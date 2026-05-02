@@ -8,7 +8,7 @@ Storyboard는 작가가 VSCode에서 소설·시나리오를 창작하기 위한
 
 - 저장소: `maroomir/storyboard`
 - 형태: VSCode Extension 예정
-- 구현 상태: 초기 문서 및 저장소 기반 정리 중
+- 구현 상태: 최소 TypeScript/esbuild 기반 extension 스캐폴딩 구성 중
 - 기준 문서:
   - [`doc/concept.md`](doc/concept.md): 제품 컨셉, 워크스페이스 구조, 파일 포맷, 명령어 모델
   - [`doc/plan.md`](doc/plan.md): Picktion에서 Storyboard로 전환하는 단계별 계획
@@ -40,7 +40,24 @@ Phase 0/1은 작은 PR 단위로 나누어 진행합니다.
 
 ## 개발 안내
 
-아직 `package.json`과 빌드 스크립트가 없습니다. PR 2에서 TypeScript, esbuild, VSCode extension 개발 설정을 추가할 예정입니다.
+개발 의존성을 설치한 뒤 컴파일과 린트를 실행할 수 있습니다.
+
+```bash
+npm install
+npm run compile
+npm run lint
+```
+
+### Extension Development Host 실행
+
+1. 이 저장소 루트(`/storyboard`)를 VSCode로 엽니다.
+2. `npm install`을 한 번 실행합니다.
+3. 왼쪽 **Run and Debug** 패널에서 `Run Extension` 구성을 선택합니다.
+4. F5를 누르면 새 **Extension Development Host** 창이 열립니다.
+5. 새 창에서 명령 팔레트(`Cmd+Shift+P`)를 열고 `Storyboard: Hello World`를 실행합니다.
+6. `Hello from Storyboard!` 정보 메시지가 보이면 최소 extension 등록이 정상입니다.
+
+F5가 반응하지 않으면 먼저 `npm run compile`이 성공하는지 확인하고, Run and Debug 패널에서 `Run Extension` 구성이 선택되어 있는지 확인하세요.
 
 개발 규칙은 다음 문서를 따릅니다.
 

@@ -1,0 +1,48 @@
+{
+  "name": "storyboard",
+  "displayName": "Storyboard",
+  "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
+  "version": "0.0.1",
+  "publisher": "maroomir",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/maroomir/storyboard.git"
+  },
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:storyboard.helloWorld"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "storyboard.helloWorld",
+        "title": "Storyboard: Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "package": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "esbuild": "^0.25.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

@@ -11,6 +11,10 @@ after the first public release.
 ### Added
 
 - Established the repository baseline for the Storyboard VSCode extension.
+- Added the initial TypeScript and esbuild extension-host scaffold.
+- Added the `storyboard.helloWorld` sanity-check command.
+- Added VSCode launch/tasks configuration for F5 extension debugging.
+- Added ESLint and Prettier baseline configuration.
 
 ### Changed
 
