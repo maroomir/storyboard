@@ -18,7 +18,10 @@ after the first public release.
 - Added the `storyboard.init` command for creating a Storyboard workspace structure.
 - Added project metadata validation for `.storyboard/project.json`.
 - Added extension-host workspace, path convention, and logger modules.
+- Added the Storyboard Activity Bar container and sidebar placeholder view.
+- Added a minimal Vite and React webview UI build.
 
 ### Changed
 
 - Slimmed Phase 0 to focus on repository readiness instead of Picktion compatibility fixtures.
+- Updated packaging scripts so `npm run build` bundles both the extension host and webview UI.

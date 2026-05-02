@@ -17,8 +17,10 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onCommand:storyboard.helloWorld",
     "onCommand:storyboard.init",
+    "onView:storyboard.sidebar",
     "workspaceContains:.storyboard/project.json"
   ],
   "main": "./out/extension.js",
@@ -32,27 +34,53 @@
         "command": "storyboard.init",
         "title": "Storyboard: Initialize Project"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "storyboard",
+          "title": "Storyboard",
+          "icon": "assets/storyboard.svg"
+        }
+      ]
+    },
+    "views": {
+      "storyboard": [
+        {
+          "id": "storyboard.sidebar",
+          "name": "Storyboard",
+          "type": "webview"
+        }
+      ]
+    }
   },
   "scripts": {
     "compile": "node esbuild.config.mjs",
+    "build:webview": "vite build",
+    "build": "npm run compile && npm run build:webview",
     "watch": "node esbuild.config.mjs --watch",
-    "lint": "eslint . --ext .ts",
+    "lint": "eslint . --ext .ts && tsc --project webview-ui/tsconfig.json --noEmit",
     "format": "prettier --write .",
-    "package": "npm run compile"
+    "package": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
+    "@vitejs/plugin-react": "^4.7.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.1",
     "prettier": "^3.3.3",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vite": "^5.4.21"
   },
   "dependencies": {
     "js-yaml": "^4.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "uuid": "^14.0.0",
     "zod": "^4.4.2"
   }

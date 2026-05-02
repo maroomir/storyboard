@@ -44,7 +44,7 @@ Phase 0/1은 작은 PR 단위로 나누어 진행합니다.
 
 ```bash
 npm install
-npm run compile
+npm run build
 npm run lint
 ```
 
@@ -78,6 +78,10 @@ README.md
 ```
 
 이미 `.storyboard/project.json`이 있는 폴더에서는 초기화를 다시 수행하지 않습니다. 기존 `.gitignore`는 덮어쓰지 않고 Storyboard 전용 ignore 블록만 추가합니다. 기존 `README.md`도 덮어쓰지 않습니다.
+
+### Activity Bar와 Sidebar
+
+F5로 Extension Development Host를 실행하면 Activity Bar에 Storyboard 아이콘이 표시됩니다. 아이콘을 클릭하면 현재는 빈 placeholder webview가 열리고, `Coming soon: Phase 2` 메시지를 표시합니다.
 
 F5가 반응하지 않으면 먼저 `npm run compile`이 성공하는지 확인하고, Run and Debug 패널에서 `Run Extension` 구성이 선택되어 있는지 확인하세요.
 
