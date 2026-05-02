@@ -17,7 +17,9 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:storyboard.helloWorld"
+    "onCommand:storyboard.helloWorld",
+    "onCommand:storyboard.init",
+    "workspaceContains:.storyboard/project.json"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -25,6 +27,10 @@
       {
         "command": "storyboard.helloWorld",
         "title": "Storyboard: Hello World"
+      },
+      {
+        "command": "storyboard.init",
+        "title": "Storyboard: Initialize Project"
       }
     ]
   },
@@ -44,5 +50,10 @@
     "eslint": "^8.57.1",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1",
+    "uuid": "^14.0.0",
+    "zod": "^4.4.2"
   }
 }

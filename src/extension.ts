@@ -1,13 +1,15 @@
 import * as vscode from "vscode"
 
-const helloWorldCommand = "storyboard.helloWorld"
+import { registerHelloWorldCommand } from "./commands/helloWorld"
+import { registerInitCommand } from "./commands/init"
+import { StoryboardLogger } from "./core/logger"
 
 export function activate(context: vscode.ExtensionContext): void {
-  const disposable = vscode.commands.registerCommand(helloWorldCommand, () => {
-    void vscode.window.showInformationMessage("Hello from Storyboard!")
-  })
+  const logger = new StoryboardLogger()
 
-  context.subscriptions.push(disposable)
+  context.subscriptions.push(logger)
+  context.subscriptions.push(registerHelloWorldCommand())
+  context.subscriptions.push(registerInitCommand({ logger }))
 }
 
 export function deactivate(): void {}

@@ -15,6 +15,9 @@ after the first public release.
 - Added the `storyboard.helloWorld` sanity-check command.
 - Added VSCode launch/tasks configuration for F5 extension debugging.
 - Added ESLint and Prettier baseline configuration.
+- Added the `storyboard.init` command for creating a Storyboard workspace structure.
+- Added project metadata validation for `.storyboard/project.json`.
+- Added extension-host workspace, path convention, and logger modules.
 
 ### Changed
 

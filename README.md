@@ -8,7 +8,7 @@ Storyboard는 작가가 VSCode에서 소설·시나리오를 창작하기 위한
 
 - 저장소: `maroomir/storyboard`
 - 형태: VSCode Extension 예정
-- 구현 상태: 최소 TypeScript/esbuild 기반 extension 스캐폴딩 구성 중
+- 구현 상태: `storyboard.init` 기반 프로젝트 초기화 구현 중
 - 기준 문서:
   - [`doc/concept.md`](doc/concept.md): 제품 컨셉, 워크스페이스 구조, 파일 포맷, 명령어 모델
   - [`doc/plan.md`](doc/plan.md): Picktion에서 Storyboard로 전환하는 단계별 계획
@@ -56,6 +56,28 @@ npm run lint
 4. F5를 누르면 새 **Extension Development Host** 창이 열립니다.
 5. 새 창에서 명령 팔레트(`Cmd+Shift+P`)를 열고 `Storyboard: Hello World`를 실행합니다.
 6. `Hello from Storyboard!` 정보 메시지가 보이면 최소 extension 등록이 정상입니다.
+
+### Storyboard 프로젝트 초기화
+
+Extension Development Host에서 빈 폴더 또는 아직 Storyboard 프로젝트가 아닌 폴더를 연 뒤 명령 팔레트에서 `Storyboard: Initialize Project`를 실행합니다.
+
+명령이 성공하면 열린 워크스페이스 폴더에 다음 구조가 생성됩니다.
+
+```text
+.storyboard/project.json
+.storyboard/cache/personas/
+.storyboard/cache/scenes/
+character/sample.card
+character/profile/
+background/sample.card
+background/concept/
+scene/01-prologue.txt
+draft/
+.gitignore
+README.md
+```
+
+이미 `.storyboard/project.json`이 있는 폴더에서는 초기화를 다시 수행하지 않습니다. 기존 `.gitignore`는 덮어쓰지 않고 Storyboard 전용 ignore 블록만 추가합니다. 기존 `README.md`도 덮어쓰지 않습니다.
 
 F5가 반응하지 않으면 먼저 `npm run compile`이 성공하는지 확인하고, Run and Debug 패널에서 `Run Extension` 구성이 선택되어 있는지 확인하세요.
 
