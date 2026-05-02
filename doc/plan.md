@@ -1,10 +1,10 @@
 # Storyboard — 마이그레이션 계획서
 
 > 작성일: 2026-05-03
-> 상태: Phase 0 시작 직전
-> 짝 문서: `storyboard-concept.md`
+> 상태: Phase 1 완료, Phase 2 시작 전
+> 짝 문서: `doc/concept.md`
 
-본 문서는 **Picktion 웹앱**(현 저장소)에서 **Storyboard VSCode Extension**(신규 저장소)으로의 전체 마이그레이션 절차를 정의한다. 컨셉·파일 포맷·명령어의 합의는 `storyboard-concept.md`에 있다. 본 문서는 그 컨셉을 어떻게 단계적으로 구현할지에 집중한다.
+본 문서는 **Picktion 웹앱**에서 **Storyboard VSCode Extension**으로의 전체 마이그레이션 절차를 정의한다. 컨셉·파일 포맷·명령어의 합의는 `doc/concept.md`에 있다. 본 문서는 그 컨셉을 어떻게 단계적으로 구현할지에 집중한다.
 
 ## 0. 한눈에 보기
 
@@ -100,7 +100,7 @@
 ├── test/
 │   ├── unit/
 │   ├── integration/
-│   └── fixtures/golden/               # Picktion에서 수집한 회귀 픽스처
+│   └── fixtures/                      # Storyboard 전용 테스트 fixture
 ├── .vscodeignore
 ├── .vscode/launch.json
 ├── tsconfig.json
@@ -153,51 +153,62 @@
 
 각 Phase는 **독립 PR**로 끝낼 수 있고, **Phase 끝마다 F5로 확장이 동작**한다.
 
-### Phase 0 — 결정 + 골든 픽스처 (2~3일)
+### Phase 0 — 저장소 베이스라인 정리 (완료)
 
-**목표**: 새 환경 + 회귀 검증 기준선 확보.
+**목표**: 새 저장소의 기본 문서·라이선스·개발 규칙을 정리하고 Phase 1 진입 기준을 확정.
 
 **체크리스트**
-- [ ] GitHub 신규 repo `maroomir/storyboard` 생성 (Public, MIT)
+- [x] GitHub 신규 저장소 `maroomir/storyboard` 생성
 - [ ] VSCode Marketplace publisher `maroomir` 등록 (Personal Access Token 발급)
-- [ ] 이름·도메인·publisher·라이선스 합의 사항 문서화 (`doc/concept.md` 이전)
-- [ ] **회귀 픽스처 50쌍 수집** (현 Picktion 가동 중에):
-  - 씬 생성 5단계 입력/출력 20개
-  - traits 추출 입력/출력 15개
-  - 배경 추출 입력/출력 10개
-  - MBTI/페르소나 5개
-- [ ] 픽스처를 신규 repo `test/fixtures/golden/`에 커밋
-- [ ] `storyboard-concept.md`, `storyboard-plan.md`를 신규 repo `doc/`로 이전
-- [ ] 현 picktion repo는 그대로 두되 `STORYBOARD_PLAN.md`(루트 또는 README 상단 안내) 추가는 보류
+- [x] 이름·도메인·publisher·라이선스 합의 사항 문서화 (`doc/concept.md` 이전)
+- [x] 골든 픽스처 수집 제외 결정 기록 (`doc/decisions/00-decisions.md`)
+- [x] `storyboard-concept.md`, `storyboard-plan.md`를 신규 repo `doc/`로 이전
+- [x] `LICENSE` (MIT) 추가
+- [x] `.gitignore` 추가
+- [x] `CHANGELOG.md` 골격 추가
+- [x] `README.md` 확장
+- [x] `.clinerules/` 존재 확인
+- [x] 초기 의사결정 로그 추가 (`doc/decisions/00-decisions.md`)
 
-**산출물**: 새 repo, 픽스처, 정식화된 컨셉/계획 문서
+**산출물**: 새 repo, 정식화된 컨셉/계획 문서, 라이선스, 변경 로그, 개발 규칙, 의사결정 로그
 
-**검증**: 픽스처 50쌍이 신규 repo에서 로드 가능
+**검증**: 파일 존재와 문서 링크를 수동 확인. PR 1 시점에는 `package.json`이 없어 빌드/테스트는 생략.
 
 ### Phase 1 — 확장 스캐폴딩 (3~5일)
 
 **목표**: F5 → 빈 확장 + `storyboard.init` 명령 + 워크스페이스 인식.
 
 **체크리스트**
-- [ ] `npm init` + extension manifest 작성
+- [x] `npm init` + extension manifest 작성
   - `engines.vscode: ^1.90.0`
-  - `activationEvents`, `contributes.commands`, `contributes.viewsContainers.activitybar`, `contributes.views`, `contributes.configuration`
-  - `publisher: maroomir`, `displayName: Storyboard`, `categories: ["AI", "Other", "Notebooks"]`
-- [ ] 의존성 설치: `vscode`, `esbuild`, `typescript`, `eslint`, `prettier`, `js-yaml`, `zod`, `uuid`
-- [ ] `esbuild.config.mjs` (extension host CJS 번들, `external: ["vscode"]`)
-- [ ] `.vscode/launch.json` (F5 디버그)
-- [ ] `commands/init.ts`:
-  - 빈 폴더 검증 (이미 `.storyboard/` 있으면 안내 후 중단)
-  - `.storyboard/project.json` + 6개 디렉토리 + `.gitignore` + `README.md` 생성
-  - 첫 캐릭터/배경/씬 샘플 1개씩
-- [ ] 사이드바 view container (Activity Bar 아이콘) — 빈 webview placeholder
-- [ ] `core/workspace.ts`: `.storyboard/project.json` 존재 검사 + 활성 프로젝트 컨텍스트
-- [ ] `core/logger.ts`: `vscode.window.createOutputChannel('Storyboard')`
+  - `activationEvents`, `contributes.commands`, `contributes.viewsContainers.activitybar`, `contributes.views`
+  - `publisher: maroomir`, `displayName: Storyboard`, `categories: ["AI", "Other"]`
+  - `contributes.configuration`은 Phase 3 설정 작업에서 추가 예정
+- [x] 의존성 설치: `esbuild`, `typescript`, `eslint`, `prettier`, `js-yaml`, `zod`, `uuid`
+  - `vscode` npm 패키지는 설치하지 않음. 런타임 API는 VSCode가 제공하고 타입은 `@types/vscode` 사용.
+- [x] `esbuild.config.mjs` (extension host CJS 번들, `external: ["vscode"]`)
+- [x] `.vscode/launch.json` (F5 디버그)
+- [x] `commands/init.ts`:
+  - 비-Storyboard 폴더에서 실행 가능
+  - 이미 `.storyboard/project.json` 있으면 안내 후 중단
+  - `.storyboard/`만 있고 `project.json`이 없으면 안전을 위해 중단
+  - `.storyboard/project.json` + 표준 디렉토리 + `.gitignore` + `README.md` 생성
+  - 첫 캐릭터/배경/씬 샘플 1개씩 생성
+- [x] 사이드바 view container (Activity Bar 아이콘) — 빈 webview placeholder
+- [x] `core/workspace.ts`: 워크스페이스 선택 + `.storyboard/project.json` 존재 검사
+- [x] `core/logger.ts`: `vscode.window.createOutputChannel('Storyboard')`
+- [x] `files/projectJson.ts`: `.storyboard/project.json` 생성/검증/저장 (zod)
+- [x] `core/pathConventions.ts`: Storyboard 표준 경로 헬퍼
+- [x] `webview-ui/` 최소 Vite + React placeholder 구성
 
 **검증**
-- 빈 폴더에서 `Storyboard: Initialize Project` → 디렉토리 구조 자동 생성
-- `.storyboard/project.json` 존재하는 폴더를 열면 사이드바 아이콘 활성화
-- `vsce package` 성공, `.vsix` 생성
+- [x] 빈 폴더에서 `Storyboard: Initialize Project` → 디렉토리 구조 자동 생성
+- [x] `.storyboard/project.json` 존재하는 폴더를 열면 사이드바 아이콘 활성화
+- [x] Activity Bar 아이콘 클릭 → Sidebar placeholder webview 표시
+- [x] `npm run build` 성공
+- [x] `npm run lint` 성공
+- [x] `npx tsc --noEmit` 성공
+- [ ] `vsce package` 성공, `.vsix` 생성
 
 ### Phase 2 — 파일 시스템 + Card Custom Editor (1주)
 
@@ -249,7 +260,7 @@
   - `storyboard.scene.prefixDigits` (기본 `2`)
 - [ ] `commands/setApiKey.ts`: QuickPick(provider 선택) → InputBox(key) → SecretStorage 저장
 - [ ] RPC 핸들러 `ai.*`: webview에서 호출 가능하게
-- [ ] 골든 픽스처 회귀 테스트 (결정적 부분: 파싱, traits 분배)
+- [ ] Storyboard 전용 fixture 테스트 (결정적 부분: 파싱, traits 분배)
 
 **검증**
 - 5 provider 모두 `checkConnection()` 통과
@@ -384,8 +395,8 @@
 
 | Phase | 기간 | 누적 | 핵심 산출 |
 |---|---|---|---|
-| 0. 결정 + 골든 픽스처 | 2~3일 | 0.5주 | 새 repo, 픽스처 |
-| 1. 확장 스캐폴딩 | 3~5일 | 1주 | F5 동작하는 빈 확장 |
+| 0. 저장소 베이스라인 정리 | 완료 | 완료 | 새 repo, 문서, 라이선스, 변경 로그 |
+| 1. 확장 스캐폴딩 | 완료 | 완료 | F5 동작하는 빈 확장 + init + sidebar placeholder |
 | 2. 파일 시스템 + Card Editor | 1주 | 2주 | `.card` 커스텀 에디터 |
 | 3. AI + Secret + 설정 | 1주 | 3주 | 5 provider 동작 |
 | 4. 씬 → 드래프트 파이프라인 | 1.5주 | 4.5주 | scene → draft 생성 |
@@ -428,8 +439,8 @@
 | `CustomTextEditorProvider` 양방향 동기화 복잡도 | Phase 2 지연 | 공식 예제(`vscode-extension-samples/custom-editor-sample`) 참고. 텍스트 충돌 시 webview 재로드 fallback |
 | 한국어 IME + InlineCompletion 충돌 | Phase 6 품질 | `inputBoxComposition` 이벤트 필터, IME 조합 중에는 ghost text 억제 |
 | 큰 프로젝트(100+ 씬)에서 file watcher 성능 | Phase 5 품질 | lazy loading, 사이드바 가상 스크롤 |
-| Picktion 사용자 데이터 포맷 변화 | Phase 7 import 실패 | 골든 픽스처에 `.picktion` 샘플 포함, round-trip 테스트 |
-| LLM 출력 비결정성 → 회귀 픽스처 의미 약화 | Phase 3 검증 어려움 | 결정적 부분(파싱, traits 분배, frontmatter)만 strict, LLM 호출은 구조적 검증(스키마 통과 여부) |
+| Picktion 사용자 데이터 포맷 변화 | Phase 7 import 실패 | import 기능을 구현하는 시점에 필요한 `.picktion` 샘플만 수집하고 round-trip 테스트 |
+| LLM 출력 비결정성 → 회귀 테스트 의미 약화 | Phase 3 검증 어려움 | 결정적 부분(파싱, traits 분배, frontmatter)만 strict, LLM 호출은 구조적 검증(스키마 통과 여부) |
 | Marketplace 거절 / 정책 위반 | 출시 지연 | `vscode.proposed.api` 미사용, 외부 호출 시 사용자 동의 UI |
 
 ## 7. 명명 규칙 / 코딩 표준
@@ -446,11 +457,11 @@
 - Phase 마감마다 PR + 태그 (`phase-1`, `phase-2`, ...).
 - 본 문서의 각 Phase 체크리스트는 Issue로 변환해 진행 상태를 동기화한다.
 
-## 9. 시작 액션
+## 9. 다음 액션
 
-1. Phase 0의 \"GitHub 신규 repo 생성\" 단계부터 시작.
-2. 신규 repo에 `doc/concept.md`, `doc/plan.md` 두 문서를 옮긴다.
-3. 새 폴더에서 본 문서 + 컨셉 문서를 열고 Phase 0 체크리스트부터 차례로 수행한다.
+1. `vsce package` 검증을 별도 PR 또는 릴리스 준비 단계에서 수행한다.
+2. Phase 2의 파일 시스템 + Card Custom Editor 작업을 시작한다.
+3. `files/card.ts`, `files/sceneCache.ts`, 카드 round-trip 테스트를 우선 구현한다.
 
 ## 10. 참고
 
