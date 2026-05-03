@@ -265,16 +265,18 @@
   - `storyboard.scene.prefixDigits` (기본 `2`)
 - [x] `commands/setApiKey.ts`: QuickPick(provider 선택) → InputBox(key) → SecretStorage 저장
 - [x] RPC 핸들러 `ai.*`: webview에서 호출 가능하게
-- [ ] Storyboard 전용 fixture 테스트 (결정적 부분: 파싱, traits 분배)
+- [x] Storyboard 전용 fixture 테스트 (결정적 부분: 파싱, traits 분배)
 
 > PR-3a 메모: AI provider 이식 전 단계로 `src/services/ai/types.ts`, `SecretStore`, `ConfigBridge`, `Storyboard: Set API Key...` 명령, `package.json#contributes.configuration`, 관련 단위 테스트를 먼저 추가했다. 기본 provider는 초기 dogfooding을 위해 `mock`으로 둔다.
 > PR-3b 메모: Picktion의 `OpenAIProvider` 호출 패턴을 Node.js extension host용으로 단순화해 이식했다. `MockAiProvider`와 `OpenAiProvider`만 `isAvailable: true`이며, Claude/Google/Ollama는 PR-3c에서 구현한다. `ai.providers.list`, `ai.providers.checkConnection`, `ai.generate` RPC 스키마와 핸들러를 추가했다.
 > PR-3c 메모: Picktion의 `ClaudeProvider`, `GoogleProvider`, `OllamaProvider` 호출 패턴을 같은 `AiProvider` 인터페이스로 이식했다. 5개 provider 모두 registry에 등록되며, OpenAI/Claude/Google은 SecretStorage API 키를 사용하고 Ollama는 `storyboard.providers.ollama.*` 설정을 사용한다.
+> PR-3d 메모: Picktion의 결정적 AI 유틸 중 `aiResponseParser`, `jsonRepair`, `traitsProcessor`를 `src/utils/`로 이식하고, Storyboard fixture 기반 단위 테스트를 추가했다. LLM 호출 결과가 아니라 파싱·정규화·trait 처리 결과만 strict하게 검증한다.
 
 **검증**
-- 5 provider 모두 `checkConnection()` 통과
-- VSCode Settings UI에서 모델 변경 → 즉시 반영
-- 키 등록/삭제 명령 정상
+- [x] 5 provider 모두 registry에 등록되고 `checkConnection()` 경로가 단위 테스트에서 injectable client로 검증됨
+- [x] VSCode Settings UI 모델 변경을 반영하는 `ConfigBridge` 단위 테스트 통과
+- [x] 키 등록/삭제를 담당하는 `SecretStore`와 `Storyboard: Set API Key...` wiring 구현
+- [x] 결정적 파싱/trait fixture 테스트 통과
 
 ### Phase 4 — 씬 → 드래프트 파이프라인 (1.5주)
 

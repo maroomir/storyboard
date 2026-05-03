@@ -100,6 +100,8 @@ API 키는 Settings에 저장하지 않고 VSCode `SecretStorage`에만 저장�
 3. API 키를 입력하면 SecretStorage에 저장됩니다.
 4. 빈 값을 입력하고 확인하면 해당 provider의 기존 키를 삭제합니다.
 
+Phase 3 기준으로 `mock`, `openai`, `claude`, `google`, `ollama` provider가 extension host registry에 등록되어 있습니다. LLM 응답 자체는 비결정적이므로, 단위 테스트는 provider client boundary와 파싱/trait 처리 같은 결정적 유틸을 중심으로 검증합니다.
+
 ### Activity Bar와 Sidebar
 
 F5로 Extension Development Host를 실행하면 Activity Bar에 Storyboard 아이콘이 표시됩니다. 아이콘을 클릭하면 현재는 빈 placeholder webview가 열리고, `Coming soon: Phase 2` 메시지를 표시합니다.

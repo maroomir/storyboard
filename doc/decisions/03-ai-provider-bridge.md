@@ -71,3 +71,15 @@ PR-3c에서는 나머지 provider 3종을 같은 `AiProvider` 인터페이스에
 - `AiProviderRegistry`: 5개 provider 모두 `isAvailable: true`로 표시한다. OpenAI/Claude/Google은 SecretStorage API 키를 요구하고, Ollama는 로컬 `baseUrl`과 `model` 설정만 요구한다.
 
 이 단계에서도 실제 네트워크 호출은 단위 테스트에서 수행하지 않는다. 각 provider는 injectable client boundary를 갖고, 테스트는 SDK/HTTP client 대역으로 요청 변환과 응답 정규화를 검증한다.
+
+## PR-3d 구현 메모
+
+PR-3d에서는 Picktion의 AI 관련 결정적 유틸 중 다음 3개를 먼저 이식했다.
+
+- `src/utils/aiResponseParser.ts`: JSON 배열/객체, 중첩 배열, bullet list, MBTI, 캐릭터별 trait section, 대사 speaker 파싱
+- `src/utils/jsonRepair.ts`: AI 응답에서 첫 JSON 배열 탐색, 깨진 JSON 배열에서 완성된 object만 추출
+- `src/utils/traitsProcessor.ts`: trait 유사도 계산, 중복 제거, 기존 trait 제거, 품질 검증, 캐릭터별 trait 처리 파이프라인
+
+이 유틸들은 provider SDK, VSCode API, 브라우저 API에 의존하지 않는 순수 함수로 유지한다. Phase 4의 씬→드래프트 파이프라인과 trait 자동 갱신 작업에서 재사용한다.
+
+Fixture는 `test/fixtures/ai/` 아래에 Storyboard 전용으로 둔다. LLM 응답 자체는 비결정적이므로, PR-3d 테스트는 fixture 문자열을 대상으로 파싱·정규화 결과만 검증한다.
