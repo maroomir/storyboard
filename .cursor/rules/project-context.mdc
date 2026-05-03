@@ -1,0 +1,59 @@
+---
+description: Storyboard VSCode extension identity, boundaries, and source of truth
+alwaysApply: true
+---
+
+# Project context
+
+## Identity
+
+- `storyboard` is a VSCode extension. Cline (`/Users/maroomir/Git/clien/cline`) is a **reference for patterns only**—do not copy implementation blindly or treat Cline as a dependency contract.
+- Prefer **incremental scaffolding**; keep the first version smaller than Cline’s mature stack unless the user asks for more.
+
+## Source of truth
+
+- **`package.json`**: extension metadata, scripts, activation, commands, views, menus, configuration.
+- **`AGENTS.md`**, **`CLAUDE.md`**, **`.clinerules/`**: agent working rules (this rule mirrors the essentials for Cursor).
+- **`CLEANCODE.md`** / **`.clinerules/clean-code.md`**: human vs agent clean-code guidance.
+- **Code and tests win** over docs: if they disagree, investigate before changing behavior.
+
+## Principles
+
+- Check **`package.json` scripts** before compile, lint, test, or package.
+- Inspect nearby files and existing conventions before introducing new patterns.
+- **Separate**: extension host vs shared types vs webview UI.
+- Use **TypeScript** with explicit types for messages, state, and command payloads.
+- Prefer **small, focused modules** over large catch-alls.
+- **Never** commit secrets, API keys, tokens, or user-private paths.
+
+## Domain boundaries
+
+| Layer            | Owns |
+|-----------------|------|
+| Extension host  | Activation, commands, webviews, `globalState` / `workspaceState` / `secrets`, FS, terminals, integrations, long-running work |
+| Shared          | Message contracts, DTOs, settings interfaces, validation; **no** `vscode` or browser-only APIs |
+| Webview         | Rendering, local UI state, typed client to extension host—**no** direct `vscode` import; use `acquireVsCodeApi()` (or equivalent) |
+
+## Intended layout (minimal first)
+
+```text
+src/extension.ts, src/core/, src/shared/, webview-ui/, assets/, tests/
+```
+
+Add deeper layers only when there is a concrete need.
+
+## Messaging and state
+
+- Prefer discriminated unions: `{ type: "...", payload: ... }`.
+- Split extension→webview vs webview→extension message types when it helps clarity.
+- **Validate** at extension boundaries for user input, paths, or external data.
+- Extension host is **source of truth** for persistence; avoid duplicating state in the webview without a deliberate sync strategy.
+- **State**: `globalState` (user-wide), `workspaceState` (workspace), `secrets` (credentials).
+
+## Security
+
+- No secrets in logs or webview. Strict CSP for webviews; nonces for scripts; avoid `unsafe-eval` unless documented tradeoff. Sanitize user Markdown/HTML.
+
+## Reference to Cline
+
+Borrow lifecycle, messaging, persistence, webview security, and testing ideas—**simplify** for this repo’s maturity. Skip Cline-specific providers, marketplace, protobuf, CLI/TUI, telemetry, release automation unless explicitly requested.

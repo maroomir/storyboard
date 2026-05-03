@@ -1,0 +1,44 @@
+---
+description: Readability, structure, naming, and review bar for storyboard code
+alwaysApply: true
+---
+
+# Clean code (agent summary)
+
+Goal: code another person can **understand quickly** and **change safely**—not style for its own sake.
+
+## Quality bar
+
+Readable, maintainable, extensible, robust (edge cases and failures handled), testable, self-documenting names, **consistent** patterns across the repo.
+
+## Readability
+
+- Let the formatter handle layout; use blank lines to separate **semantic steps**.
+- Comments: **intent, constraints, tradeoffs** only—not narration of what the code says.
+- Split when one screen no longer shows the **meaningful unit** (function/class).
+
+## Structure
+
+- Colocate related state, derived values, and behavior.
+- Preserve clear **data flow**: create → transform → use.
+- Keep **extension host**, **shared**, and **webview** concerns separated.
+
+Before finishing, ask: traceability of values? obvious change location? testable unit visible?
+
+## Naming
+
+- Variables: role clear; wider scope → more specific; booleans: `is` / `has` / `can` / `should`.
+- Functions: action + target + context when useful (e.g. `getActiveUsersByGroup`). Avoid vague `process`, `handle`, `data`, `temp` at non-trivial scope.
+- Nuance: `create` vs `add` vs `insert`; `fetch` vs `load` vs `get`; `validate` vs `update`; `current` vs `selected`.
+
+## Review checklist
+
+- Names reveal role; single responsibility per unit.
+- Related code grouped; unrelated separated.
+- Phases separated by blank lines; comments add context.
+- Patterns match surroundings; logic is testable; future change location is obvious.
+
+## Adoption
+
+- Prefer formatter + linter over ad-hoc style debates.
+- Refactor as part of feature work; add tests first for high-risk or frequently changed logic.

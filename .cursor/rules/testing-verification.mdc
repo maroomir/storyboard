@@ -1,0 +1,39 @@
+---
+description: Scripts-first verification and extension/webview testing expectations
+globs: package.json,src/**/*,tests/**/*,webview-ui/**/*
+alwaysApply: false
+---
+
+# Testing and verification
+
+## Before commands
+
+- Read **`package.json`** scripts first; prefer **project scripts** over ad-hoc commands.
+- Do not assume `build`—many extensions use **`npm run compile`**.
+
+## When scripts exist
+
+Prefer in order when defined:
+
+```bash
+npm run compile
+npm run lint
+npm test
+```
+
+Use webview-specific scripts if the repo defines them.
+
+## Extension tests
+
+- Cover command registration and activation-related behavior.
+- Test services **without** a webview when possible.
+- Use VSCode integration tests when behavior depends on VSCode APIs.
+
+## Webview tests
+
+- Separate **message handling** from visual rendering where practical.
+- Cover loading, empty, error, and cancellation—not screenshots alone for logic.
+
+## Manual fallback
+
+If automation is missing, state limitations and check: imports/paths, **`package.json`** contribution consistency, message contracts, TypeScript and obvious runtime issues.

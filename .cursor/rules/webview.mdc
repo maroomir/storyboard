@@ -1,0 +1,34 @@
+---
+description: Webview UI, messaging, security, and UX for storyboard
+globs: webview-ui/**/*,src/shared/**/*,src/core/**/*
+alwaysApply: false
+---
+
+# Webview
+
+## Separation
+
+- **Webview**: rendering, local interactions, transient UI state.
+- **Extension host**: persistence, FS, VSCode APIs, external calls.
+- **Shared**: message contracts and DTOs in a shared module when the tree exists.
+
+## Messaging
+
+- Explicit types **both directions**; prefer `{ type: "eventName", payload: ... }`.
+- Use **request IDs** if multiple concurrent operations need correlation.
+- **Validate** at the extension boundary before acting.
+
+## Security
+
+- No inline scripts without a **nonce**; avoid broad CSP and **`unsafe-eval`** unless documented.
+- **Never** expose secrets to the webview.
+- Sanitize user-provided Markdown/HTML.
+
+## UX
+
+- Prefer VSCode theme variables (e.g. `var(--vscode-foreground)`).
+- Stay responsive during long host work: loading, success, cancel, and error states should be explicit.
+
+## Reference
+
+Cline’s `webview-ui` is a mature React reference—start with the **smallest** useful UI and grow only when needed.

@@ -1,0 +1,45 @@
+---
+description: GitHub CLI checks and steps to open a storyboard pull request
+alwaysApply: false
+---
+
+# Pull request workflow
+
+Use when creating or preparing a PR for `storyboard`.
+
+## Prerequisites
+
+```bash
+gh --version
+gh auth status
+git status --short
+git branch --show-current
+```
+
+If `gh` is missing or not authenticated, ask the user to install or log in before creating the PR.
+
+## Base branch and diff
+
+```bash
+git remote show origin | grep "HEAD branch"
+git log origin/main..HEAD --oneline --no-decorate
+git diff origin/main..HEAD --stat
+```
+
+If the default branch is not `main`, substitute it in the commands.
+
+## PR body
+
+- If **`.github/pull_request_template.md`** exists, follow it exactly.
+- Include summary, motivation, implementation notes, and **tests / verification**.
+- Note when verification was limited (e.g. scripts not present).
+
+## Create PR
+
+Use a temp file for the body:
+
+```bash
+gh pr create --title "PR_TITLE" --body-file /tmp/storyboard-pr-body.md --base main
+```
+
+Remove the temp file after success.

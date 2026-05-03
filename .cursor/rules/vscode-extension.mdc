@@ -1,0 +1,34 @@
+---
+description: package.json contributions, activation, lifecycle, VSCode API boundaries
+globs: package.json,src/**/*.ts,tests/**/*.ts
+alwaysApply: false
+---
+
+# VSCode extension host
+
+## Contributions
+
+- **`package.json`** is the source of truth for commands, views, menus, config, activation events.
+- Command IDs: **`storyboard.*`** namespace.
+- Every contributed command must be **registered** on activation (or the intended lazy path)—keep contributions and runtime **aligned**.
+
+## Activation and lifecycle
+
+- Keep **`src/extension.ts`** focused on activate/deactivate and wiring.
+- Push disposables into **`context.subscriptions`**; dispose panels, watchers, listeners, terminals explicitly.
+- Avoid heavy work at activation unless the activation event requires it.
+
+## API boundaries
+
+- **`vscode`** only in extension-host code—not in webview bundles.
+- Prefer thin **services** around VSCode APIs when it improves tests.
+
+## Webviews (host side)
+
+- **CSP** required; **nonces** for scripts; **`webview.asWebviewUri(...)`** for local assets.
+- Extension ↔ webview: **message passing** only; treat webview messages as **untrusted**—validate important payloads.
+
+## Errors
+
+- Surface actionable errors via VSCode UI or webview; log context but **never** secrets.
+- Prefer **graceful degradation** over failing activation entirely.
