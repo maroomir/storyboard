@@ -1,12 +1,15 @@
 import * as vscode from "vscode"
 
+import { registerApplyDraftFormatCommand } from "./commands/applyDraftFormat"
 import { registerCreateCardCommands } from "./commands/createCard"
+import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
+import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
 import { createAiProviderRegistry } from "./services/ai/providerRegistry"
 import { SecretStore } from "./services/secrets/SecretStore"
@@ -30,6 +33,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
   context.subscriptions.push(registerGenerateDraftCommands({ aiProviderRegistry, logger }))
+  context.subscriptions.push(registerGenerateAllDraftsCommand({ aiProviderRegistry, logger }))
+  context.subscriptions.push(registerApplyDraftFormatCommand({ aiProviderRegistry, logger }))
+  context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(registerSidebarCardsProviders(context, { aiProviderRegistry }))
 }

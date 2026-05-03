@@ -16,19 +16,6 @@
     "AI",
     "Other"
   ],
-  "activationEvents": [
-    "onStartupFinished",
-    "onCommand:storyboard.helloWorld",
-    "onCommand:storyboard.init",
-    "onCommand:storyboard.character.create",
-    "onCommand:storyboard.background.create",
-    "onCommand:storyboard.apiKey.set",
-    "onCommand:storyboard.draft.generate",
-    "onCommand:storyboard.draft.regenerate",
-    "onView:storyboard.charactersView",
-    "onView:storyboard.backgroundsView",
-    "workspaceContains:.storyboard/project.json"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -61,6 +48,14 @@
       {
         "command": "storyboard.draft.regenerate",
         "title": "Storyboard: Regenerate Draft (Current Scene)"
+      },
+      {
+        "command": "storyboard.draft.generateAll",
+        "title": "Storyboard: Generate All Drafts"
+      },
+      {
+        "command": "storyboard.draft.applyFormat",
+        "title": "Storyboard: Apply Format to Draft (Current Scene)"
       }
     ],
     "configuration": {
@@ -152,12 +147,14 @@
         {
           "id": "storyboard.charactersView",
           "name": "Characters",
-          "type": "webview"
+          "type": "webview",
+          "when": "workspaceContains:.storyboard/project.json"
         },
         {
           "id": "storyboard.backgroundsView",
           "name": "Backgrounds",
-          "type": "webview"
+          "type": "webview",
+          "when": "workspaceContains:.storyboard/project.json"
         }
       ]
     },
