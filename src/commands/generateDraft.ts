@@ -7,7 +7,12 @@ import {
   type SceneContextWorkspacePaths
 } from "../core/sceneContext"
 import type { StoryboardLogger } from "../core/logger"
-import { draftPath, getStoryboardProjectPaths, type StoryboardProjectPaths } from "../core/pathConventions"
+import {
+  characterCardPath,
+  draftPath,
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths
+} from "../core/pathConventions"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
 import { createDraft, writeDraftFile, type DraftFileSystem } from "../files/draft"
 import { readProjectJson } from "../files/projectJson"
@@ -28,6 +33,7 @@ import {
   type SceneGenerationPipelineStage
 } from "../services/ai/pipelines/sceneGenerationPipeline"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
+import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
 import type { BackgroundCard } from "../shared/card"
 
@@ -167,8 +173,9 @@ export interface GenerateDraftWorkflowOptions {
   readonly onPipelineProgress?: (stage: SceneGenerationPipelineStage, current: number, total: number) => void
   readonly onSaving?: () => void
   readonly shouldCancel?: () => boolean
-  /** When true, errors are logged but the Storyboard output channel is not revealed automatically. */
   readonly suppressLoggerPanel?: boolean
+  readonly enableTraitsUpdate?: boolean
+  readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void
 }
 
 export async function generateDraftForWorkspaceSceneWorkflow(
@@ -335,6 +342,23 @@ export async function generateDraftForWorkspaceSceneWorkflow(
     await writeDraftFile(draftUri, vscodeFsAdapter, draft)
     await writeSceneCacheFile(cacheUri, vscodeFsAdapter, cacheRecord)
 
+    if (options.enableTraitsUpdate !== false) {
+      const detectedCharacterCards = context.characters.filter((card) =>
+        result.detectedCharacters.includes(card.name)
+      )
+
+      scheduleCharacterTraitsUpdate({
+        queueKey: workspaceFolder.uri.toString(),
+        draftBody: result.draftBody,
+        detectedCharacterCards,
+        aiService,
+        fileSystem: vscodeFsAdapter,
+        resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
+        logger: options.logger,
+        onComplete: options.onTraitsUpdateComplete
+      })
+    }
+
     if (options.openDocumentOnSuccess) {
       const doc = await vscode.workspace.openTextDocument(draftUri)
       await vscode.window.showTextDocument(doc)
@@ -383,6 +407,13 @@ export async function runGenerateDraftForWorkspaceScene(
         openDocumentOnSuccess: true,
         showCacheHitMessage: true,
         showSuccessMessage: true,
+        onTraitsUpdateComplete: (summary) => {
+          if (summary.updatedCardCount > 0) {
+            void vscode.window.showInformationMessage(
+              `캐릭터 카드 ${summary.updatedCardCount}개에 특성·최근 대사를 반영했습니다.`
+            )
+          }
+        },
         onPipelineProgress: (stage, current, total) => {
           if (token.isCancellationRequested) {
             return

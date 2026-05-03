@@ -38,6 +38,17 @@ describe("StoryboardAIService", () => {
       })
     ).resolves.toBe("나는 엘리아다.")
   })
+
+  it("parses traits bullets per character from model output", async () => {
+    const service = createAIService({
+      completionText: `- 활발하게 교실 앞으로 걸어 나섬
+- 친구를 안심시키며 또렷하게 말함`
+    })
+
+    await expect(service.extractTraitsByCharacter("엘리아가 앞으로 나선다.", ["엘리아"])).resolves.toEqual({
+      엘리아: ["활발하게 교실 앞으로 걸어 나섬", "친구를 안심시키며 또렷하게 말함"]
+    })
+  })
 })
 
 function createAIService(options: { readonly completionText: string }): StoryboardAIService {

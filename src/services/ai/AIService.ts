@@ -7,7 +7,8 @@ import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
-import { parseJsonArray } from "../../utils/aiResponseParser"
+import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
+import { parseBulletList, parseJsonArray } from "../../utils/aiResponseParser"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]
@@ -88,8 +89,35 @@ export class StoryboardAIService {
     return response.text.trim()
   }
 
+  public async extractTraitsByCharacter(
+    draftBody: string,
+    characterNames: readonly string[],
+    options: GenerateTextOptions = {}
+  ): Promise<Record<string, string[]>> {
+    const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
+    const traitOptions: GenerateTextOptions = {
+      ...options,
+      temperature: options.temperature ?? TraitsExtractionPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? TraitsExtractionPrompt.config.maxTokens
+    }
+
+    const entries = await Promise.all(
+      uniqueNames.map(async (name) => {
+        const response = await this.generateText(
+          "traitsExtraction",
+          [{ role: "user", content: TraitsExtractionPrompt.build(draftBody, name) }],
+          traitOptions
+        )
+
+        return [name, parseBulletList(response.text)] as const
+      })
+    )
+
+    return Object.fromEntries(entries)
+  }
+
   private async generateText(
-    taskName: "situationExtraction" | "personaDialogue" | "sceneDraft",
+    taskName: "situationExtraction" | "personaDialogue" | "sceneDraft" | "traitsExtraction",
     messages: ReadonlyArray<{ readonly role: "system" | "user" | "assistant"; readonly content: string }>,
     options: GenerateTextOptions
   ): Promise<AiGenerateResponse> {

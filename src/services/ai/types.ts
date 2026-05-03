@@ -6,6 +6,7 @@ export const aiTaskNames = [
   "situationExtraction",
   "personaDialogue",
   "sceneDraft",
+  "traitsExtraction",
   "grammarCheck",
   "inlineCompletion",
   "draftExpansion"
