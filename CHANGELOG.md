@@ -23,6 +23,9 @@ after the first public release.
 - Added `.card` YAML schemas, round-trip tests, and a Storyboard card custom editor.
 - Added Characters and Backgrounds sidebar views with file watching and card opening.
 - Added commands for creating character and background cards from the sidebar.
+- Added Storyboard AI provider configuration keys with `mock` as the default provider.
+- Added SecretStorage-backed API key management and the `Storyboard: Set API Key...` command.
+- Added testable `SecretStore` and `ConfigBridge` adapters for Phase 3 AI integration.
 
 ### Changed
 

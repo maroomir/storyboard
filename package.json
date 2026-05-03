@@ -22,6 +22,7 @@
     "onCommand:storyboard.init",
     "onCommand:storyboard.character.create",
     "onCommand:storyboard.background.create",
+    "onCommand:storyboard.apiKey.set",
     "onView:storyboard.charactersView",
     "onView:storyboard.backgroundsView",
     "workspaceContains:.storyboard/project.json"
@@ -46,8 +47,75 @@
         "command": "storyboard.background.create",
         "title": "Storyboard: Create Background",
         "icon": "$(add)"
+      },
+      {
+        "command": "storyboard.apiKey.set",
+        "title": "Storyboard: Set API Key..."
       }
     ],
+    "configuration": {
+      "title": "Storyboard",
+      "properties": {
+        "storyboard.defaultProvider": {
+          "type": "string",
+          "enum": ["openai", "claude", "google", "ollama", "mock"],
+          "default": "mock",
+          "description": "Default AI provider used when a task does not override the provider."
+        },
+        "storyboard.providers.openai.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "OpenAI model used by Storyboard."
+        },
+        "storyboard.providers.claude.model": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-latest",
+          "description": "Claude model used by Storyboard."
+        },
+        "storyboard.providers.google.model": {
+          "type": "string",
+          "default": "gemini-1.5-flash",
+          "description": "Google Gemini model used by Storyboard."
+        },
+        "storyboard.providers.ollama.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Base URL of the local Ollama server."
+        },
+        "storyboard.providers.ollama.model": {
+          "type": "string",
+          "default": "llama3.1",
+          "description": "Ollama model used by Storyboard."
+        },
+        "storyboard.tasks": {
+          "type": "object",
+          "default": {},
+          "description": "Per-task AI provider overrides. Example: { \"sceneDraft\": { \"provider\": \"claude\" } }",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "provider": {
+                "type": "string",
+                "enum": ["openai", "claude", "google", "ollama", "mock"]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "storyboard.grammar.realtimeEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable real-time grammar diagnostics. Disabled by default for performance."
+        },
+        "storyboard.scene.prefixDigits": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 4,
+          "description": "Number of zero-padded digits used for new scene file prefixes."
+        }
+      }
+    },
     "customEditors": [
       {
         "viewType": "storyboard.card",
@@ -109,10 +177,10 @@
     "package": "npm run build"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.12.12",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
-    "@types/js-yaml": "^4.0.9",
     "@types/vscode": "^1.90.0",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
@@ -125,7 +193,11 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.16.0",
     "js-yaml": "^4.1.1",
+    "openai": "^6.35.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "uuid": "^14.0.0",

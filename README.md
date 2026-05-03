@@ -2,13 +2,13 @@
 
 Storyboard는 작가가 VSCode에서 소설·시나리오를 창작하기 위한 AI 기반 픽션 IDE입니다.
 
-이 저장소는 기존 Picktion 웹앱을 그대로 이식하지 않고, VSCode Extension으로 새롭게 재구성하기 위한 신규 프로젝트입니다. 현재는 Phase 0 저장소 베이스라인을 정리하는 단계입니다.
+이 저장소는 기존 Picktion 웹앱을 그대로 이식하지 않고, VSCode Extension으로 새롭게 재구성하기 위한 신규 프로젝트입니다. 현재는 Phase 3에서 AI provider 설정과 SecretStorage 기반 API 키 관리를 준비하는 단계입니다.
 
 ## 현재 상태
 
 - 저장소: `maroomir/storyboard`
 - 형태: VSCode Extension 예정
-- 구현 상태: `storyboard.init` 기반 프로젝트 초기화 구현 중
+- 구현 상태: 프로젝트 초기화, `.card` 커스텀 에디터, 사이드바 카드 목록, API 키 저장 명령 구현 중
 - 기준 문서:
   - [`doc/concept.md`](doc/concept.md): 제품 컨셉, 워크스페이스 구조, 파일 포맷, 명령어 모델
   - [`doc/plan.md`](doc/plan.md): Picktion에서 Storyboard로 전환하는 단계별 계획
@@ -78,6 +78,27 @@ README.md
 ```
 
 이미 `.storyboard/project.json`이 있는 폴더에서는 초기화를 다시 수행하지 않습니다. 기존 `.gitignore`는 덮어쓰지 않고 Storyboard 전용 ignore 블록만 추가합니다. 기존 `README.md`도 덮어쓰지 않습니다.
+
+### AI Provider 설정과 API 키
+
+Storyboard는 VSCode Settings UI에 `storyboard.*` 설정을 노출합니다. 현재 기본 provider는 키 없이 동작 흐름을 확인할 수 있도록 `mock`입니다.
+
+주요 설정:
+
+- `storyboard.defaultProvider`: `openai`, `claude`, `google`, `ollama`, `mock` 중 선택
+- `storyboard.providers.openai.model`
+- `storyboard.providers.claude.model`
+- `storyboard.providers.google.model`
+- `storyboard.providers.ollama.baseUrl`
+- `storyboard.providers.ollama.model`
+- `storyboard.tasks`: 작업별 provider override
+
+API 키는 Settings에 저장하지 않고 VSCode `SecretStorage`에만 저장합니다.
+
+1. 명령 팔레트에서 `Storyboard: Set API Key...`를 실행합니다.
+2. provider를 선택합니다. (`mock`은 키가 필요 없어 표시하지 않습니다.)
+3. API 키를 입력하면 SecretStorage에 저장됩니다.
+4. 빈 값을 입력하고 확인하면 해당 provider의 기존 키를 삭제합니다.
 
 ### Activity Bar와 Sidebar
 

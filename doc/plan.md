@@ -249,20 +249,22 @@
 **체크리스트**
 - [ ] 현 `src/services/ai/`를 신규 repo `src/services/ai/`로 그대로 이식
 - [ ] **브라우저 전용 코드 제거**: localStorage/IndexedDB 의존 부분 제거 (대부분 settingsStore 의존이라 어댑터로 끊으면 됨)
-- [ ] `services/secrets/SecretStore.ts`:
+- [x] `services/secrets/SecretStore.ts`:
   - `setApiKey(provider, key)`, `getApiKey(provider)`, `deleteApiKey(provider)`, `hasApiKey(provider)`
   - `vscode.ExtensionContext.secrets` 사용
-- [ ] `services/settings/ConfigBridge.ts`:
+- [x] `services/settings/ConfigBridge.ts`:
   - `vscode.workspace.getConfiguration('storyboard')` 어댑터
   - 현 `settingsStore` 인터페이스 모방 → 기존 AI 코드 변경 최소화
-- [ ] `package.json#contributes.configuration`:
+- [x] `package.json#contributes.configuration`:
   - `storyboard.defaultProvider`, `storyboard.providers.openai.model`, `storyboard.providers.claude.model`, `storyboard.providers.google.model`, `storyboard.providers.ollama.baseUrl`, `storyboard.providers.ollama.model`
   - `storyboard.tasks.<taskName>.provider` (작업별 provider 오버라이드)
   - `storyboard.grammar.realtimeEnabled` (기본 `false`)
   - `storyboard.scene.prefixDigits` (기본 `2`)
-- [ ] `commands/setApiKey.ts`: QuickPick(provider 선택) → InputBox(key) → SecretStorage 저장
+- [x] `commands/setApiKey.ts`: QuickPick(provider 선택) → InputBox(key) → SecretStorage 저장
 - [ ] RPC 핸들러 `ai.*`: webview에서 호출 가능하게
 - [ ] Storyboard 전용 fixture 테스트 (결정적 부분: 파싱, traits 분배)
+
+> PR-3a 메모: AI provider 이식 전 단계로 `src/services/ai/types.ts`, `SecretStore`, `ConfigBridge`, `Storyboard: Set API Key...` 명령, `package.json#contributes.configuration`, 관련 단위 테스트를 먼저 추가했다. 기본 provider는 초기 dogfooding을 위해 `mock`으로 둔다.
 
 **검증**
 - 5 provider 모두 `checkConnection()` 통과
