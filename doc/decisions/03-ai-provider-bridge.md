@@ -48,3 +48,15 @@ Phase 3 테스트는 SecretStore, ConfigBridge, mock provider, 결정적 parser/
 - PR-3b: provider registry, mock provider, OpenAI provider, `ai.*` RPC의 최소 연결
 - PR-3c: Claude, Google, Ollama provider 추가
 - PR-3d: Picktion AI 유틸/fixture 테스트와 문서 마무리
+
+## PR-3b 구현 메모
+
+PR-3b에서는 Picktion의 `OpenAIProvider` 구조를 참고하되, Storyboard의 초기 규모에 맞춰 다음 최소 경계를 먼저 구현했다.
+
+- `AiProvider` 공용 인터페이스: `checkConnection()`과 `generate(request)`만 포함
+- `MockAiProvider`: API 키 없이 결정적 응답을 반환하는 기본 provider
+- `OpenAiProvider`: Node.js extension host에서 `openai` SDK 사용, `dangerouslyAllowBrowser` 제거
+- `AiProviderRegistry`: `ConfigBridge`와 `SecretStore`를 조합해 호출 시점에 provider 생성
+- `ai.*` RPC: `ai.providers.list`, `ai.providers.checkConnection`, `ai.generate`
+
+Claude, Google, Ollama는 provider 목록에는 표시하지만 `isAvailable: false`로 두고, 호출 시 `provider-not-registered` 에러를 반환한다. 실제 구현은 PR-3c에서 추가한다.

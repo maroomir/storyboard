@@ -45,6 +45,28 @@ describe("storyboard messaging protocol", () => {
     ).toThrow()
   })
 
+  it("parses supported ai.generate requests", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "request-ai-1",
+      method: "ai.generate",
+      payload: {
+        providerId: "mock",
+        taskName: "sceneDraft",
+        messages: [{ role: "user", content: "샘플 장면을 생성해줘." }],
+        temperature: 0.4,
+        maxTokens: 100
+      }
+    })
+
+    expect(request.method).toBe("ai.generate")
+    expect(request.payload).toMatchObject({
+      providerId: "mock",
+      taskName: "sceneDraft"
+    })
+  })
+
   it("creates validated success and error responses", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,

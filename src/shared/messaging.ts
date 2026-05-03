@@ -1,12 +1,19 @@
 import { z } from "zod"
 
 import { cardSchema, cardTypes } from "./card"
+import { aiProviderIds, aiTaskNames } from "../services/ai/types"
 
 export const storyboardMessageProtocolVersion = "1.0.0"
 
 const requestIdSchema = z.string().trim().min(1)
 const methodSchema = z.string().trim().min(1)
 const uriStringSchema = z.string().trim().min(1)
+const providerIdSchema = z.enum(aiProviderIds)
+const aiTaskNameSchema = z.enum(aiTaskNames)
+const aiMessageSchema = z.object({
+  role: z.enum(["system", "user", "assistant"]),
+  content: z.string().min(1)
+})
 
 export const cardsListRequestPayloadSchema = z.object({
   type: z.enum(cardTypes).optional()
@@ -67,13 +74,52 @@ export const cardsResolveImageUriResponsePayloadSchema = z.object({
 
 export const cardsOpenResponsePayloadSchema = z.object({})
 
+export const aiProvidersListRequestPayloadSchema = z.object({})
+
+export const aiProvidersCheckConnectionRequestPayloadSchema = z.object({
+  providerId: providerIdSchema
+})
+
+export const aiGenerateRequestPayloadSchema = z.object({
+  providerId: providerIdSchema,
+  taskName: aiTaskNameSchema,
+  messages: z.array(aiMessageSchema).min(1),
+  temperature: z.number().min(0).max(2).optional(),
+  maxTokens: z.number().int().positive().optional()
+})
+
+export const aiProviderStatusSchema = z.object({
+  providerId: providerIdSchema,
+  displayName: z.string().min(1),
+  model: z.string().optional(),
+  hasApiKey: z.boolean(),
+  isAvailable: z.boolean()
+})
+
+export const aiProvidersListResponsePayloadSchema = z.object({
+  providers: z.array(aiProviderStatusSchema)
+})
+
+export const aiProvidersCheckConnectionResponsePayloadSchema = z.object({
+  ok: z.boolean()
+})
+
+export const aiGenerateResponsePayloadSchema = z.object({
+  text: z.string(),
+  providerId: providerIdSchema,
+  model: z.string().optional()
+})
+
 export const storyboardRequestPayloadSchemas = {
   "cards.list": cardsListRequestPayloadSchema,
   "cards.read": cardsReadRequestPayloadSchema,
   "cards.write": cardsWriteRequestPayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
-  "cards.open": cardsOpenRequestPayloadSchema
+  "cards.open": cardsOpenRequestPayloadSchema,
+  "ai.providers.list": aiProvidersListRequestPayloadSchema,
+  "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
+  "ai.generate": aiGenerateRequestPayloadSchema
 } as const
 
 export const storyboardResponsePayloadSchemas = {
@@ -82,7 +128,10 @@ export const storyboardResponsePayloadSchemas = {
   "cards.write": cardsWriteResponsePayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
-  "cards.open": cardsOpenResponsePayloadSchema
+  "cards.open": cardsOpenResponsePayloadSchema,
+  "ai.providers.list": aiProvidersListResponsePayloadSchema,
+  "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
+  "ai.generate": aiGenerateResponsePayloadSchema
 } as const
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas

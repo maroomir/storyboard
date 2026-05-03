@@ -4,6 +4,8 @@ import { getStoryboardProjectPaths } from "../core/pathConventions"
 import { uriExists } from "../core/workspace"
 import { parseCard } from "../files/card"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
+import { createAiRpcHandlers } from "../services/ai/rpcHandlers"
+import { type AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { CardType } from "../shared/card"
 import type { StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
@@ -33,12 +35,17 @@ interface SidebarCardsInitialData {
   readonly isStoryboardProject: boolean
 }
 
+export interface SidebarCardsProvidersDependencies {
+  readonly aiProviderRegistry: AiProviderRegistry
+}
+
 export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   private webviewView: vscode.WebviewView | undefined
   private readonly disposables: vscode.Disposable[] = []
 
   public constructor(
     private readonly extensionUri: vscode.Uri,
+    private readonly dependencies: SidebarCardsProvidersDependencies,
     private readonly options: SidebarCardsProviderOptions
   ) {}
 
@@ -76,6 +83,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
+      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
       "cards.list": async (): Promise<StoryboardResponsePayload<"cards.list">> => ({
         cards: await this.loadCardSummaries()
       }),
@@ -180,14 +188,17 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   }
 }
 
-export function registerSidebarCardsProviders(context: vscode.ExtensionContext): vscode.Disposable {
-  const charactersProvider = new SidebarCardsProvider(context.extensionUri, {
+export function registerSidebarCardsProviders(
+  context: vscode.ExtensionContext,
+  dependencies: SidebarCardsProvidersDependencies
+): vscode.Disposable {
+  const charactersProvider = new SidebarCardsProvider(context.extensionUri, dependencies, {
     viewType: "storyboard.charactersView",
     cardType: "character",
     title: "Characters",
     cardGlob: "character/*.card"
   })
-  const backgroundsProvider = new SidebarCardsProvider(context.extensionUri, {
+  const backgroundsProvider = new SidebarCardsProvider(context.extensionUri, dependencies, {
     viewType: "storyboard.backgroundsView",
     cardType: "background",
     title: "Backgrounds",

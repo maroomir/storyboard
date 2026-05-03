@@ -26,6 +26,8 @@ after the first public release.
 - Added Storyboard AI provider configuration keys with `mock` as the default provider.
 - Added SecretStorage-backed API key management and the `Storyboard: Set API Key...` command.
 - Added testable `SecretStore` and `ConfigBridge` adapters for Phase 3 AI integration.
+- Added the Phase 3 AI provider registry with mock and OpenAI provider support.
+- Added initial `ai.providers.list`, `ai.providers.checkConnection`, and `ai.generate` RPC contracts.
 
 ### Changed
 

@@ -1,5 +1,6 @@
 import { ZodError } from "zod"
 
+import { AiProviderError } from "../services/ai/AiProviderError"
 import {
   createStoryboardErrorResponse,
   createStoryboardSuccessResponse,
@@ -95,6 +96,13 @@ function toMessageError(error: unknown, fallbackCode = "handler-error"): { code:
     return {
       code: "validation-error",
       message: error.issues.map((issue) => issue.message).join("; ")
+    }
+  }
+
+  if (error instanceof AiProviderError) {
+    return {
+      code: error.code,
+      message: error.message
     }
   }
 
