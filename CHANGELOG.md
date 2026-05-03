@@ -30,6 +30,7 @@ after the first public release.
 - Added initial `ai.providers.list`, `ai.providers.checkConnection`, and `ai.generate` RPC contracts.
 - Added Claude, Google Gemini, and Ollama provider support in the Phase 3 AI registry.
 - Added deterministic AI utility modules for response parsing, JSON repair, and trait processing.
+- Added a minimal Storyboard AI service facade and core prompt modules for Phase 3 orchestration.
 
 ### Changed
 

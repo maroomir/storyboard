@@ -102,6 +102,8 @@ API 키는 Settings에 저장하지 않고 VSCode `SecretStorage`에만 저장�
 
 Phase 3 기준으로 `mock`, `openai`, `claude`, `google`, `ollama` provider가 extension host registry에 등록되어 있습니다. LLM 응답 자체는 비결정적이므로, 단위 테스트는 provider client boundary와 파싱/trait 처리 같은 결정적 유틸을 중심으로 검증합니다.
 
+또한 Picktion의 상위 AI 계층 중 Phase 3에 필요한 최소 facade와 prompt 모듈을 `src/services/ai/AIService.ts`, `src/services/ai/prompts/*`로 이식해 두었습니다. 현재는 상황 추출, 페르소나 생성, 페르소나 대화, 장르 형식 적용까지 registry 위에서 호출 가능한 상태이며, 본격적인 scene→draft 파이프라인 연결은 Phase 4에서 이어집니다.
+
 ### Activity Bar와 Sidebar
 
 F5로 Extension Development Host를 실행하면 Activity Bar에 Storyboard 아이콘이 표시됩니다. 아이콘을 클릭하면 현재는 빈 placeholder webview가 열리고, `Coming soon: Phase 2` 메시지를 표시합니다.

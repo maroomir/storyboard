@@ -83,3 +83,15 @@ PR-3d에서는 Picktion의 AI 관련 결정적 유틸 중 다음 3개를 먼저 
 이 유틸들은 provider SDK, VSCode API, 브라우저 API에 의존하지 않는 순수 함수로 유지한다. Phase 4의 씬→드래프트 파이프라인과 trait 자동 갱신 작업에서 재사용한다.
 
 Fixture는 `test/fixtures/ai/` 아래에 Storyboard 전용으로 둔다. LLM 응답 자체는 비결정적이므로, PR-3d 테스트는 fixture 문자열을 대상으로 파싱·정규화 결과만 검증한다.
+
+### 추가 메모: 상위 AI 계층 최소 이식
+
+Phase 3의 원래 계획 문구는 `services/ai/` 전체 이식을 암시하지만, 현재 저장소 성숙도와 Phase 4 의존 관계를 고려해 PR-3d 말미에 다음 최소 상위 계층만 먼저 추가했다.
+
+- `src/services/ai/AIService.ts`: provider registry 위에서 동작하는 Storyboard용 facade
+- `src/services/ai/prompts/situationExtraction.ts`
+- `src/services/ai/prompts/personaGeneration.ts`
+- `src/services/ai/prompts/personaDialogue.ts`
+- `src/services/ai/prompts/genreFormatting.ts`
+
+즉, Picktion의 `prompts/` 전체와 `sceneGenerationPipeline` 전체를 그대로 옮기지는 않았지만, **Phase 3에서 실제로 필요한 orchestration 진입점은 확보**했다. 나머지 prompt/파이프라인 확장은 Phase 4 구현과 함께 진행한다.
