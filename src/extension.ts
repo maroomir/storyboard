@@ -3,6 +3,7 @@ import * as vscode from "vscode"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
 import { StoryboardLogger } from "./core/logger"
+import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
 import { registerSidebarPlaceholderProvider } from "./providers/SidebarPlaceholderProvider"
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -12,6 +13,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(logger)
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerInitCommand({ logger }))
+  context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(registerSidebarPlaceholderProvider(context))
 }
 

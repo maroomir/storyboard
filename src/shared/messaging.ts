@@ -18,7 +18,8 @@ export const cardsReadRequestPayloadSchema = z.object({
 
 export const cardsWriteRequestPayloadSchema = z.object({
   uri: uriStringSchema,
-  card: cardSchema
+  card: cardSchema,
+  rawText: z.string().optional()
 })
 
 export const cardsCreatePlaceholderRequestPayloadSchema = z.object({

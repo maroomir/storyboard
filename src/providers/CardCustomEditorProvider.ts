@@ -1,0 +1,121 @@
+import * as vscode from "vscode"
+
+import { CardParseError, parseCard, serializeCard } from "../files/card"
+import type { StoryboardCard } from "../shared/card"
+import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
+import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
+
+const cardEditorViewType = "storyboard.card"
+
+interface CardEditorInitialData {
+  readonly documentUri: string
+  readonly rawText: string
+  readonly card?: StoryboardCard
+  readonly error?: string
+}
+
+export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider {
+  public constructor(private readonly extensionUri: vscode.Uri) {}
+
+  public resolveCustomTextEditor(
+    document: vscode.TextDocument,
+    webviewPanel: vscode.WebviewPanel
+  ): void {
+    webviewPanel.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [getWebviewDistRoot(this.extensionUri)]
+    }
+
+    webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
+      extensionUri: this.extensionUri,
+      title: "Storyboard Card",
+      view: "card-editor",
+      initialData: createInitialData(document)
+    })
+
+    const bridge = createWebviewBridge(webviewPanel.webview, createCardEditorHandlers(document))
+    const documentChangeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document.uri.toString() !== document.uri.toString()) {
+        return
+      }
+
+      void webviewPanel.webview.postMessage({
+        type: "event",
+        method: "cards.changed",
+        payload: createInitialData(document)
+      })
+    })
+
+    webviewPanel.onDidDispose(() => {
+      bridge.dispose()
+      documentChangeSubscription.dispose()
+    })
+  }
+}
+
+export function registerCardCustomEditorProvider(context: vscode.ExtensionContext): vscode.Disposable {
+  return vscode.window.registerCustomEditorProvider(
+    cardEditorViewType,
+    new CardCustomEditorProvider(context.extensionUri),
+    {
+      webviewOptions: {
+        retainContextWhenHidden: true
+      },
+      supportsMultipleEditorsPerDocument: false
+    }
+  )
+}
+
+function createCardEditorHandlers(document: vscode.TextDocument): StoryboardRpcHandlers {
+  return {
+    "cards.read": async (): Promise<{ readonly card: StoryboardCard }> => ({
+      card: parseCard(document.getText())
+    }),
+    "cards.write": async (payload): Promise<{ readonly card: StoryboardCard }> => {
+      await replaceDocumentText(document, serializeCard(payload.card))
+      return { card: payload.card }
+    }
+  }
+}
+
+function createInitialData(document: vscode.TextDocument): CardEditorInitialData {
+  const rawText = document.getText()
+
+  try {
+    return {
+      documentUri: document.uri.toString(),
+      rawText,
+      card: parseCard(rawText)
+    }
+  } catch (error) {
+    return {
+      documentUri: document.uri.toString(),
+      rawText,
+      error: createCardErrorMessage(error)
+    }
+  }
+}
+
+async function replaceDocumentText(document: vscode.TextDocument, nextText: string): Promise<void> {
+  const edit = new vscode.WorkspaceEdit()
+  const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length))
+  edit.replace(document.uri, fullRange, nextText)
+
+  const isApplied = await vscode.workspace.applyEdit(edit)
+
+  if (!isApplied) {
+    throw new Error("카드 문서 변경을 적용하지 못했습니다.")
+  }
+}
+
+function createCardErrorMessage(error: unknown): string {
+  if (error instanceof CardParseError) {
+    return error.message
+  }
+
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return "카드를 읽을 수 없습니다."
+}

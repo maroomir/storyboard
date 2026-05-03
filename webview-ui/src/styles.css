@@ -14,6 +14,12 @@ body {
   min-width: 0;
 }
 
+button,
+input,
+textarea {
+  font: inherit;
+}
+
 .placeholder {
   display: flex;
   min-height: 100vh;
@@ -43,4 +49,110 @@ h1 {
   margin: 0;
   color: var(--vscode-descriptionForeground);
   line-height: 1.5;
+}
+
+.card-editor {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(320px, 1.15fr);
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--vscode-editor-background);
+}
+
+.editor-panel {
+  min-width: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 0.5rem;
+  background: var(--vscode-sideBar-background);
+  padding: 1rem;
+}
+
+.editor-panel--full {
+  grid-column: 1 / -1;
+}
+
+.image-panel,
+.form-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.image-placeholder {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px dashed var(--vscode-descriptionForeground);
+  border-radius: 0.5rem;
+  color: var(--vscode-descriptionForeground);
+  text-align: center;
+}
+
+.image-placeholder strong {
+  color: var(--vscode-foreground);
+  font-size: 1.1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field span {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85rem;
+}
+
+.field input,
+.field textarea,
+.raw-yaml {
+  width: 100%;
+  border: 1px solid var(--vscode-input-border, transparent);
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  padding: 0.5rem;
+}
+
+.field textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.raw-yaml-details {
+  border-top: 1px solid var(--vscode-panel-border);
+  padding-top: 1rem;
+}
+
+.raw-yaml-details summary {
+  cursor: pointer;
+  color: var(--vscode-textLink-foreground);
+}
+
+.raw-yaml {
+  min-height: 18rem;
+  margin-top: 0.75rem;
+  resize: vertical;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+}
+
+.status-message,
+.error-message {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.error-message {
+  color: var(--vscode-errorForeground);
+}
+
+@media (max-width: 760px) {
+  .card-editor {
+    grid-template-columns: 1fr;
+  }
 }

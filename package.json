@@ -35,6 +35,18 @@
         "title": "Storyboard: Initialize Project"
       }
     ],
+    "customEditors": [
+      {
+        "viewType": "storyboard.card",
+        "displayName": "Storyboard Card",
+        "selector": [
+          {
+            "filenamePattern": "*.card"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
