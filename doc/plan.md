@@ -251,6 +251,7 @@
 - [ ] **브라우저 전용 코드 제거**: localStorage/IndexedDB 의존 부분 제거 (대부분 settingsStore 의존이라 어댑터로 끊으면 됨)
 - [x] `src/services/ai/types.ts`, `AiProviderError`, `providerRegistry.ts`: provider 공용 타입과 registry 기반 마련
 - [x] `MockAiProvider`, `OpenAiProvider`: mock + OpenAI provider 최소 구현
+- [x] `ClaudeProvider`, `GoogleProvider`, `OllamaProvider`: 나머지 provider 3종 구현
 - [x] `services/secrets/SecretStore.ts`:
   - `setApiKey(provider, key)`, `getApiKey(provider)`, `deleteApiKey(provider)`, `hasApiKey(provider)`
   - `vscode.ExtensionContext.secrets` 사용
@@ -268,6 +269,7 @@
 
 > PR-3a 메모: AI provider 이식 전 단계로 `src/services/ai/types.ts`, `SecretStore`, `ConfigBridge`, `Storyboard: Set API Key...` 명령, `package.json#contributes.configuration`, 관련 단위 테스트를 먼저 추가했다. 기본 provider는 초기 dogfooding을 위해 `mock`으로 둔다.
 > PR-3b 메모: Picktion의 `OpenAIProvider` 호출 패턴을 Node.js extension host용으로 단순화해 이식했다. `MockAiProvider`와 `OpenAiProvider`만 `isAvailable: true`이며, Claude/Google/Ollama는 PR-3c에서 구현한다. `ai.providers.list`, `ai.providers.checkConnection`, `ai.generate` RPC 스키마와 핸들러를 추가했다.
+> PR-3c 메모: Picktion의 `ClaudeProvider`, `GoogleProvider`, `OllamaProvider` 호출 패턴을 같은 `AiProvider` 인터페이스로 이식했다. 5개 provider 모두 registry에 등록되며, OpenAI/Claude/Google은 SecretStorage API 키를 사용하고 Ollama는 `storyboard.providers.ollama.*` 설정을 사용한다.
 
 **검증**
 - 5 provider 모두 `checkConnection()` 통과

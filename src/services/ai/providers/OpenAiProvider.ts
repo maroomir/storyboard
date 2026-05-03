@@ -38,7 +38,7 @@ interface OpenAiChatCompletionRequest {
 }
 
 interface OpenAiChatCompletionResponse {
-  readonly choices: readonly Array<{
+  readonly choices: ReadonlyArray<{
     readonly message?: {
       readonly content?: string | null
     }

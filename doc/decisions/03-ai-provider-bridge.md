@@ -59,4 +59,15 @@ PR-3b에서는 Picktion의 `OpenAIProvider` 구조를 참고하되, Storyboard�
 - `AiProviderRegistry`: `ConfigBridge`와 `SecretStore`를 조합해 호출 시점에 provider 생성
 - `ai.*` RPC: `ai.providers.list`, `ai.providers.checkConnection`, `ai.generate`
 
-Claude, Google, Ollama는 provider 목록에는 표시하지만 `isAvailable: false`로 두고, 호출 시 `provider-not-registered` 에러를 반환한다. 실제 구현은 PR-3c에서 추가한다.
+PR-3b 시점에는 Claude, Google, Ollama를 provider 목록에만 표시하고 `isAvailable: false`로 두었다. 실제 구현은 PR-3c에서 추가한다.
+
+## PR-3c 구현 메모
+
+PR-3c에서는 나머지 provider 3종을 같은 `AiProvider` 인터페이스에 맞춰 추가했다.
+
+- `ClaudeProvider`: `@anthropic-ai/sdk` 사용. Browser 전용 `dangerouslyAllowBrowser` 옵션은 제거했다. system 메시지는 Anthropic API의 `system` 필드로 분리한다.
+- `GoogleProvider`: `@google/generative-ai` 사용. Gemini는 system role을 별도 지원하지 않는 흐름이므로 role-tagged prompt 문자열로 병합한다.
+- `OllamaProvider`: `axios` 기반 HTTP client 사용. `/api/tags`로 연결 확인, `/api/chat`으로 생성한다.
+- `AiProviderRegistry`: 5개 provider 모두 `isAvailable: true`로 표시한다. OpenAI/Claude/Google은 SecretStorage API 키를 요구하고, Ollama는 로컬 `baseUrl`과 `model` 설정만 요구한다.
+
+이 단계에서도 실제 네트워크 호출은 단위 테스트에서 수행하지 않는다. 각 provider는 injectable client boundary를 갖고, 테스트는 SDK/HTTP client 대역으로 요청 변환과 응답 정규화를 검증한다.

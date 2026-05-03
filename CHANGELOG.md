@@ -28,6 +28,7 @@ after the first public release.
 - Added testable `SecretStore` and `ConfigBridge` adapters for Phase 3 AI integration.
 - Added the Phase 3 AI provider registry with mock and OpenAI provider support.
 - Added initial `ai.providers.list`, `ai.providers.checkConnection`, and `ai.generate` RPC contracts.
+- Added Claude, Google Gemini, and Ollama provider support in the Phase 3 AI registry.
 
 ### Changed
 
