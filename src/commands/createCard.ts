@@ -1,6 +1,11 @@
 import * as vscode from "vscode"
 
-import { backgroundCardPath, characterCardPath } from "../core/pathConventions"
+import {
+  backgroundCardPath,
+  backgroundConceptPath,
+  characterCardPath,
+  characterProfilePath
+} from "../core/pathConventions"
 import { getTargetWorkspaceFolder, uriExists } from "../core/workspace"
 import { createEmptyBackground } from "../domain/Background"
 import { createEmptyCharacter } from "../domain/Character"
@@ -10,6 +15,13 @@ import { cardIdPattern, type StoryboardCard } from "../shared/card"
 const createCharacterCommand = "storyboard.character.create"
 const createBackgroundCommand = "storyboard.background.create"
 const cardEditorViewType = "storyboard.card"
+const transparentPngBytes = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48,
+  0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00,
+  0x00, 0x1f, 0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78,
+  0x9c, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00,
+  0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+])
 
 export function registerCreateCardCommands(): vscode.Disposable {
   return vscode.Disposable.from(
@@ -57,6 +69,7 @@ async function createCard(cardType: StoryboardCard["type"]): Promise<void> {
   }
 
   await vscode.workspace.fs.writeFile(cardUri, new TextEncoder().encode(serializeCard(card)))
+  await writePlaceholderImageIfMissing(workspaceFolder.uri, card)
   await vscode.commands.executeCommand("vscode.openWith", cardUri, cardEditorViewType)
 }
 
@@ -74,6 +87,22 @@ function getCardUri(workspaceRoot: vscode.Uri, card: StoryboardCard): vscode.Uri
   }
 
   return backgroundCardPath(workspaceRoot, card.id)
+}
+
+async function writePlaceholderImageIfMissing(
+  workspaceRoot: vscode.Uri,
+  card: StoryboardCard
+): Promise<void> {
+  const imageUri =
+    card.type === "character"
+      ? characterProfilePath(workspaceRoot, card.id)
+      : backgroundConceptPath(workspaceRoot, card.id)
+
+  if (await uriExists(imageUri)) {
+    return
+  }
+
+  await vscode.workspace.fs.writeFile(imageUri, transparentPngBytes)
 }
 
 function validateCardId(value: string): string | undefined {

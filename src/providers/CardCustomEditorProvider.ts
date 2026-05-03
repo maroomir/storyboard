@@ -11,6 +11,7 @@ interface CardEditorInitialData {
   readonly documentUri: string
   readonly rawText: string
   readonly card?: StoryboardCard
+  readonly imageUri?: string
   readonly error?: string
 }
 
@@ -23,14 +24,14 @@ export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider
   ): void {
     webviewPanel.webview.options = {
       enableScripts: true,
-      localResourceRoots: [getWebviewDistRoot(this.extensionUri)]
+      localResourceRoots: [getWebviewDistRoot(this.extensionUri), getDocumentWorkspaceRoot(document)]
     }
 
     webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
       extensionUri: this.extensionUri,
       title: "Storyboard Card",
       view: "card-editor",
-      initialData: createInitialData(document)
+      initialData: createInitialData(document, webviewPanel.webview)
     })
 
     const bridge = createWebviewBridge(webviewPanel.webview, createCardEditorHandlers(document))
@@ -42,7 +43,7 @@ export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider
       void webviewPanel.webview.postMessage({
         type: "event",
         method: "cards.changed",
-        payload: createInitialData(document)
+        payload: createInitialData(document, webviewPanel.webview)
       })
     })
 
@@ -78,14 +79,17 @@ function createCardEditorHandlers(document: vscode.TextDocument): StoryboardRpcH
   }
 }
 
-function createInitialData(document: vscode.TextDocument): CardEditorInitialData {
+function createInitialData(document: vscode.TextDocument, webview: vscode.Webview): CardEditorInitialData {
   const rawText = document.getText()
 
   try {
+    const card = parseCard(rawText)
+
     return {
       documentUri: document.uri.toString(),
       rawText,
-      card: parseCard(rawText)
+      card,
+      imageUri: resolveCardImageUri(document, card, webview)
     }
   } catch (error) {
     return {
@@ -94,6 +98,26 @@ function createInitialData(document: vscode.TextDocument): CardEditorInitialData
       error: createCardErrorMessage(error)
     }
   }
+}
+
+function resolveCardImageUri(
+  document: vscode.TextDocument,
+  card: StoryboardCard,
+  webview: vscode.Webview
+): string | undefined {
+  const relativeImagePath = card.type === "character" ? card.profile : card.concept
+
+  if (!relativeImagePath) {
+    return undefined
+  }
+
+  const cardDirectory = vscode.Uri.joinPath(document.uri, "..")
+  return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString()
+}
+
+function getDocumentWorkspaceRoot(document: vscode.TextDocument): vscode.Uri {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
+  return workspaceFolder?.uri ?? vscode.Uri.joinPath(document.uri, "..")
 }
 
 async function replaceDocumentText(document: vscode.TextDocument, nextText: string): Promise<void> {

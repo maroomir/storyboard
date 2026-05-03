@@ -1,7 +1,7 @@
 # Storyboard — 마이그레이션 계획서
 
 > 작성일: 2026-05-03
-> 상태: Phase 1 완료, Phase 2 시작 전
+> 상태: Phase 2 완료, Phase 3 시작 전
 > 짝 문서: `doc/concept.md`
 
 본 문서는 **Picktion 웹앱**에서 **Storyboard VSCode Extension**으로의 전체 마이그레이션 절차를 정의한다. 컨셉·파일 포맷·명령어의 합의는 `doc/concept.md`에 있다. 본 문서는 그 컨셉을 어떻게 단계적으로 구현할지에 집중한다.
@@ -210,35 +210,37 @@
 - [x] `npx tsc --noEmit` 성공
 - [ ] `vsce package` 성공, `.vsix` 생성
 
-### Phase 2 — 파일 시스템 + Card Custom Editor (1주)
+### Phase 2 — 파일 시스템 + Card Custom Editor (완료)
 
 **목표**: `.card` 커스텀 에디터로 캐릭터/배경 카드 편집. 사이드바에 목록 표시.
 
 **체크리스트**
-- [ ] `files/card.ts`: YAML ↔ Character/Background 양방향 변환 + zod 스키마 검증
-- [ ] `files/projectJson.ts`: `.storyboard/project.json` 로드/저장
-- [ ] `files/sceneCache.ts`: cache 디렉토리 헬퍼
-- [ ] `core/pathConventions.ts`: `characterCardPath(id)`, `profilePath(id)`, `sceneFilePath(id)`, `draftPath(id)`
-- [ ] `providers/CardCustomEditorProvider.ts`:
+- [x] `files/card.ts`: YAML ↔ Character/Background 양방향 변환 + zod 스키마 검증
+- [x] `files/projectJson.ts`: `.storyboard/project.json` 로드/저장
+- [x] `files/sceneCache.ts`: cache 디렉토리 헬퍼
+- [x] `core/pathConventions.ts`: `characterCardPath(id)`, `profilePath(id)`, `sceneFilePath(id)`, `draftPath(id)`
+- [x] `providers/CardCustomEditorProvider.ts`:
   - `vscode.window.registerCustomEditorProvider('storyboard.card', ...)`
   - webview에 폼 UI (이미지 미리보기 + key/value 편집기)
   - 양방향 동기화 (`TextDocument` ↔ webview state)
-- [ ] `webview-ui/views/card-editor/`: 카드 편집 React 컴포넌트
+- [x] `webview-ui/views/card-editor/`: 카드 편집 React 컴포넌트
   - 좌측: 이미지 영역 (`webview.asWebviewUri`로 .png 표시)
   - 우측: 동적 key/value 편집기 + 배열 편집기 (tags, traits, relations, arc, recentDialogues)
   - description은 멀티라인 textarea
-- [ ] `providers/SidebarCharactersProvider.ts`, `SidebarBackgroundsProvider.ts`:
+- [x] `providers/SidebarCharactersProvider.ts`, `SidebarBackgroundsProvider.ts`:
   - `WebviewViewProvider` 구현
   - file watcher (`vscode.workspace.createFileSystemWatcher`)로 `character/*.card`, `background/*.card` 변경 감지
-- [ ] `messaging/protocol.ts`: 첫 RPC 메서드 정의 (`cards.list`, `cards.read`, `cards.write`)
-- [ ] `commands/createCharacter.ts`, `createBackground.ts`: 새 카드 + 빈 프로필 PNG placeholder
-- [ ] **Round-trip 테스트**: YAML → 도메인 객체 → YAML 동등성
+- [x] `messaging/protocol.ts`: 첫 RPC 메서드 정의 (`cards.list`, `cards.read`, `cards.write`)
+- [x] `commands/createCharacter.ts`, `createBackground.ts`: 새 카드 + 빈 프로필 PNG placeholder
+- [x] **Round-trip 테스트**: YAML → 도메인 객체 → YAML 동등성
+
+> 구현 메모: 현재 구현은 초기 저장소 규모에 맞춰 `SidebarCardsProvider.ts`, `commands/createCard.ts`, `src/shared/messaging.ts`, `webview-ui/src/main.tsx`의 공용 구조로 단순화했다. 기능 경계는 Phase 2 요구사항과 동일하며, webview 세부 디렉토리 분리는 UI 규모가 커지는 시점에 진행한다.
 
 **검증**
-- 사이드바에서 캐릭터 추가 → `character/<id>.card` 생성
-- `.card` 더블클릭 → 커스텀 에디터 열림 (이미지 + 폼)
-- 폼 편집 → YAML 자동 갱신, git diff에 사람이 읽을 수 있게 표시
-- 외부 텍스트 에디터(Open With…)로 YAML 직접 수정 → 폼에 반영
+- [x] 사이드바에서 캐릭터 추가 → `character/<id>.card` 생성
+- [x] `.card` 더블클릭 → 커스텀 에디터 열림 (이미지 + 폼)
+- [x] 폼 편집 → YAML 자동 갱신, git diff에 사람이 읽을 수 있게 표시
+- [x] 외부 텍스트 에디터(Open With…)로 YAML 직접 수정 → 폼에 반영
 
 ### Phase 3 — AI 서비스 이식 + Secret + 설정 (1주)
 

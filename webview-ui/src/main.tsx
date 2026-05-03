@@ -40,6 +40,7 @@ interface CardEditorInitialData {
   readonly documentUri: string
   readonly rawText: string
   readonly card?: StoryboardCard
+  readonly imageUri?: string
   readonly error?: string
 }
 
@@ -241,11 +242,15 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
   return (
     <main className="card-editor">
       <section className="editor-panel image-panel" aria-label="카드 미리보기">
-        <div className="image-placeholder">
-          <span>{card.type === "character" ? "Character" : "Background"}</span>
-          <strong>{card.name}</strong>
-        </div>
-        <p className="description">이미지 미리보기는 실제 파일 URI 연결 전까지 placeholder로 표시합니다.</p>
+        {documentState.imageUri ? (
+          <img className="card-image-preview" src={documentState.imageUri} alt={`${card.name} preview`} />
+        ) : (
+          <div className="image-placeholder">
+            <span>{card.type === "character" ? "Character" : "Background"}</span>
+            <strong>{card.name}</strong>
+          </div>
+        )}
+        <p className="description">카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.</p>
       </section>
 
       <section className="editor-panel form-panel" aria-label="카드 편집 폼">
