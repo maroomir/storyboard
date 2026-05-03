@@ -23,6 +23,8 @@
     "onCommand:storyboard.character.create",
     "onCommand:storyboard.background.create",
     "onCommand:storyboard.apiKey.set",
+    "onCommand:storyboard.draft.generate",
+    "onCommand:storyboard.draft.regenerate",
     "onView:storyboard.charactersView",
     "onView:storyboard.backgroundsView",
     "workspaceContains:.storyboard/project.json"
@@ -51,6 +53,14 @@
       {
         "command": "storyboard.apiKey.set",
         "title": "Storyboard: Set API Key..."
+      },
+      {
+        "command": "storyboard.draft.generate",
+        "title": "Storyboard: Generate Draft (Current Scene)"
+      },
+      {
+        "command": "storyboard.draft.regenerate",
+        "title": "Storyboard: Regenerate Draft (Current Scene)"
       }
     ],
     "configuration": {

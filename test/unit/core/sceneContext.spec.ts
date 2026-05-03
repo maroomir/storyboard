@@ -70,7 +70,7 @@ describe("sceneContext", () => {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
-    joinPath: (base: unknown, ...segments: string[]) => `${base as string}/${segments.join("/")}`
+    joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
   const mockScene: SceneFile = {
     stem: "01-prologue",
@@ -159,7 +159,7 @@ describe("readPreviousSceneContext", () => {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
-    joinPath: (base: unknown, ...segments: string[]) => `${base as string}/${segments.join("/")}`
+    joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
 
   it("returns undefined for the first scene (order 1)", async () => {

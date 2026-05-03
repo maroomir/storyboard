@@ -21,6 +21,13 @@ export interface SceneGenerationPipelineTaskProviders {
   readonly sceneDraft?: AiProviderId
 }
 
+export class SceneGenerationPipelineCancelledError extends Error {
+  public constructor() {
+    super("씬 초안 생성이 취소되었습니다.")
+    this.name = "SceneGenerationPipelineCancelledError"
+  }
+}
+
 export interface RunSceneGenerationPipelineInput {
   readonly context: SceneContext
   readonly aiService: SceneGenerationPipelineAiService
@@ -28,6 +35,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly previousContext?: string
   readonly providers?: Readonly<SceneGenerationPipelineTaskProviders>
   readonly onProgress?: (stage: SceneGenerationPipelineStage, current: number, total: number) => void
+  readonly shouldCancel?: () => boolean
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -62,10 +70,16 @@ function buildGenerateOptions(
   return providerId ? { providerId } : undefined
 }
 
+function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
+  if (shouldCancel?.()) {
+    throw new SceneGenerationPipelineCancelledError()
+  }
+}
+
 export async function runSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput
 ): Promise<RunSceneGenerationPipelineResult> {
-  const { context, aiService, format, previousContext, providers = {}, onProgress } = input
+  const { context, aiService, format, previousContext, providers = {}, onProgress, shouldCancel } = input
   const body = context.scene.body.trim()
 
   if (body.length === 0) {
@@ -82,6 +96,7 @@ export async function runSceneGenerationPipeline(
     buildGenerateOptions(providers, "situationExtraction")
   )
   onProgress?.("extractSituations", 1, 1)
+  assertNotCancelled(shouldCancel)
 
   const situations = dedupeSituations(situationsRaw)
   if (situations.length === 0) {
@@ -100,6 +115,7 @@ export async function runSceneGenerationPipeline(
     const persona = await aiService.createCharacterPersona(character, personaOptions)
     personasUsed.set(character.name, persona)
     onProgress?.("buildPersonas", i + 1, characterCount)
+    assertNotCancelled(shouldCancel)
   }
 
   const background = context.background ?? createEmptyBackground("scene-default", "미정")
@@ -123,10 +139,12 @@ export async function runSceneGenerationPipeline(
       dialogueOptions
     )
     dialoguePieces.push(dialogue)
+    assertNotCancelled(shouldCancel)
   }
 
   const joinedDialogue = dialoguePieces.join("\n\n")
   onProgress?.("applyFormat", 1, 1)
+  assertNotCancelled(shouldCancel)
 
   const draftBody = await aiService.applyGenreFormat(
     joinedDialogue,

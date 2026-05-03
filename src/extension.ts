@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import { registerCreateCardCommands } from "./commands/createCard"
+import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
@@ -28,6 +29,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
+  context.subscriptions.push(registerGenerateDraftCommands({ aiProviderRegistry, logger }))
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(registerSidebarCardsProviders(context, { aiProviderRegistry }))
 }
