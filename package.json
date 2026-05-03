@@ -16,6 +16,7 @@
     "AI",
     "Other"
   ],
+  "activationEvents": ["workspaceContains:.storyboard/project.json"],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -147,14 +148,12 @@
         {
           "id": "storyboard.charactersView",
           "name": "Characters",
-          "type": "webview",
-          "when": "workspaceContains:.storyboard/project.json"
+          "type": "webview"
         },
         {
           "id": "storyboard.backgroundsView",
           "name": "Backgrounds",
-          "type": "webview",
-          "when": "workspaceContains:.storyboard/project.json"
+          "type": "webview"
         }
       ]
     },
