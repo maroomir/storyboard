@@ -47,3 +47,37 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     readme: vscode.Uri.joinPath(workspaceRoot, "README.md")
   }
 }
+
+export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "character", `${id}.card`)
+}
+
+export function characterProfilePath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "character", "profile", `${id}.png`)
+}
+
+export function backgroundCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "background", `${id}.card`)
+}
+
+export function backgroundConceptPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "background", "concept", `${id}.png`)
+}
+
+export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "scene", `${prefix}-${slug}.txt`)
+}
+
+export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, "draft", `${sceneStem}.md`)
+}
+
+export function parseCardIdFromPath(uri: vscode.Uri): string | undefined {
+  const fileName = uri.path.split("/").at(-1)
+
+  if (!fileName?.endsWith(".card")) {
+    return undefined
+  }
+
+  return fileName.slice(0, -".card".length)
+}

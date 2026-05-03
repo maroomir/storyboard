@@ -1,0 +1,12 @@
+type: background
+id: school
+name: 학교 정문
+concept: concept/school.png
+country: 한국
+category: 일상/학교
+tags:
+  - 학교
+  - 도시
+description: |-
+  주인공이 처음 등교하는 고등학교 정문.
+  아침 햇빛과 등교하는 학생들로 붐빈다.
