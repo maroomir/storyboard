@@ -51,6 +51,63 @@ h1 {
   line-height: 1.5;
 }
 
+.cards-sidebar {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--vscode-sideBar-background);
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-list-item {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.2rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--vscode-foreground);
+  cursor: pointer;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.card-list-item:hover,
+.card-list-item:focus {
+  border-color: var(--vscode-focusBorder);
+  background: var(--vscode-list-hoverBackground);
+  outline: none;
+}
+
+.card-list-item__title {
+  font-weight: 600;
+}
+
+.card-list-item__meta,
+.card-list-item__description {
+  overflow: hidden;
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-list-item__error {
+  color: var(--vscode-errorForeground);
+  font-size: 0.8rem;
+}
+
 .card-editor {
   display: grid;
   min-height: 100vh;

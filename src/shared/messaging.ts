@@ -33,6 +33,10 @@ export const cardsResolveImageUriRequestPayloadSchema = z.object({
   relativePath: z.string().trim().min(1)
 })
 
+export const cardsOpenRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
 export const cardSummarySchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
@@ -61,12 +65,15 @@ export const cardsResolveImageUriResponsePayloadSchema = z.object({
   uri: uriStringSchema
 })
 
+export const cardsOpenResponsePayloadSchema = z.object({})
+
 export const storyboardRequestPayloadSchemas = {
   "cards.list": cardsListRequestPayloadSchema,
   "cards.read": cardsReadRequestPayloadSchema,
   "cards.write": cardsWriteRequestPayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
-  "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema
+  "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
+  "cards.open": cardsOpenRequestPayloadSchema
 } as const
 
 export const storyboardResponsePayloadSchemas = {
@@ -74,7 +81,8 @@ export const storyboardResponsePayloadSchemas = {
   "cards.read": cardsReadResponsePayloadSchema,
   "cards.write": cardsWriteResponsePayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
-  "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema
+  "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
+  "cards.open": cardsOpenResponsePayloadSchema
 } as const
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas

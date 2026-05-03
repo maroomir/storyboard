@@ -59,8 +59,13 @@
     "views": {
       "storyboard": [
         {
-          "id": "storyboard.sidebar",
-          "name": "Storyboard",
+          "id": "storyboard.charactersView",
+          "name": "Characters",
+          "type": "webview"
+        },
+        {
+          "id": "storyboard.backgroundsView",
+          "name": "Backgrounds",
           "type": "webview"
         }
       ]

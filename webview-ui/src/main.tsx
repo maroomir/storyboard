@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client"
 import "./styles.css"
 
 type CardType = "character" | "background"
+type StoryboardRequestMethod = "cards.write" | "cards.open"
 
 interface StoryboardCard {
   readonly type: CardType
@@ -20,21 +21,34 @@ interface CardEditorInitialData {
   readonly error?: string
 }
 
+interface SidebarCardSummary {
+  readonly type: CardType
+  readonly id: string
+  readonly name: string
+  readonly uri: string
+  readonly description?: string
+  readonly error?: string
+}
+
+interface SidebarCardsInitialData {
+  readonly type: CardType
+  readonly title: string
+  readonly cards: readonly SidebarCardSummary[]
+  readonly isStoryboardProject: boolean
+}
+
 interface StoryboardRequestMessage {
   readonly protocolVersion: "1.0.0"
   readonly type: "request"
   readonly id: string
-  readonly method: "cards.write"
-  readonly payload: {
-    readonly uri: string
-    readonly card: StoryboardCard
-  }
+  readonly method: StoryboardRequestMethod
+  readonly payload: Record<string, unknown>
 }
 
 interface StoryboardEventMessage {
   readonly type: "event"
-  readonly method: "cards.changed"
-  readonly payload: CardEditorInitialData
+  readonly method: "cards.changed" | "cards.listChanged"
+  readonly payload: unknown
 }
 
 declare global {
@@ -49,7 +63,11 @@ declare global {
 
 function App(): React.ReactElement {
   if (window.__STORYBOARD_VIEW__ === "card-editor") {
-    return <CardEditor initialData={parseInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+    return <CardEditor initialData={parseCardEditorInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+  }
+
+  if (window.__STORYBOARD_VIEW__ === "cards-sidebar") {
+    return <CardsSidebar initialData={parseSidebarCardsInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
   }
 
   return <SidebarPlaceholder />
@@ -67,6 +85,70 @@ function SidebarPlaceholder(): React.ReactElement {
   )
 }
 
+function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
+  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
+  const [sidebarState, setSidebarState] = useState(initialData)
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
+      if (event.data.type !== "event" || event.data.method !== "cards.listChanged") {
+        return
+      }
+
+      setSidebarState(parseSidebarCardsInitialData(event.data.payload))
+    }
+
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [])
+
+  const openCard = (card: SidebarCardSummary): void => {
+    vscodeApi?.postMessage({
+      protocolVersion: "1.0.0",
+      type: "request",
+      id: createRequestId(),
+      method: "cards.open",
+      payload: { uri: card.uri }
+    })
+  }
+
+  if (!sidebarState.isStoryboardProject) {
+    return (
+      <main className="cards-sidebar">
+        <p className="eyebrow">Storyboard</p>
+        <h1>{sidebarState.title}</h1>
+        <p className="description">Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.</p>
+      </main>
+    )
+  }
+
+  return (
+    <main className="cards-sidebar">
+      <p className="eyebrow">Storyboard</p>
+      <h1>{sidebarState.title}</h1>
+
+      {sidebarState.cards.length === 0 ? (
+        <p className="description">아직 {sidebarState.type === "character" ? "캐릭터" : "배경"} 카드가 없습니다.</p>
+      ) : (
+        <ul className="card-list" aria-label={`${sidebarState.title} card list`}>
+          {sidebarState.cards.map((card) => (
+            <li key={card.uri}>
+              <button className="card-list-item" type="button" onClick={() => openCard(card)}>
+                <span className="card-list-item__title">{card.name}</span>
+                <span className="card-list-item__meta">{card.id}</span>
+                {card.error ? <span className="card-list-item__error">{card.error}</span> : null}
+                {!card.error && card.description ? (
+                  <span className="card-list-item__description">{card.description}</span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  )
+}
+
 function CardEditor({ initialData }: { readonly initialData: CardEditorInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
   const [documentState, setDocumentState] = useState(initialData)
@@ -79,8 +161,9 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
         return
       }
 
-      setDocumentState(event.data.payload)
-      setCard(event.data.payload.card)
+      const nextDocumentState = parseCardEditorInitialData(event.data.payload)
+      setDocumentState(nextDocumentState)
+      setCard(nextDocumentState.card)
       setStatus("문서 변경 사항을 다시 불러왔습니다.")
     }
 
@@ -95,7 +178,7 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
     vscodeApi?.postMessage({
       protocolVersion: "1.0.0",
       type: "request",
-      id: crypto.randomUUID(),
+      id: createRequestId(),
       method: "cards.write",
       payload: {
         uri: documentState.documentUri,
@@ -160,7 +243,7 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
   )
 }
 
-function parseInitialData(value: unknown): CardEditorInitialData {
+function parseCardEditorInitialData(value: unknown): CardEditorInitialData {
   if (isCardEditorInitialData(value)) {
     return value
   }
@@ -172,6 +255,19 @@ function parseInitialData(value: unknown): CardEditorInitialData {
   }
 }
 
+function parseSidebarCardsInitialData(value: unknown): SidebarCardsInitialData {
+  if (isSidebarCardsInitialData(value)) {
+    return value
+  }
+
+  return {
+    type: "character",
+    title: "Cards",
+    cards: [],
+    isStoryboardProject: false
+  }
+}
+
 function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {
   if (!value || typeof value !== "object") {
     return false
@@ -179,6 +275,28 @@ function isCardEditorInitialData(value: unknown): value is CardEditorInitialData
 
   const candidate = value as Partial<CardEditorInitialData>
   return typeof candidate.documentUri === "string" && typeof candidate.rawText === "string"
+}
+
+function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitialData {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<SidebarCardsInitialData>
+  return (
+    isCardType(candidate.type) &&
+    typeof candidate.title === "string" &&
+    Array.isArray(candidate.cards) &&
+    typeof candidate.isStoryboardProject === "boolean"
+  )
+}
+
+function isCardType(value: unknown): value is CardType {
+  return value === "character" || value === "background"
+}
+
+function createRequestId(): string {
+  return crypto.randomUUID()
 }
 
 const rootElement = document.getElementById("root")
