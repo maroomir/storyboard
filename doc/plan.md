@@ -286,8 +286,8 @@
 **목표**: `scene/*.txt` 파일에서 `Generate Draft` → `draft/*.md` 생성.
 
 **체크리스트**
-- [ ] `files/scene.ts`: txt + 옵셔널 frontmatter 파싱
-- [ ] `files/draft.ts`: 도메인 결과 → md 직렬화 (format에 따라 다름)
+- [x] `files/scene.ts`: txt + 옵셔널 frontmatter 파싱
+- [x] `files/draft.ts`: 도메인 결과 → md 직렬화 (format에 따라 다름)
 - [ ] `services/ai/pipelines/sceneGenerationPipeline.ts` 이식 + Storyboard용 어댑터
   - 입력: scene file path, project context (캐릭터·배경·이전 씬 cache)
   - 출력: draft md 텍스트 + per-scene cache JSON
