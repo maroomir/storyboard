@@ -10,7 +10,8 @@ import {
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
-  type AiProviderStatus
+  type AiProviderStatus,
+  type AiTaskName
 } from "./types"
 import { SecretStore } from "../secrets/SecretStore"
 import { ConfigBridge } from "../settings/ConfigBridge"
@@ -36,7 +37,11 @@ export class AiProviderRegistry {
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
-    return this.generateWithProvider(this.options.configBridge.getTaskProvider(request.taskName), request)
+    return this.generateWithProvider(this.getTaskProvider(request.taskName), request)
+  }
+
+  public getTaskProvider(taskName: AiTaskName): AiProviderId {
+    return this.options.configBridge.getTaskProvider(taskName)
   }
 
   public async generateWithProvider(

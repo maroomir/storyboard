@@ -9,7 +9,7 @@ describe("MockAiProvider", () => {
     await expect(provider.checkConnection()).resolves.toBe(true)
   })
 
-  it("generates a deterministic response containing the task and user prompt", async () => {
+  it("generates a deterministic draft response containing the task and user prompt", async () => {
     const provider = new MockAiProvider()
 
     const response = await provider.generate({
@@ -23,5 +23,33 @@ describe("MockAiProvider", () => {
     })
     expect(response.text).toContain("[Mock AI: sceneDraft]")
     expect(response.text).toContain("엘리아가 학교에 도착했다.")
+  })
+
+  it("returns valid JSON for situation extraction so the draft pipeline works with the default provider", async () => {
+    const provider = new MockAiProvider()
+
+    const response = await provider.generate({
+      taskName: "situationExtraction",
+      messages: [
+        {
+          role: "user",
+          content: [
+            "Analyze text.",
+            "",
+            "User Input:",
+            "엘리아가 학교에 도착했다.",
+            "",
+            "Output only the JSON array."
+          ].join("\n")
+        }
+      ]
+    })
+
+    expect(JSON.parse(response.text)).toEqual([
+      {
+        characters: [],
+        situation: "엘리아가 학교에 도착했다."
+      }
+    ])
   })
 })

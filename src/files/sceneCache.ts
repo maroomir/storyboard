@@ -61,6 +61,7 @@ const sceneCacheProvidersSchema = z.object({
   situationExtraction: aiProviderIdSchema.optional(),
   personaDialogue: aiProviderIdSchema.optional(),
   sceneDraft: aiProviderIdSchema.optional(),
+  traitsExtraction: aiProviderIdSchema.optional(),
   grammarCheck: aiProviderIdSchema.optional(),
   inlineCompletion: aiProviderIdSchema.optional(),
   draftExpansion: aiProviderIdSchema.optional()

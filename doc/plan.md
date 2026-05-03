@@ -288,22 +288,24 @@
 **체크리스트**
 - [x] `files/scene.ts`: txt + 옵셔널 frontmatter 파싱
 - [x] `files/draft.ts`: 도메인 결과 → md 직렬화 (format에 따라 다름)
-- [ ] `services/ai/pipelines/sceneGenerationPipeline.ts` 이식 + Storyboard용 어댑터
+- [x] `services/ai/pipelines/sceneGenerationPipeline.ts` 이식 + Storyboard용 어댑터
   - 입력: scene file path, project context (캐릭터·배경·이전 씬 cache)
   - 출력: draft md 텍스트 + per-scene cache JSON
-- [ ] `commands/generateDraft.ts`:
+- [x] `commands/generateDraft.ts`:
   - 인자: scene file URI (없으면 active editor)
   - `vscode.window.withProgress` 진행 표시
   - 단계별 메시지 ("상황 추출…", "페르소나 생성…", ...)
   - 완료 시 `draft/<scene>.md` 생성 + 자동으로 열기
-- [ ] `commands/generateAllDrafts.ts`: 일괄 처리, 진행률 바
-- [ ] `providers/SceneCodeLensProvider.ts`:
+- [x] `commands/generateAllDrafts.ts`: 일괄 처리, 진행률 바
+- [x] `providers/SceneCodeLensProvider.ts`:
   - `scene/*.txt` 위에 `▶ Generate` / `🔄 Regenerate` / `🎭 Apply Format`
   - 클릭 → `commands.executeCommand`
-- [ ] 캐시 정책:
+- [x] 캐시 정책:
   - `.storyboard/cache/scenes/<scene>.json` 저장
   - 다음 호출 시 입력 hash 비교, 동일하면 캐시 반환 (옵션)
-- [ ] traits 자동 갱신 백그라운드 작업: 새 draft 생성 후 캐릭터 카드의 `traits`/`recentDialogues` 업데이트
+- [x] traits 자동 갱신 백그라운드 작업: 새 draft 생성 후 캐릭터 카드의 `traits`/`recentDialogues` 업데이트
+
+> 구현 메모: Storyboard에서는 `scene/*.txt` 한 파일이 `draft/*.md` 한 파일로 이어지므로, Picktion 파이프라인의 여러 situation 결과를 한 draft body로 병합한 뒤 project format을 적용한다. 캐시는 scene 입력 hash와 draft 존재 여부를 함께 확인하며, cache JSON에는 `situationExtraction`, `personaDialogue`, `sceneDraft`, `traitsExtraction`의 실제 resolved provider를 기록한다. `mock` provider도 Phase 4 수동 검증이 가능하도록 task별 구조화 응답을 반환한다.
 
 **검증**
 - 샘플 scene → draft 생성 정상 (한국어, 5단계 파이프라인)

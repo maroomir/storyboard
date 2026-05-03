@@ -39,6 +39,22 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("mock")
   })
 
+  it("exposes the resolved task provider for cache metadata", () => {
+    const registry = createRegistry(
+      new Map<string, unknown>([
+        ["defaultProvider", "mock"],
+        ["tasks.situationExtraction.provider", "claude"],
+        ["tasks.personaDialogue.provider", "google"],
+        ["tasks.sceneDraft.provider", "ollama"]
+      ])
+    )
+
+    expect(registry.getTaskProvider("situationExtraction")).toBe("claude")
+    expect(registry.getTaskProvider("personaDialogue")).toBe("google")
+    expect(registry.getTaskProvider("sceneDraft")).toBe("ollama")
+    expect(registry.getTaskProvider("traitsExtraction")).toBe("mock")
+  })
+
   it("checks Claude, Google, and Ollama connections through registered clients", async () => {
     const registry = createRegistry()
 

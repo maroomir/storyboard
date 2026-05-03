@@ -296,6 +296,15 @@ export async function generateDraftForWorkspaceSceneWorkflow(
   }
 
   const aiService = new StoryboardAIService(options.aiProviderRegistry)
+  const pipelineProviders = {
+    situationExtraction: options.aiProviderRegistry.getTaskProvider("situationExtraction"),
+    personaDialogue: options.aiProviderRegistry.getTaskProvider("personaDialogue"),
+    sceneDraft: options.aiProviderRegistry.getTaskProvider("sceneDraft")
+  }
+  const cacheProviders = {
+    ...pipelineProviders,
+    traitsExtraction: options.aiProviderRegistry.getTaskProvider("traitsExtraction")
+  } satisfies Partial<Record<AiTaskName, AiProviderId>>
 
   try {
     const result = await runSceneGenerationPipeline({
@@ -303,6 +312,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       aiService,
       format: project.format,
       previousContext,
+      providers: pipelineProviders,
       onProgress: (stage, current, total) => {
         if (options.shouldCancel?.()) {
           return
@@ -336,7 +346,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       personasUsed: Object.fromEntries(result.personasUsed),
       backgroundSnapshot: toBackgroundSnapshot(context.background),
       previousContext,
-      providers: { ...result.providers } satisfies Partial<Record<AiTaskName, AiProviderId>>
+      providers: cacheProviders
     }
 
     await writeDraftFile(draftUri, vscodeFsAdapter, draft)
