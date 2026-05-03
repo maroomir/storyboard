@@ -20,7 +20,10 @@
     "onStartupFinished",
     "onCommand:storyboard.helloWorld",
     "onCommand:storyboard.init",
-    "onView:storyboard.sidebar",
+    "onCommand:storyboard.character.create",
+    "onCommand:storyboard.background.create",
+    "onView:storyboard.charactersView",
+    "onView:storyboard.backgroundsView",
     "workspaceContains:.storyboard/project.json"
   ],
   "main": "./out/extension.js",
@@ -33,6 +36,16 @@
       {
         "command": "storyboard.init",
         "title": "Storyboard: Initialize Project"
+      },
+      {
+        "command": "storyboard.character.create",
+        "title": "Storyboard: Create Character",
+        "icon": "$(add)"
+      },
+      {
+        "command": "storyboard.background.create",
+        "title": "Storyboard: Create Background",
+        "icon": "$(add)"
       }
     ],
     "customEditors": [
@@ -67,6 +80,20 @@
           "id": "storyboard.backgroundsView",
           "name": "Backgrounds",
           "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "storyboard.character.create",
+          "when": "view == storyboard.charactersView",
+          "group": "navigation"
+        },
+        {
+          "command": "storyboard.background.create",
+          "when": "view == storyboard.backgroundsView",
+          "group": "navigation"
         }
       ]
     }

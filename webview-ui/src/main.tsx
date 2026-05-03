@@ -5,13 +5,35 @@ import "./styles.css"
 
 type CardType = "character" | "background"
 type StoryboardRequestMethod = "cards.write" | "cards.open"
+type CardAttributeValue = string | number | boolean | null
+
+interface CharacterRelation {
+  readonly target: string
+  readonly type: string
+}
+
+interface CharacterArc {
+  readonly stage: string
+  readonly summary: string
+  readonly sceneRef?: string
+}
 
 interface StoryboardCard {
   readonly type: CardType
   readonly id: string
   readonly name: string
   readonly description?: string
-  readonly [key: string]: unknown
+  readonly profile?: string
+  readonly concept?: string
+  readonly role?: string
+  readonly country?: string
+  readonly category?: string
+  readonly attributes?: Record<string, CardAttributeValue>
+  readonly tags?: readonly string[]
+  readonly traits?: readonly string[]
+  readonly relations?: readonly CharacterRelation[]
+  readonly arc?: readonly CharacterArc[]
+  readonly recentDialogues?: readonly string[]
 }
 
 interface CardEditorInitialData {
@@ -154,6 +176,8 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
   const [documentState, setDocumentState] = useState(initialData)
   const [card, setCard] = useState<StoryboardCard | undefined>(initialData.card)
   const [status, setStatus] = useState("문서에서 카드 정보를 불러왔습니다.")
+  const [isDirty, setIsDirty] = useState(false)
+  const [pendingExternalData, setPendingExternalData] = useState<CardEditorInitialData | undefined>()
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
@@ -162,17 +186,31 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
       }
 
       const nextDocumentState = parseCardEditorInitialData(event.data.payload)
-      setDocumentState(nextDocumentState)
-      setCard(nextDocumentState.card)
-      setStatus("문서 변경 사항을 다시 불러왔습니다.")
+
+      if (isDirty) {
+        setPendingExternalData(nextDocumentState)
+        setStatus("외부에서 카드가 변경되었습니다. 필요하면 다시 불러오세요.")
+        return
+      }
+
+      applyDocumentState(nextDocumentState)
     }
 
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
-  }, [])
+  }, [isDirty])
+
+  const applyDocumentState = (nextDocumentState: CardEditorInitialData): void => {
+    setDocumentState(nextDocumentState)
+    setCard(nextDocumentState.card)
+    setIsDirty(false)
+    setPendingExternalData(undefined)
+    setStatus("문서 변경 사항을 다시 불러왔습니다.")
+  }
 
   const updateCard = (nextCard: StoryboardCard): void => {
     setCard(nextCard)
+    setIsDirty(true)
     setStatus("변경 사항을 문서에 반영하는 중입니다…")
 
     vscodeApi?.postMessage({
@@ -207,12 +245,21 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
           <span>{card.type === "character" ? "Character" : "Background"}</span>
           <strong>{card.name}</strong>
         </div>
-        <p className="description">이미지 미리보기는 PR 2.5에서 실제 파일 URI 연결과 함께 확장합니다.</p>
+        <p className="description">이미지 미리보기는 실제 파일 URI 연결 전까지 placeholder로 표시합니다.</p>
       </section>
 
       <section className="editor-panel form-panel" aria-label="카드 편집 폼">
         <p className="eyebrow">{card.type} card</p>
         <h1>{card.name}</h1>
+
+        {pendingExternalData ? (
+          <div className="reload-banner">
+            <span>외부에서 YAML이 변경되었습니다.</span>
+            <button type="button" onClick={() => applyDocumentState(pendingExternalData)}>
+              다시 불러오기
+            </button>
+          </div>
+        ) : null}
 
         <label className="field">
           <span>ID</span>
@@ -224,6 +271,9 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
           <input value={card.name} onChange={(event) => updateCard({ ...card, name: event.target.value })} />
         </label>
 
+        {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
+        {card.type === "background" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
+
         <label className="field">
           <span>Description</span>
           <textarea
@@ -231,6 +281,29 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
             onChange={(event) => updateCard({ ...card, description: event.target.value })}
           />
         </label>
+
+        <ListField label="Tags" values={card.tags ?? []} onChange={(tags) => updateCard({ ...card, tags })} />
+
+        {card.type === "character" ? (
+          <>
+            <ListField label="Traits" values={card.traits ?? []} onChange={(traits) => updateCard({ ...card, traits })} />
+            <ListField
+              label="Recent Dialogues"
+              values={card.recentDialogues ?? []}
+              onChange={(recentDialogues) => updateCard({ ...card, recentDialogues })}
+            />
+            <KeyValueField
+              label="Attributes"
+              values={card.attributes ?? {}}
+              onChange={(attributes) => updateCard({ ...card, attributes })}
+            />
+            <RelationsField
+              relations={card.relations ?? []}
+              onChange={(relations) => updateCard({ ...card, relations })}
+            />
+            <ArcField arc={card.arc ?? []} onChange={(arc) => updateCard({ ...card, arc })} />
+          </>
+        ) : null}
 
         <details className="raw-yaml-details">
           <summary>Raw YAML</summary>
@@ -240,6 +313,193 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
         <p className="status-message">{status}</p>
       </section>
     </main>
+  )
+}
+
+function CharacterFields({
+  card,
+  updateCard
+}: {
+  readonly card: StoryboardCard
+  readonly updateCard: (card: StoryboardCard) => void
+}): React.ReactElement {
+  return (
+    <>
+      <label className="field">
+        <span>Role</span>
+        <input value={card.role ?? ""} onChange={(event) => updateCard({ ...card, role: event.target.value })} />
+      </label>
+      <label className="field">
+        <span>Profile</span>
+        <input value={card.profile ?? ""} onChange={(event) => updateCard({ ...card, profile: event.target.value })} />
+      </label>
+    </>
+  )
+}
+
+function BackgroundFields({
+  card,
+  updateCard
+}: {
+  readonly card: StoryboardCard
+  readonly updateCard: (card: StoryboardCard) => void
+}): React.ReactElement {
+  return (
+    <>
+      <label className="field">
+        <span>Concept</span>
+        <input value={card.concept ?? ""} onChange={(event) => updateCard({ ...card, concept: event.target.value })} />
+      </label>
+      <label className="field">
+        <span>Country</span>
+        <input value={card.country ?? ""} onChange={(event) => updateCard({ ...card, country: event.target.value })} />
+      </label>
+      <label className="field">
+        <span>Category</span>
+        <input value={card.category ?? ""} onChange={(event) => updateCard({ ...card, category: event.target.value })} />
+      </label>
+    </>
+  )
+}
+
+function ListField({
+  label,
+  values,
+  onChange
+}: {
+  readonly label: string
+  readonly values: readonly string[]
+  readonly onChange: (values: string[]) => void
+}): React.ReactElement {
+  return (
+    <fieldset className="dynamic-field">
+      <legend>{label}</legend>
+      {values.map((value, index) => (
+        <div className="dynamic-row" key={`${label}-${index}`}>
+          <input
+            value={value}
+            onChange={(event) => onChange(replaceArrayItem(values, index, event.target.value))}
+          />
+          <button type="button" onClick={() => onChange(removeArrayItem(values, index))}>
+            삭제
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...values, ""])}>
+        추가
+      </button>
+    </fieldset>
+  )
+}
+
+function KeyValueField({
+  label,
+  values,
+  onChange
+}: {
+  readonly label: string
+  readonly values: Record<string, CardAttributeValue>
+  readonly onChange: (values: Record<string, CardAttributeValue>) => void
+}): React.ReactElement {
+  const entries = Object.entries(values)
+
+  return (
+    <fieldset className="dynamic-field">
+      <legend>{label}</legend>
+      {entries.map(([key, value], index) => (
+        <div className="dynamic-row" key={`${label}-${index}`}>
+          <input
+            aria-label="key"
+            value={key}
+            onChange={(event) => onChange(renameRecordKey(values, key, event.target.value))}
+          />
+          <input
+            aria-label="value"
+            value={String(value ?? "")}
+            onChange={(event) => onChange({ ...values, [key]: event.target.value })}
+          />
+          <button type="button" onClick={() => onChange(removeRecordKey(values, key))}>
+            삭제
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange({ ...values, newKey: "" })}>
+        추가
+      </button>
+    </fieldset>
+  )
+}
+
+function RelationsField({
+  relations,
+  onChange
+}: {
+  readonly relations: readonly CharacterRelation[]
+  readonly onChange: (relations: CharacterRelation[]) => void
+}): React.ReactElement {
+  return (
+    <fieldset className="dynamic-field">
+      <legend>Relations</legend>
+      {relations.map((relation, index) => (
+        <div className="dynamic-row" key={`relation-${index}`}>
+          <input
+            placeholder="target"
+            value={relation.target}
+            onChange={(event) => onChange(replaceArrayItem(relations, index, { ...relation, target: event.target.value }))}
+          />
+          <input
+            placeholder="type"
+            value={relation.type}
+            onChange={(event) => onChange(replaceArrayItem(relations, index, { ...relation, type: event.target.value }))}
+          />
+          <button type="button" onClick={() => onChange(removeArrayItem(relations, index))}>
+            삭제
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...relations, { target: "", type: "" }])}>
+        추가
+      </button>
+    </fieldset>
+  )
+}
+
+function ArcField({
+  arc,
+  onChange
+}: {
+  readonly arc: readonly CharacterArc[]
+  readonly onChange: (arc: CharacterArc[]) => void
+}): React.ReactElement {
+  return (
+    <fieldset className="dynamic-field">
+      <legend>Arc</legend>
+      {arc.map((item, index) => (
+        <div className="dynamic-column" key={`arc-${index}`}>
+          <input
+            placeholder="stage"
+            value={item.stage}
+            onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, stage: event.target.value }))}
+          />
+          <input
+            placeholder="summary"
+            value={item.summary}
+            onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, summary: event.target.value }))}
+          />
+          <input
+            placeholder="sceneRef"
+            value={item.sceneRef ?? ""}
+            onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, sceneRef: event.target.value }))}
+          />
+          <button type="button" onClick={() => onChange(removeArrayItem(arc, index))}>
+            삭제
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={() => onChange([...arc, { stage: "", summary: "", sceneRef: "" }])}>
+        추가
+      </button>
+    </fieldset>
   )
 }
 
@@ -293,6 +553,37 @@ function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitial
 
 function isCardType(value: unknown): value is CardType {
   return value === "character" || value === "background"
+}
+
+function replaceArrayItem<T>(items: readonly T[], index: number, nextItem: T): T[] {
+  return items.map((item, itemIndex) => (itemIndex === index ? nextItem : item))
+}
+
+function removeArrayItem<T>(items: readonly T[], index: number): T[] {
+  return items.filter((_, itemIndex) => itemIndex !== index)
+}
+
+function renameRecordKey(
+  record: Record<string, CardAttributeValue>,
+  previousKey: string,
+  nextKey: string
+): Record<string, CardAttributeValue> {
+  const nextRecord: Record<string, CardAttributeValue> = {}
+
+  for (const [key, value] of Object.entries(record)) {
+    nextRecord[key === previousKey ? nextKey : key] = value
+  }
+
+  return nextRecord
+}
+
+function removeRecordKey(
+  record: Record<string, CardAttributeValue>,
+  targetKey: string
+): Record<string, CardAttributeValue> {
+  const nextRecord = { ...record }
+  delete nextRecord[targetKey]
+  return nextRecord
 }
 
 function createRequestId(): string {

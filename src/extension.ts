@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { registerCreateCardCommands } from "./commands/createCard"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
 import { StoryboardLogger } from "./core/logger"
@@ -12,6 +13,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(logger)
   context.subscriptions.push(registerHelloWorldCommand())
+  context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(registerSidebarCardsProviders(context))

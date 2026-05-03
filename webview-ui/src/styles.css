@@ -167,7 +167,8 @@ h1 {
 
 .field input,
 .field textarea,
-.raw-yaml {
+.raw-yaml,
+.dynamic-field input {
   width: 100%;
   border: 1px solid var(--vscode-input-border, transparent);
   background: var(--vscode-input-background);
@@ -206,6 +207,68 @@ h1 {
 
 .error-message {
   color: var(--vscode-errorForeground);
+}
+
+.reload-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--vscode-notificationsWarningIcon-foreground);
+  border-radius: 0.35rem;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+  padding: 0.6rem;
+}
+
+.reload-banner button,
+.dynamic-field button {
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 0.25rem;
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+  cursor: pointer;
+  padding: 0.35rem 0.55rem;
+}
+
+.reload-banner button:hover,
+.dynamic-field button:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+.dynamic-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 0.35rem;
+  margin: 0;
+  padding: 0.75rem;
+}
+
+.dynamic-field legend {
+  color: var(--vscode-descriptionForeground);
+  font-size: 0.85rem;
+  padding: 0 0.25rem;
+}
+
+.dynamic-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.4rem;
+}
+
+.dynamic-row:has(input + input) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.dynamic-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 0.5rem;
 }
 
 @media (max-width: 760px) {

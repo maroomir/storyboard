@@ -20,6 +20,9 @@ after the first public release.
 - Added extension-host workspace, path convention, and logger modules.
 - Added the Storyboard Activity Bar container and sidebar placeholder view.
 - Added a minimal Vite and React webview UI build.
+- Added `.card` YAML schemas, round-trip tests, and a Storyboard card custom editor.
+- Added Characters and Backgrounds sidebar views with file watching and card opening.
+- Added commands for creating character and background cards from the sidebar.
 
 ### Changed
 
