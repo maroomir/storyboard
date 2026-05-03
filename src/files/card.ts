@@ -11,8 +11,8 @@ import {
 export type CardParseErrorCode = "invalid-yaml" | "invalid-card-schema"
 
 export interface CardFileSystem {
-  readonly readFile: (uri: unknown) => Thenable<Uint8Array>
-  readonly writeFile: (uri: unknown, content: Uint8Array) => Thenable<void>
+  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>
+  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>
 }
 
 export class CardParseError extends Error {
