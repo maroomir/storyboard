@@ -1,5 +1,7 @@
 import { aiProviderIds, aiTaskNames, type AiProviderId, type AiTaskName } from "../ai/types"
 
+const storyboardWorkspaceConfigurationTarget = 2
+
 export interface ProviderModelConfig {
   readonly model?: string
   readonly baseUrl?: string
@@ -11,6 +13,11 @@ export interface TaskProviderConfig {
 
 export interface StoryboardConfigurationLike {
   readonly get: <T>(section: string, defaultValue: T) => T
+  readonly update?: <T>(
+    section: string,
+    value: T,
+    configurationTarget?: number
+  ) => Thenable<void>
 }
 
 export interface StoryboardConfigurationChangeEventLike {
@@ -47,15 +54,53 @@ export class ConfigBridge {
   }
 
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
-    const configuredProvider = this.dependencies
-      .getConfiguration()
-      .get(`tasks.${taskName}.provider`, undefined as string | undefined)
+    const override = this.getTaskProviderOverride(taskName)
 
-    if (configuredProvider && isConfiguredProvider(configuredProvider)) {
-      return configuredProvider
+    if (override !== null) {
+      return override
     }
 
     return this.getDefaultProvider()
+  }
+
+  public getTaskProviderOverride(taskName: AiTaskName): AiProviderId | null {
+    const merged = this.readTasksOverrides(this.dependencies.getConfiguration())
+    return merged[taskName]?.provider ?? null
+  }
+
+  public async setDefaultProvider(providerId: AiProviderId): Promise<void> {
+    await this.configurationUpdate("defaultProvider", providerId)
+  }
+
+  public async setProviderModel(providerId: AiProviderId, model: string): Promise<void> {
+    await this.configurationUpdate(`providers.${providerId}.model`, model)
+  }
+
+  public async setProviderBaseUrl(baseUrl: string): Promise<void> {
+    await this.configurationUpdate("providers.ollama.baseUrl", baseUrl)
+  }
+
+  public async setTaskProvider(taskName: AiTaskName, providerId: AiProviderId | null): Promise<void> {
+    if (providerId === null) {
+      await this.clearTaskProvider(taskName)
+      return
+    }
+
+    const configuration = this.dependencies.getConfiguration()
+    this.assertConfigurationUpdate(configuration)
+
+    const merged = this.readTasksOverrides(configuration)
+    merged[taskName] = { provider: providerId }
+    await configuration.update("tasks", merged, storyboardWorkspaceConfigurationTarget)
+  }
+
+  public async clearTaskProvider(taskName: AiTaskName): Promise<void> {
+    const configuration = this.dependencies.getConfiguration()
+    this.assertConfigurationUpdate(configuration)
+
+    const merged = this.readTasksOverrides(configuration)
+    delete merged[taskName]
+    await configuration.update("tasks", merged, storyboardWorkspaceConfigurationTarget)
   }
 
   public isGrammarRealtimeEnabled(): boolean {
@@ -82,6 +127,39 @@ export class ConfigBridge {
     const configuredProvider = this.dependencies.getConfiguration().get(section, fallback as string)
 
     return isConfiguredProvider(configuredProvider) ? configuredProvider : fallback
+  }
+
+  private readTasksOverrides(
+    configuration: StoryboardConfigurationLike
+  ): Record<string, { readonly provider: AiProviderId }> {
+    const merged: Record<string, { readonly provider: AiProviderId }> = {}
+    const fromTasksObject = configuration.get("tasks", {}) as Record<string, { provider?: string } | undefined>
+
+    for (const taskName of aiTaskNames) {
+      const fromNested = fromTasksObject[taskName]?.provider
+      const fromDot = configuration.get(`tasks.${taskName}.provider`, undefined as string | undefined)
+      const raw = fromNested ?? fromDot
+
+      if (raw && isConfiguredProvider(raw)) {
+        merged[taskName] = { provider: raw }
+      }
+    }
+
+    return merged
+  }
+
+  private assertConfigurationUpdate(configuration: StoryboardConfigurationLike): asserts configuration is StoryboardConfigurationLike & {
+    readonly update: NonNullable<StoryboardConfigurationLike["update"]>
+  } {
+    if (!configuration.update) {
+      throw new Error("StoryboardConfigurationLike.update is required to change Storyboard settings.")
+    }
+  }
+
+  private async configurationUpdate<T>(section: string, value: T): Promise<void> {
+    const configuration = this.dependencies.getConfiguration()
+    this.assertConfigurationUpdate(configuration)
+    await configuration.update(section, value, storyboardWorkspaceConfigurationTarget)
   }
 }
 
