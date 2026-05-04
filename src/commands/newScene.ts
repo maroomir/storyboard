@@ -9,6 +9,7 @@ import {
   formatSceneOrderPrefix,
   validateSceneSlugInput
 } from "./newSceneHelpers"
+import { resolveScenePrefixDigitCount } from "./scenePrefixDigits"
 
 const createSceneCommand = "storyboard.scene.create"
 const openSceneDraftCommand = "storyboard.scene.openDraft"
@@ -78,7 +79,8 @@ async function createNewScene(): Promise<void> {
   }
 
   const project = await readProjectJson(paths.projectJson)
-  const digitCount = project.settings.scenePrefixDigits
+  const inspected = vscode.workspace.getConfiguration("storyboard").inspect<number>("scene.prefixDigits")
+  const digitCount = resolveScenePrefixDigitCount(project.settings.scenePrefixDigits, inspected)
 
   const directoryEntries = await vscode.workspace.fs.readDirectory(paths.sceneDirectory)
   const sceneFileNames = directoryEntries

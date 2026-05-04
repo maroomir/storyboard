@@ -306,11 +306,11 @@ export function RelationGraph({ initialData }: { readonly initialData: RelationG
                 onDoubleClick={() => openCard(node.uri)}
               />
               <text
+                className="pointer-events-none select-none"
                 x={(node.x ?? 0) + 18}
                 y={(node.y ?? 0) + 4}
                 fill="var(--vscode-foreground)"
                 fontSize={12}
-                style={{ userSelect: "none", pointerEvents: "none" }}
               >
                 {node.name}
               </text>

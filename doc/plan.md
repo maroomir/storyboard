@@ -334,7 +334,7 @@
 **검증**
 - [x] 사이드바 3종 완성
 - [x] 관계 그래프 표시 + 노드 드래그
-- [ ] macOS/Windows에서 한 번씩: init → 캐릭터 추가 → 씬 작성 → 생성 → export까지 동작 (export는 Phase 7 예정이므로 Phase 5 게이트에서는 draft·그래프·사이드바까지 확인)
+- [x] macOS/Windows에서 한 번씩: init → 캐릭터 추가 → 씬 작성 → 생성 → export까지 동작 (export는 Phase 7 예정이므로 Phase 5 게이트에서는 draft·그래프·사이드바까지 확인)
 
 ### MVP 게이트 (Phase 5 완료 후)
 - [ ] `vsce package` 성공, .vsix < 50MB
