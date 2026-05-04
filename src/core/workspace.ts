@@ -27,6 +27,16 @@ export async function hasStoryboardProject(workspaceFolder: vscode.WorkspaceFold
   return uriExists(paths.projectJson)
 }
 
+export async function resolveStoryboardWorkspaceRoot(): Promise<vscode.Uri | undefined> {
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    if (await hasStoryboardProject(folder)) {
+      return folder.uri
+    }
+  }
+
+  return undefined
+}
+
 export async function uriExists(uri: vscode.Uri): Promise<boolean> {
   try {
     await vscode.workspace.fs.stat(uri)

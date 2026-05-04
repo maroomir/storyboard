@@ -1,7 +1,6 @@
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths } from "../core/pathConventions"
-import { uriExists } from "../core/workspace"
+import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
 import { parseCard } from "../files/card"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
 import { createAiRpcHandlers } from "../services/ai/rpcHandlers"
@@ -57,19 +56,25 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       localResourceRoots: [getWebviewDistRoot(this.extensionUri)]
     }
 
-    const workspaceRoot = getPrimaryWorkspaceRoot()
+    void this.bootstrapWebview(webviewView)
+  }
+
+  private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
+    const initialData = await this.createInitialData()
+
     webviewView.webview.html = createWebviewHtml(webviewView.webview, {
       extensionUri: this.extensionUri,
       title: this.options.title,
       view: "cards-sidebar",
-      initialData: this.createInitialDataSyncFallback()
+      initialData
     })
 
     const bridge = createWebviewBridge(webviewView.webview, this.createHandlers())
     this.disposables.push(bridge)
 
-    if (workspaceRoot) {
-      this.registerCardWatcher(workspaceRoot)
+    const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+    if (storyboardRoot) {
+      this.registerCardWatcher(storyboardRoot)
     }
 
     void this.refreshCards()
@@ -120,33 +125,26 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
     })
   }
 
-  private createInitialDataSyncFallback(): SidebarCardsInitialData {
-    return {
-      type: this.options.cardType,
-      title: this.options.title,
-      cards: [],
-      isStoryboardProject: false
-    }
-  }
-
   private async createInitialData(): Promise<SidebarCardsInitialData> {
+    const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+
     return {
       type: this.options.cardType,
       title: this.options.title,
-      cards: await this.loadCardSummaries(),
-      isStoryboardProject: await hasPrimaryStoryboardProject()
+      cards: await this.loadCardSummaries(storyboardRoot),
+      isStoryboardProject: storyboardRoot !== undefined
     }
   }
 
-  private async loadCardSummaries(): Promise<SidebarCardSummary[]> {
-    const workspaceRoot = getPrimaryWorkspaceRoot()
+  private async loadCardSummaries(workspaceRoot?: vscode.Uri): Promise<SidebarCardSummary[]> {
+    const root = workspaceRoot ?? (await resolveStoryboardWorkspaceRoot())
 
-    if (!workspaceRoot || !(await hasPrimaryStoryboardProject())) {
+    if (!root) {
       return []
     }
 
     const cardUris = await vscode.workspace.findFiles(
-      new vscode.RelativePattern(workspaceRoot, this.options.cardGlob),
+      new vscode.RelativePattern(root, this.options.cardGlob),
       undefined
     )
     const summaries = await Promise.all(cardUris.map((uri) => this.loadCardSummary(uri)))
@@ -211,18 +209,4 @@ export function registerSidebarCardsProviders(
     charactersProvider,
     backgroundsProvider
   )
-}
-
-function getPrimaryWorkspaceRoot(): vscode.Uri | undefined {
-  return vscode.workspace.workspaceFolders?.[0]?.uri
-}
-
-async function hasPrimaryStoryboardProject(): Promise<boolean> {
-  const workspaceRoot = getPrimaryWorkspaceRoot()
-
-  if (!workspaceRoot) {
-    return false
-  }
-
-  return uriExists(getStoryboardProjectPaths(workspaceRoot).projectJson)
 }
