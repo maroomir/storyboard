@@ -108,6 +108,27 @@ export const scenesOpenSceneResponsePayloadSchema = z.object({})
 export const scenesOpenDraftResponsePayloadSchema = z.object({})
 export const scenesGenerateDraftResponsePayloadSchema = z.object({})
 
+export const relationsListRequestPayloadSchema = z.object({})
+
+export const relationListItemRelationSchema = z.object({
+  target: z.string().trim().min(1),
+  type: z.string().trim().min(1)
+})
+
+export const relationListCharacterSchema = z.object({
+  id: z.string().trim().min(1),
+  name: z.string().trim().min(1),
+  role: z.string().trim().min(1).optional(),
+  uri: uriStringSchema,
+  relations: z.array(relationListItemRelationSchema)
+})
+
+export const relationsListResponsePayloadSchema = z.object({
+  characters: z.array(relationListCharacterSchema)
+})
+
+export type RelationListCharacter = z.infer<typeof relationListCharacterSchema>
+
 export const aiProvidersListRequestPayloadSchema = z.object({})
 
 export const aiProvidersCheckConnectionRequestPayloadSchema = z.object({
@@ -155,6 +176,7 @@ export const storyboardRequestPayloadSchemas = {
   "scenes.openScene": scenesOpenSceneRequestPayloadSchema,
   "scenes.openDraft": scenesOpenDraftRequestPayloadSchema,
   "scenes.generateDraft": scenesGenerateDraftRequestPayloadSchema,
+  "relations.list": relationsListRequestPayloadSchema,
   "ai.providers.list": aiProvidersListRequestPayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
   "ai.generate": aiGenerateRequestPayloadSchema
@@ -171,6 +193,7 @@ export const storyboardResponsePayloadSchemas = {
   "scenes.openScene": scenesOpenSceneResponsePayloadSchema,
   "scenes.openDraft": scenesOpenDraftResponsePayloadSchema,
   "scenes.generateDraft": scenesGenerateDraftResponsePayloadSchema,
+  "relations.list": relationsListResponsePayloadSchema,
   "ai.providers.list": aiProvidersListResponsePayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
   "ai.generate": aiGenerateResponsePayloadSchema

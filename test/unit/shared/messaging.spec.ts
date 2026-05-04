@@ -100,6 +100,45 @@ describe("storyboard messaging protocol", () => {
     expect(request.method).toBe("scenes.generateDraft")
   })
 
+  it("parses relations.list request and creates validated success response", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "relations-1",
+      method: "relations.list",
+      payload: {}
+    })
+    expect(request.method).toBe("relations.list")
+    expect(request.payload).toEqual({})
+
+    if (request.method !== "relations.list") {
+      throw new Error("Expected relations.list")
+    }
+
+    const response = createStoryboardSuccessResponse(request, {
+      characters: [
+        {
+          id: "hero",
+          name: "주인공",
+          role: "lead",
+          uri: "file:///ws/character/hero.card",
+          relations: [{ target: "rival", type: "enemy" }]
+        },
+        {
+          id: "rival",
+          name: "라이벌",
+          uri: "file:///ws/character/rival.card",
+          relations: [{ target: "hero", type: "enemy" }]
+        }
+      ]
+    })
+    expect(response.ok).toBe(true)
+    if (response.ok) {
+      expect(response.payload.characters).toHaveLength(2)
+      expect(response.payload.characters[0]?.relations[0]?.target).toBe("rival")
+    }
+  })
+
   it("creates validated scenes.list success response", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,

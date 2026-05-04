@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { createRoot } from "react-dom/client"
 
+import { parseRelationGraphInitialData, RelationGraph } from "./RelationGraph"
 import "./styles.css"
 
 const sbInputClass =
@@ -101,7 +102,7 @@ interface SidebarScenesInitialData {
 
 interface StoryboardEventMessage {
   readonly type: "event"
-  readonly method: "cards.changed" | "cards.listChanged" | "scenes.listChanged"
+  readonly method: "cards.changed" | "cards.listChanged" | "scenes.listChanged" | "relations.listChanged"
   readonly payload: unknown
 }
 
@@ -126,6 +127,10 @@ function App(): React.ReactElement {
 
   if (window.__STORYBOARD_VIEW__ === "scenes-sidebar") {
     return <ScenesSidebar initialData={parseSidebarScenesInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+  }
+
+  if (window.__STORYBOARD_VIEW__ === "relation-graph") {
+    return <RelationGraph initialData={parseRelationGraphInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
   }
 
   return <SidebarPlaceholder />

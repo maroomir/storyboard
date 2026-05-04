@@ -68,6 +68,10 @@
       {
         "command": "storyboard.scene.openDraft",
         "title": "Storyboard: Open Draft for Scene"
+      },
+      {
+        "command": "storyboard.relationGraph.open",
+        "title": "Storyboard: Open Character Relation Graph"
       }
     ],
     "configuration": {
@@ -229,12 +233,18 @@
     "eslint": "^8.57.1",
     "postcss": "^8.5.13",
     "prettier": "^3.3.3",
+    "@types/d3-drag": "^3.0.7",
+    "@types/d3-force": "^3.0.10",
+    "@types/d3-selection": "^3.0.11",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "d3-drag": "^3.0.0",
+    "d3-force": "^3.0.0",
+    "d3-selection": "^3.0.0",
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.16.0",
