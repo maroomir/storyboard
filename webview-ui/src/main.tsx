@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react"
 import { createRoot } from "react-dom/client"
 
 import { parseRelationGraphInitialData, RelationGraph } from "./RelationGraph"
+import { SettingsView } from "./SettingsView"
 import "./styles.css"
 
 const sbInputClass =
@@ -111,7 +112,7 @@ declare global {
     readonly __STORYBOARD_VIEW__?: string
     readonly __STORYBOARD_INITIAL_DATA__?: unknown
     readonly acquireVsCodeApi?: () => {
-      readonly postMessage: (message: StoryboardRequestMessage) => void
+      readonly postMessage: (message: unknown) => void
     }
   }
 }
@@ -131,6 +132,10 @@ function App(): React.ReactElement {
 
   if (window.__STORYBOARD_VIEW__ === "relation-graph") {
     return <RelationGraph initialData={parseRelationGraphInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+  }
+
+  if (window.__STORYBOARD_VIEW__ === "settings") {
+    return <SettingsView initialData={window.__STORYBOARD_INITIAL_DATA__} />
   }
 
   return <SidebarPlaceholder />
