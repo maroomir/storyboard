@@ -137,6 +137,11 @@ describe("ConfigBridge", () => {
     expect(tasksAfterClear["grammarCheck"]?.provider).toBe("google")
     expect(configBridge.getTaskProviderOverride("sceneDraft")).toBeNull()
     expect(configBridge.getTaskProviderOverride("grammarCheck")).toBe("google")
+
+    await configBridge.setTaskProvider("grammarCheck", null)
+    const tasksAfterNull = values.get("tasks") as Record<string, { provider: string }>
+    expect(tasksAfterNull["grammarCheck"]).toBeUndefined()
+    expect(configBridge.getTaskProviderOverride("grammarCheck")).toBeNull()
   })
 
   it("writes provider model and Ollama base URL", async () => {

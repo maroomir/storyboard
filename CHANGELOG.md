@@ -10,6 +10,7 @@ after the first public release.
 
 ### Added
 
+- Settings webview panel (`Storyboard: Open Settings`) for default provider, curated model picks per provider, per-task provider overrides, Ollama base URL, API keys (SecretStorage), and connection checks; settings RPCs and `settings.changed` sync with host configuration and secrets.
 - Scene-to-draft generation pipeline with cache metadata and optional trait updates on new drafts (Phase 4).
 - Scenes sidebar webview with tree, status badges, and in-view actions (Phase 5).
 - Character relation graph panel (d3-force) and `Storyboard: Open Character Relation Graph` command (Phase 5).
