@@ -1,0 +1,121 @@
+import * as vscode from "vscode"
+
+import { hasStoryboardProject } from "../core/workspace"
+import { sceneFilePath } from "../core/pathConventions"
+import { tryParseDraftScenePartsForCodeLens } from "./draftCodeLensLogic"
+
+const regenerateDraftCommand = "storyboard.draft.regenerate"
+const grammarCheckCommand = "storyboard.draft.grammarCheck"
+const expandDraftCommand = "storyboard.draft.expand"
+
+function isDraftMarkdownFile(draftUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
+  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
+  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
+  const filePath = draftUri.fsPath.replace(/\\/g, "/").toLowerCase()
+
+  if (!filePath.startsWith(`${dirPath}/`)) {
+    return false
+  }
+
+  const remainder = filePath.slice(dirPath.length + 1)
+  return !remainder.includes("/") && remainder.endsWith(".md")
+}
+
+function isDirectSceneTextFile(sceneUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
+  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, "scene")
+  const dirPath = sceneDir.fsPath.replace(/\\/g, "/").toLowerCase()
+  const filePath = sceneUri.fsPath.replace(/\\/g, "/").toLowerCase()
+
+  if (!filePath.startsWith(`${dirPath}/`)) {
+    return false
+  }
+
+  const remainder = filePath.slice(dirPath.length + 1)
+  return !remainder.includes("/") && remainder.endsWith(".txt")
+}
+
+export class DraftCodeLensProvider implements vscode.CodeLensProvider {
+  private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
+
+  public readonly onDidChangeCodeLenses = this._onDidChangeCodeLenses.event
+
+  public refresh(): void {
+    this._onDidChangeCodeLenses.fire()
+  }
+
+  public async provideCodeLenses(document: vscode.TextDocument): Promise<vscode.CodeLens[]> {
+    if (document.uri.scheme !== "file") {
+      return []
+    }
+
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
+
+    if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
+      return []
+    }
+
+    if (!isDraftMarkdownFile(document.uri, workspaceFolder)) {
+      return []
+    }
+
+    const nameParts = tryParseDraftScenePartsForCodeLens(document.getText())
+
+    if (!nameParts) {
+      return []
+    }
+
+    const sceneUri = sceneFilePath(workspaceFolder.uri, nameParts.orderText, nameParts.slug)
+
+    if (!isDirectSceneTextFile(sceneUri, workspaceFolder)) {
+      return []
+    }
+
+    const range = document.lineAt(0).range
+
+    return [
+      new vscode.CodeLens(range, {
+        title: "🔁 Re-generate Draft",
+        tooltip: "연결된 씬 파일 기준으로 초안을 다시 생성합니다.",
+        command: regenerateDraftCommand,
+        arguments: [sceneUri]
+      }),
+      new vscode.CodeLens(range, {
+        title: "🩹 Grammar Check",
+        tooltip: "문법 검사(Phase 6 예정)",
+        command: grammarCheckCommand
+      }),
+      new vscode.CodeLens(range, {
+        title: "🌿 Expand",
+        tooltip: "선택 영역 확장(Phase 6 예정)",
+        command: expandDraftCommand
+      })
+    ]
+  }
+}
+
+export function registerDraftCodeLensProvider(): vscode.Disposable {
+  const provider = new DraftCodeLensProvider()
+  const selector: vscode.DocumentSelector = { scheme: "file", pattern: "**/draft/*.md" }
+
+  const registration = vscode.languages.registerCodeLensProvider(selector, provider)
+  const watchers: vscode.FileSystemWatcher[] = []
+
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, "draft/**/*.md"))
+
+    const fire = (): void => {
+      provider.refresh()
+    }
+
+    watcher.onDidChange(fire)
+    watcher.onDidCreate(fire)
+    watcher.onDidDelete(fire)
+    watchers.push(watcher)
+  }
+
+  const folderChange = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+    provider.refresh()
+  })
+
+  return vscode.Disposable.from(registration, folderChange, ...watchers)
+}

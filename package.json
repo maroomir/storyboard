@@ -72,6 +72,14 @@
       {
         "command": "storyboard.relationGraph.open",
         "title": "Storyboard: Open Character Relation Graph"
+      },
+      {
+        "command": "storyboard.draft.grammarCheck",
+        "title": "Storyboard: Grammar Check (Draft)"
+      },
+      {
+        "command": "storyboard.draft.expand",
+        "title": "Storyboard: Expand Selection (Draft)"
       }
     ],
     "configuration": {

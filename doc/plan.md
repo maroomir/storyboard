@@ -1,7 +1,7 @@
 # Storyboard — 마이그레이션 계획서
 
 > 작성일: 2026-05-03
-> 상태: Phase 2 완료, Phase 3 시작 전
+> 상태: Phase 5 MVP 마감(사이드바·그래프·드래프트 CodeLens·QA 문서 반영)
 > 짝 문서: `doc/concept.md`
 
 본 문서는 **Picktion 웹앱**에서 **Storyboard VSCode Extension**으로의 전체 마이그레이션 절차를 정의한다. 컨셉·파일 포맷·명령어의 합의는 `doc/concept.md`에 있다. 본 문서는 그 컨셉을 어떻게 단계적으로 구현할지에 집중한다.
@@ -317,22 +317,24 @@
 **목표**: MVP 시각 기능 완성.
 
 **체크리스트**
-- [ ] `SidebarScenesProvider`: scene/ 디렉토리 트리 + 상태 배지
+- [x] `SidebarScenesProvider`: scene/ 디렉토리 트리 + 상태 배지
   - ✅ 생성됨 (draft 존재 + 최신)
   - ⚠️ 구버전 (scene이 draft보다 신규)
   - ⬜ 미생성
-- [ ] 사이드바 컨텍스트 메뉴: New Scene, Generate, Open Draft
-- [ ] `commands/newScene.ts`: 다음 사용 가능 번호 자동 계산 + slug 입력 + 파일 생성
-- [ ] `RelationGraphProvider`: 캐릭터 관계 d3-force webview Panel
-- [ ] `commands/openRelationGraph.ts`
-- [ ] draft/*.md CodeLens: `🔁 Re-generate` / `🩹 Grammar Check` / `🌿 Expand`
-- [ ] webview-ui Tailwind 테마: VSCode color tokens 매핑 완성
-- [ ] **MVP QA 체크리스트** (`doc/testing/extension-qa.md`)
+- [x] 사이드바 컨텍스트 메뉴: New Scene, Generate, Open Draft
+- [x] `commands/newScene.ts`: 다음 사용 가능 번호 자동 계산 + slug 입력 + 파일 생성
+- [x] `RelationGraphProvider`: 캐릭터 관계 d3-force webview Panel
+- [x] `commands/openRelationGraph.ts`
+- [x] draft/*.md CodeLens: `🔁 Re-generate` / `🩹 Grammar Check` / `🌿 Expand`
+- [x] webview-ui Tailwind 테마: VSCode color tokens 매핑 완성
+- [x] **MVP QA 체크리스트** (`doc/testing/extension-qa.md`)
+
+> **구현 메모 (WebviewView 한계)**: Activity Bar에 올라간 `WebviewView` 사이드바에서는 VSCode `contributes.menus`의 `view/item/context`(탐색기 스타일 행별 컨텍스트 메뉴)가 적용되지 않는다. 씬 행별 **Generate / Open Draft** 등은 **webview 내부 버튼 그룹**으로 제공하고, `view/title` 영역만 VSCode 기본 툴바 메뉴(`New Scene` 등)를 사용한다.
 
 **검증**
-- 사이드바 3종 완성
-- 관계 그래프 표시 + 노드 드래그
-- macOS/Windows에서 한 번씩: init → 캐릭터 추가 → 씬 작성 → 생성 → export까지 동작
+- [x] 사이드바 3종 완성
+- [x] 관계 그래프 표시 + 노드 드래그
+- [ ] macOS/Windows에서 한 번씩: init → 캐릭터 추가 → 씬 작성 → 생성 → export까지 동작 (export는 Phase 7 예정이므로 Phase 5 게이트에서는 draft·그래프·사이드바까지 확인)
 
 ### MVP 게이트 (Phase 5 완료 후)
 - [ ] `vsce package` 성공, .vsix < 50MB
