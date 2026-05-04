@@ -2,6 +2,7 @@
 
 > 작성일: 2026-05-03
 > 상태: Phase 5 MVP 마감(사이드바·그래프·드래프트 CodeLens·QA 문서 반영)
+> MVP 게이트(0.0.1): 로컬 빌드·`vsce package`·수동 QA·dogfooding — Marketplace 발행은 범위 밖
 > 짝 문서: `doc/concept.md`
 
 본 문서는 **Picktion 웹앱**에서 **Storyboard VSCode Extension**으로의 전체 마이그레이션 절차를 정의한다. 컨셉·파일 포맷·명령어의 합의는 `doc/concept.md`에 있다. 본 문서는 그 컨셉을 어떻게 단계적으로 구현할지에 집중한다.
@@ -107,7 +108,7 @@
 ├── esbuild.config.mjs
 ├── README.md
 ├── CHANGELOG.md
-└── LICENSE                            # MIT
+└── LICENSE                            # Apache-2.0
 ```
 
 ## 2. 모듈 매핑 (현 Picktion → Storyboard)
@@ -163,7 +164,7 @@
 - [x] 이름·도메인·publisher·라이선스 합의 사항 문서화 (`doc/concept.md` 이전)
 - [x] 골든 픽스처 수집 제외 결정 기록 (`doc/decisions/00-decisions.md`)
 - [x] `storyboard-concept.md`, `storyboard-plan.md`를 신규 repo `doc/`로 이전
-- [x] `LICENSE` (MIT) 추가
+- [x] `LICENSE` (Apache-2.0) 추가
 - [x] `.gitignore` 추가
 - [x] `CHANGELOG.md` 골격 추가
 - [x] `README.md` 확장
@@ -336,14 +337,23 @@
 - [x] 관계 그래프 표시 + 노드 드래그
 - [x] macOS/Windows에서 한 번씩: init → 캐릭터 추가 → 씬 작성 → 생성 → export까지 동작 (export는 Phase 7 예정이므로 Phase 5 게이트에서는 draft·그래프·사이드바까지 확인)
 
-### MVP 게이트 (Phase 5 완료 후)
-- [ ] `vsce package` 성공, .vsix < 50MB
-- [ ] Marketplace `--pre-release` 발행 가능 상태
-- [ ] README 스크린샷·GIF 3장
-- [ ] CHANGELOG v0.1.0
-- [ ] 본인 사용 1주일 dogfooding 통과
+### MVP 게이트 (Phase 5 완료 후, `package.json` 0.0.1 dogfooding)
 
-> 여기까지가 **MVP**다. pre-release로 일부 사용자(또는 본인)에게 배포해 피드백을 모은 후 Phase 6–8로 진행한다.
+기능 범위의 **MVP(Phase 0–5)** 와 별개로, **아직 Marketplace에 올리지 않는** 검증 게이트다.
+
+- [x] `npm run build` / `npm run lint` / `npm test` 통과
+- [x] `vsce package`(또는 `npx @vscode/vsce package`) 성공, 산출 `.vsix` < 50MB
+- [ ] [`doc/testing/extension-qa.md`](testing/extension-qa.md)의 End-to-end 플로우 최소 1회 통과
+- [ ] [`README.md`](../README.md)에 0.0.1·dogfooding·Marketplace 미발행 등 현재 제한이 반영됨
+- [ ] [`CHANGELOG.md`](../CHANGELOG.md) `[Unreleased]`에 Phase 4–5 요약이 반영됨(정식 버전 섹션 분리는 실제 릴리스/태그 시점에 선택)
+- [ ] 본인 사용 1주일 dogfooding 통과(이슈·결정 사항 기록)
+
+**이번 0.0.1 게이트에서 제외(후속)**
+
+- Visual Studio Marketplace `publish` / `--pre-release`
+- README용 스크린샷·GIF 3장 확정(원하면 dogfooding 병행 중 추가)
+
+> 코드 의미의 **MVP(기능)** 는 Phase 0–5까지이며, **배포 채널**은 pre-release 이후 또는 상위 버전에서 연다.
 
 ### Phase 6 — 에디터 통합 (1주)
 
@@ -403,7 +413,7 @@
 - [ ] 성능: 100 캐릭터 + 100 씬 프로젝트 부하 테스트 (사이드바 응답성, file watcher)
 - [ ] 에러 처리: API 키 없음, 네트워크 끊김, 잘못된 YAML, 없는 이미지 등
 - [ ] Marketplace 메타: 키워드(`fiction`, `novel`, `creative writing`, `AI`, `storyboard`, `screenwriter`), 카테고리, repository 링크
-- [ ] LICENSE (MIT) 확정
+- [ ] LICENSE (Apache-2.0) 확정
 - [ ] 텔레메트리 **수집 안 함** 명시 (privacy-first)
 - [ ] `vsce publish` 정식 v1.0.0
 - [ ] Picktion repo README에 "Storyboard로 이전" 안내 + archive 처리
@@ -418,7 +428,7 @@
 | 2. 파일 시스템 + Card Editor | 1주 | 2주 | `.card` 커스텀 에디터 |
 | 3. AI + Secret + 설정 | 1주 | 3주 | 5 provider 동작 |
 | 4. 씬 → 드래프트 파이프라인 | 1.5주 | 4.5주 | scene → draft 생성 |
-| 5. 사이드바 + Graph | 1주 | **5.5주 (MVP)** | Marketplace pre-release |
+| 5. 사이드바 + Graph | 1주 | **5.5주 (MVP)** | 0.0.1 로컬 VSIX + dogfooding 게이트 |
 | 6. 에디터 통합 | 1주 | 6.5주 | inline 완성·맞춤법·hover |
 | 7. Export + Polish + Import | 1주 | 7.5주 | 풀 기능 |
 | 8. QA + 정식 출시 | 3~5일 | **~8주 (v1.0.0)** | Marketplace 정식 |
@@ -477,9 +487,9 @@
 
 ## 9. 다음 액션
 
-1. `vsce package` 검증을 별도 PR 또는 릴리스 준비 단계에서 수행한다.
-2. Phase 2의 파일 시스템 + Card Custom Editor 작업을 시작한다.
-3. `files/card.ts`, `files/sceneCache.ts`, 카드 round-trip 테스트를 우선 구현한다.
+1. [`doc/testing/extension-qa.md`](testing/extension-qa.md)와 [`README.md`](../README.md)를 기준으로 **0.0.1 dogfooding 게이트**를 수행한다(`npm run build` → `vsce package` → VSIX 용량 기록).
+2. Phase 6(에디터 통합) 이슈를 쪼개 착수한다.
+3. Marketplace pre-release는 상위 버전·메타 확정 후 별도 결정으로 연다.
 
 ## 10. 참고
 

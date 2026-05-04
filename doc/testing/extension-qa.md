@@ -1,43 +1,271 @@
-# Storyboard 확장 — MVP QA 체크리스트
+# Storyboard 확장 — 0.0.1 수동 QA 가이드
 
-Phase 5 MVP 게이트용 수동 검증 가이드이다. 자동화 테스트(`npm test`)는 결정적 로직 위주이며, 아래 항목은 **실제 VSCode에서 F5(Extension Development Host)** 로 확인한다.
+Storyboard **0.0.1**은 기본 동작을 검증하는 **dogfooding** 단계입니다. Marketplace 발행 전에, 아래 절차로 **실제 VS Code**에서 한 번씩 확인합니다.
 
-## 환경 매트릭스 (권장)
+자동화 테스트(`npm test`)는 결정적 로직 위주입니다. 이 문서의 항목은 **Extension Development Host(F5)** 또는 **로컬 VSIX**로 확인합니다.
 
-| OS            | 입력기        | VSCode        | 비고                          |
-| ------------- | ------------- | ------------- | ----------------------------- |
-| macOS         | 한글 IME      | Stable        | 기본 개발 환경                |
-| Windows       | 한글 IME      | Stable        | 경로·줄바꿈 차이              |
-| Linux (선택)  | 한글 IME      | Stable        | 파일 감시·권한                |
+---
 
-Insiders는 선택적으로 한 번만 스모크 테스트해도 된다.
+## 준비물
 
-## End-to-end — “빈 폴더 → MVP 플로우”
+| 항목 | 설명 |
+| --- | --- |
+| VS Code | Stable 권장 (Insiders는 선택) |
+| Node.js | 18 이상 (저장소 `package.json` / 빌드 도구 기준) |
+| 이 저장소 클론 | 개발자가 확장 소스를 연 상태 |
+| 테스트용 폴더 | 비어 있거나 Storyboard가 아닌 폴더 하나 (임의 경로) |
 
-워크스페이스에 Storyboard가 없는 빈(또는 테스트용) 폴더를 연 뒤 순서대로 진행한다.
+**한글 IME**를 쓰는 경우, macOS / Windows에서 각각 한 번씩 같은 플로우를 밟아 두면 좋습니다.
 
-1. **초기화**: 명령 팔레트에서 `Storyboard: Initialize Project` 실행 → `.storyboard/project.json`, `character/`, `background/`, `scene/`, `draft/` 등 표준 트리 생성 확인.
-2. **캐릭터·배경 카드**: 사이드바 Characters / Backgrounds에서 추가 → `.card` 파일 생성 및 커스텀 에디터로 열림 확인.
-3. **씬 작성**: `scene/*.txt` 파일 작성 또는 `Storyboard: New Scene`으로 생성 → 본문·옵션 frontmatter 저장.
-4. **드래프트 생성**: 씬 파일에서 CodeLens `Generate Draft` / `Regenerate` 또는 명령 `Storyboard: Generate Draft` → `draft/<stem>.md` 생성 및 열림 확인.
-5. **드래프트 CodeLens**: `draft/*.md` 첫 줄 근처에 `Re-generate Draft`, `Grammar Check`, `Expand` 표시 → Re-generate는 동작, Grammar/Expand는 “Phase 6 예정” 안내 확인.
-6. **Scenes 사이드바**: Scenes 뷰에서 목록·상태 배지(준비/구버전/미생성)·`Generate` / `Open Draft` 등 워크플로 확인.
-7. **관계 그래프**: `Storyboard: Open Character Relation Graph` 실행 → 캐릭터 노드·링크 표시, 노드 드래그 동작 확인.
-8. **캐시**: 동일 씬에 대해 재생성 없이 다시 생성 시 캐시 hit 메시지 또는 기대 동작 확인(프로젝트 설정·입력 동일 전제).
-9. **API 키**: `Storyboard: Set API Key...`로 provider별 키 등록(또는 `mock`으로 스모크) 후 생성 파이프라인 재실행.
+---
 
-## 회복·에러 시나리오
+## A안: 개발자 — F5로 검증 (가장 흔한 방법)
 
-- **API 키 없음**: 실 provider 선택 시 명확한 오류 또는 안내 메시지, Output 채널에 민감 정보 미노출.
-- **잘못된 YAML**: `.card` 또는 씬 frontmatter 깨짐 시 확장이 전체 비활성화되지 않고, 해당 기능에서만 오류 처리되는지.
-- **없는 이미지**: 카드가 참조하는 프로필/컨셉 이미지 경로가 없을 때 UI가 깨지지 않는지.
-- **네트워크 끊김**: OpenAI/Claude 등 원격 호출 시 타임아웃·실패 메시지가 사용자에게 전달되는지.
+### 0. 저장소에서 한 번만
 
-## 패키징 (후속 게이트)
+터미널에서 저장소 **루트**로 이동합니다.
 
-- `vsce package` 성공 및 산출 `.vsix` 용량 **50MB 미만**(Phase 5 이후 릴리스 준비 단계에서 기록).
-- `package` 스크립트는 저장소의 `package.json` 정의를 따른다.
+```bash
+cd /path/to/storyboard
+npm install
+npm run build
+```
 
-## 기록
+- **성공 기준**: 에러 없이 끝나고, `out/extension.js` 및 `out/webview-ui/` 산출물이 생깁니다.
 
-검증 일자·커밋 SHA·발견 이슈는 PR 또는 이슈 트래커에 남긴다.
+### 1. Extension Development Host 열기
+
+1. VS Code에서 **이 저장소 루트**를 연다.
+2. 왼쪽 **Run and Debug**(실행 및 디버그)를 연다.
+3. 구성에서 **`Run Extension`** 을 고른 뒤 **F5**를 누른다.
+4. 새 창(**Extension Development Host**)이 뜨면 성공이다.
+
+**막혔을 때**
+
+- F5가 안 되면: `npm run build`가 성공하는지, Run 구성이 `Run Extension`인지 확인한다.
+- 새 창이 안 뜨면: **View → Output**에서 확장 호스트 로그를 본다.
+
+### 2. 테스트 워크스페이스 열기
+
+**Extension Development Host 창**에서:
+
+1. **File → Open Folder…** (macOS) / **File → Open Folder** (Windows)
+2. 미리 만든 **빈 폴더**를 연다.
+
+**성공 기준**: 왼쪽 탐색기에 해당 폴더가 루트로 보인다.
+
+### 3. Storyboard 프로젝트 초기화
+
+1. `Cmd+Shift+P` (macOS) 또는 `Ctrl+Shift+P` (Windows/Linux)로 **명령 팔레트**를 연다.
+2. **`Storyboard: Initialize Project`** 를 실행한다.
+3. 안내에 따라 진행한다.
+
+**성공 기준**
+
+- 탐색기에 `.storyboard/project.json`, `character/`, `background/`, `scene/`, `draft/` 등이 생긴다.
+- Activity Bar에 **Storyboard** 아이콘이 보이고, 클릭하면 **Characters / Backgrounds / Scenes** 뷰가 열린다.
+
+**막혔을 때**
+
+- 이미 `.storyboard/project.json`이 있으면 초기화는 다시 수행되지 않을 수 있다. 새 빈 폴더를 연다.
+- 명령이 안 보이면: 확장이 해당 창에서 활성화됐는지(F5 창인지) 확인한다.
+
+### 4. 캐릭터·배경 카드 추가
+
+**Extension Development Host** 창에서:
+
+1. Activity Bar → **Storyboard** → **Characters** (또는 **Backgrounds**) 뷰를 연다.
+2. 뷰 **제목 줄 오른쪽**의 **+** (또는 해당 뷰의 “추가” UI)로 카드를 만든다.
+
+**성공 기준**
+
+- `character/<이름>.card` 또는 `background/<이름>.card` 파일이 생긴다.
+- 파일을 열면 **Storyboard Card** 커스텀 에디터가 뜬다.
+
+### 5. 씬 작성 또는 새 씬 만들기
+
+**방법 1 — 샘플 씬 편집**
+
+- `scene/01-prologue.txt` 등을 연 뒤 본문을 조금 수정해 저장한다.
+
+**방법 2 — 새 씬**
+
+- 명령 팔레트: **`Storyboard: New Scene`** (또는 Scenes 뷰 제목의 **New Scene**)
+- 안내에 따라 파일명이 생성되는지 확인한다.
+
+**성공 기준**: `scene/*.txt`가 저장되고, 내용이 유지된다.
+
+### 6. 드래프트 생성 (씬 파일 CodeLens)
+
+1. `scene/` 아래의 `.txt` 씬 파일을 연다.
+2. 파일 **맨 위 줄 근처**에 CodeLens가 보이는지 확인한다.
+   - 드래프트가 없으면: **`▶ Generate Draft`**
+   - 이미 있으면: **`🔄 Regenerate Draft`**
+   - 드래프트가 있을 때만: **`🎭 Apply Format`**
+3. **`▶ Generate Draft`** 또는 **`🔄 Regenerate Draft`** 를 클릭한다.
+
+**성공 기준**
+
+- `draft/` 아래에 대응하는 `.md` 파일이 생기거나 갱신된다.
+- 진행 알림/로그에 치명적 오류만 없으면 된다(첫 실행은 시간이 걸릴 수 있음).
+
+**명령 팔레트로 동일 동작**
+
+- 씬 파일을 활성 에디터로 둔 상태에서: **`Storyboard: Generate Draft (Current Scene)`** 등
+
+### 7. 드래프트 파일 CodeLens
+
+1. 생성된 `draft/*.md`를 연다.
+2. 상단 CodeLens 확인:
+   - **`🔁 Re-generate Draft`** — 동작해야 함
+   - **`🩹 Grammar Check`**, **`🌿 Expand`** — 클릭 시 **“Phase 6에서 제공될 예정”** 안내가 뜨면 정상(플레이스홀더)
+
+### 8. Scenes 사이드바
+
+1. **Storyboard → Scenes** 뷰를 연다.
+2. 씬 목록과 상태 표시(준비 / 구버전 / 미생성 등)가 기대와 맞는지 본다.
+3. 행에 붙은 **Generate**, **Open Draft** 등 웹뷰 버튼이 동작하는지 확인한다.
+
+> Activity Bar의 `WebviewView` 사이드바에는 탐색기처럼 **행마다 VS Code 기본 컨텍스트 메뉴**가 붙지 않는다. 씬별 액션은 **뷰 내부 버튼**과 **view/title**의 명령을 사용한다.
+
+### 9. 관계 그래프
+
+명령 팔레트: **`Storyboard: Open Character Relation Graph`**
+
+**성공 기준**
+
+- 패널이 열리고 캐릭터 노드·링크가 보인다.
+- 노드를 **드래그**할 수 있다.
+
+### 10. 캐시 동작 (선택)
+
+동일 씬·동일 설정으로 **Generate**를 다시 실행했을 때, 캐시 hit 메시지 또는 기대한 재사용 동작이 있는지 확인한다. (프로젝트 옵션·입력이 동일해야 함)
+
+### 11. API 키·기본 provider (`storyboard.defaultProvider`)
+
+Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`로 고릅니다.  
+가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`package.json`의 `contributes.configuration`과 동일).
+
+#### A. 키 없이 스모크 (`mock`)
+
+1. 아래 **「기본 provider 바꾸기」** 절차를 따라 `storyboard.defaultProvider`를 **`mock`** 으로 둔다.
+2. **6. 드래프트 생성**까지 키 없이 진행할 수 있어야 한다.
+
+#### B. 실제 provider (원격 API: OpenAI / Claude / Google)
+
+순서는 **키 등록 → 기본 provider 변경 → 6번 재실행**을 권장한다 (반대로 해도 되지만, provider와 키가 짝이 맞아야 한다).
+
+1. **API 키 저장**  
+   명령 팔레트 → **`Storyboard: Set API Key...`** → 사용할 provider 선택 → 키 입력 → 확인.  
+   - 키는 **VS Code SecretStorage**에만 들어가며, 일반 `settings.json`에는 저장되지 않는다.  
+   - `mock`은 키가 없으므로 이 명령 목록에 나오지 않을 수 있다.
+
+2. **기본 provider를 그 provider로 맞추기** (`storyboard.defaultProvider`)  
+   아래 둘 중 편한 방법 하나만 하면 된다.
+
+   **방법 1 — 설정 UI (추천)**
+
+   1. 명령 팔레트 → **`Preferences: Open Settings (UI)`** (macOS 한글 메뉴: **기본 설정: 설정(UI) 열기**)
+   2. 검색창에 **`storyboard default`** 또는 **`defaultProvider`** 입력
+   3. **Storyboard › Default Provider** 항목에서 방금 키를 넣은 provider와 **같은 값** 선택 (예: OpenAI 키를 넣었다면 `openai`)
+
+   **방법 2 — `settings.json`**
+
+   1. 명령 팔레트 → **`Preferences: Open User Settings (JSON)`**  
+      (이 Storyboard 폴더에만 적용하려면 **`Preferences: Open Workspace Settings (JSON)`**)
+   2. JSON에 한 줄 추가(예: OpenAI):
+
+   ```json
+   "storyboard.defaultProvider": "openai"
+   ```
+
+   저장 후 별도 재시작은 보통 필요 없다. 그다음 **6. 드래프트 생성**을 다시 실행한다.
+
+3. **막혔을 때**
+   - 설정에 Storyboard 항목이 안 보이면: 확장이 해당 창에 설치·활성화됐는지(F5 호스트 또는 VSIX 설치 창) 확인한다.
+   - `defaultProvider`는 `claude`인데 키는 `openai`에만 넣은 경우: **해당 provider에 맞는 키**를 다시 `Storyboard: Set API Key...`로 넣거나, `defaultProvider`를 키가 있는 쪽으로 맞춘다.
+
+#### C. Ollama (로컬, API 키 대신 URL·모델 설정)
+
+`ollama`는 보통 **API 키가 아니라** 설정으로 서버 주소와 모델을 쓴다.
+
+- `storyboard.providers.ollama.baseUrl` (기본값 예: `http://localhost:11434`)
+- `storyboard.providers.ollama.model`
+
+위를 맞춘 뒤 `storyboard.defaultProvider`를 **`ollama`** 로 바꾸고 6번을 실행한다. Ollama 데몬이 떠 있는지도 확인한다.
+
+#### D. 작업별로만 다른 provider 쓰기 (선택)
+
+`storyboard.tasks`에 작업별 `provider` override를 줄 수 있다.  
+기본은 `storyboard.defaultProvider`를 따른다. QA에서는 우선 **기본값만** 맞춰도 된다.
+
+**성공 기준**
+
+- 키가 없을 때: 실 provider로 생성 시 **이해 가능한 오류/안내**, Output·로그에 **키·토큰 원문 노출 없음**
+- 키 등록 후: 생성이 완료되거나, 네트워크 오류 시 사용자에게 전달됨
+
+---
+
+## B안: VSIX로 검증 (배포 없이 “설치 경험”만)
+
+저장소 루트에서:
+
+```bash
+npm run build
+npx @vscode/vsce package
+```
+
+- **성공 기준**: `storyboard-0.0.1.vsix`(또는 유사 이름)가 생성된다.
+- **용량**: `.vsix`가 **50MB 미만**인지 확인한다 (`du -h *.vsix` 등).
+
+일반 VS Code 창에서:
+
+1. **Extensions** 뷰 → **`...` 메뉴 → Install from VSIX…**
+2. 위에서 만든 `.vsix` 선택
+3. **새 빈 폴더**를 연 뒤, 위 **3번부터** 동일하게 진행한다.
+
+---
+
+## 회복·에러 시나리오 (짧게)
+
+- **API 키 없음 / 잘못된 키**: 실패 메시지가 뜨고, 다른 기능 전체가 죽지 않는지
+- **깨진 YAML** (`.card` 또는 씬): 해당 파일/기능에서만 오류가 나는지
+- **없는 이미지 경로**: 카드 UI가 완전히 깨지지 않는지
+- **네트워크 끊김**: 타임아웃·재시도 안내가 사용자에게 보이는지
+
+---
+
+## 자동 검증 (개발자가 커밋 전에)
+
+저장소 스크립트만 사용한다.
+
+```bash
+npm run build
+npm run lint
+npm test
+```
+
+---
+
+## 기록 (권장)
+
+검증할 때마다 아래를 PR 또는 이슈에 남긴다.
+
+- 날짜
+- Git 커밋 SHA
+- OS / VS Code 버전
+- `mock`만 했는지, 실 provider까지 했는지
+- 실패한 단계와 재현 방법
+
+---
+
+## 패키징 게이트 (0.0.1)
+
+- [ ] `npm run build` 성공
+- [ ] `npm run lint` 성공
+- [ ] `npm test` 성공
+- [ ] `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
+- [ ] 위 **End-to-end** 플로우를 최소 1회 통과
+- [ ] **1주 dogfooding** (매일 짧게라도 실제 작업 흐름에 넣고 이슈 적기)
+
+Marketplace **`vsce publish`** / **`--pre-release`** 는 **이번 0.0.1 게이트 범위에 포함하지 않는다.**

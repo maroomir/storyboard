@@ -60,7 +60,7 @@ VSCode Marketplace publisher 등록은 사용자 외부 작업이다. PR 1에는
 
 ## PR 1 완료 기준
 
-- MIT `LICENSE`가 존재한다.
+- Apache-2.0 `LICENSE`가 존재한다.
 - Node/VSCode extension 개발에 필요한 `.gitignore`가 존재한다.
 - `CHANGELOG.md`에 `Unreleased` 섹션이 있다.
 - `README.md`가 프로젝트 소개, 문서 링크, 초기 로드맵, 개발 안내를 포함한다.

@@ -287,7 +287,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - Node.js 18+ (extension host)
 - Publisher: `maroomir`
 - Repository: `maroomir/storyboard` (신규)
-- License: MIT
+- License: Apache-2.0
 
 ## 9. 참고
 

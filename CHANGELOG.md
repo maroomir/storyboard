@@ -10,6 +10,12 @@ after the first public release.
 
 ### Added
 
+- Scene-to-draft generation pipeline with cache metadata and optional trait updates on new drafts (Phase 4).
+- Scenes sidebar webview with tree, status badges, and in-view actions (Phase 5).
+- Character relation graph panel (d3-force) and `Storyboard: Open Character Relation Graph` command (Phase 5).
+- CodeLens on `scene/*.txt` for generate/regenerate draft and apply format when a draft exists (Phase 5).
+- CodeLens on `draft/*.md` for re-generate, grammar check, and expand (grammar/expand show Phase 6 placeholder notices) (Phase 5).
+- Manual MVP QA guide at `doc/testing/extension-qa.md` for 0.0.1 dogfooding (Phase 5).
 - Established the repository baseline for the Storyboard VSCode extension.
 - Added the initial TypeScript and esbuild extension-host scaffold.
 - Added the `storyboard.helloWorld` sanity-check command.
@@ -32,7 +38,14 @@ after the first public release.
 - Added deterministic AI utility modules for response parsing, JSON repair, and trait processing.
 - Added a minimal Storyboard AI service facade and core prompt modules for Phase 3 orchestration.
 
+### Documentation
+
+- README aligned with Phase 5 scope and 0.0.1 dogfooding (no Marketplace publish yet).
+- `doc/plan.md` MVP gate reframed for local `vsce package`, QA, and dogfooding.
+
 ### Changed
+
+- Project license from MIT to Apache License 2.0 (`LICENSE`, `package.json`).
 
 - Slimmed Phase 0 to focus on repository readiness instead of Picktion compatibility fixtures.
 - Updated packaging scripts so `npm run build` bundles both the extension host and webview UI.

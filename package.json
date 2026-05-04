@@ -4,7 +4,7 @@
   "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
   "version": "0.0.1",
   "publisher": "maroomir",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/maroomir/storyboard.git"
