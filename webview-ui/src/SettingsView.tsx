@@ -51,11 +51,16 @@ interface ProviderRuntimeConfig {
   readonly baseUrl?: string
 }
 
+interface TaskAiAssignment {
+  readonly providerId: AiProviderId | null
+  readonly model: string | null
+}
+
 interface SettingsReadSnapshot {
   readonly defaultProvider: AiProviderId
   readonly providers: readonly AiProviderStatus[]
   readonly providerConfigs: Readonly<Record<AiProviderId, ProviderRuntimeConfig>>
-  readonly taskAssignments: Readonly<Record<AiTaskName, AiProviderId | null>>
+  readonly taskAssignments: Readonly<Record<AiTaskName, TaskAiAssignment>>
   readonly modelCatalog: Readonly<Record<AiProviderId, readonly ProviderModelOption[]>>
 }
 
@@ -132,10 +137,30 @@ function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot | undef
 
   for (const task of AI_TASK_NAMES) {
     const assignment = (candidate.taskAssignments as Record<string, unknown>)[task]
-    if (assignment !== null && assignment !== undefined && typeof assignment !== "string") {
+    if (!assignment || typeof assignment !== "object") {
       return undefined
     }
-    if (typeof assignment === "string" && !isAiProviderId(assignment)) {
+
+    const row = assignment as Record<string, unknown>
+    if (!("providerId" in row) || !("model" in row)) {
+      return undefined
+    }
+
+    const providerId = row.providerId
+    const model = row.model
+    const usesDefaultProvider = providerId === null || providerId === undefined
+
+    if (!usesDefaultProvider) {
+      if (typeof providerId !== "string" || !isAiProviderId(providerId)) {
+        return undefined
+      }
+    }
+
+    if (model !== null && model !== undefined && typeof model !== "string") {
+      return undefined
+    }
+
+    if (usesDefaultProvider && model !== null && model !== undefined) {
       return undefined
     }
   }
@@ -199,6 +224,44 @@ function getProviderStatus(snapshot: SettingsReadSnapshot, providerId: AiProvide
   return snapshot.providers.find((entry) => entry.providerId === providerId)
 }
 
+function pickModelForTaskProvider(
+  snapshot: SettingsReadSnapshot,
+  providerId: AiProviderId,
+  preferredModelId: string | null
+): string {
+  const catalog = snapshot.modelCatalog[providerId]
+  if (preferredModelId !== null && catalog.some((entry) => entry.id === preferredModelId)) {
+    return preferredModelId
+  }
+
+  const globalModel = snapshot.providerConfigs[providerId].model
+  if (catalog.some((entry) => entry.id === globalModel)) {
+    return globalModel
+  }
+
+  return catalog[0]?.id ?? globalModel
+}
+
+function formatResolvedTaskAi(snapshot: SettingsReadSnapshot, taskName: AiTaskName): string {
+  const assign = snapshot.taskAssignments[taskName]
+  let providerId: AiProviderId
+  let modelId: string
+
+  if (!assign || assign.providerId === null) {
+    providerId = snapshot.defaultProvider
+    modelId = snapshot.providerConfigs[providerId].model
+  } else {
+    providerId = assign.providerId
+    modelId = assign.model ?? snapshot.providerConfigs[providerId].model
+  }
+
+  const providerName = getProviderStatus(snapshot, providerId)?.displayName ?? providerId
+  const modelLabel =
+    snapshot.modelCatalog[providerId].find((entry) => entry.id === modelId)?.displayName ?? modelId
+
+  return `${providerName} / ${modelLabel}`
+}
+
 function StatusPill({
   tone,
   children
@@ -230,46 +293,86 @@ function DefaultProviderSection({
   readonly onRpcError: (message: string) => void
 }): React.ReactElement {
   const [pending, setPending] = useState(false)
-  const selectedProvider = getProviderStatus(snapshot, snapshot.defaultProvider)
+  const defaultProviderId = snapshot.defaultProvider
+  const selectedProvider = getProviderStatus(snapshot, defaultProviderId)
+  const defaultModelCatalog = snapshot.modelCatalog[defaultProviderId]
+  const defaultModelSelectValue = pickModelForTaskProvider(
+    snapshot,
+    defaultProviderId,
+    snapshot.providerConfigs[defaultProviderId].model
+  )
 
   return (
-    <section className={sectionCardClass} aria-label="기본 AI 제공자">
+    <section className={sectionCardClass} aria-label="기본 AI 제공자와 모델">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">기본 제공자</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">태스크별 설정이 없을 때 사용할 기본 AI 제공자입니다.</p>
+          <h2 className="m-0 text-base font-semibold text-sb-fg">기본 제공자와 모델</h2>
+          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
+            태스크가 «기본값 사용»일 때 쓰는 제공자와, 그 제공자의 기본 모델입니다. 모델은 아래 태스크에서 다른 값으로 덮어쓸 수 있습니다.
+          </p>
         </div>
-        <StatusPill tone="success">{selectedProvider?.displayName ?? snapshot.defaultProvider}</StatusPill>
+        <StatusPill tone="success">{selectedProvider?.displayName ?? defaultProviderId}</StatusPill>
       </div>
-      <label className="flex max-w-md flex-col gap-1.5">
-        <span className="text-sm font-medium text-sb-fg">Default provider</span>
-        <select
-          className={sbSelectClass}
-          value={snapshot.defaultProvider}
-          disabled={pending}
-          onChange={(event) => {
-            const providerId = event.target.value
-            if (!isAiProviderId(providerId)) {
-              return
-            }
+      <div className="grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-sb-fg">기본 제공자</span>
+          <select
+            className={sbSelectClass}
+            value={defaultProviderId}
+            disabled={pending}
+            onChange={(event) => {
+              const providerId = event.target.value
+              if (!isAiProviderId(providerId)) {
+                return
+              }
 
-            setPending(true)
-            void callRpc("settings.updateDefaultProvider", { providerId })
-              .catch((error: unknown) => {
-                onRpcError(error instanceof Error ? error.message : "기본 제공자를 바꾸지 못했습니다.")
-              })
-              .finally(() => {
-                setPending(false)
-              })
-          }}
-        >
-          {AI_PROVIDER_IDS.map((id) => (
-            <option key={id} value={id}>
-              {getProviderStatus(snapshot, id)?.displayName ?? id}
-            </option>
-          ))}
-        </select>
-      </label>
+              setPending(true)
+              void callRpc("settings.updateDefaultProvider", { providerId })
+                .catch((error: unknown) => {
+                  onRpcError(error instanceof Error ? error.message : "기본 제공자를 바꾸지 못했습니다.")
+                })
+                .finally(() => {
+                  setPending(false)
+                })
+            }}
+          >
+            {AI_PROVIDER_IDS.map((id) => (
+              <option key={id} value={id}>
+                {getProviderStatus(snapshot, id)?.displayName ?? id}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-sb-fg">기본 모델</span>
+          <select
+            className={sbSelectClass}
+            value={defaultModelSelectValue}
+            disabled={pending}
+            onChange={(event) => {
+              const model = event.target.value
+              if (model.length === 0) {
+                return
+              }
+
+              setPending(true)
+              void callRpc("settings.updateProviderModel", { providerId: defaultProviderId, model })
+                .catch((error: unknown) => {
+                  onRpcError(error instanceof Error ? error.message : "기본 모델을 바꾸지 못했습니다.")
+                })
+                .finally(() => {
+                  setPending(false)
+                })
+            }}
+          >
+            {defaultModelCatalog.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </section>
   )
 }
@@ -306,7 +409,6 @@ function ProviderConfigCard({
   const status = getProviderStatus(snapshot, providerId)
   const displayName = status?.displayName ?? providerId
   const config = snapshot.providerConfigs[providerId]
-  const models = snapshot.modelCatalog[providerId]
   const showApiKey = providerId !== "mock" && providerId !== "ollama"
   const isOllama = providerId === "ollama"
   const testState = connectionTest[providerId] ?? "idle"
@@ -390,7 +492,11 @@ function ProviderConfigCard({
           <span className="text-sm text-sb-fg-muted transition group-open:rotate-90">&gt;</span>
           <div className="min-w-0">
             <h3 className="m-0 truncate text-sm font-semibold text-sb-fg">{displayName}</h3>
-            <p className="m-0 mt-0.5 truncate text-xs text-sb-fg-muted">{config.model}</p>
+            <p className="m-0 mt-0.5 truncate text-xs text-sb-fg-muted">
+              전역 모델:{" "}
+              {snapshot.modelCatalog[providerId].find((entry) => entry.id === config.model)?.displayName ??
+                config.model}
+            </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
@@ -404,26 +510,6 @@ function ProviderConfigCard({
       </summary>
 
       <div className="flex flex-col gap-4 border-t border-sb-border p-4">
-        <label className="flex max-w-md flex-col gap-1.5">
-          <span className="text-sm font-medium text-sb-fg">모델</span>
-          <select
-            className={sbSelectClass}
-            value={config.model}
-            onChange={(event) => {
-              const model = event.target.value
-              void callRpc("settings.updateProviderModel", { providerId, model }).catch((error: unknown) => {
-                onRpcError(error instanceof Error ? error.message : "모델을 바꾸지 못했습니다.")
-              })
-            }}
-          >
-            {models.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
-
         {isOllama ? (
           <div className={fieldGroupClass}>
             <label className="flex flex-col gap-1.5">
@@ -512,47 +598,110 @@ function TaskAssignmentsSection({
   readonly onRpcError: (message: string) => void
 }): React.ReactElement {
   return (
-    <section className={sectionCardClass} aria-label="태스크별 제공자">
+    <section className={sectionCardClass} aria-label="태스크별 제공자와 모델">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">태스크별 제공자</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">각 작업에 사용할 제공자를 지정합니다. «기본값»이면 위의 기본 제공자를 따릅니다.</p>
+          <h2 className="m-0 text-base font-semibold text-sb-fg">태스크별 제공자와 모델</h2>
+          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
+            각 작업에 사용할 제공자와 모델을 지정합니다. «기본값 사용»이면 위에서 고른 기본 제공자와 기본 모델을 따릅니다.
+          </p>
         </div>
         <StatusPill tone="neutral">{AI_TASK_NAMES.length}개 태스크</StatusPill>
       </div>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {AI_TASK_NAMES.map((taskName) => {
           const assigned = snapshot.taskAssignments[taskName]
-          const selectValue = assigned === null || assigned === undefined ? "use-default" : assigned
+          const useDefault = assigned === undefined || assigned.providerId === null
+          const providerSelectValue = useDefault ? "use-default" : assigned.providerId
+          const activeProviderId: AiProviderId = useDefault ? snapshot.defaultProvider : assigned.providerId!
+          const modelOptions = snapshot.modelCatalog[activeProviderId]
+          const storedModelWhenOverridden =
+            !useDefault && assigned.model !== null && assigned.model !== undefined ? assigned.model : null
+          const modelSelectValue = useDefault
+            ? ""
+            : pickModelForTaskProvider(snapshot, assigned.providerId, storedModelWhenOverridden)
 
           return (
-            <li
-              key={taskName}
-              className="grid grid-cols-1 gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-center"
-            >
-              <span className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</span>
-              <select
-                className={sbSelectClass}
-                value={selectValue}
-                onChange={(event) => {
-                  const value = event.target.value
-                  const providerId = value === "use-default" ? null : value
-                  if (providerId !== null && !isAiProviderId(providerId)) {
-                    return
-                  }
+            <li key={taskName} className="flex flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3">
+              <div className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-center">
+                <label className="flex flex-col gap-1 text-xs text-sb-fg-muted">
+                  <span>Provider</span>
+                  <select
+                    className={sbSelectClass}
+                    value={providerSelectValue}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      const providerId = value === "use-default" ? null : value
+                      if (providerId !== null && !isAiProviderId(providerId)) {
+                        return
+                      }
 
-                  void callRpc("settings.updateTaskProvider", { taskName, providerId }).catch((error: unknown) => {
-                    onRpcError(error instanceof Error ? error.message : "태스크 제공자를 바꾸지 못했습니다.")
-                  })
-                }}
-              >
-                <option value="use-default">기본값 사용</option>
-                {AI_PROVIDER_IDS.map((id) => (
-                  <option key={`${taskName}-${id}`} value={id}>
-                    {getProviderStatus(snapshot, id)?.displayName ?? id}
-                  </option>
-                ))}
-              </select>
+                      if (providerId === null) {
+                        void callRpc("settings.updateTaskAiConfig", { taskName, providerId: null, model: null }).catch(
+                          (error: unknown) => {
+                            onRpcError(error instanceof Error ? error.message : "태스크 설정을 바꾸지 못했습니다.")
+                          }
+                        )
+                        return
+                      }
+
+                      const previousModel =
+                        !useDefault && assigned.model !== null && assigned.model !== undefined ? assigned.model : null
+                      const model = pickModelForTaskProvider(snapshot, providerId, previousModel)
+
+                      void callRpc("settings.updateTaskAiConfig", { taskName, providerId, model }).catch(
+                        (error: unknown) => {
+                          onRpcError(error instanceof Error ? error.message : "태스크 설정을 바꾸지 못했습니다.")
+                        }
+                      )
+                    }}
+                  >
+                    <option value="use-default">기본값 사용</option>
+                    {AI_PROVIDER_IDS.map((id) => (
+                      <option key={`${taskName}-${id}`} value={id}>
+                        {getProviderStatus(snapshot, id)?.displayName ?? id}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-sb-fg-muted">
+                  <span>Model</span>
+                  <select
+                    className={sbSelectClass}
+                    disabled={useDefault}
+                    value={useDefault ? "" : modelSelectValue}
+                    onChange={(event) => {
+                      const model = event.target.value
+                      const rowProvider = assigned.providerId
+                      if (rowProvider === null || rowProvider === undefined || model.length === 0) {
+                        return
+                      }
+
+                      void callRpc("settings.updateTaskAiConfig", {
+                        taskName,
+                        providerId: rowProvider,
+                        model
+                      }).catch((error: unknown) => {
+                        onRpcError(error instanceof Error ? error.message : "태스크 모델을 바꾸지 못했습니다.")
+                      })
+                    }}
+                  >
+                    {useDefault ? (
+                      <option value="">기본 provider/model 사용</option>
+                    ) : (
+                      modelOptions.map((opt) => (
+                        <option key={`${taskName}-model-${opt.id}`} value={opt.id}>
+                          {opt.displayName}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </label>
+              </div>
+              <p className="m-0 text-xs text-sb-fg-muted">
+                실제 사용: <span className="text-sb-fg">{formatResolvedTaskAi(snapshot, taskName)}</span>
+              </p>
             </li>
           )
         })}
@@ -666,7 +815,9 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
         <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="m-0 text-2xl font-semibold text-sb-fg">설정</h1>
-            <p className="m-0 mt-1 text-sm text-sb-fg-muted">AI 제공자, 모델, API 키, 태스크 매핑을 관리합니다.</p>
+            <p className="m-0 mt-1 text-sm text-sb-fg-muted">
+              기본 제공자·모델, 제공자 연결(API 키·Ollama URL), 태스크별 덮어쓰기를 관리합니다.
+            </p>
           </div>
           <StatusPill tone="neutral">Workspace settings</StatusPill>
         </div>
@@ -685,8 +836,10 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
 
       <div className="flex flex-col gap-3">
         <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">제공자 구성</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">카드를 펼쳐 모델, API 키, 연결 상태를 조정합니다.</p>
+          <h2 className="m-0 text-base font-semibold text-sb-fg">제공자 연결</h2>
+          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
+            API 키(또는 Ollama Base URL)와 연결 테스트만 다룹니다. 모델은 위 «기본 제공자와 모델» 또는 태스크별 설정에서 고릅니다.
+          </p>
         </div>
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {AI_PROVIDER_IDS.map((providerId) => (

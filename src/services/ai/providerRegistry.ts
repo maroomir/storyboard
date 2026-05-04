@@ -37,7 +37,8 @@ export class AiProviderRegistry {
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
-    return this.generateWithProvider(this.getTaskProvider(request.taskName), request)
+    const { providerId, model } = this.options.configBridge.getTaskAiConfig(request.taskName)
+    return this.generateWithProvider(providerId, request, model)
   }
 
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
@@ -46,36 +47,40 @@ export class AiProviderRegistry {
 
   public async generateWithProvider(
     providerId: AiProviderId,
-    request: AiGenerateRequest
+    request: AiGenerateRequest,
+    modelOverride?: string
   ): Promise<AiGenerateResponse> {
-    return (await this.createProvider(providerId)).generate(request)
+    return (await this.createProvider(providerId, modelOverride)).generate(request)
   }
 
-  private async createProvider(providerId: AiProviderId): Promise<AiProvider> {
+  private async createProvider(providerId: AiProviderId, modelOverride?: string): Promise<AiProvider> {
     if (providerId === "mock") {
       return new MockAiProvider()
     }
 
     if (providerId === "openai") {
+      const config = this.options.configBridge.getProviderConfig(providerId)
       return new OpenAiProvider({
         apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: this.options.configBridge.getProviderConfig(providerId).model,
+        model: modelOverride ?? config.model,
         createClient: this.options.createOpenAiClient
       })
     }
 
     if (providerId === "claude") {
+      const config = this.options.configBridge.getProviderConfig(providerId)
       return new ClaudeProvider({
         apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: this.options.configBridge.getProviderConfig(providerId).model,
+        model: modelOverride ?? config.model,
         createClient: this.options.createClaudeClient
       })
     }
 
     if (providerId === "google") {
+      const config = this.options.configBridge.getProviderConfig(providerId)
       return new GoogleProvider({
         apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: this.options.configBridge.getProviderConfig(providerId).model,
+        model: modelOverride ?? config.model,
         createClient: this.options.createGoogleClient
       })
     }
@@ -84,7 +89,7 @@ export class AiProviderRegistry {
       const config = this.options.configBridge.getProviderConfig(providerId)
       return new OllamaProvider({
         baseUrl: config.baseUrl,
-        model: config.model,
+        model: modelOverride ?? config.model,
         createClient: this.options.createOllamaClient
       })
     }

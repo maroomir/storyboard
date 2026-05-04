@@ -130,7 +130,7 @@
         "storyboard.tasks": {
           "type": "object",
           "default": {},
-          "description": "Per-task AI provider overrides. Example: { \"sceneDraft\": { \"provider\": \"claude\" } }",
+          "description": "Per-task AI provider and optional model overrides. Example: { \"sceneDraft\": { \"provider\": \"claude\", \"model\": \"claude-sonnet-4-6\" } }. Model IDs must match the Storyboard catalog for that provider.",
           "additionalProperties": {
             "type": "object",
             "properties": {
@@ -143,6 +143,10 @@
                   "ollama",
                   "mock"
                 ]
+              },
+              "model": {
+                "type": "string",
+                "description": "Catalog model id for this task. When omitted, the provider’s global model setting is used."
               }
             },
             "additionalProperties": false

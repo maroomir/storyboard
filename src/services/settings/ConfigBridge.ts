@@ -1,4 +1,5 @@
 import { aiProviderIds, aiTaskNames, type AiProviderId, type AiTaskName } from "../ai/types"
+import { storyboardModelCatalog } from "../../shared/models"
 
 const storyboardWorkspaceConfigurationTarget = 2
 
@@ -7,8 +8,19 @@ export interface ProviderModelConfig {
   readonly baseUrl?: string
 }
 
-export interface TaskProviderConfig {
-  readonly provider?: AiProviderId
+export interface TaskAiStoredEntry {
+  readonly provider: AiProviderId
+  readonly model?: string
+}
+
+export interface TaskAiConfigOverride {
+  readonly providerId: AiProviderId
+  readonly model: string | null
+}
+
+export interface TaskAiConfigResolved {
+  readonly providerId: AiProviderId
+  readonly model: string
 }
 
 export interface StoryboardConfigurationLike {
@@ -54,18 +66,40 @@ export class ConfigBridge {
   }
 
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
-    const override = this.getTaskProviderOverride(taskName)
-
-    if (override !== null) {
-      return override
-    }
-
-    return this.getDefaultProvider()
+    return this.getTaskAiConfig(taskName).providerId
   }
 
   public getTaskProviderOverride(taskName: AiTaskName): AiProviderId | null {
-    const merged = this.readTasksOverrides(this.dependencies.getConfiguration())
-    return merged[taskName]?.provider ?? null
+    const entry = this.getTaskAiConfigOverride(taskName)
+    return entry?.providerId ?? null
+  }
+
+  public getTaskAiConfigOverride(taskName: AiTaskName): TaskAiConfigOverride | null {
+    const stored = this.readTaskStoredEntry(this.dependencies.getConfiguration(), taskName)
+    if (!stored) {
+      return null
+    }
+
+    return { providerId: stored.provider, model: stored.model ?? null }
+  }
+
+  public getTaskAiConfig(taskName: AiTaskName): TaskAiConfigResolved {
+    const stored = this.readTaskStoredEntry(this.dependencies.getConfiguration(), taskName)
+    const defaultProvider = this.getDefaultProvider()
+    const providerId = stored?.provider ?? defaultProvider
+    const runtime = this.getProviderConfig(providerId)
+    const catalog = storyboardModelCatalog[providerId]
+    const fallbackModelId = catalog[0].id
+
+    const taskModel =
+      stored?.model !== undefined && isModelInCatalogForProvider(providerId, stored.model)
+        ? stored.model
+        : undefined
+
+    const model =
+      taskModel ?? resolveEffectiveModelForTask(runtime.model, fallbackModelId, providerId)
+
+    return { providerId, model }
   }
 
   public async setDefaultProvider(providerId: AiProviderId): Promise<void> {
@@ -80,25 +114,36 @@ export class ConfigBridge {
     await this.configurationUpdate("providers.ollama.baseUrl", baseUrl)
   }
 
-  public async setTaskProvider(taskName: AiTaskName, providerId: AiProviderId | null): Promise<void> {
-    if (providerId === null) {
-      await this.clearTaskProvider(taskName)
+  public async setTaskAiConfig(
+    taskName: AiTaskName,
+    config: { readonly providerId: AiProviderId | null; readonly model: string | null }
+  ): Promise<void> {
+    const configuration = this.dependencies.getConfiguration()
+    this.assertConfigurationUpdate(configuration)
+
+    if (config.providerId === null) {
+      await this.clearTaskAiConfig(taskName)
       return
     }
 
-    const configuration = this.dependencies.getConfiguration()
-    this.assertConfigurationUpdate(configuration)
+    if (config.model === null) {
+      throw new Error("setTaskAiConfig: model is required when providerId is set.")
+    }
 
-    const merged = this.readTasksOverrides(configuration)
-    merged[taskName] = { provider: providerId }
+    if (!isModelInCatalogForProvider(config.providerId, config.model)) {
+      throw new Error(`setTaskAiConfig: model is not allowed for provider ${config.providerId}.`)
+    }
+
+    const merged = this.readTasksPersistMap(configuration)
+    merged[taskName] = { provider: config.providerId, model: config.model }
     await configuration.update("tasks", merged, storyboardWorkspaceConfigurationTarget)
   }
 
-  public async clearTaskProvider(taskName: AiTaskName): Promise<void> {
+  public async clearTaskAiConfig(taskName: AiTaskName): Promise<void> {
     const configuration = this.dependencies.getConfiguration()
     this.assertConfigurationUpdate(configuration)
 
-    const merged = this.readTasksOverrides(configuration)
+    const merged = this.readTasksPersistMap(configuration)
     delete merged[taskName]
     await configuration.update("tasks", merged, storyboardWorkspaceConfigurationTarget)
   }
@@ -129,20 +174,47 @@ export class ConfigBridge {
     return isConfiguredProvider(configuredProvider) ? configuredProvider : fallback
   }
 
-  private readTasksOverrides(
+  private readTaskStoredEntry(
+    configuration: StoryboardConfigurationLike,
+    taskName: AiTaskName
+  ): TaskAiStoredEntry | undefined {
+    const fromTasksObject = configuration.get("tasks", {}) as Record<
+      string,
+      { provider?: string; model?: string } | undefined
+    >
+
+    const nested = fromTasksObject[taskName]
+    const fromDotProvider = configuration.get(`tasks.${taskName}.provider`, undefined as string | undefined)
+    const fromDotModel = configuration.get(`tasks.${taskName}.model`, undefined as string | undefined)
+    const rawProvider = nested?.provider ?? fromDotProvider
+    const rawModel = nested?.model ?? fromDotModel
+
+    if (!rawProvider || !isConfiguredProvider(rawProvider)) {
+      return undefined
+    }
+
+    const trimmedModel = typeof rawModel === "string" ? rawModel.trim() : ""
+
+    if (trimmedModel.length > 0 && isModelInCatalogForProvider(rawProvider, trimmedModel)) {
+      return { provider: rawProvider, model: trimmedModel }
+    }
+
+    return { provider: rawProvider }
+  }
+
+  private readTasksPersistMap(
     configuration: StoryboardConfigurationLike
-  ): Record<string, { readonly provider: AiProviderId }> {
-    const merged: Record<string, { readonly provider: AiProviderId }> = {}
-    const fromTasksObject = configuration.get("tasks", {}) as Record<string, { provider?: string } | undefined>
+  ): Record<string, { readonly provider: AiProviderId; readonly model?: string }> {
+    const merged: Record<string, { readonly provider: AiProviderId; readonly model?: string }> = {}
 
     for (const taskName of aiTaskNames) {
-      const fromNested = fromTasksObject[taskName]?.provider
-      const fromDot = configuration.get(`tasks.${taskName}.provider`, undefined as string | undefined)
-      const raw = fromNested ?? fromDot
-
-      if (raw && isConfiguredProvider(raw)) {
-        merged[taskName] = { provider: raw }
+      const stored = this.readTaskStoredEntry(configuration, taskName)
+      if (!stored) {
+        continue
       }
+
+      merged[taskName] =
+        stored.model !== undefined ? { provider: stored.provider, model: stored.model } : { provider: stored.provider }
     }
 
     return merged
@@ -161,6 +233,24 @@ export class ConfigBridge {
     this.assertConfigurationUpdate(configuration)
     await configuration.update(section, value, storyboardWorkspaceConfigurationTarget)
   }
+}
+
+function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string): boolean {
+  return storyboardModelCatalog[providerId].some((entry) => entry.id === modelId)
+}
+
+function resolveEffectiveModelForTask(
+  configuredGlobal: string | undefined,
+  fallbackModelId: string,
+  providerId: AiProviderId
+): string {
+  const trimmed = configuredGlobal?.trim()
+
+  if (trimmed !== undefined && trimmed.length > 0 && isModelInCatalogForProvider(providerId, trimmed)) {
+    return trimmed
+  }
+
+  return fallbackModelId
 }
 
 function isConfiguredProvider(value: string): value is AiProviderId {

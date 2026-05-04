@@ -12,6 +12,7 @@
 - 명령: `storyboard.settings.open` — Characters / Backgrounds / Scenes 사이드바 타이틀 메뉴에서도 동일 명령으로 진입 가능.
 - Webview 엔트리: `window.__STORYBOARD_VIEW__ === "settings"`일 때 `SettingsView` React 컴포넌트를 마운트한다.
 - 호스트는 `createWebviewBridge`에 AI RPC 핸들러와 `createSettingsRpcHandlers` 결과를 합쳐 등록한다.
+- UI: **기본 제공자·기본 모델**은 상단 섹션에서 함께 조정한다. **제공자 연결** 카드는 API 키·Ollama Base URL·연결 테스트만 두고, 전역 모델은 요약으로만 표시한다(모델 변경은 기본 섹션 또는 태스크 override).
 
 ## RPC 표면 (확장)
 
@@ -23,7 +24,7 @@
 | `settings.updateDefaultProvider` | `ConfigBridge.setDefaultProvider` |
 | `settings.updateProviderModel` | `ConfigBridge.setProviderModel` — **모델 ID는 `storyboardModelCatalog`에 있을 때만 허용** |
 | `settings.updateProviderBaseUrl` | Ollama 전용, `ConfigBridge.setProviderBaseUrl` |
-| `settings.updateTaskProvider` | `null`이면 override 제거, 아니면 `tasks` 객체 전체 머지 후 저장 |
+| `settings.updateTaskAiConfig` | `providerId`·`model`이 둘 다 `null`이면 태스크 override 제거, 아니면 카탈로그 모델과 함께 `tasks`에 머지 저장 |
 | `secrets.writeApiKey` / `secrets.deleteApiKey` | SecretStorage 반영 |
 
 호스트 → 웹뷰 이벤트: `{ type: "event", method: "settings.changed", payload }` — 페이로드는 `settings.read`와 동형이라 UI가 외부에서 설정/비밀이 바뀐 뒤에도 동기화할 수 있다.

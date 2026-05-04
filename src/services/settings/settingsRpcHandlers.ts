@@ -1,7 +1,7 @@
 import type { StoryboardRpcHandlers } from "../../messaging/bridge"
 import type { StoryboardResponsePayload } from "../../shared/messaging"
 import { storyboardModelCatalog } from "../../shared/models"
-import { aiProviderIds, aiTaskNames, type AiProviderId, type AiTaskName } from "../ai/types"
+import { aiProviderIds, aiTaskNames, type AiTaskName } from "../ai/types"
 import type { AiProviderRegistry } from "../ai/providerRegistry"
 import type { SecretStore } from "../secrets/SecretStore"
 import type { ConfigBridge } from "./ConfigBridge"
@@ -46,10 +46,13 @@ export function createSettingsRpcHandlers(deps: SettingsRpcHandlersDependencies)
       return {}
     },
 
-    "settings.updateTaskProvider": async (
+    "settings.updateTaskAiConfig": async (
       payload
-    ): Promise<StoryboardResponsePayload<"settings.updateTaskProvider">> => {
-      await configBridge.setTaskProvider(payload.taskName, payload.providerId)
+    ): Promise<StoryboardResponsePayload<"settings.updateTaskAiConfig">> => {
+      await configBridge.setTaskAiConfig(payload.taskName, {
+        providerId: payload.providerId,
+        model: payload.model
+      })
       return {}
     },
 
@@ -124,6 +127,14 @@ function buildTaskAssignmentsPayload(
   configBridge: ConfigBridge
 ): StoryboardResponsePayload<"settings.read">["taskAssignments"] {
   return Object.fromEntries(
-    aiTaskNames.map((taskName: AiTaskName) => [taskName, configBridge.getTaskProviderOverride(taskName)])
-  ) as Record<AiTaskName, AiProviderId | null>
+    aiTaskNames.map((taskName: AiTaskName) => {
+      const override = configBridge.getTaskAiConfigOverride(taskName)
+      const entry =
+        override === null
+          ? { providerId: null, model: null }
+          : { providerId: override.providerId, model: override.model }
+
+      return [taskName, entry]
+    })
+  ) as StoryboardResponsePayload<"settings.read">["taskAssignments"]
 }

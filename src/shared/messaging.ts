@@ -183,7 +183,21 @@ const providerRuntimeConfigSchema = z.object({
 
 const providerConfigsPayloadSchema = z.record(providerIdSchema, providerRuntimeConfigSchema)
 
-const taskAssignmentsPayloadSchema = z.record(aiTaskNameSchema, providerIdSchema.nullable())
+const taskAssignmentReadSchema = z
+  .object({
+    providerId: providerIdSchema.nullable(),
+    model: z.string().nullable()
+  })
+  .superRefine((data, ctx) => {
+    if (data.providerId === null && data.model !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "taskAssignments: model must be null when providerId is null."
+      })
+    }
+  })
+
+const taskAssignmentsPayloadSchema = z.record(aiTaskNameSchema, taskAssignmentReadSchema)
 
 export const settingsReadResponsePayloadSchema = z.object({
   defaultProvider: providerIdSchema,
@@ -221,10 +235,39 @@ export const settingsUpdateProviderBaseUrlRequestPayloadSchema = z.object({
   baseUrl: z.string().trim().min(1)
 })
 
-export const settingsUpdateTaskProviderRequestPayloadSchema = z.object({
-  taskName: aiTaskNameSchema,
-  providerId: providerIdSchema.nullable()
-})
+export const settingsUpdateTaskAiConfigRequestPayloadSchema = z
+  .object({
+    taskName: aiTaskNameSchema,
+    providerId: providerIdSchema.nullable(),
+    model: z.string().trim().min(1).nullable()
+  })
+  .superRefine((data, ctx) => {
+    if (data.providerId === null) {
+      if (data.model !== null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "model must be null when providerId is null."
+        })
+      }
+      return
+    }
+
+    if (data.model === null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "model is required when providerId is set."
+      })
+      return
+    }
+
+    const allowedIds = storyboardModelCatalog[data.providerId].map((entry) => entry.id)
+    if (!allowedIds.some((id) => id === data.model)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Model must be a catalog option for ${data.providerId}.`
+      })
+    }
+  })
 
 export const settingsMutationOkResponsePayloadSchema = z.object({})
 
@@ -264,7 +307,7 @@ export const storyboardRequestPayloadSchemas = {
   "settings.updateDefaultProvider": settingsUpdateDefaultProviderRequestPayloadSchema,
   "settings.updateProviderModel": settingsUpdateProviderModelRequestPayloadSchema,
   "settings.updateProviderBaseUrl": settingsUpdateProviderBaseUrlRequestPayloadSchema,
-  "settings.updateTaskProvider": settingsUpdateTaskProviderRequestPayloadSchema,
+  "settings.updateTaskAiConfig": settingsUpdateTaskAiConfigRequestPayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema
 } as const
@@ -288,7 +331,7 @@ export const storyboardResponsePayloadSchemas = {
   "settings.updateDefaultProvider": settingsMutationOkResponsePayloadSchema,
   "settings.updateProviderModel": settingsMutationOkResponsePayloadSchema,
   "settings.updateProviderBaseUrl": settingsMutationOkResponsePayloadSchema,
-  "settings.updateTaskProvider": settingsMutationOkResponsePayloadSchema,
+  "settings.updateTaskAiConfig": settingsMutationOkResponsePayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema
 } as const

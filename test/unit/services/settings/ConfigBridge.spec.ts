@@ -25,11 +25,22 @@ class MutableFakeConfiguration implements StoryboardConfigurationLike {
     const taskProviderMatch = /^tasks\.([^.]+)\.provider$/.exec(section)
 
     if (taskProviderMatch) {
-      const tasks = this.values.get("tasks") as Record<string, { provider?: string }> | undefined
+      const tasks = this.values.get("tasks") as Record<string, { provider?: string; model?: string }> | undefined
       const provider = tasks?.[taskProviderMatch[1] ?? ""]?.provider
 
       if (provider !== undefined) {
         return provider as T
+      }
+    }
+
+    const taskModelMatch = /^tasks\.([^.]+)\.model$/.exec(section)
+
+    if (taskModelMatch) {
+      const tasks = this.values.get("tasks") as Record<string, { provider?: string; model?: string }> | undefined
+      const model = tasks?.[taskModelMatch[1] ?? ""]?.model
+
+      if (model !== undefined) {
+        return model as T
       }
     }
 
@@ -67,6 +78,33 @@ describe("ConfigBridge", () => {
 
     expect(configBridge.getTaskProvider("sceneDraft")).toBe("claude")
     expect(configBridge.getTaskProvider("grammarCheck")).toBe("openai")
+    expect(configBridge.getTaskAiConfigOverride("sceneDraft")).toEqual({ providerId: "claude", model: null })
+  })
+
+  it("uses per-task model override when stored and falls back to provider global for provider-only tasks", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([
+        ["defaultProvider", "openai"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
+      ])
+    )
+
+    expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
+      providerId: "claude",
+      model: "claude-haiku-4-5"
+    })
+
+    const providerOnly = createConfigBridge(
+      new Map<string, unknown>([
+        ["defaultProvider", "openai"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks", { sceneDraft: { provider: "claude" } }]
+      ])
+    )
+
+    expect(providerOnly.getTaskAiConfigOverride("sceneDraft")).toEqual({ providerId: "claude", model: null })
+    expect(providerOnly.getTaskAiConfig("sceneDraft")).toEqual({ providerId: "claude", model: "claude-sonnet-4-6" })
   })
 
   it("falls back to mock for invalid provider values", () => {
@@ -126,19 +164,20 @@ describe("ConfigBridge", () => {
     await configBridge.setDefaultProvider("openai")
     expect(values.get("defaultProvider")).toBe("openai")
 
-    await configBridge.setTaskProvider("grammarCheck", "google")
-    const tasksAfterAdd = values.get("tasks") as Record<string, { provider: string }>
+    await configBridge.setTaskAiConfig("grammarCheck", { providerId: "google", model: "gemini-2.5-flash" })
+    const tasksAfterAdd = values.get("tasks") as Record<string, { provider: string; model?: string }>
     expect(tasksAfterAdd["sceneDraft"]?.provider).toBe("claude")
     expect(tasksAfterAdd["grammarCheck"]?.provider).toBe("google")
+    expect(tasksAfterAdd["grammarCheck"]?.model).toBe("gemini-2.5-flash")
 
-    await configBridge.clearTaskProvider("sceneDraft")
-    const tasksAfterClear = values.get("tasks") as Record<string, { provider: string }>
+    await configBridge.clearTaskAiConfig("sceneDraft")
+    const tasksAfterClear = values.get("tasks") as Record<string, { provider: string; model?: string }>
     expect(tasksAfterClear["sceneDraft"]).toBeUndefined()
     expect(tasksAfterClear["grammarCheck"]?.provider).toBe("google")
     expect(configBridge.getTaskProviderOverride("sceneDraft")).toBeNull()
     expect(configBridge.getTaskProviderOverride("grammarCheck")).toBe("google")
 
-    await configBridge.setTaskProvider("grammarCheck", null)
+    await configBridge.setTaskAiConfig("grammarCheck", { providerId: null, model: null })
     const tasksAfterNull = values.get("tasks") as Record<string, { provider: string }>
     expect(tasksAfterNull["grammarCheck"]).toBeUndefined()
     expect(configBridge.getTaskProviderOverride("grammarCheck")).toBeNull()

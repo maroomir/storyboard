@@ -4,6 +4,7 @@ import { createWebviewBridge, type StoryboardWebviewLike } from "../../../../src
 import {
   parseStoryboardRequestMessage,
   settingsUpdateProviderModelRequestPayloadSchema,
+  settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion
 } from "../../../../src/shared/messaging"
 import { storyboardModelCatalog } from "../../../../src/shared/models"
@@ -28,11 +29,22 @@ class MutableFakeConfiguration implements StoryboardConfigurationLike {
     const taskProviderMatch = /^tasks\.([^.]+)\.provider$/.exec(section)
 
     if (taskProviderMatch) {
-      const tasks = this.values.get("tasks") as Record<string, { provider?: string }> | undefined
+      const tasks = this.values.get("tasks") as Record<string, { provider?: string; model?: string }> | undefined
       const provider = tasks?.[taskProviderMatch[1] ?? ""]?.provider
 
       if (provider !== undefined) {
         return provider as T
+      }
+    }
+
+    const taskModelMatch = /^tasks\.([^.]+)\.model$/.exec(section)
+
+    if (taskModelMatch) {
+      const tasks = this.values.get("tasks") as Record<string, { provider?: string; model?: string }> | undefined
+      const model = tasks?.[taskModelMatch[1] ?? ""]?.model
+
+      if (model !== undefined) {
+        return model as T
       }
     }
 
@@ -148,7 +160,7 @@ describe("createSettingsRpcHandlers", () => {
 
     expect(snapshot.defaultProvider).toBe("mock")
     expect(snapshot.providers).toHaveLength(5)
-    expect(snapshot.taskAssignments.sceneDraft).toBe("claude")
+    expect(snapshot.taskAssignments.sceneDraft).toEqual({ providerId: "claude", model: null })
     for (const taskName of aiTaskNames) {
       expect(snapshot.taskAssignments).toHaveProperty(taskName)
     }
@@ -180,11 +192,18 @@ describe("createSettingsRpcHandlers", () => {
     await handlers["settings.updateProviderBaseUrl"]!({ providerId: "ollama", baseUrl: "http://ollama.local:11434" }, {} as never)
     expect(configuration.get("providers.ollama.baseUrl")).toBe("http://ollama.local:11434")
 
-    await handlers["settings.updateTaskProvider"]!({ taskName: "grammarCheck", providerId: "google" }, {} as never)
-    const tasks = configuration.get("tasks") as Record<string, { provider: string }>
+    await handlers["settings.updateTaskAiConfig"]!(
+      { taskName: "grammarCheck", providerId: "google", model: "gemini-2.5-flash" },
+      {} as never
+    )
+    const tasks = configuration.get("tasks") as Record<string, { provider: string; model?: string }>
     expect(tasks["grammarCheck"]?.provider).toBe("google")
+    expect(tasks["grammarCheck"]?.model).toBe("gemini-2.5-flash")
 
-    await handlers["settings.updateTaskProvider"]!({ taskName: "grammarCheck", providerId: null }, {} as never)
+    await handlers["settings.updateTaskAiConfig"]!(
+      { taskName: "grammarCheck", providerId: null, model: null },
+      {} as never
+    )
     const tasksAfterClear = configuration.get("tasks") as Record<string, { provider: string }>
     expect(tasksAfterClear["grammarCheck"]).toBeUndefined()
   })
@@ -206,6 +225,42 @@ describe("createSettingsRpcHandlers", () => {
     const deleteResult = await handlers["secrets.deleteApiKey"]!({ providerId: "openai" }, {} as never)
     expect(deleteResult).toEqual({ hasApiKey: false })
     expect(await secretStore.hasApiKey("openai")).toBe(false)
+  })
+
+  it("rejects settings.updateTaskAiConfig when provider and model rules are broken (zod)", () => {
+    expect(() =>
+      settingsUpdateTaskAiConfigRequestPayloadSchema.parse({
+        taskName: "sceneDraft",
+        providerId: null,
+        model: "gpt-5-mini"
+      })
+    ).toThrow(/model must be null/)
+
+    expect(() =>
+      settingsUpdateTaskAiConfigRequestPayloadSchema.parse({
+        taskName: "sceneDraft",
+        providerId: "openai",
+        model: null
+      })
+    ).toThrow(/model is required/)
+
+    expect(() =>
+      settingsUpdateTaskAiConfigRequestPayloadSchema.parse({
+        taskName: "sceneDraft",
+        providerId: "openai",
+        model: "not-in-catalog"
+      })
+    ).toThrow(/catalog option/)
+
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "req-task-ai",
+        method: "settings.updateTaskAiConfig",
+        payload: { taskName: "sceneDraft", providerId: "claude", model: "claude-2-legacy" }
+      })
+    ).toThrow()
   })
 
   it("rejects settings.updateProviderModel payloads outside the catalog (zod)", () => {
