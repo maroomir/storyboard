@@ -4,3 +4,4 @@
 @.clinerules/webview.md
 @.clinerules/testing.md
 @.clinerules/clean-code.md
+@.clinerules/comments.md

@@ -145,7 +145,7 @@ describe("sceneContext", () => {
   })
 
   it("handles missing directories gracefully", async () => {
-    const fileSystem = new MockFileSystem() // No directories set
+    const fileSystem = new MockFileSystem()
 
     const context = await buildSceneContext(mockPaths, mockScene, fileSystem)
 
@@ -176,8 +176,7 @@ describe("readPreviousSceneContext", () => {
       ["01-prologue.md", { type: "file" }],
       ["02-chapter-1.md", { type: "file" }]
     ])
-    
-    // 긴 텍스트 생성
+
     const longText = "A".repeat(2000) + "이전 씬의 마지막 문장입니다."
     fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longText)
 

@@ -46,7 +46,6 @@ export interface RunSceneGenerationPipelineResult {
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>
 }
 
-/** Picktion `dedupeSituations`와 동일한 규칙(공백 정규화·소문자 키·첫 항목 유지). */
 export function dedupeSituations(items: readonly SituationWithCharacters[]): SituationWithCharacters[] {
   const seen = new Set<string>()
   return items.filter((item) => {

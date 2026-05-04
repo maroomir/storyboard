@@ -1,0 +1,48 @@
+---
+description: Allowed comment markers and when agents may add comments in TS/TSX
+alwaysApply: true
+---
+
+# Comments (TypeScript / TSX)
+
+## Project preference: minimal comments
+
+- **Default to no new comments.** The maintainers prefer almost no comments; add them only when truly necessary.
+- Do **not** add “helpful” narration, section headers, or JSDoc for code that is already clear from names and types.
+- If something feels unclear, first try **renaming, extracting a function, or tightening types** before adding a comment.
+- When in doubt, **omit the comment**.
+
+## Default
+
+- Prefer **clear names and types** over comments.
+- Do **not** add comments that restate what the code already says.
+
+## When an agent may add a comment
+
+Only when omitting it would likely **mislead a maintainer** or hide a **real constraint** (security, protocol shape, unavoidable hack). Limit to **intent, constraints, or tradeoffs** that are not obvious from types or names. Prefer a **single** tagged line (`// NOTE: …`, etc.).
+
+## Allowed markers (prefix with `//`)
+
+| Tag | Use |
+|-----|-----|
+| `TODO` | Planned work, missing behavior, follow-up |
+| `FIXME` | Incorrect or incomplete behavior that should be fixed |
+| `HACK` | Temporary workaround; say why if not obvious |
+| `NOTE` | Non-obvious contract, data flow, or coupling (e.g. extension ↔ webview) |
+| `SECURITY` | Trust boundaries, CSP, secrets, path handling — never log or expose secrets |
+
+**Format:** `// NOTE: …` (one space after the colon is fine.)
+
+## Always preserve (do not remove or “clean up”)
+
+- `/// <reference …>` and other TypeScript file-level directives
+- `@ts-expect-error` / `@ts-ignore` and any **required** adjacent explanation
+- `eslint-disable` / `eslint-disable-next-line` when needed; keep scope minimal
+
+## Tooling
+
+- ESLint policy is duplicated at the top of `.eslintrc.cjs`; `no-warning-comments` discourages ambiguous `xxx`-style markers.
+
+## Webview / extension boundaries
+
+- Prefer `NOTE` or `SECURITY` for message contracts, CSP, and anything that would be unsafe if mishandled.

@@ -1,6 +1,5 @@
 import { parseSceneFileName, sceneFileNamePattern } from "../shared/scene"
 
-/** Slug segment only (without order prefix); matches `sceneFileNamePattern` group 2. */
 const sceneSlugInputPattern = /^[a-z0-9][a-z0-9-]*$/
 
 export function computeNextSceneOrderFromSceneFileNames(fileNames: readonly string[]): number {

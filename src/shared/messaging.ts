@@ -347,7 +347,6 @@ export type StoryboardResponsePayload<M extends StoryboardResponseMethod> = z.in
   (typeof storyboardResponsePayloadSchemas)[M]
 >
 
-/** Host → webview: VS Code settings or secrets changed; payload matches `settings.read`. */
 export type StoryboardSettingsChangedEventMessage = {
   readonly type: "event"
   readonly method: "settings.changed"

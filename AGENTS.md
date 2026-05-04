@@ -17,6 +17,7 @@ When source files are not present yet, do not assume implementation details. Sca
 - `package.json` is the source of truth for extension metadata, scripts, activation events, commands, views, menus, and configuration once it exists.
 - `CLAUDE.md` and `.clinerules/` are the source of truth for AI-agent working rules.
 - `CLEANCODE.md` contains the human-readable clean code guide; `.clinerules/clean-code.md` summarizes it for agents.
+- `.clinerules/comments.md` defines allowed comment markers (`TODO`, `FIXME`, `HACK`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 - Existing source files and tests override intended architecture notes. If implementation and documentation disagree, investigate before editing.
 
 ## Core Principles
@@ -180,5 +181,6 @@ Important rule files:
 - `.clinerules/webview.md`
 - `.clinerules/testing.md`
 - `.clinerules/clean-code.md`
+- `.clinerules/comments.md`
 
-When writing or reviewing code, always apply the clean code standards summarized in `.clinerules/clean-code.md`.
+When writing or reviewing code, always apply the clean code standards summarized in `.clinerules/clean-code.md` and the comment markers in `.clinerules/comments.md` when adding or editing comments.

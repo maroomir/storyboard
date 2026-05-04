@@ -28,7 +28,7 @@ export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Pro
         }))
       })
     } catch {
-      // Skip unreadable or invalid cards so the graph stays usable.
+      // NOTE: Unreadable or invalid cards are skipped so the relation list stays usable.
     }
   }
 
