@@ -6,11 +6,13 @@ import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
+import { registerNewSceneCommands } from "./commands/newScene"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
 import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
+import { registerSidebarScenesProvider } from "./providers/SidebarScenesProvider"
 import { createAiProviderRegistry } from "./services/ai/providerRegistry"
 import { SecretStore } from "./services/secrets/SecretStore"
 import { ConfigBridge } from "./services/settings/ConfigBridge"
@@ -38,6 +40,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(registerSidebarCardsProviders(context, { aiProviderRegistry }))
+  context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry }))
+  context.subscriptions.push(registerNewSceneCommands())
 }
 
 export function deactivate(): void {}

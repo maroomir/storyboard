@@ -59,6 +59,15 @@
       {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
+      },
+      {
+        "command": "storyboard.scene.create",
+        "title": "Storyboard: New Scene",
+        "icon": "$(add)"
+      },
+      {
+        "command": "storyboard.scene.openDraft",
+        "title": "Storyboard: Open Draft for Scene"
       }
     ],
     "configuration": {
@@ -168,6 +177,11 @@
           "id": "storyboard.backgroundsView",
           "name": "Backgrounds",
           "type": "webview"
+        },
+        {
+          "id": "storyboard.scenesView",
+          "name": "Scenes",
+          "type": "webview"
         }
       ]
     },
@@ -181,6 +195,11 @@
         {
           "command": "storyboard.background.create",
           "when": "view == storyboard.backgroundsView",
+          "group": "navigation"
+        },
+        {
+          "command": "storyboard.scene.create",
+          "when": "view == storyboard.scenesView",
           "group": "navigation"
         }
       ]

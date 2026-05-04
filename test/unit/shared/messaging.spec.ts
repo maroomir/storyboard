@@ -67,6 +67,72 @@ describe("storyboard messaging protocol", () => {
     })
   })
 
+  it("parses scenes.list and scenes.openScene requests", () => {
+    const listRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "scenes-1",
+      method: "scenes.list",
+      payload: {}
+    })
+    expect(listRequest.method).toBe("scenes.list")
+    expect(listRequest.payload).toEqual({})
+
+    const openRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "scenes-2",
+      method: "scenes.openScene",
+      payload: { uri: "file:///workspace/scene/01-a.txt" }
+    })
+    expect(openRequest.method).toBe("scenes.openScene")
+    expect(openRequest.payload).toEqual({ uri: "file:///workspace/scene/01-a.txt" })
+  })
+
+  it("parses scenes.generateDraft request", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "scenes-3",
+      method: "scenes.generateDraft",
+      payload: { uri: "file:///workspace/scene/01-a.txt" }
+    })
+    expect(request.method).toBe("scenes.generateDraft")
+  })
+
+  it("creates validated scenes.list success response", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "scenes-4",
+      method: "scenes.list",
+      payload: {}
+    })
+    if (request.method !== "scenes.list") {
+      throw new Error("Expected scenes.list")
+    }
+    const response = createStoryboardSuccessResponse(request, {
+      scenes: [
+        {
+          stem: "01-prologue",
+          order: 1,
+          slug: "prologue",
+          title: "프롤로그",
+          sceneUri: "file:///ws/scene/01-prologue.txt",
+          draftUri: "file:///ws/draft/01-prologue.md",
+          status: "ready",
+          sceneMtime: 100,
+          draftMtime: 200
+        }
+      ]
+    })
+    expect(response.ok).toBe(true)
+    if (response.ok) {
+      expect(response.payload.scenes).toHaveLength(1)
+      expect(response.payload.scenes[0]?.status).toBe("ready")
+    }
+  })
+
   it("creates validated success and error responses", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,

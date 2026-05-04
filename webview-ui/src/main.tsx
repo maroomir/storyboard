@@ -12,7 +12,12 @@ const sbControlButtonClass =
 const sbYamlTextareaClass = `${sbInputClass} mt-3 min-h-72 resize-y font-[family-name:var(--vscode-editor-font-family)] text-[length:var(--vscode-editor-font-size)]`
 
 type CardType = "character" | "background"
-type StoryboardRequestMethod = "cards.write" | "cards.open"
+type StoryboardRequestMethod =
+  | "cards.write"
+  | "cards.open"
+  | "scenes.openScene"
+  | "scenes.openDraft"
+  | "scenes.generateDraft"
 type CardAttributeValue = string | number | boolean | null
 
 interface CharacterRelation {
@@ -76,9 +81,27 @@ interface StoryboardRequestMessage {
   readonly payload: Record<string, unknown>
 }
 
+interface SceneListItem {
+  readonly stem: string
+  readonly order: number
+  readonly slug: string
+  readonly title?: string
+  readonly sceneUri: string
+  readonly draftUri?: string
+  readonly status: "ready" | "stale" | "missing"
+  readonly sceneMtime: number
+  readonly draftMtime?: number
+}
+
+interface SidebarScenesInitialData {
+  readonly title: string
+  readonly scenes: readonly SceneListItem[]
+  readonly isStoryboardProject: boolean
+}
+
 interface StoryboardEventMessage {
   readonly type: "event"
-  readonly method: "cards.changed" | "cards.listChanged"
+  readonly method: "cards.changed" | "cards.listChanged" | "scenes.listChanged"
   readonly payload: unknown
 }
 
@@ -101,6 +124,10 @@ function App(): React.ReactElement {
     return <CardsSidebar initialData={parseSidebarCardsInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
   }
 
+  if (window.__STORYBOARD_VIEW__ === "scenes-sidebar") {
+    return <ScenesSidebar initialData={parseSidebarScenesInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+  }
+
   return <SidebarPlaceholder />
 }
 
@@ -112,6 +139,114 @@ function SidebarPlaceholder(): React.ReactElement {
       <p className="m-0 leading-normal text-sb-fg-muted">
         캐릭터, 배경, 씬을 탐색하는 사이드바가 이 위치에 표시될 예정입니다.
       </p>
+    </main>
+  )
+}
+
+function statusBadgeEmoji(status: SceneListItem["status"]): string {
+  switch (status) {
+    case "ready":
+      return "✅"
+    case "stale":
+      return "⚠️"
+    case "missing":
+      return "⬜"
+    default:
+      return ""
+  }
+}
+
+function ScenesSidebar({ initialData }: { readonly initialData: SidebarScenesInitialData }): React.ReactElement {
+  const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
+  const [sidebarState, setSidebarState] = useState(initialData)
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
+      if (event.data.type !== "event" || event.data.method !== "scenes.listChanged") {
+        return
+      }
+
+      setSidebarState(parseSidebarScenesInitialData(event.data.payload))
+    }
+
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [])
+
+  const postSceneRequest = (method: StoryboardRequestMethod, payload: Record<string, unknown>): void => {
+    vscodeApi?.postMessage({
+      protocolVersion: "1.0.0",
+      type: "request",
+      id: createRequestId(),
+      method,
+      payload
+    })
+  }
+
+  if (!sidebarState.isStoryboardProject) {
+    return (
+      <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+        <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+        <p className="m-0 leading-normal text-sb-fg-muted">
+          Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.
+        </p>
+      </main>
+    )
+  }
+
+  return (
+    <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
+      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+      <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+
+      {sidebarState.scenes.length === 0 ? (
+        <p className="m-0 leading-normal text-sb-fg-muted">아직 씬 파일이 없습니다. 상단 + 버튼으로 새 씬을 추가해 보세요.</p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Scene list">
+          {sidebarState.scenes.map((scene) => (
+            <li
+              key={scene.sceneUri}
+              className="flex flex-col gap-2 rounded-md border border-transparent bg-transparent p-2 hover:border-sb-border-focus hover:bg-sb-bg-list-hover"
+            >
+              <div className="flex items-start gap-2">
+                <span className="shrink-0 text-base" title={scene.status}>
+                  {statusBadgeEmoji(scene.status)}
+                </span>
+                <button
+                  className="min-w-0 flex-1 cursor-pointer rounded border border-transparent bg-transparent p-0 text-left text-sb-fg hover:underline focus:border-sb-border-focus focus:outline-none"
+                  type="button"
+                  onClick={() => postSceneRequest("scenes.openScene", { uri: scene.sceneUri })}
+                >
+                  <span className="block font-semibold">{scene.title ?? scene.slug}</span>
+                  <span className="block truncate text-sm text-sb-fg-muted">{scene.stem}.txt</span>
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 pl-7">
+                <button
+                  type="button"
+                  className={sbControlButtonClass}
+                  onClick={() => postSceneRequest("scenes.generateDraft", { uri: scene.sceneUri })}
+                >
+                  Generate
+                </button>
+                <button
+                  type="button"
+                  className={`${sbControlButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
+                  disabled={!scene.draftUri}
+                  onClick={() => {
+                    if (scene.draftUri) {
+                      postSceneRequest("scenes.openDraft", { uri: scene.draftUri })
+                    }
+                  }}
+                >
+                  Open Draft
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   )
 }
@@ -590,6 +725,18 @@ function parseSidebarCardsInitialData(value: unknown): SidebarCardsInitialData {
   }
 }
 
+function parseSidebarScenesInitialData(value: unknown): SidebarScenesInitialData {
+  if (isSidebarScenesInitialData(value)) {
+    return value
+  }
+
+  return {
+    title: "Scenes",
+    scenes: [],
+    isStoryboardProject: false
+  }
+}
+
 function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {
   if (!value || typeof value !== "object") {
     return false
@@ -610,6 +757,36 @@ function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitial
     typeof candidate.title === "string" &&
     Array.isArray(candidate.cards) &&
     typeof candidate.isStoryboardProject === "boolean"
+  )
+}
+
+function isSidebarScenesInitialData(value: unknown): value is SidebarScenesInitialData {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<SidebarScenesInitialData>
+  return (
+    typeof candidate.title === "string" &&
+    Array.isArray(candidate.scenes) &&
+    typeof candidate.isStoryboardProject === "boolean" &&
+    candidate.scenes.every(isSceneListItem)
+  )
+}
+
+function isSceneListItem(value: unknown): value is SceneListItem {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const s = value as Partial<SceneListItem>
+  return (
+    typeof s.stem === "string" &&
+    typeof s.order === "number" &&
+    typeof s.slug === "string" &&
+    typeof s.sceneUri === "string" &&
+    (s.status === "ready" || s.status === "stale" || s.status === "missing") &&
+    typeof s.sceneMtime === "number"
   )
 }
 

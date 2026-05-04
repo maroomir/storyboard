@@ -74,6 +74,40 @@ export const cardsResolveImageUriResponsePayloadSchema = z.object({
 
 export const cardsOpenResponsePayloadSchema = z.object({})
 
+export const scenesListRequestPayloadSchema = z.object({})
+
+export const sceneListItemSchema = z.object({
+  stem: z.string().trim().min(1),
+  order: z.number().int(),
+  slug: z.string().trim().min(1),
+  title: z.string().trim().min(1).optional(),
+  sceneUri: uriStringSchema,
+  draftUri: uriStringSchema.optional(),
+  status: z.enum(["ready", "stale", "missing"]),
+  sceneMtime: z.number(),
+  draftMtime: z.number().optional()
+})
+
+export const scenesListResponsePayloadSchema = z.object({
+  scenes: z.array(sceneListItemSchema)
+})
+
+export const scenesOpenSceneRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
+export const scenesOpenDraftRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
+export const scenesGenerateDraftRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
+export const scenesOpenSceneResponsePayloadSchema = z.object({})
+export const scenesOpenDraftResponsePayloadSchema = z.object({})
+export const scenesGenerateDraftResponsePayloadSchema = z.object({})
+
 export const aiProvidersListRequestPayloadSchema = z.object({})
 
 export const aiProvidersCheckConnectionRequestPayloadSchema = z.object({
@@ -117,6 +151,10 @@ export const storyboardRequestPayloadSchemas = {
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
   "cards.open": cardsOpenRequestPayloadSchema,
+  "scenes.list": scenesListRequestPayloadSchema,
+  "scenes.openScene": scenesOpenSceneRequestPayloadSchema,
+  "scenes.openDraft": scenesOpenDraftRequestPayloadSchema,
+  "scenes.generateDraft": scenesGenerateDraftRequestPayloadSchema,
   "ai.providers.list": aiProvidersListRequestPayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
   "ai.generate": aiGenerateRequestPayloadSchema
@@ -129,6 +167,10 @@ export const storyboardResponsePayloadSchemas = {
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
   "cards.open": cardsOpenResponsePayloadSchema,
+  "scenes.list": scenesListResponsePayloadSchema,
+  "scenes.openScene": scenesOpenSceneResponsePayloadSchema,
+  "scenes.openDraft": scenesOpenDraftResponsePayloadSchema,
+  "scenes.generateDraft": scenesGenerateDraftResponsePayloadSchema,
   "ai.providers.list": aiProvidersListResponsePayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
   "ai.generate": aiGenerateResponsePayloadSchema
