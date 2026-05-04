@@ -5,7 +5,7 @@ import { ClaudeProvider, type ClaudeClientLike } from "../../../../src/services/
 
 describe("ClaudeProvider", () => {
   it("requires an API key", () => {
-    expect(() => new ClaudeProvider({ apiKey: undefined, model: "claude-3-5-sonnet-latest" })).toThrow(
+    expect(() => new ClaudeProvider({ apiKey: undefined, model: "claude-sonnet-4-6" })).toThrow(
       AiProviderError
     )
   })
@@ -14,7 +14,7 @@ describe("ClaudeProvider", () => {
     let didCreateMessage = false
     const provider = new ClaudeProvider({
       apiKey: "sk-ant-test",
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-4-6",
       createClient: (): ClaudeClientLike => createFakeClaudeClient({
         onCreateMessage: (): void => {
           didCreateMessage = true
@@ -30,7 +30,7 @@ describe("ClaudeProvider", () => {
     let capturedSystem: string | undefined
     const provider = new ClaudeProvider({
       apiKey: "sk-ant-test",
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-4-6",
       createClient: (): ClaudeClientLike => createFakeClaudeClient({
         completionText: "클로드 응답",
         onCreateMessage: (request): void => {
@@ -50,7 +50,7 @@ describe("ClaudeProvider", () => {
     expect(capturedSystem).toBe("너는 소설가다.")
     expect(response).toEqual({
       providerId: "claude",
-      model: "claude-3-5-sonnet-latest",
+      model: "claude-sonnet-4-6",
       text: "클로드 응답"
     })
   })

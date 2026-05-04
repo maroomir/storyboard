@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { cardSchema, cardTypes } from "./card"
+import { storyboardModelCatalog } from "./models"
 import { aiProviderIds, aiTaskNames } from "../services/ai/types"
 
 export const storyboardMessageProtocolVersion = "1.0.0"
@@ -165,6 +166,85 @@ export const aiGenerateResponsePayloadSchema = z.object({
   model: z.string().optional()
 })
 
+const providerModelOptionSchema = z.object({
+  id: z.string().trim().min(1),
+  displayName: z.string().trim().min(1)
+})
+
+const storyboardModelCatalogPayloadSchema = z.record(
+  providerIdSchema,
+  z.array(providerModelOptionSchema).min(1)
+)
+
+const providerRuntimeConfigSchema = z.object({
+  model: z.string().trim().min(1),
+  baseUrl: z.string().trim().min(1).optional()
+})
+
+const providerConfigsPayloadSchema = z.record(providerIdSchema, providerRuntimeConfigSchema)
+
+const taskAssignmentsPayloadSchema = z.record(aiTaskNameSchema, providerIdSchema.nullable())
+
+export const settingsReadResponsePayloadSchema = z.object({
+  defaultProvider: providerIdSchema,
+  providers: z.array(aiProviderStatusSchema),
+  providerConfigs: providerConfigsPayloadSchema,
+  taskAssignments: taskAssignmentsPayloadSchema,
+  modelCatalog: storyboardModelCatalogPayloadSchema
+})
+
+export const settingsChangedEventPayloadSchema = settingsReadResponsePayloadSchema
+
+export const settingsReadRequestPayloadSchema = z.object({})
+
+export const settingsUpdateDefaultProviderRequestPayloadSchema = z.object({
+  providerId: providerIdSchema
+})
+
+export const settingsUpdateProviderModelRequestPayloadSchema = z
+  .object({
+    providerId: providerIdSchema,
+    model: z.string().trim().min(1)
+  })
+  .superRefine((data, ctx) => {
+    const allowedIds = storyboardModelCatalog[data.providerId].map((entry) => entry.id)
+    if (!allowedIds.some((id) => id === data.model)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Model must be a catalog option for ${data.providerId}.`
+      })
+    }
+  })
+
+export const settingsUpdateProviderBaseUrlRequestPayloadSchema = z.object({
+  providerId: z.literal("ollama"),
+  baseUrl: z.string().trim().min(1)
+})
+
+export const settingsUpdateTaskProviderRequestPayloadSchema = z.object({
+  taskName: aiTaskNameSchema,
+  providerId: providerIdSchema.nullable()
+})
+
+export const settingsMutationOkResponsePayloadSchema = z.object({})
+
+export const secretsWriteApiKeyRequestPayloadSchema = z.object({
+  providerId: providerIdSchema,
+  apiKey: z.string().min(1)
+})
+
+export const secretsWriteApiKeyResponsePayloadSchema = z.object({
+  hasApiKey: z.literal(true)
+})
+
+export const secretsDeleteApiKeyRequestPayloadSchema = z.object({
+  providerId: providerIdSchema
+})
+
+export const secretsDeleteApiKeyResponsePayloadSchema = z.object({
+  hasApiKey: z.literal(false)
+})
+
 export const storyboardRequestPayloadSchemas = {
   "cards.list": cardsListRequestPayloadSchema,
   "cards.read": cardsReadRequestPayloadSchema,
@@ -179,7 +259,14 @@ export const storyboardRequestPayloadSchemas = {
   "relations.list": relationsListRequestPayloadSchema,
   "ai.providers.list": aiProvidersListRequestPayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
-  "ai.generate": aiGenerateRequestPayloadSchema
+  "ai.generate": aiGenerateRequestPayloadSchema,
+  "settings.read": settingsReadRequestPayloadSchema,
+  "settings.updateDefaultProvider": settingsUpdateDefaultProviderRequestPayloadSchema,
+  "settings.updateProviderModel": settingsUpdateProviderModelRequestPayloadSchema,
+  "settings.updateProviderBaseUrl": settingsUpdateProviderBaseUrlRequestPayloadSchema,
+  "settings.updateTaskProvider": settingsUpdateTaskProviderRequestPayloadSchema,
+  "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
+  "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema
 } as const
 
 export const storyboardResponsePayloadSchemas = {
@@ -196,7 +283,14 @@ export const storyboardResponsePayloadSchemas = {
   "relations.list": relationsListResponsePayloadSchema,
   "ai.providers.list": aiProvidersListResponsePayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
-  "ai.generate": aiGenerateResponsePayloadSchema
+  "ai.generate": aiGenerateResponsePayloadSchema,
+  "settings.read": settingsReadResponsePayloadSchema,
+  "settings.updateDefaultProvider": settingsMutationOkResponsePayloadSchema,
+  "settings.updateProviderModel": settingsMutationOkResponsePayloadSchema,
+  "settings.updateProviderBaseUrl": settingsMutationOkResponsePayloadSchema,
+  "settings.updateTaskProvider": settingsMutationOkResponsePayloadSchema,
+  "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
+  "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema
 } as const
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas
@@ -209,6 +303,13 @@ export type StoryboardRequestPayload<M extends StoryboardRequestMethod> = z.infe
 export type StoryboardResponsePayload<M extends StoryboardResponseMethod> = z.infer<
   (typeof storyboardResponsePayloadSchemas)[M]
 >
+
+/** Host → webview: VS Code settings or secrets changed; payload matches `settings.read`. */
+export type StoryboardSettingsChangedEventMessage = {
+  readonly type: "event"
+  readonly method: "settings.changed"
+  readonly payload: StoryboardResponsePayload<"settings.read">
+}
 
 type StoryboardRequestMessageMap = {
   readonly [M in StoryboardRequestMethod]: {

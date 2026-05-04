@@ -37,7 +37,7 @@ export class ConfigBridge {
     if (providerId === "ollama") {
       return {
         baseUrl: configuration.get("providers.ollama.baseUrl", "http://localhost:11434"),
-        model: configuration.get("providers.ollama.model", "llama3.1")
+        model: configuration.get("providers.ollama.model", "llama3.3")
       }
     }
 
@@ -92,11 +92,11 @@ function isConfiguredProvider(value: string): value is AiProviderId {
 function getDefaultModel(providerId: AiProviderId): string | undefined {
   switch (providerId) {
     case "openai":
-      return "gpt-4o-mini"
+      return "gpt-5.4-mini"
     case "claude":
-      return "claude-3-5-sonnet-latest"
+      return "claude-sonnet-4-6"
     case "google":
-      return "gemini-1.5-flash"
+      return "gemini-2.5-flash"
     case "mock":
     case "ollama":
       return undefined

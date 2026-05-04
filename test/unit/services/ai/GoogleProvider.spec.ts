@@ -5,7 +5,7 @@ import { GoogleProvider, type GoogleClientLike } from "../../../../src/services/
 
 describe("GoogleProvider", () => {
   it("requires an API key", () => {
-    expect(() => new GoogleProvider({ apiKey: undefined, model: "gemini-1.5-flash" })).toThrow(
+    expect(() => new GoogleProvider({ apiKey: undefined, model: "gemini-2.5-flash" })).toThrow(
       AiProviderError
     )
   })
@@ -14,7 +14,7 @@ describe("GoogleProvider", () => {
     let capturedPrompt = ""
     const provider = new GoogleProvider({
       apiKey: "google-test",
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       createClient: (): GoogleClientLike => createFakeGoogleClient({
         completionText: "ok",
         onGenerateContent: (prompt): void => {
@@ -31,7 +31,7 @@ describe("GoogleProvider", () => {
     let capturedPrompt = ""
     const provider = new GoogleProvider({
       apiKey: "google-test",
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       createClient: (): GoogleClientLike => createFakeGoogleClient({
         completionText: "구글 응답",
         onGenerateContent: (prompt): void => {
@@ -52,7 +52,7 @@ describe("GoogleProvider", () => {
     expect(capturedPrompt).toContain("USER:\n장면을 써줘.")
     expect(response).toEqual({
       providerId: "google",
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       text: "구글 응답"
     })
   })

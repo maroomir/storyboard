@@ -99,17 +99,17 @@
         },
         "storyboard.providers.openai.model": {
           "type": "string",
-          "default": "gpt-4o-mini",
+          "default": "gpt-5.4-mini",
           "description": "OpenAI model used by Storyboard."
         },
         "storyboard.providers.claude.model": {
           "type": "string",
-          "default": "claude-3-5-sonnet-latest",
+          "default": "claude-sonnet-4-6",
           "description": "Claude model used by Storyboard."
         },
         "storyboard.providers.google.model": {
           "type": "string",
-          "default": "gemini-1.5-flash",
+          "default": "gemini-2.5-flash",
           "description": "Google Gemini model used by Storyboard."
         },
         "storyboard.providers.ollama.baseUrl": {
@@ -119,7 +119,7 @@
         },
         "storyboard.providers.ollama.model": {
           "type": "string",
-          "default": "llama3.1",
+          "default": "llama3.3",
           "description": "Ollama model used by Storyboard."
         },
         "storyboard.tasks": {

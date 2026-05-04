@@ -5,14 +5,14 @@ import { OpenAiProvider, type OpenAiClientLike } from "../../../../src/services/
 
 describe("OpenAiProvider", () => {
   it("requires an API key", () => {
-    expect(() => new OpenAiProvider({ apiKey: undefined, model: "gpt-4o-mini" })).toThrow(AiProviderError)
+    expect(() => new OpenAiProvider({ apiKey: undefined, model: "gpt-5.4-mini" })).toThrow(AiProviderError)
   })
 
   it("checks connection through OpenAI models.list", async () => {
     let didListModels = false
     const provider = new OpenAiProvider({
       apiKey: "sk-test",
-      model: "gpt-4o-mini",
+      model: "gpt-5.4-mini",
       createClient: (): OpenAiClientLike => createFakeOpenAiClient({
         onListModels: (): void => {
           didListModels = true
@@ -27,7 +27,7 @@ describe("OpenAiProvider", () => {
   it("generates text through OpenAI chat completions", async () => {
     const provider = new OpenAiProvider({
       apiKey: "sk-test",
-      model: "gpt-4o-mini",
+      model: "gpt-5.4-mini",
       createClient: (): OpenAiClientLike => createFakeOpenAiClient({ completionText: "생성된 원고" })
     })
 
@@ -40,7 +40,7 @@ describe("OpenAiProvider", () => {
 
     expect(response).toEqual({
       providerId: "openai",
-      model: "gpt-4o-mini",
+      model: "gpt-5.4-mini",
       text: "생성된 원고"
     })
   })

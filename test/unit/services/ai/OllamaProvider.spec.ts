@@ -5,14 +5,14 @@ import { OllamaProvider, type OllamaClientLike } from "../../../../src/services/
 
 describe("OllamaProvider", () => {
   it("requires a base URL", () => {
-    expect(() => new OllamaProvider({ baseUrl: undefined, model: "llama3.1" })).toThrow(AiProviderError)
+    expect(() => new OllamaProvider({ baseUrl: undefined, model: "llama3.3" })).toThrow(AiProviderError)
   })
 
   it("checks connection through /api/tags", async () => {
     let capturedPath = ""
     const provider = new OllamaProvider({
       baseUrl: "http://localhost:11434",
-      model: "llama3.1",
+      model: "llama3.3",
       createClient: (): OllamaClientLike => createFakeOllamaClient({
         onGet: (path): void => {
           capturedPath = path
@@ -28,7 +28,7 @@ describe("OllamaProvider", () => {
     let capturedPath = ""
     const provider = new OllamaProvider({
       baseUrl: "http://localhost:11434",
-      model: "llama3.1",
+      model: "llama3.3",
       createClient: (): OllamaClientLike => createFakeOllamaClient({
         completionText: "올라마 응답",
         onPost: (path): void => {
@@ -45,7 +45,7 @@ describe("OllamaProvider", () => {
     expect(capturedPath).toBe("/api/chat")
     expect(response).toEqual({
       providerId: "ollama",
-      model: "llama3.1",
+      model: "llama3.3",
       text: "올라마 응답"
     })
   })

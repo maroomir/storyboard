@@ -58,7 +58,7 @@ function createAIService(options: { readonly completionText: string }): Storyboa
       new FakeConfiguration(
         new Map<string, unknown>([
           ["defaultProvider", "openai"],
-          ["providers.openai.model", "gpt-4o-mini"]
+          ["providers.openai.model", "gpt-5.4-mini"]
         ])
       )
   })
