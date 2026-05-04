@@ -16,7 +16,9 @@
     "AI",
     "Other"
   ],
-  "activationEvents": ["workspaceContains:.storyboard/project.json"],
+  "activationEvents": [
+    "workspaceContains:.storyboard/project.json"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -64,7 +66,13 @@
       "properties": {
         "storyboard.defaultProvider": {
           "type": "string",
-          "enum": ["openai", "claude", "google", "ollama", "mock"],
+          "enum": [
+            "openai",
+            "claude",
+            "google",
+            "ollama",
+            "mock"
+          ],
           "default": "mock",
           "description": "Default AI provider used when a task does not override the provider."
         },
@@ -102,7 +110,13 @@
             "properties": {
               "provider": {
                 "type": "string",
-                "enum": ["openai", "claude", "google", "ollama", "mock"]
+                "enum": [
+                  "openai",
+                  "claude",
+                  "google",
+                  "ollama",
+                  "mock"
+                ]
               }
             },
             "additionalProperties": false
@@ -191,9 +205,12 @@
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
     "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.1",
+    "postcss": "^8.5.13",
     "prettier": "^3.3.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"

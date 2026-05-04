@@ -1,9 +1,17 @@
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
+
+const repoRoot = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   root: "webview-ui",
   plugins: [react()],
+  css: {
+    postcss: path.join(repoRoot, "webview-ui", "postcss.config.cjs")
+  },
   build: {
     outDir: "../out/webview-ui",
     emptyOutDir: true,

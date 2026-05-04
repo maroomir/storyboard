@@ -3,6 +3,14 @@ import { createRoot } from "react-dom/client"
 
 import "./styles.css"
 
+const sbInputClass =
+  "w-full border border-[color:var(--vscode-input-border)] bg-sb-bg-input p-2 text-sb-fg-input"
+
+const sbControlButtonClass =
+  "cursor-pointer rounded border border-[color:var(--vscode-button-border)] bg-sb-bg-button px-2 py-1.5 text-sm text-sb-fg-button hover:bg-sb-bg-button-hover"
+
+const sbYamlTextareaClass = `${sbInputClass} mt-3 min-h-72 resize-y font-[family-name:var(--vscode-editor-font-family)] text-[length:var(--vscode-editor-font-size)]`
+
 type CardType = "character" | "background"
 type StoryboardRequestMethod = "cards.write" | "cards.open"
 type CardAttributeValue = string | number | boolean | null
@@ -98,10 +106,10 @@ function App(): React.ReactElement {
 
 function SidebarPlaceholder(): React.ReactElement {
   return (
-    <main className="placeholder">
-      <p className="eyebrow">Storyboard</p>
-      <h1>Coming soon: Phase 2</h1>
-      <p className="description">
+    <main className="flex min-h-screen flex-col justify-center gap-3 p-5">
+      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+      <h1 className="m-0 text-xl leading-snug text-sb-fg">Coming soon: Phase 2</h1>
+      <p className="m-0 leading-normal text-sb-fg-muted">
         캐릭터, 배경, 씬을 탐색하는 사이드바가 이 위치에 표시될 예정입니다.
       </p>
     </main>
@@ -137,31 +145,39 @@ function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsIniti
 
   if (!sidebarState.isStoryboardProject) {
     return (
-      <main className="cards-sidebar">
-        <p className="eyebrow">Storyboard</p>
-        <h1>{sidebarState.title}</h1>
-        <p className="description">Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.</p>
+      <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+        <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+        <p className="m-0 leading-normal text-sb-fg-muted">
+          Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.
+        </p>
       </main>
     )
   }
 
   return (
-    <main className="cards-sidebar">
-      <p className="eyebrow">Storyboard</p>
-      <h1>{sidebarState.title}</h1>
+    <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
+      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+      <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
 
       {sidebarState.cards.length === 0 ? (
-        <p className="description">아직 {sidebarState.type === "character" ? "캐릭터" : "배경"} 카드가 없습니다.</p>
+        <p className="m-0 leading-normal text-sb-fg-muted">
+          아직 {sidebarState.type === "character" ? "캐릭터" : "배경"} 카드가 없습니다.
+        </p>
       ) : (
-        <ul className="card-list" aria-label={`${sidebarState.title} card list`}>
+        <ul className="m-0 flex list-none flex-col gap-[0.35rem] p-0" aria-label={`${sidebarState.title} card list`}>
           {sidebarState.cards.map((card) => (
             <li key={card.uri}>
-              <button className="card-list-item" type="button" onClick={() => openCard(card)}>
-                <span className="card-list-item__title">{card.name}</span>
-                <span className="card-list-item__meta">{card.id}</span>
-                {card.error ? <span className="card-list-item__error">{card.error}</span> : null}
+              <button
+                className="flex w-full cursor-pointer flex-col gap-[0.2rem] rounded-md border border-transparent bg-transparent p-2 text-left text-sb-fg hover:border-sb-border-focus hover:bg-sb-bg-list-hover focus:border-sb-border-focus focus:bg-sb-bg-list-hover focus:outline-none"
+                type="button"
+                onClick={() => openCard(card)}
+              >
+                <span className="font-semibold">{card.name}</span>
+                <span className="truncate text-sm text-sb-fg-muted">{card.id}</span>
+                {card.error ? <span className="text-sm text-sb-fg-error">{card.error}</span> : null}
                 {!card.error && card.description ? (
-                  <span className="card-list-item__description">{card.description}</span>
+                  <span className="truncate text-sm text-sb-fg-muted">{card.description}</span>
                 ) : null}
               </button>
             </li>
@@ -228,60 +244,73 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
 
   if (documentState.error || !card) {
     return (
-      <main className="card-editor">
-        <section className="editor-panel editor-panel--full">
-          <p className="eyebrow">Storyboard Card</p>
-          <h1>YAML을 카드로 읽을 수 없습니다</h1>
-          <p className="error-message">{documentState.error ?? "알 수 없는 오류"}</p>
-          <textarea className="raw-yaml" readOnly value={documentState.rawText} />
+      <main className="grid min-h-screen grid-cols-1 gap-4 bg-sb-bg p-4">
+        <section className="flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard Card</p>
+          <h1 className="m-0 text-xl leading-snug text-sb-fg">YAML을 카드로 읽을 수 없습니다</h1>
+          <p className="m-0 text-sb-fg-error">{documentState.error ?? "알 수 없는 오류"}</p>
+          <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
         </section>
       </main>
     )
   }
 
+  const panelClass = "flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4"
+
   return (
-    <main className="card-editor">
-      <section className="editor-panel image-panel" aria-label="카드 미리보기">
+    <main className="grid min-h-screen grid-cols-[minmax(220px,0.85fr)_minmax(320px,1.15fr)] gap-4 bg-sb-bg p-4 max-[760px]:grid-cols-1">
+      <section className={panelClass} aria-label="카드 미리보기">
         {documentState.imageUri ? (
-          <img className="card-image-preview" src={documentState.imageUri} alt={`${card.name} preview`} />
+          <img
+            className="block max-h-[420px] w-full rounded-lg border border-sb-border object-contain"
+            src={documentState.imageUri}
+            alt={`${card.name} preview`}
+          />
         ) : (
-          <div className="image-placeholder">
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-sb-fg-muted text-center text-sb-fg-muted">
             <span>{card.type === "character" ? "Character" : "Background"}</span>
-            <strong>{card.name}</strong>
+            <strong className="text-lg text-sb-fg">{card.name}</strong>
           </div>
         )}
-        <p className="description">카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.</p>
+        <p className="m-0 leading-normal text-sb-fg-muted">
+          카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.
+        </p>
       </section>
 
-      <section className="editor-panel form-panel" aria-label="카드 편집 폼">
-        <p className="eyebrow">{card.type} card</p>
-        <h1>{card.name}</h1>
+      <section className={panelClass} aria-label="카드 편집 폼">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">{card.type} card</p>
+        <h1 className="m-0 text-xl leading-snug text-sb-fg">{card.name}</h1>
 
         {pendingExternalData ? (
-          <div className="reload-banner">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-sb-border-warning bg-sb-bg-widget px-2.5 py-2.5 text-sb-fg">
             <span>외부에서 YAML이 변경되었습니다.</span>
-            <button type="button" onClick={() => applyDocumentState(pendingExternalData)}>
+            <button type="button" className={sbControlButtonClass} onClick={() => applyDocumentState(pendingExternalData)}>
               다시 불러오기
             </button>
           </div>
         ) : null}
 
-        <label className="field">
-          <span>ID</span>
-          <input value={card.id} readOnly />
+        <label className="flex flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">ID</span>
+          <input className={sbInputClass} value={card.id} readOnly />
         </label>
 
-        <label className="field">
-          <span>Name</span>
-          <input value={card.name} onChange={(event) => updateCard({ ...card, name: event.target.value })} />
+        <label className="flex flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">Name</span>
+          <input
+            className={sbInputClass}
+            value={card.name}
+            onChange={(event) => updateCard({ ...card, name: event.target.value })}
+          />
         </label>
 
         {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
         {card.type === "background" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
 
-        <label className="field">
-          <span>Description</span>
+        <label className="flex flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">Description</span>
           <textarea
+            className={`${sbInputClass} min-h-32 resize-y`}
             value={card.description ?? ""}
             onChange={(event) => updateCard({ ...card, description: event.target.value })}
           />
@@ -310,12 +339,12 @@ function CardEditor({ initialData }: { readonly initialData: CardEditorInitialDa
           </>
         ) : null}
 
-        <details className="raw-yaml-details">
-          <summary>Raw YAML</summary>
-          <textarea className="raw-yaml" readOnly value={documentState.rawText} />
+        <details className="border-t border-sb-border pt-4">
+          <summary className="cursor-pointer text-sb-fg-link">Raw YAML</summary>
+          <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
         </details>
 
-        <p className="status-message">{status}</p>
+        <p className="m-0 text-sb-fg-muted">{status}</p>
       </section>
     </main>
   )
@@ -330,13 +359,21 @@ function CharacterFields({
 }): React.ReactElement {
   return (
     <>
-      <label className="field">
-        <span>Role</span>
-        <input value={card.role ?? ""} onChange={(event) => updateCard({ ...card, role: event.target.value })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Role</span>
+        <input
+          className={sbInputClass}
+          value={card.role ?? ""}
+          onChange={(event) => updateCard({ ...card, role: event.target.value })}
+        />
       </label>
-      <label className="field">
-        <span>Profile</span>
-        <input value={card.profile ?? ""} onChange={(event) => updateCard({ ...card, profile: event.target.value })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Profile</span>
+        <input
+          className={sbInputClass}
+          value={card.profile ?? ""}
+          onChange={(event) => updateCard({ ...card, profile: event.target.value })}
+        />
       </label>
     </>
   )
@@ -351,17 +388,29 @@ function BackgroundFields({
 }): React.ReactElement {
   return (
     <>
-      <label className="field">
-        <span>Concept</span>
-        <input value={card.concept ?? ""} onChange={(event) => updateCard({ ...card, concept: event.target.value })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Concept</span>
+        <input
+          className={sbInputClass}
+          value={card.concept ?? ""}
+          onChange={(event) => updateCard({ ...card, concept: event.target.value })}
+        />
       </label>
-      <label className="field">
-        <span>Country</span>
-        <input value={card.country ?? ""} onChange={(event) => updateCard({ ...card, country: event.target.value })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Country</span>
+        <input
+          className={sbInputClass}
+          value={card.country ?? ""}
+          onChange={(event) => updateCard({ ...card, country: event.target.value })}
+        />
       </label>
-      <label className="field">
-        <span>Category</span>
-        <input value={card.category ?? ""} onChange={(event) => updateCard({ ...card, category: event.target.value })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Category</span>
+        <input
+          className={sbInputClass}
+          value={card.category ?? ""}
+          onChange={(event) => updateCard({ ...card, category: event.target.value })}
+        />
       </label>
     </>
   )
@@ -377,20 +426,21 @@ function ListField({
   readonly onChange: (values: string[]) => void
 }): React.ReactElement {
   return (
-    <fieldset className="dynamic-field">
-      <legend>{label}</legend>
+    <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
+      <legend className="px-1 text-sm text-sb-fg-muted">{label}</legend>
       {values.map((value, index) => (
-        <div className="dynamic-row" key={`${label}-${index}`}>
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-1.5" key={`${label}-${index}`}>
           <input
+            className={sbInputClass}
             value={value}
             onChange={(event) => onChange(replaceArrayItem(values, index, event.target.value))}
           />
-          <button type="button" onClick={() => onChange(removeArrayItem(values, index))}>
+          <button type="button" className={sbControlButtonClass} onClick={() => onChange(removeArrayItem(values, index))}>
             삭제
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...values, ""])}>
+      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange([...values, ""])}>
         추가
       </button>
     </fieldset>
@@ -409,26 +459,28 @@ function KeyValueField({
   const entries = Object.entries(values)
 
   return (
-    <fieldset className="dynamic-field">
-      <legend>{label}</legend>
+    <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
+      <legend className="px-1 text-sm text-sb-fg-muted">{label}</legend>
       {entries.map(([key, value], index) => (
-        <div className="dynamic-row" key={`${label}-${index}`}>
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-1.5" key={`${label}-${index}`}>
           <input
+            className={sbInputClass}
             aria-label="key"
             value={key}
             onChange={(event) => onChange(renameRecordKey(values, key, event.target.value))}
           />
           <input
+            className={sbInputClass}
             aria-label="value"
             value={String(value ?? "")}
             onChange={(event) => onChange({ ...values, [key]: event.target.value })}
           />
-          <button type="button" onClick={() => onChange(removeRecordKey(values, key))}>
+          <button type="button" className={sbControlButtonClass} onClick={() => onChange(removeRecordKey(values, key))}>
             삭제
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange({ ...values, newKey: "" })}>
+      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange({ ...values, newKey: "" })}>
         추가
       </button>
     </fieldset>
@@ -443,26 +495,28 @@ function RelationsField({
   readonly onChange: (relations: CharacterRelation[]) => void
 }): React.ReactElement {
   return (
-    <fieldset className="dynamic-field">
-      <legend>Relations</legend>
+    <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
+      <legend className="px-1 text-sm text-sb-fg-muted">Relations</legend>
       {relations.map((relation, index) => (
-        <div className="dynamic-row" key={`relation-${index}`}>
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-1.5" key={`relation-${index}`}>
           <input
+            className={sbInputClass}
             placeholder="target"
             value={relation.target}
             onChange={(event) => onChange(replaceArrayItem(relations, index, { ...relation, target: event.target.value }))}
           />
           <input
+            className={sbInputClass}
             placeholder="type"
             value={relation.type}
             onChange={(event) => onChange(replaceArrayItem(relations, index, { ...relation, type: event.target.value }))}
           />
-          <button type="button" onClick={() => onChange(removeArrayItem(relations, index))}>
+          <button type="button" className={sbControlButtonClass} onClick={() => onChange(removeArrayItem(relations, index))}>
             삭제
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...relations, { target: "", type: "" }])}>
+      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange([...relations, { target: "", type: "" }])}>
         추가
       </button>
     </fieldset>
@@ -477,31 +531,34 @@ function ArcField({
   readonly onChange: (arc: CharacterArc[]) => void
 }): React.ReactElement {
   return (
-    <fieldset className="dynamic-field">
-      <legend>Arc</legend>
+    <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
+      <legend className="px-1 text-sm text-sb-fg-muted">Arc</legend>
       {arc.map((item, index) => (
-        <div className="dynamic-column" key={`arc-${index}`}>
+        <div className="flex flex-col gap-1.5 border-b border-sb-border pb-2" key={`arc-${index}`}>
           <input
+            className={sbInputClass}
             placeholder="stage"
             value={item.stage}
             onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, stage: event.target.value }))}
           />
           <input
+            className={sbInputClass}
             placeholder="summary"
             value={item.summary}
             onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, summary: event.target.value }))}
           />
           <input
+            className={sbInputClass}
             placeholder="sceneRef"
             value={item.sceneRef ?? ""}
             onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, sceneRef: event.target.value }))}
           />
-          <button type="button" onClick={() => onChange(removeArrayItem(arc, index))}>
+          <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange(removeArrayItem(arc, index))}>
             삭제
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...arc, { stage: "", summary: "", sceneRef: "" }])}>
+      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange([...arc, { stage: "", summary: "", sceneRef: "" }])}>
         추가
       </button>
     </fieldset>
