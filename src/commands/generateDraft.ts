@@ -323,8 +323,6 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       shouldCancel: options.shouldCancel
     })
 
-    options.onSaving?.()
-
     const draft = createDraft({
       sceneStem: scene.stem,
       format: project.format,
@@ -332,6 +330,8 @@ export async function generateDraftForWorkspaceSceneWorkflow(
     })
 
     await ensureSceneCacheDirectory(paths)
+
+    options.onSaving?.()
 
     const cacheRecord: SceneCacheRecord = {
       sceneStem: scene.stem,
@@ -415,8 +415,8 @@ export async function runGenerateDraftForWorkspaceScene(
         aiProviderRegistry: options.aiProviderRegistry,
         logger: options.logger,
         openDocumentOnSuccess: true,
-        showCacheHitMessage: true,
-        showSuccessMessage: true,
+        showCacheHitMessage: false,
+        showSuccessMessage: false,
         onTraitsUpdateComplete: (summary) => {
           if (summary.updatedCardCount > 0) {
             void vscode.window.showInformationMessage(
@@ -443,6 +443,16 @@ export async function runGenerateDraftForWorkspaceScene(
       })
 
       if (result.ok) {
+        progress.report({
+          message: result.kind === "cache_hit" ? "캐시된 초안을 열었습니다." : "완료"
+        })
+        if (result.kind === "cache_hit") {
+          void vscode.window.showInformationMessage("입력이 동일하여 캐시된 초안을 엽니다.")
+        } else {
+          void vscode.window.showInformationMessage(
+            options.force ? "초안을 다시 생성해 저장했습니다." : "초안을 생성해 저장했습니다."
+          )
+        }
         return
       }
 
@@ -450,7 +460,7 @@ export async function runGenerateDraftForWorkspaceScene(
         return
       }
 
-      await vscode.window.showErrorMessage(result.message)
+      void vscode.window.showErrorMessage(result.message)
     }
   )
 }

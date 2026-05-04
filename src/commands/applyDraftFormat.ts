@@ -148,7 +148,8 @@ export async function runApplyDraftFormatForScene(
 
         const doc = await vscode.workspace.openTextDocument(draftUri)
         await vscode.window.showTextDocument(doc)
-        await vscode.window.showInformationMessage("장르 포맷을 적용해 초안을 저장했습니다.")
+        progress.report({ message: "완료" })
+        void vscode.window.showInformationMessage("장르 포맷을 적용해 초안을 저장했습니다.")
       }
     )
   } catch (error) {
