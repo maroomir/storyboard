@@ -74,6 +74,11 @@
         "title": "Storyboard: Open Character Relation Graph"
       },
       {
+        "command": "storyboard.settings.open",
+        "title": "Storyboard: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
         "command": "storyboard.draft.grammarCheck",
         "title": "Storyboard: Grammar Check (Draft)"
       },
@@ -213,6 +218,21 @@
           "command": "storyboard.scene.create",
           "when": "view == storyboard.scenesView",
           "group": "navigation"
+        },
+        {
+          "command": "storyboard.settings.open",
+          "when": "view == storyboard.charactersView",
+          "group": "navigation@99"
+        },
+        {
+          "command": "storyboard.settings.open",
+          "when": "view == storyboard.backgroundsView",
+          "group": "navigation@99"
+        },
+        {
+          "command": "storyboard.settings.open",
+          "when": "view == storyboard.scenesView",
+          "group": "navigation@99"
         }
       ]
     }

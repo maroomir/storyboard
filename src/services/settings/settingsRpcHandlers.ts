@@ -12,6 +12,12 @@ export interface SettingsRpcHandlersDependencies {
   readonly registry: AiProviderRegistry
 }
 
+export async function getSettingsReadSnapshot(
+  deps: Pick<SettingsRpcHandlersDependencies, "configBridge" | "registry">
+): Promise<StoryboardResponsePayload<"settings.read">> {
+  return buildSettingsReadSnapshot(deps.configBridge, deps.registry)
+}
+
 export function createSettingsRpcHandlers(deps: SettingsRpcHandlersDependencies): StoryboardRpcHandlers {
   const { configBridge, secretStore, registry } = deps
 

@@ -9,6 +9,7 @@ import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
 import { registerDraftPlaceholderCommands } from "./commands/draftPlaceholders"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
+import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
@@ -48,6 +49,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry }))
   context.subscriptions.push(registerNewSceneCommands())
   context.subscriptions.push(registerOpenRelationGraphCommand(context, { aiProviderRegistry }))
+  context.subscriptions.push(
+    registerOpenSettingsCommand(context, { aiProviderRegistry, secretStore, configBridge })
+  )
 }
 
 export function deactivate(): void {}
