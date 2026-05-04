@@ -34,6 +34,14 @@
 - **사전 정의 카탈로그만** 허용 (`src/shared/models.ts`의 `storyboardModelCatalog`). 자유 텍스트 모델 ID나 원격 모델 목록 자동 디스커버리는 이 단계에서 도입하지 않는다.
 - `package.json`에 선언된 각 provider 기본 모델 문자열은 카탈로그 ID와 정합되도록 유지한다(회귀 테스트로 검증).
 
+## 2차: 태스크별 provider + model
+
+- `storyboard.tasks.<task>`에 `provider`와 선택적 `model`을 함께 둘 수 있다. UI·RPC 저장 시에는 태스크에 provider를 쓰면 **반드시 카탈로그에 있는 model**을 함께 보내 정규화한다(`settings.updateTaskAiConfig`). `providerId`·`model`이 모두 `null`이면 해당 태스크 override를 제거한다.
+- **런타임 해석 우선순위**: 태스크에 저장된 provider + model → 태스크 provider만 있으면 해당 provider의 전역 모델 → 기본 provider + 그 전역 모델 → 안전한 mock.
+- **호환**: 예전처럼 `provider`만 있는 JSON/플랫 키(`tasks.<task>.provider`)는 그대로 읽으며, model이 없으면 provider 전역 모델을 쓴다. 카탈로그 밖의 model 문자열은 저장 경로(zod·ConfigBridge)에서 막는다.
+- **연결 테스트**(`checkConnection`)는 태스크와 무관하게 provider 전역 설정 기준으로 유지한다.
+- API 키는 기존과 같이 **provider 단위**만 사용한다(태스크별 키 없음).
+
 ## Cline 대비 단순화
 
 다음은 **이번 설계에서 의도적으로 넣지 않은** 영역이다.
@@ -47,5 +55,6 @@
 
 ## 후속 아이디어
 
+- **AI Profile**처럼 이름 붙은 프리셋 묶음(여러 태스크·provider 조합을 한 번에 바꾸기 등)은 범위 밖으로 두고, 필요 시 별도 결정에서 RPC·UI를 설계한다.
 - Ollama `tags` API 등으로 로컬 모델 목록을 채우는 옵션(옵트인)
 - 설정 검색/필터,보내기·가져오기(민감 값 제외)

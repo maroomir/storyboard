@@ -57,6 +57,24 @@ describe("AiProviderRegistry", () => {
     expect(response.model).toBe("claude-haiku-4-5")
   })
 
+  it("uses the provider global model when the task overrides provider only", async () => {
+    const registry = createRegistry(
+      new Map<string, unknown>([
+        ["defaultProvider", "mock"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks", { sceneDraft: { provider: "claude" } }]
+      ])
+    )
+
+    const response = await registry.generate({
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "테스트" }]
+    })
+
+    expect(response.providerId).toBe("claude")
+    expect(response.model).toBe("claude-sonnet-4-6")
+  })
+
   it("exposes the resolved task provider for cache metadata", () => {
     const registry = createRegistry(
       new Map<string, unknown>([

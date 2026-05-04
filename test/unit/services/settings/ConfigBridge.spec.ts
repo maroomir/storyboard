@@ -81,6 +81,22 @@ describe("ConfigBridge", () => {
     expect(configBridge.getTaskAiConfigOverride("sceneDraft")).toEqual({ providerId: "claude", model: null })
   })
 
+  it("reads legacy flat tasks.<task>.provider without a merged tasks object", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([
+        ["defaultProvider", "openai"],
+        ["providers.claude.model", "claude-sonnet-4-6"],
+        ["tasks.sceneDraft.provider", "claude"]
+      ])
+    )
+
+    expect(configBridge.getTaskAiConfigOverride("sceneDraft")).toEqual({ providerId: "claude", model: null })
+    expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
+      providerId: "claude",
+      model: "claude-sonnet-4-6"
+    })
+  })
+
   it("uses per-task model override when stored and falls back to provider global for provider-only tasks", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([

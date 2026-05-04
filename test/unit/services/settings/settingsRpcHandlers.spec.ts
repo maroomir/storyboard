@@ -169,6 +169,31 @@ describe("createSettingsRpcHandlers", () => {
     }
   })
 
+  it("settings.read returns stored task model alongside provider when both are set", async () => {
+    const configuration = new Map<string, unknown>([
+      ["defaultProvider", "mock"],
+      ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
+    ])
+    const secretValues = new Map<string, string>([
+      ["storyboard.apiKey.openai", "sk-test"],
+      ["storyboard.apiKey.claude", "sk-ant-test"],
+      ["storyboard.apiKey.google", "google-test"]
+    ])
+    const registry = createTestRegistry(configuration, secretValues)
+    const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
+    })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+
+    const snapshot = await handlers["settings.read"]!({}, {} as never)
+
+    expect(snapshot.taskAssignments.sceneDraft).toEqual({
+      providerId: "claude",
+      model: "claude-haiku-4-5"
+    })
+  })
+
   it("updates default provider, model, base URL, and task provider via RPC", async () => {
     const configuration = new Map<string, unknown>([["defaultProvider", "mock"]])
     const secretValues = new Map<string, string>([
@@ -323,6 +348,35 @@ describe("settings RPC via webview bridge", () => {
       id: "bad-model",
       method: "settings.updateProviderModel",
       payload: { providerId: "openai", model: "gpt-99-fake" }
+    })
+
+    expect(webview.postedMessages).toHaveLength(1)
+    expect(webview.postedMessages[0]).toMatchObject({
+      id: "unknown",
+      method: "unknown",
+      ok: false,
+      error: { code: "validation-error" }
+    })
+  })
+
+  it("returns validation-error for invalid settings.updateTaskAiConfig via webview bridge", async () => {
+    const configuration = new Map<string, unknown>()
+    const secretValues = new Map<string, string>()
+    const registry = createTestRegistry(configuration, secretValues)
+    const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
+    })
+    const webview = new FakeWebview()
+
+    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry }))
+
+    await webview.receive({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "bad-task-ai",
+      method: "settings.updateTaskAiConfig",
+      payload: { taskName: "sceneDraft", providerId: "openai", model: "gpt-99-fake" }
     })
 
     expect(webview.postedMessages).toHaveLength(1)
