@@ -28,10 +28,19 @@ export interface AiGenerateRequest {
   readonly maxTokens?: number
 }
 
+export interface AiUsage {
+  readonly inputTokens: number
+  readonly outputTokens: number
+  readonly cacheReadInputTokens?: number
+  readonly cacheCreationInputTokens?: number
+}
+
 export interface AiGenerateResponse {
   readonly text: string
   readonly providerId: AiProviderId
   readonly model?: string
+  readonly usage?: AiUsage
+  readonly costUsd?: number
 }
 
 export interface AiProviderStatus {

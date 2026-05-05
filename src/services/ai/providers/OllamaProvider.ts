@@ -1,12 +1,14 @@
 import axios, { type AxiosInstance } from "axios"
 
+import { aiGenerateResponseWithUsage } from "../cost"
 import { AiProviderError } from "../AiProviderError"
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
   type AiProvider,
-  type AiProviderId
+  type AiProviderId,
+  type AiUsage
 } from "../types"
 
 export interface OllamaClientLike {
@@ -34,6 +36,8 @@ interface OllamaChatResponse {
   readonly message?: {
     readonly content?: string
   }
+  readonly prompt_eval_count?: number
+  readonly eval_count?: number
 }
 
 export class OllamaProvider implements AiProvider {
@@ -80,14 +84,23 @@ export class OllamaProvider implements AiProvider {
         }
       })
 
-      return {
-        providerId: this.id,
-        model: this.model,
-        text: response.message?.content ?? ""
-      }
+      const text = response.message?.content ?? ""
+      const usage = usageFromOllamaResponse(response)
+      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage })
     } catch (error) {
       throw new AiProviderError("generation-failed", this.id, "Ollama 텍스트 생성에 실패했습니다.", error)
     }
+  }
+}
+
+function usageFromOllamaResponse(response: OllamaChatResponse): AiUsage | undefined {
+  if (response.prompt_eval_count === undefined && response.eval_count === undefined) {
+    return undefined
+  }
+
+  return {
+    inputTokens: response.prompt_eval_count ?? 0,
+    outputTokens: response.eval_count ?? 0
   }
 }
 

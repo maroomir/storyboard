@@ -17,9 +17,15 @@ describe("MockAiProvider", () => {
       messages: [{ role: "user", content: "엘리아가 학교에 도착했다." }]
     })
 
+    const promptChars = "엘리아가 학교에 도착했다.".length
     expect(response).toMatchObject({
       providerId: "mock",
-      model: "mock-model"
+      model: "mock-default",
+      usage: {
+        inputTokens: Math.floor(promptChars / 4),
+        outputTokens: Math.floor(response.text.length / 4)
+      },
+      costUsd: 0
     })
     expect(response.text).toContain("[Mock AI: sceneDraft]")
     expect(response.text).toContain("엘리아가 학교에 도착했다.")

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { computeCostUsd } from "../../../../src/services/ai/cost"
 import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
 import { OpenAiProvider, type OpenAiClientLike } from "../../../../src/services/ai/providers/OpenAiProvider"
 
@@ -25,10 +26,15 @@ describe("OpenAiProvider", () => {
   })
 
   it("generates text through OpenAI chat completions", async () => {
+    const usage = { inputTokens: 100, outputTokens: 50 }
     const provider = new OpenAiProvider({
       apiKey: "sk-test",
       model: "gpt-5.4-mini",
-      createClient: (): OpenAiClientLike => createFakeOpenAiClient({ completionText: "생성된 원고" })
+      createClient: (): OpenAiClientLike =>
+        createFakeOpenAiClient({
+          completionText: "생성된 원고",
+          usage: { prompt_tokens: usage.inputTokens, completion_tokens: usage.outputTokens }
+        })
     })
 
     const response = await provider.generate({
@@ -41,7 +47,9 @@ describe("OpenAiProvider", () => {
     expect(response).toEqual({
       providerId: "openai",
       model: "gpt-5.4-mini",
-      text: "생성된 원고"
+      text: "생성된 원고",
+      usage,
+      costUsd: computeCostUsd({ providerId: "openai", model: "gpt-5.4-mini", usage })
     })
   })
 })
@@ -49,6 +57,7 @@ describe("OpenAiProvider", () => {
 interface FakeOpenAiClientOptions {
   readonly completionText?: string
   readonly onListModels?: () => void
+  readonly usage?: { readonly prompt_tokens: number; readonly completion_tokens: number }
 }
 
 function createFakeOpenAiClient(options: FakeOpenAiClientOptions): OpenAiClientLike {
@@ -61,8 +70,12 @@ function createFakeOpenAiClient(options: FakeOpenAiClientOptions): OpenAiClientL
     },
     chat: {
       completions: {
-        create: async (): Promise<{ readonly choices: readonly [{ readonly message: { readonly content: string } }] }> => ({
-          choices: [{ message: { content: options.completionText ?? "" } }]
+        create: async (): Promise<{
+          readonly choices: readonly [{ readonly message: { readonly content: string } }]
+          readonly usage?: { readonly prompt_tokens: number; readonly completion_tokens: number }
+        }> => ({
+          choices: [{ message: { content: options.completionText ?? "" } }],
+          ...(options.usage !== undefined ? { usage: options.usage } : {})
         })
       }
     }

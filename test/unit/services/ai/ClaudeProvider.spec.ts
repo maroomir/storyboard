@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { computeCostUsd } from "../../../../src/services/ai/cost"
 import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
 import { ClaudeProvider, type ClaudeClientLike } from "../../../../src/services/ai/providers/ClaudeProvider"
 
@@ -28,15 +29,23 @@ describe("ClaudeProvider", () => {
 
   it("generates text and separates system prompts from conversation messages", async () => {
     let capturedSystem: string | undefined
+    const usage = { inputTokens: 80, outputTokens: 40 }
     const provider = new ClaudeProvider({
       apiKey: "sk-ant-test",
       model: "claude-sonnet-4-6",
-      createClient: (): ClaudeClientLike => createFakeClaudeClient({
-        completionText: "클로드 응답",
-        onCreateMessage: (request): void => {
-          capturedSystem = request.system
-        }
-      })
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          completionText: "클로드 응답",
+          usage: {
+            input_tokens: usage.inputTokens,
+            output_tokens: usage.outputTokens,
+            cache_read_input_tokens: 10,
+            cache_creation_input_tokens: 5
+          },
+          onCreateMessage: (request): void => {
+            capturedSystem = request.system
+          }
+        })
     })
 
     const response = await provider.generate({
@@ -51,22 +60,43 @@ describe("ClaudeProvider", () => {
     expect(response).toEqual({
       providerId: "claude",
       model: "claude-sonnet-4-6",
-      text: "클로드 응답"
+      text: "클로드 응답",
+      usage: {
+        inputTokens: 80,
+        outputTokens: 40,
+        cacheReadInputTokens: 10,
+        cacheCreationInputTokens: 5
+      },
+      costUsd: computeCostUsd({ providerId: "claude", model: "claude-sonnet-4-6", usage })
     })
   })
 })
 
 interface FakeClaudeClientOptions {
   readonly completionText?: string
+  readonly usage?: {
+    readonly input_tokens: number
+    readonly output_tokens: number
+    readonly cache_read_input_tokens?: number
+    readonly cache_creation_input_tokens?: number
+  }
   readonly onCreateMessage?: (request: Parameters<ClaudeClientLike["messages"]["create"]>[0]) => void
 }
 
 function createFakeClaudeClient(options: FakeClaudeClientOptions): ClaudeClientLike {
   return {
     messages: {
-      create: async (request): Promise<{ readonly content: readonly [{ readonly type: "text"; readonly text: string }] }> => {
+      create: async (
+        request
+      ): Promise<{
+        readonly content: readonly [{ readonly type: "text"; readonly text: string }]
+        readonly usage?: FakeClaudeClientOptions["usage"]
+      }> => {
         options.onCreateMessage?.(request)
-        return { content: [{ type: "text", text: options.completionText ?? "ok" }] }
+        return {
+          content: [{ type: "text", text: options.completionText ?? "ok" }],
+          ...(options.usage !== undefined ? { usage: options.usage } : {})
+        }
       }
     }
   }

@@ -1,12 +1,14 @@
 import OpenAI from "openai"
 
+import { aiGenerateResponseWithUsage } from "../cost"
 import { AiProviderError } from "../AiProviderError"
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
   type AiProvider,
-  type AiProviderId
+  type AiProviderId,
+  type AiUsage
 } from "../types"
 
 interface OpenAiModelsLike {
@@ -43,6 +45,10 @@ interface OpenAiChatCompletionResponse {
       readonly content?: string | null
     }
   }>
+  readonly usage?: {
+    readonly prompt_tokens?: number
+    readonly completion_tokens?: number
+  }
 }
 
 export class OpenAiProvider implements AiProvider {
@@ -85,14 +91,24 @@ export class OpenAiProvider implements AiProvider {
         max_tokens: request.maxTokens
       })
 
-      return {
-        providerId: this.id,
-        model: this.model,
-        text: response.choices[0]?.message?.content ?? ""
-      }
+      const text = response.choices[0]?.message?.content ?? ""
+      const usage = usageFromOpenAiResponse(response)
+      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage })
     } catch (error) {
       throw new AiProviderError("generation-failed", this.id, "OpenAI 텍스트 생성에 실패했습니다.", error)
     }
+  }
+}
+
+function usageFromOpenAiResponse(response: OpenAiChatCompletionResponse): AiUsage | undefined {
+  const usage = response.usage
+  if (!usage) {
+    return undefined
+  }
+
+  return {
+    inputTokens: usage.prompt_tokens ?? 0,
+    outputTokens: usage.completion_tokens ?? 0
   }
 }
 

@@ -1,10 +1,14 @@
+import { aiGenerateResponseWithUsage } from "../cost"
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
-  type AiTaskName
+  type AiTaskName,
+  type AiUsage
 } from "../types"
+
+const mockCatalogModelId = "mock-default"
 
 export class MockAiProvider implements AiProvider {
   public readonly id: AiProviderId = "mock"
@@ -21,11 +25,23 @@ export class MockAiProvider implements AiProvider {
       .filter((content) => content.length > 0)
       .join("\n\n")
 
-    return {
+    const text = createMockResponse(request.taskName, userPrompt)
+    const usage = syntheticUsageFromMessages(request, text)
+    return aiGenerateResponseWithUsage({
       providerId: this.id,
-      model: "mock-model",
-      text: createMockResponse(request.taskName, userPrompt)
-    }
+      model: mockCatalogModelId,
+      text,
+      usage
+    })
+  }
+}
+
+function syntheticUsageFromMessages(request: AiGenerateRequest, responseText: string): AiUsage {
+  const promptChars = request.messages.map((message) => message.content).join("").length
+
+  return {
+    inputTokens: Math.floor(promptChars / 4),
+    outputTokens: Math.floor(responseText.length / 4)
   }
 }
 

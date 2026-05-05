@@ -26,18 +26,22 @@ describe("OllamaProvider", () => {
 
   it("generates text through /api/chat", async () => {
     let capturedPath = ""
-    const provider = new OllamaProvider({
+    const usage = { inputTokens: 30, outputTokens: 70 }
+    const providerWithUsage = new OllamaProvider({
       baseUrl: "http://localhost:11434",
       model: "llama3.3",
-      createClient: (): OllamaClientLike => createFakeOllamaClient({
-        completionText: "올라마 응답",
-        onPost: (path): void => {
-          capturedPath = path
-        }
-      })
+      createClient: (): OllamaClientLike =>
+        createFakeOllamaClient({
+          completionText: "올라마 응답",
+          promptEvalCount: usage.inputTokens,
+          evalCount: usage.outputTokens,
+          onPost: (path): void => {
+            capturedPath = path
+          }
+        })
     })
 
-    const response = await provider.generate({
+    const response = await providerWithUsage.generate({
       taskName: "sceneDraft",
       messages: [{ role: "user", content: "장면" }]
     })
@@ -46,13 +50,17 @@ describe("OllamaProvider", () => {
     expect(response).toEqual({
       providerId: "ollama",
       model: "llama3.3",
-      text: "올라마 응답"
+      text: "올라마 응답",
+      usage,
+      costUsd: 0
     })
   })
 })
 
 interface FakeOllamaClientOptions {
   readonly completionText?: string
+  readonly promptEvalCount?: number
+  readonly evalCount?: number
   readonly onGet?: (path: string) => void
   readonly onPost?: (path: string) => void
 }
@@ -63,9 +71,19 @@ function createFakeOllamaClient(options: FakeOllamaClientOptions): OllamaClientL
       options.onGet?.(path)
       return {}
     },
-    post: async (path): Promise<{ readonly message: { readonly content: string } }> => {
+    post: async (
+      path
+    ): Promise<{
+      readonly message: { readonly content: string }
+      readonly prompt_eval_count?: number
+      readonly eval_count?: number
+    }> => {
       options.onPost?.(path)
-      return { message: { content: options.completionText ?? "ok" } }
+      return {
+        message: { content: options.completionText ?? "ok" },
+        ...(options.promptEvalCount !== undefined ? { prompt_eval_count: options.promptEvalCount } : {}),
+        ...(options.evalCount !== undefined ? { eval_count: options.evalCount } : {})
+      }
     }
   }
 }

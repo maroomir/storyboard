@@ -1,11 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
+import { aiGenerateResponseWithUsage } from "../cost"
 import { AiProviderError } from "../AiProviderError"
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
-  type AiProviderId
+  type AiProviderId,
+  type AiUsage
 } from "../types"
 
 interface GoogleGenerativeModelLike {
@@ -15,6 +17,10 @@ interface GoogleGenerativeModelLike {
 interface GoogleGenerateContentResultLike {
   readonly response: {
     readonly text: () => string
+    readonly usageMetadata?: {
+      readonly promptTokenCount?: number
+      readonly candidatesTokenCount?: number
+    }
   }
 }
 
@@ -79,14 +85,24 @@ export class GoogleProvider implements AiProvider {
       })
       const result = await model.generateContent(createGooglePrompt(request))
 
-      return {
-        providerId: this.id,
-        model: this.model,
-        text: result.response.text()
-      }
+      const text = result.response.text()
+      const usage = usageFromGoogleResult(result)
+      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage })
     } catch (error) {
       throw new AiProviderError("generation-failed", this.id, "Google Gemini 텍스트 생성에 실패했습니다.", error)
     }
+  }
+}
+
+function usageFromGoogleResult(result: GoogleGenerateContentResultLike): AiUsage | undefined {
+  const meta = result.response.usageMetadata
+  if (!meta) {
+    return undefined
+  }
+
+  return {
+    inputTokens: meta.promptTokenCount ?? 0,
+    outputTokens: meta.candidatesTokenCount ?? 0
   }
 }
 

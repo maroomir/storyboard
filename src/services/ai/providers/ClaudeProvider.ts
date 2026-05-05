@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
 import { type MessageParam } from "@anthropic-ai/sdk/resources/messages"
 
+import { aiGenerateResponseWithUsage } from "../cost"
 import { AiProviderError } from "../AiProviderError"
 import {
   type AiGenerateRequest,
@@ -8,7 +9,8 @@ import {
   type AiMessage,
   type AiMessageRole,
   type AiProvider,
-  type AiProviderId
+  type AiProviderId,
+  type AiUsage
 } from "../types"
 
 type ClaudeMessageRole = Exclude<AiMessageRole, "system">
@@ -45,6 +47,12 @@ interface ClaudeMessageResponse {
     readonly type: string
     readonly text?: string
   }>
+  readonly usage?: {
+    readonly input_tokens?: number
+    readonly output_tokens?: number
+    readonly cache_read_input_tokens?: number
+    readonly cache_creation_input_tokens?: number
+  }
 }
 
 export class ClaudeProvider implements AiProvider {
@@ -94,11 +102,9 @@ export class ClaudeProvider implements AiProvider {
         messages
       })
 
-      return {
-        providerId: this.id,
-        model: this.model,
-        text: extractClaudeText(response)
-      }
+      const text = extractClaudeText(response)
+      const usage = usageFromClaudeResponse(response)
+      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage })
     } catch (error) {
       throw new AiProviderError("generation-failed", this.id, "Claude 텍스트 생성에 실패했습니다.", error)
     }
@@ -125,6 +131,20 @@ function splitClaudeMessages(messages: readonly AiMessage[]): {
 
 function isClaudeConversationMessage(message: AiMessage): message is AiMessage & { readonly role: ClaudeMessageRole } {
   return message.role === "user" || message.role === "assistant"
+}
+
+function usageFromClaudeResponse(response: ClaudeMessageResponse): AiUsage | undefined {
+  const usage = response.usage
+  if (!usage) {
+    return undefined
+  }
+
+  return {
+    inputTokens: usage.input_tokens ?? 0,
+    outputTokens: usage.output_tokens ?? 0,
+    cacheReadInputTokens: usage.cache_read_input_tokens,
+    cacheCreationInputTokens: usage.cache_creation_input_tokens
+  }
 }
 
 function extractClaudeText(response: ClaudeMessageResponse): string {
