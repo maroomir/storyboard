@@ -190,22 +190,25 @@ export function registerSidebarCardsProviders(
   context: vscode.ExtensionContext,
   dependencies: SidebarCardsProvidersDependencies
 ): vscode.Disposable {
-  const charactersProvider = new SidebarCardsProvider(context.extensionUri, dependencies, {
+  const charactersOptions: SidebarCardsProviderOptions = {
     viewType: "storyboard.charactersView",
     cardType: "character",
     title: "Characters",
     cardGlob: "character/*.card"
-  })
-  const backgroundsProvider = new SidebarCardsProvider(context.extensionUri, dependencies, {
+  }
+  const backgroundsOptions: SidebarCardsProviderOptions = {
     viewType: "storyboard.backgroundsView",
     cardType: "background",
     title: "Backgrounds",
     cardGlob: "background/*.card"
-  })
+  }
+
+  const charactersProvider = new SidebarCardsProvider(context.extensionUri, dependencies, charactersOptions)
+  const backgroundsProvider = new SidebarCardsProvider(context.extensionUri, dependencies, backgroundsOptions)
 
   return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider("storyboard.charactersView", charactersProvider),
-    vscode.window.registerWebviewViewProvider("storyboard.backgroundsView", backgroundsProvider),
+    vscode.window.registerWebviewViewProvider(charactersOptions.viewType, charactersProvider),
+    vscode.window.registerWebviewViewProvider(backgroundsOptions.viewType, backgroundsProvider),
     charactersProvider,
     backgroundsProvider
   )

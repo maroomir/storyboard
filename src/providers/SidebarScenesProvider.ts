@@ -11,6 +11,7 @@ import { readSceneFile, type SceneFileSystem } from "../files/scene"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
 
 const generateDraftCommand = "storyboard.draft.generate"
+const scenesSidebarViewId = "storyboard.scenesView"
 
 const vscodeFs: SceneFileSystem = {
   readFile: (uri: unknown) => vscode.workspace.fs.readFile(uri as vscode.Uri)
@@ -235,7 +236,7 @@ export function registerSidebarScenesProvider(
   const provider = new SidebarScenesProvider(context.extensionUri, dependencies)
 
   return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider("storyboard.scenesView", provider),
+    vscode.window.registerWebviewViewProvider(scenesSidebarViewId, provider),
     provider
   )
 }

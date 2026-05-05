@@ -63,19 +63,35 @@ npm run build
 **성공 기준**
 
 - 탐색기에 `.storyboard/project.json`, `character/`, `background/`, `scene/`, `draft/` 등이 생긴다.
-- Activity Bar에 **Storyboard** 아이콘이 보이고, 클릭하면 **Characters / Backgrounds / Scenes** 뷰가 열린다.
+- Activity Bar 왼쪽에 **Storyboard · Characters**, **Storyboard · Backgrounds**, **Storyboard · Scenes** 아이콘이 **각각** 보인다(한 개의 Storyboard 아이콘 안에 세 탭이 있는 구조가 아님).
+- 위 세 아이콘을 각각 클릭하면 대응하는 **Characters**, **Backgrounds**, **Scenes** Webview 사이드바 뷰가 연다.
 
 **막혔을 때**
 
 - 이미 `.storyboard/project.json`이 있으면 초기화는 다시 수행되지 않을 수 있다. 새 빈 폴더를 연다.
 - 명령이 안 보이면: 확장이 해당 창에서 활성화됐는지(F5 창인지) 확인한다.
 
+### 3a. 세 사이드바 뷰의 **+** 와 공통 설정(톱니바퀴)
+
+프로젝트 초기화 직후, **세 Activity Bar 진입점**을 각각 열어 다음을 확인한다.
+
+| 확인 항목 | 기대 동작 |
+| --- | --- |
+| **Storyboard · Characters** → 뷰 제목 줄 **+** | **`Storyboard: Create Character`** — `character/<이름>.card` 생성 |
+| **Storyboard · Backgrounds** → 뷰 제목 줄 **+** | **`Storyboard: Create Background`** — `background/<이름>.card` 생성 |
+| **Storyboard · Scenes** → 뷰 제목 줄 **+** | **`Storyboard: New Scene`** — `scene/*.txt` 생성 흐름 |
+| 각 뷰 제목 줄 **톱니바퀴** | **`Storyboard: Open Settings`** — 세 뷰 모두 **동일한** Storyboard 설정 패널(웹뷰)이 열림 |
+| **Characters** 목록 vs **Backgrounds** 목록 | 캐릭터 카드(`character/*.card`)와 배경 카드(`background/*.card`)가 **서로 섞이지 않음** |
+| **Scenes** 목록 | 씬·드래프트 상태가 갱신되는지(준비/미생성 등 배지·버튼) |
+
+**성공 기준**: 위 표가 모두 맞고, Characters **+** 로 만든 파일이 Backgrounds 목록에 나타나지 않으며 그 반대도 같다.
+
 ### 4. 캐릭터·배경 카드 추가
 
 **Extension Development Host** 창에서:
 
-1. Activity Bar → **Storyboard** → **Characters** (또는 **Backgrounds**) 뷰를 연다.
-2. 뷰 **제목 줄 오른쪽**의 **+** (또는 해당 뷰의 “추가” UI)로 카드를 만든다.
+1. Activity Bar에서 **Storyboard · Characters** 또는 **Storyboard · Backgrounds** 아이콘을 눌러 해당 뷰를 연다.
+2. 뷰 **제목 줄 오른쪽**의 **+** 로 카드를 만든다(역할은 **3a** 표와 동일).
 
 **성공 기준**
 
@@ -122,7 +138,7 @@ npm run build
 
 ### 8. Scenes 사이드바
 
-1. **Storyboard → Scenes** 뷰를 연다.
+1. Activity Bar에서 **Storyboard · Scenes** 아이콘을 눌러 **Scenes** 뷰를 연다.
 2. 씬 목록과 상태 표시(준비 / 구버전 / 미생성 등)가 기대와 맞는지 본다.
 3. 행에 붙은 **Generate**, **Open Draft** 등 웹뷰 버튼이 동작하는지 확인한다.
 
@@ -266,6 +282,7 @@ npm test
 - [ ] `npm test` 성공
 - [ ] `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
 - [ ] 위 **End-to-end** 플로우를 최소 1회 통과
+- [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리를 확인
 - [ ] **1주 dogfooding** (매일 짧게라도 실제 작업 흐름에 넣고 이슈 적기)
 
 Marketplace **`vsce publish`** / **`--pre-release`** 는 **이번 0.0.1 게이트 범위에 포함하지 않는다.**
