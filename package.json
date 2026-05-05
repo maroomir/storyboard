@@ -274,6 +274,11 @@
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "@fontsource-variable/cormorant-garamond": "^5.2.6",
+    "@fontsource-variable/inter": "^5.2.8",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.18.2",
+    "lucide-react": "^0.468.0",
     "d3-drag": "^3.0.0",
     "d3-force": "^3.0.0",
     "d3-selection": "^3.0.0",

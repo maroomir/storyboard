@@ -1,9 +1,14 @@
+@import "@fontsource-variable/inter/index.css";
+@import "@fontsource-variable/cormorant-garamond/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    --sb-font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
+    --sb-font-display: "Cormorant Garamond Variable", "Cormorant Garamond", ui-serif, Georgia, serif;
     @apply bg-sb-bg-sidebar text-sb-fg;
     font-family: var(--vscode-font-family);
     font-size: var(--vscode-font-size);
