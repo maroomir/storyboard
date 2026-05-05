@@ -1,19 +1,40 @@
+import { AlertTriangle, CheckCircle2, CircleDashed, type LucideIcon } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 
 import { createRequestId, parseSidebarScenesInitialData } from "../../lib/messaging"
 import type { SceneListItem, SidebarScenesInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
-import { sbControlButtonClass } from "../ui/formClasses"
+import { Button } from "../ui/Button"
 
-function statusBadgeEmoji(status: SceneListItem["status"]): string {
+function sceneStatusPresentation(status: SceneListItem["status"]): {
+  readonly Icon: LucideIcon
+  readonly railClass: string
+  readonly iconClass: string
+} {
   switch (status) {
     case "ready":
-      return "✅"
+      return {
+        Icon: CheckCircle2,
+        railClass: "bg-emerald-500/90",
+        iconClass: "text-emerald-500"
+      }
     case "stale":
-      return "⚠️"
+      return {
+        Icon: AlertTriangle,
+        railClass: "bg-amber-500/90",
+        iconClass: "text-amber-500"
+      }
     case "missing":
-      return "⬜"
+      return {
+        Icon: CircleDashed,
+        railClass: "bg-sb-fg-muted/50",
+        iconClass: "text-sb-fg-muted"
+      }
     default:
-      return ""
+      return {
+        Icon: CircleDashed,
+        railClass: "bg-sb-border",
+        iconClass: "text-sb-fg-muted"
+      }
   }
 }
 
@@ -64,44 +85,52 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
       {sidebarState.scenes.length === 0 ? (
         <p className="m-0 leading-normal text-sb-fg-muted">아직 씬 파일이 없습니다. 상단 + 버튼으로 새 씬을 추가해 보세요.</p>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label="Scene list">
-          {sidebarState.scenes.map((scene) => (
-            <li
-              key={scene.sceneUri}
-              className="flex flex-col gap-2 rounded-md border border-transparent bg-transparent p-2 hover:border-sb-border-focus hover:bg-sb-bg-list-hover"
-            >
-              <div className="flex items-start gap-2">
-                <span className="shrink-0 text-base" title={scene.status}>
-                  {statusBadgeEmoji(scene.status)}
-                </span>
-                <button
-                  className="min-w-0 flex-1 cursor-pointer rounded border border-transparent bg-transparent p-0 text-left text-sb-fg hover:underline focus:border-sb-border-focus focus:outline-none"
-                  type="button"
-                  onClick={() => postSceneRequest("scenes.openScene", { uri: scene.sceneUri })}
-                >
-                  <span className="block font-semibold">{scene.title ?? scene.slug}</span>
-                  <span className="block truncate text-sm text-sb-fg-muted">{scene.stem}.txt</span>
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 pl-7">
-                <button type="button" className={sbControlButtonClass} onClick={() => postSceneRequest("scenes.generateDraft", { uri: scene.sceneUri })}>
-                  Generate
-                </button>
-                <button
-                  type="button"
-                  className={`${sbControlButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
-                  disabled={!scene.draftUri}
-                  onClick={() => {
-                    if (scene.draftUri) {
-                      postSceneRequest("scenes.openDraft", { uri: scene.draftUri })
-                    }
-                  }}
-                >
-                  Open Draft
-                </button>
-              </div>
-            </li>
-          ))}
+        <ul className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Scene list">
+          {sidebarState.scenes.map((scene) => {
+            const { Icon, railClass, iconClass } = sceneStatusPresentation(scene.status)
+            return (
+              <li
+                key={scene.sceneUri}
+                className="overflow-hidden rounded-xl border border-sb-border bg-sb-bg-widget shadow-cardRest transition hover:border-sb-border-focus hover:shadow-cardHover"
+              >
+                <div className="flex min-h-[4.25rem] min-w-0">
+                  <div className={`w-1 shrink-0 ${railClass}`} aria-hidden />
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 p-2.5 pl-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-0.5 shrink-0" title={scene.status}>
+                        <Icon className={`h-4 w-4 ${iconClass}`} aria-hidden />
+                      </span>
+                      <button
+                        className="min-w-0 flex-1 cursor-pointer rounded-md border border-transparent bg-transparent p-0 text-left text-sb-fg outline-none hover:underline focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+                        type="button"
+                        onClick={() => postSceneRequest("scenes.openScene", { uri: scene.sceneUri })}
+                      >
+                        <span className="block font-semibold leading-snug">{scene.title ?? scene.slug}</span>
+                        <span className="mt-0.5 block truncate text-sm text-sb-fg-muted">{scene.stem}.txt</span>
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pl-7">
+                      <Button type="button" onClick={() => postSceneRequest("scenes.generateDraft", { uri: scene.sceneUri })}>
+                        Generate
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={!scene.draftUri}
+                        onClick={() => {
+                          if (scene.draftUri) {
+                            postSceneRequest("scenes.openDraft", { uri: scene.draftUri })
+                          }
+                        }}
+                      >
+                        Open Draft
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
     </main>

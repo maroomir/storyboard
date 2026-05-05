@@ -1,23 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import { Button } from "../ui/Button"
+import { SectionHeader } from "../ui/SectionHeader"
+
 const sbInputClass =
   "w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus"
-
-const sbControlButtonClass =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-[color:var(--vscode-button-border)] bg-sb-bg-button px-3 py-1.5 text-sm font-medium text-sb-fg-button transition hover:bg-sb-bg-button-hover disabled:cursor-not-allowed disabled:opacity-50"
-
-const sbSecondaryButtonClass =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-sb-border bg-sb-bg-widget px-3 py-1.5 text-sm font-medium text-sb-fg transition hover:border-sb-border-focus disabled:cursor-not-allowed disabled:opacity-50"
-
-const sbDangerButtonClass =
-  "inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-sb-border bg-transparent px-3 py-1.5 text-sm font-medium text-sb-fg-error transition hover:border-sb-fg-error disabled:cursor-not-allowed disabled:opacity-50"
 
 const sbSelectClass = `${sbInputClass} max-w-md`
 
 const sectionCardClass =
-  "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar p-4 shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+  "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar p-4 shadow-cardRest"
 
-const fieldGroupClass = "flex max-w-xl flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3"
+const fieldGroupClass =
+  "flex max-w-xl flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
 
 const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "mock"] as const
 type AiProviderId = (typeof AI_PROVIDER_IDS)[number]
@@ -305,12 +300,10 @@ function DefaultProviderSection({
   return (
     <section className={sectionCardClass} aria-label="기본 AI 제공자와 모델">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">기본 제공자와 모델</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
-            태스크가 «기본값 사용»일 때 쓰는 제공자와, 그 제공자의 기본 모델입니다. 모델은 아래 태스크에서 다른 값으로 덮어쓸 수 있습니다.
-          </p>
-        </div>
+        <SectionHeader
+          title="기본 제공자와 모델"
+          description="태스크가 «기본값 사용»일 때 쓰는 제공자와, 그 제공자의 기본 모델입니다. 모델은 아래 태스크에서 다른 값으로 덮어쓸 수 있습니다."
+        />
         <StatusPill tone="success">{selectedProvider?.displayName ?? defaultProviderId}</StatusPill>
       </div>
       <div className="grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
@@ -483,7 +476,7 @@ function ProviderConfigCard({
 
   return (
     <details
-      className="group overflow-hidden rounded-xl border border-sb-border bg-sb-bg-sidebar shadow-[0_10px_28px_rgba(0,0,0,0.10)]"
+      className="group overflow-hidden rounded-xl border border-sb-border bg-sb-bg-sidebar shadow-cardRest"
       open={isExpanded}
       onToggle={(event) => setIsExpanded(event.currentTarget.open)}
     >
@@ -531,9 +524,9 @@ function ProviderConfigCard({
                 }}
               />
             </label>
-            <button type="button" className={`${sbSecondaryButtonClass} self-start`} onClick={applyOllamaBaseUrl}>
+            <Button type="button" variant="secondary" className="self-start" onClick={applyOllamaBaseUrl}>
               Base URL 적용
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -554,20 +547,26 @@ function ProviderConfigCard({
               />
             </label>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className={sbControlButtonClass} onClick={saveApiKey}>
+              <Button type="button" onClick={saveApiKey}>
                 저장
-              </button>
-              <button type="button" className={sbDangerButtonClass} onClick={deleteApiKey} disabled={!status?.hasApiKey}>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="border-sb-fg-error text-sb-fg-error hover:border-sb-fg-error disabled:border-sb-border"
+                onClick={deleteApiKey}
+                disabled={!status?.hasApiKey}
+              >
                 삭제
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sb-border bg-sb-bg-widget px-3 py-2">
-          <button type="button" className={sbSecondaryButtonClass} onClick={runConnectionTest}>
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sb-border bg-sb-bg-widget px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <Button type="button" variant="secondary" onClick={runConnectionTest}>
             연결 테스트
-          </button>
+          </Button>
           {testState === "loading" ? <span className="text-sm text-sb-fg-muted">확인 중…</span> : null}
           {testState === "ok" ? <StatusPill tone="success">연결 성공</StatusPill> : null}
           {testState === "error" ? <StatusPill tone="error">연결 실패</StatusPill> : null}
@@ -600,12 +599,10 @@ function TaskAssignmentsSection({
   return (
     <section className={sectionCardClass} aria-label="태스크별 제공자와 모델">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">태스크별 제공자와 모델</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
-            각 작업에 사용할 제공자와 모델을 지정합니다. «기본값 사용»이면 위에서 고른 기본 제공자와 기본 모델을 따릅니다.
-          </p>
-        </div>
+        <SectionHeader
+          title="태스크별 제공자와 모델"
+          description="각 작업에 사용할 제공자와 모델을 지정합니다. «기본값 사용»이면 위에서 고른 기본 제공자와 기본 모델을 따릅니다."
+        />
         <StatusPill tone="neutral">{AI_TASK_NAMES.length}개 태스크</StatusPill>
       </div>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -622,7 +619,10 @@ function TaskAssignmentsSection({
             : pickModelForTaskProvider(snapshot, assigned.providerId, storedModelWhenOverridden)
 
           return (
-            <li key={taskName} className="flex flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3">
+            <li
+              key={taskName}
+              className="flex flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+            >
               <div className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-center">
                 <label className="flex flex-col gap-1 text-xs text-sb-fg-muted">
@@ -800,47 +800,41 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
 
   if (loadError || !snapshot) {
     return (
-      <main className="flex min-h-screen flex-col gap-3 bg-sb-bg p-4">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
-        <h1 className="m-0 text-xl font-semibold text-sb-fg">설정</h1>
-        <p className="m-0 text-sb-fg-error">{loadError ?? "알 수 없는 오류"}</p>
+      <main className="flex min-h-screen flex-col gap-4 bg-sb-bg p-4">
+        <SectionHeader eyebrow="Storyboard" title="설정" description={<span className="text-sb-fg-error">{loadError ?? "알 수 없는 오류"}</span>} />
       </main>
     )
   }
 
   return (
     <main className="flex min-h-screen flex-col gap-5 bg-sb-bg p-5">
-      <header className="rounded-xl border border-sb-border bg-sb-bg-sidebar p-5 shadow-[0_14px_36px_rgba(0,0,0,0.12)]">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="m-0 text-2xl font-semibold text-sb-fg">설정</h1>
-            <p className="m-0 mt-1 text-sm text-sb-fg-muted">
-              기본 제공자·모델, 제공자 연결(API 키·Ollama URL), 태스크별 덮어쓰기를 관리합니다.
-            </p>
-          </div>
+      <header className="rounded-xl border border-sb-border bg-sb-bg-sidebar p-5 shadow-cardRest">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <SectionHeader
+            eyebrow="Storyboard"
+            title="설정"
+            description="기본 제공자·모델, 제공자 연결(API 키·Ollama URL), 태스크별 덮어쓰기를 관리합니다."
+          />
           <StatusPill tone="neutral">Workspace settings</StatusPill>
         </div>
       </header>
 
       {rpcError ? (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-sb-border-warning bg-sb-bg-widget px-3 py-2 text-sm text-sb-fg shadow-[0_8px_22px_rgba(0,0,0,0.10)]">
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-sb-border-warning bg-sb-bg-widget px-3 py-2 text-sm text-sb-fg shadow-cardRest">
           <span>{rpcError}</span>
-          <button type="button" className={sbSecondaryButtonClass} onClick={() => setRpcError(null)}>
+          <Button type="button" variant="secondary" onClick={() => setRpcError(null)}>
             닫기
-          </button>
+          </Button>
         </div>
       ) : null}
 
       <DefaultProviderSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
 
       <div className="flex flex-col gap-3">
-        <div>
-          <h2 className="m-0 text-base font-semibold text-sb-fg">제공자 연결</h2>
-          <p className="m-0 mt-1 text-sm text-sb-fg-muted">
-            API 키(또는 Ollama Base URL)와 연결 테스트만 다룹니다. 모델은 위 «기본 제공자와 모델» 또는 태스크별 설정에서 고릅니다.
-          </p>
-        </div>
+        <SectionHeader
+          title="제공자 연결"
+          description="API 키(또는 Ollama Base URL)와 연결 테스트만 다룹니다. 모델은 위 «기본 제공자와 모델» 또는 태스크별 설정에서 고릅니다."
+        />
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           {AI_PROVIDER_IDS.map((providerId) => (
             <ProviderConfigCard
