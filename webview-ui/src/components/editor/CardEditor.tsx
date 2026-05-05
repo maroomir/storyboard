@@ -1,14 +1,22 @@
-import React, { useEffect, useMemo, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createRequestId, parseCardEditorInitialData } from "../../lib/messaging"
 import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "../../lib/types"
-import { sbControlButtonClass, sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
+import { StoryboardCard as HeroCard } from "../card/StoryboardCard"
+import { Button } from "../ui/Button"
+import { SectionHeader } from "../ui/SectionHeader"
+import { Tabs } from "../ui/Tabs"
+import { sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
 import { ArcField } from "./fields/ArcField"
 import { BackgroundFields } from "./fields/BackgroundFields"
 import { CharacterFields } from "./fields/CharacterFields"
 import { KeyValueField } from "./fields/KeyValueField"
 import { ListField } from "./fields/ListField"
 import { RelationsField } from "./fields/RelationsField"
+
+const overviewBoxClass =
+  "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
 
 export function CardEditor({ initialData }: { readonly initialData: CardEditorInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
@@ -17,6 +25,14 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
   const [status, setStatus] = useState("문서에서 카드 정보를 불러왔습니다.")
   const [isDirty, setIsDirty] = useState(false)
   const [pendingExternalData, setPendingExternalData] = useState<CardEditorInitialData | undefined>()
+
+  const applyDocumentState = useCallback((nextDocumentState: CardEditorInitialData): void => {
+    setDocumentState(nextDocumentState)
+    setCard(nextDocumentState.card)
+    setIsDirty(false)
+    setPendingExternalData(undefined)
+    setStatus("문서 변경 사항을 다시 불러왔습니다.")
+  }, [])
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
@@ -37,86 +53,40 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
 
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
-  }, [isDirty])
+  }, [isDirty, applyDocumentState])
 
-  const applyDocumentState = (nextDocumentState: CardEditorInitialData): void => {
-    setDocumentState(nextDocumentState)
-    setCard(nextDocumentState.card)
-    setIsDirty(false)
-    setPendingExternalData(undefined)
-    setStatus("문서 변경 사항을 다시 불러왔습니다.")
-  }
+  const updateCard = useCallback(
+    (nextCard: StoryboardCard): void => {
+      setCard(nextCard)
+      setIsDirty(true)
+      setStatus("변경 사항을 문서에 반영하는 중입니다…")
 
-  const updateCard = (nextCard: StoryboardCard): void => {
-    setCard(nextCard)
-    setIsDirty(true)
-    setStatus("변경 사항을 문서에 반영하는 중입니다…")
+      vscodeApi?.postMessage({
+        protocolVersion: "1.0.0",
+        type: "request",
+        id: createRequestId(),
+        method: "cards.write",
+        payload: {
+          uri: documentState.documentUri,
+          card: nextCard
+        }
+      })
+    },
+    [documentState.documentUri, vscodeApi]
+  )
 
-    vscodeApi?.postMessage({
-      protocolVersion: "1.0.0",
-      type: "request",
-      id: createRequestId(),
-      method: "cards.write",
-      payload: {
-        uri: documentState.documentUri,
-        card: nextCard
-      }
-    })
-  }
+  const tabItems = useMemo(() => {
+    if (!card) {
+      return []
+    }
 
-  if (documentState.error || !card) {
-    return (
-      <main className="grid min-h-screen grid-cols-1 gap-4 bg-sb-bg p-4">
-        <section className="flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4">
-          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard Card</p>
-          <h1 className="m-0 text-xl leading-snug text-sb-fg">YAML을 카드로 읽을 수 없습니다</h1>
-          <p className="m-0 text-sb-fg-error">{documentState.error ?? "알 수 없는 오류"}</p>
-          <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
-        </section>
-      </main>
-    )
-  }
-
-  const panelClass = "flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4"
-
-  return (
-    <main className="grid min-h-screen grid-cols-[minmax(220px,0.85fr)_minmax(320px,1.15fr)] gap-4 bg-sb-bg p-4 max-[760px]:grid-cols-1">
-      <section className={panelClass} aria-label="카드 미리보기">
-        {documentState.imageUri ? (
-          <img
-            className="block max-h-[420px] w-full rounded-lg border border-sb-border object-contain"
-            src={documentState.imageUri}
-            alt={`${card.name} preview`}
-          />
-        ) : (
-          <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-sb-fg-muted text-center text-sb-fg-muted">
-            <span>{card.type === "character" ? "Character" : "Background"}</span>
-            <strong className="text-lg text-sb-fg">{card.name}</strong>
-          </div>
-        )}
-        <p className="m-0 leading-normal text-sb-fg-muted">
-          카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.
-        </p>
-      </section>
-
-      <section className={panelClass} aria-label="카드 편집 폼">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">{card.type} card</p>
-        <h1 className="m-0 text-xl leading-snug text-sb-fg">{card.name}</h1>
-
-        {pendingExternalData ? (
-          <div className="flex items-center justify-between gap-3 rounded-md border border-sb-border-warning bg-sb-bg-widget px-2.5 py-2.5 text-sb-fg">
-            <span>외부에서 YAML이 변경되었습니다.</span>
-            <button type="button" className={sbControlButtonClass} onClick={() => applyDocumentState(pendingExternalData)}>
-              다시 불러오기
-            </button>
-          </div>
-        ) : null}
-
+    const overview = (
+      <div className={overviewBoxClass}>
+        <SectionHeader title="기본 정보" eyebrow="Overview" />
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">ID</span>
           <input className={sbInputClass} value={card.id} readOnly />
         </label>
-
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Name</span>
           <input
@@ -125,10 +95,8 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
             onChange={(event) => updateCard({ ...card, name: event.target.value })}
           />
         </label>
-
         {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
         {card.type === "background" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
-
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Description</span>
           <textarea
@@ -137,11 +105,34 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
             onChange={(event) => updateCard({ ...card, description: event.target.value })}
           />
         </label>
-
         <ListField label="Tags" values={card.tags ?? []} onChange={(tags) => updateCard({ ...card, tags })} />
+      </div>
+    )
 
-        {card.type === "character" ? (
-          <>
+    if (card.type === "background") {
+      return [
+        { id: "overview", label: "Overview", panel: overview },
+        {
+          id: "yaml",
+          label: "YAML",
+          panel: (
+            <div className={overviewBoxClass}>
+              <SectionHeader title="Raw YAML" eyebrow="Source" description="읽기 전용입니다. 구조를 바꾸려면 VSCode에서 텍스트로 편집하세요." />
+              <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
+            </div>
+          )
+        }
+      ]
+    }
+
+    return [
+      { id: "overview", label: "Overview", panel: overview },
+      {
+        id: "story",
+        label: "Story",
+        panel: (
+          <div className={overviewBoxClass}>
+            <SectionHeader title="이야기 · 속성" eyebrow="Story" />
             <ListField label="Traits" values={card.traits ?? []} onChange={(traits) => updateCard({ ...card, traits })} />
             <ListField
               label="Recent Dialogues"
@@ -153,20 +144,106 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
               values={card.attributes ?? {}}
               onChange={(attributes) => updateCard({ ...card, attributes })}
             />
+            <ArcField arc={card.arc ?? []} onChange={(arc) => updateCard({ ...card, arc })} />
+          </div>
+        )
+      },
+      {
+        id: "relations",
+        label: "Relations",
+        panel: (
+          <div className={overviewBoxClass}>
+            <SectionHeader title="관계" eyebrow="Relations" />
             <RelationsField
               relations={card.relations ?? []}
               onChange={(relations) => updateCard({ ...card, relations })}
             />
-            <ArcField arc={card.arc ?? []} onChange={(arc) => updateCard({ ...card, arc })} />
-          </>
-        ) : null}
+          </div>
+        )
+      },
+      {
+        id: "yaml",
+        label: "YAML",
+        panel: (
+          <div className={overviewBoxClass}>
+            <SectionHeader title="Raw YAML" eyebrow="Source" description="읽기 전용입니다. 구조를 바꾸려면 VSCode에서 텍스트로 편집하세요." />
+            <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
+          </div>
+        )
+      }
+    ]
+  }, [card, documentState.rawText, documentState.error, updateCard])
 
-        <details className="border-t border-sb-border pt-4">
-          <summary className="cursor-pointer text-sb-fg-link">Raw YAML</summary>
+  if (documentState.error || !card) {
+    return (
+      <main className="grid min-h-screen grid-cols-1 gap-4 bg-sb-bg p-4">
+        <section className="flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard Card</p>
+          <h1 className="font-display m-0 text-xl leading-snug text-sb-fg">YAML을 카드로 읽을 수 없습니다</h1>
+          <p className="m-0 text-sb-fg-error">{documentState.error ?? "알 수 없는 오류"}</p>
           <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
-        </details>
+        </section>
+      </main>
+    )
+  }
 
-        <p className="m-0 text-sb-fg-muted">{status}</p>
+  const panelClass = "relative flex min-w-0 flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar p-4"
+
+  return (
+    <main className="relative grid min-h-screen grid-cols-[minmax(260px,0.85fr)_minmax(320px,1.15fr)] gap-4 bg-sb-bg p-4 max-[760px]:grid-cols-1">
+      <AnimatePresence>
+        {pendingExternalData ? (
+          <motion.div
+            key="external-card-change"
+            role="status"
+            aria-live="polite"
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            className="fixed bottom-4 left-1/2 z-[200] w-[min(calc(100vw-2rem),22rem)] -translate-x-1/2 rounded-xl border border-sb-border-warning bg-sb-bg-widget px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+          >
+            <p className="m-0 text-sm font-medium text-sb-fg">다른 곳에서 YAML이 변경되었습니다</p>
+            <p className="mt-1 m-0 text-xs leading-normal text-sb-fg-muted">
+              편집 중인 내용을 덮어쓰지 않도록 보류 중입니다. 최신 문서로 맞추려면 불러오기를 누르세요.
+            </p>
+            <div className="mt-3 flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setPendingExternalData(undefined)
+                  setStatus("편집을 계속합니다. 최신 문서는 다시 불러오기로 반영할 수 있습니다.")
+                }}
+              >
+                나중에
+              </Button>
+              <Button type="button" variant="primary" onClick={() => applyDocumentState(pendingExternalData)}>
+                다시 불러오기
+              </Button>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <section className={panelClass} aria-label="카드 미리보기">
+        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Preview</p>
+        <HeroCard card={card} imageUri={documentState.imageUri} variant="hero" />
+        <p className="m-0 text-xs leading-normal text-sb-fg-muted">
+          이미지는 카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.
+        </p>
+      </section>
+
+      <section className={`${panelClass} min-h-0`} aria-label="카드 편집 폼">
+        <SectionHeader
+          eyebrow={card.type === "character" ? "Character" : "Background"}
+          title={card.name}
+          description="탭으로 섹션을 전환해 편집할 수 있습니다."
+        />
+
+        <Tabs key={card.id} items={tabItems} initialId="overview" />
+
+        <p className="m-0 text-xs text-sb-fg-muted">{status}</p>
       </section>
     </main>
   )
