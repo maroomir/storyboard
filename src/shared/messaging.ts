@@ -45,6 +45,10 @@ export const cardsOpenRequestPayloadSchema = z.object({
   uri: uriStringSchema
 })
 
+export const cardsDeleteRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
 export const cardSummarySchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
@@ -74,6 +78,7 @@ export const cardsResolveImageUriResponsePayloadSchema = z.object({
 })
 
 export const cardsOpenResponsePayloadSchema = z.object({})
+export const cardsDeleteResponsePayloadSchema = z.object({})
 
 export const scenesListRequestPayloadSchema = z.object({})
 
@@ -295,6 +300,7 @@ export const storyboardRequestPayloadSchemas = {
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
   "cards.open": cardsOpenRequestPayloadSchema,
+  "cards.delete": cardsDeleteRequestPayloadSchema,
   "scenes.list": scenesListRequestPayloadSchema,
   "scenes.openScene": scenesOpenSceneRequestPayloadSchema,
   "scenes.openDraft": scenesOpenDraftRequestPayloadSchema,
@@ -319,6 +325,7 @@ export const storyboardResponsePayloadSchemas = {
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
   "cards.open": cardsOpenResponsePayloadSchema,
+  "cards.delete": cardsDeleteResponsePayloadSchema,
   "scenes.list": scenesListResponsePayloadSchema,
   "scenes.openScene": scenesOpenSceneResponsePayloadSchema,
   "scenes.openDraft": scenesOpenDraftResponsePayloadSchema,

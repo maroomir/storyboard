@@ -82,9 +82,10 @@ npm run build
 | **Storyboard · Scenes** → 뷰 제목 줄 **+** | **`Storyboard: New Scene`** — `scene/*.txt` 생성 흐름 |
 | 각 뷰 제목 줄 **톱니바퀴** | **`Storyboard: Open Settings`** — 세 뷰 모두 **동일한** Storyboard 설정 패널(웹뷰)이 열림 |
 | **Characters** 목록 vs **Backgrounds** 목록 | 캐릭터 카드(`character/*.card`)와 배경 카드(`background/*.card`)가 **서로 섞이지 않음** |
+| **Characters / Backgrounds** 카드 항목 | 이미지 없는 컴팩트 카드로 보이며, 항목 클릭은 카드 열기, 휴지통 버튼은 삭제 확인 후 `.card` 파일 삭제 |
 | **Scenes** 목록 | 씬·드래프트 상태가 갱신되는지(준비/미생성 등 배지·버튼) |
 
-**성공 기준**: 위 표가 모두 맞고, Characters **+** 로 만든 파일이 Backgrounds 목록에 나타나지 않으며 그 반대도 같다.
+**성공 기준**: 위 표가 모두 맞고, Characters **+** 로 만든 파일이 Backgrounds 목록에 나타나지 않으며 그 반대도 같다. 카드 삭제 시 VS Code 확인 다이얼로그가 뜨고, 확인하면 해당 항목과 파일이 사라진다.
 
 ### 4. 캐릭터·배경 카드 추가
 
@@ -97,6 +98,9 @@ npm run build
 
 - `character/<이름>.card` 또는 `background/<이름>.card` 파일이 생긴다.
 - 파일을 열면 **Storyboard Card** 커스텀 에디터가 뜬다.
+- 사이드바에는 이미지 없는 컴팩트 카드 항목으로 표시된다.
+- 항목의 편집 아이콘 또는 본문 클릭으로 카드 에디터가 열린다.
+- 항목의 휴지통 아이콘으로 삭제 확인 후 `.card` 파일을 삭제할 수 있다.
 
 ### 5. 씬 작성 또는 새 씬 만들기
 
@@ -247,6 +251,7 @@ npx @vscode/vsce package
 - **API 키 없음 / 잘못된 키**: 실패 메시지가 뜨고, 다른 기능 전체가 죽지 않는지
 - **깨진 YAML** (`.card` 또는 씬): 해당 파일/기능에서만 오류가 나는지
 - **없는 이미지 경로**: 카드 UI가 완전히 깨지지 않는지
+- **카드 삭제 취소/확인**: 사이드바 휴지통 버튼에서 취소 시 파일이 유지되고, 확인 시 해당 `.card` 파일과 목록 항목이 사라지는지
 - **네트워크 끊김**: 타임아웃·재시도 안내가 사용자에게 보이는지
 
 ---
@@ -282,7 +287,7 @@ npm test
 - [ ] `npm test` 성공
 - [ ] `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
 - [ ] 위 **End-to-end** 플로우를 최소 1회 통과
-- [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리를 확인
+- [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리와 Characters / Backgrounds 컴팩트 카드 열기·삭제를 확인
 - [ ] **1주 dogfooding** (매일 짧게라도 실제 작업 흐름에 넣고 이슈 적기)
 
 Marketplace **`vsce publish`** / **`--pre-release`** 는 **이번 0.0.1 게이트 범위에 포함하지 않는다.**

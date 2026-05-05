@@ -3,6 +3,7 @@ export type CardType = "character" | "background"
 export type StoryboardRequestMethod =
   | "cards.write"
   | "cards.open"
+  | "cards.delete"
   | "scenes.openScene"
   | "scenes.openDraft"
   | "scenes.generateDraft"

@@ -100,6 +100,24 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
         )
 
         return {}
+      },
+      "cards.delete": async (payload): Promise<StoryboardResponsePayload<"cards.delete">> => {
+        const targetUri = vscode.Uri.parse(payload.uri)
+        const fileName = targetUri.path.split("/").at(-1) ?? this.options.cardType
+        const confirmed = await vscode.window.showWarningMessage(
+          `${fileName} 카드를 삭제할까요?`,
+          { modal: true },
+          "삭제"
+        )
+
+        if (confirmed !== "삭제") {
+          return {}
+        }
+
+        await vscode.workspace.fs.delete(targetUri)
+        await this.refreshCards()
+
+        return {}
       }
     }
   }

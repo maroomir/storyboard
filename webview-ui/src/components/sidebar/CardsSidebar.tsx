@@ -1,20 +1,10 @@
-import { Pencil, Sparkles } from "lucide-react"
+import { Pencil, Sparkles, Trash2 } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 
-import { StoryboardCard } from "../card/StoryboardCard"
 import { Button } from "../ui/Button"
 import { EmptyState } from "../ui/EmptyState"
 import { createRequestId, parseSidebarCardsInitialData } from "../../lib/messaging"
-import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardCard as StoryboardCardModel, StoryboardEventMessage } from "../../lib/types"
-
-function summaryToCardModel(summary: SidebarCardSummary): StoryboardCardModel {
-  return {
-    type: summary.type,
-    id: summary.id,
-    name: summary.name,
-    description: summary.description
-  }
-}
+import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
 
 export function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
@@ -33,15 +23,18 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
     return () => window.removeEventListener("message", handleMessage)
   }, [])
 
-  const openCard = (card: SidebarCardSummary): void => {
+  const postCardRequest = (method: StoryboardRequestMethod, payload: Record<string, unknown>): void => {
     vscodeApi?.postMessage({
       protocolVersion: "1.0.0",
       type: "request",
       id: createRequestId(),
-      method: "cards.open",
-      payload: { uri: card.uri }
+      method,
+      payload
     })
   }
+
+  const openCard = (card: SidebarCardSummary): void => postCardRequest("cards.open", { uri: card.uri })
+  const deleteCard = (card: SidebarCardSummary): void => postCardRequest("cards.delete", { uri: card.uri })
 
   const kindLabel = sidebarState.type === "character" ? "캐릭터" : "배경"
 
@@ -71,47 +64,58 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
           description={`아직 등록된 ${kindLabel} 카드가 없습니다. 뷰 제목 표시줄의 + 버튼으로 새 카드를 만들 수 있습니다.`}
         />
       ) : (
-        <ul
-          className="m-0 grid list-none grid-cols-1 gap-3 p-0 @[320px]:grid-cols-2"
-          aria-label={`${sidebarState.title} card list`}
-        >
+        <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label={`${sidebarState.title} card list`}>
           {sidebarState.cards.map((card) => (
-            <li key={card.uri} className="group/card relative min-w-0">
-              <div
-                className="relative cursor-pointer rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-sb-border-focus"
-                role="button"
-                tabIndex={0}
-                onClick={() => openCard(card)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault()
-                    openCard(card)
-                  }
-                }}
-              >
-                <StoryboardCard
-                  card={summaryToCardModel(card)}
-                  variant="compact"
-                  className="max-w-none"
-                />
-                <div className="pointer-events-none absolute right-1 top-9 z-[5] opacity-0 transition-opacity duration-150 group-hover/card:pointer-events-auto group-hover/card:opacity-100">
+            <li
+              key={card.uri}
+              className="group/card overflow-hidden rounded-lg border border-sb-border bg-sb-bg-widget shadow-cardRest transition hover:border-sb-border-focus hover:shadow-cardHover"
+            >
+              <div className="flex min-w-0 items-start gap-2 p-2.5">
+                <button
+                  className="min-w-0 flex-1 cursor-pointer rounded-md border border-transparent bg-transparent p-0 text-left outline-none focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+                  type="button"
+                  onClick={() => openCard(card)}
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate font-semibold leading-snug text-sb-fg">{card.name}</span>
+                    <span className="shrink-0 rounded-full border border-sb-border bg-sb-bg-sidebar px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-sb-fg-muted">
+                      {card.type === "character" ? "캐릭터" : "배경"}
+                    </span>
+                  </span>
+                  {card.error ? (
+                    <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-error">{card.error}</span>
+                  ) : card.description ? (
+                    <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-muted">{card.description}</span>
+                  ) : null}
+                </button>
+
+                <div className="flex shrink-0 items-center gap-1">
                   <Button
-                    variant="secondary"
                     type="button"
-                    className="pointer-events-auto flex h-8 w-8 items-center justify-center p-0 shadow-md"
+                    variant="ghost"
+                    className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg"
                     aria-label={`${card.name} 편집`}
                     onClick={(event) => {
                       event.stopPropagation()
                       openCard(card)
                     }}
                   >
-                    <Pencil className="h-4 w-4 shrink-0" aria-hidden />
+                    <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg-error"
+                    aria-label={`${card.name} 삭제`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      deleteCard(card)
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Button>
                 </div>
               </div>
-              {card.error ? (
-                <p className="mt-1.5 text-xs leading-normal text-sb-fg-error">{card.error}</p>
-              ) : null}
             </li>
           ))}
         </ul>

@@ -14,7 +14,7 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 
 - **워크스페이스**: 폴더 하나 = 소설 프로젝트. `Storyboard: Initialize Project`로 `.storyboard/project.json`과 표준 디렉터리 생성
 - **Activity Bar**: **Storyboard · Characters**, **Storyboard · Backgrounds**, **Storyboard · Scenes** 세 진입점이 각각 있고, 각각 전용 Webview 사이드바 뷰 하나가 붙는다.
-- **카드**: `character/*.card`, `background/*.card` — 커스텀 에디터 + Characters 뷰(캐릭터만) / Backgrounds 뷰(배경만)로 목록 분리
+- **카드**: `character/*.card`, `background/*.card` — 커스텀 에디터 + Characters 뷰(캐릭터만) / Backgrounds 뷰(배경만)로 목록 분리. 사이드바 목록은 이미지 없는 컴팩트 카드로 표시되며, 각 항목에서 열기·삭제가 가능
 - **씬·드래프트**: `scene/*.txt` ↔ `draft/*.md` — CodeLens·명령으로 생성/재생성, 포맷 적용
 - **Scenes 사이드바**: Scenes Activity Bar 진입점의 **Scenes** 뷰 — 씬 목록, 상태 배지, 웹뷰 내 Generate / Open Draft 등
 - **관계 그래프**: 캐릭터 관계 시각화(드래그)
@@ -41,7 +41,7 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 1. 이 저장소를 VS Code로 연 뒤 `npm install`
 2. **Run and Debug**에서 `Run Extension`(F5) → Extension Development Host 창
 3. 빈 폴더를 워크스페이스로 연 다음 `Storyboard: Initialize Project`
-4. Activity Bar에서 **Characters** / **Backgrounds** / **Scenes** 각 뷰의 **+**로 카드·씬을 추가하고, 씬 파일의 CodeLens로 드래프트 생성(세 뷰 제목 줄의 톱니바퀴는 모두 동일한 Storyboard 설정 패널로 연결됨)
+4. Activity Bar에서 **Characters** / **Backgrounds** / **Scenes** 각 뷰의 **+**로 카드·씬을 추가하고, Characters / Backgrounds 사이드바의 컴팩트 카드 항목에서 카드 열기·삭제를 확인합니다. 씬 파일의 CodeLens로 드래프트도 생성할 수 있습니다(세 뷰 제목 줄의 톱니바퀴는 모두 동일한 Storyboard 설정 패널로 연결됨).
 5. 필요 시 `Storyboard: Set API Key...`로 키 등록(키 없이도 `mock`으로 흐름 확인 가능)
 
 ## 개발 안내
