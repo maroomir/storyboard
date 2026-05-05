@@ -1,4 +1,5 @@
 import clsx from "clsx"
+import type { LucideIcon } from "lucide-react"
 import type React from "react"
 
 export type PillTone = "character" | "background" | "neutral"
@@ -13,9 +14,10 @@ export type PillProps = {
   readonly children: React.ReactNode
   readonly tone?: PillTone
   readonly className?: string
+  readonly icon?: LucideIcon
 }
 
-export function Pill({ children, tone = "neutral", className }: PillProps): React.ReactElement {
+export function Pill({ children, tone = "neutral", className, icon: Icon }: PillProps): React.ReactElement {
   return (
     <span
       className={clsx(
@@ -24,6 +26,7 @@ export function Pill({ children, tone = "neutral", className }: PillProps): Reac
         className
       )}
     >
+      {Icon ? <Icon className="h-3 w-3 shrink-0 opacity-90" aria-hidden /> : null}
       {children}
     </span>
   )
