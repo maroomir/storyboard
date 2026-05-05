@@ -1,18 +1,22 @@
+import { AlertCircle, CheckCircle2, LoaderCircle, PlugZap } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "../ui/Button"
 import { SectionHeader } from "../ui/SectionHeader"
+import { Tabs } from "../ui/Tabs"
 
 const sbInputClass =
-  "w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus"
+  "w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus focus:ring-1 focus:ring-sb-border-focus/40"
 
 const sbSelectClass = `${sbInputClass} max-w-md`
 
 const sectionCardClass =
-  "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar p-4 shadow-cardRest"
+  "flex flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar/80 p-4"
 
 const fieldGroupClass =
-  "flex max-w-xl flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+  "grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-[minmax(8rem,0.35fr)_minmax(0,1fr)] sm:items-center"
+
+const settingsPanelClass = "mx-auto flex w-full max-w-5xl flex-col gap-4"
 
 const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "mock"] as const
 type AiProviderId = (typeof AI_PROVIDER_IDS)[number]
@@ -257,6 +261,15 @@ function formatResolvedTaskAi(snapshot: SettingsReadSnapshot, taskName: AiTaskNa
   return `${providerName} / ${modelLabel}`
 }
 
+function formatDefaultProviderSummary(snapshot: SettingsReadSnapshot): string {
+  const providerId = snapshot.defaultProvider
+  const providerName = getProviderStatus(snapshot, providerId)?.displayName ?? providerId
+  const modelId = snapshot.providerConfigs[providerId].model
+  const modelName = snapshot.modelCatalog[providerId].find((entry) => entry.id === modelId)?.displayName ?? modelId
+
+  return `${providerName} · ${modelName}`
+}
+
 function StatusPill({
   tone,
   children
@@ -275,6 +288,45 @@ function StatusPill({
     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${toneClass}`}>
       {children}
     </span>
+  )
+}
+
+function ConnectionTestButton({
+  state,
+  onClick
+}: {
+  readonly state: ConnectionTestState
+  readonly onClick: () => void
+}): React.ReactElement {
+  const iconClass = "h-4 w-4"
+  const stateView = {
+    idle: { label: "연결 테스트", icon: <PlugZap className={iconClass} aria-hidden />, className: "text-sb-fg-muted" },
+    loading: {
+      label: "연결 확인 중",
+      icon: <LoaderCircle className={`${iconClass} animate-spin`} aria-hidden />,
+      className: "text-sb-fg-muted"
+    },
+    ok: { label: "연결 성공", icon: <CheckCircle2 className={iconClass} aria-hidden />, className: "text-sb-fg" },
+    error: { label: "연결 실패", icon: <AlertCircle className={iconClass} aria-hidden />, className: "text-sb-fg-error" }
+  }[state]
+
+  return (
+    <button
+      type="button"
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-full border border-sb-border bg-sb-bg-widget outline-none transition hover:border-sb-border-focus focus-visible:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus ${stateView.className}`}
+      aria-label={stateView.label}
+      title={stateView.label}
+      onClick={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        if (state !== "loading") {
+          onClick()
+        }
+      }}
+      disabled={state === "loading"}
+    >
+      {stateView.icon}
+    </button>
   )
 }
 
@@ -406,6 +458,7 @@ function ProviderConfigCard({
   const isOllama = providerId === "ollama"
   const testState = connectionTest[providerId] ?? "idle"
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider)
+  const hasConnectionFields = showApiKey || isOllama
 
   const resolvedBaseUrl =
     ollamaBaseUrlDraft !== null ? ollamaBaseUrlDraft : (config.baseUrl ?? "http://127.0.0.1:11434")
@@ -442,20 +495,6 @@ function ProviderConfigCard({
       })
   }
 
-  const deleteApiKey = (): void => {
-    void callRpc("secrets.deleteApiKey", { providerId })
-      .then(() => {
-        setApiKeyDraft((previous) => {
-          const next = { ...previous }
-          delete next[providerId]
-          return next
-        })
-      })
-      .catch((error: unknown) => {
-        onRpcError(error instanceof Error ? error.message : "API 키를 삭제하지 못했습니다.")
-      })
-  }
-
   const applyOllamaBaseUrl = (): void => {
     const trimmed = resolvedBaseUrl.trim()
     if (trimmed.length === 0) {
@@ -476,38 +515,43 @@ function ProviderConfigCard({
 
   return (
     <details
-      className="group overflow-hidden rounded-xl border border-sb-border bg-sb-bg-sidebar shadow-cardRest"
+      className="group overflow-hidden rounded-lg border border-sb-border bg-sb-bg-sidebar/80"
       open={isExpanded}
       onToggle={(event) => setIsExpanded(event.currentTarget.open)}
     >
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-sb-bg-list-hover [&::-webkit-details-marker]:hidden">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="text-sm text-sb-fg-muted transition group-open:rotate-90">&gt;</span>
+          {hasConnectionFields ? (
+            <span className="text-xs text-sb-fg-muted transition group-open:rotate-90">›</span>
+          ) : (
+            <span className="w-[0.45rem]" aria-hidden />
+          )}
           <div className="min-w-0">
             <h3 className="m-0 truncate text-sm font-semibold text-sb-fg">{displayName}</h3>
-            <p className="m-0 mt-0.5 truncate text-xs text-sb-fg-muted">
-              전역 모델:{" "}
-              {snapshot.modelCatalog[providerId].find((entry) => entry.id === config.model)?.displayName ??
-                config.model}
-            </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
           {providerId === snapshot.defaultProvider ? <StatusPill tone="success">기본</StatusPill> : null}
-          {status?.hasApiKey ? <StatusPill tone="success">키 저장됨</StatusPill> : null}
+          {status?.hasApiKey && showApiKey ? <StatusPill tone="success">키 저장됨</StatusPill> : null}
           {!status?.hasApiKey && showApiKey ? <StatusPill tone="warning">키 필요</StatusPill> : null}
+          {isOllama ? <StatusPill tone="neutral">로컬</StatusPill> : null}
+          {providerId === "mock" ? <StatusPill tone="neutral">Mock</StatusPill> : null}
           <StatusPill tone={status?.isAvailable ? "neutral" : "error"}>
             {status?.isAvailable ? "사용 가능" : "비활성"}
           </StatusPill>
+          <ConnectionTestButton state={testState} onClick={runConnectionTest} />
         </div>
       </summary>
 
-      <div className="flex flex-col gap-4 border-t border-sb-border p-4">
+      {hasConnectionFields ? <div className="flex flex-col gap-3 border-t border-sb-border p-4">
         {isOllama ? (
           <div className={fieldGroupClass}>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-sb-fg">Base URL</span>
+            <label className="text-sm font-medium text-sb-fg" htmlFor={`${providerId}-base-url`}>
+              Base URL
+            </label>
+            <div className="flex min-w-0 gap-2">
               <input
+                id={`${providerId}-base-url`}
                 className={sbInputClass}
                 value={resolvedBaseUrl}
                 onFocus={() => {
@@ -523,18 +567,21 @@ function ProviderConfigCard({
                   setOllamaBaseUrlDraft(event.target.value)
                 }}
               />
-            </label>
-            <Button type="button" variant="secondary" className="self-start" onClick={applyOllamaBaseUrl}>
-              Base URL 적용
-            </Button>
+              <Button type="button" variant="secondary" className="shrink-0" onClick={applyOllamaBaseUrl}>
+                적용
+              </Button>
+            </div>
           </div>
         ) : null}
 
         {showApiKey ? (
           <div className={fieldGroupClass}>
-            <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-sb-fg">API 키</span>
+            <label className="text-sm font-medium text-sb-fg" htmlFor={`${providerId}-api-key`}>
+              API 키
+            </label>
+            <div className="flex min-w-0 gap-2">
               <input
+                id={`${providerId}-api-key`}
                 className={sbInputClass}
                 type="password"
                 autoComplete="off"
@@ -545,44 +592,13 @@ function ProviderConfigCard({
                   setApiKeyDraft((previous) => ({ ...previous, [providerId]: next }))
                 }}
               />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={saveApiKey}>
+              <Button type="button" className="shrink-0" onClick={saveApiKey}>
                 저장
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="border-sb-fg-error text-sb-fg-error hover:border-sb-fg-error disabled:border-sb-border"
-                onClick={deleteApiKey}
-                disabled={!status?.hasApiKey}
-              >
-                삭제
               </Button>
             </div>
           </div>
         ) : null}
-
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-sb-border bg-sb-bg-widget px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-          <Button type="button" variant="secondary" onClick={runConnectionTest}>
-            연결 테스트
-          </Button>
-          {testState === "loading" ? <span className="text-sm text-sb-fg-muted">확인 중…</span> : null}
-          {testState === "ok" ? <StatusPill tone="success">연결 성공</StatusPill> : null}
-          {testState === "error" ? <StatusPill tone="error">연결 실패</StatusPill> : null}
-          {testState !== "idle" && testState !== "loading" ? (
-            <button
-              type="button"
-              className="text-sm font-medium text-sb-fg-link underline"
-              onClick={() => {
-                setConnectionTest((previous) => ({ ...previous, [providerId]: "idle" }))
-              }}
-            >
-              상태 지우기
-            </button>
-          ) : null}
-        </div>
-      </div>
+      </div> : null}
     </details>
   )
 }
@@ -619,11 +635,13 @@ function TaskAssignmentsSection({
             : pickModelForTaskProvider(snapshot, assigned.providerId, storedModelWhenOverridden)
 
           return (
-            <li
-              key={taskName}
-              className="flex flex-col gap-2 rounded-lg border border-sb-border bg-sb-bg-widget p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-            >
-              <div className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</div>
+            <li key={taskName} className="grid gap-3 border-t border-sb-border py-3 first:border-t-0 sm:grid-cols-[minmax(9rem,0.8fr)_minmax(0,1.6fr)] sm:items-start">
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</div>
+                <p className="m-0 text-xs text-sb-fg-muted">
+                  실제 사용: <span className="text-sb-fg">{formatResolvedTaskAi(snapshot, taskName)}</span>
+                </p>
+              </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:items-center">
                 <label className="flex flex-col gap-1 text-xs text-sb-fg-muted">
                   <span>Provider</span>
@@ -699,9 +717,6 @@ function TaskAssignmentsSection({
                   </select>
                 </label>
               </div>
-              <p className="m-0 text-xs text-sb-fg-muted">
-                실제 사용: <span className="text-sb-fg">{formatResolvedTaskAi(snapshot, taskName)}</span>
-              </p>
             </li>
           )
         })}
@@ -800,63 +815,83 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
 
   if (loadError || !snapshot) {
     return (
-      <main className="flex min-h-screen flex-col gap-4 bg-sb-bg p-4">
-        <SectionHeader eyebrow="Storyboard" title="설정" description={<span className="text-sb-fg-error">{loadError ?? "알 수 없는 오류"}</span>} />
+      <main className="flex min-h-screen bg-sb-bg p-5">
+        <div className={settingsPanelClass}>
+          <SectionHeader eyebrow="Storyboard" title="설정" description={<span className="text-sb-fg-error">{loadError ?? "알 수 없는 오류"}</span>} />
+        </div>
       </main>
     )
   }
 
+  const settingsTabs = [
+    {
+      id: "defaults",
+      label: "기본값",
+      panel: <DefaultProviderSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
+    },
+    {
+      id: "connections",
+      label: "연결",
+      panel: (
+        <section className="flex flex-col gap-3" aria-label="제공자 연결">
+          <SectionHeader
+            title="제공자 연결"
+            description="API 키, Ollama Base URL, 연결 테스트만 관리합니다. 모델 선택은 기본값 또는 태스크 탭에서 조정합니다."
+          />
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
+            {AI_PROVIDER_IDS.map((providerId) => (
+              <ProviderConfigCard
+                key={providerId}
+                providerId={providerId}
+                snapshot={snapshot}
+                callRpc={callRpc}
+                onRpcError={onRpcError}
+                apiKeyDraft={apiKeyDraft}
+                setApiKeyDraft={setApiKeyDraft}
+                ollamaBaseUrlDraft={ollamaBaseUrlDraft}
+                setOllamaBaseUrlDraft={setOllamaBaseUrlDraft}
+                baseUrlFocused={baseUrlFocused}
+                setBaseUrlFocused={setBaseUrlFocused}
+                connectionTest={connectionTest}
+                setConnectionTest={setConnectionTest}
+              />
+            ))}
+          </div>
+        </section>
+      )
+    },
+    {
+      id: "tasks",
+      label: "태스크",
+      panel: <TaskAssignmentsSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
+    }
+  ]
+
   return (
-    <main className="flex min-h-screen flex-col gap-5 bg-sb-bg p-5">
-      <header className="rounded-xl border border-sb-border bg-sb-bg-sidebar p-5 shadow-cardRest">
-        <div className="flex flex-wrap items-end justify-between gap-3">
+    <main className="flex min-h-screen bg-sb-bg p-5">
+      <div className={settingsPanelClass}>
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-sb-border pb-4">
           <SectionHeader
             eyebrow="Storyboard"
             title="설정"
-            description="기본 제공자·모델, 제공자 연결(API 키·Ollama URL), 태스크별 덮어쓰기를 관리합니다."
+            description="AI 기본값, 연결 정보, 태스크별 덮어쓰기를 필요한 범위만 열어 관리합니다."
           />
-          <StatusPill tone="neutral">Workspace settings</StatusPill>
-        </div>
-      </header>
+          <StatusPill tone="neutral">{formatDefaultProviderSummary(snapshot)}</StatusPill>
+        </header>
 
-      {rpcError ? (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-sb-border-warning bg-sb-bg-widget px-3 py-2 text-sm text-sb-fg shadow-cardRest">
-          <span>{rpcError}</span>
-          <Button type="button" variant="secondary" onClick={() => setRpcError(null)}>
-            닫기
-          </Button>
-        </div>
-      ) : null}
+        {rpcError ? (
+          <div className="flex items-start justify-between gap-3 rounded-md border border-sb-border-warning bg-sb-bg-widget/80 px-3 py-2 text-sm text-sb-fg">
+            <span>{rpcError}</span>
+            <Button type="button" variant="secondary" onClick={() => setRpcError(null)}>
+              닫기
+            </Button>
+          </div>
+        ) : null}
 
-      <DefaultProviderSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
-
-      <div className="flex flex-col gap-3">
-        <SectionHeader
-          title="제공자 연결"
-          description="API 키(또는 Ollama Base URL)와 연결 테스트만 다룹니다. 모델은 위 «기본 제공자와 모델» 또는 태스크별 설정에서 고릅니다."
-        />
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-          {AI_PROVIDER_IDS.map((providerId) => (
-            <ProviderConfigCard
-              key={providerId}
-              providerId={providerId}
-              snapshot={snapshot}
-              callRpc={callRpc}
-              onRpcError={onRpcError}
-              apiKeyDraft={apiKeyDraft}
-              setApiKeyDraft={setApiKeyDraft}
-              ollamaBaseUrlDraft={ollamaBaseUrlDraft}
-              setOllamaBaseUrlDraft={setOllamaBaseUrlDraft}
-              baseUrlFocused={baseUrlFocused}
-              setBaseUrlFocused={setBaseUrlFocused}
-              connectionTest={connectionTest}
-              setConnectionTest={setConnectionTest}
-            />
-          ))}
+        <div className="rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-3">
+          <Tabs items={settingsTabs} initialId="defaults" />
         </div>
       </div>
-
-      <TaskAssignmentsSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
     </main>
   )
 }
