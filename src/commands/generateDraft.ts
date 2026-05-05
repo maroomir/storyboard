@@ -34,6 +34,7 @@ import {
 } from "../services/ai/pipelines/sceneGenerationPipeline"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
+import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
 import type { BackgroundCard } from "../shared/card"
 
@@ -149,12 +150,14 @@ async function isCacheHit(
 export interface RegisterGenerateDraftCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
+  readonly usageRecorder: UsageRecorder
 }
 
 export interface RunGenerateDraftForWorkspaceSceneOptions {
   readonly force: boolean
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
+  readonly usageRecorder: UsageRecorder
 }
 
 export type GenerateDraftWorkflowResult =
@@ -167,6 +170,7 @@ export interface GenerateDraftWorkflowOptions {
   readonly force: boolean
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
+  readonly usageRecorder: UsageRecorder
   readonly openDocumentOnSuccess: boolean
   readonly showCacheHitMessage: boolean
   readonly showSuccessMessage: boolean
@@ -295,7 +299,11 @@ export async function generateDraftForWorkspaceSceneWorkflow(
     return { ok: true, kind: "cache_hit" }
   }
 
-  const aiService = new StoryboardAIService(options.aiProviderRegistry)
+  const aiService = new StoryboardAIService(options.aiProviderRegistry, {
+    onUsage: (record): void => {
+      void options.usageRecorder.record(workspaceFolder.uri, record)
+    }
+  })
   const pipelineProviders = {
     situationExtraction: options.aiProviderRegistry.getTaskProvider("situationExtraction"),
     personaDialogue: options.aiProviderRegistry.getTaskProvider("personaDialogue"),
@@ -308,6 +316,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
   try {
     const result = await runSceneGenerationPipeline({
+      sceneStem: scene.stem,
       context,
       aiService,
       format: project.format,
@@ -359,6 +368,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
       scheduleCharacterTraitsUpdate({
         queueKey: workspaceFolder.uri.toString(),
+        sceneStem: scene.stem,
         draftBody: result.draftBody,
         detectedCharacterCards,
         aiService,
@@ -414,6 +424,7 @@ export async function runGenerateDraftForWorkspaceScene(
         force: options.force,
         aiProviderRegistry: options.aiProviderRegistry,
         logger: options.logger,
+        usageRecorder: options.usageRecorder,
         openDocumentOnSuccess: true,
         showCacheHitMessage: false,
         showSuccessMessage: false,
@@ -482,7 +493,8 @@ async function runCommand(
   await runGenerateDraftForWorkspaceScene(sceneUri, {
     force,
     aiProviderRegistry: dependencies.aiProviderRegistry,
-    logger: dependencies.logger
+    logger: dependencies.logger,
+    usageRecorder: dependencies.usageRecorder
   })
 }
 

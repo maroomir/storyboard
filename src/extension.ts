@@ -18,6 +18,7 @@ import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
 import { registerSidebarScenesProvider } from "./providers/SidebarScenesProvider"
 import { createAiProviderRegistry } from "./services/ai/providerRegistry"
+import { createVscodeUsageLedgerFileSystem, UsageRecorder } from "./services/ai/UsageRecorder"
 import { SecretStore } from "./services/secrets/SecretStore"
 import { ConfigBridge } from "./services/settings/ConfigBridge"
 
@@ -29,6 +30,9 @@ export function activate(context: vscode.ExtensionContext): void {
     onDidChangeConfiguration: (listener): vscode.Disposable => vscode.workspace.onDidChangeConfiguration(listener)
   })
   const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge })
+  const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message) =>
+    logger.warn(message)
+  )
 
   logger.info("Activating Storyboard extension")
 
@@ -38,15 +42,24 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
-  context.subscriptions.push(registerGenerateDraftCommands({ aiProviderRegistry, logger }))
-  context.subscriptions.push(registerGenerateAllDraftsCommand({ aiProviderRegistry, logger }))
-  context.subscriptions.push(registerApplyDraftFormatCommand({ aiProviderRegistry, logger }))
+  context.subscriptions.push(usageRecorder)
+  context.subscriptions.push(
+    registerGenerateDraftCommands({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerGenerateAllDraftsCommand({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder })
+  )
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
   context.subscriptions.push(registerDraftPlaceholderCommands())
   context.subscriptions.push(registerCardCustomEditorProvider(context))
-  context.subscriptions.push(registerSidebarCardsProviders(context, { aiProviderRegistry }))
-  context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry }))
+  context.subscriptions.push(
+    registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder })
+  )
+  context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry, usageRecorder }))
   context.subscriptions.push(registerNewSceneCommands())
   context.subscriptions.push(registerOpenRelationGraphCommand(context, { aiProviderRegistry }))
   context.subscriptions.push(

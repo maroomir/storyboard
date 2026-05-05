@@ -2,7 +2,13 @@ import { z } from "zod"
 
 import { cardSchema, cardTypes } from "./card"
 import { storyboardModelCatalog } from "./models"
-import { aiProviderIds, aiTaskNames } from "../services/ai/types"
+import {
+  aiProviderIds,
+  aiTaskNames,
+  type UsageSummaryByEntity
+} from "../services/ai/types"
+
+export type { UsageSummaryByEntity }
 
 export const storyboardMessageProtocolVersion = "1.0.0"
 
@@ -293,6 +299,17 @@ export const secretsDeleteApiKeyResponsePayloadSchema = z.object({
   hasApiKey: z.literal(false)
 })
 
+const usageSummaryByEntitySchema = z.object({
+  scenes: z.record(z.string(), z.number()),
+  characters: z.record(z.string(), z.number()),
+  backgrounds: z.record(z.string(), z.number()),
+  totalUsd: z.number()
+})
+
+export const usageReadRequestPayloadSchema = z.object({})
+
+export const usageReadResponsePayloadSchema = usageSummaryByEntitySchema
+
 export const storyboardRequestPayloadSchemas = {
   "cards.list": cardsListRequestPayloadSchema,
   "cards.read": cardsReadRequestPayloadSchema,
@@ -315,7 +332,8 @@ export const storyboardRequestPayloadSchemas = {
   "settings.updateProviderBaseUrl": settingsUpdateProviderBaseUrlRequestPayloadSchema,
   "settings.updateTaskAiConfig": settingsUpdateTaskAiConfigRequestPayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
-  "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema
+  "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema,
+  "usage.read": usageReadRequestPayloadSchema
 } as const
 
 export const storyboardResponsePayloadSchemas = {
@@ -340,7 +358,8 @@ export const storyboardResponsePayloadSchemas = {
   "settings.updateProviderBaseUrl": settingsMutationOkResponsePayloadSchema,
   "settings.updateTaskAiConfig": settingsMutationOkResponsePayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
-  "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema
+  "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema,
+  "usage.read": usageReadResponsePayloadSchema
 } as const
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas
@@ -358,6 +377,12 @@ export type StoryboardSettingsChangedEventMessage = {
   readonly type: "event"
   readonly method: "settings.changed"
   readonly payload: StoryboardResponsePayload<"settings.read">
+}
+
+export type StoryboardUsageChangedEventMessage = {
+  readonly type: "event"
+  readonly method: "usage.changed"
+  readonly payload: StoryboardResponsePayload<"usage.read">
 }
 
 type StoryboardRequestMessageMap = {

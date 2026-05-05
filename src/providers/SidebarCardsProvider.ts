@@ -2,9 +2,12 @@ import * as vscode from "vscode"
 
 import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
 import { parseCard } from "../files/card"
+import { emptyUsageSummary } from "../files/usageLedger"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
-import { createAiRpcHandlers } from "../services/ai/rpcHandlers"
+import { createAiRpcHandlers, createUsageRpcHandlers } from "../services/ai/rpcHandlers"
 import { type AiProviderRegistry } from "../services/ai/providerRegistry"
+import type { UsageRecorder } from "../services/ai/UsageRecorder"
+import type { UsageSummaryByEntity } from "../services/ai/types"
 import type { CardType } from "../shared/card"
 import type { StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
@@ -32,10 +35,12 @@ interface SidebarCardsInitialData {
   readonly title: string
   readonly cards: readonly SidebarCardSummary[]
   readonly isStoryboardProject: boolean
+  readonly usage: UsageSummaryByEntity
 }
 
 export interface SidebarCardsProvidersDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly usageRecorder: UsageRecorder
 }
 
 export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -72,6 +77,12 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
     const bridge = createWebviewBridge(webviewView.webview, this.createHandlers())
     this.disposables.push(bridge)
 
+    this.disposables.push(
+      this.dependencies.usageRecorder.onChange(() => {
+        void this.postUsageChanged()
+      })
+    )
+
     const storyboardRoot = await resolveStoryboardWorkspaceRoot()
     if (storyboardRoot) {
       this.registerCardWatcher(storyboardRoot)
@@ -89,6 +100,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
   private createHandlers(): StoryboardRpcHandlers {
     return {
       ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
+      ...createUsageRpcHandlers(this.dependencies.usageRecorder),
       "cards.list": async (): Promise<StoryboardResponsePayload<"cards.list">> => ({
         cards: await this.loadCardSummaries()
       }),
@@ -143,14 +155,31 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
     })
   }
 
+  private async postUsageChanged(): Promise<void> {
+    const root = await resolveStoryboardWorkspaceRoot()
+    const summary =
+      root !== undefined ? await this.dependencies.usageRecorder.getSummary(root) : emptyUsageSummary()
+
+    await this.webviewView?.webview.postMessage({
+      type: "event",
+      method: "usage.changed",
+      payload: summary
+    })
+  }
+
   private async createInitialData(): Promise<SidebarCardsInitialData> {
     const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+    const usage =
+      storyboardRoot !== undefined
+        ? await this.dependencies.usageRecorder.getSummary(storyboardRoot)
+        : emptyUsageSummary()
 
     return {
       type: this.options.cardType,
       title: this.options.title,
       cards: await this.loadCardSummaries(storyboardRoot),
-      isStoryboardProject: storyboardRoot !== undefined
+      isStoryboardProject: storyboardRoot !== undefined,
+      usage
     }
   }
 

@@ -48,6 +48,7 @@ describe("runSceneGenerationPipeline", () => {
     const ai = createRecordingAiService()
     await expect(
       runSceneGenerationPipeline({
+        sceneStem: "01-opening",
         context: contextFor([eliaCard], "   \n  "),
         aiService: ai,
         format: "novel"
@@ -61,6 +62,7 @@ describe("runSceneGenerationPipeline", () => {
     const ai = createRecordingAiService()
     await expect(
       runSceneGenerationPipeline({
+        sceneStem: "01-opening",
         context: contextFor([], "엘리아가 걷는다."),
         aiService: ai,
         format: "novel"
@@ -76,6 +78,7 @@ describe("runSceneGenerationPipeline", () => {
 
     await expect(
       runSceneGenerationPipeline({
+        sceneStem: "01-opening",
         context: contextFor([eliaCard], "본문"),
         aiService: ai,
         format: "novel"
@@ -112,6 +115,7 @@ describe("runSceneGenerationPipeline", () => {
     ai.applyGenreFormat.mockImplementation(async (dialogue, format) => `<<${format}>>${dialogue}`)
 
     const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
       context: contextFor([eliaCard, jihoonCard], "엘리아와 지훈이 학교에 있다."),
       aiService: ai,
       format: "screenplay",
@@ -137,7 +141,15 @@ describe("runSceneGenerationPipeline", () => {
       expect.any(Map),
       expect.anything(),
       "이전 씬 말미",
-      undefined
+      expect.objectContaining({
+        attribution: {
+          primary: { kind: "scene", id: "01-opening" },
+          participants: [
+            { kind: "character", id: "elia" },
+            { kind: "character", id: "jihoon" }
+          ]
+        }
+      })
     )
     expect(ai.generatePersonaDialogue).toHaveBeenNthCalledWith(
       2,
@@ -145,14 +157,22 @@ describe("runSceneGenerationPipeline", () => {
       expect.any(Map),
       expect.anything(),
       "첫 번째 상황",
-      undefined
+      expect.objectContaining({
+        attribution: {
+          primary: { kind: "scene", id: "01-opening" },
+          participants: [{ kind: "character", id: "elia" }]
+        }
+      })
     )
 
     const joined = "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=첫 번째 상황]"
     expect(ai.applyGenreFormat).toHaveBeenCalledWith(
       joined,
       "screenplay",
-      expect.objectContaining({ providerId: "openai" })
+      expect.objectContaining({
+        providerId: "openai",
+        attribution: { primary: { kind: "scene", id: "01-opening" } }
+      })
     )
 
     expect(result.draftBody).toBe(`<<screenplay>>${joined}`)
@@ -171,22 +191,51 @@ describe("runSceneGenerationPipeline", () => {
     ai.applyGenreFormat.mockResolvedValueOnce("out")
 
     await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
       context: contextFor([eliaCard], "본문"),
       aiService: ai,
       format: "novel",
       providers: { situationExtraction: "claude", personaDialogue: "google", sceneDraft: "ollama" }
     })
 
-    expect(ai.extractSituations).toHaveBeenCalledWith("본문", { providerId: "claude" })
-    expect(ai.createCharacterPersona).toHaveBeenCalledWith(eliaCard, { providerId: "google" })
+    expect(ai.extractSituations).toHaveBeenCalledWith(
+      "본문",
+      expect.objectContaining({
+        providerId: "claude",
+        attribution: { primary: { kind: "scene", id: "01-opening" } }
+      })
+    )
+    expect(ai.createCharacterPersona).toHaveBeenCalledWith(
+      eliaCard,
+      expect.objectContaining({
+        providerId: "google",
+        attribution: {
+          primary: { kind: "character", id: "elia" },
+          participants: [{ kind: "scene", id: "01-opening" }]
+        }
+      })
+    )
     expect(ai.generatePersonaDialogue).toHaveBeenCalledWith(
       "단일",
       expect.any(Map),
       expect.anything(),
       undefined,
-      { providerId: "google" }
+      expect.objectContaining({
+        providerId: "google",
+        attribution: {
+          primary: { kind: "scene", id: "01-opening" },
+          participants: [{ kind: "character", id: "elia" }]
+        }
+      })
     )
-    expect(ai.applyGenreFormat).toHaveBeenCalledWith("d", "novel", { providerId: "ollama" })
+    expect(ai.applyGenreFormat).toHaveBeenCalledWith(
+      "d",
+      "novel",
+      expect.objectContaining({
+        providerId: "ollama",
+        attribution: { primary: { kind: "scene", id: "01-opening" } }
+      })
+    )
   })
 })
 

@@ -2,12 +2,15 @@ import * as vscode from "vscode"
 
 import { draftPath, getStoryboardProjectPaths } from "../core/pathConventions"
 import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
+import { emptyUsageSummary } from "../files/usageLedger"
+import { readSceneFile, type SceneFileSystem } from "../files/scene"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
-import { createAiRpcHandlers } from "../services/ai/rpcHandlers"
+import { createAiRpcHandlers, createUsageRpcHandlers } from "../services/ai/rpcHandlers"
 import { type AiProviderRegistry } from "../services/ai/providerRegistry"
+import type { UsageRecorder } from "../services/ai/UsageRecorder"
+import type { UsageSummaryByEntity } from "../services/ai/types"
 import type { StoryboardResponsePayload } from "../shared/messaging"
 import { parseSceneFileName } from "../shared/scene"
-import { readSceneFile, type SceneFileSystem } from "../files/scene"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
 
 const generateDraftCommand = "storyboard.draft.generate"
@@ -21,6 +24,7 @@ interface SidebarScenesInitialData {
   readonly title: string
   readonly scenes: readonly SceneListItem[]
   readonly isStoryboardProject: boolean
+  readonly usage: UsageSummaryByEntity
 }
 
 export interface SceneListItem {
@@ -37,6 +41,7 @@ export interface SceneListItem {
 
 export interface SidebarScenesProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly usageRecorder: UsageRecorder
 }
 
 export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -72,6 +77,12 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
     const bridge = createWebviewBridge(webviewView.webview, this.createHandlers())
     this.disposables.push(bridge)
 
+    this.disposables.push(
+      this.dependencies.usageRecorder.onChange(() => {
+        void this.postUsageChanged()
+      })
+    )
+
     const storyboardRoot = await resolveStoryboardWorkspaceRoot()
     if (storyboardRoot) {
       this.registerWatchers(storyboardRoot)
@@ -89,6 +100,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
   private createHandlers(): StoryboardRpcHandlers {
     return {
       ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
+      ...createUsageRpcHandlers(this.dependencies.usageRecorder),
       "scenes.list": async (): Promise<StoryboardResponsePayload<"scenes.list">> => ({
         scenes: await this.loadSceneList()
       }),
@@ -142,13 +154,30 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
     })
   }
 
+  private async postUsageChanged(): Promise<void> {
+    const root = await resolveStoryboardWorkspaceRoot()
+    const summary =
+      root !== undefined ? await this.dependencies.usageRecorder.getSummary(root) : emptyUsageSummary()
+
+    await this.webviewView?.webview.postMessage({
+      type: "event",
+      method: "usage.changed",
+      payload: summary
+    })
+  }
+
   private async createInitialData(): Promise<SidebarScenesInitialData> {
     const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+    const usage =
+      storyboardRoot !== undefined
+        ? await this.dependencies.usageRecorder.getSummary(storyboardRoot)
+        : emptyUsageSummary()
 
     return {
       title: "Scenes",
       scenes: await this.loadSceneList(storyboardRoot),
-      isStoryboardProject: storyboardRoot !== undefined
+      isStoryboardProject: storyboardRoot !== undefined,
+      usage
     }
   }
 

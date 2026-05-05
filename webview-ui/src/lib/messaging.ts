@@ -3,7 +3,8 @@ import type {
   CardType,
   SceneListItem,
   SidebarCardsInitialData,
-  SidebarScenesInitialData
+  SidebarScenesInitialData,
+  UsageSummaryByEntity
 } from "./types"
 
 export function createRequestId(): string {
@@ -22,28 +23,37 @@ export function parseCardEditorInitialData(value: unknown): CardEditorInitialDat
   }
 }
 
+const emptyUsageSummary: UsageSummaryByEntity = {
+  scenes: {},
+  characters: {},
+  backgrounds: {},
+  totalUsd: 0
+}
+
 export function parseSidebarCardsInitialData(value: unknown): SidebarCardsInitialData {
   if (isSidebarCardsInitialData(value)) {
-    return value
+    return { ...value, usage: normalizeUsageSummary(value.usage) }
   }
 
   return {
     type: "character",
     title: "Cards",
     cards: [],
-    isStoryboardProject: false
+    isStoryboardProject: false,
+    usage: emptyUsageSummary
   }
 }
 
 export function parseSidebarScenesInitialData(value: unknown): SidebarScenesInitialData {
   if (isSidebarScenesInitialData(value)) {
-    return value
+    return { ...value, usage: normalizeUsageSummary(value.usage) }
   }
 
   return {
     title: "Scenes",
     scenes: [],
-    isStoryboardProject: false
+    isStoryboardProject: false,
+    usage: emptyUsageSummary
   }
 }
 
@@ -54,6 +64,21 @@ function isCardEditorInitialData(value: unknown): value is CardEditorInitialData
 
   const candidate = value as Partial<CardEditorInitialData>
   return typeof candidate.documentUri === "string" && typeof candidate.rawText === "string"
+}
+
+export function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
+  if (!value || typeof value !== "object") {
+    return emptyUsageSummary
+  }
+
+  const u = value as Partial<UsageSummaryByEntity & { readonly total?: number }>
+  const totalUsdRaw = u.totalUsd ?? u.total
+  return {
+    scenes: typeof u.scenes === "object" && u.scenes !== null ? u.scenes : {},
+    characters: typeof u.characters === "object" && u.characters !== null ? u.characters : {},
+    backgrounds: typeof u.backgrounds === "object" && u.backgrounds !== null ? u.backgrounds : {},
+    totalUsd: typeof totalUsdRaw === "number" && Number.isFinite(totalUsdRaw) ? totalUsdRaw : 0
+  }
 }
 
 function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitialData {

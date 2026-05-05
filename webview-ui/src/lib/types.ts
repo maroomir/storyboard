@@ -7,6 +7,7 @@ export type StoryboardRequestMethod =
   | "scenes.openScene"
   | "scenes.openDraft"
   | "scenes.generateDraft"
+  | "usage.read"
 
 export type CardAttributeValue = string | number | boolean | null
 
@@ -47,6 +48,13 @@ export interface CardEditorInitialData {
   readonly error?: string
 }
 
+export interface UsageSummaryByEntity {
+  readonly scenes: Readonly<Record<string, number>>
+  readonly characters: Readonly<Record<string, number>>
+  readonly backgrounds: Readonly<Record<string, number>>
+  readonly totalUsd: number
+}
+
 export interface SidebarCardSummary {
   readonly type: CardType
   readonly id: string
@@ -61,6 +69,7 @@ export interface SidebarCardsInitialData {
   readonly title: string
   readonly cards: readonly SidebarCardSummary[]
   readonly isStoryboardProject: boolean
+  readonly usage: UsageSummaryByEntity
 }
 
 export interface StoryboardRequestMessage {
@@ -87,11 +96,17 @@ export interface SidebarScenesInitialData {
   readonly title: string
   readonly scenes: readonly SceneListItem[]
   readonly isStoryboardProject: boolean
+  readonly usage: UsageSummaryByEntity
 }
 
 export interface StoryboardEventMessage {
   readonly type: "event"
-  readonly method: "cards.changed" | "cards.listChanged" | "scenes.listChanged" | "relations.listChanged"
+  readonly method:
+    | "cards.changed"
+    | "cards.listChanged"
+    | "scenes.listChanged"
+    | "relations.listChanged"
+    | "usage.changed"
   readonly payload: unknown
 }
 

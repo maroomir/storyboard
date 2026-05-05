@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, type LucideIcon } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 
-import { createRequestId, parseSidebarScenesInitialData } from "../../lib/messaging"
+import { createRequestId, normalizeUsageSummary, parseSidebarScenesInitialData } from "../../lib/messaging"
 import type { SceneListItem, SidebarScenesInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
 import { Button } from "../ui/Button"
 
@@ -44,11 +44,22 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
-      if (event.data.type !== "event" || event.data.method !== "scenes.listChanged") {
+      if (event.data.type !== "event") {
         return
       }
 
-      setSidebarState(parseSidebarScenesInitialData(event.data.payload))
+      if (event.data.method === "scenes.listChanged") {
+        setSidebarState(parseSidebarScenesInitialData(event.data.payload))
+        return
+      }
+
+      if (event.data.method === "usage.changed") {
+        const summary = (event.data.payload as { readonly summary?: unknown }).summary
+        setSidebarState((prev) => ({
+          ...prev,
+          usage: normalizeUsageSummary(summary)
+        }))
+      }
     }
 
     window.addEventListener("message", handleMessage)

@@ -1,8 +1,9 @@
 import type { SceneContext } from "../../../core/sceneContext"
 import { createEmptyBackground } from "../../../domain/Background"
+import type { CharacterCard } from "../../../shared/card"
 import type { ProjectFormat } from "../../../shared/project"
 import type { GenerateTextOptions, SituationWithCharacters, StoryboardAIService } from "../AIService"
-import type { AiProviderId } from "../types"
+import type { AiProviderId, EntityRef } from "../types"
 
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
@@ -36,6 +37,8 @@ export interface RunSceneGenerationPipelineInput {
   readonly providers?: Readonly<SceneGenerationPipelineTaskProviders>
   readonly onProgress?: (stage: SceneGenerationPipelineStage, current: number, total: number) => void
   readonly shouldCancel?: () => boolean
+  readonly sceneStem?: string
+  readonly backgroundId?: string
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -69,6 +72,31 @@ function buildGenerateOptions(
   return providerId ? { providerId } : undefined
 }
 
+function withAttribution(
+  options: GenerateTextOptions | undefined,
+  attribution: GenerateTextOptions["attribution"]
+): GenerateTextOptions {
+  return { ...options, attribution }
+}
+
+function situationCharacterRefs(
+  situation: SituationWithCharacters,
+  characters: readonly CharacterCard[]
+): EntityRef[] {
+  const byName = new Map(characters.map((character) => [character.name, character] as const))
+  const refs: EntityRef[] = []
+
+  for (const name of situation.characters) {
+    const card = byName.get(name)
+
+    if (card) {
+      refs.push({ kind: "character", id: card.id })
+    }
+  }
+
+  return refs
+}
+
 function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   if (shouldCancel?.()) {
     throw new SceneGenerationPipelineCancelledError()
@@ -79,6 +107,8 @@ export async function runSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput
 ): Promise<RunSceneGenerationPipelineResult> {
   const { context, aiService, format, previousContext, providers = {}, onProgress, shouldCancel } = input
+  const sceneStem = input.sceneStem ?? input.context.scene.stem
+  const sceneRef: EntityRef = { kind: "scene", id: sceneStem }
   const body = context.scene.body.trim()
 
   if (body.length === 0) {
@@ -92,7 +122,7 @@ export async function runSceneGenerationPipeline(
 
   const situationsRaw = await aiService.extractSituations(
     body,
-    buildGenerateOptions(providers, "situationExtraction")
+    withAttribution(buildGenerateOptions(providers, "situationExtraction"), { primary: sceneRef })
   )
   onProgress?.("extractSituations", 1, 1)
   assertNotCancelled(shouldCancel)
@@ -111,7 +141,13 @@ export async function runSceneGenerationPipeline(
     if (!character) {
       continue
     }
-    const persona = await aiService.createCharacterPersona(character, personaOptions)
+    const persona = await aiService.createCharacterPersona(
+      character,
+      withAttribution(personaOptions, {
+        primary: { kind: "character", id: character.id },
+        participants: [sceneRef]
+      })
+    )
     personasUsed.set(character.name, persona)
     onProgress?.("buildPersonas", i + 1, characterCount)
     assertNotCancelled(shouldCancel)
@@ -120,6 +156,7 @@ export async function runSceneGenerationPipeline(
   const background = context.background ?? createEmptyBackground("scene-default", "미정")
   const dialoguePieces: string[] = []
   const dialogueOptions = buildGenerateOptions(providers, "personaDialogue")
+  const backgroundParticipantId = context.background?.id ?? input.backgroundId
 
   for (let i = 0; i < situations.length; i++) {
     const situation = situations[i]
@@ -130,12 +167,21 @@ export async function runSceneGenerationPipeline(
 
     const prior: string | undefined = i > 0 ? situations[i - 1]?.situation : previousContext
 
+    const dialogueParticipants: EntityRef[] = situationCharacterRefs(situation, context.characters)
+
+    if (backgroundParticipantId) {
+      dialogueParticipants.push({ kind: "background", id: backgroundParticipantId })
+    }
+
     const dialogue = await aiService.generatePersonaDialogue(
       situation.situation,
       personasUsed,
       background,
       prior,
-      dialogueOptions
+      withAttribution(dialogueOptions, {
+        primary: sceneRef,
+        participants: dialogueParticipants
+      })
     )
     dialoguePieces.push(dialogue)
     assertNotCancelled(shouldCancel)
@@ -148,7 +194,7 @@ export async function runSceneGenerationPipeline(
   const draftBody = await aiService.applyGenreFormat(
     joinedDialogue,
     format,
-    buildGenerateOptions(providers, "sceneDraft")
+    withAttribution(buildGenerateOptions(providers, "sceneDraft"), { primary: sceneRef })
   )
 
   return {

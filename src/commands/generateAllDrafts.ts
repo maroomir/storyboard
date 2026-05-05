@@ -4,6 +4,7 @@ import type { StoryboardLogger } from "../core/logger"
 import { getStoryboardProjectPaths } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseSceneFileName } from "../shared/scene"
+import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { SceneGenerationPipelineStage } from "../services/ai/pipelines/sceneGenerationPipeline"
 import {
@@ -16,6 +17,7 @@ const generateAllDraftsCommand = "storyboard.draft.generateAll"
 export interface RegisterGenerateAllDraftsCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
+  readonly usageRecorder: UsageRecorder
 }
 
 async function listSceneUrisOrdered(sceneDirectory: vscode.Uri): Promise<vscode.Uri[]> {
@@ -104,6 +106,7 @@ export async function runGenerateAllDrafts(dependencies: RegisterGenerateAllDraf
           force: false,
           aiProviderRegistry: dependencies.aiProviderRegistry,
           logger: dependencies.logger,
+          usageRecorder: dependencies.usageRecorder,
           suppressLoggerPanel: true,
           openDocumentOnSuccess: false,
           showCacheHitMessage: false,

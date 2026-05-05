@@ -2,7 +2,7 @@ import type { Background } from "../../domain/Background"
 import type { Character } from "../../domain/Character"
 import type { ProjectFormat } from "../../shared/project"
 import { AiProviderRegistry } from "./providerRegistry"
-import type { AiGenerateResponse, AiProviderId } from "./types"
+import type { AiGenerateResponse, AiProviderId, UsageAttribution, UsageRecord } from "./types"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
@@ -19,10 +19,24 @@ export interface GenerateTextOptions {
   readonly providerId?: AiProviderId
   readonly temperature?: number
   readonly maxTokens?: number
+  readonly attribution?: UsageAttribution
+}
+
+export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
+  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+}
+
+export type OnUsageRecordCallback = (record: UsageRecord) => void
+
+export interface StoryboardAIServiceOptions {
+  readonly onUsage?: OnUsageRecordCallback
 }
 
 export class StoryboardAIService {
-  public constructor(private readonly registry: AiProviderRegistry) {}
+  public constructor(
+    private readonly registry: AiProviderRegistry,
+    private readonly serviceOptions: StoryboardAIServiceOptions = {}
+  ) {}
 
   public async extractSituations(
     input: string,
@@ -92,10 +106,10 @@ export class StoryboardAIService {
   public async extractTraitsByCharacter(
     draftBody: string,
     characterNames: readonly string[],
-    options: GenerateTextOptions = {}
+    options: ExtractTraitsByCharacterOptions = {}
   ): Promise<Record<string, string[]>> {
     const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
-    const traitOptions: GenerateTextOptions = {
+    const traitOptions: ExtractTraitsByCharacterOptions = {
       ...options,
       temperature: options.temperature ?? TraitsExtractionPrompt.config.temperature,
       maxTokens: options.maxTokens ?? TraitsExtractionPrompt.config.maxTokens
@@ -103,10 +117,14 @@ export class StoryboardAIService {
 
     const entries = await Promise.all(
       uniqueNames.map(async (name) => {
+        const attribution = traitOptions.attributionForCharacter?.(name) ?? traitOptions.attribution
         const response = await this.generateText(
           "traitsExtraction",
           [{ role: "user", content: TraitsExtractionPrompt.build(draftBody, name) }],
-          traitOptions
+          {
+            ...traitOptions,
+            attribution
+          }
         )
 
         return [name, parseBulletList(response.text)] as const
@@ -121,22 +139,48 @@ export class StoryboardAIService {
     messages: ReadonlyArray<{ readonly role: "system" | "user" | "assistant"; readonly content: string }>,
     options: GenerateTextOptions
   ): Promise<AiGenerateResponse> {
-    if (options.providerId) {
-      return this.registry.generateWithProvider(options.providerId, {
-        taskName,
-        messages,
-        temperature: options.temperature,
-        maxTokens: options.maxTokens
-      })
+    const response = options.providerId
+      ? await this.registry.generateWithProvider(options.providerId, {
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens
+        })
+      : await this.registry.generate({
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens
+        })
+
+    this.emitUsageIfNeeded(taskName, response, options.attribution)
+    return response
+  }
+
+  private emitUsageIfNeeded(
+    taskName: UsageRecord["taskName"],
+    response: AiGenerateResponse,
+    attribution: UsageAttribution | undefined
+  ): void {
+    const onUsage = this.serviceOptions.onUsage
+
+    if (!onUsage || !attribution || !isAttributed(attribution)) {
+      return
     }
 
-    return this.registry.generate({
+    onUsage({
       taskName,
-      messages,
-      temperature: options.temperature,
-      maxTokens: options.maxTokens
+      providerId: response.providerId,
+      model: response.model,
+      usage: response.usage,
+      costUsd: response.costUsd ?? 0,
+      attribution
     })
   }
+}
+
+function isAttributed(attribution: UsageAttribution): boolean {
+  return Boolean(attribution.primary) || (attribution.participants?.length ?? 0) > 0
 }
 
 function toSituationWithCharacters(value: unknown): SituationWithCharacters[] {

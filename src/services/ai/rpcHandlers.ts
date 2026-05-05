@@ -1,6 +1,9 @@
+import { resolveStoryboardWorkspaceRoot } from "../../core/workspace"
+import { emptyUsageSummary } from "../../files/usageLedger"
 import { type StoryboardRpcHandlers } from "../../messaging/bridge"
 import { type StoryboardResponsePayload } from "../../shared/messaging"
 import { AiProviderRegistry } from "./providerRegistry"
+import type { UsageRecorder } from "./UsageRecorder"
 
 export function createAiRpcHandlers(registry: AiProviderRegistry): StoryboardRpcHandlers {
   return {
@@ -19,5 +22,19 @@ export function createAiRpcHandlers(registry: AiProviderRegistry): StoryboardRpc
         temperature: payload.temperature,
         maxTokens: payload.maxTokens
       })
+  }
+}
+
+export function createUsageRpcHandlers(recorder: UsageRecorder): Pick<StoryboardRpcHandlers, "usage.read"> {
+  return {
+    "usage.read": async (): Promise<StoryboardResponsePayload<"usage.read">> => {
+      const root = await resolveStoryboardWorkspaceRoot()
+
+      if (!root) {
+        return emptyUsageSummary()
+      }
+
+      return recorder.getSummary(root)
+    }
   }
 }

@@ -3,6 +3,7 @@ import { readCardFile, writeCardFile, type CardFileSystem } from "../../files/ca
 import { parseBulletList } from "../../utils/aiResponseParser"
 import { processAllCharacterTraits } from "../../utils/traitsProcessor"
 import type { StoryboardAIService } from "./AIService"
+import type { UsageAttribution } from "./types"
 
 export interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void
@@ -14,6 +15,7 @@ export interface TraitsUpdateSummary {
 }
 
 export interface UpdateCharacterTraitsFromDraftInput {
+  readonly sceneStem?: string
   readonly draftBody: string
   readonly detectedCharacterCards: readonly CharacterCard[]
   readonly aiService: Pick<StoryboardAIService, "extractTraitsByCharacter">
@@ -98,9 +100,28 @@ export async function updateCharacterTraitsFromDraft(
   let extracted: Record<string, string[]>
 
   try {
+    const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]))
+    const sceneStem = input.sceneStem
+
     extracted = await aiService.extractTraitsByCharacter(
       draftBody,
-      detectedCharacterCards.map((card) => card.name)
+      detectedCharacterCards.map((card) => card.name),
+      sceneStem === undefined
+        ? {}
+        : {
+            attributionForCharacter: (name: string): UsageAttribution | undefined => {
+              const characterId = characterIdByName.get(name)
+
+              if (!characterId) {
+                return undefined
+              }
+
+              return {
+                primary: { kind: "character" as const, id: characterId },
+                participants: [{ kind: "scene" as const, id: sceneStem }]
+              }
+            }
+          }
     )
   } catch (error) {
     logger?.error("Traits extraction failed", error)

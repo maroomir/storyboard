@@ -8,6 +8,7 @@ import { readProjectJson } from "../files/projectJson"
 import { parseSceneFileName } from "../shared/scene"
 import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
+import type { UsageRecorder } from "../services/ai/UsageRecorder"
 
 const applyDraftFormatCommand = "storyboard.draft.applyFormat"
 
@@ -47,6 +48,7 @@ function isDirectSceneTextFile(sceneUri: vscode.Uri, workspaceFolder: vscode.Wor
 export interface RegisterApplyDraftFormatCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
+  readonly usageRecorder: UsageRecorder
 }
 
 export async function runApplyDraftFormatForScene(
@@ -114,7 +116,11 @@ export async function runApplyDraftFormatForScene(
     return
   }
 
-  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry)
+  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
+    onUsage: (record): void => {
+      void dependencies.usageRecorder.record(workspaceFolder.uri, record)
+    }
+  })
 
   try {
     await vscode.window.withProgress(
@@ -130,7 +136,10 @@ export async function runApplyDraftFormatForScene(
           return
         }
 
-        const formattedBody = await aiService.applyGenreFormat(existing.body, project.format)
+        const formattedBody = await aiService.applyGenreFormat(existing.body, project.format, {
+          providerId: dependencies.aiProviderRegistry.getTaskProvider("sceneDraft"),
+          attribution: { primary: { kind: "scene", id: nameParts.stem } }
+        })
 
         if (token.isCancellationRequested) {
           return

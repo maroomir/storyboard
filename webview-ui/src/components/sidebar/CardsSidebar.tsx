@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react"
 
 import { Button } from "../ui/Button"
 import { EmptyState } from "../ui/EmptyState"
-import { createRequestId, parseSidebarCardsInitialData } from "../../lib/messaging"
+import { createRequestId, normalizeUsageSummary, parseSidebarCardsInitialData } from "../../lib/messaging"
 import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
 
 export function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
@@ -12,11 +12,22 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
-      if (event.data.type !== "event" || event.data.method !== "cards.listChanged") {
+      if (event.data.type !== "event") {
         return
       }
 
-      setSidebarState(parseSidebarCardsInitialData(event.data.payload))
+      if (event.data.method === "cards.listChanged") {
+        setSidebarState(parseSidebarCardsInitialData(event.data.payload))
+        return
+      }
+
+      if (event.data.method === "usage.changed") {
+        const summary = (event.data.payload as { readonly summary?: unknown }).summary
+        setSidebarState((prev) => ({
+          ...prev,
+          usage: normalizeUsageSummary(summary)
+        }))
+      }
     }
 
     window.addEventListener("message", handleMessage)
