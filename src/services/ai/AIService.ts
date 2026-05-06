@@ -2,7 +2,13 @@ import type { Background } from "../../domain/Background"
 import type { Character } from "../../domain/Character"
 import type { ProjectFormat } from "../../shared/project"
 import { AiProviderRegistry } from "./providerRegistry"
-import type { AiGenerateResponse, AiProviderId, UsageAttribution, UsageRecord } from "./types"
+import type {
+  AiGenerateResponse,
+  AiProviderId,
+  UsageAttribution,
+  UsageRecord,
+  WiredAiTaskName
+} from "./types"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
@@ -135,7 +141,7 @@ export class StoryboardAIService {
   }
 
   private async generateText(
-    taskName: "situationExtraction" | "personaDialogue" | "sceneDraft" | "traitsExtraction",
+    taskName: WiredAiTaskName,
     messages: ReadonlyArray<{ readonly role: "system" | "user" | "assistant"; readonly content: string }>,
     options: GenerateTextOptions
   ): Promise<AiGenerateResponse> {

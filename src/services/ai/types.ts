@@ -2,17 +2,29 @@ export const aiProviderIds = ["openai", "claude", "google", "ollama", "mock"] as
 
 export type AiProviderId = (typeof aiProviderIds)[number]
 
-export const aiTaskNames = [
-  "situationExtraction",
-  "personaDialogue",
-  "sceneDraft",
-  "traitsExtraction",
-  "grammarCheck",
-  "inlineCompletion",
-  "draftExpansion"
+export const aiTaskCatalog = [
+  { name: "situationExtraction", label: "상황 추출", status: "wired" },
+  { name: "personaDialogue", label: "페르소나 대화", status: "wired" },
+  { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
+  { name: "traitsExtraction", label: "특성 추출", status: "wired" },
+  { name: "grammarCheck", label: "문법 검사", status: "planned" },
+  { name: "inlineCompletion", label: "인라인 완성", status: "planned" },
+  { name: "draftExpansion", label: "드래프트 확장", status: "planned" }
 ] as const
 
-export type AiTaskName = (typeof aiTaskNames)[number]
+export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number]
+export type AiTaskName = AiTaskCatalogEntry["name"]
+export type AiTaskStatus = AiTaskCatalogEntry["status"]
+export type WiredAiTaskName = Extract<AiTaskCatalogEntry, { readonly status: "wired" }>["name"]
+
+export const aiTaskNames = aiTaskCatalog.map((task) => task.name) as unknown as readonly [
+  AiTaskName,
+  ...AiTaskName[]
+]
+
+export const aiTaskLabels = Object.fromEntries(aiTaskCatalog.map((task) => [task.name, task.label])) as Readonly<
+  Record<AiTaskName, string>
+>
 
 export type AiMessageRole = "system" | "user" | "assistant"
 

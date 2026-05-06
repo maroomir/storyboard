@@ -3,7 +3,7 @@ import { z } from "zod"
 
 import type { BackgroundCard, CharacterCard } from "../shared/card"
 import type { ProjectFormat } from "../shared/project"
-import { aiProviderIds, type AiProviderId, type AiTaskName } from "../services/ai/types"
+import { aiProviderIds, aiTaskCatalog, type AiProviderId, type AiTaskName } from "../services/ai/types"
 
 export interface SceneCacheSituation {
   readonly summary: string
@@ -57,15 +57,11 @@ const sceneCacheBackgroundSnapshotSchema = z.object({
 })
 
 const aiProviderIdSchema = z.enum(aiProviderIds)
-const sceneCacheProvidersSchema = z.object({
-  situationExtraction: aiProviderIdSchema.optional(),
-  personaDialogue: aiProviderIdSchema.optional(),
-  sceneDraft: aiProviderIdSchema.optional(),
-  traitsExtraction: aiProviderIdSchema.optional(),
-  grammarCheck: aiProviderIdSchema.optional(),
-  inlineCompletion: aiProviderIdSchema.optional(),
-  draftExpansion: aiProviderIdSchema.optional()
-})
+const sceneCacheProvidersSchema = z.object(
+  Object.fromEntries(
+    aiTaskCatalog.map((task) => [task.name, aiProviderIdSchema.optional()])
+  ) as Record<AiTaskName, z.ZodOptional<typeof aiProviderIdSchema>>
+)
 
 const sceneCacheRecordSchema = z.object({
   sceneStem: z.string().trim().min(1),

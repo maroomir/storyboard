@@ -218,13 +218,20 @@ const taskAssignmentReadSchema = z
   })
 
 const taskAssignmentsPayloadSchema = z.record(aiTaskNameSchema, taskAssignmentReadSchema)
+const aiTaskStatusSchema = z.enum(["wired", "planned"])
+const taskCatalogEntrySchema = z.object({
+  name: aiTaskNameSchema,
+  label: z.string().trim().min(1),
+  status: aiTaskStatusSchema
+})
 
 export const settingsReadResponsePayloadSchema = z.object({
   defaultProvider: providerIdSchema,
   providers: z.array(aiProviderStatusSchema),
   providerConfigs: providerConfigsPayloadSchema,
   taskAssignments: taskAssignmentsPayloadSchema,
-  modelCatalog: storyboardModelCatalogPayloadSchema
+  modelCatalog: storyboardModelCatalogPayloadSchema,
+  taskCatalog: z.array(taskCatalogEntrySchema).min(1)
 })
 
 export const settingsChangedEventPayloadSchema = settingsReadResponsePayloadSchema

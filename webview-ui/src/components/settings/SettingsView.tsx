@@ -20,17 +20,8 @@ const settingsPanelClass = "mx-auto flex w-full max-w-5xl flex-col gap-4"
 
 const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "mock"] as const
 type AiProviderId = (typeof AI_PROVIDER_IDS)[number]
-
-const AI_TASK_NAMES = [
-  "situationExtraction",
-  "personaDialogue",
-  "sceneDraft",
-  "traitsExtraction",
-  "grammarCheck",
-  "inlineCompletion",
-  "draftExpansion"
-] as const
-type AiTaskName = (typeof AI_TASK_NAMES)[number]
+type AiTaskName = string
+type AiTaskStatus = "wired" | "planned"
 
 interface AiProviderStatus {
   readonly providerId: AiProviderId
@@ -55,22 +46,19 @@ interface TaskAiAssignment {
   readonly model: string | null
 }
 
+interface TaskCatalogItem {
+  readonly name: AiTaskName
+  readonly label: string
+  readonly status: AiTaskStatus
+}
+
 interface SettingsReadSnapshot {
   readonly defaultProvider: AiProviderId
   readonly providers: readonly AiProviderStatus[]
   readonly providerConfigs: Readonly<Record<AiProviderId, ProviderRuntimeConfig>>
-  readonly taskAssignments: Readonly<Record<AiTaskName, TaskAiAssignment>>
+  readonly taskAssignments: Readonly<Record<string, TaskAiAssignment>>
   readonly modelCatalog: Readonly<Record<AiProviderId, readonly ProviderModelOption[]>>
-}
-
-const AI_TASK_LABELS: Record<AiTaskName, string> = {
-  situationExtraction: "상황 추출",
-  personaDialogue: "페르소나 대화",
-  sceneDraft: "씬 드래프트",
-  traitsExtraction: "특성 추출",
-  grammarCheck: "문법 검사",
-  inlineCompletion: "인라인 완성",
-  draftExpansion: "드래프트 확장"
+  readonly taskCatalog: readonly TaskCatalogItem[]
 }
 
 interface StoryboardRpcRequest {
@@ -119,7 +107,13 @@ function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot | undef
     return undefined
   }
 
-  if (!Array.isArray(candidate.providers) || !candidate.providerConfigs || !candidate.taskAssignments || !candidate.modelCatalog) {
+  if (
+    !Array.isArray(candidate.providers) ||
+    !candidate.providerConfigs ||
+    !candidate.taskAssignments ||
+    !candidate.modelCatalog ||
+    !Array.isArray(candidate.taskCatalog)
+  ) {
     return undefined
   }
 
@@ -134,8 +128,24 @@ function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot | undef
     }
   }
 
-  for (const task of AI_TASK_NAMES) {
-    const assignment = (candidate.taskAssignments as Record<string, unknown>)[task]
+  for (const taskEntry of candidate.taskCatalog) {
+    if (!taskEntry || typeof taskEntry !== "object") {
+      return undefined
+    }
+
+    const task = taskEntry as Record<string, unknown>
+    if (typeof task.name !== "string" || task.name.trim().length === 0) {
+      return undefined
+    }
+    if (typeof task.label !== "string" || task.label.trim().length === 0) {
+      return undefined
+    }
+    if (task.status !== "wired" && task.status !== "planned") {
+      return undefined
+    }
+
+    const taskName = task.name
+    const assignment = (candidate.taskAssignments as Record<string, unknown>)[taskName]
     if (!assignment || typeof assignment !== "object") {
       return undefined
     }
@@ -619,12 +629,14 @@ function TaskAssignmentsSection({
           title="태스크별 제공자와 모델"
           description="각 작업에 사용할 제공자와 모델을 지정합니다. «기본값 사용»이면 위에서 고른 기본 제공자와 기본 모델을 따릅니다."
         />
-        <StatusPill tone="neutral">{AI_TASK_NAMES.length}개 태스크</StatusPill>
+        <StatusPill tone="neutral">{snapshot.taskCatalog.length}개 태스크</StatusPill>
       </div>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {AI_TASK_NAMES.map((taskName) => {
+        {snapshot.taskCatalog.map((task) => {
+          const taskName = task.name
           const assigned = snapshot.taskAssignments[taskName]
           const useDefault = assigned === undefined || assigned.providerId === null
+          const isPlanned = task.status === "planned"
           const providerSelectValue = useDefault ? "use-default" : assigned.providerId
           const activeProviderId: AiProviderId = useDefault ? snapshot.defaultProvider : assigned.providerId!
           const modelOptions = snapshot.modelCatalog[activeProviderId]
@@ -637,7 +649,10 @@ function TaskAssignmentsSection({
           return (
             <li key={taskName} className="grid gap-3 border-t border-sb-border py-3 first:border-t-0 sm:grid-cols-[minmax(9rem,0.8fr)_minmax(0,1.6fr)] sm:items-start">
               <div className="flex min-w-0 flex-col gap-1">
-                <div className="text-sm font-medium text-sb-fg">{AI_TASK_LABELS[taskName]}</div>
+                <div className="flex items-center gap-2 text-sm font-medium text-sb-fg">
+                  <span>{task.label}</span>
+                  {isPlanned ? <StatusPill tone="warning">Phase 6 예정</StatusPill> : null}
+                </div>
                 <p className="m-0 text-xs text-sb-fg-muted">
                   실제 사용: <span className="text-sb-fg">{formatResolvedTaskAi(snapshot, taskName)}</span>
                 </p>
@@ -648,6 +663,7 @@ function TaskAssignmentsSection({
                   <select
                     className={sbSelectClass}
                     value={providerSelectValue}
+                    disabled={isPlanned}
                     onChange={(event) => {
                       const value = event.target.value
                       const providerId = value === "use-default" ? null : value
@@ -687,7 +703,7 @@ function TaskAssignmentsSection({
                   <span>Model</span>
                   <select
                     className={sbSelectClass}
-                    disabled={useDefault}
+                    disabled={useDefault || isPlanned}
                     value={useDefault ? "" : modelSelectValue}
                     onChange={(event) => {
                       const model = event.target.value

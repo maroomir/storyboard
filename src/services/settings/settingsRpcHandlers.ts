@@ -1,7 +1,12 @@
 import type { StoryboardRpcHandlers } from "../../messaging/bridge"
 import type { StoryboardResponsePayload } from "../../shared/messaging"
 import { storyboardModelCatalog } from "../../shared/models"
-import { aiProviderIds, aiTaskNames, type AiTaskName } from "../ai/types"
+import {
+  aiProviderIds,
+  aiTaskCatalog,
+  aiTaskNames,
+  type AiTaskName
+} from "../ai/types"
 import type { AiProviderRegistry } from "../ai/providerRegistry"
 import type { SecretStore } from "../secrets/SecretStore"
 import type { ConfigBridge } from "./ConfigBridge"
@@ -87,7 +92,12 @@ async function buildSettingsReadSnapshot(
     providers,
     providerConfigs,
     taskAssignments,
-    modelCatalog
+    modelCatalog,
+    taskCatalog: aiTaskCatalog.map((task) => ({
+      name: task.name,
+      label: task.label,
+      status: task.status
+    }))
   }
 }
 
