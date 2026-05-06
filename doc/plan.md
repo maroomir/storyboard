@@ -1,7 +1,7 @@
 # Storyboard — 마이그레이션 계획서
 
 > 작성일: 2026-05-03
-> 상태: Phase 5 MVP 마감(사이드바·그래프·드래프트 CodeLens·QA 문서 반영)
+> 상태: Phase 6 마감(에디터 통합). 다음: Phase 7 — export·온보딩·i18n·**0.1.0** 메타
 > MVP 게이트(0.0.1): 로컬 빌드·`vsce package`·수동 QA·dogfooding — Marketplace 발행은 범위 밖
 > 짝 문서: `doc/concept.md`
 
@@ -13,7 +13,7 @@
 - 새 저장소 (`maroomir/storyboard`)에서 **VSCode Extension으로 처음부터 재구성**.
 - 현 코드 중 **`services/ai/`, 일부 `models/`, 일부 `utils/`만 그대로 이식**, 나머지는 폐기.
 - 단일 워크스페이스 = 단일 프로젝트 모델. 자체 storage·revision·toaster 모두 폐기, VSCode 네이티브로 대체.
-- **MVP = Phase 0–5 (~5.5주)**, **정식 출시 = Phase 6–8 (+~2주, 누적 ~7.5주)**, 1인 풀타임 기준.
+- **MVP = Phase 0–5 (~5.5주)**. **첫 공개 번들(CHANGELOG·패키지 버전 0.1.0) = Phase 7**, **Marketplace QA·발행 = Phase 8** (+~2주 누적 ~8주), 1인 풀타임 기준.
 
 ## 1. 신규 저장소 디렉토리 구조
 
@@ -64,7 +64,6 @@
 │   │   ├── setApiKey.ts
 │   │   ├── openRelationGraph.ts
 │   │   ├── exportDraft.ts
-│   │   ├── importPicktion.ts                  # 선택
 │   │   └── index.ts
 │   ├── messaging/
 │   │   ├── protocol.ts                # zod 스키마
@@ -117,7 +116,7 @@
 |---|---|
 | `services/ai/` (5 provider + 16 prompts + pipeline) | **그대로 이식**, extension host에서 호출 |
 | `services/storage/IndexedDBAdapter.ts` | **삭제** |
-| `services/storage/FileSystemAdapter.ts` (.picktion) | **삭제** (또는 `commands/importPicktion.ts`로 일회성 흡수) |
+| `services/storage/FileSystemAdapter.ts` (.picktion) | **삭제** (Storyboard는 폴더·`.card` 포맷만 지원; `.picktion` 호환 import는 범위 밖) |
 | `services/storage/StorageService.ts` 인터페이스 | **삭제** |
 | `services/config/ConfigService.ts` | 슬림 이식 (presets.json은 webview-ui로 이전) |
 | `models/Project.ts`, `Character.ts`, `Background.ts`, `Scene.ts`, `Story.ts` | 도메인 정의는 **재사용**, 직렬화 로직은 폐기 후 `files/` 모듈로 재작성 |
@@ -162,14 +161,14 @@
 - [x] GitHub 신규 저장소 `maroomir/storyboard` 생성
 - [ ] VSCode Marketplace publisher `maroomir` 등록 (Personal Access Token 발급)
 - [x] 이름·도메인·publisher·라이선스 합의 사항 문서화 (`doc/concept.md` 이전)
-- [x] 골든 픽스처 수집 제외 결정 기록 (`doc/decisions/00-decisions.md`)
+- [x] 골든 픽스처 수집 제외 결정 기록 (`doc/decisions/00-repo-baseline.md`)
 - [x] `storyboard-concept.md`, `storyboard-plan.md`를 신규 repo `doc/`로 이전
 - [x] `LICENSE` (Apache-2.0) 추가
 - [x] `.gitignore` 추가
 - [x] `CHANGELOG.md` 골격 추가
 - [x] `README.md` 확장
 - [x] `.clinerules/` 존재 확인
-- [x] 초기 의사결정 로그 추가 (`doc/decisions/00-decisions.md`)
+- [x] 초기 의사결정 로그 추가 (`doc/decisions/00-repo-baseline.md`)
 
 **산출물**: 새 repo, 정식화된 컨셉/계획 문서, 라이선스, 변경 로그, 개발 규칙, 의사결정 로그
 
@@ -382,43 +381,46 @@
 - 캐릭터 이름 hover 카드 표시
 - provider/command 핵심 경로 단위 테스트(InlineCompletion/GrammarDiagnostics/expandDraft/CharacterHover) 통과
 
-### Phase 7 — Export + 폴리시 + Picktion Import (1주)
+### Phase 7 — Export + 폴리시 + 첫 공개(0.1.0) (1주)
+
+기능·온보딩·i18n·스토어용 자산과 함께, **Marketplace에 `publish`하기 전에 갖춰야 할 법무·메타·문서**를 여기서 끝낸다. (Phase 8은 그 산출물을 **검증한 뒤** 배포하는 단계.)
 
 **체크리스트**
 - [ ] `commands/exportDraft.ts`:
   - 옵션: 단일/전체, 형식(TXT/PDF/DOCX)
   - draft/*.md를 정렬 순서대로 합치고 export
   - jspdf, docx는 extension host에서 직접 호출 (이미 Node 호환)
-- [ ] `commands/importPicktion.ts`:
-  - `.picktion` 파일 선택 → 새 워크스페이스 폴더로 변환
-  - characters → `character/*.card`
-  - backgrounds → `background/*.card`
-  - scenes → `scene/*.txt` + `draft/*.md`
-  - 사용자 안내 메시지
 - [ ] 첫 실행 환영 webview (`onboarding`):
   - "워크스페이스 폴더가 비어 있습니다. Initialize Project를 실행하시겠어요?"
   - API 키 등록 안내
-- [ ] 다국어 i18n 기초 (`ko` 기본, `en` 영문 키)
+- [ ] 다국어 i18n 기초: **`ko` 기본 UI 문자열**, **`en`은 설정 또는 locale 스위치로 선택(옵션)** — 소설 본문은 기존처럼 한국어 중심, 확장 UI는 한국어 우선
 - [ ] 아이콘 (128×128 PNG), 배너 색상, README 영상/GIF
-- [ ] CHANGELOG v0.9.0
+- [ ] `package.json` 버전 **0.1.0** 정렬 + **CHANGELOG 0.1.0** 섹션 (Unreleased 정리)
+- [ ] **발행 준비(공개 전 필수, Phase 7에서 반영)**:
+  - 루트 **`LICENSE`(Apache-2.0)** 와 `package.json`·README 등에 적힌 라이선스 표기가 **서로 모순 없이** 맞는지 확인·수정 (Phase 0에 파일이 있어도, 배포 직전 기준으로 다시 맞춘다)
+  - README(또는 Marketplace 상세 초안에 쓸 본문)에 **텔레메트리·사용 데이터 수집 안 함** 등 privacy-first 문구 명시
+  - Marketplace 제출용 메타를 manifest에 반영: **repository** 링크, **keywords**(`fiction`, `novel`, `creative writing`, `AI`, `storyboard`, `screenwriter`), **categories** 등 — 문안·키워드 최종 확정은 Phase 8에서 한 번 더 본다
 
 **검증**
 - TXT/PDF/DOCX export 정상
-- `.picktion` import 라운드트립 손실 없음
+- `ko` 기본·`en` 전환(또는 영문 키 로드) 스모크 1회
 - 첫 사용자 시나리오: 빈 VSCode → Storyboard 설치 → 폴더 열기 → init → 첫 씬 생성 (15분 이내)
+- LICENSE·privacy 문구·Marketplace 메타가 **저장소에 반영**되어 있고, 로컬 `vsce package`로 패키지가 깨지지 않음
 
-### Phase 8 — QA + 정식 출시 (3~5일)
+### Phase 8 — QA + Marketplace 첫 공개 (3~5일)
+
+**Phase 8은 “0.1.0을 낸 뒤”가 아니라, `vsce publish` **직전** 마지막 게이트다.** Phase 7에서 고정한 0.1.0 빌드·CHANGELOG·문서·메타를 QA로 검증하고, 문제 없으면 같은 버전(**0.1.0**)을 Marketplace에 올린다.
 
 **체크리스트**
+- [ ] **발행 직전 점검**: Phase 7 반영분 기준으로 LICENSE·privacy 문구·`package.json` Marketplace 필드·아이콘·README/스크린샷이 **일치**하고 Marketplace·정책 요건을 만족하는지 확인
 - [ ] **QA 매트릭스**: macOS / Windows / Linux × 한국어 입력 IME × VSCode stable/insiders
 - [ ] 성능: 100 캐릭터 + 100 씬 프로젝트 부하 테스트 (사이드바 응답성, file watcher)
 - [ ] 에러 처리: API 키 없음, 네트워크 끊김, 잘못된 YAML, 없는 이미지 등
-- [ ] Marketplace 메타: 키워드(`fiction`, `novel`, `creative writing`, `AI`, `storyboard`, `screenwriter`), 카테고리, repository 링크
-- [ ] LICENSE (Apache-2.0) 확정
-- [ ] 텔레메트리 **수집 안 함** 명시 (privacy-first)
-- [ ] `vsce publish` 정식 v1.0.0
+- [ ] `vsce package`로 최종 VSIX 검증 → `vsce publish`로 Marketplace **첫 공개 0.1.0** (필요 시 `--pre-release` 여부는 Publisher 정책에 맞게 선택)
 - [ ] Picktion repo README에 "Storyboard로 이전" 안내 + archive 처리
-- [ ] 발표 글 (블로그 / Reddit r/writing, r/vscode)
+- [ ] 발표 글 (블로그 / Reddit r/writing, r/vscode) — **배포 직후·직전** 중 팀 편한 타이밍
+
+> **버전 정리**: **1.0.0**은 장기 안정화·기능 완성도 목표로 두고, 이번 로드맵의 Marketplace 첫 버전은 **0.1.0**으로 맞춘다.
 
 ## 4. Phase별 일정 요약
 
@@ -431,8 +433,8 @@
 | 4. 씬 → 드래프트 파이프라인 | 1.5주 | 4.5주 | scene → draft 생성 |
 | 5. 사이드바 + Graph | 1주 | **5.5주 (MVP)** | 0.0.1 로컬 VSIX + dogfooding 게이트 |
 | 6. 에디터 통합 | 1주 | 6.5주 | inline 완성·맞춤법·hover |
-| 7. Export + Polish + Import | 1주 | 7.5주 | 풀 기능 |
-| 8. QA + 정식 출시 | 3~5일 | **~8주 (v1.0.0)** | Marketplace 정식 |
+| 7. Export + 폴리시 + 0.1.0 | 1주 | 7.5주 | export·온보딩·i18n·**발행 준비**(LICENSE·privacy·메타)·CHANGELOG **0.1.0** |
+| 8. QA + Marketplace 첫 공개 | 3~5일 | **~8주 (0.1.0 발행)** | **발행 직전** QA → `vsce publish` |
 
 > 1인 풀타임 기준. 파트타임이면 1.7~2배.
 
@@ -468,7 +470,7 @@
 | `CustomTextEditorProvider` 양방향 동기화 복잡도 | Phase 2 지연 | 공식 예제(`vscode-extension-samples/custom-editor-sample`) 참고. 텍스트 충돌 시 webview 재로드 fallback |
 | 한국어 IME + InlineCompletion 충돌 | Phase 6 품질 | `inputBoxComposition` 이벤트 필터, IME 조합 중에는 ghost text 억제 |
 | 큰 프로젝트(100+ 씬)에서 file watcher 성능 | Phase 5 품질 | lazy loading, 사이드바 가상 스크롤 |
-| Picktion 사용자 데이터 포맷 변화 | Phase 7 import 실패 | import 기능을 구현하는 시점에 필요한 `.picktion` 샘플만 수집하고 round-trip 테스트 |
+| README·스크린샷·GIF 미비로 Marketplace 심사 보류 | Phase 7–8 지연 | Phase 7에서 최소 1세트 확보; dogfooding 중 보강 |
 | LLM 출력 비결정성 → 회귀 테스트 의미 약화 | Phase 3 검증 어려움 | 결정적 부분(파싱, traits 분배, frontmatter)만 strict, LLM 호출은 구조적 검증(스키마 통과 여부) |
 | Marketplace 거절 / 정책 위반 | 출시 지연 | `vscode.proposed.api` 미사용, 외부 호출 시 사용자 동의 UI |
 
@@ -489,8 +491,8 @@
 ## 9. 다음 액션
 
 1. [`doc/testing/extension-qa.md`](testing/extension-qa.md)와 [`README.md`](../README.md)를 기준으로 **0.0.1 dogfooding 게이트**를 수행한다(`npm run build` → `vsce package` → VSIX 용량 기록).
-2. Phase 6(에디터 통합) 이슈를 쪼개 착수한다.
-3. Marketplace pre-release는 상위 버전·메타 확정 후 별도 결정으로 연다.
+2. Phase 7(export·온보딩·i18n·0.1.0 메타) 이슈를 쪼개 착수한다.
+3. Marketplace 첫 공개는 Phase 8에서 **0.1.0** 기준으로 진행; 이후 버전 정책은 CHANGELOG·태그로 관리한다.
 
 ## 10. 참고
 

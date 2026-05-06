@@ -19,7 +19,7 @@ PR 3에서는 Picktion에서 다음 아이디어만 참고한다.
 - 캐릭터·배경·씬의 기본 필드 감각
 - 이후 zod/uuid 기반 검증과 식별자 생성 방향
 
-`.picktion` serialization은 향후 import 기능이 필요할 때 별도 PR에서 참고한다.
+`.picktion` 호환 import는 **제공하지 않는다** (`doc/concept.md` 비목표와 동일). 과거 Picktion 데이터가 필요하면 수동으로 워크스페이스 파일을 옮기거나, 필요해지면 그때 별도 도구·문서로 범위를 정한다.
 
 ### 2. 비-Storyboard 폴더에서도 초기화를 허용한다
 

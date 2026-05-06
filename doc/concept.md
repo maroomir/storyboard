@@ -1,8 +1,8 @@
 # Storyboard — 컨셉 문서
 
 > 작성일: 2026-05-03  
-> 상태: 확정 (Phase 0 입력)  
-> 후속 문서: `storyboard-plan.md`
+> 상태: 확정 (Phase 0 입력; 출시·i18n 정책은 `doc/plan.md` Phase 7–8과 동기)  
+> 후속 문서: [`doc/plan.md`](plan.md)
 
 ## 1. 한 줄 정의
 
@@ -206,7 +206,7 @@ mood: 설렘
 
 ### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
 
-이전 Picktion의 `.picktion`을 대체한다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다.
+Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **워크스페이스 폴더의 파일**과 이 JSON으로 씬별 파이프라인 컨텍스트를 나누어 저장한다. 위치는 **`.storyboard/cache/scenes/`로 제한**되며 사용자가 직접 만들거나 옮길 수 없다.
 
 ```json
 {
@@ -246,7 +246,6 @@ mood: 설렘
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |
-| `storyboard.import.picktion` | `Storyboard: Import from Picktion…` | 선택. `.picktion` → 새 워크스페이스 변환 |
 
 ### 5.1 활성화 조건
 
@@ -270,6 +269,7 @@ mood: 설렘
 - `storyboard.tasks.<taskName>.provider`: 작업별 provider 오버라이드
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
+- (Phase 7 예정) 확장 UI 다국어: **`ko` 기본**, **`en`은 설정 또는 locale 스위치로 선택(옵션)** — 소설 본문 언어와 별개이며, 세부 키 이름은 구현 시 `package.json#contributes.configuration`과 맞춘다.
 
 API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한다.
 
@@ -281,6 +281,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 클라우드 동기화·로그인·계정 — 로컬 우선
 - 모바일/태블릿 사용 시나리오
 - 웹앱 병행 운영 (확장 안정화 후 재고)
+- `.picktion` 파일 import 및 Picktion 브라우저 저장 포맷과의 **자동 호환·변환**
 
 ## 8. 환경
 

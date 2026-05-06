@@ -41,7 +41,7 @@ Phase 0는 기존 계획보다 슬림하게 재정의하고, 저장소 기반 �
    - `.gitignore`
    - `CHANGELOG.md`
    - 확장된 `README.md`
-   - `doc/decisions/00-decisions.md`
+   - `doc/decisions/00-repo-baseline.md`
 2. **PR 2 — Phase 1a: TypeScript + esbuild 스캐폴딩**
    - 최소 extension manifest
    - `storyboard.helloWorld` 명령
@@ -64,7 +64,7 @@ VSCode Marketplace publisher 등록은 사용자 외부 작업이다. PR 1에는
 - Node/VSCode extension 개발에 필요한 `.gitignore`가 존재한다.
 - `CHANGELOG.md`에 `Unreleased` 섹션이 있다.
 - `README.md`가 프로젝트 소개, 문서 링크, 초기 로드맵, 개발 안내를 포함한다.
-- 이 의사결정 로그가 `doc/decisions/00-decisions.md`에 기록되어 있다.
+- 이 의사결정 로그가 `doc/decisions/00-repo-baseline.md`에 기록되어 있다.
 
 ## 검증 메모
 

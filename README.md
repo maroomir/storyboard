@@ -8,7 +8,13 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 - **기본 플로우를 검증하는 초기 단계**이며, 완성도·안정성 목표의 정식 릴리즈는 아닙니다.
 - **Visual Studio Marketplace 발행은 아직 하지 않습니다.** 로컬 개발(F5) 또는 로컬에서 만든 VSIX로만 검증하는 것을 권장합니다.
 
-## 현재 구현 상태 (Phase 5 기준)
+## 로드맵 메모 (문서 기준)
+
+- **`.picktion` import 비목표**: Storyboard는 폴더·`.card` 등 워크스페이스 파일만 지원한다 (`doc/concept.md`, `doc/plan.md`).
+- **확장 UI 언어**: **`ko` 기본**, **`en` 선택(옵션)** — Phase 7 i18n 기초와 함께 정리한다.
+- **첫 Marketplace 공개 버전**: **`0.1.0`** — Phase 7에서 패키지·CHANGELOG·메타를 맞추고, Phase 8에서 QA 후 발행한다.
+
+## 현재 구현 상태 (Phase 6 기준)
 
 이전 Picktion 웹앱을 그대로 이식하지 않고, VS Code Extension으로 새로 구성한 프로젝트입니다.
 
@@ -25,7 +31,7 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 - [`doc/concept.md`](doc/concept.md): 제품 컨셉, 워크스페이스 구조, 파일 포맷
 - [`doc/plan.md`](doc/plan.md): 단계별 마이그레이션 계획 및 MVP 게이트
 - [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): 수동 QA(처음 켜 보는 사람용 체크리스트)
-- [`doc/decisions/00-decisions.md`](doc/decisions/00-decisions.md): 초기 의사결정 로그
+- [`doc/decisions/00-repo-baseline.md`](doc/decisions/00-repo-baseline.md): 초기 저장소 베이스라인 의사결정
 
 ## 제품 모델 (요약)
 
