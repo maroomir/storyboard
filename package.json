@@ -202,21 +202,24 @@
         {
           "id": "storyboard.charactersView",
           "name": "Characters",
-          "type": "webview"
+          "type": "webview",
+          "when": "storyboard.workspaceReady"
         }
       ],
       "storyboard-backgrounds": [
         {
           "id": "storyboard.backgroundsView",
           "name": "Backgrounds",
-          "type": "webview"
+          "type": "webview",
+          "when": "storyboard.workspaceReady"
         }
       ],
       "storyboard-scenes": [
         {
           "id": "storyboard.scenesView",
           "name": "Scenes",
-          "type": "webview"
+          "type": "webview",
+          "when": "storyboard.workspaceReady"
         }
       ]
     },

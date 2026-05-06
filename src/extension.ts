@@ -12,6 +12,7 @@ import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
+import { registerStoryboardWorkspaceContext } from "./core/storyboardWorkspaceContext"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
 import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvider"
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
@@ -26,6 +27,8 @@ import { SecretStore } from "./services/secrets/SecretStore"
 import { ConfigBridge } from "./services/settings/ConfigBridge"
 
 export function activate(context: vscode.ExtensionContext): void {
+  registerStoryboardWorkspaceContext(context)
+
   const logger = new StoryboardLogger()
   const secretStore = new SecretStore(context.secrets)
   const configBridge = new ConfigBridge({

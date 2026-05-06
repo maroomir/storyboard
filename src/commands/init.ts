@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import { type StoryboardLogger } from "../core/logger"
+import { refreshStoryboardWorkspaceContext } from "../core/storyboardWorkspaceContext"
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "../core/pathConventions"
 import { ensureUriDoesNotExist, getTargetWorkspaceFolder, uriExists } from "../core/workspace"
 import { createDefaultProjectJson, writeProjectJson } from "../files/projectJson"
@@ -50,6 +51,7 @@ async function initializeStoryboardProject(
     await writeFileIfMissing(paths.readme, createWorkspaceReadme(project.name))
 
     dependencies.logger.info(`Initialized Storyboard project at ${workspaceFolder.uri.fsPath}`)
+    await refreshStoryboardWorkspaceContext()
     await vscode.window.showInformationMessage(`Storyboard 프로젝트를 초기화했습니다: ${project.name}`)
   } catch (error) {
     dependencies.logger.error("Failed to initialize Storyboard project", error)

@@ -22,9 +22,37 @@ export async function getTargetWorkspaceFolder(): Promise<vscode.WorkspaceFolder
   return selectedFolder?.folder
 }
 
+async function projectJsonExistsAtWorkspaceRoot(
+  workspaceRoot: vscode.Uri,
+  exists: (uri: vscode.Uri) => Promise<boolean>
+): Promise<boolean> {
+  const paths = getStoryboardProjectPaths(workspaceRoot)
+  return exists(paths.projectJson)
+}
+
 export async function hasStoryboardProject(workspaceFolder: vscode.WorkspaceFolder): Promise<boolean> {
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri)
-  return uriExists(paths.projectJson)
+  return projectJsonExistsAtWorkspaceRoot(workspaceFolder.uri, uriExists)
+}
+
+export async function anyStoryboardProjectInWorkspaceFolders(
+  folders: readonly vscode.WorkspaceFolder[] | undefined,
+  exists: (uri: vscode.Uri) => Promise<boolean>
+): Promise<boolean> {
+  if (!folders?.length) {
+    return false
+  }
+
+  for (const folder of folders) {
+    if (await projectJsonExistsAtWorkspaceRoot(folder.uri, exists)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+export async function anyStoryboardProjectInWorkspace(): Promise<boolean> {
+  return anyStoryboardProjectInWorkspaceFolders(vscode.workspace.workspaceFolders ?? [], uriExists)
 }
 
 export async function resolveStoryboardWorkspaceRoot(): Promise<vscode.Uri | undefined> {
