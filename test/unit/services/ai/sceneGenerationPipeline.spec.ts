@@ -120,7 +120,7 @@ describe("runSceneGenerationPipeline", () => {
       aiService: ai,
       format: "screenplay",
       previousContext: "이전 씬 말미",
-      providers: { situationExtraction: "mock", sceneDraft: "openai" },
+      providers: { situationExtraction: "mock", personaGeneration: "google", sceneDraft: "openai" },
       onProgress: (stage, current, total) => {
         progress.push({ stage, current, total })
       }
@@ -180,7 +180,11 @@ describe("runSceneGenerationPipeline", () => {
     expect(result.situations).toHaveLength(2)
     expect(result.personasUsed.get("엘리아")).toBe("페르소나:엘리아")
     expect(result.personasUsed.get("지훈")).toBe("페르소나:지훈")
-    expect(result.providers).toEqual({ situationExtraction: "mock", sceneDraft: "openai" })
+    expect(result.providers).toEqual({
+      situationExtraction: "mock",
+      personaGeneration: "google",
+      sceneDraft: "openai"
+    })
   })
 
   it("passes provider override for extraction and persona steps", async () => {
@@ -195,7 +199,12 @@ describe("runSceneGenerationPipeline", () => {
       context: contextFor([eliaCard], "본문"),
       aiService: ai,
       format: "novel",
-      providers: { situationExtraction: "claude", personaDialogue: "google", sceneDraft: "ollama" }
+      providers: {
+        situationExtraction: "claude",
+        personaGeneration: "google",
+        personaDialogue: "openai",
+        sceneDraft: "ollama"
+      }
     })
 
     expect(ai.extractSituations).toHaveBeenCalledWith(
@@ -221,7 +230,7 @@ describe("runSceneGenerationPipeline", () => {
       expect.anything(),
       undefined,
       expect.objectContaining({
-        providerId: "google",
+        providerId: "openai",
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
           participants: [{ kind: "character", id: "elia" }]

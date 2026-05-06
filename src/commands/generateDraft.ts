@@ -307,6 +307,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
   })
   const pipelineProviders = {
     situationExtraction: options.aiProviderRegistry.getTaskProvider("situationExtraction"),
+    personaGeneration: options.aiProviderRegistry.getTaskProvider("personaGeneration"),
     personaDialogue: options.aiProviderRegistry.getTaskProvider("personaDialogue"),
     sceneDraft: options.aiProviderRegistry.getTaskProvider("sceneDraft")
   }

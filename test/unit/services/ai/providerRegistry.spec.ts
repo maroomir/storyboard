@@ -80,12 +80,14 @@ describe("AiProviderRegistry", () => {
       new Map<string, unknown>([
         ["defaultProvider", "mock"],
         ["tasks.situationExtraction.provider", "claude"],
+        ["tasks.personaGeneration.provider", "openai"],
         ["tasks.personaDialogue.provider", "google"],
         ["tasks.sceneDraft.provider", "ollama"]
       ])
     )
 
     expect(registry.getTaskProvider("situationExtraction")).toBe("claude")
+    expect(registry.getTaskProvider("personaGeneration")).toBe("openai")
     expect(registry.getTaskProvider("personaDialogue")).toBe("google")
     expect(registry.getTaskProvider("sceneDraft")).toBe("ollama")
     expect(registry.getTaskProvider("traitsExtraction")).toBe("mock")

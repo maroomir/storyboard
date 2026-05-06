@@ -130,7 +130,7 @@
         "storyboard.tasks": {
           "type": "object",
           "default": {},
-          "description": "Per-task AI provider and optional model overrides. Example: { \"sceneDraft\": { \"provider\": \"claude\", \"model\": \"claude-sonnet-4-6\" } }. Model IDs must match the Storyboard catalog for that provider.",
+          "description": "Per-task AI provider and optional model overrides. Example: { \"personaGeneration\": { \"provider\": \"claude\" }, \"sceneDraft\": { \"provider\": \"claude\", \"model\": \"claude-sonnet-4-6\" } }. Model IDs must match the Storyboard catalog for that provider.",
           "additionalProperties": {
             "type": "object",
             "properties": {

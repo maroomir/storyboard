@@ -4,6 +4,7 @@ export type AiProviderId = (typeof aiProviderIds)[number]
 
 export const aiTaskCatalog = [
   { name: "situationExtraction", label: "상황 추출", status: "wired" },
+  { name: "personaGeneration", label: "페르소나 생성", status: "wired" },
   { name: "personaDialogue", label: "페르소나 대화", status: "wired" },
   { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
   { name: "traitsExtraction", label: "특성 추출", status: "wired" },

@@ -67,7 +67,7 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {}
   ): Promise<string> {
     const response = await this.generateText(
-      "personaDialogue",
+      "personaGeneration",
       [{ role: "user", content: PersonaGenerationPrompt.build(character) }],
       options
     )

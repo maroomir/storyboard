@@ -18,6 +18,7 @@ export type SceneGenerationPipelineStage =
 
 export interface SceneGenerationPipelineTaskProviders {
   readonly situationExtraction?: AiProviderId
+  readonly personaGeneration?: AiProviderId
   readonly personaDialogue?: AiProviderId
   readonly sceneDraft?: AiProviderId
 }
@@ -166,7 +167,7 @@ export async function runSceneGenerationPipeline(
     throw new Error("상황을 추출할 수 없습니다.")
   }
 
-  const personaOptions = buildGenerateOptions(providers, "personaDialogue")
+  const personaOptions = buildGenerateOptions(providers, "personaGeneration")
   const personasUsed = new Map<string, string>()
   const characterCount = context.characters.length
 

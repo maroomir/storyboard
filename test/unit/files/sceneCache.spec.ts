@@ -54,6 +54,7 @@ describe("scene cache codec", () => {
       },
       providers: {
         situationExtraction: "mock",
+        personaGeneration: "mock",
         personaDialogue: "mock",
         sceneDraft: "mock",
         traitsExtraction: "mock"
