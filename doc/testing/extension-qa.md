@@ -144,7 +144,18 @@ npm run build
 1. 생성된 `draft/*.md`를 연다.
 2. 상단 CodeLens 확인:
    - **`🔁 Re-generate Draft`** — 동작해야 함
-   - **`🩹 Grammar Check`**, **`🌿 Expand`** — 클릭 시 **“Phase 6에서 제공될 예정”** 안내가 뜨면 정상(플레이스홀더)
+   - **`🩹 Grammar Check`** — 진단(squiggle) 생성 또는 갱신
+   - **`🌿 Expand`** — 선택 영역이 있을 때 확장문으로 치환
+
+### 7a. 캐릭터 Hover 카드
+
+1. `draft/*.md` 본문에서 등장 캐릭터 이름 위에 마우스를 올린다.
+2. Hover 카드에 캐릭터 요약(특성/최근 대사/관계)이 표시되는지 확인한다.
+
+**성공 기준**
+
+- 프로젝트의 `character/*.card`에 있는 캐릭터만 Hover 카드가 뜬다.
+- 이름이 일치하지 않거나 프로젝트가 아니면 Hover가 뜨지 않는다.
 
 ### 8. Scenes 사이드바
 

@@ -370,16 +370,17 @@
   - `DiagnosticCollection`으로 squiggle
   - `provideCodeActions`로 "수정" QuickFix
   - `storyboard.grammar.realtimeEnabled` 기본 `false` (성능 보호)
-- [ ] `CharacterHoverProvider`:
+- [x] `CharacterHoverProvider`:
   - 본문에서 등장 캐릭터 이름 hover → 페르소나 + 최근 대사 + 관계 카드
   - 캐릭터 이름 매칭은 `characterDetector.ts` 재사용
 - [x] `commands/expandDraft.ts`: 선택 영역을 AI로 확장
-- [ ] 사용자 가이드 문서 (`doc/guide/editor.md`)
+- [x] 사용자 가이드 문서 (`doc/guide/editor.md`)
 
 **검증**
 - 타이핑 → 인라인 완성 ghost text 표시
 - 맞춤법 squiggle + Quick Fix
 - 캐릭터 이름 hover 카드 표시
+- provider/command 핵심 경로 단위 테스트(InlineCompletion/GrammarDiagnostics/expandDraft/CharacterHover) 통과
 
 ### Phase 7 — Export + 폴리시 + Picktion Import (1주)
 

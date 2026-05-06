@@ -29,7 +29,7 @@ function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceF
   return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
-function resolveRange(editor: vscode.TextEditor, rangeArg?: vscode.Range): vscode.Selection | vscode.Range {
+export function resolveExpandRange(editor: vscode.TextEditor, rangeArg?: vscode.Range): vscode.Selection | vscode.Range {
   if (rangeArg && !rangeArg.isEmpty) {
     return rangeArg
   }
@@ -71,7 +71,7 @@ async function runExpandDraftCommand(
     return
   }
 
-  const targetRange = resolveRange(editor, rangeArg)
+  const targetRange = resolveExpandRange(editor, rangeArg)
 
   if (targetRange.isEmpty) {
     await vscode.window.showInformationMessage("확장할 텍스트를 먼저 선택해 주세요.")

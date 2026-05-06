@@ -36,7 +36,7 @@ function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceF
   return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
-function trimPrefix(text: string): string {
+export function trimInlineCompletionPrefix(text: string): string {
   if (text.length <= inlineCompletionPrefixChars) {
     return text
   }
@@ -50,11 +50,15 @@ function sleep(ms: number): Promise<void> {
   })
 }
 
-function createCacheKey(document: vscode.TextDocument, position: vscode.Position, prefix: string): string {
+export function createInlineCompletionCacheKey(
+  document: vscode.TextDocument,
+  position: vscode.Position,
+  prefix: string
+): string {
   return `${document.uri.toString()}::${position.line}:${position.character}::${prefix}`
 }
 
-function pruneCache(cache: Map<string, InlineCompletionCacheValue>): void {
+export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCacheValue>): void {
   if (cache.size <= inlineCompletionCacheLimit) {
     return
   }
@@ -111,12 +115,12 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     }
 
     const fullPrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position))
-    const prefix = trimPrefix(fullPrefix).trim()
+    const prefix = trimInlineCompletionPrefix(fullPrefix).trim()
     if (prefix.length === 0) {
       return undefined
     }
 
-    const cacheKey = createCacheKey(document, position, prefix)
+    const cacheKey = createInlineCompletionCacheKey(document, position, prefix)
     const cached = this.cache.get(cacheKey)
     if (cached) {
       return [new vscode.InlineCompletionItem(cached.value, new vscode.Range(position, position))]
@@ -149,7 +153,7 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     }
 
     this.cache.set(cacheKey, { value: completion, updatedAt: Date.now() })
-    pruneCache(this.cache)
+    pruneInlineCompletionCache(this.cache)
 
     return [new vscode.InlineCompletionItem(completion, new vscode.Range(position, position))]
   }

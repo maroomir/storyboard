@@ -13,6 +13,7 @@ import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
+import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvider"
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
 import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
 import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
@@ -56,6 +57,7 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
+  context.subscriptions.push(registerCharacterHoverProvider())
   context.subscriptions.push(
     registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder })
   )

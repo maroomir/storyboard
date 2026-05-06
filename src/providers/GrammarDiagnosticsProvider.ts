@@ -12,6 +12,7 @@ const grammarCheckCommand = "storyboard.draft.grammarCheck"
 const applyGrammarFixCommand = "storyboard.draft.applyGrammarFix"
 const grammarSource = "storyboard-grammar"
 const grammarDebounceMs = 700
+const quickFixKind = (vscode.CodeActionKind?.QuickFix ?? "quickfix") as vscode.CodeActionKind
 
 export interface RegisterGrammarDiagnosticsProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
@@ -38,17 +39,48 @@ function sleep(ms: number): Promise<void> {
   })
 }
 
-function toRange(document: vscode.TextDocument, issue: GrammarIssue): vscode.Range | undefined {
+export function toGrammarRange(document: vscode.TextDocument, issue: GrammarIssue): vscode.Range | undefined {
   const body = document.getText()
   if (issue.start < 0 || issue.end < issue.start || issue.end > body.length) {
     return undefined
   }
 
-  return new vscode.Range(document.positionAt(issue.start), document.positionAt(issue.end))
+  const start = document.positionAt(issue.start)
+  const end = document.positionAt(issue.end)
+  const RangeCtor = (vscode as unknown as { Range?: typeof vscode.Range }).Range
+  return RangeCtor ? new RangeCtor(start, end) : ({ start, end } as vscode.Range)
+}
+
+export function mapGrammarIssuesToDiagnostics(
+  document: vscode.TextDocument,
+  issues: readonly GrammarIssue[]
+): vscode.Diagnostic[] {
+  const DiagnosticCtor = (vscode as unknown as { Diagnostic?: typeof vscode.Diagnostic }).Diagnostic
+  const warningSeverity =
+    (vscode.DiagnosticSeverity?.Warning ?? 1) as unknown as vscode.DiagnosticSeverity
+
+  return issues.flatMap((issue) => {
+    const range = toGrammarRange(document, issue)
+    if (!range) {
+      return []
+    }
+
+    const message = `${issue.reason} → 제안: ${issue.suggestion}`
+    const diagnostic = DiagnosticCtor
+      ? new DiagnosticCtor(range, message, warningSeverity)
+      : ({
+          range,
+          message,
+          severity: warningSeverity
+        } as vscode.Diagnostic)
+    diagnostic.source = grammarSource
+    diagnostic.code = issue.suggestion
+    return [diagnostic]
+  })
 }
 
 class GrammarCodeActionProvider implements vscode.CodeActionProvider {
-  public static readonly providedCodeActionKinds = [vscode.CodeActionKind.QuickFix]
+  public static readonly providedCodeActionKinds = [quickFixKind]
 
   public provideCodeActions(
     _document: vscode.TextDocument,
@@ -67,7 +99,7 @@ class GrammarCodeActionProvider implements vscode.CodeActionProvider {
         continue
       }
 
-      const action = new vscode.CodeAction("문법 수정 적용", vscode.CodeActionKind.QuickFix)
+      const action = new vscode.CodeAction("문법 수정 적용", quickFixKind)
       action.command = {
         command: applyGrammarFixCommand,
         title: "문법 수정 적용",
@@ -171,21 +203,7 @@ class GrammarDiagnosticsController {
   }
 
   private toDiagnostics(document: vscode.TextDocument, issues: readonly GrammarIssue[]): vscode.Diagnostic[] {
-    return issues.flatMap((issue) => {
-      const range = toRange(document, issue)
-      if (!range) {
-        return []
-      }
-
-      const diagnostic = new vscode.Diagnostic(
-        range,
-        `${issue.reason} → 제안: ${issue.suggestion}`,
-        vscode.DiagnosticSeverity.Warning
-      )
-      diagnostic.source = grammarSource
-      diagnostic.code = issue.suggestion
-      return [diagnostic]
-    })
+    return mapGrammarIssuesToDiagnostics(document, issues)
   }
 }
 
