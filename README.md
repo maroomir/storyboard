@@ -53,6 +53,14 @@ npm run lint
 npm test
 ```
 
+| 스크립트 | 용도 |
+| --- | --- |
+| `npm run compile` | 확장 호스트만 (`src/` → `out/extension.js`) |
+| `npm run build:webview` | 웹뷰 UI만 (`webview-ui/` → `out/webview-ui/`) |
+| `npm run build` | 위 둘 모두 (`compile` + `build:webview`) |
+
+**`webview-ui/`**(사이드바·설정 패널·카드 에디터 등 React 번들)만 고친 경우에는 `npm run build:webview`만 실행해도 됩니다. Extension Development Host(F5) 창에서는 빌드 후 **`Developer: Reload Window`**로 한 번 리로드해야 새 번들이 로드되는 경우가 많습니다.
+
 ### Extension Development Host
 
 1. 저장소 루트를 VS Code로 엽니다.
@@ -88,7 +96,7 @@ draft/
 
 기본 provider는 **`mock`** (키 없이 파이프라인·UI 동작 확인용)입니다.
 
-_F5가 안 뜨면 `npm run compile` 또는 `npm run build` 성공 여부와 Run 구성을 먼저 확인하세요._
+_F5가 안 뜨면 `npm run compile` 또는 `npm run build` 성공 여부와 Run 구성을 먼저 확인하세요. UI만 바꿨는데 반영이 안 되면 `npm run build:webview` 후 호스트 창을 리로드했는지 확인하세요._
 
 ### 로컬 VSIX 패키징 (Marketplace 없이)
 
