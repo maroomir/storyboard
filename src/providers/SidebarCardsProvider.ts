@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { isIgnoredSampleCardFileName } from "../core/pathConventions"
 import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
 import { parseCard } from "../files/card"
 import { emptyUsageSummary } from "../files/usageLedger"
@@ -13,6 +14,10 @@ import type { StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
 
 const cardEditorViewType = "storyboard.card"
+
+function isIgnoredCardUri(uri: vscode.Uri): boolean {
+  return isIgnoredSampleCardFileName(uri.path.split("/").at(-1) ?? "")
+}
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string
@@ -194,7 +199,8 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       new vscode.RelativePattern(root, this.options.cardGlob),
       undefined
     )
-    const summaries = await Promise.all(cardUris.map((uri) => this.loadCardSummary(uri)))
+    const visibleCardUris = cardUris.filter((uri) => !isIgnoredCardUri(uri))
+    const summaries = await Promise.all(visibleCardUris.map((uri) => this.loadCardSummary(uri)))
 
     return summaries.sort((left, right) => left.name.localeCompare(right.name, "ko"))
   }

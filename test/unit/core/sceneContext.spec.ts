@@ -144,6 +144,48 @@ describe("sceneContext", () => {
     expect(context.background).toEqual(schoolBg)
   })
 
+  it("ignores explicit sample card files when building context", async () => {
+    const fileSystem = new MockFileSystem()
+    const sampleCharacter: CharacterCard = {
+      type: "character",
+      id: "sample",
+      name: "샘플 캐릭터"
+    }
+    const sampleBackground: BackgroundCard = {
+      type: "background",
+      id: "sample",
+      name: "샘플 배경"
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [
+      [".sample.card", { type: "file" }],
+      ["elia.card", { type: "file" }]
+    ])
+    fileSystem.setDirectory("/mock/workspace/background", [
+      [".sample.card", { type: "file" }],
+      ["school.card", { type: "file" }]
+    ])
+
+    fileSystem.setFile("/mock/workspace/character/.sample.card", serializeCard(sampleCharacter))
+    fileSystem.setFile("/mock/workspace/character/elia.card", serializeCard(eliaCard))
+    fileSystem.setFile("/mock/workspace/background/.sample.card", serializeCard(sampleBackground))
+    fileSystem.setFile("/mock/workspace/background/school.card", serializeCard(schoolBg))
+
+    const sceneWithSampleReferences: SceneFile = {
+      ...mockScene,
+      frontmatter: {
+        characters: ["sample", "elia"],
+        location: "sample"
+      },
+      body: "샘플 캐릭터와 엘리아가 학교 정문에 있다."
+    }
+
+    const context = await buildSceneContext(mockPaths, sceneWithSampleReferences, fileSystem)
+
+    expect(context.characters).toEqual([eliaCard])
+    expect(context.background).toBeUndefined()
+  })
+
   it("handles missing directories gracefully", async () => {
     const fileSystem = new MockFileSystem()
 

@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { draftPath, getStoryboardProjectPaths } from "../core/pathConventions"
+import { draftPath, getStoryboardProjectPaths, isHiddenSceneFileName } from "../core/pathConventions"
 import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
 import { emptyUsageSummary } from "../files/usageLedger"
 import { readSceneFile, type SceneFileSystem } from "../files/scene"
@@ -193,6 +193,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
     const sceneFiles = entries
       .filter(([, type]) => type === vscode.FileType.File)
       .map(([name]) => name)
+      .filter((name) => !isHiddenSceneFileName(name))
       .filter((name) => parseSceneFileName(name) !== undefined)
 
     const items = await Promise.all(sceneFiles.map((name) => this.buildSceneListItem(root, name)))

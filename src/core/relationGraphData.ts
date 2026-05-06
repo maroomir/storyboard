@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { isIgnoredSampleCardFileName } from "./pathConventions"
 import { parseCard } from "../files/card"
 import type { RelationListCharacter } from "../shared/messaging"
 
@@ -9,6 +10,10 @@ export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Pro
   const results: RelationListCharacter[] = []
 
   for (const uri of uris) {
+    if (isIgnoredSampleCardFileName(uri.path.split("/").at(-1) ?? "")) {
+      continue
+    }
+
     try {
       const raw = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri))
       const card = parseCard(raw)

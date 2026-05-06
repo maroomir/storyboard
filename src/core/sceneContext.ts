@@ -1,6 +1,7 @@
 import type { BackgroundCard, CharacterCard } from "../shared/card"
 import type { SceneFile } from "../shared/scene"
 import { readCardFile } from "../files/card"
+import { isIgnoredSampleCardFileName } from "./pathConventions"
 import { detectCharactersInText } from "../utils/characterDetector"
 
 export interface SceneContextWorkspacePaths {
@@ -77,13 +78,17 @@ export async function readPreviousSceneContext(
   }
 }
 
+function isWorkingCardFileName(name: string): boolean {
+  return name.endsWith(".card") && !isIgnoredSampleCardFileName(name)
+}
+
 async function listProjectCharacters(
   paths: SceneContextWorkspacePaths,
   fileSystem: SceneContextWorkspaceFileSystem
 ): Promise<readonly CharacterCard[]> {
   try {
     const entries = await fileSystem.readDirectory(paths.characterDirectory)
-    const cardFiles = entries.filter(([name, entry]) => entry.type === "file" && name.endsWith(".card"))
+    const cardFiles = entries.filter(([name, entry]) => entry.type === "file" && isWorkingCardFileName(name))
 
     const cards = await Promise.all(
       cardFiles.map(async ([name]) => {
@@ -109,7 +114,7 @@ async function listProjectBackgrounds(
 ): Promise<readonly BackgroundCard[]> {
   try {
     const entries = await fileSystem.readDirectory(paths.backgroundDirectory)
-    const cardFiles = entries.filter(([name, entry]) => entry.type === "file" && name.endsWith(".card"))
+    const cardFiles = entries.filter(([name, entry]) => entry.type === "file" && isWorkingCardFileName(name))
 
     const cards = await Promise.all(
       cardFiles.map(async ([name]) => {

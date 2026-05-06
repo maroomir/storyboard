@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { getStoryboardProjectPaths } from "../core/pathConventions"
+import { getStoryboardProjectPaths, isHiddenSceneFileName } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseSceneFileName } from "../shared/scene"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
@@ -23,7 +23,7 @@ export interface RegisterGenerateAllDraftsCommandDependencies {
 async function listSceneUrisOrdered(sceneDirectory: vscode.Uri): Promise<vscode.Uri[]> {
   const entries = await vscode.workspace.fs.readDirectory(sceneDirectory)
   const withParts = entries
-    .filter(([name, type]) => type === vscode.FileType.File && name.endsWith(".txt"))
+    .filter(([name, type]) => type === vscode.FileType.File && name.endsWith(".txt") && !isHiddenSceneFileName(name))
     .map(([name]) => {
       const parts = parseSceneFileName(name)
       return parts ? { name, parts } : undefined

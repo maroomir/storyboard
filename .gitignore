@@ -33,3 +33,8 @@ coverage/
 # Package manager caches
 .npm/
 .pnpm-store/
+
+# Storyboard sample files
+character/.sample.card
+background/.sample.card
+scene/.sample.txt

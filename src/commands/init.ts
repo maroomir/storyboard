@@ -10,6 +10,9 @@ const storyboardGitignoreBlock = `
 # Storyboard generated files
 .storyboard/cache/
 draft/
+character/.sample.card
+background/.sample.card
+scene/.sample.txt
 `
 
 export interface RegisterInitCommandDependencies {
@@ -136,13 +139,10 @@ description: |
 }
 
 function createSampleScene(): string {
-  return `---
-title: 프롤로그
-characters: [sample]
-location: sample
-mood: 시작
----
-샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다.
+  return `# 샘플 씬
+
+Storyboard 프로젝트를 시작하기 위한 샘플 텍스트입니다.
+실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
 `
 }
 

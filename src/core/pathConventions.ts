@@ -38,16 +38,24 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     sceneCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "scenes"),
     characterDirectory,
     characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, "profile"),
-    sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, "sample.card"),
+    sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, ".sample.card"),
     backgroundDirectory,
     backgroundConceptDirectory: vscode.Uri.joinPath(backgroundDirectory, "concept"),
-    sampleBackgroundCard: vscode.Uri.joinPath(backgroundDirectory, "sample.card"),
+    sampleBackgroundCard: vscode.Uri.joinPath(backgroundDirectory, ".sample.card"),
     sceneDirectory,
-    sampleScene: vscode.Uri.joinPath(sceneDirectory, "01-prologue.txt"),
+    sampleScene: vscode.Uri.joinPath(sceneDirectory, ".sample.txt"),
     draftDirectory: vscode.Uri.joinPath(workspaceRoot, "draft"),
     gitignore: vscode.Uri.joinPath(workspaceRoot, ".gitignore"),
     readme: vscode.Uri.joinPath(workspaceRoot, "README.md")
   }
+}
+
+export function isIgnoredSampleCardFileName(fileName: string): boolean {
+  return fileName === ".sample.card"
+}
+
+export function isHiddenSceneFileName(fileName: string): boolean {
+  return fileName.startsWith(".") && fileName.endsWith(".txt")
 }
 
 export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
