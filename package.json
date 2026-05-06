@@ -267,6 +267,7 @@
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
+    "@testing-library/react": "^16.3.2",
     "@types/d3-drag": "^3.0.7",
     "@types/d3-force": "^3.0.10",
     "@types/d3-selection": "^3.0.11",
@@ -281,6 +282,7 @@
     "autoprefixer": "^10.5.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.1",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.13",
     "prettier": "^3.3.3",
     "tailwindcss": "^3.4.17",

@@ -1,9 +1,15 @@
 import { AlertTriangle, CheckCircle2, CircleDashed, type LucideIcon } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 
-import { createRequestId, normalizeUsageSummary, parseSidebarScenesInitialData } from "../../lib/messaging"
+import {
+  createRequestId,
+  parseSidebarScenesInitialData,
+  parseUsageChangedPayload,
+  sumUsageMap
+} from "../../lib/messaging"
 import type { SceneListItem, SidebarScenesInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
 import { Button } from "../ui/Button"
+import { CostBadge } from "../ui/CostBadge"
 
 function sceneStatusPresentation(status: SceneListItem["status"]): {
   readonly Icon: LucideIcon
@@ -54,10 +60,9 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
       }
 
       if (event.data.method === "usage.changed") {
-        const summary = (event.data.payload as { readonly summary?: unknown }).summary
         setSidebarState((prev) => ({
           ...prev,
-          usage: normalizeUsageSummary(summary)
+          usage: parseUsageChangedPayload(event.data.payload)
         }))
       }
     }
@@ -65,6 +70,12 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
   }, [])
+
+  const scenesUsageTotal = sumUsageMap(sidebarState.usage.scenes)
+  const sceneCostUsd = (scene: SceneListItem): number => {
+    const raw = sidebarState.usage.scenes[scene.stem]
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : 0
+  }
 
   const postSceneRequest = (method: StoryboardRequestMethod, payload: Record<string, unknown>): void => {
     vscodeApi?.postMessage({
@@ -79,8 +90,13 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
   if (!sidebarState.isStoryboardProject) {
     return (
       <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
-        <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+            <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+          </div>
+          <CostBadge usd={0} className="shrink-0" />
+        </div>
         <p className="m-0 leading-normal text-sb-fg-muted">
           Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.
         </p>
@@ -90,8 +106,13 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
 
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
-      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
-      <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+          <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+        </div>
+        <CostBadge usd={scenesUsageTotal} className="shrink-0" />
+      </div>
 
       {sidebarState.scenes.length === 0 ? (
         <p className="m-0 leading-normal text-sb-fg-muted">아직 씬 파일이 없습니다. 상단 + 버튼으로 새 씬을 추가해 보세요.</p>
@@ -119,6 +140,7 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
                         <span className="block font-semibold leading-snug">{scene.title ?? scene.slug}</span>
                         <span className="mt-0.5 block truncate text-sm text-sb-fg-muted">{scene.stem}.txt</span>
                       </button>
+                      <CostBadge usd={sceneCostUsd(scene)} className="shrink-0 self-start" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-7">
                       <Button type="button" onClick={() => postSceneRequest("scenes.generateDraft", { uri: scene.sceneUri })}>

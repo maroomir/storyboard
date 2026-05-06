@@ -1,9 +1,15 @@
 import { Pencil, Sparkles, Trash2 } from "lucide-react"
 import React, { useEffect, useMemo, useState } from "react"
 
+import { CostBadge } from "../ui/CostBadge"
 import { Button } from "../ui/Button"
 import { EmptyState } from "../ui/EmptyState"
-import { createRequestId, normalizeUsageSummary, parseSidebarCardsInitialData } from "../../lib/messaging"
+import {
+  createRequestId,
+  parseSidebarCardsInitialData,
+  parseUsageChangedPayload,
+  sumUsageMap
+} from "../../lib/messaging"
 import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
 
 export function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
@@ -22,10 +28,9 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
       }
 
       if (event.data.method === "usage.changed") {
-        const summary = (event.data.payload as { readonly summary?: unknown }).summary
         setSidebarState((prev) => ({
           ...prev,
-          usage: normalizeUsageSummary(summary)
+          usage: parseUsageChangedPayload(event.data.payload)
         }))
       }
     }
@@ -48,6 +53,16 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
   const deleteCard = (card: SidebarCardSummary): void => postCardRequest("cards.delete", { uri: card.uri })
 
   const kindLabel = sidebarState.type === "character" ? "캐릭터" : "배경"
+  const headerUsageTotal =
+    sidebarState.type === "character"
+      ? sumUsageMap(sidebarState.usage.characters)
+      : sumUsageMap(sidebarState.usage.backgrounds)
+
+  const cardCostUsd = (card: SidebarCardSummary): number => {
+    const map = sidebarState.type === "character" ? sidebarState.usage.characters : sidebarState.usage.backgrounds
+    const raw = map[card.id]
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : 0
+  }
 
   if (!sidebarState.isStoryboardProject) {
     return (
@@ -65,8 +80,13 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
 
   return (
     <main className="@container flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
-      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
-      <h1 className="font-display m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Storyboard</p>
+          <h1 className="font-display m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
+        </div>
+        <CostBadge usd={headerUsageTotal} className="shrink-0" />
+      </div>
 
       {sidebarState.cards.length === 0 ? (
         <EmptyState
@@ -101,6 +121,7 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
                 </button>
 
                 <div className="flex shrink-0 items-center gap-1">
+                  <CostBadge usd={cardCostUsd(card)} />
                   <Button
                     type="button"
                     variant="ghost"

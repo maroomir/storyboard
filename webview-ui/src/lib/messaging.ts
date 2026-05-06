@@ -66,6 +66,20 @@ function isCardEditorInitialData(value: unknown): value is CardEditorInitialData
   return typeof candidate.documentUri === "string" && typeof candidate.rawText === "string"
 }
 
+export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity {
+  return normalizeUsageSummary(payload)
+}
+
+export function sumUsageMap(map: Readonly<Record<string, number>>): number {
+  let total = 0
+  for (const value of Object.values(map)) {
+    if (Number.isFinite(value)) {
+      total += value
+    }
+  }
+  return total
+}
+
 export function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
   if (!value || typeof value !== "object") {
     return emptyUsageSummary
