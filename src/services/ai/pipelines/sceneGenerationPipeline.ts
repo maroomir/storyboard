@@ -97,6 +97,40 @@ function situationCharacterRefs(
   return refs
 }
 
+function dedupeEntityRefs(refs: readonly EntityRef[]): EntityRef[] {
+  const seen = new Set<string>()
+  const out: EntityRef[] = []
+
+  for (const ref of refs) {
+    const key = `${ref.kind}:${ref.id}`
+    if (seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    out.push(ref)
+  }
+
+  return out
+}
+
+function dialogueParticipantsForSituation(
+  situation: SituationWithCharacters,
+  characters: readonly CharacterCard[],
+  backgroundParticipantId: string | undefined
+): EntityRef[] {
+  const fromSituation = situationCharacterRefs(situation, characters)
+  const characterParticipants =
+    fromSituation.length === 0 ? characters.map((card) => ({ kind: "character" as const, id: card.id })) : fromSituation
+
+  const refs: EntityRef[] = [...characterParticipants]
+
+  if (backgroundParticipantId) {
+    refs.push({ kind: "background", id: backgroundParticipantId })
+  }
+
+  return dedupeEntityRefs(refs)
+}
+
 function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   if (shouldCancel?.()) {
     throw new SceneGenerationPipelineCancelledError()
@@ -167,11 +201,7 @@ export async function runSceneGenerationPipeline(
 
     const prior: string | undefined = i > 0 ? situations[i - 1]?.situation : previousContext
 
-    const dialogueParticipants: EntityRef[] = situationCharacterRefs(situation, context.characters)
-
-    if (backgroundParticipantId) {
-      dialogueParticipants.push({ kind: "background", id: backgroundParticipantId })
-    }
+    const dialogueParticipants = dialogueParticipantsForSituation(situation, context.characters, backgroundParticipantId)
 
     const dialogue = await aiService.generatePersonaDialogue(
       situation.situation,

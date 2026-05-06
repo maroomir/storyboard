@@ -8,7 +8,7 @@ import {
   type SceneGenerationPipelineStage
 } from "../../../../src/services/ai/pipelines/sceneGenerationPipeline"
 import type { SceneFile } from "../../../../src/shared/scene"
-import type { CharacterCard } from "../../../../src/shared/card"
+import type { BackgroundCard, CharacterCard } from "../../../../src/shared/card"
 
 const eliaCard: CharacterCard = {
   type: "character",
@@ -35,11 +35,11 @@ function sceneFile(body: string): SceneFile {
   }
 }
 
-function contextFor(characters: readonly CharacterCard[], body: string): SceneContext {
+function contextFor(characters: readonly CharacterCard[], body: string, background?: BackgroundCard): SceneContext {
   return {
     scene: sceneFile(body),
     characters,
-    background: undefined
+    background
   }
 }
 
@@ -234,6 +234,75 @@ describe("runSceneGenerationPipeline", () => {
       expect.objectContaining({
         providerId: "ollama",
         attribution: { primary: { kind: "scene", id: "01-opening" } }
+      })
+    )
+  })
+
+  it("falls back to all context characters when situation lists no characters", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "무명 상황" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p1")
+    ai.createCharacterPersona.mockResolvedValueOnce("p2")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.generatePersonaDialogue).toHaveBeenCalledWith(
+      "무명 상황",
+      expect.any(Map),
+      expect.anything(),
+      undefined,
+      expect.objectContaining({
+        attribution: {
+          primary: { kind: "scene", id: "01-opening" },
+          participants: [
+            { kind: "character", id: "elia" },
+            { kind: "character", id: "jihoon" }
+          ]
+        }
+      })
+    )
+  })
+
+  it("adds background to dialogue participants when situation lists no characters", async () => {
+    const hallBackground: BackgroundCard = {
+      type: "background",
+      id: "school-hall",
+      name: "복도"
+    }
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "복도" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", hallBackground),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.generatePersonaDialogue).toHaveBeenCalledWith(
+      "복도",
+      expect.any(Map),
+      expect.anything(),
+      undefined,
+      expect.objectContaining({
+        attribution: {
+          primary: { kind: "scene", id: "01-opening" },
+          participants: [
+            { kind: "character", id: "elia" },
+            { kind: "background", id: "school-hall" }
+          ]
+        }
       })
     )
   })

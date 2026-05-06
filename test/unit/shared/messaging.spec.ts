@@ -67,6 +67,35 @@ describe("storyboard messaging protocol", () => {
     })
   })
 
+  it("creates validated ai.generate success response preserving usage and costUsd", () => {
+    const response = createStoryboardSuccessResponse(
+      { id: "ai-res-1", method: "ai.generate" },
+      {
+        text: "ok",
+        providerId: "openai",
+        model: "gpt-5.4-mini",
+        usage: {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadInputTokens: 0,
+          cacheCreationInputTokens: 0
+        },
+        costUsd: 0.000125
+      }
+    )
+
+    expect(response.ok).toBe(true)
+    if (response.ok) {
+      expect(response.payload.usage).toEqual({
+        inputTokens: 100,
+        outputTokens: 50,
+        cacheReadInputTokens: 0,
+        cacheCreationInputTokens: 0
+      })
+      expect(response.payload.costUsd).toBe(0.000125)
+    }
+  })
+
   it("parses scenes.list and scenes.openScene requests", () => {
     const listRequest = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,

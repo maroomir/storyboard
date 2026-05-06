@@ -8,6 +8,7 @@ import { readProjectJson } from "../files/projectJson"
 import { parseSceneFileName } from "../shared/scene"
 import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
+import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 
 const applyDraftFormatCommand = "storyboard.draft.applyFormat"
@@ -118,7 +119,7 @@ export async function runApplyDraftFormatForScene(
 
   const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
     onUsage: (record): void => {
-      void dependencies.usageRecorder.record(workspaceFolder.uri, record)
+      recordUsageSafely(dependencies.usageRecorder, workspaceFolder.uri, record, dependencies.logger)
     }
   })
 

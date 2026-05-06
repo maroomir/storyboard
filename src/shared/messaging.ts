@@ -171,10 +171,19 @@ export const aiProvidersCheckConnectionResponsePayloadSchema = z.object({
   ok: z.boolean()
 })
 
+const aiUsageSchema = z.object({
+  inputTokens: z.number().nonnegative(),
+  outputTokens: z.number().nonnegative(),
+  cacheReadInputTokens: z.number().nonnegative().optional(),
+  cacheCreationInputTokens: z.number().nonnegative().optional()
+})
+
 export const aiGenerateResponsePayloadSchema = z.object({
   text: z.string(),
   providerId: providerIdSchema,
-  model: z.string().optional()
+  model: z.string().optional(),
+  usage: aiUsageSchema.optional(),
+  costUsd: z.number().optional()
 })
 
 const providerModelOptionSchema = z.object({

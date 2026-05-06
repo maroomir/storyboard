@@ -34,6 +34,7 @@ import {
 } from "../services/ai/pipelines/sceneGenerationPipeline"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
+import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
 import type { BackgroundCard } from "../shared/card"
@@ -301,7 +302,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
   const aiService = new StoryboardAIService(options.aiProviderRegistry, {
     onUsage: (record): void => {
-      void options.usageRecorder.record(workspaceFolder.uri, record)
+      recordUsageSafely(options.usageRecorder, workspaceFolder.uri, record, options.logger)
     }
   })
   const pipelineProviders = {
