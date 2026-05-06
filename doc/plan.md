@@ -360,12 +360,12 @@
 **목표**: `draft/*.md`에서 작가가 손수 편집할 때 AI 보조가 자연스럽게 동작.
 
 **체크리스트**
-- [ ] `InlineCompletionProvider`:
+- [x] `InlineCompletionProvider`:
   - `draft/*.md` 파일에서만 활성
   - 현재 커서 직전 N글자 + 활성 캐릭터 추정 + 배경 컨텍스트 → AI 호출
   - ghost text 표시, Tab으로 수락
   - 디바운스 700ms, 메모리 LRU 캐시
-- [ ] `GrammarDiagnosticsProvider`:
+- [x] `GrammarDiagnosticsProvider`:
   - draft/*.md 저장 시 또는 명시적 명령 시 grammar check
   - `DiagnosticCollection`으로 squiggle
   - `provideCodeActions`로 "수정" QuickFix
@@ -373,7 +373,7 @@
 - [ ] `CharacterHoverProvider`:
   - 본문에서 등장 캐릭터 이름 hover → 페르소나 + 최근 대사 + 관계 카드
   - 캐릭터 이름 매칭은 `characterDetector.ts` 재사용
-- [ ] `commands/expandDraft.ts`: 선택 영역을 AI로 확장
+- [x] `commands/expandDraft.ts`: 선택 영역을 AI로 확장
 - [ ] 사용자 가이드 문서 (`doc/guide/editor.md`)
 
 **검증**
