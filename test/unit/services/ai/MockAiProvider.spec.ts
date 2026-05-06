@@ -58,4 +58,39 @@ describe("MockAiProvider", () => {
       }
     ])
   })
+
+  it("returns structured JSON issues for grammarCheck", async () => {
+    const provider = new MockAiProvider()
+
+    const response = await provider.generate({
+      taskName: "grammarCheck",
+      messages: [{ role: "user", content: "그는 정말루 침착했다." }]
+    })
+
+    expect(JSON.parse(response.text)).toEqual([
+      expect.objectContaining({
+        start: expect.any(Number),
+        end: expect.any(Number),
+        original: expect.any(String),
+        suggestion: expect.any(String),
+        reason: expect.any(String)
+      })
+    ])
+  })
+
+  it("returns deterministic text for inlineCompletion and draftExpansion", async () => {
+    const provider = new MockAiProvider()
+
+    const inlineResponse = await provider.generate({
+      taskName: "inlineCompletion",
+      messages: [{ role: "user", content: "그는 창문을 닫고" }]
+    })
+    const expansionResponse = await provider.generate({
+      taskName: "draftExpansion",
+      messages: [{ role: "user", content: "그는 문을 열었다." }]
+    })
+
+    expect(inlineResponse.text).toContain("다음 말을 조심스럽게 이어 갔다.")
+    expect(expansionResponse.text).toContain("주변 공기는 묵직했고")
+  })
 })

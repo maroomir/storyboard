@@ -49,6 +49,43 @@ describe("StoryboardAIService", () => {
       엘리아: ["활발하게 교실 앞으로 걸어 나섬", "친구를 안심시키며 또렷하게 말함"]
     })
   })
+
+  it("parses grammar issues from JSON array output", async () => {
+    const service = createAIService({
+      completionText:
+        '[{"start":2,"end":6,"original":"정말루","suggestion":"정말로","reason":"표준어 표현으로 교정"}]'
+    })
+
+    await expect(service.checkGrammar("이건 정말루 중요해.")).resolves.toEqual([
+      {
+        start: 2,
+        end: 6,
+        original: "정말루",
+        suggestion: "정말로",
+        reason: "표준어 표현으로 교정"
+      }
+    ])
+  })
+
+  it("returns trimmed text for inline completion and draft expansion", async () => {
+    const service = createAIService({
+      completionText: "  그는 잠시 웃으며 고개를 끄덕였다.  "
+    })
+
+    await expect(
+      service.completeInline("그는 창밖을 보며", {
+        activeCharacter: "엘리아",
+        background: "학교 복도"
+      })
+    ).resolves.toBe("그는 잠시 웃으며 고개를 끄덕였다.")
+
+    await expect(
+      service.expandDraft("그는 문을 열었다.", {
+        activeCharacter: "엘리아",
+        background: "학교 복도"
+      })
+    ).resolves.toBe("그는 잠시 웃으며 고개를 끄덕였다.")
+  })
 })
 
 function createAIService(options: { readonly completionText: string }): StoryboardAIService {

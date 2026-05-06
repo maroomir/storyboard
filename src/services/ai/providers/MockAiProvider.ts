@@ -63,10 +63,14 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
     case "traitsExtraction":
       return ["- 상황을 관찰하고 차분하게 반응함", "- 대화 속에서 감정을 분명하게 드러냄"].join("\n")
     case "grammarCheck":
+      return createMockGrammarIssues(promptSummary)
     case "inlineCompletion":
+      return createMockInlineCompletion(promptSummary)
     case "draftExpansion":
-      return [`[Mock AI: ${taskName}]`, promptSummary, "", "이 응답은 Storyboard 검증용 모의 AI 출력입니다."].join("\n")
+      return createMockDraftExpansion(promptSummary)
   }
+
+  return `[Mock AI: ${taskName}] ${promptSummary}`
 }
 
 function extractSceneInput(prompt: string): string {
@@ -103,4 +107,38 @@ function extractDraftInput(prompt: string): string {
   const input = lastBlankLineIndex === -1 ? prompt : prompt.slice(lastBlankLineIndex + 2)
 
   return input.trim() || prompt
+}
+
+function createMockGrammarIssues(prompt: string): string {
+  const subject = extractLastContentLine(prompt, "문장을 확인해주세요.")
+
+  return JSON.stringify([
+    {
+      start: 0,
+      end: Math.min(3, subject.length),
+      original: subject.slice(0, Math.min(3, subject.length)),
+      suggestion: "교정",
+      reason: "모의 문법 검사 결과입니다."
+    }
+  ])
+}
+
+function createMockInlineCompletion(prompt: string): string {
+  const seed = extractLastContentLine(prompt, "그는 잠시 숨을 고르고")
+  return `${seed} 다음 말을 조심스럽게 이어 갔다.`
+}
+
+function createMockDraftExpansion(prompt: string): string {
+  const selection = extractLastContentLine(prompt, "그는 문을 열었다.")
+  return `${selection}\n\n주변 공기는 묵직했고, 발걸음이 멈출 때마다 긴장이 더 선명해졌다.`
+}
+
+function extractLastContentLine(prompt: string, fallback: string): string {
+  const line = prompt
+    .split("\n")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+    .at(-1)
+
+  return line ?? fallback
 }

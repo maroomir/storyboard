@@ -9,7 +9,10 @@ import type {
   UsageRecord,
   WiredAiTaskName
 } from "./types"
+import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
+import { GrammarCheckPrompt } from "./prompts/grammarCheck"
+import { InlineCompletionPrompt } from "./prompts/inlineCompletion"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
@@ -30,6 +33,24 @@ export interface GenerateTextOptions {
 
 export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+}
+
+export interface GrammarIssue {
+  readonly start: number
+  readonly end: number
+  readonly original: string
+  readonly suggestion: string
+  readonly reason: string
+}
+
+export interface InlineCompletionContext {
+  readonly activeCharacter?: string
+  readonly background?: string
+}
+
+export interface DraftExpansionContext {
+  readonly activeCharacter?: string
+  readonly background?: string
 }
 
 export type OnUsageRecordCallback = (record: UsageRecord) => void
@@ -140,6 +161,61 @@ export class StoryboardAIService {
     return Object.fromEntries(entries)
   }
 
+  public async checkGrammar(body: string, options: GenerateTextOptions = {}): Promise<GrammarIssue[]> {
+    const response = await this.generateText(
+      "grammarCheck",
+      [{ role: "user", content: GrammarCheckPrompt.build(body) }],
+      {
+        ...options,
+        temperature: options.temperature ?? GrammarCheckPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? GrammarCheckPrompt.config.maxTokens
+      }
+    )
+    const parsedArray = parseJsonArray(response.text)
+
+    if (!parsedArray) {
+      return []
+    }
+
+    return parsedArray.flatMap((value) => toGrammarIssue(value))
+  }
+
+  public async completeInline(
+    prefix: string,
+    context: InlineCompletionContext = {},
+    options: GenerateTextOptions = {}
+  ): Promise<string> {
+    const response = await this.generateText(
+      "inlineCompletion",
+      [{ role: "user", content: InlineCompletionPrompt.build(prefix, context) }],
+      {
+        ...options,
+        temperature: options.temperature ?? InlineCompletionPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? InlineCompletionPrompt.config.maxTokens
+      }
+    )
+
+    return response.text.trim()
+  }
+
+  public async expandDraft(
+    selection: string,
+    context: DraftExpansionContext = {},
+    options: GenerateTextOptions = {}
+  ): Promise<string> {
+    const response = await this.generateText(
+      "draftExpansion",
+      [{ role: "user", content: DraftExpansionPrompt.build(selection, context) }],
+      {
+        ...options,
+        temperature: options.temperature ?? DraftExpansionPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? DraftExpansionPrompt.config.maxTokens
+      }
+    )
+
+    return response.text.trim()
+  }
+
   private async generateText(
     taskName: WiredAiTaskName,
     messages: ReadonlyArray<{ readonly role: "system" | "user" | "assistant"; readonly content: string }>,
@@ -211,6 +287,44 @@ function toSituationWithCharacters(value: unknown): SituationWithCharacters[] {
     {
       situation: candidate.situation,
       characters
+    }
+  ]
+}
+
+function toGrammarIssue(value: unknown): GrammarIssue[] {
+  if (!value || typeof value !== "object") {
+    return []
+  }
+
+  const candidate = value as {
+    readonly start?: unknown
+    readonly end?: unknown
+    readonly original?: unknown
+    readonly suggestion?: unknown
+    readonly reason?: unknown
+  }
+
+  if (
+    typeof candidate.start !== "number" ||
+    typeof candidate.end !== "number" ||
+    typeof candidate.original !== "string" ||
+    typeof candidate.suggestion !== "string" ||
+    typeof candidate.reason !== "string"
+  ) {
+    return []
+  }
+
+  if (candidate.start < 0 || candidate.end < candidate.start) {
+    return []
+  }
+
+  return [
+    {
+      start: candidate.start,
+      end: candidate.end,
+      original: candidate.original,
+      suggestion: candidate.suggestion,
+      reason: candidate.reason
     }
   ]
 }
