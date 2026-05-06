@@ -81,13 +81,23 @@ export class DraftCodeLensProvider implements vscode.CodeLensProvider {
       }),
       new vscode.CodeLens(range, {
         title: "🩹 Grammar Check",
-        tooltip: "문법 검사(Phase 6 예정)",
-        command: grammarCheckCommand
+        tooltip: "현재 드래프트 본문의 문법 이슈를 진단합니다.",
+        command: grammarCheckCommand,
+        arguments: [document.uri]
       }),
       new vscode.CodeLens(range, {
         title: "🌿 Expand",
-        tooltip: "선택 영역 확장(Phase 6 예정)",
-        command: expandDraftCommand
+        tooltip: "현재 선택한 영역을 문체를 유지한 채 확장합니다.",
+        command: expandDraftCommand,
+        arguments: [
+          document.uri,
+          vscode.window.activeTextEditor?.document.uri.toString() === document.uri.toString()
+            ? new vscode.Range(
+                vscode.window.activeTextEditor.selection.start,
+                vscode.window.activeTextEditor.selection.end
+              )
+            : undefined
+        ]
       })
     ]
   }

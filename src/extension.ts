@@ -7,13 +7,15 @@ import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
-import { registerDraftPlaceholderCommands } from "./commands/draftPlaceholders"
+import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
+import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
+import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
 import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
 import { registerSidebarScenesProvider } from "./providers/SidebarScenesProvider"
@@ -54,7 +56,15 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
-  context.subscriptions.push(registerDraftPlaceholderCommands())
+  context.subscriptions.push(
+    registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerInlineCompletionProvider({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerGrammarDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder })
+  )
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(
     registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder })
