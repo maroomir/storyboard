@@ -1,4 +1,5 @@
 @.clinerules/general.md
+@.clinerules/agent-behavior.md
 @.clinerules/storyboard-overview.md
 @.clinerules/vscode-extension.md
 @.clinerules/webview.md
