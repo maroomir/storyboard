@@ -36,6 +36,7 @@ export interface GoogleProviderOptions {
 
 interface GoogleModelOptions {
   readonly model: string
+  readonly systemInstruction?: string
   readonly generationConfig?: {
     readonly temperature?: number
     readonly maxOutputTokens?: number
@@ -76,14 +77,20 @@ export class GoogleProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     try {
+      const systemInstruction = request.messages
+        .filter((message) => message.role === "system")
+        .map((message) => message.content)
+        .join("\n\n")
+
       const model = this.client.getGenerativeModel({
         model: this.model,
+        ...(systemInstruction.length > 0 ? { systemInstruction } : {}),
         generationConfig: {
           temperature: request.temperature,
           maxOutputTokens: request.maxTokens
         }
       })
-      const result = await model.generateContent(createGooglePrompt(request))
+      const result = await model.generateContent(createGoogleConversationPrompt(request))
 
       const text = result.response.text()
       const usage = usageFromGoogleResult(result)
@@ -106,8 +113,11 @@ function usageFromGoogleResult(result: GoogleGenerateContentResultLike): AiUsage
   }
 }
 
-function createGooglePrompt(request: AiGenerateRequest): string {
-  return request.messages.map((message) => `${message.role.toUpperCase()}:\n${message.content}`).join("\n\n")
+function createGoogleConversationPrompt(request: AiGenerateRequest): string {
+  return request.messages
+    .filter((message) => message.role !== "system")
+    .map((message) => message.content)
+    .join("\n\n")
 }
 
 function createDefaultGoogleClient(apiKey: string): GoogleClientLike {

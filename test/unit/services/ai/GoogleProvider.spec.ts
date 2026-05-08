@@ -13,11 +13,15 @@ describe("GoogleProvider", () => {
 
   it("checks connection with a generated test prompt", async () => {
     let capturedPrompt = ""
+    let capturedSystemInstruction: string | undefined
     const provider = new GoogleProvider({
       apiKey: "google-test",
       model: "gemini-2.5-flash",
       createClient: (): GoogleClientLike => createFakeGoogleClient({
         completionText: "ok",
+        onGetGenerativeModel: (options): void => {
+          capturedSystemInstruction = options.systemInstruction
+        },
         onGenerateContent: (prompt): void => {
           capturedPrompt = prompt
         }
@@ -26,10 +30,12 @@ describe("GoogleProvider", () => {
 
     await expect(provider.checkConnection()).resolves.toBe(true)
     expect(capturedPrompt).toBe("test")
+    expect(capturedSystemInstruction).toBeUndefined()
   })
 
-  it("combines role-tagged messages into a Gemini prompt", async () => {
+  it("passes system messages via systemInstruction and sends conversation content", async () => {
     let capturedPrompt = ""
+    let capturedSystemInstruction: string | undefined
     const usage = { inputTokens: 120, outputTokens: 60 }
     const provider = new GoogleProvider({
       apiKey: "google-test",
@@ -40,6 +46,9 @@ describe("GoogleProvider", () => {
           usageMetadata: {
             promptTokenCount: usage.inputTokens,
             candidatesTokenCount: usage.outputTokens
+          },
+          onGetGenerativeModel: (options): void => {
+            capturedSystemInstruction = options.systemInstruction
           },
           onGenerateContent: (prompt): void => {
             capturedPrompt = prompt
@@ -55,8 +64,8 @@ describe("GoogleProvider", () => {
       ]
     })
 
-    expect(capturedPrompt).toContain("SYSTEM:\n너는 작가다.")
-    expect(capturedPrompt).toContain("USER:\n장면을 써줘.")
+    expect(capturedSystemInstruction).toBe("너는 작가다.")
+    expect(capturedPrompt).toBe("장면을 써줘.")
     expect(response).toEqual({
       providerId: "google",
       model: "gemini-2.5-flash",
@@ -70,12 +79,20 @@ describe("GoogleProvider", () => {
 interface FakeGoogleClientOptions {
   readonly completionText: string
   readonly usageMetadata?: { readonly promptTokenCount: number; readonly candidatesTokenCount: number }
+  readonly onGetGenerativeModel?: (options: {
+    readonly model: string
+    readonly systemInstruction?: string
+    readonly generationConfig?: {
+      readonly temperature?: number
+      readonly maxOutputTokens?: number
+    }
+  }) => void
   readonly onGenerateContent?: (prompt: string) => void
 }
 
 function createFakeGoogleClient(options: FakeGoogleClientOptions): GoogleClientLike {
   return {
-    getGenerativeModel: () => ({
+    getGenerativeModel: (modelOptions) => ({
       generateContent: async (
         prompt
       ): Promise<{
@@ -84,6 +101,7 @@ function createFakeGoogleClient(options: FakeGoogleClientOptions): GoogleClientL
           readonly usageMetadata?: FakeGoogleClientOptions["usageMetadata"]
         }
       }> => {
+        options.onGetGenerativeModel?.(modelOptions)
         options.onGenerateContent?.(prompt)
         return {
           response: {
