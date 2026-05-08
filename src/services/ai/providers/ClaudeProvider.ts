@@ -169,11 +169,14 @@ function createDefaultClaudeClient(apiKey: string): ClaudeClientLike {
 
   return {
     messages: {
-      create: async (request): Promise<ClaudeMessageResponse> =>
-        client.messages.create({
-          ...request,
-          messages: [...request.messages] as MessageParam[]
+      create: async (request): Promise<ClaudeMessageResponse> => {
+        const { messages, system, ...rest } = request
+        return client.messages.create({
+          ...rest,
+          ...(system !== undefined ? { system: typeof system === "string" ? system : [...system] } : {}),
+          messages: [...messages] as MessageParam[]
         }) as Promise<ClaudeMessageResponse>
+      }
     }
   }
 }
