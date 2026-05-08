@@ -266,7 +266,8 @@
     "lint": "eslint . --ext .ts && tsc --project webview-ui/tsconfig.json --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
-    "package": "npm run build"
+    "package": "npm run package:vsix",
+    "package:vsix": "mkdir -p dist && npm run build && vsce package"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
@@ -282,6 +283,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vscode/vsce": "^3.9.1",
     "autoprefixer": "^10.5.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.1",

@@ -64,6 +64,7 @@ npm test
 | `npm run compile` | 확장 호스트만 (`src/` → `out/extension.js`) |
 | `npm run build:webview` | 웹뷰 UI만 (`webview-ui/` → `out/webview-ui/`) |
 | `npm run build` | 위 둘 모두 (`compile` + `build:webview`) |
+| `npm run package:vsix` | 빌드 후 로컬 설치용 VSIX 생성 |
 
 **`webview-ui/`**(사이드바·설정 패널·카드 에디터 등 React 번들)만 고친 경우에는 `npm run build:webview`만 실행해도 됩니다. Extension Development Host(F5) 창에서는 빌드 후 **`Developer: Reload Window`**로 한 번 리로드해야 새 번들이 로드되는 경우가 많습니다.
 
@@ -109,11 +110,16 @@ _F5가 안 뜨면 `npm run compile` 또는 `npm run build` 성공 여부와 Run 
 MVP/dogfooding 게이트에서만 필요하면, 빌드 후 다음을 실행합니다.
 
 ```bash
-npm run build
-npx @vscode/vsce package
+npm run package:vsix
 ```
 
 생성된 `storyboard-0.0.1.vsix`를 VS Code의 **Extensions: Install from VSIX** 로 설치해 검증할 수 있습니다.
+
+### GitHub Release용 VSIX
+
+`v*.*.*` 태그를 push하면 GitHub Actions가 lint, test, VSIX 패키징을 실행한 뒤 GitHub Release에 VSIX와 `SHA256SUMS`를 첨부합니다.
+
+릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.0` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.0`으로 올린 뒤 `v0.1.0` 태그를 push합니다.
 
 ### README용 스크린샷·GIF (선택)
 
