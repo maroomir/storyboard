@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import type { BackgroundCard, CharacterCard } from "../../../src/shared/card"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
 import {
   computeSceneInputHash,
   parseSceneCache,
   serializeSceneCache,
   type SceneCacheRecord
-} from "../../../src/files/sceneCache"
+} from "@/files/sceneCache"
 
 const sampleCharacter: CharacterCard = {
   type: "character",

@@ -10,7 +10,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      vscode: path.join(workspaceRoot, "test/stubs/vscode.ts")
+      vscode: path.join(workspaceRoot, "test/stubs/vscode.ts"),
+      "@": path.join(workspaceRoot, "src"),
+      "@webview": path.join(workspaceRoot, "webview-ui/src")
     }
   },
   test: {

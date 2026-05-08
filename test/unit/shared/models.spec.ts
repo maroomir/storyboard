@@ -1,12 +1,13 @@
 import { readFileSync } from "node:fs"
+import path from "node:path"
 import { describe, expect, it } from "vitest"
 
-import { storyboardModelCatalog } from "../../../src/shared/models"
-import { aiProviderIds, type AiProviderId } from "../../../src/services/ai/types"
+import { storyboardModelCatalog } from "@/shared/models"
+import { aiProviderIds, type AiProviderId } from "@/services/ai/types"
 
 describe("storyboardModelCatalog vs package.json defaults", () => {
   it("includes every contributed provider model default from package.json", () => {
-    const packageJsonPath = new URL("../../../package.json", import.meta.url)
+    const packageJsonPath = path.join(process.cwd(), "package.json")
     const raw = readFileSync(packageJsonPath, "utf8")
     const packageJson = JSON.parse(raw) as {
       readonly contributes?: {

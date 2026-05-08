@@ -1,7 +1,7 @@
 import type React from "react"
 
-import { removeArrayItem, replaceArrayItem } from "../../../lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "../../ui/formClasses"
+import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
+import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
 
 export function ListField({
   label,

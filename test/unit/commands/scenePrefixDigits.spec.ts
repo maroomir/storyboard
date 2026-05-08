@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { clampScenePrefixDigits, resolveScenePrefixDigitCount } from "../../../src/commands/scenePrefixDigits"
+import { clampScenePrefixDigits, resolveScenePrefixDigitCount } from "@/commands/scenePrefixDigits"
 
 describe("clampScenePrefixDigits", () => {
   it("clamps to 1..4", () => {

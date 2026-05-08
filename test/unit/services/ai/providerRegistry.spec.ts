@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderRegistry, createAiProviderRegistry } from "../../../../src/services/ai/providerRegistry"
-import { type ClaudeClientLike } from "../../../../src/services/ai/providers/ClaudeProvider"
-import { type GoogleClientLike } from "../../../../src/services/ai/providers/GoogleProvider"
-import { type OllamaClientLike } from "../../../../src/services/ai/providers/OllamaProvider"
-import { type OpenAiClientLike } from "../../../../src/services/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "../../../../src/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "../../../../src/services/settings/ConfigBridge"
+import { AiProviderRegistry, createAiProviderRegistry } from "@/services/ai/providerRegistry"
+import { type ClaudeClientLike } from "@/services/ai/providers/ClaudeProvider"
+import { type GoogleClientLike } from "@/services/ai/providers/GoogleProvider"
+import { type OllamaClientLike } from "@/services/ai/providers/OllamaProvider"
+import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {

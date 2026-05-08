@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto"
 
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths } from "../../core/pathConventions"
-import { uriExists } from "../../core/workspace"
+import { getStoryboardProjectPaths } from "@/core/pathConventions"
+import { uriExists } from "@/core/workspace"
 import {
   appendLedgerEntryIfNew,
   computeUsageSummaryFromEntries,
@@ -11,7 +11,7 @@ import {
   type UsageLedgerEntry,
   type UsageLedgerFileSystem,
   writeUsageLedgerToUri
-} from "../../files/usageLedger"
+} from "@/files/usageLedger"
 import type { UsageRecord, UsageSummaryByEntity } from "./types"
 
 interface WorkspaceUsageCache {

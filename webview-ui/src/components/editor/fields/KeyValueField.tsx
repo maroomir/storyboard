@@ -1,8 +1,8 @@
 import type React from "react"
 
-import type { CardAttributeValue } from "../../../lib/types"
-import { removeRecordKey, renameRecordKey } from "../../../lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "../../ui/formClasses"
+import type { CardAttributeValue } from "@webview/lib/types"
+import { removeRecordKey, renameRecordKey } from "@webview/lib/fieldUtils"
+import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
 
 export function KeyValueField({
   label,

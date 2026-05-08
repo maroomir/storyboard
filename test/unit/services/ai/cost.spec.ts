@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   aiGenerateResponseWithUsage,
   computeCostUsd
-} from "../../../../src/services/ai/cost"
+} from "@/services/ai/cost"
 
 describe("computeCostUsd", () => {
   it("returns 0 when model is missing from the catalog", () => {

@@ -1,7 +1,7 @@
 import type React from "react"
 
-import type { StoryboardCard } from "../../../lib/types"
-import { sbInputClass } from "../../ui/formClasses"
+import type { StoryboardCard } from "@webview/lib/types"
+import { sbInputClass } from "@webview/components/ui/formClasses"
 
 export function CharacterFields({
   card,

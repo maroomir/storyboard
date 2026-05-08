@@ -5,7 +5,7 @@ import {
   createInlineCompletionCacheKey,
   pruneInlineCompletionCache,
   trimInlineCompletionPrefix
-} from "../../../src/providers/InlineCompletionProvider"
+} from "@/providers/InlineCompletionProvider"
 
 describe("InlineCompletionProvider helpers", () => {
   it("trims prefix to the most recent 1200 characters", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { buildCharacterHoverMarkdown } from "../../../src/providers/CharacterHoverProvider"
-import type { CharacterCard } from "../../../src/shared/card"
+import { buildCharacterHoverMarkdown } from "@/providers/CharacterHoverProvider"
+import type { CharacterCard } from "@/shared/card"
 
 describe("CharacterHoverProvider helpers", () => {
   it("renders compact character summary markdown", () => {

@@ -8,6 +8,11 @@ const repoRoot = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   root: "webview-ui",
+  resolve: {
+    alias: {
+      "@webview": path.join(repoRoot, "webview-ui", "src")
+    }
+  },
   plugins: [react()],
   css: {
     postcss: path.join(repoRoot, "webview-ui", "postcss.config.cjs")

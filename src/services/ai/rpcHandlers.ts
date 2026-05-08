@@ -1,7 +1,7 @@
-import { resolveStoryboardWorkspaceRoot } from "../../core/workspace"
-import { emptyUsageSummary } from "../../files/usageLedger"
-import { type StoryboardRpcHandlers } from "../../messaging/bridge"
-import { type StoryboardResponsePayload } from "../../shared/messaging"
+import { resolveStoryboardWorkspaceRoot } from "@/core/workspace"
+import { emptyUsageSummary } from "@/files/usageLedger"
+import { type StoryboardRpcHandlers } from "@/messaging/bridge"
+import { type StoryboardResponsePayload } from "@/shared/messaging"
 import { AiProviderRegistry } from "./providerRegistry"
 import type { UsageRecorder } from "./UsageRecorder"
 

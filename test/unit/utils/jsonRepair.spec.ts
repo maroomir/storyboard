@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { extractCompleteObjectsFromJsonArray, findFirstJsonArray } from "../../../src/utils/jsonRepair"
+import { extractCompleteObjectsFromJsonArray, findFirstJsonArray } from "@/utils/jsonRepair"
 
 describe("jsonRepair", () => {
   it("finds the first balanced JSON array while respecting strings", () => {

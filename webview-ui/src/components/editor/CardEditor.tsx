@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 
-import { createRequestId, parseCardEditorInitialData } from "../../lib/messaging"
-import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "../../lib/types"
+import { createRequestId, parseCardEditorInitialData } from "@webview/lib/messaging"
+import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "@webview/lib/types"
 import { StoryboardCard as HeroCard } from "../card/StoryboardCard"
 import { Button } from "../ui/Button"
 import { SectionHeader } from "../ui/SectionHeader"

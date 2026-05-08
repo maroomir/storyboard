@@ -2,8 +2,8 @@ import { render, waitFor } from "@testing-library/react"
 import React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-import { CardsSidebar } from "../../../webview-ui/src/components/sidebar/CardsSidebar"
-import type { SidebarCardsInitialData } from "../../../webview-ui/src/lib/types"
+import { CardsSidebar } from "@webview/components/sidebar/CardsSidebar"
+import type { SidebarCardsInitialData } from "@webview/lib/types"
 
 describe("CardsSidebar usage.changed", () => {
   it("merges flat usage payload into row and header badges", async () => {

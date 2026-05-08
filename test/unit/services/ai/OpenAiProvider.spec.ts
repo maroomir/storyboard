@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "../../../../src/services/ai/cost"
-import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
-import { OpenAiProvider, type OpenAiClientLike } from "../../../../src/services/ai/providers/OpenAiProvider"
+import { computeCostUsd } from "@/services/ai/cost"
+import { AiProviderError } from "@/services/ai/AiProviderError"
+import { OpenAiProvider, type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
 
 describe("OpenAiProvider", () => {
   it("requires an API key", () => {

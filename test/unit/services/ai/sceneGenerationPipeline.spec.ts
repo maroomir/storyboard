@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { SceneContext } from "../../../../src/core/sceneContext"
+import type { SceneContext } from "@/core/sceneContext"
 import {
   dedupeSituations,
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
-} from "../../../../src/services/ai/pipelines/sceneGenerationPipeline"
-import type { SceneFile } from "../../../../src/shared/scene"
-import type { BackgroundCard, CharacterCard } from "../../../../src/shared/card"
+} from "@/services/ai/pipelines/sceneGenerationPipeline"
+import type { SceneFile } from "@/shared/scene"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 const eliaCard: CharacterCard = {
   type: "character",

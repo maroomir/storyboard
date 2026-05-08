@@ -9,8 +9,8 @@ import {
   parseSidebarCardsInitialData,
   parseUsageChangedPayload,
   sumUsageMap
-} from "../../lib/messaging"
-import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
+} from "@webview/lib/messaging"
+import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "@webview/lib/types"
 
 export function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])

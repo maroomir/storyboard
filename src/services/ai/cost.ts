@@ -1,4 +1,4 @@
-import { type ModelPricePerMillion, storyboardModelPricing } from "../../shared/pricing"
+import { type ModelPricePerMillion, storyboardModelPricing } from "@/shared/pricing"
 
 import type { AiGenerateResponse, AiProviderId, AiUsage } from "./types"
 

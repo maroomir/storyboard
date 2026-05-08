@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, serializeDraft } from "../../../src/files/draft"
-import { tryParseDraftScenePartsForCodeLens } from "../../../src/providers/draftCodeLensLogic"
+import { createDraft, serializeDraft } from "@/files/draft"
+import { tryParseDraftScenePartsForCodeLens } from "@/providers/draftCodeLensLogic"
 
 describe("tryParseDraftScenePartsForCodeLens", () => {
   it("returns scene parts for a valid draft frontmatter", () => {

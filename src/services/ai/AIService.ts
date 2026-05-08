@@ -1,6 +1,6 @@
-import type { Background } from "../../domain/Background"
-import type { Character } from "../../domain/Character"
-import type { ProjectFormat } from "../../shared/project"
+import type { Background } from "@/domain/Background"
+import type { Character } from "@/domain/Character"
+import type { ProjectFormat } from "@/shared/project"
 import { AiProviderRegistry } from "./providerRegistry"
 import type {
   AiGenerateResponse,
@@ -17,7 +17,7 @@ import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
-import { parseBulletList, parseJsonArray } from "../../utils/aiResponseParser"
+import { parseBulletList, parseJsonArray } from "@/utils/aiResponseParser"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]

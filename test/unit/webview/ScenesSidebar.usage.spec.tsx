@@ -2,8 +2,8 @@ import { render, waitFor } from "@testing-library/react"
 import React from "react"
 import { describe, expect, it, vi } from "vitest"
 
-import { ScenesSidebar } from "../../../webview-ui/src/components/sidebar/ScenesSidebar"
-import type { SidebarScenesInitialData } from "../../../webview-ui/src/lib/types"
+import { ScenesSidebar } from "@webview/components/sidebar/ScenesSidebar"
+import type { SidebarScenesInitialData } from "@webview/lib/types"
 
 describe("ScenesSidebar usage.changed", () => {
   it("merges flat usage payload into scene and header badges", async () => {

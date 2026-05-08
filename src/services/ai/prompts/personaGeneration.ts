@@ -1,4 +1,4 @@
-import type { Character } from "../../../domain/Character"
+import type { Character } from "@/domain/Character"
 
 export const PersonaGenerationPrompt = {
   config: {

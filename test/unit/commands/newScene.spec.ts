@@ -4,7 +4,7 @@ import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
   validateSceneSlugInput
-} from "../../../src/commands/newSceneHelpers"
+} from "@/commands/newSceneHelpers"
 
 describe("newScene helpers", () => {
   it("computes next order as 1 when there are no valid scene files", () => {

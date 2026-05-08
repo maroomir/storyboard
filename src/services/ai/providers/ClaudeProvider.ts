@@ -163,7 +163,7 @@ function createDefaultClaudeClient(apiKey: string): ClaudeClientLike {
         client.messages.create({
           ...request,
           messages: [...request.messages] as MessageParam[]
-        })
+        }) as Promise<ClaudeMessageResponse>
     }
   }
 }

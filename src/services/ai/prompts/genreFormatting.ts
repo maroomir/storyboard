@@ -1,4 +1,4 @@
-import type { ProjectFormat } from "../../../shared/project"
+import type { ProjectFormat } from "@/shared/project"
 
 const formatGuides: Readonly<Record<ProjectFormat, string>> = {
   novel: "소설 형식으로 자연스럽게 서술하세요.",

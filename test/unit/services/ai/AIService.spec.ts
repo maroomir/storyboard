@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { StoryboardAIService } from "../../../../src/services/ai/AIService"
-import { createAiProviderRegistry } from "../../../../src/services/ai/providerRegistry"
-import { type OpenAiClientLike } from "../../../../src/services/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "../../../../src/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "../../../../src/services/settings/ConfigBridge"
+import { StoryboardAIService } from "@/services/ai/AIService"
+import { createAiProviderRegistry } from "@/services/ai/providerRegistry"
+import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 
 describe("StoryboardAIService", () => {
   it("extracts situations from JSON-shaped model output", async () => {

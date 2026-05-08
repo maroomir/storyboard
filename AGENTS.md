@@ -35,6 +35,13 @@ When source files are not present yet, do not assume implementation details. Sca
 - Do not introduce secrets, API keys, or user-private values into source control.
 - If you reference Cline, adapt the idea to `storyboard` rather than importing unrelated complexity.
 
+## Import aliases
+
+- **`@/`** → repository [`src/`](src/) (extension host code and anything compiled into the extension bundle).
+- **`@webview/`** → [`webview-ui/src/`](webview-ui/src/) (webview UI only). Do not use `@/` from webview code; keep the extension/webview boundary obvious.
+- Prefer these aliases over long `../../` chains; short same-folder or single-level sibling imports (`./`, `../`) are fine when they stay readable.
+- Aliases are wired in [`tsconfig.json`](tsconfig.json), [`webview-ui/tsconfig.json`](webview-ui/tsconfig.json), [`esbuild.config.mjs`](esbuild.config.mjs), [`vite.config.mjs`](vite.config.mjs), and [`vitest.config.mts`](vitest.config.mts).
+
 ## Domain Boundaries
 
 Keep responsibilities separated by runtime and dependency direction.

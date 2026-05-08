@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { MockAiProvider } from "../../../../src/services/ai/providers/MockAiProvider"
+import { MockAiProvider } from "@/services/ai/providers/MockAiProvider"
 
 describe("MockAiProvider", () => {
   it("always reports a successful connection", async () => {

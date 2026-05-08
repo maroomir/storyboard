@@ -5,7 +5,7 @@ import {
   createStoryboardSuccessResponse,
   parseStoryboardRequestMessage,
   storyboardMessageProtocolVersion
-} from "../../../src/shared/messaging"
+} from "@/shared/messaging"
 
 describe("storyboard messaging protocol", () => {
   it("parses a supported cards.list request", () => {

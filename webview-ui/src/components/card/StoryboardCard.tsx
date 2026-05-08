@@ -2,7 +2,7 @@ import clsx from "clsx"
 import { motion } from "framer-motion"
 import type React from "react"
 
-import type { StoryboardCard as StoryboardCardModel } from "../../lib/types"
+import type { StoryboardCard as StoryboardCardModel } from "@webview/lib/types"
 import { CardImagePane } from "./CardImagePane"
 import { CardTagRow } from "./CardTagRow"
 

@@ -1,7 +1,7 @@
 import clsx from "clsx"
 import type React from "react"
 
-import { formatCostBadgeLabel, formatCostBadgeTooltip, isZeroCostDisplay } from "../../lib/costFormat"
+import { formatCostBadgeLabel, formatCostBadgeTooltip, isZeroCostDisplay } from "@webview/lib/costFormat"
 
 export type CostBadgeProps = {
   readonly usd: number

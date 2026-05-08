@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { recordUsageSafely } from "../../../../src/services/ai/recordUsageSafely"
-import type { UsageRecorder } from "../../../../src/services/ai/UsageRecorder"
-import type { UsageRecord } from "../../../../src/services/ai/types"
+import { recordUsageSafely } from "@/services/ai/recordUsageSafely"
+import type { UsageRecorder } from "@/services/ai/UsageRecorder"
+import type { UsageRecord } from "@/services/ai/types"
 
 describe("recordUsageSafely", () => {
   it("logs when ledger record fails", async () => {

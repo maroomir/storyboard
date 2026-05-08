@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import type { CharacterCard } from "../../../../src/shared/card"
-import type { CardFileSystem } from "../../../../src/files/card"
-import { parseCard, serializeCard } from "../../../../src/files/card"
+import type { CharacterCard } from "@/shared/card"
+import type { CardFileSystem } from "@/files/card"
+import { parseCard, serializeCard } from "@/files/card"
 import {
   applyTraitsFromExtractedBullets,
   extractQuotedUtterancesForCharacter
-} from "../../../../src/services/ai/traitsUpdater"
+} from "@/services/ai/traitsUpdater"
 
 describe("extractQuotedUtterancesForCharacter", () => {
   it("collects double-quoted and corner-bracket speech for a speaker line", () => {

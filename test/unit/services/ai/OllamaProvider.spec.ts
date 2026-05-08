@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
-import { OllamaProvider, type OllamaClientLike } from "../../../../src/services/ai/providers/OllamaProvider"
+import { AiProviderError } from "@/services/ai/AiProviderError"
+import { OllamaProvider, type OllamaClientLike } from "@/services/ai/providers/OllamaProvider"
 
 describe("OllamaProvider", () => {
   it("requires a base URL", () => {

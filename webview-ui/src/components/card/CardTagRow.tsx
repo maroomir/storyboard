@@ -2,7 +2,7 @@ import clsx from "clsx"
 import { Map, User } from "lucide-react"
 import type React from "react"
 
-import type { CardType } from "../../lib/types"
+import type { CardType } from "@webview/lib/types"
 import { Pill } from "../ui/Pill"
 
 export type CardTagRowProps = {

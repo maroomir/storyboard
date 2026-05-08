@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "../../../../src/services/ai/cost"
-import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
-import { ClaudeProvider, type ClaudeClientLike } from "../../../../src/services/ai/providers/ClaudeProvider"
+import { computeCostUsd } from "@/services/ai/cost"
+import { AiProviderError } from "@/services/ai/AiProviderError"
+import { ClaudeProvider, type ClaudeClientLike } from "@/services/ai/providers/ClaudeProvider"
 
 describe("ClaudeProvider", () => {
   it("requires an API key", () => {

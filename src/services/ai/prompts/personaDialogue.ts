@@ -1,4 +1,4 @@
-import type { Background } from "../../../domain/Background"
+import type { Background } from "@/domain/Background"
 
 export const PersonaDialoguePrompt = {
   config: {

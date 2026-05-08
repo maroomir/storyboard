@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { cardSchema, isCardType } from "../../../src/shared/card"
+import { cardSchema, isCardType } from "@/shared/card"
 
 describe("card schema", () => {
   it("parses a minimal character card", () => {

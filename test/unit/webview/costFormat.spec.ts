@@ -4,7 +4,7 @@ import {
   formatCostBadgeLabel,
   formatCostBadgeTooltip,
   isZeroCostDisplay
-} from "../../../webview-ui/src/lib/costFormat"
+} from "@webview/lib/costFormat"
 
 describe("formatCostBadgeLabel", () => {
   it("uses placeholder for non-positive and non-finite", () => {

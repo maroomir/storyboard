@@ -4,7 +4,7 @@ import {
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName
-} from "../../../src/core/pathConventions"
+} from "@/core/pathConventions"
 import { Uri } from "../../stubs/vscode"
 
 describe("pathConventions", () => {

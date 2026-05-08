@@ -29,6 +29,12 @@ alwaysApply: true
 - Prefer **small, focused modules** over large catch-alls.
 - **Never** commit secrets, API keys, tokens, or user-private paths.
 
+## Import aliases
+
+- **`@/`** → repo `src/` (extension bundle).
+- **`@webview/`** → `webview-ui/src/` (webview only). Do not use `@/` inside webview code.
+- Prefer aliases over deep `../../` imports; short `./` / single `../` sibling imports are OK.
+
 ## Domain boundaries
 
 | Layer            | Owns |

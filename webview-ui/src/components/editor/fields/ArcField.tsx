@@ -1,8 +1,8 @@
 import type React from "react"
 
-import type { CharacterArc } from "../../../lib/types"
-import { removeArrayItem, replaceArrayItem } from "../../../lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "../../ui/formClasses"
+import type { CharacterArc } from "@webview/lib/types"
+import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
+import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
 
 export function ArcField({
   arc,

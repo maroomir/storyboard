@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, DraftParseError, parseDraft, serializeDraft } from "../../../src/files/draft"
+import { createDraft, DraftParseError, parseDraft, serializeDraft } from "@/files/draft"
 
 describe("draft file codec", () => {
   it("serializes and parses a draft with stable frontmatter", () => {

@@ -6,8 +6,8 @@ import {
   parseSidebarScenesInitialData,
   parseUsageChangedPayload,
   sumUsageMap
-} from "../../lib/messaging"
-import type { SceneListItem, SidebarScenesInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "../../lib/types"
+} from "@webview/lib/messaging"
+import type { SceneListItem, SidebarScenesInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "@webview/lib/types"
 import { Button } from "../ui/Button"
 import { CostBadge } from "../ui/CostBadge"
 

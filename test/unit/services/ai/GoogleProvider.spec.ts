@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "../../../../src/services/ai/cost"
-import { AiProviderError } from "../../../../src/services/ai/AiProviderError"
-import { GoogleProvider, type GoogleClientLike } from "../../../../src/services/ai/providers/GoogleProvider"
+import { computeCostUsd } from "@/services/ai/cost"
+import { AiProviderError } from "@/services/ai/AiProviderError"
+import { GoogleProvider, type GoogleClientLike } from "@/services/ai/providers/GoogleProvider"
 
 describe("GoogleProvider", () => {
   it("requires an API key", () => {

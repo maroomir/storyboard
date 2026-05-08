@@ -1,7 +1,7 @@
-import type { CharacterCard } from "../../shared/card"
-import { readCardFile, writeCardFile, type CardFileSystem } from "../../files/card"
-import { parseBulletList } from "../../utils/aiResponseParser"
-import { processAllCharacterTraits } from "../../utils/traitsProcessor"
+import type { CharacterCard } from "@/shared/card"
+import { readCardFile, writeCardFile, type CardFileSystem } from "@/files/card"
+import { parseBulletList } from "@/utils/aiResponseParser"
+import { processAllCharacterTraits } from "@/utils/traitsProcessor"
 import type { StoryboardAIService } from "./AIService"
 import type { UsageAttribution } from "./types"
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { buildSceneContext, type SceneContextWorkspaceFileSystem } from "../../../src/core/sceneContext"
-import type { SceneFile } from "../../../src/shared/scene"
-import { serializeCard } from "../../../src/files/card"
-import type { BackgroundCard, CharacterCard } from "../../../src/shared/card"
+import { buildSceneContext, type SceneContextWorkspaceFileSystem } from "@/core/sceneContext"
+import type { SceneFile } from "@/shared/scene"
+import { serializeCard } from "@/files/card"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 const eliaCard: CharacterCard = {
   type: "character",
@@ -206,7 +206,7 @@ describe("readPreviousSceneContext", () => {
 
   it("returns undefined for the first scene (order 1)", async () => {
     const fileSystem = new MockFileSystem()
-    const context = await import("../../../src/core/sceneContext").then((m) =>
+    const context = await import("@/core/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 1, fileSystem)
     )
     expect(context).toBeUndefined()
@@ -222,7 +222,7 @@ describe("readPreviousSceneContext", () => {
     const longText = "A".repeat(2000) + "이전 씬의 마지막 문장입니다."
     fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longText)
 
-    const context = await import("../../../src/core/sceneContext").then((m) =>
+    const context = await import("@/core/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 2, fileSystem)
     )
 
@@ -237,7 +237,7 @@ describe("readPreviousSceneContext", () => {
       ["02-chapter-1.md", { type: "file" }]
     ])
 
-    const context = await import("../../../src/core/sceneContext").then((m) =>
+    const context = await import("@/core/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 3, fileSystem)
     )
 

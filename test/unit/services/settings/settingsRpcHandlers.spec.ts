@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest"
 
-import { createWebviewBridge, type StoryboardWebviewLike } from "../../../../src/messaging/bridge"
+import { createWebviewBridge, type StoryboardWebviewLike } from "@/messaging/bridge"
 import {
   parseStoryboardRequestMessage,
   settingsUpdateProviderModelRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion
-} from "../../../../src/shared/messaging"
-import { storyboardModelCatalog } from "../../../../src/shared/models"
-import { createAiProviderRegistry, type AiProviderRegistry } from "../../../../src/services/ai/providerRegistry"
-import { type ClaudeClientLike } from "../../../../src/services/ai/providers/ClaudeProvider"
-import { type GoogleClientLike } from "../../../../src/services/ai/providers/GoogleProvider"
-import { type OllamaClientLike } from "../../../../src/services/ai/providers/OllamaProvider"
-import { type OpenAiClientLike } from "../../../../src/services/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "../../../../src/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "../../../../src/services/settings/ConfigBridge"
-import { createSettingsRpcHandlers } from "../../../../src/services/settings/settingsRpcHandlers"
-import { aiTaskNames } from "../../../../src/services/ai/types"
+} from "@/shared/messaging"
+import { storyboardModelCatalog } from "@/shared/models"
+import { createAiProviderRegistry, type AiProviderRegistry } from "@/services/ai/providerRegistry"
+import { type ClaudeClientLike } from "@/services/ai/providers/ClaudeProvider"
+import { type GoogleClientLike } from "@/services/ai/providers/GoogleProvider"
+import { type OllamaClientLike } from "@/services/ai/providers/OllamaProvider"
+import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
+import { createSettingsRpcHandlers } from "@/services/settings/settingsRpcHandlers"
+import { aiTaskNames } from "@/services/ai/types"
 
 class MutableFakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: Map<string, unknown>) {}

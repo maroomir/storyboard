@@ -1,7 +1,7 @@
-import type { SceneContext } from "../../../core/sceneContext"
-import { createEmptyBackground } from "../../../domain/Background"
-import type { CharacterCard } from "../../../shared/card"
-import type { ProjectFormat } from "../../../shared/project"
+import type { SceneContext } from "@/core/sceneContext"
+import { createEmptyBackground } from "@/domain/Background"
+import type { CharacterCard } from "@/shared/card"
+import type { ProjectFormat } from "@/shared/project"
 import type { GenerateTextOptions, SituationWithCharacters, StoryboardAIService } from "../AIService"
 import type { AiProviderId, EntityRef } from "../types"
 

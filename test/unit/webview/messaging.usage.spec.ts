@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   parseUsageChangedPayload,
   sumUsageMap
-} from "../../../webview-ui/src/lib/messaging"
+} from "@webview/lib/messaging"
 
 describe("parseUsageChangedPayload", () => {
   it("reads flat usage.read-shaped payloads", () => {
