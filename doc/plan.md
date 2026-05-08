@@ -13,7 +13,7 @@
 - 새 저장소 (`maroomir/storyboard`)에서 **VSCode Extension으로 처음부터 재구성**.
 - 현 코드 중 **`services/ai/`, 일부 `models/`, 일부 `utils/`만 그대로 이식**, 나머지는 폐기.
 - 단일 워크스페이스 = 단일 프로젝트 모델. 자체 storage·revision·toaster 모두 폐기, VSCode 네이티브로 대체.
-- **MVP = Phase 0–5 (~5.5주)**. **첫 공개 번들(CHANGELOG·패키지 버전 0.1.0) = Phase 7**, **Marketplace QA·발행 = Phase 8** (+~2주 누적 ~8주), 1인 풀타임 기준.
+- **MVP = Phase 0–5 (~5.5주)**. **첫 공개 번들(영문/국문 CHANGELOG·패키지 버전 0.1.0) = Phase 7**, **Marketplace QA·발행 = Phase 8** (+~2주 누적 ~8주), 1인 풀타임 기준.
 
 ## 1. 신규 저장소 디렉토리 구조
 
@@ -107,6 +107,7 @@
 ├── esbuild.config.mjs
 ├── README.md
 ├── CHANGELOG.md
+├── CHANGELOG.ko.md
 └── LICENSE                            # Apache-2.0
 ```
 
@@ -344,7 +345,7 @@
 - [x] `vsce package`(또는 `npx @vscode/vsce package`) 성공, 산출 `.vsix` < 50MB
 - [ ] [`doc/testing/extension-qa.md`](testing/extension-qa.md)의 End-to-end 플로우 최소 1회 통과
 - [ ] [`README.md`](../README.md)에 0.0.1·dogfooding·Marketplace 미발행 등 현재 제한이 반영됨
-- [ ] [`CHANGELOG.md`](../CHANGELOG.md) `[Unreleased]`에 Phase 4–5 요약이 반영됨(정식 버전 섹션 분리는 실제 릴리스/태그 시점에 선택)
+- [ ] [`CHANGELOG.md`](../CHANGELOG.md) / [`CHANGELOG.ko.md`](../CHANGELOG.ko.md) `[Unreleased]`에 Phase 4–5 요약이 반영됨(정식 버전 섹션 분리는 실제 릴리스/태그 시점에 선택)
 - [ ] 본인 사용 1주일 dogfooding 통과(이슈·결정 사항 기록)
 
 **이번 0.0.1 게이트에서 제외(후속)**
@@ -395,7 +396,7 @@
   - API 키 등록 안내
 - [ ] 다국어 i18n 기초: **`ko` 기본 UI 문자열**, **`en`은 설정 또는 locale 스위치로 선택(옵션)** — 소설 본문은 기존처럼 한국어 중심, 확장 UI는 한국어 우선
 - [ ] 아이콘 (128×128 PNG), 배너 색상, README 영상/GIF
-- [ ] `package.json` 버전 **0.1.0** 정렬 + **CHANGELOG 0.1.0** 섹션 (Unreleased 정리)
+- [ ] `package.json` 버전 **0.1.0** 정렬 + **CHANGELOG.md / CHANGELOG.ko.md 0.1.0** 섹션 (Unreleased 정리)
 - [ ] **발행 준비(공개 전 필수, Phase 7에서 반영)**:
   - 루트 **`LICENSE`(Apache-2.0)** 와 `package.json`·README 등에 적힌 라이선스 표기가 **서로 모순 없이** 맞는지 확인·수정 (Phase 0에 파일이 있어도, 배포 직전 기준으로 다시 맞춘다)
   - README(또는 Marketplace 상세 초안에 쓸 본문)에 **텔레메트리·사용 데이터 수집 안 함** 등 privacy-first 문구 명시
@@ -409,7 +410,7 @@
 
 ### Phase 8 — QA + Marketplace 첫 공개 (3~5일)
 
-**Phase 8은 “0.1.0을 낸 뒤”가 아니라, `vsce publish` **직전** 마지막 게이트다.** Phase 7에서 고정한 0.1.0 빌드·CHANGELOG·문서·메타를 QA로 검증하고, 문제 없으면 같은 버전(**0.1.0**)을 Marketplace에 올린다.
+**Phase 8은 “0.1.0을 낸 뒤”가 아니라, `vsce publish` **직전** 마지막 게이트다.** Phase 7에서 고정한 0.1.0 빌드·영문/국문 CHANGELOG·문서·메타를 QA로 검증하고, 문제 없으면 같은 버전(**0.1.0**)을 Marketplace에 올린다.
 
 **체크리스트**
 - [ ] **발행 직전 점검**: Phase 7 반영분 기준으로 LICENSE·privacy 문구·`package.json` Marketplace 필드·아이콘·README/스크린샷이 **일치**하고 Marketplace·정책 요건을 만족하는지 확인
@@ -433,7 +434,7 @@
 | 4. 씬 → 드래프트 파이프라인 | 1.5주 | 4.5주 | scene → draft 생성 |
 | 5. 사이드바 + Graph | 1주 | **5.5주 (MVP)** | 0.0.1 로컬 VSIX + dogfooding 게이트 |
 | 6. 에디터 통합 | 1주 | 6.5주 | inline 완성·맞춤법·hover |
-| 7. Export + 폴리시 + 0.1.0 | 1주 | 7.5주 | export·온보딩·i18n·**발행 준비**(LICENSE·privacy·메타)·CHANGELOG **0.1.0** |
+| 7. Export + 폴리시 + 0.1.0 | 1주 | 7.5주 | export·온보딩·i18n·**발행 준비**(LICENSE·privacy·메타)·영문/국문 CHANGELOG **0.1.0** |
 | 8. QA + Marketplace 첫 공개 | 3~5일 | **~8주 (0.1.0 발행)** | **발행 직전** QA → `vsce publish` |
 
 > 1인 풀타임 기준. 파트타임이면 1.7~2배.
@@ -492,7 +493,7 @@
 
 1. [`doc/testing/extension-qa.md`](testing/extension-qa.md)와 [`README.md`](../README.md)를 기준으로 **0.0.1 dogfooding 게이트**를 수행한다(`npm run build` → `vsce package` → VSIX 용량 기록).
 2. Phase 7(export·온보딩·i18n·0.1.0 메타) 이슈를 쪼개 착수한다.
-3. Marketplace 첫 공개는 Phase 8에서 **0.1.0** 기준으로 진행; 이후 버전 정책은 CHANGELOG·태그로 관리한다.
+3. Marketplace 첫 공개는 Phase 8에서 **0.1.0** 기준으로 진행; 이후 버전 정책은 영문/국문 CHANGELOG·태그로 관리한다.
 
 ## 10. 참고
 

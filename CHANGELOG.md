@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Documentation
+
+- Added Korean changelog links and release-note sync guidance to `README.md` and `doc/plan.md`.
+
 ## [0.1.1] - 2026-05-09
 
 ### Added

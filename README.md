@@ -2,9 +2,9 @@
 
 Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위한 AI 기반 픽션 IDE 확장입니다.
 
-## 버전 0.1.0
+## 버전 0.1.1
 
-- **이 저장소의 공개 버전은 `0.1.0`입니다.** (`package.json`의 `version`과 동일)
+- **이 저장소의 공개 버전은 `0.1.1`입니다.** (`package.json`의 `version`과 동일)
 - **첫 GitHub Release용 VSIX 배포 버전**입니다.
 - **Visual Studio Marketplace 발행은 아직 하지 않습니다.** GitHub Release의 VSIX 또는 로컬 개발(F5)로 검증하는 것을 권장합니다.
 
@@ -33,6 +33,8 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 - [`doc/guide/release.md`](doc/guide/release.md): GitHub Release용 VSIX 태그·배포 절차
 - [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): 수동 QA(처음 켜 보는 사람용 체크리스트)
 - [`doc/decisions/00-repo-baseline.md`](doc/decisions/00-repo-baseline.md): 초기 저장소 베이스라인 의사결정
+- [`CHANGELOG.md`](CHANGELOG.md): 영문 변경 내역
+- [`CHANGELOG.ko.md`](CHANGELOG.ko.md): 한국어 변경 내역
 
 ## 제품 모델 (요약)
 
@@ -114,13 +116,13 @@ MVP/dogfooding 게이트에서만 필요하면, 빌드 후 다음을 실행합�
 npm run package:vsix
 ```
 
-생성된 `storyboard-0.1.0.vsix`를 VS Code의 **Extensions: Install from VSIX** 로 설치해 검증할 수 있습니다.
+생성된 `storyboard-0.1.1.vsix`를 VS Code의 **Extensions: Install from VSIX** 로 설치해 검증할 수 있습니다.
 
 ### GitHub Release용 VSIX
 
 `v*.*.*` 태그를 push하면 GitHub Actions가 lint, test, VSIX 패키징을 실행한 뒤 GitHub Release에 VSIX와 `SHA256SUMS`를 첨부합니다.
 
-릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.0` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.0`으로 올린 뒤 `v0.1.0` 태그를 push합니다.
+릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.1` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.1`으로 올리고 `CHANGELOG.md`와 `CHANGELOG.ko.md`를 함께 정리한 뒤 `v0.1.1` 태그를 push합니다.
 
 자세한 절차는 [`doc/guide/release.md`](doc/guide/release.md)를 참고하세요.
 

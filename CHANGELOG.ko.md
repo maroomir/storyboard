@@ -9,6 +9,10 @@ Storyboard의 주요 변경 사항을 한국어로 함께 기록합니다.
 
 ## [Unreleased]
 
+### Documentation
+
+- `README.md`와 `doc/plan.md`에 한국어 변경 내역 링크와 릴리스 노트 동기화 안내를 추가했습니다.
+
 ## [0.1.1] - 2026-05-09
 
 ### Added
