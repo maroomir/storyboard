@@ -1,0 +1,26 @@
+---
+description: >-
+  Version bump, CHANGELOG, verification, VSIX packaging, and git tag for
+  storyboard releases.
+alwaysApply: false
+---
+
+# Release workflow
+
+Use when the user asks to prepare a release, bump the extension version, update the changelog for a cut, package a VSIX before publish, or create a version tag.
+
+## Source of truth
+
+1. Follow `.cursor/skills/prepare-release/SKILL.md` step by step.
+2. Align git/tag and GitHub Release expectations with `doc/guide/release.md`.
+
+## Files to keep in sync
+
+- Bump **`package.json`** and **`package-lock.json`** (root `version` and `packages[""].version`) to the same target version.
+- Add or finalize **`CHANGELOG.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting).
+
+## After verification
+
+Run the scripts from `package.json` listed in the skill (typically `compile`, `lint`, `test`, `build`, `package` / `package:vsix` when packaging).
+
+Create **`git tag v<version>`** and push only after the maintainer confirms; tag name must match `package.json` with a leading `v`.

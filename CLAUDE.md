@@ -6,3 +6,4 @@
 @.clinerules/testing.md
 @.clinerules/clean-code.md
 @.clinerules/comments.md
+@.clinerules/release.md

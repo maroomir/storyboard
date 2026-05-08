@@ -193,5 +193,6 @@ Important rule files:
 - `.clinerules/testing.md`
 - `.clinerules/clean-code.md`
 - `.clinerules/comments.md`
+- `.clinerules/release.md`
 
 When writing or reviewing code, always apply the clean code standards summarized in `.clinerules/clean-code.md` and the comment markers in `.clinerules/comments.md` when adding or editing comments.

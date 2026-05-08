@@ -33,6 +33,10 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 - Do not commit generated build output unless the packaging workflow requires it.
 - Do not store API keys, tokens, or personal workspace paths in committed code.
 
+## Release
+
+For version bumps, changelog cuts, VSIX packaging, and tags, see **`.clinerules/release.md`** (and the `prepare-release` Cursor skill).
+
 ## Reference Project Usage
 
 When using `/Users/maroomir/Git/clien/cline` as reference:

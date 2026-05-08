@@ -17,7 +17,7 @@ Workflow is minimal until packaging and marketplace steps are fully wired. Follo
 node -p "require('./package.json').version"
 ```
 
-Agree the target version with the maintainer before changing `package.json`.
+Agree the target version with the maintainer before changing `package.json` and `package-lock.json` (root `version` and `packages[""].version`).
 
 ## 2. Update release notes
 
