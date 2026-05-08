@@ -12,6 +12,7 @@ after the first public release.
 
 ### Documentation
 
+- Removed Visual Studio Marketplace publishing guidance from `README.md` and `doc/`, aligning distribution docs with GitHub Releases-only VSIX delivery.
 - Added Korean changelog links and release-note sync guidance to `README.md` and `doc/plan.md`.
 
 ## [0.1.1] - 2026-05-09

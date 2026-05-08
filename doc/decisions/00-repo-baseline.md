@@ -54,9 +54,9 @@ Phase 0는 기존 계획보다 슬림하게 재정의하고, 저장소 기반 �
    - Activity Bar view container
    - 빈 webview placeholder
 
-### 4. Marketplace publisher 등록은 Phase 1 패키징 전까지 완료하면 된다
+### 4. 배포 산출물은 GitHub Releases에 둔다
 
-VSCode Marketplace publisher 등록은 사용자 외부 작업이다. PR 1에는 포함하지 않고, 실제 패키징 및 배포 검증이 필요한 시점까지 완료하는 것으로 둔다.
+확장 산출물은 저장소의 GitHub Releases에 VSIX로 첨부한다. PR 1에는 배포 자동화를 포함하지 않고, 실제 패키징 및 배포 검증이 필요한 시점까지 로컬 VSIX 생성 절차를 정리하는 것으로 둔다.
 
 ## PR 1 완료 기준
 

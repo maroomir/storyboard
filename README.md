@@ -5,14 +5,14 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 ## 버전 0.1.1
 
 - **이 저장소의 공개 버전은 `0.1.1`입니다.** (`package.json`의 `version`과 동일)
-- **첫 GitHub Release용 VSIX 배포 버전**입니다.
-- **Visual Studio Marketplace 발행은 아직 하지 않습니다.** GitHub Release의 VSIX 또는 로컬 개발(F5)로 검증하는 것을 권장합니다.
+- **GitHub Releases용 VSIX 배포 버전**입니다.
+- 배포 산출물은 이 저장소의 GitHub Releases에 첨부된 VSIX로 제공합니다. 로컬 개발은 F5로 검증합니다.
 
 ## 로드맵 메모 (문서 기준)
 
 - **`.picktion` import 비목표**: Storyboard는 폴더·`.card` 등 워크스페이스 파일만 지원한다 (`doc/concept.md`, `doc/plan.md`).
 - **확장 UI 언어**: **`ko` 기본**, **`en` 선택(옵션)** — Phase 7 i18n 기초와 함께 정리한다.
-- **첫 Marketplace 공개 버전**: **`0.1.0`** — Phase 7에서 패키지·CHANGELOG·메타를 맞추고, Phase 8에서 QA 후 발행한다.
+- **릴리스 채널**: GitHub Releases에 VSIX를 첨부해 배포한다.
 
 ## 현재 구현 상태 (Phase 6 기준)
 
@@ -108,7 +108,7 @@ draft/
 
 _F5가 안 뜨면 `npm run compile` 또는 `npm run build` 성공 여부와 Run 구성을 먼저 확인하세요. UI만 바꿨는데 반영이 안 되면 `npm run build:webview` 후 호스트 창을 리로드했는지 확인하세요._
 
-### 로컬 VSIX 패키징 (Marketplace 없이)
+### 로컬 VSIX 패키징
 
 MVP/dogfooding 게이트에서만 필요하면, 빌드 후 다음을 실행합니다.
 
@@ -128,7 +128,7 @@ npm run package:vsix
 
 ### README용 스크린샷·GIF (선택)
 
-Marketplace용 자산은 아직 확정하지 않았습니다. 소개 이미지를 넣을 때는 예를 들어 다음 세 가지를 권장합니다(파일은 추후 `doc/` 또는 `assets/`에 두고 README에서 링크).
+소개 이미지를 넣을 때는 예를 들어 다음 세 가지를 권장합니다(파일은 추후 `doc/` 또는 `assets/`에 두고 README에서 링크).
 
 1. Activity Bar에 세 개의 Storyboard 진입점(Characters / Backgrounds / Scenes)과 각 사이드바 뷰
 2. `.card` 커스텀 에디터
