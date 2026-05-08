@@ -8,6 +8,18 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-05-09
+
+### Added
+
+- AI streaming RPC (`ai.generateStream`) and chunk event (`ai.generateStream.chunk`) for incremental UI updates; providers without native streaming fall back to one-shot generation via the registry.
+- Setting `storyboard.ai.contextCondenseEnabled` to optionally trim long `previousContext` during scene draft generation.
+
+### Changed
+
+- Prompt variant selection now considers task, model, and token budget (`xs` / `generic` / `rich`) instead of provider-only routing.
+- Long-form prompts (notably persona dialogue and genre formatting) gain richer instructions when the `rich` variant is selected.
+
 ## [0.1.0] - 2026-05-09
 
 ### Changed
