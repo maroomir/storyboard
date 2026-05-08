@@ -47,22 +47,39 @@ function sceneStatusPresentation(status: SceneListItem["status"]): {
 export function ScenesSidebar({ initialData }: { readonly initialData: SidebarScenesInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
   const [sidebarState, setSidebarState] = useState(initialData)
+  const [pendingGenerateRequestMap, setPendingGenerateRequestMap] = useState<Readonly<Record<string, string>>>({})
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
+    const handleMessage = (event: MessageEvent<StoryboardEventMessage | { readonly type: "response"; readonly id: string }>): void => {
+      if (event.data.type === "response" && "id" in event.data) {
+        const responseId = event.data.id
+        setPendingGenerateRequestMap((prev) => {
+          if (!prev[responseId]) {
+            return prev
+          }
+
+          const next = { ...prev }
+          delete next[responseId]
+          return next
+        })
+        return
+      }
+
       if (event.data.type !== "event") {
         return
       }
 
-      if (event.data.method === "scenes.listChanged") {
-        setSidebarState(parseSidebarScenesInitialData(event.data.payload))
+      const eventMessage = event.data as StoryboardEventMessage
+
+      if (eventMessage.method === "scenes.listChanged") {
+        setSidebarState(parseSidebarScenesInitialData(eventMessage.payload))
         return
       }
 
-      if (event.data.method === "usage.changed") {
+      if (eventMessage.method === "usage.changed") {
         setSidebarState((prev) => ({
           ...prev,
-          usage: parseUsageChangedPayload(event.data.payload)
+          usage: parseUsageChangedPayload(eventMessage.payload)
         }))
       }
     }
@@ -78,10 +95,18 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
   }
 
   const postSceneRequest = (method: StoryboardRequestMethod, payload: Record<string, unknown>): void => {
+    const requestId = createRequestId()
+    if (method === "scenes.generateDraft") {
+      const uri = typeof payload.uri === "string" ? payload.uri : ""
+      if (uri.length > 0) {
+        setPendingGenerateRequestMap((prev) => ({ ...prev, [requestId]: uri }))
+      }
+    }
+
     vscodeApi?.postMessage({
       protocolVersion: "1.0.0",
       type: "request",
-      id: createRequestId(),
+      id: requestId,
       method,
       payload
     })
@@ -103,6 +128,8 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
       </main>
     )
   }
+
+  const pendingGenerateUris = new Set(Object.values(pendingGenerateRequestMap))
 
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
@@ -144,7 +171,7 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-7">
                       <Button type="button" onClick={() => postSceneRequest("scenes.generateDraft", { uri: scene.sceneUri })}>
-                        Generate
+                        {pendingGenerateUris.has(scene.sceneUri) ? "Generating…" : "Generate"}
                       </Button>
                       <Button
                         type="button"

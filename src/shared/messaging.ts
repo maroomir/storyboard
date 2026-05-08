@@ -154,6 +154,7 @@ export const aiGenerateRequestPayloadSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   maxTokens: z.number().int().positive().optional()
 })
+export const aiGenerateStreamRequestPayloadSchema = aiGenerateRequestPayloadSchema
 
 export const aiProviderStatusSchema = z.object({
   providerId: providerIdSchema,
@@ -184,6 +185,11 @@ export const aiGenerateResponsePayloadSchema = z.object({
   model: z.string().optional(),
   usage: aiUsageSchema.optional(),
   costUsd: z.number().optional()
+})
+export const aiGenerateStreamResponsePayloadSchema = aiGenerateResponsePayloadSchema
+export const aiGenerateStreamChunkEventPayloadSchema = z.object({
+  requestId: requestIdSchema,
+  delta: z.string()
 })
 
 const providerModelOptionSchema = z.object({
@@ -342,6 +348,7 @@ export const storyboardRequestPayloadSchemas = {
   "ai.providers.list": aiProvidersListRequestPayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
   "ai.generate": aiGenerateRequestPayloadSchema,
+  "ai.generateStream": aiGenerateStreamRequestPayloadSchema,
   "settings.read": settingsReadRequestPayloadSchema,
   "settings.updateDefaultProvider": settingsUpdateDefaultProviderRequestPayloadSchema,
   "settings.updateProviderModel": settingsUpdateProviderModelRequestPayloadSchema,
@@ -368,6 +375,7 @@ export const storyboardResponsePayloadSchemas = {
   "ai.providers.list": aiProvidersListResponsePayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
   "ai.generate": aiGenerateResponsePayloadSchema,
+  "ai.generateStream": aiGenerateStreamResponsePayloadSchema,
   "settings.read": settingsReadResponsePayloadSchema,
   "settings.updateDefaultProvider": settingsMutationOkResponsePayloadSchema,
   "settings.updateProviderModel": settingsMutationOkResponsePayloadSchema,
@@ -399,6 +407,12 @@ export type StoryboardUsageChangedEventMessage = {
   readonly type: "event"
   readonly method: "usage.changed"
   readonly payload: StoryboardResponsePayload<"usage.read">
+}
+
+export type StoryboardAiGenerateStreamChunkEventMessage = {
+  readonly type: "event"
+  readonly method: "ai.generateStream.chunk"
+  readonly payload: z.infer<typeof aiGenerateStreamChunkEventPayloadSchema>
 }
 
 type StoryboardRequestMessageMap = {

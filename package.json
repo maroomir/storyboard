@@ -157,6 +157,11 @@
           "default": false,
           "description": "Enable real-time grammar diagnostics. Disabled by default for performance."
         },
+        "storyboard.ai.contextCondenseEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable lightweight previous-context condense for long scene generation prompts."
+        },
         "storyboard.scene.prefixDigits": {
           "type": "integer",
           "default": 2,

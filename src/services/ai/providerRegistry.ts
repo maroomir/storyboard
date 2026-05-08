@@ -5,6 +5,7 @@ import { MockAiProvider } from "./providers/MockAiProvider"
 import { OllamaProvider, type OllamaClientLike } from "./providers/OllamaProvider"
 import { OpenAiProvider, type OpenAiClientLike } from "./providers/OpenAiProvider"
 import {
+  type AiStreamChunk,
   aiProviderIds,
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -41,8 +42,17 @@ export class AiProviderRegistry {
     return this.generateWithProvider(providerId, request, model)
   }
 
+  public generateStream(request: AiGenerateRequest): AsyncIterable<AiStreamChunk> {
+    const { providerId, model } = this.options.configBridge.getTaskAiConfig(request.taskName)
+    return this.generateStreamWithProvider(providerId, request, model)
+  }
+
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
     return this.options.configBridge.getTaskProvider(taskName)
+  }
+
+  public getTaskAiConfig(taskName: AiTaskName): { readonly providerId: AiProviderId; readonly model: string } {
+    return this.options.configBridge.getTaskAiConfig(taskName)
   }
 
   public async generateWithProvider(
@@ -51,6 +61,25 @@ export class AiProviderRegistry {
     modelOverride?: string
   ): Promise<AiGenerateResponse> {
     return (await this.createProvider(providerId, modelOverride)).generate(request)
+  }
+
+  public async *generateStreamWithProvider(
+    providerId: AiProviderId,
+    request: AiGenerateRequest,
+    modelOverride?: string
+  ): AsyncIterable<AiStreamChunk> {
+    const provider = await this.createProvider(providerId, modelOverride)
+
+    if (provider.generateStream) {
+      yield* provider.generateStream(request)
+      return
+    }
+
+    const response = await provider.generate(request)
+    if (response.text.length > 0) {
+      yield { type: "text-delta", delta: response.text }
+    }
+    yield { type: "done", response }
   }
 
   private async createProvider(providerId: AiProviderId, modelOverride?: string): Promise<AiProvider> {

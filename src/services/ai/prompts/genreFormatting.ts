@@ -15,7 +15,15 @@ export const GenreFormattingPrompt = {
     maxTokens: 12000
   },
   build(dialogue: string, format: ProjectFormat, variant: PromptVariantId = "generic"): PromptArtifact {
-    return variant === "xs" ? buildXs(dialogue, format) : buildGeneric(dialogue, format)
+    if (variant === "xs") {
+      return buildXs(dialogue, format)
+    }
+
+    if (variant === "rich") {
+      return buildRich(dialogue, format)
+    }
+
+    return buildGeneric(dialogue, format)
   }
 } as const
 
@@ -34,6 +42,19 @@ function buildGeneric(dialogue: string, format: ProjectFormat): PromptArtifact {
 function buildXs(dialogue: string, format: ProjectFormat): PromptArtifact {
   return {
     system: [`${format} 형식으로 재작성. 의미 유지, 형식만 변경, 한국어 출력.`].join("\n"),
+    user: dialogue
+  }
+}
+
+function buildRich(dialogue: string, format: ProjectFormat): PromptArtifact {
+  return {
+    system: [
+      `전문 작가처럼 장면을 ${format} 형식으로 재작성하라.`,
+      formatGuides[format],
+      "원문의 사건 순서, 대화 의미, 감정 흐름은 보존하라.",
+      "형식 규칙에 맞게 문장 리듬과 단락 구조를 다듬되 새 설정은 추가하지 마라.",
+      "출력은 한국어로 작성하라."
+    ].join("\n"),
     user: dialogue
   }
 }

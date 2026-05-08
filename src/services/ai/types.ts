@@ -41,6 +41,16 @@ export interface AiGenerateRequest {
   readonly maxTokens?: number
 }
 
+export type AiStreamChunk =
+  | {
+      readonly type: "text-delta"
+      readonly delta: string
+    }
+  | {
+      readonly type: "done"
+      readonly response: AiGenerateResponse
+    }
+
 export interface AiUsage {
   readonly inputTokens: number
   readonly outputTokens: number
@@ -81,6 +91,7 @@ export interface AiProvider {
   readonly displayName: string
   readonly checkConnection: () => Promise<boolean>
   readonly generate: (request: AiGenerateRequest) => Promise<AiGenerateResponse>
+  readonly generateStream?: (request: AiGenerateRequest) => AsyncIterable<AiStreamChunk>
 }
 
 export interface UsageRecord {

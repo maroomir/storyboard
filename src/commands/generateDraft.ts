@@ -33,6 +33,7 @@ import {
   type SceneGenerationPipelineStage
 } from "../services/ai/pipelines/sceneGenerationPipeline"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
+import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
@@ -150,6 +151,7 @@ async function isCacheHit(
 
 export interface RegisterGenerateDraftCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly configBridge: ConfigBridge
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
 }
@@ -157,6 +159,7 @@ export interface RegisterGenerateDraftCommandDependencies {
 export interface RunGenerateDraftForWorkspaceSceneOptions {
   readonly force: boolean
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly configBridge: ConfigBridge
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
 }
@@ -170,6 +173,7 @@ export type GenerateDraftWorkflowResult =
 export interface GenerateDraftWorkflowOptions {
   readonly force: boolean
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly configBridge: ConfigBridge
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
   readonly openDocumentOnSuccess: boolean
@@ -331,7 +335,8 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
         options.onPipelineProgress?.(stage, current, total)
       },
-      shouldCancel: options.shouldCancel
+      shouldCancel: options.shouldCancel,
+      useContextCondense: options.configBridge.isAiContextCondenseEnabled()
     })
 
     const draft = createDraft({
@@ -425,6 +430,7 @@ export async function runGenerateDraftForWorkspaceScene(
       const result = await generateDraftForWorkspaceSceneWorkflow(sceneUri, {
         force: options.force,
         aiProviderRegistry: options.aiProviderRegistry,
+        configBridge: options.configBridge,
         logger: options.logger,
         usageRecorder: options.usageRecorder,
         openDocumentOnSuccess: true,
@@ -495,6 +501,7 @@ async function runCommand(
   await runGenerateDraftForWorkspaceScene(sceneUri, {
     force,
     aiProviderRegistry: dependencies.aiProviderRegistry,
+    configBridge: dependencies.configBridge,
     logger: dependencies.logger,
     usageRecorder: dependencies.usageRecorder
   })

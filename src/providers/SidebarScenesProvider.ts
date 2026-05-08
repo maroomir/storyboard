@@ -99,7 +99,15 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
-      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
+      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry, {
+        onStreamChunk: async (requestId, delta) => {
+          await this.webviewView?.webview.postMessage({
+            type: "event",
+            method: "ai.generateStream.chunk",
+            payload: { requestId, delta }
+          })
+        }
+      }),
       ...createUsageRpcHandlers(this.dependencies.usageRecorder),
       "scenes.list": async (): Promise<StoryboardResponsePayload<"scenes.list">> => ({
         scenes: await this.loadSceneList()

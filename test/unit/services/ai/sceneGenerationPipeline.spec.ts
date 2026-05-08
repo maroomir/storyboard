@@ -187,6 +187,29 @@ describe("runSceneGenerationPipeline", () => {
     })
   })
 
+  it("condenses previousContext when context condense is enabled", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "첫 번째 상황" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    const longContext = `엘리아: 시작\n${"지문\n".repeat(800)}끝`
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      previousContext: longContext,
+      useContextCondense: true
+    })
+
+    const previous = ai.generatePersonaDialogue.mock.calls[0]?.[3]
+    expect(typeof previous).toBe("string")
+    expect((previous as string).length).toBeLessThanOrEqual(1200)
+  })
+
   it("passes provider override for extraction and persona steps", async () => {
     const ai = createRecordingAiService()
     ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "단일" }])

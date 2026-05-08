@@ -7,6 +7,7 @@ import { parseSceneFileName } from "../shared/scene"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { SceneGenerationPipelineStage } from "../services/ai/pipelines/sceneGenerationPipeline"
+import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import {
   generateDraftForWorkspaceSceneWorkflow,
   stageProgressLabel
@@ -16,6 +17,7 @@ const generateAllDraftsCommand = "storyboard.draft.generateAll"
 
 export interface RegisterGenerateAllDraftsCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
+  readonly configBridge: ConfigBridge
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
 }
@@ -105,6 +107,7 @@ export async function runGenerateAllDrafts(dependencies: RegisterGenerateAllDraf
         const result = await generateDraftForWorkspaceSceneWorkflow(sceneUri, {
           force: false,
           aiProviderRegistry: dependencies.aiProviderRegistry,
+          configBridge: dependencies.configBridge,
           logger: dependencies.logger,
           usageRecorder: dependencies.usageRecorder,
           suppressLoggerPanel: true,

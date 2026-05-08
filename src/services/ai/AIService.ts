@@ -5,6 +5,7 @@ import { AiProviderRegistry } from "./providerRegistry"
 import type {
   AiGenerateResponse,
   AiProviderId,
+  AiStreamChunk,
   UsageAttribution,
   UsageRecord,
   WiredAiTaskName
@@ -253,9 +254,41 @@ export class StoryboardAIService {
     return response
   }
 
+  public async *generateTextStream(
+    taskName: WiredAiTaskName,
+    messages: ReadonlyArray<{ readonly role: "system" | "user" | "assistant"; readonly content: string }>,
+    options: GenerateTextOptions
+  ): AsyncIterable<AiStreamChunk> {
+    const stream = options.providerId
+      ? this.registry.generateStreamWithProvider(options.providerId, {
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens
+        })
+      : this.registry.generateStream({
+          taskName,
+          messages,
+          temperature: options.temperature,
+          maxTokens: options.maxTokens
+        })
+
+    for await (const chunk of stream) {
+      if (chunk.type === "done") {
+        this.emitUsageIfNeeded(taskName, chunk.response, options.attribution)
+      }
+      yield chunk
+    }
+  }
+
   private resolvePromptVariant(taskName: WiredAiTaskName, options: GenerateTextOptions): PromptVariantId {
-    const providerId = options.providerId ?? this.registry.getTaskProvider(taskName)
-    return selectPromptVariant(providerId)
+    const resolved = this.registry.getTaskAiConfig(taskName)
+    return selectPromptVariant({
+      providerId: options.providerId ?? resolved.providerId,
+      taskName,
+      model: resolved.model,
+      maxTokens: options.maxTokens
+    })
   }
 
   private emitUsageIfNeeded(

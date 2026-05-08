@@ -7,6 +7,7 @@ export type StoryboardRequestMethod =
   | "scenes.openScene"
   | "scenes.openDraft"
   | "scenes.generateDraft"
+  | "ai.generateStream"
   | "usage.read"
 
 export type CardAttributeValue = string | number | boolean | null
@@ -107,6 +108,7 @@ export interface StoryboardEventMessage {
     | "scenes.listChanged"
     | "relations.listChanged"
     | "usage.changed"
+    | "ai.generateStream.chunk"
   readonly payload: unknown
 }
 

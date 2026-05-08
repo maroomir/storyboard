@@ -50,10 +50,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
   context.subscriptions.push(usageRecorder)
   context.subscriptions.push(
-    registerGenerateDraftCommands({ aiProviderRegistry, logger, usageRecorder })
+    registerGenerateDraftCommands({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(
-    registerGenerateAllDraftsCommand({ aiProviderRegistry, logger, usageRecorder })
+    registerGenerateAllDraftsCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(
     registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder })

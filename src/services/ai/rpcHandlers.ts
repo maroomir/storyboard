@@ -5,7 +5,14 @@ import { type StoryboardResponsePayload } from "@/shared/messaging"
 import { AiProviderRegistry } from "./providerRegistry"
 import type { UsageRecorder } from "./UsageRecorder"
 
-export function createAiRpcHandlers(registry: AiProviderRegistry): StoryboardRpcHandlers {
+export interface AiRpcHandlersOptions {
+  readonly onStreamChunk?: (requestId: string, delta: string) => Promise<void>
+}
+
+export function createAiRpcHandlers(
+  registry: AiProviderRegistry,
+  options: AiRpcHandlersOptions = {}
+): StoryboardRpcHandlers {
   return {
     "ai.providers.list": async (): Promise<StoryboardResponsePayload<"ai.providers.list">> => ({
       providers: await registry.listProviders()
@@ -21,7 +28,30 @@ export function createAiRpcHandlers(registry: AiProviderRegistry): StoryboardRpc
         messages: payload.messages,
         temperature: payload.temperature,
         maxTokens: payload.maxTokens
-      })
+      }),
+    "ai.generateStream": async (payload, request): Promise<StoryboardResponsePayload<"ai.generateStream">> => {
+      let finalResponse: StoryboardResponsePayload<"ai.generateStream"> | undefined
+
+      for await (const chunk of registry.generateStreamWithProvider(payload.providerId, {
+        taskName: payload.taskName,
+        messages: payload.messages,
+        temperature: payload.temperature,
+        maxTokens: payload.maxTokens
+      })) {
+        if (chunk.type === "text-delta") {
+          await options.onStreamChunk?.(request.id, chunk.delta)
+          continue
+        }
+
+        finalResponse = chunk.response
+      }
+
+      if (!finalResponse) {
+        throw new Error("AI streaming completed without a final response.")
+      }
+
+      return finalResponse
+    }
   }
 }
 

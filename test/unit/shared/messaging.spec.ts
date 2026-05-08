@@ -67,6 +67,28 @@ describe("storyboard messaging protocol", () => {
     })
   })
 
+  it("parses supported ai.generateStream requests", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "request-ai-stream-1",
+      method: "ai.generateStream",
+      payload: {
+        providerId: "mock",
+        taskName: "sceneDraft",
+        messages: [{ role: "user", content: "스트리밍으로 장면을 생성해줘." }],
+        temperature: 0.4,
+        maxTokens: 100
+      }
+    })
+
+    expect(request.method).toBe("ai.generateStream")
+    expect(request.payload).toMatchObject({
+      providerId: "mock",
+      taskName: "sceneDraft"
+    })
+  })
+
   it("creates validated ai.generate success response preserving usage and costUsd", () => {
     const response = createStoryboardSuccessResponse(
       { id: "ai-res-1", method: "ai.generate" },

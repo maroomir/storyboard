@@ -40,6 +40,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly shouldCancel?: () => boolean
   readonly sceneStem?: string
   readonly backgroundId?: string
+  readonly useContextCondense?: boolean
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -138,10 +139,39 @@ function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   }
 }
 
+function condensePreviousContext(previousContext: string | undefined, enabled: boolean): string | undefined {
+  if (!previousContext) {
+    return undefined
+  }
+
+  if (!enabled) {
+    return previousContext
+  }
+
+  const maxLength = 1200
+  if (previousContext.length <= maxLength) {
+    return previousContext
+  }
+
+  const lines = previousContext
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .filter((line) => line.includes(":") || /행동|표정|감정|생각|묘사/.test(line))
+
+  if (lines.length === 0) {
+    return previousContext.slice(-maxLength)
+  }
+
+  const condensed = lines.join("\n")
+  return condensed.length <= maxLength ? condensed : condensed.slice(-maxLength)
+}
+
 export async function runSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput
 ): Promise<RunSceneGenerationPipelineResult> {
   const { context, aiService, format, previousContext, providers = {}, onProgress, shouldCancel } = input
+  const condensedPreviousContext = condensePreviousContext(previousContext, input.useContextCondense === true)
   const sceneStem = input.sceneStem ?? input.context.scene.stem
   const sceneRef: EntityRef = { kind: "scene", id: sceneStem }
   const body = context.scene.body.trim()
@@ -200,7 +230,7 @@ export async function runSceneGenerationPipeline(
     }
     onProgress?.("generateDialogue", i + 1, situations.length)
 
-    const prior: string | undefined = i > 0 ? situations[i - 1]?.situation : previousContext
+    const prior: string | undefined = i > 0 ? situations[i - 1]?.situation : condensedPreviousContext
 
     const dialogueParticipants = dialogueParticipantsForSituation(situation, context.characters, backgroundParticipantId)
 

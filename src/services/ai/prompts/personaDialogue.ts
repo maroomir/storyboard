@@ -17,6 +17,7 @@ export const PersonaDialoguePrompt = {
       variant === "xs"
         ? "페르소나 기반 장면 작성. 형식: '캐릭터명: 대사'. 행동/감정도 포함."
         : "주어진 상황에서 캐릭터들의 페르소나를 바탕으로 자연스러운 대화와 장면을 작성하라.",
+      variant === "rich" ? "장면 전개는 인물 간 긴장/목표/갈등이 드러나도록 구성하라." : undefined,
       variant === "xs" ? undefined : "대화는 '캐릭터명: 대사' 형식을 사용하라.",
       variant === "xs" ? undefined : "행동, 표정, 감정을 함께 서술하라.",
       background.description ? `배경 설명: ${background.description}` : undefined,

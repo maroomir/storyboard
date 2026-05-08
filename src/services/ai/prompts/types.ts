@@ -1,4 +1,4 @@
-export type PromptVariantId = "generic" | "xs"
+export type PromptVariantId = "generic" | "xs" | "rich"
 
 export interface PromptArtifact {
   readonly system: string
