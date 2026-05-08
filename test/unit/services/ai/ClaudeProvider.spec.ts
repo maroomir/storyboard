@@ -28,7 +28,7 @@ describe("ClaudeProvider", () => {
   })
 
   it("generates text and separates system prompts from conversation messages", async () => {
-    let capturedSystem: string | undefined
+    let capturedSystem: Parameters<ClaudeClientLike["messages"]["create"]>[0]["system"]
     const usage = { inputTokens: 80, outputTokens: 40 }
     const provider = new ClaudeProvider({
       apiKey: "sk-ant-test",
@@ -56,7 +56,13 @@ describe("ClaudeProvider", () => {
       ]
     })
 
-    expect(capturedSystem).toBe("너는 소설가다.")
+    expect(capturedSystem).toEqual([
+      {
+        type: "text",
+        text: "너는 소설가다.",
+        cache_control: { type: "ephemeral" }
+      }
+    ])
     expect(response).toEqual({
       providerId: "claude",
       model: "claude-sonnet-4-6",

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk"
-import { type MessageParam } from "@anthropic-ai/sdk/resources/messages"
+import { type MessageParam, type TextBlockParam } from "@anthropic-ai/sdk/resources/messages"
 
 import { aiGenerateResponseWithUsage } from "../cost"
 import { AiProviderError } from "../AiProviderError"
@@ -38,7 +38,7 @@ interface ClaudeMessageRequest {
   readonly model: string
   readonly max_tokens: number
   readonly temperature?: number
-  readonly system?: string
+  readonly system?: string | ReadonlyArray<TextBlockParam>
   readonly messages: ReadonlyArray<ClaudeConversationMessage>
 }
 
@@ -98,7 +98,17 @@ export class ClaudeProvider implements AiProvider {
         model: this.model,
         max_tokens: request.maxTokens ?? 4096,
         temperature: request.temperature,
-        ...(systemPrompt ? { system: systemPrompt } : {}),
+        ...(systemPrompt
+          ? {
+              system: [
+                {
+                  type: "text",
+                  text: systemPrompt,
+                  cache_control: { type: "ephemeral" }
+                }
+              ]
+            }
+          : {}),
         messages
       })
 
