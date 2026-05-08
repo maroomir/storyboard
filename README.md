@@ -30,6 +30,7 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 
 - [`doc/concept.md`](doc/concept.md): 제품 컨셉, 워크스페이스 구조, 파일 포맷
 - [`doc/plan.md`](doc/plan.md): 단계별 마이그레이션 계획 및 MVP 게이트
+- [`doc/guide/release.md`](doc/guide/release.md): GitHub Release용 VSIX 태그·배포 절차
 - [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): 수동 QA(처음 켜 보는 사람용 체크리스트)
 - [`doc/decisions/00-repo-baseline.md`](doc/decisions/00-repo-baseline.md): 초기 저장소 베이스라인 의사결정
 
@@ -120,6 +121,8 @@ npm run package:vsix
 `v*.*.*` 태그를 push하면 GitHub Actions가 lint, test, VSIX 패키징을 실행한 뒤 GitHub Release에 VSIX와 `SHA256SUMS`를 첨부합니다.
 
 릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.0` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.0`으로 올린 뒤 `v0.1.0` 태그를 push합니다.
+
+자세한 절차는 [`doc/guide/release.md`](doc/guide/release.md)를 참고하세요.
 
 ### README용 스크린샷·GIF (선택)
 
