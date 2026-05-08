@@ -1,4 +1,5 @@
 import type { Background } from "@/domain/Background"
+import { type PromptArtifact, type PromptVariantId } from "./types"
 
 export const PersonaDialoguePrompt = {
   config: {
@@ -9,12 +10,15 @@ export const PersonaDialoguePrompt = {
     situation: string,
     personas: ReadonlyMap<string, string>,
     background: Background,
-    previousContext?: string
-  ): { readonly system: string; readonly user: string } {
+    previousContext?: string,
+    variant: PromptVariantId = "generic"
+  ): PromptArtifact {
     const system = [
-      "주어진 상황에서 캐릭터들의 페르소나를 바탕으로 자연스러운 대화와 장면을 작성해주세요.",
-      "대화는 '캐릭터명: 대사' 형식을 사용하세요.",
-      "행동, 표정, 감정을 함께 서술하세요.",
+      variant === "xs"
+        ? "페르소나 기반 장면 작성. 형식: '캐릭터명: 대사'. 행동/감정도 포함."
+        : "주어진 상황에서 캐릭터들의 페르소나를 바탕으로 자연스러운 대화와 장면을 작성하라.",
+      variant === "xs" ? undefined : "대화는 '캐릭터명: 대사' 형식을 사용하라.",
+      variant === "xs" ? undefined : "행동, 표정, 감정을 함께 서술하라.",
       background.description ? `배경 설명: ${background.description}` : undefined,
       background.country ? `국가/지역: ${background.country}` : undefined,
       background.category ? `카테고리: ${background.category}` : undefined
@@ -29,7 +33,7 @@ export const PersonaDialoguePrompt = {
       ...personaLines,
       previousContext ? `\n이전 장면:\n${previousContext}` : undefined,
       `\n상황:\n${situation}`,
-      "\n위 상황에서 캐릭터들의 대화와 행동을 작성해주세요."
+      "\n위 상황에서 캐릭터들의 대화와 행동을 작성하라."
     ]
       .filter((line): line is string => Boolean(line))
       .join("\n")

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import { StoryboardAIService } from "@/services/ai/AIService"
 import { createAiProviderRegistry } from "@/services/ai/providerRegistry"
 import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
+import { type AiMessage } from "@/services/ai/types"
 import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 
@@ -86,16 +87,52 @@ describe("StoryboardAIService", () => {
       })
     ).resolves.toBe("그는 잠시 웃으며 고개를 끄덕였다.")
   })
+
+  it("sends prompt as separated system/user messages", async () => {
+    const capture: MessageCapture = {}
+    const service = createAIService({ completionText: "[]", capture })
+
+    await service.checkGrammar("이건 정말루 중요해.")
+
+    expect(capture.lastMessages).toBeDefined()
+    expect(capture.lastMessages).toHaveLength(2)
+    expect(capture.lastMessages?.[0]?.role).toBe("system")
+    expect(capture.lastMessages?.[1]?.role).toBe("user")
+    expect(capture.lastMessages?.[1]?.content).toContain("이건 정말루 중요해.")
+  })
+
+  it("uses xs prompt variant when provider is ollama", async () => {
+    const capture: MessageCapture = {}
+    const service = createAIService({ completionText: "[]", capture, defaultProvider: "ollama" })
+
+    await service.checkGrammar("이건 정말루 중요해.")
+
+    expect(capture.lastProviderId).toBe("ollama")
+    expect(capture.lastMessages).toBeDefined()
+    expect(capture.lastMessages?.[0]?.role).toBe("system")
+    expect(capture.lastMessages?.[0]?.content.length ?? 0).toBeLessThan(140)
+  })
 })
 
-function createAIService(options: { readonly completionText: string }): StoryboardAIService {
+interface MessageCapture {
+  lastMessages?: readonly AiMessage[]
+  lastProviderId?: string
+}
+
+function createAIService(options: {
+  readonly completionText: string
+  readonly defaultProvider?: "openai" | "ollama"
+  readonly capture?: MessageCapture
+}): StoryboardAIService {
   const secretStore = new SecretStore(new FakeSecretStorage(new Map([["storyboard.apiKey.openai", "sk-test"]])))
   const configBridge = new ConfigBridge({
     getConfiguration: (): StoryboardConfigurationLike =>
       new FakeConfiguration(
         new Map<string, unknown>([
-          ["defaultProvider", "openai"],
-          ["providers.openai.model", "gpt-5.4-mini"]
+          ["defaultProvider", options.defaultProvider ?? "openai"],
+          ["providers.openai.model", "gpt-5.4-mini"],
+          ["providers.ollama.baseUrl", "http://localhost:11434"],
+          ["providers.ollama.model", "llama3.3"]
         ])
       )
   })
@@ -110,9 +147,27 @@ function createAIService(options: { readonly completionText: string }): Storyboa
         },
         chat: {
           completions: {
-            create: async (): Promise<{ readonly choices: readonly [{ readonly message: { readonly content: string } }] }> => ({
-              choices: [{ message: { content: options.completionText } }]
-            })
+            create: async (request: { readonly messages: readonly AiMessage[] }): Promise<{ readonly choices: readonly [{ readonly message: { readonly content: string } }] }> => {
+              if (options.capture) {
+                options.capture.lastMessages = request.messages
+                options.capture.lastProviderId = "openai"
+              }
+              return {
+                choices: [{ message: { content: options.completionText } }]
+              }
+            }
+          }
+        }
+      }),
+      createOllamaClient: () => ({
+        get: async (): Promise<unknown> => ({}),
+        post: async (_path: string, body: { readonly messages: readonly AiMessage[] }) => {
+          if (options.capture) {
+            options.capture.lastMessages = body.messages
+            options.capture.lastProviderId = "ollama"
+          }
+          return {
+            message: { content: options.completionText }
           }
         }
       })

@@ -17,6 +17,8 @@ import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
+import { selectPromptVariant } from "./prompts/variant"
+import { type PromptArtifact } from "./prompts/types"
 import { parseBulletList, parseJsonArray } from "@/utils/aiResponseParser"
 
 export interface SituationWithCharacters {
@@ -69,9 +71,11 @@ export class StoryboardAIService {
     input: string,
     options: GenerateTextOptions = {}
   ): Promise<SituationWithCharacters[]> {
+    const variant = this.resolvePromptVariant("situationExtraction", options)
+    const prompt = SituationExtractionPrompt.build(input, variant)
     const response = await this.generateText(
       "situationExtraction",
-      [{ role: "user", content: SituationExtractionPrompt.build(input) }],
+      toPromptMessages(prompt),
       options
     )
     const parsedArray = parseJsonArray(response.text)
@@ -87,9 +91,11 @@ export class StoryboardAIService {
     character: Character,
     options: GenerateTextOptions = {}
   ): Promise<string> {
+    const variant = this.resolvePromptVariant("personaGeneration", options)
+    const prompt = PersonaGenerationPrompt.build(character, variant)
     const response = await this.generateText(
       "personaGeneration",
-      [{ role: "user", content: PersonaGenerationPrompt.build(character) }],
+      toPromptMessages(prompt),
       options
     )
 
@@ -103,13 +109,11 @@ export class StoryboardAIService {
     previousContext?: string,
     options: GenerateTextOptions = {}
   ): Promise<string> {
-    const prompt = PersonaDialoguePrompt.build(situation, personas, background, previousContext)
+    const variant = this.resolvePromptVariant("personaDialogue", options)
+    const prompt = PersonaDialoguePrompt.build(situation, personas, background, previousContext, variant)
     const response = await this.generateText(
       "personaDialogue",
-      [
-        { role: "system", content: prompt.system },
-        { role: "user", content: prompt.user }
-      ],
+      toPromptMessages(prompt),
       options
     )
 
@@ -121,9 +125,11 @@ export class StoryboardAIService {
     format: ProjectFormat,
     options: GenerateTextOptions = {}
   ): Promise<string> {
+    const variant = this.resolvePromptVariant("sceneDraft", options)
+    const prompt = GenreFormattingPrompt.build(dialogue, format, variant)
     const response = await this.generateText(
       "sceneDraft",
-      [{ role: "user", content: GenreFormattingPrompt.build(dialogue, format) }],
+      toPromptMessages(prompt),
       options
     )
 
@@ -145,9 +151,11 @@ export class StoryboardAIService {
     const entries = await Promise.all(
       uniqueNames.map(async (name) => {
         const attribution = traitOptions.attributionForCharacter?.(name) ?? traitOptions.attribution
+        const variant = this.resolvePromptVariant("traitsExtraction", traitOptions)
+        const prompt = TraitsExtractionPrompt.build(draftBody, name, undefined, variant)
         const response = await this.generateText(
           "traitsExtraction",
-          [{ role: "user", content: TraitsExtractionPrompt.build(draftBody, name) }],
+          toPromptMessages(prompt),
           {
             ...traitOptions,
             attribution
@@ -162,9 +170,11 @@ export class StoryboardAIService {
   }
 
   public async checkGrammar(body: string, options: GenerateTextOptions = {}): Promise<GrammarIssue[]> {
+    const variant = this.resolvePromptVariant("grammarCheck", options)
+    const prompt = GrammarCheckPrompt.build(body, variant)
     const response = await this.generateText(
       "grammarCheck",
-      [{ role: "user", content: GrammarCheckPrompt.build(body) }],
+      toPromptMessages(prompt),
       {
         ...options,
         temperature: options.temperature ?? GrammarCheckPrompt.config.temperature,
@@ -185,9 +195,11 @@ export class StoryboardAIService {
     context: InlineCompletionContext = {},
     options: GenerateTextOptions = {}
   ): Promise<string> {
+    const variant = this.resolvePromptVariant("inlineCompletion", options)
+    const prompt = InlineCompletionPrompt.build(prefix, context, variant)
     const response = await this.generateText(
       "inlineCompletion",
-      [{ role: "user", content: InlineCompletionPrompt.build(prefix, context) }],
+      toPromptMessages(prompt),
       {
         ...options,
         temperature: options.temperature ?? InlineCompletionPrompt.config.temperature,
@@ -203,9 +215,11 @@ export class StoryboardAIService {
     context: DraftExpansionContext = {},
     options: GenerateTextOptions = {}
   ): Promise<string> {
+    const variant = this.resolvePromptVariant("draftExpansion", options)
+    const prompt = DraftExpansionPrompt.build(selection, context, variant)
     const response = await this.generateText(
       "draftExpansion",
-      [{ role: "user", content: DraftExpansionPrompt.build(selection, context) }],
+      toPromptMessages(prompt),
       {
         ...options,
         temperature: options.temperature ?? DraftExpansionPrompt.config.temperature,
@@ -237,6 +251,11 @@ export class StoryboardAIService {
 
     this.emitUsageIfNeeded(taskName, response, options.attribution)
     return response
+  }
+
+  private resolvePromptVariant(taskName: WiredAiTaskName, options: GenerateTextOptions) {
+    const providerId = options.providerId ?? this.registry.getTaskProvider(taskName)
+    return selectPromptVariant(providerId)
   }
 
   private emitUsageIfNeeded(
@@ -326,5 +345,12 @@ function toGrammarIssue(value: unknown): GrammarIssue[] {
       suggestion: candidate.suggestion,
       reason: candidate.reason
     }
+  ]
+}
+
+function toPromptMessages(artifact: PromptArtifact): ReadonlyArray<{ readonly role: "system" | "user"; readonly content: string }> {
+  return [
+    { role: "system", content: artifact.system },
+    { role: "user", content: artifact.user }
   ]
 }

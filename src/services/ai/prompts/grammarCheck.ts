@@ -1,3 +1,5 @@
+import { type PromptArtifact, type PromptVariantId } from "./types"
+
 export interface GrammarCheckIssuePayload {
   readonly start: number
   readonly end: number
@@ -11,16 +13,28 @@ export const GrammarCheckPrompt = {
     temperature: 0.1,
     maxTokens: 2000
   },
-  build(body: string): string {
-    return [
-      "당신은 한국어 문장 교정 도우미입니다.",
-      "입력 본문을 검사해 문법/맞춤법/띄어쓰기 문제만 찾아주세요.",
-      "아래 JSON 배열만 출력하세요. 설명 문장은 금지입니다.",
-      '[{"start":0,"end":0,"original":"","suggestion":"","reason":""}]',
-      "start/end는 UTF-16 기준 0-based offset이며, end는 exclusive입니다.",
-      "",
-      "[본문]",
-      body
-    ].join("\n")
+  build(body: string, variant: PromptVariantId = "generic"): PromptArtifact {
+    return variant === "xs" ? buildXs(body) : buildGeneric(body)
   }
 } as const
+
+function buildGeneric(body: string): PromptArtifact {
+  return {
+    system: [
+      "한국어 문장 교정 도우미다.",
+      "본문에서 문법/맞춤법/띄어쓰기 문제만 추출하라.",
+      "설명 없이 JSON 배열만 출력하라.",
+      '[{"start":0,"end":0,"original":"","suggestion":"","reason":""}]',
+      "start/end는 UTF-16 0-based, end는 exclusive다."
+    ].join("\n"),
+    user: ["[본문]", body].join("\n")
+  }
+}
+
+function buildXs(body: string): PromptArtifact {
+  return {
+    system:
+      '문법 오류만 JSON 배열로 반환: [{"start":0,"end":0,"original":"","suggestion":"","reason":""}] (UTF-16 offset).',
+    user: body
+  }
+}
