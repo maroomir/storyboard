@@ -2,11 +2,11 @@
 
 Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위한 AI 기반 픽션 IDE 확장입니다.
 
-## 버전 0.0.1 (dogfooding)
+## 버전 0.1.0
 
-- **이 저장소의 공개 버전은 `0.0.1`입니다.** (`package.json`의 `version`과 동일)
-- **기본 플로우를 검증하는 초기 단계**이며, 완성도·안정성 목표의 정식 릴리즈는 아닙니다.
-- **Visual Studio Marketplace 발행은 아직 하지 않습니다.** 로컬 개발(F5) 또는 로컬에서 만든 VSIX로만 검증하는 것을 권장합니다.
+- **이 저장소의 공개 버전은 `0.1.0`입니다.** (`package.json`의 `version`과 동일)
+- **첫 GitHub Release용 VSIX 배포 버전**입니다.
+- **Visual Studio Marketplace 발행은 아직 하지 않습니다.** GitHub Release의 VSIX 또는 로컬 개발(F5)로 검증하는 것을 권장합니다.
 
 ## 로드맵 메모 (문서 기준)
 
@@ -113,7 +113,7 @@ MVP/dogfooding 게이트에서만 필요하면, 빌드 후 다음을 실행합�
 npm run package:vsix
 ```
 
-생성된 `storyboard-0.0.1.vsix`를 VS Code의 **Extensions: Install from VSIX** 로 설치해 검증할 수 있습니다.
+생성된 `storyboard-0.1.0.vsix`를 VS Code의 **Extensions: Install from VSIX** 로 설치해 검증할 수 있습니다.
 
 ### GitHub Release용 VSIX
 

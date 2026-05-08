@@ -8,6 +8,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-05-09
+
 ### Changed
 
 - Documentation: aligned `doc/plan.md`, `doc/concept.md`, `doc/decisions/01-project-initialization.md`, `doc/testing/extension-qa.md`, and `README.md` with release policy — no `.picktion` import; extension UI i18n **`ko` default**, **`en` optional**; first Marketplace target **0.1.0** (Phase 7–8).
@@ -15,6 +17,8 @@ after the first public release.
 
 ### Added
 
+- GitHub Release workflow for tag-based VSIX packaging with checksum assets.
+- Local `npm run package:vsix` script backed by `@vscode/vsce`.
 - Settings webview panel (`Storyboard: Open Settings`) for default provider, curated model picks per provider, per-task provider overrides, Ollama base URL, API keys (SecretStorage), and connection checks; settings RPCs and `settings.changed` sync with host configuration and secrets.
 - Scene-to-draft generation pipeline with cache metadata and optional trait updates on new drafts (Phase 4).
 - Scenes sidebar webview with tree, status badges, and in-view actions (Phase 5).
