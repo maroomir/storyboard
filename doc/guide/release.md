@@ -5,7 +5,7 @@ This guide describes how to publish a Storyboard VSIX to GitHub Releases.
 ## Prerequisites
 
 - The release branch is ready to publish.
-- `package.json`, `package-lock.json`, and `CHANGELOG.md` contain the target version.
+- `package.json`, `package-lock.json`, `CHANGELOG.md`, and `CHANGELOG.ko.md` contain the target version.
 - The working tree contains only intentional release changes.
 
 ## Local verification
@@ -27,11 +27,12 @@ For `v0.1.0`, the version commit should include at least:
 - `package.json`
 - `package-lock.json`
 - `CHANGELOG.md`
+- `CHANGELOG.ko.md`
 
 If the release changes user-facing installation or release instructions, include the relevant docs as well.
 
 ```bash
-git add package.json package-lock.json CHANGELOG.md README.md doc/guide/release.md
+git add package.json package-lock.json CHANGELOG.md CHANGELOG.ko.md README.md doc/guide/release.md
 git commit -m "chore: release v0.1.0"
 ```
 

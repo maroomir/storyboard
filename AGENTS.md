@@ -25,6 +25,7 @@ When source files are not present yet, do not assume implementation details. Sca
 
 - This is a VSCode extension project.
 - Check `package.json` scripts before running build, lint, test, or packaging commands.
+- When updating the project version or release notes, update both `CHANGELOG.md` and `CHANGELOG.ko.md` in the same change.
 - Inspect nearby files and existing conventions before editing.
 - For non-trivial work, state assumptions and success criteria before editing; ask when ambiguity could change the implementation.
 - Keep changes surgical: every changed line should trace directly to the user's request.

@@ -5,4 +5,4 @@ When preparing a Storyboard extension release (version bump, changelog, VSIX, ta
 1. Follow **`.cursor/skills/prepare-release/SKILL.md`**.
 2. Match **`doc/guide/release.md`** for the version commit contents, tag shape (`v` + semver), and GitHub Release workflow.
 
-Keep **`package.json`**, **`package-lock.json`**, and **`CHANGELOG.md`** on the same target version before tagging.
+Keep **`package.json`**, **`package-lock.json`**, **`CHANGELOG.md`**, and **`CHANGELOG.ko.md`** on the same target version before tagging. When updating changelog entries for a version, update both changelog files in the same change.

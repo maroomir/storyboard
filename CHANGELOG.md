@@ -2,6 +2,8 @@
 
 All notable changes to Storyboard will be documented in this file.
 
+Korean changelog: [CHANGELOG.ko.md](CHANGELOG.ko.md).
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 after the first public release.
