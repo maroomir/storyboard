@@ -161,7 +161,10 @@ function createAIService(options: {
       }),
       createOllamaClient: () => ({
         get: async (): Promise<unknown> => ({}),
-        post: async (_path: string, body: { readonly messages: readonly AiMessage[] }) => {
+        post: async (
+          _path: string,
+          body: { readonly messages: readonly AiMessage[] }
+        ): Promise<{ readonly message: { readonly content: string } }> => {
           if (options.capture) {
             options.capture.lastMessages = body.messages
             options.capture.lastProviderId = "ollama"

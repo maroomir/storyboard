@@ -18,7 +18,7 @@ import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
 import { selectPromptVariant } from "./prompts/variant"
-import { type PromptArtifact } from "./prompts/types"
+import { type PromptArtifact, type PromptVariantId } from "./prompts/types"
 import { parseBulletList, parseJsonArray } from "@/utils/aiResponseParser"
 
 export interface SituationWithCharacters {
@@ -253,7 +253,7 @@ export class StoryboardAIService {
     return response
   }
 
-  private resolvePromptVariant(taskName: WiredAiTaskName, options: GenerateTextOptions) {
+  private resolvePromptVariant(taskName: WiredAiTaskName, options: GenerateTextOptions): PromptVariantId {
     const providerId = options.providerId ?? this.registry.getTaskProvider(taskName)
     return selectPromptVariant(providerId)
   }

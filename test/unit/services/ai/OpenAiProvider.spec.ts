@@ -52,11 +52,44 @@ describe("OpenAiProvider", () => {
       costUsd: computeCostUsd({ providerId: "openai", model: "gpt-5.4-mini", usage })
     })
   })
+
+  it("forwards system role messages to OpenAI without merging into user", async () => {
+    let captured: { readonly messages: readonly { readonly role: string; readonly content: string }[] } | undefined
+    const provider = new OpenAiProvider({
+      apiKey: "sk-test",
+      model: "gpt-5.4-mini",
+      createClient: (): OpenAiClientLike =>
+        createFakeOpenAiClient({
+          completionText: "ok",
+          onCreate: (request): void => {
+            captured = request
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneDraft",
+      messages: [
+        { role: "system", content: "지시문" },
+        { role: "user", content: "본문" }
+      ]
+    })
+
+    expect(captured?.messages).toEqual([
+      { role: "system", content: "지시문" },
+      { role: "user", content: "본문" }
+    ])
+  })
 })
+
+interface FakeOpenAiCreateRequest {
+  readonly messages: readonly { readonly role: string; readonly content: string }[]
+}
 
 interface FakeOpenAiClientOptions {
   readonly completionText?: string
   readonly onListModels?: () => void
+  readonly onCreate?: (request: FakeOpenAiCreateRequest) => void
   readonly usage?: { readonly prompt_tokens: number; readonly completion_tokens: number }
 }
 
@@ -70,13 +103,16 @@ function createFakeOpenAiClient(options: FakeOpenAiClientOptions): OpenAiClientL
     },
     chat: {
       completions: {
-        create: async (): Promise<{
+        create: async (request: FakeOpenAiCreateRequest): Promise<{
           readonly choices: readonly [{ readonly message: { readonly content: string } }]
           readonly usage?: { readonly prompt_tokens: number; readonly completion_tokens: number }
-        }> => ({
-          choices: [{ message: { content: options.completionText ?? "" } }],
-          ...(options.usage !== undefined ? { usage: options.usage } : {})
-        })
+        }> => {
+          options.onCreate?.(request)
+          return {
+            choices: [{ message: { content: options.completionText ?? "" } }],
+            ...(options.usage !== undefined ? { usage: options.usage } : {})
+          }
+        }
       }
     }
   }

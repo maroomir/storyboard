@@ -55,14 +55,46 @@ describe("OllamaProvider", () => {
       costUsd: 0
     })
   })
+
+  it("forwards system role messages to /api/chat without merging into user", async () => {
+    let capturedMessages: readonly { readonly role: string; readonly content: string }[] = []
+    const provider = new OllamaProvider({
+      baseUrl: "http://localhost:11434",
+      model: "llama3.3",
+      createClient: (): OllamaClientLike =>
+        createFakeOllamaClient({
+          completionText: "ok",
+          onPost: (_path, body): void => {
+            capturedMessages = body.messages
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneDraft",
+      messages: [
+        { role: "system", content: "지시문" },
+        { role: "user", content: "본문" }
+      ]
+    })
+
+    expect(capturedMessages).toEqual([
+      { role: "system", content: "지시문" },
+      { role: "user", content: "본문" }
+    ])
+  })
 })
+
+interface FakeOllamaPostBody {
+  readonly messages: readonly { readonly role: string; readonly content: string }[]
+}
 
 interface FakeOllamaClientOptions {
   readonly completionText?: string
   readonly promptEvalCount?: number
   readonly evalCount?: number
   readonly onGet?: (path: string) => void
-  readonly onPost?: (path: string) => void
+  readonly onPost?: (path: string, body: FakeOllamaPostBody) => void
 }
 
 function createFakeOllamaClient(options: FakeOllamaClientOptions): OllamaClientLike {
@@ -72,13 +104,14 @@ function createFakeOllamaClient(options: FakeOllamaClientOptions): OllamaClientL
       return {}
     },
     post: async (
-      path
+      path,
+      body
     ): Promise<{
       readonly message: { readonly content: string }
       readonly prompt_eval_count?: number
       readonly eval_count?: number
     }> => {
-      options.onPost?.(path)
+      options.onPost?.(path, body as FakeOllamaPostBody)
       return {
         message: { content: options.completionText ?? "ok" },
         ...(options.promptEvalCount !== undefined ? { prompt_eval_count: options.promptEvalCount } : {}),
