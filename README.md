@@ -2,6 +2,8 @@
 
 Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위한 AI 기반 픽션 IDE 확장입니다.
 
+영어 README: [`README.en.md`](README.en.md)
+
 ## 버전 0.1.1
 
 - **이 저장소의 공개 버전은 `0.1.1`입니다.** (`package.json`의 `version`과 동일)
@@ -33,8 +35,8 @@ Storyboard는 작가가 VS Code에서 소설·시나리오를 창작하기 위�
 - [`doc/guide/release.md`](doc/guide/release.md): GitHub Release용 VSIX 태그·배포 절차
 - [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): 수동 QA(처음 켜 보는 사람용 체크리스트)
 - [`doc/decisions/00-repo-baseline.md`](doc/decisions/00-repo-baseline.md): 초기 저장소 베이스라인 의사결정
-- [`CHANGELOG.md`](CHANGELOG.md): 영문 변경 내역
-- [`CHANGELOG.ko.md`](CHANGELOG.ko.md): 한국어 변경 내역
+- [`CHANGELOG.md`](CHANGELOG.md): 한국어 변경 내역
+- [`CHANGELOG.en.md`](CHANGELOG.en.md): 영어 변경 내역
 
 ## 제품 모델 (요약)
 
@@ -122,7 +124,7 @@ npm run package:vsix
 
 `v*.*.*` 태그를 push하면 GitHub Actions가 lint, test, VSIX 패키징을 실행한 뒤 GitHub Release에 VSIX와 `SHA256SUMS`를 첨부합니다.
 
-릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.1` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.1`으로 올리고 `CHANGELOG.md`와 `CHANGELOG.ko.md`를 함께 정리한 뒤 `v0.1.1` 태그를 push합니다.
+릴리즈 태그와 `package.json`의 `version`은 일치해야 합니다. 예를 들어 `0.1.1` 릴리즈는 `package.json`과 `package-lock.json`을 `0.1.1`으로 올리고 `CHANGELOG.md`와 `CHANGELOG.en.md`를 함께 정리한 뒤 `v0.1.1` 태그를 push합니다.
 
 자세한 절차는 [`doc/guide/release.md`](doc/guide/release.md)를 참고하세요.
 
