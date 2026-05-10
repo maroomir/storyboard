@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-11
+
 ### 문서
 
 - `README.md`와 `doc/`에서 Visual Studio Marketplace 발행 안내를 제거하고, GitHub Releases 전용 VSIX 배포 방침에 맞췄습니다.

@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-05-11
+
 ### Documentation
 
 - Removed Visual Studio Marketplace publishing guidance from `README.md` and `doc/`, aligning distribution docs with GitHub Releases-only VSIX delivery.
