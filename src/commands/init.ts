@@ -72,7 +72,7 @@ async function validateCanInitialize(paths: StoryboardProjectPaths): Promise<boo
   )
 }
 
-async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {
+export async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {
   await Promise.all([
     vscode.workspace.fs.createDirectory(paths.personaCacheDirectory),
     vscode.workspace.fs.createDirectory(paths.sceneCacheDirectory),
@@ -91,7 +91,7 @@ async function writeFileIfMissing(uri: vscode.Uri, content: string): Promise<voi
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content))
 }
 
-async function ensureWorkspaceGitignore(gitignoreUri: vscode.Uri): Promise<void> {
+export async function ensureWorkspaceGitignore(gitignoreUri: vscode.Uri): Promise<void> {
   if (!(await uriExists(gitignoreUri))) {
     await vscode.workspace.fs.writeFile(gitignoreUri, new TextEncoder().encode(storyboardGitignoreBlock.trimStart()))
     return
@@ -148,7 +148,7 @@ Storyboard 프로젝트를 시작하기 위한 샘플 텍스트입니다.
 `
 }
 
-function createWorkspaceReadme(projectName: string): string {
+export function createWorkspaceReadme(projectName: string): string {
   return `# ${projectName}
 
 Storyboard 프로젝트 노트입니다.

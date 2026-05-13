@@ -5,6 +5,7 @@ import { registerCreateCardCommands } from "./commands/createCard"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
+import { registerImportSeedCommands } from "./commands/importSeed"
 import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
@@ -47,6 +48,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerInitCommand({ logger }))
+  context.subscriptions.push(registerImportSeedCommands({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
   context.subscriptions.push(usageRecorder)
   context.subscriptions.push(

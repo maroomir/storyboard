@@ -17,7 +17,9 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:.storyboard/project.json"
+    "workspaceContains:.storyboard/project.json",
+    "onCommand:storyboard.seed.createFromFile",
+    "onCommand:storyboard.seed.syncFromFile"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -29,6 +31,14 @@
       {
         "command": "storyboard.init",
         "title": "Storyboard: Initialize Project"
+      },
+      {
+        "command": "storyboard.seed.createFromFile",
+        "title": "Storyboard: Create Project from Seed..."
+      },
+      {
+        "command": "storyboard.seed.syncFromFile",
+        "title": "Storyboard: Sync Project from Seed..."
       },
       {
         "command": "storyboard.character.create",
