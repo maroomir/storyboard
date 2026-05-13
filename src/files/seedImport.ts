@@ -9,6 +9,17 @@ export interface SeedFileWriteEntry {
   readonly content: string
 }
 
+export class SeedWriteAbortedError extends Error {
+  public constructor(
+    message: string,
+    public readonly writtenRelativePaths: readonly string[],
+    options?: { cause?: unknown }
+  ) {
+    super(message, options)
+    this.name = "SeedWriteAbortedError"
+  }
+}
+
 export function normalizeRelativePath(relativePath: string): string {
   return relativePath.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "")
 }
@@ -48,6 +59,55 @@ export function buildSeedWritePlan(seed: ParsedSeedEnvelope): readonly SeedFileW
   }
 
   return entries
+}
+
+export function collectTrackedCardAndSceneRelativePathsFromFileNames(input: {
+  readonly characterFileNames: readonly string[]
+  readonly backgroundFileNames: readonly string[]
+  readonly sceneFileNames: readonly string[]
+}): string[] {
+  const out: string[] = []
+
+  for (const name of input.characterFileNames) {
+    const rel = `character/${name}`
+    if (parseCharacterRootCardId(rel) !== undefined) {
+      out.push(rel)
+    }
+  }
+
+  for (const name of input.backgroundFileNames) {
+    const rel = `background/${name}`
+    if (parseBackgroundRootCardId(rel) !== undefined) {
+      out.push(rel)
+    }
+  }
+
+  for (const name of input.sceneFileNames) {
+    const rel = `scene/${name}`
+    if (parseSceneRootTxtStem(rel) !== undefined) {
+      out.push(rel)
+    }
+  }
+
+  return out
+}
+
+export function listSeedPlanContentConflictRelativePaths(
+  plan: readonly SeedFileWriteEntry[],
+  existingContentByRelativePath: ReadonlyMap<string, string | undefined>
+): string[] {
+  const conflicts: string[] = []
+
+  for (const entry of plan) {
+    const norm = normalizeRelativePath(entry.relativePath)
+    const existing = existingContentByRelativePath.get(norm)
+
+    if (existing !== undefined && existing !== entry.content) {
+      conflicts.push(norm)
+    }
+  }
+
+  return conflicts.sort((a, b) => a.localeCompare(b))
 }
 
 export function computeSeedDeletionCandidates(

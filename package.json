@@ -19,7 +19,8 @@
   "activationEvents": [
     "workspaceContains:.storyboard/project.json",
     "onCommand:storyboard.seed.createFromFile",
-    "onCommand:storyboard.seed.syncFromFile"
+    "onCommand:storyboard.seed.syncFromFile",
+    "onCommand:storyboard.seed.exportToFile"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -39,6 +40,10 @@
       {
         "command": "storyboard.seed.syncFromFile",
         "title": "Storyboard: Sync Project from Seed..."
+      },
+      {
+        "command": "storyboard.seed.exportToFile",
+        "title": "Storyboard: Export Project to Seed..."
       },
       {
         "command": "storyboard.character.create",
@@ -239,6 +244,13 @@
       ]
     },
     "menus": {
+      "explorer/context": [
+        {
+          "command": "storyboard.seed.syncFromFile",
+          "when": "resourceExtname == .seed",
+          "group": "storyboard@98"
+        }
+      ],
       "view/title": [
         {
           "command": "storyboard.character.create",

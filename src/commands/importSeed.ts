@@ -6,11 +6,15 @@ import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "../core/
 import { hasStoryboardProject, uriExists } from "../core/workspace"
 import {
   buildSeedWritePlan,
+  collectTrackedCardAndSceneRelativePathsFromFileNames,
   computeSeedDeletionCandidates,
+  listSeedPlanContentConflictRelativePaths,
   normalizeRelativePath,
+  SeedWriteAbortedError,
   type SeedFileWriteEntry
 } from "../files/seedImport"
-import { parseSeed, SeedParseError, type ParsedSeedEnvelope } from "../models/serialization/seedFile"
+import { readDirectoryFileNamesOnly, readParsedSeedEnvelopeFromWorkspaceRoot } from "../files/seedEnvelopeFromWorkspace"
+import { parseSeed, SeedParseError, serializeSeed, type ParsedSeedEnvelope } from "../models/serialization/seedFile"
 import {
   createStoryboardDirectories,
   createWorkspaceReadme,
@@ -19,6 +23,7 @@ import {
 
 const createFromSeedCommand = "storyboard.seed.createFromFile"
 const syncFromSeedCommand = "storyboard.seed.syncFromFile"
+const exportToSeedCommand = "storyboard.seed.exportToFile"
 
 const SEED_DELETE_DETAIL_LOG_THRESHOLD = 8
 
@@ -33,7 +38,10 @@ export function registerImportSeedCommands(
     vscode.commands.registerCommand(createFromSeedCommand, () =>
       createProjectFromSeedFile(dependencies)
     ),
-    vscode.commands.registerCommand(syncFromSeedCommand, () => syncProjectFromSeedFile(dependencies))
+    vscode.commands.registerCommand(syncFromSeedCommand, (resource?: vscode.Uri) =>
+      syncProjectFromSeedFile(dependencies, resource)
+    ),
+    vscode.commands.registerCommand(exportToSeedCommand, () => exportProjectToSeedFile(dependencies))
   )
 }
 
@@ -42,35 +50,17 @@ function uriForRelativeProjectPath(root: vscode.Uri, relativePath: string): vsco
   return vscode.Uri.joinPath(root, ...segments)
 }
 
-function relativePathUnderRoot(root: vscode.Uri, file: vscode.Uri): string {
-  const rootPosix = root.fsPath.replace(/\\/g, "/").replace(/\/$/, "")
-  const filePosix = file.fsPath.replace(/\\/g, "/")
-  const prefix = `${rootPosix}/`
-
-  if (filePosix === rootPosix) {
-    return ""
-  }
-
-  if (!filePosix.startsWith(prefix)) {
-    throw new Error("파일 경로가 대상 루트 밖에 있습니다.")
-  }
-
-  return normalizeRelativePath(filePosix.slice(prefix.length))
-}
-
 async function collectSeedSyncRelativePaths(workspaceRoot: vscode.Uri): Promise<string[]> {
-  const patterns = ["character/*.card", "background/*.card", "scene/*.txt"] as const
-  const relativePaths: string[] = []
+  const paths = getStoryboardProjectPaths(workspaceRoot)
+  const characterFileNames = await readDirectoryFileNamesOnly(paths.characterDirectory)
+  const backgroundFileNames = await readDirectoryFileNamesOnly(paths.backgroundDirectory)
+  const sceneFileNames = await readDirectoryFileNamesOnly(paths.sceneDirectory)
 
-  for (const pattern of patterns) {
-    const found = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, pattern), null, 5000)
-
-    for (const uri of found) {
-      relativePaths.push(relativePathUnderRoot(workspaceRoot, uri))
-    }
-  }
-
-  return relativePaths
+  return collectTrackedCardAndSceneRelativePathsFromFileNames({
+    characterFileNames,
+    backgroundFileNames,
+    sceneFileNames
+  })
 }
 
 async function readSeedFile(uri: vscode.Uri): Promise<string> {
@@ -141,10 +131,44 @@ async function pickStoryboardWorkspaceFolder(): Promise<vscode.WorkspaceFolder |
   return picked?.folder
 }
 
-async function writeSeedPlanEntries(root: vscode.Uri, entries: readonly SeedFileWriteEntry[]): Promise<void> {
+async function readExistingContentByRelativePathForPlan(
+  root: vscode.Uri,
+  plan: readonly SeedFileWriteEntry[]
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>()
+
+  for (const entry of plan) {
+    const norm = normalizeRelativePath(entry.relativePath)
+    const target = uriForRelativeProjectPath(root, norm)
+
+    if (await uriExists(target)) {
+      const bytes = await vscode.workspace.fs.readFile(target)
+      map.set(norm, new TextDecoder().decode(bytes))
+    }
+  }
+
+  return map
+}
+
+async function writeSeedPlanEntries(
+  root: vscode.Uri,
+  entries: readonly SeedFileWriteEntry[],
+  logger: StoryboardLogger
+): Promise<void> {
+  const written: string[] = []
+
   for (const entry of entries) {
-    const target = uriForRelativeProjectPath(root, entry.relativePath)
-    await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(entry.content))
+    try {
+      const target = uriForRelativeProjectPath(root, entry.relativePath)
+      await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(entry.content))
+      written.push(entry.relativePath)
+    } catch (error) {
+      logger.error(
+        `Seed 파일 쓰기가 중단되었습니다. 이미 반영된 경로 (${written.length}개): ${written.join(", ")}`,
+        error
+      )
+      throw new SeedWriteAbortedError("Seed 파일 쓰기가 중단되었습니다.", written, { cause: error })
+    }
   }
 }
 
@@ -176,6 +200,21 @@ async function confirmOrAbortStoryboardMetadataWithoutProjectJson(
   )
 
   return choice === "계속"
+}
+
+async function confirmOverwriteDifferentSeedContent(conflicts: readonly string[]): Promise<boolean> {
+  if (conflicts.length === 0) {
+    return true
+  }
+
+  const choice = await vscode.window.showWarningMessage(
+    `Seed와 내용이 다른 기존 파일이 ${conflicts.length}개 있습니다. 덮어쓰시겠습니까?`,
+    { modal: true, detail: conflicts.slice(0, 12).join("\n") },
+    "덮어쓰기",
+    "취소"
+  )
+
+  return choice === "덮어쓰기"
 }
 
 async function confirmOverwriteExistingSeedTargets(
@@ -327,7 +366,7 @@ async function createProjectFromSeedFile(
     }
 
     await createStoryboardDirectories(paths)
-    await writeSeedPlanEntries(targetRoot, plan)
+    await writeSeedPlanEntries(targetRoot, plan, dependencies.logger)
     await ensureWorkspaceGitignore(paths.gitignore)
     await writeReadmeIfMissing(paths, seed.project.name)
     dependencies.logger.info(`Seed로 프로젝트를 생성했습니다: ${targetRoot.fsPath}`)
@@ -335,6 +374,14 @@ async function createProjectFromSeedFile(
     await vscode.window.showInformationMessage(`Seed로 Storyboard 프로젝트를 생성했습니다: ${seed.project.name}`)
     await offerOpenCreatedFolder(targetRoot)
   } catch (error) {
+    if (error instanceof SeedWriteAbortedError) {
+      dependencies.logger.show()
+      await vscode.window.showErrorMessage(
+        `Seed 반영이 중간에 실패했습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
+      )
+      return
+    }
+
     dependencies.logger.error("Seed 기반 프로젝트 생성에 실패했습니다.", error)
     dependencies.logger.show()
     await vscode.window.showErrorMessage("Seed 기반 프로젝트 생성에 실패했습니다. Output 패널을 확인해 주세요.")
@@ -342,7 +389,8 @@ async function createProjectFromSeedFile(
 }
 
 async function syncProjectFromSeedFile(
-  dependencies: RegisterImportSeedCommandsDependencies
+  dependencies: RegisterImportSeedCommandsDependencies,
+  seedFileUri?: vscode.Uri
 ): Promise<void> {
   const workspaceFolder = await pickStoryboardWorkspaceFolder()
 
@@ -350,7 +398,7 @@ async function syncProjectFromSeedFile(
     return
   }
 
-  const seedUri = await pickSeedFileUri()
+  const seedUri = seedFileUri ?? (await pickSeedFileUri())
 
   if (!seedUri) {
     return
@@ -382,20 +430,68 @@ async function syncProjectFromSeedFile(
     const existingRelativePaths = await collectSeedSyncRelativePaths(workspaceFolder.uri)
     const deletions = computeSeedDeletionCandidates(existingRelativePaths, seed)
     const plan = buildSeedWritePlan(seed)
+    const existingByPath = await readExistingContentByRelativePathForPlan(workspaceFolder.uri, plan)
+    const contentConflicts = listSeedPlanContentConflictRelativePaths(plan, existingByPath)
+
+    if (!(await confirmOverwriteDifferentSeedContent(contentConflicts))) {
+      return
+    }
 
     if (!(await confirmSeedDeletionCandidates(deletions, dependencies.logger))) {
       return
     }
 
-    await writeSeedPlanEntries(workspaceFolder.uri, plan)
+    await writeSeedPlanEntries(workspaceFolder.uri, plan, dependencies.logger)
     await deleteRelativePaths(workspaceFolder.uri, deletions)
     await ensureWorkspaceGitignore(paths.gitignore)
     dependencies.logger.info(`Seed로 프로젝트를 동기화했습니다: ${workspaceFolder.uri.fsPath}`)
     await refreshStoryboardWorkspaceContext()
     await vscode.window.showInformationMessage(`Seed 내용으로 프로젝트를 동기화했습니다: ${seed.project.name}`)
   } catch (error) {
+    if (error instanceof SeedWriteAbortedError) {
+      dependencies.logger.show()
+      await vscode.window.showErrorMessage(
+        `Seed 동기화 중 쓰기가 중단되었습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
+      )
+      return
+    }
+
     dependencies.logger.error("Seed 동기화에 실패했습니다.", error)
     dependencies.logger.show()
     await vscode.window.showErrorMessage("Seed 동기화에 실패했습니다. Output 패널을 확인해 주세요.")
+  }
+}
+
+async function exportProjectToSeedFile(
+  dependencies: RegisterImportSeedCommandsDependencies
+): Promise<void> {
+  const workspaceFolder = await pickStoryboardWorkspaceFolder()
+
+  if (!workspaceFolder) {
+    return
+  }
+
+  try {
+    const envelope = await readParsedSeedEnvelopeFromWorkspaceRoot(workspaceFolder.uri)
+    const raw = serializeSeed(envelope)
+    const safeName = envelope.project.name.replace(/[/\\?%*:|"<>]/g, "-").trim() || "storyboard"
+    const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, `${safeName}.seed`)
+    const picked = await vscode.window.showSaveDialog({
+      defaultUri,
+      filters: { "Storyboard Seed": ["seed"] },
+      saveLabel: "보내기"
+    })
+
+    if (!picked) {
+      return
+    }
+
+    await vscode.workspace.fs.writeFile(picked, new TextEncoder().encode(raw))
+    dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`)
+    await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`)
+  } catch (error) {
+    dependencies.logger.error("Seed 보내기에 실패했습니다.", error)
+    dependencies.logger.show()
+    await vscode.window.showErrorMessage("Seed 보내기에 실패했습니다. Output 패널을 확인해 주세요.")
   }
 }

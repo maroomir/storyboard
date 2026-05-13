@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest"
 import { parseProjectJson } from "@/files/projectJson"
 import {
   buildSeedWritePlan,
+  collectTrackedCardAndSceneRelativePathsFromFileNames,
   computeSeedDeletionCandidates,
   isSeedSyncExcludedPath,
+  listSeedPlanContentConflictRelativePaths,
   normalizeRelativePath
 } from "@/files/seedImport"
 import { parseSeed, SEED_ENVELOPE_VERSION } from "@/models/serialization/seedFile"
@@ -100,6 +102,35 @@ describe("seedImport", () => {
     expect(computeSeedDeletionCandidates(existing, seed).sort()).toEqual(
       ["background/old.card", "character/orphan.card", "scene/02-unused.txt"].sort()
     )
+  })
+
+  it("collectTrackedCardAndSceneRelativePathsFromFileNames lists only root-level tracked cards and valid scenes", () => {
+    const paths = collectTrackedCardAndSceneRelativePathsFromFileNames({
+      characterFileNames: [".sample.card", "hero.card", "not-a-card.txt"],
+      backgroundFileNames: ["bg.card"],
+      sceneFileNames: [".sample.txt", "01-a.txt", "invalid-scene-name.txt"]
+    })
+
+    expect(paths.sort()).toEqual(["background/bg.card", "character/hero.card", "scene/01-a.txt"])
+  })
+
+  it("listSeedPlanContentConflictRelativePaths lists paths where existing content differs", () => {
+    const plan = buildSeedWritePlan(parseSeed(minimalSeedRaw()))
+    const existing = new Map<string, string>([["character/hero.card", "different"]])
+
+    expect(listSeedPlanContentConflictRelativePaths(plan, existing)).toContain("character/hero.card")
+  })
+
+  it("listSeedPlanContentConflictRelativePaths ignores missing files and identical content", () => {
+    const plan: { relativePath: string; content: string }[] = [
+      { relativePath: "scene/01-prologue.txt", content: "same" }
+    ]
+    const existing = new Map<string, string>([
+      ["scene/01-prologue.txt", "same"],
+      ["other.txt", "x"]
+    ])
+
+    expect(listSeedPlanContentConflictRelativePaths(plan, existing)).toEqual([])
   })
 
   it("does not treat invalid scene filenames as deletion candidates", () => {
