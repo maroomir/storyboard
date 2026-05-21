@@ -304,9 +304,13 @@ describe("runSceneGenerationPipeline", () => {
 
   it("adds background to dialogue participants when situation lists no characters", async () => {
     const hallBackground: BackgroundCard = {
-      type: "background",
+      type: "location",
       id: "school-hall",
-      name: "복도"
+      name: "복도",
+      locationKind: "place",
+      description: "",
+      characterIds: [],
+      tags: []
     }
 
     const ai = createRecordingAiService()
