@@ -126,9 +126,7 @@ function toBackgroundSnapshot(
   return {
     id: background.id,
     name: background.name,
-    description: background.description,
-    country: background.country,
-    category: background.category
+    description: background.description
   }
 }
 

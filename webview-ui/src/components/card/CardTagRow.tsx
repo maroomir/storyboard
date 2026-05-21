@@ -14,7 +14,9 @@ export type CardTagRowProps = {
 
 const typeLabel: Record<CardType, string> = {
   character: "Character",
-  background: "Background"
+  location: "Location",
+  temporal: "Temporal",
+  social: "Social"
 }
 
 export function CardTagRow({

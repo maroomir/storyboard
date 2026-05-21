@@ -96,7 +96,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           />
         </label>
         {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
-        {card.type === "background" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
+        {card.type !== "character" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Description</span>
           <textarea
@@ -109,7 +109,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
       </div>
     )
 
-    if (card.type === "background") {
+    if (card.type !== "character") {
       return [
         { id: "overview", label: "Overview", panel: overview },
         {
@@ -229,9 +229,11 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
       <section className={panelClass} aria-label="카드 미리보기">
         <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Preview</p>
         <HeroCard card={card} imageUri={documentState.imageUri} variant="hero" />
-        <p className="m-0 text-xs leading-normal text-sb-fg-muted">
-          이미지는 카드의 {card.type === "character" ? "profile" : "concept"} 경로를 기준으로 표시합니다.
-        </p>
+        {card.type === "character" ? (
+          <p className="m-0 text-xs leading-normal text-sb-fg-muted">
+            이미지는 카드의 profile 경로를 기준으로 표시합니다.
+          </p>
+        ) : null}
       </section>
 
       <section className={`${panelClass} min-h-0`} aria-label="카드 편집 폼">

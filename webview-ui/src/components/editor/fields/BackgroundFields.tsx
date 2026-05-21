@@ -12,30 +12,21 @@ export function BackgroundFields({
 }): React.ReactElement {
   return (
     <>
-      <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Concept</span>
-        <input
-          className={sbInputClass}
-          value={card.concept ?? ""}
-          onChange={(event) => updateCard({ ...card, concept: event.target.value })}
-        />
-      </label>
-      <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Country</span>
-        <input
-          className={sbInputClass}
-          value={card.country ?? ""}
-          onChange={(event) => updateCard({ ...card, country: event.target.value })}
-        />
-      </label>
-      <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Category</span>
-        <input
-          className={sbInputClass}
-          value={card.category ?? ""}
-          onChange={(event) => updateCard({ ...card, category: event.target.value })}
-        />
-      </label>
+      {card.type === "location" ? (
+        <label className="flex flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">Location Kind</span>
+          <select
+            className={sbInputClass}
+            value={card.locationKind ?? "place"}
+            onChange={(event) =>
+              updateCard({ ...card, locationKind: event.target.value as "place" | "affiliation" })
+            }
+          >
+            <option value="place">place</option>
+            <option value="affiliation">affiliation</option>
+          </select>
+        </label>
+      ) : null}
     </>
   )
 }

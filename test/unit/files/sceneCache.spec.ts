@@ -20,11 +20,11 @@ const sampleCharacter: CharacterCard = {
 }
 
 const sampleBackground: BackgroundCard = {
-  type: "background",
+  type: "location",
   id: "sample",
   name: "샘플 배경",
-  country: "한국",
-  category: "샘플",
+  locationKind: "place",
+  characterIds: [],
   tags: ["샘플"],
   description: "테스트 배경"
 }
@@ -48,8 +48,6 @@ describe("scene cache codec", () => {
       backgroundSnapshot: {
         id: "sample",
         name: "샘플 배경",
-        country: "한국",
-        category: "샘플",
         description: "테스트 배경"
       },
       providers: {

@@ -35,14 +35,13 @@ describe("prompt length dump", () => {
   }
 
   const background: Background = {
-    type: "background",
+    type: "location",
     id: "school",
     name: "학교",
-    concept: "concept/school.png",
+    locationKind: "place",
     description: "교실",
-    tags: [],
-    country: "KR",
-    category: "학원물"
+    characterIds: [],
+    tags: []
   }
 
   const format: ProjectFormat = "screenplay"

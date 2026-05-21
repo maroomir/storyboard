@@ -1,7 +1,7 @@
 import type {
   CardEditorInitialData,
-  CardType,
   SceneListItem,
+  SidebarCardCategory,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
   UsageSummaryByEntity
@@ -102,7 +102,7 @@ function isSidebarCardsInitialData(value: unknown): value is SidebarCardsInitial
 
   const candidate = value as Partial<SidebarCardsInitialData>
   return (
-    isCardType(candidate.type) &&
+    isSidebarCardCategory(candidate.type) &&
     typeof candidate.title === "string" &&
     Array.isArray(candidate.cards) &&
     typeof candidate.isStoryboardProject === "boolean"
@@ -139,6 +139,6 @@ function isSceneListItem(value: unknown): value is SceneListItem {
   )
 }
 
-function isCardType(value: unknown): value is CardType {
+function isSidebarCardCategory(value: unknown): value is SidebarCardCategory {
   return value === "character" || value === "background"
 }

@@ -14,8 +14,6 @@ export interface SceneCacheBackgroundSnapshot {
   readonly id: string
   readonly name: string
   readonly description?: string
-  readonly country?: string
-  readonly category?: string
 }
 
 export interface SceneCacheRecord {
@@ -51,9 +49,7 @@ const sceneCacheSituationSchema = z.object({
 const sceneCacheBackgroundSnapshotSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().optional(),
-  country: z.string().optional(),
-  category: z.string().optional()
+  description: z.string().optional()
 })
 
 const aiProviderIdSchema = z.enum(aiProviderIds)
@@ -114,12 +110,12 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
     })),
     background: input.background
       ? {
+          type: input.background.type,
           id: input.background.id,
           name: input.background.name,
-          country: input.background.country,
-          category: input.background.category,
           tags: input.background.tags ?? [],
-          description: input.background.description ?? ""
+          description: input.background.description ?? "",
+          characterIds: input.background.characterIds ?? []
         }
       : undefined,
     format: input.format

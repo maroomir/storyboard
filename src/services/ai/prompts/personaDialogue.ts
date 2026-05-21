@@ -21,8 +21,7 @@ export const PersonaDialoguePrompt = {
       variant === "xs" ? undefined : "대화는 '캐릭터명: 대사' 형식을 사용하라.",
       variant === "xs" ? undefined : "행동, 표정, 감정을 함께 서술하라.",
       background.description ? `배경 설명: ${background.description}` : undefined,
-      background.country ? `국가/지역: ${background.country}` : undefined,
-      background.category ? `카테고리: ${background.category}` : undefined
+      background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined
     ]
       .filter((line): line is string => Boolean(line))
       .join("\n")

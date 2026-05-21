@@ -12,7 +12,6 @@ export interface StoryboardProjectPaths {
   readonly characterProfileDirectory: vscode.Uri
   readonly sampleCharacterCard: vscode.Uri
   readonly backgroundDirectory: vscode.Uri
-  readonly backgroundConceptDirectory: vscode.Uri
   readonly sampleBackgroundCard: vscode.Uri
   readonly sceneDirectory: vscode.Uri
   readonly sampleScene: vscode.Uri
@@ -40,7 +39,6 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, "profile"),
     sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, ".sample.card"),
     backgroundDirectory,
-    backgroundConceptDirectory: vscode.Uri.joinPath(backgroundDirectory, "concept"),
     sampleBackgroundCard: vscode.Uri.joinPath(backgroundDirectory, ".sample.card"),
     sceneDirectory,
     sampleScene: vscode.Uri.joinPath(sceneDirectory, ".sample.txt"),
@@ -68,10 +66,6 @@ export function characterProfilePath(workspaceRoot: vscode.Uri, id: string): vsc
 
 export function backgroundCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
   return vscode.Uri.joinPath(workspaceRoot, "background", `${id}.card`)
-}
-
-export function backgroundConceptPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, "background", "concept", `${id}.png`)
 }
 
 export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: string): vscode.Uri {

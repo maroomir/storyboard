@@ -16,7 +16,7 @@ export type StoryboardCardProps = {
 
 const shadowRest = "inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.18), 0 8px 24px rgba(0,0,0,0.12)"
 
-const shadowHover: Record<StoryboardCardModel["type"], string> = {
+const shadowHover: Record<"character" | "background", string> = {
   character:
     "inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 32px rgba(0,0,0,0.24), 0 0 36px rgba(251, 191, 36, 0.24)",
   background:
@@ -33,11 +33,11 @@ export function StoryboardCard({
   className
 }: StoryboardCardProps): React.ReactElement {
   const isHero = variant === "hero"
-  const glowKey = card.type
+  const glowKey = card.type === "character" ? "character" : "background"
 
   const compactSecondary =
     card.description?.trim() ||
-    [card.role, card.country ?? card.category].filter(Boolean).join(" · ") ||
+    [card.role, card.locationKind].filter(Boolean).join(" · ") ||
     ""
 
   const frameClass = clsx(

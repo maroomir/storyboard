@@ -2,7 +2,6 @@ import * as vscode from "vscode"
 
 import {
   backgroundCardPath,
-  backgroundConceptPath,
   characterCardPath,
   characterProfilePath
 } from "../core/pathConventions"
@@ -26,7 +25,7 @@ const transparentPngBytes = Uint8Array.from([
 export function registerCreateCardCommands(): vscode.Disposable {
   return vscode.Disposable.from(
     vscode.commands.registerCommand(createCharacterCommand, () => createCard("character")),
-    vscode.commands.registerCommand(createBackgroundCommand, () => createCard("background"))
+    vscode.commands.registerCommand(createBackgroundCommand, () => createCard("location"))
   )
 }
 
@@ -93,10 +92,11 @@ async function writePlaceholderImageIfMissing(
   workspaceRoot: vscode.Uri,
   card: StoryboardCard
 ): Promise<void> {
-  const imageUri =
-    card.type === "character"
-      ? characterProfilePath(workspaceRoot, card.id)
-      : backgroundConceptPath(workspaceRoot, card.id)
+  if (card.type !== "character") {
+    return
+  }
+
+  const imageUri = characterProfilePath(workspaceRoot, card.id)
 
   if (await uriExists(imageUri)) {
     return

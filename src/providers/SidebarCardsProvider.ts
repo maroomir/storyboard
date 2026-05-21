@@ -19,9 +19,19 @@ function isIgnoredCardUri(uri: vscode.Uri): boolean {
   return isIgnoredSampleCardFileName(uri.path.split("/").at(-1) ?? "")
 }
 
+type SidebarCardCategory = "character" | "background"
+
+function toSidebarCardCategory(cardType: CardType): SidebarCardCategory {
+  return cardType === "character" ? "character" : "background"
+}
+
+function representativeCardType(category: SidebarCardCategory): CardType {
+  return category === "character" ? "character" : "location"
+}
+
 interface SidebarCardsProviderOptions {
   readonly viewType: string
-  readonly cardType: CardType
+  readonly cardType: SidebarCardCategory
   readonly title: string
   readonly cardGlob: string
 }
@@ -36,7 +46,7 @@ interface SidebarCardSummary {
 }
 
 interface SidebarCardsInitialData {
-  readonly type: CardType
+  readonly type: SidebarCardCategory
   readonly title: string
   readonly cards: readonly SidebarCardSummary[]
   readonly isStoryboardProject: boolean
@@ -209,10 +219,11 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
     try {
       const rawCard = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri))
       const card = parseCard(rawCard)
+      const category = toSidebarCardCategory(card.type)
 
-      if (card.type !== this.options.cardType) {
+      if (category !== this.options.cardType) {
         return {
-          type: this.options.cardType,
+          type: representativeCardType(this.options.cardType),
           id: uri.path,
           name: uri.path.split("/").at(-1) ?? uri.toString(),
           uri: uri.toString(),
@@ -229,7 +240,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       }
     } catch (error) {
       return {
-        type: this.options.cardType,
+        type: representativeCardType(this.options.cardType),
         id: uri.path,
         name: uri.path.split("/").at(-1) ?? uri.toString(),
         uri: uri.toString(),

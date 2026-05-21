@@ -80,7 +80,7 @@ async function createNewScene(): Promise<void> {
 
   const project = await readProjectJson(paths.projectJson)
   const inspected = vscode.workspace.getConfiguration("storyboard").inspect<number>("scene.prefixDigits")
-  const digitCount = resolveScenePrefixDigitCount(project.settings.scenePrefixDigits, inspected)
+  const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, inspected)
 
   const directoryEntries = await vscode.workspace.fs.readDirectory(paths.sceneDirectory)
   const sceneFileNames = directoryEntries

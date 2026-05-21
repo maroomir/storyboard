@@ -105,7 +105,7 @@ function resolveCardImageUri(
   card: StoryboardCard,
   webview: vscode.Webview
 ): string | undefined {
-  const relativeImagePath = card.type === "character" ? card.profile : card.concept
+  const relativeImagePath = card.type === "character" ? card.profile : undefined
 
   if (!relativeImagePath) {
     return undefined

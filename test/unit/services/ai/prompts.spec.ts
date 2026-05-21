@@ -29,14 +29,13 @@ describe("AI prompts", () => {
   }
 
   const background: Background = {
-    type: "background",
+    type: "location",
     id: "school",
     name: "학교",
-    concept: "concept/school.png",
+    locationKind: "place",
     description: "교실",
-    tags: [],
-    country: "KR",
-    category: "학원물"
+    characterIds: [],
+    tags: []
   }
 
   const format: ProjectFormat = "screenplay"
@@ -118,16 +117,13 @@ describe("AI prompts", () => {
     recentDialogues: []
   }
   const background: Background = {
-    type: "background",
+    type: "location",
     id: "school",
     name: "학교",
+    locationKind: "place",
     description: "교실",
-    tags: [],
-    country: "KR",
-    category: "학원물",
-    atmosphere: undefined,
-    constraints: [],
-    props: []
+    characterIds: [],
+    tags: []
   }
   const format: ProjectFormat = "screenplay"
 

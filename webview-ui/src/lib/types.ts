@@ -1,4 +1,6 @@
-export type CardType = "character" | "background"
+export type CardType = "character" | "location" | "temporal" | "social"
+
+export type SidebarCardCategory = "character" | "background"
 
 export type StoryboardRequestMethod =
   | "cards.write"
@@ -29,10 +31,9 @@ export interface StoryboardCard {
   readonly name: string
   readonly description?: string
   readonly profile?: string
-  readonly concept?: string
   readonly role?: string
-  readonly country?: string
-  readonly category?: string
+  readonly locationKind?: "place" | "affiliation"
+  readonly characterIds?: readonly string[]
   readonly attributes?: Record<string, CardAttributeValue>
   readonly tags?: readonly string[]
   readonly traits?: readonly string[]
@@ -66,7 +67,7 @@ export interface SidebarCardSummary {
 }
 
 export interface SidebarCardsInitialData {
-  readonly type: CardType
+  readonly type: SidebarCardCategory
   readonly title: string
   readonly cards: readonly SidebarCardSummary[]
   readonly isStoryboardProject: boolean

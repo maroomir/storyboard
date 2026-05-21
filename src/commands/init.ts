@@ -77,7 +77,7 @@ export async function createStoryboardDirectories(paths: StoryboardProjectPaths)
     vscode.workspace.fs.createDirectory(paths.personaCacheDirectory),
     vscode.workspace.fs.createDirectory(paths.sceneCacheDirectory),
     vscode.workspace.fs.createDirectory(paths.characterProfileDirectory),
-    vscode.workspace.fs.createDirectory(paths.backgroundConceptDirectory),
+    vscode.workspace.fs.createDirectory(paths.backgroundDirectory),
     vscode.workspace.fs.createDirectory(paths.sceneDirectory),
     vscode.workspace.fs.createDirectory(paths.draftDirectory)
   ])
@@ -127,12 +127,11 @@ recentDialogues: []
 }
 
 function createSampleBackgroundCard(): string {
-  return `type: background
+  return `type: location
 id: sample
 name: 샘플 배경
-concept: concept/sample.png
-country: 한국
-category: 샘플
+locationKind: place
+characterIds: []
 tags:
   - 샘플
 description: |

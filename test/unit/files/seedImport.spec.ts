@@ -115,7 +115,7 @@ describe("seedImport", () => {
       "character/profile/hero.png"
     ]
 
-    expect(computeSeedDeletionCandidates(existing, seed).sort()).toEqual(
+    expect([...computeSeedDeletionCandidates(existing, seed)].sort()).toEqual(
       ["background/old.card", "character/orphan.card", "scene/02-unused.txt"].sort()
     )
   })
