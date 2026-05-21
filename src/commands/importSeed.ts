@@ -14,10 +14,12 @@ import {
   type SeedFileWriteEntry
 } from "../files/seedImport"
 import { readDirectoryFileNamesOnly, readParsedSeedEnvelopeFromWorkspaceRoot } from "../files/seedEnvelopeFromWorkspace"
+import { listSeedExportPreflightIssues } from "../files/seedExportPreflight"
 import {
   decodeSeedToWritePlan,
   encodeWorkspaceToSeed,
-  type DecodedSeedContent
+  type DecodedSeedContent,
+  type WorkspaceContent
 } from "../services/seedcoat/projectAdapter"
 import { inspectHeader, isSeedError } from "../services/seedcoat/loader"
 import {
@@ -36,6 +38,56 @@ const syncFromSeedCommand = "storyboard.seed.syncFromFile"
 const exportToSeedCommand = "storyboard.seed.exportToFile"
 
 const SEED_DELETE_DETAIL_LOG_THRESHOLD = 8
+
+async function decodeSeedWithProgress(
+  bytes: Uint8Array,
+  passphrase: string
+): Promise<DecodedSeedContent> {
+  return vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Storyboard Seed",
+      cancellable: false
+    },
+    async (progress) => {
+      progress.report({
+        message: "복호화 중… 패스프레이즈 검증에 수 초~수십 초 걸릴 수 있습니다."
+      })
+      return decodeSeedToWritePlan(bytes, passphrase)
+    }
+  )
+}
+
+async function encodeWorkspaceWithProgress(
+  content: WorkspaceContent,
+  passphrase: string
+): Promise<Uint8Array> {
+  return vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Storyboard Seed",
+      cancellable: false
+    },
+    async (progress) => {
+      progress.report({ message: "암호화 중… 수 초~수십 초 걸릴 수 있습니다." })
+      return encodeWorkspaceToSeed(content, passphrase)
+    }
+  )
+}
+
+async function reportSeedExportPreflightIssuesOrAbort(content: WorkspaceContent): Promise<boolean> {
+  const issues = listSeedExportPreflightIssues(content)
+
+  if (issues.length === 0) {
+    return true
+  }
+
+  await vscode.window.showErrorMessage(
+    ".seed보내기를 할 수 없습니다. 씬 stem·editor.scenePrefixDigits를 seedcoat 규칙(두 자리 prefix, 예: 01-opening)에 맞게 수정하세요.",
+    { modal: true, detail: issues.join("\n") }
+  )
+  return false
+}
 
 export interface RegisterImportSeedCommandsDependencies {
   readonly logger: StoryboardLogger
@@ -456,7 +508,7 @@ async function createProjectFromSeedFile(
   let seed: DecodedSeedContent
 
   try {
-    seed = await decodeSeedToWritePlan(bytes, passphrase)
+    seed = await decodeSeedWithProgress(bytes, passphrase)
   } catch (error) {
     await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
     return
@@ -543,7 +595,7 @@ async function syncProjectFromSeedFile(
   let seed: DecodedSeedContent
 
   try {
-    seed = await decodeSeedToWritePlan(bytes, passphrase)
+    seed = await decodeSeedWithProgress(bytes, passphrase)
   } catch (error) {
     await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
     return
@@ -596,6 +648,11 @@ async function exportProjectToSeedFile(
 
   try {
     const content = await readParsedSeedEnvelopeFromWorkspaceRoot(workspaceFolder.uri)
+
+    if (!(await reportSeedExportPreflightIssuesOrAbort(content))) {
+      return
+    }
+
     const safeName = content.project.name.replace(/[/\\?%*:|"<>]/g, "-").trim() || "storyboard"
     const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, `${safeName}.seed`)
     const picked = await vscode.window.showSaveDialog({
@@ -614,7 +671,7 @@ async function exportProjectToSeedFile(
       return
     }
 
-    const seedBytes = await encodeWorkspaceToSeed(content, passphrase)
+    const seedBytes = await encodeWorkspaceWithProgress(content, passphrase)
     await vscode.workspace.fs.writeFile(picked, seedBytes)
     dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`)
     await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`)

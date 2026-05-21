@@ -9,7 +9,14 @@ import {
   type CharacterCard
 } from "@/shared/card"
 import { storyboardProjectSchema } from "@/files/projectJson"
+import { SEED_PASSPHRASE_REQUIRED_MESSAGE } from "@/constants/projectStorageMessages"
 import { decode, encode, validate, type SeedParts } from "@/services/seedcoat/loader"
+
+function assertPassphraseProvided(passphrase: string): void {
+  if (passphrase.length === 0) {
+    throw new Error(SEED_PASSPHRASE_REQUIRED_MESSAGE)
+  }
+}
 
 export interface SeedSceneEntry {
   readonly stem: string
@@ -107,6 +114,7 @@ export async function decodeSeedToWritePlan(
   bytes: Uint8Array,
   passphrase: string
 ): Promise<DecodedSeedContent> {
+  assertPassphraseProvided(passphrase)
   const parts = await decode(bytes, passphrase)
 
   const project = parseProjectPart(parseJsonPart("project", parts.project))
@@ -131,6 +139,7 @@ export async function encodeWorkspaceToSeed(
   content: WorkspaceContent,
   passphrase: string
 ): Promise<Uint8Array> {
+  assertPassphraseProvided(passphrase)
   const projectEnvelope = {
     version: content.project.version,
     id: content.project.id,
