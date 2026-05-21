@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-22
+
 ### Changed
 
 - Moved the `doc/` tree to an untracked `.doc/` folder (not shipped in the public repo) and consolidated public docs at the repo root as `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `EXTENSION_QA.md`, `RELEASE.md`, and `GUIDE.md`. Updated links in README, AGENTS, Cursor/Clinerules, and skills.
@@ -23,10 +25,13 @@ after the first public release.
 - Passphrase prompts for Seed import/export (one prompt on import; entry + confirmation plus a loss warning on export). Empty passphrases are rejected and never stored.
 - `inspectHeader` preflight on import to reject legacy plaintext `.seed` files before asking for a passphrase.
 - Korean message mapping for all seedcoat error codes (`src/constants/projectStorageMessages.ts`).
+- Progress notifications during `.seed` encode/decode (KDF wait).
+- Pre-export validation for `scenePrefixDigits` and scene stems (`src/files/seedExportPreflight.ts`).
+- Manual `.seed` QA in [`EXTENSION_QA.md`](EXTENSION_QA.md) and VSIX `.seed` smoke steps in [`RELEASE.md`](RELEASE.md).
 
 ### Notes
 
-- Character `arc` / `recentDialogues` / `profile` / `attributes` are not preserved across a `.seed` round-trip (seedcoat discards them on encode). Existing workspace background cards in the old format are not auto-migrated.
+- Character `arc` / `recentDialogues` / `profile` / `attributes` are not preserved across a `.seed` round-trip (seedcoat discards them on encode). `trackDraft` is omitted from the seed `project` envelope and may be lost on sync overwrite. Existing workspace background cards in the old format are not auto-migrated.
 
 ## [0.1.3] - 2026-05-21
 

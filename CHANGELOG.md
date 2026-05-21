@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-22
+
 ### 변경
 
 - `doc/` 트리를 비추적 `.doc/`으로 옮기고(원격 저장소에는 포함하지 않음), 공개 문서는 루트 `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `EXTENSION_QA.md`, `RELEASE.md`, `GUIDE.md`로 정리했습니다. README, AGENTS, Cursor/Clinerules, 스킬 문서의 링크를 갱신했습니다.
@@ -22,10 +24,13 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - Seed import/export 시 패스프레이즈 입력 다이얼로그를 추가했습니다(import 1회, export 입력+확인 2회 및 손실 경고). 빈 패스프레이즈는 허용하지 않으며 저장하지 않습니다.
 - 가져오기 시 패스프레이즈 입력 전 `inspectHeader`로 레거시 평문 `.seed`를 거부합니다.
 - seedcoat 오류 코드 전체에 대한 한국어 메시지 매핑(`src/constants/projectStorageMessages.ts`)을 추가했습니다.
+- `.seed` 보내기/가져오기 시 KDF 대기용 진행 알림(`withProgress`)을 추가했습니다.
+- `.seed` 보내기 전 `scenePrefixDigits`·씬 stem seedcoat 규칙 사전 검사(`src/files/seedExportPreflight.ts`)를 추가했습니다.
+- [`EXTENSION_QA.md`](EXTENSION_QA.md)에 `.seed` 수동 QA 절, [`RELEASE.md`](RELEASE.md)에 `compile`·VSIX `.seed` smoke 절차를 추가했습니다.
 
 ### 참고
 
-- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`는 `.seed` 왕복에서 보존되지 않습니다(seedcoat가 encode 시 폐기). 기존 워크스페이스의 구 형식 background 카드는 자동 마이그레이션되지 않습니다.
+- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`는 `.seed` 왕복에서 보존되지 않습니다(seedcoat가 encode 시 폐기). `trackDraft`는 seed `project` envelope에 없어 동기화 시 덮어쓰면 소실될 수 있습니다. 기존 워크스페이스의 구 형식 background 카드는 자동 마이그레이션되지 않습니다.
 
 ## [0.1.3] - 2026-05-21
 
