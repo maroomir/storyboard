@@ -20,6 +20,7 @@ import {
   type DecodedSeedContent
 } from "../services/seedcoat/projectAdapter"
 import { isSeedError } from "../services/seedcoat/loader"
+import { UNSUPPORTED_LEGACY_SEED_FILE_MESSAGE } from "../constants/projectStorageMessages"
 import {
   createStoryboardDirectories,
   createWorkspaceReadme,
@@ -72,9 +73,20 @@ async function readSeedFile(uri: vscode.Uri): Promise<Uint8Array> {
   return vscode.workspace.fs.readFile(uri)
 }
 
-function formatSeedParseFailureMessage(error: unknown): string {
+function formatSeedErrorMessage(error: unknown): string {
   if (isSeedError(error)) {
-    return error.message
+    switch (error.code) {
+      case "DECRYPTION_FAILED":
+        return "패스프레이즈가 올바르지 않거나 파일이 손상되었습니다."
+      case "LEGACY_FORMAT_REJECTED":
+        return UNSUPPORTED_LEGACY_SEED_FILE_MESSAGE
+      case "INPUT_LIMITS_EXCEEDED":
+        return "Seed 파일이 처리 한도를 초과했습니다."
+      case "SCHEMA_VIOLATION":
+        return "Seed 파일 구조가 올바르지 않습니다."
+      default:
+        return error.message
+    }
   }
 
   if (error instanceof Error) {
@@ -82,6 +94,58 @@ function formatSeedParseFailureMessage(error: unknown): string {
   }
 
   return "Seed 파일을 처리하는 중 알 수 없는 오류가 발생했습니다."
+}
+
+async function promptImportPassphrase(): Promise<string | undefined> {
+  return vscode.window.showInputBox({
+    prompt: "Seed 파일의 패스프레이즈를 입력하세요",
+    password: true,
+    placeHolder: "패스프레이즈 (없으면 비워두세요)"
+  })
+}
+
+async function confirmExportAndPromptPassphrase(): Promise<string | undefined> {
+  const proceed = await vscode.window.showWarningMessage(
+    "Seed 파일로 내보냅니다.",
+    {
+      modal: true,
+      detail:
+        "⚠ 패스프레이즈를 잃어버리면 Seed를 복호화할 수 없습니다.\n\n다음 데이터는 .seed 파일에 포함되지 않습니다:\n• 캐릭터 프로필 이미지 경로(profile), 속성(attributes)\n• 임시 작업 데이터(draft/)\n\n패스프레이즈 없이 내보내려면 비워두고 확인하세요."
+    },
+    "계속",
+    "취소"
+  )
+
+  if (proceed !== "계속") {
+    return undefined
+  }
+
+  const passphrase = await vscode.window.showInputBox({
+    prompt: "Seed 파일에 사용할 패스프레이즈를 입력하세요",
+    password: true,
+    placeHolder: "패스프레이즈 (없으면 비워두세요)"
+  })
+
+  if (passphrase === undefined) {
+    return undefined
+  }
+
+  const confirm = await vscode.window.showInputBox({
+    prompt: "패스프레이즈를 다시 입력하세요",
+    password: true,
+    placeHolder: "패스프레이즈 확인"
+  })
+
+  if (confirm === undefined) {
+    return undefined
+  }
+
+  if (passphrase !== confirm) {
+    await vscode.window.showErrorMessage("패스프레이즈가 일치하지 않습니다. 다시 시도하세요.")
+    return undefined
+  }
+
+  return passphrase
 }
 
 async function pickSeedFileUri(): Promise<vscode.Uri | undefined> {
@@ -344,13 +408,18 @@ async function createProjectFromSeedFile(
     return
   }
 
+  const passphrase = await promptImportPassphrase()
+
+  if (passphrase === undefined) {
+    return
+  }
+
   let seed: DecodedSeedContent
 
   try {
-    // TODO Phase 3: prompt for passphrase via showInputBox
-    seed = await decodeSeedToWritePlan(bytes, "")
+    seed = await decodeSeedToWritePlan(bytes, passphrase)
   } catch (error) {
-    await vscode.window.showErrorMessage(formatSeedParseFailureMessage(error))
+    await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
     return
   }
 
@@ -422,13 +491,18 @@ async function syncProjectFromSeedFile(
     return
   }
 
+  const passphrase = await promptImportPassphrase()
+
+  if (passphrase === undefined) {
+    return
+  }
+
   let seed: DecodedSeedContent
 
   try {
-    // TODO Phase 3: prompt for passphrase via showInputBox
-    seed = await decodeSeedToWritePlan(bytes, "")
+    seed = await decodeSeedToWritePlan(bytes, passphrase)
   } catch (error) {
-    await vscode.window.showErrorMessage(formatSeedParseFailureMessage(error))
+    await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
     return
   }
 
@@ -491,8 +565,13 @@ async function exportProjectToSeedFile(
       return
     }
 
-    // TODO Phase 3: prompt for passphrase via showInputBox (confirm + loss warning)
-    const seedBytes = await encodeWorkspaceToSeed(content, "")
+    const passphrase = await confirmExportAndPromptPassphrase()
+
+    if (passphrase === undefined) {
+      return
+    }
+
+    const seedBytes = await encodeWorkspaceToSeed(content, passphrase)
     await vscode.workspace.fs.writeFile(picked, seedBytes)
     dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`)
     await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`)
