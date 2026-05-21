@@ -9,6 +9,23 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 변경
+
+- `.seed` 파일을 평문 JSON envelope(`version: "2.0.0"`)에서 **`@seedcoat/wasm` v0.2.0 암호화 컨테이너**로 완전히 이관했습니다(하드 컷오버). 이전 평문/구버전 `.seed`는 더 이상 지원하지 않으며 `LEGACY_FORMAT_REJECTED`로 거부됩니다.
+- 배경 카드 스키마를 단일 `type: background`에서 **판별 유니온(`location` / `temporal` / `social`)**으로 교체하고, 공통 필드(`characterIds`, `tags`)와 `locationKind`(location 전용)를 도입했습니다. 이전 `concept` / `country` / `category` 필드는 제거되었습니다.
+- 프로젝트 메타데이터의 `settings`를 `editor`(`scenePrefixDigits`, `trackDraft?`)와 작품 단위 `setting`(genre/country/concept/tags/description)으로 분리했습니다.
+- 루트 `SEED-FORMAT.md`를 제거하고, 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)를 단일 진실원으로 둡니다. Storyboard 정책은 [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)에 정리했습니다.
+
+### 추가
+
+- Seed import/export 시 패스프레이즈 입력 다이얼로그를 추가했습니다(import 1회, export 입력+확인 2회 및 손실 경고). 빈 패스프레이즈는 허용하지 않으며 저장하지 않습니다.
+- 가져오기 시 패스프레이즈 입력 전 `inspectHeader`로 레거시 평문 `.seed`를 거부합니다.
+- seedcoat 오류 코드 전체에 대한 한국어 메시지 매핑(`src/constants/projectStorageMessages.ts`)을 추가했습니다.
+
+### 참고
+
+- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`는 `.seed` 왕복에서 보존되지 않습니다(seedcoat가 encode 시 폐기). 기존 워크스페이스의 구 형식 background 카드는 자동 마이그레이션되지 않습니다.
+
 ## [0.1.3] - 2026-05-21
 
 ### 추가

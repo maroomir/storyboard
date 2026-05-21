@@ -17,6 +17,24 @@ const MINIMAL_SEED_PATH = join(
   "node_modules/@seedcoat/wasm/fixtures/sealed/minimal.seed"
 )
 
+function minimalWorkspaceContent(overrides?: Partial<WorkspaceContent>): WorkspaceContent {
+  return {
+    project: {
+      version: "1.0.0",
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "Round Trip Test",
+      format: "novel",
+      language: "ko",
+      createdAt: "2026-05-13T08:00:00.000Z",
+      editor: { scenePrefixDigits: 2 }
+    },
+    characters: [],
+    backgrounds: [],
+    scenes: [{ stem: "01-opening", content: "첫 장면\n" }],
+    ...overrides
+  }
+}
+
 describe("projectAdapter (@seedcoat/wasm)", () => {
   it(
     "decodes minimal.seed fixture",
@@ -60,20 +78,7 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
   it(
     "round-trips encode → decode",
     async () => {
-      const content: WorkspaceContent = {
-        project: {
-          version: "1.0.0",
-          id: "00000000-0000-4000-8000-000000000001",
-          name: "Round Trip Test",
-          format: "novel",
-          language: "ko",
-          createdAt: "2026-05-13T08:00:00.000Z",
-          editor: { scenePrefixDigits: 2 }
-        },
-        characters: [],
-        backgrounds: [],
-        scenes: [{ stem: "01-opening", content: "첫 장면\n" }]
-      }
+      const content = minimalWorkspaceContent()
 
       const bytes = await encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)
       const decoded = await decodeSeedToWritePlan(bytes, FIXTURE_PASSPHRASE)
@@ -86,4 +91,87 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
     },
     30_000
   )
+
+  it(
+    "does not preserve character arc, profile, or attributes after round-trip",
+    async () => {
+      const content = minimalWorkspaceContent({
+        characters: [
+          {
+            type: "character",
+            id: "hero",
+            name: "주인공",
+            role: "lead",
+            arc: [{ stage: "발단", summary: "시작" }],
+            recentDialogues: ["안녕"],
+            profile: "profile/hero.png",
+            attributes: { age: 20 }
+          }
+        ]
+      })
+
+      const bytes = await encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)
+      const decoded = await decodeSeedToWritePlan(bytes, FIXTURE_PASSPHRASE)
+
+      expect(decoded.characters).toHaveLength(1)
+      const hero = decoded.characters[0]
+      expect(hero?.id).toBe("hero")
+      expect(hero?.arc).toBeUndefined()
+      expect(hero?.recentDialogues).toBeUndefined()
+      expect(hero?.profile).toBeUndefined()
+      expect(hero?.attributes).toBeUndefined()
+    },
+    30_000
+  )
+
+  it(
+    "removes orphan background characterIds on decode",
+    async () => {
+      const content = minimalWorkspaceContent({
+        characters: [
+          {
+            type: "character",
+            id: "hero",
+            name: "주인공",
+            role: "lead",
+            traits: [],
+            description: "",
+            relations: []
+          }
+        ],
+        backgrounds: [
+          {
+            type: "location",
+            id: "cafe",
+            name: "카페",
+            locationKind: "place",
+            characterIds: ["hero", "missing"],
+            tags: [],
+            description: ""
+          }
+        ]
+      })
+
+      const bytes = await encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)
+      const decoded = await decodeSeedToWritePlan(bytes, FIXTURE_PASSPHRASE)
+
+      expect(decoded.backgrounds[0]?.characterIds).toEqual(["hero"])
+    },
+    30_000
+  )
+
+  it(
+    "rejects export when scene stem does not match two-digit prefix constraint",
+    async () => {
+      const content = minimalWorkspaceContent({
+        scenes: [{ stem: "1-opening", content: "본문\n" }]
+      })
+
+      await expect(encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)).rejects.toMatchObject({
+        code: "SCHEMA_VIOLATION"
+      })
+    },
+    30_000
+  )
+
 })

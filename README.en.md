@@ -13,6 +13,7 @@ Korean README: [`README.md`](README.md)
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
 - Visualize character relationships with a relation graph.
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
+- Import and export seedcoat v0.2 encrypted `.seed` files (compatible with Seeds).
 
 ## Project Model
 
@@ -56,6 +57,14 @@ The default `mock` provider lets you verify the flow without an API key. To use 
 | `npm run package:vsix` | Create a local-install VSIX |
 
 For webview-only changes, run `npm run build:webview`, then run `Developer: Reload Window` in the Extension Development Host.
+
+## `.seed` import and export
+
+- Commands: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
+- `.seed` files are **encrypted binaries** produced by [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0. Legacy plaintext JSON envelopes are not supported.
+- A **passphrase is required on every import and export** (empty passphrases are rejected; never stored).
+- Character `arc` / `recentDialogues` / `profile` / `attributes` and `draft/` are not included in `.seed` files.
+- Policy summary: [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)
 
 ## Documentation
 

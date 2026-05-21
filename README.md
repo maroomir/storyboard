@@ -13,6 +13,7 @@ English README: [`README.en.md`](README.en.md)
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
+- seedcoat v0.2 암호화 `.seed` 가져오기/보내기(Seeds와 호환)
 
 ## 프로젝트 모델
 
@@ -56,6 +57,14 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 | `npm run package:vsix` | 로컬 설치용 VSIX 생성 |
 
 웹뷰만 수정한 경우에는 `npm run build:webview` 후 Extension Development Host에서 `Developer: Reload Window`를 실행하면 됩니다.
+
+## `.seed` 가져오기/보내기
+
+- 명령: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
+- `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0 **암호화 바이너리**입니다. 평문 JSON envelope 등 이전 형식은 지원하지 않습니다.
+- import/export 시 **패스프레이즈를 매번 입력**합니다(빈 문자열 불가, 저장하지 않음).
+- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
+- 정책 요약: [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)
 
 ## 문서
 

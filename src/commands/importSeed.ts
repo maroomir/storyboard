@@ -19,8 +19,12 @@ import {
   encodeWorkspaceToSeed,
   type DecodedSeedContent
 } from "../services/seedcoat/projectAdapter"
-import { isSeedError } from "../services/seedcoat/loader"
-import { UNSUPPORTED_LEGACY_SEED_FILE_MESSAGE } from "../constants/projectStorageMessages"
+import { inspectHeader, isSeedError } from "../services/seedcoat/loader"
+import {
+  mapSeedErrorToMessage,
+  SEED_PASSPHRASE_REQUIRED_MESSAGE,
+  SEED_UNKNOWN_ERROR_MESSAGE
+} from "../constants/projectStorageMessages"
 import {
   createStoryboardDirectories,
   createWorkspaceReadme,
@@ -75,33 +79,52 @@ async function readSeedFile(uri: vscode.Uri): Promise<Uint8Array> {
 
 function formatSeedErrorMessage(error: unknown): string {
   if (isSeedError(error)) {
-    switch (error.code) {
-      case "DECRYPTION_FAILED":
-        return "패스프레이즈가 올바르지 않거나 파일이 손상되었습니다."
-      case "LEGACY_FORMAT_REJECTED":
-        return UNSUPPORTED_LEGACY_SEED_FILE_MESSAGE
-      case "INPUT_LIMITS_EXCEEDED":
-        return "Seed 파일이 처리 한도를 초과했습니다."
-      case "SCHEMA_VIOLATION":
-        return "Seed 파일 구조가 올바르지 않습니다."
-      default:
-        return error.message
-    }
+    return mapSeedErrorToMessage(error)
   }
 
   if (error instanceof Error) {
     return error.message
   }
 
-  return "Seed 파일을 처리하는 중 알 수 없는 오류가 발생했습니다."
+  return SEED_UNKNOWN_ERROR_MESSAGE
+}
+
+async function preflightSeedContainerOrAbort(bytes: Uint8Array): Promise<boolean> {
+  try {
+    await inspectHeader(bytes)
+    return true
+  } catch (error) {
+    if (isSeedError(error) && error.code === "LEGACY_FORMAT_REJECTED") {
+      await vscode.window.showErrorMessage(mapSeedErrorToMessage(error))
+      return false
+    }
+
+    throw error
+  }
+}
+
+function isUsablePassphrase(passphrase: string | undefined): passphrase is string {
+  return passphrase !== undefined && passphrase.length > 0
 }
 
 async function promptImportPassphrase(): Promise<string | undefined> {
-  return vscode.window.showInputBox({
+  const passphrase = await vscode.window.showInputBox({
     prompt: "Seed 파일의 패스프레이즈를 입력하세요",
     password: true,
-    placeHolder: "패스프레이즈 (없으면 비워두세요)"
+    placeHolder: "패스프레이즈",
+    ignoreEmptyInput: true,
+    validateInput: (value) => (value.length > 0 ? undefined : SEED_PASSPHRASE_REQUIRED_MESSAGE)
   })
+
+  if (!isUsablePassphrase(passphrase)) {
+    if (passphrase !== undefined) {
+      await vscode.window.showErrorMessage(SEED_PASSPHRASE_REQUIRED_MESSAGE)
+    }
+
+    return undefined
+  }
+
+  return passphrase
 }
 
 async function confirmExportAndPromptPassphrase(): Promise<string | undefined> {
@@ -110,7 +133,7 @@ async function confirmExportAndPromptPassphrase(): Promise<string | undefined> {
     {
       modal: true,
       detail:
-        "⚠ 패스프레이즈를 잃어버리면 Seed를 복호화할 수 없습니다.\n\n다음 데이터는 .seed 파일에 포함되지 않습니다:\n• 캐릭터 프로필 이미지 경로(profile), 속성(attributes)\n• 임시 작업 데이터(draft/)\n\n패스프레이즈 없이 내보내려면 비워두고 확인하세요."
+        "⚠ 패스프레이즈를 잃어버리면 Seed를 복호화할 수 없습니다.\n\n다음 데이터는 .seed 파일에 포함되지 않습니다:\n• 캐릭터 아크(arc), 최근 대사(recentDialogues), 프로필 이미지 경로(profile), 속성(attributes)\n• 임시 작업 데이터(draft/)"
     },
     "계속",
     "취소"
@@ -123,20 +146,32 @@ async function confirmExportAndPromptPassphrase(): Promise<string | undefined> {
   const passphrase = await vscode.window.showInputBox({
     prompt: "Seed 파일에 사용할 패스프레이즈를 입력하세요",
     password: true,
-    placeHolder: "패스프레이즈 (없으면 비워두세요)"
+    placeHolder: "패스프레이즈",
+    ignoreEmptyInput: true,
+    validateInput: (value) => (value.length > 0 ? undefined : SEED_PASSPHRASE_REQUIRED_MESSAGE)
   })
 
-  if (passphrase === undefined) {
+  if (!isUsablePassphrase(passphrase)) {
+    if (passphrase !== undefined) {
+      await vscode.window.showErrorMessage(SEED_PASSPHRASE_REQUIRED_MESSAGE)
+    }
+
     return undefined
   }
 
   const confirm = await vscode.window.showInputBox({
     prompt: "패스프레이즈를 다시 입력하세요",
     password: true,
-    placeHolder: "패스프레이즈 확인"
+    placeHolder: "패스프레이즈 확인",
+    ignoreEmptyInput: true,
+    validateInput: (value) => (value.length > 0 ? undefined : SEED_PASSPHRASE_REQUIRED_MESSAGE)
   })
 
-  if (confirm === undefined) {
+  if (!isUsablePassphrase(confirm)) {
+    if (confirm !== undefined) {
+      await vscode.window.showErrorMessage(SEED_PASSPHRASE_REQUIRED_MESSAGE)
+    }
+
     return undefined
   }
 
@@ -408,6 +443,10 @@ async function createProjectFromSeedFile(
     return
   }
 
+  if (!(await preflightSeedContainerOrAbort(bytes))) {
+    return
+  }
+
   const passphrase = await promptImportPassphrase()
 
   if (passphrase === undefined) {
@@ -488,6 +527,10 @@ async function syncProjectFromSeedFile(
     dependencies.logger.error("Seed 파일을 읽지 못했습니다.", error)
     dependencies.logger.show()
     await vscode.window.showErrorMessage("Seed 파일을 읽는 데 실패했습니다. Output 패널을 확인해 주세요.")
+    return
+  }
+
+  if (!(await preflightSeedContainerOrAbort(bytes))) {
     return
   }
 
@@ -578,6 +621,8 @@ async function exportProjectToSeedFile(
   } catch (error) {
     dependencies.logger.error("Seed 보내기에 실패했습니다.", error)
     dependencies.logger.show()
-    await vscode.window.showErrorMessage("Seed 보내기에 실패했습니다. Output 패널을 확인해 주세요.")
+    await vscode.window.showErrorMessage(
+      isSeedError(error) ? mapSeedErrorToMessage(error) : formatSeedErrorMessage(error)
+    )
   }
 }

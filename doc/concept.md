@@ -47,10 +47,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │
 ├── background/
 │   ├── school.card
-│   ├── home.card
-│   └── concept/
-│       ├── school.png
-│       └── home.png
+│   └── home.card
 │
 ├── scene/                        # 사용자가 직접 적는 raw 시드
 │   ├── 01-prologue.txt
@@ -73,7 +70,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `.storyboard/` | 프로젝트 메타 + 캐시 | `project.json`, `settings.json`만 추적 |
 | `.storyboard/cache/` | AI 컨텍스트 스냅샷 | 제외 |
 | `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
-| `background/` | 배경 카드 + 컨셉 이미지 | 추적 |
+| `background/` | 배경 카드 | 추적 |
 | `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
 
@@ -89,7 +86,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
   "format": "novel",
   "language": "ko",
   "createdAt": "2026-05-03T...",
-  "settings": {
+  "editor": {
     "scenePrefixDigits": 2,
     "trackDraft": false
   }
@@ -138,12 +135,12 @@ recentDialogues:
 배경 예시 (`background/school.card`):
 
 ```yaml
-type: background
+type: location
 id: school
 name: 학교 정문
-concept: concept/school.png
-country: 한국
-category: 일상/학교
+locationKind: place
+characterIds:
+  - elia
 tags:
   - 학교
   - 도시
@@ -153,7 +150,7 @@ description: |
 
 #### 카드 렌더링 (커스텀 에디터)
 
-- 좌측: 프로필/컨셉 이미지(PNG)
+- 좌측: 캐릭터 프로필 이미지(PNG, 캐릭터 카드 한정)
 - 우측: key/value 영역
   - 고정 키(`name`, `role`, `attributes.*`)는 폼 입력
   - 자유 배열(`tags`, `traits`, `recentDialogues`, `relations`, `arc`)은 동적 리스트 편집기
@@ -163,8 +160,7 @@ description: |
 ### 4.3 `.png`
 
 - 캐릭터 프로필: `character/profile/<id>.png`
-- 배경 컨셉: `background/concept/<id>.png`
-- 카드의 `profile` / `concept` 필드가 상대 경로로 참조
+- 카드의 `profile` 필드가 상대 경로로 참조 (캐릭터 카드 한정)
 
 ### 4.4 `.txt` (씬 시드)
 
@@ -221,7 +217,7 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
     "elia": "<페르소나 텍스트>",
     "jihoon": "<페르소나 텍스트>"
   },
-  "backgroundSnapshot": { "location": "school", "country": "한국" },
+  "backgroundSnapshot": { "id": "school", "name": "학교 정문" },
   "previousContext": "...",
   "providers": { "situationExtraction": "openai", "personaDialogue": "claude" },
   "inputHash": "sha256:..."
@@ -239,13 +235,18 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 |---|---|---|
 | `storyboard.init` | `Storyboard: Initialize Project` | 빈 폴더에 디렉토리·`.storyboard/project.json`·.gitignore·README 생성 |
 | `storyboard.character.create` | `Storyboard: Create Character` | 새 `.card` + 빈 프로필 placeholder |
-| `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` + 빈 concept placeholder |
+| `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` (location 기본) 생성 후 열기 |
 | `storyboard.scene.new` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.txt` 생성 후 열기 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |
+| `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | 암호화 `.seed` → 새 워크스페이스 폴더 |
+| `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | 암호화 `.seed` → 기존 프로젝트 동기화 |
+| `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → 암호화 `.seed` |
+
+디스크 교환용 `.seed` 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`doc/migration/storyboard-alignment.md`](migration/storyboard-alignment.md)를 따른다.
 
 ### 5.1 활성화 조건
 
