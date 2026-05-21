@@ -64,15 +64,18 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 - `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0 **암호화 바이너리**입니다. 평문 JSON envelope 등 이전 형식은 지원하지 않습니다.
 - import/export 시 **패스프레이즈를 매번 입력**합니다(빈 문자열 불가, 저장하지 않음).
 - 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
-- 정책 요약: [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)
+- 정책 요약: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
 
 ## 문서
 
-- [`doc/concept.md`](doc/concept.md): 제품 컨셉과 파일 모델
-- [`doc/plan.md`](doc/plan.md): 개발 계획
-- [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): 수동 QA 체크리스트
-- [`doc/guide/release.md`](doc/guide/release.md): 릴리스 절차
-- [`CHANGELOG.md`](CHANGELOG.md): 변경 내역
+공개 문서는 저장소 루트의 대문자 Markdown을 기준으로 합니다. 상세 계획·의사결정 기록 등 확장 문서는 원격에 포함되지 않으며, 필요 시 로컬에만 `.doc/` 디렉터리를 두고 관리할 수 있습니다.
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): 제품 아키텍처와 파일 모델
+- [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` 정책
+- [`GUIDE.md`](GUIDE.md): draft 편집 기능 사용법
+- [`EXTENSION_QA.md`](EXTENSION_QA.md): 수동 QA 체크리스트
+- [`RELEASE.md`](RELEASE.md): 릴리스 절차
+- [`CHANGELOG.md`](CHANGELOG.md): 변경 내역 (한국어)
 
 ## 라이선스
 

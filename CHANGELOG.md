@@ -11,10 +11,11 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 변경
 
+- `doc/` 트리를 비추적 `.doc/`으로 옮기고(원격 저장소에는 포함하지 않음), 공개 문서는 루트 `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `EXTENSION_QA.md`, `RELEASE.md`, `GUIDE.md`로 정리했습니다. README, AGENTS, Cursor/Clinerules, 스킬 문서의 링크를 갱신했습니다.
 - `.seed` 파일을 평문 JSON envelope(`version: "2.0.0"`)에서 **`@seedcoat/wasm` v0.2.0 암호화 컨테이너**로 완전히 이관했습니다(하드 컷오버). 이전 평문/구버전 `.seed`는 더 이상 지원하지 않으며 `LEGACY_FORMAT_REJECTED`로 거부됩니다.
 - 배경 카드 스키마를 단일 `type: background`에서 **판별 유니온(`location` / `temporal` / `social`)**으로 교체하고, 공통 필드(`characterIds`, `tags`)와 `locationKind`(location 전용)를 도입했습니다. 이전 `concept` / `country` / `category` 필드는 제거되었습니다.
 - 프로젝트 메타데이터의 `settings`를 `editor`(`scenePrefixDigits`, `trackDraft?`)와 작품 단위 `setting`(genre/country/concept/tags/description)으로 분리했습니다.
-- 루트 `SEED-FORMAT.md`를 제거하고, 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)를 단일 진실원으로 둡니다. Storyboard 정책은 [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)에 정리했습니다.
+- 루트 `SEED-FORMAT.md`를 제거하고, 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)를 단일 진실원으로 둡니다. Storyboard 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)에 정리했습니다.
 
 ### 추가
 

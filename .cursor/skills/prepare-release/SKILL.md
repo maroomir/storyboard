@@ -21,8 +21,9 @@ Agree the target version with the maintainer before changing `package.json` and 
 
 ## 2. Update release notes
 
-- Update [`CHANGELOG.md`](CHANGELOG.md) under `[Unreleased]` (or add a dated section after release).
+- Update [`CHANGELOG.md`](CHANGELOG.md) and [`CHANGELOG.en.md`](CHANGELOG.en.md) under `[Unreleased]` (or add a dated section after release).
 - Keep entries user-facing and concise.
+- Follow [`RELEASE.md`](RELEASE.md) for version commit contents and tagging.
 
 ## 3. Verify
 

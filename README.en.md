@@ -64,15 +64,18 @@ For webview-only changes, run `npm run build:webview`, then run `Developer: Relo
 - `.seed` files are **encrypted binaries** produced by [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0. Legacy plaintext JSON envelopes are not supported.
 - A **passphrase is required on every import and export** (empty passphrases are rejected; never stored).
 - Character `arc` / `recentDialogues` / `profile` / `attributes` and `draft/` are not included in `.seed` files.
-- Policy summary: [`doc/migration/storyboard-alignment.md`](doc/migration/storyboard-alignment.md)
+- Policy summary: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
 
 ## Documentation
 
-- [`doc/concept.md`](doc/concept.md): product concept and file model
-- [`doc/plan.md`](doc/plan.md): development plan
-- [`doc/testing/extension-qa.md`](doc/testing/extension-qa.md): manual QA checklist
-- [`doc/guide/release.md`](doc/guide/release.md): release process
-- [`CHANGELOG.en.md`](CHANGELOG.en.md): changelog
+Public docs live at the repo root as uppercase Markdown files. Extended plans and decision logs are not shipped in the remote repo; maintain a local-only `.doc/` directory when needed.
+
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): product architecture and file model
+- [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` policy
+- [`GUIDE.md`](GUIDE.md): draft editor feature guide
+- [`EXTENSION_QA.md`](EXTENSION_QA.md): manual QA checklist
+- [`RELEASE.md`](RELEASE.md): release process
+- [`CHANGELOG.en.md`](CHANGELOG.en.md): changelog (English)
 
 ## License
 

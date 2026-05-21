@@ -47,3 +47,12 @@ graph TB
 ## Reference to Cline
 
 Cline demonstrates a mature VSCode extension architecture with extension-host orchestration, webview communication, persistent state, and task execution patterns. For `storyboard`, borrow the ideas that fit the immediate product scope and avoid unnecessary complexity until needed.
+
+## Tracked documentation
+
+- `ARCHITECTURE.md` for product concept, workspace layout, and file formats.
+- `STORYBOARD_ALIGNMENT.md` for `.seed` exchange policy with Seeds.
+- `EXTENSION_QA.md` for manual extension QA.
+- `RELEASE.md` for version commits, tags, and GitHub Releases.
+- `GUIDE.md` for draft editor features.
+- Optional local-only `.doc/` (gitignored) for migration plans and ADRs.

@@ -38,3 +38,6 @@ coverage/
 character/.sample.card
 background/.sample.card
 scene/.sample.txt
+
+# Local-only documentation (extended plans, ADRs, drafts)
+.doc/

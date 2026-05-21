@@ -15,7 +15,7 @@ alwaysApply: true
 - **`package.json`**: extension metadata, scripts, activation, commands, views, menus, configuration.
 - **`AGENTS.md`**, **`CLAUDE.md`**, **`.clinerules/`**: agent working rules (this rule mirrors the essentials for Cursor).
 - **`.clinerules/agent-behavior.md`** / **`.cursor/rules/agent-behavior.mdc`**: Karpathy-inspired agent behavior for explicit assumptions, simplicity, surgical edits, and verifiable goals.
-- **`CLEANCODE.md`** / **`.clinerules/clean-code.md`**: human vs agent clean-code guidance.
+- **`.clinerules/clean-code.md`** / **`.cursor/rules/clean-code.mdc`**: agent clean-code guidance.
 - **Code and tests win** over docs: if they disagree, investigate before changing behavior.
 
 ## Principles

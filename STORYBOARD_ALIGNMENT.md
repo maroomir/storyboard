@@ -4,8 +4,8 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 
 **구현**
 
-- 인코딩·디코딩: [`src/services/seedcoat/projectAdapter.ts`](../../src/services/seedcoat/projectAdapter.ts)
-- VS Code 명령: [`src/commands/importSeed.ts`](../../src/commands/importSeed.ts)
+- 인코딩·디코딩: [`src/services/seedcoat/projectAdapter.ts`](src/services/seedcoat/projectAdapter.ts)
+- VS Code 명령: [`src/commands/importSeed.ts`](src/commands/importSeed.ts)
 
 ## 디스크 매핑
 
@@ -28,4 +28,4 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 ## 미지원·호환
 
 - 기존 워크스페이스의 구 `type: background` 카드는 자동 마이그레이션하지 않는다.
-- 오류 코드 → 한국어 메시지: [`src/constants/projectStorageMessages.ts`](../../src/constants/projectStorageMessages.ts)
+- 오류 코드 → 한국어 메시지: [`src/constants/projectStorageMessages.ts`](src/constants/projectStorageMessages.ts)

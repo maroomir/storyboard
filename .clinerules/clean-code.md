@@ -1,6 +1,6 @@
 # Clean Code Rules
 
-These rules summarize the clean code principles from `CLEANCODE.md` for AI agents working on `storyboard`.
+These rules summarize clean code principles for AI agents working on `storyboard`.
 
 The goal is not pretty code for its own sake. The goal is code that another person can understand quickly and modify safely.
 

@@ -2,7 +2,7 @@
 
 Storyboard **0.0.1**은 기본 동작을 검증하는 **dogfooding** 단계입니다. GitHub Releases용 VSIX를 준비하기 전에, 아래 절차로 **실제 VS Code**에서 한 번씩 확인합니다.
 
-문서상 출시 로드맵: Phase 7에서 **0.1.0** 메타·export·온보딩·i18n(**`ko` 기본**, **`en` 옵션**)을 두고, Phase 8에서 GitHub Releases용 VSIX 검증을 목표로 한다. `.picktion` import는 비목표다 (`doc/plan.md`, `doc/concept.md`).
+문서상 출시 로드맵: Phase 7에서 **0.1.0** 메타·export·온보딩·i18n(**`ko` 기본**, **`en` 옵션**)을 두고, Phase 8에서 GitHub Releases용 VSIX 검증을 목표로 한다. `.picktion` import는 비목표다 ([`ARCHITECTURE.md`](ARCHITECTURE.md), 로컬 `.doc/plan/storyboard-plan.md`).
 
 자동화 테스트(`npm test`)는 결정적 로직 위주입니다. 이 문서의 항목은 **Extension Development Host(F5)** 또는 **로컬 VSIX**로 확인합니다.
 

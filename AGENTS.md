@@ -17,7 +17,7 @@ When source files are not present yet, do not assume implementation details. Sca
 - `package.json` is the source of truth for extension metadata, scripts, activation events, commands, views, menus, and configuration once it exists.
 - `CLAUDE.md` and `.clinerules/` are the source of truth for AI-agent working rules.
 - `.clinerules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
-- `CLEANCODE.md` contains the human-readable clean code guide; `.clinerules/clean-code.md` summarizes it for agents.
+- `.clinerules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
 - `.clinerules/comments.md` defines allowed comment markers (`TODO`, `FIXME`, `HACK`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 - Existing source files and tests override intended architecture notes. If implementation and documentation disagree, investigate before editing.
 
@@ -25,7 +25,8 @@ When source files are not present yet, do not assume implementation details. Sca
 
 - This is a VSCode extension project.
 - Check `package.json` scripts before running build, lint, test, or packaging commands.
-- When updating the project version or release notes, update both `CHANGELOG.md` and `CHANGELOG.ko.md` in the same change.
+- When updating the project version or release notes, update both `CHANGELOG.md` and `CHANGELOG.en.md` in the same change.
+- Tracked docs at repo root: `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `EXTENSION_QA.md`, `RELEASE.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
 - Inspect nearby files and existing conventions before editing.
 - For non-trivial work, state assumptions and success criteria before editing; ask when ambiguity could change the implementation.
 - Keep changes surgical: every changed line should trace directly to the user's request.

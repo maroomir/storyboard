@@ -8,7 +8,7 @@ description: >-
 
 # Card and scene formats (Storyboard)
 
-Primary references: [`doc/concept.md`](doc/concept.md), [`doc/decisions/02-card-files-and-editor.md`](doc/decisions/02-card-files-and-editor.md). Code: [`src/shared/card.ts`](src/shared/card.ts), [`src/shared/scene.ts`](src/shared/scene.ts).
+Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/card.ts`](src/shared/card.ts), [`src/shared/scene.ts`](src/shared/scene.ts). Extended ADR (local): `.doc/decisions/02-card-files-and-editor.md`.
 
 ## Workspace model
 

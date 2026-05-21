@@ -1,8 +1,7 @@
-# Storyboard — 컨셉 문서
+# Storyboard — Architecture
 
 > 작성일: 2026-05-03  
-> 상태: 확정 (Phase 0 입력; 출시·i18n 정책은 `doc/plan.md` Phase 7–8과 동기)  
-> 후속 문서: [`doc/plan.md`](plan.md)
+> 상태: 확정 (Phase 0 입력; 출시·i18n 정책은 로컬 `.doc/plan/storyboard-plan.md` Phase 7–8과 동기)
 
 ## 1. 한 줄 정의
 
@@ -246,7 +245,7 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 | `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | 암호화 `.seed` → 기존 프로젝트 동기화 |
 | `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → 암호화 `.seed` |
 
-디스크 교환용 `.seed` 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`doc/migration/storyboard-alignment.md`](migration/storyboard-alignment.md)를 따른다.
+디스크 교환용 `.seed` 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
 
 ### 5.1 활성화 조건
 
@@ -293,5 +292,5 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 
 ## 9. 참고
 
-- 본 문서는 `doc/plan.md`(상세 마이그레이션 계획)와 짝을 이룬다.
+- 상세 마이그레이션 계획은 로컬 `.doc/plan/storyboard-plan.md`(비추적)에 있다.
 - 기존 Picktion 저장소 (`maroomir/picktion`)는 그대로 유지(archive 예정)되며, 본 컨셉/계획 문서는 새 `maroomir/storyboard` 저장소의 출발점이 된다.

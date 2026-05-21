@@ -9,7 +9,7 @@ description: >-
 
 # AI provider workflow (Storyboard)
 
-Authoritative detail: [`doc/decisions/03-ai-provider-bridge.md`](doc/decisions/03-ai-provider-bridge.md).
+Authoritative detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) (settings and commands). Extended ADR (local): `.doc/decisions/03-ai-provider-bridge.md`.
 
 ## Policy (do not violate)
 

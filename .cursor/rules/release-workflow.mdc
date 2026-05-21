@@ -12,12 +12,12 @@ Use when the user asks to prepare a release, bump the extension version, update 
 ## Source of truth
 
 1. Follow `.cursor/skills/prepare-release/SKILL.md` step by step.
-2. Align git/tag and GitHub Release expectations with `doc/guide/release.md`.
+2. Align git/tag and GitHub Release expectations with `RELEASE.md`.
 
 ## Files to keep in sync
 
 - Bump **`package.json`** and **`package-lock.json`** (root `version` and `packages[""].version`) to the same target version.
-- Add or finalize **`CHANGELOG.md`** and **`CHANGELOG.ko.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting). Version update requests must update both changelog files in the same change.
+- Add or finalize **`CHANGELOG.md`** and **`CHANGELOG.en.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting). Version update requests must update both changelog files in the same change.
 
 ## After verification
 
