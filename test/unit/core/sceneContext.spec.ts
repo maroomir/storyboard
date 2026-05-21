@@ -20,10 +20,13 @@ const jihoonCard: CharacterCard = {
 }
 
 const schoolBg: BackgroundCard = {
-  type: "background",
+  type: "location",
   id: "school",
   name: "학교 정문",
-  country: "한국"
+  locationKind: "place",
+  description: "",
+  characterIds: [],
+  tags: []
 }
 
 class MockFileSystem implements SceneContextWorkspaceFileSystem {
@@ -152,9 +155,13 @@ describe("sceneContext", () => {
       name: "샘플 캐릭터"
     }
     const sampleBackground: BackgroundCard = {
-      type: "background",
+      type: "location",
       id: "sample",
-      name: "샘플 배경"
+      name: "샘플 배경",
+      locationKind: "place",
+      description: "",
+      characterIds: [],
+      tags: []
     }
 
     fileSystem.setDirectory("/mock/workspace/character", [

@@ -1,4 +1,4 @@
-import type { BackgroundCard, CharacterCard } from "../shared/card"
+import { isBackgroundCard, type BackgroundCard, type CharacterCard } from "../shared/card"
 import type { SceneFile } from "../shared/scene"
 import { readCardFile } from "../files/card"
 import { isIgnoredSampleCardFileName } from "./pathConventions"
@@ -121,7 +121,7 @@ async function listProjectBackgrounds(
         const uri = paths.joinPath(paths.backgroundDirectory, name)
         try {
           const card = await readCardFile(uri, fileSystem)
-          return card.type === "background" ? card : undefined
+          return isBackgroundCard(card) ? card : undefined
         } catch {
           return undefined
         }

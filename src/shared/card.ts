@@ -2,7 +2,7 @@ import { z } from "zod"
 
 export const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/
 
-export const cardTypes = ["character", "background"] as const
+export const cardTypes = ["character", "location", "temporal", "social"] as const
 
 const cardIdSchema = z.string().regex(cardIdPattern, {
   message: "Card id must use lowercase letters, numbers, and hyphens."
@@ -37,26 +37,57 @@ export const characterCardSchema = z.object({
   recentDialogues: stringListSchema.optional()
 })
 
-export const backgroundCardSchema = z.object({
-  type: z.literal("background"),
+const backgroundBaseFields = {
   id: cardIdSchema,
   name: z.string().trim().min(1),
-  concept: z.string().trim().min(1).optional(),
-  country: z.string().trim().min(1).optional(),
-  category: z.string().trim().min(1).optional(),
-  tags: stringListSchema.optional(),
-  description: z.string().optional()
+  description: z.string().default(""),
+  characterIds: stringListSchema.default([]),
+  tags: stringListSchema.default([])
+}
+
+export const locationBackgroundSchema = z.object({
+  type: z.literal("location"),
+  ...backgroundBaseFields,
+  locationKind: z.enum(["place", "affiliation"]).default("place")
 })
 
-export const cardSchema = z.discriminatedUnion("type", [characterCardSchema, backgroundCardSchema])
+export const temporalBackgroundSchema = z.object({
+  type: z.literal("temporal"),
+  ...backgroundBaseFields
+})
+
+export const socialBackgroundSchema = z.object({
+  type: z.literal("social"),
+  ...backgroundBaseFields
+})
+
+export const backgroundCardSchema = z.discriminatedUnion("type", [
+  locationBackgroundSchema,
+  temporalBackgroundSchema,
+  socialBackgroundSchema
+])
+
+export const cardSchema = z.discriminatedUnion("type", [
+  characterCardSchema,
+  locationBackgroundSchema,
+  temporalBackgroundSchema,
+  socialBackgroundSchema
+])
 
 export type CardType = (typeof cardTypes)[number]
 export type CharacterRelation = z.infer<typeof characterRelationSchema>
 export type CharacterArc = z.infer<typeof characterArcSchema>
 export type CharacterCard = z.infer<typeof characterCardSchema>
-export type BackgroundCard = z.infer<typeof backgroundCardSchema>
+export type LocationBackgroundCard = z.infer<typeof locationBackgroundSchema>
+export type TemporalBackgroundCard = z.infer<typeof temporalBackgroundSchema>
+export type SocialBackgroundCard = z.infer<typeof socialBackgroundSchema>
+export type BackgroundCard = LocationBackgroundCard | TemporalBackgroundCard | SocialBackgroundCard
 export type StoryboardCard = z.infer<typeof cardSchema>
 
 export function isCardType(value: string): value is CardType {
   return cardTypes.includes(value as CardType)
+}
+
+export function isBackgroundCard(card: StoryboardCard): card is BackgroundCard {
+  return card.type === "location" || card.type === "temporal" || card.type === "social"
 }

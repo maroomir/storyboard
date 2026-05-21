@@ -4,9 +4,17 @@ export const projectFormats = ["novel", "screenplay", "play", "essay", "poem"] a
 
 export type ProjectFormat = (typeof projectFormats)[number]
 
-export interface StoryboardProjectSettings {
+export interface ProjectEditor {
   readonly scenePrefixDigits: number
-  readonly trackDraft: boolean
+  readonly trackDraft?: boolean
+}
+
+export interface ProjectSetting {
+  readonly genre?: string
+  readonly country?: string
+  readonly concept?: string
+  readonly tags: string[]
+  readonly description?: string
 }
 
 export interface StoryboardProject {
@@ -16,5 +24,6 @@ export interface StoryboardProject {
   readonly format: ProjectFormat
   readonly language: string
   readonly createdAt: string
-  readonly settings: StoryboardProjectSettings
+  readonly editor: ProjectEditor
+  readonly setting?: ProjectSetting
 }

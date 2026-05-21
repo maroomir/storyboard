@@ -96,14 +96,15 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
 }
 
 function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
-  return {
-    type: card.type,
+  const base = {
     id: card.id,
     name: card.name,
-    ...(card.concept === undefined ? {} : { concept: card.concept }),
-    ...(card.country === undefined ? {} : { country: card.country }),
-    ...(card.category === undefined ? {} : { category: card.category }),
-    ...(card.tags === undefined ? {} : { tags: card.tags }),
-    ...(card.description === undefined ? {} : { description: card.description })
+    description: card.description,
+    characterIds: card.characterIds,
+    tags: card.tags
   }
+  if (card.type === "location") {
+    return { type: "location", ...base, locationKind: card.locationKind }
+  }
+  return { type: card.type, ...base }
 }

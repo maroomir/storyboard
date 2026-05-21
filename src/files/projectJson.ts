@@ -9,9 +9,17 @@ import {
   storyboardProjectVersion
 } from "../shared/project"
 
-const storyboardProjectSettingsSchema = z.object({
+const projectEditorSchema = z.object({
   scenePrefixDigits: z.number().int().positive(),
-  trackDraft: z.boolean()
+  trackDraft: z.boolean().optional()
+})
+
+const projectSettingSchema = z.object({
+  genre: z.string().trim().min(1).optional(),
+  country: z.string().trim().min(1).optional(),
+  concept: z.string().trim().min(1).optional(),
+  tags: z.array(z.string()).default([]),
+  description: z.string().optional()
 })
 
 export const storyboardProjectSchema = z.object({
@@ -21,7 +29,8 @@ export const storyboardProjectSchema = z.object({
   format: z.enum(projectFormats),
   language: z.string().trim().min(1),
   createdAt: z.string().datetime(),
-  settings: storyboardProjectSettingsSchema
+  editor: projectEditorSchema,
+  setting: projectSettingSchema.optional()
 })
 
 export interface CreateProjectJsonInput {
@@ -29,7 +38,6 @@ export interface CreateProjectJsonInput {
   readonly format?: ProjectFormat
   readonly language?: string
   readonly scenePrefixDigits?: number
-  readonly trackDraft?: boolean
 }
 
 export function createDefaultProjectJson(input: CreateProjectJsonInput): StoryboardProject {
@@ -40,9 +48,8 @@ export function createDefaultProjectJson(input: CreateProjectJsonInput): Storybo
     format: input.format ?? "novel",
     language: input.language ?? "ko",
     createdAt: new Date().toISOString(),
-    settings: {
-      scenePrefixDigits: input.scenePrefixDigits ?? 2,
-      trackDraft: input.trackDraft ?? false
+    editor: {
+      scenePrefixDigits: input.scenePrefixDigits ?? 2
     }
   }
 }

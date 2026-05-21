@@ -9,10 +9,10 @@ describe("card schema", () => {
     expect(parsedCard.type).toBe("character")
   })
 
-  it("parses a minimal background card", () => {
-    const parsedCard = cardSchema.parse({ type: "background", id: "school", name: "학교" })
+  it("parses a minimal location background card", () => {
+    const parsedCard = cardSchema.parse({ type: "location", id: "school", name: "학교" })
 
-    expect(parsedCard.type).toBe("background")
+    expect(parsedCard.type).toBe("location")
   })
 
   it("rejects card ids that are unsafe as file names", () => {
