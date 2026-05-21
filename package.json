@@ -286,10 +286,10 @@
     }
   },
   "scripts": {
-    "compile": "node esbuild.config.mjs",
+    "compile": "node esbuild.config.mjs && node scripts/copy-seedcoat.mjs",
     "build:webview": "vite build",
     "build": "npm run compile && npm run build:webview",
-    "watch": "node esbuild.config.mjs --watch",
+    "watch": "node scripts/copy-seedcoat.mjs && node esbuild.config.mjs --watch",
     "lint": "eslint . --ext .ts && tsc --project webview-ui/tsconfig.json --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
@@ -327,6 +327,7 @@
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
     "@fontsource-variable/inter": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
+    "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.2.0.tgz",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",

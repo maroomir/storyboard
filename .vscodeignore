@@ -9,6 +9,8 @@ src/**
 test/**
 webview-ui/**
 node_modules/**
+vendor/**
+scripts/**
 dist/**
 out/**/*.map
 *.vsix
