@@ -4,8 +4,8 @@ import { getStoryboardProjectPaths } from "@/core/pathConventions"
 import { parseCard } from "@/files/card"
 import { readProjectJson } from "@/files/projectJson"
 import { collectTrackedCardAndSceneRelativePathsFromFileNames } from "@/files/seedImport"
-import { SEED_ENVELOPE_VERSION, type ParsedSeedEnvelope } from "@/models/serialization/seedFile"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
+import { isBackgroundCard, type BackgroundCard, type CharacterCard } from "@/shared/card"
+import type { WorkspaceContent, SeedSceneEntry } from "@/services/seedcoat/projectAdapter"
 
 export async function readDirectoryFileNamesOnly(directory: vscode.Uri): Promise<string[]> {
   try {
@@ -18,7 +18,7 @@ export async function readDirectoryFileNamesOnly(directory: vscode.Uri): Promise
   }
 }
 
-export async function readParsedSeedEnvelopeFromWorkspaceRoot(workspaceRoot: vscode.Uri): Promise<ParsedSeedEnvelope> {
+export async function readParsedSeedEnvelopeFromWorkspaceRoot(workspaceRoot: vscode.Uri): Promise<WorkspaceContent> {
   const paths = getStoryboardProjectPaths(workspaceRoot)
   const project = await readProjectJson(paths.projectJson)
 
@@ -34,7 +34,7 @@ export async function readParsedSeedEnvelopeFromWorkspaceRoot(workspaceRoot: vsc
 
   const characters: CharacterCard[] = []
   const backgrounds: BackgroundCard[] = []
-  const scenes: ParsedSeedEnvelope["scenes"] = []
+  const scenes: SeedSceneEntry[] = []
 
   for (const rel of tracked) {
     if (rel.startsWith("character/") && rel.endsWith(".card")) {
@@ -54,7 +54,7 @@ export async function readParsedSeedEnvelopeFromWorkspaceRoot(workspaceRoot: vsc
       const raw = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri))
       const card = parseCard(raw)
 
-      if (card.type === "background") {
+      if (isBackgroundCard(card)) {
         backgrounds.push(card)
       }
 
@@ -74,11 +74,5 @@ export async function readParsedSeedEnvelopeFromWorkspaceRoot(workspaceRoot: vsc
   backgrounds.sort((a, b) => a.id.localeCompare(b.id))
   scenes.sort((a, b) => a.stem.localeCompare(b.stem))
 
-  return {
-    version: SEED_ENVELOPE_VERSION,
-    project,
-    characters,
-    backgrounds,
-    scenes
-  }
+  return { project, characters, backgrounds, scenes }
 }

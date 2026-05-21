@@ -14,7 +14,12 @@ import {
   type SeedFileWriteEntry
 } from "../files/seedImport"
 import { readDirectoryFileNamesOnly, readParsedSeedEnvelopeFromWorkspaceRoot } from "../files/seedEnvelopeFromWorkspace"
-import { parseSeed, SeedParseError, serializeSeed, type ParsedSeedEnvelope } from "../models/serialization/seedFile"
+import {
+  decodeSeedToWritePlan,
+  encodeWorkspaceToSeed,
+  type DecodedSeedContent
+} from "../services/seedcoat/projectAdapter"
+import { isSeedError } from "../services/seedcoat/loader"
 import {
   createStoryboardDirectories,
   createWorkspaceReadme,
@@ -63,13 +68,12 @@ async function collectSeedSyncRelativePaths(workspaceRoot: vscode.Uri): Promise<
   })
 }
 
-async function readSeedFile(uri: vscode.Uri): Promise<string> {
-  const bytes = await vscode.workspace.fs.readFile(uri)
-  return new TextDecoder().decode(bytes)
+async function readSeedFile(uri: vscode.Uri): Promise<Uint8Array> {
+  return vscode.workspace.fs.readFile(uri)
 }
 
 function formatSeedParseFailureMessage(error: unknown): string {
-  if (error instanceof SeedParseError) {
+  if (isSeedError(error)) {
     return error.message
   }
 
@@ -329,10 +333,10 @@ async function createProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(targetRoot)
 
-  let raw: string
+  let bytes: Uint8Array
 
   try {
-    raw = await readSeedFile(seedUri)
+    bytes = await readSeedFile(seedUri)
   } catch (error) {
     dependencies.logger.error("Seed 파일을 읽지 못했습니다.", error)
     dependencies.logger.show()
@@ -340,10 +344,11 @@ async function createProjectFromSeedFile(
     return
   }
 
-  let seed: ParsedSeedEnvelope
+  let seed: DecodedSeedContent
 
   try {
-    seed = parseSeed(raw)
+    // TODO Phase 3: prompt for passphrase via showInputBox
+    seed = await decodeSeedToWritePlan(bytes, "")
   } catch (error) {
     await vscode.window.showErrorMessage(formatSeedParseFailureMessage(error))
     return
@@ -406,10 +411,10 @@ async function syncProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(workspaceFolder.uri)
 
-  let raw: string
+  let bytes: Uint8Array
 
   try {
-    raw = await readSeedFile(seedUri)
+    bytes = await readSeedFile(seedUri)
   } catch (error) {
     dependencies.logger.error("Seed 파일을 읽지 못했습니다.", error)
     dependencies.logger.show()
@@ -417,10 +422,11 @@ async function syncProjectFromSeedFile(
     return
   }
 
-  let seed: ParsedSeedEnvelope
+  let seed: DecodedSeedContent
 
   try {
-    seed = parseSeed(raw)
+    // TODO Phase 3: prompt for passphrase via showInputBox
+    seed = await decodeSeedToWritePlan(bytes, "")
   } catch (error) {
     await vscode.window.showErrorMessage(formatSeedParseFailureMessage(error))
     return
@@ -472,9 +478,8 @@ async function exportProjectToSeedFile(
   }
 
   try {
-    const envelope = await readParsedSeedEnvelopeFromWorkspaceRoot(workspaceFolder.uri)
-    const raw = serializeSeed(envelope)
-    const safeName = envelope.project.name.replace(/[/\\?%*:|"<>]/g, "-").trim() || "storyboard"
+    const content = await readParsedSeedEnvelopeFromWorkspaceRoot(workspaceFolder.uri)
+    const safeName = content.project.name.replace(/[/\\?%*:|"<>]/g, "-").trim() || "storyboard"
     const defaultUri = vscode.Uri.joinPath(workspaceFolder.uri, `${safeName}.seed`)
     const picked = await vscode.window.showSaveDialog({
       defaultUri,
@@ -486,7 +491,9 @@ async function exportProjectToSeedFile(
       return
     }
 
-    await vscode.workspace.fs.writeFile(picked, new TextEncoder().encode(raw))
+    // TODO Phase 3: prompt for passphrase via showInputBox (confirm + loss warning)
+    const seedBytes = await encodeWorkspaceToSeed(content, "")
+    await vscode.workspace.fs.writeFile(picked, seedBytes)
     dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`)
     await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`)
   } catch (error) {

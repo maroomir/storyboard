@@ -24,7 +24,7 @@ const projectSettingSchema = z.object({
 
 export const storyboardProjectSchema = z.object({
   version: z.literal(storyboardProjectVersion),
-  id: z.string().uuid(),
+  id: z.string().min(1),
   name: z.string().trim().min(1),
   format: z.enum(projectFormats),
   language: z.string().trim().min(1),

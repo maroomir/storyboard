@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest"
 
-import { parseProjectJson } from "@/files/projectJson"
 import {
   buildSeedWritePlan,
   collectTrackedCardAndSceneRelativePathsFromFileNames,
@@ -9,28 +8,36 @@ import {
   listSeedPlanContentConflictRelativePaths,
   normalizeRelativePath
 } from "@/files/seedImport"
-import { parseSeed, SEED_ENVELOPE_VERSION } from "@/models/serialization/seedFile"
+import { parseProjectJson } from "@/files/projectJson"
+import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 
-function minimalSeedRaw(): string {
-  return JSON.stringify(
-    {
-      version: SEED_ENVELOPE_VERSION,
-      project: {
+function minimalDecodedSeed(): DecodedSeedContent {
+  return {
+    project: parseProjectJson(
+      JSON.stringify({
         version: "1.0.0",
         id: "00000000-0000-4000-8000-000000000001",
         name: "테스트",
         format: "novel",
         language: "ko",
         createdAt: "2026-05-13T08:00:00.000Z",
-        settings: { scenePrefixDigits: 2 }
-      },
-      characters: [{ type: "character", id: "hero", name: "주인공" }],
-      backgrounds: [{ type: "background", id: "bg1", name: "배경" }],
-      scenes: [{ stem: "01-prologue", content: "scene body\n" }]
-    },
-    null,
-    2
-  )
+        editor: { scenePrefixDigits: 2 }
+      })
+    ),
+    characters: [{ type: "character", id: "hero", name: "주인공" }],
+    backgrounds: [
+      {
+        type: "location",
+        id: "bg1",
+        name: "배경",
+        locationKind: "place",
+        characterIds: [],
+        tags: [],
+        description: ""
+      }
+    ],
+    scenes: [{ stem: "01-prologue", content: "scene body\n" }]
+  }
 }
 
 describe("seedImport", () => {
@@ -46,29 +53,38 @@ describe("seedImport", () => {
   })
 
   it("buildSeedWritePlan maps project, cards, and scenes to stable sorted paths", () => {
-    const seed = parseSeed(
-      JSON.stringify({
-        version: SEED_ENVELOPE_VERSION,
-        project: {
+    const seed: DecodedSeedContent = {
+      project: parseProjectJson(
+        JSON.stringify({
           version: "1.0.0",
           id: "00000000-0000-4000-8000-000000000001",
           name: "테스트",
           format: "novel",
           language: "ko",
           createdAt: "2026-05-13T08:00:00.000Z",
-          settings: { scenePrefixDigits: 2 }
-        },
-        characters: [
-          { type: "character", id: "zebra", name: "Z" },
-          { type: "character", id: "alpha", name: "A" }
-        ],
-        backgrounds: [{ type: "background", id: "bg1", name: "B" }],
-        scenes: [
-          { stem: "02-second", content: "b" },
-          { stem: "01-first", content: "a" }
-        ]
-      })
-    )
+          editor: { scenePrefixDigits: 2 }
+        })
+      ),
+      characters: [
+        { type: "character", id: "zebra", name: "Z" },
+        { type: "character", id: "alpha", name: "A" }
+      ],
+      backgrounds: [
+        {
+          type: "location",
+          id: "bg1",
+          name: "B",
+          locationKind: "place",
+          characterIds: [],
+          tags: [],
+          description: ""
+        }
+      ],
+      scenes: [
+        { stem: "02-second", content: "b" },
+        { stem: "01-first", content: "a" }
+      ]
+    }
 
     const plan = buildSeedWritePlan(seed)
     const paths = plan.map((entry) => entry.relativePath)
@@ -83,7 +99,7 @@ describe("seedImport", () => {
   })
 
   it("computeSeedDeletionCandidates lists cards and scenes missing from seed, excluding samples and excluded dirs", () => {
-    const seed = parseSeed(minimalSeedRaw())
+    const seed = minimalDecodedSeed()
 
     const existing = [
       "character/hero.card",
@@ -115,7 +131,7 @@ describe("seedImport", () => {
   })
 
   it("listSeedPlanContentConflictRelativePaths lists paths where existing content differs", () => {
-    const plan = buildSeedWritePlan(parseSeed(minimalSeedRaw()))
+    const plan = buildSeedWritePlan(minimalDecodedSeed())
     const existing = new Map<string, string>([["character/hero.card", "different"]])
 
     expect(listSeedPlanContentConflictRelativePaths(plan, existing)).toContain("character/hero.card")
@@ -134,7 +150,7 @@ describe("seedImport", () => {
   })
 
   it("does not treat invalid scene filenames as deletion candidates", () => {
-    const seed = parseSeed(minimalSeedRaw())
+    const seed = minimalDecodedSeed()
 
     expect(computeSeedDeletionCandidates(["scene/not-a-valid-scene.txt"], seed)).toEqual([])
   })

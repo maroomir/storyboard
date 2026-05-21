@@ -1,6 +1,6 @@
 import { serializeCard } from "@/files/card"
 import { serializeProjectJson } from "@/files/projectJson"
-import type { ParsedSeedEnvelope } from "@/models/serialization/seedFile"
+import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 import { isHiddenSceneFileName, isIgnoredSampleCardFileName } from "@/core/pathConventions"
 import { parseSceneStem } from "@/shared/scene"
 
@@ -29,7 +29,7 @@ export function isSeedSyncExcludedPath(normalizedRelativePath: string): boolean 
   return path.startsWith("draft/") || path.startsWith(".storyboard/cache/")
 }
 
-export function buildSeedWritePlan(seed: ParsedSeedEnvelope): readonly SeedFileWriteEntry[] {
+export function buildSeedWritePlan(seed: DecodedSeedContent): readonly SeedFileWriteEntry[] {
   const entries: SeedFileWriteEntry[] = [
     { relativePath: ".storyboard/project.json", content: serializeProjectJson(seed.project) }
   ]
@@ -112,7 +112,7 @@ export function listSeedPlanContentConflictRelativePaths(
 
 export function computeSeedDeletionCandidates(
   existingRelativePaths: readonly string[],
-  seed: ParsedSeedEnvelope
+  seed: DecodedSeedContent
 ): readonly string[] {
   const characterIds = new Set(seed.characters.map((c) => c.id))
   const backgroundIds = new Set(seed.backgrounds.map((b) => b.id))

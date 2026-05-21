@@ -19,7 +19,11 @@ let seedErrorClass: typeof SeedError | undefined
 // NOTE: @seedcoat/wasm is ESM-only and loads seedcoat.wasm relative to its own dist/.
 // The extension bundle is CJS (esbuild) and ships the package under out/vendor (see scripts/copy-seedcoat.mjs),
 // so we import the copied entry by file URL. The Function wrapper keeps esbuild from down-leveling import() to require().
+// In vitest (process.env.VITEST), vite resolves the package from node_modules directly, so no Function wrapping needed.
 function importSeedCoat(): Promise<SeedCoatApi> {
+  if (process.env.VITEST) {
+    return import("@seedcoat/wasm") as unknown as Promise<SeedCoatApi>
+  }
   const dynamicImport = new Function("specifier", "return import(specifier)") as (
     specifier: string
   ) => Promise<SeedCoatApi>
