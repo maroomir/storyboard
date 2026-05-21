@@ -10,6 +10,14 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-21
+
+### Added
+
+- Official specification document for the Seed `.seed` file format v2 envelope (`SEED-FORMAT.md`).
+- Commands for creating a Storyboard project from a Seed file and syncing an existing project from a Seed file.
+- Export command and related documentation for writing a Storyboard project to a Seed file.
+
 ## [0.1.2] - 2026-05-11
 
 ### Documentation

@@ -9,6 +9,14 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-05-21
+
+### 추가
+
+- Seed `.seed` 파일 포맷 v2 envelope의 공식 사양 문서(`SEED-FORMAT.md`)를 추가했습니다.
+- Seed 파일에서 Storyboard 프로젝트를 생성하고 기존 프로젝트와 동기화하는 command를 추가했습니다.
+- Storyboard 프로젝트를 Seed 파일로 내보내는 export command와 관련 문서를 추가했습니다.
+
 ## [0.1.2] - 2026-05-11
 
 ### 문서
