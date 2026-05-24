@@ -34,11 +34,27 @@ export class EventEmitter<T = void> {
   }
 }
 
+export interface WorkspaceFolder {
+  readonly uri: Uri
+  readonly name: string
+  readonly index: number
+}
+
+export const workspace: {
+  getWorkspaceFolder: (uri: Uri) => WorkspaceFolder | undefined
+} = {
+  getWorkspaceFolder: () => undefined
+}
+
 export class Uri {
   public constructor(
     public readonly scheme: string,
     public readonly fsPath: string
   ) {}
+
+  public get path(): string {
+    return this.fsPath
+  }
 
   static file(path: string): Uri {
     return new Uri("file", path)

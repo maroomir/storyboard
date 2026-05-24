@@ -28,10 +28,16 @@ import {
   SEED_UNKNOWN_ERROR_MESSAGE
 } from "../constants/projectStorageMessages"
 import {
+  applySeedIdMapping,
+  SeedIdMappingConflictError,
+  SeedIdMappingValidationError
+} from "../files/seedRemap"
+import {
   createStoryboardDirectories,
   createWorkspaceReadme,
   ensureWorkspaceGitignore
 } from "./init"
+import { formatSeedIdRemapErrorMessage, promptSeedIdRemapping } from "./seedIdRemapPrompt"
 
 const createFromSeedCommand = "storyboard.seed.createFromFile"
 const syncFromSeedCommand = "storyboard.seed.syncFromFile"
@@ -452,6 +458,31 @@ function isTargetRootInsideWorkspace(targetRoot: vscode.Uri): boolean {
   return false
 }
 
+async function applyOptionalSeedIdRemapping(
+  seed: DecodedSeedContent
+): Promise<DecodedSeedContent | undefined> {
+  const mapping = await promptSeedIdRemapping(seed)
+
+  if (mapping === undefined) {
+    return undefined
+  }
+
+  if (mapping.size === 0) {
+    return seed
+  }
+
+  try {
+    return applySeedIdMapping(seed, mapping)
+  } catch (error) {
+    if (error instanceof SeedIdMappingConflictError || error instanceof SeedIdMappingValidationError) {
+      await vscode.window.showErrorMessage(formatSeedIdRemapErrorMessage(error))
+      return undefined
+    }
+
+    throw error
+  }
+}
+
 async function offerOpenCreatedFolder(targetRoot: vscode.Uri): Promise<void> {
   if (isTargetRootInsideWorkspace(targetRoot)) {
     return
@@ -523,6 +554,14 @@ async function createProjectFromSeedFile(
     if (!(await confirmOrAbortStoryboardMetadataWithoutProjectJson(paths))) {
       return
     }
+
+    const remappedSeed = await applyOptionalSeedIdRemapping(seed)
+
+    if (remappedSeed === undefined) {
+      return
+    }
+
+    seed = remappedSeed
 
     const plan = buildSeedWritePlan(seed)
 
@@ -602,6 +641,14 @@ async function syncProjectFromSeedFile(
   }
 
   try {
+    const remappedSeed = await applyOptionalSeedIdRemapping(seed)
+
+    if (remappedSeed === undefined) {
+      return
+    }
+
+    seed = remappedSeed
+
     const existingRelativePaths = await collectSeedSyncRelativePaths(workspaceFolder.uri)
     const deletions = computeSeedDeletionCandidates(existingRelativePaths, seed)
     const plan = buildSeedWritePlan(seed)

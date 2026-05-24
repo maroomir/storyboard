@@ -9,6 +9,11 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- 탐색기에서 `*.card` 파일 rename 시 본문 `id`, 다른 카드 참조, 캐릭터 프로필 이미지를 함께 갱신합니다. 사이드바 컨텍스트 메뉴의 **ID 변경** 명령(`storyboard.character.rename`, `storyboard.background.rename`)도 같은 경로를 사용합니다.
+- Seed 가져오기·동기화 직후 **ID 매핑 검토** QuickPick을 추가했습니다. 카드별 새 ID를 지정할 수 있으며, **변경 없이 계속**을 선택하면 기존 흐름과 동일합니다.
+
 ## [0.2.0] - 2026-05-22
 
 ### 변경

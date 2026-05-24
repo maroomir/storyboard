@@ -10,6 +10,11 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Renaming a `*.card` file in the explorer updates the card body `id`, references in other cards, and the character profile image when present. Sidebar **Rename ID** commands (`storyboard.character.rename`, `storyboard.background.rename`) use the same pipeline.
+- After Seed import or sync, an optional **Review ID mapping** QuickPick lets you assign new card IDs before writing files. Choosing **Continue without changes** preserves the previous behavior.
+
 ## [0.2.0] - 2026-05-22
 
 ### Changed

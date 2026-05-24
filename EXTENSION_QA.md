@@ -289,7 +289,17 @@ npx @vscode/vsce package
 
 - [ ] **복호화 중…** 진행 알림이 뜨고, 잘못된 패스프레이즈 시 한국어 오류가 표시된다.
 - [ ] 올바른 패스프레이즈로 **새 폴더에 만들기** 후 `project.json`, 카드, `scene/*.txt`가 기대와 일치한다.
+- [ ] 복호화 직후 **ID 매핑 검토** QuickPick이 뜬다. 항목에서 새 ID를 지정하면 import/sync 결과 파일명·본문 `id`·참조가 함께 바뀌고, **변경 없이 계속**이면 seedcoat ID가 그대로 반영된다.
 - [ ] 기존 워크스페이스 **동기화** 시 충돌·삭제 확인 후 반영된다.
+
+---
+
+## 카드 ID rename
+
+- [ ] 탐색기에서 `character/*.card` 또는 `background/*.card` 파일명을 rename하면 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
+- [ ] Storyboard 사이드바 카드 컨텍스트 **ID 변경** 명령으로도 동일하게 rename된다.
+- [ ] `.sample.card` rename은 후처리 대상에서 제외된다.
+- [ ] 규칙에 맞지 않는 새 ID(대문자·공백 등)는 경고 후 rename이 취소된다.
 
 ### 데이터·호환
 
