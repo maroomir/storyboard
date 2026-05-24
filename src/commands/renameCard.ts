@@ -65,11 +65,13 @@ async function renameCard(kind: "character" | "background", invokedUri?: vscode.
     return
   }
 
-  try {
-    await vscode.workspace.fs.rename(cardUri, newUri, { overwrite: false })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "카드 rename에 실패했습니다."
-    await vscode.window.showErrorMessage(message)
+  const edit = new vscode.WorkspaceEdit()
+  edit.renameFile(cardUri, newUri, { overwrite: false })
+
+  const applied = await vscode.workspace.applyEdit(edit)
+
+  if (!applied) {
+    await vscode.window.showErrorMessage("카드 rename에 실패했습니다.")
   }
 }
 

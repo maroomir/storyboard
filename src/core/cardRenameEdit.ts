@@ -118,7 +118,7 @@ export async function appendCardRenameWorkspaceEdit(
     throw new CardRenameValidationError(message)
   }
 
-  replaceFileText(edit, newUri, serializeCard(renamedCard), oldCardText)
+  replaceFileText(edit, oldUri, serializeCard(renamedCard), oldCardText)
 
   if (candidate.kind === "character") {
     await appendCharacterReferenceUpdates(edit, candidate, oldUri, newUri)

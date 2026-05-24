@@ -50,7 +50,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerRenameCardCommands())
-  context.subscriptions.push(registerCardRenameParticipant())
+  context.subscriptions.push(registerCardRenameParticipant({ logger }))
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerImportSeedCommands({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
