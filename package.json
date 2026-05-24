@@ -56,6 +56,14 @@
         "icon": "$(add)"
       },
       {
+        "command": "storyboard.character.rename",
+        "title": "Storyboard: Rename Character ID..."
+      },
+      {
+        "command": "storyboard.background.rename",
+        "title": "Storyboard: Rename Background ID..."
+      },
+      {
         "command": "storyboard.apiKey.set",
         "title": "Storyboard: Set API Key..."
       },
@@ -249,6 +257,16 @@
           "command": "storyboard.seed.syncFromFile",
           "when": "resourceExtname == .seed",
           "group": "storyboard@98"
+        },
+        {
+          "command": "storyboard.character.rename",
+          "when": "resourceExtname == .card && resourceFilename != .sample.card",
+          "group": "storyboard@1"
+        },
+        {
+          "command": "storyboard.background.rename",
+          "when": "resourceExtname == .card && resourceFilename != .sample.card",
+          "group": "storyboard@1"
         }
       ],
       "view/title": [
@@ -281,6 +299,18 @@
           "command": "storyboard.settings.open",
           "when": "view == storyboard.scenesView",
           "group": "navigation@99"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "storyboard.character.rename",
+          "when": "view == storyboard.charactersView",
+          "group": "inline"
+        },
+        {
+          "command": "storyboard.background.rename",
+          "when": "view == storyboard.backgroundsView",
+          "group": "inline"
         }
       ]
     }

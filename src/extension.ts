@@ -11,10 +11,12 @@ import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
+import { registerRenameCardCommands } from "./commands/renameCard"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
 import { registerStoryboardWorkspaceContext } from "./core/storyboardWorkspaceContext"
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
+import { registerCardRenameParticipant } from "./providers/CardRenameParticipant"
 import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvider"
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
 import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
@@ -47,6 +49,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(configBridge.onDidChange(() => logger.info("Storyboard configuration changed")))
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerCreateCardCommands())
+  context.subscriptions.push(registerRenameCardCommands())
+  context.subscriptions.push(registerCardRenameParticipant())
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerImportSeedCommands({ logger }))
   context.subscriptions.push(registerSetApiKeyCommand({ secretStore }))
