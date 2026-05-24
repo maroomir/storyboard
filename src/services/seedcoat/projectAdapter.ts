@@ -41,6 +41,41 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
+function describeZodIssues(error: ZodError): string {
+  return error.issues
+    .map((issue) => {
+      const path = issue.path.join(".")
+      return path.length > 0 ? `${path}: ${issue.message}` : issue.message
+    })
+    .join("; ")
+}
+
+function isSeedRelationWithRequiredFields(value: unknown): boolean {
+  if (!isPlainObject(value)) {
+    return false
+  }
+
+  return typeof value.target === "string" && value.target.trim().length > 0 && typeof value.type === "string" && value.type.trim().length > 0
+}
+
+function normalizeSeedCharacter(item: unknown): unknown {
+  if (!isPlainObject(item)) {
+    return item
+  }
+
+  const normalized = { ...item }
+
+  if (typeof item.role === "string" && item.role.trim().length === 0) {
+    delete normalized.role
+  }
+
+  if (Array.isArray(item.relations)) {
+    normalized.relations = item.relations.filter(isSeedRelationWithRequiredFields)
+  }
+
+  return normalized
+}
+
 function parseJsonPart(label: string, json: string): unknown {
   try {
     return JSON.parse(json)
@@ -60,7 +95,7 @@ function parseProjectPart(value: unknown): StoryboardProject {
     return storyboardProjectSchema.parse(value)
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new Error(`project: 스키마 검증에 실패했습니다.`)
+      throw new Error(`project: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`)
     }
     throw error
   }
@@ -72,10 +107,10 @@ function parseCharacterArray(value: unknown): CharacterCard[] {
   }
   return value.map((item, i) => {
     try {
-      return characterCardSchema.parse(item)
+      return characterCardSchema.parse(normalizeSeedCharacter(item))
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new Error(`characters[${i}]: 스키마 검증에 실패했습니다.`)
+        throw new Error(`characters[${i}]: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`)
       }
       throw error
     }
@@ -91,7 +126,7 @@ function parseBackgroundArray(value: unknown): BackgroundCard[] {
       return backgroundCardSchema.parse(item)
     } catch (error) {
       if (error instanceof ZodError) {
-        throw new Error(`backgrounds[${i}]: 스키마 검증에 실패했습니다.`)
+        throw new Error(`backgrounds[${i}]: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`)
       }
       throw error
     }
@@ -159,7 +194,7 @@ export async function encodeWorkspaceToSeed(
     ...(c.tags !== undefined ? { tags: c.tags } : {}),
     traits: c.traits ?? [],
     description: c.description ?? "",
-    relations: c.relations ?? [],
+    relations: (c.relations ?? []).filter(isSeedRelationWithRequiredFields),
     arc: c.arc ?? [],
     recentDialogues: c.recentDialogues ?? [],
     ...(c.profile !== undefined ? { profile: c.profile } : {}),

@@ -125,6 +125,50 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
   )
 
   it(
+    "round-trips a role-less character (encoder emits role='', decode drops it)",
+    async () => {
+      const content = minimalWorkspaceContent({
+        characters: [{ type: "character", id: "hero", name: "주인공" }]
+      })
+
+      const bytes = await encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)
+      const decoded = await decodeSeedToWritePlan(bytes, FIXTURE_PASSPHRASE)
+
+      expect(decoded.characters).toHaveLength(1)
+      expect(decoded.characters[0]?.id).toBe("hero")
+      expect(decoded.characters[0]?.role).toBeUndefined()
+    },
+    30_000
+  )
+
+  it(
+    "drops relations without a type during seed round-trip",
+    async () => {
+      const content = minimalWorkspaceContent({
+        characters: [
+          {
+            type: "character",
+            id: "hero",
+            name: "주인공",
+            relations: [
+              { target: "rival", type: "" },
+              { target: "mentor", type: "ally" }
+            ]
+          },
+          { type: "character", id: "rival", name: "라이벌" },
+          { type: "character", id: "mentor", name: "멘토" }
+        ]
+      })
+
+      const bytes = await encodeWorkspaceToSeed(content, FIXTURE_PASSPHRASE)
+      const decoded = await decodeSeedToWritePlan(bytes, FIXTURE_PASSPHRASE)
+
+      expect(decoded.characters[0]?.relations).toEqual([{ target: "mentor", type: "ally" }])
+    },
+    30_000
+  )
+
+  it(
     "removes orphan background characterIds on decode",
     async () => {
       const content = minimalWorkspaceContent({
