@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-24
+
 ### Fixed
 
 - Explorer F2 renames no longer skip updating the card body `id`; text edits now target `oldUri` so they apply before VS Code moves the file.

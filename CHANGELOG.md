@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-05-24
+
 ### 수정
 
 - 탐색기 F2 rename 시 카드 본문 `id` 갱신이 적용되지 않던 문제를 수정했습니다. `onWillRenameFiles` 시점에 `oldUri`에 텍스트 edit를 걸도록 변경했습니다.
