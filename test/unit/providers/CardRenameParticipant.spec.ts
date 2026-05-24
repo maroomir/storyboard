@@ -1,18 +1,27 @@
 import * as vscode from "vscode"
-import { beforeEach, describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
+  buildCardRenameWorkspaceEdit,
   parseCardRenameCandidate,
   validateCardRenameId
 } from "@/core/cardRenameEdit"
-import { workspace } from "../../stubs/vscode"
+import { registerCardRenameParticipant } from "@/providers/CardRenameParticipant"
+import type { StoryboardLogger } from "@/core/logger"
+import {
+  fireWillRenameFiles,
+  FileType,
+  workspace,
+  type WorkspaceEdit as StubWorkspaceEdit,
+  type WorkspaceFolder
+} from "../../stubs/vscode"
 
 describe("CardRenameParticipant helpers", () => {
   const workspaceRoot = vscode.Uri.file("/ws/project")
   const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
 
   beforeEach(() => {
-    workspace.getWorkspaceFolder = (uri: vscode.Uri): typeof workspaceFolder | undefined =>
+    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
       uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
   })
 
@@ -66,5 +75,88 @@ describe("CardRenameParticipant helpers", () => {
     expect(validateCardRenameId("Bad Id")).toBe(
       "ID는 영문 소문자, 숫자, 하이픈만 사용할 수 있고 숫자/문자로 시작해야 합니다."
     )
+  })
+})
+
+describe("buildCardRenameWorkspaceEdit", () => {
+  const workspaceRoot = vscode.Uri.file("/ws/project")
+  const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
+
+  beforeEach(() => {
+    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
+      uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
+    workspace.findFiles = async (): Promise<vscode.Uri[]> => []
+    workspace.fs.stat = async (): Promise<{ type: FileType }> => {
+      throw new Error("not found")
+    }
+  })
+
+  it("targets oldUri for the renamed card body text edit", async () => {
+    const oldUri = vscode.Uri.file("/ws/project/character/item.card")
+    const newUri = vscode.Uri.file("/ws/project/character/manjae-jo.card")
+    const cardText = "type: character\nid: item\nname: Item\n"
+
+    workspace.fs.readFile = async (uri): Promise<Uint8Array> => {
+      if (uri.fsPath === oldUri.fsPath) {
+        return new TextEncoder().encode(cardText)
+      }
+      throw new Error(`unexpected read: ${uri.fsPath}`)
+    }
+
+    const edit = await buildCardRenameWorkspaceEdit(oldUri, newUri)
+
+    expect(edit).toBeDefined()
+    const replacements = (edit as vscode.WorkspaceEdit & { getReplacements(): readonly { uri: vscode.Uri; text: string }[] }).getReplacements()
+    const bodyEdit = replacements.find((replacement) => replacement.text.includes("id: manjae-jo"))
+
+    expect(bodyEdit).toBeDefined()
+    expect(bodyEdit?.uri.fsPath).toBe(oldUri.fsPath)
+    expect(bodyEdit?.uri.fsPath).not.toBe(newUri.fsPath)
+  })
+})
+
+describe("registerCardRenameParticipant", () => {
+  const workspaceRoot = vscode.Uri.file("/ws/project")
+  const workspaceFolder = { uri: workspaceRoot, name: "project", index: 0 }
+
+  beforeEach(() => {
+    workspace.getWorkspaceFolder = (uri): WorkspaceFolder | undefined =>
+      uri.fsPath.startsWith(workspaceRoot.fsPath) ? workspaceFolder : undefined
+    workspace.findFiles = async (): Promise<vscode.Uri[]> => []
+    workspace.fs.stat = async (): Promise<{ type: FileType }> => {
+      throw new Error("not found")
+    }
+  })
+
+  it("logs card renames when handling onWillRenameFiles", async () => {
+    const oldUri = vscode.Uri.file("/ws/project/character/hero.card")
+    const newUri = vscode.Uri.file("/ws/project/character/protagonist.card")
+    const cardText = "type: character\nid: hero\nname: Hero\n"
+    const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
+
+    workspace.fs.readFile = async (uri): Promise<Uint8Array> => {
+      if (uri.fsPath === oldUri.fsPath) {
+        return new TextEncoder().encode(cardText)
+      }
+      throw new Error(`unexpected read: ${uri.fsPath}`)
+    }
+
+    registerCardRenameParticipant({ logger: logger as unknown as StoryboardLogger })
+
+    let waitUntilPromise: Promise<StubWorkspaceEdit | undefined> | undefined
+
+    fireWillRenameFiles({
+      files: [{ oldUri, newUri }],
+      waitUntil(thenable) {
+        waitUntilPromise = thenable
+      }
+    })
+
+    await waitUntilPromise
+
+    expect(logger.info).toHaveBeenCalledWith(
+      `card rename participant: ${oldUri.fsPath} -> ${newUri.fsPath} (n=1)`
+    )
+    expect(logger.info).toHaveBeenCalledWith("card rename participant: applied edits for 1 card(s)")
   })
 })

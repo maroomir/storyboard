@@ -296,10 +296,10 @@ npx @vscode/vsce package
 
 ## 카드 ID rename
 
-- [ ] 탐색기에서 `character/*.card` 또는 `background/*.card` 파일명을 rename하면 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
-- [ ] Storyboard 사이드바 카드 컨텍스트 **ID 변경** 명령으로도 동일하게 rename된다.
+- [ ] 탐색기 F2, Storyboard 사이드바 카드 컨텍스트 **ID 변경**, 명령 팔레트(`storyboard.character.rename` / `storyboard.background.rename`) 세 경로 모두 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
 - [ ] `.sample.card` rename은 후처리 대상에서 제외된다.
 - [ ] 규칙에 맞지 않는 새 ID(대문자·공백 등)는 경고 후 rename이 취소된다.
+- [ ] Finder·터미널 등 VSCode 밖에서 파일명을 바꾼 경우는 자동 갱신되지 않는다. 본문·참조·프로필을 맞추려면 사이드바 **ID 변경** 또는 명령 팔레트 rename을 사용한다.
 
 ### 데이터·호환
 

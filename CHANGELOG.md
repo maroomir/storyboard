@@ -9,6 +9,11 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 수정
+
+- 탐색기 F2 rename 시 카드 본문 `id` 갱신이 적용되지 않던 문제를 수정했습니다. `onWillRenameFiles` 시점에 `oldUri`에 텍스트 edit를 걸도록 변경했습니다.
+- 사이드바·명령 팔레트 **ID 변경**이 `fs.rename`만 호출해 참조·프로필이 갱신되지 않던 문제를 수정했습니다. `workspace.applyEdit` + `renameFile`로 participant 경로와 통일했습니다.
+
 ### 추가
 
 - 탐색기에서 `*.card` 파일 rename 시 본문 `id`, 다른 카드 참조, 캐릭터 프로필 이미지를 함께 갱신합니다. 사이드바 컨텍스트 메뉴의 **ID 변경** 명령(`storyboard.character.rename`, `storyboard.background.rename`)도 같은 경로를 사용합니다.
