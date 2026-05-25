@@ -155,6 +155,8 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           <div className={overviewBoxClass}>
             <SectionHeader title="관계" eyebrow="Relations" />
             <RelationsField
+              characterId={card.id}
+              characterName={card.name}
               relations={card.relations ?? []}
               onChange={(relations) => updateCard({ ...card, relations })}
             />

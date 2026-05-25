@@ -74,7 +74,6 @@ async function validateCanInitialize(paths: StoryboardProjectPaths): Promise<boo
 
 export async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {
   await Promise.all([
-    vscode.workspace.fs.createDirectory(paths.personaCacheDirectory),
     vscode.workspace.fs.createDirectory(paths.sceneCacheDirectory),
     vscode.workspace.fs.createDirectory(paths.characterProfileDirectory),
     vscode.workspace.fs.createDirectory(paths.backgroundDirectory),
