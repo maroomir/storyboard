@@ -2,7 +2,8 @@ import type React from "react"
 
 import type { CardAttributeValue } from "@webview/lib/types"
 import { removeRecordKey, renameRecordKey } from "@webview/lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
+import { IconButton } from "@webview/components/ui/IconButton"
+import { sbInputClass } from "@webview/components/ui/formClasses"
 
 export function KeyValueField({
   label,
@@ -32,14 +33,10 @@ export function KeyValueField({
             value={String(value ?? "")}
             onChange={(event) => onChange({ ...values, [key]: event.target.value })}
           />
-          <button type="button" className={sbControlButtonClass} onClick={() => onChange(removeRecordKey(values, key))}>
-            삭제
-          </button>
+          <IconButton icon="remove" aria-label="삭제" onClick={() => onChange(removeRecordKey(values, key))} />
         </div>
       ))}
-      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange({ ...values, newKey: "" })}>
-        추가
-      </button>
+      <IconButton icon="add" aria-label="추가" className="self-start" onClick={() => onChange({ ...values, newKey: "" })} />
     </fieldset>
   )
 }

@@ -14,6 +14,10 @@ after the first public release.
 
 - Card game–style framing on `StoryboardCard` in the editor preview, with role badges (main / supporting / extra) using distinct colors and glyphs.
 
+### Changed
+
+- Replaced Overview field add/remove text buttons (List, Arc, Relations, Key-Value) with compact `+` / `-` `IconButton` controls.
+
 ## [0.2.1] - 2026-05-24
 
 ### Fixed

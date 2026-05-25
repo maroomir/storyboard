@@ -2,7 +2,8 @@ import type React from "react"
 
 import type { CharacterArc } from "@webview/lib/types"
 import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
+import { IconButton } from "@webview/components/ui/IconButton"
+import { sbInputClass } from "@webview/components/ui/formClasses"
 
 export function ArcField({
   arc,
@@ -34,14 +35,20 @@ export function ArcField({
             value={item.sceneRef ?? ""}
             onChange={(event) => onChange(replaceArrayItem(arc, index, { ...item, sceneRef: event.target.value }))}
           />
-          <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange(removeArrayItem(arc, index))}>
-            삭제
-          </button>
+          <IconButton
+            icon="remove"
+            aria-label="삭제"
+            className="self-start"
+            onClick={() => onChange(removeArrayItem(arc, index))}
+          />
         </div>
       ))}
-      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange([...arc, { stage: "", summary: "", sceneRef: "" }])}>
-        추가
-      </button>
+      <IconButton
+        icon="add"
+        aria-label="추가"
+        className="self-start"
+        onClick={() => onChange([...arc, { stage: "", summary: "", sceneRef: "" }])}
+      />
     </fieldset>
   )
 }

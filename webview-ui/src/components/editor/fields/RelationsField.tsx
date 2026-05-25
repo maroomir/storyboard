@@ -2,7 +2,8 @@ import type React from "react"
 
 import type { CharacterRelation } from "@webview/lib/types"
 import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
-import { sbControlButtonClass, sbInputClass } from "@webview/components/ui/formClasses"
+import { IconButton } from "@webview/components/ui/IconButton"
+import { sbInputClass } from "@webview/components/ui/formClasses"
 
 export function RelationsField({
   relations,
@@ -28,14 +29,15 @@ export function RelationsField({
             value={relation.type}
             onChange={(event) => onChange(replaceArrayItem(relations, index, { ...relation, type: event.target.value }))}
           />
-          <button type="button" className={sbControlButtonClass} onClick={() => onChange(removeArrayItem(relations, index))}>
-            삭제
-          </button>
+          <IconButton icon="remove" aria-label="삭제" onClick={() => onChange(removeArrayItem(relations, index))} />
         </div>
       ))}
-      <button type="button" className={`${sbControlButtonClass} self-start`} onClick={() => onChange([...relations, { target: "", type: "" }])}>
-        추가
-      </button>
+      <IconButton
+        icon="add"
+        aria-label="추가"
+        className="self-start"
+        onClick={() => onChange([...relations, { target: "", type: "" }])}
+      />
     </fieldset>
   )
 }
