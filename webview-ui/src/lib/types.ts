@@ -6,6 +6,7 @@ export type CharacterRole = "main" | "supporting" | "extra"
 
 export type StoryboardRequestMethod =
   | "cards.write"
+  | "cards.writeRaw"
   | "cards.open"
   | "cards.delete"
   | "scenes.openScene"

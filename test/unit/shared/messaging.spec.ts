@@ -21,6 +21,25 @@ describe("storyboard messaging protocol", () => {
     expect(request.payload).toEqual({ type: "character" })
   })
 
+  it("parses cards.writeRaw request", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "cards-write-raw-1",
+      method: "cards.writeRaw",
+      payload: {
+        uri: "file:///workspace/character/elia.card",
+        rawText: "type: character\nid: elia\nname: 엘리아\n"
+      }
+    })
+
+    expect(request.method).toBe("cards.writeRaw")
+    expect(request.payload).toEqual({
+      uri: "file:///workspace/character/elia.card",
+      rawText: "type: character\nid: elia\nname: 엘리아\n"
+    })
+  })
+
   it("rejects unsupported methods", () => {
     expect(() =>
       parseStoryboardRequestMessage({

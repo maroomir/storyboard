@@ -1,9 +1,9 @@
 import clsx from "clsx"
-import { Minus, Plus } from "lucide-react"
+import { Minus, Pencil, Plus, Save, X } from "lucide-react"
 import type React from "react"
 
 export type IconButtonSize = "sm" | "md"
-export type IconButtonIcon = "add" | "remove"
+export type IconButtonIcon = "add" | "remove" | "edit" | "save" | "cancel"
 
 const sizeClass: Record<IconButtonSize, { button: string; icon: string }> = {
   sm: { button: "h-7 w-7", icon: "h-3.5 w-3.5" },
@@ -19,6 +19,14 @@ export type IconButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>
   readonly size?: IconButtonSize
 }
 
+const iconComponents: Record<IconButtonIcon, typeof Plus> = {
+  add: Plus,
+  remove: Minus,
+  edit: Pencil,
+  save: Save,
+  cancel: X
+}
+
 export function IconButton({
   icon,
   size = "sm",
@@ -26,11 +34,20 @@ export function IconButton({
   type = "button",
   ...rest
 }: IconButtonProps): React.ReactElement {
-  const LucideIcon = icon === "add" ? Plus : Minus
+  const LucideIcon = iconComponents[icon]
   const sizes = sizeClass[size]
 
   return (
-    <button type={type} className={clsx(baseClass, sizes.button, icon === "remove" && "hover:text-sb-fg-error", className)} {...rest}>
+    <button
+      type={type}
+      className={clsx(
+        baseClass,
+        sizes.button,
+        (icon === "remove" || icon === "cancel") && "hover:text-sb-fg-error",
+        className
+      )}
+      {...rest}
+    >
       <LucideIcon className={sizes.icon} aria-hidden />
     </button>
   )

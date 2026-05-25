@@ -75,6 +75,12 @@ function createCardEditorHandlers(document: vscode.TextDocument): StoryboardRpcH
     "cards.write": async (payload): Promise<{ readonly card: StoryboardCard }> => {
       await replaceDocumentText(document, serializeCard(payload.card))
       return { card: payload.card }
+    },
+    "cards.writeRaw": async (payload): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> => {
+      const card = parseCard(payload.rawText)
+      const rawText = serializeCard(card)
+      await replaceDocumentText(document, rawText)
+      return { card, rawText }
     }
   }
 }

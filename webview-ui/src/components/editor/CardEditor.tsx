@@ -5,6 +5,7 @@ import { createRequestId, parseCardEditorInitialData } from "@webview/lib/messag
 import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "@webview/lib/types"
 import { Button } from "../ui/Button"
 import { PreviewPanel } from "./PreviewPanel"
+import { YamlEditorPanel } from "./YamlEditorPanel"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
 import { sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
@@ -24,12 +25,14 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
   const [card, setCard] = useState<StoryboardCard | undefined>(initialData.card)
   const [status, setStatus] = useState("문서에서 카드 정보를 불러왔습니다.")
   const [isDirty, setIsDirty] = useState(false)
+  const [isEditingYaml, setIsEditingYaml] = useState(false)
   const [pendingExternalData, setPendingExternalData] = useState<CardEditorInitialData | undefined>()
 
   const applyDocumentState = useCallback((nextDocumentState: CardEditorInitialData): void => {
     setDocumentState(nextDocumentState)
     setCard(nextDocumentState.card)
     setIsDirty(false)
+    setIsEditingYaml(false)
     setPendingExternalData(undefined)
     setStatus("문서 변경 사항을 다시 불러왔습니다.")
   }, [])
@@ -42,7 +45,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
 
       const nextDocumentState = parseCardEditorInitialData(event.data.payload)
 
-      if (isDirty) {
+      if (isDirty || isEditingYaml) {
         setPendingExternalData(nextDocumentState)
         setStatus("외부에서 카드가 변경되었습니다. 필요하면 다시 불러오세요.")
         return
@@ -53,7 +56,21 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
 
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
-  }, [isDirty, applyDocumentState])
+  }, [isDirty, isEditingYaml, applyDocumentState])
+
+  const applyYamlSave = useCallback(
+    (next: Pick<CardEditorInitialData, "card" | "rawText">): void => {
+      if (!next.card) {
+        return
+      }
+
+      setDocumentState((prev) => ({ ...prev, card: next.card, rawText: next.rawText }))
+      setCard(next.card)
+      setIsDirty(false)
+      setPendingExternalData(undefined)
+    },
+    []
+  )
 
   const updateCard = useCallback(
     (nextCard: StoryboardCard): void => {
@@ -73,6 +90,20 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
       })
     },
     [documentState.documentUri, vscodeApi]
+  )
+
+  const yamlPanel = useMemo(
+    () => (
+      <YamlEditorPanel
+        documentUri={documentState.documentUri}
+        rawText={documentState.rawText}
+        vscodeApi={vscodeApi}
+        onSaved={applyYamlSave}
+        onEditingChange={setIsEditingYaml}
+        onStatusChange={setStatus}
+      />
+    ),
+    [documentState.documentUri, documentState.rawText, vscodeApi, applyYamlSave]
   )
 
   const tabItems = useMemo(() => {
@@ -112,16 +143,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
     if (card.type !== "character") {
       return [
         { id: "overview", label: "Overview", panel: overview },
-        {
-          id: "yaml",
-          label: "YAML",
-          panel: (
-            <div className={overviewBoxClass}>
-              <SectionHeader title="Raw YAML" eyebrow="Source" description="읽기 전용입니다. 구조를 바꾸려면 VSCode에서 텍스트로 편집하세요." />
-              <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
-            </div>
-          )
-        }
+        { id: "yaml", label: "YAML", panel: yamlPanel }
       ]
     }
 
@@ -163,18 +185,9 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           </div>
         )
       },
-      {
-        id: "yaml",
-        label: "YAML",
-        panel: (
-          <div className={overviewBoxClass}>
-            <SectionHeader title="Raw YAML" eyebrow="Source" description="읽기 전용입니다. 구조를 바꾸려면 VSCode에서 텍스트로 편집하세요." />
-            <textarea className={sbYamlTextareaClass} readOnly value={documentState.rawText} />
-          </div>
-        )
-      }
+      { id: "yaml", label: "YAML", panel: yamlPanel }
     ]
-  }, [card, documentState.rawText, documentState.error, updateCard])
+  }, [card, updateCard, yamlPanel])
 
   if (documentState.error || !card) {
     return (

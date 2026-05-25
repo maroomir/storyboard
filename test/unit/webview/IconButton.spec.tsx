@@ -21,4 +21,26 @@ describe("IconButton", () => {
     expect(onAdd).toHaveBeenCalledOnce()
     expect(onRemove).toHaveBeenCalledOnce()
   })
+
+  it("exposes yaml edit actions via aria-label", () => {
+    const onEdit = vi.fn()
+    const onSave = vi.fn()
+    const onCancel = vi.fn()
+
+    render(
+      <>
+        <IconButton icon="edit" aria-label="편집" onClick={onEdit} />
+        <IconButton icon="save" aria-label="저장" onClick={onSave} />
+        <IconButton icon="cancel" aria-label="취소" onClick={onCancel} />
+      </>
+    )
+
+    screen.getByRole("button", { name: "편집" }).click()
+    screen.getByRole("button", { name: "저장" }).click()
+    screen.getByRole("button", { name: "취소" }).click()
+
+    expect(onEdit).toHaveBeenCalledOnce()
+    expect(onSave).toHaveBeenCalledOnce()
+    expect(onCancel).toHaveBeenCalledOnce()
+  })
 })

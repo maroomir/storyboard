@@ -36,6 +36,11 @@ export const cardsWriteRequestPayloadSchema = z.object({
   rawText: z.string().optional()
 })
 
+export const cardsWriteRawRequestPayloadSchema = z.object({
+  uri: uriStringSchema,
+  rawText: z.string()
+})
+
 export const cardsCreatePlaceholderRequestPayloadSchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
@@ -92,6 +97,11 @@ export const cardsReadResponsePayloadSchema = z.object({
 
 export const cardsWriteResponsePayloadSchema = z.object({
   card: cardSchema
+})
+
+export const cardsWriteRawResponsePayloadSchema = z.object({
+  card: cardSchema,
+  rawText: z.string()
 })
 
 export const cardsCreatePlaceholderResponsePayloadSchema = z.object({
@@ -356,6 +366,7 @@ export const storyboardRequestPayloadSchemas = {
   "cards.list": cardsListRequestPayloadSchema,
   "cards.read": cardsReadRequestPayloadSchema,
   "cards.write": cardsWriteRequestPayloadSchema,
+  "cards.writeRaw": cardsWriteRawRequestPayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
   "cards.open": cardsOpenRequestPayloadSchema,
@@ -383,6 +394,7 @@ export const storyboardResponsePayloadSchemas = {
   "cards.list": cardsListResponsePayloadSchema,
   "cards.read": cardsReadResponsePayloadSchema,
   "cards.write": cardsWriteResponsePayloadSchema,
+  "cards.writeRaw": cardsWriteRawResponsePayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
   "cards.open": cardsOpenResponsePayloadSchema,
