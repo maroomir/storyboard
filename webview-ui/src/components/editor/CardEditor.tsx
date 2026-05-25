@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createRequestId, parseCardEditorInitialData } from "@webview/lib/messaging"
 import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "@webview/lib/types"
-import { StoryboardCard as HeroCard } from "../card/StoryboardCard"
 import { Button } from "../ui/Button"
+import { PreviewPanel } from "./PreviewPanel"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
 import { sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
@@ -226,15 +226,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
         ) : null}
       </AnimatePresence>
 
-      <section className={panelClass} aria-label="카드 미리보기">
-        <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">Preview</p>
-        <HeroCard card={card} imageUri={documentState.imageUri} variant="hero" />
-        {card.type === "character" ? (
-          <p className="m-0 text-xs leading-normal text-sb-fg-muted">
-            이미지는 카드의 profile 경로를 기준으로 표시합니다.
-          </p>
-        ) : null}
-      </section>
+      <PreviewPanel card={card} imageUri={documentState.imageUri} />
 
       <section className={`${panelClass} min-h-0`} aria-label="카드 편집 폼">
         <SectionHeader
