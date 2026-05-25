@@ -1,7 +1,7 @@
 import clsx from "clsx"
 import type React from "react"
 
-import { CardFooterTags, CardTagRow } from "../card/CardTagRow"
+import { CardTagRow } from "../card/CardTagRow"
 import { StoryboardCard as HeroCard } from "../card/StoryboardCard"
 import { Pill } from "../ui/Pill"
 import { CHARACTER_ROLE_OPTIONS } from "@webview/lib/characterSidebarGroups"
@@ -22,17 +22,6 @@ const locationKindLabel: Record<"place" | "affiliation", string> = {
   affiliation: "소속"
 }
 
-function descriptionExcerpt(description: string | undefined, maxLength = 160): string | undefined {
-  const trimmed = description?.trim()
-  if (!trimmed) {
-    return undefined
-  }
-  if (trimmed.length <= maxLength) {
-    return trimmed
-  }
-  return `${trimmed.slice(0, maxLength).trimEnd()}…`
-}
-
 export type PreviewPanelProps = {
   readonly card: StoryboardCard
   readonly imageUri?: string
@@ -40,7 +29,6 @@ export type PreviewPanelProps = {
 }
 
 export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): React.ReactElement {
-  const excerpt = descriptionExcerpt(card.description)
   const roleLabel = card.type === "character" && card.role ? roleLabelByValue[card.role] : undefined
   const locationLabel =
     card.type !== "character" && card.locationKind ? locationKindLabel[card.locationKind] : undefined
@@ -69,15 +57,6 @@ export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): 
       <div className={heroFrameClass}>
         <HeroCard card={card} imageUri={imageUri} variant="hero" className="rounded-none border-0 shadow-none" />
       </div>
-
-      {excerpt || card.tags?.length ? (
-        <footer className="flex flex-col gap-2.5 rounded-lg border border-sb-border/70 bg-sb-bg-widget/40 px-3 py-3">
-          {excerpt ? (
-            <p className="m-0 line-clamp-4 text-sm leading-relaxed text-sb-fg-muted">{excerpt}</p>
-          ) : null}
-          <CardFooterTags tags={card.tags} />
-        </footer>
-      ) : null}
 
       {card.type === "character" ? (
         <p className="m-0 text-xs leading-normal text-sb-fg-muted">

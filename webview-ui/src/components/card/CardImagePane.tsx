@@ -37,12 +37,29 @@ function PlaceholderArt({ card, variant }: { readonly card: StoryboardCard; read
 }
 
 export function CardImagePane({ card, imageUri, variant, className }: CardImagePaneProps): React.ReactElement {
+  const isHero = variant === "hero"
   const baseBg = card.type === "character" ? "bg-cardCharacter" : "bg-cardBackground"
+
   return (
-    <div className={clsx("relative h-full min-h-0 w-full overflow-hidden", baseBg, className)}>
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-sb-parchment/80 via-transparent to-transparent" />
+    <div
+      className={clsx(
+        "relative h-full min-h-0 w-full overflow-hidden",
+        isHero ? "min-h-[220px]" : "min-h-0",
+        baseBg,
+        className
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-gradient-to-b from-sb-parchment/70 via-transparent to-black/55" />
+      <div className="pointer-events-none absolute inset-0 z-[2] shadow-[inset_0_0_24px_rgba(0,0,0,0.22)]" />
       {imageUri ? (
-        <img className="relative z-[1] h-full w-full object-cover" src={imageUri} alt="" />
+        <img
+          className={clsx(
+            "relative z-[1] h-full w-full object-cover",
+            isHero ? "object-[center_20%]" : "object-[center_15%]"
+          )}
+          src={imageUri}
+          alt=""
+        />
       ) : (
         <div className="relative z-[1] flex h-full min-h-0 w-full flex-1">
           <PlaceholderArt card={card} variant={variant} />
