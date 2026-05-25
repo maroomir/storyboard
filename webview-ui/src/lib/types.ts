@@ -2,6 +2,8 @@ export type CardType = "character" | "location" | "temporal" | "social"
 
 export type SidebarCardCategory = "character" | "background"
 
+export type CharacterRole = "main" | "supporting" | "extra"
+
 export type StoryboardRequestMethod =
   | "cards.write"
   | "cards.open"
@@ -64,6 +66,7 @@ export interface SidebarCardSummary {
   readonly uri: string
   readonly description?: string
   readonly error?: string
+  readonly role?: CharacterRole
 }
 
 export interface SidebarCardsInitialData {

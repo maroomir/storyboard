@@ -4,6 +4,13 @@ export const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/
 
 export const cardTypes = ["character", "location", "temporal", "social"] as const
 
+export const characterRoles = ["main", "supporting", "extra"] as const
+export type CharacterRole = (typeof characterRoles)[number]
+
+export function isCharacterRole(value: string | undefined): value is CharacterRole {
+  return value === "main" || value === "supporting" || value === "extra"
+}
+
 const cardIdSchema = z.string().regex(cardIdPattern, {
   message: "Card id must use lowercase letters, numbers, and hyphens."
 })

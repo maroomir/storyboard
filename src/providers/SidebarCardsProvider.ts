@@ -9,8 +9,8 @@ import { createAiRpcHandlers, createUsageRpcHandlers } from "../services/ai/rpcH
 import { type AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { UsageSummaryByEntity } from "../services/ai/types"
-import type { CardType } from "../shared/card"
-import type { StoryboardResponsePayload } from "../shared/messaging"
+import { isCharacterRole, type CardType } from "../shared/card"
+import type { SidebarCardSummary, StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
 
 const cardEditorViewType = "storyboard.card"
@@ -34,15 +34,6 @@ interface SidebarCardsProviderOptions {
   readonly cardType: SidebarCardCategory
   readonly title: string
   readonly cardGlob: string
-}
-
-interface SidebarCardSummary {
-  readonly type: CardType
-  readonly id: string
-  readonly name: string
-  readonly uri: string
-  readonly description?: string
-  readonly error?: string
 }
 
 interface SidebarCardsInitialData {
@@ -231,12 +222,15 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
         }
       }
 
+      const role = card.type === "character" && isCharacterRole(card.role) ? card.role : undefined
+
       return {
         type: card.type,
         id: card.id,
         name: card.name,
         uri: uri.toString(),
-        description: card.description
+        description: card.description,
+        ...(role ? { role } : {})
       }
     } catch (error) {
       return {

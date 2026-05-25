@@ -10,7 +10,72 @@ import {
   parseUsageChangedPayload,
   sumUsageMap
 } from "@webview/lib/messaging"
+import { groupCharacterCardsByRole } from "@webview/lib/characterSidebarGroups"
 import type { SidebarCardSummary, SidebarCardsInitialData, StoryboardEventMessage, StoryboardRequestMethod } from "@webview/lib/types"
+
+function SidebarCardRow({
+  card,
+  cardCostUsd,
+  onOpen,
+  onDelete
+}: {
+  readonly card: SidebarCardSummary
+  readonly cardCostUsd: (card: SidebarCardSummary) => number
+  readonly onOpen: (card: SidebarCardSummary) => void
+  readonly onDelete: (card: SidebarCardSummary) => void
+}): React.ReactElement {
+  return (
+    <li className="group/card overflow-hidden rounded-lg border border-sb-border bg-sb-bg-widget shadow-cardRest transition hover:border-sb-border-focus hover:shadow-cardHover">
+      <div className="flex min-w-0 items-start gap-2 p-2.5">
+        <button
+          className="min-w-0 flex-1 cursor-pointer rounded-md border border-transparent bg-transparent p-0 text-left outline-none focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+          type="button"
+          onClick={() => onOpen(card)}
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate font-semibold leading-snug text-sb-fg">{card.name}</span>
+            <span className="shrink-0 rounded-full border border-sb-border bg-sb-bg-sidebar px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-sb-fg-muted">
+              {card.type === "character" ? "캐릭터" : "배경"}
+            </span>
+          </span>
+          {card.error ? (
+            <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-error">{card.error}</span>
+          ) : card.description ? (
+            <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-muted">{card.description}</span>
+          ) : null}
+        </button>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <CostBadge usd={cardCostUsd(card)} />
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg"
+            aria-label={`${card.name} 편집`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onOpen(card)
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg-error"
+            aria-label={`${card.name} 삭제`}
+            onClick={(event) => {
+              event.stopPropagation()
+              onDelete(card)
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          </Button>
+        </div>
+      </div>
+    </li>
+  )
+}
 
 export function CardsSidebar({ initialData }: { readonly initialData: SidebarCardsInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
@@ -64,6 +129,18 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
     return typeof raw === "number" && Number.isFinite(raw) ? raw : 0
   }
 
+  const characterSections = useMemo(
+    () => (sidebarState.type === "character" ? groupCharacterCardsByRole(sidebarState.cards) : []),
+    [sidebarState.cards, sidebarState.type]
+  )
+
+  const backgroundCards = useMemo(() => {
+    if (sidebarState.type !== "background") {
+      return []
+    }
+    return [...sidebarState.cards].sort((left, right) => left.name.localeCompare(right.name, "ko"))
+  }, [sidebarState.cards, sidebarState.type])
+
   if (!sidebarState.isStoryboardProject) {
     return (
       <main className="@container flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
@@ -94,61 +171,49 @@ export function CardsSidebar({ initialData }: { readonly initialData: SidebarCar
           title={`${kindLabel} 카드가 없습니다`}
           description={`아직 등록된 ${kindLabel} 카드가 없습니다. 뷰 제목 표시줄의 + 버튼으로 새 카드를 만들 수 있습니다.`}
         />
+      ) : sidebarState.type === "character" ? (
+        <div className="flex flex-col gap-3" aria-label={`${sidebarState.title} card list`}>
+          {characterSections.map((section) => (
+            <details
+              key={section.key}
+              className="group overflow-hidden rounded-lg border border-sb-border bg-sb-bg-sidebar/80"
+              open
+            >
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 transition hover:bg-sb-bg-list-hover [&::-webkit-details-marker]:hidden">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="text-xs text-sb-fg-muted transition group-open:rotate-90" aria-hidden>
+                    ›
+                  </span>
+                  <span className="text-sm font-semibold text-sb-fg">{section.label}</span>
+                </span>
+                <span className="shrink-0 rounded-full border border-sb-border bg-sb-bg-widget px-2 py-0.5 text-[0.65rem] font-medium text-sb-fg-muted">
+                  {section.cards.length}
+                </span>
+              </summary>
+              <ul className="m-0 flex list-none flex-col gap-2 border-t border-sb-border p-2">
+                {section.cards.map((card) => (
+                  <SidebarCardRow
+                    key={card.uri}
+                    card={card}
+                    cardCostUsd={cardCostUsd}
+                    onOpen={openCard}
+                    onDelete={deleteCard}
+                  />
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0" aria-label={`${sidebarState.title} card list`}>
-          {sidebarState.cards.map((card) => (
-            <li
+          {backgroundCards.map((card) => (
+            <SidebarCardRow
               key={card.uri}
-              className="group/card overflow-hidden rounded-lg border border-sb-border bg-sb-bg-widget shadow-cardRest transition hover:border-sb-border-focus hover:shadow-cardHover"
-            >
-              <div className="flex min-w-0 items-start gap-2 p-2.5">
-                <button
-                  className="min-w-0 flex-1 cursor-pointer rounded-md border border-transparent bg-transparent p-0 text-left outline-none focus-visible:ring-1 focus-visible:ring-sb-border-focus"
-                  type="button"
-                  onClick={() => openCard(card)}
-                >
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate font-semibold leading-snug text-sb-fg">{card.name}</span>
-                    <span className="shrink-0 rounded-full border border-sb-border bg-sb-bg-sidebar px-1.5 py-0.5 text-[0.65rem] font-medium uppercase tracking-wide text-sb-fg-muted">
-                      {card.type === "character" ? "캐릭터" : "배경"}
-                    </span>
-                  </span>
-                  {card.error ? (
-                    <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-error">{card.error}</span>
-                  ) : card.description ? (
-                    <span className="mt-1 block line-clamp-2 text-xs leading-normal text-sb-fg-muted">{card.description}</span>
-                  ) : null}
-                </button>
-
-                <div className="flex shrink-0 items-center gap-1">
-                  <CostBadge usd={cardCostUsd(card)} />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg"
-                    aria-label={`${card.name} 편집`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      openCard(card)
-                    }}
-                  >
-                    <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="flex h-7 w-7 items-center justify-center p-0 text-sb-fg-muted hover:text-sb-fg-error"
-                    aria-label={`${card.name} 삭제`}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      deleteCard(card)
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  </Button>
-                </div>
-              </div>
-            </li>
+              card={card}
+              cardCostUsd={cardCostUsd}
+              onOpen={openCard}
+              onDelete={deleteCard}
+            />
           ))}
         </ul>
       )}
