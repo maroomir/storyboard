@@ -4,7 +4,7 @@
     {
       "label": "storybook: compile",
       "type": "shell",
-      "command": "npm run compile",
+      "command": "npm run build",
       "group": "build",
       "problemMatcher": []
     }

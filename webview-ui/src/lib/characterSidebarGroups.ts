@@ -18,6 +18,14 @@ export const CHARACTER_SIDEBAR_SECTIONS: readonly {
   { key: "unclassified", label: "미분류" }
 ]
 
+export const CHARACTER_ROLE_OPTIONS: readonly {
+  readonly value: CharacterRole
+  readonly label: string
+}[] = CHARACTER_SIDEBAR_SECTIONS.filter(
+  (section): section is { readonly key: CharacterRole; readonly label: string } =>
+    section.key !== "unclassified"
+).map((section) => ({ value: section.key, label: section.label }))
+
 function characterRoleGroup(role: CharacterRole | undefined): CharacterSidebarGroupKey {
   if (role === "main" || role === "supporting" || role === "extra") {
     return role

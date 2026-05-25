@@ -11,6 +11,26 @@ export function isCharacterRole(value: string | undefined): value is CharacterRo
   return value === "main" || value === "supporting" || value === "extra"
 }
 
+export const characterRoleSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) {
+      return undefined
+    }
+
+    if (typeof value !== "string") {
+      return "extra"
+    }
+
+    const trimmed = value.trim()
+    if (trimmed.length === 0) {
+      return undefined
+    }
+
+    return isCharacterRole(trimmed) ? trimmed : "extra"
+  },
+  z.enum(characterRoles).optional()
+)
+
 const cardIdSchema = z.string().regex(cardIdPattern, {
   message: "Card id must use lowercase letters, numbers, and hyphens."
 })
@@ -34,7 +54,7 @@ export const characterCardSchema = z.object({
   id: cardIdSchema,
   name: z.string().trim().min(1),
   profile: z.string().trim().min(1).optional(),
-  role: z.string().trim().min(1).optional(),
+  role: characterRoleSchema,
   attributes: z.record(z.string(), cardAttributeValueSchema).optional(),
   tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),

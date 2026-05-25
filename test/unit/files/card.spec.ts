@@ -41,6 +41,17 @@ describe("card file codec", () => {
       expect((error as CardParseError).code).toBe("invalid-card-schema")
     }
   })
+
+  it("normalizes unknown character role values to extra on parse", () => {
+    const rawCard = readFixtureCard("character.card").replace("role: main", "role: lead")
+
+    const parsedCard = parseCard(rawCard)
+
+    expect(parsedCard.type).toBe("character")
+    if (parsedCard.type === "character") {
+      expect(parsedCard.role).toBe("extra")
+    }
+  })
 })
 
 function readFixtureCard(fixtureName: string): string {

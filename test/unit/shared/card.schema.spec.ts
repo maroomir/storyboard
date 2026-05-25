@@ -25,4 +25,24 @@ describe("card schema", () => {
     expect(isCardType("character")).toBe(true)
     expect(isCardType("scene")).toBe(false)
   })
+
+  it("preserves valid character roles", () => {
+    for (const role of ["main", "supporting", "extra"] as const) {
+      const parsedCard = cardSchema.parse({ type: "character", id: "elia", name: "엘리아", role })
+
+      expect(parsedCard.type).toBe("character")
+      if (parsedCard.type === "character") {
+        expect(parsedCard.role).toBe(role)
+      }
+    }
+  })
+
+  it("maps unknown character role values to extra", () => {
+    const parsedCard = cardSchema.parse({ type: "character", id: "elia", name: "엘리아", role: "lead" })
+
+    expect(parsedCard.type).toBe("character")
+    if (parsedCard.type === "character") {
+      expect(parsedCard.role).toBe("extra")
+    }
+  })
 })
