@@ -10,13 +10,23 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-05-28
+
 ### Added
 
-- Card game–style framing on `StoryboardCard` in the editor preview, with role badges (main / supporting / extra) using distinct colors and glyphs.
+- Added character card role metadata (`protagonist` / `supporting` / `extra`) to the schema and editor UI.
+- Grouped the Characters sidebar by role (protagonist, supporting, extra, uncategorized), with collapsible sections and per-group counts.
+- Added card game–style framing on `StoryboardCard` in the editor preview, with role badges (main / supporting / extra) using distinct colors and glyphs.
+- Added a raw YAML editor panel to the card editor. It reports validation errors before saving and refreshes the card data after a successful save.
+- Added a character relation preview panel so character arc flow and relation lists can be reviewed directly in the card editor.
+- Added roster lookup for relation displays so related character IDs can be shown with character names and role metadata.
 
 ### Changed
 
 - Replaced Overview field add/remove text buttons (List, Arc, Relations, Key-Value) with compact `+` / `-` `IconButton` controls.
+- Extracted the card preview area into `PreviewPanel`, separating card editor content from preview rendering.
+- Cleaned up Arc and Relations array editing flows and aligned their data shape with the relation preview.
+- Removed unused character relation sample path creation from the initial project template and path conventions.
 
 ## [0.2.1] - 2026-05-24
 
