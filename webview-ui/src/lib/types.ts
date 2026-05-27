@@ -45,11 +45,18 @@ export interface StoryboardCard {
   readonly recentDialogues?: readonly string[]
 }
 
+export interface CharacterRosterEntry {
+  readonly id: string
+  readonly name: string
+  readonly role?: CharacterRole
+}
+
 export interface CardEditorInitialData {
   readonly documentUri: string
   readonly rawText: string
   readonly card?: StoryboardCard
   readonly imageUri?: string
+  readonly characterRoster?: readonly CharacterRosterEntry[]
   readonly error?: string
 }
 

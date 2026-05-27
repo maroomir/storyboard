@@ -2,7 +2,24 @@ import * as vscode from "vscode"
 
 import { isIgnoredSampleCardFileName } from "./pathConventions"
 import { parseCard } from "../files/card"
+import { isCharacterRole, type CharacterRole } from "../shared/card"
 import type { RelationListCharacter } from "../shared/messaging"
+
+export interface CharacterRosterEntry {
+  readonly id: string
+  readonly name: string
+  readonly role?: CharacterRole
+}
+
+export async function loadCharacterRoster(workspaceRoot: vscode.Uri): Promise<CharacterRosterEntry[]> {
+  const characters = await loadRelationListCharacters(workspaceRoot)
+
+  return characters.map((character) => ({
+    id: character.id,
+    name: character.name,
+    ...(character.role !== undefined && isCharacterRole(character.role) ? { role: character.role } : {})
+  }))
+}
 
 export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Promise<RelationListCharacter[]> {
   const pattern = new vscode.RelativePattern(workspaceRoot, "character/*.card")

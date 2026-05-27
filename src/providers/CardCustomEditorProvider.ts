@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import { CardParseError, parseCard, serializeCard } from "../files/card"
+import { loadCharacterRoster } from "../core/relationGraphData"
 import type { StoryboardCard } from "../shared/card"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
@@ -12,6 +13,7 @@ interface CardEditorInitialData {
   readonly rawText: string
   readonly card?: StoryboardCard
   readonly imageUri?: string
+  readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>
   readonly error?: string
 }
 
@@ -27,31 +29,46 @@ export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider
       localResourceRoots: [getWebviewDistRoot(this.extensionUri), getDocumentWorkspaceRoot(document)]
     }
 
-    webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
-      extensionUri: this.extensionUri,
-      title: "Storyboard Card",
-      view: "card-editor",
-      initialData: createInitialData(document, webviewPanel.webview)
-    })
-
-    const bridge = createWebviewBridge(webviewPanel.webview, createCardEditorHandlers(document))
-    const documentChangeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
-      if (event.document.uri.toString() !== document.uri.toString()) {
-        return
-      }
-
-      void webviewPanel.webview.postMessage({
-        type: "event",
-        method: "cards.changed",
-        payload: createInitialData(document, webviewPanel.webview)
-      })
-    })
-
-    webviewPanel.onDidDispose(() => {
-      bridge.dispose()
-      documentChangeSubscription.dispose()
-    })
+    void initializeCardEditor(document, webviewPanel, this.extensionUri)
   }
+}
+
+async function initializeCardEditor(
+  document: vscode.TextDocument,
+  webviewPanel: vscode.WebviewPanel,
+  extensionUri: vscode.Uri
+): Promise<void> {
+  const initialData = await createInitialData(document, webviewPanel.webview)
+
+  webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
+    extensionUri,
+    title: "Storyboard Card",
+    view: "card-editor",
+    initialData
+  })
+
+  const bridge = createWebviewBridge(webviewPanel.webview, createCardEditorHandlers(document))
+  const documentChangeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+    if (event.document.uri.toString() !== document.uri.toString()) {
+      return
+    }
+
+    void postCardChanged(document, webviewPanel)
+  })
+
+  webviewPanel.onDidDispose(() => {
+    bridge.dispose()
+    documentChangeSubscription.dispose()
+  })
+}
+
+async function postCardChanged(document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel): Promise<void> {
+  const payload = await createInitialData(document, webviewPanel.webview)
+  await webviewPanel.webview.postMessage({
+    type: "event",
+    method: "cards.changed",
+    payload
+  })
 }
 
 export function registerCardCustomEditorProvider(context: vscode.ExtensionContext): vscode.Disposable {
@@ -85,17 +102,20 @@ function createCardEditorHandlers(document: vscode.TextDocument): StoryboardRpcH
   }
 }
 
-function createInitialData(document: vscode.TextDocument, webview: vscode.Webview): CardEditorInitialData {
+async function createInitialData(document: vscode.TextDocument, webview: vscode.Webview): Promise<CardEditorInitialData> {
   const rawText = document.getText()
+  const workspaceRoot = getDocumentWorkspaceRoot(document)
 
   try {
     const card = parseCard(rawText)
+    const characterRoster = card.type === "character" ? await loadCharacterRoster(workspaceRoot) : undefined
 
     return {
       documentUri: document.uri.toString(),
       rawText,
       card,
-      imageUri: resolveCardImageUri(document, card, webview)
+      imageUri: resolveCardImageUri(document, card, webview),
+      ...(characterRoster === undefined ? {} : { characterRoster })
     }
   } catch (error) {
     return {

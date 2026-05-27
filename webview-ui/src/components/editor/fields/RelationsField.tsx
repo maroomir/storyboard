@@ -1,25 +1,32 @@
 import type React from "react"
 
 import { CharacterRelationPreview } from "@webview/components/character/CharacterRelationPreview"
-import type { CharacterRelation } from "@webview/lib/types"
+import type { CharacterRelation, CharacterRole, CharacterRosterEntry } from "@webview/lib/types"
 import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
 import { IconButton } from "@webview/components/ui/IconButton"
 import { sbInputClass } from "@webview/components/ui/formClasses"
 
 export function RelationsField({
-  characterId,
   characterName,
+  characterRole,
+  characterRoster,
   relations,
   onChange
 }: {
-  readonly characterId: string
   readonly characterName: string
+  readonly characterRole?: CharacterRole
+  readonly characterRoster?: readonly CharacterRosterEntry[]
   readonly relations: readonly CharacterRelation[]
   readonly onChange: (relations: CharacterRelation[]) => void
 }): React.ReactElement {
   return (
     <div className="flex flex-col gap-3">
-      <CharacterRelationPreview characterId={characterId} characterName={characterName} relations={relations} />
+      <CharacterRelationPreview
+        characterName={characterName}
+        characterRole={characterRole}
+        characterRoster={characterRoster}
+        relations={relations}
+      />
       <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
         <legend className="px-1 text-sm text-sb-fg-muted">Relations</legend>
         {relations.map((relation, index) => (

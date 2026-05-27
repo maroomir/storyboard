@@ -177,8 +177,9 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           <div className={overviewBoxClass}>
             <SectionHeader title="관계" eyebrow="Relations" />
             <RelationsField
-              characterId={card.id}
               characterName={card.name}
+              characterRole={card.role}
+              characterRoster={documentState.characterRoster}
               relations={card.relations ?? []}
               onChange={(relations) => updateCard({ ...card, relations })}
             />
@@ -187,7 +188,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
       },
       { id: "yaml", label: "YAML", panel: yamlPanel }
     ]
-  }, [card, updateCard, yamlPanel])
+  }, [card, documentState.characterRoster, updateCard, yamlPanel])
 
   if (documentState.error || !card) {
     return (
