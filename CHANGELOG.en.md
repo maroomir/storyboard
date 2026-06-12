@@ -10,6 +10,17 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- Migrated `.seed` import/export to the `@seedcoat/wasm` v0.4.0 repository-engine API (`load`/`checkoutSnapshot`, `init`/`note`/`save`). `.seed` files are now unencrypted portable archives (`seedcoat archive v1`) that preserve the full change history.
+- Removed passphrase prompts and encryption/decryption progress notifications from import/export. Exporting shows a one-time unencrypted-file notice.
+- Replaced seed error messages to match the new error-code set (11 codes such as `UNSUPPORTED_FORMAT` and `HASH_MISMATCH`).
+- `@seedcoat/wasm` is now a pure TypeScript package and is bundled directly into the extension. Removed the `out/vendor` copy step (`scripts/copy-seedcoat.mjs`) and the dynamic-import loader.
+
+### Removed
+
+- Dropped support for old encrypted `.seed` files (seedcoat v0.2). Such files are rejected as an unsupported format and must be re-exported in the v0.4 format by the sender.
+
 ## [0.2.2] - 2026-05-28
 
 ### Added

@@ -241,11 +241,11 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |
-| `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | 암호화 `.seed` → 새 워크스페이스 폴더 |
-| `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | 암호화 `.seed` → 기존 프로젝트 동기화 |
-| `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → 암호화 `.seed` |
+| `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | `.seed` 아카이브 → 새 워크스페이스 폴더 |
+| `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |
+| `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → `.seed` 아카이브 |
 
-디스크 교환용 `.seed` 컨테이너 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
+디스크 교환용 `.seed` 저장소 아카이브 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
 
 ### 5.1 활성화 조건
 

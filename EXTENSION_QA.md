@@ -265,31 +265,31 @@ npx @vscode/vsce package
 
 ---
 
-## `.seed` 암호화 컨테이너 (seedcoat v0.2)
+## `.seed` 저장소 아카이브 (seedcoat v0.4)
 
-**전제**: `npm run compile`로 `out/vendor/@seedcoat/wasm`이 번들에 포함된 상태에서 F5 또는 VSIX로 검증한다. 평문 JSON envelope(구 `version: "2.0.0"`) `.seed`는 지원하지 않는다.
+**전제**: `npm run compile` 결과 번들(`out/extension.js`)에 `@seedcoat/wasm`이 포함된 상태에서 F5 또는 VSIX로 검증한다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope `.seed`는 지원하지 않는다.
 
 ### 준비
 
 - [ ] 테스트용 Storyboard 워크스페이스(캐릭터·배경·씬 `01-…` stem)가 있다.
-- [ ] 동일 워크스페이스를 **보내기**한 `.seed` 파일 1개를 만든다(패스프레이즈 기억).
+- [ ] 동일 워크스페이스를 **보내기**한 `.seed` 파일 1개를 만든다.
 
-### 바이너리·레거시
+### 형식·레거시
 
-- [ ] 저장된 `.seed`를 텍스트 에디터로 열면 **바이너리**이며, 평문 `version` JSON이 보이지 않는다.
-- [ ] 구 평문 `.seed`로 **가져오기** 시 패스프레이즈 입력 **전**에 레거시 거부 메시지가 뜬다.
+- [ ] 저장된 `.seed`를 텍스트 에디터로 열면 첫 줄이 `seedcoat archive v1`이다.
+- [ ] 구 암호화 `.seed`(v0.2) 또는 평문 JSON `.seed`로 **가져오기** 시 지원하지 않는 형식이라는 한국어 거부 메시지가 뜬다.
 
 ### 보내기 (export)
 
-- [ ] 명령 **Storyboard: Seed 파일로 보내기** → 저장 대화상자 → 패스프레이즈 2회 확인 → **암호화 중…** 알림이 뜨고, 수 초~수십 초 후 완료된다.
-- [ ] `scene/1-opening.txt`처럼 **두 자리 prefix가 아닌 stem**이 있으면 보내기 **전**에 한국어 사전 검사로 중단된다(패스프레이즈 입력 전).
+- [ ] 명령 **Storyboard: Export Project to Seed...** → 저장 대화상자 → **비암호화 고지** 확인 대화상자 1회 → 즉시 완료된다(패스프레이즈 입력 없음).
+- [ ] `scene/1-opening.txt`처럼 **두 자리 prefix가 아닌 stem**이 있으면 보내기 **전**에 한국어 사전 검사로 중단된다.
 - [ ] `editor.scenePrefixDigits`가 `2`가 아니면 보내기가 사전 검사로 중단된다.
 
 ### 가져오기·동기화 (import / sync)
 
-- [ ] **복호화 중…** 진행 알림이 뜨고, 잘못된 패스프레이즈 시 한국어 오류가 표시된다.
-- [ ] 올바른 패스프레이즈로 **새 폴더에 만들기** 후 `project.json`, 카드, `scene/*.txt`가 기대와 일치한다.
-- [ ] 복호화 직후 **ID 매핑 검토** QuickPick이 뜬다. 항목에서 새 ID를 지정하면 import/sync 결과 파일명·본문 `id`·참조가 함께 바뀌고, **변경 없이 계속**이면 seedcoat ID가 그대로 반영된다.
+- [ ] 패스프레이즈 입력 없이 즉시 진행되고, 손상·변조된 파일은 한국어 오류(형식/해시 불일치)가 표시된다.
+- [ ] **새 폴더에 만들기** 후 `project.json`, 카드, `scene/*.txt`가 기대와 일치한다.
+- [ ] 디코드 직후 **ID 매핑 검토** QuickPick이 뜬다. 항목에서 새 ID를 지정하면 import/sync 결과 파일명·본문 `id`·참조가 함께 바뀌고, **변경 없이 계속**이면 seedcoat ID가 그대로 반영된다.
 - [ ] 기존 워크스페이스 **동기화** 시 충돌·삭제 확인 후 반영된다.
 
 ---
@@ -310,7 +310,7 @@ npx @vscode/vsce package
 ### VSIX 패키징
 
 - [ ] `npm run package:vsix -- --out dist/storyboard-<version>.vsix` 성공.
-- [ ] VSIX 설치 후 위 **보내기·가져오기**를 **최소 1회** 반복한다(`out/vendor` 포함 확인).
+- [ ] VSIX 설치 후 위 **보내기·가져오기**를 **최소 1회** 반복한다.
 
 ---
 
