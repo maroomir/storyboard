@@ -9,6 +9,17 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 변경
+
+- `.seed` 가져오기/보내기를 `@seedcoat/wasm` v0.4.0 저장소 엔진 API(`load`/`checkoutSnapshot`, `init`/`note`/`save`)로 전환했습니다. `.seed`는 이제 전체 변경 이력을 보존하는 비암호화 포터블 아카이브(`seedcoat archive v1`)입니다.
+- 가져오기/보내기에서 패스프레이즈 입력과 암호화/복호화 진행 알림을 제거했습니다. 내보내기 시 비암호화 고지를 1회 표시합니다.
+- Seed 오류 메시지를 신규 오류 코드 체계(`UNSUPPORTED_FORMAT`, `HASH_MISMATCH` 등 11종)에 맞게 교체했습니다.
+- `@seedcoat/wasm`이 순수 TypeScript 패키지가 되어 확장 번들에 직접 포함합니다. `out/vendor` 복사 단계(`scripts/copy-seedcoat.mjs`)와 동적 import 로더를 제거했습니다.
+
+### 제거
+
+- 구 암호화 `.seed`(seedcoat v0.2) 지원을 제거했습니다. 해당 파일은 지원하지 않는 형식으로 거부되며, 보낸 쪽에서 v0.4 형식으로 다시 내보내야 합니다.
+
 ## [0.2.2] - 2026-05-28
 
 ### 추가

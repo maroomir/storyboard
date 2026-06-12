@@ -13,7 +13,7 @@ Korean README: [`README.md`](README.md)
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
 - Visualize character relationships with a relation graph.
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
-- Import and export seedcoat v0.2 encrypted `.seed` files (compatible with Seeds).
+- Import and export seedcoat `.seed` repository archives (compatible with Seeds).
 
 ## Project Model
 
@@ -61,8 +61,8 @@ For webview-only changes, run `npm run build:webview`, then run `Developer: Relo
 ## `.seed` import and export
 
 - Commands: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
-- `.seed` files are **encrypted binaries** produced by [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0. Legacy plaintext JSON envelopes are not supported.
-- A **passphrase is required on every import and export** (empty passphrases are rejected; never stored).
+- `.seed` files are **repository archives** (`seedcoat archive v1`) produced by [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 and preserve the full change history. Old encrypted binaries (v0.2) and legacy plaintext JSON envelopes are not supported.
+- `.seed` files are **not encrypted**. Passphrases are no longer used; exporting shows a one-time unencrypted-file notice.
 - Character `arc` / `recentDialogues` / `profile` / `attributes` and `draft/` are not included in `.seed` files.
 - Policy summary: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
 

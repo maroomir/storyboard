@@ -13,7 +13,7 @@ English README: [`README.en.md`](README.en.md)
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
-- seedcoat v0.2 암호화 `.seed` 가져오기/보내기(Seeds와 호환)
+- seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 
 ## 프로젝트 모델
 
@@ -61,8 +61,8 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 ## `.seed` 가져오기/보내기
 
 - 명령: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
-- `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.2.0 **암호화 바이너리**입니다. 평문 JSON envelope 등 이전 형식은 지원하지 않습니다.
-- import/export 시 **패스프레이즈를 매번 입력**합니다(빈 문자열 불가, 저장하지 않음).
+- `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
+- `.seed`는 **암호화되지 않습니다**. 패스프레이즈는 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시합니다.
 - 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
 - 정책 요약: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
 

@@ -21,16 +21,16 @@ npm run package:vsix -- --out dist/storyboard-0.1.0.vsix
 
 Replace `0.1.0` with the target version.
 
-`compile` copies `@seedcoat/wasm` into `out/vendor/`; the packaged VSIX must include that path for `.seed` import/export to work at runtime.
+`@seedcoat/wasm` is bundled into `out/extension.js` by `compile`; no separate vendor copy step is required.
 
 ### `.seed` smoke (after VSIX package)
 
-Before tagging a release that includes seedcoat (v0.2+), run once on the built VSIX (see [`EXTENSION_QA.md`](EXTENSION_QA.md) § `.seed` 암호화 컨테이너):
+Before tagging a release that includes seedcoat (v0.4+), run once on the built VSIX (see [`EXTENSION_QA.md`](EXTENSION_QA.md) § `.seed` 저장소 아카이브):
 
 1. Install `dist/storyboard-<version>.vsix` in a clean VS Code window.
 2. Open a Storyboard workspace with valid `01-*` scene stems and `editor.scenePrefixDigits: 2`.
-3. **보내기** → confirm progress notification and a binary `.seed` file.
-4. **가져오기** or **동기화** with the same passphrase → confirm round-trip without `LEGACY_FORMAT_REJECTED` or missing WASM errors.
+3. **보내기** → confirm the unencrypted-file notice and a `.seed` file whose first line is `seedcoat archive v1`.
+4. **가져오기** or **동기화** → confirm round-trip without `UNSUPPORTED_FORMAT` or `HASH_MISMATCH` errors.
 
 ## Version commit
 
