@@ -10,7 +10,7 @@ const isWatchMode = process.argv.includes("--watch")
 const extensionConfig = {
   bundle: true,
   entryPoints: ["src/extension.ts"],
-  external: ["vscode", "@seedcoat/wasm"],
+  external: ["vscode"],
   format: "cjs",
   logLevel: "info",
   minify: false,

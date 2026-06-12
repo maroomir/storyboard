@@ -9,14 +9,19 @@ import {
   type CharacterCard
 } from "@/shared/card"
 import { storyboardProjectSchema } from "@/files/projectJson"
-import { SEED_PASSPHRASE_REQUIRED_MESSAGE } from "@/constants/projectStorageMessages"
-import { decode, encode, validate, type SeedParts } from "@/services/seedcoat/loader"
-
-function assertPassphraseProvided(passphrase: string): void {
-  if (passphrase.length === 0) {
-    throw new Error(SEED_PASSPHRASE_REQUIRED_MESSAGE)
-  }
-}
+import { SEED_NO_HISTORY_MESSAGE } from "@/constants/projectStorageMessages"
+import {
+  checkoutSnapshot,
+  init,
+  load,
+  log,
+  note,
+  save,
+  SeedError,
+  type SeedBackgroundCard,
+  type SeedCharacterCard,
+  type SeedState
+} from "@seedcoat/wasm"
 
 export interface SeedSceneEntry {
   readonly stem: string
@@ -35,6 +40,10 @@ export interface WorkspaceContent {
   readonly characters: readonly CharacterCard[]
   readonly backgrounds: readonly BackgroundCard[]
   readonly scenes: readonly SeedSceneEntry[]
+}
+
+export function isSeedError(error: unknown): error is SeedError {
+  return error instanceof SeedError
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -76,17 +85,9 @@ function normalizeSeedCharacter(item: unknown): unknown {
   return normalized
 }
 
-function parseJsonPart(label: string, json: string): unknown {
-  try {
-    return JSON.parse(json)
-  } catch {
-    throw new Error(`${label}: JSON 파싱에 실패했습니다.`)
-  }
-}
-
 function parseProjectPart(value: unknown): StoryboardProject {
   if (!isPlainObject(value)) {
-    throw new Error("project: JSON 파싱에 실패했습니다.")
+    throw new Error("project: 데이터 형식이 올바르지 않습니다.")
   }
   if (value.version !== storyboardProjectVersion) {
     throw new Error(`지원하지 않는 project 버전: ${String(value.version)}`)
@@ -103,7 +104,7 @@ function parseProjectPart(value: unknown): StoryboardProject {
 
 function parseCharacterArray(value: unknown): CharacterCard[] {
   if (!Array.isArray(value)) {
-    throw new Error("characters: JSON 파싱에 실패했습니다.")
+    throw new Error("characters: 데이터 형식이 올바르지 않습니다.")
   }
   return value.map((item, i) => {
     try {
@@ -119,7 +120,7 @@ function parseCharacterArray(value: unknown): CharacterCard[] {
 
 function parseBackgroundArray(value: unknown): BackgroundCard[] {
   if (!Array.isArray(value)) {
-    throw new Error("backgrounds: JSON 파싱에 실패했습니다.")
+    throw new Error("backgrounds: 데이터 형식이 올바르지 않습니다.")
   }
   return value.map((item, i) => {
     try {
@@ -135,7 +136,7 @@ function parseBackgroundArray(value: unknown): BackgroundCard[] {
 
 function parseSceneEntries(value: unknown): SeedSceneEntry[] {
   if (!Array.isArray(value)) {
-    throw new Error("scenes: JSON 파싱에 실패했습니다.")
+    throw new Error("scenes: 데이터 형식이 올바르지 않습니다.")
   }
   return value.map((item) => {
     if (!isPlainObject(item) || typeof item.stem !== "string" || typeof item.content !== "string") {
@@ -145,17 +146,20 @@ function parseSceneEntries(value: unknown): SeedSceneEntry[] {
   })
 }
 
-export async function decodeSeedToWritePlan(
-  bytes: Uint8Array,
-  passphrase: string
-): Promise<DecodedSeedContent> {
-  assertPassphraseProvided(passphrase)
-  const parts = await decode(bytes, passphrase)
+export function decodeSeedToWritePlan(bytes: Uint8Array): DecodedSeedContent {
+  const repo = load(bytes)
+  const latestNote = log(repo)[0]
 
-  const project = parseProjectPart(parseJsonPart("project", parts.project))
-  const characters = parseCharacterArray(parseJsonPart("characters", parts.characters))
-  const backgrounds = parseBackgroundArray(parseJsonPart("backgrounds", parts.backgrounds))
-  const scenes = parseSceneEntries(parseJsonPart("scenes", parts.scenes))
+  if (latestNote === undefined) {
+    throw new Error(SEED_NO_HISTORY_MESSAGE)
+  }
+
+  const state = checkoutSnapshot(repo, { changeId: latestNote.changeId })
+
+  const project = parseProjectPart(state.project)
+  const characters = parseCharacterArray(state.characters)
+  const backgrounds = parseBackgroundArray(state.backgrounds)
+  const scenes = parseSceneEntries(state.scenes)
 
   const parsedCharIds = new Set(characters.map((c) => c.id))
 
@@ -170,46 +174,46 @@ export async function decodeSeedToWritePlan(
   }
 }
 
-export async function encodeWorkspaceToSeed(
-  content: WorkspaceContent,
-  passphrase: string
-): Promise<Uint8Array> {
-  assertPassphraseProvided(passphrase)
-  const projectEnvelope = {
-    version: content.project.version,
-    id: content.project.id,
-    name: content.project.name,
-    format: content.project.format,
-    language: content.project.language,
-    createdAt: content.project.createdAt,
-    editor: { scenePrefixDigits: content.project.editor.scenePrefixDigits },
-    setting: content.project.setting
+function toSeedCharacter(card: CharacterCard): SeedCharacterCard {
+  return {
+    type: "character",
+    id: card.id,
+    name: card.name,
+    ...(card.role !== undefined ? { role: card.role } : {}),
+    ...(card.tags !== undefined ? { tags: [...card.tags] } : {}),
+    traits: [...(card.traits ?? [])],
+    description: card.description ?? "",
+    relations: (card.relations ?? [])
+      .filter(isSeedRelationWithRequiredFields)
+      .map((relation) => ({ target: relation.target, type: relation.type }))
+  }
+}
+
+function toSeedBackground(card: BackgroundCard): SeedBackgroundCard {
+  return { ...card }
+}
+
+export function encodeWorkspaceToSeed(content: WorkspaceContent): Uint8Array {
+  const project = content.project
+  const state: SeedState = {
+    project: {
+      version: project.version,
+      id: project.id,
+      name: project.name,
+      format: project.format,
+      language: project.language,
+      createdAt: new Date(project.createdAt).toISOString(),
+      editor: { scenePrefixDigits: project.editor.scenePrefixDigits },
+      ...(project.setting !== undefined ? { setting: { ...project.setting } } : {})
+    },
+    characters: content.characters.map(toSeedCharacter),
+    backgrounds: content.backgrounds.map(toSeedBackground),
+    scenes: [...content.scenes]
+      .sort((a, b) => a.stem.localeCompare(b.stem))
+      .map((scene) => ({ stem: scene.stem, content: scene.content }))
   }
 
-  const characters = content.characters.map((c) => ({
-    type: c.type,
-    id: c.id,
-    name: c.name,
-    role: c.role ?? "",
-    ...(c.tags !== undefined ? { tags: c.tags } : {}),
-    traits: c.traits ?? [],
-    description: c.description ?? "",
-    relations: (c.relations ?? []).filter(isSeedRelationWithRequiredFields),
-    arc: c.arc ?? [],
-    recentDialogues: c.recentDialogues ?? [],
-    ...(c.profile !== undefined ? { profile: c.profile } : {}),
-    ...(c.attributes !== undefined ? { attributes: c.attributes } : {})
-  }))
-
-  const sortedScenes = [...content.scenes].sort((a, b) => a.stem.localeCompare(b.stem))
-
-  const parts: SeedParts = {
-    project: JSON.stringify(projectEnvelope),
-    characters: JSON.stringify(characters),
-    backgrounds: JSON.stringify(content.backgrounds),
-    scenes: JSON.stringify(sortedScenes)
-  }
-
-  await validate(parts)
-  return encode(parts, passphrase, { kdfProfile: "interactive" })
+  const staged = init(state)
+  const noted = note(staged, { comment: `storyboard export: ${project.name}` })
+  return save(noted.repo)
 }
