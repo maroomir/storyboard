@@ -127,7 +127,9 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           />
         </label>
         {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
-        {card.type !== "character" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
+        {card.type !== "character" ? (
+          <BackgroundFields card={card} updateCard={updateCard} characterRoster={documentState.characterRoster} />
+        ) : null}
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Description</span>
           <textarea
