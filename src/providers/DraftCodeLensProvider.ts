@@ -6,6 +6,7 @@ import { tryParseDraftScenePartsForCodeLens } from "./draftCodeLensLogic"
 
 const regenerateDraftCommand = "storyboard.draft.regenerate"
 const grammarCheckCommand = "storyboard.draft.grammarCheck"
+const continuityCheckCommand = "storyboard.draft.continuityCheck"
 const expandDraftCommand = "storyboard.draft.expand"
 
 function isDraftMarkdownFile(draftUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
@@ -83,6 +84,12 @@ export class DraftCodeLensProvider implements vscode.CodeLensProvider {
         title: "🩹 Grammar Check",
         tooltip: "현재 드래프트 본문의 문법 이슈를 진단합니다.",
         command: grammarCheckCommand,
+        arguments: [document.uri]
+      }),
+      new vscode.CodeLens(range, {
+        title: "🧭 Continuity Check",
+        tooltip: "스토리 바이블의 정전 설정과 본문이 모순되는지 진단합니다.",
+        command: continuityCheckCommand,
         arguments: [document.uri]
       }),
       new vscode.CodeLens(range, {
