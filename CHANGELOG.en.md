@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-06-14
+
 ### Changed
 
 - Migrated `.seed` import/export to the `@seedcoat/wasm` v0.4.0 repository-engine API (`load`/`checkoutSnapshot`, `init`/`note`/`save`). `.seed` files are now unencrypted portable archives (`seedcoat archive v1`) that preserve the full change history.

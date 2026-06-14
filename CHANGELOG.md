@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-06-14
+
 ### 변경
 
 - `.seed` 가져오기/보내기를 `@seedcoat/wasm` v0.4.0 저장소 엔진 API(`load`/`checkoutSnapshot`, `init`/`note`/`save`)로 전환했습니다. `.seed`는 이제 전체 변경 이력을 보존하는 비암호화 포터블 아카이브(`seedcoat archive v1`)입니다.

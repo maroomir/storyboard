@@ -5,6 +5,7 @@
 .clinerules/**
 .cursor/**
 .github/**
+.doc/**
 src/**
 test/**
 webview-ui/**
@@ -12,6 +13,7 @@ node_modules/**
 vendor/**
 scripts/**
 dist/**
+out/vendor/**
 out/**/*.map
 *.vsix
 AGENTS.md

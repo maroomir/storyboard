@@ -2,7 +2,7 @@
   "name": "storyboard",
   "displayName": "Storyboard",
   "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "publisher": "maroomir",
   "license": "Apache-2.0",
   "repository": {
