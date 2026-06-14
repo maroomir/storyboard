@@ -2,6 +2,7 @@ import { createHash } from "node:crypto"
 import { z } from "zod"
 
 import type { BackgroundCard, CharacterCard } from "../shared/card"
+import type { BibleFact } from "../shared/bible"
 import type { ProjectFormat } from "../shared/project"
 import { aiProviderIds, aiTaskCatalog, type AiProviderId, type AiTaskName } from "../services/ai/types"
 
@@ -39,6 +40,7 @@ export interface SceneInputHashInput {
   readonly characters: readonly CharacterCard[]
   readonly background?: BackgroundCard
   readonly format: ProjectFormat
+  readonly bibleFacts?: readonly BibleFact[]
 }
 
 const sceneCacheSituationSchema = z.object({
@@ -96,6 +98,12 @@ export async function writeSceneCacheFile(
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeSceneCache(record)))
 }
 
+function digestBibleFacts(facts: readonly BibleFact[]): { kind: string; id: string; key: string; value: string }[] {
+  return facts
+    .map((fact) => ({ kind: fact.subject.kind, id: fact.subject.id, key: fact.key, value: fact.value }))
+    .sort((a, b) => `${a.kind}:${a.id}:${a.key}`.localeCompare(`${b.kind}:${b.id}:${b.key}`))
+}
+
 export function computeSceneInputHash(input: SceneInputHashInput): string {
   const digestSource = {
     sceneBody: input.sceneBody,
@@ -118,7 +126,10 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
           characterIds: input.background.characterIds ?? []
         }
       : undefined,
-    format: input.format
+    format: input.format,
+    ...(input.bibleFacts && input.bibleFacts.length > 0
+      ? { bibleFacts: digestBibleFacts(input.bibleFacts) }
+      : {})
   }
   const hash = createHash("sha256").update(JSON.stringify(digestSource)).digest("hex")
 

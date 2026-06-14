@@ -1,8 +1,8 @@
 import * as vscode from "vscode"
 
 import {
+  buildNarrativeContext,
   buildSceneContext,
-  readPreviousSceneContext,
   type SceneContextWorkspaceFileSystem,
   type SceneContextWorkspacePaths
 } from "../core/sceneContext"
@@ -68,6 +68,7 @@ function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspace
     characterDirectory: paths.characterDirectory,
     backgroundDirectory: paths.backgroundDirectory,
     draftDirectory: paths.draftDirectory,
+    bibleCanon: paths.bibleCanon,
     joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
       vscode.Uri.joinPath(base as vscode.Uri, ...segments)
   }
@@ -278,12 +279,14 @@ export async function generateDraftForWorkspaceSceneWorkflow(
     }
   }
 
-  const previousContext = await readPreviousSceneContext(ctxPaths, scene.order, sceneContextFileSystem)
+  const narrativeContext = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem)
+  const previousContext = narrativeContext.prompt
   const inputHash = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
     background: context.background,
-    format: project.format
+    format: project.format,
+    bibleFacts: narrativeContext.bibleFacts
   })
 
   const draftUri = draftPath(workspaceFolder.uri, scene.stem)

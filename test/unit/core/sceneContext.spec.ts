@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest"
 
-import { buildSceneContext, type SceneContextWorkspaceFileSystem } from "@/core/sceneContext"
+import {
+  buildNarrativeContext,
+  buildSceneContext,
+  type SceneContext,
+  type SceneContextWorkspaceFileSystem
+} from "@/core/sceneContext"
 import type { SceneFile } from "@/shared/scene"
 import { serializeCard } from "@/files/card"
+import { serializeBible } from "@/files/bible"
+import type { StoryBible } from "@/shared/bible"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 const eliaCard: CharacterCard = {
@@ -249,5 +256,52 @@ describe("readPreviousSceneContext", () => {
     )
 
     expect(context).toBeUndefined()
+  })
+})
+
+describe("buildNarrativeContext", () => {
+  const biblePath = "/mock/workspace/.storyboard/bible/canon.yaml"
+  const basePaths = {
+    characterDirectory: "/mock/workspace/character",
+    backgroundDirectory: "/mock/workspace/background",
+    draftDirectory: "/mock/workspace/draft",
+    joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
+  }
+  const firstScene: SceneFile = {
+    stem: "01-prologue",
+    order: 1,
+    orderText: "01",
+    slug: "prologue",
+    frontmatter: {},
+    body: "엘리아가 지훈에게 인사한다."
+  }
+  const context: SceneContext = { scene: firstScene, characters: [eliaCard, jihoonCard] }
+  const bible: StoryBible = {
+    version: "1.0.0",
+    facts: [
+      { id: "f1", subject: { kind: "character", id: "elia" }, key: "눈동자 색", value: "녹색", status: "canon" },
+      { id: "f2", subject: { kind: "character", id: "elia" }, key: "비밀", value: "왕족", status: "candidate" }
+    ]
+  }
+
+  it("injects canon bible facts for scene entities", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(biblePath, serializeBible(bible))
+
+    const result = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, context, fileSystem)
+
+    expect(result.bibleFacts.map((fact) => fact.id)).toEqual(["f1"])
+    expect(result.prompt).toContain("[설정 메모]")
+    expect(result.prompt).toContain("엘리아 — 눈동자 색: 녹색")
+    expect(result.prompt).not.toContain("왕족")
+  })
+
+  it("returns no facts or prompt when bible and previous context are absent", async () => {
+    const fileSystem = new MockFileSystem()
+
+    const result = await buildNarrativeContext(basePaths, context, fileSystem)
+
+    expect(result.bibleFacts).toEqual([])
+    expect(result.prompt).toBeUndefined()
   })
 })

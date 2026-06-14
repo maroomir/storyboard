@@ -86,4 +86,25 @@ describe("scene cache codec", () => {
     expect(firstHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     expect(changedHash).not.toBe(firstHash)
   })
+
+  it("changes the hash when bible facts are injected", () => {
+    const withoutFacts = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel"
+    })
+    const withFacts = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel",
+      bibleFacts: [
+        { id: "f1", subject: { kind: "character", id: "sample" }, key: "눈동자 색", value: "녹색", status: "canon" }
+      ]
+    })
+
+    expect(withFacts).not.toBe(withoutFacts)
+    expect(withFacts).toMatch(/^sha256:[a-f0-9]{64}$/)
+  })
 })

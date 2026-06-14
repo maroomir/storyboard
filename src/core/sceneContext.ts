@@ -1,6 +1,14 @@
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from "../shared/card"
 import type { SceneFile } from "../shared/scene"
 import { readCardFile } from "../files/card"
+import { readBibleFile } from "../files/bible"
+import {
+  createEmptyBible,
+  selectBibleFacts,
+  type BibleFact,
+  type BibleFactSubject,
+  type StoryBible
+} from "../shared/bible"
 import { isIgnoredSampleCardFileName } from "./pathConventions"
 import { detectCharactersInText } from "../utils/characterDetector"
 
@@ -8,6 +16,7 @@ export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown
   readonly backgroundDirectory: unknown
   readonly draftDirectory: unknown
+  readonly bibleCanon?: unknown
   readonly joinPath: (base: unknown, ...pathSegments: string[]) => unknown
 }
 
@@ -76,6 +85,91 @@ export async function readPreviousSceneContext(
   } catch {
     return undefined
   }
+}
+
+export interface NarrativeContext {
+  readonly bibleFacts: readonly BibleFact[]
+  readonly prompt?: string
+}
+
+// NOTE: Replaces the raw previous-draft tail as the pipeline's previousContext, prepending
+// canon bible facts for the scene's entities so long-range setting stays consistent.
+export async function buildNarrativeContext(
+  paths: SceneContextWorkspacePaths,
+  context: SceneContext,
+  fileSystem: SceneContextWorkspaceFileSystem
+): Promise<NarrativeContext> {
+  const previousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem)
+  const bible = await readSceneBible(paths, fileSystem)
+  const bibleFacts = selectBibleFacts(bible, sceneSubjects(context))
+  const prompt = composeNarrativePrompt(bibleFacts, previousContext, sceneEntityNames(context))
+
+  return { bibleFacts, prompt }
+}
+
+async function readSceneBible(
+  paths: SceneContextWorkspacePaths,
+  fileSystem: SceneContextWorkspaceFileSystem
+): Promise<StoryBible> {
+  if (!paths.bibleCanon) {
+    return createEmptyBible()
+  }
+
+  try {
+    return await readBibleFile(paths.bibleCanon, fileSystem)
+  } catch {
+    return createEmptyBible()
+  }
+}
+
+function sceneSubjects(context: SceneContext): BibleFactSubject[] {
+  const subjects: BibleFactSubject[] = context.characters.map((character) => ({
+    kind: "character",
+    id: character.id
+  }))
+
+  if (context.background) {
+    subjects.push({ kind: "background", id: context.background.id })
+  }
+
+  return subjects
+}
+
+function sceneEntityNames(context: SceneContext): ReadonlyMap<string, string> {
+  const names = new Map<string, string>()
+
+  for (const character of context.characters) {
+    names.set(`character:${character.id}`, character.name)
+  }
+
+  if (context.background) {
+    names.set(`background:${context.background.id}`, context.background.name)
+  }
+
+  return names
+}
+
+function composeNarrativePrompt(
+  facts: readonly BibleFact[],
+  previousContext: string | undefined,
+  nameByKey: ReadonlyMap<string, string>
+): string | undefined {
+  const sections: string[] = []
+
+  if (facts.length > 0) {
+    const lines = facts.map((fact) => {
+      const subject = nameByKey.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id
+      return `- ${subject} — ${fact.key}: ${fact.value}`
+    })
+    sections.push(`[설정 메모]\n${lines.join("\n")}`)
+  }
+
+  const trimmedPrevious = previousContext?.trim()
+  if (trimmedPrevious) {
+    sections.push(`[이전 장면]\n${trimmedPrevious}`)
+  }
+
+  return sections.length > 0 ? sections.join("\n\n") : undefined
 }
 
 function isWorkingCardFileName(name: string): boolean {
