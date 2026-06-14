@@ -36,6 +36,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   └── cache/                    # AI 컨텍스트 캐시 (.gitignore)
 │       ├── personas/             # 캐릭터별 페르소나 캐시
 │       │   └── elia.json
+│       ├── bible/                # 자동 추출된 설정 사실 후보 (candidate)
+│       │   └── 01-prologue.json
 │       └── scenes/               # 씬별 생성 컨텍스트 스냅샷
 │           └── 01-prologue.json
 │
@@ -250,6 +252,10 @@ facts:
     sourceScene: 01-prologue                 # 선택
 ```
 
+**candidate → canon 흐름**: 초안 생성 시 설정 사실 추출(`factExtraction`)이 등장 인물의 고정 설정을
+`.storyboard/cache/bible/<scene>.json`에 **candidate**로 자동 저장한다. `Storyboard: Promote Bible
+Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승격하면, 그때부터 주입·연속성 검사 대상이 된다.
+
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
@@ -261,6 +267,7 @@ facts:
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
+| `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |

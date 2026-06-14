@@ -12,6 +12,7 @@ English README: [`README.en.md`](README.en.md)
 - `scene/*.txt` 기반 씬 관리와 `draft/*.md` 초안 생성
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
+- 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)

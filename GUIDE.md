@@ -27,6 +27,7 @@
   - CodeLens: `🧭 Continuity Check`
 - 동작: 초안 본문을 등장 인물/배경의 정전(canon) 설정과 대조해 모순되는 구간을 경고 진단으로 표시합니다.
 - 주의: 해당 씬에 적용되는 canon 사실이 없으면 모델을 호출하지 않고 건너뜁니다.
+- canon 채우기: 초안을 생성하면 설정 사실 후보가 자동 추출됩니다. `Storyboard: Promote Bible Candidates to Canon` 명령으로 후보를 골라 canon으로 승격하면 주입·검사 대상이 됩니다.
 
 ## 4) 선택 영역 확장
 
