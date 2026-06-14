@@ -67,9 +67,11 @@ Storyboard는 **소설을 "설정 → 씬 → 초안"의 흐름으로 쓰도록 
 ### 2) 캐릭터·배경 카드 만들기
 
 - **Characters / Backgrounds 패널의 `+`** 버튼으로 카드를 추가하면 **카드 에디터**가 열립니다.
-  - 탭: **Overview / Story / Relations / YAML**. 폼으로 채우거나 YAML을 직접 편집할 수 있습니다.
-  - 캐릭터: 이름, 역할(주연/조연/단역), 성격·특성, 설명, **관계**(다른 인물과의 관계) 등.
-  - 배경: 종류(장소/시간/사회), 설명, 관련 인물 등.
+  - 탭: 캐릭터는 **Overview / Story / Relations / YAML**, 배경은 **Overview / YAML**. 폼으로 채우거나
+    YAML을 직접 편집할 수 있습니다.
+  - 캐릭터: 이름, 역할(주연/조연/단역), 프로필(성격), **특성**(Story 탭의 traits), 설명,
+    **관계**(Relations 탭에서 다른 인물과의 관계) 등.
+  - 배경: 종류(장소/시간/사회), 설명, **관련 인물**(Overview에서 캐릭터 목록으로 선택) 등.
 - 카드 이름(id)을 바꾸려면 사이드바 항목의 **이름 변경 아이콘**(또는 `.card` 우클릭 → Rename)을 쓰세요.
   참조도 함께 갱신됩니다.
 
@@ -98,7 +100,7 @@ mood: 설렘
 
 - 씬 파일을 연 상태에서 상단 **`Generate Draft`**(또는 Scenes 패널의 생성 버튼)를 누르면
   `draft/NN-slug.md`가 만들어집니다.
-- 내부적으로 **상황 추출 → 인물 페르소나 → 대사·서술 → 장르 포맷**의 4단계를 거칩니다.
+- 내부적으로 **상황 추출 → 페르소나 준비 → 대화 생성 → 장르 포맷 적용**의 4단계를 거칩니다(서술 정리는 마지막 포맷 단계에 포함).
 - **`Generate All Drafts`** 로 모든 씬을 한 번에 처리할 수 있습니다.
 - 같은 입력이면 **캐시된 초안**을 재사용합니다. 강제로 다시 만들려면 **`Re-generate`** 를 누르세요.
 
@@ -183,6 +185,7 @@ mood: 설렘
 | `Storyboard: Generate Draft (Current Scene)` | 현재 씬 초안 생성 |
 | `Storyboard: Regenerate Draft (Current Scene)` | 캐시 무시하고 다시 생성 |
 | `Storyboard: Generate All Drafts` | 모든 씬 일괄 생성 |
+| `Storyboard: Apply Format to Draft (Current Scene)` | 생성 없이 장르 포맷만 다시 적용 |
 | `Storyboard: Grammar Check (Draft)` | 문법 진단 |
 | `Storyboard: Continuity Check (Draft)` | 설정 일관성 진단 |
 | `Storyboard: Expand Selection (Draft)` | 선택 영역 확장 |
