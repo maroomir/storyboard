@@ -7,6 +7,8 @@ export interface StoryboardProjectPaths {
   readonly cacheDirectory: vscode.Uri
   readonly usageLedger: vscode.Uri
   readonly sceneCacheDirectory: vscode.Uri
+  readonly bibleDirectory: vscode.Uri
+  readonly bibleCanon: vscode.Uri
   readonly characterDirectory: vscode.Uri
   readonly characterProfileDirectory: vscode.Uri
   readonly sampleCharacterCard: vscode.Uri
@@ -22,6 +24,7 @@ export interface StoryboardProjectPaths {
 export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): StoryboardProjectPaths {
   const metadataDirectory = vscode.Uri.joinPath(workspaceRoot, ".storyboard")
   const cacheDirectory = vscode.Uri.joinPath(metadataDirectory, "cache")
+  const bibleDirectory = vscode.Uri.joinPath(metadataDirectory, "bible")
   const characterDirectory = vscode.Uri.joinPath(workspaceRoot, "character")
   const backgroundDirectory = vscode.Uri.joinPath(workspaceRoot, "background")
   const sceneDirectory = vscode.Uri.joinPath(workspaceRoot, "scene")
@@ -33,6 +36,8 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     cacheDirectory,
     usageLedger: vscode.Uri.joinPath(cacheDirectory, "usage.json"),
     sceneCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "scenes"),
+    bibleDirectory,
+    bibleCanon: vscode.Uri.joinPath(bibleDirectory, "canon.yaml"),
     characterDirectory,
     characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, "profile"),
     sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, ".sample.card"),

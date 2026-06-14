@@ -1,0 +1,46 @@
+import { describe, expect, it } from "vitest"
+
+import { createEmptyBible, selectBibleFacts, type StoryBible } from "@/shared/bible"
+
+const bible: StoryBible = {
+  version: "1.0.0",
+  facts: [
+    { id: "f1", subject: { kind: "character", id: "elia" }, key: "눈동자 색", value: "녹색", status: "canon" },
+    { id: "f2", subject: { kind: "character", id: "jihoon" }, key: "키", value: "180cm", status: "canon" },
+    { id: "f3", subject: { kind: "character", id: "elia" }, key: "취미", value: "검술", status: "candidate" },
+    { id: "f4", subject: { kind: "background", id: "school" }, key: "위치", value: "도시 외곽", status: "canon" }
+  ]
+}
+
+describe("createEmptyBible", () => {
+  it("creates a versioned empty bible", () => {
+    expect(createEmptyBible()).toEqual({ version: "1.0.0", facts: [] })
+  })
+})
+
+describe("selectBibleFacts", () => {
+  it("returns only canon facts for the requested subjects", () => {
+    const facts = selectBibleFacts(bible, [{ kind: "character", id: "elia" }])
+
+    expect(facts.map((fact) => fact.id)).toEqual(["f1"])
+  })
+
+  it("matches subjects across kinds and ids", () => {
+    const facts = selectBibleFacts(bible, [
+      { kind: "character", id: "jihoon" },
+      { kind: "background", id: "school" }
+    ])
+
+    expect(facts.map((fact) => fact.id)).toEqual(["f2", "f4"])
+  })
+
+  it("excludes candidate facts even when the subject matches", () => {
+    const facts = selectBibleFacts(bible, [{ kind: "character", id: "elia" }])
+
+    expect(facts.some((fact) => fact.status === "candidate")).toBe(false)
+  })
+
+  it("returns nothing when no subjects are requested", () => {
+    expect(selectBibleFacts(bible, [])).toEqual([])
+  })
+})
