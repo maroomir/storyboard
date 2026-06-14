@@ -11,6 +11,7 @@ import type {
   WiredAiTaskName
 } from "./types"
 import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
+import { FactExtractionPrompt } from "./prompts/factExtraction"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -36,6 +37,15 @@ export interface GenerateTextOptions {
 }
 
 export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
+  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+}
+
+export interface FactCandidate {
+  readonly key: string
+  readonly value: string
+}
+
+export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
 }
 
@@ -172,6 +182,36 @@ export class StoryboardAIService {
         )
 
         return [name, parseBulletList(response.text)] as const
+      })
+    )
+
+    return Object.fromEntries(entries)
+  }
+
+  public async extractFactsByCharacter(
+    draftBody: string,
+    characterNames: readonly string[],
+    options: ExtractFactsByCharacterOptions = {}
+  ): Promise<Record<string, FactCandidate[]>> {
+    const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
+    const factOptions: ExtractFactsByCharacterOptions = {
+      ...options,
+      temperature: options.temperature ?? FactExtractionPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? FactExtractionPrompt.config.maxTokens
+    }
+
+    const entries = await Promise.all(
+      uniqueNames.map(async (name) => {
+        const attribution = factOptions.attributionForCharacter?.(name) ?? factOptions.attribution
+        const variant = this.resolvePromptVariant("factExtraction", factOptions)
+        const prompt = FactExtractionPrompt.build(draftBody, name, variant)
+        const response = await this.generateText("factExtraction", toPromptMessages(prompt), {
+          ...factOptions,
+          attribution
+        })
+        const parsedArray = parseJsonArray(response.text)
+
+        return [name, parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : []] as const
       })
     )
 
@@ -416,6 +456,27 @@ function toGrammarIssue(value: unknown): GrammarIssue[] {
       reason: candidate.reason
     }
   ]
+}
+
+function toFactCandidate(value: unknown): FactCandidate[] {
+  if (!value || typeof value !== "object") {
+    return []
+  }
+
+  const candidate = value as { readonly key?: unknown; readonly value?: unknown }
+
+  if (typeof candidate.key !== "string" || typeof candidate.value !== "string") {
+    return []
+  }
+
+  const key = candidate.key.trim()
+  const factValue = candidate.value.trim()
+
+  if (key.length === 0 || factValue.length === 0) {
+    return []
+  }
+
+  return [{ key, value: factValue }]
 }
 
 function toContinuityIssue(value: unknown): ContinuityIssue[] {

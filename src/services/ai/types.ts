@@ -8,6 +8,7 @@ export const aiTaskCatalog = [
   { name: "personaDialogue", label: "페르소나 대화", status: "wired" },
   { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
   { name: "traitsExtraction", label: "특성 추출", status: "wired" },
+  { name: "factExtraction", label: "설정 사실 추출", status: "wired" },
   { name: "grammarCheck", label: "문법 검사", status: "wired" },
   { name: "continuityCheck", label: "연속성 검사", status: "wired" },
   { name: "inlineCompletion", label: "인라인 완성", status: "wired" },

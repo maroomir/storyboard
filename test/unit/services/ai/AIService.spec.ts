@@ -68,6 +68,19 @@ describe("StoryboardAIService", () => {
     ])
   })
 
+  it("parses setting facts per character from JSON array output", async () => {
+    const service = createAIService({
+      completionText: '[{"key":"눈동자 색","value":"녹색"},{"key":"나이","value":"17"}]'
+    })
+
+    await expect(service.extractFactsByCharacter("엘리아가 걸어왔다.", ["엘리아"])).resolves.toEqual({
+      엘리아: [
+        { key: "눈동자 색", value: "녹색" },
+        { key: "나이", value: "17" }
+      ]
+    })
+  })
+
   it("parses continuity issues from JSON array output", async () => {
     const service = createAIService({
       completionText:

@@ -66,6 +66,8 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return createMockGrammarIssues(promptSummary)
     case "continuityCheck":
       return "[]"
+    case "factExtraction":
+      return "[]"
     case "inlineCompletion":
       return createMockInlineCompletion(promptSummary)
     case "draftExpansion":
