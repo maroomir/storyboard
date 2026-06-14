@@ -72,6 +72,7 @@ For webview-only changes, run `npm run build:webview`, then run `Developer: Relo
 
 Public docs live at the repo root as uppercase Markdown files. Extended plans and decision logs are not shipped in the remote repo; maintain a local-only `.doc/` directory when needed.
 
+- [`GETTING_STARTED.md`](GETTING_STARTED.md): writer-facing getting started guide (beginner walkthrough)
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): product architecture and file model
 - [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` policy
 - [`GUIDE.md`](GUIDE.md): draft editor feature guide

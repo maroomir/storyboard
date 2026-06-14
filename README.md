@@ -72,6 +72,7 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 
 공개 문서는 저장소 루트의 대문자 Markdown을 기준으로 합니다. 상세 계획·의사결정 기록 등 확장 문서는 원격에 포함되지 않으며, 필요 시 로컬에만 `.doc/` 디렉터리를 두고 관리할 수 있습니다.
 
+- [`GETTING_STARTED.md`](GETTING_STARTED.md): 작가용 시작 가이드 (초보자용 전체 흐름)
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): 제품 아키텍처와 파일 모델
 - [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` 정책
 - [`GUIDE.md`](GUIDE.md): draft 편집 기능 사용법
