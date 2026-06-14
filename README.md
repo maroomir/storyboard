@@ -11,6 +11,7 @@ English README: [`README.en.md`](README.en.md)
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
 - `scene/*.txt` 기반 씬 관리와 `draft/*.md` 초안 생성
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
+- `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)

@@ -31,6 +31,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 ├── .storyboard/
 │   ├── project.json              # 프로젝트 메타 (id, name, format, version)
 │   ├── settings.json             # 프로젝트 단위 설정 (선택, git 추적)
+│   ├── bible/                    # 스토리 바이블 정전 설정 (git 추적)
+│   │   └── canon.yaml
 │   └── cache/                    # AI 컨텍스트 캐시 (.gitignore)
 │       ├── personas/             # 캐릭터별 페르소나 캐시
 │       │   └── elia.json
@@ -67,6 +69,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | 폴더 | 역할 | Git 추적 |
 |---|---|---|
 | `.storyboard/` | 프로젝트 메타 + 캐시 | `project.json`, `settings.json`만 추적 |
+| `.storyboard/bible/` | 스토리 바이블 정전 설정 | 추적 (사람이 확정한 설정) |
 | `.storyboard/cache/` | AI 컨텍스트 스냅샷 | 제외 |
 | `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
 | `background/` | 배경 카드 | 추적 |
@@ -228,6 +231,25 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 - "왜 이렇게 나왔는가" 디버깅
 - 추후 회귀 테스트 자료
 
+씬 입력 hash에는 주입된 정전 설정(아래 4.7)도 포함되어, canon이 바뀌면 하위 씬 캐시가 무효화된다.
+
+### 4.7 `.storyboard/bible/canon.yaml` (스토리 바이블)
+
+장편의 장거리 일관성을 위한 **정전(canon) 설정 저장소**다. 사람이 확정한 사실만 담으며 git으로 추적한다.
+씬 생성 시 등장 인물/배경에 해당하는 canon 사실만 골라 파이프라인 컨텍스트(`previousContext`)에 주입하고,
+초안의 `연속성 검사`는 이 설정과 본문이 모순되는 구간을 진단한다.
+
+```yaml
+version: 1.0.0
+facts:
+  - id: elia-eye-color
+    subject: { kind: character, id: elia }   # character | background
+    key: 눈동자 색
+    value: 녹색
+    status: canon                            # canon | candidate (candidate는 주입/검사 제외)
+    sourceScene: 01-prologue                 # 선택
+```
+
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
@@ -238,6 +260,7 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 | `storyboard.scene.new` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.txt` 생성 후 열기 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
+| `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |

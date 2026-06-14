@@ -19,14 +19,23 @@
 - 수정: 문제 구간에서 Quick Fix를 실행하면 제안 교정문을 적용할 수 있습니다.
 - 실시간 검사: `storyboard.grammar.realtimeEnabled`가 `true`일 때만 입력 중 검사합니다.
 
-## 3) 선택 영역 확장
+## 3) 연속성 검사
+
+- 대상: `draft/*.md` (프로젝트에 `.storyboard/bible/canon.yaml` 정전 설정이 있을 때)
+- 실행 방법
+  - 명령: `Storyboard: Continuity Check (Draft)`
+  - CodeLens: `🧭 Continuity Check`
+- 동작: 초안 본문을 등장 인물/배경의 정전(canon) 설정과 대조해 모순되는 구간을 경고 진단으로 표시합니다.
+- 주의: 해당 씬에 적용되는 canon 사실이 없으면 모델을 호출하지 않고 건너뜁니다.
+
+## 4) 선택 영역 확장
 
 - 명령: `Storyboard: Expand Selection (Draft)`
 - CodeLens: `🌿 Expand`
 - 동작: 선택한 텍스트를 문체를 유지한 채 확장해 같은 위치에 치환합니다.
 - 주의: 선택 영역이 비어 있으면 확장하지 않고 안내 메시지를 표시합니다.
 
-## 4) 캐릭터 Hover 카드
+## 5) 캐릭터 Hover 카드
 
 - 대상: `draft/*.md` 본문에서 캐릭터 이름 위 Hover
 - 표시 정보
@@ -36,7 +45,7 @@
   - 관계 캐릭터 요약
 - 데이터 소스: 워크스페이스 `character/*.card` 파일
 
-## 5) 동작하지 않을 때 점검
+## 6) 동작하지 않을 때 점검
 
 1. 워크스페이스에 `.storyboard/project.json`이 있는지 확인
 2. 파일이 `draft/*.md` 경로인지 확인

@@ -11,6 +11,7 @@ Korean README: [`README.md`](README.md)
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
 - Manage scenes with `scene/*.txt` and generate drafts as `draft/*.md`.
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
+- Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Visualize character relationships with a relation graph.
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
