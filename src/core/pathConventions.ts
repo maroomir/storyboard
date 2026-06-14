@@ -7,6 +7,7 @@ export interface StoryboardProjectPaths {
   readonly cacheDirectory: vscode.Uri
   readonly usageLedger: vscode.Uri
   readonly sceneCacheDirectory: vscode.Uri
+  readonly bibleCacheDirectory: vscode.Uri
   readonly bibleDirectory: vscode.Uri
   readonly bibleCanon: vscode.Uri
   readonly characterDirectory: vscode.Uri
@@ -36,6 +37,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     cacheDirectory,
     usageLedger: vscode.Uri.joinPath(cacheDirectory, "usage.json"),
     sceneCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "scenes"),
+    bibleCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "bible"),
     bibleDirectory,
     bibleCanon: vscode.Uri.joinPath(bibleDirectory, "canon.yaml"),
     characterDirectory,

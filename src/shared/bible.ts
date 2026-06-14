@@ -35,6 +35,23 @@ export function createEmptyBible(): StoryBible {
   return { version: storyBibleVersion, facts: [] }
 }
 
+// NOTE: id is deterministic from subject+key so re-extracting the same fact stays stable for dedup.
+export function buildCandidateFact(
+  subject: BibleFactSubject,
+  key: string,
+  value: string,
+  sourceScene?: string
+): BibleFact {
+  return {
+    id: `${subject.kind}:${subject.id}:${key}`,
+    subject,
+    key,
+    value,
+    status: "candidate",
+    ...(sourceScene ? { sourceScene } : {})
+  }
+}
+
 // NOTE: Retrieval only injects author-confirmed canon, never auto-extracted candidates.
 export function selectBibleFacts(
   bible: StoryBible,
