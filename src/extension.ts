@@ -10,6 +10,7 @@ import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
+import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerRenameCardCommands } from "./commands/renameCard"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
@@ -65,6 +66,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder })
   )
+  context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
   context.subscriptions.push(registerCharacterHoverProvider())

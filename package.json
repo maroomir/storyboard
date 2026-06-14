@@ -110,6 +110,10 @@
         "title": "Storyboard: Continuity Check (Draft)"
       },
       {
+        "command": "storyboard.bible.promoteCandidates",
+        "title": "Storyboard: Promote Bible Candidates to Canon"
+      },
+      {
         "command": "storyboard.draft.expand",
         "title": "Storyboard: Expand Selection (Draft)"
       }
