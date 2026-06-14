@@ -64,6 +64,8 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return ["- 상황을 관찰하고 차분하게 반응함", "- 대화 속에서 감정을 분명하게 드러냄"].join("\n")
     case "grammarCheck":
       return createMockGrammarIssues(promptSummary)
+    case "continuityCheck":
+      return "[]"
     case "inlineCompletion":
       return createMockInlineCompletion(promptSummary)
     case "draftExpansion":

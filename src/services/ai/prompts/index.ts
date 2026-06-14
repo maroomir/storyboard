@@ -1,3 +1,4 @@
+export * from "./continuityCheck"
 export * from "./genreFormatting"
 export * from "./grammarCheck"
 export * from "./inlineCompletion"

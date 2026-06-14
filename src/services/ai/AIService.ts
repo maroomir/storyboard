@@ -10,6 +10,7 @@ import type {
   UsageRecord,
   WiredAiTaskName
 } from "./types"
+import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -43,6 +44,13 @@ export interface GrammarIssue {
   readonly end: number
   readonly original: string
   readonly suggestion: string
+  readonly reason: string
+}
+
+export interface ContinuityIssue {
+  readonly start: number
+  readonly end: number
+  readonly original: string
   readonly reason: string
 }
 
@@ -189,6 +197,35 @@ export class StoryboardAIService {
     }
 
     return parsedArray.flatMap((value) => toGrammarIssue(value))
+  }
+
+  public async checkContinuity(
+    body: string,
+    facts: readonly string[],
+    options: GenerateTextOptions = {}
+  ): Promise<ContinuityIssue[]> {
+    if (facts.length === 0) {
+      return []
+    }
+
+    const variant = this.resolvePromptVariant("continuityCheck", options)
+    const prompt = ContinuityCheckPrompt.build(body, facts, variant)
+    const response = await this.generateText(
+      "continuityCheck",
+      toPromptMessages(prompt),
+      {
+        ...options,
+        temperature: options.temperature ?? ContinuityCheckPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? ContinuityCheckPrompt.config.maxTokens
+      }
+    )
+    const parsedArray = parseJsonArray(response.text)
+
+    if (!parsedArray) {
+      return []
+    }
+
+    return parsedArray.flatMap((value) => toContinuityIssue(value))
   }
 
   public async completeInline(
@@ -376,6 +413,41 @@ function toGrammarIssue(value: unknown): GrammarIssue[] {
       end: candidate.end,
       original: candidate.original,
       suggestion: candidate.suggestion,
+      reason: candidate.reason
+    }
+  ]
+}
+
+function toContinuityIssue(value: unknown): ContinuityIssue[] {
+  if (!value || typeof value !== "object") {
+    return []
+  }
+
+  const candidate = value as {
+    readonly start?: unknown
+    readonly end?: unknown
+    readonly original?: unknown
+    readonly reason?: unknown
+  }
+
+  if (
+    typeof candidate.start !== "number" ||
+    typeof candidate.end !== "number" ||
+    typeof candidate.original !== "string" ||
+    typeof candidate.reason !== "string"
+  ) {
+    return []
+  }
+
+  if (candidate.start < 0 || candidate.end < candidate.start) {
+    return []
+  }
+
+  return [
+    {
+      start: candidate.start,
+      end: candidate.end,
+      original: candidate.original,
       reason: candidate.reason
     }
   ]

@@ -68,6 +68,32 @@ describe("StoryboardAIService", () => {
     ])
   })
 
+  it("parses continuity issues from JSON array output", async () => {
+    const service = createAIService({
+      completionText:
+        '[{"start":0,"end":5,"original":"파란 눈","reason":"설정상 엘리아의 눈동자 색은 녹색"}]'
+    })
+
+    await expect(
+      service.checkContinuity("파란 눈의 엘리아가 걸어왔다.", ["엘리아 — 눈동자 색: 녹색"])
+    ).resolves.toEqual([
+      {
+        start: 0,
+        end: 5,
+        original: "파란 눈",
+        reason: "설정상 엘리아의 눈동자 색은 녹색"
+      }
+    ])
+  })
+
+  it("skips the model call and returns nothing when no facts are provided", async () => {
+    const capture: MessageCapture = {}
+    const service = createAIService({ completionText: "[]", capture })
+
+    await expect(service.checkContinuity("아무 본문", [])).resolves.toEqual([])
+    expect(capture.lastMessages).toBeUndefined()
+  })
+
   it("returns trimmed text for inline completion and draft expansion", async () => {
     const service = createAIService({
       completionText: "  그는 잠시 웃으며 고개를 끄덕였다.  "

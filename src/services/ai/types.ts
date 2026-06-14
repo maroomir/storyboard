@@ -9,6 +9,7 @@ export const aiTaskCatalog = [
   { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
   { name: "traitsExtraction", label: "특성 추출", status: "wired" },
   { name: "grammarCheck", label: "문법 검사", status: "wired" },
+  { name: "continuityCheck", label: "연속성 검사", status: "wired" },
   { name: "inlineCompletion", label: "인라인 완성", status: "wired" },
   { name: "draftExpansion", label: "드래프트 확장", status: "wired" }
 ] as const
