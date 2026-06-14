@@ -20,6 +20,7 @@ import { registerCardRenameParticipant } from "./providers/CardRenameParticipant
 import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvider"
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
 import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
+import { registerContinuityDiagnosticsProvider } from "./providers/ContinuityDiagnosticsProvider"
 import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
 import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
@@ -75,6 +76,9 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(
     registerGrammarDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerContinuityDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder })
   )
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(

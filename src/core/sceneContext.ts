@@ -102,9 +102,18 @@ export async function buildNarrativeContext(
   const previousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem)
   const bible = await readSceneBible(paths, fileSystem)
   const bibleFacts = selectBibleFacts(bible, sceneSubjects(context))
-  const prompt = composeNarrativePrompt(bibleFacts, previousContext, sceneEntityNames(context))
+  const prompt = composeNarrativePrompt(formatBibleFactLines(context, bibleFacts), previousContext)
 
   return { bibleFacts, prompt }
+}
+
+export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {
+  const names = sceneEntityNames(context)
+
+  return facts.map((fact) => {
+    const subject = names.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id
+    return `${subject} — ${fact.key}: ${fact.value}`
+  })
 }
 
 async function readSceneBible(
@@ -150,18 +159,13 @@ function sceneEntityNames(context: SceneContext): ReadonlyMap<string, string> {
 }
 
 function composeNarrativePrompt(
-  facts: readonly BibleFact[],
-  previousContext: string | undefined,
-  nameByKey: ReadonlyMap<string, string>
+  factLines: readonly string[],
+  previousContext: string | undefined
 ): string | undefined {
   const sections: string[] = []
 
-  if (facts.length > 0) {
-    const lines = facts.map((fact) => {
-      const subject = nameByKey.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id
-      return `- ${subject} — ${fact.key}: ${fact.value}`
-    })
-    sections.push(`[설정 메모]\n${lines.join("\n")}`)
+  if (factLines.length > 0) {
+    sections.push(`[설정 메모]\n${factLines.map((line) => `- ${line}`).join("\n")}`)
   }
 
   const trimmedPrevious = previousContext?.trim()
