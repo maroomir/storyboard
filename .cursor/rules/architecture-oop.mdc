@@ -1,0 +1,17 @@
+---
+description: Runtime boundaries and pattern adoption when complexity warrants it
+globs: src/**/*,webview-ui/src/**/*,tests/**/*
+alwaysApply: false
+---
+
+# Architecture and patterns
+
+- Keep extension activation focused on lifecycle and high-level wiring.
+- Keep VSCode APIs, file access, terminals, subprocesses, and integrations behind extension-host services or adapters when it improves testability.
+- Shared code must not depend on `vscode` or browser-only APIs; webview code owns rendering and transient UI state.
+- Keep long-running work in the extension host and avoid blocking activation or message handling.
+- Use Strategy or Factory only for implementations that already vary behind one contract.
+- Use Command-style handlers when commands need independent validation, execution, and tests.
+- Use a Facade or controller only when multi-service orchestration is no longer readable as a direct flow.
+- Do not create interfaces, classes, or layers for simple single-use behavior.
+- Existing code and tests define the actual directory layout; avoid speculative file trees in rules.

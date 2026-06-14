@@ -1,5 +1,6 @@
 @.clinerules/general.md
 @.clinerules/agent-behavior.md
+@.clinerules/architecture.md
 @.clinerules/storyboard-overview.md
 @.clinerules/vscode-extension.md
 @.clinerules/webview.md
@@ -7,3 +8,4 @@
 @.clinerules/clean-code.md
 @.clinerules/comments.md
 @.clinerules/release.md
+@.clinerules/agent-workflow.md

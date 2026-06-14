@@ -33,6 +33,13 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 - Do not commit generated build output unless the packaging workflow requires it.
 - Do not store API keys, tokens, or personal workspace paths in committed code.
 
+## Documentation Sync
+
+- Update `README.md` and related docs for new commands, settings, configuration, or user-facing behavior.
+- Update tracked architecture documents when product scope, file formats, or runtime boundaries change.
+- Update `.clinerules/`, matching `.cursor/rules/`, and `AGENTS.md` together when agent policy changes.
+- Update `CLAUDE.md` only when the `.clinerules/` import index changes.
+
 ## Release
 
 For version bumps, changelog cuts, VSIX packaging, and tags, see **`.clinerules/release.md`** (and the `prepare-release` Cursor skill).
@@ -44,4 +51,3 @@ When using `/Users/maroomir/Git/clien/cline` as reference:
 - Look for architectural patterns, lifecycle handling, message passing, and testing strategy.
 - Avoid importing unrelated domains such as Cline-specific providers, protobuf services, marketplace features, or CLI logic unless the user asks for them.
 - Simplify patterns for this repository's current maturity.
-

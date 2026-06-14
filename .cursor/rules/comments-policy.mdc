@@ -19,19 +19,20 @@ alwaysApply: true
 
 ## When an agent may add a comment
 
-Only when omitting it would likely **mislead a maintainer** or hide a **real constraint** (security, protocol shape, unavoidable hack). Limit to **intent, constraints, or tradeoffs** that are not obvious from types or names. Prefer a **single** tagged line (`// NOTE: …`, etc.).
+Only when omitting it would likely **mislead a maintainer** or hide a **real constraint** (security, protocol shape, unavoidable workaround). Limit to **intent, constraints, or tradeoffs** that are not obvious from types or names. Prefer a **single** tagged line (`// NOTE: …`, etc.).
 
 ## Allowed markers (prefix with `//`)
 
-| Tag | Use |
-|-----|-----|
-| `TODO` | Planned work, missing behavior, follow-up |
-| `FIXME` | Incorrect or incomplete behavior that should be fixed |
-| `HACK` | Temporary workaround; say why if not obvious |
-| `NOTE` | Non-obvious contract, data flow, or coupling (e.g. extension ↔ webview) |
-| `SECURITY` | Trust boundaries, CSP, secrets, path handling — never log or expose secrets |
+| Tag               | Use                                                                         |
+| ----------------- | --------------------------------------------------------------------------- |
+| `TODO(<issue>):`  | Planned work, missing behavior, or follow-up linked to a tracked issue      |
+| `FIXME(<issue>):` | Incorrect or incomplete behavior linked to a tracked issue                  |
+| `NOTE`            | Non-obvious contract, data flow, or coupling (e.g. extension ↔ webview)     |
+| `SECURITY`        | Trust boundaries, CSP, secrets, path handling — never log or expose secrets |
 
 **Format:** `// NOTE: …` (one space after the colon is fine.)
+
+Do not add untracked `TODO` or `FIXME` comments.
 
 ## Always preserve (do not remove or “clean up”)
 

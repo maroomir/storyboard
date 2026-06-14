@@ -20,6 +20,10 @@ npm test
 
 For webview-specific work, use webview-specific scripts if the repository defines them.
 
+Run focused tests first for narrow changes. Broaden verification when shared behavior, message contracts, persistence, or extension lifecycle code changes.
+
+Mock external APIs, subprocesses, Git repositories, and network access in unit tests by default.
+
 ## Extension Testing
 
 - Test command registration and activation events.

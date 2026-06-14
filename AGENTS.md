@@ -14,12 +14,21 @@ When source files are not present yet, do not assume implementation details. Sca
 
 ## Source of Truth
 
-- `package.json` is the source of truth for extension metadata, scripts, activation events, commands, views, menus, and configuration once it exists.
-- `CLAUDE.md` and `.clinerules/` are the source of truth for AI-agent working rules.
+Apply this priority when instructions conflict:
+
+1. The user's latest explicit instruction.
+2. Existing source files and tests.
+3. `package.json` for extension metadata, scripts, activation events, commands, views, menus, and configuration.
+4. Tracked product and architecture documentation.
+5. `.clinerules/` and `AGENTS.md` for AI-agent working rules.
+6. `CLAUDE.md` as the Claude Code rule index.
+
 - `.clinerules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
+- `.clinerules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
 - `.clinerules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
-- `.clinerules/comments.md` defines allowed comment markers (`TODO`, `FIXME`, `HACK`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
-- Existing source files and tests override intended architecture notes. If implementation and documentation disagree, investigate before editing.
+- `.clinerules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
+
+If documents conflict in a way that could change behavior, investigate and ask before editing.
 
 ## Core Principles
 
@@ -124,20 +133,26 @@ Start with the smallest useful version of this structure. Add deeper layers only
 
 ## Implementation Workflow
 
-Before editing:
+### Pre-Work Checklist
 
-1. Identify the relevant domain: extension host, shared contracts, webview, tests, docs, or tooling.
-2. Inspect existing files and scripts before introducing new patterns.
-3. Prefer the smallest change that satisfies the user request.
-4. Ask a clarifying question when product behavior, architecture, or verification expectations are ambiguous.
+- [ ] Is the task within the documented product scope?
+- [ ] Are assumptions, tradeoffs, and success criteria explicit?
+- [ ] Is the relevant domain identified: extension host, shared contracts, webview, tests, docs, or tooling?
+- [ ] Have nearby files, scripts, and conventions been inspected?
+- [ ] Are secrets, user input, file paths, subprocesses, or other risky boundaries involved?
+- [ ] Are tests, documentation, or rule updates required?
 
-Before finalizing changes:
+### Post-Work Checklist
 
-- Confirm package contributions and runtime registrations are aligned.
-- Confirm disposables are registered or explicitly disposed.
-- Confirm message contracts are typed and validated where needed.
-- Confirm code follows `.clinerules/clean-code.md`.
-- Run appropriate project scripts, or state why verification is limited.
+- [ ] The request is satisfied without unrelated refactors or cleanup.
+- [ ] Tests were added or updated when behavior changed.
+- [ ] Package contributions and runtime registrations are aligned.
+- [ ] Disposables are registered or explicitly disposed.
+- [ ] Message contracts are typed and validated where needed.
+- [ ] Code follows `.clinerules/clean-code.md`.
+- [ ] Appropriate project scripts were run, or the verification limitation is stated.
+- [ ] New commands, settings, configuration, or user-facing behavior are documented.
+- [ ] Rule files were updated when architecture, workflow, security, testing, or reporting expectations changed.
 
 ## Clean Code Standard
 
@@ -174,12 +189,52 @@ If scripts do not exist yet, explain that verification is limited and inspect th
 
 For webview-specific work, use webview-specific scripts if the repository defines them.
 
+Run focused tests first for narrow changes, then broaden verification when shared behavior or cross-runtime contracts change.
+
+## Commit Message Style
+
+Write all commit messages in English using this format:
+
+```text
+type: Title
+
+- Body sentence.
+- Body sentence.
+```
+
+- The subject format is `type: title`, is 50 characters or less, clearly describes the change, and has no trailing period.
+- Keep one blank line between the subject and body.
+- Start each body line with `-` and write complete sentences, preferably 100 characters or less.
+- Allowed types: `feat`, `fix`, `docs`, `test`, `refact`, `style`, and `chore`.
+- Do not append a `Co-Authored-By` trailer.
+
 ## Pull Requests
 
 - Use clear, scoped commits.
 - If `.github/pull_request_template.md` exists, follow it exactly.
 - Summarize user-facing behavior, implementation notes, and test results.
 - Mention any verification limitations clearly.
+
+## Rule Synchronization
+
+- Update `.clinerules/` when architecture, security, testing, comments, release, or agent workflow policy changes.
+- Keep the corresponding `.cursor/rules/` summary aligned when Cursor needs the same rule.
+- Update `AGENTS.md` when agent workflow, checklists, commit style, or final reporting changes.
+- Update `CLAUDE.md` only when the `.clinerules/` import index changes.
+- Update product documentation when user-facing behavior or scope changes.
+
+## Final Report Format
+
+When work is complete, summarize:
+
+- Changed files.
+- Implemented behavior or documentation.
+- Security or configuration notes when relevant.
+- Verification commands and results, or why verification was limited.
+- Whether rule documents were updated.
+- Remaining TODOs or follow-up work.
+
+Keep the report concise and specific.
 
 ## Related Rule Files
 
@@ -189,6 +244,7 @@ Important rule files:
 
 - `.clinerules/general.md`
 - `.clinerules/agent-behavior.md`
+- `.clinerules/architecture.md`
 - `.clinerules/storyboard-overview.md`
 - `.clinerules/vscode-extension.md`
 - `.clinerules/webview.md`
@@ -196,5 +252,6 @@ Important rule files:
 - `.clinerules/clean-code.md`
 - `.clinerules/comments.md`
 - `.clinerules/release.md`
+- `.clinerules/agent-workflow.md`
 
 When writing or reviewing code, always apply the clean code standards summarized in `.clinerules/clean-code.md` and the comment markers in `.clinerules/comments.md` when adding or editing comments.

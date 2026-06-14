@@ -1,0 +1,32 @@
+---
+description: Pre-work checks, commit style, documentation sync, and final reporting
+alwaysApply: true
+---
+
+# Agent workflow
+
+## Before editing
+
+- Confirm product scope, assumptions, tradeoffs, and verifiable success criteria.
+- Inspect nearby code, tests, scripts, and rules before introducing a pattern.
+- Identify security, configuration, subprocess, file-system, and extension/webview boundary risks.
+- Decide whether tests, documentation, or rule updates are required.
+
+## Before finalizing
+
+- Satisfy the request without unrelated cleanup.
+- Add or update tests when behavior changed.
+- Run focused verification first, then broaden when shared behavior changed.
+- Document new commands, settings, configuration, and user-facing behavior.
+- Keep `.clinerules/`, matching `.cursor/rules/`, and `AGENTS.md` synchronized when policy changes.
+
+## Commit messages
+
+- Write English commits as `type: title`, then a blank line and `-`-prefixed complete sentences.
+- Keep the subject at 50 characters or less with no trailing period; prefer body lines at 100 characters or less.
+- Allowed types: `feat`, `fix`, `docs`, `test`, `refact`, `style`, `chore`.
+- Do not add `Co-Authored-By` trailers.
+
+## Final report
+
+Summarize changed files, implemented behavior, relevant security/configuration notes, verification results or limitations, rule updates, and remaining follow-up work.

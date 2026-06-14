@@ -1,6 +1,6 @@
 /**
  * Comment policy: minimize comments—prefer names/types; add only what is truly necessary.
- * When needed, use TODO, FIXME, HACK, NOTE, or SECURITY for intentional markers only.
+ * When needed, use tracked TODO/FIXME markers, NOTE, or SECURITY only.
  * Preserve TypeScript directives (/// <reference), @ts-expect-error / @ts-ignore, and eslint-disable* when required.
  */
 module.exports = {

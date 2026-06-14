@@ -16,17 +16,18 @@ Applies to `src/`, `webview-ui/src/`, and `test/` unless a task says otherwise.
 
 ## When to add a comment
 
-Only when skipping it would likely mislead someone or hide a real constraint (e.g. security, host ↔ webview contract, temporary hack). Keep to intent, constraints, or tradeoffs that the code cannot express. Prefer one tagged line (`// NOTE: …`, etc.).
+Only when skipping it would likely mislead someone or hide a real constraint (e.g. security, host ↔ webview contract, temporary workaround). Keep to intent, constraints, or tradeoffs that the code cannot express. Prefer one tagged line (`// NOTE: …`, etc.).
 
 ## Allowed markers
 
 Prefix line comments with one of:
 
-- `TODO` — planned work or known gap
-- `FIXME` — wrong or incomplete behavior to fix
-- `HACK` — intentional temporary workaround (brief why)
+- `TODO(<issue>):` — planned work or known gap linked to a tracked issue
+- `FIXME(<issue>):` — wrong or incomplete behavior linked to a tracked issue
 - `NOTE` — non-obvious contract, coupling, or cross-boundary behavior (e.g. host ↔ webview messaging)
 - `SECURITY` — trust boundaries, CSP, secrets, paths; never suggest logging secrets
+
+Do not add untracked `TODO` or `FIXME` comments.
 
 Example: `// NOTE: Payload shape matches settings.read response.`
 
