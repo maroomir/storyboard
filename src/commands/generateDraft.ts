@@ -35,6 +35,8 @@ import {
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
+import { scheduleBibleCandidateUpdate } from "../services/ai/bibleCandidateUpdater"
+import { bibleCandidateFilePath, ensureBibleCacheDirectory } from "../files/bibleCacheWorkspace"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
@@ -384,6 +386,18 @@ export async function generateDraftForWorkspaceSceneWorkflow(
         resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
         logger: options.logger,
         onComplete: options.onTraitsUpdateComplete
+      })
+
+      scheduleBibleCandidateUpdate({
+        queueKey: `${workspaceFolder.uri.toString()}#bible`,
+        sceneStem: scene.stem,
+        draftBody: result.draftBody,
+        detectedCharacterCards,
+        aiService,
+        fileSystem: vscodeFsAdapter,
+        ensureDirectory: () => ensureBibleCacheDirectory(paths),
+        resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
+        logger: options.logger
       })
     }
 
