@@ -1,30 +1,50 @@
 # Storyboard — Architecture
 
 > 작성일: 2026-05-03  
-> 상태: 확정 (Phase 0 입력; 출시·i18n 정책은 로컬 `.doc/plan/storyboard-plan.md` Phase 7–8과 동기)
+> 상태: 제품 방향 재정렬 (원클릭 장편 생성 IDE; 출시·i18n 정책은 로컬 `.doc/plan/storyboard-plan.md` Phase 7–8과 동기)
 
 ## 1. 한 줄 정의
 
-**Storyboard는 작가가 VSCode에서 소설·시나리오를 창작하기 위한 AI 기반 픽션 IDE이다.**
+**Storyboard는 VSCode에서 장편 소설 한 권을 기획, 집필, 검수, 수정, 조립까지 자동 수행하는 원클릭 장편 생성 IDE이다.**
 
-기존 Picktion 웹앱을 폐기하고, 동일한 AI 핵심을 VSCode Extension으로 옮긴다. 이 문서는 사용자 멘탈 모델, 워크스페이스 구조, 파일 포맷, 명령어 체계의 합의된 정의를 담는다.
+기존 Picktion 웹앱을 폐기하고, 동일한 AI 핵심을 VSCode Extension으로 옮긴다. 제품 방향은 Scrivener류의 보조형 창작 도구가 아니라, **Novel Factory / Autonomous Fiction Studio**에 가깝다. 사용자는 작품 목표와 제약을 지정하고, Storyboard는 장편을 작은 검증 가능한 산출물로 나누어 생성·검수·재작성·조립한다.
+
+이 문서는 사용자 멘탈 모델, 워크스페이스 구조, 파일 포맷, 명령어 체계, 장편 자동 생성 로드맵의 합의된 정의를 담는다.
+
+## 1.1 제품 목표
+
+최종 사용 경험은 **버튼 한 번으로 사람이 쓴 것처럼 일관된 장편 초고를 얻는 것**이다. 단, 기술적으로는 한 번의 거대 프롬프트로 장편 전체를 뽑지 않는다. Storyboard는 다음 단계를 파이프라인으로 실행한다.
+
+1. 작품 컨셉, 장르, 독자층, 금지 조건을 바탕으로 프로젝트 설계를 만든다.
+2. 로그라인, 시놉시스, 주요 갈등, 결말, 톤, 시점, 문체 규칙을 확정한다.
+3. 캐릭터, 배경, 세계관, 장기 떡밥을 `.card`와 story bible 후보로 만든다.
+4. 전체 플롯을 act/chapter/scene 단위로 분해하고 각 씬 목표를 생성한다.
+5. 씬별 초안을 생성하되, 이전 본문·canon·캐릭터 상태·미해결 복선을 주입한다.
+6. 장거리 연속성, 캐릭터 음성, 문체, 장면 목적, 중복, 설정 모순을 검사한다.
+7. 문제 구간을 재작성하고 chapter/volume 단위 원고로 조립한다.
+
+따라서 현재의 `scene/*.txt → draft/*.md` 흐름은 최종 목표의 한 하위 단계다. 앞으로의 계획은 “사용자가 씬을 모두 써 준다”는 전제를 줄이고, Storyboard가 씬 목록과 시드까지 발명하는 방향으로 확장한다.
 
 ## 2. 멘탈 모델
 
 - **워크스페이스 폴더 = 1 프로젝트 = 1 소설**.
   - 사용자가 `/Users/maroomir/MagicBoy/`를 VSCode로 열면, `MagicBoy` 라는 이름의 소설을 그곳에 적는다는 의미.
   - 멀티 프로젝트, 프로젝트 선택 화면은 존재하지 않는다.
+- **프로젝트 설정 = 생성 계약**.
+  - 장르, 국가, 컨셉, 태그, 설명, 독자층, 금지 조건, 목표 분량은 자동 생성 파이프라인의 입력 계약이다.
+  - Storyboard는 계약을 바탕으로 outline, cards, bible, scene seed, draft를 차례로 만든다.
 - **씬 = 파일**.
   - `scene/01-prologue.txt` 한 파일이 한 씬.
   - 인라인 마커, 가상의 ID 시스템 없음. 파일명이 정렬과 식별을 동시에 책임진다.
+  - 사용자가 직접 쓸 수도 있고, 장편 자동 생성 파이프라인이 outline에서 파생해 만들 수도 있다.
 - **카드 = 자료**.
   - 캐릭터·배경 정보는 `.card` 파일 한 개에 한 자료. 내부는 YAML, VSCode에서는 커스텀 에디터가 카드 형태로 렌더링.
   - Characters / Backgrounds 사이드바 목록은 각 자료를 이미지 없는 컴팩트 카드 항목으로 보여 주며, 항목에서 열기와 삭제를 수행할 수 있다.
-- **원고는 생성물**.
-  - `scene/*.txt`(시드) → AI 파이프라인 → `draft/*.md`(최종 원고).
+- **원고는 생성·검수·재작성되는 산출물**.
+  - `project setting` → outline/card/bible/scene seed → AI 파이프라인 → `draft/*.md` → 검사/재작성 → 조립 원고.
   - `draft/`는 재생성 가능한 산출물이므로 기본적으로 Git에서 제외한다.
 
-## 3. 디렉토리 구조 (확정)
+## 3. 디렉토리 구조 (현재 + 예정)
 
 ```
 MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 프로젝트)
@@ -33,6 +53,9 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── settings.json             # 프로젝트 단위 설정 (선택, git 추적)
 │   ├── bible/                    # 스토리 바이블 정전 설정 (git 추적)
 │   │   └── canon.yaml
+│   ├── outline/                  # 장편 구조 계획 (git 추적, 예정)
+│   │   ├── synopsis.md
+│   │   └── chapters.yaml
 │   └── cache/                    # AI 컨텍스트 캐시 (.gitignore)
 │       ├── personas/             # 캐릭터별 페르소나 캐시
 │       │   └── elia.json
@@ -70,8 +93,9 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 
 | 폴더 | 역할 | Git 추적 |
 |---|---|---|
-| `.storyboard/` | 프로젝트 메타 + 캐시 | `project.json`, `settings.json`만 추적 |
+| `.storyboard/` | 프로젝트 메타 + 내부 저장소 | 하위 폴더별 정책 적용 |
 | `.storyboard/bible/` | 스토리 바이블 정전 설정 | 추적 (사람이 확정한 설정) |
+| `.storyboard/outline/` | 장편 시놉시스·챕터·씬 계획 | 추적 (예정) |
 | `.storyboard/cache/` | AI 컨텍스트 스냅샷 | 제외 |
 | `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
 | `background/` | 배경 카드 | 추적 |
@@ -100,6 +124,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 - `format`: `novel` | `screenplay` | `play` | `essay` | `poem`
 - `scenePrefixDigits`: 씬 파일명 prefix 자릿수 (기본 2 → `01-...`)
 - `trackDraft`: `true`로 바꾸면 `draft/`도 Git에 포함 (기본 false)
+
+작품 단위 자동 생성 입력은 `setting`에 둔다. 현재 구현은 genre/country/concept/tags/description 중심이며, 이후 독자층, 목표 분량, 시점, 문체 제약, 금지 조건, chapter/scene 목표치를 추가한다.
 
 ### 4.2 `.card` (YAML)
 
@@ -256,6 +282,16 @@ facts:
 `.storyboard/cache/bible/<scene>.json`에 **candidate**로 자동 저장한다. `Storyboard: Promote Bible
 Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승격하면, 그때부터 주입·연속성 검사 대상이 된다.
 
+### 4.8 `.storyboard/outline/` (장편 구조 계획, 예정)
+
+장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
+
+- `synopsis.md`: 로그라인, 장르 약속, 결말, 주제, 톤, 시점, 문체 규칙.
+- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 감정 변화, 회수할 복선.
+- `revision-plan.yaml`: 검사 결과와 재작성 지시를 chapter/scene 단위로 누적.
+
+이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. 구현 전까지는 현재의 `scene/*.txt` 수동 작성 흐름을 유지한다.
+
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
@@ -266,6 +302,9 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.scene.new` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.txt` 생성 후 열기 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
+| `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline/card/bible/scene/draft/검수/재작성/조립 전체 실행 (예정) |
+| `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → 장편 outline 생성 (예정) |
+| `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | outline → `scene/*.txt` 생성 (예정) |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
@@ -312,15 +351,56 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 모바일/태블릿 사용 시나리오
 - 웹앱 병행 운영 (확장 안정화 후 재고)
 - `.picktion` 파일 import 및 Picktion 브라우저 저장 포맷과의 **자동 호환·변환**
+- “완성 품질 보장”을 검수 없이 한 번의 모델 응답에 맡기는 방식
 
-## 8. 환경
+## 8. 로드맵
+
+현재 구현은 자동 장편 생성 IDE의 하위 파이프라인인 “씬 시드에서 초안 생성”까지 도달했다. 이후 계획은 다음 순서로 확장한다.
+
+### Phase A: Generation Contract
+
+- 프로젝트 설정을 작품 생성 계약으로 정리한다.
+- 장르, 독자층, 목표 분량, 시점, 문체, 금지 조건, 품질 기준을 저장한다.
+- 설정 패널에서 원클릭 생성 전에 입력 누락과 위험한 조합을 검증한다.
+
+### Phase B: Story Planning
+
+- 작품 설정에서 로그라인, 시놉시스, 결말, 주요 갈등, 캐릭터 기능, 세계관 규칙을 생성한다.
+- `.storyboard/outline/`을 도입해 계획을 사람이 읽고 수정할 수 있게 저장한다.
+- outline 변경 시 어떤 scene/draft가 stale인지 표시한다.
+
+### Phase C: Scene Seed Factory
+
+- outline을 chapter/scene 단위로 분해해 `scene/*.txt`를 자동 생성한다.
+- 씬마다 목적, 갈등, 반전, 감정 변화, 필요한 canon 사실을 명시한다.
+- 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
+
+### Phase D: Autonomous Draft Loop
+
+- 씬 초안 생성 후 grammar, continuity, character voice, plot purpose, repetition 검사를 묶어 실행한다.
+- 검사 결과를 재작성 지시로 변환하고, 실패한 씬만 반복 재생성한다.
+- 비용, 토큰, provider, 모델 선택을 작업별로 기록한다.
+
+### Phase E: Manuscript Assembly
+
+- chapter/volume 단위로 `draft/*.md`를 조립한다.
+- 장별 요약, 이전 장 recap, 미해결 복선, canon diff를 유지한다.
+- export 전 전체 원고에 대한 최종 연속성·문체·중복 검사를 실행한다.
+
+### Phase F: One-Click Novel
+
+- `Storyboard: Generate Novel` 명령이 Phase A-E를 하나의 진행 상태로 실행한다.
+- 실패 시 중단 지점과 재시작 가능한 작업 큐를 남긴다.
+- 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행 중 하나를 고를 수 있다.
+
+## 9. 환경
 
 - VSCode `^1.90.0` 이상
 - Node.js 18+ (extension host)
 - Repository: `maroomir/storyboard` (신규)
 - License: Apache-2.0
 
-## 9. 참고
+## 10. 참고
 
 - 상세 마이그레이션 계획은 로컬 `.doc/plan/storyboard-plan.md`(비추적)에 있다.
 - 기존 Picktion 저장소 (`maroomir/picktion`)는 그대로 유지(archive 예정)되며, 본 컨셉/계획 문서는 새 `maroomir/storyboard` 저장소의 출발점이 된다.

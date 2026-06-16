@@ -10,6 +10,12 @@ after the first public release.
 
 ## [Unreleased]
 
+### Documentation
+
+- Reframed the product plan from an author-assist fiction IDE toward a **one-click long-form novel generation IDE / Autonomous Fiction Studio**.
+- Added the autonomous novel-generation pipeline, planned outline storage, planned one-click generation commands, and phased roadmap to `ARCHITECTURE.md`.
+- Updated README files and the agent rule summary to describe the new product direction consistently.
+
 ## [0.2.3] - 2026-06-14
 
 ### Changed

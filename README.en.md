@@ -1,11 +1,12 @@
 # Storyboard
 
-Storyboard is an AI-powered fiction IDE extension for authors writing novels and screenplays in VS Code.
+Storyboard is an AI-powered fiction IDE extension aiming to plan, draft, review, revise, and assemble a full-length novel inside VS Code.
 
 Korean README: [`README.md`](README.md)
 
 ## Features
 
+- Target direction: one-click long-form novel generation IDE (Autonomous Fiction Studio).
 - Initialize one workspace folder as one Storyboard project.
 - Manage character and background cards with `character/*.card` and `background/*.card`.
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
@@ -17,10 +18,13 @@ Korean README: [`README.md`](README.md)
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
 
+The current implementation focuses on a lower-level slice of that goal: generating `draft/*.md` from `scene/*.txt`, injecting canon facts, and checking drafts. The planned direction is a pipeline that starts from project settings and generates outline files, cards, story bible entries, scene seeds, drafts, review results, and revised manuscript output. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the roadmap.
+
 ## Project Model
 
 ```text
 .storyboard/project.json
+.storyboard/outline/   # planned: synopsis, chapters, and scene plan
 character/*.card
 background/*.card
 scene/*.txt
@@ -28,9 +32,10 @@ draft/*.md
 ```
 
 - One workspace folder is one project.
+- Project settings are the input contract for autonomous novel generation.
 - `.card` files are YAML-based reference cards.
-- One `scene/*.txt` file is one scene.
-- `draft/*.md` files are AI-generated drafts.
+- One `scene/*.txt` file is one scene, written manually or generated from the outline.
+- `draft/*.md` files are AI-generated, reviewed, and revised manuscript drafts.
 
 ## Run Locally
 

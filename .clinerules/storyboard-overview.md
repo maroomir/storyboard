@@ -1,6 +1,8 @@
 # Storyboard Extension Overview
 
-`storyboard` is planned as a VSCode extension. The exact product behavior is still evolving, so this document describes the intended technical foundation rather than fixed implementation details.
+`storyboard` is a VSCode extension intended to become a one-click long-form novel generation IDE: it should plan, draft, review, revise, and assemble a full manuscript from project-level creative constraints.
+
+The current implementation is still smaller than that target. Treat `scene/*.txt → draft/*.md`, cards, canon, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
 ## Intended Architecture
 
@@ -47,6 +49,12 @@ graph TB
 ## Reference to Cline
 
 Cline demonstrates a mature VSCode extension architecture with extension-host orchestration, webview communication, persistent state, and task execution patterns. For `storyboard`, borrow the ideas that fit the immediate product scope and avoid unnecessary complexity until needed.
+
+## Product Direction
+
+- Prefer features that move Storyboard toward autonomous long-form generation: project contract, outline, scene seed factory, draft loop, review loop, and manuscript assembly.
+- Keep every autonomous step inspectable as files or diagnostics so users can understand and rerun failed stages.
+- Do not assume one giant prompt is the architecture for generating a novel. Break generation into typed, restartable stages.
 
 ## Tracked documentation
 

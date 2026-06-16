@@ -1,11 +1,12 @@
 # Storyboard
 
-Storyboard는 작가가 VS Code에서 소설과 시나리오를 작업하기 위한 AI 기반 픽션 IDE 확장입니다.
+Storyboard는 VS Code에서 장편 소설 한 권을 기획, 집필, 검수, 수정, 조립까지 자동 수행하는 것을 목표로 하는 AI 기반 픽션 IDE 확장입니다.
 
 English README: [`README.en.md`](README.en.md)
 
 ## 주요 기능
 
+- 목표 방향: 원클릭 장편 생성 IDE(Autonomous Fiction Studio)
 - 워크스페이스 폴더 하나를 하나의 Storyboard 프로젝트로 초기화
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
@@ -17,10 +18,13 @@ English README: [`README.en.md`](README.en.md)
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 
+현재 구현은 장편 자동 생성의 하위 단계인 `scene/*.txt → draft/*.md` 생성, canon 주입, 초안 검사에 집중합니다. 계획된 방향은 작품 설정에서 outline, 카드, story bible, 씬 시드, 초안, 검수 결과, 재작성 원고를 순차 생성하는 파이프라인입니다. 자세한 로드맵은 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 봅니다.
+
 ## 프로젝트 모델
 
 ```text
 .storyboard/project.json
+.storyboard/outline/   # 예정: 장편 시놉시스·챕터·씬 계획
 character/*.card
 background/*.card
 scene/*.txt
@@ -28,9 +32,10 @@ draft/*.md
 ```
 
 - 워크스페이스 폴더 하나가 프로젝트 하나입니다.
+- 프로젝트 설정은 자동 장편 생성의 입력 계약입니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
-- `scene/*.txt` 파일 하나가 씬 하나입니다.
-- `draft/*.md` 파일은 AI가 생성한 초안입니다.
+- `scene/*.txt` 파일 하나가 씬 하나이며, 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다.
+- `draft/*.md` 파일은 AI가 생성하고 검사·재작성하는 원고입니다.
 
 ## 로컬 실행
 

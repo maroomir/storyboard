@@ -9,6 +9,12 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 문서
+
+- 제품 계획을 “작가 보조형 픽션 IDE”에서 **원클릭 장편 생성 IDE / Autonomous Fiction Studio** 방향으로 재정렬했습니다.
+- `ARCHITECTURE.md`에 장편 자동 생성 파이프라인, 예정 outline 저장소, 원클릭 생성 명령, 단계별 로드맵을 추가했습니다.
+- README와 agent rule 요약이 새 제품 방향을 같은 용어로 설명하도록 갱신했습니다.
+
 ## [0.2.3] - 2026-06-14
 
 ### 변경
