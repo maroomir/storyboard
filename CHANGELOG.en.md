@@ -10,11 +10,23 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-06-18
+
+### Added
+
+- Added the story bible domain and file I/O so work-level canon and settings can be stored and loaded in the workspace.
+- Injects story bible canon into scene-generation prompts.
+- Added a continuity-check AI task.
+- Surfaces continuity diagnostics on drafts and adds a draft CodeLens action to run continuity checks.
+- Added a bible-candidate fact store and a setting-fact extraction AI task.
+- Auto-extracts bible candidates after draft generation and adds a command to promote candidates into canon.
+- Background card forms can edit related characters (`characterIds`).
+
 ### Documentation
 
-- Reframed the product plan from an author-assist fiction IDE toward a **one-click long-form novel generation IDE / Autonomous Fiction Studio**.
-- Added the autonomous novel-generation pipeline, planned outline storage, planned one-click generation commands, and phased roadmap to `ARCHITECTURE.md`.
-- Updated README files and the agent rule summary to describe the new product direction consistently.
+- Documented the story bible, continuity checks, and bible-candidate promotion flow.
+- Added a writer getting-started guide (`GUIDE.md`).
+- Reframed the product plan from an author-assist fiction IDE toward a **one-click long-form novel generation IDE / Autonomous Fiction Studio**, updating `ARCHITECTURE.md`, README files, and the agent rule summary consistently.
 
 ## [0.2.3] - 2026-06-14
 
