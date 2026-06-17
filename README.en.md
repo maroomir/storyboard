@@ -32,7 +32,7 @@ draft/*.md
 ```
 
 - One workspace folder is one project.
-- Project settings are the input contract for autonomous novel generation.
+- Project settings are the input contract for autonomous novel generation. Edit audience, target word count, point of view, and prohibitions in the **Generation Contract** tab of `Storyboard: Open Settings`, and check generation readiness there.
 - `.card` files are YAML-based reference cards.
 - One `scene/*.txt` file is one scene, written manually or generated from the outline.
 - `draft/*.md` files are AI-generated, reviewed, and revised manuscript drafts.

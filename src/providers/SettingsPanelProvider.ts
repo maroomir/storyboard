@@ -6,6 +6,7 @@ import { type AiProviderRegistry } from "../services/ai/providerRegistry"
 import { aiProviderIds } from "../services/ai/types"
 import { type SecretStore } from "../services/secrets/SecretStore"
 import { type ConfigBridge } from "../services/settings/ConfigBridge"
+import { createContractRpcHandlers } from "../services/settings/contractRpcHandlers"
 import { createSettingsRpcHandlers, getSettingsReadSnapshot } from "../services/settings/settingsRpcHandlers"
 import type { StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
@@ -101,6 +102,7 @@ function createSettingsPanelHandlers(dependencies: SettingsPanelDependencies): S
       configBridge: dependencies.configBridge,
       secretStore: dependencies.secretStore,
       registry: dependencies.aiProviderRegistry
-    })
+    }),
+    ...createContractRpcHandlers()
   }
 }

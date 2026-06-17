@@ -4,6 +4,14 @@ export const projectFormats = ["novel", "screenplay", "play", "essay", "poem"] a
 
 export type ProjectFormat = (typeof projectFormats)[number]
 
+export const pointOfViews = ["first", "third-limited", "third-omniscient"] as const
+
+export type PointOfView = (typeof pointOfViews)[number]
+
+export const contractFieldKeys = ["genre", "audience", "pov", "targetWordCount"] as const
+
+export type ContractFieldKey = (typeof contractFieldKeys)[number]
+
 export interface ProjectEditor {
   readonly scenePrefixDigits: number
   readonly trackDraft?: boolean
@@ -15,6 +23,10 @@ export interface ProjectSetting {
   readonly concept?: string
   readonly tags: string[]
   readonly description?: string
+  readonly audience?: string
+  readonly targetWordCount?: number
+  readonly pov?: PointOfView
+  readonly prohibitions: string[]
 }
 
 export interface StoryboardProject {
