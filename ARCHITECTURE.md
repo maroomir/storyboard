@@ -293,15 +293,15 @@ facts:
 `.storyboard/cache/bible/<scene>.json`에 **candidate**로 자동 저장한다. `Storyboard: Promote Bible
 Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승격하면, 그때부터 주입·연속성 검사 대상이 된다.
 
-### 4.8 `.storyboard/outline/` (장편 구조 계획, 예정)
+### 4.8 `.storyboard/outline/` (장편 구조 계획)
 
 장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
 
-- `synopsis.md`: 로그라인, 장르 약속, 결말, 주제, 톤, 시점, 문체 규칙.
-- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 감정 변화, 회수할 복선.
-- `revision-plan.yaml`: 검사 결과와 재작성 지시를 chapter/scene 단위로 누적.
+- `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
+- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 감정 변화, 회수할 복선. (`storyboard.outline.generate`가 생성)
+- `revision-plan.yaml`: 검사 결과와 재작성 지시를 chapter/scene 단위로 누적. (예정)
 
-이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. 구현 전까지는 현재의 `scene/*.txt` 수동 작성 흐름을 유지한다.
+이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. outline에서 `scene/*.txt`를 파생하는 흐름은 Phase C에서 도입하며, 그 전까지는 현재의 `scene/*.txt` 수동 작성 흐름을 유지한다.
 
 ## 5. 명령어 (확정)
 
@@ -314,7 +314,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline/card/bible/scene/draft/검수/재작성/조립 전체 실행 (예정) |
-| `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → 장편 outline 생성 (예정) |
+| `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | outline → `scene/*.txt` 생성 (예정) |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
