@@ -12,7 +12,9 @@ export const aiTaskCatalog = [
   { name: "grammarCheck", label: "문법 검사", status: "wired" },
   { name: "continuityCheck", label: "연속성 검사", status: "wired" },
   { name: "inlineCompletion", label: "인라인 완성", status: "wired" },
-  { name: "draftExpansion", label: "드래프트 확장", status: "wired" }
+  { name: "draftExpansion", label: "드래프트 확장", status: "wired" },
+  { name: "outlineSynopsis", label: "시놉시스 생성", status: "wired" },
+  { name: "chapterPlan", label: "챕터 구성", status: "wired" }
 ] as const
 
 export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number]

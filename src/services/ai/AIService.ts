@@ -10,7 +10,9 @@ import type {
   UsageRecord,
   WiredAiTaskName
 } from "./types"
+import { ChapterPlanPrompt } from "./prompts/chapterPlan"
 import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
+import { OutlineSynopsisPrompt } from "./prompts/outlineSynopsis"
 import { FactExtractionPrompt } from "./prompts/factExtraction"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
@@ -22,7 +24,15 @@ import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
 import { selectPromptVariant } from "./prompts/variant"
 import { type PromptArtifact, type PromptVariantId } from "./prompts/types"
-import { parseBulletList, parseJsonArray } from "@/utils/aiResponseParser"
+import { parseBulletList, parseJsonArray, parseJsonObject } from "@/utils/aiResponseParser"
+import {
+  coerceChapterPlan,
+  coerceOutlineSynopsis,
+  type ChapterPlan,
+  type OutlineBrief,
+  type OutlineCharacterBrief,
+  type OutlineSynopsis
+} from "@/shared/outline"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]
@@ -306,6 +316,38 @@ export class StoryboardAIService {
     )
 
     return response.text.trim()
+  }
+
+  public async generateOutlineSynopsis(
+    brief: OutlineBrief,
+    options: GenerateTextOptions = {}
+  ): Promise<OutlineSynopsis> {
+    const variant = this.resolvePromptVariant("outlineSynopsis", options)
+    const prompt = OutlineSynopsisPrompt.build(brief, variant)
+    const response = await this.generateText("outlineSynopsis", toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? OutlineSynopsisPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? OutlineSynopsisPrompt.config.maxTokens
+    })
+
+    return coerceOutlineSynopsis(parseJsonObject(response.text), brief)
+  }
+
+  public async generateChapterPlan(
+    brief: OutlineBrief,
+    synopsis: OutlineSynopsis,
+    characters: readonly OutlineCharacterBrief[],
+    options: GenerateTextOptions = {}
+  ): Promise<ChapterPlan> {
+    const variant = this.resolvePromptVariant("chapterPlan", options)
+    const prompt = ChapterPlanPrompt.build(brief, synopsis, characters, variant)
+    const response = await this.generateText("chapterPlan", toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? ChapterPlanPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? ChapterPlanPrompt.config.maxTokens
+    })
+
+    return coerceChapterPlan(parseJsonObject(response.text))
   }
 
   private async generateText(

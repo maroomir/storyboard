@@ -80,6 +80,10 @@
         "title": "Storyboard: Generate All Drafts"
       },
       {
+        "command": "storyboard.outline.generate",
+        "title": "Storyboard: Generate Novel Outline"
+      },
+      {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
       },

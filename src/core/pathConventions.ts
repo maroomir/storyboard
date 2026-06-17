@@ -10,6 +10,9 @@ export interface StoryboardProjectPaths {
   readonly bibleCacheDirectory: vscode.Uri
   readonly bibleDirectory: vscode.Uri
   readonly bibleCanon: vscode.Uri
+  readonly outlineDirectory: vscode.Uri
+  readonly outlineSynopsis: vscode.Uri
+  readonly outlineChapters: vscode.Uri
   readonly characterDirectory: vscode.Uri
   readonly characterProfileDirectory: vscode.Uri
   readonly sampleCharacterCard: vscode.Uri
@@ -26,6 +29,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
   const metadataDirectory = vscode.Uri.joinPath(workspaceRoot, ".storyboard")
   const cacheDirectory = vscode.Uri.joinPath(metadataDirectory, "cache")
   const bibleDirectory = vscode.Uri.joinPath(metadataDirectory, "bible")
+  const outlineDirectory = vscode.Uri.joinPath(metadataDirectory, "outline")
   const characterDirectory = vscode.Uri.joinPath(workspaceRoot, "character")
   const backgroundDirectory = vscode.Uri.joinPath(workspaceRoot, "background")
   const sceneDirectory = vscode.Uri.joinPath(workspaceRoot, "scene")
@@ -40,6 +44,9 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     bibleCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "bible"),
     bibleDirectory,
     bibleCanon: vscode.Uri.joinPath(bibleDirectory, "canon.yaml"),
+    outlineDirectory,
+    outlineSynopsis: vscode.Uri.joinPath(outlineDirectory, "synopsis.md"),
+    outlineChapters: vscode.Uri.joinPath(outlineDirectory, "chapters.yaml"),
     characterDirectory,
     characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, "profile"),
     sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, ".sample.card"),
