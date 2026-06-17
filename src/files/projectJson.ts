@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid"
 import { z } from "zod"
 
 import {
+  pointOfViews,
   projectFormats,
   type ProjectFormat,
   type StoryboardProject,
@@ -19,7 +20,11 @@ const projectSettingSchema = z.object({
   country: z.string().trim().min(1).optional(),
   concept: z.string().trim().min(1).optional(),
   tags: z.array(z.string()).default([]),
-  description: z.string().optional()
+  description: z.string().optional(),
+  audience: z.string().trim().min(1).optional(),
+  targetWordCount: z.number().int().positive().optional(),
+  pov: z.enum(pointOfViews).optional(),
+  prohibitions: z.array(z.string()).default([])
 })
 
 export const storyboardProjectSchema = z.object({

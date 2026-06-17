@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "../ui/Button"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
+import { GenerationContractSection } from "./GenerationContractSection"
 
 const sbInputClass =
   "w-full rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-3 py-2 text-sb-fg-input outline-none transition focus:border-sb-border-focus focus:ring-1 focus:ring-sb-border-focus/40"
@@ -880,6 +881,11 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
       id: "tasks",
       label: "태스크",
       panel: <TaskAssignmentsSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
+    },
+    {
+      id: "contract",
+      label: "작품 계약",
+      panel: <GenerationContractSection callRpc={callRpc} onRpcError={onRpcError} />
     }
   ]
 

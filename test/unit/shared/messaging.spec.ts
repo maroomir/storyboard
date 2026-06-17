@@ -40,6 +40,70 @@ describe("storyboard messaging protocol", () => {
     })
   })
 
+  it("parses project.readContract and project.updateContract requests", () => {
+    const readRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "contract-1",
+      method: "project.readContract",
+      payload: {}
+    })
+    expect(readRequest.method).toBe("project.readContract")
+
+    const updateRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "contract-2",
+      method: "project.updateContract",
+      payload: {
+        genre: "성장 판타지",
+        audience: "10대 후반",
+        pov: "third-limited",
+        targetWordCount: 120000,
+        prohibitions: ["과도한 폭력"]
+      }
+    })
+    expect(updateRequest.method).toBe("project.updateContract")
+    expect(updateRequest.payload).toMatchObject({ pov: "third-limited", targetWordCount: 120000 })
+  })
+
+  it("creates a validated project.readContract success response", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "contract-3",
+      method: "project.readContract",
+      payload: {}
+    })
+    if (request.method !== "project.readContract") {
+      throw new Error("Expected project.readContract")
+    }
+
+    const response = createStoryboardSuccessResponse(request, {
+      isStoryboardProject: true,
+      format: "novel",
+      setting: { genre: "판타지", prohibitions: [] },
+      readiness: { isReady: false, missing: ["audience", "pov", "targetWordCount"], warnings: [] }
+    })
+
+    expect(response.ok).toBe(true)
+    if (response.ok) {
+      expect(response.payload.readiness.missing).toContain("audience")
+    }
+  })
+
+  it("rejects an invalid point of view in project.updateContract", () => {
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "contract-4",
+        method: "project.updateContract",
+        payload: { pov: "omniscient" }
+      })
+    ).toThrow()
+  })
+
   it("rejects unsupported methods", () => {
     expect(() =>
       parseStoryboardRequestMessage({

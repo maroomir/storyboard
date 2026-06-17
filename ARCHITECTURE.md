@@ -125,7 +125,18 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 - `scenePrefixDigits`: 씬 파일명 prefix 자릿수 (기본 2 → `01-...`)
 - `trackDraft`: `true`로 바꾸면 `draft/`도 Git에 포함 (기본 false)
 
-작품 단위 자동 생성 입력은 `setting`에 둔다. 현재 구현은 genre/country/concept/tags/description 중심이며, 이후 독자층, 목표 분량, 시점, 문체 제약, 금지 조건, chapter/scene 목표치를 추가한다.
+작품 단위 자동 생성 입력은 `setting`에 둔다. genre/country/concept/tags/description에 더해, **Phase A(생성 계약)**로 독자층(`audience`), 목표 분량(`targetWordCount`), 시점(`pov`: `first` | `third-limited` | `third-omniscient`), 금지 조건(`prohibitions`)을 추가했다. 이 핵심 계약 필드는 `Storyboard: Open Settings`의 **작품 계약** 탭에서 편집하며, 원클릭 생성 전 누락·위험 조합을 검증한다. 문체 제약, 품질 기준, chapter/scene 목표치는 이후 Phase에서 추가한다.
+
+```jsonc
+"setting": {
+  "genre": "성장 판타지",
+  "audience": "10대 후반",
+  "targetWordCount": 120000,
+  "pov": "third-limited",
+  "prohibitions": ["과도한 폭력"],
+  "tags": ["학원"]
+}
+```
 
 ### 4.2 `.card` (YAML)
 
@@ -357,11 +368,12 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 
 현재 구현은 자동 장편 생성 IDE의 하위 파이프라인인 “씬 시드에서 초안 생성”까지 도달했다. 이후 계획은 다음 순서로 확장한다.
 
-### Phase A: Generation Contract
+### Phase A: Generation Contract (진행 중)
 
 - 프로젝트 설정을 작품 생성 계약으로 정리한다.
 - 장르, 독자층, 목표 분량, 시점, 문체, 금지 조건, 품질 기준을 저장한다.
 - 설정 패널에서 원클릭 생성 전에 입력 누락과 위험한 조합을 검증한다.
+- 현재 상태: 핵심 필드(독자층·목표 분량·시점·금지 조건)와 검증·**작품 계약** 설정 탭을 구현. 문체 제약·품질 기준은 후속.
 
 ### Phase B: Story Planning
 

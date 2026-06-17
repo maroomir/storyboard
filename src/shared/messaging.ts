@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { cardSchema, cardTypes, characterRoles } from "./card"
 import { storyboardModelCatalog } from "./models"
+import { contractFieldKeys, pointOfViews, projectFormats } from "./project"
 import {
   aiProviderIds,
   aiTaskNames,
@@ -351,6 +352,41 @@ export const secretsDeleteApiKeyResponsePayloadSchema = z.object({
   hasApiKey: z.literal(false)
 })
 
+const generationContractReadinessSchema = z.object({
+  isReady: z.boolean(),
+  missing: z.array(z.enum(contractFieldKeys)),
+  warnings: z.array(z.string())
+})
+
+const generationContractSettingSchema = z.object({
+  genre: z.string().optional(),
+  audience: z.string().optional(),
+  pov: z.enum(pointOfViews).optional(),
+  targetWordCount: z.number().int().positive().optional(),
+  prohibitions: z.array(z.string())
+})
+
+const projectContractSnapshotSchema = z.object({
+  isStoryboardProject: z.boolean(),
+  format: z.enum(projectFormats).optional(),
+  setting: generationContractSettingSchema.optional(),
+  readiness: generationContractReadinessSchema
+})
+
+export const projectReadContractRequestPayloadSchema = z.object({})
+
+export const projectReadContractResponsePayloadSchema = projectContractSnapshotSchema
+
+export const projectUpdateContractRequestPayloadSchema = z.object({
+  genre: z.string().trim().optional(),
+  audience: z.string().trim().optional(),
+  pov: z.enum(pointOfViews).nullable().optional(),
+  targetWordCount: z.number().int().positive().nullable().optional(),
+  prohibitions: z.array(z.string()).optional()
+})
+
+export const projectUpdateContractResponsePayloadSchema = projectContractSnapshotSchema
+
 const usageSummaryByEntitySchema = z.object({
   scenes: z.record(z.string(), z.number()),
   characters: z.record(z.string(), z.number()),
@@ -387,6 +423,8 @@ export const storyboardRequestPayloadSchemas = {
   "settings.updateTaskAiConfig": settingsUpdateTaskAiConfigRequestPayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema,
+  "project.readContract": projectReadContractRequestPayloadSchema,
+  "project.updateContract": projectUpdateContractRequestPayloadSchema,
   "usage.read": usageReadRequestPayloadSchema
 } as const
 
@@ -415,6 +453,8 @@ export const storyboardResponsePayloadSchemas = {
   "settings.updateTaskAiConfig": settingsMutationOkResponsePayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema,
+  "project.readContract": projectReadContractResponsePayloadSchema,
+  "project.updateContract": projectUpdateContractResponsePayloadSchema,
   "usage.read": usageReadResponsePayloadSchema
 } as const
 
