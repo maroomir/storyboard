@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import { registerApplyDraftFormatCommand } from "./commands/applyDraftFormat"
+import { registerAssembleManuscriptCommand } from "./commands/assembleManuscript"
 import { registerCreateCardCommands } from "./commands/createCard"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
@@ -73,6 +74,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder })
   )
   context.subscriptions.push(registerGenerateSceneSeedsCommand())
+  context.subscriptions.push(registerAssembleManuscriptCommand({ logger }))
   context.subscriptions.push(
     registerReviseDraftCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )

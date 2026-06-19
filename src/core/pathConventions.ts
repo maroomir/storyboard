@@ -21,6 +21,8 @@ export interface StoryboardProjectPaths {
   readonly sceneDirectory: vscode.Uri
   readonly sampleScene: vscode.Uri
   readonly draftDirectory: vscode.Uri
+  readonly manuscriptDirectory: vscode.Uri
+  readonly manuscriptVolume: vscode.Uri
   readonly gitignore: vscode.Uri
   readonly readme: vscode.Uri
 }
@@ -55,6 +57,8 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     sceneDirectory,
     sampleScene: vscode.Uri.joinPath(sceneDirectory, ".sample.txt"),
     draftDirectory: vscode.Uri.joinPath(workspaceRoot, "draft"),
+    manuscriptDirectory: vscode.Uri.joinPath(workspaceRoot, "manuscript"),
+    manuscriptVolume: vscode.Uri.joinPath(workspaceRoot, "manuscript", "manuscript.md"),
     gitignore: vscode.Uri.joinPath(workspaceRoot, ".gitignore"),
     readme: vscode.Uri.joinPath(workspaceRoot, "README.md")
   }
