@@ -118,6 +118,10 @@
         "title": "Storyboard: Continuity Check (Draft)"
       },
       {
+        "command": "storyboard.draft.reviseLoop",
+        "title": "Storyboard: Review & Revise Draft (Current Scene)"
+      },
+      {
         "command": "storyboard.bible.promoteCandidates",
         "title": "Storyboard: Promote Bible Candidates to Canon"
       },
@@ -207,6 +211,13 @@
           "minimum": 1,
           "maximum": 4,
           "description": "Number of zero-padded digits used for new scene file prefixes."
+        },
+        "storyboard.draft.reviseMaxIterations": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Maximum number of revision passes in the Review & Revise Draft loop."
         }
       }
     },

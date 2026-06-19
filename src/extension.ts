@@ -13,6 +13,7 @@ import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
+import { registerReviseDraftCommand } from "./commands/reviseDraft"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerRenameCardCommands } from "./commands/renameCard"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
@@ -72,6 +73,9 @@ export function activate(context: vscode.ExtensionContext): void {
     registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder })
   )
   context.subscriptions.push(registerGenerateSceneSeedsCommand())
+  context.subscriptions.push(
+    registerReviseDraftCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
+  )
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())

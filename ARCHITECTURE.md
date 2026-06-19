@@ -317,6 +317,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.txt` 생성 |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
+| `storyboard.draft.reviseLoop` | `Storyboard: Review & Revise Draft (Current Scene)` | 초안을 연속성·비평으로 검사하고 차단 이슈를 재작성으로 고치는 루프 |
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
@@ -349,6 +350,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 - `storyboard.tasks.<taskName>.provider`: 작업별 provider 오버라이드
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
+- `storyboard.draft.reviseMaxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
 - (Phase 7 예정) 확장 UI 다국어: **`ko` 기본**, **`en`은 설정 또는 locale 스위치로 선택(옵션)** — 소설 본문 언어와 별개이며, 세부 키 이름은 구현 시 `package.json#contributes.configuration`과 맞춘다.
 
 API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한다.
@@ -387,11 +389,12 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 씬마다 목적, 갈등, 반전, 감정 변화, 필요한 canon 사실을 명시한다.
 - 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
 
-### Phase D: Autonomous Draft Loop
+### Phase D: Autonomous Draft Loop (진행 중)
 
-- 씬 초안 생성 후 grammar, continuity, character voice, plot purpose, repetition 검사를 묶어 실행한다.
-- 검사 결과를 재작성 지시로 변환하고, 실패한 씬만 반복 재생성한다.
-- 비용, 토큰, provider, 모델 선택을 작업별로 기록한다.
+- 단일 씬 초안에 대해 continuity와 통합 비평(character voice, plot purpose, repetition) 검사를 묶어 실행한다(`storyboard.draft.reviseLoop`).
+- 검사 결과를 재작성 지시로 변환해 초안을 다시 쓰고, 차단 이슈가 없거나 최대 횟수에 도달할 때까지 review→revise→re-review를 반복한다.
+- 비용, 토큰, provider, 모델 선택을 작업별로(`draftCritique`/`draftRevision`/`continuityCheck`) 사용량 원장에 기록한다.
+- 전체 씬 배치 검수와 grammar 통합, 생성 직후 자동 체이닝은 Phase F에서 다룬다.
 
 ### Phase E: Manuscript Assembly
 
