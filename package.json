@@ -84,6 +84,10 @@
         "title": "Storyboard: Generate Novel Outline"
       },
       {
+        "command": "storyboard.scene.generateAllSeeds",
+        "title": "Storyboard: Generate Scene Seeds"
+      },
+      {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
       },
