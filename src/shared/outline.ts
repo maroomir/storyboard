@@ -115,6 +115,34 @@ export interface OutlineCharacterBrief {
   readonly role?: string
 }
 
+export interface FlatChapterScene {
+  readonly scene: ScenePlan
+  readonly actTitle: string
+  readonly chapterTitle: string
+  readonly actIndex: number
+  readonly chapterIndex: number
+}
+
+export function flattenChapterPlan(plan: ChapterPlan): FlatChapterScene[] {
+  const flatScenes: FlatChapterScene[] = []
+
+  plan.acts.forEach((act, actIndex) => {
+    act.chapters.forEach((chapter, chapterIndex) => {
+      for (const scene of chapter.scenes) {
+        flatScenes.push({
+          scene,
+          actTitle: act.title,
+          chapterTitle: chapter.title,
+          actIndex,
+          chapterIndex
+        })
+      }
+    })
+  })
+
+  return flatScenes
+}
+
 export function toOutlineBrief(project: StoryboardProject): OutlineBrief {
   const setting = project.setting
 

@@ -88,6 +88,10 @@
         "title": "Storyboard: Generate Scene Seeds"
       },
       {
+        "command": "storyboard.manuscript.assemble",
+        "title": "Storyboard: Assemble Manuscript"
+      },
+      {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
       },

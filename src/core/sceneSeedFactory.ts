@@ -1,6 +1,6 @@
 import yaml from "js-yaml"
 
-import type { ChapterPlan, ScenePlan } from "../shared/outline"
+import { flattenChapterPlan, type ChapterPlan, type FlatChapterScene, type ScenePlan } from "../shared/outline"
 
 export interface GeneratedSceneSeed {
   readonly stem: string
@@ -8,14 +8,8 @@ export interface GeneratedSceneSeed {
   readonly content: string
 }
 
-interface FlatScene {
-  readonly scene: ScenePlan
-  readonly actTitle: string
-  readonly chapterTitle: string
-}
-
 export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): GeneratedSceneSeed[] {
-  const flatScenes = flattenScenes(plan)
+  const flatScenes = flattenChapterPlan(plan)
   const usedSlugs = new Set<string>()
 
   return flatScenes.map((flatScene, index) => {
@@ -30,20 +24,6 @@ export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): Generate
       content: buildSceneSeedContent(flatScene)
     }
   })
-}
-
-function flattenScenes(plan: ChapterPlan): FlatScene[] {
-  const flatScenes: FlatScene[] = []
-
-  for (const act of plan.acts) {
-    for (const chapter of act.chapters) {
-      for (const scene of chapter.scenes) {
-        flatScenes.push({ scene, actTitle: act.title, chapterTitle: chapter.title })
-      }
-    }
-  }
-
-  return flatScenes
 }
 
 function deriveSlug(scene: ScenePlan, order: number): string {
@@ -75,7 +55,7 @@ function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
   return uniqueSlug
 }
 
-function buildSceneSeedContent(flatScene: FlatScene): string {
+function buildSceneSeedContent(flatScene: FlatChapterScene): string {
   return `---\n${buildFrontmatter(flatScene.scene)}---\n${buildBody(flatScene)}`
 }
 
@@ -92,7 +72,7 @@ function buildFrontmatter(scene: ScenePlan): string {
   return yaml.dump(frontmatter, { lineWidth: -1, noRefs: true, sortKeys: false })
 }
 
-function buildBody(flatScene: FlatScene): string {
+function buildBody(flatScene: FlatChapterScene): string {
   const { scene } = flatScene
   const blocks: string[] = [`[목적]\n${scene.purpose.trim().length > 0 ? scene.purpose : "_미작성_"}`]
 

@@ -85,7 +85,11 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── 02-chapter-01.md
 │   └── 03-chapter-02.md
 │
-├── .gitignore                    # .storyboard/cache/, draft/
+├── manuscript/                   # chapter/volume 조립 원고 (.gitignore)
+│   ├── 01-prologue.md
+│   └── manuscript.md
+│
+├── .gitignore                    # .storyboard/cache/, draft/, manuscript/
 └── README.md                     # 프로젝트 자유 노트
 ```
 
@@ -101,6 +105,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `background/` | 배경 카드 | 추적 |
 | `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
+| `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
 
 ## 4. 파일 포맷 명세
 
@@ -316,6 +321,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline/card/bible/scene/draft/검수/재작성/조립 전체 실행 (예정) |
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.txt` 생성 |
+| `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.draft.reviseLoop` | `Storyboard: Review & Revise Draft (Current Scene)` | 초안을 연속성·비평으로 검사하고 차단 이슈를 재작성으로 고치는 루프 |
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
@@ -396,11 +402,11 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 비용, 토큰, provider, 모델 선택을 작업별로(`draftCritique`/`draftRevision`/`continuityCheck`) 사용량 원장에 기록한다.
 - 전체 씬 배치 검수와 grammar 통합, 생성 직후 자동 체이닝은 Phase F에서 다룬다.
 
-### Phase E: Manuscript Assembly
+### Phase E: Manuscript Assembly (진행 중)
 
-- chapter/volume 단위로 `draft/*.md`를 조립한다.
-- 장별 요약, 이전 장 recap, 미해결 복선, canon diff를 유지한다.
-- export 전 전체 원고에 대한 최종 연속성·문체·중복 검사를 실행한다.
+- `chapters.yaml` 순서로 `draft/*.md`를 chapter별 파일과 전체 volume 파일(`manuscript/`)로 결정적으로 조립한다(`storyboard.manuscript.assemble`).
+- 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
+- 장별 AI 요약·이전 장 recap·미해결 복선·canon diff, export 전 전체 원고 최종 검사(continuity/문체/중복)는 후속(Phase F 포함)에서 다룬다.
 
 ### Phase F: One-Click Novel
 
