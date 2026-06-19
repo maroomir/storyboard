@@ -12,6 +12,8 @@ import type {
 } from "./types"
 import { ChapterPlanPrompt } from "./prompts/chapterPlan"
 import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
+import { DraftCritiquePrompt, type DraftCritiqueInput } from "./prompts/draftCritique"
+import { DraftRevisionPrompt, type DraftRevisionInput } from "./prompts/draftRevision"
 import { OutlineSynopsisPrompt } from "./prompts/outlineSynopsis"
 import { FactExtractionPrompt } from "./prompts/factExtraction"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
@@ -33,6 +35,7 @@ import {
   type OutlineCharacterBrief,
   type OutlineSynopsis
 } from "@/shared/outline"
+import { coerceCritiqueIssues, type DraftCritiqueIssue } from "@/shared/draftReview"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]
@@ -348,6 +351,33 @@ export class StoryboardAIService {
     })
 
     return coerceChapterPlan(parseJsonObject(response.text))
+  }
+
+  public async critiqueDraft(
+    input: DraftCritiqueInput,
+    options: GenerateTextOptions = {}
+  ): Promise<DraftCritiqueIssue[]> {
+    const variant = this.resolvePromptVariant("draftCritique", options)
+    const prompt = DraftCritiquePrompt.build(input, variant)
+    const response = await this.generateText("draftCritique", toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? DraftCritiquePrompt.config.temperature,
+      maxTokens: options.maxTokens ?? DraftCritiquePrompt.config.maxTokens
+    })
+
+    return coerceCritiqueIssues(response.text)
+  }
+
+  public async reviseDraft(input: DraftRevisionInput, options: GenerateTextOptions = {}): Promise<string> {
+    const variant = this.resolvePromptVariant("draftRevision", options)
+    const prompt = DraftRevisionPrompt.build(input, variant)
+    const response = await this.generateText("draftRevision", toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? DraftRevisionPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? DraftRevisionPrompt.config.maxTokens
+    })
+
+    return response.text.trim()
   }
 
   private async generateText(

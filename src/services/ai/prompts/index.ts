@@ -1,5 +1,7 @@
 export * from "./chapterPlan"
 export * from "./continuityCheck"
+export * from "./draftCritique"
+export * from "./draftRevision"
 export * from "./factExtraction"
 export * from "./outlineSynopsis"
 export * from "./genreFormatting"
