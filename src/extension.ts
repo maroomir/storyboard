@@ -5,6 +5,7 @@ import { registerCreateCardCommands } from "./commands/createCard"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerGenerateOutlineCommand } from "./commands/generateOutline"
+import { registerGenerateSceneSeedsCommand } from "./commands/generateSceneSeeds"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
 import { registerImportSeedCommands } from "./commands/importSeed"
 import { registerInitCommand } from "./commands/init"
@@ -70,6 +71,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder })
   )
+  context.subscriptions.push(registerGenerateSceneSeedsCommand())
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
