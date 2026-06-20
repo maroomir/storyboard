@@ -34,7 +34,8 @@ function buildGeneric(
       "시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.",
       "각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.",
       "characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.",
-      '{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""]}]}]}]}',
+      '{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}',
+      "전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.",
       "id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라."
     ].join("\n"),
     user: planToUserBlock(brief, synopsis, characters)
