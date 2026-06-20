@@ -9,6 +9,19 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- `Storyboard: Generate Novel` 명령으로 작품 설정 → outline → 시드 → 장별 초안·검수 → 조립 → 검사 → 요약까지 원클릭 실행하고 단계별로 재개할 수 있습니다.
+- `Storyboard: Canon Diff Report`(`storyboard.bible.canonDiff`)가 아직 승격되지 않은 설정 후보를 `canon.yaml`과 대조해 `manuscript/CANON.md`로 정리합니다.
+- `Storyboard: Export Draft…`(`storyboard.draft.export`)가 조립 원고를 Markdown 또는 일반 텍스트로 내보냅니다. (PDF/DOCX는 후속)
+- 검수·재작성 결과와 지시를 `.storyboard/outline/revision-plan.yaml`에 scene 단위로 누적합니다.
+- 작품 계약에 문체 제약(`styleConstraints`)·품질 기준(`qualityCriteria`)을 추가하고 **작품 계약** 설정 탭에서 편집합니다.
+- 확장 UI 다국어(i18n) 메커니즘(`package.nls.json` / `package.nls.ko.json`)을 도입했습니다.
+
+### 변경
+
+- `chapters.yaml`가 씬보다 최신이면 Scenes 사이드바에 "outline" stale 배지를 표시합니다.
+
 ## [0.2.4] - 2026-06-18
 
 ### 추가

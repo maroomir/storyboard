@@ -164,8 +164,16 @@ npm run build
 1. Activity Bar에서 **Storyboard · Scenes** 아이콘을 눌러 **Scenes** 뷰를 연다.
 2. 씬 목록과 상태 표시(준비 / 구버전 / 미생성 등)가 기대와 맞는지 본다.
 3. 행에 붙은 **Generate**, **Open Draft** 등 웹뷰 버튼이 동작하는지 확인한다.
+4. `.storyboard/outline/chapters.yaml`를 저장(수정)한 뒤 뷰를 새로고침하면, 해당 씬 행에 **"outline"** stale 배지가 보이는지 확인한다.
 
 > Activity Bar의 `WebviewView` 사이드바에는 탐색기처럼 **행마다 VS Code 기본 컨텍스트 메뉴**가 붙지 않는다. 씬별 액션은 **뷰 내부 버튼**과 **view/title**의 명령을 사용한다.
+
+### 8a. 장편 산출물 명령 (선택)
+
+조립 원고·설정 후보가 있는 프로젝트에서 확인한다.
+
+1. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
+2. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 
 ### 9. 관계 그래프
 
