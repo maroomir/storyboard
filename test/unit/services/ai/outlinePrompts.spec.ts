@@ -13,7 +13,9 @@ const brief: OutlineBrief = {
   pov: "third-limited",
   targetWordCount: 80_000,
   tags: ["학원"],
-  prohibitions: ["과도한 폭력"]
+  prohibitions: ["과도한 폭력"],
+  styleConstraints: ["단문 위주"],
+  qualityCriteria: ["복선 회수"]
 }
 
 const synopsis: OutlineSynopsis = {
@@ -40,6 +42,8 @@ describe("OutlineSynopsisPrompt", () => {
     expect(artifact.user).toContain("판타지")
     expect(artifact.user).toContain("청소년")
     expect(artifact.user).toContain("3인칭 제한적")
+    expect(artifact.user).toContain("단문 위주")
+    expect(artifact.user).toContain("복선 회수")
   })
 
   it("keeps the xs system block shorter than generic", () => {

@@ -43,6 +43,8 @@ export function briefToUserBlock(brief: OutlineBrief): string {
   appendField(lines, "설명", brief.description)
   appendField(lines, "태그", brief.tags.length > 0 ? brief.tags.join(", ") : undefined)
   appendField(lines, "금지 조건", brief.prohibitions.length > 0 ? brief.prohibitions.join(", ") : undefined)
+  appendField(lines, "문체 제약", brief.styleConstraints.length > 0 ? brief.styleConstraints.join(", ") : undefined)
+  appendField(lines, "품질 기준", brief.qualityCriteria.length > 0 ? brief.qualityCriteria.join(", ") : undefined)
 
   return lines.join("\n")
 }

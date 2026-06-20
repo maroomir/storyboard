@@ -107,6 +107,8 @@ export interface OutlineBrief {
   readonly description?: string
   readonly tags: readonly string[]
   readonly prohibitions: readonly string[]
+  readonly styleConstraints: readonly string[]
+  readonly qualityCriteria: readonly string[]
 }
 
 export interface OutlineCharacterBrief {
@@ -157,7 +159,9 @@ export function toOutlineBrief(project: StoryboardProject): OutlineBrief {
     concept: setting?.concept,
     description: setting?.description,
     tags: setting?.tags ?? [],
-    prohibitions: setting?.prohibitions ?? []
+    prohibitions: setting?.prohibitions ?? [],
+    styleConstraints: setting?.styleConstraints ?? [],
+    qualityCriteria: setting?.qualityCriteria ?? []
   }
 }
 

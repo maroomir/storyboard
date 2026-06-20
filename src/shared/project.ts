@@ -27,6 +27,8 @@ export interface ProjectSetting {
   readonly targetWordCount?: number
   readonly pov?: PointOfView
   readonly prohibitions: string[]
+  readonly styleConstraints: string[]
+  readonly qualityCriteria: string[]
 }
 
 export interface StoryboardProject {
