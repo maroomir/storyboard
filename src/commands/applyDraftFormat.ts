@@ -2,8 +2,9 @@ import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
 import { draftPath, getStoryboardProjectPaths, isDirectSceneTextFile } from "../core/pathConventions"
+import { vscodeFsAdapter } from "../core/vscodeFileSystem"
 import { hasStoryboardProject } from "../core/workspace"
-import { createDraft, parseDraft, readDraftFile, writeDraftFile, type DraftFileSystem } from "../files/draft"
+import { createDraft, parseDraft, readDraftFile, writeDraftFile } from "../files/draft"
 import { readProjectJson } from "../files/projectJson"
 import { parseSceneFileName } from "../shared/scene"
 import { StoryboardAIService } from "../services/ai/AIService"
@@ -12,12 +13,6 @@ import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 
 const applyDraftFormatCommand = "storyboard.draft.applyFormat"
-
-const vscodeFsAdapter: DraftFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
 
 function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   if (invokedUri && invokedUri.scheme === "file") {

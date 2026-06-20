@@ -1,18 +1,13 @@
 import * as vscode from "vscode"
 
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from "../core/pathConventions"
+import { vscodeFsAdapter } from "../core/vscodeFileSystem"
 import { hasStoryboardProject } from "../core/workspace"
 import { readCardFile } from "../files/card"
 import type { CharacterCard } from "../shared/card"
 import { detectCharactersInText } from "../utils/characterDetector"
 
 const wordPattern = /[0-9A-Za-z가-힣_-]+/
-
-const vscodeFsAdapter = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
 
 interface CharacterHoverContext {
   readonly character: CharacterCard

@@ -1,14 +1,9 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { getStoryboardProjectPaths, isDraftMarkdownFile, type StoryboardProjectPaths } from "../core/pathConventions"
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths
-} from "../core/sceneContext"
+import { getStoryboardProjectPaths, isDraftMarkdownFile } from "../core/pathConventions"
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines } from "../core/sceneContext"
+import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "../core/vscodeFileSystem"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { readSceneFile } from "../files/scene"
@@ -24,35 +19,6 @@ export interface RegisterContinuityDiagnosticsProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
-}
-
-const vscodeFsAdapter = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
-
-const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
-  readFile: vscodeFsAdapter.readFile,
-  writeFile: vscodeFsAdapter.writeFile,
-  readDirectory: async (uri: unknown): Promise<[string, { type: "file" | "directory" }][]> => {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri)
-    return entries.map(([name, fileType]) => [
-      name,
-      { type: fileType === vscode.FileType.Directory ? ("directory" as const) : ("file" as const) }
-    ])
-  }
-}
-
-function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {
-  return {
-    characterDirectory: paths.characterDirectory,
-    backgroundDirectory: paths.backgroundDirectory,
-    draftDirectory: paths.draftDirectory,
-    bibleCanon: paths.bibleCanon,
-    joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
-      vscode.Uri.joinPath(base as vscode.Uri, ...segments)
-  }
 }
 
 export function toContinuityRange(document: vscode.TextDocument, issue: ContinuityIssue): vscode.Range | undefined {

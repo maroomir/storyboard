@@ -1,28 +1,22 @@
 import * as vscode from "vscode"
 
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths
-} from "../core/sceneContext"
+import { buildNarrativeContext, buildSceneContext } from "../core/sceneContext"
 import type { StoryboardLogger } from "../core/logger"
 import {
   characterCardPath,
   draftPath,
   getStoryboardProjectPaths,
-  isDirectSceneTextFile,
-  type StoryboardProjectPaths
+  isDirectSceneTextFile
 } from "../core/pathConventions"
+import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "../core/vscodeFileSystem"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
-import { createDraft, writeDraftFile, type DraftFileSystem } from "../files/draft"
+import { createDraft, writeDraftFile } from "../files/draft"
 import { readProjectJson } from "../files/projectJson"
 import { readSceneFile, SceneParseError } from "../files/scene"
 import {
   computeSceneInputHash,
   readSceneCacheFile,
   writeSceneCacheFile,
-  type SceneCacheFileSystem,
   type SceneCacheRecord
 } from "../files/sceneCache"
 import { ensureSceneCacheDirectory, sceneCacheFilePath } from "../files/sceneCacheWorkspace"
@@ -45,37 +39,6 @@ import type { BackgroundCard } from "../shared/card"
 
 const generateDraftCommand = "storyboard.draft.generate"
 const regenerateDraftCommand = "storyboard.draft.regenerate"
-
-const vscodeFsAdapter: SceneCacheFileSystem & DraftFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
-
-const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
-  readFile: vscodeFsAdapter.readFile,
-  writeFile: vscodeFsAdapter.writeFile,
-  readDirectory: async (
-    uri: unknown
-  ): Promise<[string, { type: "file" | "directory" }][]> => {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri)
-    return entries.map(([name, fileType]) => [
-      name,
-      { type: fileType === vscode.FileType.Directory ? ("directory" as const) : ("file" as const) }
-    ])
-  }
-}
-
-function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {
-  return {
-    characterDirectory: paths.characterDirectory,
-    backgroundDirectory: paths.backgroundDirectory,
-    draftDirectory: paths.draftDirectory,
-    bibleCanon: paths.bibleCanon,
-    joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
-      vscode.Uri.joinPath(base as vscode.Uri, ...segments)
-  }
-}
 
 function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   if (invokedUri && invokedUri.scheme === "file") {

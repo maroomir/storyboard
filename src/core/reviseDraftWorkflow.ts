@@ -2,14 +2,9 @@ import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "./logger"
 import { type StoryboardProjectPaths } from "./pathConventions"
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths
-} from "./sceneContext"
-import { createDraft, parseDraft, readDraftFile, writeDraftFile, type DraftFileSystem } from "../files/draft"
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines } from "./sceneContext"
+import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "./vscodeFileSystem"
+import { createDraft, parseDraft, readDraftFile, writeDraftFile } from "../files/draft"
 import { readProjectJson } from "../files/projectJson"
 import { readSceneFile } from "../files/scene"
 import { StoryboardAIService } from "../services/ai/AIService"
@@ -17,24 +12,6 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import { buildRevisionInstructions, countBlockingIssues } from "../shared/draftReview"
-
-const vscodeFsAdapter: DraftFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
-
-const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
-  readFile: vscodeFsAdapter.readFile,
-  writeFile: vscodeFsAdapter.writeFile,
-  readDirectory: async (uri: unknown): Promise<[string, { type: "file" | "directory" }][]> => {
-    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri)
-    return entries.map(([name, fileType]) => [
-      name,
-      { type: fileType === vscode.FileType.Directory ? ("directory" as const) : ("file" as const) }
-    ])
-  }
-}
 
 async function readContractGuidance(
   projectJsonUri: vscode.Uri
@@ -47,17 +24,6 @@ async function readContractGuidance(
     }
   } catch {
     return { styleConstraints: [], qualityCriteria: [] }
-  }
-}
-
-function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {
-  return {
-    characterDirectory: paths.characterDirectory,
-    backgroundDirectory: paths.backgroundDirectory,
-    draftDirectory: paths.draftDirectory,
-    bibleCanon: paths.bibleCanon,
-    joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
-      vscode.Uri.joinPath(base as vscode.Uri, ...segments)
   }
 }
 
