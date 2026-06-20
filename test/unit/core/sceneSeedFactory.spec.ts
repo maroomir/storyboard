@@ -101,7 +101,8 @@ describe("buildSceneSeeds", () => {
                   conflict: "엘리아 대 지훈",
                   twist: "지훈이 형이었다",
                   foreshadowing: [],
-                  neededCanon: ["엘리아의 검술 실력"]
+                  neededCanon: ["엘리아의 검술 실력"],
+                  targetWordCount: 3000
                 }
               ]
             }
@@ -117,6 +118,8 @@ describe("buildSceneSeeds", () => {
     expect(scene.body).toContain("[반전]\n지훈이 형이었다")
     expect(scene.body).toContain("[필요 설정]")
     expect(scene.body).toContain("- 엘리아의 검술 실력")
+    expect(scene.body).toContain("[목표 분량]")
+    expect(scene.body).toContain("약 3,000자")
   })
 
   it("omits optional frontmatter and sections when the plan lacks them", () => {

@@ -91,6 +91,9 @@ function buildBody(flatScene: FlatChapterScene): string {
   if (scene.neededCanon && scene.neededCanon.length > 0) {
     blocks.push(`[필요 설정]\n${scene.neededCanon.map((item) => `- ${item}`).join("\n")}`)
   }
+  if (scene.targetWordCount !== undefined) {
+    blocks.push(`[목표 분량]\n약 ${scene.targetWordCount.toLocaleString()}자`)
+  }
 
   blocks.push(
     `> ${flatScene.actTitle} · ${flatScene.chapterTitle} — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.`

@@ -37,12 +37,14 @@ export interface ScenePlan {
   readonly emotionalShift?: string
   readonly foreshadowing: readonly string[]
   readonly neededCanon?: readonly string[]
+  readonly targetWordCount?: number
 }
 
 export interface ChapterPlanChapter {
   readonly id: string
   readonly title: string
   readonly summary?: string
+  readonly targetWordCount?: number
   readonly scenes: readonly ScenePlan[]
 }
 
@@ -79,13 +81,15 @@ const scenePlanSchema = z.object({
   twist: z.string().trim().min(1).optional(),
   emotionalShift: z.string().trim().min(1).optional(),
   foreshadowing: z.array(z.string().trim().min(1)).default([]),
-  neededCanon: z.array(z.string().trim().min(1)).default([])
+  neededCanon: z.array(z.string().trim().min(1)).default([]),
+  targetWordCount: z.number().int().positive().optional()
 })
 
 const chapterPlanChapterSchema = z.object({
   id: z.string().trim().min(1),
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).optional(),
+  targetWordCount: z.number().int().positive().optional(),
   scenes: z.array(scenePlanSchema).default([])
 })
 
@@ -200,6 +204,7 @@ export function coerceChapterPlan(raw: unknown): ChapterPlan {
           id: text(chapter.id) ?? `chapter-${actIndex + 1}-${chapterIndex + 1}`,
           title: text(chapter.title) ?? `${chapterIndex + 1}장`,
           ...optionalText("summary", chapter.summary),
+          ...optionalPositiveInt("targetWordCount", chapter.targetWordCount),
           scenes: scenesRaw.map((sceneRaw, sceneIndex) => {
             const scene = isRecord(sceneRaw) ? sceneRaw : {}
 
@@ -213,7 +218,8 @@ export function coerceChapterPlan(raw: unknown): ChapterPlan {
               ...optionalText("twist", scene.twist),
               ...optionalText("emotionalShift", scene.emotionalShift),
               foreshadowing: textList(scene.foreshadowing),
-              neededCanon: textList(scene.neededCanon)
+              neededCanon: textList(scene.neededCanon),
+              ...optionalPositiveInt("targetWordCount", scene.targetWordCount)
             }
           })
         }
@@ -245,4 +251,9 @@ function textList(value: unknown): string[] {
 function optionalText(key: string, value: unknown): Record<string, string> {
   const trimmed = text(value)
   return trimmed !== undefined ? { [key]: trimmed } : {}
+}
+
+function optionalPositiveInt(key: string, value: unknown): Record<string, number> {
+  const parsed = typeof value === "string" ? Number(value) : value
+  return typeof parsed === "number" && Number.isInteger(parsed) && parsed > 0 ? { [key]: parsed } : {}
 }
