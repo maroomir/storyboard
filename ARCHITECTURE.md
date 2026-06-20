@@ -412,7 +412,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
 - 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`).
-- canon diff, 검사 결과 기반 자동 재작성·문서 export는 후속(Phase F 포함)에서 다룬다.
+- 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
 ### Phase F: One-Click Novel (진행 중)
 

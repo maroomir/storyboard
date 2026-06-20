@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 
 import { registerApplyDraftFormatCommand } from "./commands/applyDraftFormat"
 import { registerAssembleManuscriptCommand } from "./commands/assembleManuscript"
+import { registerCanonDiffCommand } from "./commands/canonDiff"
 import { registerCreateCardCommands } from "./commands/createCard"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
@@ -87,6 +88,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerGenerateNovelCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
+  context.subscriptions.push(registerCanonDiffCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
   context.subscriptions.push(registerCharacterHoverProvider())
