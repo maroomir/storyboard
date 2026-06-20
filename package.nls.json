@@ -1,0 +1,5 @@
+{
+  "displayName": "Storyboard",
+  "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
+  "storyboard.novel.generate.title": "Storyboard: Generate Novel"
+}

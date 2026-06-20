@@ -360,7 +360,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
 - `storyboard.draft.reviseMaxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
-- (Phase 7 예정) 확장 UI 다국어: **`ko` 기본**, **`en`은 설정 또는 locale 스위치로 선택(옵션)** — 소설 본문 언어와 별개이며, 세부 키 이름은 구현 시 `package.json#contributes.configuration`과 맞춘다.
+- 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 도입했다. 현재는 `displayName`·`description`·대표 명령(`storyboard.novel.generate`) 제목만 외부화했고, 나머지 명령·설정 설명·런타임 문자열(`vscode.l10n`)·webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
 
 API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한다.
 
