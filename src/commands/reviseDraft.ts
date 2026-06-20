@@ -3,6 +3,7 @@ import * as vscode from "vscode"
 import type { StoryboardLogger } from "../core/logger"
 import { draftPath, getStoryboardProjectPaths } from "../core/pathConventions"
 import { runReviseDraftWorkflow } from "../core/reviseDraftWorkflow"
+import { recordRevisionEntry } from "../core/revisionPlanRecorder"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { ConfigBridge } from "../services/settings/ConfigBridge"
@@ -96,6 +97,20 @@ async function runReviseDraft(
           onProgress: (message) => progress.report({ message }),
           shouldCancel: () => token.isCancellationRequested
         })
+
+        try {
+          await recordRevisionEntry(paths, {
+            sceneStem,
+            checkedAt: new Date().toISOString(),
+            revisionCount: result.revisionCount,
+            remainingBlocking: result.remainingBlocking,
+            instructions: result.instructions
+          })
+        } catch (error) {
+          dependencies.logger.warn(
+            `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`
+          )
+        }
 
         const document = await vscode.workspace.openTextDocument(draftUri)
         await vscode.window.showTextDocument(document)

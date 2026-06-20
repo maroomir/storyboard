@@ -64,6 +64,7 @@ export interface ReviseDraftWorkflowResult {
   readonly revisionCount: number
   readonly remainingBlocking: number
   readonly cancelled: boolean
+  readonly instructions: readonly string[]
 }
 
 export async function runReviseDraftWorkflow(
@@ -97,6 +98,7 @@ export async function runReviseDraftWorkflow(
   let revisionCount = 0
   let blocking = 0
   let passed = false
+  let lastInstructions: string[] = []
 
   while (!isCancelled()) {
     options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`)
@@ -113,6 +115,7 @@ export async function runReviseDraftWorkflow(
     ])
 
     blocking = countBlockingIssues(continuityIssues, critiqueIssues)
+    lastInstructions = buildRevisionInstructions(continuityIssues, critiqueIssues)
 
     if (blocking === 0) {
       passed = true
@@ -129,7 +132,7 @@ export async function runReviseDraftWorkflow(
       {
         body,
         format: draft.format,
-        instructions: buildRevisionInstructions(continuityIssues, critiqueIssues),
+        instructions: lastInstructions,
         intent,
         facts: factLines
       },
@@ -140,5 +143,11 @@ export async function runReviseDraftWorkflow(
     revisionCount += 1
   }
 
-  return { passed, revisionCount, remainingBlocking: blocking, cancelled: isCancelled() }
+  return {
+    passed,
+    revisionCount,
+    remainingBlocking: blocking,
+    cancelled: isCancelled(),
+    instructions: lastInstructions
+  }
 }

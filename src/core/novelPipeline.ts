@@ -9,6 +9,7 @@ import { buildChapterSummariesMarkdown, type ChapterSummary } from "./chapterSum
 import { buildForeshadowingMarkdown, collectForeshadowing } from "./foreshadowingTracker"
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "./pathConventions"
 import { runReviseDraftWorkflow } from "./reviseDraftWorkflow"
+import { recordRevisionEntry } from "./revisionPlanRecorder"
 import { buildSceneSeeds } from "./sceneSeedFactory"
 import { resolveScenePrefixDigitCount } from "../commands/scenePrefixDigits"
 import { generateDraftForWorkspaceSceneWorkflow } from "../commands/generateDraft"
@@ -287,7 +288,7 @@ async function runChapterDraftsAndRevise(
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`)
     }
 
-    await runReviseDraftWorkflow({
+    const reviseResult = await runReviseDraftWorkflow({
       aiProviderRegistry: options.deps.aiProviderRegistry,
       usageRecorder: options.deps.usageRecorder,
       logger: options.deps.logger,
@@ -297,6 +298,14 @@ async function runChapterDraftsAndRevise(
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
       shouldCancel: options.shouldCancel
+    })
+
+    await recordRevisionEntry(paths, {
+      sceneStem: stem,
+      checkedAt: new Date().toISOString(),
+      revisionCount: reviseResult.revisionCount,
+      remainingBlocking: reviseResult.remainingBlocking,
+      instructions: reviseResult.instructions
     })
   }
 }

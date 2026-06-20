@@ -14,6 +14,7 @@ export interface StoryboardProjectPaths {
   readonly outlineDirectory: vscode.Uri
   readonly outlineSynopsis: vscode.Uri
   readonly outlineChapters: vscode.Uri
+  readonly outlineRevisionPlan: vscode.Uri
   readonly characterDirectory: vscode.Uri
   readonly characterProfileDirectory: vscode.Uri
   readonly sampleCharacterCard: vscode.Uri
@@ -51,6 +52,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     outlineDirectory,
     outlineSynopsis: vscode.Uri.joinPath(outlineDirectory, "synopsis.md"),
     outlineChapters: vscode.Uri.joinPath(outlineDirectory, "chapters.yaml"),
+    outlineRevisionPlan: vscode.Uri.joinPath(outlineDirectory, "revision-plan.yaml"),
     characterDirectory,
     characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, "profile"),
     sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, ".sample.card"),

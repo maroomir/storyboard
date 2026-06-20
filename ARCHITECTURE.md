@@ -305,7 +305,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
 - `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 감정 변화, 회수할 복선. (`storyboard.outline.generate`가 생성)
-- `revision-plan.yaml`: 검사 결과와 재작성 지시를 chapter/scene 단위로 누적. (예정)
+- `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.txt` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
 
