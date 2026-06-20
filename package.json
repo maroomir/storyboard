@@ -1,7 +1,7 @@
 {
   "name": "storyboard",
-  "displayName": "Storyboard",
-  "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
+  "displayName": "%displayName%",
+  "description": "%description%",
   "version": "0.2.4",
   "publisher": "maroomir",
   "license": "Apache-2.0",
@@ -81,7 +81,7 @@
       },
       {
         "command": "storyboard.novel.generate",
-        "title": "Storyboard: Generate Novel"
+        "title": "%storyboard.novel.generate.title%"
       },
       {
         "command": "storyboard.outline.generate",

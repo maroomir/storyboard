@@ -1,0 +1,5 @@
+{
+  "displayName": "Storyboard",
+  "description": "VSCode에서 소설·시나리오를 집필하는 AI 기반 픽션 IDE.",
+  "storyboard.novel.generate.title": "Storyboard: 장편 생성"
+}
