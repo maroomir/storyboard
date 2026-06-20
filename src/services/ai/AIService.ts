@@ -26,7 +26,7 @@ import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
 import { selectPromptVariant } from "./prompts/variant"
-import { type PromptArtifact, type PromptVariantId } from "./prompts/types"
+import { type PromptArtifact, type PromptConfig, type PromptVariantId } from "./prompts/types"
 import { parseBulletList, parseJsonArray, parseJsonObject } from "@/utils/aiResponseParser"
 import {
   coerceChapterPlan,
@@ -235,15 +235,7 @@ export class StoryboardAIService {
   public async checkGrammar(body: string, options: GenerateTextOptions = {}): Promise<GrammarIssue[]> {
     const variant = this.resolvePromptVariant("grammarCheck", options)
     const prompt = GrammarCheckPrompt.build(body, variant)
-    const response = await this.generateText(
-      "grammarCheck",
-      toPromptMessages(prompt),
-      {
-        ...options,
-        temperature: options.temperature ?? GrammarCheckPrompt.config.temperature,
-        maxTokens: options.maxTokens ?? GrammarCheckPrompt.config.maxTokens
-      }
-    )
+    const response = await this.generateWithDefaults("grammarCheck", prompt, GrammarCheckPrompt.config, options)
     const parsedArray = parseJsonArray(response.text)
 
     if (!parsedArray) {
@@ -264,15 +256,7 @@ export class StoryboardAIService {
 
     const variant = this.resolvePromptVariant("continuityCheck", options)
     const prompt = ContinuityCheckPrompt.build(body, facts, variant)
-    const response = await this.generateText(
-      "continuityCheck",
-      toPromptMessages(prompt),
-      {
-        ...options,
-        temperature: options.temperature ?? ContinuityCheckPrompt.config.temperature,
-        maxTokens: options.maxTokens ?? ContinuityCheckPrompt.config.maxTokens
-      }
-    )
+    const response = await this.generateWithDefaults("continuityCheck", prompt, ContinuityCheckPrompt.config, options)
     const parsedArray = parseJsonArray(response.text)
 
     if (!parsedArray) {
@@ -289,15 +273,7 @@ export class StoryboardAIService {
   ): Promise<string> {
     const variant = this.resolvePromptVariant("inlineCompletion", options)
     const prompt = InlineCompletionPrompt.build(prefix, context, variant)
-    const response = await this.generateText(
-      "inlineCompletion",
-      toPromptMessages(prompt),
-      {
-        ...options,
-        temperature: options.temperature ?? InlineCompletionPrompt.config.temperature,
-        maxTokens: options.maxTokens ?? InlineCompletionPrompt.config.maxTokens
-      }
-    )
+    const response = await this.generateWithDefaults("inlineCompletion", prompt, InlineCompletionPrompt.config, options)
 
     return response.text.trim()
   }
@@ -309,15 +285,7 @@ export class StoryboardAIService {
   ): Promise<string> {
     const variant = this.resolvePromptVariant("draftExpansion", options)
     const prompt = DraftExpansionPrompt.build(selection, context, variant)
-    const response = await this.generateText(
-      "draftExpansion",
-      toPromptMessages(prompt),
-      {
-        ...options,
-        temperature: options.temperature ?? DraftExpansionPrompt.config.temperature,
-        maxTokens: options.maxTokens ?? DraftExpansionPrompt.config.maxTokens
-      }
-    )
+    const response = await this.generateWithDefaults("draftExpansion", prompt, DraftExpansionPrompt.config, options)
 
     return response.text.trim()
   }
@@ -328,11 +296,7 @@ export class StoryboardAIService {
   ): Promise<OutlineSynopsis> {
     const variant = this.resolvePromptVariant("outlineSynopsis", options)
     const prompt = OutlineSynopsisPrompt.build(brief, variant)
-    const response = await this.generateText("outlineSynopsis", toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? OutlineSynopsisPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? OutlineSynopsisPrompt.config.maxTokens
-    })
+    const response = await this.generateWithDefaults("outlineSynopsis", prompt, OutlineSynopsisPrompt.config, options)
 
     return coerceOutlineSynopsis(parseJsonObject(response.text), brief)
   }
@@ -345,11 +309,7 @@ export class StoryboardAIService {
   ): Promise<ChapterPlan> {
     const variant = this.resolvePromptVariant("chapterPlan", options)
     const prompt = ChapterPlanPrompt.build(brief, synopsis, characters, variant)
-    const response = await this.generateText("chapterPlan", toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? ChapterPlanPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? ChapterPlanPrompt.config.maxTokens
-    })
+    const response = await this.generateWithDefaults("chapterPlan", prompt, ChapterPlanPrompt.config, options)
 
     return coerceChapterPlan(parseJsonObject(response.text))
   }
@@ -360,11 +320,7 @@ export class StoryboardAIService {
   ): Promise<DraftCritiqueIssue[]> {
     const variant = this.resolvePromptVariant("draftCritique", options)
     const prompt = DraftCritiquePrompt.build(input, variant)
-    const response = await this.generateText("draftCritique", toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? DraftCritiquePrompt.config.temperature,
-      maxTokens: options.maxTokens ?? DraftCritiquePrompt.config.maxTokens
-    })
+    const response = await this.generateWithDefaults("draftCritique", prompt, DraftCritiquePrompt.config, options)
 
     return coerceCritiqueIssues(response.text)
   }
@@ -375,11 +331,7 @@ export class StoryboardAIService {
   ): Promise<string> {
     const variant = this.resolvePromptVariant("chapterSummary", options)
     const prompt = ChapterSummaryPrompt.build(input, variant)
-    const response = await this.generateText("chapterSummary", toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? ChapterSummaryPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? ChapterSummaryPrompt.config.maxTokens
-    })
+    const response = await this.generateWithDefaults("chapterSummary", prompt, ChapterSummaryPrompt.config, options)
 
     return response.text.trim()
   }
@@ -387,13 +339,22 @@ export class StoryboardAIService {
   public async reviseDraft(input: DraftRevisionInput, options: GenerateTextOptions = {}): Promise<string> {
     const variant = this.resolvePromptVariant("draftRevision", options)
     const prompt = DraftRevisionPrompt.build(input, variant)
-    const response = await this.generateText("draftRevision", toPromptMessages(prompt), {
-      ...options,
-      temperature: options.temperature ?? DraftRevisionPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? DraftRevisionPrompt.config.maxTokens
-    })
+    const response = await this.generateWithDefaults("draftRevision", prompt, DraftRevisionPrompt.config, options)
 
     return response.text.trim()
+  }
+
+  private async generateWithDefaults(
+    taskName: WiredAiTaskName,
+    prompt: PromptArtifact,
+    config: PromptConfig,
+    options: GenerateTextOptions
+  ): Promise<AiGenerateResponse> {
+    return this.generateText(taskName, toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? config.temperature,
+      maxTokens: options.maxTokens ?? config.maxTokens
+    })
   }
 
   private async generateText(
