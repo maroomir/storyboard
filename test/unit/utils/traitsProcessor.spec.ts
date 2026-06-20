@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest"
 import { parseCharacterTraitSections } from "@/utils/aiResponseParser"
 import {
   calculateSimilarity,
-  processAllCharacterTraits,
+  reconcileCharacterTraits,
   removeDuplicateTraits,
   removeExistingTraits,
   validateTraits
@@ -31,7 +31,7 @@ describe("traitsProcessor", () => {
     const response = readFileSync("test/fixtures/ai/character-traits-response.txt", "utf8")
     const extractedTraits = parseCharacterTraitSections(response, ["엘리아", "지훈"])
 
-    expect(processAllCharacterTraits(extractedTraits, { 지훈: ["상황을 조심스럽게 관찰하고 판단함"] })).toEqual({
+    expect(reconcileCharacterTraits(extractedTraits, { 지훈: ["상황을 조심스럽게 관찰하고 판단함"] })).toEqual({
       엘리아: ["활발하게 교실 앞으로 걸어 나섬", "친구를 안심시키며 또렷하게 말함"],
       지훈: ["주변 친구들의 반응을 살피며 한발 물러섬"]
     })

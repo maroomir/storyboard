@@ -1,7 +1,7 @@
 import type { CharacterCard } from "@/shared/card"
 import { readCardFile, writeCardFile, type CardFileSystem } from "@/files/card"
 import { parseBulletList } from "@/utils/aiResponseParser"
-import { processAllCharacterTraits } from "@/utils/traitsProcessor"
+import { reconcileCharacterTraits } from "@/utils/traitsProcessor"
 import type { StoryboardAIService } from "./AIService"
 import type { UsageAttribution } from "./types"
 
@@ -129,7 +129,7 @@ export async function updateCharacterTraitsFromDraft(
     }
   }
 
-  const processed = processAllCharacterTraits(extracted, existingTraits)
+  const processed = reconcileCharacterTraits(extracted, existingTraits)
   let updatedCardCount = 0
   let skippedUnchangedCount = 0
 

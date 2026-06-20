@@ -50,7 +50,7 @@ export function validateTraits(traits: readonly string[]): string[] {
   })
 }
 
-export function processAllCharacterTraits(
+export function reconcileCharacterTraits(
   extractedTraits: Readonly<Record<string, readonly string[]>>,
   existingTraits: Readonly<Record<string, readonly string[]>> = {}
 ): Record<string, string[]> {

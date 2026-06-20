@@ -4,6 +4,7 @@ import type { StoryboardLogger } from "../core/logger"
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from "../core/pathConventions"
 import { buildNarrativeContext, buildSceneContext, formatBibleFactLines } from "../core/sceneContext"
 import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "../core/vscodeFileSystem"
+import { createWarningDiagnostic, toRange } from "./diagnosticsShared"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { readSceneFile } from "../files/scene"
@@ -22,24 +23,13 @@ export interface RegisterContinuityDiagnosticsProviderDependencies {
 }
 
 export function toContinuityRange(document: vscode.TextDocument, issue: ContinuityIssue): vscode.Range | undefined {
-  const body = document.getText()
-  if (issue.start < 0 || issue.end < issue.start || issue.end > body.length) {
-    return undefined
-  }
-
-  const start = document.positionAt(issue.start)
-  const end = document.positionAt(issue.end)
-  const RangeCtor = (vscode as unknown as { Range?: typeof vscode.Range }).Range
-  return RangeCtor ? new RangeCtor(start, end) : ({ start, end } as vscode.Range)
+  return toRange(document, issue.start, issue.end)
 }
 
 export function mapContinuityIssuesToDiagnostics(
   document: vscode.TextDocument,
   issues: readonly ContinuityIssue[]
 ): vscode.Diagnostic[] {
-  const DiagnosticCtor = (vscode as unknown as { Diagnostic?: typeof vscode.Diagnostic }).Diagnostic
-  const warningSeverity = (vscode.DiagnosticSeverity?.Warning ?? 1) as unknown as vscode.DiagnosticSeverity
-
   return issues.flatMap((issue) => {
     const range = toContinuityRange(document, issue)
     if (!range) {
@@ -47,11 +37,7 @@ export function mapContinuityIssuesToDiagnostics(
     }
 
     const message = `설정 불일치: ${issue.reason}`
-    const diagnostic = DiagnosticCtor
-      ? new DiagnosticCtor(range, message, warningSeverity)
-      : ({ range, message, severity: warningSeverity } as vscode.Diagnostic)
-    diagnostic.source = continuitySource
-    return [diagnostic]
+    return [createWarningDiagnostic(range, message, continuitySource)]
   })
 }
 

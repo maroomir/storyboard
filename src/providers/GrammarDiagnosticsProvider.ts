@@ -2,6 +2,7 @@ import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
 import { isDraftMarkdownFile } from "../core/pathConventions"
+import { createWarningDiagnostic, toRange } from "./diagnosticsShared"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { StoryboardAIService, type GrammarIssue } from "../services/ai/AIService"
@@ -28,25 +29,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function toGrammarRange(document: vscode.TextDocument, issue: GrammarIssue): vscode.Range | undefined {
-  const body = document.getText()
-  if (issue.start < 0 || issue.end < issue.start || issue.end > body.length) {
-    return undefined
-  }
-
-  const start = document.positionAt(issue.start)
-  const end = document.positionAt(issue.end)
-  const RangeCtor = (vscode as unknown as { Range?: typeof vscode.Range }).Range
-  return RangeCtor ? new RangeCtor(start, end) : ({ start, end } as vscode.Range)
+  return toRange(document, issue.start, issue.end)
 }
 
 export function mapGrammarIssuesToDiagnostics(
   document: vscode.TextDocument,
   issues: readonly GrammarIssue[]
 ): vscode.Diagnostic[] {
-  const DiagnosticCtor = (vscode as unknown as { Diagnostic?: typeof vscode.Diagnostic }).Diagnostic
-  const warningSeverity =
-    (vscode.DiagnosticSeverity?.Warning ?? 1) as unknown as vscode.DiagnosticSeverity
-
   return issues.flatMap((issue) => {
     const range = toGrammarRange(document, issue)
     if (!range) {
@@ -54,14 +43,7 @@ export function mapGrammarIssuesToDiagnostics(
     }
 
     const message = `${issue.reason} → 제안: ${issue.suggestion}`
-    const diagnostic = DiagnosticCtor
-      ? new DiagnosticCtor(range, message, warningSeverity)
-      : ({
-          range,
-          message,
-          severity: warningSeverity
-        } as vscode.Diagnostic)
-    diagnostic.source = grammarSource
+    const diagnostic = createWarningDiagnostic(range, message, grammarSource)
     diagnostic.code = issue.suggestion
     return [diagnostic]
   })
