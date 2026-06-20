@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import { draftPath, getStoryboardProjectPaths, isHiddenSceneFileName } from "../core/pathConventions"
+import { isOutlineStale } from "../core/sceneStatus"
 import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
 import { emptyUsageSummary } from "../files/usageLedger"
 import { readSceneFile, type SceneFileSystem } from "../files/scene"
@@ -204,12 +205,27 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       .filter((name) => !isHiddenSceneFileName(name))
       .filter((name) => parseSceneFileName(name) !== undefined)
 
-    const items = await Promise.all(sceneFiles.map((name) => this.buildSceneListItem(root, name)))
+    const outlineMtime = await this.tryStatMtime(paths.outlineChapters)
+    const items = await Promise.all(
+      sceneFiles.map((name) => this.buildSceneListItem(root, name, outlineMtime))
+    )
 
     return items.sort((a, b) => a.order - b.order)
   }
 
-  private async buildSceneListItem(workspaceRoot: vscode.Uri, fileName: string): Promise<SceneListItem> {
+  private async tryStatMtime(uri: vscode.Uri): Promise<number | undefined> {
+    try {
+      return (await vscode.workspace.fs.stat(uri)).mtime ?? 0
+    } catch {
+      return undefined
+    }
+  }
+
+  private async buildSceneListItem(
+    workspaceRoot: vscode.Uri,
+    fileName: string,
+    outlineMtime: number | undefined
+  ): Promise<SceneListItem> {
     const parts = parseSceneFileName(fileName)
     if (!parts) {
       throw new Error(`Invariant: invalid scene file name ${fileName}`)
@@ -251,7 +267,8 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       draftUri: draftUriString,
       status,
       sceneMtime,
-      draftMtime
+      draftMtime,
+      outlineStale: isOutlineStale(outlineMtime, sceneMtime)
     }
   }
 

@@ -390,7 +390,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 
 - 작품 설정에서 로그라인, 시놉시스, 결말, 주요 갈등, 캐릭터 기능, 세계관 규칙을 생성한다.
 - `.storyboard/outline/`을 도입해 계획을 사람이 읽고 수정할 수 있게 저장한다.
-- outline 변경 시 어떤 scene/draft가 stale인지 표시한다.
+- `chapters.yaml`가 씬보다 최신이면 Scenes 사이드바에 "outline" stale 배지로 표시한다.
 
 ### Phase C: Scene Seed Factory
 

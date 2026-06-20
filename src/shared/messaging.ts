@@ -128,7 +128,8 @@ export const sceneListItemSchema = z.object({
   draftUri: uriStringSchema.optional(),
   status: z.enum(["ready", "stale", "missing"]),
   sceneMtime: z.number(),
-  draftMtime: z.number().optional()
+  draftMtime: z.number().optional(),
+  outlineStale: z.boolean().optional()
 })
 
 export const scenesListResponsePayloadSchema = z.object({
