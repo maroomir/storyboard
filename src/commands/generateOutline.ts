@@ -1,10 +1,11 @@
 import * as vscode from "vscode"
 
 import { validateGenerationContract } from "../core/generationContract"
+import { listCharacterBriefs } from "../core/characterBriefs"
 import type { StoryboardLogger } from "../core/logger"
 import { getStoryboardProjectPaths } from "../core/pathConventions"
 import { resolveStoryboardWorkspaceRoot, uriExists } from "../core/workspace"
-import { readCardFile, type CardFileSystem } from "../files/card"
+import { type CardFileSystem } from "../files/card"
 import {
   writeChapterPlanFile,
   writeSynopsisFile,
@@ -15,7 +16,7 @@ import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
-import { toOutlineBrief, type OutlineCharacterBrief } from "../shared/outline"
+import { toOutlineBrief } from "../shared/outline"
 import type { ContractFieldKey } from "../shared/project"
 
 const generateOutlineCommand = "storyboard.outline.generate"
@@ -123,7 +124,7 @@ async function runGenerateOutline(
         progress.report({ message: "시놉시스 생성 중…" })
         const synopsis = await aiService.generateOutlineSynopsis(brief)
 
-        const characters = await listCharacterBriefs(paths.characterDirectory)
+        const characters = await listCharacterBriefs(paths.characterDirectory, cardFileSystem)
 
         progress.report({ message: "챕터 구성 중…" })
         const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters)
@@ -150,33 +151,4 @@ async function runGenerateOutline(
 
 async function outlineFilesExist(synopsisUri: vscode.Uri, chaptersUri: vscode.Uri): Promise<boolean> {
   return (await uriExists(synopsisUri)) || (await uriExists(chaptersUri))
-}
-
-async function listCharacterBriefs(characterDirectory: vscode.Uri): Promise<OutlineCharacterBrief[]> {
-  let entries: [string, vscode.FileType][]
-  try {
-    entries = await vscode.workspace.fs.readDirectory(characterDirectory)
-  } catch {
-    return []
-  }
-
-  const briefs: OutlineCharacterBrief[] = []
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith(".card") || name === ".sample.card") {
-      continue
-    }
-
-    const uri = vscode.Uri.joinPath(characterDirectory, name)
-    try {
-      const card = await readCardFile(uri, cardFileSystem)
-      if (card.type === "character") {
-        briefs.push({ id: card.id, name: card.name, role: card.role })
-      }
-    } catch {
-      continue
-    }
-  }
-
-  return briefs
 }
