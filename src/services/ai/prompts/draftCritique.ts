@@ -5,6 +5,8 @@ export interface DraftCritiqueInput {
   readonly intent: string
   readonly characters: readonly string[]
   readonly facts: readonly string[]
+  readonly styleConstraints?: readonly string[]
+  readonly qualityCriteria?: readonly string[]
 }
 
 export const DraftCritiquePrompt = {
@@ -22,6 +24,7 @@ function buildGeneric(input: DraftCritiqueInput): PromptArtifact {
     system: [
       "한국어 장편 소설 초안을 비평하는 도우미다.",
       "다음 세 관점만 검토한다: 캐릭터 보이스(voice), 장면 목적 달성(purpose), 불필요한 반복(repetition).",
+      "[문체 제약]이 주어지면 이를 위반한 표현을 voice로, [품질 기준] 미달은 purpose로 보고한다.",
       "문법·맞춤법은 보지 않는다. 명백한 문제만 보고하고, 사소하면 severity를 low로 둔다.",
       "설명 없이 JSON 배열만 출력하라.",
       '[{"category":"voice","severity":"high","excerpt":"","comment":""}]',
@@ -51,6 +54,12 @@ function buildUserBlock(input: DraftCritiqueInput): string {
   }
   if (input.facts.length > 0) {
     sections.push(`[설정]\n${input.facts.join("\n")}`)
+  }
+  if (input.styleConstraints && input.styleConstraints.length > 0) {
+    sections.push(`[문체 제약]\n${input.styleConstraints.join("\n")}`)
+  }
+  if (input.qualityCriteria && input.qualityCriteria.length > 0) {
+    sections.push(`[품질 기준]\n${input.qualityCriteria.join("\n")}`)
   }
 
   sections.push(`[본문]\n${input.body}`)

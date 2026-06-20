@@ -10,6 +10,7 @@ import {
   type SceneContextWorkspacePaths
 } from "./sceneContext"
 import { createDraft, parseDraft, readDraftFile, writeDraftFile, type DraftFileSystem } from "../files/draft"
+import { readProjectJson } from "../files/projectJson"
 import { readSceneFile } from "../files/scene"
 import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
@@ -32,6 +33,20 @@ const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
       name,
       { type: fileType === vscode.FileType.Directory ? ("directory" as const) : ("file" as const) }
     ])
+  }
+}
+
+async function readContractGuidance(
+  projectJsonUri: vscode.Uri
+): Promise<{ styleConstraints: readonly string[]; qualityCriteria: readonly string[] }> {
+  try {
+    const project = await readProjectJson(projectJsonUri)
+    return {
+      styleConstraints: project.setting?.styleConstraints ?? [],
+      qualityCriteria: project.setting?.qualityCriteria ?? []
+    }
+  } catch {
+    return { styleConstraints: [], qualityCriteria: [] }
   }
 }
 
@@ -92,6 +107,7 @@ export async function runReviseDraftWorkflow(
   const factLines = formatBibleFactLines(context, narrative.bibleFacts)
   const characterNames = context.characters.map((character) => character.name)
   const intent = scene.body
+  const { styleConstraints, qualityCriteria } = await readContractGuidance(paths.projectJson)
 
   const draft = parseDraft(await readDraftFile(draftUri, vscodeFsAdapter))
   let body = draft.body
@@ -109,7 +125,7 @@ export async function runReviseDraftWorkflow(
         attribution
       }),
       aiService.critiqueDraft(
-        { body, intent, characters: characterNames, facts: factLines },
+        { body, intent, characters: characterNames, facts: factLines, styleConstraints, qualityCriteria },
         { providerId: registry.getTaskProvider("draftCritique"), attribution }
       )
     ])

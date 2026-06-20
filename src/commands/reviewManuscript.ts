@@ -92,7 +92,9 @@ async function runReviewManuscript(
               body: manuscript.volumeMarkdown,
               intent: "전체 원고 최종 검수",
               characters,
-              facts: factLines
+              facts: factLines,
+              styleConstraints: project.setting?.styleConstraints ?? [],
+              qualityCriteria: project.setting?.qualityCriteria ?? []
             },
             { providerId: registry.getTaskProvider("draftCritique") }
           )
