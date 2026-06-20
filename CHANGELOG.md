@@ -15,8 +15,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - `Storyboard: Canon Diff Report`(`storyboard.bible.canonDiff`)가 아직 승격되지 않은 설정 후보를 `canon.yaml`과 대조해 `manuscript/CANON.md`로 정리합니다.
 - `Storyboard: Export Draft…`(`storyboard.draft.export`)가 조립 원고를 Markdown 또는 일반 텍스트로 내보냅니다. (PDF/DOCX는 후속)
 - 검수·재작성 결과와 지시를 `.storyboard/outline/revision-plan.yaml`에 scene 단위로 누적합니다.
-- 작품 계약에 문체 제약(`styleConstraints`)·품질 기준(`qualityCriteria`)을 추가하고 **작품 계약** 설정 탭에서 편집합니다.
-- 확장 UI 다국어(i18n) 메커니즘(`package.nls.json` / `package.nls.ko.json`)을 도입했습니다.
+- 작품 계약에 문체 제약(`styleConstraints`)·품질 기준(`qualityCriteria`)을 추가하고 **작품 계약** 설정 탭에서 편집합니다. 해당 기준은 draft critique 프롬프트에도 반영됩니다.
+- `chapters.yaml`에 chapter/scene 단위 목표 분량(`targetWordCount`)을 저장합니다.
+- outline 기반 씬 시드에 갈등(`conflict`), 반전(`twist`), 필요 설정(`neededCanon`), 목표 분량을 포함합니다.
+- 확장 UI 다국어(i18n) 메커니즘(`package.nls.json` / `package.nls.ko.json`)을 도입하고 모든 명령 제목을 외부화했습니다.
 
 ### 변경
 

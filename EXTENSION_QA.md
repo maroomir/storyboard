@@ -1,8 +1,8 @@
-# Storyboard 확장 — 0.0.1 수동 QA 가이드
+# Storyboard 확장 — 수동 QA 가이드
 
-Storyboard **0.0.1**은 기본 동작을 검증하는 **dogfooding** 단계입니다. GitHub Releases용 VSIX를 준비하기 전에, 아래 절차로 **실제 VS Code**에서 한 번씩 확인합니다.
+Storyboard의 기본 동작과 장편 생성 흐름을 검증하는 **dogfooding** 체크리스트입니다. GitHub Releases용 VSIX를 준비하기 전에, 아래 절차로 **실제 VS Code**에서 한 번씩 확인합니다.
 
-문서상 출시 로드맵: Phase 7에서 **0.1.0** 메타·export·온보딩·i18n(**`ko` 기본**, **`en` 옵션**)을 두고, Phase 8에서 GitHub Releases용 VSIX 검증을 목표로 한다. `.picktion` import는 비목표다 ([`ARCHITECTURE.md`](ARCHITECTURE.md), 로컬 `.doc/plan/storyboard-plan.md`).
+문서상 출시 로드맵과 현재 파이프라인 범위는 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 기준으로 한다. `.picktion` import는 비목표다.
 
 자동화 테스트(`npm test`)는 결정적 로직 위주입니다. 이 문서의 항목은 **Extension Development Host(F5)** 또는 **로컬 VSIX**로 확인합니다.
 
@@ -147,6 +147,7 @@ npm run build
 2. 상단 CodeLens 확인:
    - **`🔁 Re-generate Draft`** — 동작해야 함
    - **`🩹 Grammar Check`** — 진단(squiggle) 생성 또는 갱신
+   - **`🧭 Continuity Check`** — canon이 있으면 설정 모순 진단 생성 또는 갱신
    - **`🌿 Expand`** — 선택 영역이 있을 때 확장문으로 치환
 
 ### 7a. 캐릭터 Hover 카드
@@ -159,6 +160,18 @@ npm run build
 - 프로젝트의 `character/*.card`에 있는 캐릭터만 Hover 카드가 뜬다.
 - 이름이 일치하지 않거나 프로젝트가 아니면 Hover가 뜨지 않는다.
 
+### 7b. 초안 검수·재작성 루프
+
+1. `draft/*.md`를 활성 에디터로 둔다.
+2. **`Storyboard: Review & Revise Draft (Current Scene)`** 실행.
+3. `storyboard.draft.reviseMaxIterations` 기본값(2)에서 완료 또는 남은 차단 이슈 안내가 표시되는지 확인한다.
+
+**성공 기준**
+
+- 초안이 필요 시 재작성된다.
+- `.storyboard/outline/revision-plan.yaml`에 scene stem, 검사 시각, 재작성 횟수, 남은 차단 이슈, 지시가 기록된다.
+- Output에 API 키·토큰 원문이 노출되지 않는다.
+
 ### 8. Scenes 사이드바
 
 1. Activity Bar에서 **Storyboard · Scenes** 아이콘을 눌러 **Scenes** 뷰를 연다.
@@ -168,12 +181,33 @@ npm run build
 
 > Activity Bar의 `WebviewView` 사이드바에는 탐색기처럼 **행마다 VS Code 기본 컨텍스트 메뉴**가 붙지 않는다. 씬별 액션은 **뷰 내부 버튼**과 **view/title**의 명령을 사용한다.
 
-### 8a. 장편 산출물 명령 (선택)
+### 8a. 작품 계약·outline·씬 시드
+
+1. **`Storyboard: Open Settings`** → **작품 계약** 탭에서 장르, 독자층, 시점, 목표 분량을 채운다.
+2. **`Storyboard: Generate Novel Outline`** 실행 → `.storyboard/outline/synopsis.md`와 `chapters.yaml`가 생성되고 `synopsis.md`가 열리는지 확인한다.
+3. `chapters.yaml`에 chapter/scene `targetWordCount`, scene `conflict`, `twist`, `neededCanon`이 포함될 수 있는지 확인한다.
+4. **`Storyboard: Generate Scene Seeds`** 실행 → `scene/NN-slug.txt` 파일이 생성되고 첫 씬이 열리는지 확인한다.
+
+**성공 기준**: 필수 계약 필드가 비어 있을 때는 설정 열기 안내가 나오며, 채운 뒤에는 outline과 씬 시드가 재현 가능한 파일로 저장된다.
+
+### 8b. 장편 원클릭 생성 (선택)
+
+1. 위 **8a**의 작품 계약 필드를 채운 프로젝트에서 **`Storyboard: Generate Novel`** 실행.
+2. 실행 모드 QuickPick(전체 자동 / 아웃라인 승인 후 진행 / 장별 승인 후 진행)이 뜨는지 확인한다.
+3. 아웃라인 승인 또는 장별 승인 모드에서 확인 다이얼로그가 의도한 지점에 뜨는지 확인한다.
+4. 진행 중 취소 후 다시 실행하면 `.storyboard/cache/novel-run.json`을 바탕으로 이어서 진행 선택지가 보이는지 확인한다.
+
+**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `SUMMARY.md`, `FORESHADOWING.md`가 생성된다.
+
+### 8c. 장편 산출물 명령 (선택)
 
 조립 원고·설정 후보가 있는 프로젝트에서 확인한다.
 
-1. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
-2. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
+1. **`Storyboard: Assemble Manuscript`** 실행 → `manuscript/NN-chapter.md`, `manuscript/manuscript.md`, `manuscript/FORESHADOWING.md`가 생성되는지 확인한다.
+2. **`Storyboard: Review Manuscript`** 실행 → `manuscript/REVIEW.md`가 생성되고 설정 모순·비평 요약이 표시되는지 확인한다.
+3. **`Storyboard: Summarize Chapters`** 실행 → `manuscript/SUMMARY.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다.
+4. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
+5. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 
 ### 9. 관계 그래프
 
@@ -262,7 +296,7 @@ npm run build
 npx @vscode/vsce package
 ```
 
-- **성공 기준**: `storyboard-0.0.1.vsix`(또는 유사 이름)가 생성된다.
+- **성공 기준**: `storyboard-<version>.vsix`(또는 지정한 출력 이름)가 생성된다.
 - **용량**: `.vsix`가 **50MB 미만**인지 확인한다 (`du -h *.vsix` 등).
 
 일반 VS Code 창에서:
@@ -356,14 +390,15 @@ npm test
 
 ---
 
-## 패키징 게이트 (0.0.1)
+## 패키징 게이트
 
 - [ ] `npm run build` 성공
 - [ ] `npm run lint` 성공
 - [ ] `npm test` 성공
 - [ ] `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
-- [ ] 위 **End-to-end** 플로우를 최소 1회 통과
+- [ ] 위 A안 또는 B안의 수동 플로우를 최소 1회 통과
 - [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리와 Characters / Backgrounds 컴팩트 카드 열기·삭제를 확인
+- [ ] **8a~8c** 절차로 작품 계약, outline, 씬 시드, 장편 산출물 명령을 확인
 - [ ] **1주 dogfooding** (매일 짧게라도 실제 작업 흐름에 넣고 이슈 적기)
 
-저장소 릴리스 태그 생성과 GitHub Release 업로드는 **이번 0.0.1 게이트 범위에 포함하지 않는다.**
+저장소 릴리스 태그 생성과 GitHub Release 업로드는 별도 릴리스 절차([`RELEASE.md`](RELEASE.md))에서 확인한다.

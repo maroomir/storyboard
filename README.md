@@ -8,34 +8,46 @@ English README: [`README.en.md`](README.en.md)
 
 - 목표 방향: 원클릭 장편 생성 IDE(Autonomous Fiction Studio)
 - 워크스페이스 폴더 하나를 하나의 Storyboard 프로젝트로 초기화
+- **작품 계약** 설정으로 장르·독자층·시점·목표 분량·금지 조건·문체/품질 기준 관리
+- `Storyboard: Generate Novel`로 작품 설정 → outline → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
+- `.storyboard/outline/synopsis.md`, `chapters.yaml`, `revision-plan.yaml` 기반 장편 구조 계획
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
-- `scene/*.txt` 기반 씬 관리와 `draft/*.md` 초안 생성
+- outline에서 `scene/*.txt` 씬 시드를 만들고 `draft/*.md` 초안을 생성
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
+- 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
+- `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`SUMMARY.md`), 복선 체크리스트(`FORESHADOWING.md`)
+- 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
+- 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
+- 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 
-현재 구현은 장편 자동 생성의 하위 단계인 `scene/*.txt → draft/*.md` 생성, canon 주입, 초안 검사에 집중합니다. 계획된 방향은 작품 설정에서 outline, 카드, story bible, 씬 시드, 초안, 검수 결과, 재작성 원고를 순차 생성하는 파이프라인입니다. 자세한 로드맵은 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 봅니다.
+현재 구현은 수동 `scene/*.txt → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 봅니다.
 
 ## 프로젝트 모델
 
 ```text
 .storyboard/project.json
-.storyboard/outline/   # 예정: 장편 시놉시스·챕터·씬 계획
+.storyboard/bible/canon.yaml
+.storyboard/outline/   # 시놉시스·챕터/씬 계획·재작성 계획
 character/*.card
 background/*.card
 scene/*.txt
 draft/*.md
+manuscript/*.md
 ```
 
 - 워크스페이스 폴더 하나가 프로젝트 하나입니다.
 - 프로젝트 설정은 자동 장편 생성의 입력 계약입니다. `Storyboard: Open Settings`의 **작품 계약** 탭에서 독자층·목표 분량·시점·금지 조건을 입력하고 생성 준비 상태를 확인합니다.
+- `Storyboard: Generate Novel Outline`은 `synopsis.md`와 `chapters.yaml`을 만들고, `Storyboard: Generate Scene Seeds`는 이 계획에서 씬 시드를 파생합니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
 - `scene/*.txt` 파일 하나가 씬 하나이며, 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다.
 - `draft/*.md` 파일은 AI가 생성하고 검사·재작성하는 원고입니다.
+- `manuscript/`는 장별 조립 원고, 전체 원고(`manuscript.md`), 최종 검사·요약·복선 보고서를 담는 재생성 가능한 산출물입니다.
 
 ## 로컬 실행
 
@@ -48,7 +60,7 @@ npm run build
 2. **Run and Debug**에서 `Run Extension`을 선택하고 F5를 누릅니다.
 3. Extension Development Host 창에서 빈 폴더를 엽니다.
 4. `Storyboard: Initialize Project`를 실행합니다.
-5. Activity Bar의 Characters / Backgrounds / Scenes 뷰에서 카드와 씬을 생성합니다.
+5. `Storyboard: Open Settings`에서 **작품 계약**을 채운 뒤 `Storyboard: Generate Novel`을 실행하거나, Activity Bar의 Characters / Backgrounds / Scenes 뷰에서 카드와 씬을 직접 생성합니다.
 
 API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다. 실제 provider를 쓰려면 `Storyboard: Set API Key...` 명령으로 키를 저장합니다.
 

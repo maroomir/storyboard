@@ -16,8 +16,10 @@ after the first public release.
 - `Storyboard: Canon Diff Report` (`storyboard.bible.canonDiff`) compares not-yet-promoted candidate facts against `canon.yaml` and writes `manuscript/CANON.md`.
 - `Storyboard: Export Draft…` (`storyboard.draft.export`) exports the assembled manuscript to Markdown or plain text. (PDF/DOCX to follow.)
 - Review-and-revise results and instructions are now accumulated per scene in `.storyboard/outline/revision-plan.yaml`.
-- Added `styleConstraints` and `qualityCriteria` to the generation contract, editable in the **작품 계약** settings tab.
-- Introduced an extension UI i18n (l10n) mechanism (`package.nls.json` / `package.nls.ko.json`).
+- Added `styleConstraints` and `qualityCriteria` to the generation contract, editable in the **Generation Contract** settings tab. These fields are also fed into draft critique prompts.
+- `chapters.yaml` now stores chapter- and scene-level target word counts (`targetWordCount`).
+- Outline-derived scene seeds now include conflict, twist, needed canon, and target word count details.
+- Introduced an extension UI i18n (l10n) mechanism (`package.nls.json` / `package.nls.ko.json`) and externalized all command titles.
 
 ### Changed
 

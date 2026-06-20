@@ -23,7 +23,7 @@
 6. 장거리 연속성, 캐릭터 음성, 문체, 장면 목적, 중복, 설정 모순을 검사한다.
 7. 문제 구간을 재작성하고 chapter/volume 단위 원고로 조립한다.
 
-따라서 현재의 `scene/*.txt → draft/*.md` 흐름은 최종 목표의 한 하위 단계다. 앞으로의 계획은 “사용자가 씬을 모두 써 준다”는 전제를 줄이고, Storyboard가 씬 목록과 시드까지 발명하는 방향으로 확장한다.
+따라서 현재 구현은 기존 `scene/*.txt → draft/*.md` 수동 흐름을 유지하면서, 작품 계약에서 outline, 씬 시드, 장별 초안·검수·재작성, 조립 원고, 최종 검사·요약까지 이어지는 초기 원클릭 파이프라인을 함께 제공한다. 아직 카드/바이블 자동 생성, 긴 원고의 고급 export, 더 정교한 배치 검수는 후속 확장 대상이다.
 
 ## 2. 멘탈 모델
 
@@ -44,7 +44,7 @@
   - `project setting` → outline/card/bible/scene seed → AI 파이프라인 → `draft/*.md` → 검사/재작성 → 조립 원고.
   - `draft/`는 재생성 가능한 산출물이므로 기본적으로 Git에서 제외한다.
 
-## 3. 디렉토리 구조 (현재 + 예정)
+## 3. 디렉토리 구조
 
 ```
 MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 프로젝트)
@@ -101,7 +101,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 |---|---|---|
 | `.storyboard/` | 프로젝트 메타 + 내부 저장소 | 하위 폴더별 정책 적용 |
 | `.storyboard/bible/` | 스토리 바이블 정전 설정 | 추적 (사람이 확정한 설정) |
-| `.storyboard/outline/` | 장편 시놉시스·챕터·씬 계획 | 추적 (예정) |
+| `.storyboard/outline/` | 장편 시놉시스·챕터·씬 계획·재작성 계획 | 추적 |
 | `.storyboard/cache/` | AI 컨텍스트 스냅샷 | 제외 |
 | `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
 | `background/` | 배경 카드 | 추적 |
@@ -305,7 +305,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
-- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. (`storyboard.outline.generate`가 생성)
+- `chapters.yaml`: act/chapter/scene 구조, chapter/scene 목표 분량, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. (`storyboard.outline.generate`가 생성)
 - `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.txt` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
@@ -331,7 +331,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.bible.canonDiff` | `Storyboard: Canon Diff Report` | 미승격 설정 후보를 `canon.yaml`과 대조해 `manuscript/CANON.md` 보고서 생성 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
-| `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
+| `storyboard.relationGraph.open` | `Storyboard: Open Character Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | 조립 원고(`manuscript/manuscript.md`)를 Markdown/TXT로 내보내기 (PDF/DOCX 후속) |
 | `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | `.seed` 아카이브 → 새 워크스페이스 폴더 |
 | `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |
@@ -343,10 +343,14 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 ```json
 "activationEvents": [
-  "onCommand:storyboard.init",
-  "workspaceContains:.storyboard/project.json"
+  "workspaceContains:.storyboard/project.json",
+  "onCommand:storyboard.seed.createFromFile",
+  "onCommand:storyboard.seed.syncFromFile",
+  "onCommand:storyboard.seed.exportToFile"
 ]
 ```
+
+그 외 contributed command는 VSCode의 command activation 동작으로 실행된다.
 
 ## 6. 설정 키
 
@@ -379,35 +383,37 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 
 ## 8. 로드맵
 
-현재 구현은 자동 장편 생성 IDE의 하위 파이프라인인 “씬 시드에서 초안 생성”까지 도달했다. 이후 계획은 다음 순서로 확장한다.
+현재 구현은 Phase A~F의 초기 세로 절편을 갖췄다. 아래는 구현된 범위와 남은 확장 방향을 함께 기록한다.
 
-### Phase A: Generation Contract (진행 중)
+### Phase A: Generation Contract (초기 구현)
 
 - 프로젝트 설정을 작품 생성 계약으로 정리한다.
 - 장르, 독자층, 목표 분량, 시점, 금지 조건, 문체 제약, 품질 기준을 저장한다(설정 «작품 계약» 탭).
 - 설정 패널에서 원클릭 생성 전에 입력 누락과 위험한 조합을 검증한다.
 - 현재 상태: 계약 필드(독자층·목표 분량·시점·금지 조건·문체 제약·품질 기준)와 검증·**작품 계약** 설정 탭을 구현. chapter/scene 목표 분량은 `chapters.yaml`에서 관리.
 
-### Phase B: Story Planning
+### Phase B: Story Planning (초기 구현)
 
 - 작품 설정에서 로그라인, 시놉시스, 결말, 주요 갈등, 캐릭터 기능, 세계관 규칙을 생성한다.
 - `.storyboard/outline/`을 도입해 계획을 사람이 읽고 수정할 수 있게 저장한다.
 - `chapters.yaml`가 씬보다 최신이면 Scenes 사이드바에 "outline" stale 배지로 표시한다.
+- chapter/scene 단위 목표 분량을 `chapters.yaml`에 저장한다.
 
-### Phase C: Scene Seed Factory
+### Phase C: Scene Seed Factory (초기 구현)
 
 - outline을 chapter/scene 단위로 분해해 `scene/*.txt`를 자동 생성한다.
 - 씬마다 목적, 갈등(`conflict`), 반전(`twist`), 감정 변화, 회수할 복선, 필요한 설정 사실(`neededCanon`)을 `chapters.yaml`에 담고 시드 본문에 반영한다.
 - 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
 
-### Phase D: Autonomous Draft Loop (진행 중)
+### Phase D: Autonomous Draft Loop (초기 구현)
 
 - 단일 씬 초안에 대해 continuity와 통합 비평(character voice, plot purpose, repetition) 검사를 묶어 실행한다(`storyboard.draft.reviseLoop`).
 - 검사 결과를 재작성 지시로 변환해 초안을 다시 쓰고, 차단 이슈가 없거나 최대 횟수에 도달할 때까지 review→revise→re-review를 반복한다.
+- 작품 계약의 문체 제약(`styleConstraints`)과 품질 기준(`qualityCriteria`)을 비평 프롬프트에 반영한다.
 - 비용, 토큰, provider, 모델 선택을 작업별로(`draftCritique`/`draftRevision`/`continuityCheck`) 사용량 원장에 기록한다.
 - 전체 씬 배치 검수와 grammar 통합, 생성 직후 자동 체이닝은 Phase F에서 다룬다.
 
-### Phase E: Manuscript Assembly (진행 중)
+### Phase E: Manuscript Assembly (초기 구현)
 
 - `chapters.yaml` 순서로 `draft/*.md`를 chapter별 파일과 전체 volume 파일(`manuscript/`)로 결정적으로 조립한다(`storyboard.manuscript.assemble`).
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
@@ -416,7 +422,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`).
 - 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
-### Phase F: One-Click Novel (진행 중)
+### Phase F: One-Click Novel (초기 구현)
 
 - `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→seeds(C)→장별 draft/검수(D)→assemble/review/summaries(E)를 한 진행 상태로 실행한다.
 - 실패·중단 시 단계·장 진행 상태를 `.storyboard/cache/novel-run.json`(재시작 가능한 작업 큐)에 남기고, 다시 실행하면 중단 지점부터 재개한다.

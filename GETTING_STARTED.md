@@ -10,14 +10,17 @@
 
 ## 1. Storyboard는 무엇인가요?
 
-Storyboard는 **소설을 "설정 → 씬 → 초안"의 흐름으로 쓰도록 돕는 VSCode 확장**입니다. 핵심 사고방식:
+Storyboard는 **소설을 "작품 계약 → outline → 씬 → 초안 → 원고"의 흐름으로 쓰도록 돕는 VSCode 확장**입니다. 핵심 사고방식:
 
+- **작품 계약(generation contract)** = 장르·독자층·시점·목표 분량·금지 조건·문체/품질 기준. 자동 생성의 입력입니다.
+- **outline** = 시놉시스, 장/씬 계획, 목표 분량, 갈등·반전·필요 설정. (`.storyboard/outline/`)
 - **카드(card)** = 등장인물·배경 같은 *설정 자료*. (`character/`, `background/`)
 - **씬(scene)** = 작가가 직접 쓰는 *장면 시드*. "여기서 무슨 일이 일어나는가"를 짧게 적습니다. (`scene/`)
 - **초안(draft)** = AI가 씬과 카드를 읽고 만들어 주는 *원고*. (`draft/`)
 - **스토리 바이블(bible)** = "엘리아의 눈은 녹색" 같은 *확정 설정*. 장편에서 앞뒤 일관성을 지켜 줍니다.
+- **조립 원고(manuscript)** = 장별 파일, 전체 원고, 최종 검사·요약 보고서. (`manuscript/`)
 
-즉 작가는 **설정과 씬**에 집중하고, AI가 **초안**을 채우며, 바이블이 **일관성**을 지킵니다.
+즉 작가는 **작품 목표와 검토·수정 판단**에 집중하고, AI가 outline, 씬 시드, 초안, 검수 보고서, 조립 원고를 차례로 만듭니다.
 
 ---
 
@@ -29,9 +32,12 @@ Storyboard는 **소설을 "설정 → 씬 → 초안"의 흐름으로 쓰도록 
    → 왼쪽 활동 막대에 **Characters / Backgrounds / Scenes** 패널 3개가 나타납니다.
 3. (선택) AI를 진짜로 쓰려면 **`Storyboard: Set API Key...`** 로 키를 넣습니다.
    키가 없어도 됩니다 — 기본 제공자는 `mock`이라 **키 없이 가짜 초안으로 전체 흐름을 연습**할 수 있습니다.
-4. **Characters 패널의 `+`** → 캐릭터 카드를 만들고 이름·설명을 채웁니다.
-5. **Scenes 패널의 `+`** → 슬러그(예: `prologue`)를 입력해 `scene/01-prologue.txt`를 만들고, 장면을 짧게 적습니다.
-6. 씬 파일 위쪽의 **`Generate Draft`** 를 누르면 `draft/01-prologue.md` 초안이 생성됩니다.
+4. **`Storyboard: Open Settings`** → **작품 계약** 탭에서 장르, 독자층, 시점, 목표 분량을 채웁니다.
+5. 빠른 자동 흐름을 보려면 **`Storyboard: Generate Novel`** 실행 → 실행 모드 선택.
+   - 전체 자동: outline부터 원고 조립·검사·요약까지 한 번에 진행.
+   - 아웃라인 승인 후 진행: `synopsis.md` / `chapters.yaml`을 검토한 뒤 계속.
+   - 장별 승인 후 진행: 각 장 초안·검수 뒤 다음 장 진행 여부 확인.
+6. 수동 흐름을 쓰려면 **Characters 패널의 `+`** 로 카드 작성 → **Scenes 패널의 `+`** 로 씬 작성 → 씬 파일 위쪽의 **`Generate Draft`** 실행.
 
 여기까지가 한 바퀴입니다. 아래는 각 단계를 자세히 설명합니다.
 
@@ -64,7 +70,34 @@ Storyboard는 **소설을 "설정 → 씬 → 초안"의 흐름으로 쓰도록 
 - **처음엔 `mock`으로 연습**하세요. 키·비용 없이 모든 버튼이 동작합니다(초안 내용은 자리표시자).
 - Ollama를 쓰면 로컬에서 무료로 돌릴 수도 있습니다(설정에서 `baseUrl`/모델 지정).
 
-### 2) 캐릭터·배경 카드 만들기
+### 2) 작품 계약과 장편 자동 생성
+
+- **`Storyboard: Open Settings`** → **작품 계약** 탭에서 아래 필드를 채웁니다.
+  - 필수: 장르, 독자층, 시점, 목표 분량
+  - 선택: 컨셉, 설명, 태그, 금지 조건, 문체 제약, 품질 기준
+- **`Storyboard: Generate Novel Outline`** 은 `.storyboard/outline/synopsis.md`와 `chapters.yaml`을 만듭니다.
+- **`Storyboard: Generate Scene Seeds`** 는 `chapters.yaml`에서 `scene/NN-slug.txt`를 생성합니다.
+  생성된 시드에는 목적, 갈등, 반전, 감정 변화, 회수할 복선, 필요 설정, 목표 분량이 들어갑니다.
+- **`Storyboard: Generate Novel`** 은 outline 생성, 씬 시드 생성, 장별 초안·검수·재작성, 원고 조립, 최종 검사, 장별 요약까지 이어서 실행합니다.
+  중간에 취소하거나 실패하면 `.storyboard/cache/novel-run.json`에 진행 상태가 남고, 다시 실행하면 이어서 진행할 수 있습니다.
+- `chapters.yaml`을 수정하면 Scenes 사이드바가 해당 씬에 **outline** 배지를 표시해 outline보다 오래된 씬임을 알려 줍니다.
+
+자동 생성 산출물:
+
+```text
+.storyboard/outline/synopsis.md
+.storyboard/outline/chapters.yaml
+.storyboard/outline/revision-plan.yaml
+scene/NN-slug.txt
+draft/NN-slug.md
+manuscript/NN-chapter.md
+manuscript/manuscript.md
+manuscript/REVIEW.md
+manuscript/SUMMARY.md
+manuscript/FORESHADOWING.md
+```
+
+### 3) 캐릭터·배경 카드 만들기
 
 - **Characters / Backgrounds 패널의 `+`** 버튼으로 카드를 추가하면 **카드 에디터**가 열립니다.
   - 탭: 캐릭터는 **Overview / Story / Relations / YAML**, 배경은 **Overview / YAML**. 폼으로 채우거나
@@ -77,7 +110,7 @@ Storyboard는 **소설을 "설정 → 씬 → 초안"의 흐름으로 쓰도록 
 
 > 팁: 초안에 등장하는 인물 이름 위에 마우스를 올리면 **카드 미리보기**가 뜹니다.
 
-### 3) 씬 쓰기
+### 4) 씬 쓰기
 
 - **Scenes 패널의 `+`** → 슬러그 입력 → `scene/NN-slug.txt` 생성.
 - 씬 파일은 **앞머리(frontmatter) + 본문**으로 구성됩니다:
@@ -96,7 +129,7 @@ mood: 설렘
 - `characters`를 적지 않으면 본문에서 인물 이름을 자동으로 찾아냅니다.
 - 파일명 앞 번호(`01-`, `02-`)가 **읽는 순서**입니다.
 
-### 4) 초안 생성
+### 5) 초안 생성
 
 - 씬 파일을 연 상태에서 상단 **`Generate Draft`**(또는 Scenes 패널의 생성 버튼)를 누르면
   `draft/NN-slug.md`가 만들어집니다.
@@ -104,7 +137,7 @@ mood: 설렘
 - **`Generate All Drafts`** 로 모든 씬을 한 번에 처리할 수 있습니다.
 - 같은 입력이면 **캐시된 초안**을 재사용합니다. 강제로 다시 만들려면 **`Re-generate`** 를 누르세요.
 
-### 5) 초안 다듬기
+### 6) 초안 다듬기
 
 `draft/*.md`를 열면 문서 맨 위에 버튼(CodeLens)이 보입니다:
 
@@ -112,13 +145,15 @@ mood: 설렘
 |---|---|
 | 🔁 Re-generate Draft | 연결된 씬 기준으로 초안 다시 생성 |
 | 🩹 Grammar Check | 문법·맞춤법 진단(밑줄) + Quick Fix |
-| 🧭 Continuity Check | **설정 바이블과 모순되는 부분** 진단 (아래 6번) |
+| 🧭 Continuity Check | **설정 바이블과 모순되는 부분** 진단 (아래 7번) |
 | 🌿 Expand | 선택한 문장을 문체를 유지한 채 확장 |
+
+명령 팔레트의 **`Storyboard: Review & Revise Draft (Current Scene)`** 을 실행하면 연속성·비평 검수 후 차단 이슈를 재작성하고 결과를 기록합니다.
 
 이 밖에 타이핑 중 **자동 완성(Ghost Text)** 제안, 인물 이름 **Hover 카드**도 동작합니다.
 자세한 내용은 [`GUIDE.md`](GUIDE.md).
 
-### 6) 설정 일관성 — 스토리 바이블 루프 ⭐
+### 7) 설정 일관성 — 스토리 바이블 루프 ⭐
 
 장편(여러 권)에서 가장 어려운 건 **앞뒤 설정이 어긋나지 않게** 하는 것입니다. Storyboard는 이걸
 "AI가 제안하고 작가가 확정하는" 루프로 돕습니다.
@@ -141,12 +176,22 @@ mood: 설렘
 
 설정 바이블을 직접 적는 형식 예시는 [`ARCHITECTURE.md`](ARCHITECTURE.md)의 4.7절을 참고하세요.
 
-### 7) 인물 관계 보기
+### 8) 원고 조립·검사·내보내기
+
+원클릭 생성을 쓰지 않고 수동으로 초안을 만든 경우에도 원고 단계 명령을 따로 실행할 수 있습니다.
+
+- **`Storyboard: Assemble Manuscript`**: `chapters.yaml` 순서로 `draft/*.md`를 장별 파일과 `manuscript/manuscript.md`로 조립합니다.
+- **`Storyboard: Review Manuscript`**: 전체 조립 원고를 canon 연속성·캐릭터 보이스·장면 목적·반복 기준으로 검사해 `manuscript/REVIEW.md`를 만듭니다.
+- **`Storyboard: Summarize Chapters`**: 장별 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 만듭니다.
+- **`Storyboard: Canon Diff Report`**: 아직 canon으로 승격하지 않은 설정 후보를 `manuscript/CANON.md`에 정리합니다.
+- **`Storyboard: Export Draft…`**: `manuscript/manuscript.md`를 Markdown 또는 일반 텍스트로 내보냅니다.
+
+### 9) 인물 관계 보기
 
 - **`Storyboard: Open Character Relation Graph`** → 인물 관계를 그래프로 시각화합니다.
   노드를 더블클릭하면 해당 카드가 열립니다. (관계는 캐릭터 카드의 Relations 탭에서 입력)
 
-### 8) 백업·공유 (.seed)
+### 10) 백업·공유 (.seed)
 
 - **`Storyboard: Export Project to Seed...`** → 프로젝트를 `.seed` 아카이브 한 파일로 내보냅니다(변경 이력 포함).
 - 받은 `.seed`는 **`Create Project from Seed...`**(새 프로젝트) 또는 **`Sync Project from Seed...`**
@@ -160,25 +205,29 @@ mood: 설렘
 ```
 1. Initialize Project
 2. (mock으로 먼저 연습 → 익숙해지면) Set API Key
-3. 주요 인물·배경 카드 작성
-4. 씬을 순서대로 작성 (01-, 02- ...)
-5. Generate Draft / Generate All Drafts
-6. 초안 읽으며 Grammar / Expand로 다듬기
-7. Promote Bible Candidates → 핵심 설정을 canon으로 확정
-8. 다음 권/뒤 씬 생성 → canon이 자동 주입되어 일관성 유지
-9. 가끔 Continuity Check로 설정 충돌 점검
-10. 필요 시 Export to Seed로 백업/공유
+3. Open Settings → 작품 계약 채우기
+4. 주요 인물·배경 카드 작성
+5. Generate Novel Outline → synopsis.md / chapters.yaml 검토
+6. Generate Novel 또는 Generate Scene Seeds + Generate All Drafts
+7. Review & Revise / Promote Bible Candidates로 초안과 canon 정리
+8. Assemble / Review / Summarize Manuscript
+9. Export Draft 또는 Export to Seed로 내보내기·공유
 ```
 
 ---
 
 ## 5. 명령어 한눈에
 
+한국어 VS Code에서는 명령 제목이 한국어로 보일 수 있습니다.
+
 | 명령 (명령 팔레트에서 검색) | 용도 |
 |---|---|
 | `Storyboard: Initialize Project` | 현재 폴더를 프로젝트로 초기화 |
 | `Storyboard: Set API Key...` | AI 제공자 키 저장 |
 | `Storyboard: Open Settings` | 기본 제공자·작업별 모델 설정 |
+| `Storyboard: Generate Novel` | outline부터 조립 원고·검사·요약까지 실행 |
+| `Storyboard: Generate Novel Outline` | `synopsis.md`와 `chapters.yaml` 생성 |
+| `Storyboard: Generate Scene Seeds` | `chapters.yaml`에서 `scene/*.txt` 생성 |
 | `Storyboard: Create Character` / `Create Background` | 카드 추가 |
 | `Storyboard: Rename Character ID...` / `Rename Background ID...` | 카드 id 변경 |
 | `Storyboard: New Scene` | 다음 번호로 씬 파일 생성 |
@@ -188,8 +237,14 @@ mood: 설렘
 | `Storyboard: Apply Format to Draft (Current Scene)` | 생성 없이 장르 포맷만 다시 적용 |
 | `Storyboard: Grammar Check (Draft)` | 문법 진단 |
 | `Storyboard: Continuity Check (Draft)` | 설정 일관성 진단 |
+| `Storyboard: Review & Revise Draft (Current Scene)` | 초안 검수·재작성 루프 |
 | `Storyboard: Expand Selection (Draft)` | 선택 영역 확장 |
 | `Storyboard: Promote Bible Candidates to Canon` | 설정 후보를 canon으로 승격 |
+| `Storyboard: Assemble Manuscript` | 초안을 장별·전체 원고로 조립 |
+| `Storyboard: Review Manuscript` | 조립 원고 최종 검사 보고서 생성 |
+| `Storyboard: Summarize Chapters` | 장별 요약과 recap 생성 |
+| `Storyboard: Canon Diff Report` | 미승격 설정 후보 보고서 생성 |
+| `Storyboard: Export Draft…` | 조립 원고를 Markdown/TXT로 내보내기 |
 | `Storyboard: Open Character Relation Graph` | 관계 그래프 |
 | `Storyboard: Create/Sync/Export ... Seed` | 프로젝트 가져오기/내보내기 |
 
@@ -203,6 +258,8 @@ mood: 설렘
   덮어써집니다. 보존하려면 별도 보관하세요.
 - **Continuity Check가 아무것도 안 잡아요.** 그 씬 인물에 대한 **확정 설정(canon)** 이 없으면 검사를 건너뜁니다.
   먼저 `Promote Bible Candidates to Canon`으로 설정을 확정하세요.
+- **Generate Novel이 바로 시작되지 않아요.** 작품 계약의 필수 항목(장르, 독자층, 시점, 목표 분량)이 비어 있으면 시작하지 않습니다.
+  `Storyboard: Open Settings`의 **작품 계약** 탭을 먼저 채우세요.
 - **사이드바가 안 보여요.** `Storyboard: Initialize Project`로 프로젝트를 만든 폴더에서만 패널이 나타납니다.
 - **비용이 걱정돼요.** 사이드바에 작업별 **비용 배지**가 표시되고, 같은 입력은 캐시를 재사용합니다.
   연속성 검사는 자동이 아니라 **직접 실행할 때만** AI를 호출합니다.

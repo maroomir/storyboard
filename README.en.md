@@ -8,34 +8,46 @@ Korean README: [`README.md`](README.md)
 
 - Target direction: one-click long-form novel generation IDE (Autonomous Fiction Studio).
 - Initialize one workspace folder as one Storyboard project.
+- Manage the **Generation Contract**: genre, audience, POV, target word count, prohibitions, style constraints, and quality criteria.
+- Run `Storyboard: Generate Novel` for project settings → outline → scene seeds → drafts, review, revision → manuscript assembly, review, and summaries.
+- Plan long-form structure with `.storyboard/outline/synopsis.md`, `chapters.yaml`, and `revision-plan.yaml`.
 - Manage character and background cards with `character/*.card` and `background/*.card`.
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
-- Manage scenes with `scene/*.txt` and generate drafts as `draft/*.md`.
+- Generate `scene/*.txt` seeds from the outline, then generate `draft/*.md` drafts.
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
+- Review and revise individual scene drafts while recording instructions in `revision-plan.yaml`.
+- Assemble `manuscript/`, run final review (`REVIEW.md`), write chapter summaries (`SUMMARY.md`), and track foreshadowing (`FORESHADOWING.md`).
+- Compare unpromoted candidate facts against `canon.yaml` with `Canon Diff Report`.
+- Export the assembled manuscript as Markdown or plain text.
 - Visualize character relationships with a relation graph.
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
+- Localize extension command titles through `package.nls.json` and `package.nls.ko.json`.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
 
-The current implementation focuses on a lower-level slice of that goal: generating `draft/*.md` from `scene/*.txt`, injecting canon facts, and checking drafts. The planned direction is a pipeline that starts from project settings and generates outline files, cards, story bible entries, scene seeds, drafts, review results, and revised manuscript output. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the roadmap.
+The current implementation supports both the manual `scene/*.txt` → `draft/*.md` flow and the one-click long-form generation flow. One-click generation stores resumable stage state in `.storyboard/cache/novel-run.json`; long-manuscript PDF/DOCX export and deeper batch review remain follow-up work. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the structure.
 
 ## Project Model
 
 ```text
 .storyboard/project.json
-.storyboard/outline/   # planned: synopsis, chapters, and scene plan
+.storyboard/bible/canon.yaml
+.storyboard/outline/   # synopsis, chapter/scene plan, revision plan
 character/*.card
 background/*.card
 scene/*.txt
 draft/*.md
+manuscript/*.md
 ```
 
 - One workspace folder is one project.
 - Project settings are the input contract for autonomous novel generation. Edit audience, target word count, point of view, and prohibitions in the **Generation Contract** tab of `Storyboard: Open Settings`, and check generation readiness there.
+- `Storyboard: Generate Novel Outline` writes `synopsis.md` and `chapters.yaml`; `Storyboard: Generate Scene Seeds` derives scene seeds from that plan.
 - `.card` files are YAML-based reference cards.
 - One `scene/*.txt` file is one scene, written manually or generated from the outline.
 - `draft/*.md` files are AI-generated, reviewed, and revised manuscript drafts.
+- `manuscript/` contains regenerable chapter files, the volume file (`manuscript.md`), and final review, summary, and foreshadowing reports.
 
 ## Run Locally
 
@@ -48,7 +60,7 @@ npm run build
 2. Select `Run Extension` in **Run and Debug**, then press F5.
 3. In the Extension Development Host window, open an empty folder.
 4. Run `Storyboard: Initialize Project`.
-5. Use the Characters / Backgrounds / Scenes views in the Activity Bar to create cards and scenes.
+5. Fill the **Generation Contract** in `Storyboard: Open Settings`, then run `Storyboard: Generate Novel`, or manually create cards and scenes from the Characters / Backgrounds / Scenes views.
 
 The default `mock` provider lets you verify the flow without an API key. To use a real provider, save a key with `Storyboard: Set API Key...`.
 

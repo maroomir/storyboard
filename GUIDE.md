@@ -1,6 +1,6 @@
-# Storyboard 에디터 가이드 (Phase 6)
+# Storyboard 에디터 가이드
 
-이 문서는 `draft/*.md` 편집 중 사용하는 Phase 6 기능의 실제 사용 흐름을 정리합니다.
+이 문서는 `draft/*.md` 편집 중 사용하는 기능의 실제 사용 흐름을 정리합니다.
 
 ## 1) 인라인 완성
 
@@ -36,7 +36,15 @@
 - 동작: 선택한 텍스트를 문체를 유지한 채 확장해 같은 위치에 치환합니다.
 - 주의: 선택 영역이 비어 있으면 확장하지 않고 안내 메시지를 표시합니다.
 
-## 5) 캐릭터 Hover 카드
+## 5) 초안 검수·재작성 루프
+
+- 명령: `Storyboard: Review & Revise Draft (Current Scene)`
+- 동작: 현재 초안을 연속성 검사와 비평(캐릭터 보이스, 장면 목적, 반복)으로 검수하고, 차단 이슈가 있으면 재작성합니다.
+- 반복 횟수: `storyboard.draft.reviseMaxIterations` 설정을 따릅니다(기본 2, 최대 5).
+- 기록: 씬별 검수 시각, 재작성 횟수, 남은 차단 이슈, 재작성 지시를 `.storyboard/outline/revision-plan.yaml`에 누적합니다.
+- 문체/품질 기준: `Storyboard: Open Settings`의 **작품 계약** 탭에 입력한 `styleConstraints`와 `qualityCriteria`가 비평 프롬프트에 반영됩니다.
+
+## 6) 캐릭터 Hover 카드
 
 - 대상: `draft/*.md` 본문에서 캐릭터 이름 위 Hover
 - 표시 정보
@@ -46,7 +54,7 @@
   - 관계 캐릭터 요약
 - 데이터 소스: 워크스페이스 `character/*.card` 파일
 
-## 6) 동작하지 않을 때 점검
+## 7) 동작하지 않을 때 점검
 
 1. 워크스페이스에 `.storyboard/project.json`이 있는지 확인
 2. 파일이 `draft/*.md` 경로인지 확인
