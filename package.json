@@ -92,6 +92,10 @@
         "title": "Storyboard: Assemble Manuscript"
       },
       {
+        "command": "storyboard.manuscript.review",
+        "title": "Storyboard: Review Manuscript"
+      },
+      {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
       },

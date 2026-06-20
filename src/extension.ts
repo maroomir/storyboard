@@ -14,6 +14,7 @@ import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
+import { registerReviewManuscriptCommand } from "./commands/reviewManuscript"
 import { registerReviseDraftCommand } from "./commands/reviseDraft"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerRenameCardCommands } from "./commands/renameCard"
@@ -75,6 +76,7 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(registerGenerateSceneSeedsCommand())
   context.subscriptions.push(registerAssembleManuscriptCommand({ logger }))
+  context.subscriptions.push(registerReviewManuscriptCommand({ aiProviderRegistry, logger }))
   context.subscriptions.push(
     registerReviseDraftCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )

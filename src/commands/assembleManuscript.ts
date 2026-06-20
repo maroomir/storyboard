@@ -1,13 +1,13 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { assembleManuscript, type ManuscriptDraftEntry } from "../core/manuscriptAssembly"
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "../core/pathConventions"
+import { assembleManuscript } from "../core/manuscriptAssembly"
+import { collectDraftsByOrder } from "../core/manuscriptDrafts"
+import { getStoryboardProjectPaths } from "../core/pathConventions"
 import { resolveStoryboardWorkspaceRoot, uriExists } from "../core/workspace"
-import { parseDraft, readDraftFile, type DraftFileSystem } from "../files/draft"
+import { type DraftFileSystem } from "../files/draft"
 import { readChapterPlanFile, type OutlineFileSystem } from "../files/outline"
 import { readProjectJson } from "../files/projectJson"
-import { parseSceneStem } from "../shared/scene"
 
 const assembleManuscriptCommand = "storyboard.manuscript.assemble"
 
@@ -51,7 +51,7 @@ async function runAssembleManuscript(
   try {
     const project = await readProjectJson(paths.projectJson)
     const plan = await readChapterPlanFile(paths.outlineChapters, fileSystem)
-    const draftsByOrder = await collectDraftsByOrder(paths, dependencies.logger)
+    const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, dependencies.logger)
 
     if (draftsByOrder.size === 0) {
       await vscode.window.showInformationMessage(
@@ -86,40 +86,4 @@ async function runAssembleManuscript(
     const message = error instanceof Error ? error.message : String(error)
     await vscode.window.showErrorMessage(`원고 조립에 실패했습니다: ${message}`)
   }
-}
-
-async function collectDraftsByOrder(
-  paths: StoryboardProjectPaths,
-  logger: StoryboardLogger
-): Promise<Map<number, ManuscriptDraftEntry>> {
-  const draftsByOrder = new Map<number, ManuscriptDraftEntry>()
-
-  let entries: [string, vscode.FileType][]
-  try {
-    entries = await vscode.workspace.fs.readDirectory(paths.draftDirectory)
-  } catch {
-    return draftsByOrder
-  }
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith(".md")) {
-      continue
-    }
-
-    const stem = name.slice(0, -".md".length)
-    const parts = parseSceneStem(stem)
-    if (!parts) {
-      continue
-    }
-
-    const draftUri = vscode.Uri.joinPath(paths.draftDirectory, name)
-    try {
-      const draft = parseDraft(await readDraftFile(draftUri, fileSystem))
-      draftsByOrder.set(parts.order, { stem, body: draft.body })
-    } catch (error) {
-      logger.warn(`Skipping unreadable draft: ${name} (${error instanceof Error ? error.message : String(error)})`)
-    }
-  }
-
-  return draftsByOrder
 }
