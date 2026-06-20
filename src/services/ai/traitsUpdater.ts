@@ -135,7 +135,8 @@ export async function updateCharacterTraitsFromDraft(
 
   for (const ref of detectedCharacterCards) {
     try {
-      const current = await readCharacterCard(ref)
+      const cardUri = input.resolveCharacterCardUri(ref)
+      const current = await readCardFile(cardUri, fileSystem)
 
       if (current.type !== "character") {
         continue
@@ -159,7 +160,7 @@ export async function updateCharacterTraitsFromDraft(
         recentDialogues: mergedRecent
       }
 
-      await writeCardFile(input.resolveCharacterCardUri(ref), fileSystem, next)
+      await writeCardFile(cardUri, fileSystem, next)
       updatedCardCount += 1
     } catch (error) {
       logger?.error(`Failed to update traits for character ${ref.name}`, error)
