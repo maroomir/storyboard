@@ -10,6 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- `Storyboard: Generate Novel` runs the full pipeline in one click — project settings → outline → seeds → per-chapter drafting and review → assembly → review → summaries — and can resume by stage.
+- `Storyboard: Canon Diff Report` (`storyboard.bible.canonDiff`) compares not-yet-promoted candidate facts against `canon.yaml` and writes `manuscript/CANON.md`.
+- `Storyboard: Export Draft…` (`storyboard.draft.export`) exports the assembled manuscript to Markdown or plain text. (PDF/DOCX to follow.)
+- Review-and-revise results and instructions are now accumulated per scene in `.storyboard/outline/revision-plan.yaml`.
+- Added `styleConstraints` and `qualityCriteria` to the generation contract, editable in the **작품 계약** settings tab.
+- Introduced an extension UI i18n (l10n) mechanism (`package.nls.json` / `package.nls.ko.json`).
+
+### Changed
+
+- The Scenes sidebar shows an "outline" stale badge when `chapters.yaml` is newer than a scene.
+
 ## [0.2.4] - 2026-06-18
 
 ### Added
