@@ -72,7 +72,9 @@ function toContractSetting(
     audience: setting?.audience,
     pov: setting?.pov,
     targetWordCount: setting?.targetWordCount,
-    prohibitions: setting?.prohibitions ?? []
+    prohibitions: setting?.prohibitions ?? [],
+    styleConstraints: setting?.styleConstraints ?? [],
+    qualityCriteria: setting?.qualityCriteria ?? []
   }
 }
 
@@ -80,7 +82,12 @@ function mergeContractSetting(
   existing: ProjectSetting | undefined,
   payload: StoryboardRequestPayload<"project.updateContract">
 ): ProjectSetting {
-  const base: ProjectSetting = existing ?? { tags: [], prohibitions: [] }
+  const base: ProjectSetting = existing ?? {
+    tags: [],
+    prohibitions: [],
+    styleConstraints: [],
+    qualityCriteria: []
+  }
 
   return {
     ...base,
@@ -88,7 +95,9 @@ function mergeContractSetting(
     audience: normalizeText(payload.audience),
     pov: payload.pov ?? undefined,
     targetWordCount: payload.targetWordCount ?? undefined,
-    prohibitions: normalizeList(payload.prohibitions)
+    prohibitions: normalizeList(payload.prohibitions),
+    styleConstraints: normalizeList(payload.styleConstraints),
+    qualityCriteria: normalizeList(payload.qualityCriteria)
   }
 }
 

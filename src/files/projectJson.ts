@@ -24,7 +24,9 @@ const projectSettingSchema = z.object({
   audience: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
   pov: z.enum(pointOfViews).optional(),
-  prohibitions: z.array(z.string()).default([])
+  prohibitions: z.array(z.string()).default([]),
+  styleConstraints: z.array(z.string()).default([]),
+  qualityCriteria: z.array(z.string()).default([])
 })
 
 export const storyboardProjectSchema = z.object({

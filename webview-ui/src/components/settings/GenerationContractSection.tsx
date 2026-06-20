@@ -35,6 +35,8 @@ interface ContractSetting {
   readonly pov?: PointOfView
   readonly targetWordCount?: number
   readonly prohibitions: readonly string[]
+  readonly styleConstraints: readonly string[]
+  readonly qualityCriteria: readonly string[]
 }
 
 interface ContractReadiness {
@@ -56,6 +58,8 @@ interface ContractDraft {
   pov: PointOfView | ""
   targetWordCount: string
   prohibitions: string[]
+  styleConstraints: string[]
+  qualityCriteria: string[]
 }
 
 function isPointOfView(value: string): value is PointOfView {
@@ -91,7 +95,9 @@ function toDraft(setting: ContractSetting | undefined): ContractDraft {
     audience: setting?.audience ?? "",
     pov: setting?.pov ?? "",
     targetWordCount: setting?.targetWordCount !== undefined ? String(setting.targetWordCount) : "",
-    prohibitions: setting ? [...setting.prohibitions] : []
+    prohibitions: setting ? [...setting.prohibitions] : [],
+    styleConstraints: setting ? [...setting.styleConstraints] : [],
+    qualityCriteria: setting ? [...setting.qualityCriteria] : []
   }
 }
 
@@ -103,7 +109,9 @@ function buildUpdatePayload(draft: ContractDraft): Record<string, unknown> {
     audience: draft.audience,
     pov: draft.pov === "" ? null : draft.pov,
     targetWordCount,
-    prohibitions: draft.prohibitions
+    prohibitions: draft.prohibitions,
+    styleConstraints: draft.styleConstraints,
+    qualityCriteria: draft.qualityCriteria
   }
 }
 
@@ -206,7 +214,7 @@ export function GenerationContractSection({
     () => (
       <SectionHeader
         title="작품 계약"
-        description="장르, 독자층, 시점, 목표 분량, 금지 조건을 작품 생성 계약으로 저장합니다. 값은 .storyboard/project.json에 기록됩니다."
+        description="장르, 독자층, 시점, 목표 분량, 금지 조건, 문체 제약, 품질 기준을 작품 생성 계약으로 저장합니다. 값은 .storyboard/project.json에 기록됩니다."
       />
     ),
     []
@@ -303,11 +311,21 @@ export function GenerationContractSection({
         </label>
       </div>
 
-      <div className="max-w-3xl">
+      <div className="grid max-w-3xl grid-cols-1 gap-4">
         <ListField
           label="금지 조건"
           values={draft.prohibitions}
           onChange={(values) => save({ ...draft, prohibitions: values })}
+        />
+        <ListField
+          label="문체 제약"
+          values={draft.styleConstraints}
+          onChange={(values) => save({ ...draft, styleConstraints: values })}
+        />
+        <ListField
+          label="품질 기준"
+          values={draft.qualityCriteria}
+          onChange={(values) => save({ ...draft, qualityCriteria: values })}
         />
       </div>
     </section>

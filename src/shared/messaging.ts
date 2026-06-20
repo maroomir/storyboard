@@ -364,7 +364,9 @@ const generationContractSettingSchema = z.object({
   audience: z.string().optional(),
   pov: z.enum(pointOfViews).optional(),
   targetWordCount: z.number().int().positive().optional(),
-  prohibitions: z.array(z.string())
+  prohibitions: z.array(z.string()),
+  styleConstraints: z.array(z.string()),
+  qualityCriteria: z.array(z.string())
 })
 
 const projectContractSnapshotSchema = z.object({
@@ -383,7 +385,9 @@ export const projectUpdateContractRequestPayloadSchema = z.object({
   audience: z.string().trim().optional(),
   pov: z.enum(pointOfViews).nullable().optional(),
   targetWordCount: z.number().int().positive().nullable().optional(),
-  prohibitions: z.array(z.string()).optional()
+  prohibitions: z.array(z.string()).optional(),
+  styleConstraints: z.array(z.string()).optional(),
+  qualityCriteria: z.array(z.string()).optional()
 })
 
 export const projectUpdateContractResponsePayloadSchema = projectContractSnapshotSchema
