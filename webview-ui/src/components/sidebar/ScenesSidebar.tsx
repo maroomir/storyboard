@@ -167,6 +167,14 @@ export function ScenesSidebar({ initialData }: { readonly initialData: SidebarSc
                         <span className="block font-semibold leading-snug">{scene.title ?? scene.slug}</span>
                         <span className="mt-0.5 block truncate text-sm text-sb-fg-muted">{scene.stem}.txt</span>
                       </button>
+                      {scene.outlineStale ? (
+                        <span
+                          className="shrink-0 self-start rounded-full border border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-500"
+                          title="아웃라인(chapters.yaml)이 이 씬보다 최신입니다. 시드·초안이 계획과 어긋날 수 있습니다."
+                        >
+                          outline
+                        </span>
+                      ) : null}
                       <CostBadge usd={sceneCostUsd(scene)} className="shrink-0 self-start" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-7">
