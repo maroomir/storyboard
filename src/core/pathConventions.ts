@@ -6,6 +6,7 @@ export interface StoryboardProjectPaths {
   readonly projectJson: vscode.Uri
   readonly cacheDirectory: vscode.Uri
   readonly usageLedger: vscode.Uri
+  readonly novelRunState: vscode.Uri
   readonly sceneCacheDirectory: vscode.Uri
   readonly bibleCacheDirectory: vscode.Uri
   readonly bibleDirectory: vscode.Uri
@@ -42,6 +43,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     projectJson: vscode.Uri.joinPath(metadataDirectory, "project.json"),
     cacheDirectory,
     usageLedger: vscode.Uri.joinPath(cacheDirectory, "usage.json"),
+    novelRunState: vscode.Uri.joinPath(cacheDirectory, "novel-run.json"),
     sceneCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "scenes"),
     bibleCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "bible"),
     bibleDirectory,

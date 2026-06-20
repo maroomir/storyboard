@@ -5,6 +5,7 @@ import { registerAssembleManuscriptCommand } from "./commands/assembleManuscript
 import { registerCreateCardCommands } from "./commands/createCard"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
+import { registerGenerateNovelCommand } from "./commands/generateNovel"
 import { registerGenerateOutlineCommand } from "./commands/generateOutline"
 import { registerGenerateSceneSeedsCommand } from "./commands/generateSceneSeeds"
 import { registerHelloWorldCommand } from "./commands/helloWorld"
@@ -81,6 +82,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerSummarizeChaptersCommand({ aiProviderRegistry, logger }))
   context.subscriptions.push(
     registerReviseDraftCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerGenerateNovelCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())

@@ -61,8 +61,9 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │       │   └── elia.json
 │       ├── bible/                # 자동 추출된 설정 사실 후보 (candidate)
 │       │   └── 01-prologue.json
-│       └── scenes/               # 씬별 생성 컨텍스트 스냅샷
-│           └── 01-prologue.json
+│       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
+│       │   └── 01-prologue.json
+│       └── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
 │
 ├── character/
 │   ├── elia.card                 # YAML, 커스텀 에디터로 렌더
@@ -318,7 +319,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.scene.new` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.txt` 생성 후 열기 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
-| `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline/card/bible/scene/draft/검수/재작성/조립 전체 실행 (예정) |
+| `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.txt` 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
@@ -413,11 +414,12 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`).
 - canon diff, 검사 결과 기반 자동 재작성·문서 export는 후속(Phase F 포함)에서 다룬다.
 
-### Phase F: One-Click Novel
+### Phase F: One-Click Novel (진행 중)
 
-- `Storyboard: Generate Novel` 명령이 Phase A-E를 하나의 진행 상태로 실행한다.
-- 실패 시 중단 지점과 재시작 가능한 작업 큐를 남긴다.
+- `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→seeds(C)→장별 draft/검수(D)→assemble/review/summaries(E)를 한 진행 상태로 실행한다.
+- 실패·중단 시 단계·장 진행 상태를 `.storyboard/cache/novel-run.json`(재시작 가능한 작업 큐)에 남기고, 다시 실행하면 중단 지점부터 재개한다.
 - 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행 중 하나를 고를 수 있다.
+- 문서 export(PDF/DOCX)와 매우 긴 원고의 분할 검사는 후속에서 다룬다.
 
 ## 9. 환경
 

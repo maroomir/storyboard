@@ -80,6 +80,10 @@
         "title": "Storyboard: Generate All Drafts"
       },
       {
+        "command": "storyboard.novel.generate",
+        "title": "Storyboard: Generate Novel"
+      },
+      {
         "command": "storyboard.outline.generate",
         "title": "Storyboard: Generate Novel Outline"
       },
