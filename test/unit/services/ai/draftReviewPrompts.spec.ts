@@ -21,6 +21,16 @@ describe("DraftCritiquePrompt", () => {
     expect(artifact.user).toContain("눈동자 색")
   })
 
+  it("includes style constraints and quality criteria when provided", () => {
+    const artifact = DraftCritiquePrompt.build(
+      { ...input, styleConstraints: ["단문 위주"], qualityCriteria: ["복선 회수"] },
+      "generic"
+    )
+
+    expect(artifact.user).toContain("단문 위주")
+    expect(artifact.user).toContain("복선 회수")
+  })
+
   it("keeps the xs system block shorter than generic", () => {
     expect(DraftCritiquePrompt.build(input, "xs").system.length).toBeLessThan(
       DraftCritiquePrompt.build(input, "generic").system.length

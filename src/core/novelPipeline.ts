@@ -353,7 +353,14 @@ async function runReviewStage(
       providerId: registry.getTaskProvider("continuityCheck")
     }),
     aiService.critiqueDraft(
-      { body: manuscript.volumeMarkdown, intent: "전체 원고 최종 검수", characters, facts: factLines },
+      {
+        body: manuscript.volumeMarkdown,
+        intent: "전체 원고 최종 검수",
+        characters,
+        facts: factLines,
+        styleConstraints: project.setting?.styleConstraints ?? [],
+        qualityCriteria: project.setting?.qualityCriteria ?? []
+      },
       { providerId: registry.getTaskProvider("draftCritique") }
     )
   ])
