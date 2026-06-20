@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "../core/pathConventions"
+import { getStoryboardProjectPaths, isDraftMarkdownFile, type StoryboardProjectPaths } from "../core/pathConventions"
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -53,19 +53,6 @@ function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspace
     joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
       vscode.Uri.joinPath(base as vscode.Uri, ...segments)
   }
-}
-
-function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
-  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
 export function toContinuityRange(document: vscode.TextDocument, issue: ContinuityIssue): vscode.Range | undefined {

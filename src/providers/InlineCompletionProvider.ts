@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
+import { isDraftMarkdownFile } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { StoryboardAIService } from "../services/ai/AIService"
@@ -21,19 +22,6 @@ export interface RegisterInlineCompletionProviderDependencies {
 interface InlineCompletionCacheValue {
   readonly value: string
   readonly updatedAt: number
-}
-
-function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
-  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
 export function trimInlineCompletionPrefix(text: string): string {

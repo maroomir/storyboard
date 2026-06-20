@@ -76,6 +76,32 @@ export function isHiddenSceneFileName(fileName: string): boolean {
   return fileName.startsWith(".") && fileName.endsWith(".txt")
 }
 
+export function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
+  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
+  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
+  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
+
+  if (!filePath.startsWith(`${dirPath}/`)) {
+    return false
+  }
+
+  const remainder = filePath.slice(dirPath.length + 1)
+  return !remainder.includes("/") && remainder.endsWith(".md")
+}
+
+export function isDirectSceneTextFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
+  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, "scene")
+  const dirPath = sceneDir.fsPath.replace(/\\/g, "/").toLowerCase()
+  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
+
+  if (!filePath.startsWith(`${dirPath}/`)) {
+    return false
+  }
+
+  const remainder = filePath.slice(dirPath.length + 1)
+  return !remainder.includes("/") && remainder.endsWith(".txt")
+}
+
 export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
   return vscode.Uri.joinPath(workspaceRoot, "character", `${id}.card`)
 }

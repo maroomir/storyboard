@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { draftPath, getStoryboardProjectPaths } from "../core/pathConventions"
+import { draftPath, getStoryboardProjectPaths, isDirectSceneTextFile } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { createDraft, parseDraft, readDraftFile, writeDraftFile, type DraftFileSystem } from "../files/draft"
 import { readProjectJson } from "../files/projectJson"
@@ -31,19 +31,6 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   }
 
   return doc.uri
-}
-
-function isDirectSceneTextFile(sceneUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, "scene")
-  const dirPath = sceneDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = sceneUri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".txt")
 }
 
 export interface RegisterApplyDraftFormatCommandDependencies {

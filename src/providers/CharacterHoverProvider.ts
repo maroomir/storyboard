@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths } from "../core/pathConventions"
+import { getStoryboardProjectPaths, isDraftMarkdownFile } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { readCardFile } from "../files/card"
 import type { CharacterCard } from "../shared/card"
@@ -17,19 +17,6 @@ const vscodeFsAdapter = {
 interface CharacterHoverContext {
   readonly character: CharacterCard
   readonly relatedCharacterNames: readonly string[]
-}
-
-function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
-  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
 export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vscode.MarkdownString {

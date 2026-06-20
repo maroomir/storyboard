@@ -1,6 +1,7 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
+import { isDraftMarkdownFile } from "../core/pathConventions"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { StoryboardAIService, type GrammarIssue } from "../services/ai/AIService"
@@ -18,19 +19,6 @@ export interface RegisterGrammarDiagnosticsProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly logger: StoryboardLogger
   readonly usageRecorder: UsageRecorder
-}
-
-function isDraftMarkdownFile(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
-  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = uri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".md")
 }
 
 function sleep(ms: number): Promise<void> {

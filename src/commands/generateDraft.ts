@@ -11,6 +11,7 @@ import {
   characterCardPath,
   draftPath,
   getStoryboardProjectPaths,
+  isDirectSceneTextFile,
   type StoryboardProjectPaths
 } from "../core/pathConventions"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
@@ -89,19 +90,6 @@ function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | un
   }
 
   return doc.uri
-}
-
-function isDirectSceneTextFile(sceneUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, "scene")
-  const dirPath = sceneDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = sceneUri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".txt")
 }
 
 export function stageProgressLabel(stage: SceneGenerationPipelineStage): string {

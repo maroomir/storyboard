@@ -1,39 +1,13 @@
 import * as vscode from "vscode"
 
 import { hasStoryboardProject } from "../core/workspace"
-import { sceneFilePath } from "../core/pathConventions"
+import { isDirectSceneTextFile, isDraftMarkdownFile, sceneFilePath } from "../core/pathConventions"
 import { tryParseDraftScenePartsForCodeLens } from "./draftCodeLensLogic"
 
 const regenerateDraftCommand = "storyboard.draft.regenerate"
 const grammarCheckCommand = "storyboard.draft.grammarCheck"
 const continuityCheckCommand = "storyboard.draft.continuityCheck"
 const expandDraftCommand = "storyboard.draft.expand"
-
-function isDraftMarkdownFile(draftUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, "draft")
-  const dirPath = draftDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = draftUri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".md")
-}
-
-function isDirectSceneTextFile(sceneUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
-  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, "scene")
-  const dirPath = sceneDir.fsPath.replace(/\\/g, "/").toLowerCase()
-  const filePath = sceneUri.fsPath.replace(/\\/g, "/").toLowerCase()
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1)
-  return !remainder.includes("/") && remainder.endsWith(".txt")
-}
 
 export class DraftCodeLensProvider implements vscode.CodeLensProvider {
   private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
