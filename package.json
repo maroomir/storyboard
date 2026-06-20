@@ -27,57 +27,57 @@
     "commands": [
       {
         "command": "storyboard.helloWorld",
-        "title": "Storyboard: Hello World"
+        "title": "%storyboard.helloWorld.title%"
       },
       {
         "command": "storyboard.init",
-        "title": "Storyboard: Initialize Project"
+        "title": "%storyboard.init.title%"
       },
       {
         "command": "storyboard.seed.createFromFile",
-        "title": "Storyboard: Create Project from Seed..."
+        "title": "%storyboard.seed.createFromFile.title%"
       },
       {
         "command": "storyboard.seed.syncFromFile",
-        "title": "Storyboard: Sync Project from Seed..."
+        "title": "%storyboard.seed.syncFromFile.title%"
       },
       {
         "command": "storyboard.seed.exportToFile",
-        "title": "Storyboard: Export Project to Seed..."
+        "title": "%storyboard.seed.exportToFile.title%"
       },
       {
         "command": "storyboard.character.create",
-        "title": "Storyboard: Create Character",
+        "title": "%storyboard.character.create.title%",
         "icon": "$(add)"
       },
       {
         "command": "storyboard.background.create",
-        "title": "Storyboard: Create Background",
+        "title": "%storyboard.background.create.title%",
         "icon": "$(add)"
       },
       {
         "command": "storyboard.character.rename",
-        "title": "Storyboard: Rename Character ID..."
+        "title": "%storyboard.character.rename.title%"
       },
       {
         "command": "storyboard.background.rename",
-        "title": "Storyboard: Rename Background ID..."
+        "title": "%storyboard.background.rename.title%"
       },
       {
         "command": "storyboard.apiKey.set",
-        "title": "Storyboard: Set API Key..."
+        "title": "%storyboard.apiKey.set.title%"
       },
       {
         "command": "storyboard.draft.generate",
-        "title": "Storyboard: Generate Draft (Current Scene)"
+        "title": "%storyboard.draft.generate.title%"
       },
       {
         "command": "storyboard.draft.regenerate",
-        "title": "Storyboard: Regenerate Draft (Current Scene)"
+        "title": "%storyboard.draft.regenerate.title%"
       },
       {
         "command": "storyboard.draft.generateAll",
-        "title": "Storyboard: Generate All Drafts"
+        "title": "%storyboard.draft.generateAll.title%"
       },
       {
         "command": "storyboard.novel.generate",
@@ -85,73 +85,73 @@
       },
       {
         "command": "storyboard.outline.generate",
-        "title": "Storyboard: Generate Novel Outline"
+        "title": "%storyboard.outline.generate.title%"
       },
       {
         "command": "storyboard.scene.generateAllSeeds",
-        "title": "Storyboard: Generate Scene Seeds"
+        "title": "%storyboard.scene.generateAllSeeds.title%"
       },
       {
         "command": "storyboard.manuscript.assemble",
-        "title": "Storyboard: Assemble Manuscript"
+        "title": "%storyboard.manuscript.assemble.title%"
       },
       {
         "command": "storyboard.manuscript.review",
-        "title": "Storyboard: Review Manuscript"
+        "title": "%storyboard.manuscript.review.title%"
       },
       {
         "command": "storyboard.manuscript.summaries",
-        "title": "Storyboard: Summarize Chapters"
+        "title": "%storyboard.manuscript.summaries.title%"
       },
       {
         "command": "storyboard.draft.applyFormat",
-        "title": "Storyboard: Apply Format to Draft (Current Scene)"
+        "title": "%storyboard.draft.applyFormat.title%"
       },
       {
         "command": "storyboard.scene.create",
-        "title": "Storyboard: New Scene",
+        "title": "%storyboard.scene.create.title%",
         "icon": "$(add)"
       },
       {
         "command": "storyboard.scene.openDraft",
-        "title": "Storyboard: Open Draft for Scene"
+        "title": "%storyboard.scene.openDraft.title%"
       },
       {
         "command": "storyboard.relationGraph.open",
-        "title": "Storyboard: Open Character Relation Graph"
+        "title": "%storyboard.relationGraph.open.title%"
       },
       {
         "command": "storyboard.settings.open",
-        "title": "Storyboard: Open Settings",
+        "title": "%storyboard.settings.open.title%",
         "icon": "$(gear)"
       },
       {
         "command": "storyboard.draft.grammarCheck",
-        "title": "Storyboard: Grammar Check (Draft)"
+        "title": "%storyboard.draft.grammarCheck.title%"
       },
       {
         "command": "storyboard.draft.continuityCheck",
-        "title": "Storyboard: Continuity Check (Draft)"
+        "title": "%storyboard.draft.continuityCheck.title%"
       },
       {
         "command": "storyboard.draft.reviseLoop",
-        "title": "Storyboard: Review & Revise Draft (Current Scene)"
+        "title": "%storyboard.draft.reviseLoop.title%"
       },
       {
         "command": "storyboard.bible.promoteCandidates",
-        "title": "Storyboard: Promote Bible Candidates to Canon"
+        "title": "%storyboard.bible.promoteCandidates.title%"
       },
       {
         "command": "storyboard.bible.canonDiff",
-        "title": "Storyboard: Canon Diff Report"
+        "title": "%storyboard.bible.canonDiff.title%"
       },
       {
         "command": "storyboard.draft.expand",
-        "title": "Storyboard: Expand Selection (Draft)"
+        "title": "%storyboard.draft.expand.title%"
       },
       {
         "command": "storyboard.draft.export",
-        "title": "Storyboard: Export Draft…"
+        "title": "%storyboard.draft.export.title%"
       }
     ],
     "configuration": {
