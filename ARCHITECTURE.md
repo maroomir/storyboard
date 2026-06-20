@@ -408,7 +408,8 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 - `chapters.yaml` 순서로 `draft/*.md`를 chapter별 파일과 전체 volume 파일(`manuscript/`)로 결정적으로 조립한다(`storyboard.manuscript.assemble`).
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
 - 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
-- 장별 AI 요약·이전 장 recap·미해결 복선·canon diff, 검사 결과 기반 자동 재작성·문서 export는 후속(Phase F 포함)에서 다룬다.
+- 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
+- 장별 AI 요약·이전 장 recap·canon diff, 검사 결과 기반 자동 재작성·문서 export는 후속(Phase F 포함)에서 다룬다.
 
 ### Phase F: One-Click Novel
 
