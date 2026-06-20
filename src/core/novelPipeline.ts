@@ -105,15 +105,27 @@ export async function runNovelPipeline(options: NovelPipelineOptions): Promise<N
       }
     })
 
+  const runStageOnce = async (
+    stage: NovelStageName,
+    label: string,
+    run: () => Promise<void>
+  ): Promise<void> => {
+    if (completed.has(stage)) {
+      return
+    }
+    options.onProgress(stage, label)
+    await run()
+    completed.add(stage)
+    await persist({})
+  }
+
   try {
     await persist({ status: "running" })
 
-    // Stage: outline (B)
     if (!completed.has("outline")) {
-      options.onProgress("outline", "아웃라인 생성 중…")
-      await runOutlineStage(paths, options.project, newAiService())
-      completed.add("outline")
-      await persist({})
+      await runStageOnce("outline", "아웃라인 생성 중…", () =>
+        runOutlineStage(paths, options.project, newAiService())
+      )
 
       if (options.runMode !== "auto") {
         const approved = await options.requestApproval(
@@ -137,18 +149,11 @@ export async function runNovelPipeline(options: NovelPipelineOptions): Promise<N
     )
     const groups = groupChapterStems(plan, digitCount)
 
-    // Stage: seeds (C)
-    if (!completed.has("seeds")) {
-      options.onProgress("seeds", "씬 시드 생성 중…")
-      await runSeedsStage(paths, plan, digitCount)
-      completed.add("seeds")
-      await persist({})
-    }
+    await runStageOnce("seeds", "씬 시드 생성 중…", () => runSeedsStage(paths, plan, digitCount))
     if (options.shouldCancel()) {
       return await cancel(persist)
     }
 
-    // Stage: chapters (drafts + revise, per chapter)
     if (!completed.has("chapters")) {
       for (let chapterIndex = state.nextChapterIndex; chapterIndex < groups.length; chapterIndex += 1) {
         const group = groups[chapterIndex]
@@ -188,29 +193,17 @@ export async function runNovelPipeline(options: NovelPipelineOptions): Promise<N
       return await cancel(persist)
     }
 
-    // Stage: assemble (E)
-    if (!completed.has("assemble")) {
-      options.onProgress("assemble", "원고 조립 중…")
-      await runAssembleStage(paths, options.project, plan)
-      completed.add("assemble")
-      await persist({})
-    }
+    await runStageOnce("assemble", "원고 조립 중…", () =>
+      runAssembleStage(paths, options.project, plan)
+    )
 
-    // Stage: review (E)
-    if (!completed.has("review")) {
-      options.onProgress("review", "원고 최종 검사 중…")
-      await runReviewStage(paths, options.project, plan, newAiService(), options.deps.aiProviderRegistry)
-      completed.add("review")
-      await persist({})
-    }
+    await runStageOnce("review", "원고 최종 검사 중…", () =>
+      runReviewStage(paths, options.project, plan, newAiService(), options.deps.aiProviderRegistry)
+    )
 
-    // Stage: summaries (E)
-    if (!completed.has("summaries")) {
-      options.onProgress("summaries", "장별 요약 중…")
-      await runSummariesStage(paths, options.project, plan, newAiService(), options.deps.aiProviderRegistry)
-      completed.add("summaries")
-      await persist({})
-    }
+    await runStageOnce("summaries", "장별 요약 중…", () =>
+      runSummariesStage(paths, options.project, plan, newAiService(), options.deps.aiProviderRegistry)
+    )
 
     await persist({ status: "done" })
     return { outcome: "completed", message: "장편 생성을 완료했습니다." }
@@ -310,13 +303,21 @@ async function runChapterDraftsAndRevise(
   }
 }
 
+async function loadAssembledManuscript(
+  paths: StoryboardProjectPaths,
+  project: StoryboardProject,
+  plan: ChapterPlan
+): Promise<ReturnType<typeof assembleManuscript>> {
+  const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, { warn: () => undefined })
+  return assembleManuscript({ plan, projectName: project.name, draftsByOrder })
+}
+
 async function runAssembleStage(
   paths: StoryboardProjectPaths,
   project: StoryboardProject,
   plan: ChapterPlan
 ): Promise<void> {
-  const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, { warn: () => undefined })
-  const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder })
+  const manuscript = await loadAssembledManuscript(paths, project, plan)
 
   await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
 
@@ -343,8 +344,7 @@ async function runReviewStage(
   aiService: StoryboardAIService,
   registry: AiProviderRegistry
 ): Promise<void> {
-  const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, { warn: () => undefined })
-  const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder })
+  const manuscript = await loadAssembledManuscript(paths, project, plan)
   const factLines = await loadCanonFactLines(paths.bibleCanon)
   const characters = collectCharacterIds(plan)
 
@@ -387,8 +387,7 @@ async function runSummariesStage(
   aiService: StoryboardAIService,
   registry: AiProviderRegistry
 ): Promise<void> {
-  const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, { warn: () => undefined })
-  const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder })
+  const manuscript = await loadAssembledManuscript(paths, project, plan)
   const providerId = registry.getTaskProvider("chapterSummary")
 
   const summaries: ChapterSummary[] = []

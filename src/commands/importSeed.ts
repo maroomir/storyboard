@@ -110,6 +110,56 @@ function formatSeedErrorMessage(error: unknown): string {
   return SEED_UNKNOWN_ERROR_MESSAGE
 }
 
+async function loadDecodedSeedOrReport(
+  seedUri: vscode.Uri,
+  logger: StoryboardLogger
+): Promise<DecodedSeedContent | undefined> {
+  let bytes: Uint8Array
+
+  try {
+    bytes = await readSeedFile(seedUri)
+  } catch (error) {
+    logger.error("Seed 파일을 읽지 못했습니다.", error)
+    logger.show()
+    await vscode.window.showErrorMessage("Seed 파일을 읽는 데 실패했습니다. Output 패널을 확인해 주세요.")
+    return undefined
+  }
+
+  try {
+    return decodeSeedToWritePlan(bytes)
+  } catch (error) {
+    await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
+    return undefined
+  }
+}
+
+async function reportSeedWriteFailure(
+  error: unknown,
+  logger: StoryboardLogger,
+  kind: "create" | "sync"
+): Promise<void> {
+  if (error instanceof SeedWriteAbortedError) {
+    logger.show()
+    const abortMessage =
+      kind === "create"
+        ? `Seed 반영이 중간에 실패했습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
+        : `Seed 동기화 중 쓰기가 중단되었습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
+    await vscode.window.showErrorMessage(abortMessage)
+    return
+  }
+
+  if (kind === "create") {
+    logger.error("Seed 기반 프로젝트 생성에 실패했습니다.", error)
+    logger.show()
+    await vscode.window.showErrorMessage("Seed 기반 프로젝트 생성에 실패했습니다. Output 패널을 확인해 주세요.")
+    return
+  }
+
+  logger.error("Seed 동기화에 실패했습니다.", error)
+  logger.show()
+  await vscode.window.showErrorMessage("Seed 동기화에 실패했습니다. Output 패널을 확인해 주세요.")
+}
+
 async function confirmExportWithoutEncryption(): Promise<boolean> {
   const proceed = await vscode.window.showWarningMessage(
     "Seed 파일로 내보냅니다.",
@@ -399,23 +449,9 @@ async function createProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(targetRoot)
 
-  let bytes: Uint8Array
+  let seed = await loadDecodedSeedOrReport(seedUri, dependencies.logger)
 
-  try {
-    bytes = await readSeedFile(seedUri)
-  } catch (error) {
-    dependencies.logger.error("Seed 파일을 읽지 못했습니다.", error)
-    dependencies.logger.show()
-    await vscode.window.showErrorMessage("Seed 파일을 읽는 데 실패했습니다. Output 패널을 확인해 주세요.")
-    return
-  }
-
-  let seed: DecodedSeedContent
-
-  try {
-    seed = decodeSeedToWritePlan(bytes)
-  } catch (error) {
-    await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
+  if (seed === undefined) {
     return
   }
 
@@ -452,17 +488,7 @@ async function createProjectFromSeedFile(
     await vscode.window.showInformationMessage(`Seed로 Storyboard 프로젝트를 생성했습니다: ${seed.project.name}`)
     await offerOpenCreatedFolder(targetRoot)
   } catch (error) {
-    if (error instanceof SeedWriteAbortedError) {
-      dependencies.logger.show()
-      await vscode.window.showErrorMessage(
-        `Seed 반영이 중간에 실패했습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
-      )
-      return
-    }
-
-    dependencies.logger.error("Seed 기반 프로젝트 생성에 실패했습니다.", error)
-    dependencies.logger.show()
-    await vscode.window.showErrorMessage("Seed 기반 프로젝트 생성에 실패했습니다. Output 패널을 확인해 주세요.")
+    await reportSeedWriteFailure(error, dependencies.logger, "create")
   }
 }
 
@@ -484,23 +510,9 @@ async function syncProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(workspaceFolder.uri)
 
-  let bytes: Uint8Array
+  let seed = await loadDecodedSeedOrReport(seedUri, dependencies.logger)
 
-  try {
-    bytes = await readSeedFile(seedUri)
-  } catch (error) {
-    dependencies.logger.error("Seed 파일을 읽지 못했습니다.", error)
-    dependencies.logger.show()
-    await vscode.window.showErrorMessage("Seed 파일을 읽는 데 실패했습니다. Output 패널을 확인해 주세요.")
-    return
-  }
-
-  let seed: DecodedSeedContent
-
-  try {
-    seed = decodeSeedToWritePlan(bytes)
-  } catch (error) {
-    await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
+  if (seed === undefined) {
     return
   }
 
@@ -534,17 +546,7 @@ async function syncProjectFromSeedFile(
     await refreshStoryboardWorkspaceContext()
     await vscode.window.showInformationMessage(`Seed 내용으로 프로젝트를 동기화했습니다: ${seed.project.name}`)
   } catch (error) {
-    if (error instanceof SeedWriteAbortedError) {
-      dependencies.logger.show()
-      await vscode.window.showErrorMessage(
-        `Seed 동기화 중 쓰기가 중단되었습니다. 이미 변경된 파일이 ${error.writtenRelativePaths.length}개 있을 수 있습니다. 필요하면 되돌린 뒤 다시 시도하세요. 상세 경로는 Output의 Storyboard 채널을 확인하세요.`
-      )
-      return
-    }
-
-    dependencies.logger.error("Seed 동기화에 실패했습니다.", error)
-    dependencies.logger.show()
-    await vscode.window.showErrorMessage("Seed 동기화에 실패했습니다. Output 패널을 확인해 주세요.")
+    await reportSeedWriteFailure(error, dependencies.logger, "sync")
   }
 }
 

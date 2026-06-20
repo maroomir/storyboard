@@ -47,34 +47,17 @@ export function extractQuotedUtterancesForCharacter(script: string, characterNam
 }
 
 function collectQuotedStrings(text: string, out: string[]): void {
-  const doubleQuote = /"([^"]+)"/g
-  let match: RegExpExecArray | null
+  const quotePatterns = [/"([^"]+)"/g, /「([^」]+)」/g, /'([^']+)'/g]
 
-  while ((match = doubleQuote.exec(text)) !== null) {
-    const raw = (match[1] ?? "").trim()
+  for (const pattern of quotePatterns) {
+    let match: RegExpExecArray | null
 
-    if (raw.length >= 2) {
-      out.push(raw)
-    }
-  }
+    while ((match = pattern.exec(text)) !== null) {
+      const raw = (match[1] ?? "").trim()
 
-  const corner = /「([^」]+)」/g
-
-  while ((match = corner.exec(text)) !== null) {
-    const raw = (match[1] ?? "").trim()
-
-    if (raw.length >= 2) {
-      out.push(raw)
-    }
-  }
-
-  const singleQuote = /'([^']+)'/g
-
-  while ((match = singleQuote.exec(text)) !== null) {
-    const raw = (match[1] ?? "").trim()
-
-    if (raw.length >= 2) {
-      out.push(raw)
+      if (raw.length >= 2) {
+        out.push(raw)
+      }
     }
   }
 }
@@ -92,6 +75,9 @@ export async function updateCharacterTraitsFromDraft(
 ): Promise<TraitsUpdateSummary> {
   const limit = input.recentDialogueLimit ?? 8
   const { draftBody, detectedCharacterCards, aiService, fileSystem, logger } = input
+
+  const readCharacterCard = (ref: CharacterCard): ReturnType<typeof readCardFile> =>
+    readCardFile(input.resolveCharacterCardUri(ref), fileSystem)
 
   if (detectedCharacterCards.length === 0) {
     return { updatedCardCount: 0, skippedUnchangedCount: 0 }
@@ -133,8 +119,7 @@ export async function updateCharacterTraitsFromDraft(
 
   for (const ref of detectedCharacterCards) {
     try {
-      const uri = input.resolveCharacterCardUri(ref)
-      const current = await readCardFile(uri, fileSystem)
+      const current = await readCharacterCard(ref)
 
       if (current.type === "character") {
         existingTraits[ref.name] = current.traits ?? []
@@ -150,8 +135,7 @@ export async function updateCharacterTraitsFromDraft(
 
   for (const ref of detectedCharacterCards) {
     try {
-      const uri = input.resolveCharacterCardUri(ref)
-      const current = await readCardFile(uri, fileSystem)
+      const current = await readCharacterCard(ref)
 
       if (current.type !== "character") {
         continue
@@ -175,7 +159,7 @@ export async function updateCharacterTraitsFromDraft(
         recentDialogues: mergedRecent
       }
 
-      await writeCardFile(uri, fileSystem, next)
+      await writeCardFile(input.resolveCharacterCardUri(ref), fileSystem, next)
       updatedCardCount += 1
     } catch (error) {
       logger?.error(`Failed to update traits for character ${ref.name}`, error)
