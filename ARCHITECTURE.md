@@ -330,7 +330,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Relation Graph` | 관계 그래프 webview Panel |
-| `storyboard.draft.export` | `Storyboard: Export Draft…` | TXT/PDF/DOCX export |
+| `storyboard.draft.export` | `Storyboard: Export Draft…` | 조립 원고(`manuscript/manuscript.md`)를 Markdown/TXT로 내보내기 (PDF/DOCX 후속) |
 | `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | `.seed` 아카이브 → 새 워크스페이스 폴더 |
 | `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |
 | `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → `.seed` 아카이브 |

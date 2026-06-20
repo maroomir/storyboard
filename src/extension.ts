@@ -4,6 +4,7 @@ import { registerApplyDraftFormatCommand } from "./commands/applyDraftFormat"
 import { registerAssembleManuscriptCommand } from "./commands/assembleManuscript"
 import { registerCanonDiffCommand } from "./commands/canonDiff"
 import { registerCreateCardCommands } from "./commands/createCard"
+import { registerExportManuscriptCommand } from "./commands/exportManuscript"
 import { registerGenerateAllDraftsCommand } from "./commands/generateAllDrafts"
 import { registerGenerateDraftCommands } from "./commands/generateDraft"
 import { registerGenerateNovelCommand } from "./commands/generateNovel"
@@ -89,6 +90,7 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
   context.subscriptions.push(registerCanonDiffCommand({ logger }))
+  context.subscriptions.push(registerExportManuscriptCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
   context.subscriptions.push(registerDraftCodeLensProvider())
   context.subscriptions.push(registerCharacterHoverProvider())

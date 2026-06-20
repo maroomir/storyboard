@@ -148,6 +148,10 @@
       {
         "command": "storyboard.draft.expand",
         "title": "Storyboard: Expand Selection (Draft)"
+      },
+      {
+        "command": "storyboard.draft.export",
+        "title": "Storyboard: Export Draft…"
       }
     ],
     "configuration": {
