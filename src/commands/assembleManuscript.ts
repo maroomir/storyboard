@@ -1,5 +1,10 @@
 import * as vscode from "vscode"
 
+import {
+  buildForeshadowingMarkdown,
+  collectForeshadowing,
+  countForeshadowing
+} from "../core/foreshadowingTracker"
 import type { StoryboardLogger } from "../core/logger"
 import { assembleManuscript } from "../core/manuscriptAssembly"
 import { collectDraftsByOrder } from "../core/manuscriptDrafts"
@@ -74,11 +79,17 @@ async function runAssembleManuscript(
       new TextEncoder().encode(manuscript.volumeMarkdown)
     )
 
+    const foreshadowing = collectForeshadowing(plan)
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.joinPath(paths.manuscriptDirectory, "FORESHADOWING.md"),
+      new TextEncoder().encode(buildForeshadowingMarkdown(project.name, foreshadowing))
+    )
+
     const document = await vscode.workspace.openTextDocument(paths.manuscriptVolume)
     await vscode.window.showTextDocument(document)
 
     await vscode.window.showInformationMessage(
-      `원고를 조립했습니다. 챕터 ${manuscript.chapters.length}개, 포함 ${manuscript.includedCount}개, 누락 ${manuscript.missingCount}개, 기타 ${manuscript.extraCount}개.`
+      `원고를 조립했습니다. 챕터 ${manuscript.chapters.length}개, 포함 ${manuscript.includedCount}개, 누락 ${manuscript.missingCount}개, 기타 ${manuscript.extraCount}개, 복선 ${countForeshadowing(foreshadowing)}건.`
     )
   } catch (error) {
     dependencies.logger.error("Manuscript assembly failed", error)
