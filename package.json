@@ -142,6 +142,10 @@
         "title": "Storyboard: Promote Bible Candidates to Canon"
       },
       {
+        "command": "storyboard.bible.canonDiff",
+        "title": "Storyboard: Canon Diff Report"
+      },
+      {
         "command": "storyboard.draft.expand",
         "title": "Storyboard: Expand Selection (Draft)"
       }
