@@ -76,11 +76,20 @@ function buildBody(flatScene: FlatChapterScene): string {
   const { scene } = flatScene
   const blocks: string[] = [`[목적]\n${scene.purpose.trim().length > 0 ? scene.purpose : "_미작성_"}`]
 
+  if (scene.conflict !== undefined) {
+    blocks.push(`[갈등]\n${scene.conflict}`)
+  }
+  if (scene.twist !== undefined) {
+    blocks.push(`[반전]\n${scene.twist}`)
+  }
   if (scene.emotionalShift !== undefined) {
     blocks.push(`[감정 변화]\n${scene.emotionalShift}`)
   }
   if (scene.foreshadowing.length > 0) {
     blocks.push(`[회수할 복선]\n${scene.foreshadowing.map((item) => `- ${item}`).join("\n")}`)
+  }
+  if (scene.neededCanon && scene.neededCanon.length > 0) {
+    blocks.push(`[필요 설정]\n${scene.neededCanon.map((item) => `- ${item}`).join("\n")}`)
   }
 
   blocks.push(

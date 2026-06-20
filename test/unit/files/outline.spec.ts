@@ -27,7 +27,8 @@ const plan: ChapterPlan = {
               characters: ["elia"],
               location: "school",
               emotionalShift: "불안 → 설렘",
-              foreshadowing: ["전학 이유"]
+              foreshadowing: ["전학 이유"],
+              neededCanon: []
             }
           ]
         }

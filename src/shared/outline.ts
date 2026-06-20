@@ -32,8 +32,11 @@ export interface ScenePlan {
   readonly purpose: string
   readonly characters: readonly string[]
   readonly location?: string
+  readonly conflict?: string
+  readonly twist?: string
   readonly emotionalShift?: string
   readonly foreshadowing: readonly string[]
+  readonly neededCanon?: readonly string[]
 }
 
 export interface ChapterPlanChapter {
@@ -72,8 +75,11 @@ const scenePlanSchema = z.object({
   purpose: z.string().trim().default(""),
   characters: z.array(z.string().trim().min(1)).default([]),
   location: z.string().trim().min(1).optional(),
+  conflict: z.string().trim().min(1).optional(),
+  twist: z.string().trim().min(1).optional(),
   emotionalShift: z.string().trim().min(1).optional(),
-  foreshadowing: z.array(z.string().trim().min(1)).default([])
+  foreshadowing: z.array(z.string().trim().min(1)).default([]),
+  neededCanon: z.array(z.string().trim().min(1)).default([])
 })
 
 const chapterPlanChapterSchema = z.object({
@@ -203,8 +209,11 @@ export function coerceChapterPlan(raw: unknown): ChapterPlan {
               purpose: text(scene.purpose) ?? "",
               characters: textList(scene.characters),
               ...optionalText("location", scene.location),
+              ...optionalText("conflict", scene.conflict),
+              ...optionalText("twist", scene.twist),
               ...optionalText("emotionalShift", scene.emotionalShift),
-              foreshadowing: textList(scene.foreshadowing)
+              foreshadowing: textList(scene.foreshadowing),
+              neededCanon: textList(scene.neededCanon)
             }
           })
         }
