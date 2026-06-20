@@ -81,6 +81,44 @@ describe("buildSceneSeeds", () => {
     expect(scene.body).toContain("- 전학 이유")
   })
 
+  it("renders conflict, twist, and needed-canon sections when present", () => {
+    const richPlan: ChapterPlan = {
+      version: "1.0.0",
+      acts: [
+        {
+          id: "act-1",
+          title: "발단",
+          chapters: [
+            {
+              id: "chapter-1-1",
+              title: "1장",
+              scenes: [
+                {
+                  id: "duel",
+                  title: "결투",
+                  purpose: "대립 점화",
+                  characters: ["elia"],
+                  conflict: "엘리아 대 지훈",
+                  twist: "지훈이 형이었다",
+                  foreshadowing: [],
+                  neededCanon: ["엘리아의 검술 실력"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    const [seed] = buildSceneSeeds(richPlan, 2)
+    const scene = parseScene(seed.content, seed.fileName)
+
+    expect(scene.body).toContain("[갈등]\n엘리아 대 지훈")
+    expect(scene.body).toContain("[반전]\n지훈이 형이었다")
+    expect(scene.body).toContain("[필요 설정]")
+    expect(scene.body).toContain("- 엘리아의 검술 실력")
+  })
+
   it("omits optional frontmatter and sections when the plan lacks them", () => {
     const seeds = buildSceneSeeds(plan, 2)
     const rumor = parseScene(seeds[2].content, seeds[2].fileName)

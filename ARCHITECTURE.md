@@ -305,7 +305,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
-- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 감정 변화, 회수할 복선. (`storyboard.outline.generate`가 생성)
+- `chapters.yaml`: act/chapter/scene 구조, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. (`storyboard.outline.generate`가 생성)
 - `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.txt` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
@@ -397,7 +397,7 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 ### Phase C: Scene Seed Factory
 
 - outline을 chapter/scene 단위로 분해해 `scene/*.txt`를 자동 생성한다.
-- 씬마다 목적, 갈등, 반전, 감정 변화, 필요한 canon 사실을 명시한다.
+- 씬마다 목적, 갈등(`conflict`), 반전(`twist`), 감정 변화, 회수할 복선, 필요한 설정 사실(`neededCanon`)을 `chapters.yaml`에 담고 시드 본문에 반영한다.
 - 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
 
 ### Phase D: Autonomous Draft Loop (진행 중)
