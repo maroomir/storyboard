@@ -96,6 +96,10 @@
         "title": "Storyboard: Review Manuscript"
       },
       {
+        "command": "storyboard.manuscript.summaries",
+        "title": "Storyboard: Summarize Chapters"
+      },
+      {
         "command": "storyboard.draft.applyFormat",
         "title": "Storyboard: Apply Format to Draft (Current Scene)"
       },

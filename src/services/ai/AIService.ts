@@ -11,6 +11,7 @@ import type {
   WiredAiTaskName
 } from "./types"
 import { ChapterPlanPrompt } from "./prompts/chapterPlan"
+import { ChapterSummaryPrompt, type ChapterSummaryInput } from "./prompts/chapterSummary"
 import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
 import { DraftCritiquePrompt, type DraftCritiqueInput } from "./prompts/draftCritique"
 import { DraftRevisionPrompt, type DraftRevisionInput } from "./prompts/draftRevision"
@@ -366,6 +367,21 @@ export class StoryboardAIService {
     })
 
     return coerceCritiqueIssues(response.text)
+  }
+
+  public async summarizeChapter(
+    input: ChapterSummaryInput,
+    options: GenerateTextOptions = {}
+  ): Promise<string> {
+    const variant = this.resolvePromptVariant("chapterSummary", options)
+    const prompt = ChapterSummaryPrompt.build(input, variant)
+    const response = await this.generateText("chapterSummary", toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? ChapterSummaryPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? ChapterSummaryPrompt.config.maxTokens
+    })
+
+    return response.text.trim()
   }
 
   public async reviseDraft(input: DraftRevisionInput, options: GenerateTextOptions = {}): Promise<string> {

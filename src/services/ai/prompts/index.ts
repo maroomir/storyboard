@@ -1,4 +1,5 @@
 export * from "./chapterPlan"
+export * from "./chapterSummary"
 export * from "./continuityCheck"
 export * from "./draftCritique"
 export * from "./draftRevision"
