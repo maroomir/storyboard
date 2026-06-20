@@ -139,6 +139,21 @@ export interface GenerateDraftWorkflowOptions {
   readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void
 }
 
+function reportWorkflowFailure(
+  options: GenerateDraftWorkflowOptions,
+  logMessage: string,
+  error: unknown,
+  userMessage: string
+): GenerateDraftWorkflowResult {
+  options.logger.error(logMessage, error)
+
+  if (!options.suppressLoggerPanel) {
+    options.logger.show()
+  }
+
+  return { ok: false, kind: "failed", message: userMessage }
+}
+
 export async function generateDraftForWorkspaceSceneWorkflow(
   sceneUri: vscode.Uri,
   options: GenerateDraftWorkflowOptions
@@ -182,17 +197,12 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       return { ok: false, kind: "failed", message: `씬 파일을 읽을 수 없습니다: ${error.message}` }
     }
 
-    options.logger.error("Failed to read scene file", error)
-
-    if (!options.suppressLoggerPanel) {
-      options.logger.show()
-    }
-
-    return {
-      ok: false,
-      kind: "failed",
-      message: "씬 파일을 읽는 중 오류가 발생했습니다. Output 패널을 확인해 주세요."
-    }
+    return reportWorkflowFailure(
+      options,
+      "Failed to read scene file",
+      error,
+      "씬 파일을 읽는 중 오류가 발생했습니다. Output 패널을 확인해 주세요."
+    )
   }
 
   let project
@@ -200,17 +210,12 @@ export async function generateDraftForWorkspaceSceneWorkflow(
   try {
     project = await readProjectJson(paths.projectJson)
   } catch (error) {
-    options.logger.error("Failed to read project.json", error)
-
-    if (!options.suppressLoggerPanel) {
-      options.logger.show()
-    }
-
-    return {
-      ok: false,
-      kind: "failed",
-      message: "project.json을 읽을 수 없습니다. Output 패널을 확인해 주세요."
-    }
+    return reportWorkflowFailure(
+      options,
+      "Failed to read project.json",
+      error,
+      "project.json을 읽을 수 없습니다. Output 패널을 확인해 주세요."
+    )
   }
 
   const ctxPaths = sceneContextPaths(paths)
@@ -219,17 +224,12 @@ export async function generateDraftForWorkspaceSceneWorkflow(
   try {
     context = await buildSceneContext(ctxPaths, scene, sceneContextFileSystem)
   } catch (error) {
-    options.logger.error("Failed to build scene context", error)
-
-    if (!options.suppressLoggerPanel) {
-      options.logger.show()
-    }
-
-    return {
-      ok: false,
-      kind: "failed",
-      message: "씬 컨텍스트를 구성하지 못했습니다. Output 패널을 확인해 주세요."
-    }
+    return reportWorkflowFailure(
+      options,
+      "Failed to build scene context",
+      error,
+      "씬 컨텍스트를 구성하지 못했습니다. Output 패널을 확인해 주세요."
+    )
   }
 
   const narrativeContext = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem)
@@ -369,14 +369,8 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       return { ok: false, kind: "cancelled" }
     }
 
-    options.logger.error("Draft generation failed", error)
-
-    if (!options.suppressLoggerPanel) {
-      options.logger.show()
-    }
-
     const message = error instanceof Error ? error.message : String(error)
-    return { ok: false, kind: "failed", message: `초안 생성에 실패했습니다: ${message}` }
+    return reportWorkflowFailure(options, "Draft generation failed", error, `초안 생성에 실패했습니다: ${message}`)
   }
 }
 
