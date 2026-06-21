@@ -164,6 +164,8 @@
             "claude",
             "google",
             "ollama",
+            "claude-code",
+            "codex",
             "mock"
           ],
           "default": "mock",
@@ -194,6 +196,26 @@
           "default": "llama3.3",
           "description": "Ollama model used by Storyboard."
         },
+        "storyboard.providers.claude-code.command": {
+          "type": "string",
+          "default": "claude",
+          "description": "Executable used to invoke the Claude Code CLI. Override with an absolute path if it is not on PATH."
+        },
+        "storyboard.providers.claude-code.model": {
+          "type": "string",
+          "default": "sonnet",
+          "description": "Model passed to the Claude Code CLI (e.g. sonnet, opus, haiku). Uses your Claude Code login; no API key required."
+        },
+        "storyboard.providers.codex.command": {
+          "type": "string",
+          "default": "codex",
+          "description": "Executable used to invoke the Codex CLI. Override with an absolute path if it is not on PATH."
+        },
+        "storyboard.providers.codex.model": {
+          "type": "string",
+          "default": "gpt-5-codex",
+          "description": "Model passed to the Codex CLI. Uses your Codex login; no API key required."
+        },
         "storyboard.tasks": {
           "type": "object",
           "default": {},
@@ -208,6 +230,8 @@
                   "claude",
                   "google",
                   "ollama",
+                  "claude-code",
+                  "codex",
                   "mock"
                 ]
               },

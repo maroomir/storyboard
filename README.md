@@ -23,6 +23,7 @@ English README: [`README.en.md`](README.en.md)
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
+- Claude Code(`claude`)·Codex(`codex`) CLI provider 지원 — API 키 없이 구독 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 
@@ -63,6 +64,12 @@ npm run build
 5. `Storyboard: Open Settings`에서 **작품 계약**을 채운 뒤 `Storyboard: Generate Novel`을 실행하거나, Activity Bar의 Characters / Backgrounds / Scenes 뷰에서 카드와 씬을 직접 생성합니다.
 
 API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다. 실제 provider를 쓰려면 `Storyboard: Set API Key...` 명령으로 키를 저장합니다.
+
+이미 **Claude Code**나 **Codex** CLI를 쓰고 있다면 API 키 없이 그 구독을 그대로 활용할 수 있습니다.
+각 CLI(`claude` / `codex`)를 설치하고 로그인한 뒤 `storyboard.defaultProvider`를 `claude-code` 또는
+`codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에 없으면 `storyboard.providers.claude-code.command` /
+`storyboard.providers.codex.command`에 절대 경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다.
+설정 패널의 연결 테스트로 CLI 감지 여부를 확인할 수 있습니다.
 
 ## 개발
 

@@ -6,6 +6,7 @@ const storyboardWorkspaceConfigurationTarget = 2
 export interface ProviderModelConfig {
   readonly model?: string
   readonly baseUrl?: string
+  readonly command?: string
 }
 
 export interface TaskAiStoredEntry {
@@ -57,6 +58,13 @@ export class ConfigBridge {
       return {
         baseUrl: configuration.get("providers.ollama.baseUrl", "http://localhost:11434"),
         model: configuration.get("providers.ollama.model", "llama3.3")
+      }
+    }
+
+    if (providerId === "claude-code" || providerId === "codex") {
+      return {
+        command: configuration.get(`providers.${providerId}.command`, getDefaultCommand(providerId)),
+        model: configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId))
       }
     }
 
@@ -269,10 +277,18 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
       return "claude-sonnet-4-6"
     case "google":
       return "gemini-2.5-flash"
+    case "claude-code":
+      return "sonnet"
+    case "codex":
+      return "gpt-5-codex"
     case "mock":
     case "ollama":
       return undefined
   }
+}
+
+function getDefaultCommand(providerId: "claude-code" | "codex"): string {
+  return providerId === "claude-code" ? "claude" : "codex"
 }
 
 export function getConfigurableTaskNames(): readonly AiTaskName[] {

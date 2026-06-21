@@ -16,7 +16,7 @@ import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
 import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 import { createSettingsRpcHandlers } from "@/services/settings/settingsRpcHandlers"
-import { aiTaskNames } from "@/services/ai/types"
+import { aiProviderIds, aiTaskNames } from "@/services/ai/types"
 
 class MutableFakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: Map<string, unknown>) {}
@@ -159,12 +159,12 @@ describe("createSettingsRpcHandlers", () => {
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
     expect(snapshot.defaultProvider).toBe("mock")
-    expect(snapshot.providers).toHaveLength(5)
+    expect(snapshot.providers).toHaveLength(aiProviderIds.length)
     expect(snapshot.taskAssignments.sceneDraft).toEqual({ providerId: "claude", model: null })
     for (const taskName of aiTaskNames) {
       expect(snapshot.taskAssignments).toHaveProperty(taskName)
     }
-    for (const id of ["openai", "claude", "google", "ollama", "mock"] as const) {
+    for (const id of aiProviderIds) {
       expect(snapshot.modelCatalog[id].map((o) => o.id)).toEqual(storyboardModelCatalog[id].map((o) => o.id))
     }
   })

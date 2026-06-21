@@ -19,7 +19,7 @@ const fieldGroupClass =
 
 const settingsPanelClass = "mx-auto flex w-full max-w-5xl flex-col gap-4"
 
-const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "mock"] as const
+const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "claude-code", "codex", "mock"] as const
 type AiProviderId = (typeof AI_PROVIDER_IDS)[number]
 type AiTaskName = string
 type AiTaskStatus = "wired" | "planned"
@@ -465,7 +465,8 @@ function ProviderConfigCard({
   const status = getProviderStatus(snapshot, providerId)
   const displayName = status?.displayName ?? providerId
   const config = snapshot.providerConfigs[providerId]
-  const showApiKey = providerId !== "mock" && providerId !== "ollama"
+  const isCli = providerId === "claude-code" || providerId === "codex"
+  const showApiKey = providerId !== "mock" && providerId !== "ollama" && !isCli
   const isOllama = providerId === "ollama"
   const testState = connectionTest[providerId] ?? "idle"
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider)
@@ -546,6 +547,7 @@ function ProviderConfigCard({
           {status?.hasApiKey && showApiKey ? <StatusPill tone="success">키 저장됨</StatusPill> : null}
           {!status?.hasApiKey && showApiKey ? <StatusPill tone="warning">키 필요</StatusPill> : null}
           {isOllama ? <StatusPill tone="neutral">로컬</StatusPill> : null}
+          {isCli ? <StatusPill tone="neutral">CLI</StatusPill> : null}
           {providerId === "mock" ? <StatusPill tone="neutral">Mock</StatusPill> : null}
           <StatusPill tone={status?.isAvailable ? "neutral" : "error"}>
             {status?.isAvailable ? "사용 가능" : "비활성"}

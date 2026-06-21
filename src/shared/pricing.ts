@@ -26,6 +26,8 @@ export const storyboardModelPricing = {
     "llama3.2": { inputPricePerMillion: 0, outputPricePerMillion: 0 },
     "qwen2.5": { inputPricePerMillion: 0, outputPricePerMillion: 0 }
   },
+  "claude-code": {},
+  codex: {},
   mock: {
     "mock-default": { inputPricePerMillion: 0, outputPricePerMillion: 0 }
   }
