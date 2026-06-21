@@ -61,6 +61,10 @@ export function createDefaultCliRunner(): CliRunner {
         finish(() => resolve({ stdout, stderr, exitCode: code }))
       })
 
+      // NOTE: 사용자 지정 command가 stdin 소비 전 종료하면 stdin에 EPIPE 'error'가 발생하는데,
+      // 리스너가 없으면 uncaught 예외로 확장 호스트가 죽는다. 실패는 child 'error'/'close'로 표면화한다.
+      child.stdin?.on("error", () => {})
+
       if (input.stdin !== undefined) {
         child.stdin?.write(input.stdin)
       }

@@ -16,7 +16,7 @@ interface SpawnCall {
   readonly options: { readonly shell: boolean; readonly cwd?: string }
 }
 
-class FakeWritableStdin {
+class FakeWritableStdin extends EventEmitter {
   public readonly chunks: string[] = []
   public ended = false
 
@@ -125,6 +125,16 @@ describe("createDefaultCliRunner", () => {
     expect(call.args).not.toContain(secretPrompt)
     expect(call.args.join(" ")).not.toContain("rm -rf")
     expect(child.stdin.chunks).toEqual([secretPrompt])
+  })
+
+  it("swallows a stdin error instead of crashing the host", async () => {
+    const runner = createDefaultCliRunner()
+    const running = runner({ command: "claude", args: [], stdin: "본문" })
+
+    child.stdin.emit("error", new Error("EPIPE"))
+    child.emitClose(0)
+
+    await expect(running).resolves.toMatchObject({ exitCode: 0 })
   })
 
   it("resolves with accumulated stdout, stderr, and exit code on close", async () => {

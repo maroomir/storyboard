@@ -57,7 +57,8 @@ export class ClaudeCodeProvider implements AiProvider {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      // NOTE: auth status는 토큰을 쓰지 않고 바이너리 존재와 구독 로그인 여부를 함께 확인한다.
+      // NOTE: `claude auth status --json`은 로그인 시 `{ "loggedIn": true }`를 출력한다(claude 2.1.185 확인).
+      // 로그아웃 시 JSON 형태는 로그인된 환경에서 검증하지 못했다.
       const result = await this.run({
         command: this.command,
         args: ["auth", "status", "--json"],
