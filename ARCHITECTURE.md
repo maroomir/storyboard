@@ -376,6 +376,11 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 헤드리스 모드로 실행해 생성 결과를 가져온다. 인증은 각 CLI의 자체 로그인(구독)이 처리하므로 API 키가
 필요 없고(keyless), CLI는 셸 보간 없이(`shell:false`) 임시 디렉터리에서 읽기 전용으로 실행하며 프롬프트는
 stdin으로만 전달한다. `claude-code`는 `--output-format json` 출력에서 토큰 사용량과 비용을 그대로 기록한다.
+연결 테스트는 `claude auth status`(또는 codex의 로그인 상태 확인)로 바이너리와 로그인 여부를 함께 검증한다.
+
+CLI provider의 한계로, 두 CLI는 샘플링 파라미터를 노출하지 않으므로 `temperature`와 `maxTokens`(출력 토큰
+상한)는 적용되지 않는다. 또한 `codex`는 사용량·비용을 기록하지 않아 사용량 원장에서 0으로 집계된다(실제 CLI로
+`--json` 출력을 검증한 뒤 보완 예정).
 
 ## 7. 비목표 (Non-Goals)
 
