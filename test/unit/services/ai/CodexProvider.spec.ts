@@ -10,7 +10,7 @@ describe("CodexProvider", () => {
     expect(() => new CodexProvider({ command: "codex", model: undefined })).toThrow(AiProviderError)
   })
 
-  it("checks connection by running --version", async () => {
+  it("verifies authentication via `codex login status`", async () => {
     const calls: CliRunInput[] = []
     const provider = new CodexProvider({
       command: "codex",
@@ -19,7 +19,20 @@ describe("CodexProvider", () => {
     })
 
     await expect(provider.checkConnection()).resolves.toBe(true)
-    expect(calls[0]?.args).toEqual(["--version"])
+    expect(calls[0]?.args).toEqual(["login", "status"])
+  })
+
+  it("throws when the auth check exits non-zero", async () => {
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 1, stderr: "not logged in" })
+    })
+
+    await expect(provider.checkConnection()).rejects.toMatchObject({
+      code: "connection-failed",
+      providerId: "codex"
+    })
   })
 
   it("runs exec in a read-only sandbox and combines system and user into stdin", async () => {
