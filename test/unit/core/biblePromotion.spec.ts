@@ -28,16 +28,19 @@ describe("selectNewCandidates", () => {
     facts: [{ id: "character:elia:눈동자 색", subject: { kind: "character", id: "elia" }, key: "눈동자 색", value: "녹색", status: "canon" }]
   }
 
-  it("excludes candidates already present in canon with the same value", () => {
-    const candidates = [buildCandidateFact({ kind: "character", id: "elia" }, "눈동자 색", "녹색")]
+  it("excludes candidates whose id already exists in canon, regardless of value", () => {
+    const candidates = [
+      buildCandidateFact({ kind: "character", id: "elia" }, "눈동자 색", "녹색"),
+      buildCandidateFact({ kind: "character", id: "elia" }, "눈동자 색", "파란색")
+    ]
 
     expect(selectNewCandidates(candidates, canon)).toEqual([])
   })
 
-  it("keeps candidates whose value differs from canon", () => {
-    const candidates = [buildCandidateFact({ kind: "character", id: "elia" }, "눈동자 색", "파란색")]
+  it("keeps candidates whose id is not yet in canon", () => {
+    const candidates = [buildCandidateFact({ kind: "character", id: "elia" }, "키", "170cm")]
 
-    expect(selectNewCandidates(candidates, canon).map((fact) => fact.value)).toEqual(["파란색"])
+    expect(selectNewCandidates(candidates, canon).map((fact) => fact.id)).toEqual(["character:elia:키"])
   })
 })
 
