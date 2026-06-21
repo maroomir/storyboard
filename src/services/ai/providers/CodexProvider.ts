@@ -1,11 +1,13 @@
 import os from "node:os"
 
 import { AiProviderError } from "../AiProviderError"
+import { aiGenerateResponseWithUsage } from "../cost"
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
-  type AiProviderId
+  type AiProviderId,
+  type AiUsage
 } from "../types"
 import { type CliRunner, createDefaultCliRunner, splitCliPrompt } from "./cliRunner"
 
@@ -76,7 +78,8 @@ export class CodexProvider implements AiProvider {
     // NOTE: codex CLI는 temperature를 노출하지 않아 request.temperature와
     // request.maxTokens는 적용되지 않는다.
     // NOTE: read-only 샌드박스로 실행해 Codex가 파일을 수정하지 못하게 한다.
-    const args = ["exec", "--model", this.model, "--sandbox", "read-only", "--skip-git-repo-check"]
+    // NOTE: --json으로 stdout에 JSONL 이벤트를 받아 최종 메시지와 토큰 사용량을 파싱한다.
+    const args = ["exec", "--model", this.model, "--sandbox", "read-only", "--skip-git-repo-check", "--json"]
 
     let result
     try {
@@ -100,10 +103,79 @@ export class CodexProvider implements AiProvider {
       )
     }
 
-    return {
+    const parsed = parseCodexJsonl(result.stdout)
+    // NOTE: --json을 인식하지 못하는 CLI/버전이면 평문 stdout로 폴백해 throw 없이 동작시킨다.
+    const text = parsed.text ?? result.stdout.trim()
+
+    return aiGenerateResponseWithUsage({
       providerId: this.id,
       model: this.model,
-      text: result.stdout.trim()
+      text,
+      ...(parsed.usage ? { usage: parsed.usage } : {})
+    })
+  }
+}
+
+interface CodexJsonlParseResult {
+  readonly text?: string
+  readonly usage?: AiUsage
+}
+
+interface CodexTurnUsage {
+  readonly input_tokens?: number
+  readonly cached_input_tokens?: number
+  readonly output_tokens?: number
+  readonly reasoning_output_tokens?: number
+}
+
+function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
+  let text: string | undefined
+  let usage: AiUsage | undefined
+
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    let event: unknown
+    try {
+      event = JSON.parse(trimmed)
+    } catch {
+      continue
+    }
+
+    if (!isRecord(event)) {
+      continue
+    }
+
+    if (event.type === "item.completed" && isRecord(event.item) && event.item.type === "agent_message") {
+      const message = event.item.text
+      if (typeof message === "string") {
+        text = message
+      }
+    }
+
+    if (event.type === "turn.completed" && isRecord(event.usage)) {
+      usage = usageFromCodexTurn(event.usage as CodexTurnUsage)
     }
   }
+
+  return {
+    ...(text !== undefined ? { text } : {}),
+    ...(usage ? { usage } : {})
+  }
+}
+
+function usageFromCodexTurn(turnUsage: CodexTurnUsage): AiUsage {
+  // NOTE: codex의 output_tokens는 reasoning_output_tokens를 이미 포함하므로 더하면 이중 계산이 된다.
+  return {
+    inputTokens: turnUsage.input_tokens ?? 0,
+    outputTokens: turnUsage.output_tokens ?? 0,
+    cacheReadInputTokens: turnUsage.cached_input_tokens
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }

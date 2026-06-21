@@ -35,15 +35,24 @@ describe("CodexProvider", () => {
     })
   })
 
-  it("runs exec in a read-only sandbox and combines system and user into stdin", async () => {
+  it("runs exec with json output and parses the agent message and usage", async () => {
     let captured: CliRunInput | undefined
+    const stdout = [
+      JSON.stringify({ type: "thread.started", thread_id: "t1" }),
+      JSON.stringify({ type: "turn.started" }),
+      JSON.stringify({ type: "item.completed", item: { id: "item_0", type: "agent_message", text: "코덱스 응답" } }),
+      JSON.stringify({
+        type: "turn.completed",
+        usage: { input_tokens: 100, cached_input_tokens: 40, output_tokens: 50, reasoning_output_tokens: 12 }
+      })
+    ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
       model: "gpt-5-codex",
       createRunner: (): CliRunner =>
         createFakeRunner({
           exitCode: 0,
-          stdout: "  코덱스 응답  \n",
+          stdout,
           onRun: (input) => {
             captured = input
           }
@@ -59,8 +68,67 @@ describe("CodexProvider", () => {
     })
 
     expect(captured?.command).toBe("codex")
-    expect(captured?.args).toEqual(["exec", "--model", "gpt-5-codex", "--sandbox", "read-only", "--skip-git-repo-check"])
+    expect(captured?.args).toEqual([
+      "exec",
+      "--model",
+      "gpt-5-codex",
+      "--sandbox",
+      "read-only",
+      "--skip-git-repo-check",
+      "--json"
+    ])
     expect(captured?.stdin).toBe("지시문\n\n본문")
+    expect(response.providerId).toBe("codex")
+    expect(response.model).toBe("gpt-5-codex")
+    expect(response.text).toBe("코덱스 응답")
+    expect(response.usage).toEqual({ inputTokens: 100, outputTokens: 50, cacheReadInputTokens: 40 })
+  })
+
+  it("does not add reasoning tokens onto output tokens", async () => {
+    const stdout = [
+      JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
+      JSON.stringify({
+        type: "turn.completed",
+        usage: { input_tokens: 10, output_tokens: 72, reasoning_output_tokens: 65 }
+      })
+    ].join("\n")
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(response.usage?.outputTokens).toBe(72)
+  })
+
+  it("routes cost through the pricing path when usage is present", async () => {
+    const stdout = [
+      JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
+      JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } })
+    ].join("\n")
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(response.usage).toBeDefined()
+    expect(response.costUsd).toBe(0)
+  })
+
+  it("falls back to plain stdout when json is not emitted", async () => {
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout: "  코덱스 응답  \n" })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
     expect(response).toEqual({ providerId: "codex", model: "gpt-5-codex", text: "코덱스 응답" })
   })
 

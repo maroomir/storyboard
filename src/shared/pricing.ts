@@ -27,7 +27,10 @@ export const storyboardModelPricing = {
     "qwen2.5": { inputPricePerMillion: 0, outputPricePerMillion: 0 }
   },
   "claude-code": {},
-  codex: {},
+  codex: {
+    // NOTE: 실제 gpt-5-codex 요금은 사용자 제공 대기 중. 숫자만 채우면 비용 산출이 활성화된다.
+    "gpt-5-codex": { inputPricePerMillion: 0, outputPricePerMillion: 0 }
+  },
   mock: {
     "mock-default": { inputPricePerMillion: 0, outputPricePerMillion: 0 }
   }
