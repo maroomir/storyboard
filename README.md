@@ -67,9 +67,10 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 
 이미 **Claude Code**나 **Codex** CLI를 쓰고 있다면 API 키 없이 그 구독을 그대로 활용할 수 있습니다.
 각 CLI(`claude` / `codex`)를 설치하고 로그인한 뒤 `storyboard.defaultProvider`를 `claude-code` 또는
-`codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에 없으면 `storyboard.providers.claude-code.command` /
-`storyboard.providers.codex.command`에 절대 경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다.
-설정 패널의 연결 테스트로 CLI 감지 여부를 확인할 수 있습니다.
+`codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에 없으면 설정 패널 **연결** 탭의 «실행 명령» 입력
+(또는 `storyboard.providers.claude-code.command` / `storyboard.providers.codex.command` 설정)에 절대
+경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다. 연결 테스트는 CLI를 찾지 못하면 «CLI 미설치»를,
+설치는 됐지만 로그인되지 않았으면 연결 실패를 표시합니다.
 
 ## 개발
 

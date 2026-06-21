@@ -40,6 +40,7 @@ interface ProviderModelOption {
 interface ProviderRuntimeConfig {
   readonly model: string
   readonly baseUrl?: string
+  readonly command?: string
 }
 
 interface TaskAiAssignment {
@@ -318,7 +319,12 @@ function ConnectionTestButton({
       className: "text-sb-fg-muted"
     },
     ok: { label: "연결 성공", icon: <CheckCircle2 className={iconClass} aria-hidden />, className: "text-sb-fg" },
-    error: { label: "연결 실패", icon: <AlertCircle className={iconClass} aria-hidden />, className: "text-sb-fg-error" }
+    error: { label: "연결 실패", icon: <AlertCircle className={iconClass} aria-hidden />, className: "text-sb-fg-error" },
+    "not-installed": {
+      label: "CLI 미설치",
+      icon: <AlertCircle className={iconClass} aria-hidden />,
+      className: "text-sb-fg-error"
+    }
   }[state]
 
   return (
@@ -433,7 +439,7 @@ function DefaultProviderSection({
   )
 }
 
-type ConnectionTestState = "idle" | "loading" | "ok" | "error"
+type ConnectionTestState = "idle" | "loading" | "ok" | "error" | "not-installed"
 
 function ProviderConfigCard({
   providerId,
@@ -442,6 +448,8 @@ function ProviderConfigCard({
   onRpcError,
   apiKeyDraft,
   setApiKeyDraft,
+  commandDraft,
+  setCommandDraft,
   ollamaBaseUrlDraft,
   setOllamaBaseUrlDraft,
   baseUrlFocused,
@@ -455,6 +463,8 @@ function ProviderConfigCard({
   readonly onRpcError: (message: string) => void
   readonly apiKeyDraft: Partial<Record<AiProviderId, string>>
   readonly setApiKeyDraft: React.Dispatch<React.SetStateAction<Partial<Record<AiProviderId, string>>>>
+  readonly commandDraft: Partial<Record<AiProviderId, string>>
+  readonly setCommandDraft: React.Dispatch<React.SetStateAction<Partial<Record<AiProviderId, string>>>>
   readonly ollamaBaseUrlDraft: string | null
   readonly setOllamaBaseUrlDraft: React.Dispatch<React.SetStateAction<string | null>>
   readonly baseUrlFocused: boolean
@@ -470,17 +480,20 @@ function ProviderConfigCard({
   const isOllama = providerId === "ollama"
   const testState = connectionTest[providerId] ?? "idle"
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider)
-  const hasConnectionFields = showApiKey || isOllama
+  const hasConnectionFields = showApiKey || isOllama || isCli
 
   const resolvedBaseUrl =
     ollamaBaseUrlDraft !== null ? ollamaBaseUrlDraft : (config.baseUrl ?? "http://127.0.0.1:11434")
+
+  const resolvedCommand = commandDraft[providerId] ?? config.command ?? ""
 
   const runConnectionTest = (): void => {
     setConnectionTest((previous) => ({ ...previous, [providerId]: "loading" }))
     void callRpc("ai.providers.checkConnection", { providerId })
       .then((payload) => {
-        const ok = typeof payload === "object" && payload !== null && (payload as { ok?: boolean }).ok === true
-        setConnectionTest((previous) => ({ ...previous, [providerId]: ok ? "ok" : "error" }))
+        const result = typeof payload === "object" && payload !== null ? (payload as { ok?: boolean; reason?: string }) : {}
+        const next = result.ok === true ? "ok" : result.reason === "not-installed" ? "not-installed" : "error"
+        setConnectionTest((previous) => ({ ...previous, [providerId]: next }))
       })
       .catch(() => {
         setConnectionTest((previous) => ({ ...previous, [providerId]: "error" }))
@@ -522,6 +535,26 @@ function ProviderConfigCard({
       })
       .catch((error: unknown) => {
         onRpcError(error instanceof Error ? error.message : "Base URL을 저장하지 못했습니다.")
+      })
+  }
+
+  const saveCommand = (): void => {
+    const trimmed = resolvedCommand.trim()
+    if (trimmed.length === 0) {
+      onRpcError("CLI 실행 명령을 입력하세요.")
+      return
+    }
+
+    void callRpc("settings.updateProviderCommand", { providerId, command: trimmed })
+      .then(() => {
+        setCommandDraft((previous) => {
+          const next = { ...previous }
+          delete next[providerId]
+          return next
+        })
+      })
+      .catch((error: unknown) => {
+        onRpcError(error instanceof Error ? error.message : "실행 명령을 저장하지 못했습니다.")
       })
   }
 
@@ -585,6 +618,37 @@ function ProviderConfigCard({
               </Button>
             </div>
           </div>
+        ) : null}
+
+        {isCli ? (
+          <div className={fieldGroupClass}>
+            <label className="text-sm font-medium text-sb-fg" htmlFor={`${providerId}-command`}>
+              실행 명령
+            </label>
+            <div className="flex min-w-0 gap-2">
+              <input
+                id={`${providerId}-command`}
+                className={sbInputClass}
+                autoComplete="off"
+                spellCheck={false}
+                value={resolvedCommand}
+                placeholder={providerId === "claude-code" ? "claude" : "codex"}
+                onChange={(event) => {
+                  const next = event.target.value
+                  setCommandDraft((previous) => ({ ...previous, [providerId]: next }))
+                }}
+              />
+              <Button type="button" variant="secondary" className="shrink-0" onClick={saveCommand}>
+                적용
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {isCli && testState === "not-installed" ? (
+          <p className="m-0 text-xs text-sb-fg-error">
+            CLI 미설치: 실행 명령 «{resolvedCommand || (providerId === "claude-code" ? "claude" : "codex")}»을 찾을 수 없습니다. 설치 후 PATH를 확인하거나 위에서 명령 경로를 지정하세요.
+          </p>
         ) : null}
 
         {showApiKey ? (
@@ -750,6 +814,7 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
   const [loadError, setLoadError] = useState<string | null>(parsedInitial ? null : "설정을 불러오지 못했습니다.")
   const [rpcError, setRpcError] = useState<string | null>(null)
   const [apiKeyDraft, setApiKeyDraft] = useState<Partial<Record<AiProviderId, string>>>({})
+  const [commandDraft, setCommandDraft] = useState<Partial<Record<AiProviderId, string>>>({})
   const [ollamaBaseUrlDraft, setOllamaBaseUrlDraft] = useState<string | null>(null)
   const [baseUrlFocused, setBaseUrlFocused] = useState(false)
   const baseUrlFocusedRef = useRef(baseUrlFocused)
@@ -867,6 +932,8 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
                 onRpcError={onRpcError}
                 apiKeyDraft={apiKeyDraft}
                 setApiKeyDraft={setApiKeyDraft}
+                commandDraft={commandDraft}
+                setCommandDraft={setCommandDraft}
                 ollamaBaseUrlDraft={ollamaBaseUrlDraft}
                 setOllamaBaseUrlDraft={setOllamaBaseUrlDraft}
                 baseUrlFocused={baseUrlFocused}

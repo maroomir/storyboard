@@ -68,6 +68,10 @@ export function createDefaultCliRunner(): CliRunner {
     })
 }
 
+export function isCommandNotFound(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: unknown }).code === "ENOENT"
+}
+
 export interface SplitCliPrompt {
   readonly systemPrompt?: string
   readonly userPrompt: string

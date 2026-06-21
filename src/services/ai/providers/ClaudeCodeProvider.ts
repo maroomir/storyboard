@@ -8,7 +8,7 @@ import {
   type AiProviderId,
   type AiUsage
 } from "../types"
-import { type CliRunner, createDefaultCliRunner, splitCliPrompt } from "./cliRunner"
+import { type CliRunner, createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from "./cliRunner"
 
 const connectionTimeoutMs = 15_000
 const generateTimeoutMs = 180_000
@@ -79,6 +79,16 @@ export class ClaudeCodeProvider implements AiProvider {
     } catch (error) {
       if (error instanceof AiProviderError) {
         throw error
+      }
+
+      if (isCommandNotFound(error)) {
+        throw new AiProviderError(
+          "connection-failed",
+          this.id,
+          `Claude Code 실행 명령 \`${this.command}\`을 찾을 수 없습니다.`,
+          error,
+          { connectionReason: "not-installed" }
+        )
       }
 
       throw new AiProviderError("connection-failed", this.id, "Claude Code CLI 연결 확인에 실패했습니다.", error)

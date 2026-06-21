@@ -167,6 +167,27 @@ describe("createSettingsRpcHandlers", () => {
     for (const id of aiProviderIds) {
       expect(snapshot.modelCatalog[id].map((o) => o.id)).toEqual(storyboardModelCatalog[id].map((o) => o.id))
     }
+
+    expect(snapshot.providerConfigs["claude-code"].command).toBe("claude")
+    expect(snapshot.providerConfigs["codex"].command).toBe("codex")
+    expect(snapshot.providerConfigs["openai"].command).toBeUndefined()
+  })
+
+  it("ships the configured CLI command in settings.read and writes it via updateProviderCommand", async () => {
+    const configuration = new Map<string, unknown>([["providers.claude-code.command", "/custom/claude"]])
+    const secretValues = new Map<string, string>()
+    const registry = createTestRegistry(configuration, secretValues)
+    const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
+    })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+
+    const snapshot = await handlers["settings.read"]!({}, {} as never)
+    expect(snapshot.providerConfigs["claude-code"].command).toBe("/custom/claude")
+
+    await handlers["settings.updateProviderCommand"]!({ providerId: "codex", command: "/opt/codex" }, {} as never)
+    expect(configuration.get("providers.codex.command")).toBe("/opt/codex")
   })
 
   it("settings.read returns stored task model alongside provider when both are set", async () => {
@@ -348,6 +369,35 @@ describe("settings RPC via webview bridge", () => {
       id: "bad-model",
       method: "settings.updateProviderModel",
       payload: { providerId: "openai", model: "gpt-99-fake" }
+    })
+
+    expect(webview.postedMessages).toHaveLength(1)
+    expect(webview.postedMessages[0]).toMatchObject({
+      id: "unknown",
+      method: "unknown",
+      ok: false,
+      error: { code: "validation-error" }
+    })
+  })
+
+  it("returns validation-error for settings.updateProviderCommand on a non-CLI provider", async () => {
+    const configuration = new Map<string, unknown>()
+    const secretValues = new Map<string, string>()
+    const registry = createTestRegistry(configuration, secretValues)
+    const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
+    })
+    const webview = new FakeWebview()
+
+    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry }))
+
+    await webview.receive({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "bad-command",
+      method: "settings.updateProviderCommand",
+      payload: { providerId: "openai", command: "claude" }
     })
 
     expect(webview.postedMessages).toHaveLength(1)

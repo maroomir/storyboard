@@ -122,6 +122,10 @@ export class ConfigBridge {
     await this.configurationUpdate("providers.ollama.baseUrl", baseUrl)
   }
 
+  public async setProviderCommand(providerId: "claude-code" | "codex", command: string): Promise<void> {
+    await this.configurationUpdate(`providers.${providerId}.command`, command)
+  }
+
   public async setTaskAiConfig(
     taskName: AiTaskName,
     config: { readonly providerId: AiProviderId | null; readonly model: string | null }

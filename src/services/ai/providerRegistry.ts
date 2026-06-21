@@ -8,6 +8,7 @@ import { MockAiProvider } from "./providers/MockAiProvider"
 import { OllamaProvider, type OllamaClientLike } from "./providers/OllamaProvider"
 import { OpenAiProvider, type OpenAiClientLike } from "./providers/OpenAiProvider"
 import {
+  type AiConnectionResult,
   type AiStreamChunk,
   aiProviderIds,
   type AiGenerateRequest,
@@ -38,8 +39,17 @@ export class AiProviderRegistry {
     return Promise.all(aiProviderIds.map((providerId) => this.getProviderStatus(providerId)))
   }
 
-  public async checkConnection(providerId: AiProviderId): Promise<boolean> {
-    return (await this.createProvider(providerId)).checkConnection()
+  public async checkConnection(providerId: AiProviderId): Promise<AiConnectionResult> {
+    try {
+      await (await this.createProvider(providerId)).checkConnection()
+      return { ok: true }
+    } catch (error) {
+      if (error instanceof AiProviderError && error.connectionReason === "not-installed") {
+        return { ok: false, reason: "not-installed" }
+      }
+
+      throw error
+    }
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {

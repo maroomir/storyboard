@@ -211,6 +211,27 @@ describe("ConfigBridge", () => {
 
     await configBridge.setProviderBaseUrl("http://127.0.0.1:11434")
     expect(values.get("providers.ollama.baseUrl")).toBe("http://127.0.0.1:11434")
+
+    await configBridge.setProviderCommand("claude-code", "/usr/local/bin/claude")
+    expect(values.get("providers.claude-code.command")).toBe("/usr/local/bin/claude")
+
+    await configBridge.setProviderCommand("codex", "/opt/codex")
+    expect(values.get("providers.codex.command")).toBe("/opt/codex")
+  })
+
+  it("reads CLI provider command with defaults", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([["providers.claude-code.command", "/custom/claude"]])
+    )
+
+    expect(configBridge.getProviderConfig("claude-code")).toEqual({
+      command: "/custom/claude",
+      model: "sonnet"
+    })
+    expect(configBridge.getProviderConfig("codex")).toEqual({
+      command: "codex",
+      model: "gpt-5-codex"
+    })
   })
 
   it("throws when update is not available on configuration", async () => {

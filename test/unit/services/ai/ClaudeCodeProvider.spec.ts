@@ -54,6 +54,23 @@ describe("ClaudeCodeProvider", () => {
     })
   })
 
+  it("tags a missing binary (ENOENT) as a not-installed connection failure", async () => {
+    const enoent = Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" })
+    const provider = new ClaudeCodeProvider({
+      command: "claude",
+      model: "sonnet",
+      createRunner: (): CliRunner => async () => {
+        throw enoent
+      }
+    })
+
+    await expect(provider.checkConnection()).rejects.toMatchObject({
+      code: "connection-failed",
+      providerId: "claude-code",
+      connectionReason: "not-installed"
+    })
+  })
+
   it("runs print mode with json output and passes the prompt over stdin", async () => {
     let captured: CliRunInput | undefined
     const provider = new ClaudeCodeProvider({

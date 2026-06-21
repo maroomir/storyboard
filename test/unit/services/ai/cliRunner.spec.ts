@@ -8,7 +8,7 @@ vi.mock("node:child_process", () => ({
   spawn: (...args: unknown[]): unknown => spawnMock(...args)
 }))
 
-import { createDefaultCliRunner, splitCliPrompt } from "@/services/ai/providers/cliRunner"
+import { createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from "@/services/ai/providers/cliRunner"
 
 interface SpawnCall {
   readonly command: string
@@ -201,6 +201,16 @@ describe("createDefaultCliRunner", () => {
     child.emitError(new Error("too late"))
 
     await expect(running).resolves.toMatchObject({ exitCode: 0 })
+  })
+})
+
+describe("isCommandNotFound", () => {
+  it("detects ENOENT spawn errors and ignores everything else", () => {
+    expect(isCommandNotFound(Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" }))).toBe(true)
+    expect(isCommandNotFound(Object.assign(new Error("denied"), { code: "EACCES" }))).toBe(false)
+    expect(isCommandNotFound(new Error("plain"))).toBe(false)
+    expect(isCommandNotFound("ENOENT")).toBe(false)
+    expect(isCommandNotFound(null)).toBe(false)
   })
 })
 

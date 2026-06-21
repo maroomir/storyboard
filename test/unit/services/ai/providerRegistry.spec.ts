@@ -97,9 +97,20 @@ describe("AiProviderRegistry", () => {
   it("checks Claude, Google, and Ollama connections through registered clients", async () => {
     const registry = createRegistry()
 
-    await expect(registry.checkConnection("claude")).resolves.toBe(true)
-    await expect(registry.checkConnection("google")).resolves.toBe(true)
-    await expect(registry.checkConnection("ollama")).resolves.toBe(true)
+    await expect(registry.checkConnection("claude")).resolves.toEqual({ ok: true })
+    await expect(registry.checkConnection("google")).resolves.toEqual({ ok: true })
+    await expect(registry.checkConnection("ollama")).resolves.toEqual({ ok: true })
+  })
+
+  it("reports a missing CLI binary as a not-installed connection result", async () => {
+    const enoent = Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" })
+    const enoentRunner: CliRunner = async () => {
+      throw enoent
+    }
+    const registry = createRegistry(new Map(), new Map(), enoentRunner)
+
+    await expect(registry.checkConnection("claude-code")).resolves.toEqual({ ok: false, reason: "not-installed" })
+    await expect(registry.checkConnection("codex")).resolves.toEqual({ ok: false, reason: "not-installed" })
   })
 
   it("reports missing provider keys with a normalized error", async () => {
@@ -141,7 +152,8 @@ describe("AiProviderRegistry", () => {
 
 function createRegistry(
   configuration = new Map<string, unknown>(),
-  secretValues = createDefaultSecretValues()
+  secretValues = createDefaultSecretValues(),
+  cliRunner: CliRunner = createFakeCliRunner()
 ): AiProviderRegistry {
   const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
   const configBridge = new ConfigBridge({
@@ -155,7 +167,7 @@ function createRegistry(
     createGoogleClient: (): GoogleClientLike => createFakeGoogleClient(),
     createOllamaClient: (): OllamaClientLike => createFakeOllamaClient(),
     createOpenAiClient: (): OpenAiClientLike => createFakeOpenAiClient(),
-    createCliRunner: (): CliRunner => createFakeCliRunner()
+    createCliRunner: (): CliRunner => cliRunner
   })
 }
 

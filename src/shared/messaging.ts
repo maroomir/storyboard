@@ -201,7 +201,8 @@ export const aiProvidersListResponsePayloadSchema = z.object({
 })
 
 export const aiProvidersCheckConnectionResponsePayloadSchema = z.object({
-  ok: z.boolean()
+  ok: z.boolean(),
+  reason: z.enum(["not-installed", "not-authenticated"]).optional()
 })
 
 const aiUsageSchema = z.object({
@@ -236,7 +237,8 @@ const storyboardModelCatalogPayloadSchema = z.record(
 
 const providerRuntimeConfigSchema = z.object({
   model: z.string().trim().min(1),
-  baseUrl: z.string().trim().min(1).optional()
+  baseUrl: z.string().trim().min(1).optional(),
+  command: z.string().trim().min(1).optional()
 })
 
 const providerConfigsPayloadSchema = z.record(providerIdSchema, providerRuntimeConfigSchema)
@@ -298,6 +300,11 @@ export const settingsUpdateProviderModelRequestPayloadSchema = z
 export const settingsUpdateProviderBaseUrlRequestPayloadSchema = z.object({
   providerId: z.literal("ollama"),
   baseUrl: z.string().trim().min(1)
+})
+
+export const settingsUpdateProviderCommandRequestPayloadSchema = z.object({
+  providerId: z.enum(["claude-code", "codex"]),
+  command: z.string().trim().min(1)
 })
 
 export const settingsUpdateTaskAiConfigRequestPayloadSchema = z
@@ -425,6 +432,7 @@ export const storyboardRequestPayloadSchemas = {
   "settings.updateDefaultProvider": settingsUpdateDefaultProviderRequestPayloadSchema,
   "settings.updateProviderModel": settingsUpdateProviderModelRequestPayloadSchema,
   "settings.updateProviderBaseUrl": settingsUpdateProviderBaseUrlRequestPayloadSchema,
+  "settings.updateProviderCommand": settingsUpdateProviderCommandRequestPayloadSchema,
   "settings.updateTaskAiConfig": settingsUpdateTaskAiConfigRequestPayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema,
@@ -455,6 +463,7 @@ export const storyboardResponsePayloadSchemas = {
   "settings.updateDefaultProvider": settingsMutationOkResponsePayloadSchema,
   "settings.updateProviderModel": settingsMutationOkResponsePayloadSchema,
   "settings.updateProviderBaseUrl": settingsMutationOkResponsePayloadSchema,
+  "settings.updateProviderCommand": settingsMutationOkResponsePayloadSchema,
   "settings.updateTaskAiConfig": settingsMutationOkResponsePayloadSchema,
   "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
   "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema,

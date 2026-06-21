@@ -5,6 +5,7 @@ import {
   aiProviderIds,
   aiTaskCatalog,
   aiTaskNames,
+  isCliProvider,
   type AiTaskName
 } from "../ai/types"
 import type { AiProviderRegistry } from "../ai/providerRegistry"
@@ -48,6 +49,13 @@ export function createSettingsRpcHandlers(deps: SettingsRpcHandlersDependencies)
       payload
     ): Promise<StoryboardResponsePayload<"settings.updateProviderBaseUrl">> => {
       await configBridge.setProviderBaseUrl(payload.baseUrl)
+      return {}
+    },
+
+    "settings.updateProviderCommand": async (
+      payload
+    ): Promise<StoryboardResponsePayload<"settings.updateProviderCommand">> => {
+      await configBridge.setProviderCommand(payload.providerId, payload.command)
       return {}
     },
 
@@ -115,6 +123,10 @@ function buildProviderConfigsPayload(
       const baseUrl = runtime.baseUrl?.trim()
       result[id] =
         baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model }
+    } else if (isCliProvider(id)) {
+      const command = runtime.command?.trim()
+      result[id] =
+        command !== undefined && command.length > 0 ? { model, command } : { model }
     } else {
       result[id] = { model }
     }

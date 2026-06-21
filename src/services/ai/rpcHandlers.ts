@@ -19,9 +19,8 @@ export function createAiRpcHandlers(
     }),
     "ai.providers.checkConnection": async (
       payload
-    ): Promise<StoryboardResponsePayload<"ai.providers.checkConnection">> => ({
-      ok: await registry.checkConnection(payload.providerId)
-    }),
+    ): Promise<StoryboardResponsePayload<"ai.providers.checkConnection">> =>
+      registry.checkConnection(payload.providerId),
     "ai.generate": async (payload): Promise<StoryboardResponsePayload<"ai.generate">> =>
       registry.generateWithProvider(payload.providerId, {
         taskName: payload.taskName,

@@ -35,6 +35,23 @@ describe("CodexProvider", () => {
     })
   })
 
+  it("tags a missing binary (ENOENT) as a not-installed connection failure", async () => {
+    const enoent = Object.assign(new Error("spawn codex ENOENT"), { code: "ENOENT" })
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => async () => {
+        throw enoent
+      }
+    })
+
+    await expect(provider.checkConnection()).rejects.toMatchObject({
+      code: "connection-failed",
+      providerId: "codex",
+      connectionReason: "not-installed"
+    })
+  })
+
   it("runs exec with json output and parses the agent message and usage", async () => {
     let captured: CliRunInput | undefined
     const stdout = [

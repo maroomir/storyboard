@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  aiProvidersCheckConnectionResponsePayloadSchema,
   createStoryboardErrorResponse,
   createStoryboardSuccessResponse,
   parseStoryboardRequestMessage,
@@ -199,6 +200,48 @@ describe("storyboard messaging protocol", () => {
       })
       expect(response.payload.costUsd).toBe(0.000125)
     }
+  })
+
+  it("parses settings.updateProviderCommand for CLI providers and rejects others", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "command-1",
+      method: "settings.updateProviderCommand",
+      payload: { providerId: "claude-code", command: "/usr/local/bin/claude" }
+    })
+    expect(request.method).toBe("settings.updateProviderCommand")
+    expect(request.payload).toEqual({ providerId: "claude-code", command: "/usr/local/bin/claude" })
+
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "command-2",
+        method: "settings.updateProviderCommand",
+        payload: { providerId: "openai", command: "claude" }
+      })
+    ).toThrow()
+
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "command-3",
+        method: "settings.updateProviderCommand",
+        payload: { providerId: "codex", command: "   " }
+      })
+    ).toThrow()
+  })
+
+  it("validates checkConnection responses with an optional reason discriminator", () => {
+    expect(aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: true })).toEqual({ ok: true })
+    expect(
+      aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: false, reason: "not-installed" })
+    ).toEqual({ ok: false, reason: "not-installed" })
+    expect(() =>
+      aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: false, reason: "exploded" })
+    ).toThrow()
   })
 
   it("parses scenes.list and scenes.openScene requests", () => {
