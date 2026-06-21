@@ -87,6 +87,8 @@ export class ClaudeCodeProvider implements AiProvider {
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     const { systemPrompt, userPrompt } = splitCliPrompt(request.messages)
+    // NOTE: claude CLI는 temperature·출력 토큰 상한 플래그를 노출하지 않아
+    // request.temperature와 request.maxTokens는 적용되지 않는다.
     const args = ["-p", "--output-format", "json", "--model", this.model]
     if (systemPrompt) {
       args.push("--append-system-prompt", systemPrompt)

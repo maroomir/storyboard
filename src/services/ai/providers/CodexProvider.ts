@@ -73,6 +73,8 @@ export class CodexProvider implements AiProvider {
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
     const { systemPrompt, userPrompt } = splitCliPrompt(request.messages)
     const prompt = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt
+    // NOTE: codex CLI는 temperature를 노출하지 않아 request.temperature와
+    // request.maxTokens는 적용되지 않는다.
     // NOTE: read-only 샌드박스로 실행해 Codex가 파일을 수정하지 못하게 한다.
     const args = ["exec", "--model", this.model, "--sandbox", "read-only", "--skip-git-repo-check"]
 
