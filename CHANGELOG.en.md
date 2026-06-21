@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-21
+
 ### Added
 
 - `Storyboard: Generate Novel` runs the full pipeline in one click — project settings → outline → seeds → per-chapter drafting and review → assembly → review → summaries — and can resume by stage.
