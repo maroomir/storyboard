@@ -9,7 +9,7 @@ import {
 } from "../types"
 import { type CliRunner, createDefaultCliRunner, splitCliPrompt } from "./cliRunner"
 
-const versionTimeoutMs = 15_000
+const connectionTimeoutMs = 15_000
 const generateTimeoutMs = 180_000
 
 export interface CodexProviderOptions {
@@ -44,9 +44,20 @@ export class CodexProvider implements AiProvider {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      const result = await this.run({ command: this.command, args: ["--version"], timeoutMs: versionTimeoutMs })
+      // NOTE: codex의 인증 상태 확인 명령. 바이너리 존재와 로그인 여부를 함께 본다.
+      // 이 환경엔 codex가 없어 명령 형태는 문서 기준이며 실제 출력은 미검증이다.
+      const result = await this.run({
+        command: this.command,
+        args: ["login", "status"],
+        timeoutMs: connectionTimeoutMs
+      })
       if (result.exitCode !== 0) {
-        throw new AiProviderError("connection-failed", this.id, "Codex CLI를 실행하지 못했습니다.", result.stderr)
+        throw new AiProviderError(
+          "connection-failed",
+          this.id,
+          "Codex CLI 인증을 확인하지 못했습니다. `codex login`으로 로그인하세요.",
+          result.stderr
+        )
       }
 
       return true

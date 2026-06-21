@@ -10,20 +10,38 @@ describe("ClaudeCodeProvider", () => {
     expect(() => new ClaudeCodeProvider({ command: "claude", model: undefined })).toThrow(AiProviderError)
   })
 
-  it("checks connection by running --version", async () => {
+  it("verifies authentication via `claude auth status`", async () => {
     const calls: CliRunInput[] = []
     const provider = new ClaudeCodeProvider({
       command: "claude",
       model: "sonnet",
-      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, onRun: (input) => calls.push(input) })
+      createRunner: (): CliRunner =>
+        createFakeRunner({
+          exitCode: 0,
+          stdout: JSON.stringify({ loggedIn: true }),
+          onRun: (input) => calls.push(input)
+        })
     })
 
     await expect(provider.checkConnection()).resolves.toBe(true)
     expect(calls[0]?.command).toBe("claude")
-    expect(calls[0]?.args).toEqual(["--version"])
+    expect(calls[0]?.args).toEqual(["auth", "status", "--json"])
   })
 
-  it("throws when --version exits non-zero", async () => {
+  it("rejects when the CLI reports a logged-out session", async () => {
+    const provider = new ClaudeCodeProvider({
+      command: "claude",
+      model: "sonnet",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout: JSON.stringify({ loggedIn: false }) })
+    })
+
+    await expect(provider.checkConnection()).rejects.toMatchObject({
+      code: "connection-failed",
+      providerId: "claude-code"
+    })
+  })
+
+  it("throws when the auth check exits non-zero", async () => {
     const provider = new ClaudeCodeProvider({
       command: "claude",
       model: "sonnet",

@@ -10,7 +10,7 @@ import {
 } from "../types"
 import { type CliRunner, createDefaultCliRunner, splitCliPrompt } from "./cliRunner"
 
-const versionTimeoutMs = 15_000
+const connectionTimeoutMs = 15_000
 const generateTimeoutMs = 180_000
 
 export interface ClaudeCodeProviderOptions {
@@ -57,9 +57,22 @@ export class ClaudeCodeProvider implements AiProvider {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      const result = await this.run({ command: this.command, args: ["--version"], timeoutMs: versionTimeoutMs })
+      // NOTE: auth status는 토큰을 쓰지 않고 바이너리 존재와 구독 로그인 여부를 함께 확인한다.
+      const result = await this.run({
+        command: this.command,
+        args: ["auth", "status", "--json"],
+        timeoutMs: connectionTimeoutMs
+      })
       if (result.exitCode !== 0) {
         throw new AiProviderError("connection-failed", this.id, "Claude Code CLI를 실행하지 못했습니다.", result.stderr)
+      }
+
+      if (!isLoggedIn(result.stdout)) {
+        throw new AiProviderError(
+          "connection-failed",
+          this.id,
+          "Claude Code에 로그인되어 있지 않습니다. `claude auth login`으로 로그인하세요."
+        )
       }
 
       return true
@@ -115,6 +128,15 @@ export class ClaudeCodeProvider implements AiProvider {
       ...(usage ? { usage } : {}),
       ...(parsed.total_cost_usd !== undefined ? { costUsd: parsed.total_cost_usd } : {})
     }
+  }
+}
+
+function isLoggedIn(stdout: string): boolean {
+  try {
+    const parsed = JSON.parse(stdout.trim()) as { readonly loggedIn?: boolean }
+    return parsed.loggedIn === true
+  } catch {
+    return false
   }
 }
 
