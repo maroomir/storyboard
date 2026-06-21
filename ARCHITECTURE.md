@@ -356,12 +356,14 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 `package.json#contributes.configuration`에 다음을 노출한다.
 
-- `storyboard.defaultProvider`: `"openai" | "claude" | "google" | "ollama" | "mock"`
+- `storyboard.defaultProvider`: `"openai" | "claude" | "google" | "ollama" | "claude-code" | "codex" | "mock"`
 - `storyboard.providers.openai.model`
 - `storyboard.providers.claude.model`
 - `storyboard.providers.google.model`
 - `storyboard.providers.ollama.baseUrl`
 - `storyboard.providers.ollama.model`
+- `storyboard.providers.claude-code.command` / `storyboard.providers.claude-code.model`
+- `storyboard.providers.codex.command` / `storyboard.providers.codex.model`
 - `storyboard.tasks.<taskName>.provider`: 작업별 provider 오버라이드
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
@@ -369,6 +371,11 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
 
 API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한다.
+
+`claude-code`·`codex` provider는 클라우드 API를 직접 호출하는 대신 로컬에 설치된 `claude`·`codex` CLI를
+헤드리스 모드로 실행해 생성 결과를 가져온다. 인증은 각 CLI의 자체 로그인(구독)이 처리하므로 API 키가
+필요 없고(keyless), CLI는 셸 보간 없이(`shell:false`) 임시 디렉터리에서 읽기 전용으로 실행하며 프롬프트는
+stdin으로만 전달한다. `claude-code`는 `--output-format json` 출력에서 토큰 사용량과 비용을 그대로 기록한다.
 
 ## 7. 비목표 (Non-Goals)
 

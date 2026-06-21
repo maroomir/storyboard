@@ -26,5 +26,14 @@ export const storyboardModelCatalog = {
     { id: "llama3.2", displayName: "Llama 3.2" },
     { id: "qwen2.5", displayName: "Qwen 2.5" }
   ],
+  "claude-code": [
+    { id: "sonnet", displayName: "Claude Code · Sonnet" },
+    { id: "opus", displayName: "Claude Code · Opus" },
+    { id: "haiku", displayName: "Claude Code · Haiku" }
+  ],
+  codex: [
+    { id: "gpt-5-codex", displayName: "Codex · GPT-5 Codex" },
+    { id: "gpt-5", displayName: "Codex · GPT-5" }
+  ],
   mock: [{ id: "mock-default", displayName: "Mock (offline)" }]
 } as const satisfies Record<AiProviderId, readonly ProviderModelOption[]>

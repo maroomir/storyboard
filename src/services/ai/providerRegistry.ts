@@ -1,5 +1,8 @@
 import { AiProviderError } from "./AiProviderError"
+import { type CliRunner } from "./providers/cliRunner"
+import { ClaudeCodeProvider } from "./providers/ClaudeCodeProvider"
 import { ClaudeProvider, type ClaudeClientLike } from "./providers/ClaudeProvider"
+import { CodexProvider } from "./providers/CodexProvider"
 import { GoogleProvider, type GoogleClientLike } from "./providers/GoogleProvider"
 import { MockAiProvider } from "./providers/MockAiProvider"
 import { OllamaProvider, type OllamaClientLike } from "./providers/OllamaProvider"
@@ -24,6 +27,7 @@ export interface AiProviderRegistryOptions {
   readonly createGoogleClient?: (apiKey: string) => GoogleClientLike
   readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike
   readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike
+  readonly createCliRunner?: () => CliRunner
 }
 
 export class AiProviderRegistry {
@@ -123,6 +127,24 @@ export class AiProviderRegistry {
       })
     }
 
+    if (providerId === "claude-code") {
+      const config = this.options.configBridge.getProviderConfig(providerId)
+      return new ClaudeCodeProvider({
+        command: config.command,
+        model: modelOverride ?? config.model,
+        createRunner: this.options.createCliRunner
+      })
+    }
+
+    if (providerId === "codex") {
+      const config = this.options.configBridge.getProviderConfig(providerId)
+      return new CodexProvider({
+        command: config.command,
+        model: modelOverride ?? config.model,
+        createRunner: this.options.createCliRunner
+      })
+    }
+
     throw new AiProviderError(
       "provider-not-registered",
       providerId,
@@ -132,8 +154,7 @@ export class AiProviderRegistry {
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
     const config = this.options.configBridge.getProviderConfig(providerId)
-    const hasApiKey =
-      providerId === "mock" || providerId === "ollama" ? true : await this.options.secretStore.hasApiKey(providerId)
+    const hasApiKey = isKeylessProvider(providerId) ? true : await this.options.secretStore.hasApiKey(providerId)
 
     return {
       providerId,
@@ -149,6 +170,10 @@ export function createAiProviderRegistry(options: AiProviderRegistryOptions): Ai
   return new AiProviderRegistry(options)
 }
 
+function isKeylessProvider(providerId: AiProviderId): boolean {
+  return providerId === "mock" || providerId === "ollama" || providerId === "claude-code" || providerId === "codex"
+}
+
 function getProviderDisplayName(providerId: AiProviderId): string {
   switch (providerId) {
     case "openai":
@@ -159,6 +184,10 @@ function getProviderDisplayName(providerId: AiProviderId): string {
       return "Google Gemini"
     case "ollama":
       return "Ollama"
+    case "claude-code":
+      return "Claude Code (CLI)"
+    case "codex":
+      return "Codex (CLI)"
     case "mock":
       return "Mock AI"
   }

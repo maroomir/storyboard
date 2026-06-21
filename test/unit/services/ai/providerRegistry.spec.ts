@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { AiProviderRegistry, createAiProviderRegistry } from "@/services/ai/providerRegistry"
+import { type CliRunner } from "@/services/ai/providers/cliRunner"
 import { type ClaudeClientLike } from "@/services/ai/providers/ClaudeProvider"
 import { type GoogleClientLike } from "@/services/ai/providers/GoogleProvider"
 import { type OllamaClientLike } from "@/services/ai/providers/OllamaProvider"
@@ -109,6 +110,33 @@ describe("AiProviderRegistry", () => {
       providerId: "claude"
     })
   })
+
+  it("routes generation to the Claude Code CLI runner without requiring an API key", async () => {
+    const registry = createRegistry(
+      new Map<string, unknown>([["defaultProvider", "claude-code"]]),
+      new Map()
+    )
+
+    const response = await registry.generate({
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "테스트" }]
+    })
+
+    expect(response.providerId).toBe("claude-code")
+    expect(response.model).toBe("sonnet")
+    expect(response.text).toBe("cli-ok")
+  })
+
+  it("marks Claude Code and Codex providers as keyless and available", async () => {
+    const registry = createRegistry(new Map(), new Map())
+
+    await expect(registry.listProviders()).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ providerId: "claude-code", hasApiKey: true, isAvailable: true }),
+        expect.objectContaining({ providerId: "codex", hasApiKey: true, isAvailable: true })
+      ])
+    )
+  })
 })
 
 function createRegistry(
@@ -126,7 +154,8 @@ function createRegistry(
     createClaudeClient: (): ClaudeClientLike => createFakeClaudeClient(),
     createGoogleClient: (): GoogleClientLike => createFakeGoogleClient(),
     createOllamaClient: (): OllamaClientLike => createFakeOllamaClient(),
-    createOpenAiClient: (): OpenAiClientLike => createFakeOpenAiClient()
+    createOpenAiClient: (): OpenAiClientLike => createFakeOpenAiClient(),
+    createCliRunner: (): CliRunner => createFakeCliRunner()
   })
 }
 
@@ -204,4 +233,8 @@ function createFakeOllamaClient(): OllamaClientLike {
       message: { content: "ok" }
     })
   }
+}
+
+function createFakeCliRunner(): CliRunner {
+  return async () => ({ stdout: JSON.stringify({ result: "cli-ok" }), stderr: "", exitCode: 0 })
 }
