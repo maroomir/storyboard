@@ -375,12 +375,21 @@ API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한�
 `claude-code`·`codex` provider는 클라우드 API를 직접 호출하는 대신 로컬에 설치된 `claude`·`codex` CLI를
 헤드리스 모드로 실행해 생성 결과를 가져온다. 인증은 각 CLI의 자체 로그인(구독)이 처리하므로 API 키가
 필요 없고(keyless), CLI는 셸 보간 없이(`shell:false`) 임시 디렉터리에서 읽기 전용으로 실행하며 프롬프트는
-stdin으로만 전달한다. `claude-code`는 `--output-format json` 출력에서 토큰 사용량과 비용을 그대로 기록한다.
-연결 테스트는 `claude auth status`(또는 codex의 로그인 상태 확인)로 바이너리와 로그인 여부를 함께 검증한다.
+stdin으로만 전달한다. 실행 명령(`storyboard.providers.<id>.command`)은 설정 패널에서 사용자가 바꿀 수
+있으나, 웹뷰에서 들어온 명령 값은 호스트 경계에서 검증한 뒤 인자 배열로만 전달한다.
+연결 테스트는 `claude auth status`(또는 `codex login status`)로 바이너리와 로그인 여부를 함께 검증하며,
+바이너리를 찾지 못한 경우(`ENOENT`)는 그 밖의 실패와 구분해 «CLI 미설치»로 표시한다.
 
-CLI provider의 한계로, 두 CLI는 샘플링 파라미터를 노출하지 않으므로 `temperature`와 `maxTokens`(출력 토큰
-상한)는 적용되지 않는다. 또한 `codex`는 사용량·비용을 기록하지 않아 사용량 원장에서 0으로 집계된다(실제 CLI로
-`--json` 출력을 검증한 뒤 보완 예정).
+**사용량·비용**: `claude-code`는 `--output-format json` 출력의 `total_cost_usd`를 비용으로 그대로 기록한다.
+`codex`는 `codex exec --json` 이벤트에서 토큰 사용량을 파싱하고, 비용은 gpt-5-codex API 요금
+(입력 $1.25 / 출력 $10.00 per 1M)으로 **환산한 추정치**다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당
+과금이 아니므로 이 값은 실제 청구액이 아니라 다른 provider와 비교·예산 산정을 위한 근사치다.
+
+CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토큰 스트리밍을 노출하지 않으므로 생성을
+끝까지 마친 뒤 전체 결과를 한 번에 전달하며, 실시간 토큰 스트리밍은 제공하지 않는다(설계상 의도).
+같은 이유로 **인라인 완성은 CLI provider에서 비활성화**한다. 키 입력마다 CLI 프로세스를 새로 띄우면
+지연·비용이 과도하고, 두 CLI는 `temperature`·출력 길이 제어를 노출하지 않기 때문이다(설계상 의도).
+따라서 `temperature`와 `maxTokens`(출력 토큰 상한)도 CLI provider에는 적용되지 않는다.
 
 ## 7. 비목표 (Non-Goals)
 

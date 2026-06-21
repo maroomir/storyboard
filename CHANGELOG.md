@@ -9,6 +9,16 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- Claude Code(`claude`)·Codex(`codex`) CLI provider를 추가했습니다. API 키 없이 각 CLI의 자체 로그인(구독)으로 생성하며, 실행 명령·모델은 설정과 **연결** 탭에서 바꿀 수 있습니다.
+- 연결 테스트가 CLI 바이너리를 찾지 못한 경우(`ENOENT`)를 그 밖의 실패와 구분해 «CLI 미설치»로 표시합니다.
+- Claude Code 비용은 CLI가 보고하는 `total_cost_usd`를 기록하고, Codex 사용량은 `codex exec --json`에서 파싱합니다. Codex 비용은 gpt-5-codex API 요금으로 환산한 추정치이며 실제 청구액이 아닙니다.
+
+### 변경
+
+- CLI provider는 실시간 토큰 스트리밍 대신 전체 결과를 한 번에 전달하고, 인라인 완성은 CLI provider에서 비활성화합니다.
+
 ## [0.3.0] - 2026-06-21
 
 ### 추가

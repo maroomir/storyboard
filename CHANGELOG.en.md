@@ -10,6 +10,16 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Added Claude Code (`claude`) and Codex (`codex`) CLI providers. They generate via each CLI's own login (subscription) with no API key, and their command path and model are editable in settings and the **Connection** tab.
+- The connection test distinguishes a missing CLI binary (`ENOENT`) from other failures and reports it as "CLI not installed".
+- Claude Code cost is recorded from the CLI's reported `total_cost_usd`, and Codex usage is parsed from `codex exec --json`. The Codex cost is an estimate at gpt-5-codex API rates, not an actual charge.
+
+### Changed
+
+- CLI providers deliver the full result at once instead of live token streaming, and inline completion is disabled for CLI providers.
+
 ## [0.3.0] - 2026-06-21
 
 ### Added

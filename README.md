@@ -66,11 +66,21 @@ npm run build
 API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다. 실제 provider를 쓰려면 `Storyboard: Set API Key...` 명령으로 키를 저장합니다.
 
 이미 **Claude Code**나 **Codex** CLI를 쓰고 있다면 API 키 없이 그 구독을 그대로 활용할 수 있습니다.
-각 CLI(`claude` / `codex`)를 설치하고 로그인한 뒤 `storyboard.defaultProvider`를 `claude-code` 또는
-`codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에 없으면 설정 패널 **연결** 탭의 «실행 명령» 입력
-(또는 `storyboard.providers.claude-code.command` / `storyboard.providers.codex.command` 설정)에 절대
-경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다. 연결 테스트는 CLI를 찾지 못하면 «CLI 미설치»를,
-설치는 됐지만 로그인되지 않았으면 연결 실패를 표시합니다.
+각 CLI(`claude` / `codex`)를 설치하고 자체 로그인(`claude` 구독 로그인 / `codex login`의 ChatGPT 로그인)을
+마친 뒤 `storyboard.defaultProvider`를 `claude-code` 또는 `codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에
+없으면 설정 패널 **연결** 탭의 «실행 명령» 입력(또는 `storyboard.providers.claude-code.command` /
+`storyboard.providers.codex.command` 설정)에 절대 경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다.
+연결 테스트는 CLI를 찾지 못하면 «CLI 미설치»를, 설치는 됐지만 로그인되지 않았으면 연결 실패를 표시합니다.
+
+CLI provider 사용 시 참고할 점:
+
+- **사용량·비용**: Claude Code 비용은 CLI가 보고하는 `total_cost_usd`를 그대로 씁니다. Codex 사용량은
+  `codex exec --json`에서 파싱하며, 비용은 gpt-5-codex API 요금(입력 $1.25 / 출력 $10.00 per 1M)으로 환산한
+  **추정치**입니다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 이 값은 실제 청구액이 아니라
+  비교·예산 산정을 위한 근사치입니다.
+- **스트리밍**: 두 CLI는 실시간 토큰 스트리밍 대신 생성을 끝까지 마친 뒤 전체 결과를 한 번에 전달합니다(의도된 동작).
+- **인라인 완성**: CLI provider에서는 인라인 완성이 비활성화됩니다. 키 입력마다 CLI 프로세스를 새로 띄우는 비용이
+  크고, 두 CLI가 길이·`temperature` 제어를 노출하지 않기 때문입니다(의도된 동작).
 
 ## 개발
 
