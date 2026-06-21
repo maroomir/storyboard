@@ -7,6 +7,7 @@ import { parseDraft } from "../files/draft"
 import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
+import { type AiProviderId, isCliProvider } from "../services/ai/types"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 
 const inlineCompletionDelayMs = 700
@@ -22,6 +23,11 @@ export interface RegisterInlineCompletionProviderDependencies {
 interface InlineCompletionCacheValue {
   readonly value: string
   readonly updatedAt: number
+}
+
+// NOTE: CLI provider는 호출마다 프로세스를 새로 띄워 키 입력당 인라인 완성에는 부적합하므로 건너뛴다.
+export function shouldRunInlineCompletion(providerId: AiProviderId): boolean {
+  return !isCliProvider(providerId)
 }
 
 export function trimInlineCompletionPrefix(text: string): string {
@@ -99,6 +105,10 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     this.currentWorkspaceUri = workspaceFolder.uri
 
     if (!isDraftMarkdownFile(document.uri, workspaceFolder)) {
+      return undefined
+    }
+
+    if (!shouldRunInlineCompletion(this.dependencies.aiProviderRegistry.getTaskProvider("inlineCompletion"))) {
       return undefined
     }
 

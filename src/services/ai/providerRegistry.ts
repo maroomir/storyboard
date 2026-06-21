@@ -15,7 +15,8 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiProviderStatus,
-  type AiTaskName
+  type AiTaskName,
+  isCliProvider
 } from "./types"
 import { SecretStore } from "../secrets/SecretStore"
 import { ConfigBridge } from "../settings/ConfigBridge"
@@ -171,7 +172,7 @@ export function createAiProviderRegistry(options: AiProviderRegistryOptions): Ai
 }
 
 function isKeylessProvider(providerId: AiProviderId): boolean {
-  return providerId === "mock" || providerId === "ollama" || providerId === "claude-code" || providerId === "codex"
+  return providerId === "mock" || providerId === "ollama" || isCliProvider(providerId)
 }
 
 function getProviderDisplayName(providerId: AiProviderId): string {

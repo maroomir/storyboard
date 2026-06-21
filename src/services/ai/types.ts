@@ -121,3 +121,7 @@ export interface UsageSummaryByEntity {
 export function isAiProviderId(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId)
 }
+
+export function isCliProvider(providerId: AiProviderId): boolean {
+  return providerId === "claude-code" || providerId === "codex"
+}
