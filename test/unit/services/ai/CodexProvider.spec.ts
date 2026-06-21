@@ -123,7 +123,7 @@ describe("CodexProvider", () => {
   it("routes cost through the pricing path when usage is present", async () => {
     const stdout = [
       JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
-      JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1, output_tokens: 1 } })
+      JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1_000_000, output_tokens: 1_000_000 } })
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
@@ -134,7 +134,7 @@ describe("CodexProvider", () => {
     const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
 
     expect(response.usage).toBeDefined()
-    expect(response.costUsd).toBe(0)
+    expect(response.costUsd).toBe(11.25)
   })
 
   it("falls back to plain stdout when json is not emitted", async () => {
