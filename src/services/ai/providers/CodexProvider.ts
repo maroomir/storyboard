@@ -44,8 +44,8 @@ export class CodexProvider implements AiProvider {
 
   public async checkConnection(): Promise<boolean> {
     try {
-      // NOTE: codex의 인증 상태 확인 명령. 바이너리 존재와 로그인 여부를 함께 본다.
-      // 이 환경엔 codex가 없어 명령 형태는 문서 기준이며 실제 출력은 미검증이다.
+      // NOTE: `codex login status`는 로그인 시 exit 0과 "Logged in using ..." 텍스트를 출력한다
+      // (codex-cli 0.138.0 확인). 로그아웃 시 비정상 종료 여부는 로그인된 환경에서 검증하지 못했다.
       const result = await this.run({
         command: this.command,
         args: ["login", "status"],
