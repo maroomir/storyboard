@@ -114,8 +114,9 @@ export class CodexProvider implements AiProvider {
     }
 
     const parsed = parseCodexJsonl(result.stdout)
-    // NOTE: --json을 인식하지 못하는 CLI/버전이면 평문 stdout로 폴백해 throw 없이 동작시킨다.
-    const text = parsed.text ?? result.stdout.trim()
+    // NOTE: JSONL을 파싱했으나 agent_message가 없으면 원시 JSONL을 답변으로 내보내지 않는다.
+    //       --json을 인식하지 못해 평문만 출력하는 CLI/버전일 때만 stdout로 폴백한다.
+    const text = parsed.text ?? (parsed.sawJsonlEvent ? "" : result.stdout.trim())
 
     return aiGenerateResponseWithUsage({
       providerId: this.id,
@@ -129,6 +130,7 @@ export class CodexProvider implements AiProvider {
 interface CodexJsonlParseResult {
   readonly text?: string
   readonly usage?: AiUsage
+  readonly sawJsonlEvent: boolean
 }
 
 interface CodexTurnUsage {
@@ -141,6 +143,7 @@ interface CodexTurnUsage {
 function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
   let text: string | undefined
   let usage: AiUsage | undefined
+  let sawJsonlEvent = false
 
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim()
@@ -158,6 +161,7 @@ function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
     if (!isRecord(event)) {
       continue
     }
+    sawJsonlEvent = true
 
     if (event.type === "item.completed" && isRecord(event.item) && event.item.type === "agent_message") {
       const message = event.item.text
@@ -167,17 +171,26 @@ function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
     }
 
     if (event.type === "turn.completed" && isRecord(event.usage)) {
-      usage = usageFromCodexTurn(event.usage as CodexTurnUsage)
+      // NOTE: 토큰이 빈 후속 turn.completed가 앞선 usage를 0으로 덮어쓰지 않도록 값이 있을 때만 갱신한다.
+      const turnUsage = usageFromCodexTurn(event.usage as CodexTurnUsage)
+      if (turnUsage) {
+        usage = turnUsage
+      }
     }
   }
 
   return {
     ...(text !== undefined ? { text } : {}),
-    ...(usage ? { usage } : {})
+    ...(usage ? { usage } : {}),
+    sawJsonlEvent
   }
 }
 
-function usageFromCodexTurn(turnUsage: CodexTurnUsage): AiUsage {
+function usageFromCodexTurn(turnUsage: CodexTurnUsage): AiUsage | undefined {
+  if (turnUsage.input_tokens === undefined && turnUsage.output_tokens === undefined) {
+    return undefined
+  }
+
   // NOTE: codex의 output_tokens는 reasoning_output_tokens를 이미 포함하므로 더하면 이중 계산이 된다.
   return {
     inputTokens: turnUsage.input_tokens ?? 0,

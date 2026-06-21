@@ -149,6 +149,39 @@ describe("CodexProvider", () => {
     expect(response).toEqual({ providerId: "codex", model: "gpt-5-codex", text: "코덱스 응답" })
   })
 
+  it("returns empty text when json yields no agent message instead of echoing the stream", async () => {
+    const stdout = [
+      JSON.stringify({ type: "turn.started" }),
+      JSON.stringify({ type: "turn.completed", usage: { input_tokens: 5, output_tokens: 0 } })
+    ].join("\n")
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(response.text).toBe("")
+  })
+
+  it("does not let an empty later turn clobber earlier usage", async () => {
+    const stdout = [
+      JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
+      JSON.stringify({ type: "turn.completed", usage: { input_tokens: 30, output_tokens: 20 } }),
+      JSON.stringify({ type: "turn.completed", usage: {} })
+    ].join("\n")
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5-codex",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(response.usage).toEqual({ inputTokens: 30, outputTokens: 20 })
+  })
+
   it("maps a non-zero exit code to a generation error", async () => {
     const provider = new CodexProvider({
       command: "codex",

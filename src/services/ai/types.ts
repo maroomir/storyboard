@@ -93,7 +93,7 @@ export interface AiProviderStatus {
   readonly isAvailable: boolean
 }
 
-export type AiConnectionFailureReason = "not-installed" | "not-authenticated"
+export type AiConnectionFailureReason = "not-installed"
 
 export interface AiConnectionResult {
   readonly ok: boolean
