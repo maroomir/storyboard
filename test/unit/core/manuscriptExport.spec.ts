@@ -7,6 +7,11 @@ describe("toPlainText", () => {
     const markdown = ["# 제목", "", "> 인용", "**굵게** 그리고 `코드`", "- 항목"].join("\n")
     expect(toPlainText(markdown)).toBe(["제목", "", "인용", "굵게 그리고 코드", "- 항목"].join("\n"))
   })
+
+  it("strips single-asterisk emphasis such as act titles", () => {
+    const markdown = ["# 1장", "", "*발단*", "본문 *강조* 끝"].join("\n")
+    expect(toPlainText(markdown)).toBe(["1장", "", "발단", "본문 강조 끝"].join("\n"))
+  })
 })
 
 describe("renderManuscriptExport", () => {

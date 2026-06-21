@@ -10,6 +10,7 @@ export function toPlainText(markdown: string): string {
         .replace(/^#{1,6}\s+/, "")
         .replace(/^\s*>\s?/, "")
         .replace(/\*\*/g, "")
+        .replace(/\*([^*\n]+)\*/g, "$1")
         .replace(/`/g, "")
     )
     .join("\n")
