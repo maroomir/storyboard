@@ -4,6 +4,7 @@ import * as vscode from "vscode"
 import {
   createInlineCompletionCacheKey,
   pruneInlineCompletionCache,
+  shouldRunInlineCompletion,
   trimInlineCompletionPrefix
 } from "@/providers/InlineCompletionProvider"
 
@@ -32,6 +33,14 @@ describe("InlineCompletionProvider helpers", () => {
     expect(key).toContain("file:///tmp/storyboard/draft/01-opening.md")
     expect(key).toContain("3:7")
     expect(key.endsWith("::prefix")).toBe(true)
+  })
+
+  it("skips inline completion for CLI providers but allows API providers", () => {
+    expect(shouldRunInlineCompletion("claude-code")).toBe(false)
+    expect(shouldRunInlineCompletion("codex")).toBe(false)
+    expect(shouldRunInlineCompletion("openai")).toBe(true)
+    expect(shouldRunInlineCompletion("claude")).toBe(true)
+    expect(shouldRunInlineCompletion("mock")).toBe(true)
   })
 
   it("prunes oldest entries when cache exceeds limit", () => {
