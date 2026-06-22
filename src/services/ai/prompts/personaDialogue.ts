@@ -15,6 +15,11 @@ export const PersonaDialoguePrompt = {
     variant: PromptVariantId = "generic",
     style?: StyleDirective
   ): PromptArtifact {
+    const povInteriorityLine =
+      style?.pov === "first" || style?.pov === "third-limited"
+        ? "시점 화자의 내면 독백(생각·판단·자기합리화·감정)을 대사 사이에 충분히 녹여라."
+        : undefined
+
     const system = [
       variant === "xs"
         ? "페르소나 기반 장면 작성. 형식: '캐릭터명: 대사'. 행동/감정도 포함."
@@ -22,6 +27,9 @@ export const PersonaDialoguePrompt = {
       variant === "rich" ? "장면 전개는 인물 간 긴장/목표/갈등이 드러나도록 구성하라." : undefined,
       variant === "xs" ? undefined : "대화는 '캐릭터명: 대사' 형식을 사용하라.",
       variant === "xs" ? undefined : "행동, 표정, 감정을 함께 서술하라.",
+      variant === "xs" ? undefined : "상황과 페르소나에 주어진 사실만 사용하고, 입력에 없는 새로운 사건·설정·인물·배경을 지어내지 마라.",
+      variant === "xs" ? undefined : "상황에 인물의 폭언·별칭·직접 대사가 드러나면 순화하거나 화해로 덮지 말고 그 표현을 그대로 살려 대사로 옮겨라.",
+      variant === "xs" ? undefined : povInteriorityLine,
       background.description ? `배경 설명: ${background.description}` : undefined,
       background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined,
       ...(variant === "xs" ? [] : voiceStyleLines(style))

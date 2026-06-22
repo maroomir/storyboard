@@ -14,6 +14,7 @@ function buildGeneric(input: string): PromptArtifact {
   return {
     system: [
       "사용자 입력에서 상황과 참여 캐릭터를 모두 추출하라.",
+      "모든 장면 비트를 등장 순서대로 빠짐없이 추출하고, 임의로 병합하거나 생략하지 마라.",
       "출력은 한국어 JSON 배열만 허용한다.",
       '각 항목: {"characters":string[],"situation":string}.',
       "situation은 가능한 원문 표현을 유지하라."
