@@ -1,4 +1,5 @@
 import type { ProjectFormat } from "@/shared/project"
+import { narrativeStyleLines, type StyleDirective } from "@/shared/styleDirective"
 import { type PromptArtifact, type PromptVariantId } from "./types"
 
 const formatGuides: Readonly<Record<ProjectFormat, string>> = {
@@ -14,26 +15,32 @@ export const GenreFormattingPrompt = {
     temperature: 0.5,
     maxTokens: 12000
   },
-  build(dialogue: string, format: ProjectFormat, variant: PromptVariantId = "generic"): PromptArtifact {
+  build(
+    dialogue: string,
+    format: ProjectFormat,
+    variant: PromptVariantId = "generic",
+    style?: StyleDirective
+  ): PromptArtifact {
     if (variant === "xs") {
       return buildXs(dialogue, format)
     }
 
     if (variant === "rich") {
-      return buildRich(dialogue, format)
+      return buildRich(dialogue, format, style)
     }
 
-    return buildGeneric(dialogue, format)
+    return buildGeneric(dialogue, format, style)
   }
 } as const
 
-function buildGeneric(dialogue: string, format: ProjectFormat): PromptArtifact {
+function buildGeneric(dialogue: string, format: ProjectFormat, style?: StyleDirective): PromptArtifact {
   return {
     system: [
       `전문 작가처럼 장면을 ${format} 형식으로 재작성하라.`,
       formatGuides[format],
       "원문의 대사와 장면 의미는 유지하고 형식만 조정하라.",
-      "출력은 한국어로 작성하라."
+      "출력은 한국어로 작성하라.",
+      ...narrativeStyleLines(style)
     ].join("\n"),
     user: dialogue
   }
@@ -46,14 +53,15 @@ function buildXs(dialogue: string, format: ProjectFormat): PromptArtifact {
   }
 }
 
-function buildRich(dialogue: string, format: ProjectFormat): PromptArtifact {
+function buildRich(dialogue: string, format: ProjectFormat, style?: StyleDirective): PromptArtifact {
   return {
     system: [
       `전문 작가처럼 장면을 ${format} 형식으로 재작성하라.`,
       formatGuides[format],
       "원문의 사건 순서, 대화 의미, 감정 흐름은 보존하라.",
       "형식 규칙에 맞게 문장 리듬과 단락 구조를 다듬되 새 설정은 추가하지 마라.",
-      "출력은 한국어로 작성하라."
+      "출력은 한국어로 작성하라.",
+      ...narrativeStyleLines(style)
     ].join("\n"),
     user: dialogue
   }

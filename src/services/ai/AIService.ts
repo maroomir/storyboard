@@ -1,6 +1,7 @@
 import type { Background } from "@/domain/Background"
 import type { Character } from "@/domain/Character"
 import type { ProjectFormat } from "@/shared/project"
+import type { StyleDirective } from "@/shared/styleDirective"
 import { AiProviderRegistry } from "./providerRegistry"
 import type {
   AiGenerateResponse,
@@ -48,6 +49,7 @@ export interface GenerateTextOptions {
   readonly temperature?: number
   readonly maxTokens?: number
   readonly attribution?: UsageAttribution
+  readonly styleDirective?: StyleDirective
 }
 
 export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
@@ -126,7 +128,7 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {}
   ): Promise<string> {
     const variant = this.resolvePromptVariant("personaGeneration", options)
-    const prompt = PersonaGenerationPrompt.build(character, variant)
+    const prompt = PersonaGenerationPrompt.build(character, variant, options.styleDirective)
     const response = await this.generateText(
       "personaGeneration",
       toPromptMessages(prompt),
@@ -144,7 +146,14 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {}
   ): Promise<string> {
     const variant = this.resolvePromptVariant("personaDialogue", options)
-    const prompt = PersonaDialoguePrompt.build(situation, personas, background, previousContext, variant)
+    const prompt = PersonaDialoguePrompt.build(
+      situation,
+      personas,
+      background,
+      previousContext,
+      variant,
+      options.styleDirective
+    )
     const response = await this.generateText(
       "personaDialogue",
       toPromptMessages(prompt),
@@ -160,7 +169,7 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {}
   ): Promise<string> {
     const variant = this.resolvePromptVariant("sceneDraft", options)
-    const prompt = GenreFormattingPrompt.build(dialogue, format, variant)
+    const prompt = GenreFormattingPrompt.build(dialogue, format, variant, options.styleDirective)
     const response = await this.generateText(
       "sceneDraft",
       toPromptMessages(prompt),

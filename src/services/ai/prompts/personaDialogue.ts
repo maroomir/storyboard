@@ -1,4 +1,5 @@
 import type { Background } from "@/domain/Background"
+import { voiceStyleLines, type StyleDirective } from "@/shared/styleDirective"
 import { type PromptArtifact, type PromptVariantId } from "./types"
 
 export const PersonaDialoguePrompt = {
@@ -11,7 +12,8 @@ export const PersonaDialoguePrompt = {
     personas: ReadonlyMap<string, string>,
     background: Background,
     previousContext?: string,
-    variant: PromptVariantId = "generic"
+    variant: PromptVariantId = "generic",
+    style?: StyleDirective
   ): PromptArtifact {
     const system = [
       variant === "xs"
@@ -21,7 +23,8 @@ export const PersonaDialoguePrompt = {
       variant === "xs" ? undefined : "대화는 '캐릭터명: 대사' 형식을 사용하라.",
       variant === "xs" ? undefined : "행동, 표정, 감정을 함께 서술하라.",
       background.description ? `배경 설명: ${background.description}` : undefined,
-      background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined
+      background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined,
+      ...(variant === "xs" ? [] : voiceStyleLines(style))
     ]
       .filter((line): line is string => Boolean(line))
       .join("\n")

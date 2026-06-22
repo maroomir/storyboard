@@ -21,6 +21,7 @@ import {
 } from "../files/sceneCache"
 import { ensureSceneCacheDirectory, sceneCacheFilePath } from "../files/sceneCacheWorkspace"
 import { parseSceneFileName } from "../shared/scene"
+import { buildStyleDirective } from "../shared/styleDirective"
 import { runReviseGateForScene } from "./reviseDraft"
 import { StoryboardAIService } from "../services/ai/AIService"
 import {
@@ -281,6 +282,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       context,
       aiService,
       format: project.format,
+      styleDirective: buildStyleDirective(project.setting),
       previousContext,
       providers: pipelineProviders,
       onProgress: (stage, current, total) => {

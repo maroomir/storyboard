@@ -2,6 +2,7 @@ import type { SceneContext } from "@/core/sceneContext"
 import { createEmptyBackground } from "@/domain/Background"
 import type { CharacterCard } from "@/shared/card"
 import type { ProjectFormat } from "@/shared/project"
+import type { StyleDirective } from "@/shared/styleDirective"
 import type { GenerateTextOptions, SituationWithCharacters, StoryboardAIService } from "../AIService"
 import type { AiProviderId, EntityRef } from "../types"
 
@@ -34,6 +35,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly context: SceneContext
   readonly aiService: SceneGenerationPipelineAiService
   readonly format: ProjectFormat
+  readonly styleDirective?: StyleDirective
   readonly previousContext?: string
   readonly providers?: Readonly<SceneGenerationPipelineTaskProviders>
   readonly onProgress?: (stage: SceneGenerationPipelineStage, current: number, total: number) => void
@@ -170,7 +172,7 @@ function condensePreviousContext(previousContext: string | undefined, enabled: b
 export async function runSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput
 ): Promise<RunSceneGenerationPipelineResult> {
-  const { context, aiService, format, previousContext, providers = {}, onProgress, shouldCancel } = input
+  const { context, aiService, format, styleDirective, previousContext, providers = {}, onProgress, shouldCancel } = input
   const condensedPreviousContext = condensePreviousContext(previousContext, input.useContextCondense === true)
   const sceneStem = input.sceneStem ?? input.context.scene.stem
   const sceneRef: EntityRef = { kind: "scene", id: sceneStem }
@@ -197,7 +199,10 @@ export async function runSceneGenerationPipeline(
     throw new Error("상황을 추출할 수 없습니다.")
   }
 
-  const personaOptions = buildGenerateOptions(providers, "personaGeneration")
+  const personaOptions: GenerateTextOptions = {
+    ...buildGenerateOptions(providers, "personaGeneration"),
+    styleDirective
+  }
   const personasUsed = new Map<string, string>()
   const characterCount = context.characters.length
 
@@ -220,7 +225,10 @@ export async function runSceneGenerationPipeline(
 
   const background = context.background ?? createEmptyBackground("scene-default", "미정")
   const dialoguePieces: string[] = []
-  const dialogueOptions = buildGenerateOptions(providers, "personaDialogue")
+  const dialogueOptions: GenerateTextOptions = {
+    ...buildGenerateOptions(providers, "personaDialogue"),
+    styleDirective
+  }
   const backgroundParticipantId = context.background?.id ?? input.backgroundId
 
   for (let i = 0; i < situations.length; i++) {
@@ -255,7 +263,7 @@ export async function runSceneGenerationPipeline(
   const draftBody = await aiService.applyGenreFormat(
     joinedDialogue,
     format,
-    withAttribution(buildGenerateOptions(providers, "sceneDraft"), { primary: sceneRef })
+    withAttribution({ ...buildGenerateOptions(providers, "sceneDraft"), styleDirective }, { primary: sceneRef })
   )
 
   return {
