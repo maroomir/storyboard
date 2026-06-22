@@ -17,6 +17,7 @@ export interface SceneContextWorkspacePaths {
   readonly backgroundDirectory: unknown
   readonly draftDirectory: unknown
   readonly bibleCanon?: unknown
+  readonly manuscriptSummary?: unknown
   readonly joinPath: (base: unknown, ...pathSegments: string[]) => unknown
 }
 
@@ -52,6 +53,8 @@ export async function buildSceneContext(
   }
 }
 
+const summaryContextBudget = 2000
+
 export async function readPreviousSceneContext(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
@@ -61,8 +64,41 @@ export async function readPreviousSceneContext(
     return undefined
   }
 
-  const previousOrder = currentSceneOrder - 1
+  const rollingSummary = await readRollingSummary(paths, fileSystem)
+  if (rollingSummary) {
+    return rollingSummary
+  }
 
+  return readPreviousDraftTail(paths, currentSceneOrder - 1, fileSystem)
+}
+
+async function readRollingSummary(
+  paths: SceneContextWorkspacePaths,
+  fileSystem: SceneContextWorkspaceFileSystem
+): Promise<string | undefined> {
+  if (!paths.manuscriptSummary) {
+    return undefined
+  }
+
+  try {
+    const content = new TextDecoder().decode(await fileSystem.readFile(paths.manuscriptSummary))
+    const trimmed = content.trim()
+    return trimmed.length > 0 ? boundSummary(trimmed) : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function boundSummary(content: string): string {
+  const trimmed = content.trim()
+  return trimmed.length <= summaryContextBudget ? trimmed : trimmed.slice(-summaryContextBudget).trim()
+}
+
+async function readPreviousDraftTail(
+  paths: SceneContextWorkspacePaths,
+  previousOrder: number,
+  fileSystem: SceneContextWorkspaceFileSystem
+): Promise<string | undefined> {
   try {
     const entries = await fileSystem.readDirectory(paths.draftDirectory)
     const draftFiles = entries.filter(([name, entry]) => entry.type === "file" && name.endsWith(".md"))

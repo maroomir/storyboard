@@ -1,3 +1,5 @@
+export const summaryFileName = "SUMMARY.md"
+
 export interface ChapterSummary {
   readonly chapterTitle: string
   readonly summary: string

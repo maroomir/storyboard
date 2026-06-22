@@ -61,6 +61,7 @@ function baseOptions(overrides: Partial<ReviseDraftWorkflowOptions> = {}): Revis
     paths: {
       sceneDirectory: vscode.Uri.file("/ws/project/scene"),
       draftDirectory: vscode.Uri.file("/ws/project/draft"),
+      manuscriptDirectory: vscode.Uri.file("/ws/project/manuscript"),
       characterDirectory: vscode.Uri.file("/ws/project/character"),
       backgroundDirectory: vscode.Uri.file("/ws/project/background"),
       bibleCanon: vscode.Uri.file("/ws/project/.storyboard/bible/canon.yaml"),

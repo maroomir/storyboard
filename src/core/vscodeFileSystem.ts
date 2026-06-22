@@ -1,5 +1,6 @@
 import * as vscode from "vscode"
 
+import { summaryFileName } from "./chapterSummaries"
 import { type StoryboardProjectPaths } from "./pathConventions"
 import {
   type SceneContextWorkspaceFileSystem,
@@ -30,6 +31,7 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     backgroundDirectory: paths.backgroundDirectory,
     draftDirectory: paths.draftDirectory,
     bibleCanon: paths.bibleCanon,
+    manuscriptSummary: vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
     joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
       vscode.Uri.joinPath(base as vscode.Uri, ...segments)
   }

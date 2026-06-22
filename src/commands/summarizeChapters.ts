@@ -1,6 +1,6 @@
 import * as vscode from "vscode"
 
-import { buildChapterSummariesMarkdown, type ChapterSummary } from "../core/chapterSummaries"
+import { buildChapterSummariesMarkdown, summaryFileName, type ChapterSummary } from "../core/chapterSummaries"
 import type { StoryboardLogger } from "../core/logger"
 import { assembleManuscript } from "../core/manuscriptAssembly"
 import { collectDraftsByOrder } from "../core/manuscriptDrafts"
@@ -13,7 +13,6 @@ import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 
 const summarizeChaptersCommand = "storyboard.manuscript.summaries"
-const summaryFileName = "SUMMARY.md"
 
 const fileSystem: DraftFileSystem & OutlineFileSystem = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

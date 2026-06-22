@@ -33,7 +33,10 @@ vi.mock("@/core/manuscriptAssembly", () => ({
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
 vi.mock("@/core/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
-vi.mock("@/core/chapterSummaries", () => ({ buildChapterSummariesMarkdown: (): string => "" }))
+vi.mock("@/core/chapterSummaries", () => ({
+  buildChapterSummariesMarkdown: (): string => "",
+  summaryFileName: "SUMMARY.md"
+}))
 vi.mock("@/core/foreshadowingTracker", () => ({
   collectForeshadowing: (): unknown[] => [],
   buildForeshadowingMarkdown: (): string => ""

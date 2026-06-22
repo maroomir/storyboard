@@ -5,7 +5,7 @@ import type { StoryboardLogger } from "./logger"
 import { assembleManuscript } from "./manuscriptAssembly"
 import { collectDraftsByOrder } from "./manuscriptDrafts"
 import { buildManuscriptReviewMarkdown } from "./manuscriptReview"
-import { buildChapterSummariesMarkdown, type ChapterSummary } from "./chapterSummaries"
+import { buildChapterSummariesMarkdown, summaryFileName, type ChapterSummary } from "./chapterSummaries"
 import { buildForeshadowingMarkdown, collectForeshadowing } from "./foreshadowingTracker"
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from "./pathConventions"
 import { runReviseDraftWorkflow } from "./reviseDraftWorkflow"
@@ -402,7 +402,7 @@ async function runSummariesStage(
 
   await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
   await vscode.workspace.fs.writeFile(
-    vscode.Uri.joinPath(paths.manuscriptDirectory, "SUMMARY.md"),
+    vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
     new TextEncoder().encode(buildChapterSummariesMarkdown(project.name, summaries))
   )
 }

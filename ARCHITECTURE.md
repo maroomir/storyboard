@@ -441,7 +441,7 @@ CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토�
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
 - 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
-- 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`).
+- 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 2000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
 - 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
 ### Phase F: One-Click Novel (초기 구현)

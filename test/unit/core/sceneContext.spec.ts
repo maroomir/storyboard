@@ -40,6 +40,8 @@ class MockFileSystem implements SceneContextWorkspaceFileSystem {
   private readonly files = new Map<string, Uint8Array>()
   private readonly directories = new Map<string, [string, { type: "file" | "directory" }][]>()
 
+  public writeCount = 0
+
   public setFile(path: string, content: string): void {
     this.files.set(path, new TextEncoder().encode(content))
   }
@@ -60,7 +62,7 @@ class MockFileSystem implements SceneContextWorkspaceFileSystem {
   }
 
   public async writeFile(): Promise<void> {
-    throw new Error("Not implemented")
+    this.writeCount += 1
   }
 
   public async readDirectory(uri: unknown): Promise<[string, { type: "file" | "directory" }][]> {
@@ -215,6 +217,7 @@ describe("readPreviousSceneContext", () => {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
+    manuscriptSummary: "/mock/workspace/manuscript/SUMMARY.md",
     joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
 
@@ -259,12 +262,173 @@ describe("readPreviousSceneContext", () => {
   })
 })
 
+describe("readPreviousSceneContext rolling summary", () => {
+  const summaryPath = "/mock/workspace/manuscript/SUMMARY.md"
+  const mockPaths = {
+    characterDirectory: "/mock/workspace/character",
+    backgroundDirectory: "/mock/workspace/background",
+    draftDirectory: "/mock/workspace/draft",
+    manuscriptSummary: summaryPath,
+    joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
+  }
+
+  const setDraftTail = (fileSystem: MockFileSystem, marker: string): void => {
+    fileSystem.setDirectory("/mock/workspace/draft", [
+      ["01-prologue.md", { type: "file" }],
+      ["02-chapter-1.md", { type: "file" }]
+    ])
+    fileSystem.setFile("/mock/workspace/draft/01-prologue.md", "A".repeat(50) + marker)
+  }
+
+  const readPrevious = (
+    paths: typeof mockPaths | Omit<typeof mockPaths, "manuscriptSummary">,
+    order: number,
+    fileSystem: MockFileSystem
+  ): Promise<string | undefined> =>
+    import("@/core/sceneContext.js").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
+
+  it("QAS-C6-01: prefers the rolling summary over the previous draft tail", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "rolling state with SUMMARY-MARKER inside")
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toContain("SUMMARY-MARKER")
+    expect(result).not.toContain("TAIL-MARKER")
+  })
+
+  it("QAS-C6-02: returns undefined for the first scene even when a summary exists", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "SUMMARY-MARKER for an existing summary")
+
+    const result = await readPrevious(mockPaths, 1, fileSystem)
+
+    expect(result).toBeUndefined()
+  })
+
+  it("QAS-C6-03: falls back to the 1000-char tail when the summary file is absent", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setDirectory("/mock/workspace/draft", [
+      ["01-prologue.md", { type: "file" }],
+      ["02-chapter-1.md", { type: "file" }]
+    ])
+    const longTail = "A".repeat(2000) + "TAIL-MARKER"
+    fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longTail)
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toBeDefined()
+    expect(result?.length).toBeLessThanOrEqual(1000)
+    expect(result).toContain("TAIL-MARKER")
+  })
+
+  it("QAS-C6-04: treats a whitespace-only summary as absent and falls to the tail", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "   \n   ")
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toContain("TAIL-MARKER")
+    expect(result).not.toBe("")
+  })
+
+  it("QAS-C6-05: caps an over-budget summary to its tail 2000 chars", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "HEAD-MARKER" + "x".repeat(3000) + "TAIL-MARKER")
+    setDraftTail(fileSystem, "DRAFT-TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toBeDefined()
+    expect(result?.length).toBeLessThanOrEqual(2000)
+    expect(result?.length).toBeGreaterThanOrEqual(1000)
+    expect(result).toContain("TAIL-MARKER")
+    expect(result).not.toContain("HEAD-MARKER")
+  })
+
+  it("QAS-C6-06: keeps at least 1000 chars (improvement over the old tail)", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "y".repeat(2500))
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result?.length).toBeGreaterThanOrEqual(1000)
+  })
+
+  it("QAS-C6-07: returns the whole trimmed file when length equals the budget", async () => {
+    const fileSystem = new MockFileSystem()
+    const wholeSummary = "z".repeat(2000)
+    fileSystem.setFile(summaryPath, wholeSummary)
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toBe(wholeSummary)
+    expect(result?.length).toBe(2000)
+  })
+
+  it("QAS-C6-08: returns the trailing 2000 chars when length is just over the budget", async () => {
+    const fileSystem = new MockFileSystem()
+    const overBudget = "w".repeat(2001)
+    fileSystem.setFile(summaryPath, overBudget)
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result?.length).toBe(2000)
+    expect(result).toBe(overBudget.slice(-2000))
+  })
+
+  it("QAS-C6-09: falls back to the tail when the summary read is unreadable", async () => {
+    const fileSystem = new MockFileSystem()
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toContain("TAIL-MARKER")
+  })
+
+  it("QAS-C6-10: skips the summary entirely when no path member is present", async () => {
+    const fileSystem = new MockFileSystem()
+    const { manuscriptSummary, ...pathsWithoutSummary } = mockPaths
+    void manuscriptSummary
+    fileSystem.setFile(summaryPath, "SUMMARY-MARKER should be ignored without a path member")
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(pathsWithoutSummary, 2, fileSystem)
+
+    expect(result).toContain("TAIL-MARKER")
+    expect(result).not.toContain("SUMMARY-MARKER")
+  })
+
+  it("QAS-C6-13: never writes on the read path", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "rolling state with SUMMARY-MARKER inside")
+
+    await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(fileSystem.writeCount).toBe(0)
+  })
+
+  it("QAS-C6-14: returns identical results across repeated reads", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "rolling state with DETERMINISM-MARKER inside")
+
+    const first = await readPrevious(mockPaths, 2, fileSystem)
+    const second = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(first).toBe(second)
+  })
+})
+
 describe("buildNarrativeContext", () => {
   const biblePath = "/mock/workspace/.storyboard/bible/canon.yaml"
+  const summaryPath = "/mock/workspace/manuscript/SUMMARY.md"
   const basePaths = {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
+    manuscriptSummary: summaryPath,
     joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
   const firstScene: SceneFile = {
@@ -303,6 +467,19 @@ describe("buildNarrativeContext", () => {
 
     expect(result.bibleFacts).toEqual([])
     expect(result.prompt).toBeUndefined()
+  })
+
+  it("QAS-C6-11: renders the rolling summary under [이전 장면]", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(summaryPath, "rolling state with SUMMARY-MARKER inside")
+
+    const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
+    const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
+
+    const result = await buildNarrativeContext(basePaths, secondContext, fileSystem)
+
+    expect(result.prompt).toContain("[이전 장면]")
+    expect(result.prompt).toContain("SUMMARY-MARKER")
   })
 
   it("injects the time-valid arm version for the scene's order", async () => {
