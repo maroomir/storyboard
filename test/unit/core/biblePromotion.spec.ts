@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { aggregateCandidateFacts, mergeCanonFacts, selectNewCandidates } from "@/core/biblePromotion"
+import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/core/biblePromotion"
 import { buildCandidateFact, type StoryBible } from "@/shared/bible"
 import type { BibleCandidateRecord } from "@/files/bibleCandidates"
 
@@ -41,6 +41,44 @@ describe("selectNewCandidates", () => {
     const candidates = [buildCandidateFact({ kind: "character", id: "elia" }, "키", "170cm")]
 
     expect(selectNewCandidates(candidates, canon).map((fact) => fact.id)).toEqual(["character:elia:키"])
+  })
+})
+
+describe("seedPromotedFact", () => {
+  it("anchors validFrom and a versioned id from a resolvable sourceScene", () => {
+    const candidate = buildCandidateFact({ kind: "character", id: "elia" }, "팔", "의수", "04-the-fall")
+
+    const seeded = seedPromotedFact(candidate)
+
+    expect(seeded.validFrom).toBe("04-the-fall")
+    expect(seeded.id).toBe("character:elia:팔@4")
+  })
+
+  it("leaves a candidate without a sourceScene unchanged", () => {
+    const candidate = buildCandidateFact({ kind: "character", id: "elia" }, "팔", "의수")
+
+    const seeded = seedPromotedFact(candidate)
+
+    expect(seeded.validFrom).toBeUndefined()
+    expect(seeded.id).toBe("character:elia:팔")
+  })
+
+  it("leaves a candidate with an unparseable sourceScene unchanged", () => {
+    const candidate = buildCandidateFact({ kind: "character", id: "elia" }, "팔", "의수", "banana")
+
+    const seeded = seedPromotedFact(candidate)
+
+    expect(seeded.validFrom).toBeUndefined()
+    expect(seeded.id).toBe("character:elia:팔")
+  })
+
+  it("leaves a fact that already has validFrom unchanged", () => {
+    const fact = {
+      ...buildCandidateFact({ kind: "character", id: "elia" }, "팔", "의수", "04-the-fall"),
+      validFrom: 2
+    }
+
+    expect(seedPromotedFact(fact)).toBe(fact)
   })
 })
 

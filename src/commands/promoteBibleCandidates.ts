@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
 import { getStoryboardProjectPaths } from "../core/pathConventions"
-import { aggregateCandidateFacts, mergeCanonFacts, selectNewCandidates } from "../core/biblePromotion"
+import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "../core/biblePromotion"
 import { getTargetWorkspaceFolder, hasStoryboardProject } from "../core/workspace"
 import { readBibleFile, writeBibleFile } from "../files/bible"
 import { readBibleCandidateFile, type BibleCandidateRecord } from "../files/bibleCandidates"
@@ -101,7 +101,7 @@ async function runPromote(logger: StoryboardLogger): Promise<void> {
 
   const merged = mergeCanonFacts(
     canon,
-    picked.map((item) => item.fact)
+    picked.map((item) => seedPromotedFact(item.fact))
   )
 
   try {
