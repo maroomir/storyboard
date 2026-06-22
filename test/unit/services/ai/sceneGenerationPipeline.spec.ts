@@ -156,7 +156,7 @@ describe("runSceneGenerationPipeline", () => {
       "두 번째 상황",
       expect.any(Map),
       expect.anything(),
-      "첫 번째 상황",
+      "[첫 번째 상황|prev=이전 씬 말미]",
       expect.objectContaining({
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
@@ -165,7 +165,7 @@ describe("runSceneGenerationPipeline", () => {
       })
     )
 
-    const joined = "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=첫 번째 상황]"
+    const joined = "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=[첫 번째 상황|prev=이전 씬 말미]]"
     expect(ai.applyGenreFormat).toHaveBeenCalledWith(
       joined,
       "screenplay",
@@ -185,6 +185,123 @@ describe("runSceneGenerationPipeline", () => {
       personaGeneration: "google",
       sceneDraft: "openai"
     })
+  })
+
+  it("scopes personas to the characters listed in each situation", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아", "지훈"], situation: "둘 다" },
+      { characters: ["엘리아"], situation: "엘리아만" }
+    ])
+    ai.createCharacterPersona.mockImplementation(async (character) => `페르소나:${character.name}`)
+    ai.generatePersonaDialogue.mockResolvedValue("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const bothPersonas = ai.generatePersonaDialogue.mock.calls[0]?.[1] as Map<string, string>
+    expect(Array.from(bothPersonas.keys())).toEqual(["엘리아", "지훈"])
+
+    const scopedPersonas = ai.generatePersonaDialogue.mock.calls[1]?.[1] as Map<string, string>
+    expect(scopedPersonas.size).toBe(1)
+    expect(Array.from(scopedPersonas.keys())).toEqual(["엘리아"])
+    expect(scopedPersonas.has("지훈")).toBe(false)
+  })
+
+  it("scopes personas by alias and keys the subset by the canonical name", async () => {
+    const manjaeCard: CharacterCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      aliases: ["만재"]
+    }
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["만재"], situation: "만재만" }])
+    ai.createCharacterPersona.mockImplementation(async (character) => `페르소나:${character.name}`)
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([manjaeCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const personas = ai.generatePersonaDialogue.mock.calls[0]?.[1] as Map<string, string>
+    expect(personas.size).toBe(1)
+    expect(Array.from(personas.keys())).toEqual(["조만재"])
+    expect(personas.has("만재")).toBe(false)
+    expect(personas.has("지훈")).toBe(false)
+  })
+
+  it("passes the full personas map when a situation lists no characters", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "무명" }])
+    ai.createCharacterPersona.mockImplementation(async (character) => `페르소나:${character.name}`)
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const personas = ai.generatePersonaDialogue.mock.calls[0]?.[1] as Map<string, string>
+    expect(Array.from(personas.keys())).toEqual(["엘리아", "지훈"])
+  })
+
+  it("falls back to the full personas map when no listed name matches a persona", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["미등록"], situation: "미상" }])
+    ai.createCharacterPersona.mockImplementation(async (character) => `페르소나:${character.name}`)
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const personas = ai.generatePersonaDialogue.mock.calls[0]?.[1] as Map<string, string>
+    expect(Array.from(personas.keys())).toEqual(["엘리아", "지훈"])
+  })
+
+  it("chains generated dialogue, not raw situation text, into later previousContext", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "상황1" },
+      { characters: ["엘리아"], situation: "상황2" },
+      { characters: ["엘리아"], situation: "상황3" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockImplementation(async (situation) => `엘리아: ${situation}에서 만든 대사`)
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const thirdPriorContext = ai.generatePersonaDialogue.mock.calls[2]?.[3]
+    expect(typeof thirdPriorContext).toBe("string")
+    expect(thirdPriorContext as string).toContain("상황1에서 만든 대사")
+    expect(thirdPriorContext as string).toContain("상황2에서 만든 대사")
+    expect(thirdPriorContext).not.toBe("상황2")
+    expect(thirdPriorContext as string).not.toContain("상황3")
   })
 
   it("condenses previousContext when context condense is enabled", async () => {

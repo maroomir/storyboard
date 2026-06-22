@@ -135,6 +135,33 @@ function dialogueParticipantsForSituation(
   return dedupeEntityRefs(refs)
 }
 
+function selectSituationPersonas(
+  situation: SituationWithCharacters,
+  characters: readonly CharacterCard[],
+  personasUsed: ReadonlyMap<string, string>
+): ReadonlyMap<string, string> {
+  if (situation.characters.length === 0) {
+    return personasUsed
+  }
+
+  // NOTE: 상황 추출이 원문 표기(별칭일 수 있음)로 인물을 돌려주므로 카드 name뿐 아니라 alias로도
+  // 대조해야 스코핑이 실제로 걸린다. 이름만 비교하면 별칭 상황은 전부 전체 폴백으로 새 버린다.
+  const tokens = new Set(situation.characters)
+  const subset = new Map<string, string>()
+  for (const card of characters) {
+    const matches = tokens.has(card.name) || (card.aliases ?? []).some((alias) => tokens.has(alias))
+    if (!matches) {
+      continue
+    }
+    const persona = personasUsed.get(card.name)
+    if (persona !== undefined) {
+      subset.set(card.name, persona)
+    }
+  }
+
+  return subset.size > 0 ? subset : personasUsed
+}
+
 function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   if (shouldCancel?.()) {
     throw new SceneGenerationPipelineCancelledError()
@@ -238,13 +265,22 @@ export async function runSceneGenerationPipeline(
     }
     onProgress?.("generateDialogue", i + 1, situations.length)
 
-    const prior: string | undefined = i > 0 ? situations[i - 1]?.situation : condensedPreviousContext
+    // NOTE: 앞 구간에서 실제로 생성된 대사의 압축 tail을 이어 넘겨 장면 간 연결성을 유지한다.
+    // 직전 상황의 원문이 아니라 이미 쓰여진 대사를 봐야 인물 감정·맥락이 누적된다.
+    const prior: string | undefined =
+      dialoguePieces.length > 0
+        ? condensePreviousContext(dialoguePieces.join("\n\n"), true)
+        : condensedPreviousContext
 
     const dialogueParticipants = dialogueParticipantsForSituation(situation, context.characters, backgroundParticipantId)
 
+    // NOTE: 이 상황에 실제 참여하는 인물의 페르소나만 넘긴다. 전체 페르소나를 매 상황에 주면
+    // 모델이 그 비트에 없어야 할 인물(예: 다른 장소 전용 인물)까지 끌어와 등장 드리프트가 난다.
+    const situationPersonas = selectSituationPersonas(situation, context.characters, personasUsed)
+
     const dialogue = await aiService.generatePersonaDialogue(
       situation.situation,
-      personasUsed,
+      situationPersonas,
       background,
       prior,
       withAttribution(dialogueOptions, {
