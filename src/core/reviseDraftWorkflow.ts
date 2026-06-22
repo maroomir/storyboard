@@ -12,15 +12,18 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "../shared/draftReview"
+import type { ProjectSetting } from "../shared/project"
+import { buildStyleDirective } from "../shared/styleDirective"
 
 async function readContractGuidance(
   projectJsonUri: vscode.Uri
-): Promise<{ styleConstraints: readonly string[]; qualityCriteria: readonly string[] }> {
+): Promise<{ styleConstraints: readonly string[]; qualityCriteria: readonly string[]; setting?: ProjectSetting }> {
   try {
     const project = await readProjectJson(projectJsonUri)
     return {
       styleConstraints: project.setting?.styleConstraints ?? [],
-      qualityCriteria: project.setting?.qualityCriteria ?? []
+      qualityCriteria: project.setting?.qualityCriteria ?? [],
+      setting: project.setting
     }
   } catch {
     return { styleConstraints: [], qualityCriteria: [] }
@@ -74,7 +77,8 @@ export async function runReviseDraftWorkflow(
   const factLines = formatBibleFactLines(context, narrative.bibleFacts)
   const characterNames = context.characters.map((character) => character.name)
   const intent = scene.body
-  const { styleConstraints, qualityCriteria } = await readContractGuidance(paths.projectJson)
+  const { styleConstraints, qualityCriteria, setting } = await readContractGuidance(paths.projectJson)
+  const styleDirective = buildStyleDirective(setting, scene.frontmatter.relationStage)
 
   const draft = parseDraft(await readDraftFile(draftUri, vscodeFsAdapter))
   let body = draft.body
@@ -92,7 +96,7 @@ export async function runReviseDraftWorkflow(
         attribution
       }),
       aiService.critiqueDraft(
-        { body, intent, characters: characterNames, facts: factLines, styleConstraints, qualityCriteria },
+        { body, intent, characters: characterNames, facts: factLines, styleConstraints, qualityCriteria, styleDirective },
         { providerId: registry.getTaskProvider("draftCritique"), attribution }
       )
     ])

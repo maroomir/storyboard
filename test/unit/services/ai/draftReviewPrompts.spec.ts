@@ -31,6 +31,18 @@ describe("DraftCritiquePrompt", () => {
     expect(artifact.user).toContain("복선 회수")
   })
 
+  it("includes pov and relation stage from the style directive", () => {
+    const artifact = DraftCritiquePrompt.build(
+      { ...input, styleDirective: { pov: "first", genre: "허세 코미디", relationStage: "적대적 첫 만남" } },
+      "generic"
+    )
+
+    expect(artifact.user).toContain("[시점]")
+    expect(artifact.user).toContain("[관계 단계]")
+    expect(artifact.user).toContain("적대적 첫 만남")
+    expect(artifact.system).toContain("관계 단계")
+  })
+
   it("keeps the xs system block shorter than generic", () => {
     expect(DraftCritiquePrompt.build(input, "xs").system.length).toBeLessThan(
       DraftCritiquePrompt.build(input, "generic").system.length
