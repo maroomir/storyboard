@@ -281,7 +281,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       context,
       aiService,
       format: project.format,
-      styleDirective: buildStyleDirective(project.setting),
+      styleDirective: buildStyleDirective(project.setting, scene.frontmatter.relationStage),
       previousContext,
       providers: pipelineProviders,
       onProgress: (stage, current, total) => {

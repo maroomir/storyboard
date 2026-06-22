@@ -8,7 +8,8 @@ export const sceneFrontmatterSchema = z
     title: z.string().trim().min(1).optional(),
     characters: z.array(z.string().trim().min(1)).optional(),
     location: z.string().trim().min(1).optional(),
-    mood: z.string().trim().min(1).optional()
+    mood: z.string().trim().min(1).optional(),
+    relationStage: z.string().trim().min(1).optional()
   })
   .passthrough()
 

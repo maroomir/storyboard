@@ -62,23 +62,42 @@ describe("buildStyleDirective", () => {
     expect(directive?.styleConstraints).toBeUndefined()
     expect(directive?.pov).toBeUndefined()
   })
+
+  it("includes relationStage from scene metadata", () => {
+    expect(buildStyleDirective(settingOf({ genre: "로맨스" }), "적대적 첫 만남")?.relationStage).toBe("적대적 첫 만남")
+  })
+
+  it("returns a directive from relationStage alone, without setting", () => {
+    expect(buildStyleDirective(undefined, "연인")?.relationStage).toBe("연인")
+  })
+
+  it("drops a blank relationStage", () => {
+    expect(buildStyleDirective(undefined, "   ")).toBeUndefined()
+  })
 })
 
 describe("style lines", () => {
-  const directive: StyleDirective = { pov: "first", genre: "로맨스", styleConstraints: ["간결체"] }
+  const directive: StyleDirective = {
+    pov: "first",
+    genre: "로맨스",
+    styleConstraints: ["간결체"],
+    relationStage: "적대적 첫 만남"
+  }
 
-  it("narrativeStyleLines includes pov, genre, and style constraints", () => {
+  it("narrativeStyleLines includes pov, genre, style constraints, and relation stage", () => {
     const lines = narrativeStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(true)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
+    expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
   })
 
-  it("voiceStyleLines omits pov but keeps genre and style", () => {
+  it("voiceStyleLines omits pov but keeps genre, style, and relation stage", () => {
     const lines = voiceStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(false)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
+    expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
   })
 
   it("returns empty arrays for an undefined directive", () => {

@@ -229,6 +229,7 @@ title: 학교에 도착하다
 characters: [elia, jihoon]
 location: school
 mood: 설렘
+relationStage: 첫 만남, 어색한 거리
 ---
 주인공이 학교에 도착했다...
 ```

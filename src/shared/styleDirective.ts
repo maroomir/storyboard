@@ -8,22 +8,26 @@ export interface StyleDirective {
   readonly pov?: PointOfView
   readonly genre?: string
   readonly styleConstraints?: readonly string[]
+  readonly relationStage?: string
 }
 
-export function buildStyleDirective(setting: ProjectSetting | undefined): StyleDirective | undefined {
-  if (!setting) {
-    return undefined
-  }
-
+export function buildStyleDirective(
+  setting: ProjectSetting | undefined,
+  relationStage?: string
+): StyleDirective | undefined {
   const styleConstraints =
-    setting.styleConstraints && setting.styleConstraints.length > 0 ? setting.styleConstraints : undefined
+    setting?.styleConstraints && setting.styleConstraints.length > 0 ? setting.styleConstraints : undefined
+  const trimmedRelationStage = relationStage?.trim()
   const directive: StyleDirective = {
-    pov: setting.pov,
-    genre: setting.genre,
-    styleConstraints
+    pov: setting?.pov,
+    genre: setting?.genre,
+    styleConstraints,
+    relationStage: trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined
   }
 
-  return directive.pov || directive.genre || directive.styleConstraints ? directive : undefined
+  return directive.pov || directive.genre || directive.styleConstraints || directive.relationStage
+    ? directive
+    : undefined
 }
 
 function povLine(directive: StyleDirective): string | undefined {
@@ -40,22 +44,30 @@ function styleConstraintLine(directive: StyleDirective): string | undefined {
     : undefined
 }
 
+function relationLine(directive: StyleDirective): string | undefined {
+  return directive.relationStage
+    ? `이 장면의 인물 관계 단계: ${directive.relationStage} — 이 단계에 맞는 태도와 거리감으로 표현하라.`
+    : undefined
+}
+
 // genreFormatting처럼 최종 시점을 확정하는 단계용: 시점까지 포함한다.
 export function narrativeStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
     return []
   }
 
-  return [povLine(directive), genreLine(directive), styleConstraintLine(directive)].filter(
+  return [povLine(directive), genreLine(directive), styleConstraintLine(directive), relationLine(directive)].filter(
     (line): line is string => Boolean(line)
   )
 }
 
-// 페르소나·대사처럼 시점이 중립인 단계용: 톤·문체만 반영한다.
+// 페르소나·대사처럼 시점이 중립인 단계용: 톤·문체·관계 단계를 반영한다.
 export function voiceStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
     return []
   }
 
-  return [genreLine(directive), styleConstraintLine(directive)].filter((line): line is string => Boolean(line))
+  return [genreLine(directive), styleConstraintLine(directive), relationLine(directive)].filter(
+    (line): line is string => Boolean(line)
+  )
 }
