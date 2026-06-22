@@ -239,6 +239,13 @@ describe("ConfigBridge", () => {
 
     await expect(configBridge.setDefaultProvider("openai")).rejects.toThrow(/update is required/)
   })
+
+  it("disables revise-after-generate by default and reads the configured value", () => {
+    expect(createConfigBridge(new Map()).isReviseAfterGenerateEnabled()).toBe(false)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseAfterGenerate", true]])).isReviseAfterGenerateEnabled()
+    ).toBe(true)
+  })
 })
 
 function createConfigBridge(values: ReadonlyMap<string, unknown>): ConfigBridge {

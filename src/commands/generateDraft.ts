@@ -21,6 +21,7 @@ import {
 } from "../files/sceneCache"
 import { ensureSceneCacheDirectory, sceneCacheFilePath } from "../files/sceneCacheWorkspace"
 import { parseSceneFileName } from "../shared/scene"
+import { runReviseGateForScene } from "./reviseDraft"
 import { StoryboardAIService } from "../services/ai/AIService"
 import {
   runSceneGenerationPipeline,
@@ -422,6 +423,31 @@ export async function runGenerateDraftForWorkspaceScene(
       })
 
       if (result.ok) {
+        if (
+          result.kind === "generated" &&
+          options.configBridge.isReviseAfterGenerateEnabled() &&
+          !token.isCancellationRequested
+        ) {
+          const folder = vscode.workspace.getWorkspaceFolder(sceneUri)
+          const stem = parseSceneFileName(sceneUri.path.split("/").pop() ?? "")?.stem
+
+          if (folder && stem) {
+            await runReviseGateForScene(
+              folder.uri,
+              stem,
+              {
+                aiProviderRegistry: options.aiProviderRegistry,
+                usageRecorder: options.usageRecorder,
+                logger: options.logger
+              },
+              {
+                onProgress: (message) => progress.report({ message }),
+                shouldCancel: () => token.isCancellationRequested
+              }
+            )
+          }
+        }
+
         progress.report({
           message: result.kind === "cache_hit" ? "캐시된 초안을 열었습니다." : "완료"
         })

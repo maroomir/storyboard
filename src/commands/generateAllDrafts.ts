@@ -12,6 +12,7 @@ import {
   generateDraftForWorkspaceSceneWorkflow,
   stageProgressLabel
 } from "./generateDraft"
+import { runReviseGateForScene } from "./reviseDraft"
 
 const generateAllDraftsCommand = "storyboard.draft.generateAll"
 
@@ -137,6 +138,25 @@ export async function runGenerateAllDrafts(dependencies: RegisterGenerateAllDraf
             cacheHits += 1
           } else {
             generated += 1
+
+            if (dependencies.configBridge.isReviseAfterGenerateEnabled() && !token.isCancellationRequested) {
+              const folder = vscode.workspace.getWorkspaceFolder(sceneUri)
+              const stem = parseSceneFileName(label)?.stem
+
+              if (folder && stem) {
+                progress.report({ message: `[${index + 1}/${total}] ${label} — 검수·재작성 중…` })
+                await runReviseGateForScene(
+                  folder.uri,
+                  stem,
+                  {
+                    aiProviderRegistry: dependencies.aiProviderRegistry,
+                    usageRecorder: dependencies.usageRecorder,
+                    logger: dependencies.logger
+                  },
+                  { shouldCancel: () => token.isCancellationRequested }
+                )
+              }
+            }
           }
 
           continue

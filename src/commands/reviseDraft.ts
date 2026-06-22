@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
 import { draftPath, getStoryboardProjectPaths } from "../core/pathConventions"
-import { runReviseDraftWorkflow } from "../core/reviseDraftWorkflow"
+import { runReviseDraftWorkflow, type ReviseDraftWorkflowResult } from "../core/reviseDraftWorkflow"
 import { recordRevisionEntry } from "../core/revisionPlanRecorder"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
@@ -28,6 +28,63 @@ export function registerReviseDraftCommand(
   return vscode.commands.registerCommand(reviseDraftCommand, (uri?: vscode.Uri) =>
     runReviseDraft(uri, dependencies)
   )
+}
+
+export interface ReviseGateDependencies {
+  readonly aiProviderRegistry: AiProviderRegistry
+  readonly usageRecorder: UsageRecorder
+  readonly logger: StoryboardLogger
+}
+
+export interface ReviseGateHooks {
+  readonly onProgress?: (message: string) => void
+  readonly shouldCancel?: () => boolean
+}
+
+// NOTE: Shared revise gate so Generate Draft / Generate All Drafts can verify-before-commit
+// with the same continuity+critique loop the manual reviseLoop command uses. Returns undefined
+// when the scene has no draft yet.
+export async function runReviseGateForScene(
+  workspaceUri: vscode.Uri,
+  sceneStem: string,
+  dependencies: ReviseGateDependencies,
+  hooks: ReviseGateHooks = {}
+): Promise<ReviseDraftWorkflowResult | undefined> {
+  const paths = getStoryboardProjectPaths(workspaceUri)
+  const draftUri = draftPath(workspaceUri, sceneStem)
+
+  if (!(await uriExists(draftUri))) {
+    return undefined
+  }
+
+  const result = await runReviseDraftWorkflow({
+    aiProviderRegistry: dependencies.aiProviderRegistry,
+    usageRecorder: dependencies.usageRecorder,
+    logger: dependencies.logger,
+    workspaceUri,
+    paths,
+    draftUri,
+    sceneStem,
+    maxIterations: resolveMaxIterations(),
+    onProgress: hooks.onProgress,
+    shouldCancel: hooks.shouldCancel
+  })
+
+  try {
+    await recordRevisionEntry(paths, {
+      sceneStem,
+      checkedAt: new Date().toISOString(),
+      revisionCount: result.revisionCount,
+      remainingBlocking: result.remainingBlocking,
+      instructions: result.instructions
+    })
+  } catch (error) {
+    dependencies.logger.warn(
+      `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+
+  return result
 }
 
 function resolveSceneStem(uri: vscode.Uri): string | undefined {
@@ -69,7 +126,6 @@ async function runReviseDraft(
     return
   }
 
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri)
   const draftUri = draftPath(workspaceFolder.uri, sceneStem)
 
   if (!(await uriExists(draftUri))) {
@@ -85,31 +141,19 @@ async function runReviseDraft(
     },
     async (progress, token) => {
       try {
-        const result = await runReviseDraftWorkflow({
-          aiProviderRegistry: dependencies.aiProviderRegistry,
-          usageRecorder: dependencies.usageRecorder,
-          logger: dependencies.logger,
-          workspaceUri: workspaceFolder.uri,
-          paths,
-          draftUri,
+        const result = await runReviseGateForScene(
+          workspaceFolder.uri,
           sceneStem,
-          maxIterations: resolveMaxIterations(),
-          onProgress: (message) => progress.report({ message }),
-          shouldCancel: () => token.isCancellationRequested
-        })
+          dependencies,
+          {
+            onProgress: (message) => progress.report({ message }),
+            shouldCancel: () => token.isCancellationRequested
+          }
+        )
 
-        try {
-          await recordRevisionEntry(paths, {
-            sceneStem,
-            checkedAt: new Date().toISOString(),
-            revisionCount: result.revisionCount,
-            remainingBlocking: result.remainingBlocking,
-            instructions: result.instructions
-          })
-        } catch (error) {
-          dependencies.logger.warn(
-            `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`
-          )
+        if (!result) {
+          await vscode.window.showInformationMessage("초안이 없습니다. 먼저 Generate Draft를 실행해 주세요.")
+          return
         }
 
         const document = await vscode.workspace.openTextDocument(draftUri)

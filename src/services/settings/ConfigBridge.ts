@@ -172,6 +172,10 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get("ai.contextCondenseEnabled", false)
   }
 
+  public isReviseAfterGenerateEnabled(): boolean {
+    return this.dependencies.getConfiguration().get("draft.reviseAfterGenerate", false)
+  }
+
   public onDidChange(listener: () => void): { readonly dispose: () => void } {
     if (!this.dependencies.onDidChangeConfiguration) {
       return { dispose: (): void => undefined }

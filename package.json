@@ -266,6 +266,11 @@
           "minimum": 1,
           "maximum": 5,
           "description": "Maximum number of revision passes in the Review & Revise Draft loop."
+        },
+        "storyboard.draft.reviseAfterGenerate": {
+          "type": "boolean",
+          "default": false,
+          "description": "After generating a draft (Generate Draft / Generate All Drafts), automatically run the continuity & critique revise gate. Off by default because it adds extra AI calls and cost per draft."
         }
       }
     },
