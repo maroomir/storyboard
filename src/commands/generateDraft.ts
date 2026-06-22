@@ -137,7 +137,6 @@ export interface GenerateDraftWorkflowOptions {
   readonly onSaving?: () => void
   readonly shouldCancel?: () => boolean
   readonly suppressLoggerPanel?: boolean
-  readonly enableTraitsUpdate?: boolean
   readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void
 }
 
@@ -325,7 +324,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
     await writeDraftFile(draftUri, vscodeFsAdapter, draft)
     await writeSceneCacheFile(cacheUri, vscodeFsAdapter, cacheRecord)
 
-    if (options.enableTraitsUpdate !== false) {
+    if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
       const detectedCharacterCards = context.characters.filter((card) =>
         result.detectedCharacters.includes(card.name)
       )

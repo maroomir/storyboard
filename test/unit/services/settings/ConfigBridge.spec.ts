@@ -264,6 +264,15 @@ describe("ConfigBridge", () => {
       createConfigBridge(new Map<string, unknown>([["draft.reviseAfterGenerate", true]])).isReviseAfterGenerateEnabled()
     ).toBe(true)
   })
+
+  it("disables update-cards-after-generate by default and reads the configured value", () => {
+    expect(createConfigBridge(new Map()).isUpdateCardsAfterGenerateEnabled()).toBe(false)
+    expect(
+      createConfigBridge(
+        new Map<string, unknown>([["draft.updateCardsAfterGenerate", true]])
+      ).isUpdateCardsAfterGenerateEnabled()
+    ).toBe(true)
+  })
 })
 
 function createConfigBridge(values: ReadonlyMap<string, unknown>): ConfigBridge {

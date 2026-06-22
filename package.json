@@ -287,6 +287,11 @@
           "minimum": 0,
           "maximum": 100,
           "description": "Optional critique-score quality bar (0–100) that lets the Review & Revise loop pass early once the deterministic rubric score reaches it. 0 disables this and keeps the loop's stop behavior and AI-call count identical to before. High-severity continuity issues still block regardless."
+        },
+        "storyboard.draft.updateCardsAfterGenerate": {
+          "type": "boolean",
+          "default": false,
+          "description": "After generating a draft, extract traits and recent dialogue from the result back into character cards. Off by default to keep cards stable; enabling it lets generated drafts feed back into card traits and dialogue."
         }
       }
     },
