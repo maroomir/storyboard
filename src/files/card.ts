@@ -89,6 +89,7 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     ...(card.tags === undefined ? {} : { tags: card.tags }),
     ...(card.traits === undefined ? {} : { traits: card.traits }),
     ...(card.description === undefined ? {} : { description: card.description }),
+    ...(card.voice === undefined ? {} : { voice: card.voice }),
     ...(card.relations === undefined ? {} : { relations: card.relations }),
     ...(card.arc === undefined ? {} : { arc: card.arc }),
     ...(card.recentDialogues === undefined ? {} : { recentDialogues: card.recentDialogues })

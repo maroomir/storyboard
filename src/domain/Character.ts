@@ -13,6 +13,7 @@ export function createEmptyCharacter(id: string, name: string): Character {
     tags: [],
     traits: [],
     description: "",
+    voice: "",
     relations: [],
     arc: [],
     recentDialogues: []

@@ -169,6 +169,8 @@ traits:
   - 결단력 있는 발언
 description: |
   주인공. 학교에 첫 등교한 17세 여학생.
+voice: |
+  밝고 또렷한 1인칭. 긴장해도 말끝을 흐리지 않는다.
 relations:
   - target: jihoon
     type: 친구

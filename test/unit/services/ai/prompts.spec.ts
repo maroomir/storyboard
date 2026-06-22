@@ -96,4 +96,11 @@ describe("AI prompts", () => {
     expect(novel.system).toContain("풍부하게")
     expect(novel.system).toContain("새로운 사건·설정·인물은 만들어내지 마라")
   })
+
+  it("includes character voice in the persona prompt and instructs reflecting it", () => {
+    const voiced: Character = { ...character, voice: "1인칭 허세 만연체" }
+    const prompt = PersonaGenerationPrompt.build(voiced, "generic")
+    expect(prompt.user).toContain("목소리·말투: 1인칭 허세 만연체")
+    expect(prompt.system).toContain("화법과 어조")
+  })
 })

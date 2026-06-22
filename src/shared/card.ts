@@ -59,6 +59,7 @@ export const characterCardSchema = z.object({
   tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),
   description: z.string().optional(),
+  voice: z.string().optional(),
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),
   recentDialogues: stringListSchema.optional()

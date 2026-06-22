@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { CardParseError, parseCard, serializeCard } from "@/files/card"
+import type { StoryboardCard } from "@/shared/card"
 
 const cardsFixtureDirectory = join(process.cwd(), "test", "fixtures", "cards")
 
@@ -50,6 +51,24 @@ describe("card file codec", () => {
     expect(parsedCard.type).toBe("character")
     if (parsedCard.type === "character") {
       expect(parsedCard.role).toBe("extra")
+    }
+  })
+
+  it("round-trips a character voice field through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      description: "허세덩어리",
+      voice: "1인칭 허세 만연체 자칭 세기의 철학자"
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("character")
+    if (reparsed.type === "character") {
+      expect(reparsed.voice).toBe("1인칭 허세 만연체 자칭 세기의 철학자")
     }
   })
 })
