@@ -86,6 +86,7 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     ...(card.profile === undefined ? {} : { profile: card.profile }),
     ...(card.role === undefined ? {} : { role: card.role }),
     ...(card.attributes === undefined ? {} : { attributes: card.attributes }),
+    ...(card.aliases === undefined ? {} : { aliases: card.aliases }),
     ...(card.tags === undefined ? {} : { tags: card.tags }),
     ...(card.traits === undefined ? {} : { traits: card.traits }),
     ...(card.description === undefined ? {} : { description: card.description }),

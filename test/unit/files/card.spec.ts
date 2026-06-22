@@ -54,6 +54,23 @@ describe("card file codec", () => {
     }
   })
 
+  it("round-trips character aliases through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      aliases: ["만재", "재"]
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("character")
+    if (reparsed.type === "character") {
+      expect(reparsed.aliases).toEqual(["만재", "재"])
+    }
+  })
+
   it("round-trips a character voice field through serialize and parse", () => {
     const card: StoryboardCard = {
       type: "character",

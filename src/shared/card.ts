@@ -56,6 +56,7 @@ export const characterCardSchema = z.object({
   profile: z.string().trim().min(1).optional(),
   role: characterRoleSchema,
   attributes: z.record(z.string(), cardAttributeValueSchema).optional(),
+  aliases: stringListSchema.optional(),
   tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),
   description: z.string().optional(),

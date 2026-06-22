@@ -115,6 +115,91 @@ describe("sceneContext", () => {
     expect(context.background).toBeUndefined()
   })
 
+  it("detects a character by alias when the name is absent from the body", async () => {
+    const fileSystem = new MockFileSystem()
+    const manjaeCard: CharacterCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      aliases: ["만재"]
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [["manjae.card", { type: "file" }]])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/manjae.card", serializeCard(manjaeCard))
+
+    const aliasScene: SceneFile = { ...mockScene, body: "만재가 문을 박차고 들어왔다." }
+
+    const context = await buildSceneContext(mockPaths, aliasScene, fileSystem)
+
+    expect(context.characters).toEqual([manjaeCard])
+  })
+
+  it("excludes a character whose name and aliases are both absent from the body", async () => {
+    const fileSystem = new MockFileSystem()
+    const manjaeCard: CharacterCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      aliases: ["만재"]
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [["manjae.card", { type: "file" }]])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/manjae.card", serializeCard(manjaeCard))
+
+    const absentScene: SceneFile = { ...mockScene, body: "엘리아가 혼자 걷는다." }
+
+    const context = await buildSceneContext(mockPaths, absentScene, fileSystem)
+
+    expect(context.characters).toEqual([])
+  })
+
+  it("still detects by name when no aliases are set", async () => {
+    const fileSystem = new MockFileSystem()
+
+    fileSystem.setDirectory("/mock/workspace/character", [["elia.card", { type: "file" }]])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/elia.card", serializeCard(eliaCard))
+
+    const nameScene: SceneFile = { ...mockScene, body: "엘리아가 창밖을 본다." }
+
+    const context = await buildSceneContext(mockPaths, nameScene, fileSystem)
+
+    expect(context.characters).toEqual([eliaCard])
+  })
+
+  it("uses frontmatter.characters over alias detection when provided", async () => {
+    const fileSystem = new MockFileSystem()
+    const manjaeCard: CharacterCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      aliases: ["만재"]
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [
+      ["manjae.card", { type: "file" }],
+      ["elia.card", { type: "file" }]
+    ])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/manjae.card", serializeCard(manjaeCard))
+    fileSystem.setFile("/mock/workspace/character/elia.card", serializeCard(eliaCard))
+
+    const frontmatterScene: SceneFile = {
+      ...mockScene,
+      frontmatter: { characters: ["elia"] },
+      body: "만재가 문을 박차고 들어왔다."
+    }
+
+    const context = await buildSceneContext(mockPaths, frontmatterScene, fileSystem)
+
+    expect(context.characters).toEqual([eliaCard])
+  })
+
   it("uses frontmatter.characters over body text when provided", async () => {
     const fileSystem = new MockFileSystem()
 

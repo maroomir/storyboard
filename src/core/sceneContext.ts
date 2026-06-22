@@ -282,10 +282,12 @@ function resolveSceneCharacters(
     return allCharacters.filter((char) => targetIds.has(char.id))
   }
 
-  const allNames = allCharacters.map((char) => char.name)
-  const detectedNames = new Set(detectCharactersInText(scene.body, allNames))
-  
-  return allCharacters.filter((char) => detectedNames.has(char.name))
+  const detectableTokens = allCharacters.flatMap((char) => [char.name, ...(char.aliases ?? [])])
+  const detectedTokens = new Set(detectCharactersInText(scene.body, detectableTokens))
+
+  return allCharacters.filter(
+    (char) => detectedTokens.has(char.name) || (char.aliases ?? []).some((alias) => detectedTokens.has(alias))
+  )
 }
 
 function resolveSceneBackground(
