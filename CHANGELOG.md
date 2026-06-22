@@ -9,6 +9,32 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-22
+
+### 추가
+
+- 스토리 바이블 정전 사실에 `validFrom` / `validUntil` 유효 범위와 `keywords` 활성화 조건을 추가했습니다. 씬 순번에 맞는 canon 버전만 주입하고, 씬 본문에 키워드가 등장하면 등장 엔티티가 아니어도 관련 사실을 추가로 주입합니다.
+- `Storyboard: Slop Check (Draft)` 명령과 선택적 `storyboard.slop.realtimeEnabled` 설정을 추가했습니다. 초안에서 상투 표현, “단순히 X가 아니라 Y”류 대조 구문, 과도하게 반복되는 3어절 표현을 진단합니다.
+- `storyboard.draft.reviseAfterGenerate` 설정을 추가했습니다. 켜면 `Generate Draft` / `Generate All Drafts`로 새 초안을 생성한 직후 기존 연속성·비평 검수 재작성 게이트를 실행합니다.
+- `storyboard.draft.reviseScoreThreshold` 설정과 비평 루브릭 점수를 추가했습니다. 기준 점수 이상이고 high 연속성 이슈가 없으면 검수·재작성 루프를 조기 통과할 수 있으며, 최종 검사 보고서에도 `비평 점수: NN/100`을 표시합니다.
+- `Storyboard: Canon Diff Report`가 같은 subject/key의 시간 범위별 canon 버전을 “설정 변경 타임라인”으로 함께 표시합니다.
+
+### 변경
+
+- 씬 생성 컨텍스트가 2번째 이상 씬에서 `manuscript/SUMMARY.md`의 롤링 요약(최대 2000자)을 이전 장면 컨텍스트로 우선 사용합니다. 요약 파일이 없거나 비어 있으면 기존처럼 이전 초안 tail 1000자로 fallback합니다.
+- 연속성 검사 결과에 `high` / `low` 심각도를 도입했습니다. `high`만 재작성 차단 이슈로 세고, 실시간 진단에서는 `high`를 Warning, `low`를 Information으로 표시합니다.
+- 자동 승격되는 바이블 후보는 `sourceScene`을 해석할 수 있으면 해당 씬을 `validFrom`으로 삼고, 같은 subject/key의 이후 버전과 구분되는 id를 부여합니다.
+- Codex CLI provider의 기본 모델을 `gpt-5.5`로 바꾸고, 기존 `gpt-5-codex` 설정은 현재 catalog 기본값으로 보정합니다.
+- Codex CLI는 ChatGPT 구독 기반 사용을 반영해 토큰 사용량만 기록하고 USD 비용은 `0`으로 기록합니다. 이전 gpt-5-codex API 요금 환산 추정치는 제거했습니다.
+
+### 수정
+
+- Codex CLI가 JSONL 오류 이벤트와 함께 실패할 때, 일반 종료 코드 메시지 대신 CLI가 제공한 구체적인 실패 사유를 표시합니다.
+
+### 문서
+
+- README, 아키텍처 문서, 작가 가이드, 수동 QA 문서에 canon 키워드 주입, 롤링 요약 컨텍스트, 검수 점수 기준, Codex 비용 기록 변경을 반영했습니다.
+
 ## [0.3.1] - 2026-06-22
 
 ### 추가

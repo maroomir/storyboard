@@ -10,6 +10,32 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-06-22
+
+### Added
+
+- Added `validFrom` / `validUntil` validity ranges and `keywords` activation to story bible canon facts. Scene generation injects only the canon version valid for the scene order, and keyword matches can activate related facts even when their subject is not a scene entity.
+- Added `Storyboard: Slop Check (Draft)` and the optional `storyboard.slop.realtimeEnabled` setting. Draft diagnostics now flag cliche phrases, "not just X but Y" style contrast patterns, and over-repeated three-word expressions.
+- Added `storyboard.draft.reviseAfterGenerate`. When enabled, newly generated drafts from `Generate Draft` / `Generate All Drafts` run through the existing continuity-and-critique revise gate.
+- Added `storyboard.draft.reviseScoreThreshold` and a deterministic critique rubric score. The revise loop can pass early when the score meets the threshold and no high-severity continuity issue remains, and final review reports now include `비평 점수: NN/100`.
+- `Storyboard: Canon Diff Report` now includes a canon change timeline for subject/key pairs that have multiple time-scoped versions.
+
+### Changed
+
+- Scene generation now prefers the rolling summary in `manuscript/SUMMARY.md` (up to 2000 characters) as previous-scene context for scene order 2 and later. If the summary is missing or empty, it falls back to the previous 1000-character draft tail.
+- Continuity-check results now carry `high` / `low` severity. Only `high` continuity issues block revise loops, and realtime diagnostics render `high` as Warning and `low` as Information.
+- Promoted bible candidates now seed `validFrom` from a resolvable `sourceScene` and receive an id that distinguishes later versions of the same subject/key.
+- The Codex CLI provider default model is now `gpt-5.5`, and legacy `gpt-5-codex` settings fall back to the current catalog default.
+- Codex CLI usage now records token usage with `0` USD cost to reflect ChatGPT subscription-based authentication. The previous gpt-5-codex API-rate cost estimate was removed.
+
+### Fixed
+
+- Codex CLI JSONL failure events are surfaced as the generation failure message instead of showing only a generic non-zero exit code.
+
+### Documentation
+
+- Updated README, architecture, writer guide, and manual QA docs for canon keyword injection, rolling-summary context, revise score thresholds, and Codex cost recording.
+
 ## [0.3.1] - 2026-06-22
 
 ### Added
