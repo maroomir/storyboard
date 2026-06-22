@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-22
+
 ### 추가
 
 - Claude Code(`claude`)·Codex(`codex`) CLI provider를 추가했습니다. API 키 없이 각 CLI의 자체 로그인(구독)으로 생성하며, 실행 명령·모델은 설정과 **연결** 탭에서 바꿀 수 있습니다.
@@ -18,6 +20,17 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 ### 변경
 
 - CLI provider는 실시간 토큰 스트리밍 대신 전체 결과를 한 번에 전달하고, 인라인 완성은 CLI provider에서 비활성화합니다.
+- CLI provider에서는 각 CLI가 노출하지 않는 `temperature`와 출력 토큰 상한(`maxTokens`)을 적용하지 않습니다.
+
+### 수정
+
+- Claude Code와 Codex 연결 테스트가 CLI 실행 가능 여부뿐 아니라 로그인 상태까지 확인하도록 보강했습니다.
+- 사용자 지정 CLI command가 stdin 소비 전 종료해도 `EPIPE`로 확장이 중단되지 않도록 보호했습니다.
+- Codex `--json` 이벤트 파싱을 강화해 빈 usage 이벤트가 앞선 사용량을 0으로 덮어쓰지 않도록 했습니다.
+
+### 문서
+
+- README와 아키텍처 문서에 CLI provider 지원 범위, 인증 방식, 비용 추정, 스트리밍·인라인 완성 제한을 정리했습니다.
 
 ## [0.3.0] - 2026-06-21
 

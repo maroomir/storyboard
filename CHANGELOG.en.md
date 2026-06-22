@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-22
+
 ### Added
 
 - Added Claude Code (`claude`) and Codex (`codex`) CLI providers. They generate via each CLI's own login (subscription) with no API key, and their command path and model are editable in settings and the **Connection** tab.
@@ -19,6 +21,17 @@ after the first public release.
 ### Changed
 
 - CLI providers deliver the full result at once instead of live token streaming, and inline completion is disabled for CLI providers.
+- CLI providers do not apply `temperature` or output token limits (`maxTokens`) because those controls are not exposed by the underlying CLIs.
+
+### Fixed
+
+- Claude Code and Codex connection tests now verify login state as well as CLI executability.
+- Custom CLI commands that exit before consuming stdin no longer stop the extension with an `EPIPE` error.
+- Codex `--json` event parsing is more robust, and empty usage events no longer overwrite earlier usage with zeroes.
+
+### Documentation
+
+- Documented CLI provider support, authentication, cost estimates, and streaming/inline-completion limits in README and architecture docs.
 
 ## [0.3.0] - 2026-06-21
 
