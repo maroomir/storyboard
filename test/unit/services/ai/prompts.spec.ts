@@ -89,4 +89,11 @@ describe("AI prompts", () => {
       expect(xs.system.length).toBeLessThan(generic.system.length)
     }
   })
+
+  it("amplifies novel genre formatting from a compressed scene skeleton", () => {
+    const novel = GenreFormattingPrompt.build("조만재: 안녕", "novel", "generic")
+    expect(novel.system).toContain("압축된 골자")
+    expect(novel.system).toContain("풍부하게")
+    expect(novel.system).toContain("새로운 사건·설정·인물은 만들어내지 마라")
+  })
 })
