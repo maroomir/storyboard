@@ -62,9 +62,14 @@ export class ConfigBridge {
     }
 
     if (providerId === "claude-code" || providerId === "codex") {
+      const model = configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId))
+
       return {
         command: configuration.get(`providers.${providerId}.command`, getDefaultCommand(providerId)),
-        model: configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId))
+        model:
+          providerId === "codex"
+            ? resolveEffectiveModelForTask(model, storyboardModelCatalog.codex[0].id, providerId)
+            : model
       }
     }
 
@@ -288,7 +293,7 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
     case "claude-code":
       return "sonnet"
     case "codex":
-      return "gpt-5-codex"
+      return "gpt-5.5"
     case "mock":
     case "ollama":
       return undefined

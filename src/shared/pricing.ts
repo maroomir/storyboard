@@ -28,9 +28,7 @@ export const storyboardModelPricing = {
   },
   "claude-code": {},
   codex: {
-    // NOTE: gpt-5-codex API 요금(2025-09 기준 input $1.25 / output $10.00 per 1M)을 추정치로 쓴다.
-    // Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 이 값은 실제 청구액이 아닌 환산 추정이다.
-    "gpt-5-codex": { inputPricePerMillion: 1.25, outputPricePerMillion: 10.0 }
+    // Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 사용량만 기록한다.
   },
   mock: {
     "mock-default": { inputPricePerMillion: 0, outputPricePerMillion: 0 }

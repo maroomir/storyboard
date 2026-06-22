@@ -385,9 +385,8 @@ stdin으로만 전달한다. 실행 명령(`storyboard.providers.<id>.command`)�
 바이너리를 찾지 못한 경우(`ENOENT`)는 그 밖의 실패와 구분해 «CLI 미설치»로 표시한다.
 
 **사용량·비용**: `claude-code`는 `--output-format json` 출력의 `total_cost_usd`를 비용으로 그대로 기록한다.
-`codex`는 `codex exec --json` 이벤트에서 토큰 사용량을 파싱하고, 비용은 gpt-5-codex API 요금
-(입력 $1.25 / 출력 $10.00 per 1M)으로 **환산한 추정치**다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당
-과금이 아니므로 이 값은 실제 청구액이 아니라 다른 provider와 비교·예산 산정을 위한 근사치다.
+`codex`는 `codex exec --json` 이벤트에서 토큰 사용량을 파싱한다. Codex CLI는 ChatGPT 구독으로 인증돼
+토큰당 과금이 아니므로 USD 비용은 `0`으로 기록한다.
 
 CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토큰 스트리밍을 노출하지 않으므로 생성을
 끝까지 마친 뒤 전체 결과를 한 번에 전달하며, 실시간 토큰 스트리밍은 제공하지 않는다(설계상 의도).

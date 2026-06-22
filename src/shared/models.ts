@@ -32,8 +32,9 @@ export const storyboardModelCatalog = {
     { id: "haiku", displayName: "Claude Code · Haiku" }
   ],
   codex: [
-    { id: "gpt-5-codex", displayName: "Codex · GPT-5 Codex" },
-    { id: "gpt-5", displayName: "Codex · GPT-5" }
+    { id: "gpt-5.5", displayName: "Codex · GPT-5.5" },
+    { id: "gpt-5.4", displayName: "Codex · GPT-5.4" },
+    { id: "gpt-5.4-mini", displayName: "Codex · GPT-5.4 mini" }
   ],
   mock: [{ id: "mock-default", displayName: "Mock (offline)" }]
 } as const satisfies Record<AiProviderId, readonly ProviderModelOption[]>

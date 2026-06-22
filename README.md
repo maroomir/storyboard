@@ -75,9 +75,8 @@ API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다
 CLI provider 사용 시 참고할 점:
 
 - **사용량·비용**: Claude Code 비용은 CLI가 보고하는 `total_cost_usd`를 그대로 씁니다. Codex 사용량은
-  `codex exec --json`에서 파싱하며, 비용은 gpt-5-codex API 요금(입력 $1.25 / 출력 $10.00 per 1M)으로 환산한
-  **추정치**입니다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 이 값은 실제 청구액이 아니라
-  비교·예산 산정을 위한 근사치입니다.
+  `codex exec --json`에서 파싱합니다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 USD 비용은
+  `0`으로 기록합니다.
 - **스트리밍**: 두 CLI는 실시간 토큰 스트리밍 대신 생성을 끝까지 마친 뒤 전체 결과를 한 번에 전달합니다(의도된 동작).
 - **인라인 완성**: CLI provider에서는 인라인 완성이 비활성화됩니다. 키 입력마다 CLI 프로세스를 새로 띄우는 비용이
   크고, 두 CLI가 길이·`temperature` 제어를 노출하지 않기 때문입니다(의도된 동작).

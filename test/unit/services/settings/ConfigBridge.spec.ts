@@ -230,7 +230,25 @@ describe("ConfigBridge", () => {
     })
     expect(configBridge.getProviderConfig("codex")).toEqual({
       command: "codex",
-      model: "gpt-5-codex"
+      model: "gpt-5.5"
+    })
+  })
+
+  it("falls back from legacy Codex models to the current catalog default", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([
+        ["defaultProvider", "codex"],
+        ["providers.codex.model", "gpt-5-codex"]
+      ])
+    )
+
+    expect(configBridge.getProviderConfig("codex")).toEqual({
+      command: "codex",
+      model: "gpt-5.5"
+    })
+    expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
+      providerId: "codex",
+      model: "gpt-5.5"
     })
   })
 

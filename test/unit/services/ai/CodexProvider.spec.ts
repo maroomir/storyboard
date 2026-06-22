@@ -6,7 +6,7 @@ import { type CliRunInput, type CliRunResult, type CliRunner } from "@/services/
 
 describe("CodexProvider", () => {
   it("requires a command and a model", () => {
-    expect(() => new CodexProvider({ command: undefined, model: "gpt-5-codex" })).toThrow(AiProviderError)
+    expect(() => new CodexProvider({ command: undefined, model: "gpt-5.5" })).toThrow(AiProviderError)
     expect(() => new CodexProvider({ command: "codex", model: undefined })).toThrow(AiProviderError)
   })
 
@@ -14,7 +14,7 @@ describe("CodexProvider", () => {
     const calls: CliRunInput[] = []
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, onRun: (input) => calls.push(input) })
     })
 
@@ -25,7 +25,7 @@ describe("CodexProvider", () => {
   it("throws when the auth check exits non-zero", async () => {
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 1, stderr: "not logged in" })
     })
 
@@ -39,7 +39,7 @@ describe("CodexProvider", () => {
     const enoent = Object.assign(new Error("spawn codex ENOENT"), { code: "ENOENT" })
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => async () => {
         throw enoent
       }
@@ -65,7 +65,7 @@ describe("CodexProvider", () => {
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner =>
         createFakeRunner({
           exitCode: 0,
@@ -88,7 +88,7 @@ describe("CodexProvider", () => {
     expect(captured?.args).toEqual([
       "exec",
       "--model",
-      "gpt-5-codex",
+      "gpt-5.5",
       "--sandbox",
       "read-only",
       "--skip-git-repo-check",
@@ -96,7 +96,7 @@ describe("CodexProvider", () => {
     ])
     expect(captured?.stdin).toBe("지시문\n\n본문")
     expect(response.providerId).toBe("codex")
-    expect(response.model).toBe("gpt-5-codex")
+    expect(response.model).toBe("gpt-5.5")
     expect(response.text).toBe("코덱스 응답")
     expect(response.usage).toEqual({ inputTokens: 100, outputTokens: 50, cacheReadInputTokens: 40 })
   })
@@ -111,7 +111,7 @@ describe("CodexProvider", () => {
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
     })
 
@@ -120,33 +120,33 @@ describe("CodexProvider", () => {
     expect(response.usage?.outputTokens).toBe(72)
   })
 
-  it("routes cost through the pricing path when usage is present", async () => {
+  it("records usage with zero subscription cost when usage is present", async () => {
     const stdout = [
       JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
       JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1_000_000, output_tokens: 1_000_000 } })
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
     })
 
     const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
 
     expect(response.usage).toBeDefined()
-    expect(response.costUsd).toBe(11.25)
+    expect(response.costUsd).toBe(0)
   })
 
   it("falls back to plain stdout when json is not emitted", async () => {
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout: "  코덱스 응답  \n" })
     })
 
     const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
 
-    expect(response).toEqual({ providerId: "codex", model: "gpt-5-codex", text: "코덱스 응답" })
+    expect(response).toEqual({ providerId: "codex", model: "gpt-5.5", text: "코덱스 응답" })
   })
 
   it("returns empty text when json yields no agent message instead of echoing the stream", async () => {
@@ -156,7 +156,7 @@ describe("CodexProvider", () => {
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
     })
 
@@ -173,7 +173,7 @@ describe("CodexProvider", () => {
     ].join("\n")
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout })
     })
 
@@ -185,13 +185,39 @@ describe("CodexProvider", () => {
   it("maps a non-zero exit code to a generation error", async () => {
     const provider = new CodexProvider({
       command: "codex",
-      model: "gpt-5-codex",
+      model: "gpt-5.5",
       createRunner: (): CliRunner => createFakeRunner({ exitCode: 1, stderr: "boom" })
     })
 
     await expect(
       provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
     ).rejects.toMatchObject({ code: "generation-failed", providerId: "codex" })
+  })
+
+  it("surfaces JSONL failure messages when exec exits non-zero", async () => {
+    const stdout = [
+      JSON.stringify({ type: "item.completed", item: { type: "error", message: "fallback metadata" } }),
+      JSON.stringify({
+        type: "error",
+        message: JSON.stringify({
+          type: "error",
+          status: 400,
+          error: {
+            type: "invalid_request_error",
+            message: "The 'gpt-5-codex' model is not supported when using Codex with a ChatGPT account."
+          }
+        })
+      })
+    ].join("\n")
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5.5",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 1, stdout })
+    })
+
+    await expect(
+      provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+    ).rejects.toThrow("not supported when using Codex with a ChatGPT account")
   })
 })
 

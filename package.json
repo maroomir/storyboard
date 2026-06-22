@@ -217,7 +217,7 @@
         },
         "storyboard.providers.codex.model": {
           "type": "string",
-          "default": "gpt-5-codex",
+          "default": "gpt-5.5",
           "description": "Model passed to the Codex CLI. Uses your Codex login; no API key required."
         },
         "storyboard.tasks": {

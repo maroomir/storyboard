@@ -9,7 +9,13 @@ import {
   type AiProviderId,
   type AiUsage
 } from "../types"
-import { type CliRunner, createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from "./cliRunner"
+import {
+  type CliRunner,
+  type CliRunResult,
+  createDefaultCliRunner,
+  isCommandNotFound,
+  splitCliPrompt
+} from "./cliRunner"
 
 const connectionTimeoutMs = 15_000
 const generateTimeoutMs = 180_000
@@ -105,11 +111,16 @@ export class CodexProvider implements AiProvider {
     }
 
     if (result.exitCode !== 0) {
+      const failureMessage = extractCodexFailureMessage(result)
+      const message = failureMessage
+        ? `Codex CLI가 비정상 종료했습니다 (exit ${result.exitCode ?? "unknown"}): ${failureMessage}`
+        : `Codex CLI가 비정상 종료했습니다 (exit ${result.exitCode ?? "unknown"}).`
+
       throw new AiProviderError(
         "generation-failed",
         this.id,
-        `Codex CLI가 비정상 종료했습니다 (exit ${result.exitCode ?? "unknown"}).`,
-        result.stderr
+        message,
+        failureMessage ?? result.stderr
       )
     }
 
@@ -197,6 +208,92 @@ function usageFromCodexTurn(turnUsage: CodexTurnUsage): AiUsage | undefined {
     outputTokens: turnUsage.output_tokens ?? 0,
     cacheReadInputTokens: turnUsage.cached_input_tokens
   }
+}
+
+function extractCodexFailureMessage(result: CliRunResult): string | undefined {
+  const stdoutMessage = extractCodexJsonlFailureMessage(result.stdout)
+  if (stdoutMessage) {
+    return stdoutMessage
+  }
+
+  const stderrMessage = result.stderr.trim()
+  return stderrMessage.length > 0 ? truncateFailureMessage(stderrMessage) : undefined
+}
+
+function extractCodexJsonlFailureMessage(stdout: string): string | undefined {
+  let itemError: string | undefined
+  let turnError: string | undefined
+  let topLevelError: string | undefined
+
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim()
+    if (!trimmed) {
+      continue
+    }
+
+    let event: unknown
+    try {
+      event = JSON.parse(trimmed)
+    } catch {
+      continue
+    }
+
+    if (!isRecord(event)) {
+      continue
+    }
+
+    if (event.type === "error" && typeof event.message === "string") {
+      topLevelError = normalizeCodexErrorMessage(event.message)
+      continue
+    }
+
+    if (event.type === "turn.failed" && isRecord(event.error) && typeof event.error.message === "string") {
+      turnError = normalizeCodexErrorMessage(event.error.message)
+      continue
+    }
+
+    if (
+      event.type === "item.completed" &&
+      isRecord(event.item) &&
+      event.item.type === "error" &&
+      typeof event.item.message === "string"
+    ) {
+      itemError = normalizeCodexErrorMessage(event.item.message)
+    }
+  }
+
+  return topLevelError || turnError || itemError
+}
+
+function normalizeCodexErrorMessage(message: string): string {
+  const trimmed = message.trim()
+  if (!trimmed) {
+    return ""
+  }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return truncateFailureMessage(trimmed)
+  }
+
+  if (isRecord(parsed)) {
+    if (isRecord(parsed.error) && typeof parsed.error.message === "string") {
+      return truncateFailureMessage(parsed.error.message)
+    }
+
+    if (typeof parsed.message === "string") {
+      return truncateFailureMessage(parsed.message)
+    }
+  }
+
+  return truncateFailureMessage(trimmed)
+}
+
+function truncateFailureMessage(message: string): string {
+  const maxLength = 1_000
+  return message.length > maxLength ? `${message.slice(0, maxLength - 3)}...` : message
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
