@@ -27,6 +27,7 @@
   "storyboard.settings.open.title": "Storyboard: Open Settings",
   "storyboard.draft.grammarCheck.title": "Storyboard: Grammar Check (Draft)",
   "storyboard.draft.continuityCheck.title": "Storyboard: Continuity Check (Draft)",
+  "storyboard.draft.slopCheck.title": "Storyboard: Slop Check (Draft)",
   "storyboard.draft.reviseLoop.title": "Storyboard: Review & Revise Draft (Current Scene)",
   "storyboard.bible.promoteCandidates.title": "Storyboard: Promote Bible Candidates to Canon",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff Report",

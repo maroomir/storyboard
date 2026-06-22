@@ -134,6 +134,10 @@
         "title": "%storyboard.draft.continuityCheck.title%"
       },
       {
+        "command": "storyboard.draft.slopCheck",
+        "title": "%storyboard.draft.slopCheck.title%"
+      },
+      {
         "command": "storyboard.draft.reviseLoop",
         "title": "%storyboard.draft.reviseLoop.title%"
       },
@@ -247,6 +251,11 @@
           "type": "boolean",
           "default": false,
           "description": "Enable real-time grammar diagnostics. Disabled by default for performance."
+        },
+        "storyboard.slop.realtimeEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable on-save slop / AI-tell diagnostics for drafts. Disabled by default."
         },
         "storyboard.ai.contextCondenseEnabled": {
           "type": "boolean",

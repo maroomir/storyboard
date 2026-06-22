@@ -31,6 +31,7 @@ import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvid
 import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
 import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
 import { registerContinuityDiagnosticsProvider } from "./providers/ContinuityDiagnosticsProvider"
+import { registerSlopDiagnosticsProvider } from "./providers/SlopDiagnosticsProvider"
 import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
 import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
@@ -106,6 +107,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     registerContinuityDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder })
   )
+  context.subscriptions.push(registerSlopDiagnosticsProvider({ logger }))
   context.subscriptions.push(registerCardCustomEditorProvider(context))
   context.subscriptions.push(
     registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder })

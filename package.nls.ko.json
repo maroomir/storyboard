@@ -27,6 +27,7 @@
   "storyboard.settings.open.title": "Storyboard: 설정 열기",
   "storyboard.draft.grammarCheck.title": "Storyboard: 문법 검사 (초안)",
   "storyboard.draft.continuityCheck.title": "Storyboard: 연속성 검사 (초안)",
+  "storyboard.draft.slopCheck.title": "Storyboard: 상투 표현 검사 (초안)",
   "storyboard.draft.reviseLoop.title": "Storyboard: 초안 검수·재작성 (현재 씬)",
   "storyboard.bible.promoteCandidates.title": "Storyboard: 설정 후보를 정전으로 승격",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff 보고서",
