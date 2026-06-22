@@ -51,7 +51,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
     const candidates = await readCandidateRecords(paths, dependencies.logger)
 
     const { pending } = diffCandidatesAgainstCanon(canon, candidates)
-    const markdown = buildCanonDiffMarkdown(project.name, pending)
+    const markdown = buildCanonDiffMarkdown(project.name, pending, canon)
 
     await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
     const reportUri = vscode.Uri.joinPath(paths.manuscriptDirectory, "CANON.md")
