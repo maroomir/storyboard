@@ -97,6 +97,20 @@ describe("AI prompts", () => {
     expect(novel.system).toContain("새로운 사건·설정·인물은 만들어내지 마라")
   })
 
+  it("preserves full coverage and raw confrontation in the rich genre formatting, but not in xs", () => {
+    const noCompressionLine =
+      "입력의 모든 장면과 대사를 빠짐없이 포함하고 요약하거나 압축하지 마라. 분량을 줄이지 말고 오히려 묘사를 더해 확장하라."
+    const rawConfrontationLine = "인물의 폭언·별칭·갈등·실망 같은 거친 표현은 순화하거나 화해로 덮지 말고 그 강도 그대로 살려라."
+
+    const rich = GenreFormattingPrompt.build("조만재: 안녕", "novel", "rich", { genre: "허세 코미디" })
+    expect(rich.system).toContain(noCompressionLine)
+    expect(rich.system).toContain(rawConfrontationLine)
+
+    const xs = GenreFormattingPrompt.build("조만재: 안녕", "novel", "xs")
+    expect(xs.system).not.toContain(noCompressionLine)
+    expect(xs.system).not.toContain(rawConfrontationLine)
+  })
+
   it("includes character voice in the persona prompt and instructs reflecting it", () => {
     const voiced: Character = { ...character, voice: "1인칭 허세 만연체" }
     const prompt = PersonaGenerationPrompt.build(voiced, "generic")
