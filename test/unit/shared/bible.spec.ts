@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createEmptyBible, selectBibleFacts, type StoryBible } from "@/shared/bible"
+import { bibleFactSchema, createEmptyBible, selectBibleFacts, type StoryBible } from "@/shared/bible"
 
 const bible: StoryBible = {
   version: "1.0.0",
@@ -42,5 +42,39 @@ describe("selectBibleFacts", () => {
 
   it("returns nothing when no subjects are requested", () => {
     expect(selectBibleFacts(bible, [])).toEqual([])
+  })
+})
+
+describe("bibleFactSchema range bounds", () => {
+  const baseFact = {
+    id: "f1",
+    subject: { kind: "character", id: "elia" },
+    key: "팔",
+    value: "의수",
+    status: "canon"
+  }
+
+  it("validates a range-less fact", () => {
+    expect(bibleFactSchema.safeParse(baseFact).success).toBe(true)
+  })
+
+  it("validates string range bounds", () => {
+    const result = bibleFactSchema.safeParse({ ...baseFact, validFrom: "04-the-fall", validUntil: "07-x" })
+
+    expect(result.success).toBe(true)
+  })
+
+  it("validates numeric range bounds", () => {
+    const result = bibleFactSchema.safeParse({ ...baseFact, validFrom: 4, validUntil: 7 })
+
+    expect(result.success).toBe(true)
+  })
+
+  it("rejects an unparseable string bound", () => {
+    expect(bibleFactSchema.safeParse({ ...baseFact, validFrom: "banana" }).success).toBe(false)
+  })
+
+  it("parses an inverted range without error (validity is the resolver's concern)", () => {
+    expect(bibleFactSchema.safeParse({ ...baseFact, validFrom: 8, validUntil: 5 }).success).toBe(true)
   })
 })

@@ -4,7 +4,7 @@ import { readCardFile } from "../files/card"
 import { readBibleFile } from "../files/bible"
 import {
   createEmptyBible,
-  selectBibleFacts,
+  selectValidBibleFacts,
   type BibleFact,
   type BibleFactSubject,
   type StoryBible
@@ -101,7 +101,7 @@ export async function buildNarrativeContext(
 ): Promise<NarrativeContext> {
   const previousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem)
   const bible = await readSceneBible(paths, fileSystem)
-  const bibleFacts = selectBibleFacts(bible, sceneSubjects(context))
+  const bibleFacts = selectValidBibleFacts(bible, sceneSubjects(context), context.scene.order)
   const prompt = composeNarrativePrompt(formatBibleFactLines(context, bibleFacts), previousContext)
 
   return { bibleFacts, prompt }

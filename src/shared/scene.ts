@@ -73,3 +73,19 @@ export function parseSceneStem(stem: string): SceneFileNameParts | undefined {
     slug
   }
 }
+
+// NOTE: File-agnostic timeline coordinate for canon-fact validity ranges. Accepts a bare
+// order, a numeric string, or an `NN-slug` scene stem; returns undefined for anything else.
+export function resolveSceneOrder(ref: string | number): number | undefined {
+  if (typeof ref === "number") {
+    return Number.isInteger(ref) && ref > 0 ? ref : undefined
+  }
+
+  const trimmed = ref.trim()
+
+  if (/^\d+$/.test(trimmed)) {
+    return Number.parseInt(trimmed, 10)
+  }
+
+  return parseSceneStem(trimmed)?.order
+}

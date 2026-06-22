@@ -304,4 +304,39 @@ describe("buildNarrativeContext", () => {
     expect(result.bibleFacts).toEqual([])
     expect(result.prompt).toBeUndefined()
   })
+
+  it("injects the time-valid arm version for the scene's order", async () => {
+    const armBible: StoryBible = {
+      version: "1.0.0",
+      facts: [
+        { id: "arm-a", subject: { kind: "character", id: "elia" }, key: "팔", value: "멀쩡함", status: "canon", validUntil: "03-x" },
+        { id: "arm-b", subject: { kind: "character", id: "elia" }, key: "팔", value: "의수", status: "canon", validFrom: "04-x" }
+      ]
+    }
+    const sceneAt = (order: number): SceneFile => ({
+      stem: `${String(order).padStart(2, "0")}-scene`,
+      order,
+      orderText: String(order).padStart(2, "0"),
+      slug: "scene",
+      frontmatter: {},
+      body: "엘리아가 지훈에게 인사한다."
+    })
+
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(biblePath, serializeBible(armBible))
+
+    const beforeContext: SceneContext = { scene: sceneAt(2), characters: [eliaCard] }
+    const before = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, beforeContext, fileSystem)
+
+    expect(before.bibleFacts.map((fact) => fact.id)).toEqual(["arm-a"])
+    expect(before.prompt).toContain("멀쩡함")
+    expect(before.prompt).not.toContain("의수")
+
+    const afterContext: SceneContext = { scene: sceneAt(6), characters: [eliaCard] }
+    const after = await buildNarrativeContext({ ...basePaths, bibleCanon: biblePath }, afterContext, fileSystem)
+
+    expect(after.bibleFacts.map((fact) => fact.id)).toEqual(["arm-b"])
+    expect(after.prompt).toContain("의수")
+    expect(after.prompt).not.toContain("멀쩡함")
+  })
 })

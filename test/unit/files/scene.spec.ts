@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { parseScene, SceneParseError } from "@/files/scene"
-import { parseSceneFileName, parseSceneStem } from "@/shared/scene"
+import { parseSceneFileName, parseSceneStem, resolveSceneOrder } from "@/shared/scene"
 
 const scenesFixtureDirectory = join(process.cwd(), "test", "fixtures", "scenes")
 
@@ -59,6 +59,31 @@ describe("scene file codec", () => {
       orderText: "12",
       slug: "chapter-10"
     })
+  })
+})
+
+describe("resolveSceneOrder", () => {
+  it("returns a positive integer order unchanged", () => {
+    expect(resolveSceneOrder(4)).toBe(4)
+  })
+
+  it("rejects non-positive or non-integer numbers", () => {
+    expect(resolveSceneOrder(0)).toBeUndefined()
+    expect(resolveSceneOrder(-4)).toBeUndefined()
+    expect(resolveSceneOrder(4.5)).toBeUndefined()
+  })
+
+  it("parses a numeric string into its order", () => {
+    expect(resolveSceneOrder("4")).toBe(4)
+  })
+
+  it("parses an NN-slug scene stem into its order", () => {
+    expect(resolveSceneOrder("04-the-fall")).toBe(4)
+  })
+
+  it("returns undefined for unparseable references", () => {
+    expect(resolveSceneOrder("banana")).toBeUndefined()
+    expect(resolveSceneOrder("")).toBeUndefined()
   })
 })
 
