@@ -21,7 +21,8 @@ describe("ContinuityDiagnosticsProvider helpers", () => {
       start: 0,
       end: 10,
       original: "문장",
-      reason: "테스트"
+      reason: "테스트",
+      severity: "high"
     }
 
     expect(toContinuityRange(document, invalidIssue)).toBeUndefined()
@@ -34,7 +35,8 @@ describe("ContinuityDiagnosticsProvider helpers", () => {
         start: 0,
         end: 5,
         original: "파란 눈",
-        reason: "설정상 엘리아의 눈동자 색은 녹색"
+        reason: "설정상 엘리아의 눈동자 색은 녹색",
+        severity: "high"
       }
     ]
 
@@ -43,5 +45,33 @@ describe("ContinuityDiagnosticsProvider helpers", () => {
     expect(diagnostics).toHaveLength(1)
     expect(diagnostics[0]?.source).toBe("storyboard-continuity")
     expect(diagnostics[0]?.message).toContain("설정상 엘리아의 눈동자 색은 녹색")
+  })
+
+  it("Q12: maps high to Warning and low to Information severity", () => {
+    const document = createDocument("파란 눈의 엘리아가 왼손으로 걸어왔다.")
+    const issues: ContinuityIssue[] = [
+      {
+        start: 0,
+        end: 5,
+        original: "파란 눈",
+        reason: "엘리아의 눈동자 색은 녹색",
+        severity: "high"
+      },
+      {
+        start: 11,
+        end: 13,
+        original: "왼손",
+        reason: "엘리아는 오른손잡이",
+        severity: "low"
+      }
+    ]
+
+    const diagnostics = mapContinuityIssuesToDiagnostics(document, issues)
+
+    expect(diagnostics).toHaveLength(2)
+    expect(diagnostics[0]?.severity).toBe(vscode.DiagnosticSeverity.Warning)
+    expect(diagnostics[1]?.severity).toBe(vscode.DiagnosticSeverity.Information)
+    expect(diagnostics[0]?.message).toContain("설정 불일치:")
+    expect(diagnostics[1]?.message).toContain("설정 불일치:")
   })
 })

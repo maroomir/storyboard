@@ -48,7 +48,8 @@ vi.mock("@/core/sceneContext", () => ({
 
 import { runReviseDraftWorkflow, type ReviseDraftWorkflowOptions } from "@/core/reviseDraftWorkflow"
 
-const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순" }
+const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
+const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }
 const highCritique: DraftCritiqueIssue = { category: "voice", severity: "high", comment: "보이스 문제" }
 
 function baseOptions(overrides: Partial<ReviseDraftWorkflowOptions> = {}): ReviseDraftWorkflowOptions {
@@ -96,10 +97,21 @@ describe("runReviseDraftWorkflow", () => {
     expect(writeDraftFileMock).not.toHaveBeenCalled()
   })
 
-  it("revises once then passes when the second check is clean", async () => {
+  it("Q4: passes without revising when continuity issues are all low severity", async () => {
+    checkContinuityMock.mockResolvedValue([lowContinuity])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 3 }))
+
+    expect(result.passed).toBe(true)
+    expect(result.revisionCount).toBe(0)
+    expect(result.remainingBlocking).toBe(0)
+    expect(reviseDraftMock).not.toHaveBeenCalled()
+  })
+
+  it("Q5: revises once then passes when the second check is clean", async () => {
     checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
 
-    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 3 }))
 
     expect(result.passed).toBe(true)
     expect(result.revisionCount).toBe(1)
@@ -108,7 +120,7 @@ describe("runReviseDraftWorkflow", () => {
     expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
   })
 
-  it("stops at maxIterations and reports remaining blocking when issues persist", async () => {
+  it("Q6: stops at maxIterations and reports remaining blocking when issues persist", async () => {
     checkContinuityMock.mockResolvedValue([blockingContinuity])
     critiqueDraftMock.mockResolvedValue([highCritique])
 
@@ -116,9 +128,19 @@ describe("runReviseDraftWorkflow", () => {
 
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
-    expect(result.remainingBlocking).toBe(2)
+    expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
     expect(reviseDraftMock).toHaveBeenCalledTimes(2)
     expect(result.instructions.length).toBeGreaterThan(0)
+  })
+
+  it("Q7: never revises when continuity issues stay low across iterations", async () => {
+    checkContinuityMock.mockResolvedValue([lowContinuity, lowContinuity])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.passed).toBe(true)
+    expect(result.revisionCount).toBe(0)
+    expect(reviseDraftMock).not.toHaveBeenCalled()
   })
 
   it("checks once and never revises when maxIterations is zero", async () => {

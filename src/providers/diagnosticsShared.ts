@@ -12,13 +12,22 @@ export function toRange(document: vscode.TextDocument, start: number, end: numbe
   return RangeCtor ? new RangeCtor(startPosition, endPosition) : ({ start: startPosition, end: endPosition } as vscode.Range)
 }
 
-export function createWarningDiagnostic(range: vscode.Range, message: string, source: string): vscode.Diagnostic {
+export function createDiagnostic(
+  range: vscode.Range,
+  message: string,
+  source: string,
+  severity: vscode.DiagnosticSeverity
+): vscode.Diagnostic {
   const DiagnosticCtor = (vscode as unknown as { Diagnostic?: typeof vscode.Diagnostic }).Diagnostic
-  const warningSeverity = (vscode.DiagnosticSeverity?.Warning ?? 1) as unknown as vscode.DiagnosticSeverity
 
   const diagnostic = DiagnosticCtor
-    ? new DiagnosticCtor(range, message, warningSeverity)
-    : ({ range, message, severity: warningSeverity } as vscode.Diagnostic)
+    ? new DiagnosticCtor(range, message, severity)
+    : ({ range, message, severity } as vscode.Diagnostic)
   diagnostic.source = source
   return diagnostic
+}
+
+export function createWarningDiagnostic(range: vscode.Range, message: string, source: string): vscode.Diagnostic {
+  const warningSeverity = (vscode.DiagnosticSeverity?.Warning ?? 1) as unknown as vscode.DiagnosticSeverity
+  return createDiagnostic(range, message, source, warningSeverity)
 }

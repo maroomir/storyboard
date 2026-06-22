@@ -6,13 +6,13 @@ export const critiqueCategories = ["voice", "purpose", "repetition"] as const
 
 export type CritiqueCategory = (typeof critiqueCategories)[number]
 
-export const critiqueSeverities = ["high", "low"] as const
+export const severities = ["high", "low"] as const
 
-export type CritiqueSeverity = (typeof critiqueSeverities)[number]
+export type Severity = (typeof severities)[number]
 
 export interface DraftCritiqueIssue {
   readonly category: CritiqueCategory
-  readonly severity: CritiqueSeverity
+  readonly severity: Severity
   readonly excerpt?: string
   readonly comment: string
 }
@@ -20,6 +20,7 @@ export interface DraftCritiqueIssue {
 export interface ContinuityIssueLike {
   readonly original: string
   readonly reason: string
+  readonly severity: Severity
 }
 
 const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
@@ -30,7 +31,7 @@ const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
 
 const draftCritiqueIssueSchema = z.object({
   category: z.enum(critiqueCategories),
-  severity: z.enum(critiqueSeverities).default("low"),
+  severity: z.enum(severities).default("low"),
   excerpt: z.string().trim().min(1).optional(),
   comment: z.string().trim().min(1)
 })
@@ -52,8 +53,9 @@ export function countBlockingIssues(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[]
 ): number {
+  const blockingContinuity = continuityIssues.filter((issue) => issue.severity === "high").length
   const blockingCritique = critiqueIssues.filter((issue) => issue.severity === "high").length
-  return continuityIssues.length + blockingCritique
+  return blockingContinuity + blockingCritique
 }
 
 export function buildRevisionInstructions(

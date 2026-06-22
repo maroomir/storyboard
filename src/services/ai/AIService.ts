@@ -36,7 +36,7 @@ import {
   type OutlineCharacterBrief,
   type OutlineSynopsis
 } from "@/shared/outline"
-import { coerceCritiqueIssues, type DraftCritiqueIssue } from "@/shared/draftReview"
+import { coerceCritiqueIssues, type DraftCritiqueIssue, type Severity } from "@/shared/draftReview"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]
@@ -76,6 +76,7 @@ export interface ContinuityIssue {
   readonly end: number
   readonly original: string
   readonly reason: string
+  readonly severity: Severity
 }
 
 export interface InlineCompletionContext {
@@ -538,6 +539,7 @@ function toContinuityIssue(value: unknown): ContinuityIssue[] {
     readonly end?: unknown
     readonly original?: unknown
     readonly reason?: unknown
+    readonly severity?: unknown
   }
 
   if (
@@ -553,12 +555,15 @@ function toContinuityIssue(value: unknown): ContinuityIssue[] {
     return []
   }
 
+  const severity: Severity = candidate.severity === "low" ? "low" : "high"
+
   return [
     {
       start: candidate.start,
       end: candidate.end,
       original: candidate.original,
-      reason: candidate.reason
+      reason: candidate.reason,
+      severity
     }
   ]
 }

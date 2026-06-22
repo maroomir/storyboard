@@ -17,6 +17,8 @@ const categoryLabels: Record<CritiqueCategory, string> = {
 export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): string {
   const highCount = input.critiqueIssues.filter((issue) => issue.severity === "high").length
   const lowCount = input.critiqueIssues.length - highCount
+  const continuityHigh = input.continuityIssues.filter((issue) => issue.severity === "high").length
+  const continuityLow = input.continuityIssues.length - continuityHigh
   const total = input.continuityIssues.length + input.critiqueIssues.length
 
   const sections: string[] = [
@@ -32,7 +34,7 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
   sections.push(
     [
       "## 요약",
-      `- 설정 모순(continuity): ${input.continuityIssues.length}건`,
+      `- 설정 모순(continuity): ${input.continuityIssues.length}건 (high ${continuityHigh} / low ${continuityLow})`,
       `- 비평(critique): ${input.critiqueIssues.length}건 (high ${highCount} / low ${lowCount})`
     ].join("\n")
   )

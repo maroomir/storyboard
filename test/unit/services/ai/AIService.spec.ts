@@ -81,7 +81,7 @@ describe("StoryboardAIService", () => {
     })
   })
 
-  it("parses continuity issues from JSON array output", async () => {
+  it("Q8: parses continuity issues and defaults missing severity to high", async () => {
     const service = createAIService({
       completionText:
         '[{"start":0,"end":5,"original":"파란 눈","reason":"설정상 엘리아의 눈동자 색은 녹색"}]'
@@ -94,7 +94,40 @@ describe("StoryboardAIService", () => {
         start: 0,
         end: 5,
         original: "파란 눈",
-        reason: "설정상 엘리아의 눈동자 색은 녹색"
+        reason: "설정상 엘리아의 눈동자 색은 녹색",
+        severity: "high"
+      }
+    ])
+  })
+
+  it("Q9: defaults invalid severity values to high", async () => {
+    const service = createAIService({
+      completionText:
+        '[{"start":0,"end":5,"original":"파란 눈","reason":"색 모순","severity":"critical"},{"start":6,"end":9,"original":"엘리아","reason":"이름 모순","severity":123}]'
+    })
+
+    const issues = await service.checkContinuity("파란 눈의 엘리아가 걸어왔다.", ["엘리아 — 눈동자 색: 녹색"])
+
+    expect(issues).toHaveLength(2)
+    expect(issues[0]?.severity).toBe("high")
+    expect(issues[1]?.severity).toBe("high")
+  })
+
+  it("Q10: preserves an explicit low severity", async () => {
+    const service = createAIService({
+      completionText:
+        '[{"start":0,"end":5,"original":"파란 눈","reason":"색 모순","severity":"low"}]'
+    })
+
+    await expect(
+      service.checkContinuity("파란 눈의 엘리아가 걸어왔다.", ["엘리아 — 눈동자 색: 녹색"])
+    ).resolves.toEqual([
+      {
+        start: 0,
+        end: 5,
+        original: "파란 눈",
+        reason: "색 모순",
+        severity: "low"
       }
     ])
   })

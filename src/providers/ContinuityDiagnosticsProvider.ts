@@ -4,7 +4,7 @@ import type { StoryboardLogger } from "../core/logger"
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from "../core/pathConventions"
 import { buildNarrativeContext, buildSceneContext, formatBibleFactLines } from "../core/sceneContext"
 import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "../core/vscodeFileSystem"
-import { createWarningDiagnostic, toRange } from "./diagnosticsShared"
+import { createDiagnostic, toRange } from "./diagnosticsShared"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
 import { readSceneFile } from "../files/scene"
@@ -37,7 +37,11 @@ export function mapContinuityIssuesToDiagnostics(
     }
 
     const message = `설정 불일치: ${issue.reason}`
-    return [createWarningDiagnostic(range, message, continuitySource)]
+    const severity =
+      issue.severity === "low"
+        ? (vscode.DiagnosticSeverity?.Information ?? 2)
+        : (vscode.DiagnosticSeverity?.Warning ?? 1)
+    return [createDiagnostic(range, message, continuitySource, severity as vscode.DiagnosticSeverity)]
   })
 }
 

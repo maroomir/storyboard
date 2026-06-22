@@ -73,6 +73,13 @@ export enum FileType {
   SymbolicLink = 64
 }
 
+export enum DiagnosticSeverity {
+  Error = 0,
+  Warning = 1,
+  Information = 2,
+  Hint = 3
+}
+
 export interface TextEditReplacement {
   readonly uri: UriLike
   readonly range: Range
