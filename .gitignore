@@ -39,5 +39,8 @@ character/.sample.card
 background/.sample.card
 scene/.sample.txt
 
+# Documentation
+docs/upgrade-feature
+
 # Local-only documentation (extended plans, ADRs, drafts)
 .doc/
