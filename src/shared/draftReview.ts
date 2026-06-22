@@ -58,6 +58,45 @@ export function countBlockingIssues(
   return blockingContinuity + blockingCritique
 }
 
+export interface CritiqueScore {
+  readonly overall: number
+  readonly perCategory: Record<CritiqueCategory, number>
+  readonly issueCount: number
+}
+
+const baseCritiqueScore = 100
+
+const critiqueDeduction: Record<CritiqueCategory, Record<Severity, number>> = {
+  purpose: { high: 15, low: 5 },
+  voice: { high: 12, low: 4 },
+  repetition: { high: 8, low: 3 }
+}
+
+export function scoreCritique(critiqueIssues: readonly DraftCritiqueIssue[]): CritiqueScore {
+  const perCategory: Record<CritiqueCategory, number> = { voice: 0, purpose: 0, repetition: 0 }
+
+  for (const issue of critiqueIssues) {
+    perCategory[issue.category] += critiqueDeduction[issue.category][issue.severity]
+  }
+
+  const totalDeduction = perCategory.voice + perCategory.purpose + perCategory.repetition
+  const overall = Math.max(0, Math.min(baseCritiqueScore, baseCritiqueScore - totalDeduction))
+
+  return { overall, perCategory, issueCount: critiqueIssues.length }
+}
+
+export function shouldPassRevise(input: {
+  readonly blocking: number
+  readonly score: number
+  readonly threshold: number
+  readonly highContinuityCount: number
+}): boolean {
+  if (input.blocking === 0) {
+    return true
+  }
+  return input.threshold > 0 && input.score >= input.threshold && input.highContinuityCount === 0
+}
+
 export function buildRevisionInstructions(
   continuityIssues: readonly ContinuityIssueLike[],
   critiqueIssues: readonly DraftCritiqueIssue[]

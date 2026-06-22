@@ -52,4 +52,25 @@ describe("buildManuscriptReviewMarkdown", () => {
     expect(markdown).toContain("## 설정 모순 (continuity)\n\n_없음_")
     expect(markdown).toContain("- [장면 목적/high] 목적 불명확")
   })
+
+  it("QAS-C3-10: renders the critique score line in the summary", () => {
+    const markdown = buildManuscriptReviewMarkdown({
+      ...baseInput,
+      continuityIssues: [{ original: "녹색 눈", reason: "canon은 파란 눈", severity: "low" }],
+      critiqueIssues: [{ category: "voice", severity: "high", excerpt: "안녕", comment: "말투 어긋남" }]
+    })
+
+    expect(markdown).toContain("비평 점수: 88/100")
+  })
+
+  it("QAS-C3-11: reports a perfect score on the empty-issue path alongside the no-issue line", () => {
+    const markdown = buildManuscriptReviewMarkdown({
+      ...baseInput,
+      continuityIssues: [],
+      critiqueIssues: []
+    })
+
+    expect(markdown).toContain("비평 점수: 100/100")
+    expect(markdown).toContain("발견된 이슈가 없습니다.")
+  })
 })

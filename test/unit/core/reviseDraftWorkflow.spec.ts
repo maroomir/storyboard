@@ -69,6 +69,7 @@ function baseOptions(overrides: Partial<ReviseDraftWorkflowOptions> = {}): Revis
     draftUri: vscode.Uri.file("/ws/project/draft/01-scene.md"),
     sceneStem: "01-scene",
     maxIterations: 2,
+    reviseScoreThreshold: 0,
     ...overrides
   }
 }
@@ -173,5 +174,18 @@ describe("runReviseDraftWorkflow", () => {
     expect(result.passed).toBe(true)
     expect(result.remainingBlocking).toBe(0)
     expect(reviseDraftMock).not.toHaveBeenCalled()
+  })
+
+  it("QAS-C3-12: does not early-pass on a high score when reviseScoreThreshold is 0", async () => {
+    const lowCritique: DraftCritiqueIssue = { category: "repetition", severity: "low", comment: "사소함" }
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    critiqueDraftMock.mockResolvedValue([lowCritique])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2, reviseScoreThreshold: 0 }))
+
+    expect(result.passed).toBe(false)
+    expect(result.revisionCount).toBe(2)
+    expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
+    expect(reviseDraftMock).toHaveBeenCalledTimes(2)
   })
 })

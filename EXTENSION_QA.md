@@ -165,6 +165,7 @@ npm run build
 1. `draft/*.md`를 활성 에디터로 둔다.
 2. **`Storyboard: Review & Revise Draft (Current Scene)`** 실행.
 3. `storyboard.draft.reviseMaxIterations` 기본값(2)에서 완료 또는 남은 차단 이슈 안내가 표시되는지 확인한다.
+4. `storyboard.draft.reviseScoreThreshold` 기본값(0)에서는 동작이 변하지 않는지, 값을 올렸을 때(예: 90) 점수 기준 충족 시 루프가 더 일찍 통과하는지 확인한다. 최종 검사 보고서에 `비평 점수: NN/100` 줄이 표시되는지 확인한다.
 
 **성공 기준**
 

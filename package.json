@@ -280,6 +280,13 @@
           "type": "boolean",
           "default": false,
           "description": "After generating a draft (Generate Draft / Generate All Drafts), automatically run the continuity & critique revise gate. Off by default because it adds extra AI calls and cost per draft."
+        },
+        "storyboard.draft.reviseScoreThreshold": {
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Optional critique-score quality bar (0–100) that lets the Review & Revise loop pass early once the deterministic rubric score reaches it. 0 disables this and keeps the loop's stop behavior and AI-call count identical to before. High-severity continuity issues still block regardless."
         }
       }
     },

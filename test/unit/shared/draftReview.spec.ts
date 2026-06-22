@@ -1,9 +1,14 @@
+import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
+
 import { describe, expect, it } from "vitest"
 
 import {
   buildRevisionInstructions,
   coerceCritiqueIssues,
   countBlockingIssues,
+  scoreCritique,
+  shouldPassRevise,
   type ContinuityIssueLike,
   type DraftCritiqueIssue
 } from "@/shared/draftReview"
@@ -120,5 +125,123 @@ describe("buildRevisionInstructions", () => {
     )
 
     expect(instructions).toEqual(["장면 목적: 장면 목적을 분명히"])
+  })
+})
+
+describe("scoreCritique", () => {
+  it("QAS-C3-01: returns a perfect score with zero deductions for empty critique", () => {
+    expect(scoreCritique([])).toEqual({
+      overall: 100,
+      perCategory: { voice: 0, purpose: 0, repetition: 0 },
+      issueCount: 0
+    })
+  })
+
+  it("QAS-C3-02: deducts a single high voice issue to overall 88", () => {
+    const score = scoreCritique([{ category: "voice", severity: "high", comment: "보이스 어긋남" }])
+
+    expect(score.overall).toBe(88)
+    expect(score.perCategory.voice).toBe(12)
+  })
+
+  it("QAS-C3-03: a high issue deducts more than a low issue in the same category", () => {
+    const high = scoreCritique([{ category: "voice", severity: "high", comment: "a" }])
+    const low = scoreCritique([{ category: "voice", severity: "low", comment: "a" }])
+
+    expect(high.overall).toBe(88)
+    expect(low.overall).toBe(96)
+    expect(high.overall).toBeLessThan(low.overall)
+  })
+
+  it("QAS-C3-04: a high purpose issue deducts more than a high repetition issue", () => {
+    const purpose = scoreCritique([{ category: "purpose", severity: "high", comment: "a" }])
+    const repetition = scoreCritique([{ category: "repetition", severity: "high", comment: "a" }])
+
+    expect(purpose.overall).toBe(85)
+    expect(repetition.overall).toBe(92)
+    expect(purpose.overall).toBeLessThan(repetition.overall)
+  })
+
+  it("QAS-C3-05: clamps overall to 0 (never negative) while reporting un-clamped per-category", () => {
+    const tenHighPurpose: DraftCritiqueIssue[] = Array.from({ length: 10 }, () => ({
+      category: "purpose",
+      severity: "high",
+      comment: "목적 실패"
+    }))
+
+    const score = scoreCritique(tenHighPurpose)
+
+    expect(score.overall).toBe(0)
+    expect(score.overall).toBeGreaterThanOrEqual(0)
+    expect(score.perCategory.purpose).toBe(150)
+  })
+
+  it("QAS-C3-06: clamps overall to the upper bound, exactly 100 for empty critique", () => {
+    const score = scoreCritique([])
+
+    expect(score.overall).toBeLessThanOrEqual(100)
+    expect(score.overall).toBe(100)
+  })
+
+  it("QAS-C3-07: accounts per category for a mixed issue list (Example C)", () => {
+    const score = scoreCritique([
+      { category: "purpose", severity: "high", comment: "a" },
+      { category: "voice", severity: "low", comment: "b" },
+      { category: "repetition", severity: "low", comment: "c" },
+      { category: "repetition", severity: "low", comment: "d" }
+    ])
+
+    expect(score).toEqual({
+      overall: 75,
+      perCategory: { voice: 4, purpose: 15, repetition: 6 },
+      issueCount: 4
+    })
+  })
+
+  it("QAS-C3-09: is deterministic across two calls on the same input", () => {
+    const input: DraftCritiqueIssue[] = [
+      { category: "purpose", severity: "high", comment: "a" },
+      { category: "voice", severity: "low", comment: "b" }
+    ]
+
+    expect(scoreCritique(input)).toEqual(scoreCritique(input))
+  })
+})
+
+describe("shouldPassRevise", () => {
+  it("QAS-C3-12: does not pass on score when threshold is 0 (inert)", () => {
+    expect(shouldPassRevise({ blocking: 1, score: 100, threshold: 0, highContinuityCount: 0 })).toBe(false)
+  })
+
+  it("QAS-C3-13: passes early when score meets the threshold and no high continuity", () => {
+    expect(shouldPassRevise({ blocking: 1, score: 88, threshold: 85, highContinuityCount: 0 })).toBe(true)
+  })
+
+  it("QAS-C3-14: a high continuity issue still gates even at a perfect score", () => {
+    expect(shouldPassRevise({ blocking: 2, score: 100, threshold: 85, highContinuityCount: 1 })).toBe(false)
+  })
+
+  it("QAS-C3-15: passes when there are no blocking issues regardless of score", () => {
+    expect(shouldPassRevise({ blocking: 0, score: 50, threshold: 0, highContinuityCount: 0 })).toBe(true)
+  })
+
+  it("QAS-C3-16: passes at the threshold boundary (>=)", () => {
+    expect(shouldPassRevise({ blocking: 1, score: 88, threshold: 88, highContinuityCount: 0 })).toBe(true)
+  })
+
+  it("QAS-C3-17: does not pass just under the threshold", () => {
+    expect(shouldPassRevise({ blocking: 1, score: 88, threshold: 89, highContinuityCount: 0 })).toBe(false)
+  })
+})
+
+describe("draftReview module purity", () => {
+  it("QAS-C3-08: source has no vscode, AI service, or network imports", () => {
+    const sourcePath = fileURLToPath(new URL("../../../src/shared/draftReview.ts", import.meta.url))
+    const source = readFileSync(sourcePath, "utf8")
+
+    expect(source.length).toBeGreaterThan(0)
+    expect(source).not.toMatch(/from\s+["']vscode["']/)
+    expect(source).not.toMatch(/services\/ai/)
+    expect(source).not.toMatch(/from\s+["']https?:\/\//)
   })
 })

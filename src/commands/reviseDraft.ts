@@ -66,6 +66,7 @@ export async function runReviseGateForScene(
     draftUri,
     sceneStem,
     maxIterations: resolveMaxIterations(),
+    reviseScoreThreshold: resolveReviseScoreThreshold(),
     onProgress: hooks.onProgress,
     shouldCancel: hooks.shouldCancel
   })
@@ -99,6 +100,14 @@ function resolveMaxIterations(): number {
     .get<number>("draft.reviseMaxIterations", defaultMaxIterations)
   const value = Math.floor(Number.isFinite(configured) ? configured : defaultMaxIterations)
   return Math.min(maxMaxIterations, Math.max(minMaxIterations, value))
+}
+
+function resolveReviseScoreThreshold(): number {
+  const configured = vscode.workspace
+    .getConfiguration("storyboard")
+    .get<number>("draft.reviseScoreThreshold", 0)
+  const value = Math.floor(Number.isFinite(configured) ? configured : 0)
+  return Math.min(100, Math.max(0, value))
 }
 
 async function runReviseDraft(

@@ -290,6 +290,7 @@ async function runChapterDraftsAndRevise(
       draftUri: vscode.Uri.joinPath(paths.draftDirectory, `${stem}.md`),
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
+      reviseScoreThreshold: 0,
       shouldCancel: options.shouldCancel
     })
 

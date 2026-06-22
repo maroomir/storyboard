@@ -11,7 +11,7 @@ import { StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
-import { buildRevisionInstructions, countBlockingIssues } from "../shared/draftReview"
+import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "../shared/draftReview"
 
 async function readContractGuidance(
   projectJsonUri: vscode.Uri
@@ -36,6 +36,7 @@ export interface ReviseDraftWorkflowOptions {
   readonly draftUri: vscode.Uri
   readonly sceneStem: string
   readonly maxIterations: number
+  readonly reviseScoreThreshold: number
   readonly onProgress?: (message: string) => void
   readonly shouldCancel?: () => boolean
 }
@@ -99,7 +100,17 @@ export async function runReviseDraftWorkflow(
     blocking = countBlockingIssues(continuityIssues, critiqueIssues)
     lastInstructions = buildRevisionInstructions(continuityIssues, critiqueIssues)
 
-    if (blocking === 0) {
+    const score = scoreCritique(critiqueIssues)
+    const highContinuityCount = continuityIssues.filter((issue) => issue.severity === "high").length
+
+    if (
+      shouldPassRevise({
+        blocking,
+        score: score.overall,
+        threshold: options.reviseScoreThreshold,
+        highContinuityCount
+      })
+    ) {
       passed = true
       break
     }

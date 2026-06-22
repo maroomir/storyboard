@@ -1,3 +1,4 @@
+import { scoreCritique } from "../shared/draftReview"
 import type { ContinuityIssueLike, CritiqueCategory, DraftCritiqueIssue } from "../shared/draftReview"
 
 export interface ManuscriptReviewInput {
@@ -21,6 +22,9 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
   const continuityLow = input.continuityIssues.length - continuityHigh
   const total = input.continuityIssues.length + input.critiqueIssues.length
 
+  const score = scoreCritique(input.critiqueIssues)
+  const scoreLine = `- 비평 점수: ${score.overall}/100 (voice −${score.perCategory.voice} / purpose −${score.perCategory.purpose} / repetition −${score.perCategory.repetition})`
+
   const sections: string[] = [
     "# 원고 최종 검사 보고서",
     `> 생성: ${input.generatedAt}\n> 대상: ${input.projectName} · 씬 ${input.sceneCount}개`
@@ -28,6 +32,7 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
 
   if (total === 0) {
     sections.push("발견된 이슈가 없습니다.")
+    sections.push(scoreLine)
     return `${sections.join("\n\n")}\n`
   }
 
@@ -35,7 +40,8 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
     [
       "## 요약",
       `- 설정 모순(continuity): ${input.continuityIssues.length}건 (high ${continuityHigh} / low ${continuityLow})`,
-      `- 비평(critique): ${input.critiqueIssues.length}건 (high ${highCount} / low ${lowCount})`
+      `- 비평(critique): ${input.critiqueIssues.length}건 (high ${highCount} / low ${lowCount})`,
+      scoreLine
     ].join("\n")
   )
 
