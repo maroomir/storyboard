@@ -282,8 +282,10 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
 ### 4.7 `.storyboard/bible/canon.yaml` (스토리 바이블)
 
 장편의 장거리 일관성을 위한 **정전(canon) 설정 저장소**다. 사람이 확정한 사실만 담으며 git으로 추적한다.
-씬 생성 시 등장 인물/배경에 해당하는 canon 사실만 골라 파이프라인 컨텍스트(`previousContext`)에 주입하고,
-초안의 `연속성 검사`는 이 설정과 본문이 모순되는 구간을 진단한다.
+씬 생성 시 등장 인물/배경에 해당하는 canon 사실을 골라 파이프라인 컨텍스트(`previousContext`)에 주입하고,
+초안의 `연속성 검사`는 이 설정과 본문이 모순되는 구간을 진단한다. 사실이 선택적 `keywords`를 선언하면, 씬 시드 본문에
+그 키워드가 등장할 때 해당 사실의 subject가 씬 등장 엔티티가 아니어도 추가로 활성화된다(결정적 소문자 부분일치, AI 없음).
+`keywords`가 없으면 기존 등장 엔티티 멤버십 동작과 동일하다.
 
 ```yaml
 version: 1.0.0
@@ -294,6 +296,7 @@ facts:
     value: 녹색
     status: canon                            # canon | candidate (candidate는 주입/검사 제외)
     sourceScene: 01-prologue                 # 선택
+    keywords: [붉은 제국, Crimson Empire]      # 선택: 씬 본문에 등장 시 비-엔티티 사실도 활성화
 ```
 
 **candidate → canon 흐름**: 초안 생성 시 설정 사실 추출(`factExtraction`)이 등장 인물의 고정 설정을

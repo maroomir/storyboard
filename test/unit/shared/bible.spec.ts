@@ -78,3 +78,20 @@ describe("bibleFactSchema range bounds", () => {
     expect(bibleFactSchema.safeParse({ ...baseFact, validFrom: 8, validUntil: 5 }).success).toBe(true)
   })
 })
+
+describe("bibleFactSchema keywords", () => {
+  const baseFact = {
+    id: "f1",
+    subject: { kind: "character", id: "elia" },
+    key: "팔",
+    value: "의수",
+    status: "canon"
+  }
+
+  it("QAS-C5-12a: accepts a non-empty keywords array, rejects empty or non-string entries", () => {
+    expect(bibleFactSchema.safeParse({ ...baseFact, keywords: ["a", "붉은 제국"] }).success).toBe(true)
+    expect(bibleFactSchema.safeParse({ ...baseFact, keywords: [""] }).success).toBe(false)
+    expect(bibleFactSchema.safeParse({ ...baseFact, keywords: [3] }).success).toBe(false)
+    expect(bibleFactSchema.safeParse(baseFact).success).toBe(true)
+  })
+})
