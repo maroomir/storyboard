@@ -179,6 +179,8 @@ function selectSituationPersonas(
 // 조각을 묶어 여러 번 포맷한 뒤 이어 붙여, 27개 비트가 전부 살아남고 분량이 안정적으로 나오게 한다.
 const formatChunkCharBudget = 12000
 
+const maxCondensedContextChars = 1200
+
 export function chunkDialoguePiecesByBudget(pieces: readonly string[], maxChars: number): string[][] {
   const chunks: string[][] = []
   let current: string[] = []
@@ -238,6 +240,10 @@ function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   }
 }
 
+function isContextBearingLine(line: string): boolean {
+  return line.includes(":") || /행동|표정|감정|생각|묘사/.test(line)
+}
+
 function condensePreviousContext(previousContext: string | undefined, enabled: boolean): string | undefined {
   if (!previousContext) {
     return undefined
@@ -247,8 +253,7 @@ function condensePreviousContext(previousContext: string | undefined, enabled: b
     return previousContext
   }
 
-  const maxLength = 1200
-  if (previousContext.length <= maxLength) {
+  if (previousContext.length <= maxCondensedContextChars) {
     return previousContext
   }
 
@@ -256,14 +261,14 @@ function condensePreviousContext(previousContext: string | undefined, enabled: b
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .filter((line) => line.includes(":") || /행동|표정|감정|생각|묘사/.test(line))
+    .filter(isContextBearingLine)
 
   if (lines.length === 0) {
-    return previousContext.slice(-maxLength)
+    return previousContext.slice(-maxCondensedContextChars)
   }
 
   const condensed = lines.join("\n")
-  return condensed.length <= maxLength ? condensed : condensed.slice(-maxLength)
+  return condensed.length <= maxCondensedContextChars ? condensed : condensed.slice(-maxCondensedContextChars)
 }
 
 export async function runSceneGenerationPipeline(
