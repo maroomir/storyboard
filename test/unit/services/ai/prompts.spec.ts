@@ -99,16 +99,30 @@ describe("AI prompts", () => {
 
   it("preserves full coverage and raw confrontation in the rich genre formatting, but not in xs", () => {
     const noCompressionLine =
-      "입력의 모든 장면과 대사를 빠짐없이 포함하고 요약하거나 압축하지 마라. 분량을 줄이지 말고 오히려 묘사를 더해 확장하라."
+      "입력의 모든 장면과 대사를 빠짐없이 포함하고 요약하거나 압축하지 마라. 다만 분량을 임의로 부풀리지 말고 입력의 밀도와 호흡을 유지하라."
     const rawConfrontationLine = "인물의 폭언·별칭·갈등·실망 같은 거친 표현은 순화하거나 화해로 덮지 말고 그 강도 그대로 살려라."
+    const sceneDelineationLine =
+      "시간·장소가 바뀌는 지점에서 장면을 명확히 구분하고, 각 장면의 도입(등장 경위·공간)과 장면 사이의 전환을 자연스럽게 이어라. 대사 없이 행동만 있는 대목도 장면으로 살려 두어라."
+    const noMetaLeakLine =
+      "오직 완성된 소설 본문만 출력하라. 분량·토큰·작업 방식에 대한 안내, 연재형/압축형 같은 선택지 제시, 사용자에게 묻는 말 등 어떤 메타 설명도 출력하지 마라."
+    const noDividerLine = "장면 구분은 빈 줄로만 하고 ---, *** 같은 기호 구분선은 쓰지 마라."
+    const noRepetitionLine = "같은 표현이나 상투구를 반복하지 말고 변주하라."
 
     const rich = GenreFormattingPrompt.build("조만재: 안녕", "novel", "rich", { genre: "허세 코미디" })
     expect(rich.system).toContain(noCompressionLine)
     expect(rich.system).toContain(rawConfrontationLine)
+    expect(rich.system).toContain(sceneDelineationLine)
+    expect(rich.system).toContain(noMetaLeakLine)
+    expect(rich.system).toContain(noDividerLine)
+    expect(rich.system).toContain(noRepetitionLine)
 
     const xs = GenreFormattingPrompt.build("조만재: 안녕", "novel", "xs")
     expect(xs.system).not.toContain(noCompressionLine)
     expect(xs.system).not.toContain(rawConfrontationLine)
+    expect(xs.system).not.toContain(sceneDelineationLine)
+    expect(xs.system).not.toContain(noMetaLeakLine)
+    expect(xs.system).not.toContain(noDividerLine)
+    expect(xs.system).not.toContain(noRepetitionLine)
   })
 
   it("includes character voice in the persona prompt and instructs reflecting it", () => {
