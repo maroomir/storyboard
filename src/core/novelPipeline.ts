@@ -43,6 +43,10 @@ const fileSystem: DraftFileSystem & OutlineFileSystem & BibleFileSystem & CardFi
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
 }
 
+async function writeTextFile(uri: vscode.Uri, text: string): Promise<void> {
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text))
+}
+
 export interface NovelPipelineDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
   readonly configBridge: ConfigBridge
@@ -246,7 +250,7 @@ async function runSeedsStage(
 
   for (const seed of buildSceneSeeds(plan, digitCount)) {
     const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, seed.fileName)
-    await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(seed.content))
+    await writeTextFile(sceneUri, seed.content)
   }
 }
 
@@ -323,18 +327,12 @@ async function runAssembleStage(
   await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
 
   for (const chapter of manuscript.chapters) {
-    await vscode.workspace.fs.writeFile(
-      vscode.Uri.joinPath(paths.manuscriptDirectory, chapter.fileName),
-      new TextEncoder().encode(chapter.markdown)
-    )
+    await writeTextFile(vscode.Uri.joinPath(paths.manuscriptDirectory, chapter.fileName), chapter.markdown)
   }
-  await vscode.workspace.fs.writeFile(
-    paths.manuscriptVolume,
-    new TextEncoder().encode(manuscript.volumeMarkdown)
-  )
-  await vscode.workspace.fs.writeFile(
+  await writeTextFile(paths.manuscriptVolume, manuscript.volumeMarkdown)
+  await writeTextFile(
     vscode.Uri.joinPath(paths.manuscriptDirectory, "FORESHADOWING.md"),
-    new TextEncoder().encode(buildForeshadowingMarkdown(project.name, collectForeshadowing(plan)))
+    buildForeshadowingMarkdown(project.name, collectForeshadowing(plan))
   )
 }
 
@@ -375,10 +373,7 @@ async function runReviewStage(
   })
 
   await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
-  await vscode.workspace.fs.writeFile(
-    vscode.Uri.joinPath(paths.manuscriptDirectory, "REVIEW.md"),
-    new TextEncoder().encode(reportMarkdown)
-  )
+  await writeTextFile(vscode.Uri.joinPath(paths.manuscriptDirectory, "REVIEW.md"), reportMarkdown)
 }
 
 async function runSummariesStage(
@@ -401,9 +396,9 @@ async function runSummariesStage(
   }
 
   await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory)
-  await vscode.workspace.fs.writeFile(
+  await writeTextFile(
     vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
-    new TextEncoder().encode(buildChapterSummariesMarkdown(project.name, summaries))
+    buildChapterSummariesMarkdown(project.name, summaries)
   )
 }
 
