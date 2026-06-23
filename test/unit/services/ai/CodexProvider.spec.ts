@@ -149,6 +149,24 @@ describe("CodexProvider", () => {
     expect(response).toEqual({ providerId: "codex", model: "gpt-5.5", text: "코덱스 응답" })
   })
 
+  it("applies the default generate timeout and honors an override", async () => {
+    const calls: CliRunInput[] = []
+    const makeProvider = (generateTimeoutMs?: number): CodexProvider =>
+      new CodexProvider({
+        command: "codex",
+        model: "gpt-5.5",
+        generateTimeoutMs,
+        createRunner: (): CliRunner =>
+          createFakeRunner({ exitCode: 0, stdout: "ok", onRun: (input) => calls.push(input) })
+      })
+
+    await makeProvider().generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+    expect(calls[0]?.timeoutMs).toBe(600_000)
+
+    await makeProvider(300_000).generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+    expect(calls[1]?.timeoutMs).toBe(300_000)
+  })
+
   it("returns empty text when json yields no agent message instead of echoing the stream", async () => {
     const stdout = [
       JSON.stringify({ type: "turn.started" }),

@@ -226,12 +226,23 @@ describe("ConfigBridge", () => {
 
     expect(configBridge.getProviderConfig("claude-code")).toEqual({
       command: "/custom/claude",
-      model: "sonnet"
+      model: "sonnet",
+      timeoutMs: 600000
     })
     expect(configBridge.getProviderConfig("codex")).toEqual({
       command: "codex",
-      model: "gpt-5.5"
+      model: "gpt-5.5",
+      timeoutMs: 600000
     })
+  })
+
+  it("reads a configured CLI provider timeout override", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([["providers.codex.timeoutMs", 300000]])
+    )
+
+    expect(configBridge.getProviderConfig("codex").timeoutMs).toBe(300000)
+    expect(configBridge.getProviderConfig("claude-code").timeoutMs).toBe(600000)
   })
 
   it("falls back from legacy Codex models to the current catalog default", () => {
@@ -244,7 +255,8 @@ describe("ConfigBridge", () => {
 
     expect(configBridge.getProviderConfig("codex")).toEqual({
       command: "codex",
-      model: "gpt-5.5"
+      model: "gpt-5.5",
+      timeoutMs: 600000
     })
     expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
       providerId: "codex",
@@ -258,11 +270,11 @@ describe("ConfigBridge", () => {
     await expect(configBridge.setDefaultProvider("openai")).rejects.toThrow(/update is required/)
   })
 
-  it("disables revise-after-generate by default and reads the configured value", () => {
-    expect(createConfigBridge(new Map()).isReviseAfterGenerateEnabled()).toBe(false)
+  it("enables revise-after-generate by default and reads the configured value", () => {
+    expect(createConfigBridge(new Map()).isReviseAfterGenerateEnabled()).toBe(true)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseAfterGenerate", true]])).isReviseAfterGenerateEnabled()
-    ).toBe(true)
+      createConfigBridge(new Map<string, unknown>([["draft.reviseAfterGenerate", false]])).isReviseAfterGenerateEnabled()
+    ).toBe(false)
   })
 
   it("disables update-cards-after-generate by default and reads the configured value", () => {

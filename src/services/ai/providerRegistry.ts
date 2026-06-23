@@ -143,6 +143,7 @@ export class AiProviderRegistry {
       return new ClaudeCodeProvider({
         command: config.command,
         model: modelOverride ?? config.model,
+        generateTimeoutMs: config.timeoutMs,
         createRunner: this.options.createCliRunner
       })
     }
@@ -152,6 +153,7 @@ export class AiProviderRegistry {
       return new CodexProvider({
         command: config.command,
         model: modelOverride ?? config.model,
+        generateTimeoutMs: config.timeoutMs,
         createRunner: this.options.createCliRunner
       })
     }

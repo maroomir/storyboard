@@ -7,7 +7,10 @@ export interface ProviderModelConfig {
   readonly model?: string
   readonly baseUrl?: string
   readonly command?: string
+  readonly timeoutMs?: number
 }
+
+const defaultCliGenerateTimeoutMs = 600_000
 
 export interface TaskAiStoredEntry {
   readonly provider: AiProviderId
@@ -69,7 +72,8 @@ export class ConfigBridge {
         model:
           providerId === "codex"
             ? resolveEffectiveModelForTask(model, storyboardModelCatalog.codex[0].id, providerId)
-            : model
+            : model,
+        timeoutMs: configuration.get(`providers.${providerId}.timeoutMs`, defaultCliGenerateTimeoutMs)
       }
     }
 
@@ -178,7 +182,7 @@ export class ConfigBridge {
   }
 
   public isReviseAfterGenerateEnabled(): boolean {
-    return this.dependencies.getConfiguration().get("draft.reviseAfterGenerate", false)
+    return this.dependencies.getConfiguration().get("draft.reviseAfterGenerate", true)
   }
 
   public isUpdateCardsAfterGenerateEnabled(): boolean {

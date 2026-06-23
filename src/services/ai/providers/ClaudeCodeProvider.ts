@@ -11,11 +11,12 @@ import {
 import { type CliRunner, createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from "./cliRunner"
 
 const connectionTimeoutMs = 15_000
-const generateTimeoutMs = 180_000
+const defaultGenerateTimeoutMs = 600_000
 
 export interface ClaudeCodeProviderOptions {
   readonly command: string | undefined
   readonly model: string | undefined
+  readonly generateTimeoutMs?: number
   readonly createRunner?: () => CliRunner
 }
 
@@ -36,6 +37,7 @@ export class ClaudeCodeProvider implements AiProvider {
   public readonly displayName = "Claude Code (CLI)"
   private readonly command: string
   private readonly model: string
+  private readonly generateTimeoutMs: number
   private readonly run: CliRunner
 
   public constructor(options: ClaudeCodeProviderOptions) {
@@ -52,6 +54,7 @@ export class ClaudeCodeProvider implements AiProvider {
 
     this.command = command
     this.model = model
+    this.generateTimeoutMs = options.generateTimeoutMs ?? defaultGenerateTimeoutMs
     this.run = options.createRunner?.() ?? createDefaultCliRunner()
   }
 
@@ -113,7 +116,7 @@ export class ClaudeCodeProvider implements AiProvider {
         args,
         stdin: userPrompt,
         cwd: os.tmpdir(),
-        timeoutMs: generateTimeoutMs
+        timeoutMs: this.generateTimeoutMs
       })
     } catch (error) {
       throw new AiProviderError("generation-failed", this.id, "Claude Code CLI 실행에 실패했습니다.", error)

@@ -210,6 +210,13 @@
           "default": "sonnet",
           "description": "Model passed to the Claude Code CLI (e.g. sonnet, opus, haiku). Uses your Claude Code login; no API key required."
         },
+        "storyboard.providers.claude-code.timeoutMs": {
+          "type": "integer",
+          "default": 600000,
+          "minimum": 60000,
+          "maximum": 1800000,
+          "description": "Per-call timeout (ms) for the Claude Code CLI. Long reasoning beats can exceed the previous 180s; default 600000 (10 min)."
+        },
         "storyboard.providers.codex.command": {
           "type": "string",
           "default": "codex",
@@ -219,6 +226,13 @@
           "type": "string",
           "default": "gpt-5.5",
           "description": "Model passed to the Codex CLI. Uses your Codex login; no API key required."
+        },
+        "storyboard.providers.codex.timeoutMs": {
+          "type": "integer",
+          "default": 600000,
+          "minimum": 60000,
+          "maximum": 1800000,
+          "description": "Per-call timeout (ms) for the Codex CLI. Long reasoning beats can exceed the previous 180s; default 600000 (10 min)."
         },
         "storyboard.tasks": {
           "type": "object",
@@ -278,8 +292,8 @@
         },
         "storyboard.draft.reviseAfterGenerate": {
           "type": "boolean",
-          "default": false,
-          "description": "After generating a draft (Generate Draft / Generate All Drafts), automatically run the continuity & critique revise gate. Off by default because it adds extra AI calls and cost per draft."
+          "default": true,
+          "description": "After generating a draft (Generate Draft / Regenerate Draft / Generate All Drafts), automatically run the continuity & critique revise gate so one action produces a reviewed draft. On by default for quality; turn off to skip the extra AI calls and cost per draft."
         },
         "storyboard.draft.reviseScoreThreshold": {
           "type": "integer",
