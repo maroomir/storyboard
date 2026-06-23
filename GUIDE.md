@@ -38,7 +38,8 @@
 
 ## 5) 초안 검수·재작성 루프
 
-- 명령: `Storyboard: Review & Revise Draft (Current Scene)`
+- 명령: `Storyboard: Review & Revise Draft (Current Scene)` — 기존 초안에 검수·재작성만 다시 돌리고 싶을 때 사용합니다.
+- 자동 실행: `storyboard.draft.reviseAfterGenerate`가 기본 `true`라, 초안 생성(Generate / Regenerate / Generate All) 직후 이 루프가 자동으로 이어집니다. 한 동작으로 검수된 초안이 나오므로 위 명령을 따로 실행할 필요가 없습니다. 비용을 줄이려면 이 설정을 끕니다.
 - 동작: 현재 초안을 연속성 검사와 비평(캐릭터 보이스, 장면 목적, 반복)으로 검수하고, 차단 이슈가 있으면 재작성합니다.
 - 반복 횟수: `storyboard.draft.reviseMaxIterations` 설정을 따릅니다(기본 2, 최대 5).
 - 점수 기준(선택): `storyboard.draft.reviseScoreThreshold`(0–100, 기본 0=비활성)을 설정하면, 비평 루브릭 점수가 기준 이상일 때 루프를 한 번 일찍 통과시킵니다. 기본값 0에서는 동작이 기존과 동일하며 AI 호출 수가 늘지 않습니다. 연속성 high 이슈는 점수와 무관하게 계속 차단합니다. 최종 검사 보고서에는 `비평 점수: NN/100` 줄이 함께 표시됩니다.

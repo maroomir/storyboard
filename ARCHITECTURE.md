@@ -388,8 +388,10 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 - `storyboard.providers.ollama.baseUrl`
 - `storyboard.providers.ollama.model`
 - `storyboard.providers.claude-code.command` / `storyboard.providers.claude-code.model`
+- `storyboard.providers.claude-code.timeoutMs` / `storyboard.providers.codex.timeoutMs`: CLI 호출당 타임아웃(ms), 기본 `600000`(10분). 긴 추론 비트가 이전 180초를 초과해 끊기던 문제 해소.
 - `storyboard.providers.codex.command` / `storyboard.providers.codex.model`
 - `storyboard.tasks.<taskName>.provider`: 작업별 provider 오버라이드
+- `storyboard.draft.reviseAfterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
 - `storyboard.draft.reviseMaxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
