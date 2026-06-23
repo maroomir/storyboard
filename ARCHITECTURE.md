@@ -43,6 +43,10 @@
 - **원고는 생성·검수·재작성되는 산출물**.
   - `project setting` → outline/card/bible/scene seed → AI 파이프라인 → `draft/*.md` → 검사/재작성 → 조립 원고.
   - `draft/`는 재생성 가능한 산출물이므로 기본적으로 Git에서 제외한다.
+- **생성 = 에이전트 협업**.
+  - 파이프라인은 역할이 다른 여러 에이전트(콘티·페르소나·드로잉·서술자·설정 키퍼·검수자)를 **결정적 코드**가 순서대로 호출해 진행한다. 자율적으로 도구를 부르는 LLM 루프가 아니라, 각 에이전트는 (역할 + 전용 provider/model + 메모리 + 입출력 계약)을 가진 모듈이다.
+  - **카드 = 에이전트**. 캐릭터·배경 카드는 자료이자 그 카드를 연기·묘사하는 에이전트의 정체성이며, 결과는 디스크에 캐싱되어 씬 진행에 따라 진화한다.
+  - 검수자가 이슈를 리포트하면 감독이 이슈를 **해당 서브 에이전트로 라우팅**해 부분만 재생성한 뒤 재검수한다. 상세는 §8.
 
 ## 3. 디렉토리 구조
 
@@ -316,6 +320,21 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.txt` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
 
+### 4.9 `.storyboard/cache/personas/`·`backgrounds/` (에이전트 영속 메모리)
+
+> 계획됨(Phase G-2). 현재는 페르소나가 씬 캐시(`personasUsed`)에만 세션 단위로 저장되고, 카드 단위로는 영속화되지 않는다.
+
+카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다.
+
+```json
+// .storyboard/cache/personas/<character-id>.json
+{ "cardId": "elia", "persona": "<1인칭 페르소나>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
+// .storyboard/cache/backgrounds/<background-id>.json
+{ "cardId": "school", "atmosphere": "<장소·시대 분위기 묘사>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
+```
+
+`cardHash`로 카드가 바뀌면 무효화한다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
+
 ## 5. 명령어 (확정)
 
 | 명령어 ID | 표시 이름 | 동작 |
@@ -408,7 +427,49 @@ CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토�
 - `.picktion` 파일 import 및 Picktion 브라우저 저장 포맷과의 **자동 호환·변환**
 - “완성 품질 보장”을 검수 없이 한 번의 모델 응답에 맡기는 방식
 
-## 8. 로드맵
+## 8. 에이전트 협업 모델
+
+장편 생성은 역할이 다른 에이전트들의 협업이다. **감독(Director) 에이전트가 결정적 코드로 서브 에이전트를 순서대로 호출**하고, 검수자 피드백을 해당 서브 에이전트로 라우팅한다. 현재 구현 상당 부분이 이 모델과 1:1 대응하므로, 아래 카탈로그는 **기존 단계를 에이전트로 명명·격상**한 것이다.
+
+### 8.1 에이전트 카탈로그
+
+| 에이전트 | 역할 | 권장 모델 | 현재 구현 |
+|---|---|---|---|
+| **감독(Director)** | 파이프라인 오케스트레이션, 검수 리포트 판단 → 서브 에이전트 재호출 결정 | 최상급 | `novelPipeline`·`sceneGenerationPipeline` |
+| **콘티 작가(Dramaturg)** | 씬을 비트로 분해(누가/어디서/무엇을) | 저가 | `extractSituations` |
+| **페르소나(Persona)** | 캐릭터 카드별 대사·내면. 카드 = 에이전트 | 중간 | `buildPersonas`·`generatePersonaDialogue` |
+| **드로잉(Setting)** | 배경 카드별 장소·시대 분위기/감각 묘사 | 중간 | background → narrative context 주입(능동 묘사는 Phase G-4) |
+| **서술자/문체(Narrator)** | 대사·행동을 일관된 시점·시제·문체의 산문으로 직조 | 중간~최상급 | `applyGenreFormat` |
+| **설정 키퍼(Canon Keeper)** | 책 전체 사실 일관성. `canon.yaml` 소유, 후보 사실 추출/검증 | 중간 | bible/`checkContinuity`. 검수자와 분리(씬 품질 ≠ 전체 세계 일관성) |
+| **검수자(Reviewer)** | draft candidate 품질 점검, Pass/Fail 판정, 이슈 리포트 | 최상급 | `reviseDraftWorkflow`·`critiqueDraft` |
+| **교열(Copy Editor)** | 오탈자·맞춤법. 검수자가 직접 고치는 경량 작업 | 저가 | `grammarCheck` |
+
+### 8.2 오케스트레이션 원칙
+
+- **코드 주도.** 단계 순서는 결정적 TS 코드가 책임진다(restartable·inspectable). 에이전트는 자율 LLM 루프가 아니다.
+- **역할별 모델 차등.** 감독·검수자는 최상급, 콘티·페르소나·드로잉·교열은 저가 모델을 쓸 수 있다. 작업별 provider/model 배정(`storyboard.tasks` 설정)을 그대로 재사용하므로 별도 인프라가 필요 없다.
+
+### 8.3 검수 피드백 라우팅 (Phase G-3)
+
+현재 review→revise는 draft 본문을 통째로 재작성한다. 이를 **이슈에 타깃 메타데이터**를 부여해 해당 에이전트만 부분 재생성하도록 바꾼다.
+
+```text
+ReviewIssue {
+  severity: "high" | "low"
+  category: "voice" | "purpose" | "repetition" | "continuity" | "grammar"
+  target?: { agent: "persona" | "setting" | "narrator" | "canon", cardId?: string }
+  note: string
+}
+```
+
+- `category → target.agent` 매핑은 **결정적 규칙**이다(감독이 LLM으로 추론하지 않음): voice→persona(cardId), continuity→canon, repetition/문체→narrator, grammar→copy-editor(검수자 직접 수정).
+- 감독은 타깃별로 그룹핑해 해당 에이전트만 재호출하고, 다른 단계는 씬 캐시(4.6)·카드 메모리(4.9)에서 재사용한다. 타깃이 없는 전역 이슈일 때만 전체 재작성으로 폴백한다.
+
+### 8.4 비목표
+
+- 에이전트 간 디베이트·합의 루프, 우선순위 큐·리소스 스케줄러, 에이전트 동적 생성. 현 성숙도에서 과설계이며, 복잡도가 정당화될 때 재고한다.
+
+## 9. 로드맵
 
 현재 구현은 Phase A~F의 초기 세로 절편을 갖췄다. 아래는 구현된 범위와 남은 확장 방향을 함께 기록한다.
 
@@ -456,14 +517,23 @@ CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토�
 - 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행 중 하나를 고를 수 있다.
 - 문서 export(PDF/DOCX)와 매우 긴 원고의 분할 검사는 후속에서 다룬다.
 
-## 9. 환경
+### Phase G: Multi-Agent Collaboration (계획)
+
+§8의 협업 모델을 단계적으로 구현한다.
+
+- **G-1 에이전트 명명·격상**: 기존 파이프라인 단계를 §8.1 카탈로그의 에이전트로 명명·정합(코드 동작 변경 없음, 문서/역할 정리).
+- **G-2 카드 단위 영속 메모리**: 페르소나/배경을 `.storyboard/cache/personas/`·`backgrounds/`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
+- **G-3 검수 이슈 라우팅**: `ReviewIssue.target`(§8.3)과 결정적 `category→agent` 매핑을 도입해, 검수 이슈를 해당 에이전트의 부분 재생성으로 라우팅. 전역 이슈만 전체 재작성으로 폴백.
+- **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장.
+
+## 10. 환경
 
 - VSCode `^1.90.0` 이상
 - Node.js 18+ (extension host)
 - Repository: `maroomir/storyboard` (신규)
 - License: Apache-2.0
 
-## 10. 참고
+## 11. 참고
 
 - 상세 마이그레이션 계획은 로컬 `.doc/plan/storyboard-plan.md`(비추적)에 있다.
 - 기존 Picktion 저장소 (`maroomir/picktion`)는 그대로 유지(archive 예정)되며, 본 컨셉/계획 문서는 새 `maroomir/storyboard` 저장소의 출발점이 된다.
