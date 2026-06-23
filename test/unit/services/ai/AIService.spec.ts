@@ -173,6 +173,31 @@ describe("StoryboardAIService", () => {
     expect(capture.lastMessages?.[1]?.content).toContain("이건 정말루 중요해.")
   })
 
+  it("skips the model call and returns nothing when no beats are provided for coverage", async () => {
+    const capture: MessageCapture = {}
+    const service = createAIService({ completionText: "[]", capture })
+
+    await expect(service.checkSceneCoverage([], "엘리아가 복도를 걸었다.")).resolves.toEqual([])
+    expect(capture.lastMessages).toBeUndefined()
+  })
+
+  it("calls the registry once and coerces the scene-coverage response", async () => {
+    const capture: MessageCapture = {}
+    const service = createAIService({
+      completionText: '[{"index":2,"status":"missing","note":"잠긴 문 장면이 빠짐"},{"index":5,"status":"missing"}]',
+      capture
+    })
+
+    const issues = await service.checkSceneCoverage(
+      ["엘리아가 복도를 걷는다.", "잠긴 문 앞에 선다.", "문이 열린다."],
+      "엘리아는 복도를 걸었고 문이 열렸다."
+    )
+
+    expect(issues).toEqual([{ index: 2, status: "missing", note: "잠긴 문 장면이 빠짐" }])
+    expect(capture.lastMessages).toBeDefined()
+    expect(capture.lastMessages?.[1]?.content).toContain("엘리아는 복도를 걸었고 문이 열렸다.")
+  })
+
   it("uses xs prompt variant when provider is ollama", async () => {
     const capture: MessageCapture = {}
     const service = createAIService({ completionText: "[]", capture, defaultProvider: "ollama" })

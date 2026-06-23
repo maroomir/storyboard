@@ -24,6 +24,7 @@ import { GrammarCheckPrompt } from "./prompts/grammarCheck"
 import { InlineCompletionPrompt } from "./prompts/inlineCompletion"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
+import { SceneCoveragePrompt } from "./prompts/sceneCoverage"
 import { SituationExtractionPrompt } from "./prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "./prompts/traitsExtraction"
 import { selectPromptVariant } from "./prompts/variant"
@@ -38,6 +39,7 @@ import {
   type OutlineSynopsis
 } from "@/shared/outline"
 import { coerceCritiqueIssues, type DraftCritiqueIssue, type Severity } from "@/shared/draftReview"
+import { coerceSceneCoverage, type SceneCoverageIssue } from "@/shared/sceneCoverage"
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[]
@@ -274,6 +276,22 @@ export class StoryboardAIService {
     }
 
     return parsedArray.flatMap((value) => toContinuityIssue(value))
+  }
+
+  public async checkSceneCoverage(
+    beats: readonly string[],
+    draft: string,
+    options: GenerateTextOptions = {}
+  ): Promise<SceneCoverageIssue[]> {
+    if (beats.length === 0) {
+      return []
+    }
+
+    const variant = this.resolvePromptVariant("sceneCoverage", options)
+    const prompt = SceneCoveragePrompt.build(beats, draft, variant)
+    const response = await this.generateWithDefaults("sceneCoverage", prompt, SceneCoveragePrompt.config, options)
+
+    return coerceSceneCoverage(response.text, beats.length)
   }
 
   public async completeInline(
