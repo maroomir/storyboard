@@ -98,71 +98,64 @@ export class AiProviderRegistry {
   }
 
   private async createProvider(providerId: AiProviderId, modelOverride?: string): Promise<AiProvider> {
-    if (providerId === "mock") {
-      return new MockAiProvider()
+    switch (providerId) {
+      case "mock":
+        return new MockAiProvider()
+      case "openai":
+      case "claude":
+      case "google":
+        return this.createApiKeyProvider(providerId, modelOverride)
+      case "ollama":
+        return this.createOllamaProvider(modelOverride)
+      case "claude-code":
+      case "codex":
+        return this.createCliProvider(providerId, modelOverride)
+      default:
+        throw new AiProviderError(
+          "provider-not-registered",
+          providerId,
+          `${providerId} provider는 아직 PR-3b에서 등록되지 않았습니다.`
+        )
+    }
+  }
+
+  private async createApiKeyProvider(
+    providerId: "openai" | "claude" | "google",
+    modelOverride?: string
+  ): Promise<AiProvider> {
+    const config = this.options.configBridge.getProviderConfig(providerId)
+    const apiKey = await this.options.secretStore.getApiKey(providerId)
+    const model = modelOverride ?? config.model
+
+    switch (providerId) {
+      case "openai":
+        return new OpenAiProvider({ apiKey, model, createClient: this.options.createOpenAiClient })
+      case "claude":
+        return new ClaudeProvider({ apiKey, model, createClient: this.options.createClaudeClient })
+      case "google":
+        return new GoogleProvider({ apiKey, model, createClient: this.options.createGoogleClient })
+    }
+  }
+
+  private createOllamaProvider(modelOverride?: string): AiProvider {
+    const config = this.options.configBridge.getProviderConfig("ollama")
+    return new OllamaProvider({
+      baseUrl: config.baseUrl,
+      model: modelOverride ?? config.model,
+      createClient: this.options.createOllamaClient
+    })
+  }
+
+  private createCliProvider(providerId: "claude-code" | "codex", modelOverride?: string): AiProvider {
+    const config = this.options.configBridge.getProviderConfig(providerId)
+    const settings = {
+      command: config.command,
+      model: modelOverride ?? config.model,
+      generateTimeoutMs: config.timeoutMs,
+      createRunner: this.options.createCliRunner
     }
 
-    if (providerId === "openai") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new OpenAiProvider({
-        apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: modelOverride ?? config.model,
-        createClient: this.options.createOpenAiClient
-      })
-    }
-
-    if (providerId === "claude") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new ClaudeProvider({
-        apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: modelOverride ?? config.model,
-        createClient: this.options.createClaudeClient
-      })
-    }
-
-    if (providerId === "google") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new GoogleProvider({
-        apiKey: await this.options.secretStore.getApiKey(providerId),
-        model: modelOverride ?? config.model,
-        createClient: this.options.createGoogleClient
-      })
-    }
-
-    if (providerId === "ollama") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new OllamaProvider({
-        baseUrl: config.baseUrl,
-        model: modelOverride ?? config.model,
-        createClient: this.options.createOllamaClient
-      })
-    }
-
-    if (providerId === "claude-code") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new ClaudeCodeProvider({
-        command: config.command,
-        model: modelOverride ?? config.model,
-        generateTimeoutMs: config.timeoutMs,
-        createRunner: this.options.createCliRunner
-      })
-    }
-
-    if (providerId === "codex") {
-      const config = this.options.configBridge.getProviderConfig(providerId)
-      return new CodexProvider({
-        command: config.command,
-        model: modelOverride ?? config.model,
-        generateTimeoutMs: config.timeoutMs,
-        createRunner: this.options.createCliRunner
-      })
-    }
-
-    throw new AiProviderError(
-      "provider-not-registered",
-      providerId,
-      `${providerId} provider는 아직 PR-3b에서 등록되지 않았습니다.`
-    )
+    return providerId === "claude-code" ? new ClaudeCodeProvider(settings) : new CodexProvider(settings)
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
