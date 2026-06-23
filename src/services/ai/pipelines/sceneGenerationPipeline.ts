@@ -1,6 +1,7 @@
 import type { SceneContext } from "@/core/sceneContext"
+import type { Background } from "@/domain/Background"
 import { createEmptyBackground } from "@/domain/Background"
-import type { CharacterCard } from "@/shared/card"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
 import type { ProjectFormat } from "@/shared/project"
 import type { StyleDirective } from "@/shared/styleDirective"
 import type { GenerateTextOptions, SituationWithCharacters, StoryboardAIService } from "../AIService"
@@ -8,7 +9,7 @@ import type { AiProviderId, EntityRef } from "../types"
 
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
-  "extractSituations" | "createCharacterPersona" | "generatePersonaDialogue" | "applyGenreFormat"
+  "extractSituations" | "createCharacterPersona" | "describeBackground" | "generatePersonaDialogue" | "applyGenreFormat"
 >
 
 export type SceneGenerationPipelineStage =
@@ -27,6 +28,11 @@ export interface SceneGenerationPipelineTaskProviders {
 export interface PersonaMemoryStore {
   readonly load: (card: CharacterCard) => Promise<string | undefined>
   readonly save: (card: CharacterCard, persona: string) => Promise<void>
+}
+
+export interface BackgroundMemoryStore {
+  readonly load: (card: BackgroundCard) => Promise<string | undefined>
+  readonly save: (card: BackgroundCard, atmosphere: string) => Promise<void>
 }
 
 export class SceneGenerationPipelineCancelledError extends Error {
@@ -49,6 +55,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly backgroundId?: string
   readonly useContextCondense?: boolean
   readonly personaStore?: PersonaMemoryStore
+  readonly backgroundStore?: BackgroundMemoryStore
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -203,6 +210,28 @@ export function looksLikeFormatMetaLeak(text: string): boolean {
   return hasLengthExcuse && offersOptions
 }
 
+async function describeBackgroundForScene(
+  card: BackgroundCard,
+  aiService: Pick<StoryboardAIService, "describeBackground">,
+  store: BackgroundMemoryStore | undefined
+): Promise<Background> {
+  const cached = await store?.load(card)
+  let atmosphere = cached
+  if (atmosphere === undefined) {
+    atmosphere = await aiService.describeBackground(card, {
+      attribution: { primary: { kind: "background", id: card.id } }
+    })
+    await store?.save(card, atmosphere)
+  }
+
+  if (atmosphere.length === 0) {
+    return card
+  }
+
+  const description = card.description ? `${card.description}\n${atmosphere}` : atmosphere
+  return { ...card, description }
+}
+
 function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   if (shouldCancel?.()) {
     throw new SceneGenerationPipelineCancelledError()
@@ -296,13 +325,17 @@ export async function runSceneGenerationPipeline(
     assertNotCancelled(shouldCancel)
   }
 
-  const background = context.background ?? createEmptyBackground("scene-default", "미정")
+  const backgroundCard = context.background ?? createEmptyBackground("scene-default", "미정")
+  const background = context.background
+    ? await describeBackgroundForScene(context.background, aiService, input.backgroundStore)
+    : backgroundCard
   const dialoguePieces: string[] = []
   const dialogueOptions: GenerateTextOptions = {
     ...buildGenerateOptions(providers, "personaDialogue"),
     styleDirective
   }
   const backgroundParticipantId = context.background?.id ?? input.backgroundId
+  assertNotCancelled(shouldCancel)
 
   for (let i = 0; i < situations.length; i++) {
     const situation = situations[i]

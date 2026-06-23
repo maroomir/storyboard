@@ -3,11 +3,17 @@ import * as vscode from "vscode"
 import type { StoryboardProjectPaths } from "../core/pathConventions"
 import { uriExists } from "../core/workspace"
 import { vscodeFsAdapter } from "../core/vscodeFileSystem"
-import type { CharacterCard } from "../shared/card"
-import type { PersonaMemoryStore } from "../services/ai/pipelines/sceneGenerationPipeline"
+import type { BackgroundCard, CharacterCard } from "../shared/card"
+import type {
+  BackgroundMemoryStore,
+  PersonaMemoryStore
+} from "../services/ai/pipelines/sceneGenerationPipeline"
 import {
+  computeBackgroundCardHash,
   computePersonaCardHash,
+  readBackgroundMemoryFile,
   readPersonaMemoryFile,
+  writeBackgroundMemoryFile,
   writePersonaMemoryFile
 } from "./cardMemory"
 
@@ -53,6 +59,37 @@ export function createPersonaMemoryStore(
         persona,
         updatedThroughScene: sceneStem,
         cardHash: computePersonaCardHash(card)
+      })
+    }
+  }
+}
+
+export function createBackgroundMemoryStore(
+  paths: StoryboardProjectPaths,
+  sceneStem: string
+): BackgroundMemoryStore {
+  return {
+    async load(card: BackgroundCard): Promise<string | undefined> {
+      const uri = backgroundMemoryFilePath(paths, card.id)
+
+      if (!(await uriExists(uri))) {
+        return undefined
+      }
+
+      try {
+        const record = await readBackgroundMemoryFile(uri, vscodeFsAdapter)
+        return record.cardHash === computeBackgroundCardHash(card) ? record.atmosphere : undefined
+      } catch {
+        return undefined
+      }
+    },
+    async save(card: BackgroundCard, atmosphere: string): Promise<void> {
+      await ensureBackgroundMemoryDirectory(paths)
+      await writeBackgroundMemoryFile(backgroundMemoryFilePath(paths, card.id), vscodeFsAdapter, {
+        cardId: card.id,
+        atmosphere,
+        updatedThroughScene: sceneStem,
+        cardHash: computeBackgroundCardHash(card)
       })
     }
   }

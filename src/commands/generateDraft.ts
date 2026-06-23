@@ -20,7 +20,7 @@ import {
   type SceneCacheRecord
 } from "../files/sceneCache"
 import { ensureSceneCacheDirectory, sceneCacheFilePath } from "../files/sceneCacheWorkspace"
-import { createPersonaMemoryStore } from "../files/cardMemoryWorkspace"
+import { createBackgroundMemoryStore, createPersonaMemoryStore } from "../files/cardMemoryWorkspace"
 import { parseSceneFileName } from "../shared/scene"
 import { buildStyleDirective } from "../shared/styleDirective"
 import { runReviseGateForScene } from "./reviseDraft"
@@ -294,7 +294,8 @@ export async function generateDraftForWorkspaceSceneWorkflow(
       },
       shouldCancel: options.shouldCancel,
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
-      personaStore: createPersonaMemoryStore(paths, scene.stem)
+      personaStore: createPersonaMemoryStore(paths, scene.stem),
+      backgroundStore: createBackgroundMemoryStore(paths, scene.stem)
     })
 
     const draft = createDraft({

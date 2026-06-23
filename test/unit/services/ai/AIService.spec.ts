@@ -40,6 +40,22 @@ describe("StoryboardAIService", () => {
     ).resolves.toBe("나는 엘리아다.")
   })
 
+  it("returns trimmed background atmosphere through the registry", async () => {
+    const service = createAIService({ completionText: "  분필 냄새가 떠도는 오후의 정적.  " })
+
+    await expect(
+      service.describeBackground({
+        type: "location",
+        id: "school-hall",
+        name: "복도",
+        locationKind: "place",
+        description: "낡은 복도",
+        characterIds: [],
+        tags: ["학교"]
+      })
+    ).resolves.toBe("분필 냄새가 떠도는 오후의 정적.")
+  })
+
   it("parses traits bullets per character from model output", async () => {
     const service = createAIService({
       completionText: `- 활발하게 교실 앞으로 걸어 나섬

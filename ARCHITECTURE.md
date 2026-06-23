@@ -322,9 +322,9 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 ### 4.9 `.storyboard/cache/personas/`·`backgrounds/` (에이전트 영속 메모리)
 
-> 페르소나 메모리는 구현됨(Phase G-2). 배경 메모리(`backgrounds/`)는 Phase G-4에서 능동 묘사와 함께 채운다.
+> 페르소나 메모리(`personas/`)와 배경 메모리(`backgrounds/`) 모두 구현됨(Phase G-2·G-4).
 
-카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다.
+카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가, 배경 분위기 묘사 캐시는 대화 생성 직전 드로잉 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다.
 
 ```json
 // .storyboard/cache/personas/<character-id>.json
@@ -438,7 +438,7 @@ CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토�
 | **감독(Director)** | 파이프라인 오케스트레이션, 검수 리포트 판단 → 서브 에이전트 재호출 결정 | 최상급 | `novelPipeline`·`sceneGenerationPipeline` |
 | **콘티 작가(Dramaturg)** | 씬을 비트로 분해(누가/어디서/무엇을) | 저가 | `extractSituations` |
 | **페르소나(Persona)** | 캐릭터 카드별 대사·내면. 카드 = 에이전트 | 중간 | `buildPersonas`·`generatePersonaDialogue` |
-| **드로잉(Setting)** | 배경 카드별 장소·시대 분위기/감각 묘사 | 중간 | background → narrative context 주입(능동 묘사는 Phase G-4) |
+| **드로잉(Setting)** | 배경 카드별 장소·시대 분위기/감각 묘사 | 중간 | `describeBackground`(backgroundDescription 작업)로 분위기 묘사 생성→대화에 주입, `backgrounds/` 메모리 캐싱 |
 | **서술자/문체(Narrator)** | 대사·행동을 일관된 시점·시제·문체의 산문으로 직조 | 중간~최상급 | `applyGenreFormat` |
 | **설정 키퍼(Canon Keeper)** | 책 전체 사실 일관성. `canon.yaml` 소유, 후보 사실 추출/검증 | 중간 | bible/`checkContinuity`. 검수자와 분리(씬 품질 ≠ 전체 세계 일관성) |
 | **검수자(Reviewer)** | draft candidate 품질 점검, Pass/Fail 판정, 이슈 리포트 | 최상급 | `reviseDraftWorkflow`·`critiqueDraft` |
@@ -525,7 +525,7 @@ ReviewIssue {
 - **G-1 에이전트 명명·격상**: 기존 파이프라인 단계를 §8.1 카탈로그의 에이전트로 명명·정합(코드 동작 변경 없음, 문서/역할 정리).
 - **G-2 카드 단위 영속 메모리**: 페르소나/배경을 `.storyboard/cache/personas/`·`backgrounds/`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
 - **G-3 검수 이슈 라우팅**: `ReviewIssue.target`(§8.3)과 결정적 `category→agent` 매핑을 도입해, 검수 이슈를 해당 에이전트의 부분 재생성으로 라우팅. 전역 이슈만 전체 재작성으로 폴백.
-- **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장.
+- **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장. 구현됨 — `backgroundDescription` 작업으로 분위기를 생성해 대화 컨텍스트에 주입하고 `backgrounds/` 메모리(4.9)에 `cardHash` 무효화로 캐싱한다.
 
 ## 10. 환경
 

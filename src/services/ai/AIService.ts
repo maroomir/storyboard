@@ -22,6 +22,7 @@ import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
 import { InlineCompletionPrompt } from "./prompts/inlineCompletion"
+import { BackgroundDescriptionPrompt } from "./prompts/backgroundDescription"
 import { PersonaDialoguePrompt } from "./prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "./prompts/personaGeneration"
 import { SceneCoveragePrompt } from "./prompts/sceneCoverage"
@@ -134,6 +135,22 @@ export class StoryboardAIService {
     const response = await this.generateText(
       "personaGeneration",
       toPromptMessages(prompt),
+      options
+    )
+
+    return response.text.trim()
+  }
+
+  public async describeBackground(
+    background: Background,
+    options: GenerateTextOptions = {}
+  ): Promise<string> {
+    const variant = this.resolvePromptVariant("backgroundDescription", options)
+    const prompt = BackgroundDescriptionPrompt.build(background, variant)
+    const response = await this.generateWithDefaults(
+      "backgroundDescription",
+      prompt,
+      BackgroundDescriptionPrompt.config,
       options
     )
 

@@ -495,6 +495,93 @@ describe("runSceneGenerationPipeline", () => {
     expect(result.draftBody).toBe("formatted(상황1)\n\nformatted(상황2)\n\nformatted(상황3)")
   })
 
+  it("describes the background and injects the atmosphere into the dialogue background", async () => {
+    const hallBackground: BackgroundCard = {
+      type: "location",
+      id: "school-hall",
+      name: "복도",
+      locationKind: "place",
+      description: "낡은 복도",
+      characterIds: [],
+      tags: []
+    }
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "복도" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p")
+    ai.describeBackground.mockResolvedValueOnce("분필 냄새가 떠도는 오후의 정적")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", hallBackground),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.describeBackground).toHaveBeenCalledWith(hallBackground, expect.anything())
+
+    const dialogueBackground = ai.generatePersonaDialogue.mock.calls[0]?.[2] as BackgroundCard
+    expect(dialogueBackground.description).toContain("낡은 복도")
+    expect(dialogueBackground.description).toContain("분필 냄새가 떠도는 오후의 정적")
+  })
+
+  it("reuses a cached atmosphere from the background store", async () => {
+    const hallBackground: BackgroundCard = {
+      type: "location",
+      id: "school-hall",
+      name: "복도",
+      locationKind: "place",
+      description: "낡은 복도",
+      characterIds: [],
+      tags: []
+    }
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "복도" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    const store = {
+      load: vi.fn(async () => "캐시된 분위기"),
+      save: vi.fn(async () => {})
+    }
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", hallBackground),
+      aiService: ai,
+      format: "novel",
+      backgroundStore: store
+    })
+
+    expect(store.load).toHaveBeenCalledWith(hallBackground)
+    expect(ai.describeBackground).not.toHaveBeenCalled()
+    expect(store.save).not.toHaveBeenCalled()
+
+    const dialogueBackground = ai.generatePersonaDialogue.mock.calls[0]?.[2] as BackgroundCard
+    expect(dialogueBackground.description).toContain("캐시된 분위기")
+  })
+
+  it("does not describe a background when the scene has none", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "단일" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("p")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.describeBackground).not.toHaveBeenCalled()
+  })
+
   it("reuses a cached persona from the store instead of regenerating it", async () => {
     const ai = createRecordingAiService()
     ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "단일" }])
@@ -615,12 +702,14 @@ describe("looksLikeFormatMetaLeak", () => {
 function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly extractSituations: ReturnType<typeof vi.fn>
   readonly createCharacterPersona: ReturnType<typeof vi.fn>
+  readonly describeBackground: ReturnType<typeof vi.fn>
   readonly generatePersonaDialogue: ReturnType<typeof vi.fn>
   readonly applyGenreFormat: ReturnType<typeof vi.fn>
 } {
   return {
     extractSituations: vi.fn(async () => []),
     createCharacterPersona: vi.fn(async () => ""),
+    describeBackground: vi.fn(async () => ""),
     generatePersonaDialogue: vi.fn(async () => ""),
     applyGenreFormat: vi.fn(async () => "")
   }
