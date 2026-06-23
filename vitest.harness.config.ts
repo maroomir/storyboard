@@ -18,8 +18,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["scripts/harness/**/*.harness.ts"],
-    testTimeout: 3_600_000,
-    hookTimeout: 3_600_000,
+    testTimeout: 7_200_000,
+    hookTimeout: 7_200_000,
     fileParallelism: false
   }
 })

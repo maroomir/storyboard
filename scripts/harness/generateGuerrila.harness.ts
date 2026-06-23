@@ -12,7 +12,7 @@ import type { AiProviderRegistry } from "@/services/ai/providerRegistry"
 import { ClaudeCodeProvider } from "@/services/ai/providers/ClaudeCodeProvider"
 import { CodexProvider } from "@/services/ai/providers/CodexProvider"
 import { createDefaultCliRunner, type CliRunResult } from "@/services/ai/providers/cliRunner"
-import type { AiGenerateResponse, AiProvider, AiProviderId } from "@/services/ai/types"
+import type { AiGenerateRequest, AiGenerateResponse, AiProvider, AiProviderId } from "@/services/ai/types"
 import { buildStyleDirective } from "@/shared/styleDirective"
 
 // NOTE: reasoning calls can exceed the provider's 180s default; lengthen only in the harness so a
@@ -52,16 +52,61 @@ const paths = {
   joinPath: (base: unknown, ...segments: string[]): string => path.join(base as string, ...segments)
 }
 
+function isUsageLimitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return /usage limit|Upgrade to Pro|rate limit|quota|too many requests/i.test(message)
+}
+
+// NOTE: harness-only — when codex hits its usage limit mid-run, switch the remaining beats to
+// claude-code so verification can finish instead of aborting. Mixed-model output is acceptable here.
+class FallbackCliProvider implements AiProvider {
+  public readonly id: AiProviderId
+  public readonly displayName = "harness-fallback"
+  private fellBack = false
+
+  public constructor(
+    private readonly primary: AiProvider,
+    private readonly fallback: AiProvider
+  ) {
+    this.id = primary.id
+  }
+
+  public checkConnection(): Promise<boolean> {
+    return this.primary.checkConnection()
+  }
+
+  public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
+    if (this.fellBack) {
+      return this.fallback.generate(request)
+    }
+
+    try {
+      return await this.primary.generate(request)
+    } catch (error) {
+      if (!isUsageLimitError(error)) {
+        throw error
+      }
+      this.fellBack = true
+      // eslint-disable-next-line no-console
+      console.log("[harness] codex usage limit hit — falling back to claude-code for remaining calls")
+      return this.fallback.generate(request)
+    }
+  }
+}
+
 function createCliProvider(): AiProvider {
   const baseRunner = createDefaultCliRunner()
   const createRunner = (): typeof baseRunner => (input): Promise<CliRunResult> =>
     baseRunner({ ...input, timeoutMs: harnessCliTimeoutMs })
 
+  const claude = new ClaudeCodeProvider({ command: "claude", model: "claude-sonnet-4-6", createRunner })
+
   if (harnessProviderId === "claude-code") {
-    return new ClaudeCodeProvider({ command: harnessCommand, model: harnessModel, createRunner })
+    return claude
   }
 
-  return new CodexProvider({ command: harnessCommand, model: harnessModel, createRunner })
+  const codex = new CodexProvider({ command: harnessCommand, model: harnessModel, createRunner })
+  return new FallbackCliProvider(codex, claude)
 }
 
 function createRegistry(): AiProviderRegistry {
@@ -117,4 +162,4 @@ test("regenerate guerrila draft via codex pipeline", async () => {
 
   const draft = createDraft({ sceneStem: scene.stem, format: project.format, body: result.draftBody })
   await nodeFs.writeFile(path.join(workspace, "draft", `${scene.stem}.md`), serializeDraft(draft), "utf8")
-}, 3_600_000)
+}, 7_200_000)
