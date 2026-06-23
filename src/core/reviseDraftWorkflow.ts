@@ -12,6 +12,12 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "../shared/draftReview"
+import {
+  adaptContinuityIssues,
+  adaptCritiqueIssues,
+  buildScopedInstructions,
+  routeReviewIssues
+} from "../shared/reviewRouting"
 import type { ProjectSetting } from "../shared/project"
 import { buildStyleDirective } from "../shared/styleDirective"
 
@@ -125,16 +131,47 @@ export async function runReviseDraftWorkflow(
 
     options.onProgress?.(`재작성 중 (${revisionCount + 1}/${maxIterations})…`)
 
-    body = await aiService.reviseDraft(
-      {
-        body,
-        format: draft.format,
-        instructions: lastInstructions,
-        intent,
-        facts: factLines
-      },
-      { providerId: registry.getTaskProvider("draftRevision"), attribution }
-    )
+    const reviewIssues = [
+      ...adaptContinuityIssues(continuityIssues),
+      ...adaptCritiqueIssues(critiqueIssues, context.characters)
+    ]
+    const routing = routeReviewIssues(reviewIssues)
+    const cardNameById = new Map(context.characters.map((character) => [character.id, character.name] as const))
+
+    // 타깃 그룹은 에이전트별로 스코프 재작성하고, 타깃 없는 전역 이슈만 전체 재작성으로 한 번 더 덮는다.
+    const revisionPasses =
+      routing.groups.length > 0
+        ? [
+            ...routing.groups.map((group) =>
+              buildScopedInstructions(group, (cardId) => cardNameById.get(cardId))
+            ),
+            ...(routing.global.length > 0 ? [lastInstructions] : [])
+          ]
+        : [lastInstructions]
+
+    let appliedAnyPass = false
+
+    for (const instructions of revisionPasses) {
+      if (isCancelled()) {
+        break
+      }
+
+      body = await aiService.reviseDraft(
+        {
+          body,
+          format: draft.format,
+          instructions,
+          intent,
+          facts: factLines
+        },
+        { providerId: registry.getTaskProvider("draftRevision"), attribution }
+      )
+      appliedAnyPass = true
+    }
+
+    if (!appliedAnyPass) {
+      break
+    }
 
     await writeDraftFile(draftUri, vscodeFsAdapter, createDraft({ sceneStem, format: draft.format, body }))
     revisionCount += 1

@@ -462,8 +462,9 @@ ReviewIssue {
 }
 ```
 
-- `category → target.agent` 매핑은 **결정적 규칙**이다(감독이 LLM으로 추론하지 않음): voice→persona(cardId), continuity→canon, repetition/문체→narrator, grammar→copy-editor(검수자 직접 수정).
+- `category → target.agent` 매핑은 **결정적 규칙**이다(감독이 LLM으로 추론하지 않음): voice→persona(cardId), continuity→canon, repetition·purpose→narrator, grammar→copy-editor(검수자 직접 수정).
 - 감독은 타깃별로 그룹핑해 해당 에이전트만 재호출하고, 다른 단계는 씬 캐시(4.6)·카드 메모리(4.9)에서 재사용한다. 타깃이 없는 전역 이슈일 때만 전체 재작성으로 폴백한다.
+- 구현됨(Phase G-3). `src/shared/reviewRouting.ts`가 `category→agent` 결정 매핑과 `routeReviewIssues`(canon→persona→narrator 고정 순서)를 제공하고, `reviseDraftWorkflow`가 그룹별로 스코프된 지시를 만들어 `reviseDraft`를 순차 호출한다. `voice.cardId`는 `excerpt`를 등장인물 name·alias와 대조해 best-effort로 채우며(단일 매칭일 때만), 매칭 실패 시 persona 그룹을 등장 캐릭터 전체 대상으로 처리한다. grammar는 현 revise 루프에 검사 경로가 없어 라우팅 대상에서 제외하고 타입에만 둔다. setting 라우팅은 G-4 전까지 비활성이다.
 
 ### 8.4 비목표
 

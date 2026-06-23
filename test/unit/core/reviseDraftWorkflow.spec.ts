@@ -131,7 +131,8 @@ describe("runReviseDraftWorkflow", () => {
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
     expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
-    expect(reviseDraftMock).toHaveBeenCalledTimes(2)
+    // continuity(canon)·voice(persona) 두 타깃 그룹을 매 반복마다 스코프 재작성: 2그룹 × 2반복.
+    expect(reviseDraftMock).toHaveBeenCalledTimes(4)
     expect(result.instructions.length).toBeGreaterThan(0)
   })
 
@@ -177,6 +178,30 @@ describe("runReviseDraftWorkflow", () => {
     expect(reviseDraftMock).not.toHaveBeenCalled()
   })
 
+  it("G-3: makes one scoped revision call when only a single agent is targeted", async () => {
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.passed).toBe(true)
+    expect(result.revisionCount).toBe(1)
+    // continuity 단독 → canon 그룹 1개 → 스코프 호출 1회.
+    expect(reviseDraftMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("G-3: makes one scoped call per targeted agent across canon/persona/narrator", async () => {
+    const purposeCritique: DraftCritiqueIssue = { category: "purpose", severity: "high", comment: "목적 미달" }
+    checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
+    critiqueDraftMock.mockResolvedValueOnce([highCritique, purposeCritique]).mockResolvedValue([])
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.passed).toBe(true)
+    expect(result.revisionCount).toBe(1)
+    // canon(continuity) + persona(voice) + narrator(purpose) 세 그룹 → 한 반복에 3회 스코프 재작성.
+    expect(reviseDraftMock).toHaveBeenCalledTimes(3)
+  })
+
   it("QAS-C3-12: does not early-pass on a high score when reviseScoreThreshold is 0", async () => {
     const lowCritique: DraftCritiqueIssue = { category: "repetition", severity: "low", comment: "사소함" }
     checkContinuityMock.mockResolvedValue([blockingContinuity])
@@ -187,6 +212,7 @@ describe("runReviseDraftWorkflow", () => {
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
     expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
-    expect(reviseDraftMock).toHaveBeenCalledTimes(2)
+    // continuity(canon)·repetition(narrator) 두 타깃 그룹을 매 반복마다 스코프 재작성: 2그룹 × 2반복.
+    expect(reviseDraftMock).toHaveBeenCalledTimes(4)
   })
 })
