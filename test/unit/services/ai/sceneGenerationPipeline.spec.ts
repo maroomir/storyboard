@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from "vitest"
 
 import type { SceneContext } from "@/core/sceneContext"
 import {
+  chunkDialoguePiecesByBudget,
   dedupeSituations,
+  looksLikeFormatMetaLeak,
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
@@ -458,6 +460,105 @@ describe("runSceneGenerationPipeline", () => {
         }
       })
     )
+  })
+
+  it("formats oversize dialogue in one chunk per piece and joins the parts", async () => {
+    const progress: Array<{ readonly stage: SceneGenerationPipelineStage; readonly current: number; readonly total: number }> =
+      []
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "상황1" },
+      { characters: ["엘리아"], situation: "상황2" },
+      { characters: ["엘리아"], situation: "상황3" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockImplementation(async (situation) => `${situation}|${"가".repeat(9000)}`)
+    ai.applyGenreFormat.mockImplementation(async (dialogue) => `formatted(${dialogue.split("|")[0]})`)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      onProgress: (stage, current, total) => {
+        progress.push({ stage, current, total })
+      }
+    })
+
+    expect(ai.applyGenreFormat).toHaveBeenCalledTimes(3)
+    expect(progress.filter((entry) => entry.stage === "applyFormat")).toEqual([
+      { stage: "applyFormat", current: 1, total: 3 },
+      { stage: "applyFormat", current: 2, total: 3 },
+      { stage: "applyFormat", current: 3, total: 3 }
+    ])
+    expect(result.draftBody).toBe("formatted(상황1)\n\nformatted(상황2)\n\nformatted(상황3)")
+  })
+
+  it("keeps the raw dialogue when the formatter leaks a meta message", async () => {
+    const metaLeak = "분량 한계가 있어 한 번에 다 쓸 수 없습니다. 연재형과 압축형 중 어느 쪽을 원하시나요?"
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "상황1" }])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("엘리아: 복도를 걷는 장면 대사")
+    ai.applyGenreFormat.mockResolvedValueOnce(metaLeak)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.draftBody).not.toContain(metaLeak)
+    expect(result.draftBody).toBe("엘리아: 복도를 걷는 장면 대사")
+  })
+})
+
+describe("chunkDialoguePiecesByBudget", () => {
+  it("returns no chunks for an empty piece list", () => {
+    expect(chunkDialoguePiecesByBudget([], 8000)).toEqual([])
+  })
+
+  it("packs pieces that fit within the budget into a single chunk", () => {
+    expect(chunkDialoguePiecesByBudget(["a", "bb", "ccc"], 8000)).toEqual([["a", "bb", "ccc"]])
+  })
+
+  it("splits at the boundary where the cumulative length would exceed the budget", () => {
+    expect(chunkDialoguePiecesByBudget(["aaaa", "bbbb", "cc", "dddd"], 8)).toEqual([
+      ["aaaa", "bbbb"],
+      ["cc", "dddd"]
+    ])
+  })
+
+  it("makes a single oversize piece its own chunk", () => {
+    expect(chunkDialoguePiecesByBudget(["aa", "bbbbbb", "cc"], 4)).toEqual([["aa"], ["bbbbbb"], ["cc"]])
+  })
+
+  it("preserves the original order across chunks", () => {
+    const pieces = ["1", "2", "3", "4", "5"]
+    expect(chunkDialoguePiecesByBudget(pieces, 2).flat()).toEqual(pieces)
+  })
+})
+
+describe("looksLikeFormatMetaLeak", () => {
+  it("flags text that has both a length excuse and an options offer", () => {
+    expect(
+      looksLikeFormatMetaLeak("분량 한계가 있어 한 번에 다 쓸 수 없습니다. 연재형과 압축형 중 어느 쪽을 원하시나요?")
+    ).toBe(true)
+  })
+
+  it("does not flag normal prose", () => {
+    expect(looksLikeFormatMetaLeak("엘리아는 복도를 걸으며 창밖을 바라보았다.")).toBe(false)
+  })
+
+  it("does not flag text with only a length excuse", () => {
+    expect(looksLikeFormatMetaLeak("분량 한계가 있어 한 번에 다 쓸 수 없습니다.")).toBe(false)
+  })
+
+  it("does not flag text with only an options offer", () => {
+    expect(looksLikeFormatMetaLeak("연재형과 압축형 중 어느 쪽을 원하시나요?")).toBe(false)
   })
 })
 

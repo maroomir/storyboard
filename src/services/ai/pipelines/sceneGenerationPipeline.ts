@@ -162,6 +162,41 @@ function selectSituationPersonas(
   return subset.size > 0 ? subset : personasUsed
 }
 
+// NOTE: 모든 대사 조각을 한 번에 포맷하면 모델 출력 한계로 뒷부분 비트가 잘려 나간다. 글자 예산 단위로
+// 조각을 묶어 여러 번 포맷한 뒤 이어 붙여, 27개 비트가 전부 살아남고 분량이 안정적으로 나오게 한다.
+const formatChunkCharBudget = 12000
+
+export function chunkDialoguePiecesByBudget(pieces: readonly string[], maxChars: number): string[][] {
+  const chunks: string[][] = []
+  let current: string[] = []
+  let currentChars = 0
+
+  for (const piece of pieces) {
+    if (current.length > 0 && currentChars + piece.length > maxChars) {
+      chunks.push(current)
+      current = []
+      currentChars = 0
+    }
+    current.push(piece)
+    currentChars += piece.length
+  }
+
+  if (current.length > 0) {
+    chunks.push(current)
+  }
+
+  return chunks
+}
+
+// NOTE: 청크 포맷 호출이 소설 본문 대신 "분량 한계라 연재형/압축형 중 고르라"는 메타 안내를 돌려보내는
+// 경우가 있어, 그게 원고에 박히지 않도록 감지한다. 길이 핑계와 선택지 제시가 함께 있을 때만 메타로 본다.
+export function looksLikeFormatMetaLeak(text: string): boolean {
+  const hasLengthExcuse = /분량[^\n]{0,8}(한계|제한|많|길)|한 ?번에 (다|모두|전부)|토큰 ?(한계|제한|수)/.test(text)
+  const offersOptions =
+    /연재형|압축형|다음 중|어느 (쪽|것|걸)|선택해|골라|옵션|원하시(는|면)|알려 ?주(세요|시면)/.test(text)
+  return hasLengthExcuse && offersOptions
+}
+
 function assertNotCancelled(shouldCancel: (() => boolean) | undefined): void {
   if (shouldCancel?.()) {
     throw new SceneGenerationPipelineCancelledError()
@@ -292,15 +327,27 @@ export async function runSceneGenerationPipeline(
     assertNotCancelled(shouldCancel)
   }
 
-  const joinedDialogue = dialoguePieces.join("\n\n")
-  onProgress?.("applyFormat", 1, 1)
-  assertNotCancelled(shouldCancel)
+  const formatChunks = chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget)
+  const formattedParts: string[] = []
 
-  const draftBody = await aiService.applyGenreFormat(
-    joinedDialogue,
-    format,
-    withAttribution({ ...buildGenerateOptions(providers, "sceneDraft"), styleDirective }, { primary: sceneRef })
-  )
+  for (let i = 0; i < formatChunks.length; i++) {
+    const chunk = formatChunks[i]
+    if (!chunk) {
+      continue
+    }
+    onProgress?.("applyFormat", i + 1, formatChunks.length)
+    const chunkInput = chunk.join("\n\n")
+    const formatted = await aiService.applyGenreFormat(
+      chunkInput,
+      format,
+      withAttribution({ ...buildGenerateOptions(providers, "sceneDraft"), styleDirective }, { primary: sceneRef })
+    )
+    // 메타 누수가 감지되면 원고를 오염시키는 대신 해당 청크의 원본 대사를 그대로 남긴다.
+    formattedParts.push(looksLikeFormatMetaLeak(formatted) ? chunkInput : formatted)
+    assertNotCancelled(shouldCancel)
+  }
+
+  const draftBody = formattedParts.join("\n\n")
 
   return {
     draftBody,
