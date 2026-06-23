@@ -18,7 +18,7 @@ alwaysApply: true
 - Add or update tests when behavior changed.
 - Run focused verification first, then broaden when shared behavior changed.
 - Document new commands, settings, configuration, and user-facing behavior.
-- Keep `.clinerules/`, matching `.cursor/rules/`, and `AGENTS.md` synchronized when policy changes.
+- Keep `.claude/rules/` (canonical), matching `.cursor/rules/`, and `AGENTS.md` synchronized when policy changes.
 
 ## Commit messages
 

@@ -20,13 +20,13 @@ Apply this priority when instructions conflict:
 2. Existing source files and tests.
 3. `package.json` for extension metadata, scripts, activation events, commands, views, menus, and configuration.
 4. Tracked product and architecture documentation.
-5. `.clinerules/` and `AGENTS.md` for AI-agent working rules.
+5. `.claude/rules/` and `AGENTS.md` for AI-agent working rules.
 6. `CLAUDE.md` as the Claude Code rule index.
 
-- `.clinerules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
-- `.clinerules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
-- `.clinerules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
-- `.clinerules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
+- `.claude/rules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
+- `.claude/rules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
+- `.claude/rules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
+- `.claude/rules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 
 If documents conflict in a way that could change behavior, investigate and ask before editing.
 
@@ -42,7 +42,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 - Keep extension host code, shared domain code, and webview UI code separated.
 - Use TypeScript and explicit types for extension messages, state, and command payloads.
 - Prefer small, focused modules over large catch-all files.
-- Follow the clean code rules in `.clinerules/clean-code.md`: optimize for readability, maintainability, testability, and consistent naming/structure.
+- Follow the clean code rules in `.claude/rules/clean-code.md`: optimize for readability, maintainability, testability, and consistent naming/structure.
 - Do not introduce secrets, API keys, or user-private values into source control.
 - If you reference Cline, adapt the idea to `storyboard` rather than importing unrelated complexity.
 
@@ -149,7 +149,7 @@ Start with the smallest useful version of this structure. Add deeper layers only
 - [ ] Package contributions and runtime registrations are aligned.
 - [ ] Disposables are registered or explicitly disposed.
 - [ ] Message contracts are typed and validated where needed.
-- [ ] Code follows `.clinerules/clean-code.md`.
+- [ ] Code follows `.claude/rules/clean-code.md`.
 - [ ] Appropriate project scripts were run, or the verification limitation is stated.
 - [ ] New commands, settings, configuration, or user-facing behavior are documented.
 - [ ] Rule files were updated when architecture, workflow, security, testing, or reporting expectations changed.
@@ -164,7 +164,7 @@ Code should be easy for another person to understand quickly and modify safely.
 - Use comments for intent, constraints, and tradeoffs; avoid comments that repeat implementation.
 - Keep code testable by separating pure logic from VSCode API and webview runtime dependencies.
 
-For the full agent-facing checklist, read `.clinerules/clean-code.md`.
+For the full agent-facing checklist, read `.claude/rules/clean-code.md`.
 
 ## Reference Project Usage
 
@@ -217,10 +217,11 @@ type: Title
 
 ## Rule Synchronization
 
-- Update `.clinerules/` when architecture, security, testing, comments, release, or agent workflow policy changes.
-- Keep the corresponding `.cursor/rules/` summary aligned when Cursor needs the same rule.
+- Rules live canonically in `.claude/rules/` (Claude Code is the main tool). Update them when architecture, security, testing, comments, release, or agent workflow policy changes.
+- Keep the `.cursor/rules/` summary (Cursor) and this `AGENTS.md` (Codex) aligned with `.claude/rules/` when the same rule applies.
+- Skills live canonically in `.claude/skills/` and are mirrored to `.cursor/skills/`.
 - Update `AGENTS.md` when agent workflow, checklists, commit style, or final reporting changes.
-- Update `CLAUDE.md` only when the `.clinerules/` import index changes.
+- Update `CLAUDE.md` only when the `.claude/rules/` import index changes.
 - Update product documentation when user-facing behavior or scope changes.
 
 ## Final Report Format
@@ -238,20 +239,20 @@ Keep the report concise and specific.
 
 ## Related Rule Files
 
-Additional rule files live under `.clinerules/` and are referenced by `CLAUDE.md`.
+Additional rule files live under `.claude/rules/` and are referenced by `CLAUDE.md`.
 
 Important rule files:
 
-- `.clinerules/general.md`
-- `.clinerules/agent-behavior.md`
-- `.clinerules/architecture.md`
-- `.clinerules/storyboard-overview.md`
-- `.clinerules/vscode-extension.md`
-- `.clinerules/webview.md`
-- `.clinerules/testing.md`
-- `.clinerules/clean-code.md`
-- `.clinerules/comments.md`
-- `.clinerules/release.md`
-- `.clinerules/agent-workflow.md`
+- `.claude/rules/general.md`
+- `.claude/rules/agent-behavior.md`
+- `.claude/rules/architecture.md`
+- `.claude/rules/storyboard-overview.md`
+- `.claude/rules/vscode-extension.md`
+- `.claude/rules/webview.md`
+- `.claude/rules/testing.md`
+- `.claude/rules/clean-code.md`
+- `.claude/rules/comments.md`
+- `.claude/rules/release.md`
+- `.claude/rules/agent-workflow.md`
 
-When writing or reviewing code, always apply the clean code standards summarized in `.clinerules/clean-code.md` and the comment markers in `.clinerules/comments.md` when adding or editing comments.
+When writing or reviewing code, always apply the clean code standards summarized in `.claude/rules/clean-code.md` and the comment markers in `.claude/rules/comments.md` when adding or editing comments.

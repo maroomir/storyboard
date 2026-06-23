@@ -11,7 +11,7 @@ description: >-
 
 # Scene generation quality loop (storyboard)
 
-> Mirror of the Claude Code command `.claude/commands/scene-quality.md` — keep the two in sync.
+> Mirror of the Claude Code skill `.claude/skills/scene-quality/SKILL.md` — keep the two in sync.
 
 Pushes one workspace scene's generated draft toward its human-written gt. The pipeline (extraction → persona → dialogue → chunked format) lives in `src/services/ai/`; this skill drives it headlessly, measures quality objectively + qualitatively, and tunes code/data until the four axes pass.
 

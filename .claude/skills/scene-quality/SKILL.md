@@ -1,4 +1,5 @@
 ---
+name: scene-quality
 description: >-
   Iteratively test and improve a Storyboard workspace scene's generated draft
   toward ground-truth (gt) quality on four narrative axes (서사력·연결성·장면구분·전환).
@@ -6,19 +7,20 @@ description: >-
   with a PM + evaluator + tester agent team. Use when asked to improve scene
   generation quality, score a draft against gt, or harden the pipeline against a
   quality regression.
-argument-hint: "[workspace-path] [scene-file NN-slug.txt]"
 ---
 
 # Scene generation quality loop (storyboard)
 
-Pushes one workspace scene's generated draft toward its human-written gt. The pipeline (extraction → persona → dialogue → chunked format) lives in `src/services/ai/`; this command drives it headlessly, measures quality objectively + qualitatively, and tunes code/data until the four axes pass.
+> Canonical copy. The Cursor mirror `.cursor/skills/scene-quality/SKILL.md` must stay in sync.
+
+Pushes one workspace scene's generated draft toward its human-written gt. The pipeline (extraction → persona → dialogue → chunked format) lives in `src/services/ai/`; this skill drives it headlessly, measures quality objectively + qualitatively, and tunes code/data until the four axes pass.
 
 ## Inputs
 
 - workspace path (a Storyboard project dir with `scene/`, `gt/`, `character/`, `background/`, `.storyboard/project.json`)
 - scene file name `NN-slug.txt`; its gt is `gt/NN-slug.md`
 
-If not given as arguments, ask for the workspace path and scene file before starting.
+If not given, ask for the workspace path and scene file before starting.
 
 ## Invariants (non-negotiable)
 
@@ -31,7 +33,7 @@ If not given as arguments, ask for the workspace path and scene file before star
 ## Team
 
 - **PM (you):** orchestrate the loop, pick the single highest-leverage gap each cycle, decide gates.
-- **Evaluator (`scenario-analyst`):** score the draft vs gt using `docs/scene-quality-rubric.md`. Read-only — never generates or edits a draft.
+- **Evaluator (`scenario-analyst`):** score the draft vs gt using `./rubric.md`. Read-only — never generates or edits a draft.
 - **Tester (`test-engineer`):** write/maintain unit tests for each `src/` change (`npx vitest run`).
 - Optional: a general/`debugger` helper for `src/` edits, a general helper to fill workspace cards.
 
@@ -43,7 +45,7 @@ If not given as arguments, ask for the workspace path and scene file before star
 2. **Objective coverage:**
    `SCENE_WS=<ws> SCENE_FILE=<NN-slug.txt> npx vitest run --config vitest.harness.config.ts coverageCheck`
    Read `coveredRatio` + `missing` / `outOfOrder` beat indices (the `checkSceneCoverage` feature).
-3. **Qualitative eval:** hand the draft + gt + source to `scenario-analyst`; it scores with `docs/scene-quality-rubric.md` (gate A, 4 axes, 6-dim /30).
+3. **Qualitative eval:** hand the draft + gt + source to `scenario-analyst`; it scores with `./rubric.md` (gate A, 4 axes, 6-dim /30).
 4. **Diagnose** the single highest-leverage gap (gate-A failures first: truncation/order).
 5. **Fix** in `src/` (pipeline/prompts) and/or workspace cards. Tester adds tests for any `src/` change. For cards, only `voice`/`aliases`/`traits`/`description` (+`name`/`role`) actually affect generation — see `docs/card-parameter-impact.md`.
 6. **Regenerate → re-score.** Loop until all four axes ≥4 and coveredRatio → 1.0. Then commit per feature.
@@ -59,7 +61,7 @@ Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (ski
 
 ## References
 
-- Rubric: `docs/scene-quality-rubric.md`
+- Rubric: `./rubric.md` (mirror of `docs/scene-quality-rubric.md` — keep both in sync)
 - Harness + coverage probe: `scripts/harness/generateGuerrila.harness.ts`, `scripts/harness/coverageCheck.harness.ts`, `vitest.harness.config.ts`
 - Coverage feature: `AIService.checkSceneCoverage`, `src/shared/sceneCoverage.ts`, task `sceneCoverage`
 - Parameter impact: `docs/card-parameter-impact.md`

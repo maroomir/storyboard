@@ -28,7 +28,7 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 - Keep extension host code separate from webview UI code.
 - Keep shared message/state types in a shared module once source structure exists.
 - Use explicit command and message names prefixed with `storyboard`.
-- Apply the clean code standards in `.clinerules/clean-code.md` when writing or reviewing code.
+- Apply the clean code standards in `.claude/rules/clean-code.md` when writing or reviewing code.
 - Use import aliases: `@/` → `src/` (extension host), `@webview/` → `webview-ui/src/` (webview). Prefer them over long `../../` chains; do not use `@/` from webview code.
 - Do not commit generated build output unless the packaging workflow requires it.
 - Do not store API keys, tokens, or personal workspace paths in committed code.
@@ -37,12 +37,13 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 
 - Update `README.md` and related docs for new commands, settings, configuration, or user-facing behavior.
 - Update tracked architecture documents when product scope, file formats, or runtime boundaries change.
-- Update `.clinerules/`, matching `.cursor/rules/`, and `AGENTS.md` together when agent policy changes.
-- Update `CLAUDE.md` only when the `.clinerules/` import index changes.
+- Rules live canonically in `.claude/rules/` (Claude Code is the main tool). When agent policy changes, update `.claude/rules/` and mirror it to `.cursor/rules/` (Cursor) and `AGENTS.md` (Codex).
+- Skills live canonically in `.claude/skills/` and are mirrored to `.cursor/skills/`.
+- Update `CLAUDE.md` only when the `.claude/rules/` import index changes.
 
 ## Release
 
-For version bumps, changelog cuts, VSIX packaging, and tags, see **`.clinerules/release.md`** (and the `prepare-release` Cursor skill).
+For version bumps, changelog cuts, VSIX packaging, and tags, see **`.claude/rules/release.md`** (and the `prepare-release` skill).
 
 ## Reference Project Usage
 

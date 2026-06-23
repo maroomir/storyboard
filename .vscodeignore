@@ -2,7 +2,6 @@
 .vscode-test/**
 .agents/**
 .claude/**
-.clinerules/**
 .cursor/**
 .github/**
 .doc/**

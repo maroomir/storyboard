@@ -17,7 +17,7 @@ This file carries the reusable agent workflow adopted from `remote-coder`.
 - Run focused verification first, then broader project scripts when shared behavior changed.
 - State verification limitations explicitly.
 - Update documentation for new settings, commands, configuration, or user-facing behavior.
-- Keep `.clinerules/`, `.cursor/rules/`, `AGENTS.md`, and `CLAUDE.md` synchronized according to their ownership rules.
+- Keep `.claude/rules/`, `.cursor/rules/`, `AGENTS.md`, and `CLAUDE.md` synchronized according to their ownership rules.
 
 ## Commit Messages
 
