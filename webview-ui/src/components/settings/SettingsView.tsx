@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import { createRequestId } from "@webview/lib/messaging"
+
 import { Button } from "../ui/Button"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
@@ -49,10 +51,6 @@ interface SettingsChangedEvent {
   readonly type: "event"
   readonly method: "settings.changed"
   readonly payload: unknown
-}
-
-function createRequestId(): string {
-  return crypto.randomUUID()
 }
 
 function useStoryboardRpc(): {
