@@ -186,37 +186,55 @@ export class StoryboardAIService {
     return response.text.trim()
   }
 
+  private async extractPerCharacter<T>(
+    characterNames: readonly string[],
+    options: GenerateTextOptions & {
+      readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+    },
+    config: PromptConfig,
+    runForName: (
+      name: string,
+      resolvedOptions: GenerateTextOptions,
+      attribution: UsageAttribution | undefined
+    ) => Promise<T>
+  ): Promise<Record<string, T>> {
+    const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
+    const resolved = {
+      ...options,
+      temperature: options.temperature ?? config.temperature,
+      maxTokens: options.maxTokens ?? config.maxTokens
+    }
+
+    const entries = await Promise.all(
+      uniqueNames.map(async (name) => {
+        const attribution = resolved.attributionForCharacter?.(name) ?? resolved.attribution
+        return [name, await runForName(name, resolved, attribution)] as const
+      })
+    )
+
+    return Object.fromEntries(entries)
+  }
+
   public async extractTraitsByCharacter(
     draftBody: string,
     characterNames: readonly string[],
     options: ExtractTraitsByCharacterOptions = {}
   ): Promise<Record<string, string[]>> {
-    const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
-    const traitOptions: ExtractTraitsByCharacterOptions = {
-      ...options,
-      temperature: options.temperature ?? TraitsExtractionPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? TraitsExtractionPrompt.config.maxTokens
-    }
-
-    const entries = await Promise.all(
-      uniqueNames.map(async (name) => {
-        const attribution = traitOptions.attributionForCharacter?.(name) ?? traitOptions.attribution
-        const variant = this.resolvePromptVariant("traitsExtraction", traitOptions)
+    return this.extractPerCharacter(
+      characterNames,
+      options,
+      TraitsExtractionPrompt.config,
+      async (name, resolvedOptions, attribution) => {
+        const variant = this.resolvePromptVariant("traitsExtraction", resolvedOptions)
         const prompt = TraitsExtractionPrompt.build(draftBody, name, undefined, variant)
-        const response = await this.generateText(
-          "traitsExtraction",
-          toPromptMessages(prompt),
-          {
-            ...traitOptions,
-            attribution
-          }
-        )
+        const response = await this.generateText("traitsExtraction", toPromptMessages(prompt), {
+          ...resolvedOptions,
+          attribution
+        })
 
-        return [name, parseBulletList(response.text)] as const
-      })
+        return parseBulletList(response.text)
+      }
     )
-
-    return Object.fromEntries(entries)
   }
 
   public async extractFactsByCharacter(
@@ -224,29 +242,22 @@ export class StoryboardAIService {
     characterNames: readonly string[],
     options: ExtractFactsByCharacterOptions = {}
   ): Promise<Record<string, FactCandidate[]>> {
-    const uniqueNames = [...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0))]
-    const factOptions: ExtractFactsByCharacterOptions = {
-      ...options,
-      temperature: options.temperature ?? FactExtractionPrompt.config.temperature,
-      maxTokens: options.maxTokens ?? FactExtractionPrompt.config.maxTokens
-    }
-
-    const entries = await Promise.all(
-      uniqueNames.map(async (name) => {
-        const attribution = factOptions.attributionForCharacter?.(name) ?? factOptions.attribution
-        const variant = this.resolvePromptVariant("factExtraction", factOptions)
+    return this.extractPerCharacter(
+      characterNames,
+      options,
+      FactExtractionPrompt.config,
+      async (name, resolvedOptions, attribution) => {
+        const variant = this.resolvePromptVariant("factExtraction", resolvedOptions)
         const prompt = FactExtractionPrompt.build(draftBody, name, variant)
         const response = await this.generateText("factExtraction", toPromptMessages(prompt), {
-          ...factOptions,
+          ...resolvedOptions,
           attribution
         })
         const parsedArray = parseJsonArray(response.text)
 
-        return [name, parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : []] as const
-      })
+        return parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : []
+      }
     )
-
-    return Object.fromEntries(entries)
   }
 
   public async checkGrammar(body: string, options: GenerateTextOptions = {}): Promise<GrammarIssue[]> {
