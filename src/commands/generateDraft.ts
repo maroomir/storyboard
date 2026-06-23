@@ -23,7 +23,7 @@ import { ensureSceneCacheDirectory, sceneCacheFilePath } from "../files/sceneCac
 import { createBackgroundMemoryStore, createPersonaMemoryStore } from "../files/cardMemoryWorkspace"
 import { parseSceneFileName } from "../shared/scene"
 import { buildStyleDirective } from "../shared/styleDirective"
-import { runReviseGateForScene } from "./reviseDraft"
+import { maybeRunReviseAfterGenerate } from "./reviseDraft"
 import { StoryboardAIService } from "../services/ai/AIService"
 import {
   runSceneGenerationPipeline,
@@ -431,29 +431,20 @@ export async function runGenerateDraftForWorkspaceScene(
       })
 
       if (result.ok) {
-        if (
-          result.kind === "generated" &&
-          options.configBridge.isReviseAfterGenerateEnabled() &&
-          !token.isCancellationRequested
-        ) {
-          const folder = vscode.workspace.getWorkspaceFolder(sceneUri)
-          const stem = parseSceneFileName(sceneUri.path.split("/").pop() ?? "")?.stem
-
-          if (folder && stem) {
-            await runReviseGateForScene(
-              folder.uri,
-              stem,
-              {
-                aiProviderRegistry: options.aiProviderRegistry,
-                usageRecorder: options.usageRecorder,
-                logger: options.logger
-              },
-              {
-                onProgress: (message) => progress.report({ message }),
-                shouldCancel: () => token.isCancellationRequested
-              }
-            )
-          }
+        if (result.kind === "generated") {
+          await maybeRunReviseAfterGenerate(
+            sceneUri,
+            options.configBridge,
+            {
+              aiProviderRegistry: options.aiProviderRegistry,
+              usageRecorder: options.usageRecorder,
+              logger: options.logger
+            },
+            {
+              onProgress: (message) => progress.report({ message }),
+              shouldCancel: () => token.isCancellationRequested
+            }
+          )
         }
 
         progress.report({

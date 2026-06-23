@@ -8,7 +8,7 @@ import { hasStoryboardProject, uriExists } from "../core/workspace"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
-import { parseSceneStem } from "../shared/scene"
+import { parseSceneFileName, parseSceneStem } from "../shared/scene"
 
 const reviseDraftCommand = "storyboard.draft.reviseLoop"
 const defaultMaxIterations = 2
@@ -86,6 +86,37 @@ export async function runReviseGateForScene(
   }
 
   return result
+}
+
+export interface ReviseAfterGenerateHooks extends ReviseGateHooks {
+  readonly onWillRun?: () => void
+}
+
+// NOTE: Shared post-generate revise gate so Generate Draft / Generate All Drafts apply the
+// revise-after-generate setting identically. No-ops when disabled, cancelled, or the scene has no
+// parseable stem; onWillRun fires only right before the gate actually runs.
+export async function maybeRunReviseAfterGenerate(
+  sceneUri: vscode.Uri,
+  configBridge: ConfigBridge,
+  dependencies: ReviseGateDependencies,
+  hooks: ReviseAfterGenerateHooks = {}
+): Promise<void> {
+  if (!configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
+    return
+  }
+
+  const folder = vscode.workspace.getWorkspaceFolder(sceneUri)
+  const stem = parseSceneFileName(sceneUri.path.split("/").pop() ?? "")?.stem
+
+  if (!folder || !stem) {
+    return
+  }
+
+  hooks.onWillRun?.()
+  await runReviseGateForScene(folder.uri, stem, dependencies, {
+    onProgress: hooks.onProgress,
+    shouldCancel: hooks.shouldCancel
+  })
 }
 
 function resolveSceneStem(uri: vscode.Uri): string | undefined {
