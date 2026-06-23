@@ -3,16 +3,37 @@ import path from "node:path"
 
 import { test } from "vitest"
 
-import { buildNarrativeContext, buildSceneContext, type SceneContext } from "@/core/sceneContext"
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@/core/sceneContext"
+import {
+  computeBackgroundCardHash,
+  computePersonaCardHash,
+  readBackgroundMemoryFile,
+  readPersonaMemoryFile,
+  writeBackgroundMemoryFile,
+  writePersonaMemoryFile
+} from "@/files/cardMemory"
 import { createDraft, serializeDraft } from "@/files/draft"
 import { readSceneFile } from "@/files/scene"
 import { StoryboardAIService } from "@/services/ai/AIService"
-import { runSceneGenerationPipeline } from "@/services/ai/pipelines/sceneGenerationPipeline"
+import {
+  runSceneGenerationPipeline,
+  type BackgroundMemoryStore,
+  type PersonaMemoryStore
+} from "@/services/ai/pipelines/sceneGenerationPipeline"
 import type { AiProviderRegistry } from "@/services/ai/providerRegistry"
 import { ClaudeCodeProvider } from "@/services/ai/providers/ClaudeCodeProvider"
 import { CodexProvider } from "@/services/ai/providers/CodexProvider"
 import { createDefaultCliRunner, type CliRunResult } from "@/services/ai/providers/cliRunner"
 import type { AiGenerateRequest, AiGenerateResponse, AiProvider, AiProviderId } from "@/services/ai/types"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
+import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "@/shared/draftReview"
+import type { ProjectFormat } from "@/shared/project"
+import {
+  adaptContinuityIssues,
+  adaptCritiqueIssues,
+  buildScopedInstructions,
+  routeReviewIssues
+} from "@/shared/reviewRouting"
 import { buildStyleDirective } from "@/shared/styleDirective"
 
 // NOTE: reasoning calls can exceed the provider's 180s default; lengthen only in the harness so a
@@ -31,6 +52,13 @@ const harnessCommand = harnessProviderId === "claude-code" ? "claude" : "codex"
 // flow: background only attaches via scene frontmatter.location (the source has none, so none here).
 const workspace = process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
 const sceneFileName = process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
+
+// NOTE: run the G-3 revise loop after generation unless GUERRILA_REVISE=0; iterations bound CLI cost.
+const harnessRunRevise = process.env.GUERRILA_REVISE !== "0"
+const harnessReviseIterations = Number(process.env.GUERRILA_REVISE_ITERS ?? "2")
+
+const personaMemoryDirectory = path.join(workspace, ".storyboard", "cache", "personas")
+const backgroundMemoryDirectory = path.join(workspace, ".storyboard", "cache", "backgrounds")
 
 const fileSystem = {
   readFile: async (uri: unknown): Promise<Uint8Array> => new Uint8Array(await nodeFs.readFile(uri as string)),
@@ -125,6 +153,149 @@ function createRegistry(): AiProviderRegistry {
   return registry as unknown as AiProviderRegistry
 }
 
+// NOTE: G-2/G-4 — mirror createPersonaMemoryStore/createBackgroundMemoryStore (which require vscode)
+// with the harness nodeFs adapter so card-scoped memory is exercised headlessly.
+function createHarnessPersonaStore(sceneStem: string): PersonaMemoryStore {
+  return {
+    async load(card: CharacterCard): Promise<string | undefined> {
+      try {
+        const record = await readPersonaMemoryFile(path.join(personaMemoryDirectory, `${card.id}.json`), fileSystem)
+        return record.cardHash === computePersonaCardHash(card) ? record.persona : undefined
+      } catch {
+        return undefined
+      }
+    },
+    async save(card: CharacterCard, persona: string): Promise<void> {
+      await nodeFs.mkdir(personaMemoryDirectory, { recursive: true })
+      await writePersonaMemoryFile(path.join(personaMemoryDirectory, `${card.id}.json`), fileSystem, {
+        cardId: card.id,
+        persona,
+        updatedThroughScene: sceneStem,
+        cardHash: computePersonaCardHash(card)
+      })
+    }
+  }
+}
+
+function createHarnessBackgroundStore(sceneStem: string): BackgroundMemoryStore {
+  return {
+    async load(card: BackgroundCard): Promise<string | undefined> {
+      try {
+        const record = await readBackgroundMemoryFile(path.join(backgroundMemoryDirectory, `${card.id}.json`), fileSystem)
+        return record.cardHash === computeBackgroundCardHash(card) ? record.atmosphere : undefined
+      } catch {
+        return undefined
+      }
+    },
+    async save(card: BackgroundCard, atmosphere: string): Promise<void> {
+      await nodeFs.mkdir(backgroundMemoryDirectory, { recursive: true })
+      await writeBackgroundMemoryFile(path.join(backgroundMemoryDirectory, `${card.id}.json`), fileSystem, {
+        cardId: card.id,
+        atmosphere,
+        updatedThroughScene: sceneStem,
+        cardHash: computeBackgroundCardHash(card)
+      })
+    }
+  }
+}
+
+interface HarnessReviseInput {
+  readonly aiService: StoryboardAIService
+  readonly providerId: AiProviderId
+  readonly context: SceneContext
+  readonly intent: string
+  readonly factLines: readonly string[]
+  readonly styleDirective: ReturnType<typeof buildStyleDirective>
+  readonly styleConstraints: readonly string[]
+  readonly qualityCriteria: readonly string[]
+  readonly format: ProjectFormat
+  readonly initialBody: string
+  readonly sceneStem: string
+}
+
+// NOTE: headless mirror of runReviseDraftWorkflow (which imports vscode). Exercises the G-3 routing
+// path: continuity+critique → routeReviewIssues → per-agent scoped reviseDraft passes.
+async function runHarnessReviseLoop(input: HarnessReviseInput): Promise<{
+  body: string
+  passed: boolean
+  revisionCount: number
+  remainingBlocking: number
+}> {
+  const attribution = { primary: { kind: "scene" as const, id: input.sceneStem } }
+  const characterNames = input.context.characters.map((character) => character.name)
+  const cardNameById = new Map(input.context.characters.map((character) => [character.id, character.name] as const))
+
+  let body = input.initialBody
+  let revisionCount = 0
+  let blocking = 0
+  let passed = false
+
+  for (;;) {
+    const [continuityIssues, critiqueIssues] = await Promise.all([
+      input.aiService.checkContinuity(body, input.factLines, { providerId: input.providerId, attribution }),
+      input.aiService.critiqueDraft(
+        {
+          body,
+          intent: input.intent,
+          characters: characterNames,
+          facts: input.factLines,
+          styleConstraints: input.styleConstraints,
+          qualityCriteria: input.qualityCriteria,
+          styleDirective: input.styleDirective
+        },
+        { providerId: input.providerId, attribution }
+      )
+    ])
+
+    blocking = countBlockingIssues(continuityIssues, critiqueIssues)
+    const score = scoreCritique(critiqueIssues)
+    const highContinuityCount = continuityIssues.filter((issue) => issue.severity === "high").length
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `[revise ${revisionCount}/${harnessReviseIterations}] blocking=${blocking} score=${score.overall} continuityHigh=${highContinuityCount}`
+    )
+
+    if (shouldPassRevise({ blocking, score: score.overall, threshold: 0, highContinuityCount })) {
+      passed = true
+      break
+    }
+
+    if (revisionCount >= harnessReviseIterations) {
+      break
+    }
+
+    const reviewIssues = [
+      ...adaptContinuityIssues(continuityIssues),
+      ...adaptCritiqueIssues(critiqueIssues, input.context.characters)
+    ]
+    const routing = routeReviewIssues(reviewIssues)
+    const globalInstructions = buildRevisionInstructions(continuityIssues, critiqueIssues)
+
+    const revisionPasses =
+      routing.groups.length > 0
+        ? [
+            ...routing.groups.map((group) => buildScopedInstructions(group, (cardId) => cardNameById.get(cardId))),
+            ...(routing.global.length > 0 ? [globalInstructions] : [])
+          ]
+        : [globalInstructions]
+
+    // eslint-disable-next-line no-console
+    console.log(`[revise ${revisionCount}] groups=${routing.groups.length} global=${routing.global.length}`)
+
+    for (const instructions of revisionPasses) {
+      body = await input.aiService.reviseDraft(
+        { body, format: input.format, instructions, intent: input.intent, facts: input.factLines },
+        { providerId: input.providerId, attribution }
+      )
+    }
+
+    revisionCount += 1
+  }
+
+  return { body, passed, revisionCount, remainingBlocking: blocking }
+}
+
 test("regenerate guerrila draft via codex pipeline", async () => {
   const scene = await readSceneFile(path.join(workspace, "scene", sceneFileName), fileSystem, sceneFileName)
   const project = JSON.parse(await nodeFs.readFile(path.join(workspace, ".storyboard", "project.json"), "utf8"))
@@ -150,6 +321,8 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       personaDialogue: harnessProviderId,
       sceneDraft: harnessProviderId
     },
+    personaStore: createHarnessPersonaStore(scene.stem),
+    backgroundStore: createHarnessBackgroundStore(scene.stem),
     onProgress: (stage, current, total) => {
       // eslint-disable-next-line no-console
       console.log(`[${stage}] ${current}/${total}`)
@@ -160,6 +333,39 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   // eslint-disable-next-line no-console
   console.log(`situations=${result.situations.length} characters=${result.detectedCharacters.join(", ")}`)
 
-  const draft = createDraft({ sceneStem: scene.stem, format: project.format, body: result.draftBody })
-  await nodeFs.writeFile(path.join(workspace, "draft", `${scene.stem}.md`), serializeDraft(draft), "utf8")
+  const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
+  let body = result.draftBody
+  await nodeFs.writeFile(
+    draftPath,
+    serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
+    "utf8"
+  )
+
+  if (harnessRunRevise) {
+    const revision = await runHarnessReviseLoop({
+      aiService,
+      providerId: harnessProviderId,
+      context,
+      intent: scene.body,
+      factLines: formatBibleFactLines(context, narrative.bibleFacts),
+      styleDirective,
+      styleConstraints: project.setting?.styleConstraints ?? [],
+      qualityCriteria: project.setting?.qualityCriteria ?? [],
+      format: project.format,
+      initialBody: body,
+      sceneStem: scene.stem
+    })
+
+    body = revision.body
+    await nodeFs.writeFile(
+      draftPath,
+      serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
+      "utf8"
+    )
+
+    // eslint-disable-next-line no-console
+    console.log(
+      `[revise done] passed=${revision.passed} revisions=${revision.revisionCount} remainingBlocking=${revision.remainingBlocking}`
+    )
+  }
 }, 7_200_000)
