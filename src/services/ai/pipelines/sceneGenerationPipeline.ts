@@ -271,6 +271,128 @@ function condensePreviousContext(previousContext: string | undefined, enabled: b
   return condensed.length <= maxCondensedContextChars ? condensed : condensed.slice(-maxCondensedContextChars)
 }
 
+async function buildScenePersonas(
+  characters: readonly CharacterCard[],
+  personaOptions: GenerateTextOptions,
+  aiService: Pick<SceneGenerationPipelineAiService, "createCharacterPersona">,
+  personaStore: PersonaMemoryStore | undefined,
+  sceneRef: EntityRef,
+  onProgress: RunSceneGenerationPipelineInput["onProgress"],
+  shouldCancel: (() => boolean) | undefined
+): Promise<Map<string, string>> {
+  const personasUsed = new Map<string, string>()
+  const characterCount = characters.length
+
+  for (let i = 0; i < characters.length; i++) {
+    const character = characters[i]
+    if (!character) {
+      continue
+    }
+    const cached = await personaStore?.load(character)
+    let persona = cached
+    if (persona === undefined) {
+      persona = await aiService.createCharacterPersona(
+        character,
+        withAttribution(personaOptions, {
+          primary: { kind: "character", id: character.id },
+          participants: [sceneRef]
+        })
+      )
+      await personaStore?.save(character, persona)
+    }
+    personasUsed.set(character.name, persona)
+    onProgress?.("buildPersonas", i + 1, characterCount)
+    assertNotCancelled(shouldCancel)
+  }
+
+  return personasUsed
+}
+
+async function generateSceneDialogue(
+  situations: readonly SituationWithCharacters[],
+  characters: readonly CharacterCard[],
+  personasUsed: ReadonlyMap<string, string>,
+  background: Background,
+  backgroundParticipantId: string | undefined,
+  dialogueOptions: GenerateTextOptions,
+  condensedPreviousContext: string | undefined,
+  aiService: Pick<SceneGenerationPipelineAiService, "generatePersonaDialogue">,
+  sceneRef: EntityRef,
+  onProgress: RunSceneGenerationPipelineInput["onProgress"],
+  shouldCancel: (() => boolean) | undefined
+): Promise<string[]> {
+  const dialoguePieces: string[] = []
+
+  for (let i = 0; i < situations.length; i++) {
+    const situation = situations[i]
+    if (!situation) {
+      continue
+    }
+    onProgress?.("generateDialogue", i + 1, situations.length)
+
+    // NOTE: 앞 구간에서 실제로 생성된 대사의 압축 tail을 이어 넘겨 장면 간 연결성을 유지한다.
+    // 직전 상황의 원문이 아니라 이미 쓰여진 대사를 봐야 인물 감정·맥락이 누적된다.
+    const prior: string | undefined =
+      dialoguePieces.length > 0
+        ? condensePreviousContext(dialoguePieces.join("\n\n"), true)
+        : condensedPreviousContext
+
+    const dialogueParticipants = dialogueParticipantsForSituation(situation, characters, backgroundParticipantId)
+
+    // NOTE: 이 상황에 실제 참여하는 인물의 페르소나만 넘긴다. 전체 페르소나를 매 상황에 주면
+    // 모델이 그 비트에 없어야 할 인물(예: 다른 장소 전용 인물)까지 끌어와 등장 드리프트가 난다.
+    const situationPersonas = selectSituationPersonas(situation, characters, personasUsed)
+
+    const dialogue = await aiService.generatePersonaDialogue(
+      situation.situation,
+      situationPersonas,
+      background,
+      prior,
+      withAttribution(dialogueOptions, {
+        primary: sceneRef,
+        participants: dialogueParticipants
+      })
+    )
+    dialoguePieces.push(dialogue)
+    assertNotCancelled(shouldCancel)
+  }
+
+  return dialoguePieces
+}
+
+async function formatSceneDraft(
+  dialoguePieces: readonly string[],
+  format: ProjectFormat,
+  providers: Readonly<SceneGenerationPipelineTaskProviders>,
+  styleDirective: StyleDirective | undefined,
+  aiService: Pick<SceneGenerationPipelineAiService, "applyGenreFormat">,
+  sceneRef: EntityRef,
+  onProgress: RunSceneGenerationPipelineInput["onProgress"],
+  shouldCancel: (() => boolean) | undefined
+): Promise<string> {
+  const formatChunks = chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget)
+  const formattedParts: string[] = []
+
+  for (let i = 0; i < formatChunks.length; i++) {
+    const chunk = formatChunks[i]
+    if (!chunk) {
+      continue
+    }
+    onProgress?.("applyFormat", i + 1, formatChunks.length)
+    const chunkInput = chunk.join("\n\n")
+    const formatted = await aiService.applyGenreFormat(
+      chunkInput,
+      format,
+      withAttribution({ ...buildGenerateOptions(providers, "sceneDraft"), styleDirective }, { primary: sceneRef })
+    )
+    // 메타 누수가 감지되면 원고를 오염시키는 대신 해당 청크의 원본 대사를 그대로 남긴다.
+    formattedParts.push(looksLikeFormatMetaLeak(formatted) ? chunkInput : formatted)
+    assertNotCancelled(shouldCancel)
+  }
+
+  return formattedParts.join("\n\n")
+}
+
 export async function runSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput
 ): Promise<RunSceneGenerationPipelineResult> {
@@ -305,36 +427,20 @@ export async function runSceneGenerationPipeline(
     ...buildGenerateOptions(providers, "personaGeneration"),
     styleDirective
   }
-  const personasUsed = new Map<string, string>()
-  const characterCount = context.characters.length
-
-  for (let i = 0; i < context.characters.length; i++) {
-    const character = context.characters[i]
-    if (!character) {
-      continue
-    }
-    const cached = await input.personaStore?.load(character)
-    let persona = cached
-    if (persona === undefined) {
-      persona = await aiService.createCharacterPersona(
-        character,
-        withAttribution(personaOptions, {
-          primary: { kind: "character", id: character.id },
-          participants: [sceneRef]
-        })
-      )
-      await input.personaStore?.save(character, persona)
-    }
-    personasUsed.set(character.name, persona)
-    onProgress?.("buildPersonas", i + 1, characterCount)
-    assertNotCancelled(shouldCancel)
-  }
+  const personasUsed = await buildScenePersonas(
+    context.characters,
+    personaOptions,
+    aiService,
+    input.personaStore,
+    sceneRef,
+    onProgress,
+    shouldCancel
+  )
 
   const backgroundCard = context.background ?? createEmptyBackground("scene-default", "미정")
   const background = context.background
     ? await describeBackgroundForScene(context.background, aiService, input.backgroundStore)
     : backgroundCard
-  const dialoguePieces: string[] = []
   const dialogueOptions: GenerateTextOptions = {
     ...buildGenerateOptions(providers, "personaDialogue"),
     styleDirective
@@ -342,61 +448,30 @@ export async function runSceneGenerationPipeline(
   const backgroundParticipantId = context.background?.id ?? input.backgroundId
   assertNotCancelled(shouldCancel)
 
-  for (let i = 0; i < situations.length; i++) {
-    const situation = situations[i]
-    if (!situation) {
-      continue
-    }
-    onProgress?.("generateDialogue", i + 1, situations.length)
+  const dialoguePieces = await generateSceneDialogue(
+    situations,
+    context.characters,
+    personasUsed,
+    background,
+    backgroundParticipantId,
+    dialogueOptions,
+    condensedPreviousContext,
+    aiService,
+    sceneRef,
+    onProgress,
+    shouldCancel
+  )
 
-    // NOTE: 앞 구간에서 실제로 생성된 대사의 압축 tail을 이어 넘겨 장면 간 연결성을 유지한다.
-    // 직전 상황의 원문이 아니라 이미 쓰여진 대사를 봐야 인물 감정·맥락이 누적된다.
-    const prior: string | undefined =
-      dialoguePieces.length > 0
-        ? condensePreviousContext(dialoguePieces.join("\n\n"), true)
-        : condensedPreviousContext
-
-    const dialogueParticipants = dialogueParticipantsForSituation(situation, context.characters, backgroundParticipantId)
-
-    // NOTE: 이 상황에 실제 참여하는 인물의 페르소나만 넘긴다. 전체 페르소나를 매 상황에 주면
-    // 모델이 그 비트에 없어야 할 인물(예: 다른 장소 전용 인물)까지 끌어와 등장 드리프트가 난다.
-    const situationPersonas = selectSituationPersonas(situation, context.characters, personasUsed)
-
-    const dialogue = await aiService.generatePersonaDialogue(
-      situation.situation,
-      situationPersonas,
-      background,
-      prior,
-      withAttribution(dialogueOptions, {
-        primary: sceneRef,
-        participants: dialogueParticipants
-      })
-    )
-    dialoguePieces.push(dialogue)
-    assertNotCancelled(shouldCancel)
-  }
-
-  const formatChunks = chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget)
-  const formattedParts: string[] = []
-
-  for (let i = 0; i < formatChunks.length; i++) {
-    const chunk = formatChunks[i]
-    if (!chunk) {
-      continue
-    }
-    onProgress?.("applyFormat", i + 1, formatChunks.length)
-    const chunkInput = chunk.join("\n\n")
-    const formatted = await aiService.applyGenreFormat(
-      chunkInput,
-      format,
-      withAttribution({ ...buildGenerateOptions(providers, "sceneDraft"), styleDirective }, { primary: sceneRef })
-    )
-    // 메타 누수가 감지되면 원고를 오염시키는 대신 해당 청크의 원본 대사를 그대로 남긴다.
-    formattedParts.push(looksLikeFormatMetaLeak(formatted) ? chunkInput : formatted)
-    assertNotCancelled(shouldCancel)
-  }
-
-  const draftBody = formattedParts.join("\n\n")
+  const draftBody = await formatSceneDraft(
+    dialoguePieces,
+    format,
+    providers,
+    styleDirective,
+    aiService,
+    sceneRef,
+    onProgress,
+    shouldCancel
+  )
 
   return {
     draftBody,
