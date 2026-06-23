@@ -322,9 +322,9 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 
 ### 4.9 `.storyboard/cache/personas/`·`backgrounds/` (에이전트 영속 메모리)
 
-> 계획됨(Phase G-2). 현재는 페르소나가 씬 캐시(`personasUsed`)에만 세션 단위로 저장되고, 카드 단위로는 영속화되지 않는다.
+> 페르소나 메모리는 구현됨(Phase G-2). 배경 메모리(`backgrounds/`)는 Phase G-4에서 능동 묘사와 함께 채운다.
 
-카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다.
+카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다.
 
 ```json
 // .storyboard/cache/personas/<character-id>.json

@@ -24,6 +24,11 @@ export interface SceneGenerationPipelineTaskProviders {
   readonly sceneDraft?: AiProviderId
 }
 
+export interface PersonaMemoryStore {
+  readonly load: (card: CharacterCard) => Promise<string | undefined>
+  readonly save: (card: CharacterCard, persona: string) => Promise<void>
+}
+
 export class SceneGenerationPipelineCancelledError extends Error {
   public constructor() {
     super("씬 초안 생성이 취소되었습니다.")
@@ -43,6 +48,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly sceneStem?: string
   readonly backgroundId?: string
   readonly useContextCondense?: boolean
+  readonly personaStore?: PersonaMemoryStore
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -273,13 +279,18 @@ export async function runSceneGenerationPipeline(
     if (!character) {
       continue
     }
-    const persona = await aiService.createCharacterPersona(
-      character,
-      withAttribution(personaOptions, {
-        primary: { kind: "character", id: character.id },
-        participants: [sceneRef]
-      })
-    )
+    const cached = await input.personaStore?.load(character)
+    let persona = cached
+    if (persona === undefined) {
+      persona = await aiService.createCharacterPersona(
+        character,
+        withAttribution(personaOptions, {
+          primary: { kind: "character", id: character.id },
+          participants: [sceneRef]
+        })
+      )
+      await input.personaStore?.save(character, persona)
+    }
     personasUsed.set(character.name, persona)
     onProgress?.("buildPersonas", i + 1, characterCount)
     assertNotCancelled(shouldCancel)

@@ -495,6 +495,56 @@ describe("runSceneGenerationPipeline", () => {
     expect(result.draftBody).toBe("formatted(상황1)\n\nformatted(상황2)\n\nformatted(상황3)")
   })
 
+  it("reuses a cached persona from the store instead of regenerating it", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "단일" }])
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    const store = {
+      load: vi.fn(async () => "캐시된 페르소나"),
+      save: vi.fn(async () => {})
+    }
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      personaStore: store
+    })
+
+    expect(store.load).toHaveBeenCalledWith(eliaCard)
+    expect(ai.createCharacterPersona).not.toHaveBeenCalled()
+    expect(store.save).not.toHaveBeenCalled()
+    expect(result.personasUsed.get("엘리아")).toBe("캐시된 페르소나")
+  })
+
+  it("generates and saves a persona when the store misses", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "단일" }])
+    ai.createCharacterPersona.mockResolvedValueOnce("새 페르소나")
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    const store = {
+      load: vi.fn(async () => undefined),
+      save: vi.fn(async () => {})
+    }
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      personaStore: store
+    })
+
+    expect(ai.createCharacterPersona).toHaveBeenCalledTimes(1)
+    expect(store.save).toHaveBeenCalledWith(eliaCard, "새 페르소나")
+    expect(result.personasUsed.get("엘리아")).toBe("새 페르소나")
+  })
+
   it("keeps the raw dialogue when the formatter leaks a meta message", async () => {
     const metaLeak = "분량 한계가 있어 한 번에 다 쓸 수 없습니다. 연재형과 압축형 중 어느 쪽을 원하시나요?"
 
