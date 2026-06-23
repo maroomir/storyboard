@@ -15,10 +15,11 @@ import { summarizeSceneCoverage } from "@/shared/sceneCoverage"
 
 // NOTE: Diagnostic — runs the new checkSceneCoverage feature against the current draft to verify
 // every source beat is dramatized in order. Re-extracts beats so it does not depend on stale cache.
-const workspace = process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
-const sceneFileName = process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
-const providerId = process.env.GUERRILA_PROVIDER ?? "codex"
-const model = process.env.GUERRILA_MODEL ?? (providerId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
+const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
+const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
+const providerId = process.env.SCENE_PROVIDER ?? process.env.GUERRILA_PROVIDER ?? "codex"
+const model =
+  process.env.SCENE_MODEL ?? process.env.GUERRILA_MODEL ?? (providerId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
 
 const fileSystem = {
   readFile: async (uri: unknown): Promise<Uint8Array> => new Uint8Array(await nodeFs.readFile(uri as string)),

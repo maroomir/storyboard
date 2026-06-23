@@ -41,21 +41,24 @@ import { buildStyleDirective } from "@/shared/styleDirective"
 const harnessCliTimeoutMs = 600_000
 
 // NOTE: codex (gpt-5.5) is the default; on codex usage-limit fall back to claude-code (sonnet) via
-// GUERRILA_PROVIDER=claude-code, per the project's provider fallback policy.
-const harnessProviderId = (process.env.GUERRILA_PROVIDER ?? "codex") as AiProviderId
+// SCENE_PROVIDER=claude-code, per the project's provider fallback policy. Project-neutral SCENE_*
+// vars are preferred; the legacy GUERRILA_* names still work as a fallback.
+const harnessProviderId = (process.env.SCENE_PROVIDER ?? process.env.GUERRILA_PROVIDER ?? "codex") as AiProviderId
 const harnessModel =
-  process.env.GUERRILA_MODEL ?? (harnessProviderId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
+  process.env.SCENE_MODEL ??
+  process.env.GUERRILA_MODEL ??
+  (harnessProviderId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
 const harnessCommand = harnessProviderId === "claude-code" ? "claude" : "codex"
 
 // NOTE: Headless harness that drives the REAL scene-generation pipeline against the codex CLI so
 // the guerrila draft can be regenerated outside the VSCode extension host. Faithful to the product
 // flow: background only attaches via scene frontmatter.location (the source has none, so none here).
-const workspace = process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
-const sceneFileName = process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
+const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
+const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
 
-// NOTE: run the G-3 revise loop after generation unless GUERRILA_REVISE=0; iterations bound CLI cost.
-const harnessRunRevise = process.env.GUERRILA_REVISE !== "0"
-const harnessReviseIterations = Number(process.env.GUERRILA_REVISE_ITERS ?? "2")
+// NOTE: run the G-3 revise loop after generation unless SCENE_REVISE=0; iterations bound CLI cost.
+const harnessRunRevise = (process.env.SCENE_REVISE ?? process.env.GUERRILA_REVISE) !== "0"
+const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process.env.GUERRILA_REVISE_ITERS ?? "2")
 
 const personaMemoryDirectory = path.join(workspace, ".storyboard", "cache", "personas")
 const backgroundMemoryDirectory = path.join(workspace, ".storyboard", "cache", "backgrounds")
