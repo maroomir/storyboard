@@ -43,6 +43,10 @@ import type { BackgroundCard } from "../shared/card"
 const generateDraftCommand = "storyboard.draft.generate"
 const regenerateDraftCommand = "storyboard.draft.regenerate"
 
+const cacheHitMessage = "입력이 동일하여 캐시된 초안을 엽니다."
+const regenerateSuccessMessage = "초안을 다시 생성해 저장했습니다."
+const generateSuccessMessage = "초안을 생성해 저장했습니다."
+
 function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   if (invokedUri && invokedUri.scheme === "file") {
     return invokedUri
@@ -249,7 +253,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
   if (!options.force && (await isCacheHit(cacheUri, draftUri, inputHash))) {
     if (options.showCacheHitMessage) {
-      await vscode.window.showInformationMessage("입력이 동일하여 캐시된 초안을 엽니다.")
+      await vscode.window.showInformationMessage(cacheHitMessage)
     }
 
     if (options.openDocumentOnSuccess) {
@@ -364,7 +368,7 @@ export async function generateDraftForWorkspaceSceneWorkflow(
 
     if (options.showSuccessMessage) {
       await vscode.window.showInformationMessage(
-        options.force ? "초안을 다시 생성해 저장했습니다." : "초안을 생성해 저장했습니다."
+        options.force ? regenerateSuccessMessage : generateSuccessMessage
       )
     }
 
@@ -456,10 +460,10 @@ export async function runGenerateDraftForWorkspaceScene(
           message: result.kind === "cache_hit" ? "캐시된 초안을 열었습니다." : "완료"
         })
         if (result.kind === "cache_hit") {
-          void vscode.window.showInformationMessage("입력이 동일하여 캐시된 초안을 엽니다.")
+          void vscode.window.showInformationMessage(cacheHitMessage)
         } else {
           void vscode.window.showInformationMessage(
-            options.force ? "초안을 다시 생성해 저장했습니다." : "초안을 생성해 저장했습니다."
+            options.force ? regenerateSuccessMessage : generateSuccessMessage
           )
         }
         return
