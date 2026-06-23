@@ -21,9 +21,9 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { ContractFieldKey } from "../shared/project"
+import { resolveReviseMaxIterations } from "./reviseDraft"
 
 const generateNovelCommand = "storyboard.novel.generate"
-const defaultReviseMaxIterations = 2
 
 const contractFieldLabels: Record<ContractFieldKey, string> = {
   genre: "장르",
@@ -176,14 +176,6 @@ async function requestApproval(_kind: NovelApprovalKind, info: string): Promise<
   const proceed = "계속"
   const choice = await vscode.window.showInformationMessage(info, { modal: true }, proceed)
   return choice === proceed
-}
-
-function resolveReviseMaxIterations(): number {
-  const configured = vscode.workspace
-    .getConfiguration("storyboard")
-    .get<number>("draft.reviseMaxIterations", defaultReviseMaxIterations)
-  const value = Math.floor(Number.isFinite(configured) ? configured : defaultReviseMaxIterations)
-  return Math.min(5, Math.max(1, value))
 }
 
 async function reportResult(result: NovelPipelineResult, manuscriptVolumeUri: vscode.Uri): Promise<void> {

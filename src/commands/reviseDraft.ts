@@ -65,7 +65,7 @@ export async function runReviseGateForScene(
     paths,
     draftUri,
     sceneStem,
-    maxIterations: resolveMaxIterations(),
+    maxIterations: resolveReviseMaxIterations(),
     reviseScoreThreshold: resolveReviseScoreThreshold(),
     onProgress: hooks.onProgress,
     shouldCancel: hooks.shouldCancel
@@ -94,7 +94,7 @@ function resolveSceneStem(uri: vscode.Uri): string | undefined {
   return parseSceneStem(stem) ? stem : undefined
 }
 
-function resolveMaxIterations(): number {
+export function resolveReviseMaxIterations(): number {
   const configured = vscode.workspace
     .getConfiguration("storyboard")
     .get<number>("draft.reviseMaxIterations", defaultMaxIterations)
