@@ -39,13 +39,22 @@ import {
   type OutlineCharacterBrief,
   type OutlineSynopsis
 } from "@/shared/outline"
-import { coerceCritiqueIssues, type DraftCritiqueIssue, type Severity } from "@/shared/draftReview"
+import { coerceCritiqueIssues, type DraftCritiqueIssue } from "@/shared/draftReview"
 import { coerceSceneCoverage, type SceneCoverageIssue } from "@/shared/sceneCoverage"
+import {
+  isAttributed,
+  toContinuityIssue,
+  toFactCandidate,
+  toGrammarIssue,
+  toPromptMessages,
+  toSituationWithCharacters,
+  type ContinuityIssue,
+  type FactCandidate,
+  type GrammarIssue,
+  type SituationWithCharacters
+} from "./aiResponseCoercion"
 
-export interface SituationWithCharacters {
-  readonly characters: readonly string[]
-  readonly situation: string
-}
+export type { ContinuityIssue, FactCandidate, GrammarIssue, SituationWithCharacters } from "./aiResponseCoercion"
 
 export interface GenerateTextOptions {
   readonly providerId?: AiProviderId
@@ -59,29 +68,8 @@ export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
 }
 
-export interface FactCandidate {
-  readonly key: string
-  readonly value: string
-}
-
 export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
-}
-
-export interface GrammarIssue {
-  readonly start: number
-  readonly end: number
-  readonly original: string
-  readonly suggestion: string
-  readonly reason: string
-}
-
-export interface ContinuityIssue {
-  readonly start: number
-  readonly end: number
-  readonly original: string
-  readonly reason: string
-  readonly severity: Severity
 }
 
 export interface InlineCompletionContext {
@@ -482,139 +470,4 @@ export class StoryboardAIService {
       attribution
     })
   }
-}
-
-function isAttributed(attribution: UsageAttribution): boolean {
-  return Boolean(attribution.primary) || (attribution.participants?.length ?? 0) > 0
-}
-
-function toSituationWithCharacters(value: unknown): SituationWithCharacters[] {
-  if (!value || typeof value !== "object") {
-    return []
-  }
-
-  const candidate = value as {
-    readonly characters?: unknown
-    readonly situation?: unknown
-  }
-
-  if (typeof candidate.situation !== "string") {
-    return []
-  }
-
-  const characters = Array.isArray(candidate.characters)
-    ? candidate.characters.filter((character): character is string => typeof character === "string")
-    : []
-
-  return [
-    {
-      situation: candidate.situation,
-      characters
-    }
-  ]
-}
-
-function toGrammarIssue(value: unknown): GrammarIssue[] {
-  if (!value || typeof value !== "object") {
-    return []
-  }
-
-  const candidate = value as {
-    readonly start?: unknown
-    readonly end?: unknown
-    readonly original?: unknown
-    readonly suggestion?: unknown
-    readonly reason?: unknown
-  }
-
-  if (
-    typeof candidate.start !== "number" ||
-    typeof candidate.end !== "number" ||
-    typeof candidate.original !== "string" ||
-    typeof candidate.suggestion !== "string" ||
-    typeof candidate.reason !== "string"
-  ) {
-    return []
-  }
-
-  if (candidate.start < 0 || candidate.end < candidate.start) {
-    return []
-  }
-
-  return [
-    {
-      start: candidate.start,
-      end: candidate.end,
-      original: candidate.original,
-      suggestion: candidate.suggestion,
-      reason: candidate.reason
-    }
-  ]
-}
-
-function toFactCandidate(value: unknown): FactCandidate[] {
-  if (!value || typeof value !== "object") {
-    return []
-  }
-
-  const candidate = value as { readonly key?: unknown; readonly value?: unknown }
-
-  if (typeof candidate.key !== "string" || typeof candidate.value !== "string") {
-    return []
-  }
-
-  const key = candidate.key.trim()
-  const factValue = candidate.value.trim()
-
-  if (key.length === 0 || factValue.length === 0) {
-    return []
-  }
-
-  return [{ key, value: factValue }]
-}
-
-function toContinuityIssue(value: unknown): ContinuityIssue[] {
-  if (!value || typeof value !== "object") {
-    return []
-  }
-
-  const candidate = value as {
-    readonly start?: unknown
-    readonly end?: unknown
-    readonly original?: unknown
-    readonly reason?: unknown
-    readonly severity?: unknown
-  }
-
-  if (
-    typeof candidate.start !== "number" ||
-    typeof candidate.end !== "number" ||
-    typeof candidate.original !== "string" ||
-    typeof candidate.reason !== "string"
-  ) {
-    return []
-  }
-
-  if (candidate.start < 0 || candidate.end < candidate.start) {
-    return []
-  }
-
-  const severity: Severity = candidate.severity === "low" ? "low" : "high"
-
-  return [
-    {
-      start: candidate.start,
-      end: candidate.end,
-      original: candidate.original,
-      reason: candidate.reason,
-      severity
-    }
-  ]
-}
-
-function toPromptMessages(artifact: PromptArtifact): ReadonlyArray<{ readonly role: "system" | "user"; readonly content: string }> {
-  return [
-    { role: "system", content: artifact.system },
-    { role: "user", content: artifact.user }
-  ]
 }
