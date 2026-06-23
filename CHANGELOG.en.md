@@ -10,6 +10,30 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-06-24
+
+### Added
+
+- Added `aliases` and `voice` fields to character cards. Scene body character detection and per-situation persona scoping now recognize aliases as well as canonical names.
+- Added a style directive that combines scene `relationStage` frontmatter with project POV, genre, and style constraints. Persona generation, dialogue generation, genre formatting, and draft critique prompts now use it.
+- Added the `sceneCoverage` AI task and `StoryboardAIService.checkSceneCoverage`. It reports missing or out-of-order source beats from a draft as JSON and can summarize the result.
+- Added a separate Vitest harness configuration and scripts for running long-form scene generation and scene coverage checks through real CLI providers.
+
+### Changed
+
+- Scene generation now passes only the personas for characters participating in each situation, and later situations receive the generated dialogue tail instead of the previous raw situation text.
+- Situation extraction, dialogue generation, and genre-formatting prompts now emphasize preserving all beats while dramatizing transitions, actions, interiority, and conflict as full scenes.
+- Final scene formatting is split into character-budgeted chunks for long scenes. If the model returns meta guidance about length limits or output options, the pipeline keeps the raw dialogue chunk out of the manuscript instead.
+- Character card updates after draft generation are now off by default and run only when `storyboard.draft.updateCardsAfterGenerate` is enabled.
+
+### Documentation
+
+- Updated architecture examples with character `voice` and scene `relationStage` frontmatter.
+
+### Tests
+
+- Added tests for alias-based character detection, style directives, scene coverage parsing and summaries, prompt instructions, and scene-generation persona scoping, context chaining, and chunked formatting.
+
 ## [0.3.2] - 2026-06-22
 
 ### Added
