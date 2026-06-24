@@ -10,6 +10,34 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-25
+
+### Added
+
+- Added card-scoped memory for character personas and background atmospheres under `.storyboard/cache/personas/` and `.storyboard/cache/backgrounds/`. Card changes invalidate the cache through `cardHash`.
+- Added the `backgroundDescription` AI task. It generates place/period atmosphere and sensory details from background cards and feeds them into scene dialogue context.
+- Added deterministic review-issue routing to the `canon`, `persona`, and `narrator` agents. Voice issues are scoped to a character card when name/alias matching is unambiguous, while global issues keep the existing full-rewrite path.
+- Added the `/scene-quality` workflow and scene-quality rubric docs covering the coverage gate, narrative/connectivity/delineation/transition axes, and six-dimension quality score.
+
+### Changed
+
+- `storyboard.draft.reviseAfterGenerate` now defaults to `true`. Generate / Regenerate / Generate All automatically continue into the review-and-revise loop so one action produces a reviewed draft.
+- Added `timeoutMs` settings for Claude Code and Codex CLI providers and raised the default generation timeout to 10 minutes.
+- Split the scene-generation pipeline, novel pipeline, draft-generation commands, AI provider construction, settings view, and messaging contracts into smaller stages and modules. User behavior is preserved while testable boundaries are clearer.
+- Reduced duplication in Codex JSONL parsing, persona-line construction, AI response coercion, revise-after-generate gating, and Seed file I/O.
+
+### Documentation
+
+- Updated the architecture docs with the multi-agent collaboration model, card-scoped memory, review feedback routing, and setting-agent background description flow.
+- Updated the writer guide for the new default automatic review-and-revise behavior after draft generation.
+- Added a report on which card parameters actually affect draft-generation quality.
+- Reorganized Claude/Cursor rules and skills around `.claude/` as the canonical source and synchronized Cursor mirrors.
+
+### Tests
+
+- Added tests for card-memory serialization and validation, persona cache reuse and invalidation, background atmosphere cache, review routing, settings snapshots, CLI timeouts, and messaging-registry splitting.
+- Expanded scene-generation pipeline and revise-workflow coverage.
+
 ## [0.3.3] - 2026-06-24
 
 ### Added

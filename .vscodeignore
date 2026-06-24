@@ -5,6 +5,8 @@
 .cursor/**
 .github/**
 .doc/**
+docs/upgrade-feature/**
+docs/refactor/**
 src/**
 test/**
 webview-ui/**
