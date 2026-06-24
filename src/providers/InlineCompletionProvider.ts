@@ -44,6 +44,21 @@ function sleep(ms: number): Promise<void> {
   })
 }
 
+async function resolveStoryboardWorkspaceFolder(
+  documentUri: vscode.Uri
+): Promise<vscode.WorkspaceFolder | undefined> {
+  if (documentUri.scheme !== "file") {
+    return undefined
+  }
+
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri)
+  if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
+    return undefined
+  }
+
+  return workspaceFolder
+}
+
 export function createInlineCompletionCacheKey(
   document: vscode.TextDocument,
   position: vscode.Position,
@@ -88,27 +103,26 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     })
   }
 
+  private canCompleteDraft(documentUri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): boolean {
+    return (
+      isDraftMarkdownFile(documentUri, workspaceFolder) &&
+      shouldRunInlineCompletion(this.dependencies.aiProviderRegistry.getTaskProvider("inlineCompletion"))
+    )
+  }
+
   public async provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
     _context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken
   ): Promise<vscode.InlineCompletionItem[] | vscode.InlineCompletionList | undefined> {
-    if (document.uri.scheme !== "file") {
-      return undefined
-    }
-
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
-    if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
+    const workspaceFolder = await resolveStoryboardWorkspaceFolder(document.uri)
+    if (!workspaceFolder) {
       return undefined
     }
     this.currentWorkspaceUri = workspaceFolder.uri
 
-    if (!isDraftMarkdownFile(document.uri, workspaceFolder)) {
-      return undefined
-    }
-
-    if (!shouldRunInlineCompletion(this.dependencies.aiProviderRegistry.getTaskProvider("inlineCompletion"))) {
+    if (!this.canCompleteDraft(document.uri, workspaceFolder)) {
       return undefined
     }
 
