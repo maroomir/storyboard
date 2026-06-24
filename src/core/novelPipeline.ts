@@ -80,7 +80,16 @@ interface ChapterGroup {
   readonly stems: readonly string[]
 }
 
-export async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
+interface NovelRunContext {
+  readonly paths: StoryboardProjectPaths
+  readonly state: NovelRunState
+  readonly completed: Set<NovelStageName>
+  readonly persist: (patch: Partial<NovelRunState>) => Promise<void>
+  readonly runStageOnce: (stage: NovelStageName, label: string, run: () => Promise<void>) => Promise<void>
+  readonly newAiService: () => StoryboardAIService
+}
+
+function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   const paths = getStoryboardProjectPaths(options.workspaceUri)
   const completed = new Set<NovelStageName>(options.resumeState?.completedStages ?? [])
   const now = (): string => new Date().toISOString()
@@ -123,23 +132,28 @@ export async function runNovelPipeline(options: NovelPipelineOptions): Promise<N
     await persist({})
   }
 
+  return { paths, state, completed, persist, runStageOnce, newAiService }
+}
+
+export async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
+  const { paths, state, completed, persist, runStageOnce, newAiService } = createNovelRunContext(options)
+
   try {
     await persist({ status: "running" })
 
-    if (!completed.has("outline")) {
-      await runStageOnce("outline", "아웃라인 생성 중…", () =>
-        runOutlineStage(paths, options.project, newAiService())
-      )
+    const outlineWasCompleted = completed.has("outline")
+    await runStageOnce("outline", "아웃라인 생성 중…", () =>
+      runOutlineStage(paths, options.project, newAiService())
+    )
 
-      if (options.runMode !== "auto") {
-        const approved = await options.requestApproval(
-          "outline",
-          "아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?"
-        )
-        if (!approved) {
-          await persist({ status: "paused" })
-          return { outcome: "paused", message: "아웃라인 승인 대기에서 멈췄습니다." }
-        }
+    if (!outlineWasCompleted && options.runMode !== "auto") {
+      const paused = await pauseForApproval(options, persist, {
+        kind: "outline",
+        info: "아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?",
+        pausedMessage: "아웃라인 승인 대기에서 멈췄습니다."
+      })
+      if (paused) {
+        return paused
       }
     }
     if (options.shouldCancel()) {
@@ -158,40 +172,9 @@ export async function runNovelPipeline(options: NovelPipelineOptions): Promise<N
       return await cancel(persist)
     }
 
-    if (!completed.has("chapters")) {
-      for (let chapterIndex = state.nextChapterIndex; chapterIndex < groups.length; chapterIndex += 1) {
-        const group = groups[chapterIndex]
-        if (!group) {
-          continue
-        }
-        options.onProgress(
-          "chapters",
-          `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`
-        )
-
-        await runChapterDraftsAndRevise(group, paths, options)
-
-        await persist({ nextChapterIndex: chapterIndex + 1 })
-
-        if (options.shouldCancel()) {
-          return await cancel(persist)
-        }
-
-        const isLastChapter = chapterIndex === groups.length - 1
-        if (options.runMode === "chapter-approval" && !isLastChapter) {
-          const approved = await options.requestApproval(
-            "chapter",
-            `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`
-          )
-          if (!approved) {
-            await persist({ status: "paused" })
-            return { outcome: "paused", message: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.` }
-          }
-        }
-      }
-
-      completed.add("chapters")
-      await persist({})
+    const chapterResult = await runChapterStages({ options, paths, groups, state, completed, persist })
+    if (chapterResult) {
+      return chapterResult
     }
     if (options.shouldCancel()) {
       return await cancel(persist)
@@ -224,6 +207,25 @@ async function cancel(
 ): Promise<NovelPipelineResult> {
   await persist({ status: "paused" })
   return { outcome: "cancelled", message: "실행을 취소했습니다. 다시 실행하면 이어서 진행합니다." }
+}
+
+interface ApprovalRequest {
+  readonly kind: NovelApprovalKind
+  readonly info: string
+  readonly pausedMessage: string
+}
+
+async function pauseForApproval(
+  options: NovelPipelineOptions,
+  persist: (patch: Partial<NovelRunState>) => Promise<void>,
+  request: ApprovalRequest
+): Promise<NovelPipelineResult | undefined> {
+  const approved = await options.requestApproval(request.kind, request.info)
+  if (approved) {
+    return undefined
+  }
+  await persist({ status: "paused" })
+  return { outcome: "paused", message: request.pausedMessage }
 }
 
 async function runOutlineStage(
@@ -306,6 +308,57 @@ async function runChapterDraftsAndRevise(
       instructions: reviseResult.instructions
     })
   }
+}
+
+interface ChapterStageContext {
+  readonly options: NovelPipelineOptions
+  readonly paths: StoryboardProjectPaths
+  readonly groups: readonly ChapterGroup[]
+  readonly state: NovelRunState
+  readonly completed: Set<NovelStageName>
+  readonly persist: (patch: Partial<NovelRunState>) => Promise<void>
+}
+
+async function runChapterStages(ctx: ChapterStageContext): Promise<NovelPipelineResult | undefined> {
+  const { options, paths, groups, state, completed, persist } = ctx
+  if (completed.has("chapters")) {
+    return undefined
+  }
+
+  for (let chapterIndex = state.nextChapterIndex; chapterIndex < groups.length; chapterIndex += 1) {
+    const group = groups[chapterIndex]
+    if (!group) {
+      continue
+    }
+    options.onProgress(
+      "chapters",
+      `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`
+    )
+
+    await runChapterDraftsAndRevise(group, paths, options)
+
+    await persist({ nextChapterIndex: chapterIndex + 1 })
+
+    if (options.shouldCancel()) {
+      return await cancel(persist)
+    }
+
+    const isLastChapter = chapterIndex === groups.length - 1
+    if (options.runMode === "chapter-approval" && !isLastChapter) {
+      const paused = await pauseForApproval(options, persist, {
+        kind: "chapter",
+        info: `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`,
+        pausedMessage: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.`
+      })
+      if (paused) {
+        return paused
+      }
+    }
+  }
+
+  completed.add("chapters")
+  await persist({})
+  return undefined
 }
 
 async function loadAssembledManuscript(
