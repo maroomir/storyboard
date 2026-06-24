@@ -112,37 +112,15 @@ export async function runApplyDraftFormatForScene(
         title: "Storyboard 장르 포맷 적용",
         cancellable: true
       },
-      async (progress, token) => {
-        progress.report({ message: "장르 포맷 적용 중…" })
-
-        if (token.isCancellationRequested) {
-          return
-        }
-
-        const formattedBody = await aiService.applyGenreFormat(existing.body, project.format, {
-          providerId: dependencies.aiProviderRegistry.getTaskProvider("sceneDraft"),
-          attribution: { primary: { kind: "scene", id: nameParts.stem } }
+      (progress, token) =>
+        applyDraftFormatWithProgress(progress, token, {
+          aiService,
+          aiProviderRegistry: dependencies.aiProviderRegistry,
+          existing,
+          project,
+          draftUri,
+          sceneStem: nameParts.stem
         })
-
-        if (token.isCancellationRequested) {
-          return
-        }
-
-        const draft = createDraft({
-          sceneStem: existing.sceneStem,
-          format: project.format,
-          body: formattedBody,
-          generatedAt: existing.generatedAt
-        })
-
-        progress.report({ message: "저장 중…" })
-        await writeDraftFile(draftUri, vscodeFsAdapter, draft)
-
-        const doc = await vscode.workspace.openTextDocument(draftUri)
-        await vscode.window.showTextDocument(doc)
-        progress.report({ message: "완료" })
-        void vscode.window.showInformationMessage("장르 포맷을 적용해 초안을 저장했습니다.")
-      }
     )
   } catch (error) {
     dependencies.logger.error("Apply draft format failed", error)
@@ -150,6 +128,53 @@ export async function runApplyDraftFormatForScene(
     const message = error instanceof Error ? error.message : String(error)
     await vscode.window.showErrorMessage(`장르 포맷 적용에 실패했습니다: ${message}`)
   }
+}
+
+interface ApplyDraftFormatWithProgressOptions {
+  readonly aiService: StoryboardAIService
+  readonly aiProviderRegistry: AiProviderRegistry
+  readonly existing: ReturnType<typeof parseDraft>
+  readonly project: Awaited<ReturnType<typeof readProjectJson>>
+  readonly draftUri: vscode.Uri
+  readonly sceneStem: string
+}
+
+async function applyDraftFormatWithProgress(
+  progress: vscode.Progress<{ message?: string }>,
+  token: vscode.CancellationToken,
+  options: ApplyDraftFormatWithProgressOptions
+): Promise<void> {
+  const { aiService, aiProviderRegistry, existing, project, draftUri, sceneStem } = options
+
+  progress.report({ message: "장르 포맷 적용 중…" })
+
+  if (token.isCancellationRequested) {
+    return
+  }
+
+  const formattedBody = await aiService.applyGenreFormat(existing.body, project.format, {
+    providerId: aiProviderRegistry.getTaskProvider("sceneDraft"),
+    attribution: { primary: { kind: "scene", id: sceneStem } }
+  })
+
+  if (token.isCancellationRequested) {
+    return
+  }
+
+  const draft = createDraft({
+    sceneStem: existing.sceneStem,
+    format: project.format,
+    body: formattedBody,
+    generatedAt: existing.generatedAt
+  })
+
+  progress.report({ message: "저장 중…" })
+  await writeDraftFile(draftUri, vscodeFsAdapter, draft)
+
+  const doc = await vscode.workspace.openTextDocument(draftUri)
+  await vscode.window.showTextDocument(doc)
+  progress.report({ message: "완료" })
+  void vscode.window.showInformationMessage("장르 포맷을 적용해 초안을 저장했습니다.")
 }
 
 async function runCommand(
