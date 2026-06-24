@@ -70,26 +70,15 @@ function sameStringArray(left: readonly string[], right: readonly string[]): boo
   return left.every((value, index) => value === right[index])
 }
 
-export async function updateCharacterTraitsFromDraft(
+async function extractTraitsForCards(
   input: UpdateCharacterTraitsFromDraftInput
-): Promise<TraitsUpdateSummary> {
-  const limit = input.recentDialogueLimit ?? 8
-  const { draftBody, detectedCharacterCards, aiService, fileSystem, logger } = input
-
-  const readCharacterCard = (ref: CharacterCard): ReturnType<typeof readCardFile> =>
-    readCardFile(input.resolveCharacterCardUri(ref), fileSystem)
-
-  if (detectedCharacterCards.length === 0) {
-    return { updatedCardCount: 0, skippedUnchangedCount: 0 }
-  }
-
-  let extracted: Record<string, string[]>
+): Promise<Record<string, string[]> | undefined> {
+  const { draftBody, detectedCharacterCards, aiService, logger } = input
+  const sceneStem = input.sceneStem
+  const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]))
 
   try {
-    const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]))
-    const sceneStem = input.sceneStem
-
-    extracted = await aiService.extractTraitsByCharacter(
+    return await aiService.extractTraitsByCharacter(
       draftBody,
       detectedCharacterCards.map((card) => card.name),
       sceneStem === undefined
@@ -112,9 +101,14 @@ export async function updateCharacterTraitsFromDraft(
   } catch (error) {
     logger?.error("Traits extraction failed", error)
 
-    return { updatedCardCount: 0, skippedUnchangedCount: 0 }
+    return undefined
   }
+}
 
+async function loadExistingTraits(
+  detectedCharacterCards: readonly CharacterCard[],
+  readCharacterCard: (ref: CharacterCard) => ReturnType<typeof readCardFile>
+): Promise<Record<string, readonly string[]>> {
   const existingTraits: Record<string, readonly string[]> = {}
 
   for (const ref of detectedCharacterCards) {
@@ -129,39 +123,89 @@ export async function updateCharacterTraitsFromDraft(
     }
   }
 
+  return existingTraits
+}
+
+type TraitsCardOutcome = "updated" | "skipped" | "noop"
+
+async function applyTraitsToCard(args: {
+  readonly ref: CharacterCard
+  readonly processed: ReturnType<typeof reconcileCharacterTraits>
+  readonly draftBody: string
+  readonly limit: number
+  readonly fileSystem: CardFileSystem
+  readonly resolveCharacterCardUri: (card: CharacterCard) => unknown
+}): Promise<TraitsCardOutcome> {
+  const { ref, processed, draftBody, limit, fileSystem, resolveCharacterCardUri } = args
+  const cardUri = resolveCharacterCardUri(ref)
+  const current = await readCardFile(cardUri, fileSystem)
+
+  if (current.type !== "character") {
+    return "noop"
+  }
+
+  const additions = processed[current.name] ?? []
+  const quoted = extractQuotedUtterancesForCharacter(draftBody, current.name)
+  const mergedTraits = [...(current.traits ?? []), ...additions]
+  const mergedRecent = [...(current.recentDialogues ?? []), ...quoted].slice(-limit)
+  const traitsUnchanged = sameStringArray(mergedTraits, current.traits ?? [])
+  const recentUnchanged = sameStringArray(mergedRecent, current.recentDialogues ?? [])
+
+  if (traitsUnchanged && recentUnchanged) {
+    return "skipped"
+  }
+
+  const next: CharacterCard = {
+    ...current,
+    traits: mergedTraits,
+    recentDialogues: mergedRecent
+  }
+
+  await writeCardFile(cardUri, fileSystem, next)
+
+  return "updated"
+}
+
+export async function updateCharacterTraitsFromDraft(
+  input: UpdateCharacterTraitsFromDraftInput
+): Promise<TraitsUpdateSummary> {
+  const limit = input.recentDialogueLimit ?? 8
+  const { draftBody, detectedCharacterCards, fileSystem, logger } = input
+
+  const readCharacterCard = (ref: CharacterCard): ReturnType<typeof readCardFile> =>
+    readCardFile(input.resolveCharacterCardUri(ref), fileSystem)
+
+  if (detectedCharacterCards.length === 0) {
+    return { updatedCardCount: 0, skippedUnchangedCount: 0 }
+  }
+
+  const extracted = await extractTraitsForCards(input)
+  if (extracted === undefined) {
+    return { updatedCardCount: 0, skippedUnchangedCount: 0 }
+  }
+
+  const existingTraits = await loadExistingTraits(detectedCharacterCards, readCharacterCard)
   const processed = reconcileCharacterTraits(extracted, existingTraits)
+
   let updatedCardCount = 0
   let skippedUnchangedCount = 0
 
   for (const ref of detectedCharacterCards) {
     try {
-      const cardUri = input.resolveCharacterCardUri(ref)
-      const current = await readCardFile(cardUri, fileSystem)
+      const outcome = await applyTraitsToCard({
+        ref,
+        processed,
+        draftBody,
+        limit,
+        fileSystem,
+        resolveCharacterCardUri: input.resolveCharacterCardUri
+      })
 
-      if (current.type !== "character") {
-        continue
-      }
-
-      const additions = processed[current.name] ?? []
-      const quoted = extractQuotedUtterancesForCharacter(draftBody, current.name)
-      const mergedTraits = [...(current.traits ?? []), ...additions]
-      const mergedRecent = [...(current.recentDialogues ?? []), ...quoted].slice(-limit)
-      const traitsUnchanged = sameStringArray(mergedTraits, current.traits ?? [])
-      const recentUnchanged = sameStringArray(mergedRecent, current.recentDialogues ?? [])
-
-      if (traitsUnchanged && recentUnchanged) {
+      if (outcome === "updated") {
+        updatedCardCount += 1
+      } else if (outcome === "skipped") {
         skippedUnchangedCount += 1
-        continue
       }
-
-      const next: CharacterCard = {
-        ...current,
-        traits: mergedTraits,
-        recentDialogues: mergedRecent
-      }
-
-      await writeCardFile(cardUri, fileSystem, next)
-      updatedCardCount += 1
     } catch (error) {
       logger?.error(`Failed to update traits for character ${ref.name}`, error)
     }
