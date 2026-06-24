@@ -3,6 +3,7 @@ import type React from "react"
 import type { CharacterRole, StoryboardCard } from "@webview/lib/types"
 import { CHARACTER_ROLE_OPTIONS } from "@webview/lib/characterSidebarGroups"
 import { sbInputClass } from "@webview/components/ui/formClasses"
+import { ListField } from "./ListField"
 
 export function CharacterFields({
   card,
@@ -13,6 +14,7 @@ export function CharacterFields({
 }): React.ReactElement {
   return (
     <>
+      <ListField label="Aliases" values={card.aliases ?? []} onChange={(aliases) => updateCard({ ...card, aliases })} />
       <label className="flex flex-col gap-[0.35rem]">
         <span className="text-sm text-sb-fg-muted">Role</span>
         <select
@@ -35,6 +37,14 @@ export function CharacterFields({
             </option>
           ))}
         </select>
+      </label>
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Voice</span>
+        <textarea
+          className={`${sbInputClass} min-h-24 resize-y`}
+          value={card.voice ?? ""}
+          onChange={(event) => updateCard({ ...card, voice: event.target.value })}
+        />
       </label>
       <label className="flex flex-col gap-[0.35rem]">
         <span className="text-sm text-sb-fg-muted">Profile</span>
