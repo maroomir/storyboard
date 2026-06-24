@@ -41,6 +41,7 @@ scene/.sample.txt
 
 # Documentation
 docs/upgrade-feature
+docs/refactor
 
 # Local-only documentation (extended plans, ADRs, drafts)
 .doc/
