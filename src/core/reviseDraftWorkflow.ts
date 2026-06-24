@@ -58,19 +58,22 @@ export interface ReviseDraftWorkflowResult {
   readonly instructions: readonly string[]
 }
 
-export async function runReviseDraftWorkflow(
-  options: ReviseDraftWorkflowOptions
-): Promise<ReviseDraftWorkflowResult> {
-  const { aiProviderRegistry: registry, paths, draftUri, sceneStem, maxIterations } = options
-  const isCancelled = (): boolean => options.shouldCancel?.() ?? false
+interface ReviseDraftContext {
+  readonly context: Awaited<ReturnType<typeof buildSceneContext>>
+  readonly factLines: readonly string[]
+  readonly characterNames: readonly string[]
+  readonly intent: string
+  readonly styleConstraints: readonly string[]
+  readonly qualityCriteria: readonly string[]
+  readonly styleDirective: ReturnType<typeof buildStyleDirective>
+  readonly draft: ReturnType<typeof parseDraft>
+}
 
-  const aiService = new StoryboardAIService(registry, {
-    onUsage: (record): void => {
-      recordUsageSafely(options.usageRecorder, options.workspaceUri, record, options.logger)
-    }
-  })
-  const attribution = { primary: { kind: "scene" as const, id: sceneStem } }
-
+async function prepareReviseDraftContext(
+  paths: StoryboardProjectPaths,
+  draftUri: vscode.Uri,
+  sceneStem: string
+): Promise<ReviseDraftContext> {
   const sceneFileName = `${sceneStem}.txt`
   const scene = await readSceneFile(
     vscode.Uri.joinPath(paths.sceneDirectory, sceneFileName),
@@ -87,6 +90,48 @@ export async function runReviseDraftWorkflow(
   const styleDirective = buildStyleDirective(setting, scene.frontmatter.relationStage)
 
   const draft = parseDraft(await readDraftFile(draftUri, vscodeFsAdapter))
+
+  return { context, factLines, characterNames, intent, styleConstraints, qualityCriteria, styleDirective, draft }
+}
+
+function buildRevisionPasses(
+  continuityIssues: Awaited<ReturnType<StoryboardAIService["checkContinuity"]>>,
+  critiqueIssues: Awaited<ReturnType<StoryboardAIService["critiqueDraft"]>>,
+  characters: ReviseDraftContext["context"]["characters"],
+  globalInstructions: readonly string[]
+): readonly (readonly string[])[] {
+  const reviewIssues = [
+    ...adaptContinuityIssues(continuityIssues),
+    ...adaptCritiqueIssues(critiqueIssues, characters)
+  ]
+  const routing = routeReviewIssues(reviewIssues)
+  const cardNameById = new Map(characters.map((character) => [character.id, character.name] as const))
+
+  // 타깃 그룹은 에이전트별로 스코프 재작성하고, 타깃 없는 전역 이슈만 전체 재작성으로 한 번 더 덮는다.
+  return routing.groups.length > 0
+    ? [
+        ...routing.groups.map((group) => buildScopedInstructions(group, (cardId) => cardNameById.get(cardId))),
+        ...(routing.global.length > 0 ? [globalInstructions] : [])
+      ]
+    : [globalInstructions]
+}
+
+export async function runReviseDraftWorkflow(
+  options: ReviseDraftWorkflowOptions
+): Promise<ReviseDraftWorkflowResult> {
+  const { aiProviderRegistry: registry, paths, draftUri, sceneStem, maxIterations } = options
+  const isCancelled = (): boolean => options.shouldCancel?.() ?? false
+
+  const aiService = new StoryboardAIService(registry, {
+    onUsage: (record): void => {
+      recordUsageSafely(options.usageRecorder, options.workspaceUri, record, options.logger)
+    }
+  })
+  const attribution = { primary: { kind: "scene" as const, id: sceneStem } }
+
+  const { context, factLines, characterNames, intent, styleConstraints, qualityCriteria, styleDirective, draft } =
+    await prepareReviseDraftContext(paths, draftUri, sceneStem)
+
   let body = draft.body
   let revisionCount = 0
   let blocking = 0
@@ -131,23 +176,7 @@ export async function runReviseDraftWorkflow(
 
     options.onProgress?.(`재작성 중 (${revisionCount + 1}/${maxIterations})…`)
 
-    const reviewIssues = [
-      ...adaptContinuityIssues(continuityIssues),
-      ...adaptCritiqueIssues(critiqueIssues, context.characters)
-    ]
-    const routing = routeReviewIssues(reviewIssues)
-    const cardNameById = new Map(context.characters.map((character) => [character.id, character.name] as const))
-
-    // 타깃 그룹은 에이전트별로 스코프 재작성하고, 타깃 없는 전역 이슈만 전체 재작성으로 한 번 더 덮는다.
-    const revisionPasses =
-      routing.groups.length > 0
-        ? [
-            ...routing.groups.map((group) =>
-              buildScopedInstructions(group, (cardId) => cardNameById.get(cardId))
-            ),
-            ...(routing.global.length > 0 ? [lastInstructions] : [])
-          ]
-        : [lastInstructions]
+    const revisionPasses = buildRevisionPasses(continuityIssues, critiqueIssues, context.characters, lastInstructions)
 
     let appliedAnyPass = false
 

@@ -18,6 +18,24 @@ export interface CardRenameCandidate {
   readonly newId: string
 }
 
+function isSameWorkspaceFolder(
+  oldUri: vscode.Uri,
+  newUri: vscode.Uri
+): vscode.WorkspaceFolder | undefined {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(oldUri)
+  const newWorkspaceFolder = vscode.workspace.getWorkspaceFolder(newUri)
+
+  if (!workspaceFolder || !newWorkspaceFolder || workspaceFolder.uri.toString() !== newWorkspaceFolder.uri.toString()) {
+    return undefined
+  }
+
+  return workspaceFolder
+}
+
+function isValidCardFileName(fileName: string): boolean {
+  return !isIgnoredSampleCardFileName(fileName) && fileName.endsWith(".card")
+}
+
 export function parseCardRenameCandidate(
   oldUri: vscode.Uri,
   newUri: vscode.Uri
@@ -26,22 +44,16 @@ export function parseCardRenameCandidate(
     return undefined
   }
 
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(oldUri)
-  const newWorkspaceFolder = vscode.workspace.getWorkspaceFolder(newUri)
+  const workspaceFolder = isSameWorkspaceFolder(oldUri, newUri)
 
-  if (!workspaceFolder || !newWorkspaceFolder || workspaceFolder.uri.toString() !== newWorkspaceFolder.uri.toString()) {
+  if (!workspaceFolder) {
     return undefined
   }
 
   const oldFileName = oldUri.path.split("/").at(-1) ?? ""
   const newFileName = newUri.path.split("/").at(-1) ?? ""
 
-  if (
-    isIgnoredSampleCardFileName(oldFileName) ||
-    isIgnoredSampleCardFileName(newFileName) ||
-    !oldFileName.endsWith(".card") ||
-    !newFileName.endsWith(".card")
-  ) {
+  if (!isValidCardFileName(oldFileName) || !isValidCardFileName(newFileName)) {
     return undefined
   }
 
