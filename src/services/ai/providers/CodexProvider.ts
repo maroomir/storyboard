@@ -154,11 +154,7 @@ interface CodexTurnUsage {
   readonly reasoning_output_tokens?: number
 }
 
-function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
-  let text: string | undefined
-  let usage: AiUsage | undefined
-  let sawJsonlEvent = false
-
+function* iterateCodexJsonlEvents(stdout: string): Generator<Record<string, unknown>> {
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim()
     if (!trimmed) {
@@ -175,13 +171,30 @@ function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
     if (!isRecord(event)) {
       continue
     }
+
+    yield event
+  }
+}
+
+function agentMessageFromCodexEvent(event: Record<string, unknown>): string | undefined {
+  if (event.type !== "item.completed" || !isRecord(event.item) || event.item.type !== "agent_message") {
+    return undefined
+  }
+
+  return typeof event.item.text === "string" ? event.item.text : undefined
+}
+
+function parseCodexJsonl(stdout: string): CodexJsonlParseResult {
+  let text: string | undefined
+  let usage: AiUsage | undefined
+  let sawJsonlEvent = false
+
+  for (const event of iterateCodexJsonlEvents(stdout)) {
     sawJsonlEvent = true
 
-    if (event.type === "item.completed" && isRecord(event.item) && event.item.type === "agent_message") {
-      const message = event.item.text
-      if (typeof message === "string") {
-        text = message
-      }
+    const message = agentMessageFromCodexEvent(event)
+    if (message !== undefined) {
+      text = message
     }
 
     if (event.type === "turn.completed" && isRecord(event.usage)) {
@@ -223,45 +236,52 @@ function extractCodexFailureMessage(result: CliRunResult): string | undefined {
   return stderrMessage.length > 0 ? truncateFailureMessage(stderrMessage) : undefined
 }
 
+function topLevelErrorFromCodexEvent(event: Record<string, unknown>): string | undefined {
+  return event.type === "error" && typeof event.message === "string" ? event.message : undefined
+}
+
+function turnErrorFromCodexEvent(event: Record<string, unknown>): string | undefined {
+  if (event.type !== "turn.failed" || !isRecord(event.error) || typeof event.error.message !== "string") {
+    return undefined
+  }
+
+  return event.error.message
+}
+
+function itemErrorFromCodexEvent(event: Record<string, unknown>): string | undefined {
+  if (
+    event.type !== "item.completed" ||
+    !isRecord(event.item) ||
+    event.item.type !== "error" ||
+    typeof event.item.message !== "string"
+  ) {
+    return undefined
+  }
+
+  return event.item.message
+}
+
 function extractCodexJsonlFailureMessage(stdout: string): string | undefined {
   let itemError: string | undefined
   let turnError: string | undefined
   let topLevelError: string | undefined
 
-  for (const line of stdout.split("\n")) {
-    const trimmed = line.trim()
-    if (!trimmed) {
+  for (const event of iterateCodexJsonlEvents(stdout)) {
+    const topLevel = topLevelErrorFromCodexEvent(event)
+    if (topLevel !== undefined) {
+      topLevelError = normalizeCodexErrorMessage(topLevel)
       continue
     }
 
-    let event: unknown
-    try {
-      event = JSON.parse(trimmed)
-    } catch {
+    const turn = turnErrorFromCodexEvent(event)
+    if (turn !== undefined) {
+      turnError = normalizeCodexErrorMessage(turn)
       continue
     }
 
-    if (!isRecord(event)) {
-      continue
-    }
-
-    if (event.type === "error" && typeof event.message === "string") {
-      topLevelError = normalizeCodexErrorMessage(event.message)
-      continue
-    }
-
-    if (event.type === "turn.failed" && isRecord(event.error) && typeof event.error.message === "string") {
-      turnError = normalizeCodexErrorMessage(event.error.message)
-      continue
-    }
-
-    if (
-      event.type === "item.completed" &&
-      isRecord(event.item) &&
-      event.item.type === "error" &&
-      typeof event.item.message === "string"
-    ) {
-      itemError = normalizeCodexErrorMessage(event.item.message)
+    const item = itemErrorFromCodexEvent(event)
+    if (item !== undefined) {
+      itemError = normalizeCodexErrorMessage(item)
     }
   }
 
