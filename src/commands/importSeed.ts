@@ -163,7 +163,7 @@ async function confirmExportWithoutEncryption(): Promise<boolean> {
     {
       modal: true,
       detail:
-        "⚠ `.seed` 파일은 암호화되지 않습니다. 민감한 내용이 있다면 파일 공유에 주의하세요.\n\n다음 데이터는 .seed 파일에 포함되지 않습니다:\n• 캐릭터 아크(arc), 최근 대사(recentDialogues), 프로필 이미지 경로(profile), 속성(attributes)\n• 임시 작업 데이터(draft/)"
+        "⚠ `.seed` 파일은 암호화되지 않습니다. 민감한 내용이 있다면 파일 공유에 주의하세요.\n\n다음 데이터는 .seed 파일에 포함되지 않습니다:\n• 캐릭터 최근 대사(recentDialogues)\n• 임시 작업 데이터(draft/)"
     },
     "계속",
     "취소"

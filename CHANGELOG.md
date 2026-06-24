@@ -9,6 +9,11 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 제거
+
+- draft 생성에 전혀 쓰이지 않던 카드 파라미터를 정리했습니다: 캐릭터 `attributes` · `relations` · `arc` · `profile`, 배경 `locationKind`. 캐릭터 프로필 이미지는 이제 카드 필드 대신 `profile/<id>.png` 규칙으로 해석합니다.
+- `relations`·`arc`에 의존하던 캐릭터 관계 그래프(`Storyboard: Open Character Relation Graph` 명령)와 아크 곡선 편집 기능을 함께 제거했습니다.
+
 ## [0.4.0] - 2026-06-25
 
 ### 추가

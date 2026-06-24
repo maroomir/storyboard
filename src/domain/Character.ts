@@ -7,15 +7,11 @@ export function createEmptyCharacter(id: string, name: string): Character {
     type: "character",
     id,
     name,
-    profile: `profile/${id}.png`,
     role: "main",
-    attributes: {},
     tags: [],
     traits: [],
     description: "",
     voice: "",
-    relations: [],
-    arc: [],
     recentDialogues: []
   }
 }

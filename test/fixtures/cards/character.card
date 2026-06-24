@@ -1,12 +1,7 @@
 type: character
 id: elia
 name: 엘리아
-profile: profile/elia.png
 role: main
-attributes:
-  age: 17
-  sex: female
-  mbti: ENFJ
 tags:
   - 용감한
   - 결단력
@@ -16,12 +11,5 @@ traits:
 description: |-
   주인공. 학교에 첫 등교한 17세 여학생.
   새로운 학교 생활에 대한 기대와 긴장을 함께 품고 있다.
-relations:
-  - target: jihoon
-    type: 친구
-arc:
-  - stage: 발단
-    summary: 학교에 도착해 새 친구를 만남
-    sceneRef: 01-prologue
 recentDialogues:
   - 이건 우리가 해낼 수 있어!

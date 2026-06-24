@@ -11,16 +11,11 @@ const wordPattern = /[0-9A-Za-z가-힣_-]+/
 
 interface CharacterHoverContext {
   readonly character: CharacterCard
-  readonly relatedCharacterNames: readonly string[]
 }
 
 export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vscode.MarkdownString {
-  const { character, relatedCharacterNames } = context
+  const { character } = context
   const lines: string[] = [`### ${character.name}`]
-
-  if (character.profile && character.profile.trim().length > 0) {
-    lines.push("", character.profile.trim())
-  }
 
   if (character.description && character.description.trim().length > 0) {
     lines.push("", `- 설명: ${character.description.trim()}`)
@@ -32,10 +27,6 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
 
   if (character.recentDialogues && character.recentDialogues.length > 0) {
     lines.push("", "- 최근 대사", ...character.recentDialogues.slice(-3).map((line) => `  - ${line}`))
-  }
-
-  if (relatedCharacterNames.length > 0) {
-    lines.push("", `- 관계: ${relatedCharacterNames.join(", ")}`)
   }
 
   const MarkdownCtor = (vscode as unknown as { MarkdownString?: typeof vscode.MarkdownString }).MarkdownString
@@ -109,12 +100,7 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
       return undefined
     }
 
-    const byId = new Map(characters.map((character) => [character.id, character.name] as const))
-    const relatedNames = (matched.relations ?? [])
-      .map((relation) => byId.get(relation.target))
-      .filter((name): name is string => typeof name === "string")
-
-    return new vscode.Hover(buildCharacterHoverMarkdown({ character: matched, relatedCharacterNames: relatedNames }), wordRange)
+    return new vscode.Hover(buildCharacterHoverMarkdown({ character: matched }), wordRange)
   }
 }
 

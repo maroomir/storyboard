@@ -1,48 +1,11 @@
 import {
   isBackgroundCard,
   type BackgroundCard,
-  type CharacterCard,
   type StoryboardCard
 } from "../shared/card"
 
-export function setCardId(card: StoryboardCard, newId: string): StoryboardCard {
-  if (card.type === "character") {
-    const nextCard: CharacterCard = { ...card, id: newId }
-
-    if (card.profile === `profile/${card.id}.png`) {
-      nextCard.profile = `profile/${newId}.png`
-    }
-
-    return nextCard
-  }
-
-  if (isBackgroundCard(card)) {
-    return { ...card, id: newId }
-  }
-
-  return card
-}
-
-export function renameCardIdInCharacterCard(
-  card: CharacterCard,
-  oldId: string,
-  newId: string
-): CharacterCard {
-  if (oldId === newId || card.relations === undefined) {
-    return card
-  }
-
-  let changed = false
-  const relations = card.relations.map((relation) => {
-    if (relation.target !== oldId) {
-      return relation
-    }
-
-    changed = true
-    return { ...relation, target: newId }
-  })
-
-  return changed ? { ...card, relations } : card
+export function setCardId<T extends StoryboardCard>(card: T, newId: string): T {
+  return { ...card, id: newId }
 }
 
 export function renameCardIdInBackgroundCard(
@@ -69,10 +32,6 @@ export function rewriteCardIdReferences(
 ): StoryboardCard {
   if (oldId === newId) {
     return card
-  }
-
-  if (card.type === "character") {
-    return renameCardIdInCharacterCard(card, oldId, newId)
   }
 
   if (isBackgroundCard(card)) {

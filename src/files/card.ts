@@ -83,30 +83,23 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     type: card.type,
     id: card.id,
     name: card.name,
-    ...(card.profile === undefined ? {} : { profile: card.profile }),
     ...(card.role === undefined ? {} : { role: card.role }),
-    ...(card.attributes === undefined ? {} : { attributes: card.attributes }),
     ...(card.aliases === undefined ? {} : { aliases: card.aliases }),
     ...(card.tags === undefined ? {} : { tags: card.tags }),
     ...(card.traits === undefined ? {} : { traits: card.traits }),
     ...(card.description === undefined ? {} : { description: card.description }),
     ...(card.voice === undefined ? {} : { voice: card.voice }),
-    ...(card.relations === undefined ? {} : { relations: card.relations }),
-    ...(card.arc === undefined ? {} : { arc: card.arc }),
     ...(card.recentDialogues === undefined ? {} : { recentDialogues: card.recentDialogues })
   }
 }
 
 function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
-  const base = {
+  return {
+    type: card.type,
     id: card.id,
     name: card.name,
     description: card.description,
     characterIds: card.characterIds,
     tags: card.tags
   }
-  if (card.type === "location") {
-    return { type: "location", ...base, locationKind: card.locationKind }
-  }
-  return { type: card.type, ...base }
 }

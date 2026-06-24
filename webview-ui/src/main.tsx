@@ -3,7 +3,6 @@ import { createRoot } from "react-dom/client"
 
 import "./lib/types"
 import { CardEditor } from "./components/editor/CardEditor"
-import { parseRelationGraphInitialData, RelationGraph } from "./components/relation/RelationGraphView"
 import { SettingsView } from "./components/settings/SettingsView"
 import { CardsSidebar } from "./components/sidebar/CardsSidebar"
 import { SidebarPlaceholder } from "./components/sidebar/Placeholder"
@@ -22,10 +21,6 @@ function App(): React.ReactElement {
 
   if (window.__STORYBOARD_VIEW__ === "scenes-sidebar") {
     return <ScenesSidebar initialData={parseSidebarScenesInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
-  }
-
-  if (window.__STORYBOARD_VIEW__ === "relation-graph") {
-    return <RelationGraph initialData={parseRelationGraphInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
   }
 
   if (window.__STORYBOARD_VIEW__ === "settings") {

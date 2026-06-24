@@ -7,7 +7,6 @@ export function createEmptyBackground(id: string, name: string): LocationBackgro
     type: "location",
     id,
     name,
-    locationKind: "place",
     characterIds: [],
     tags: [],
     description: ""

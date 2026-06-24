@@ -36,14 +36,6 @@ export function CharacterFields({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Profile</span>
-        <input
-          className={sbInputClass}
-          value={card.profile ?? ""}
-          onChange={(event) => updateCard({ ...card, profile: event.target.value })}
-        />
-      </label>
     </>
   )
 }

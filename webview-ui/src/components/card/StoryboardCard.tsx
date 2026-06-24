@@ -74,10 +74,7 @@ export function StoryboardCard({
   const glowKey = card.type === "character" ? "character" : "background"
   const showRoleBadge = card.type === "character" && card.role
 
-  const compactSecondary =
-    card.description?.trim() ||
-    [card.locationKind].filter(Boolean).join(" · ") ||
-    ""
+  const compactSecondary = card.description?.trim() || ""
 
   const frameClass = clsx(
     "group relative flex w-full flex-col overflow-hidden text-left animate-cardEntrance",

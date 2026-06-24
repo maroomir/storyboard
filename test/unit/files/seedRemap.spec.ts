@@ -23,12 +23,7 @@ function minimalSeed(overrides?: Partial<DecodedSeedContent>): DecodedSeedConten
       })
     ),
     characters: [
-      {
-        type: "character",
-        id: "item",
-        name: "주인공",
-        relations: [{ target: "item-2", type: "rival" }]
-      },
+      { type: "character", id: "item", name: "주인공" },
       { type: "character", id: "item-2", name: "라이벌" }
     ],
     backgrounds: [
@@ -36,7 +31,6 @@ function minimalSeed(overrides?: Partial<DecodedSeedContent>): DecodedSeedConten
         type: "location",
         id: "bg-item",
         name: "배경",
-        locationKind: "place",
         characterIds: ["item", "item-2"],
         tags: [],
         description: ""
@@ -64,7 +58,6 @@ describe("seedRemap", () => {
     const remapped = applySeedIdMapping(seed, mapping)
 
     expect(remapped.characters.map((card) => card.id)).toEqual(["hero", "rival"])
-    expect(remapped.characters[0]?.relations).toEqual([{ target: "rival", type: "rival" }])
     expect(remapped.backgrounds[0]?.characterIds).toEqual(["hero", "rival"])
     expect(remapped.scenes).toBe(seed.scenes)
     expect(remapped.project).toBe(seed.project)

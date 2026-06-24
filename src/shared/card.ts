@@ -36,33 +36,17 @@ const cardIdSchema = z.string().regex(cardIdPattern, {
 })
 
 const stringListSchema = z.array(z.string())
-const cardAttributeValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
-
-export const characterRelationSchema = z.object({
-  target: cardIdSchema,
-  type: z.string().trim().min(1)
-})
-
-export const characterArcSchema = z.object({
-  stage: z.string().trim().min(1),
-  summary: z.string().trim().min(1),
-  sceneRef: z.string().trim().min(1).optional()
-})
 
 export const characterCardSchema = z.object({
   type: z.literal("character"),
   id: cardIdSchema,
   name: z.string().trim().min(1),
-  profile: z.string().trim().min(1).optional(),
   role: characterRoleSchema,
-  attributes: z.record(z.string(), cardAttributeValueSchema).optional(),
   aliases: stringListSchema.optional(),
   tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),
   description: z.string().optional(),
   voice: z.string().optional(),
-  relations: z.array(characterRelationSchema).optional(),
-  arc: z.array(characterArcSchema).optional(),
   recentDialogues: stringListSchema.optional()
 })
 
@@ -76,8 +60,7 @@ const backgroundBaseFields = {
 
 export const locationBackgroundSchema = z.object({
   type: z.literal("location"),
-  ...backgroundBaseFields,
-  locationKind: z.enum(["place", "affiliation"]).default("place")
+  ...backgroundBaseFields
 })
 
 export const temporalBackgroundSchema = z.object({
@@ -104,8 +87,6 @@ export const cardSchema = z.discriminatedUnion("type", [
 ])
 
 export type CardType = (typeof cardTypes)[number]
-export type CharacterRelation = z.infer<typeof characterRelationSchema>
-export type CharacterArc = z.infer<typeof characterArcSchema>
 export type CharacterCard = z.infer<typeof characterCardSchema>
 export type LocationBackgroundCard = z.infer<typeof locationBackgroundSchema>
 export type TemporalBackgroundCard = z.infer<typeof temporalBackgroundSchema>

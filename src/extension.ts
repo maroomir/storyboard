@@ -15,7 +15,6 @@ import { registerImportSeedCommands } from "./commands/importSeed"
 import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
-import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
 import { registerReviewManuscriptCommand } from "./commands/reviewManuscript"
 import { registerReviseDraftCommand } from "./commands/reviseDraft"
@@ -114,7 +113,6 @@ export function activate(context: vscode.ExtensionContext): void {
   )
   context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry, usageRecorder }))
   context.subscriptions.push(registerNewSceneCommands())
-  context.subscriptions.push(registerOpenRelationGraphCommand(context, { aiProviderRegistry }))
   context.subscriptions.push(
     registerOpenSettingsCommand(context, { aiProviderRegistry, secretStore, configBridge })
   )

@@ -21,7 +21,6 @@ const expectedMethods = [
   "cards.writeRaw",
   "project.readContract",
   "project.updateContract",
-  "relations.list",
   "scenes.generateDraft",
   "scenes.list",
   "scenes.openDraft",

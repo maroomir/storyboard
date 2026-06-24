@@ -112,16 +112,12 @@ function createSampleCharacterCard(): string {
   return `type: character
 id: sample
 name: 샘플 캐릭터
-profile: profile/sample.png
 role: main
-attributes: {}
 tags:
   - 샘플
 traits: []
 description: |
   Storyboard 프로젝트를 시작하기 위한 샘플 캐릭터입니다.
-relations: []
-arc: []
 recentDialogues: []
 `
 }
@@ -130,7 +126,6 @@ function createSampleBackgroundCard(): string {
   return `type: location
 id: sample
 name: 샘플 배경
-locationKind: place
 characterIds: []
 tags:
   - 샘플

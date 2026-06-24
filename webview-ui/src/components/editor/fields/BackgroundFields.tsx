@@ -18,22 +18,6 @@ export function BackgroundFields({
 
   return (
     <>
-      {card.type === "location" ? (
-        <label className="flex flex-col gap-[0.35rem]">
-          <span className="text-sm text-sb-fg-muted">Location Kind</span>
-          <select
-            className={sbInputClass}
-            value={card.locationKind ?? "place"}
-            onChange={(event) =>
-              updateCard({ ...card, locationKind: event.target.value as "place" | "affiliation" })
-            }
-          >
-            <option value="place">place</option>
-            <option value="affiliation">affiliation</option>
-          </select>
-        </label>
-      ) : null}
-
       <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
         <legend className="px-1 text-sm text-sb-fg-muted">Related Characters</legend>
         {characterIds.map((characterId, index) => (

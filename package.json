@@ -117,10 +117,6 @@
         "title": "%storyboard.scene.openDraft.title%"
       },
       {
-        "command": "storyboard.relationGraph.open",
-        "title": "%storyboard.relationGraph.open.title%"
-      },
-      {
         "command": "storyboard.settings.open",
         "title": "%storyboard.settings.open.title%",
         "icon": "$(gear)"

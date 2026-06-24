@@ -210,20 +210,11 @@ npm run build
 4. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
 5. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 
-### 9. 관계 그래프
-
-명령 팔레트: **`Storyboard: Open Character Relation Graph`**
-
-**성공 기준**
-
-- 패널이 열리고 캐릭터 노드·링크가 보인다.
-- 노드를 **드래그**할 수 있다.
-
-### 10. 캐시 동작 (선택)
+### 9. 캐시 동작 (선택)
 
 동일 씬·동일 설정으로 **Generate**를 다시 실행했을 때, 캐시 hit 메시지 또는 기대한 재사용 동작이 있는지 확인한다. (프로젝트 옵션·입력이 동일해야 함)
 
-### 11. API 키·기본 provider (`storyboard.defaultProvider`)
+### 10. API 키·기본 provider (`storyboard.defaultProvider`)
 
 Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`로 고릅니다.  
 가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`package.json`의 `contributes.configuration`과 동일).
@@ -339,14 +330,14 @@ npx @vscode/vsce package
 
 ## 카드 ID rename
 
-- [ ] 탐색기 F2, Storyboard 사이드바 카드 컨텍스트 **ID 변경**, 명령 팔레트(`storyboard.character.rename` / `storyboard.background.rename`) 세 경로 모두 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
+- [ ] 탐색기 F2, Storyboard 사이드바 카드 컨텍스트 **ID 변경**, 명령 팔레트(`storyboard.character.rename` / `storyboard.background.rename`) 세 경로 모두 본문 `id`, 다른 배경 카드의 `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
 - [ ] `.sample.card` rename은 후처리 대상에서 제외된다.
 - [ ] 규칙에 맞지 않는 새 ID(대문자·공백 등)는 경고 후 rename이 취소된다.
 - [ ] Finder·터미널 등 VSCode 밖에서 파일명을 바꾼 경우는 자동 갱신되지 않는다. 본문·참조·프로필을 맞추려면 사이드바 **ID 변경** 또는 명령 팔레트 rename을 사용한다.
 
 ### 데이터·호환
 
-- [ ] 보내기 다이얼로그에 arc/profile 등 **미포함** 안내가 있다. round-trip 후 해당 필드가 사라지는지 확인한다(의도된 동작).
+- [ ] 보내기 다이얼로그에 recentDialogues 등 **미포함** 안내가 있다. round-trip 후 해당 필드가 사라지는지 확인한다(의도된 동작).
 - [ ] `trackDraft` 등 seed `project` envelope에 없는 필드는 동기화 시 덮어쓰기 정책을 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)와 대조한다.
 - [ ] 구 `type: background` 카드가 있는 워크스페이스는 보내기/읽기 실패 시 메시지로 원인을 파악할 수 있다.
 

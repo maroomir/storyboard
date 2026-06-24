@@ -24,7 +24,8 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 - `.seed`는 **암호화되지 않는다**. 패스프레이즈는 더 이상 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시한다.
 - **가져오기**는 `load`로 아카이브를 검증(경로 안전성·객체 해시·refs 무결성)한 뒤, HEAD 노트의 스냅샷(`log` → `checkoutSnapshot`)을 디스크에 반영한다. 노트가 하나도 없는 아카이브는 거부한다.
 - **내보내기**는 워크스페이스 상태로 새 저장소를 만들고(`init` → `note` → `save`) 노트 1개를 기록한다. 기존 `.seed`의 이력을 이어가지 않는다.
-- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`는 `.seed` 왕복에서 보존되지 않는다(seedcoat canonical 스키마가 알려진 필드만 기록).
+- 캐릭터 `recentDialogues`는 `.seed` 왕복에서 보존되지 않는다(seedcoat canonical 스키마가 알려진 필드만 기록).
+- seedcoat canonical 스키마에 남아 있는 캐릭터 `relations`·배경 `locationKind`는 Storyboard 카드가 더 이상 사용하지 않으므로, 내보낼 때 빈 값으로 기록하고 가져올 때 무시한다.
 - `draft/`, `.storyboard/cache/`는 아카이브에 포함하지 않으며 Seed 동기화 시에도 소스로 취급하지 않는다.
 - 씬 `stem`은 seedcoat 기준으로 숫자 prefix(`^[0-9]+-`)면 유효하지만, Storyboard 내보내기는 **두 자리 prefix**(`^\d{2}-`) 정책을 유지한다. 보내기 전 [`src/files/seedExportPreflight.ts`](src/files/seedExportPreflight.ts)로 `editor.scenePrefixDigits === 2`와 stem 규칙을 사전 검사한다.
 - `project.json`의 `editor.trackDraft`는 seed `project`에 **포함하지 않는다**. Seed로 **동기화**하면 디스크의 `project.json`이 디코드 결과로 덮어쓰이므로 `trackDraft`는 유지되지 않을 수 있다. 로컬에서만 쓰는 값은 동기화 전 백업하거나, 동기화 후 다시 설정한다.

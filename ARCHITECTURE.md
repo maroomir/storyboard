@@ -159,12 +159,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 type: character
 id: elia
 name: 엘리아
-profile: profile/elia.png
 role: main
-attributes:
-  age: 17
-  sex: female
-  mbti: ENFJ
 tags:
   - 용감한
   - 결단력
@@ -175,13 +170,6 @@ description: |
   주인공. 학교에 첫 등교한 17세 여학생.
 voice: |
   밝고 또렷한 1인칭. 긴장해도 말끝을 흐리지 않는다.
-relations:
-  - target: jihoon
-    type: 친구
-arc:
-  - stage: 발단
-    summary: 학교에 도착해 새 친구를 만남
-    sceneRef: 01-prologue
 recentDialogues:
   - "이건 우리가 해낼 수 있어!"
 ```
@@ -192,7 +180,6 @@ recentDialogues:
 type: location
 id: school
 name: 학교 정문
-locationKind: place
 characterIds:
   - elia
 tags:
@@ -206,15 +193,15 @@ description: |
 
 - 좌측: 캐릭터 프로필 이미지(PNG, 캐릭터 카드 한정)
 - 우측: key/value 영역
-  - 고정 키(`name`, `role`, `attributes.*`)는 폼 입력
-  - 자유 배열(`tags`, `traits`, `recentDialogues`, `relations`, `arc`)은 동적 리스트 편집기
+  - 고정 키(`name`, `role`)는 폼 입력
+  - 자유 배열(`tags`, `traits`, `recentDialogues`)은 동적 리스트 편집기
   - `description`은 멀티라인 텍스트 영역
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)
 
 ### 4.3 `.png`
 
 - 캐릭터 프로필: `character/profile/<id>.png`
-- 카드의 `profile` 필드가 상대 경로로 참조 (캐릭터 카드 한정)
+- 캐릭터 카드의 프로필 이미지는 카드 `id` 규칙(`profile/<id>.png`)으로 참조한다
 
 ### 4.4 `.txt` (씬 시드)
 
@@ -356,7 +343,6 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
 | `storyboard.bible.canonDiff` | `Storyboard: Canon Diff Report` | 미승격 설정 후보를 `canon.yaml`과 대조해 `manuscript/CANON.md` 보고서 생성 |
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
-| `storyboard.relationGraph.open` | `Storyboard: Open Character Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | 조립 원고(`manuscript/manuscript.md`)를 Markdown/TXT로 내보내기 (PDF/DOCX 후속) |
 | `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | `.seed` 아카이브 → 새 워크스페이스 폴더 |
 | `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |

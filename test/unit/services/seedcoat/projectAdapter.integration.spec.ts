@@ -153,29 +153,6 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
     expect(decoded.characters[0]?.role).toBeUndefined()
   })
 
-  it("drops relations without a type during seed round-trip", () => {
-    const content = minimalWorkspaceContent({
-      characters: [
-        {
-          type: "character",
-          id: "hero",
-          name: "주인공",
-          relations: [
-            { target: "rival", type: "" },
-            { target: "mentor", type: "ally" }
-          ]
-        },
-        { type: "character", id: "rival", name: "라이벌" },
-        { type: "character", id: "mentor", name: "멘토" }
-      ]
-    })
-
-    const bytes = encodeWorkspaceToSeed(content)
-    const decoded = decodeSeedToWritePlan(bytes)
-
-    expect(decoded.characters[0]?.relations).toEqual([{ target: "mentor", type: "ally" }])
-  })
-
   it("removes orphan background characterIds on decode", () => {
     const content = minimalWorkspaceContent({
       characters: [

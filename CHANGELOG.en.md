@@ -10,6 +10,11 @@ after the first public release.
 
 ## [Unreleased]
 
+### Removed
+
+- Pruned card parameters that never reached draft generation: character `attributes`, `relations`, `arc`, `profile`, and background `locationKind`. The character profile image is now resolved by the `profile/<id>.png` convention instead of a card field.
+- Removed the character relation graph (`Storyboard: Open Character Relation Graph` command) and arc-curve editing features that depended on `relations`/`arc`.
+
 ## [0.4.0] - 2026-06-25
 
 ### Added

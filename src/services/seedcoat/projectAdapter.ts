@@ -59,14 +59,6 @@ function describeZodIssues(error: ZodError): string {
     .join("; ")
 }
 
-function isSeedRelationWithRequiredFields(value: unknown): boolean {
-  if (!isPlainObject(value)) {
-    return false
-  }
-
-  return typeof value.target === "string" && value.target.trim().length > 0 && typeof value.type === "string" && value.type.trim().length > 0
-}
-
 function normalizeSeedCharacter(item: unknown): unknown {
   if (!isPlainObject(item)) {
     return item
@@ -76,10 +68,6 @@ function normalizeSeedCharacter(item: unknown): unknown {
 
   if (typeof item.role === "string" && item.role.trim().length === 0) {
     delete normalized.role
-  }
-
-  if (Array.isArray(item.relations)) {
-    normalized.relations = item.relations.filter(isSeedRelationWithRequiredFields)
   }
 
   return normalized
@@ -183,9 +171,7 @@ function toSeedCharacter(card: CharacterCard): SeedCharacterCard {
     ...(card.tags !== undefined ? { tags: [...card.tags] } : {}),
     traits: [...(card.traits ?? [])],
     description: card.description ?? "",
-    relations: (card.relations ?? [])
-      .filter(isSeedRelationWithRequiredFields)
-      .map((relation) => ({ target: relation.target, type: relation.type }))
+    relations: []
   }
 }
 

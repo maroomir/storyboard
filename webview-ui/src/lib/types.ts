@@ -15,33 +15,15 @@ export type StoryboardRequestMethod =
   | "ai.generateStream"
   | "usage.read"
 
-export type CardAttributeValue = string | number | boolean | null
-
-export interface CharacterRelation {
-  readonly target: string
-  readonly type: string
-}
-
-export interface CharacterArc {
-  readonly stage: string
-  readonly summary: string
-  readonly sceneRef?: string
-}
-
 export interface StoryboardCard {
   readonly type: CardType
   readonly id: string
   readonly name: string
   readonly description?: string
-  readonly profile?: string
   readonly role?: CharacterRole
-  readonly locationKind?: "place" | "affiliation"
   readonly characterIds?: readonly string[]
-  readonly attributes?: Record<string, CardAttributeValue>
   readonly tags?: readonly string[]
   readonly traits?: readonly string[]
-  readonly relations?: readonly CharacterRelation[]
-  readonly arc?: readonly CharacterArc[]
   readonly recentDialogues?: readonly string[]
 }
 
@@ -119,7 +101,6 @@ export interface StoryboardEventMessage {
     | "cards.changed"
     | "cards.listChanged"
     | "scenes.listChanged"
-    | "relations.listChanged"
     | "usage.changed"
     | "ai.generateStream.chunk"
   readonly payload: unknown

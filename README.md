@@ -21,7 +21,6 @@ English README: [`README.en.md`](README.en.md)
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`SUMMARY.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
 - 조립 원고 Markdown / plain text 내보내기
-- 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
 - Claude Code(`claude`)·Codex(`codex`) CLI provider 지원 — API 키 없이 구독 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
@@ -99,7 +98,7 @@ CLI provider 사용 시 참고할 점:
 - 명령: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
 - `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
 - `.seed`는 **암호화되지 않습니다**. 패스프레이즈는 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시합니다.
-- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
+- 캐릭터 `recentDialogues`와 `draft/`는 `.seed`에 포함되지 않습니다.
 - 정책 요약: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
 
 ## 문서

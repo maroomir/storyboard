@@ -9,12 +9,9 @@ import { YamlEditorPanel } from "./YamlEditorPanel"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
 import { sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
-import { ArcField } from "./fields/ArcField"
 import { BackgroundFields } from "./fields/BackgroundFields"
 import { CharacterFields } from "./fields/CharacterFields"
-import { KeyValueField } from "./fields/KeyValueField"
 import { ListField } from "./fields/ListField"
-import { RelationsField } from "./fields/RelationsField"
 
 const overviewBoxClass =
   "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
@@ -162,28 +159,6 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
               label="Recent Dialogues"
               values={card.recentDialogues ?? []}
               onChange={(recentDialogues) => updateCard({ ...card, recentDialogues })}
-            />
-            <KeyValueField
-              label="Attributes"
-              values={card.attributes ?? {}}
-              onChange={(attributes) => updateCard({ ...card, attributes })}
-            />
-            <ArcField arc={card.arc ?? []} onChange={(arc) => updateCard({ ...card, arc })} />
-          </div>
-        )
-      },
-      {
-        id: "relations",
-        label: "Relations",
-        panel: (
-          <div className={overviewBoxClass}>
-            <SectionHeader title="관계" eyebrow="Relations" />
-            <RelationsField
-              characterName={card.name}
-              characterRole={card.role}
-              characterRoster={documentState.characterRoster}
-              relations={card.relations ?? []}
-              onChange={(relations) => updateCard({ ...card, relations })}
             />
           </div>
         )

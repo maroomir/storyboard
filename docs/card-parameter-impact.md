@@ -4,6 +4,12 @@
 대상: `CharacterCard` / `BackgroundCard`의 각 필드가 **draft 생성**에 실제로 얼마나 기여하는가
 배경: guerrila `01-first-meeting` 씬을 gt 수준으로 끌어올리는 9차 반복 튜닝 과정에서, 어떤 카드 파라미터가 결과를 움직이고 어떤 것이 무의미했는지 코드로 검증한 결과.
 
+> **갱신 (2026-06-24)**: 아래 "영향력 없는" 필드 중 draft 생성에 전혀 닿지 않던 5개 —
+> 캐릭터 `attributes` · `relations` · `arc` · `profile`, 배경 `locationKind` — 를 스키마에서 제거했다.
+> `relations`·`arc`를 읽던 관계 그래프·아크 곡선 기능(전용 프로바이더·webview 컴포넌트·`relations.list` RPC)도 함께 삭제했다.
+> 캐릭터 프로필 이미지는 이제 카드 필드 대신 `profile/<id>.png` 규칙으로 해석한다.
+> 캐릭터 `tags`·`recentDialogues`, 배경 `characterIds`, `aliases`, `role`은 캐시·매칭·UI에서 계속 쓰여 **보존**했다.
+
 ## TL;DR
 
 - **카드 데이터를 draft 생성에 쓰는 프롬프트는 `PersonaGenerationPrompt` 하나뿐**이다. 거기서 읽는 character 필드는 `name` · `voice` · `description` · `role` · `traits`(앞 10개) **5개**가 전부다.
@@ -43,24 +49,23 @@
 
 ## 영향력 없는 파라미터 (생성 경로에서 참조 0)
 
-| 파라미터 | 생성 | 다른 기능에서의 사용처(삭제 시 영향) |
-|---|---|---|
-| **`relations`** | 0 | 관계 그래프(`relationGraphData`), hover, id 리네임(`cardReferenceRewriter`) |
-| **`arc`** | 0 | 카드 에디터 UI(`CardEditor.tsx`, `ArcField.tsx`) |
-| **`recentDialogues`** | 0 | hover, **traits-updater가 자동 기록**(생성은 안 읽음) |
-| **`attributes`** | 0 | 카드 에디터 UI |
-| **`profile`** | 0 | 캐릭터 이미지(`CardCustomEditorProvider`), hover |
-| character **`tags`** | 0 | `sceneCache` 스냅샷, UI (persona엔 `traits`만 들어감) |
-| `background.characterIds` | 0 | — |
-| `background.locationKind` | 0 | 구조용 |
-| `arc.sceneRef` / `relations.type` (하위필드) | 0 | 그래프 · UI |
-| (이 프로젝트) **모든 background 필드** | 0 | `frontmatter.location` 부재로 미부착 |
+| 파라미터 | 생성 | 다른 기능에서의 사용처 | 상태 |
+|---|---|---|---|
+| **`relations`** | 0 | 관계 그래프, hover, id 리네임 | **제거됨** (기능 삭제) |
+| **`arc`** | 0 | 카드 에디터 UI(`ArcField.tsx`) | **제거됨** (기능 삭제) |
+| **`attributes`** | 0 | 카드 에디터 UI | **제거됨** |
+| **`profile`** | 0 | 캐릭터 이미지, hover | **제거됨** (이미지는 `profile/<id>.png` 규칙) |
+| `background.locationKind` | 0 | 구조용 | **제거됨** |
+| **`recentDialogues`** | 0 | hover, **traits-updater가 자동 기록**(생성은 안 읽음) | 보존 |
+| character **`tags`** | 0 | `sceneCache` 스냅샷, UI (persona엔 `traits`만 들어감) | 보존 |
+| `background.characterIds` | 0 | `sceneCache` 스냅샷, 참조 무결성 | 보존 |
+| (이 프로젝트) **모든 background 필드** | 0 | `frontmatter.location` 부재로 미부착 | — |
 
 ## 권고
 
 1. **생성 품질 투자처는 좁다**: `voice` · `aliases` · `traits` · `description`(+`name`/`role`)에만 집중하면 된다. 나머지 카드 필드를 채우는 것은 draft 품질에 무의미하다.
 2. **삭제는 노이즈 제거가 아니다**: 위 "영향력 없는" 필드는 애초에 프롬프트에 주입되지 않으므로, 채워도 생성에 노이즈를 더하지 않는다. 즉 *지운다고 draft가 좋아지지 않는다*. 지우는 동기는 "스키마/입력 작업 단순화"여야 한다.
-3. **하드 삭제 비용**: `relations`(그래프) · `arc`(에디터) · `recentDialogues`(hover/자동기록) · `attributes`/`profile`/`tags`(UI/스냅샷)는 다른 코드가 읽는다. 스키마에서 제거하려면 그 UI/그래프/hover/sceneCache 코드도 함께 정리해야 한다.
+3. **하드 삭제 비용**: `relations`(그래프) · `arc`(에디터) · `attributes`/`profile`(UI) · `locationKind`(UI)는 스키마 제거 시 그 UI/그래프/hover 코드도 함께 정리해야 했다 — 2026-06-24 정리에서 완료. `recentDialogues`(hover/자동기록) · `tags`/`characterIds`(스냅샷)는 캐시·매칭에 엮여 있어 보존했다.
 4. **무비용 축소**: 생성 목적의 채움을 중단하는 것은 즉시 무비용(draft 영향 0). 진짜 스키마 슬림화는 별도 리팩터링 과제로 분리할 것.
 5. **background를 살리려면**: 소스 씬이 불변이라 `frontmatter.location`을 추가할 수 없으니, **배경 자동 탐지** 기능을 넣지 않는 한 background 파라미터는 이 프로젝트에서 영구 dead다.
 
@@ -69,4 +74,5 @@
 - 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `role`, `traits`
 - 생성(배경, 조건부): `personaDialogue.ts` → `background.description`, `background.tags`
 - 탐지/스코핑: `sceneContext.ts`, `sceneGenerationPipeline.ts` → `name`, `aliases`
-- UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `attributes`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`
+- UI/스냅샷 전용(생성 무관, 보존): `recentDialogues`, character `tags`, `background.characterIds`
+- 2026-06-24 제거됨: `relations`, `arc`, `attributes`, `profile`, `background.locationKind`

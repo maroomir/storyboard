@@ -3,7 +3,6 @@ import * as vscode from "vscode"
 import { isIgnoredSampleCardFileName } from "./pathConventions"
 import { parseCard } from "../files/card"
 import { isCharacterRole, type CharacterRole } from "../shared/card"
-import type { RelationListCharacter } from "../shared/messaging"
 
 export interface CharacterRosterEntry {
   readonly id: string
@@ -12,19 +11,9 @@ export interface CharacterRosterEntry {
 }
 
 export async function loadCharacterRoster(workspaceRoot: vscode.Uri): Promise<CharacterRosterEntry[]> {
-  const characters = await loadRelationListCharacters(workspaceRoot)
-
-  return characters.map((character) => ({
-    id: character.id,
-    name: character.name,
-    ...(character.role !== undefined && isCharacterRole(character.role) ? { role: character.role } : {})
-  }))
-}
-
-export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Promise<RelationListCharacter[]> {
   const pattern = new vscode.RelativePattern(workspaceRoot, "character/*.card")
   const uris = await vscode.workspace.findFiles(pattern, undefined)
-  const results: RelationListCharacter[] = []
+  const results: CharacterRosterEntry[] = []
 
   for (const uri of uris) {
     if (isIgnoredSampleCardFileName(uri.path.split("/").at(-1) ?? "")) {
@@ -32,8 +21,7 @@ export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Pro
     }
 
     try {
-      const raw = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri))
-      const card = parseCard(raw)
+      const card = parseCard(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)))
 
       if (card.type !== "character") {
         continue
@@ -42,15 +30,10 @@ export async function loadRelationListCharacters(workspaceRoot: vscode.Uri): Pro
       results.push({
         id: card.id,
         name: card.name,
-        ...(card.role === undefined ? {} : { role: card.role }),
-        uri: uri.toString(),
-        relations: (card.relations ?? []).map((relation) => ({
-          target: relation.target,
-          type: relation.type
-        }))
+        ...(card.role !== undefined && isCharacterRole(card.role) ? { role: card.role } : {})
       })
     } catch {
-      // NOTE: Unreadable or invalid cards are skipped so the relation list stays usable.
+      // NOTE: Unreadable or invalid cards are skipped so the roster stays usable.
     }
   }
 

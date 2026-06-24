@@ -17,11 +17,6 @@ const roleLabelByValue = Object.fromEntries(
   CHARACTER_ROLE_OPTIONS.map((option) => [option.value, option.label])
 ) as Record<CharacterRole, string>
 
-const locationKindLabel: Record<"place" | "affiliation", string> = {
-  place: "장소",
-  affiliation: "소속"
-}
-
 export type PreviewPanelProps = {
   readonly card: StoryboardCard
   readonly imageUri?: string
@@ -30,8 +25,6 @@ export type PreviewPanelProps = {
 
 export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): React.ReactElement {
   const roleLabel = card.type === "character" && card.role ? roleLabelByValue[card.role] : undefined
-  const locationLabel =
-    card.type !== "character" && card.locationKind ? locationKindLabel[card.locationKind] : undefined
 
   return (
     <section className={clsx(previewShellClass, className)} aria-label="카드 미리보기">
@@ -47,11 +40,6 @@ export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): 
             {roleLabel}
           </Pill>
         ) : null}
-        {locationLabel ? (
-          <Pill tone="background" className="normal-case tracking-normal">
-            {locationLabel}
-          </Pill>
-        ) : null}
       </div>
 
       <div className={heroFrameClass}>
@@ -60,7 +48,7 @@ export function PreviewPanel({ card, imageUri, className }: PreviewPanelProps): 
 
       {card.type === "character" ? (
         <p className="m-0 text-xs leading-normal text-sb-fg-muted">
-          이미지는 카드의 profile 경로를 기준으로 표시합니다.
+          이미지는 character/profile/{`{id}`}.png 경로를 기준으로 표시합니다.
         </p>
       ) : null}
     </section>

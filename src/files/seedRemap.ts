@@ -1,6 +1,5 @@
 import {
   renameCardIdInBackgroundCard,
-  renameCardIdInCharacterCard,
   setCardId
 } from "@/core/cardReferenceRewriter"
 import { cardIdPattern } from "@/shared/card"
@@ -77,7 +76,7 @@ export function applySeedIdMapping(
 
   validateSeedIdMapping(seed, mapping)
 
-  let characters = seed.characters.map((card) => {
+  const characters = seed.characters.map((card) => {
     const newId = mapping.get(card.id)
 
     return newId !== undefined && newId !== card.id ? setCardId(card, newId) : card
@@ -94,7 +93,6 @@ export function applySeedIdMapping(
       continue
     }
 
-    characters = characters.map((card) => renameCardIdInCharacterCard(card, oldId, newId))
     backgrounds = backgrounds.map((card) => renameCardIdInBackgroundCard(card, oldId, newId))
   }
 

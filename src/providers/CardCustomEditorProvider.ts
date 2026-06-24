@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 
 import { CardParseError, parseCard, serializeCard } from "../files/card"
-import { loadCharacterRoster } from "../core/relationGraphData"
+import { loadCharacterRoster } from "../core/characterRoster"
 import type { StoryboardCard } from "../shared/card"
 import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
@@ -131,7 +131,7 @@ function resolveCardImageUri(
   card: StoryboardCard,
   webview: vscode.Webview
 ): string | undefined {
-  const relativeImagePath = card.type === "character" ? card.profile : undefined
+  const relativeImagePath = card.type === "character" ? `profile/${card.id}.png` : undefined
 
   if (!relativeImagePath) {
     return undefined

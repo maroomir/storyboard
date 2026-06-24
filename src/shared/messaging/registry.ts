@@ -35,10 +35,6 @@ import {
   projectUpdateContractResponsePayloadSchema
 } from "./project"
 import {
-  relationsListRequestPayloadSchema,
-  relationsListResponsePayloadSchema
-} from "./relations"
-import {
   scenesGenerateDraftRequestPayloadSchema,
   scenesGenerateDraftResponsePayloadSchema,
   scenesListRequestPayloadSchema,
@@ -82,7 +78,6 @@ export const storyboardRequestPayloadSchemas = {
   "scenes.openScene": scenesOpenSceneRequestPayloadSchema,
   "scenes.openDraft": scenesOpenDraftRequestPayloadSchema,
   "scenes.generateDraft": scenesGenerateDraftRequestPayloadSchema,
-  "relations.list": relationsListRequestPayloadSchema,
   "ai.providers.list": aiProvidersListRequestPayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
   "ai.generate": aiGenerateRequestPayloadSchema,
@@ -113,7 +108,6 @@ export const storyboardResponsePayloadSchemas = {
   "scenes.openScene": scenesOpenSceneResponsePayloadSchema,
   "scenes.openDraft": scenesOpenDraftResponsePayloadSchema,
   "scenes.generateDraft": scenesGenerateDraftResponsePayloadSchema,
-  "relations.list": relationsListResponsePayloadSchema,
   "ai.providers.list": aiProvidersListResponsePayloadSchema,
   "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
   "ai.generate": aiGenerateResponsePayloadSchema,
