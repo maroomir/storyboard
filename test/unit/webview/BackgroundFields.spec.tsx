@@ -4,52 +4,30 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { BackgroundFields } from "@webview/components/editor/fields/BackgroundFields"
 import type { StoryboardCard } from "@webview/lib/types"
 
-const backgroundCard: StoryboardCard = {
-  type: "social",
-  id: "academy",
-  name: "학교 사회",
-  characterIds: ["elia"]
+const locationCard: StoryboardCard = {
+  type: "location",
+  id: "school",
+  name: "학교 정문",
+  locationKind: "place"
 }
-
-const roster = [
-  { id: "elia", name: "엘리아", role: "main" as const },
-  { id: "jihoon", name: "지훈", role: "supporting" as const }
-]
 
 describe("BackgroundFields", () => {
   afterEach(cleanup)
 
-  it("adds an empty related-character slot", () => {
+  it("updates the location kind for location cards", () => {
     const updateCard = vi.fn()
-    render(<BackgroundFields card={{ ...backgroundCard, characterIds: [] }} updateCard={updateCard} characterRoster={roster} />)
+    render(<BackgroundFields card={locationCard} updateCard={updateCard} />)
 
-    fireEvent.click(screen.getByLabelText("추가"))
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "affiliation" } })
 
-    expect(updateCard).toHaveBeenCalledWith(expect.objectContaining({ characterIds: [""] }))
+    expect(updateCard).toHaveBeenCalledWith(expect.objectContaining({ locationKind: "affiliation" }))
   })
 
-  it("removes the selected related character", () => {
+  it("does not render related-character inputs", () => {
     const updateCard = vi.fn()
-    render(<BackgroundFields card={backgroundCard} updateCard={updateCard} characterRoster={roster} />)
+    render(<BackgroundFields card={{ type: "social", id: "academy", name: "학교 사회" }} updateCard={updateCard} />)
 
-    fireEvent.click(screen.getByLabelText("삭제"))
-
-    expect(updateCard).toHaveBeenCalledWith(expect.objectContaining({ characterIds: [] }))
-  })
-
-  it("changes a related character to another roster entry", () => {
-    const updateCard = vi.fn()
-    render(<BackgroundFields card={backgroundCard} updateCard={updateCard} characterRoster={roster} />)
-
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "jihoon" } })
-
-    expect(updateCard).toHaveBeenCalledWith(expect.objectContaining({ characterIds: ["jihoon"] }))
-  })
-
-  it("keeps an unknown character id selectable when roster is empty", () => {
-    const updateCard = vi.fn()
-    render(<BackgroundFields card={backgroundCard} updateCard={updateCard} characterRoster={[]} />)
-
-    expect(screen.getByText("elia")).toBeTruthy()
+    expect(screen.queryByText("Related Characters")).toBeNull()
+    expect(screen.queryByRole("combobox")).toBeNull()
   })
 })

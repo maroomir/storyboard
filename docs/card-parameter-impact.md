@@ -64,6 +64,20 @@
 4. **무비용 축소**: 생성 목적의 채움을 중단하는 것은 즉시 무비용(draft 영향 0). 진짜 스키마 슬림화는 별도 리팩터링 과제로 분리할 것.
 5. **background를 살리려면**: 소스 씬이 불변이라 `frontmatter.location`을 추가할 수 없으니, **배경 자동 탐지** 기능을 넣지 않는 한 background 파라미터는 이 프로젝트에서 영구 dead다.
 
+## 입력 주체 분류 (수기 vs AI 자동)
+
+생성 영향도와 별개로, 각 필드를 **누가 채우는가**로 나눈다. 카드 에디터(`webview-ui`)는 이 분류를 따른다:
+수기 필드는 `편집` 탭에 단일 목록형으로 노출하고, AI 자동 필드는 스키마/YAML에 유지하되 입력란을 두지 않는다.
+
+| 구분 | 캐릭터 | 배경 |
+|---|---|---|
+| **수기 입력** (작가 의도·정체성) | `id`(읽기전용)·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile` | `type`·`id`(읽기전용)·`name`·`description`·`tags`·`locationKind`(location) |
+| **AI 자동 갱신** (이야기 진행 누적) | `traits`·`recentDialogues`·`attributes`·`arc`·`relations` | `characterIds` |
+
+- `traits`·`recentDialogues`는 `src/services/ai/traitsUpdater.ts`가 draft 생성 후 자동 갱신한다.
+- `attributes`·`arc`·`relations`·`characterIds`는 현재 자동 갱신 코드는 없으나 입력 주체상 AI 누적값으로 분류해 입력란에서 제외한다(향후 자동화 대상). YAML에는 보존되며 `YAML` 탭에서 확인·편집할 수 있다.
+- `arc`·`relations`는 `AI 기록` 탭에서 **읽기 전용 시각화**(아크 곡선·관계 미리보기)로만 표시한다.
+
 ## 부록: 필드별 코드 사용처 요약
 
 - 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `role`, `traits`

@@ -9,12 +9,11 @@ import { YamlEditorPanel } from "./YamlEditorPanel"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
 import { sbInputClass, sbYamlTextareaClass } from "../ui/formClasses"
-import { ArcField } from "./fields/ArcField"
+import { ArcCurveView } from "../character/ArcCurveView"
+import { CharacterRelationPreview } from "../character/CharacterRelationPreview"
 import { BackgroundFields } from "./fields/BackgroundFields"
 import { CharacterFields } from "./fields/CharacterFields"
-import { KeyValueField } from "./fields/KeyValueField"
 import { ListField } from "./fields/ListField"
-import { RelationsField } from "./fields/RelationsField"
 
 const overviewBoxClass =
   "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
@@ -127,9 +126,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           />
         </label>
         {card.type === "character" ? <CharacterFields card={card} updateCard={updateCard} /> : null}
-        {card.type !== "character" ? (
-          <BackgroundFields card={card} updateCard={updateCard} characterRoster={documentState.characterRoster} />
-        ) : null}
+        {card.type !== "character" ? <BackgroundFields card={card} updateCard={updateCard} /> : null}
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Description</span>
           <textarea
@@ -144,46 +141,28 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
 
     if (card.type !== "character") {
       return [
-        { id: "overview", label: "Overview", panel: overview },
+        { id: "overview", label: "편집", panel: overview },
         { id: "yaml", label: "YAML", panel: yamlPanel }
       ]
     }
 
     return [
-      { id: "overview", label: "Overview", panel: overview },
+      { id: "overview", label: "편집", panel: overview },
       {
-        id: "story",
-        label: "Story",
+        id: "ai-record",
+        label: "AI 기록",
         panel: (
           <div className={overviewBoxClass}>
-            <SectionHeader title="이야기 · 속성" eyebrow="Story" />
-            <ListField label="Traits" values={card.traits ?? []} onChange={(traits) => updateCard({ ...card, traits })} />
-            <ListField
-              label="Recent Dialogues"
-              values={card.recentDialogues ?? []}
-              onChange={(recentDialogues) => updateCard({ ...card, recentDialogues })}
-            />
-            <KeyValueField
-              label="Attributes"
-              values={card.attributes ?? {}}
-              onChange={(attributes) => updateCard({ ...card, attributes })}
-            />
-            <ArcField arc={card.arc ?? []} onChange={(arc) => updateCard({ ...card, arc })} />
-          </div>
-        )
-      },
-      {
-        id: "relations",
-        label: "Relations",
-        panel: (
-          <div className={overviewBoxClass}>
-            <SectionHeader title="관계" eyebrow="Relations" />
-            <RelationsField
+            <SectionHeader title="AI 자동 기록" eyebrow="Auto" />
+            <p className="m-0 text-xs leading-normal text-sb-fg-muted">
+              draft 생성 중 AI가 자동으로 갱신합니다. 직접 입력할 필요가 없으며, 상세 값은 YAML 탭에서 확인할 수 있습니다.
+            </p>
+            <ArcCurveView arc={card.arc ?? []} />
+            <CharacterRelationPreview
               characterName={card.name}
               characterRole={card.role}
               characterRoster={documentState.characterRoster}
               relations={card.relations ?? []}
-              onChange={(relations) => updateCard({ ...card, relations })}
             />
           </div>
         )

@@ -71,6 +71,31 @@ describe("card file codec", () => {
     }
   })
 
+  it("preserves AI-managed fields through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      attributes: { age: 18 },
+      traits: ["허세 섞인 단언"],
+      relations: [{ target: "eunha", type: "라이벌" }],
+      arc: [{ stage: "발단", summary: "첫 등장", sceneRef: "01-first-meeting" }],
+      recentDialogues: ["내가 누군지 아나?"]
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("character")
+    if (reparsed.type === "character") {
+      expect(reparsed.attributes).toEqual({ age: 18 })
+      expect(reparsed.traits).toEqual(["허세 섞인 단언"])
+      expect(reparsed.relations).toEqual([{ target: "eunha", type: "라이벌" }])
+      expect(reparsed.arc).toEqual([{ stage: "발단", summary: "첫 등장", sceneRef: "01-first-meeting" }])
+      expect(reparsed.recentDialogues).toEqual(["내가 누군지 아나?"])
+    }
+  })
+
   it("round-trips a character voice field through serialize and parse", () => {
     const card: StoryboardCard = {
       type: "character",

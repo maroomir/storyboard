@@ -204,12 +204,21 @@ description: |
 
 #### 카드 렌더링 (커스텀 에디터)
 
-- 좌측: 캐릭터 프로필 이미지(PNG, 캐릭터 카드 한정)
-- 우측: key/value 영역
-  - 고정 키(`name`, `role`, `attributes.*`)는 폼 입력
-  - 자유 배열(`tags`, `traits`, `recentDialogues`, `relations`, `arc`)은 동적 리스트 편집기
-  - `description`은 멀티라인 텍스트 영역
+- 좌측: 미리보기(캐릭터 프로필 이미지 + 역할/유형 배지)
+- 우측: 탭으로 구성된 편집 영역
+  - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
+    - 캐릭터: `name`·`aliases`·`role`·`voice`·`description`·`tags`·`profile` (`id`는 읽기 전용)
+    - 배경: `name`·`description`·`tags`·`locationKind`(location 한정) (`id`는 읽기 전용)
+  - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
+  - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)
+
+#### 파라미터 입력 주체 (수기 vs AI 자동)
+
+카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `docs/card-parameter-impact.md`.
+
+- **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
+- **AI 자동 갱신(이야기 진행으로 누적되는 값)**: 캐릭터 `traits`·`recentDialogues`·`attributes`·`arc`·`relations`, 배경 `characterIds`. 스키마/YAML에는 유지되지만 `편집` 탭에 입력란을 두지 않는다. `traits`·`recentDialogues`는 `src/services/ai/traitsUpdater.ts`가 draft 생성 후 자동 갱신하며, 나머지는 YAML에 보존된 채 향후 자동화 대상이다.
 
 ### 4.3 `.png`
 
