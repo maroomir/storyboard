@@ -69,6 +69,7 @@ export const characterCardSchema = z.object({
 const backgroundBaseFields = {
   id: cardIdSchema,
   name: z.string().trim().min(1),
+  aliases: stringListSchema.optional(),
   description: stringListSchema.default([]),
   characterIds: stringListSchema.default([]),
   tags: stringListSchema.default([])

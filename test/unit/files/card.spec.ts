@@ -71,6 +71,26 @@ describe("card file codec", () => {
     }
   })
 
+  it("round-trips background aliases through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "location",
+      id: "school",
+      name: "학교 정문",
+      aliases: ["학교", "교문"],
+      locationKind: "place",
+      description: [],
+      characterIds: [],
+      tags: []
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("location")
+    if (reparsed.type === "location") {
+      expect(reparsed.aliases).toEqual(["학교", "교문"])
+    }
+  })
+
   it("preserves AI-managed fields through serialize and parse", () => {
     const card: StoryboardCard = {
       type: "character",

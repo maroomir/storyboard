@@ -294,9 +294,36 @@ function resolveSceneBackground(
   scene: SceneFile,
   allBackgrounds: readonly BackgroundCard[]
 ): BackgroundCard | undefined {
-  if (!scene.frontmatter.location) {
-    return undefined
+  if (scene.frontmatter.location) {
+    return allBackgrounds.find((bg) => bg.id === scene.frontmatter.location)
   }
 
-  return allBackgrounds.find((bg) => bg.id === scene.frontmatter.location)
+  return detectSceneBackground(scene.body, allBackgrounds)
+}
+
+function detectSceneBackground(
+  body: string,
+  allBackgrounds: readonly BackgroundCard[]
+): BackgroundCard | undefined {
+  let best: { card: BackgroundCard; matchLength: number } | undefined
+
+  for (const background of allBackgrounds) {
+    const tokens = [background.name, ...(background.aliases ?? [])]
+    const matched = detectCharactersInText(body, tokens)
+    if (matched.length === 0) {
+      continue
+    }
+
+    const matchLength = Math.max(...matched.map((token) => token.length))
+    const isBetter =
+      best === undefined ||
+      matchLength > best.matchLength ||
+      (matchLength === best.matchLength && background.id < best.card.id)
+
+    if (isBetter) {
+      best = { card: background, matchLength }
+    }
+  }
+
+  return best?.card
 }

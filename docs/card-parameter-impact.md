@@ -8,7 +8,7 @@
 
 - **카드 데이터를 draft 생성에 쓰는 프롬프트는 `PersonaGenerationPrompt` 하나뿐**이다. 거기서 읽는 character 필드는 `name` · `voice` · `description` · `role` · `traits`(앞 10개) **5개**가 전부다.
 - `aliases`는 인물 **탐지/스코핑**에만, `background.description` / `background.tags`는 **씬에 `frontmatter.location`이 있어 배경이 부착될 때만** 쓰인다.
-- guerrila의 씬은 frontmatter가 비어 있어(`---\n---`) 배경이 부착되지 않는다 → **모든 background 필드는 현재 생성에 0의 영향**.
+- guerrila의 씬은 frontmatter가 비어 있어(`---\n---`) 배경이 부착되지 않았다 → 당시 **모든 background 필드는 생성에 0의 영향**이었다. **(2026-06-25 갱신: 배경 `name`/`aliases` 자동 탐지가 추가되어, 본문에 배경 표기형이 등장하면 frontmatter 없이도 부착된다. `aliases`를 채운 배경은 더 이상 dead가 아니다.)**
 - `relations` · `arc` · `recentDialogues` · `attributes` · `profile` · character `tags`는 **어떤 생성 프롬프트에서도 참조되지 않는다**(UI·그래프·hover·스냅샷 전용).
 
 ## 검증 방법
@@ -22,7 +22,7 @@
 - `src/services/ai/prompts/personaDialogue.ts:37-38` — `background.description`, `background.tags`만 사용.
 - `src/core/sceneContext.ts:285-289` — `name` + `aliases`로 인물 **탐지**.
 - `src/services/ai/pipelines/sceneGenerationPipeline.ts:152` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
-- `src/core/sceneContext.ts:297-301` — 배경은 `scene.frontmatter.location === bg.id`일 때만 부착. 없으면 `createEmptyBackground`(파이프라인 288행) → 배경 필드 전부 무시.
+- `src/core/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
 
 ## 영향력 높은 파라미터
 
@@ -54,7 +54,7 @@
 | `background.characterIds` | 0 | — |
 | `background.locationKind` | 0 | 구조용 |
 | `arc.sceneRef` / `relations.type` (하위필드) | 0 | 그래프 · UI |
-| (이 프로젝트) **모든 background 필드** | 0 | `frontmatter.location` 부재로 미부착 |
+| (이 프로젝트) **모든 background 필드** | 0→조건부 | 과거 `frontmatter.location` 부재로 미부착. 2026-06-25 자동 탐지 추가 후, 본문에 `name`/`aliases` 등장 시 부착 |
 
 ## 권고
 
@@ -62,7 +62,7 @@
 2. **삭제는 노이즈 제거가 아니다**: 위 "영향력 없는" 필드는 애초에 프롬프트에 주입되지 않으므로, 채워도 생성에 노이즈를 더하지 않는다. 즉 *지운다고 draft가 좋아지지 않는다*. 지우는 동기는 "스키마/입력 작업 단순화"여야 한다.
 3. **하드 삭제 비용**: `relations`(그래프) · `arc`(에디터) · `recentDialogues`(hover/자동기록) · `attributes`/`profile`/`tags`(UI/스냅샷)는 다른 코드가 읽는다. 스키마에서 제거하려면 그 UI/그래프/hover/sceneCache 코드도 함께 정리해야 한다.
 4. **무비용 축소**: 생성 목적의 채움을 중단하는 것은 즉시 무비용(draft 영향 0). 진짜 스키마 슬림화는 별도 리팩터링 과제로 분리할 것.
-5. **background를 살리려면**: 소스 씬이 불변이라 `frontmatter.location`을 추가할 수 없으니, **배경 자동 탐지** 기능을 넣지 않는 한 background 파라미터는 이 프로젝트에서 영구 dead다.
+5. **background 자동 탐지(2026-06-25 구현됨)**: 이제 `frontmatter.location`이 없어도 본문에서 배경 `name`/`aliases`를 탐지해 부착한다. 배경 `aliases`에 본문 표기형을 넣으면 `description`/`tags`가 생성에 닿는다. 소스 씬을 고치지 않고도 배경을 살릴 수 있다.
 
 ## 입력 주체 분류 (수기 vs AI 자동)
 
