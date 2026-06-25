@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest"
 
 import {
   applyCardCandidateItems,
+  cardCandidateItemKey,
   collectCardCandidateItems,
+  pruneRecordByPromotedKeys,
   selectNewCardCandidateItems
 } from "@/core/cardCandidatePromotion"
 import type { CardCandidateRecord } from "@/shared/cardCandidates"
@@ -74,5 +76,47 @@ describe("cardCandidatePromotion", () => {
     expect(merged.attributes).toEqual({ 나이: "17", 키: "160" })
     expect(merged.relations).toEqual([{ target: "jihoon", type: "친구" }])
     expect(merged.arc).toEqual([{ stage: "01-a", summary: "등교", sceneRef: "01-a" }])
+  })
+
+  it("removes promoted items and drops fully promoted characters", () => {
+    const input = record("01-a", [
+      {
+        cardId: "elia",
+        attributes: [
+          { key: "나이", value: "17" },
+          { key: "키", value: "160" }
+        ],
+        relations: [{ target: "jihoon", type: "친구" }],
+        arc: [{ summary: "등교", sceneRef: "01-a" }]
+      },
+      {
+        cardId: "jihoon",
+        attributes: [],
+        relations: [{ target: "elia", type: "친구" }],
+        arc: []
+      }
+    ])
+
+    const items = collectCardCandidateItems([input])
+    const promotedKeys = new Set(
+      items
+        .filter(
+          (item) =>
+            (item.cardId === "elia" && item.kind === "attribute" && item.key === "나이") ||
+            (item.cardId === "elia" && item.kind === "arc") ||
+            item.cardId === "jihoon"
+        )
+        .map(cardCandidateItemKey)
+    )
+
+    const pruned = pruneRecordByPromotedKeys(input, promotedKeys)
+
+    expect(pruned.characters).toHaveLength(1)
+    expect(pruned.characters[0]).toMatchObject({
+      cardId: "elia",
+      attributes: [{ key: "키", value: "160" }],
+      relations: [{ target: "jihoon", type: "친구" }],
+      arc: []
+    })
   })
 })
