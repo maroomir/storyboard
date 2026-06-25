@@ -193,6 +193,9 @@ recentDialogues:
 type: location
 id: school
 name: 학교 정문
+aliases:
+  - 학교
+  - 교문
 locationKind: place
 characterIds:
   - elia
@@ -203,13 +206,15 @@ description:
   - 주인공이 처음 등교하는 고등학교 정문. ...
 ```
 
+씬에 배경을 붙이는 방법은 두 가지다. `scene` frontmatter의 `location: <id>`로 명시하거나, 명시가 없으면 본문에서 배경의 `name`·`aliases`가 등장하는지로 자동 탐지한다(캐릭터 탐지와 동일한 방식). 자동 탐지는 가장 구체적인(가장 긴 일치 토큰) 배경 하나를 부착한다. 배경 이름이 "학교 정문"처럼 본문에 그대로 나오지 않을 수 있으므로 `aliases`에 본문 표기형("학교", "교문")을 넣어 두면 탐지가 안정된다.
+
 #### 카드 렌더링 (커스텀 에디터)
 
 - 좌측: 미리보기(캐릭터 프로필 이미지 + 역할/유형 배지)
 - 우측: 탭으로 구성된 편집 영역
   - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
     - 캐릭터: `name`·`aliases`·`role`·`voice`·`description`·`tags`·`profile` (`id`는 읽기 전용)
-    - 배경: `name`·`description`·`tags`·`locationKind`(location 한정) (`id`는 읽기 전용)
+    - 배경: `name`·`aliases`·`description`·`tags`·`locationKind`(location 한정) (`id`는 읽기 전용)
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)

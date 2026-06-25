@@ -101,6 +101,7 @@ function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
   const base = {
     id: card.id,
     name: card.name,
+    ...(card.aliases === undefined ? {} : { aliases: card.aliases }),
     description: card.description,
     characterIds: card.characterIds,
     tags: card.tags

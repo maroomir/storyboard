@@ -80,4 +80,17 @@ describe("card schema", () => {
       expect(parsedCard.description).toEqual([])
     }
   })
+
+  it("parses aliases on a background card", () => {
+    const parsedCard = cardSchema.parse({
+      type: "location",
+      id: "school",
+      name: "학교 정문",
+      aliases: ["학교", "교문"]
+    })
+
+    if (parsedCard.type === "location") {
+      expect(parsedCard.aliases).toEqual(["학교", "교문"])
+    }
+  })
 })

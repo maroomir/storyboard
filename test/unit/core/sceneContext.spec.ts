@@ -241,6 +241,96 @@ describe("sceneContext", () => {
     expect(context.background).toEqual(schoolBg)
   })
 
+  it("auto-detects a background by alias when frontmatter.location is absent", async () => {
+    const fileSystem = new MockFileSystem()
+    const aliasedSchoolBg: BackgroundCard = { ...schoolBg, aliases: ["학교", "교문"] }
+
+    fileSystem.setDirectory("/mock/workspace/character", [])
+    fileSystem.setDirectory("/mock/workspace/background", [["school.card", { type: "file" }]])
+    fileSystem.setFile("/mock/workspace/background/school.card", serializeCard(aliasedSchoolBg))
+
+    const sceneInSchool: SceneFile = { ...mockScene, body: "교문 앞에서 엘리아가 기다린다." }
+
+    const context = await buildSceneContext(mockPaths, sceneInSchool, fileSystem)
+
+    expect(context.background).toEqual(aliasedSchoolBg)
+  })
+
+  it("prefers the background whose matched token is most specific", async () => {
+    const fileSystem = new MockFileSystem()
+    const cityBg: BackgroundCard = {
+      type: "location",
+      id: "city",
+      name: "도시",
+      locationKind: "place",
+      description: [],
+      characterIds: [],
+      tags: []
+    }
+    const aliasedSchoolBg: BackgroundCard = { ...schoolBg, aliases: ["학교"] }
+
+    fileSystem.setDirectory("/mock/workspace/character", [])
+    fileSystem.setDirectory("/mock/workspace/background", [
+      ["city.card", { type: "file" }],
+      ["school.card", { type: "file" }]
+    ])
+    fileSystem.setFile("/mock/workspace/background/city.card", serializeCard(cityBg))
+    fileSystem.setFile("/mock/workspace/background/school.card", serializeCard(aliasedSchoolBg))
+
+    const sceneInSchool: SceneFile = { ...mockScene, body: "도시의 학교 정문 앞에서 만났다." }
+
+    const context = await buildSceneContext(mockPaths, sceneInSchool, fileSystem)
+
+    expect(context.background).toEqual(aliasedSchoolBg)
+  })
+
+  it("leaves background undefined when no background matches the body", async () => {
+    const fileSystem = new MockFileSystem()
+    const aliasedSchoolBg: BackgroundCard = { ...schoolBg, aliases: ["학교", "교문"] }
+
+    fileSystem.setDirectory("/mock/workspace/character", [])
+    fileSystem.setDirectory("/mock/workspace/background", [["school.card", { type: "file" }]])
+    fileSystem.setFile("/mock/workspace/background/school.card", serializeCard(aliasedSchoolBg))
+
+    const sceneElsewhere: SceneFile = { ...mockScene, body: "엘리아가 바닷가를 걷는다." }
+
+    const context = await buildSceneContext(mockPaths, sceneElsewhere, fileSystem)
+
+    expect(context.background).toBeUndefined()
+  })
+
+  it("prefers frontmatter.location over body auto-detection", async () => {
+    const fileSystem = new MockFileSystem()
+    const aliasedSchoolBg: BackgroundCard = { ...schoolBg, aliases: ["학교", "교문"] }
+    const harborBg: BackgroundCard = {
+      type: "location",
+      id: "harbor",
+      name: "항구",
+      locationKind: "place",
+      description: [],
+      characterIds: [],
+      tags: []
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [])
+    fileSystem.setDirectory("/mock/workspace/background", [
+      ["school.card", { type: "file" }],
+      ["harbor.card", { type: "file" }]
+    ])
+    fileSystem.setFile("/mock/workspace/background/school.card", serializeCard(aliasedSchoolBg))
+    fileSystem.setFile("/mock/workspace/background/harbor.card", serializeCard(harborBg))
+
+    const sceneWithLocation: SceneFile = {
+      ...mockScene,
+      frontmatter: { location: "harbor" },
+      body: "교문 앞에서 엘리아가 기다린다."
+    }
+
+    const context = await buildSceneContext(mockPaths, sceneWithLocation, fileSystem)
+
+    expect(context.background).toEqual(harborBg)
+  })
+
   it("ignores explicit sample card files when building context", async () => {
     const fileSystem = new MockFileSystem()
     const sampleCharacter: CharacterCard = {

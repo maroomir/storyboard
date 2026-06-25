@@ -28,6 +28,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/car
 
 - Filename: `NN-<slug>.txt` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`src/shared/scene.ts`](src/shared/scene.ts).
 - Optional YAML frontmatter for title, characters, location, mood; body is the scene seed text.
+- **Background attachment**: a scene attaches a background via frontmatter `location: <id>`, or—when absent—by auto-detecting a background whose `name`/`aliases` appear in the body (most-specific/longest match wins). Mirrors character name/alias detection; see `resolveSceneBackground`/`detectSceneBackground` in [`src/core/sceneContext.ts`](src/core/sceneContext.ts). Backgrounds support an optional `aliases: string[]` for body surface forms.
 
 ## Drafts and cache
 
