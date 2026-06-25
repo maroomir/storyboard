@@ -230,7 +230,7 @@ async function describeBackgroundForScene(
     return card
   }
 
-  const description = card.description ? `${card.description}\n${atmosphere}` : atmosphere
+  const description = [...(card.description ?? []), atmosphere]
   return { ...card, description }
 }
 

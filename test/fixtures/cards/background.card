@@ -1,9 +1,9 @@
 type: location
 id: school
 name: 학교 정문
-description: |-
-  주인공이 처음 등교하는 고등학교 정문.
-  아침 햇빛과 등교하는 학생들로 붐빈다.
+description:
+  - 주인공이 처음 등교하는 고등학교 정문.
+  - 아침 햇빛과 등교하는 학생들로 붐빈다.
 characterIds: []
 tags:
   - 학교

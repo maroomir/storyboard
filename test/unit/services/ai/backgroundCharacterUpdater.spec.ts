@@ -8,7 +8,7 @@ const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 const jihoon: CharacterCard = { type: "character", id: "jihoon", name: "지훈" }
 
 function backgroundCard(characterIds: string[]): BackgroundCard {
-  return { type: "location", id: "school", name: "학교 정문", description: "", characterIds, tags: [], locationKind: "place" }
+  return { type: "location", id: "school", name: "학교 정문", description: [], characterIds, tags: [], locationKind: "place" }
 }
 
 class MemoryCardFileSystem implements CardFileSystem {

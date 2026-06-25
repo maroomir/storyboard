@@ -22,6 +22,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/car
 - **Card `id`**: `^[a-z0-9][a-z0-9-]*$` only (ASCII). Human-readable names go in `name`. Keeps filenames and refs portable—see `cardIdPattern` / `cardSchema` in [`src/shared/card.ts`](src/shared/card.ts).
 - **Source of truth for edits**: `TextDocument`; webview/form changes serialize to YAML and replace document text (full replace is acceptable until diff sync is needed).
 - **Codec**: keep `parseCard` / `serializeCard` in [`src/files/card.ts`](src/files/card.ts) testable with round-trip tests.
+- **List-form text fields**: character `voice`/`description` and background `description` are `string[]` (one bullet per item), not prose. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `src/shared/card.ts`) wherever a field is fed to prompts/hashes. Legacy prose cards are converted by the `storyboard.cards.migrateTextToList` command (`src/core/cardTextMigration.ts`).
 
 ## Scenes (`scene/*.txt`)
 

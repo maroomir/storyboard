@@ -1,4 +1,5 @@
 import type { Background } from "@/domain/Background"
+import { joinCardText } from "@/shared/card"
 import { voiceStyleLines, type StyleDirective } from "@/shared/styleDirective"
 import { type PromptArtifact, type PromptVariantId } from "./types"
 
@@ -22,7 +23,7 @@ function buildSystemLines(
     variant === "xs" ? undefined : "상황에서 이름만 언급되거나 아직 도착하지 않은(앞으로 올) 인물은 그 장면에 등장시키거나 대사를 주지 마라. 실제로 그 자리에 있는 인물만 다뤄라.",
     variant === "xs" ? undefined : "상황에 인물의 폭언·별칭·직접 대사가 드러나면 순화하거나 화해로 덮지 말고 그 표현을 그대로 살려 대사로 옮겨라.",
     variant === "xs" ? undefined : povInteriorityLine,
-    background.description ? `배경 설명: ${background.description}` : undefined,
+    joinCardText(background.description) ? `배경 설명: ${joinCardText(background.description)}` : undefined,
     background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined,
     ...(variant === "xs" ? [] : voiceStyleLines(style))
   ]

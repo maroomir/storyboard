@@ -10,7 +10,7 @@ const baseCard: StoryboardCard = {
   id: "elia",
   name: "엘리아",
   role: "main",
-  description: "주인공"
+  description: ["주인공"]
 }
 
 const rawText = `type: character

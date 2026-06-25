@@ -27,8 +27,8 @@ const shadowHover: Record<"character" | "background", string> = {
 
 const motionTap = { scale: 0.99 }
 
-function descriptionExcerpt(description: string | undefined, maxLength: number): string | undefined {
-  const trimmed = description?.trim()
+function descriptionExcerpt(description: readonly string[] | undefined, maxLength: number): string | undefined {
+  const trimmed = (description ?? []).join("\n").trim()
   if (!trimmed) {
     return undefined
   }
@@ -75,7 +75,7 @@ export function StoryboardCard({
   const showRoleBadge = card.type === "character" && card.role
 
   const compactSecondary =
-    card.description?.trim() ||
+    (card.description ?? []).join("\n").trim() ||
     [card.locationKind].filter(Boolean).join(" · ") ||
     ""
 

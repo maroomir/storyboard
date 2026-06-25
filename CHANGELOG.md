@@ -9,6 +9,11 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 변경
+
+- 캐릭터 `voice`·`description`과 배경 `description`을 긴 산문 대신 **항목 목록(`string[]`)**으로 입력하도록 바꿨습니다. 카드 편집기에서 항목 추가/삭제로 관리하며, YAML에는 시퀀스로 저장됩니다.
+- 산문으로 작성된 기존 카드를 줄 단위 목록으로 변환하는 `Storyboard: 카드 텍스트 필드를 목록형으로 변환`(`storyboard.cards.migrateTextToList`) 명령을 추가했습니다.
+
 ## [0.4.0] - 2026-06-25
 
 ### 추가

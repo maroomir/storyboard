@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react"
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { CardEditor } from "@webview/components/editor/CardEditor"
@@ -9,9 +9,9 @@ const card: StoryboardCard = {
   id: "elia",
   name: "엘리아",
   role: "main",
-  voice: "또렷하고 단단한 1인칭",
+  voice: ["또렷하고 단단한 1인칭"],
   aliases: ["엘리"],
-  description: "주인공",
+  description: ["주인공"],
   traits: ["결단력 있는 발언"],
   attributes: { age: 17 },
   arc: [{ stage: "발단", summary: "등교" }],
@@ -57,12 +57,14 @@ describe("CardEditor manual fields", () => {
   it("preserves AI-managed fields when a manual field is edited", () => {
     const { postMessage } = renderWithApi()
 
-    fireEvent.change(screen.getByLabelText("Voice"), { target: { value: "차분한 1인칭" } })
+    const voiceFieldset = screen.getByText("Voice").closest("fieldset") as HTMLElement
+    const voiceInput = within(voiceFieldset).getAllByRole("textbox")[0] as HTMLElement
+    fireEvent.change(voiceInput, { target: { value: "차분한 1인칭" } })
 
     const lastCall = postMessage.mock.calls.at(-1)?.[0] as { readonly payload: { readonly card: StoryboardCard } }
     expect(lastCall.payload.card).toEqual(
       expect.objectContaining({
-        voice: "차분한 1인칭",
+        voice: ["차분한 1인칭"],
         traits: ["결단력 있는 발언"],
         attributes: { age: 17 },
         arc: [{ stage: "발단", summary: "등교" }],

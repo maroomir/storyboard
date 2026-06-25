@@ -22,6 +22,7 @@ import { registerReviewManuscriptCommand } from "./commands/reviewManuscript"
 import { registerReviseDraftCommand } from "./commands/reviseDraft"
 import { registerSummarizeChaptersCommand } from "./commands/summarizeChapters"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
+import { registerMigrateCardTextCommand } from "./commands/migrateCardTextToList"
 import { registerRenameCardCommands } from "./commands/renameCard"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
@@ -63,6 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerCreateCardCommands())
   context.subscriptions.push(registerRenameCardCommands())
+  context.subscriptions.push(registerMigrateCardTextCommand({ logger }))
   context.subscriptions.push(registerCardRenameParticipant({ logger }))
   context.subscriptions.push(registerInitCommand({ logger }))
   context.subscriptions.push(registerImportSeedCommands({ logger }))

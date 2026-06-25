@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { z } from "zod"
 
-import type { BackgroundCard, CharacterCard } from "../shared/card"
+import { joinCardText, type BackgroundCard, type CharacterCard } from "../shared/card"
 import type { BibleFact } from "../shared/bible"
 import type { ProjectFormat } from "../shared/project"
 import { aiProviderIds, aiTaskCatalog, type AiProviderId, type AiTaskName } from "../services/ai/types"
@@ -113,7 +113,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       role: character.role,
       tags: character.tags ?? [],
       traits: character.traits ?? [],
-      description: character.description ?? "",
+      description: joinCardText(character.description),
       recentDialogues: character.recentDialogues ?? []
     })),
     background: input.background
@@ -122,7 +122,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
           id: input.background.id,
           name: input.background.name,
           tags: input.background.tags ?? [],
-          description: input.background.description ?? "",
+          description: joinCardText(input.background.description),
           characterIds: input.background.characterIds ?? []
         }
       : undefined,

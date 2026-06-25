@@ -42,7 +42,7 @@ import { cardCandidateFilePath, ensureCardCacheDirectory } from "../files/cardCa
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
-import type { BackgroundCard } from "../shared/card"
+import { joinCardText, type BackgroundCard } from "../shared/card"
 
 const generateDraftCommand = "storyboard.draft.generate"
 const regenerateDraftCommand = "storyboard.draft.regenerate"
@@ -91,7 +91,7 @@ function toBackgroundSnapshot(
   return {
     id: background.id,
     name: background.name,
-    description: background.description
+    description: joinCardText(background.description)
   }
 }
 

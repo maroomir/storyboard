@@ -38,14 +38,7 @@ export function CharacterFields({
           ))}
         </select>
       </label>
-      <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Voice</span>
-        <textarea
-          className={`${sbInputClass} min-h-24 resize-y`}
-          value={card.voice ?? ""}
-          onChange={(event) => updateCard({ ...card, voice: event.target.value })}
-        />
-      </label>
+      <ListField label="Voice" values={card.voice ?? []} onChange={(voice) => updateCard({ ...card, voice })} />
       <label className="flex flex-col gap-[0.35rem]">
         <span className="text-sm text-sb-fg-muted">Profile</span>
         <input

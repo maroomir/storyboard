@@ -1,4 +1,5 @@
 import type { Background } from "@/domain/Background"
+import { joinCardText } from "@/shared/card"
 import { type PromptArtifact, type PromptVariantId } from "./types"
 
 export const BackgroundDescriptionPrompt = {
@@ -7,10 +8,11 @@ export const BackgroundDescriptionPrompt = {
     maxTokens: 400
   },
   build(background: Background, variant: PromptVariantId = "generic"): PromptArtifact {
+    const description = joinCardText(background.description)
     const parts = [
       `이름: ${background.name}`,
       `유형: ${background.type}`,
-      background.description ? `설명: ${background.description}` : undefined,
+      description ? `설명: ${description}` : undefined,
       background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined
     ].filter((part): part is string => Boolean(part))
 

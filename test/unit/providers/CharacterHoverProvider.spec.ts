@@ -10,7 +10,7 @@ describe("CharacterHoverProvider helpers", () => {
       id: "elia",
       name: "엘리아",
       profile: "명랑한 주인공",
-      description: "상황을 빠르게 파악한다.",
+      description: ["상황을 빠르게 파악한다."],
       traits: ["침착함", "리더십"],
       recentDialogues: ["괜찮아, 내가 해볼게."],
       relations: [{ target: "jihoon", type: "friend" }]

@@ -33,7 +33,7 @@ function minimalDecodedSeed(): DecodedSeedContent {
         locationKind: "place",
         characterIds: [],
         tags: [],
-        description: ""
+        description: []
       }
     ],
     scenes: [{ stem: "01-prologue", content: "scene body\n" }]
@@ -77,7 +77,7 @@ describe("seedImport", () => {
           locationKind: "place",
           characterIds: [],
           tags: [],
-          description: ""
+          description: []
         }
       ],
       scenes: [

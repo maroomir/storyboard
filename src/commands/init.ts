@@ -118,8 +118,8 @@ attributes: {}
 tags:
   - 샘플
 traits: []
-description: |
-  Storyboard 프로젝트를 시작하기 위한 샘플 캐릭터입니다.
+description:
+  - Storyboard 프로젝트를 시작하기 위한 샘플 캐릭터입니다.
 relations: []
 arc: []
 recentDialogues: []
@@ -134,8 +134,8 @@ locationKind: place
 characterIds: []
 tags:
   - 샘플
-description: |
-  Storyboard 프로젝트를 시작하기 위한 샘플 배경입니다.
+description:
+  - Storyboard 프로젝트를 시작하기 위한 샘플 배경입니다.
 `
 }
 

@@ -26,7 +26,7 @@ describe("prompt length dump", () => {
     profile: "profile/elia.png",
     role: "main",
     attributes: {},
-    description: "차분한 주인공",
+    description: ["차분한 주인공"],
     tags: [],
     traits: ["용감함", "신중함"],
     relations: [],
@@ -39,7 +39,7 @@ describe("prompt length dump", () => {
     id: "school",
     name: "학교",
     locationKind: "place",
-    description: "교실",
+    description: ["교실"],
     characterIds: [],
     tags: []
   }
