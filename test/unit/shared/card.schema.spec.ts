@@ -93,4 +93,34 @@ describe("card schema", () => {
       expect(parsedCard.aliases).toEqual(["학교", "교문"])
     }
   })
+
+  it("parses a desire list on a character card", () => {
+    const parsedCard = cardSchema.parse({
+      type: "character",
+      id: "elia",
+      name: "엘리아",
+      desire: ["진짜 친구를 만들고 싶다"]
+    })
+
+    if (parsedCard.type === "character") {
+      expect(parsedCard.desire).toEqual(["진짜 친구를 만들고 싶다"])
+    }
+  })
+
+  it("parses time, weather, and senses on a background card", () => {
+    const parsedCard = cardSchema.parse({
+      type: "location",
+      id: "school",
+      name: "학교 정문",
+      time: "아침",
+      weather: "맑음",
+      senses: ["종소리", "잔디 냄새"]
+    })
+
+    if (parsedCard.type === "location") {
+      expect(parsedCard.time).toBe("아침")
+      expect(parsedCard.weather).toBe("맑음")
+      expect(parsedCard.senses).toEqual(["종소리", "잔디 냄새"])
+    }
+  })
 })

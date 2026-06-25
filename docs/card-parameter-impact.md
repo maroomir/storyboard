@@ -6,7 +6,7 @@
 
 ## TL;DR
 
-- **카드 데이터를 draft 생성에 쓰는 프롬프트는 `PersonaGenerationPrompt` 하나뿐**이다. 거기서 읽는 character 필드는 `name` · `voice` · `description` · `role` · `attributes` · `traits`(앞 10개) **6개**다. (2026-06-25: `attributes`를 키 정렬 `속성:` 라인으로 주입 추가 — 이전엔 5개였다.)
+- **카드 데이터를 draft 생성에 쓰는 핵심 프롬프트는 `PersonaGenerationPrompt`**이며, 거기서 읽는 character 필드는 `name` · `voice` · `description` · `desire` · `role` · `attributes` · `traits`(앞 10개) **7개**다. 배경은 `BackgroundDescriptionPrompt`(드로잉)가 `name`·`description`·`time`·`weather`·`senses`·`tags`를 읽는다. (2026-06-25: `attributes`(`속성:`)·`desire`(`목표:`)·배경 `time`/`weather`/`senses` 주입 추가 — 이전 character는 5개였다.)
 - `aliases`는 인물 **탐지/스코핑**에만, `background.description` / `background.tags`는 **씬에 `frontmatter.location`이 있어 배경이 부착될 때만** 쓰인다.
 - guerrila의 씬은 frontmatter가 비어 있어(`---\n---`) 배경이 부착되지 않았다 → 당시 **모든 background 필드는 생성에 0의 영향**이었다. **(2026-06-25 갱신: 배경 `name`/`aliases` 자동 탐지가 추가되어, 본문에 배경 표기형이 등장하면 frontmatter 없이도 부착된다. `aliases`를 채운 배경은 더 이상 dead가 아니다.)**
 - `relations` · `arc` · `recentDialogues` · `profile` · character `tags`는 **어떤 생성 프롬프트에서도 참조되지 않는다**(UI·그래프·hover·스냅샷 전용).
@@ -26,7 +26,7 @@
 
 ## 영향력 높은 파라미터
 
-카드 필드 중 생성에 닿는 것은 사실상 7개다(8·9는 조건부).
+카드 필드 중 생성에 닿는 것은 사실상 8개다(배경 부착 필드는 조건부).
 
 | 순위 | 파라미터 | 경로 | 영향 |
 |---|---|---|---|
@@ -37,8 +37,10 @@
 | 5 | **`description`** | personaGeneration "설명" | 인물 한 줄 맥락. |
 | 6 | **`role`** | personaGeneration "역할" | 약함(한 줄). |
 | 7 | **`attributes`** | personaGeneration "속성"(키 정렬) | 성별·나이·MBTI 등 압축 프라이어(2026-06-25 추가). |
-| 8 | `background.description` | personaDialogue "배경 설명" | location/자동탐지 부착 시에만. |
-| 9 | `background.tags` | personaDialogue "태그" | 부착 시에만, 미미. |
+| 8 | **`desire`** | personaGeneration "목표" | 인물 동기·목표(2026-06-25 추가). |
+| 9 | `background.description` | backgroundDescription/personaDialogue | location/자동탐지 부착 시에만. |
+| 10 | **`background.time`·`weather`·`senses`** | backgroundDescription "시간/날씨/감각" | 드로잉 감각 묘사 입력(2026-06-25 추가), 부착 시에만. |
+| 11 | `background.tags` | personaDialogue "태그" | 부착 시에만, 미미. |
 
 > 참고 — 실제로 가장 큰 생성 레버는 **카드 밖**에 있다: `setting.pov`, `setting.styleConstraints`, `setting.genre`(→ styleDirective), `scene.frontmatter.relationStage` / `characters` / `location`. 카드 슬림화와 별개로 이쪽이 품질에 더 크게 작용한다.
 
@@ -91,7 +93,7 @@
 
 ## 부록: 필드별 코드 사용처 요약
 
-- 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `role`, `attributes`, `traits`
-- 생성(배경, 조건부): `personaDialogue.ts` → `background.description`, `background.tags`
+- 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `desire`, `role`, `attributes`, `traits`
+- 생성(배경, 조건부): `backgroundDescription.ts` → `name`, `description`, `time`, `weather`, `senses`, `tags`; 결과 분위기는 `personaDialogue.ts`에 주입
 - 탐지/스코핑: `sceneContext.ts`, `sceneGenerationPipeline.ts` → `name`, `aliases`
 - UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`

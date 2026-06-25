@@ -39,6 +39,7 @@ export function CharacterFields({
         </select>
       </label>
       <ListField label="Voice" values={card.voice ?? []} onChange={(voice) => updateCard({ ...card, voice })} />
+      <ListField label="Desire" values={card.desire ?? []} onChange={(desire) => updateCard({ ...card, desire })} />
       <label className="flex flex-col gap-[0.35rem]">
         <span className="text-sm text-sb-fg-muted">Profile</span>
         <input

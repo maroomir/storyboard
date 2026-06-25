@@ -91,6 +91,47 @@ describe("card file codec", () => {
     }
   })
 
+  it("round-trips a character desire field through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "character",
+      id: "manjae",
+      name: "조만재",
+      role: "main",
+      desire: ["라이벌을 이기고 싶다", "인정받고 싶다"]
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("character")
+    if (reparsed.type === "character") {
+      expect(reparsed.desire).toEqual(["라이벌을 이기고 싶다", "인정받고 싶다"])
+    }
+  })
+
+  it("round-trips background time, weather, and senses through serialize and parse", () => {
+    const card: StoryboardCard = {
+      type: "location",
+      id: "school",
+      name: "학교 정문",
+      locationKind: "place",
+      description: [],
+      characterIds: [],
+      tags: [],
+      time: "아침",
+      weather: "맑음",
+      senses: ["종소리", "잔디 냄새"]
+    }
+
+    const reparsed = parseCard(serializeCard(card))
+
+    expect(reparsed.type).toBe("location")
+    if (reparsed.type === "location") {
+      expect(reparsed.time).toBe("아침")
+      expect(reparsed.weather).toBe("맑음")
+      expect(reparsed.senses).toEqual(["종소리", "잔디 냄새"])
+    }
+  })
+
   it("preserves AI-managed fields through serialize and parse", () => {
     const card: StoryboardCard = {
       type: "character",

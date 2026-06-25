@@ -114,6 +114,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       tags: character.tags ?? [],
       traits: character.traits ?? [],
       description: joinCardText(character.description),
+      desire: joinCardText(character.desire),
       recentDialogues: character.recentDialogues ?? []
     })),
     background: input.background
@@ -123,6 +124,9 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
           name: input.background.name,
           tags: input.background.tags ?? [],
           description: joinCardText(input.background.description),
+          time: input.background.time ?? "",
+          weather: input.background.weather ?? "",
+          senses: joinCardText(input.background.senses),
           characterIds: input.background.characterIds ?? []
         }
       : undefined,

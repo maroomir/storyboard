@@ -9,10 +9,14 @@ export const BackgroundDescriptionPrompt = {
   },
   build(background: Background, variant: PromptVariantId = "generic"): PromptArtifact {
     const description = joinCardText(background.description)
+    const senses = joinCardText(background.senses)
     const parts = [
       `이름: ${background.name}`,
       `유형: ${background.type}`,
       description ? `설명: ${description}` : undefined,
+      background.time ? `시간: ${background.time}` : undefined,
+      background.weather ? `날씨: ${background.weather}` : undefined,
+      senses ? `감각: ${senses}` : undefined,
       background.tags && background.tags.length > 0 ? `태그: ${background.tags.join(", ")}` : undefined
     ].filter((part): part is string => Boolean(part))
 

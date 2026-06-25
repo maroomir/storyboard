@@ -176,6 +176,8 @@ description:
 voice:
   - 밝고 또렷한 1인칭으로 말한다
   - 긴장해도 말끝을 흐리지 않는다
+desire:
+  - 새 학교에서 진짜 친구를 만들고 싶다
 relations:
   - target: jihoon
     type: 친구
@@ -202,6 +204,11 @@ characterIds:
 tags:
   - 학교
   - 도시
+time: 아침
+weather: 맑음
+senses:
+  - 멀리서 울리는 등교 종소리
+  - 갓 자른 잔디 냄새
 description:
   - 주인공이 처음 등교하는 고등학교 정문. ...
 ```
@@ -213,8 +220,8 @@ description:
 - 좌측: 미리보기(캐릭터 프로필 이미지 + 역할/유형 배지)
 - 우측: 탭으로 구성된 편집 영역
   - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
-    - 캐릭터: `name`·`aliases`·`role`·`voice`·`description`·`tags`·`profile` (`id`는 읽기 전용)
-    - 배경: `name`·`aliases`·`description`·`tags`·`locationKind`(location 한정) (`id`는 읽기 전용)
+    - 캐릭터: `name`·`aliases`·`role`·`voice`·`desire`·`description`·`tags`·`profile` (`id`는 읽기 전용)
+    - 배경: `name`·`aliases`·`description`·`tags`·`time`·`weather`·`senses`·`locationKind`(location 한정) (`id`는 읽기 전용)
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)

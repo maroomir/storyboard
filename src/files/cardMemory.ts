@@ -62,6 +62,7 @@ export function computePersonaCardHash(card: CharacterCard): string {
     role: card.role,
     voice: joinCardText(card.voice),
     description: joinCardText(card.description),
+    desire: joinCardText(card.desire),
     attributes: formatCardAttributes(card.attributes),
     traits: card.traits ?? []
   }
@@ -74,6 +75,9 @@ export function computeBackgroundCardHash(card: BackgroundCard): string {
     id: card.id,
     name: card.name,
     description: joinCardText(card.description),
+    time: card.time ?? "",
+    weather: card.weather ?? "",
+    senses: joinCardText(card.senses),
     tags: card.tags ?? []
   }
   return digestCard(digestSource)

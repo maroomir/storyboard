@@ -35,4 +35,13 @@ describe("PersonaGenerationPrompt", () => {
     expect(artifact.user).toContain("속성: mbti=ENFJ")
     expect(artifact.user).not.toContain("secret")
   })
+
+  it("includes the character desire as a goal line", () => {
+    const artifact = PersonaGenerationPrompt.build({
+      ...baseCharacter,
+      desire: ["진짜 친구를 만들고 싶다", "인정받고 싶다"]
+    })
+
+    expect(artifact.user).toContain("목표: 진짜 친구를 만들고 싶다\n인정받고 싶다")
+  })
 })

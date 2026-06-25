@@ -91,6 +91,7 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     ...(card.traits === undefined ? {} : { traits: card.traits }),
     ...(card.description === undefined ? {} : { description: card.description }),
     ...(card.voice === undefined ? {} : { voice: card.voice }),
+    ...(card.desire === undefined ? {} : { desire: card.desire }),
     ...(card.relations === undefined ? {} : { relations: card.relations }),
     ...(card.arc === undefined ? {} : { arc: card.arc }),
     ...(card.recentDialogues === undefined ? {} : { recentDialogues: card.recentDialogues })
@@ -104,7 +105,10 @@ function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
     ...(card.aliases === undefined ? {} : { aliases: card.aliases }),
     description: card.description,
     characterIds: card.characterIds,
-    tags: card.tags
+    tags: card.tags,
+    ...(card.time === undefined ? {} : { time: card.time }),
+    ...(card.weather === undefined ? {} : { weather: card.weather }),
+    ...(card.senses === undefined ? {} : { senses: card.senses })
   }
   if (card.type === "location") {
     return { type: "location", ...base, locationKind: card.locationKind }

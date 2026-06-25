@@ -14,6 +14,7 @@ export function createEmptyCharacter(id: string, name: string): Character {
     traits: [],
     description: [],
     voice: [],
+    desire: [],
     relations: [],
     arc: [],
     recentDialogues: []

@@ -12,4 +12,9 @@ characterIds: []
 tags:
   - 학교
   - 도시
+time: 아침
+weather: 맑음
+senses:
+  - 멀리서 울리는 등교 종소리
+  - 갓 자른 잔디 냄새
 locationKind: place

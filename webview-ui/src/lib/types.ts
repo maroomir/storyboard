@@ -37,7 +37,11 @@ export interface StoryboardCard {
   readonly role?: CharacterRole
   readonly aliases?: readonly string[]
   readonly voice?: readonly string[]
+  readonly desire?: readonly string[]
   readonly locationKind?: "place" | "affiliation"
+  readonly time?: string
+  readonly weather?: string
+  readonly senses?: readonly string[]
   readonly characterIds?: readonly string[]
   readonly attributes?: Record<string, CardAttributeValue>
   readonly tags?: readonly string[]
