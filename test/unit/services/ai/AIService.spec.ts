@@ -112,6 +112,26 @@ describe("StoryboardAIService", () => {
     })
   })
 
+  it("parses approved candidate indices from JSON array output", async () => {
+    const service = createAIService({ completionText: "[0, 2]" })
+
+    await expect(
+      service.verifyCardCandidatesByCharacter("엘리아가 지훈을 만났다.", "엘리아", [
+        "속성 나이: 17",
+        "관계 지훈: 친구",
+        "아크: 학교에 도착"
+      ])
+    ).resolves.toEqual([0, 2])
+  })
+
+  it("returns null when verification output is not a JSON array", async () => {
+    const service = createAIService({ completionText: "확인 불가" })
+
+    await expect(
+      service.verifyCardCandidatesByCharacter("본문", "엘리아", ["속성 나이: 17"])
+    ).resolves.toBeNull()
+  })
+
   it("Q8: parses continuity issues and defaults missing severity to high", async () => {
     const service = createAIService({
       completionText:

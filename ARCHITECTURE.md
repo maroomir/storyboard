@@ -222,6 +222,7 @@ description: |
   - `traits`·`recentDialogues`는 `src/services/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
   - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`src/services/ai/backgroundCharacterUpdater.ts`).
   - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`src/services/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
+  - 적재 전 자기검증: `storyboard.draft.verifyCardCandidates` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
   - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.3 `.png`
