@@ -1,5 +1,5 @@
 import type { Character } from "@/domain/Character"
-import { joinCardText } from "@/shared/card"
+import { formatCardAttributes, joinCardText } from "@/shared/card"
 import { voiceStyleLines, type StyleDirective } from "@/shared/styleDirective"
 import { type PromptArtifact, type PromptVariantId } from "./types"
 
@@ -11,11 +11,13 @@ export const PersonaGenerationPrompt = {
   build(character: Character, variant: PromptVariantId = "generic", style?: StyleDirective): PromptArtifact {
     const voice = joinCardText(character.voice)
     const description = joinCardText(character.description)
+    const attributes = formatCardAttributes(character.attributes)
     const parts = [
       `이름: ${character.name}`,
       voice ? `목소리·말투: ${voice}` : undefined,
       description ? `설명: ${description}` : undefined,
       character.role ? `역할: ${character.role}` : undefined,
+      attributes ? `속성: ${attributes}` : undefined,
       character.traits && character.traits.length > 0 ? `특징: ${character.traits.slice(0, 10).join(", ")}` : undefined
     ].filter((part): part is string => Boolean(part))
 

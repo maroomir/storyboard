@@ -6,10 +6,10 @@
 
 ## TL;DR
 
-- **카드 데이터를 draft 생성에 쓰는 프롬프트는 `PersonaGenerationPrompt` 하나뿐**이다. 거기서 읽는 character 필드는 `name` · `voice` · `description` · `role` · `traits`(앞 10개) **5개**가 전부다.
+- **카드 데이터를 draft 생성에 쓰는 프롬프트는 `PersonaGenerationPrompt` 하나뿐**이다. 거기서 읽는 character 필드는 `name` · `voice` · `description` · `role` · `attributes` · `traits`(앞 10개) **6개**다. (2026-06-25: `attributes`를 키 정렬 `속성:` 라인으로 주입 추가 — 이전엔 5개였다.)
 - `aliases`는 인물 **탐지/스코핑**에만, `background.description` / `background.tags`는 **씬에 `frontmatter.location`이 있어 배경이 부착될 때만** 쓰인다.
 - guerrila의 씬은 frontmatter가 비어 있어(`---\n---`) 배경이 부착되지 않았다 → 당시 **모든 background 필드는 생성에 0의 영향**이었다. **(2026-06-25 갱신: 배경 `name`/`aliases` 자동 탐지가 추가되어, 본문에 배경 표기형이 등장하면 frontmatter 없이도 부착된다. `aliases`를 채운 배경은 더 이상 dead가 아니다.)**
-- `relations` · `arc` · `recentDialogues` · `attributes` · `profile` · character `tags`는 **어떤 생성 프롬프트에서도 참조되지 않는다**(UI·그래프·hover·스냅샷 전용).
+- `relations` · `arc` · `recentDialogues` · `profile` · character `tags`는 **어떤 생성 프롬프트에서도 참조되지 않는다**(UI·그래프·hover·스냅샷 전용).
 
 ## 검증 방법
 
@@ -18,7 +18,7 @@
 
 핵심 근거 (코드 위치):
 
-- `src/services/ai/prompts/personaGeneration.ts:11-17` — character에서 **`name`, `voice`, `description`, `role`, `traits`(slice 0,10)만** 사용.
+- `src/services/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
 - `src/services/ai/prompts/personaDialogue.ts:37-38` — `background.description`, `background.tags`만 사용.
 - `src/core/sceneContext.ts:285-289` — `name` + `aliases`로 인물 **탐지**.
 - `src/services/ai/pipelines/sceneGenerationPipeline.ts:152` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
@@ -26,7 +26,7 @@
 
 ## 영향력 높은 파라미터
 
-카드 필드 중 생성에 닿는 것은 사실상 6개뿐이다(7·8은 조건부).
+카드 필드 중 생성에 닿는 것은 사실상 7개다(8·9는 조건부).
 
 | 순위 | 파라미터 | 경로 | 영향 |
 |---|---|---|---|
@@ -36,8 +36,9 @@
 | 4 | **`traits`** | personaGeneration "특징"(앞 10개) | 행동 패턴. |
 | 5 | **`description`** | personaGeneration "설명" | 인물 한 줄 맥락. |
 | 6 | **`role`** | personaGeneration "역할" | 약함(한 줄). |
-| 7 | `background.description` | personaDialogue "배경 설명" | **location 부착 시에만**(guerrila 현재 0). |
-| 8 | `background.tags` | personaDialogue "태그" | location 부착 시에만, 미미. |
+| 7 | **`attributes`** | personaGeneration "속성"(키 정렬) | 성별·나이·MBTI 등 압축 프라이어(2026-06-25 추가). |
+| 8 | `background.description` | personaDialogue "배경 설명" | location/자동탐지 부착 시에만. |
+| 9 | `background.tags` | personaDialogue "태그" | 부착 시에만, 미미. |
 
 > 참고 — 실제로 가장 큰 생성 레버는 **카드 밖**에 있다: `setting.pov`, `setting.styleConstraints`, `setting.genre`(→ styleDirective), `scene.frontmatter.relationStage` / `characters` / `location`. 카드 슬림화와 별개로 이쪽이 품질에 더 크게 작용한다.
 
@@ -48,7 +49,6 @@
 | **`relations`** | 0 | 관계 그래프(`relationGraphData`), hover, id 리네임(`cardReferenceRewriter`) |
 | **`arc`** | 0 | 카드 에디터 UI(`CardEditor.tsx`, `ArcField.tsx`) |
 | **`recentDialogues`** | 0 | hover, **traits-updater가 자동 기록**(생성은 안 읽음) |
-| **`attributes`** | 0 | 카드 에디터 UI |
 | **`profile`** | 0 | 캐릭터 이미지(`CardCustomEditorProvider`), hover |
 | character **`tags`** | 0 | `sceneCache` 스냅샷, UI (persona엔 `traits`만 들어감) |
 | `background.characterIds` | 0 | — |
@@ -91,7 +91,7 @@
 
 ## 부록: 필드별 코드 사용처 요약
 
-- 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `role`, `traits`
+- 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `role`, `attributes`, `traits`
 - 생성(배경, 조건부): `personaDialogue.ts` → `background.description`, `background.tags`
 - 탐지/스코핑: `sceneContext.ts`, `sceneGenerationPipeline.ts` → `name`, `aliases`
-- UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `attributes`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`
+- UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`
