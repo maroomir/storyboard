@@ -4,13 +4,15 @@ import type { StoryboardLogger } from "../core/logger"
 import { characterCardPath, getStoryboardProjectPaths } from "../core/pathConventions"
 import {
   applyCardCandidateItems,
+  cardCandidateItemKey,
   collectCardCandidateItems,
+  pruneRecordByPromotedKeys,
   selectNewCardCandidateItems,
   type CardCandidateItem
 } from "../core/cardCandidatePromotion"
 import { getTargetWorkspaceFolder, hasStoryboardProject } from "../core/workspace"
 import { readCardFile, writeCardFile } from "../files/card"
-import { readCardCandidateFile } from "../files/cardCandidates"
+import { readCardCandidateFile, writeCardCandidateFile } from "../files/cardCandidates"
 import type { CharacterCard } from "../shared/card"
 import type { CardCandidateRecord } from "../shared/cardCandidates"
 
@@ -116,6 +118,52 @@ async function applyPickedItems(
   return updatedCardCount
 }
 
+function countRecordCandidates(record: CardCandidateRecord): number {
+  return record.characters.reduce(
+    (total, character) => total + character.attributes.length + character.relations.length + character.arc.length,
+    0
+  )
+}
+
+async function pruneCandidateFiles(
+  cardCacheDirectory: vscode.Uri,
+  promotedKeys: ReadonlySet<string>,
+  logger: StoryboardLogger
+): Promise<void> {
+  let entries: [string, vscode.FileType][]
+
+  try {
+    entries = await vscode.workspace.fs.readDirectory(cardCacheDirectory)
+  } catch {
+    return
+  }
+
+  for (const [name, fileType] of entries) {
+    if (fileType !== vscode.FileType.File || !name.endsWith(".json")) {
+      continue
+    }
+
+    const fileUri = vscode.Uri.joinPath(cardCacheDirectory, name)
+
+    try {
+      const record = await readCardCandidateFile(fileUri, vscodeFs)
+      const pruned = pruneRecordByPromotedKeys(record, promotedKeys)
+
+      if (countRecordCandidates(pruned) === countRecordCandidates(record)) {
+        continue
+      }
+
+      if (pruned.characters.length === 0) {
+        await vscode.workspace.fs.delete(fileUri)
+      } else {
+        await writeCardCandidateFile(fileUri, vscodeFs, pruned)
+      }
+    } catch (error) {
+      logger.error(`Failed to prune promoted candidates in ${name}`, error)
+    }
+  }
+}
+
 async function runPromote(logger: StoryboardLogger): Promise<void> {
   const folder = await getTargetWorkspaceFolder()
 
@@ -173,6 +221,9 @@ async function runPromote(logger: StoryboardLogger): Promise<void> {
     await vscode.window.showErrorMessage("카드 저장에 실패했습니다. Output 패널을 확인해 주세요.")
     return
   }
+
+  const promotedKeys = new Set(picked.map((entry) => cardCandidateItemKey(entry.item)))
+  await pruneCandidateFiles(paths.cardCacheDirectory, promotedKeys, logger)
 
   await vscode.window.showInformationMessage(`후보 ${picked.length}개를 카드 ${updatedCardCount}개에 반영했습니다.`)
 }

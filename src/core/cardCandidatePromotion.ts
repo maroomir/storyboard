@@ -99,6 +99,55 @@ export function selectNewCardCandidateItems(
   return items.filter((item) => !isCardCandidateItemPresent(item, cardsById.get(item.cardId)))
 }
 
+export function pruneRecordByPromotedKeys(
+  record: CardCandidateRecord,
+  promotedKeys: ReadonlySet<string>
+): CardCandidateRecord {
+  const characters = record.characters
+    .map((character) => ({
+      ...character,
+      attributes: character.attributes.filter(
+        (attribute) =>
+          !promotedKeys.has(
+            cardCandidateItemKey({
+              kind: "attribute",
+              cardId: character.cardId,
+              sceneStem: record.sceneStem,
+              key: attribute.key,
+              value: attribute.value
+            })
+          )
+      ),
+      relations: character.relations.filter(
+        (relation) =>
+          !promotedKeys.has(
+            cardCandidateItemKey({
+              kind: "relation",
+              cardId: character.cardId,
+              sceneStem: record.sceneStem,
+              target: relation.target,
+              type: relation.type
+            })
+          )
+      ),
+      arc: character.arc.filter(
+        (arc) =>
+          !promotedKeys.has(
+            cardCandidateItemKey({
+              kind: "arc",
+              cardId: character.cardId,
+              sceneStem: record.sceneStem,
+              summary: arc.summary,
+              sceneRef: arc.sceneRef
+            })
+          )
+      )
+    }))
+    .filter((character) => character.attributes.length + character.relations.length + character.arc.length > 0)
+
+  return { ...record, characters }
+}
+
 export function applyCardCandidateItems(
   card: CharacterCard,
   items: readonly CardCandidateItem[]
