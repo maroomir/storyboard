@@ -18,6 +18,11 @@ import { DraftCritiquePrompt, type DraftCritiqueInput } from "./prompts/draftCri
 import { DraftRevisionPrompt, type DraftRevisionInput } from "./prompts/draftRevision"
 import { OutlineSynopsisPrompt } from "./prompts/outlineSynopsis"
 import { FactExtractionPrompt } from "./prompts/factExtraction"
+import {
+  CardCandidateExtractionPrompt,
+  coerceCardCandidateExtraction,
+  type CardCandidateExtraction
+} from "./prompts/cardCandidateExtraction"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -69,6 +74,10 @@ export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
 }
 
 export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
+  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+}
+
+export interface ExtractCardCandidatesByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
 }
 
@@ -256,6 +265,28 @@ export class StoryboardAIService {
         const parsedArray = parseJsonArray(response.text)
 
         return parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : []
+      }
+    )
+  }
+
+  public async extractCardCandidatesByCharacter(
+    draftBody: string,
+    characterNames: readonly string[],
+    options: ExtractCardCandidatesByCharacterOptions = {}
+  ): Promise<Record<string, CardCandidateExtraction>> {
+    return this.extractPerCharacter(
+      characterNames,
+      options,
+      CardCandidateExtractionPrompt.config,
+      async (name, resolvedOptions, attribution) => {
+        const variant = this.resolvePromptVariant("cardFactExtraction", resolvedOptions)
+        const prompt = CardCandidateExtractionPrompt.build(draftBody, name, variant)
+        const response = await this.generateText("cardFactExtraction", toPromptMessages(prompt), {
+          ...resolvedOptions,
+          attribution
+        })
+
+        return coerceCardCandidateExtraction(parseJsonObject(response.text))
       }
     )
   }

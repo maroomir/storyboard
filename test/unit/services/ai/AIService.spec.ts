@@ -97,6 +97,21 @@ describe("StoryboardAIService", () => {
     })
   })
 
+  it("parses card candidate fields per character from JSON object output", async () => {
+    const service = createAIService({
+      completionText:
+        '{"attributes":[{"key":"나이","value":"17"}],"relations":[{"target":"지훈","type":"친구"}],"arc":{"summary":"학교에 도착해 친구를 만남"}}'
+    })
+
+    await expect(service.extractCardCandidatesByCharacter("엘리아가 지훈을 만났다.", ["엘리아"])).resolves.toEqual({
+      엘리아: {
+        attributes: [{ key: "나이", value: "17" }],
+        relations: [{ target: "지훈", type: "친구" }],
+        arc: { summary: "학교에 도착해 친구를 만남" }
+      }
+    })
+  })
+
   it("Q8: parses continuity issues and defaults missing severity to high", async () => {
     const service = createAIService({
       completionText:

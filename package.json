@@ -146,6 +146,10 @@
         "title": "%storyboard.bible.promoteCandidates.title%"
       },
       {
+        "command": "storyboard.cards.promoteCandidates",
+        "title": "%storyboard.cards.promoteCandidates.title%"
+      },
+      {
         "command": "storyboard.bible.canonDiff",
         "title": "%storyboard.bible.canonDiff.title%"
       },
@@ -305,7 +309,7 @@
         "storyboard.draft.updateCardsAfterGenerate": {
           "type": "boolean",
           "default": false,
-          "description": "After generating a draft, extract traits and recent dialogue from the result back into character cards. Off by default to keep cards stable; enabling it lets generated drafts feed back into card traits and dialogue."
+          "description": "After generating a draft, feed the result back into cards: traits and recent dialogue are written to character cards, detected characters are added to the scene's background card, and relation/arc/attribute candidates are extracted for review via 'Promote Card Candidates'. Off by default to keep cards stable; enabling it adds extraction model calls per generation."
         }
       }
     },

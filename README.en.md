@@ -17,6 +17,7 @@ Korean README: [`README.md`](README.md)
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
+- Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.
 - Review and revise individual scene drafts while recording instructions in `revision-plan.yaml`.
 - Assemble `manuscript/`, run final review (`REVIEW.md`), write chapter summaries (`SUMMARY.md`), and track foreshadowing (`FORESHADOWING.md`).
 - Compare unpromoted candidate facts against `canon.yaml` with `Canon Diff Report`.

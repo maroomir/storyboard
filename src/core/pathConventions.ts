@@ -11,6 +11,7 @@ export interface StoryboardProjectPaths {
   readonly personaMemoryDirectory: vscode.Uri
   readonly backgroundMemoryDirectory: vscode.Uri
   readonly bibleCacheDirectory: vscode.Uri
+  readonly cardCacheDirectory: vscode.Uri
   readonly bibleDirectory: vscode.Uri
   readonly bibleCanon: vscode.Uri
   readonly outlineDirectory: vscode.Uri
@@ -51,6 +52,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     personaMemoryDirectory: vscode.Uri.joinPath(cacheDirectory, "personas"),
     backgroundMemoryDirectory: vscode.Uri.joinPath(cacheDirectory, "backgrounds"),
     bibleCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "bible"),
+    cardCacheDirectory: vscode.Uri.joinPath(cacheDirectory, "cards"),
     bibleDirectory,
     bibleCanon: vscode.Uri.joinPath(bibleDirectory, "canon.yaml"),
     outlineDirectory,
