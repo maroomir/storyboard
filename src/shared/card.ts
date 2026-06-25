@@ -61,6 +61,7 @@ export const characterCardSchema = z.object({
   traits: stringListSchema.optional(),
   description: stringListSchema.optional(),
   voice: stringListSchema.optional(),
+  desire: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),
   recentDialogues: stringListSchema.optional()
@@ -72,7 +73,10 @@ const backgroundBaseFields = {
   aliases: stringListSchema.optional(),
   description: stringListSchema.default([]),
   characterIds: stringListSchema.default([]),
-  tags: stringListSchema.default([])
+  tags: stringListSchema.default([]),
+  time: z.string().trim().min(1).optional(),
+  weather: z.string().trim().min(1).optional(),
+  senses: stringListSchema.optional()
 }
 
 export const locationBackgroundSchema = z.object({

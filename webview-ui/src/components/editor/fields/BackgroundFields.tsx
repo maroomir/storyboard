@@ -14,6 +14,29 @@ export function BackgroundFields({
   return (
     <>
       <ListField label="Aliases" values={card.aliases ?? []} onChange={(aliases) => updateCard({ ...card, aliases })} />
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Time</span>
+        <input
+          className={sbInputClass}
+          value={card.time ?? ""}
+          onChange={(event) => {
+            const value = event.target.value
+            updateCard({ ...card, time: value === "" ? undefined : value })
+          }}
+        />
+      </label>
+      <label className="flex flex-col gap-[0.35rem]">
+        <span className="text-sm text-sb-fg-muted">Weather</span>
+        <input
+          className={sbInputClass}
+          value={card.weather ?? ""}
+          onChange={(event) => {
+            const value = event.target.value
+            updateCard({ ...card, weather: value === "" ? undefined : value })
+          }}
+        />
+      </label>
+      <ListField label="Senses" values={card.senses ?? []} onChange={(senses) => updateCard({ ...card, senses })} />
       {card.type === "location" ? (
         <label className="flex flex-col gap-[0.35rem]">
           <span className="text-sm text-sb-fg-muted">Location Kind</span>

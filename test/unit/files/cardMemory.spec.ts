@@ -74,6 +74,13 @@ describe("persona memory codec", () => {
 
     expect(shuffled).toBe(ordered)
   })
+
+  it("changes the persona hash when desire changes", () => {
+    const baseHash = computePersonaCardHash(eliaCard)
+    const withDesire = computePersonaCardHash({ ...eliaCard, desire: ["친구를 사귀고 싶다"] })
+
+    expect(withDesire).not.toBe(baseHash)
+  })
 })
 
 describe("background memory codec", () => {
@@ -94,5 +101,16 @@ describe("background memory codec", () => {
 
     expect(baseHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     expect(changedHash).not.toBe(baseHash)
+  })
+
+  it("changes the background hash when time, weather, or senses change", () => {
+    const baseHash = computeBackgroundCardHash(schoolCard)
+    const withTime = computeBackgroundCardHash({ ...schoolCard, time: "밤" })
+    const withWeather = computeBackgroundCardHash({ ...schoolCard, weather: "비" })
+    const withSenses = computeBackgroundCardHash({ ...schoolCard, senses: ["빗소리"] })
+
+    expect(withTime).not.toBe(baseHash)
+    expect(withWeather).not.toBe(baseHash)
+    expect(withSenses).not.toBe(baseHash)
   })
 })
