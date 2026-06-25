@@ -28,7 +28,11 @@ export interface UpdateCardCandidatesFromDraftInput {
   readonly draftBody: string
   readonly detectedCharacterCards: readonly CharacterCard[]
   readonly characterRoster: readonly CardCandidateRosterEntry[]
-  readonly aiService: Pick<StoryboardAIService, "extractCardCandidatesByCharacter">
+  readonly aiService: Pick<
+    StoryboardAIService,
+    "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"
+  >
+  readonly verify?: boolean
   readonly fileSystem: CardCandidateFileSystem
   readonly resolveCandidateUri: (sceneStem: string) => unknown
   readonly ensureDirectory?: () => Promise<void>
@@ -68,6 +72,60 @@ function dedupeAttributes(attributes: readonly CardAttributeCandidate[]): CardAt
 
 function countCandidates(character: CardCandidateCharacter): number {
   return character.attributes.length + character.relations.length + character.arc.length
+}
+
+interface VerifiableCandidates {
+  readonly attributes: readonly CardAttributeCandidate[]
+  readonly relations: readonly CardRelationCandidate[]
+  readonly arc: readonly CardArcCandidate[]
+}
+
+function buildCandidateStatements(candidates: VerifiableCandidates): string[] {
+  return [
+    ...candidates.attributes.map((attribute) => `속성 ${attribute.key}: ${attribute.value}`),
+    ...candidates.relations.map((relation) => `관계 ${relation.target}: ${relation.type}`),
+    ...candidates.arc.map((entry) => `아크: ${entry.summary}`)
+  ]
+}
+
+async function verifyCandidates(
+  input: UpdateCardCandidatesFromDraftInput,
+  card: CharacterCard,
+  candidates: VerifiableCandidates
+): Promise<VerifiableCandidates> {
+  const statements = buildCandidateStatements(candidates)
+
+  if (statements.length === 0) {
+    return candidates
+  }
+
+  let approvedIndices: number[] | null
+
+  try {
+    approvedIndices = await input.aiService.verifyCardCandidatesByCharacter(input.draftBody, card.name, statements, {
+      attribution: {
+        primary: { kind: "character" as const, id: card.id },
+        participants: [{ kind: "scene" as const, id: input.sceneStem }]
+      }
+    })
+  } catch (error) {
+    input.logger?.error("Card candidate verification failed", error)
+    approvedIndices = null
+  }
+
+  if (approvedIndices === null) {
+    return candidates
+  }
+
+  const approved = new Set(approvedIndices)
+  const relationOffset = candidates.attributes.length
+  const arcOffset = relationOffset + candidates.relations.length
+
+  return {
+    attributes: candidates.attributes.filter((_, index) => approved.has(index)),
+    relations: candidates.relations.filter((_, index) => approved.has(relationOffset + index)),
+    arc: candidates.arc.filter((_, index) => approved.has(arcOffset + index))
+  }
 }
 
 export async function updateCardCandidatesFromDraft(
@@ -133,7 +191,16 @@ export async function updateCardCandidatesFromDraft(
       ? [{ summary: candidate.arc.summary, sceneRef: sceneStem }]
       : []
 
-    const character: CardCandidateCharacter = { cardId: card.id, attributes, relations, arc }
+    const verified = input.verify
+      ? await verifyCandidates(input, card, { attributes, relations, arc })
+      : { attributes, relations, arc }
+
+    const character: CardCandidateCharacter = {
+      cardId: card.id,
+      attributes: [...verified.attributes],
+      relations: [...verified.relations],
+      arc: [...verified.arc]
+    }
 
     if (countCandidates(character) > 0) {
       characters.push(character)

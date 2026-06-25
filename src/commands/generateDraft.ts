@@ -370,6 +370,7 @@ function schedulePostGenerationUpdates(
     detectedCharacterCards,
     characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
     aiService,
+    verify: options.configBridge.isVerifyCardCandidatesEnabled(),
     fileSystem: vscodeFsAdapter,
     ensureDirectory: () => ensureCardCacheDirectory(paths),
     resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),

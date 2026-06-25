@@ -25,11 +25,14 @@ class CaptureFileSystem implements CardCandidateFileSystem {
 }
 
 function createService(
-  byName: Readonly<Record<string, CardCandidateExtraction>>
-): Pick<StoryboardAIService, "extractCardCandidatesByCharacter"> {
+  byName: Readonly<Record<string, CardCandidateExtraction>>,
+  verify?: (statements: readonly string[]) => number[] | null
+): Pick<StoryboardAIService, "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"> {
   return {
     extractCardCandidatesByCharacter: async (_draftBody, names) =>
-      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [] }]))
+      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [] }])),
+    verifyCardCandidatesByCharacter: async (_draftBody, _name, statements) =>
+      verify ? verify(statements) : statements.map((_statement, index) => index)
   }
 }
 
@@ -86,5 +89,71 @@ describe("updateCardCandidatesFromDraft", () => {
 
     expect(summary).toEqual({ characterCount: 0, candidateCount: 0 })
     expect(fileSystem.written.size).toBe(0)
+  })
+
+  it("keeps only verified candidates when verification approves a subset", async () => {
+    const fileSystem = new CaptureFileSystem()
+
+    const summary = await updateCardCandidatesFromDraft({
+      sceneStem: "03-verify",
+      draftBody: "엘리아가 지훈을 만났다.",
+      detectedCharacterCards: [elia],
+      characterRoster: [
+        { id: "elia", name: "엘리아" },
+        { id: "jihoon", name: "지훈" }
+      ],
+      verify: true,
+      aiService: createService(
+        {
+          엘리아: {
+            attributes: [{ key: "나이", value: "17" }],
+            relations: [{ target: "지훈", type: "친구" }],
+            arc: { summary: "본문에 없는 추측" }
+          }
+        },
+        () => [1]
+      ),
+      fileSystem,
+      resolveCandidateUri: (stem) => `/cache/cards/${stem}.json`
+    })
+
+    expect(summary).toEqual({ characterCount: 1, candidateCount: 1 })
+
+    const written = JSON.parse(fileSystem.written.get("/cache/cards/03-verify.json") ?? "{}")
+    expect(written.characters[0]).toMatchObject({
+      cardId: "elia",
+      attributes: [],
+      relations: [{ target: "jihoon", type: "친구" }],
+      arc: []
+    })
+  })
+
+  it("keeps all candidates when verification returns no verdict", async () => {
+    const fileSystem = new CaptureFileSystem()
+
+    const summary = await updateCardCandidatesFromDraft({
+      sceneStem: "04-fallback",
+      draftBody: "엘리아가 지훈을 만났다.",
+      detectedCharacterCards: [elia],
+      characterRoster: [
+        { id: "elia", name: "엘리아" },
+        { id: "jihoon", name: "지훈" }
+      ],
+      verify: true,
+      aiService: createService(
+        {
+          엘리아: {
+            attributes: [{ key: "나이", value: "17" }],
+            relations: [{ target: "지훈", type: "친구" }],
+            arc: { summary: "학교에 도착" }
+          }
+        },
+        () => null
+      ),
+      fileSystem,
+      resolveCandidateUri: (stem) => `/cache/cards/${stem}.json`
+    })
+
+    expect(summary).toEqual({ characterCount: 1, candidateCount: 3 })
   })
 })

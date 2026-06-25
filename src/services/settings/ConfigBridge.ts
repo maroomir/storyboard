@@ -189,6 +189,10 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get("draft.updateCardsAfterGenerate", false)
   }
 
+  public isVerifyCardCandidatesEnabled(): boolean {
+    return this.dependencies.getConfiguration().get("draft.verifyCardCandidates", true)
+  }
+
   public onDidChange(listener: () => void): { readonly dispose: () => void } {
     if (!this.dependencies.onDidChangeConfiguration) {
       return { dispose: (): void => undefined }

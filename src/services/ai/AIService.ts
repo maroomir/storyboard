@@ -23,6 +23,7 @@ import {
   coerceCardCandidateExtraction,
   type CardCandidateExtraction
 } from "./prompts/cardCandidateExtraction"
+import { CardCandidateVerificationPrompt } from "./prompts/cardCandidateVerification"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -289,6 +290,42 @@ export class StoryboardAIService {
         return coerceCardCandidateExtraction(parseJsonObject(response.text))
       }
     )
+  }
+
+  public async verifyCardCandidatesByCharacter(
+    draftBody: string,
+    characterName: string,
+    statements: readonly string[],
+    options: GenerateTextOptions = {}
+  ): Promise<number[] | null> {
+    if (statements.length === 0) {
+      return []
+    }
+
+    const variant = this.resolvePromptVariant("cardFactVerification", options)
+    const prompt = CardCandidateVerificationPrompt.build(draftBody, characterName, statements, variant)
+    const response = await this.generateWithDefaults(
+      "cardFactVerification",
+      prompt,
+      CardCandidateVerificationPrompt.config,
+      options
+    )
+    const parsedArray = parseJsonArray(response.text)
+
+    if (!parsedArray) {
+      return null
+    }
+
+    const approved = new Set<number>()
+
+    for (const value of parsedArray) {
+      const index = typeof value === "number" ? value : Number(value)
+      if (Number.isInteger(index) && index >= 0 && index < statements.length) {
+        approved.add(index)
+      }
+    }
+
+    return [...approved]
   }
 
   public async checkGrammar(body: string, options: GenerateTextOptions = {}): Promise<GrammarIssue[]> {
