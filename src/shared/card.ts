@@ -59,8 +59,8 @@ export const characterCardSchema = z.object({
   aliases: stringListSchema.optional(),
   tags: stringListSchema.optional(),
   traits: stringListSchema.optional(),
-  description: z.string().optional(),
-  voice: z.string().optional(),
+  description: stringListSchema.optional(),
+  voice: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),
   recentDialogues: stringListSchema.optional()
@@ -69,7 +69,7 @@ export const characterCardSchema = z.object({
 const backgroundBaseFields = {
   id: cardIdSchema,
   name: z.string().trim().min(1),
-  description: z.string().default(""),
+  description: stringListSchema.default([]),
   characterIds: stringListSchema.default([]),
   tags: stringListSchema.default([])
 }
@@ -119,4 +119,15 @@ export function isCardType(value: string): value is CardType {
 
 export function isBackgroundCard(card: StoryboardCard): card is BackgroundCard {
   return card.type === "location" || card.type === "temporal" || card.type === "social"
+}
+
+export function joinCardText(value: readonly string[] | undefined): string {
+  return (value ?? []).join("\n")
+}
+
+export function splitCardTextToList(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.replace(/^\s*[-*•]\s+/, "").trim())
+    .filter((line) => line.length > 0)
 }

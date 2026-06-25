@@ -10,6 +10,11 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- Character `voice`/`description` and background `description` are now entered as **item lists (`string[]`)** instead of long prose. Manage items in the card editor; they serialize to YAML sequences.
+- Added the `Storyboard: Migrate Card Text Fields to List` (`storyboard.cards.migrateTextToList`) command to convert legacy prose cards into line-based lists.
+
 ## [0.4.0] - 2026-06-25
 
 ### Added

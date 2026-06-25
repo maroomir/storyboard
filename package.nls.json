@@ -31,6 +31,7 @@
   "storyboard.draft.reviseLoop.title": "Storyboard: Review & Revise Draft (Current Scene)",
   "storyboard.bible.promoteCandidates.title": "Storyboard: Promote Bible Candidates to Canon",
   "storyboard.cards.promoteCandidates.title": "Storyboard: Promote Card Candidates",
+  "storyboard.cards.migrateTextToList.title": "Storyboard: Migrate Card Text Fields to List",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff Report",
   "storyboard.draft.expand.title": "Storyboard: Expand Selection (Draft)",
   "storyboard.draft.export.title": "Storyboard: Export Draft…"

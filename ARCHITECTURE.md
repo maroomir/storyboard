@@ -171,10 +171,11 @@ tags:
 traits:
   - 활발하게 움직임
   - 결단력 있는 발언
-description: |
-  주인공. 학교에 첫 등교한 17세 여학생.
-voice: |
-  밝고 또렷한 1인칭. 긴장해도 말끝을 흐리지 않는다.
+description:
+  - 주인공. 학교에 첫 등교한 17세 여학생.
+voice:
+  - 밝고 또렷한 1인칭으로 말한다
+  - 긴장해도 말끝을 흐리지 않는다
 relations:
   - target: jihoon
     type: 친구
@@ -198,8 +199,8 @@ characterIds:
 tags:
   - 학교
   - 도시
-description: |
-  주인공이 처음 등교하는 고등학교 정문. ...
+description:
+  - 주인공이 처음 등교하는 고등학교 정문. ...
 ```
 
 #### 카드 렌더링 (커스텀 에디터)
@@ -212,6 +213,7 @@ description: |
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)
+- 캐릭터 `voice`·`description`과 배경 `description`은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. `편집` 탭에서 항목 추가/삭제로 관리하고, YAML에는 시퀀스로 저장된다. 산문으로 작성된 기존 카드는 `Storyboard: Migrate Card Text Fields to List`(`storyboard.cards.migrateTextToList`) 명령으로 줄 단위 목록으로 변환한다.
 
 #### 파라미터 입력 주체 (수기 vs AI 자동)
 

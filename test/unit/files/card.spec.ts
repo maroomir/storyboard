@@ -102,15 +102,15 @@ describe("card file codec", () => {
       id: "manjae",
       name: "조만재",
       role: "main",
-      description: "허세덩어리",
-      voice: "1인칭 허세 만연체 자칭 세기의 철학자"
+      description: ["허세덩어리"],
+      voice: ["1인칭 허세 만연체", "자칭 세기의 철학자"]
     }
 
     const reparsed = parseCard(serializeCard(card))
 
     expect(reparsed.type).toBe("character")
     if (reparsed.type === "character") {
-      expect(reparsed.voice).toBe("1인칭 허세 만연체 자칭 세기의 철학자")
+      expect(reparsed.voice).toEqual(["1인칭 허세 만연체", "자칭 세기의 철학자"])
     }
   })
 })

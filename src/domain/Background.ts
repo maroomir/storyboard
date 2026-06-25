@@ -10,6 +10,6 @@ export function createEmptyBackground(id: string, name: string): LocationBackgro
     locationKind: "place",
     characterIds: [],
     tags: [],
-    description: ""
+    description: []
   }
 }

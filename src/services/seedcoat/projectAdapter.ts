@@ -5,6 +5,8 @@ import type { StoryboardProject } from "@/shared/project"
 import {
   backgroundCardSchema,
   characterCardSchema,
+  joinCardText,
+  splitCardTextToList,
   type BackgroundCard,
   type CharacterCard
 } from "@/shared/card"
@@ -78,8 +80,30 @@ function normalizeSeedCharacter(item: unknown): unknown {
     delete normalized.role
   }
 
+  if (typeof item.description === "string") {
+    normalized.description = splitCardTextToList(item.description)
+  }
+
+  if (typeof item.voice === "string") {
+    normalized.voice = splitCardTextToList(item.voice)
+  }
+
   if (Array.isArray(item.relations)) {
     normalized.relations = item.relations.filter(isSeedRelationWithRequiredFields)
+  }
+
+  return normalized
+}
+
+function normalizeSeedBackground(item: unknown): unknown {
+  if (!isPlainObject(item)) {
+    return item
+  }
+
+  const normalized = { ...item }
+
+  if (typeof item.description === "string") {
+    normalized.description = splitCardTextToList(item.description)
   }
 
   return normalized
@@ -124,7 +148,7 @@ function parseBackgroundArray(value: unknown): BackgroundCard[] {
   }
   return value.map((item, i) => {
     try {
-      return backgroundCardSchema.parse(item)
+      return backgroundCardSchema.parse(normalizeSeedBackground(item))
     } catch (error) {
       if (error instanceof ZodError) {
         throw new Error(`backgrounds[${i}]: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`)
@@ -182,7 +206,7 @@ function toSeedCharacter(card: CharacterCard): SeedCharacterCard {
     ...(card.role !== undefined ? { role: card.role } : {}),
     ...(card.tags !== undefined ? { tags: [...card.tags] } : {}),
     traits: [...(card.traits ?? [])],
-    description: card.description ?? "",
+    description: joinCardText(card.description),
     relations: (card.relations ?? [])
       .filter(isSeedRelationWithRequiredFields)
       .map((relation) => ({ target: relation.target, type: relation.type }))
@@ -190,7 +214,7 @@ function toSeedCharacter(card: CharacterCard): SeedCharacterCard {
 }
 
 function toSeedBackground(card: BackgroundCard): SeedBackgroundCard {
-  return { ...card }
+  return { ...card, description: joinCardText(card.description) }
 }
 
 export function encodeWorkspaceToSeed(content: WorkspaceContent): Uint8Array {

@@ -22,7 +22,7 @@ const background: BackgroundCard = {
   locationKind: "place",
   characterIds: ["hero", "ally"],
   tags: [],
-  description: ""
+  description: []
 }
 
 describe("cardReferenceRewriter", () => {

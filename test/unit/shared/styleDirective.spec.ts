@@ -22,7 +22,7 @@ const character: Character = {
   id: "manjae",
   name: "조만재",
   role: "main",
-  description: "허세덩어리",
+  description: ["허세덩어리"],
   traits: []
 }
 
@@ -31,7 +31,7 @@ const background: Background = {
   id: "home",
   name: "집",
   locationKind: "place",
-  description: "",
+  description: [],
   characterIds: [],
   tags: []
 }

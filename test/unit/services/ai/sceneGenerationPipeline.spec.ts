@@ -427,7 +427,7 @@ describe("runSceneGenerationPipeline", () => {
       id: "school-hall",
       name: "복도",
       locationKind: "place",
-      description: "",
+      description: [],
       characterIds: [],
       tags: []
     }
@@ -501,7 +501,7 @@ describe("runSceneGenerationPipeline", () => {
       id: "school-hall",
       name: "복도",
       locationKind: "place",
-      description: "낡은 복도",
+      description: ["낡은 복도"],
       characterIds: [],
       tags: []
     }
@@ -533,7 +533,7 @@ describe("runSceneGenerationPipeline", () => {
       id: "school-hall",
       name: "복도",
       locationKind: "place",
-      description: "낡은 복도",
+      description: ["낡은 복도"],
       characterIds: [],
       tags: []
     }

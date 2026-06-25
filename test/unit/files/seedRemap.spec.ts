@@ -39,7 +39,7 @@ function minimalSeed(overrides?: Partial<DecodedSeedContent>): DecodedSeedConten
         locationKind: "place",
         characterIds: ["item", "item-2"],
         tags: [],
-        description: ""
+        description: []
       }
     ],
     scenes: [{ stem: "01-prologue", content: "scene\n" }],

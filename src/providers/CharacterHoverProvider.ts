@@ -22,8 +22,8 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
     lines.push("", character.profile.trim())
   }
 
-  if (character.description && character.description.trim().length > 0) {
-    lines.push("", `- 설명: ${character.description.trim()}`)
+  if (character.description && character.description.length > 0) {
+    lines.push("", "- 설명", ...character.description.map((item) => `  - ${item}`))
   }
 
   if (character.traits && character.traits.length > 0) {

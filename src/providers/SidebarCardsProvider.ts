@@ -9,7 +9,7 @@ import { createAiRpcHandlers, createUsageRpcHandlers } from "../services/ai/rpcH
 import { type AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { UsageSummaryByEntity } from "../services/ai/types"
-import { isCharacterRole, type CardType } from "../shared/card"
+import { isCharacterRole, joinCardText, type CardType } from "../shared/card"
 import type { SidebarCardSummary, StoryboardResponsePayload } from "../shared/messaging"
 import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
 
@@ -229,7 +229,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
         id: card.id,
         name: card.name,
         uri: uri.toString(),
-        description: card.description,
+        description: joinCardText(card.description),
         ...(role ? { role } : {})
       }
     } catch (error) {

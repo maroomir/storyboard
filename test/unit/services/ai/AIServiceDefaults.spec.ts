@@ -74,7 +74,7 @@ describe("StoryboardAIService temperature/maxTokens contract", () => {
       type: "character" as const,
       id: "elia",
       name: "엘리아",
-      description: "주인공",
+      description: ["주인공"],
       tags: [],
       traits: ["용감함"],
       relations: [],

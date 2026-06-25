@@ -150,6 +150,10 @@
         "title": "%storyboard.cards.promoteCandidates.title%"
       },
       {
+        "command": "storyboard.cards.migrateTextToList",
+        "title": "%storyboard.cards.migrateTextToList.title%"
+      },
+      {
         "command": "storyboard.bible.canonDiff",
         "title": "%storyboard.bible.canonDiff.title%"
       },

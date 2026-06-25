@@ -15,7 +15,7 @@ const sampleCharacter: CharacterCard = {
   role: "main",
   traits: ["호기심이 많음"],
   tags: ["샘플"],
-  description: "테스트 캐릭터",
+  description: ["테스트 캐릭터"],
   recentDialogues: ["시작해볼까?"]
 }
 
@@ -26,7 +26,7 @@ const sampleBackground: BackgroundCard = {
   locationKind: "place",
   characterIds: [],
   tags: ["샘플"],
-  description: "테스트 배경"
+  description: ["테스트 배경"]
 }
 
 describe("scene cache codec", () => {

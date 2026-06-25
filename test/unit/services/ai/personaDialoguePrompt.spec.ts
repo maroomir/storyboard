@@ -22,7 +22,7 @@ const background: Background = {
   id: "school",
   name: "학교",
   locationKind: "place",
-  description: "교실",
+  description: ["교실"],
   characterIds: [],
   tags: []
 }

@@ -185,7 +185,7 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
           name: "주인공",
           role: "main",
           traits: [],
-          description: "",
+          description: [],
           relations: []
         }
       ],
@@ -197,7 +197,7 @@ describe("projectAdapter (@seedcoat/wasm)", () => {
           locationKind: "place",
           characterIds: ["hero", "missing"],
           tags: [],
-          description: ""
+          description: []
         }
       ]
     })

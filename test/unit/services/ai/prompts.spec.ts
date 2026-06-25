@@ -20,7 +20,7 @@ describe("AI prompts", () => {
     profile: "profile/elia.png",
     role: "main",
     attributes: {},
-    description: "주인공",
+    description: ["주인공"],
     tags: [],
     traits: ["용감함"],
     relations: [],
@@ -33,7 +33,7 @@ describe("AI prompts", () => {
     id: "school",
     name: "학교",
     locationKind: "place",
-    description: "교실",
+    description: ["교실"],
     characterIds: [],
     tags: []
   }
@@ -126,7 +126,7 @@ describe("AI prompts", () => {
   })
 
   it("includes character voice in the persona prompt and instructs reflecting it", () => {
-    const voiced: Character = { ...character, voice: "1인칭 허세 만연체" }
+    const voiced: Character = { ...character, voice: ["1인칭 허세 만연체"] }
     const prompt = PersonaGenerationPrompt.build(voiced, "generic")
     expect(prompt.user).toContain("목소리·말투: 1인칭 허세 만연체")
     expect(prompt.system).toContain("화법과 어조")

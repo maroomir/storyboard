@@ -45,4 +45,39 @@ describe("card schema", () => {
       expect(parsedCard.role).toBe("extra")
     }
   })
+
+  it("parses list-form voice and description on a character card", () => {
+    const parsedCard = cardSchema.parse({
+      type: "character",
+      id: "elia",
+      name: "엘리아",
+      voice: ["느린 말투로 말한다", "어조에 농담을 섞는다"],
+      description: ["주인공", "17세 여학생"]
+    })
+
+    expect(parsedCard.type).toBe("character")
+    if (parsedCard.type === "character") {
+      expect(parsedCard.voice).toEqual(["느린 말투로 말한다", "어조에 농담을 섞는다"])
+      expect(parsedCard.description).toEqual(["주인공", "17세 여학생"])
+    }
+  })
+
+  it("rejects string-form voice and description on a character card", () => {
+    const parseResult = cardSchema.safeParse({
+      type: "character",
+      id: "elia",
+      name: "엘리아",
+      voice: "느린 말투로 말한다"
+    })
+
+    expect(parseResult.success).toBe(false)
+  })
+
+  it("defaults background description to an empty list", () => {
+    const parsedCard = cardSchema.parse({ type: "location", id: "school", name: "학교" })
+
+    if (parsedCard.type === "location") {
+      expect(parsedCard.description).toEqual([])
+    }
+  })
 })

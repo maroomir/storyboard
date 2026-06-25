@@ -17,8 +17,8 @@ const eliaCard: CharacterCard = {
   id: "elia",
   name: "엘리아",
   role: "main",
-  voice: "단정한 말투",
-  description: "호기심 많은 학생",
+  voice: ["단정한 말투"],
+  description: ["호기심 많은 학생"],
   traits: ["관찰력이 좋음"]
 }
 
@@ -29,7 +29,7 @@ const schoolCard: BackgroundCard = {
   locationKind: "place",
   characterIds: [],
   tags: ["일상"],
-  description: "낡은 복도와 교실"
+  description: ["낡은 복도와 교실"]
 }
 
 describe("persona memory codec", () => {
@@ -47,7 +47,7 @@ describe("persona memory codec", () => {
   it("changes the persona hash when a meaningful card field changes", () => {
     const baseHash = computePersonaCardHash(eliaCard)
     const renamedHash = computePersonaCardHash({ ...eliaCard, name: "엘리" })
-    const revoicedHash = computePersonaCardHash({ ...eliaCard, voice: "거친 말투" })
+    const revoicedHash = computePersonaCardHash({ ...eliaCard, voice: ["거친 말투"] })
 
     expect(baseHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     expect(renamedHash).not.toBe(baseHash)
@@ -76,7 +76,7 @@ describe("background memory codec", () => {
 
   it("changes the background hash when description changes", () => {
     const baseHash = computeBackgroundCardHash(schoolCard)
-    const changedHash = computeBackgroundCardHash({ ...schoolCard, description: "새 건물" })
+    const changedHash = computeBackgroundCardHash({ ...schoolCard, description: ["새 건물"] })
 
     expect(baseHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     expect(changedHash).not.toBe(baseHash)

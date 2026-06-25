@@ -2,7 +2,7 @@ import { createHash } from "node:crypto"
 import { z } from "zod"
 
 import type { BackgroundCard, CharacterCard } from "../shared/card"
-import { cardIdPattern } from "../shared/card"
+import { cardIdPattern, joinCardText } from "../shared/card"
 
 export interface PersonaMemoryRecord {
   readonly cardId: string
@@ -60,8 +60,8 @@ export function computePersonaCardHash(card: CharacterCard): string {
     id: card.id,
     name: card.name,
     role: card.role,
-    voice: card.voice ?? "",
-    description: card.description ?? "",
+    voice: joinCardText(card.voice),
+    description: joinCardText(card.description),
     traits: card.traits ?? []
   }
   return digestCard(digestSource)
@@ -72,7 +72,7 @@ export function computeBackgroundCardHash(card: BackgroundCard): string {
     type: card.type,
     id: card.id,
     name: card.name,
-    description: card.description ?? "",
+    description: joinCardText(card.description),
     tags: card.tags ?? []
   }
   return digestCard(digestSource)
