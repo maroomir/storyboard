@@ -74,9 +74,16 @@
 | **수기 입력** (작가 의도·정체성) | `id`(읽기전용)·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile` | `type`·`id`(읽기전용)·`name`·`description`·`tags`·`locationKind`(location) |
 | **AI 자동 갱신** (이야기 진행 누적) | `traits`·`recentDialogues`·`attributes`·`arc`·`relations` | `characterIds` |
 
-- `traits`·`recentDialogues`는 `src/services/ai/traitsUpdater.ts`가 draft 생성 후 자동 갱신한다.
-- `attributes`·`arc`·`relations`·`characterIds`는 현재 자동 갱신 코드는 없으나 입력 주체상 AI 누적값으로 분류해 입력란에서 제외한다(향후 자동화 대상). YAML에는 보존되며 `YAML` 탭에서 확인·편집할 수 있다.
-- `arc`·`relations`는 `AI 기록` 탭에서 **읽기 전용 시각화**(아크 곡선·관계 미리보기)로만 표시한다.
+자동 갱신은 `storyboard.draft.updateCardsAfterGenerate`(기본 off)가 켜진 경우에만 동작하며, 방식은 두 가지다.
+
+| 필드 | 자동화 방식 | 코드 |
+|---|---|---|
+| `traits`·`recentDialogues` | 카드에 직접 기록(append) | `src/services/ai/traitsUpdater.ts` |
+| 배경 `characterIds` | 부착 배경 카드에 등장 인물 id를 결정적 append | `src/services/ai/backgroundCharacterUpdater.ts` |
+| `attributes`·`arc`·`relations` | AI 추출 → `.storyboard/cache/cards/<scene>.json` 후보 → `Promote Card Candidates`로 승격 | `src/services/ai/cardCandidateUpdater.ts`, `src/core/cardCandidatePromotion.ts` |
+
+- `arc`·`relations`는 카드 에디터 `AI 기록` 탭에서 **읽기 전용 시각화**(아크 곡선·관계 미리보기)로 표시된다.
+- 환각 완화: 후보는 승격 게이트를 거치고, relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
 
 ## 부록: 필드별 코드 사용처 요약
 

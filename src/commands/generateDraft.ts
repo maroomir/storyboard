@@ -3,6 +3,7 @@ import * as vscode from "vscode"
 import { buildNarrativeContext, buildSceneContext } from "../core/sceneContext"
 import type { StoryboardLogger } from "../core/logger"
 import {
+  backgroundCardPath,
   characterCardPath,
   draftPath,
   getStoryboardProjectPaths,
@@ -34,7 +35,10 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import type { ConfigBridge } from "../services/settings/ConfigBridge"
 import { scheduleCharacterTraitsUpdate, type TraitsUpdateSummary } from "../services/ai/traitsUpdater"
 import { scheduleBibleCandidateUpdate } from "../services/ai/bibleCandidateUpdater"
+import { scheduleBackgroundCharacterUpdate } from "../services/ai/backgroundCharacterUpdater"
+import { scheduleCardCandidateUpdate } from "../services/ai/cardCandidateUpdater"
 import { bibleCandidateFilePath, ensureBibleCacheDirectory } from "../files/bibleCacheWorkspace"
+import { cardCandidateFilePath, ensureCardCacheDirectory } from "../files/cardCacheWorkspace"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { AiProviderId, AiTaskName } from "../services/ai/types"
@@ -358,6 +362,30 @@ function schedulePostGenerationUpdates(
     resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
     logger: options.logger
   })
+
+  scheduleCardCandidateUpdate({
+    queueKey: `${workspaceFolder.uri.toString()}#cards`,
+    sceneStem: scene.stem,
+    draftBody: result.draftBody,
+    detectedCharacterCards,
+    characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
+    aiService,
+    fileSystem: vscodeFsAdapter,
+    ensureDirectory: () => ensureCardCacheDirectory(paths),
+    resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
+    logger: options.logger
+  })
+
+  if (context.background) {
+    scheduleBackgroundCharacterUpdate({
+      queueKey: `${workspaceFolder.uri.toString()}#background`,
+      backgroundId: context.background.id,
+      detectedCharacterCards,
+      fileSystem: vscodeFsAdapter,
+      resolveBackgroundCardUri: (backgroundId) => backgroundCardPath(workspaceFolder.uri, backgroundId),
+      logger: options.logger
+    })
+  }
 }
 
 function buildSceneCacheRecord(

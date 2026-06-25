@@ -17,6 +17,7 @@ import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
+import { registerPromoteCardCandidatesCommand } from "./commands/promoteCardCandidates"
 import { registerReviewManuscriptCommand } from "./commands/reviewManuscript"
 import { registerReviseDraftCommand } from "./commands/reviseDraft"
 import { registerSummarizeChaptersCommand } from "./commands/summarizeChapters"
@@ -90,6 +91,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerGenerateNovelCommand({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(registerPromoteBibleCandidatesCommand({ logger }))
+  context.subscriptions.push(registerPromoteCardCandidatesCommand({ logger }))
   context.subscriptions.push(registerCanonDiffCommand({ logger }))
   context.subscriptions.push(registerExportManuscriptCommand({ logger }))
   context.subscriptions.push(registerSceneCodeLensProvider())
