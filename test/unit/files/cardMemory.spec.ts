@@ -60,6 +60,20 @@ describe("persona memory codec", () => {
 
     expect(withTags).toBe(baseHash)
   })
+
+  it("changes the persona hash when attributes change", () => {
+    const baseHash = computePersonaCardHash(eliaCard)
+    const withAttributes = computePersonaCardHash({ ...eliaCard, attributes: { mbti: "ENFJ" } })
+
+    expect(withAttributes).not.toBe(baseHash)
+  })
+
+  it("keeps the persona hash stable regardless of attribute key order", () => {
+    const ordered = computePersonaCardHash({ ...eliaCard, attributes: { age: 17, mbti: "ENFJ", sex: "female" } })
+    const shuffled = computePersonaCardHash({ ...eliaCard, attributes: { sex: "female", age: 17, mbti: "ENFJ" } })
+
+    expect(shuffled).toBe(ordered)
+  })
 })
 
 describe("background memory codec", () => {

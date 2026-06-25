@@ -132,3 +132,15 @@ export function splitCardTextToList(value: string): string[] {
     .map((line) => line.replace(/^\s*[-*•]\s+/, "").trim())
     .filter((line) => line.length > 0)
 }
+
+export function formatCardAttributes(attributes: CharacterCard["attributes"]): string {
+  if (!attributes) {
+    return ""
+  }
+
+  return Object.entries(attributes)
+    .filter((entry): entry is [string, string | number | boolean] => entry[1] !== null)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([key, value]) => `${key}=${value}`)
+    .join(", ")
+}
