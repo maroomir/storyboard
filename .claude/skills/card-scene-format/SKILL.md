@@ -33,6 +33,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/car
 ## Drafts and cache
 
 - `draft/<scene>.md`: AI-generated prose; may be overwritten on regenerate.
+- `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`: previous-draft history archived before an overwrite when `storyboard.draft.keepHistory` is on (off by default). Local archive time + per-scene incrementing revision; gitignored like `draft/`. See `archiveExistingDraft` in [`src/files/draftHistory.ts`](src/files/draftHistory.ts), wired in [`src/commands/generateDraft.ts`](src/commands/generateDraft.ts).
 - `.storyboard/cache/scenes/<scene>.json`: extension-managed context snapshots; users should not hand-edit paths outside the tool.
 
 ## When changing formats

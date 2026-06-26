@@ -9,6 +9,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- 초안 히스토리 옵션 `storyboard.draft.keepHistory`(기본 꺼짐)를 추가했습니다. 켜면 Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 이전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관합니다. `.draft/`는 `draft/`처럼 `.gitignore`로 제외됩니다.
+
 ### 변경
 
 - 캐릭터 `voice`·`description`과 배경 `description`을 긴 산문 대신 **항목 목록(`string[]`)**으로 입력하도록 바꿨습니다. 카드 편집기에서 항목 추가/삭제로 관리하며, YAML에는 시퀀스로 저장됩니다.

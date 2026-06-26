@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Added the draft-history option `storyboard.draft.keepHistory` (off by default). When on, Generate/Regenerate archives the previous draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` just before overwriting `draft/<scene>.md`. `.draft/` is gitignored like `draft/`.
+
 ### Changed
 
 - Character `voice`/`description` and background `description` are now entered as **item lists (`string[]`)** instead of long prose. Manage items in the card editor; they serialize to YAML sequences.

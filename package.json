@@ -319,6 +319,11 @@
           "type": "boolean",
           "default": true,
           "description": "When 'Update cards after generate' is on, re-check each extracted relation/arc/attribute candidate against the draft body and keep only the ones explicitly stated, reducing hallucinated candidates before they reach 'Promote Card Candidates'. Adds one verification model call per detected character; turn off to skip it."
+        },
+        "storyboard.draft.keepHistory": {
+          "type": "boolean",
+          "default": false,
+          "description": "Before a draft is overwritten by Generate/Regenerate, archive the previous version under '.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md' so older drafts accumulate as history. Off by default; the '.draft' folder is gitignored like 'draft'."
         }
       }
     },

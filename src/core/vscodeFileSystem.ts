@@ -13,6 +13,25 @@ export const vscodeFsAdapter = {
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
 }
 
+export const draftHistoryFileSystem = {
+  readFile: vscodeFsAdapter.readFile,
+  writeFile: vscodeFsAdapter.writeFile,
+  createDirectory: (uri: unknown): PromiseLike<void> =>
+    vscode.workspace.fs.createDirectory(uri as vscode.Uri),
+  exists: async (uri: unknown): Promise<boolean> => {
+    try {
+      await vscode.workspace.fs.stat(uri as vscode.Uri)
+      return true
+    } catch {
+      return false
+    }
+  },
+  listFileNames: async (uri: unknown): Promise<string[]> => {
+    const entries = await vscode.workspace.fs.readDirectory(uri as vscode.Uri)
+    return entries.filter(([, type]) => type === vscode.FileType.File).map(([name]) => name)
+  }
+}
+
 export const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
   readFile: vscodeFsAdapter.readFile,
   writeFile: vscodeFsAdapter.writeFile,

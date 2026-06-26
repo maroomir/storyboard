@@ -26,6 +26,7 @@ export interface StoryboardProjectPaths {
   readonly sceneDirectory: vscode.Uri
   readonly sampleScene: vscode.Uri
   readonly draftDirectory: vscode.Uri
+  readonly draftHistoryDirectory: vscode.Uri
   readonly manuscriptDirectory: vscode.Uri
   readonly manuscriptVolume: vscode.Uri
   readonly gitignore: vscode.Uri
@@ -67,6 +68,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     sceneDirectory,
     sampleScene: vscode.Uri.joinPath(sceneDirectory, ".sample.txt"),
     draftDirectory: vscode.Uri.joinPath(workspaceRoot, "draft"),
+    draftHistoryDirectory: vscode.Uri.joinPath(workspaceRoot, ".draft"),
     manuscriptDirectory: vscode.Uri.joinPath(workspaceRoot, "manuscript"),
     manuscriptVolume: vscode.Uri.joinPath(workspaceRoot, "manuscript", "manuscript.md"),
     gitignore: vscode.Uri.joinPath(workspaceRoot, ".gitignore"),
@@ -126,6 +128,10 @@ export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: s
 
 export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
   return vscode.Uri.joinPath(workspaceRoot, "draft", `${sceneStem}.md`)
+}
+
+export function draftHistorySceneDirectory(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, ".draft", sceneStem)
 }
 
 export function parseCardIdFromPath(uri: vscode.Uri): string | undefined {

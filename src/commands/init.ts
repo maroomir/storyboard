@@ -11,6 +11,7 @@ const storyboardGitignoreBlock = `
 # Storyboard generated files
 .storyboard/cache/
 draft/
+.draft/
 manuscript/
 character/.sample.card
 background/.sample.card

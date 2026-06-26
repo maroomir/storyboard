@@ -173,6 +173,19 @@ npm run build
 - `.storyboard/outline/revision-plan.yaml`에 scene stem, 검사 시각, 재작성 횟수, 남은 차단 이슈, 지시가 기록된다.
 - Output에 API 키·토큰 원문이 노출되지 않는다.
 
+### 7c. 이전 초안 히스토리 보관
+
+1. `storyboard.draft.keepHistory`를 `true`로 설정한다.
+2. 이미 `draft/<scene>.md`가 있는 씬에서 **Regenerate**(또는 Generate)를 실행한다.
+3. `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-01.md`에 직전 초안이 그대로 보관되는지 확인한다.
+4. 같은 씬을 한 번 더 재생성하면 `rev-02.md`가 추가되는지 확인한다.
+
+**성공 기준**
+
+- `draft/<scene>.md`는 최신 결과로 덮어써지고, 이전 버전은 `.draft/<scene>/`에 시간값 + `rev-NN`으로 누적된다.
+- 옵션이 꺼져 있으면 `.draft/`가 생성되지 않는다.
+- 보관에 실패해도 초안 생성 자체는 성공하며, 실패는 Output 경고로만 남는다.
+
 ### 8. Scenes 사이드바
 
 1. Activity Bar에서 **Storyboard · Scenes** 아이콘을 눌러 **Scenes** 뷰를 연다.

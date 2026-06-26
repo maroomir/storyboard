@@ -15,6 +15,7 @@ English README: [`README.en.md`](README.en.md)
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
 - outline에서 `scene/*.txt` 씬 시드를 만들고 `draft/*.md` 초안을 생성
 - 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
+- 이전 초안 히스토리 보관(`storyboard.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격

@@ -5,13 +5,20 @@ import type { StoryboardLogger } from "../core/logger"
 import {
   backgroundCardPath,
   characterCardPath,
+  draftHistorySceneDirectory,
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneTextFile
 } from "../core/pathConventions"
-import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from "../core/vscodeFileSystem"
+import {
+  draftHistoryFileSystem,
+  sceneContextFileSystem,
+  sceneContextPaths,
+  vscodeFsAdapter
+} from "../core/vscodeFileSystem"
 import { hasStoryboardProject, uriExists } from "../core/workspace"
 import { createDraft, writeDraftFile } from "../files/draft"
+import { archiveExistingDraft } from "../files/draftHistory"
 import { readProjectJson } from "../files/projectJson"
 import { readSceneFile, SceneParseError } from "../files/scene"
 import {
@@ -413,6 +420,28 @@ function buildSceneCacheRecord(
   }
 }
 
+async function maybeArchiveExistingDraft(
+  inputs: SceneGenerationInputs,
+  options: GenerateDraftWorkflowOptions
+): Promise<void> {
+  if (!options.configBridge.isKeepDraftHistoryEnabled()) {
+    return
+  }
+
+  const historyDirectory = draftHistorySceneDirectory(inputs.workspaceFolder.uri, inputs.scene.stem)
+
+  try {
+    await archiveExistingDraft({
+      draftUri: inputs.draftUri,
+      historyDirectory,
+      resolveArchiveUri: (fileName) => vscode.Uri.joinPath(historyDirectory, fileName),
+      fileSystem: draftHistoryFileSystem
+    })
+  } catch (error) {
+    options.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`)
+  }
+}
+
 async function runAndPersistDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions
@@ -468,6 +497,8 @@ async function runAndPersistDraft(
     options.onSaving?.()
 
     const cacheRecord = buildSceneCacheRecord(inputs, result, cacheProviders)
+
+    await maybeArchiveExistingDraft(inputs, options)
 
     await writeDraftFile(draftUri, vscodeFsAdapter, draft)
     await writeSceneCacheFile(cacheUri, vscodeFsAdapter, cacheRecord)

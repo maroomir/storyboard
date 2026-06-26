@@ -91,11 +91,15 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── 02-chapter-01.md
 │   └── 03-chapter-02.md
 │
+├── .draft/                       # 이전 초안 히스토리 (draft.keepHistory, .gitignore)
+│   └── 01-prologue/
+│       └── 2026-06-07-09-03-rev-01.md
+│
 ├── manuscript/                   # chapter/volume 조립 원고 (.gitignore)
 │   ├── 01-prologue.md
 │   └── manuscript.md
 │
-├── .gitignore                    # .storyboard/cache/, draft/, manuscript/
+├── .gitignore                    # .storyboard/cache/, draft/, .draft/, manuscript/
 └── README.md                     # 프로젝트 자유 노트
 ```
 
@@ -111,6 +115,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `background/` | 배경 카드 | 추적 |
 | `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
+| `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
 | `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
 
 ## 4. 파일 포맷 명세
@@ -283,6 +288,10 @@ relationStage: 첫 만남, 어색한 거리
 - `format=screenplay`: Fountain 스타일 또는 `**캐릭터:** 대사`
 - `format=play`: 희곡 형식 (지문 + 대사)
 - `format=essay` / `format=poem`: 자유 형식
+
+#### 이전 초안 히스토리 (`.draft/`)
+
+`storyboard.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 재생성 가능한 산출물이라 `draft/`처럼 `.gitignore`로 제외한다. 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
 
 ### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
 

@@ -15,6 +15,7 @@ Korean README: [`README.md`](README.md)
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
 - Generate `scene/*.txt` seeds from the outline, then generate `draft/*.md` drafts.
 - Generate and regenerate drafts from scene CodeLens actions and sidebar actions.
+- Keep previous-draft history (`storyboard.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
 - Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.

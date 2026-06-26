@@ -193,6 +193,10 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get("draft.verifyCardCandidates", true)
   }
 
+  public isKeepDraftHistoryEnabled(): boolean {
+    return this.dependencies.getConfiguration().get("draft.keepHistory", false)
+  }
+
   public onDidChange(listener: () => void): { readonly dispose: () => void } {
     if (!this.dependencies.onDidChangeConfiguration) {
       return { dispose: (): void => undefined }
