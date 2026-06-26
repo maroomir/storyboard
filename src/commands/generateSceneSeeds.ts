@@ -56,7 +56,8 @@ async function runGenerateSceneSeeds(): Promise<void> {
     throw error
   }
 
-  if (seeds.length === 0) {
+  const [firstSeed] = seeds
+  if (!firstSeed) {
     await vscode.window.showInformationMessage("아웃라인에 생성할 씬이 없습니다.")
     return
   }
@@ -81,7 +82,7 @@ async function runGenerateSceneSeeds(): Promise<void> {
     await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(seed.content))
   }
 
-  const firstSceneUri = vscode.Uri.joinPath(paths.sceneDirectory, seeds[0].fileName)
+  const firstSceneUri = vscode.Uri.joinPath(paths.sceneDirectory, firstSeed.fileName)
   const document = await vscode.workspace.openTextDocument(firstSceneUri)
   await vscode.window.showTextDocument(document)
 

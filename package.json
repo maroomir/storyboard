@@ -448,7 +448,7 @@
     "build:webview": "vite build",
     "build": "npm run compile && npm run build:webview",
     "watch": "node esbuild.config.mjs --watch",
-    "lint": "eslint . --ext .ts && tsc --project webview-ui/tsconfig.json --noEmit",
+    "lint": "eslint . --ext .ts && tsc --noEmit -p tsconfig.json && tsc --project webview-ui/tsconfig.json --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
     "package": "npm run package:vsix",

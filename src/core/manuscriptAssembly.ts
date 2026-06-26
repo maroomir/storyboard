@@ -29,7 +29,7 @@ export interface AssembledManuscript {
 interface ChapterGroup {
   readonly actTitle: string
   readonly chapterTitle: string
-  readonly scenes: FlatChapterScene[]
+  readonly scenes: IndexedFlatScene[]
 }
 
 const extraChapterTitle = "기타 (계획 외)"
@@ -77,8 +77,8 @@ interface IndexedFlatScene extends FlatChapterScene {
   readonly globalIndex: number
 }
 
-function groupByChapter(flatScenes: readonly FlatChapterScene[]): (ChapterGroup & { scenes: IndexedFlatScene[] })[] {
-  const groups: (ChapterGroup & { scenes: IndexedFlatScene[] })[] = []
+function groupByChapter(flatScenes: readonly FlatChapterScene[]): ChapterGroup[] {
+  const groups: ChapterGroup[] = []
 
   flatScenes.forEach((flatScene, globalIndex) => {
     const last = groups.at(-1)

@@ -80,7 +80,6 @@ export async function promptSeedIdRemapping(
     const newId = await vscode.window.showInputBox({
       prompt: `${sourceId}의 새 ID를 입력하세요`,
       value: currentId,
-      ignoreEmptyInput: true,
       validateInput: (value) => validateCardRenameId(value.trim())
     })
 
