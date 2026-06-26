@@ -13,6 +13,7 @@ import {
   writePersonaMemoryFile
 } from "@/files/cardMemory"
 import { createDraft, serializeDraft } from "@/files/draft"
+import { archiveExistingDraft } from "@/files/draftHistory"
 import { readSceneFile } from "@/files/scene"
 import { StoryboardAIService } from "@/services/ai/AIService"
 import {
@@ -60,6 +61,11 @@ const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "0
 const harnessRunRevise = (process.env.SCENE_REVISE ?? process.env.GUERRILA_REVISE) !== "0"
 const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process.env.GUERRILA_REVISE_ITERS ?? "2")
 
+// NOTE: mirror the extension's storyboard.draft.keepHistory — archive the prior draft under
+// .draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md before the headless run overwrites it. On unless
+// SCENE_KEEP_HISTORY=0, since each headless regeneration otherwise discards the previous draft.
+const harnessKeepHistory = (process.env.SCENE_KEEP_HISTORY ?? process.env.GUERRILA_KEEP_HISTORY) !== "0"
+
 const personaMemoryDirectory = path.join(workspace, ".storyboard", "cache", "personas")
 const backgroundMemoryDirectory = path.join(workspace, ".storyboard", "cache", "backgrounds")
 
@@ -71,6 +77,26 @@ const fileSystem = {
   readDirectory: async (uri: unknown): Promise<[string, { type: "file" | "directory" }][]> => {
     const entries = await nodeFs.readdir(uri as string, { withFileTypes: true })
     return entries.map((entry) => [entry.name, { type: entry.isDirectory() ? "directory" : "file" }])
+  }
+}
+
+const draftHistoryFs = {
+  readFile: fileSystem.readFile,
+  writeFile: fileSystem.writeFile,
+  exists: async (uri: unknown): Promise<boolean> => {
+    try {
+      await nodeFs.stat(uri as string)
+      return true
+    } catch {
+      return false
+    }
+  },
+  createDirectory: async (uri: unknown): Promise<void> => {
+    await nodeFs.mkdir(uri as string, { recursive: true })
+  },
+  listFileNames: async (uri: unknown): Promise<string[]> => {
+    const entries = await nodeFs.readdir(uri as string, { withFileTypes: true })
+    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name)
   }
 }
 
@@ -337,6 +363,22 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   console.log(`situations=${result.situations.length} characters=${result.detectedCharacters.join(", ")}`)
 
   const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
+
+  if (harnessKeepHistory) {
+    const historyDirectory = path.join(workspace, ".draft", scene.stem)
+    const archivedFileName = await archiveExistingDraft({
+      draftUri: draftPath,
+      historyDirectory,
+      resolveArchiveUri: (fileName) => path.join(historyDirectory, fileName),
+      fileSystem: draftHistoryFs
+    })
+
+    if (archivedFileName) {
+      // eslint-disable-next-line no-console
+      console.log(`[harness] archived previous draft → .draft/${scene.stem}/${archivedFileName}`)
+    }
+  }
+
   let body = result.draftBody
   await nodeFs.writeFile(
     draftPath,
