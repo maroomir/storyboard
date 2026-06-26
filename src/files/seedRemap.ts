@@ -3,7 +3,7 @@ import {
   renameCardIdInCharacterCard,
   setCardId
 } from "@/core/cardReferenceRewriter"
-import { cardIdPattern } from "@/shared/card"
+import { cardIdPattern, type BackgroundCard, type CharacterCard } from "@/shared/card"
 import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 
 export class SeedIdMappingConflictError extends Error {
@@ -80,13 +80,13 @@ export function applySeedIdMapping(
   let characters = seed.characters.map((card) => {
     const newId = mapping.get(card.id)
 
-    return newId !== undefined && newId !== card.id ? setCardId(card, newId) : card
+    return newId !== undefined && newId !== card.id ? (setCardId(card, newId) as CharacterCard) : card
   })
 
   let backgrounds = seed.backgrounds.map((card) => {
     const newId = mapping.get(card.id)
 
-    return newId !== undefined && newId !== card.id ? setCardId(card, newId) : card
+    return newId !== undefined && newId !== card.id ? (setCardId(card, newId) as BackgroundCard) : card
   })
 
   for (const [oldId, newId] of mapping) {

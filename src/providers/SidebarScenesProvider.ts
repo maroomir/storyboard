@@ -38,6 +38,7 @@ export interface SceneListItem {
   readonly status: "ready" | "stale" | "missing"
   readonly sceneMtime: number
   readonly draftMtime?: number
+  readonly outlineStale: boolean
 }
 
 export interface SidebarScenesProviderDependencies {
