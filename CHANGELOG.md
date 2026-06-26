@@ -9,14 +9,42 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-27
+
 ### 추가
 
 - 초안 히스토리 옵션 `storyboard.draft.keepHistory`(기본 꺼짐)를 추가했습니다. 켜면 Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 이전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관합니다. `.draft/`는 `draft/`처럼 `.gitignore`로 제외됩니다.
+- 초안 생성 결과에서 캐릭터별 속성·관계·아크 후보를 추출해 `.storyboard/cache/cards/`에 저장하는 카드 후보 흐름을 추가했습니다. `storyboard.draft.updateCardsAfterGenerate`가 켜져 있을 때 동작하며, `Storyboard: Promote Card Candidates` 명령으로 사용자가 선택한 후보만 캐릭터 카드에 반영합니다.
+- 카드 후보 검증 옵션 `storyboard.draft.verifyCardCandidates`(기본 켜짐)를 추가했습니다. 추출된 후보를 초안 본문과 다시 대조해 명시적으로 확인되는 후보만 승격 대기 목록에 남깁니다.
+- 캐릭터 카드에 `desire` 항목 목록을, 배경 카드에 `aliases`·`time`·`weather`·`senses` 필드를 추가했습니다. 페르소나 생성과 배경 묘사 프롬프트가 새 필드를 컨텍스트로 사용합니다.
+- 씬 frontmatter에 `location`이 없어도 본문에서 배경 이름·별칭을 감지해 씬 컨텍스트에 배경 카드를 연결합니다.
+- 초안 생성 후 감지된 캐릭터를 해당 배경 카드의 `characterIds`에 자동 추가하는 흐름을 추가했습니다.
 
 ### 변경
 
 - 캐릭터 `voice`·`description`과 배경 `description`을 긴 산문 대신 **항목 목록(`string[]`)**으로 입력하도록 바꿨습니다. 카드 편집기에서 항목 추가/삭제로 관리하며, YAML에는 시퀀스로 저장됩니다.
 - 산문으로 작성된 기존 카드를 줄 단위 목록으로 변환하는 `Storyboard: 카드 텍스트 필드를 목록형으로 변환`(`storyboard.cards.migrateTextToList`) 명령을 추가했습니다.
+- 카드 편집기에서 수동 입력 필드와 AI가 관리하는 후보·관계·아크 필드를 분리했습니다. 관계·아크·속성은 초안에서 후보로 모은 뒤 승격 명령으로 반영하는 흐름에 맞췄습니다.
+- `storyboard.draft.updateCardsAfterGenerate` 설명과 동작 범위를 확장했습니다. 기존 traits/recent dialogue 업데이트에 더해 배경 캐릭터 연결과 카드 후보 추출까지 포함합니다.
+- 캐릭터 `attributes`를 페르소나 캐시와 페르소나 생성 프롬프트에 반영하도록 바꿨습니다.
+- Guerrila harness의 재생성 흐름도 기존 초안을 `.draft/` 히스토리에 보관하도록 맞췄습니다.
+- `npm run lint`가 extension host `tsconfig.json` 타입체크까지 실행하도록 보강했습니다.
+
+### 수정
+
+- 캐릭터 `voice`·`description`·`attributes`와 배경 `description`·`senses`가 바뀌면 씬 캐시가 올바르게 무효화되도록 고쳤습니다.
+- 승격된 카드 후보는 후보 캐시에서 제거하고, 모두 반영된 후보 파일은 삭제하도록 고쳤습니다.
+- 로컬 개발용 `TODO.md`가 Git과 VSIX 패키지에 포함되지 않도록 제외했습니다.
+
+### 문서
+
+- README, 아키텍처 문서, 수동 QA 문서, 카드 파라미터 영향 리포트에 카드 후보 승격, 초안 히스토리, 목록형 카드 필드, 배경 감지와 새 카드 필드 흐름을 반영했습니다.
+- 카드/씬 포맷 스킬 문서에 목록형 카드 텍스트 필드와 초안 히스토리 규칙을 반영했습니다.
+
+### 테스트
+
+- 카드 후보 추출·검증·승격·캐시 정리, 배경 캐릭터 자동 업데이트, 카드 텍스트 목록 변환, 초안 히스토리, 배경 자동 감지, 카드 스키마와 씬 캐시 무효화 테스트를 추가했습니다.
+- 카드 편집기 수동 필드, YAML 편집, Seed 가져오기/리맵, 페르소나·배경 묘사 프롬프트 관련 회귀 테스트를 갱신했습니다.
 
 ## [0.4.0] - 2026-06-25
 

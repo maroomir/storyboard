@@ -10,14 +10,42 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-27
+
 ### Added
 
 - Added the draft-history option `storyboard.draft.keepHistory` (off by default). When on, Generate/Regenerate archives the previous draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` just before overwriting `draft/<scene>.md`. `.draft/` is gitignored like `draft/`.
+- Added a card-candidate flow that extracts per-character attributes, relations, and arc candidates from generated drafts into `.storyboard/cache/cards/`. It runs when `storyboard.draft.updateCardsAfterGenerate` is enabled, and `Storyboard: Promote Card Candidates` lets users choose which candidates to apply to character cards.
+- Added `storyboard.draft.verifyCardCandidates` (on by default). Extracted candidates are checked against the draft body again so only explicitly supported candidates remain pending promotion.
+- Added character `desire` lists and background `aliases`, `time`, `weather`, and `senses` fields. Persona generation and background-description prompts now use these fields as context.
+- Scene context now detects a background card from background names or aliases in the scene body when frontmatter has no `location`.
+- Draft generation can add detected characters to the linked background card's `characterIds`.
 
 ### Changed
 
 - Character `voice`/`description` and background `description` are now entered as **item lists (`string[]`)** instead of long prose. Manage items in the card editor; they serialize to YAML sequences.
 - Added the `Storyboard: Migrate Card Text Fields to List` (`storyboard.cards.migrateTextToList`) command to convert legacy prose cards into line-based lists.
+- Split manual card-editor inputs from AI-managed candidate, relation, and arc data. Relations, arcs, and attributes now fit the draft-to-candidate-to-promotion flow.
+- Expanded the behavior and description of `storyboard.draft.updateCardsAfterGenerate`. In addition to traits and recent dialogue, it can link background characters and extract card candidates.
+- Character `attributes` now feed persona cache keys and persona-generation prompts.
+- Guerrila harness regeneration now archives the prior draft into `.draft/` history.
+- `npm run lint` now also typechecks the extension-host `tsconfig.json`.
+
+### Fixed
+
+- Scene caches now invalidate correctly when character `voice`, `description`, or `attributes`, and background `description` or `senses`, change.
+- Promoted card candidates are removed from the candidate cache, and fully applied candidate files are deleted.
+- Local development `TODO.md` is excluded from Git and VSIX packages.
+
+### Documentation
+
+- Updated README, architecture docs, manual QA docs, and the card-parameter impact report for card-candidate promotion, draft history, list-based card fields, background detection, and the new card fields.
+- Updated the card/scene format skills for list-based card text fields and draft-history behavior.
+
+### Tests
+
+- Added coverage for card-candidate extraction, verification, promotion, and cache pruning; background character auto-updates; card-text migration; draft history; background detection; card schemas; and scene-cache invalidation.
+- Updated regression coverage for manual card-editor fields, YAML editing, Seed import/remapping, and persona/background prompt behavior.
 
 ## [0.4.0] - 2026-06-25
 
