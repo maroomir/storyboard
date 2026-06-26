@@ -45,3 +45,6 @@ docs/refactor
 
 # Local-only documentation (extended plans, ADRs, drafts)
 .doc/
+
+# 개발용
+TODO.md
