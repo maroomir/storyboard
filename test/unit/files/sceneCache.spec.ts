@@ -111,6 +111,30 @@ describe("scene cache codec", () => {
     expect(withAtmosphere).not.toBe(baseHash)
   })
 
+  it("changes the hash when character voice or attributes change", () => {
+    const baseHash = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel"
+    })
+    const withVoice = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [{ ...sampleCharacter, voice: ["거친 말투"] }],
+      background: sampleBackground,
+      format: "novel"
+    })
+    const withAttributes = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [{ ...sampleCharacter, attributes: { mbti: "ENFJ" } }],
+      background: sampleBackground,
+      format: "novel"
+    })
+
+    expect(withVoice).not.toBe(baseHash)
+    expect(withAttributes).not.toBe(baseHash)
+  })
+
   it("changes the hash when bible facts are injected", () => {
     const withoutFacts = computeSceneInputHash({
       sceneBody: "같은 입력",

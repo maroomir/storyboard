@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { z } from "zod"
 
-import { joinCardText, type BackgroundCard, type CharacterCard } from "../shared/card"
+import { formatCardAttributes, joinCardText, type BackgroundCard, type CharacterCard } from "../shared/card"
 import type { BibleFact } from "../shared/bible"
 import type { ProjectFormat } from "../shared/project"
 import { aiProviderIds, aiTaskCatalog, type AiProviderId, type AiTaskName } from "../services/ai/types"
@@ -105,6 +105,9 @@ function digestBibleFacts(facts: readonly BibleFact[]): { kind: string; id: stri
 }
 
 export function computeSceneInputHash(input: SceneInputHashInput): string {
+  // NOTE: A draft cache hit skips the whole generation pipeline (incl. persona/background
+  // regen), so every card field that reaches a generation prompt must be digested here or
+  // edits to it would serve a stale draft.
   const digestSource = {
     sceneBody: input.sceneBody,
     characters: input.characters.map((character) => ({
@@ -113,8 +116,10 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       role: character.role,
       tags: character.tags ?? [],
       traits: character.traits ?? [],
+      voice: joinCardText(character.voice),
       description: joinCardText(character.description),
       desire: joinCardText(character.desire),
+      attributes: formatCardAttributes(character.attributes),
       recentDialogues: character.recentDialogues ?? []
     })),
     background: input.background
