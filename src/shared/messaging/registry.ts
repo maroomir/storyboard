@@ -11,6 +11,12 @@ import {
   aiProvidersListResponsePayloadSchema
 } from "./ai"
 import {
+  cardsApplyCollectRequestPayloadSchema,
+  cardsApplyCollectResponsePayloadSchema,
+  cardsCollectRequestPayloadSchema,
+  cardsCollectResponsePayloadSchema,
+  cardsPreviewCollectRequestPayloadSchema,
+  cardsPreviewCollectResponsePayloadSchema,
   cardsCreatePlaceholderRequestPayloadSchema,
   cardsCreatePlaceholderResponsePayloadSchema,
   cardsDeleteRequestPayloadSchema,
@@ -76,6 +82,9 @@ export const storyboardRequestPayloadSchemas = {
   "cards.writeRaw": cardsWriteRawRequestPayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
+  "cards.collect": cardsCollectRequestPayloadSchema,
+  "cards.applyCollect": cardsApplyCollectRequestPayloadSchema,
+  "cards.previewCollect": cardsPreviewCollectRequestPayloadSchema,
   "cards.open": cardsOpenRequestPayloadSchema,
   "cards.delete": cardsDeleteRequestPayloadSchema,
   "scenes.list": scenesListRequestPayloadSchema,
@@ -107,6 +116,9 @@ export const storyboardResponsePayloadSchemas = {
   "cards.writeRaw": cardsWriteRawResponsePayloadSchema,
   "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
   "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
+  "cards.collect": cardsCollectResponsePayloadSchema,
+  "cards.applyCollect": cardsApplyCollectResponsePayloadSchema,
+  "cards.previewCollect": cardsPreviewCollectResponsePayloadSchema,
   "cards.open": cardsOpenResponsePayloadSchema,
   "cards.delete": cardsDeleteResponsePayloadSchema,
   "scenes.list": scenesListResponsePayloadSchema,

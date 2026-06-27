@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { cardSchema, cardTypes, characterRoles } from "../card"
+import { cardCollectProposalSchema } from "../cardCollect"
 import { uriStringSchema } from "./atoms"
 
 export const cardsListRequestPayloadSchema = z.object({
@@ -31,6 +32,20 @@ export const cardsCreatePlaceholderRequestPayloadSchema = z.object({
 export const cardsResolveImageUriRequestPayloadSchema = z.object({
   cardUri: uriStringSchema,
   relativePath: z.string().trim().min(1)
+})
+
+export const cardsCollectRequestPayloadSchema = z.object({
+  uri: uriStringSchema
+})
+
+export const cardsApplyCollectRequestPayloadSchema = z.object({
+  uri: uriStringSchema,
+  accepted: z.array(cardCollectProposalSchema)
+})
+
+export const cardsPreviewCollectRequestPayloadSchema = z.object({
+  uri: uriStringSchema,
+  accepted: z.array(cardCollectProposalSchema)
 })
 
 export const cardsOpenRequestPayloadSchema = z.object({
@@ -93,6 +108,16 @@ export const cardsCreatePlaceholderResponsePayloadSchema = z.object({
 export const cardsResolveImageUriResponsePayloadSchema = z.object({
   uri: uriStringSchema
 })
+
+export const cardsCollectResponsePayloadSchema = z.object({
+  proposals: z.array(cardCollectProposalSchema)
+})
+
+export const cardsApplyCollectResponsePayloadSchema = z.object({
+  card: cardSchema
+})
+
+export const cardsPreviewCollectResponsePayloadSchema = z.object({})
 
 export const cardsOpenResponsePayloadSchema = z.object({})
 export const cardsDeleteResponsePayloadSchema = z.object({})
