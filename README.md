@@ -19,6 +19,7 @@ English README: [`README.en.md`](README.en.md)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격
+- 카드 에디터의 **수집** 탭: 카드가 등장하는 draft에서 LLM으로 항목을 추출해 git diff처럼 보여주고, 선택 수락 시 캐릭터/배경 카드에 추가(기존 값 보존)
 - 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`SUMMARY.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
