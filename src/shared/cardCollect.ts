@@ -31,6 +31,8 @@ export const cardCollectProposalSchema = z.discriminatedUnion("kind", [
   z.object({ ...proposalBaseFields, kind: z.literal("trait"), value: z.string().min(1) }),
   z.object({ ...proposalBaseFields, kind: z.literal("recentDialogue"), value: z.string().min(1) }),
   z.object({ ...proposalBaseFields, kind: z.literal("descriptionLine"), value: z.string().min(1) }),
+  z.object({ ...proposalBaseFields, kind: z.literal("voiceLine"), value: z.string().min(1) }),
+  z.object({ ...proposalBaseFields, kind: z.literal("desireLine"), value: z.string().min(1) }),
   z.object({ ...proposalBaseFields, kind: z.literal("sense"), value: z.string().min(1) }),
   z.object({
     ...proposalBaseFields,

@@ -108,6 +108,8 @@ describe("StoryboardAIService", () => {
         attributes: [{ key: "나이", value: "17" }],
         relations: [{ target: "지훈", type: "친구" }],
         description: [],
+        voice: [],
+        desire: [],
         arc: { summary: "학교에 도착해 친구를 만남" }
       }
     })

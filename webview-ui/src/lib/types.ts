@@ -46,6 +46,8 @@ export type CardCollectProposal =
   | (CardCollectProposalBase & { readonly kind: "trait"; readonly value: string })
   | (CardCollectProposalBase & { readonly kind: "recentDialogue"; readonly value: string })
   | (CardCollectProposalBase & { readonly kind: "descriptionLine"; readonly value: string })
+  | (CardCollectProposalBase & { readonly kind: "voiceLine"; readonly value: string })
+  | (CardCollectProposalBase & { readonly kind: "desireLine"; readonly value: string })
   | (CardCollectProposalBase & { readonly kind: "sense"; readonly value: string })
   | (CardCollectProposalBase & {
       readonly kind: "scalar"

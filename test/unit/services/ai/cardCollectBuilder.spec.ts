@@ -24,6 +24,8 @@ function characterAiService(): CardCollectAiService {
             attributes: [{ key: "height", value: "170" }],
             relations: [{ target: "지훈", type: "friend" }],
             description: ["은빛 머리의 소녀"],
+            voice: ["또박또박한 존댓말"],
+            desire: ["진실을 밝히고 싶다"],
             arc: { summary: "각성" }
           }
         ])
@@ -71,6 +73,8 @@ describe("buildCardCollectProposals (character)", () => {
     expect(proposals.filter((proposal) => proposal.kind === "arc")).toHaveLength(2)
     expect(proposals.filter((proposal) => proposal.kind === "trait")).toHaveLength(1)
     expect(proposals.find((proposal) => proposal.kind === "descriptionLine")).toMatchObject({ value: "은빛 머리의 소녀" })
+    expect(proposals.find((proposal) => proposal.kind === "voiceLine")).toMatchObject({ value: "또박또박한 존댓말" })
+    expect(proposals.find((proposal) => proposal.kind === "desireLine")).toMatchObject({ value: "진실을 밝히고 싶다" })
   })
 
   it("drops an unchanged relation type for the same target", async () => {

@@ -39,7 +39,9 @@ describe("applyCardCollectProposals (character)", () => {
       proposal({ kind: "relation", target: "mina", type: "rival" }),
       proposal({ kind: "arc", summary: "각성", sceneRef: "03-scene" }),
       proposal({ kind: "recentDialogue", value: "안녕" }),
-      proposal({ kind: "descriptionLine", value: "주인공" })
+      proposal({ kind: "descriptionLine", value: "주인공" }),
+      proposal({ kind: "voiceLine", value: "또박또박한 존댓말" }),
+      proposal({ kind: "desireLine", value: "진실을 밝히고 싶다" })
     ]) as CharacterCard
 
     expect(result.attributes).toEqual({ age: "99", height: "170" })
@@ -51,6 +53,8 @@ describe("applyCardCollectProposals (character)", () => {
     expect(result.arc).toEqual([{ stage: "03-scene", summary: "각성", sceneRef: "03-scene" }])
     expect(result.recentDialogues).toEqual(["안녕"])
     expect(result.description).toEqual(["주인공"])
+    expect(result.voice).toEqual(["또박또박한 존댓말"])
+    expect(result.desire).toEqual(["진실을 밝히고 싶다"])
   })
 
   it("replaces an existing relation type for the same target instead of duplicating", () => {

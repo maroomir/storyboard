@@ -30,7 +30,7 @@ function createService(
 ): Pick<StoryboardAIService, "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"> {
   return {
     extractCardCandidatesByCharacter: async (_draftBody, names) =>
-      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [], description: [] }])),
+      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [], description: [], voice: [], desire: [] }])),
     verifyCardCandidatesByCharacter: async (_draftBody, _name, statements) =>
       verify ? verify(statements) : statements.map((_statement, index) => index)
   }
@@ -57,6 +57,8 @@ describe("updateCardCandidatesFromDraft", () => {
             { target: "엘리아", type: "자기참조" }
           ],
           description: [],
+          voice: [],
+          desire: [],
           arc: { summary: "학교에 도착해 친구를 만남" }
         }
       }),
@@ -83,7 +85,7 @@ describe("updateCardCandidatesFromDraft", () => {
       draftBody: "배경 묘사뿐.",
       detectedCharacterCards: [elia],
       characterRoster: [{ id: "elia", name: "엘리아" }],
-      aiService: createService({ 엘리아: { attributes: [], relations: [], description: [] } }),
+      aiService: createService({ 엘리아: { attributes: [], relations: [], description: [], voice: [], desire: [] } }),
       fileSystem,
       resolveCandidateUri: (stem) => `/cache/cards/${stem}.json`
     })
@@ -110,6 +112,8 @@ describe("updateCardCandidatesFromDraft", () => {
             attributes: [{ key: "나이", value: "17" }],
             relations: [{ target: "지훈", type: "친구" }],
             description: [],
+            voice: [],
+            desire: [],
             arc: { summary: "본문에 없는 추측" }
           }
         },
@@ -148,6 +152,8 @@ describe("updateCardCandidatesFromDraft", () => {
             attributes: [{ key: "나이", value: "17" }],
             relations: [{ target: "지훈", type: "친구" }],
             description: [],
+            voice: [],
+            desire: [],
             arc: { summary: "학교에 도착" }
           }
         },

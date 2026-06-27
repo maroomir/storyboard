@@ -20,6 +20,8 @@ function applyToCharacter(card: CharacterCard, accepted: readonly CardCollectPro
   let traits = [...(card.traits ?? [])]
   let recentDialogues = [...(card.recentDialogues ?? [])]
   let description = [...(card.description ?? [])]
+  let voice = [...(card.voice ?? [])]
+  let desire = [...(card.desire ?? [])]
 
   for (const proposal of accepted) {
     switch (proposal.kind) {
@@ -53,6 +55,12 @@ function applyToCharacter(card: CharacterCard, accepted: readonly CardCollectPro
       case "descriptionLine":
         description = addUnique(description, proposal.value)
         break
+      case "voiceLine":
+        voice = addUnique(voice, proposal.value)
+        break
+      case "desireLine":
+        desire = addUnique(desire, proposal.value)
+        break
       default:
         break
     }
@@ -65,7 +73,9 @@ function applyToCharacter(card: CharacterCard, accepted: readonly CardCollectPro
     ...(arc.length > 0 ? { arc } : {}),
     ...(traits.length > 0 ? { traits } : {}),
     ...(recentDialogues.length > 0 ? { recentDialogues } : {}),
-    ...(description.length > 0 ? { description } : {})
+    ...(description.length > 0 ? { description } : {}),
+    ...(voice.length > 0 ? { voice } : {}),
+    ...(desire.length > 0 ? { desire } : {})
   }
 }
 
@@ -133,6 +143,10 @@ export function shouldProposeCardCollect(card: StoryboardCard, proposal: CardCol
         return isNewListValue(card.recentDialogues, proposal.value)
       case "descriptionLine":
         return isNewListValue(card.description, proposal.value)
+      case "voiceLine":
+        return isNewListValue(card.voice, proposal.value)
+      case "desireLine":
+        return isNewListValue(card.desire, proposal.value)
       default:
         return false
     }

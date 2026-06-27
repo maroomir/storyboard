@@ -18,6 +18,8 @@ const kindLabels: Record<CardCollectProposal["kind"], string> = {
   trait: "특성",
   recentDialogue: "최근 대사",
   descriptionLine: "설명",
+  voiceLine: "화법",
+  desireLine: "욕망",
   sense: "감각",
   scalar: "값",
   characterId: "등장인물"
@@ -235,6 +237,8 @@ export function CollectPanel({ card, documentUri, vscodeApi, onStatusChange }: C
       "descriptionLine",
       "attribute",
       "trait",
+      "voiceLine",
+      "desireLine",
       "relation",
       "arc",
       "sense",
