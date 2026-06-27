@@ -70,6 +70,8 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return "[]"
     case "cardFactExtraction":
       return JSON.stringify({ attributes: [], relations: [], arc: { summary: "" } })
+    case "backgroundFactExtraction":
+      return JSON.stringify({ description: [], senses: [], time: "", weather: "", characterNames: [] })
     case "cardFactVerification":
       return "[]"
     case "inlineCompletion":

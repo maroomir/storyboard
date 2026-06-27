@@ -24,6 +24,11 @@ import {
   type CardCandidateExtraction
 } from "./prompts/cardCandidateExtraction"
 import { CardCandidateVerificationPrompt } from "./prompts/cardCandidateVerification"
+import {
+  BackgroundFactExtractionPrompt,
+  coerceBackgroundFactExtraction,
+  type BackgroundFactExtraction
+} from "./prompts/backgroundFactExtraction"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -290,6 +295,23 @@ export class StoryboardAIService {
         return coerceCardCandidateExtraction(parseJsonObject(response.text))
       }
     )
+  }
+
+  public async extractBackgroundFactsFromDraft(
+    draftBody: string,
+    backgroundName: string,
+    options: GenerateTextOptions = {}
+  ): Promise<BackgroundFactExtraction> {
+    const variant = this.resolvePromptVariant("backgroundFactExtraction", options)
+    const prompt = BackgroundFactExtractionPrompt.build(draftBody, backgroundName, variant)
+    const response = await this.generateWithDefaults(
+      "backgroundFactExtraction",
+      prompt,
+      BackgroundFactExtractionPrompt.config,
+      options
+    )
+
+    return coerceBackgroundFactExtraction(parseJsonObject(response.text))
   }
 
   public async verifyCardCandidatesByCharacter(

@@ -22,6 +22,7 @@ function buildGeneric(body: string, characterName: string): PromptArtifact {
       `"${characterName}"에 대해 본문에 명시된 정보만 추출하라.`,
       "attributes: 나이·외형·소속 같은 고정 설정만 {key,value}로.",
       `relations: "${characterName}"과 다른 인물 사이의 관계만 {target,type}으로. target은 상대 인물의 이름.`,
+      "relations.type은 '소꿉친구', '짝사랑'처럼 1~5단어의 짧은 라벨로. 문장으로 풀어 쓰지 말 것.",
       "arc.summary: 이 장면에서 이 인물의 진행을 한 줄로.",
       "본문에 명시되지 않은 내용은 추측하지 말고 비워 두라.",
       "설명 없이 JSON 객체만 출력하라.",
@@ -33,7 +34,7 @@ function buildGeneric(body: string, characterName: string): PromptArtifact {
 
 function buildXs(body: string, characterName: string): PromptArtifact {
   return {
-    system: `"${characterName}" 정보를 JSON으로: {"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"arc":{"summary":""}}. 본문에 없는 건 비워 둘 것.`,
+    system: `"${characterName}" 정보를 JSON으로: {"attributes":[{"key":"","value":""}],"relations":[{"target":"","type":""}],"arc":{"summary":""}}. relations.type은 1~5단어 짧은 라벨. 본문에 없는 건 비워 둘 것.`,
     user: body
   }
 }
