@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react"
 import { createRequestId, parseCardEditorInitialData } from "@webview/lib/messaging"
 import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "@webview/lib/types"
 import { Button } from "../ui/Button"
+import { CollectPanel } from "./CollectPanel"
 import { PreviewPanel } from "./PreviewPanel"
 import { YamlEditorPanel } from "./YamlEditorPanel"
 import { SectionHeader } from "../ui/SectionHeader"
@@ -136,9 +137,23 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
       </div>
     )
 
+    const collectTab = {
+      id: "collect",
+      label: "수집",
+      panel: (
+        <CollectPanel
+          card={card}
+          documentUri={documentState.documentUri}
+          vscodeApi={vscodeApi}
+          onStatusChange={setStatus}
+        />
+      )
+    }
+
     if (card.type !== "character") {
       return [
         { id: "overview", label: "편집", panel: overview },
+        collectTab,
         { id: "yaml", label: "YAML", panel: yamlPanel }
       ]
     }
@@ -164,9 +179,10 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
           </div>
         )
       },
+      collectTab,
       { id: "yaml", label: "YAML", panel: yamlPanel }
     ]
-  }, [card, documentState.characterRoster, updateCard, yamlPanel])
+  }, [card, documentState.characterRoster, documentState.documentUri, vscodeApi, updateCard, yamlPanel])
 
   if (documentState.error || !card) {
     return (
