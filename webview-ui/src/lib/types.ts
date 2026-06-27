@@ -7,6 +7,9 @@ export type CharacterRole = "main" | "supporting" | "extra"
 export type StoryboardRequestMethod =
   | "cards.write"
   | "cards.writeRaw"
+  | "cards.collect"
+  | "cards.applyCollect"
+  | "cards.previewCollect"
   | "cards.open"
   | "cards.delete"
   | "scenes.openScene"
@@ -14,6 +17,43 @@ export type StoryboardRequestMethod =
   | "scenes.generateDraft"
   | "ai.generateStream"
   | "usage.read"
+
+interface CardCollectProposalBase {
+  readonly id: string
+  readonly sourceScenes: readonly string[]
+}
+
+export type CardCollectProposal =
+  | (CardCollectProposalBase & {
+      readonly kind: "attribute"
+      readonly key: string
+      readonly value: string
+      readonly before?: string
+    })
+  | (CardCollectProposalBase & {
+      readonly kind: "relation"
+      readonly target: string
+      readonly type: string
+      readonly before?: string
+    })
+  | (CardCollectProposalBase & {
+      readonly kind: "arc"
+      readonly stage?: string
+      readonly summary: string
+      readonly sceneRef: string
+      readonly before?: string
+    })
+  | (CardCollectProposalBase & { readonly kind: "trait"; readonly value: string })
+  | (CardCollectProposalBase & { readonly kind: "recentDialogue"; readonly value: string })
+  | (CardCollectProposalBase & { readonly kind: "descriptionLine"; readonly value: string })
+  | (CardCollectProposalBase & { readonly kind: "sense"; readonly value: string })
+  | (CardCollectProposalBase & {
+      readonly kind: "scalar"
+      readonly field: "time" | "weather"
+      readonly before?: string
+      readonly after: string
+    })
+  | (CardCollectProposalBase & { readonly kind: "characterId"; readonly value: string })
 
 export type CardAttributeValue = string | number | boolean | null
 
