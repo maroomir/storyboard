@@ -116,11 +116,12 @@ async function buildCharacterProposals(
   const resolveTarget = buildTargetResolver(roster)
   const accumulator = new ProposalAccumulator()
   const primary: EntityRef = { kind: "character", id: card.id }
+  const aliases = card.aliases ?? []
 
   for (const draft of drafts) {
     const attribution = attributionFor(primary, draft.sceneStem)
 
-    const extracted = await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], { attribution })
+    const extracted = await aiService.extractCardCandidatesByCharacter(draft.body, [card.name], { attribution, aliases })
     const candidate = extracted[card.name]
 
     if (candidate) {
@@ -147,12 +148,12 @@ async function buildCharacterProposals(
       }
     }
 
-    const traits = await aiService.extractTraitsByCharacter(draft.body, [card.name], { attribution })
+    const traits = await aiService.extractTraitsByCharacter(draft.body, [card.name], { attribution, aliases })
     for (const trait of traits[card.name] ?? []) {
       accumulator.add(draft.sceneStem, { kind: "trait", value: trait })
     }
 
-    for (const utterance of extractQuotedUtterancesForCharacter(draft.body, card.name)) {
+    for (const utterance of extractQuotedUtterancesForCharacter(draft.body, card.name, aliases)) {
       accumulator.add(draft.sceneStem, { kind: "recentDialogue", value: utterance })
     }
   }

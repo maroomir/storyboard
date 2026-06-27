@@ -77,6 +77,7 @@ export interface GenerateTextOptions {
 
 export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+  readonly aliases?: readonly string[]
 }
 
 export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
@@ -85,6 +86,7 @@ export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
 
 export interface ExtractCardCandidatesByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined
+  readonly aliases?: readonly string[]
 }
 
 export interface InlineCompletionContext {
@@ -241,7 +243,7 @@ export class StoryboardAIService {
       TraitsExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
         const variant = this.resolvePromptVariant("traitsExtraction", resolvedOptions)
-        const prompt = TraitsExtractionPrompt.build(draftBody, name, undefined, variant)
+        const prompt = TraitsExtractionPrompt.build(draftBody, name, options.aliases, variant)
         const response = await this.generateText("traitsExtraction", toPromptMessages(prompt), {
           ...resolvedOptions,
           attribution
@@ -286,7 +288,7 @@ export class StoryboardAIService {
       CardCandidateExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
         const variant = this.resolvePromptVariant("cardFactExtraction", resolvedOptions)
-        const prompt = CardCandidateExtractionPrompt.build(draftBody, name, variant)
+        const prompt = CardCandidateExtractionPrompt.build(draftBody, name, options.aliases, variant)
         const response = await this.generateText("cardFactExtraction", toPromptMessages(prompt), {
           ...resolvedOptions,
           attribution

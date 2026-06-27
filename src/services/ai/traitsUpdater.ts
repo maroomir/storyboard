@@ -29,9 +29,16 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-export function extractQuotedUtterancesForCharacter(script: string, characterName: string): string[] {
+export function extractQuotedUtterancesForCharacter(
+  script: string,
+  characterName: string,
+  aliases?: readonly string[]
+): string[] {
   const utterances: string[] = []
-  const speaker = new RegExp(`^\\s*${escapeRegExp(characterName)}\\s*:\\s*(.+)$`)
+  const speakerNames = [characterName, ...(aliases ?? [])]
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+  const speaker = new RegExp(`^\\s*(?:${speakerNames.map(escapeRegExp).join("|")})\\s*:\\s*(.+)$`)
 
   for (const rawLine of script.split(/\r?\n/)) {
     const match = speaker.exec(rawLine)

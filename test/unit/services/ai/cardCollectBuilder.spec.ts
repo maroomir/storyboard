@@ -77,6 +77,34 @@ describe("buildCardCollectProposals (character)", () => {
     expect(proposals.find((proposal) => proposal.kind === "desireLine")).toMatchObject({ value: "진실을 밝히고 싶다" })
   })
 
+  it("forwards aliases to extraction and collects dialogue spoken under an alias name", async () => {
+    const jeonghwa: CharacterCard = {
+      type: "character",
+      id: "jeonghwa-choi",
+      name: "최정화",
+      aliases: ["엄마"]
+    }
+    const drafts: CollectDraft[] = [{ sceneStem: "01", body: '엄마: "밥은 먹었니?"' }]
+
+    const receivedAliases: (readonly string[] | undefined)[] = []
+    const aiService: CardCollectAiService = {
+      extractCardCandidatesByCharacter: async (_body, names, options) => {
+        receivedAliases.push(options?.aliases)
+        return Object.fromEntries(names.map((name) => [name, { attributes: [], relations: [], description: [], voice: [], desire: [] }]))
+      },
+      extractTraitsByCharacter: async (_body, _names, options) => {
+        receivedAliases.push(options?.aliases)
+        return {}
+      },
+      extractBackgroundFactsFromDraft: async () => ({ description: [], senses: [], characterNames: [] })
+    }
+
+    const proposals = await buildCardCollectProposals({ card: jeonghwa, drafts, aiService, characterRoster: roster })
+
+    expect(receivedAliases).toEqual([["엄마"], ["엄마"]])
+    expect(proposals.find((proposal) => proposal.kind === "recentDialogue")).toMatchObject({ value: "밥은 먹었니?" })
+  })
+
   it("drops an unchanged relation type for the same target", async () => {
     const elia: CharacterCard = {
       type: "character",
