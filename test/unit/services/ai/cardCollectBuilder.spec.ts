@@ -20,7 +20,12 @@ function characterAiService(): CardCollectAiService {
       Object.fromEntries(
         names.map((name) => [
           name,
-          { attributes: [{ key: "height", value: "170" }], relations: [{ target: "지훈", type: "friend" }], arc: { summary: "각성" } }
+          {
+            attributes: [{ key: "height", value: "170" }],
+            relations: [{ target: "지훈", type: "friend" }],
+            description: ["은빛 머리의 소녀"],
+            arc: { summary: "각성" }
+          }
         ])
       ),
     extractTraitsByCharacter: async (_body, names) => Object.fromEntries(names.map((name) => [name, ["신중함"]])),
@@ -65,6 +70,7 @@ describe("buildCardCollectProposals (character)", () => {
 
     expect(proposals.filter((proposal) => proposal.kind === "arc")).toHaveLength(2)
     expect(proposals.filter((proposal) => proposal.kind === "trait")).toHaveLength(1)
+    expect(proposals.find((proposal) => proposal.kind === "descriptionLine")).toMatchObject({ value: "은빛 머리의 소녀" })
   })
 
   it("drops an unchanged relation type for the same target", async () => {

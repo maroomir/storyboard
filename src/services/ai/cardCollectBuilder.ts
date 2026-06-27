@@ -133,6 +133,9 @@ async function buildCharacterProposals(
           accumulator.add(draft.sceneStem, { kind: "relation", target, type: relation.type })
         }
       }
+      for (const line of candidate.description) {
+        accumulator.add(draft.sceneStem, { kind: "descriptionLine", value: line })
+      }
       if (candidate.arc?.summary) {
         accumulator.add(draft.sceneStem, { kind: "arc", summary: candidate.arc.summary, sceneRef: draft.sceneStem })
       }

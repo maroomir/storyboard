@@ -107,6 +107,7 @@ describe("StoryboardAIService", () => {
       엘리아: {
         attributes: [{ key: "나이", value: "17" }],
         relations: [{ target: "지훈", type: "친구" }],
+        description: [],
         arc: { summary: "학교에 도착해 친구를 만남" }
       }
     })

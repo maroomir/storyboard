@@ -30,7 +30,7 @@ function createService(
 ): Pick<StoryboardAIService, "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"> {
   return {
     extractCardCandidatesByCharacter: async (_draftBody, names) =>
-      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [] }])),
+      Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [], description: [] }])),
     verifyCardCandidatesByCharacter: async (_draftBody, _name, statements) =>
       verify ? verify(statements) : statements.map((_statement, index) => index)
   }
@@ -56,6 +56,7 @@ describe("updateCardCandidatesFromDraft", () => {
             { target: "존재하지않는인물", type: "적" },
             { target: "엘리아", type: "자기참조" }
           ],
+          description: [],
           arc: { summary: "학교에 도착해 친구를 만남" }
         }
       }),
@@ -82,7 +83,7 @@ describe("updateCardCandidatesFromDraft", () => {
       draftBody: "배경 묘사뿐.",
       detectedCharacterCards: [elia],
       characterRoster: [{ id: "elia", name: "엘리아" }],
-      aiService: createService({ 엘리아: { attributes: [], relations: [] } }),
+      aiService: createService({ 엘리아: { attributes: [], relations: [], description: [] } }),
       fileSystem,
       resolveCandidateUri: (stem) => `/cache/cards/${stem}.json`
     })
@@ -108,6 +109,7 @@ describe("updateCardCandidatesFromDraft", () => {
           엘리아: {
             attributes: [{ key: "나이", value: "17" }],
             relations: [{ target: "지훈", type: "친구" }],
+            description: [],
             arc: { summary: "본문에 없는 추측" }
           }
         },
@@ -145,6 +147,7 @@ describe("updateCardCandidatesFromDraft", () => {
           엘리아: {
             attributes: [{ key: "나이", value: "17" }],
             relations: [{ target: "지훈", type: "친구" }],
+            description: [],
             arc: { summary: "학교에 도착" }
           }
         },
