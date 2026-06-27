@@ -53,8 +53,9 @@ class CollectPreviewContentProvider implements vscode.TextDocumentContentProvide
 }
 
 function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
-  const fileName = documentUri.path.split("/").at(-1) ?? "card.card"
-  return vscode.Uri.from({ scheme: collectPreviewScheme, path: `/${fileName}`, query: documentUri.toString() })
+  const baseName = (documentUri.path.split("/").at(-1) ?? "card.card").replace(/\.card$/, "")
+  // NOTE: Use .yaml extension so VSCode doesn't route the virtual doc through CardCustomEditorProvider.
+  return vscode.Uri.from({ scheme: collectPreviewScheme, path: `/${baseName}.yaml`, query: documentUri.toString() })
 }
 
 interface CardEditorInitialData {
