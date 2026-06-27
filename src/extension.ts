@@ -112,7 +112,9 @@ export function activate(context: vscode.ExtensionContext): void {
     registerContinuityDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder })
   )
   context.subscriptions.push(registerSlopDiagnosticsProvider({ logger }))
-  context.subscriptions.push(registerCardCustomEditorProvider(context))
+  context.subscriptions.push(
+    registerCardCustomEditorProvider(context, { aiProviderRegistry, usageRecorder, logger })
+  )
   context.subscriptions.push(
     registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder })
   )
