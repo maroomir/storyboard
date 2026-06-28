@@ -180,6 +180,10 @@
         "title": "%storyboard.draft.augmentSelection.title%"
       },
       {
+        "command": "storyboard.draft.editSelection",
+        "title": "%storyboard.draft.editSelection.title%"
+      },
+      {
         "command": "storyboard.draft.export",
         "title": "%storyboard.draft.export.title%"
       }

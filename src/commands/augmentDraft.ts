@@ -38,6 +38,7 @@ import { resolveExpandRange } from "./expandDraft"
 
 const augmentDraftCommand = "storyboard.draft.augment"
 const augmentSelectionCommand = "storyboard.draft.augmentSelection"
+const editSelectionCommand = "storyboard.draft.editSelection"
 const augmentPreviewScheme = "storyboard-augment"
 
 export interface RegisterAugmentDraftCommandDependencies {
@@ -196,7 +197,8 @@ async function runAugmentDraft(
   previewProvider: AugmentPreviewContentProvider,
   invokedSceneUri?: vscode.Uri,
   invokedDraftUri?: vscode.Uri,
-  rangeArg?: vscode.Range
+  rangeArg?: vscode.Range,
+  instruction?: string
 ): Promise<void> {
   const editor = vscode.window.activeTextEditor
 
@@ -240,7 +242,7 @@ async function runAugmentDraft(
   const selectionRange = resolveExpandRange(editor, rangeArg)
 
   if (scope === "selection" && selectionRange.isEmpty) {
-    await vscode.window.showInformationMessage("보충할 영역을 먼저 선택해 주세요.")
+    await vscode.window.showInformationMessage(instruction ? "수정할 영역을 먼저 선택해 주세요." : "보충할 영역을 먼저 선택해 주세요.")
     return
   }
 
@@ -276,7 +278,7 @@ async function runAugmentDraft(
     augmented = await vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
-        title: scope === "selection" ? "Storyboard 선택 영역 보충" : "Storyboard 초안 보충",
+        title: instruction ? "Storyboard 선택 영역 편집" : scope === "selection" ? "Storyboard 선택 영역 보충" : "Storyboard 초안 보충",
         cancellable: false
       },
       async () =>
@@ -287,7 +289,8 @@ async function runAugmentDraft(
             format: context.format,
             cards: formatAugmentCards(context.sceneContext.characters, context.sceneContext.background),
             facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
-            intent: context.sceneContext.scene.body
+            intent: context.sceneContext.scene.body,
+            instruction
           },
           {
             providerId: dependencies.aiProviderRegistry.getTaskProvider("draftAugment"),
@@ -314,11 +317,19 @@ async function runAugmentDraft(
 
   previewProvider.setContent(previewUri, proposedFullText)
 
-  await vscode.commands.executeCommand("vscode.diff", editor.document.uri, previewUri, "초안 ↔ 보충 제안", {
-    preview: true
-  })
+  await vscode.commands.executeCommand(
+    "vscode.diff",
+    editor.document.uri,
+    previewUri,
+    instruction ? "초안 ↔ 수정 제안" : "초안 ↔ 보충 제안",
+    { preview: true }
+  )
 
-  const decision = await vscode.window.showInformationMessage("보충 결과를 적용하시겠습니까?", "적용", "취소")
+  const decision = await vscode.window.showInformationMessage(
+    instruction ? "수정 결과를 적용하시겠습니까?" : "보충 결과를 적용하시겠습니까?",
+    "적용",
+    "취소"
+  )
 
   if (decision !== "적용") {
     return
@@ -336,7 +347,9 @@ async function runAugmentDraft(
   }
 
   await editor.document.save()
-  await vscode.window.showInformationMessage(scope === "selection" ? "선택 영역을 보충했습니다." : "초안을 보충했습니다.")
+  await vscode.window.showInformationMessage(
+    instruction ? "선택 영역을 수정했습니다." : scope === "selection" ? "선택 영역을 보충했습니다." : "초안을 보충했습니다."
+  )
 }
 
 export function registerAugmentDraftCommands(
@@ -356,6 +369,23 @@ export function registerAugmentDraftCommands(
       augmentSelectionCommand,
       (sceneUri?: vscode.Uri, draftUri?: vscode.Uri, rangeArg?: vscode.Range) =>
         runAugmentDraft("selection", dependencies, previewProvider, sceneUri, draftUri, rangeArg)
+    ),
+    vscode.commands.registerCommand(
+      editSelectionCommand,
+      async (sceneUri?: vscode.Uri, draftUri?: vscode.Uri, rangeArg?: vscode.Range) => {
+        const instruction = await vscode.window.showInputBox({
+          title: "선택 영역 편집",
+          prompt: "어떻게 수정할까요?",
+          placeHolder: "예: 더 긴장감 있게, 캐릭터 감정을 강조해서, 짧게 줄여서...",
+          ignoreFocusOut: true
+        })
+        if (instruction === undefined) return
+        if (!instruction.trim()) {
+          await vscode.window.showInformationMessage("수정 지시문을 입력해 주세요.")
+          return
+        }
+        return runAugmentDraft("selection", dependencies, previewProvider, sceneUri, draftUri, rangeArg, instruction)
+      }
     )
   )
 }

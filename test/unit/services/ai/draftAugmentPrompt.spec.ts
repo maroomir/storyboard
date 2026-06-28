@@ -56,6 +56,40 @@ describe("DraftAugmentPrompt", () => {
       DraftAugmentPrompt.build(baseInput, "generic").system.length
     )
   })
+
+  it("uses instruction-first editor role when instruction is provided", () => {
+    const artifact = DraftAugmentPrompt.build(
+      { ...baseInput, scope: "selection", instruction: "더 긴장감 있게" },
+      "generic"
+    )
+
+    expect(artifact.system).toContain("편집자")
+    expect(artifact.system).toContain("[지시문]")
+    expect(artifact.system).not.toContain("보충")
+    expect(artifact.user).toContain("[지시문]\n더 긴장감 있게")
+    expect(artifact.user).toContain("[선택 영역]")
+  })
+
+  it("omits scene intent when instruction is provided", () => {
+    const withIntent = DraftAugmentPrompt.build({ ...baseInput, intent: "주인공 소개" }, "generic")
+    const withInstruction = DraftAugmentPrompt.build(
+      { ...baseInput, intent: "주인공 소개", instruction: "더 짧게" },
+      "generic"
+    )
+
+    expect(withIntent.user).toContain("[장면 의도]")
+    expect(withInstruction.user).not.toContain("[장면 의도]")
+  })
+
+  it("uses shorter xs system for instruction mode", () => {
+    const artifact = DraftAugmentPrompt.build(
+      { ...baseInput, scope: "selection", instruction: "더 짧게" },
+      "xs"
+    )
+
+    expect(artifact.system).toContain("[지시문]")
+    expect(artifact.user).toContain("[지시문]\n더 짧게")
+  })
 })
 
 describe("formatAugmentCards", () => {

@@ -10,6 +10,7 @@ const continuityCheckCommand = "storyboard.draft.continuityCheck"
 const expandDraftCommand = "storyboard.draft.expand"
 const augmentDraftCommand = "storyboard.draft.augment"
 const augmentSelectionCommand = "storyboard.draft.augmentSelection"
+const editSelectionCommand = "storyboard.draft.editSelection"
 
 export class DraftCodeLensProvider implements vscode.CodeLensProvider {
   private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
@@ -92,6 +93,21 @@ export class DraftCodeLensProvider implements vscode.CodeLensProvider {
         title: "🪄 Update Selection",
         tooltip: "선택한 영역만 현재 카드·설정 기준으로 보충합니다.",
         command: augmentSelectionCommand,
+        arguments: [
+          sceneUri,
+          document.uri,
+          vscode.window.activeTextEditor?.document.uri.toString() === document.uri.toString()
+            ? new vscode.Range(
+                vscode.window.activeTextEditor.selection.start,
+                vscode.window.activeTextEditor.selection.end
+              )
+            : undefined
+        ]
+      }),
+      new vscode.CodeLens(range, {
+        title: "✏️ Edit Selection...",
+        tooltip: "선택한 영역을 지시문 기반으로 수정합니다. 클릭하면 수정 방향을 입력하는 창이 열립니다.",
+        command: editSelectionCommand,
         arguments: [
           sceneUri,
           document.uri,

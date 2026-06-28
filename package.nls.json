@@ -38,5 +38,6 @@
   "storyboard.draft.expand.title": "Storyboard: Expand Selection (Draft)",
   "storyboard.draft.augment.title": "Storyboard: Supplement Draft from Cards",
   "storyboard.draft.augmentSelection.title": "Storyboard: Update Selection from Cards",
+  "storyboard.draft.editSelection.title": "Storyboard: Edit Selection with Instruction...",
   "storyboard.draft.export.title": "Storyboard: Export Draft…"
 }

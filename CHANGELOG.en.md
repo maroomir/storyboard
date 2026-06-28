@@ -13,6 +13,7 @@ after the first public release.
 ### Added
 
 - Added card-based supplementing that folds the current cards and canon into an existing draft without regenerating it. The draft CodeLens `✨ Augment from Cards` supplements the whole body and `🪄 Update Selection` supplements only the selected range, while preserving the existing flow, prose style, and manual edits. A native VSCode diff previews the before/after and changes apply only after you click **Apply**; when `storyboard.draft.keepHistory` is enabled the previous draft is archived to `.draft` history first.
+- Added instruction-based selection editing. Clicking `✏️ Edit Selection...` in the draft CodeLens opens an input box where you can type a revision direction (e.g. "more tension", "shorter", "emphasize the character's emotion"). The AI rewrites the selected range following the instruction, informed by current cards and canon, and uses the same diff preview and Apply flow.
 
 ## [0.4.3] - 2026-06-28
 
