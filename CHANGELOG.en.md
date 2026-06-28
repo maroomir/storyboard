@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Added card-based supplementing that folds the current cards and canon into an existing draft without regenerating it. The draft CodeLens `✨ Augment from Cards` supplements the whole body and `🪄 Update Selection` supplements only the selected range, while preserving the existing flow, prose style, and manual edits. A native VSCode diff previews the before/after and changes apply only after you click **Apply**; when `storyboard.draft.keepHistory` is enabled the previous draft is archived to `.draft` history first.
+
 ## [0.4.3] - 2026-06-28
 
 ### Added

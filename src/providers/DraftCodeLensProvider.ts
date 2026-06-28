@@ -9,6 +9,7 @@ const grammarCheckCommand = "storyboard.draft.grammarCheck"
 const continuityCheckCommand = "storyboard.draft.continuityCheck"
 const expandDraftCommand = "storyboard.draft.expand"
 const augmentDraftCommand = "storyboard.draft.augment"
+const augmentSelectionCommand = "storyboard.draft.augmentSelection"
 
 export class DraftCodeLensProvider implements vscode.CodeLensProvider {
   private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
@@ -86,6 +87,21 @@ export class DraftCodeLensProvider implements vscode.CodeLensProvider {
         tooltip: "재생성 없이 현재 카드·설정을 본문 전체에 반영해 보충합니다.",
         command: augmentDraftCommand,
         arguments: [sceneUri, document.uri]
+      }),
+      new vscode.CodeLens(range, {
+        title: "🪄 Update Selection",
+        tooltip: "선택한 영역만 현재 카드·설정 기준으로 보충합니다.",
+        command: augmentSelectionCommand,
+        arguments: [
+          sceneUri,
+          document.uri,
+          vscode.window.activeTextEditor?.document.uri.toString() === document.uri.toString()
+            ? new vscode.Range(
+                vscode.window.activeTextEditor.selection.start,
+                vscode.window.activeTextEditor.selection.end
+              )
+            : undefined
+        ]
       })
     ]
   }

@@ -9,6 +9,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- 재생성 없이 현재 카드·정전(canon)을 기존 초안에 반영해 보충하는 기능을 추가했습니다. 초안 CodeLens의 `✨ Augment from Cards`는 본문 전체를, `🪄 Update Selection`은 선택한 영역만 보충하며, 사건 전개·문체·직접 편집분을 보존합니다. 적용 전 VSCode 네이티브 diff로 변경 전/후를 확인하고 **적용**을 눌러야 반영되며, `storyboard.draft.keepHistory`가 켜져 있으면 직전 초안을 `.draft` 히스토리에 보관합니다.
+
 ## [0.4.3] - 2026-06-28
 
 ### 추가

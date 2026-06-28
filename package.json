@@ -176,6 +176,10 @@
         "title": "%storyboard.draft.augment.title%"
       },
       {
+        "command": "storyboard.draft.augmentSelection",
+        "title": "%storyboard.draft.augmentSelection.title%"
+      },
+      {
         "command": "storyboard.draft.export",
         "title": "%storyboard.draft.export.title%"
       }

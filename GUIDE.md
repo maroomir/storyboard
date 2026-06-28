@@ -36,7 +36,18 @@
 - 동작: 선택한 텍스트를 문체를 유지한 채 확장해 같은 위치에 치환합니다.
 - 주의: 선택 영역이 비어 있으면 확장하지 않고 안내 메시지를 표시합니다.
 
-## 5) 초안 검수·재작성 루프
+## 5) 카드 기반 보충 (재생성 없이)
+
+- 명령: `Storyboard: Supplement Draft from Cards` / `Storyboard: Update Selection from Cards`
+- CodeLens: `✨ Augment from Cards`(본문 전체) / `🪄 Update Selection`(선택 영역)
+- 동작: 초안을 **재생성하지 않고**, 현재 캐릭터·배경 카드와 정전(canon) 설정을 기존 본문에 자연스럽게 녹여 보충합니다. 사건 전개·문체·사용자가 직접 고친 부분은 보존합니다.
+  - `✨ Augment from Cards`: 본문 전체를 대상으로 보충합니다.
+  - `🪄 Update Selection`: 선택한 영역만 보충합니다(선택이 비어 있으면 안내 메시지).
+- diff 미리보기: 적용 전 VSCode 네이티브 diff 편집기로 변경 전/후를 보여 주고, 알림의 **적용**을 눌러야 반영됩니다. **취소** 시 본문은 그대로입니다.
+- 기록: `storyboard.draft.keepHistory`가 켜져 있으면 적용 직전 초안을 `.draft` 히스토리에 보관합니다.
+- 카드를 갱신한 뒤 재생성으로 직접 편집분을 잃고 싶지 않을 때 사용합니다.
+
+## 6) 초안 검수·재작성 루프
 
 - 명령: `Storyboard: Review & Revise Draft (Current Scene)` — 기존 초안에 검수·재작성만 다시 돌리고 싶을 때 사용합니다.
 - 자동 실행: `storyboard.draft.reviseAfterGenerate`가 기본 `true`라, 초안 생성(Generate / Regenerate / Generate All) 직후 이 루프가 자동으로 이어집니다. 한 동작으로 검수된 초안이 나오므로 위 명령을 따로 실행할 필요가 없습니다. 비용을 줄이려면 이 설정을 끕니다.
@@ -46,7 +57,7 @@
 - 기록: 씬별 검수 시각, 재작성 횟수, 남은 차단 이슈, 재작성 지시를 `.storyboard/outline/revision-plan.yaml`에 누적합니다.
 - 문체/품질 기준: `Storyboard: Open Settings`의 **작품 계약** 탭에 입력한 `styleConstraints`와 `qualityCriteria`가 비평 프롬프트에 반영됩니다.
 
-## 6) 캐릭터 Hover 카드
+## 7) 캐릭터 Hover 카드
 
 - 대상: `draft/*.md` 본문에서 캐릭터 이름 위 Hover
 - 표시 정보
@@ -56,7 +67,7 @@
   - 관계 캐릭터 요약
 - 데이터 소스: 워크스페이스 `character/*.card` 파일
 
-## 7) 카드 에디터에서 draft 수집
+## 8) 카드 에디터에서 draft 수집
 
 - 대상: `character/*.card`, `background/*.card`를 커스텀 에디터로 열었을 때의 **수집** 탭
 - 동작: **수집** 버튼을 누르면 이 카드가 등장하는 `draft/*.md`를 모아 LLM으로 카드에 추가할 정보를 추출합니다.
@@ -67,7 +78,7 @@
 - diff 미리보기: 체크박스로 항목을 고른 뒤 **diff 미리보기**를 누르면 VSCode 네이티브 diff 편집기가 현재 카드 YAML과 선택 반영본을 나란히 보여 줍니다.
 - 반영: **선택 항목 반영**을 누르면 카드 YAML에 적용됩니다. 수정 항목은 사용자가 수락할 때만 기존 값을 덮어씁니다.
 
-## 8) 캐릭터·배경 카드 추천
+## 9) 캐릭터·배경 카드 추천
 
 - 대상: 좌측 **Characters**/**Backgrounds** 뷰 헤더의 **추천**(✨) 버튼
 - 동작: 프로젝트 전체 `scene/*.txt`와 `draft/*.md`를 모아 LLM으로 읽고, 본문에 등장하지만 해당 탭에 아직 카드가 없는 인물·배경을 찾아 제안합니다.
@@ -77,7 +88,7 @@
 - 보강: 생성 후 세부 설정은 카드 에디터의 **수집** 탭(§7)으로 채웁니다.
 - 이미 카드가 있는 이름과 별칭은 제안에서 제외됩니다.
 
-## 9) 동작하지 않을 때 점검
+## 10) 동작하지 않을 때 점검
 
 1. 워크스페이스에 `.storyboard/project.json`이 있는지 확인
 2. 파일이 `draft/*.md` 경로인지 확인
