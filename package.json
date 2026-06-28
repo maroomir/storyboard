@@ -56,6 +56,16 @@
         "icon": "$(add)"
       },
       {
+        "command": "storyboard.character.recommend",
+        "title": "%storyboard.character.recommend.title%",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "storyboard.background.recommend",
+        "title": "%storyboard.background.recommend.title%",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "storyboard.character.rename",
         "title": "%storyboard.character.rename.title%"
       },
@@ -412,6 +422,16 @@
           "command": "storyboard.background.create",
           "when": "view == storyboard.backgroundsView",
           "group": "navigation"
+        },
+        {
+          "command": "storyboard.character.recommend",
+          "when": "view == storyboard.charactersView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "storyboard.background.recommend",
+          "when": "view == storyboard.backgroundsView",
+          "group": "navigation@1"
         },
         {
           "command": "storyboard.scene.create",

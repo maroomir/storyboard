@@ -23,6 +23,7 @@ import { registerReviseDraftCommand } from "./commands/reviseDraft"
 import { registerSummarizeChaptersCommand } from "./commands/summarizeChapters"
 import { registerOpenSettingsCommand } from "./commands/openSettings"
 import { registerMigrateCardTextCommand } from "./commands/migrateCardTextToList"
+import { registerRecommendCardCommands } from "./commands/recommendCards"
 import { registerRenameCardCommands } from "./commands/renameCard"
 import { registerSetApiKeyCommand } from "./commands/setApiKey"
 import { StoryboardLogger } from "./core/logger"
@@ -63,6 +64,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(configBridge.onDidChange(() => logger.info("Storyboard configuration changed")))
   context.subscriptions.push(registerHelloWorldCommand())
   context.subscriptions.push(registerCreateCardCommands())
+  context.subscriptions.push(registerRecommendCardCommands({ aiProviderRegistry, usageRecorder, logger }))
   context.subscriptions.push(registerRenameCardCommands())
   context.subscriptions.push(registerMigrateCardTextCommand({ logger }))
   context.subscriptions.push(registerCardRenameParticipant({ logger }))

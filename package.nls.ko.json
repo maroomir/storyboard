@@ -9,6 +9,8 @@
   "storyboard.seed.exportToFile.title": "Storyboard: 프로젝트를 시드로 내보내기...",
   "storyboard.character.create.title": "Storyboard: 캐릭터 생성",
   "storyboard.background.create.title": "Storyboard: 배경 생성",
+  "storyboard.character.recommend.title": "Storyboard: 캐릭터 추천",
+  "storyboard.background.recommend.title": "Storyboard: 배경 추천",
   "storyboard.character.rename.title": "Storyboard: 캐릭터 ID 변경...",
   "storyboard.background.rename.title": "Storyboard: 배경 ID 변경...",
   "storyboard.apiKey.set.title": "Storyboard: API 키 설정...",
