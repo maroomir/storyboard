@@ -3,10 +3,12 @@ import * as vscode from "vscode"
 
 import {
   createInlineCompletionCacheKey,
+  formatInlineSceneContext,
   pruneInlineCompletionCache,
   shouldRunInlineCompletion,
   trimInlineCompletionPrefix
 } from "@/providers/InlineCompletionProvider"
+import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 describe("InlineCompletionProvider helpers", () => {
   it("trims prefix to the most recent 1200 characters", () => {
@@ -41,6 +43,34 @@ describe("InlineCompletionProvider helpers", () => {
     expect(shouldRunInlineCompletion("openai")).toBe(true)
     expect(shouldRunInlineCompletion("claude")).toBe(true)
     expect(shouldRunInlineCompletion("mock")).toBe(true)
+  })
+
+  it("formats scene context with character voice, background, and trimmed intent", () => {
+    const characters = [
+      { name: "한별", voice: ["냉소적이고 짧게 끊어 말한다"] },
+      { name: "도윤", voice: [] },
+      { name: "세아", voice: ["따뜻한 존댓말"] },
+      { name: "넷째", voice: ["등장 안 함"] }
+    ] as unknown as CharacterCard[]
+    const background = {
+      name: "옥상",
+      description: ["바람이 거센 낡은 옥상"]
+    } as unknown as BackgroundCard
+    const sceneBody = "x".repeat(400)
+
+    const context = formatInlineSceneContext(characters, background, sceneBody)
+
+    expect(context.activeCharacter).toBe("한별(냉소적이고 짧게 끊어 말한다), 도윤, 세아(따뜻한 존댓말)")
+    expect(context.background).toBe("옥상 — 바람이 거센 낡은 옥상")
+    expect(context.sceneIntent).toHaveLength(300)
+  })
+
+  it("returns undefined fields when scene context is empty", () => {
+    const context = formatInlineSceneContext([], undefined, "   ")
+
+    expect(context.activeCharacter).toBeUndefined()
+    expect(context.background).toBeUndefined()
+    expect(context.sceneIntent).toBeUndefined()
   })
 
   it("prunes oldest entries when cache exceeds limit", () => {

@@ -1,18 +1,34 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
-import { isDraftMarkdownFile } from "../core/pathConventions"
+import {
+  getStoryboardProjectPaths,
+  isDraftMarkdownFile,
+  sceneFilePath
+} from "../core/pathConventions"
+import { buildSceneContext } from "../core/sceneContext"
+import {
+  sceneContextFileSystem,
+  sceneContextPaths,
+  vscodeFsAdapter
+} from "../core/vscodeFileSystem"
 import { hasStoryboardProject } from "../core/workspace"
 import { parseDraft } from "../files/draft"
-import { StoryboardAIService } from "../services/ai/AIService"
+import { readSceneFile } from "../files/scene"
+import type { BackgroundCard, CharacterCard } from "../shared/card"
+import { type InlineCompletionContext, StoryboardAIService } from "../services/ai/AIService"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import { type AiProviderId, isCliProvider } from "../services/ai/types"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
+import { tryParseDraftScenePartsForCodeLens } from "./draftCodeLensLogic"
 
 const inlineCompletionDelayMs = 700
 const inlineCompletionPrefixChars = 1200
 const inlineCompletionCacheLimit = 100
+const inlineSceneContextTtlMs = 60_000
+const inlineSceneIntentChars = 300
+const inlineMaxActiveCharacters = 3
 
 export interface RegisterInlineCompletionProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry
@@ -23,6 +39,50 @@ export interface RegisterInlineCompletionProviderDependencies {
 interface InlineCompletionCacheValue {
   readonly value: string
   readonly updatedAt: number
+}
+
+interface CachedSceneContext {
+  readonly context: InlineCompletionContext
+  readonly cachedAt: number
+}
+
+export function formatInlineSceneContext(
+  characters: readonly CharacterCard[],
+  background: BackgroundCard | undefined,
+  sceneBody: string
+): InlineCompletionContext {
+  return {
+    activeCharacter: formatActiveCharacters(characters),
+    background: formatSceneBackground(background),
+    sceneIntent: formatSceneIntent(sceneBody)
+  }
+}
+
+function formatActiveCharacters(characters: readonly CharacterCard[]): string | undefined {
+  const labels = characters.slice(0, inlineMaxActiveCharacters).map((character) => {
+    const voice = character.voice?.[0]?.trim()
+    return voice ? `${character.name}(${voice})` : character.name
+  })
+
+  return labels.length > 0 ? labels.join(", ") : undefined
+}
+
+function formatSceneBackground(background: BackgroundCard | undefined): string | undefined {
+  if (!background) {
+    return undefined
+  }
+
+  const description = background.description[0]?.trim()
+  return description ? `${background.name} — ${description}` : background.name
+}
+
+function formatSceneIntent(sceneBody: string): string | undefined {
+  const trimmed = sceneBody.trim()
+  if (trimmed.length === 0) {
+    return undefined
+  }
+
+  return trimmed.length <= inlineSceneIntentChars ? trimmed : trimmed.slice(0, inlineSceneIntentChars).trim()
 }
 
 // NOTE: CLI provider는 호출마다 프로세스를 새로 띄워 키 입력당 인라인 완성에는 부적합하므로 건너뛴다.
@@ -85,6 +145,7 @@ export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCa
 
 class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
   private readonly cache = new Map<string, InlineCompletionCacheValue>()
+  private readonly sceneContextCache = new Map<string, CachedSceneContext>()
   private readonly aiService: StoryboardAIService
   private currentWorkspaceUri: vscode.Uri | undefined
 
@@ -108,6 +169,44 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       isDraftMarkdownFile(documentUri, workspaceFolder) &&
       shouldRunInlineCompletion(this.dependencies.aiProviderRegistry.getTaskProvider("inlineCompletion"))
     )
+  }
+
+  private async loadSceneContext(
+    document: vscode.TextDocument,
+    workspaceFolder: vscode.WorkspaceFolder,
+    sceneStem: string
+  ): Promise<InlineCompletionContext> {
+    const cached = this.sceneContextCache.get(sceneStem)
+    if (cached && Date.now() - cached.cachedAt < inlineSceneContextTtlMs) {
+      return cached.context
+    }
+
+    const context = await this.readSceneContext(document, workspaceFolder)
+    this.sceneContextCache.set(sceneStem, { context, cachedAt: Date.now() })
+    return context
+  }
+
+  private async readSceneContext(
+    document: vscode.TextDocument,
+    workspaceFolder: vscode.WorkspaceFolder
+  ): Promise<InlineCompletionContext> {
+    const parts = tryParseDraftScenePartsForCodeLens(document.getText())
+    if (!parts) {
+      return {}
+    }
+
+    try {
+      const sceneUri = sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug)
+      const fileName = sceneUri.path.split("/").pop() ?? ""
+      const scene = await readSceneFile(sceneUri, vscodeFsAdapter, fileName)
+
+      const paths = sceneContextPaths(getStoryboardProjectPaths(workspaceFolder.uri))
+      const sceneContext = await buildSceneContext(paths, scene, sceneContextFileSystem)
+
+      return formatInlineSceneContext(sceneContext.characters, sceneContext.background, scene.body)
+    } catch {
+      return {}
+    }
   }
 
   public async provideInlineCompletionItems(
@@ -151,9 +250,14 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       sceneStem = fileName.replace(/\.md$/i, "")
     }
 
+    const sceneContext = await this.loadSceneContext(document, workspaceFolder, sceneStem)
+    if (token.isCancellationRequested) {
+      return undefined
+    }
+
     const completion = await this.aiService.completeInline(
       prefix,
-      {},
+      sceneContext,
       {
         providerId: this.dependencies.aiProviderRegistry.getTaskProvider("inlineCompletion"),
         attribution: { primary: { kind: "scene", id: sceneStem } }

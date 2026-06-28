@@ -3,6 +3,7 @@ import { type PromptArtifact, type PromptVariantId } from "./types"
 export interface InlineCompletionPromptContext {
   readonly activeCharacter?: string
   readonly background?: string
+  readonly sceneIntent?: string
 }
 
 export const InlineCompletionPrompt = {
@@ -23,6 +24,7 @@ function buildGeneric(prefix: string, context: InlineCompletionPromptContext): P
       "설명/따옴표/코드블록 없이 완성 문장만 출력하라."
     ].join("\n"),
     user: [
+      context.sceneIntent ? `[씬 의도]\n${context.sceneIntent}\n` : undefined,
       context.activeCharacter ? `활성 캐릭터: ${context.activeCharacter}` : undefined,
       context.background ? `배경: ${context.background}` : undefined,
       "",

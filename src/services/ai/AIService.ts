@@ -99,6 +99,7 @@ export interface ExtractCardCandidatesByCharacterOptions extends GenerateTextOpt
 export interface InlineCompletionContext {
   readonly activeCharacter?: string
   readonly background?: string
+  readonly sceneIntent?: string
 }
 
 export interface DraftExpansionContext {
