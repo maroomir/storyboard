@@ -10,6 +10,29 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-06-28
+
+### Added
+
+- Added a **Collect** tab to the card editor. From `character/*.card` and `background/*.card`, it scans matching `draft/*.md` files, asks the LLM for card-enrichment proposals, and applies only the items selected by the user back to the card YAML.
+- Added shared card-collect proposal types and apply logic. Character proposals cover attributes, relations, arcs, traits, recent dialogue, description, voice, and desire; background proposals cover description, senses, time, weather, and characters.
+- Added the card-collect AI builder and `backgroundFactExtraction` task. Proposals are accumulated per scene, deduplicated, and shown as updates when an existing keyed value would change.
+- Added `cards.collect`, `cards.applyCollect`, and `cards.previewCollect` RPC messages and wired them into the card custom editor provider.
+- Added a preview flow that opens the selected collect proposals in VSCode's native diff editor against the current card YAML.
+
+### Fixed
+
+- Fixed collect diff previews opening through the card custom editor route because the virtual preview document kept the `.card` extension.
+- Fixed alias-only character mentions being missed by collect extraction. Dialogue and narration that use aliases or titles now contribute to the relevant character's proposals.
+
+### Documentation
+
+- Documented the card-editor Collect tab, proposal review, diff preview, and selective apply flow in README and the writer guide.
+
+### Tests
+
+- Added and updated coverage for card-collect proposal types, add/update filtering, apply logic, background extraction, character description/voice/desire collection, alias-based collection, and messaging registry entries.
+
 ## [0.4.1] - 2026-06-27
 
 ### Added
