@@ -10,9 +10,15 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-06-28
+
 ### Added
 
 - Added a **Recommend** (✨) button to the Characters and Backgrounds sidebar headers. Clicking it scans all `scene/*.txt` and `draft/*.md` files across the project, uses the LLM to find entities that appear in the text but have no card yet, and presents them in a multi-select QuickPick. Only the selected items are created as minimal card files. Names and aliases already registered in existing cards are excluded from suggestions.
+
+### Fixed
+
+- Fixed recommended cards with non-ASCII names (e.g. Korean) getting meaningless filenames like `background-2` or `background-3`. A file-ID input box now appears so you can specify the ID directly.
 
 ## [0.4.2] - 2026-06-28
 
