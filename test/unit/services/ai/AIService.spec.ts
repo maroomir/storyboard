@@ -214,6 +214,22 @@ describe("StoryboardAIService", () => {
     ).resolves.toBe("그는 잠시 웃으며 고개를 끄덕였다.")
   })
 
+  it("returns trimmed text for draft augment", async () => {
+    const service = createAIService({
+      completionText: "  그는 잠시 웃으며 고개를 끄덕였다.  "
+    })
+
+    await expect(
+      service.augmentDraft({
+        target: "그는 문을 열었다.",
+        scope: "selection",
+        format: "novel",
+        cards: ["[엘리아] 역할: main"],
+        facts: ["엘리아 — 눈동자 색: 녹색"]
+      })
+    ).resolves.toBe("그는 잠시 웃으며 고개를 끄덕였다.")
+  })
+
   it("sends prompt as separated system/user messages", async () => {
     const capture: MessageCapture = {}
     const service = createAIService({ completionText: "[]", capture })

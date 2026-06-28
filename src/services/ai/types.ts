@@ -17,6 +17,7 @@ export const aiTaskCatalog = [
   { name: "continuityCheck", label: "연속성 검사", status: "wired" },
   { name: "inlineCompletion", label: "인라인 완성", status: "wired" },
   { name: "draftExpansion", label: "드래프트 확장", status: "wired" },
+  { name: "draftAugment", label: "초안 보충", status: "wired" },
   { name: "outlineSynopsis", label: "시놉시스 생성", status: "wired" },
   { name: "chapterPlan", label: "챕터 구성", status: "wired" },
   { name: "draftCritique", label: "초안 비평", status: "wired" },

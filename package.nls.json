@@ -36,5 +36,6 @@
   "storyboard.cards.migrateTextToList.title": "Storyboard: Migrate Card Text Fields to List",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff Report",
   "storyboard.draft.expand.title": "Storyboard: Expand Selection (Draft)",
+  "storyboard.draft.augment.title": "Storyboard: Supplement Draft from Cards",
   "storyboard.draft.export.title": "Storyboard: Export Draft…"
 }

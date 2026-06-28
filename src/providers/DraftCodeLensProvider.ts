@@ -8,6 +8,7 @@ const regenerateDraftCommand = "storyboard.draft.regenerate"
 const grammarCheckCommand = "storyboard.draft.grammarCheck"
 const continuityCheckCommand = "storyboard.draft.continuityCheck"
 const expandDraftCommand = "storyboard.draft.expand"
+const augmentDraftCommand = "storyboard.draft.augment"
 
 export class DraftCodeLensProvider implements vscode.CodeLensProvider {
   private readonly _onDidChangeCodeLenses = new vscode.EventEmitter<void>()
@@ -79,6 +80,12 @@ export class DraftCodeLensProvider implements vscode.CodeLensProvider {
               )
             : undefined
         ]
+      }),
+      new vscode.CodeLens(range, {
+        title: "✨ Augment from Cards",
+        tooltip: "재생성 없이 현재 카드·설정을 본문 전체에 반영해 보충합니다.",
+        command: augmentDraftCommand,
+        arguments: [sceneUri, document.uri]
       })
     ]
   }

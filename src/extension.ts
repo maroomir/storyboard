@@ -15,6 +15,7 @@ import { registerImportSeedCommands } from "./commands/importSeed"
 import { registerInitCommand } from "./commands/init"
 import { registerNewSceneCommands } from "./commands/newScene"
 import { registerExpandDraftCommand } from "./commands/expandDraft"
+import { registerAugmentDraftCommands } from "./commands/augmentDraft"
 import { registerOpenRelationGraphCommand } from "./commands/openRelationGraph"
 import { registerPromoteBibleCandidatesCommand } from "./commands/promoteBibleCandidates"
 import { registerPromoteCardCandidatesCommand } from "./commands/promoteCardCandidates"
@@ -103,6 +104,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerCharacterHoverProvider())
   context.subscriptions.push(
     registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder })
+  )
+  context.subscriptions.push(
+    registerAugmentDraftCommands({ aiProviderRegistry, configBridge, logger, usageRecorder })
   )
   context.subscriptions.push(
     registerInlineCompletionProvider({ aiProviderRegistry, logger, usageRecorder })

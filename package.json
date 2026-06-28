@@ -172,6 +172,10 @@
         "title": "%storyboard.draft.expand.title%"
       },
       {
+        "command": "storyboard.draft.augment",
+        "title": "%storyboard.draft.augment.title%"
+      },
+      {
         "command": "storyboard.draft.export",
         "title": "%storyboard.draft.export.title%"
       }

@@ -15,6 +15,7 @@ import { ChapterPlanPrompt } from "./prompts/chapterPlan"
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from "./prompts/chapterSummary"
 import { ContinuityCheckPrompt } from "./prompts/continuityCheck"
 import { DraftCritiquePrompt, type DraftCritiqueInput } from "./prompts/draftCritique"
+import { DraftAugmentPrompt, type DraftAugmentInput } from "./prompts/draftAugment"
 import { DraftRevisionPrompt, type DraftRevisionInput } from "./prompts/draftRevision"
 import { OutlineSynopsisPrompt } from "./prompts/outlineSynopsis"
 import { FactExtractionPrompt } from "./prompts/factExtraction"
@@ -500,6 +501,14 @@ export class StoryboardAIService {
     const variant = this.resolvePromptVariant("draftRevision", options)
     const prompt = DraftRevisionPrompt.build(input, variant)
     const response = await this.generateWithDefaults("draftRevision", prompt, DraftRevisionPrompt.config, options)
+
+    return response.text.trim()
+  }
+
+  public async augmentDraft(input: DraftAugmentInput, options: GenerateTextOptions = {}): Promise<string> {
+    const variant = this.resolvePromptVariant("draftAugment", options)
+    const prompt = DraftAugmentPrompt.build(input, variant)
+    const response = await this.generateWithDefaults("draftAugment", prompt, DraftAugmentPrompt.config, options)
 
     return response.text.trim()
   }
