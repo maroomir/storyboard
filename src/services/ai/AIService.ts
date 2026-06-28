@@ -29,6 +29,12 @@ import {
   coerceBackgroundFactExtraction,
   type BackgroundFactExtraction
 } from "./prompts/backgroundFactExtraction"
+import {
+  CardRecommendationPrompt,
+  coerceCardRecommendations,
+  type RecommendationCategory,
+  type RecommendedEntity
+} from "./prompts/cardRecommendation"
 import { DraftExpansionPrompt } from "./prompts/draftExpansion"
 import { GenreFormattingPrompt } from "./prompts/genreFormatting"
 import { GrammarCheckPrompt } from "./prompts/grammarCheck"
@@ -314,6 +320,24 @@ export class StoryboardAIService {
     )
 
     return coerceBackgroundFactExtraction(parseJsonObject(response.text))
+  }
+
+  public async extractCardRecommendations(
+    body: string,
+    category: RecommendationCategory,
+    knownNames: readonly string[],
+    options: GenerateTextOptions = {}
+  ): Promise<RecommendedEntity[]> {
+    const variant = this.resolvePromptVariant("cardRecommendation", options)
+    const prompt = CardRecommendationPrompt.build(body, category, knownNames, variant)
+    const response = await this.generateWithDefaults(
+      "cardRecommendation",
+      prompt,
+      CardRecommendationPrompt.config,
+      options
+    )
+
+    return coerceCardRecommendations(parseJsonArray(response.text), category)
   }
 
   public async verifyCardCandidatesByCharacter(

@@ -22,7 +22,8 @@ export const aiTaskCatalog = [
   { name: "draftCritique", label: "초안 비평", status: "wired" },
   { name: "draftRevision", label: "초안 수정", status: "wired" },
   { name: "chapterSummary", label: "장 요약", status: "wired" },
-  { name: "sceneCoverage", label: "장면 커버리지 검사", status: "wired" }
+  { name: "sceneCoverage", label: "장면 커버리지 검사", status: "wired" },
+  { name: "cardRecommendation", label: "카드 추천", status: "wired" }
 ] as const
 
 export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number]
