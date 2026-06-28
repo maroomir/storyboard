@@ -81,19 +81,24 @@ export async function writeNewCardFiles(workspaceRoot: vscode.Uri, card: Storybo
 export async function deriveUniqueCardId(
   workspaceRoot: vscode.Uri,
   cardType: StoryboardCard["type"],
-  name: string
+  name: string,
+  base?: string
 ): Promise<string> {
   const suggested = suggestCardId(name)
-  const base = suggested === fallbackCardId ? defaultCardIdBase(cardType) : suggested
-  let candidate = base
+  const resolvedBase = base ?? (suggested === fallbackCardId ? defaultCardIdBase(cardType) : suggested)
+  let candidate = resolvedBase
   let suffix = 2
 
   while (await uriExists(cardUriForType(workspaceRoot, cardType, candidate))) {
-    candidate = `${base}-${suffix}`
+    candidate = `${resolvedBase}-${suffix}`
     suffix += 1
   }
 
   return candidate
+}
+
+export function needsCardIdPrompt(name: string): boolean {
+  return suggestCardId(name) === fallbackCardId
 }
 
 function createEmptyCard(cardType: StoryboardCard["type"], id: string, name: string): StoryboardCard {
@@ -129,7 +134,7 @@ async function writePlaceholderImageIfMissing(
   await vscode.workspace.fs.writeFile(imageUri, transparentPngBytes)
 }
 
-function validateCardId(value: string): string | undefined {
+export function validateCardId(value: string): string | undefined {
   const id = value.trim()
 
   if (id.length === 0) {

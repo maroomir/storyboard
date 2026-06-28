@@ -19,7 +19,7 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
 import type { StoryboardLogger } from "../core/logger"
-import { deriveUniqueCardId, writeNewCardFiles } from "./createCard"
+import { deriveUniqueCardId, needsCardIdPrompt, validateCardId, writeNewCardFiles } from "./createCard"
 
 const recommendCharacterCommand = "storyboard.character.recommend"
 const recommendBackgroundCommand = "storyboard.background.recommend"
@@ -170,12 +170,37 @@ async function createCardsFromRecommendations(
   let created = 0
 
   for (const recommendation of recommendations) {
-    const id = await deriveUniqueCardId(workspaceRoot, cardType, recommendation.name)
+    const base = await askCardIdBase(recommendation.name, category)
+
+    if (base === null) {
+      continue
+    }
+
+    const id = await deriveUniqueCardId(workspaceRoot, cardType, recommendation.name, base ?? undefined)
     await writeNewCardFiles(workspaceRoot, buildCardFromRecommendation(category, id, recommendation))
     created += 1
   }
 
   return created
+}
+
+async function askCardIdBase(
+  name: string,
+  category: RecommendationCategory
+): Promise<string | null | undefined> {
+  if (!needsCardIdPrompt(name)) {
+    return undefined
+  }
+
+  const label = category === "character" ? "캐릭터" : "배경"
+  const input = await vscode.window.showInputBox({
+    title: `${name} — 파일 ID 지정`,
+    prompt: `영문 소문자·숫자·하이픈만 사용 가능. ${label} 폴더의 파일명으로 쓰입니다.`,
+    ignoreFocusOut: true,
+    validateInput: validateCardId
+  })
+
+  return input === undefined ? null : input
 }
 
 function buildCardFromRecommendation(
