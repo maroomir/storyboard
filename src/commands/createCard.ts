@@ -67,9 +67,33 @@ async function createCard(cardType: StoryboardCard["type"]): Promise<void> {
     return
   }
 
-  await vscode.workspace.fs.writeFile(cardUri, new TextEncoder().encode(serializeCard(card)))
-  await writePlaceholderImageIfMissing(workspaceFolder.uri, card)
+  await writeNewCardFiles(workspaceFolder.uri, card)
   await vscode.commands.executeCommand("vscode.openWith", cardUri, cardEditorViewType)
+}
+
+export async function writeNewCardFiles(workspaceRoot: vscode.Uri, card: StoryboardCard): Promise<vscode.Uri> {
+  const cardUri = getCardUri(workspaceRoot, card)
+  await vscode.workspace.fs.writeFile(cardUri, new TextEncoder().encode(serializeCard(card)))
+  await writePlaceholderImageIfMissing(workspaceRoot, card)
+  return cardUri
+}
+
+export async function deriveUniqueCardId(
+  workspaceRoot: vscode.Uri,
+  cardType: StoryboardCard["type"],
+  name: string
+): Promise<string> {
+  const suggested = suggestCardId(name)
+  const base = suggested === fallbackCardId ? defaultCardIdBase(cardType) : suggested
+  let candidate = base
+  let suffix = 2
+
+  while (await uriExists(cardUriForType(workspaceRoot, cardType, candidate))) {
+    candidate = `${base}-${suffix}`
+    suffix += 1
+  }
+
+  return candidate
 }
 
 function createEmptyCard(cardType: StoryboardCard["type"], id: string, name: string): StoryboardCard {
@@ -80,12 +104,12 @@ function createEmptyCard(cardType: StoryboardCard["type"], id: string, name: str
   return createEmptyBackground(id, name)
 }
 
-function getCardUri(workspaceRoot: vscode.Uri, card: StoryboardCard): vscode.Uri {
-  if (card.type === "character") {
-    return characterCardPath(workspaceRoot, card.id)
-  }
+function cardUriForType(workspaceRoot: vscode.Uri, cardType: StoryboardCard["type"], id: string): vscode.Uri {
+  return cardType === "character" ? characterCardPath(workspaceRoot, id) : backgroundCardPath(workspaceRoot, id)
+}
 
-  return backgroundCardPath(workspaceRoot, card.id)
+function getCardUri(workspaceRoot: vscode.Uri, card: StoryboardCard): vscode.Uri {
+  return cardUriForType(workspaceRoot, card.type, card.id)
 }
 
 async function writePlaceholderImageIfMissing(
@@ -119,6 +143,8 @@ function validateCardId(value: string): string | undefined {
   return undefined
 }
 
+const fallbackCardId = "new-card"
+
 function suggestCardId(name: string): string {
   const normalizedName = name
     .trim()
@@ -126,5 +152,9 @@ function suggestCardId(name: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
 
-  return normalizedName.length > 0 ? normalizedName : "new-card"
+  return normalizedName.length > 0 ? normalizedName : fallbackCardId
+}
+
+function defaultCardIdBase(cardType: StoryboardCard["type"]): string {
+  return cardType === "character" ? "character" : "background"
 }
