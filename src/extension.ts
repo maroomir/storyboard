@@ -32,12 +32,10 @@ import { registerStoryboardWorkspaceContext } from "./core/storyboardWorkspaceCo
 import { registerCardCustomEditorProvider } from "./providers/CardCustomEditorProvider"
 import { registerCardRenameParticipant } from "./providers/CardRenameParticipant"
 import { registerCharacterHoverProvider } from "./providers/CharacterHoverProvider"
-import { registerDraftCodeLensProvider } from "./providers/DraftCodeLensProvider"
 import { registerGrammarDiagnosticsProvider } from "./providers/GrammarDiagnosticsProvider"
 import { registerContinuityDiagnosticsProvider } from "./providers/ContinuityDiagnosticsProvider"
 import { registerSlopDiagnosticsProvider } from "./providers/SlopDiagnosticsProvider"
 import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
-import { registerSceneCodeLensProvider } from "./providers/SceneCodeLensProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
 import { registerSidebarScenesProvider } from "./providers/SidebarScenesProvider"
 import { createAiProviderRegistry } from "./services/ai/providerRegistry"
@@ -99,8 +97,6 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(registerPromoteCardCandidatesCommand({ logger }))
   context.subscriptions.push(registerCanonDiffCommand({ logger }))
   context.subscriptions.push(registerExportManuscriptCommand({ logger }))
-  context.subscriptions.push(registerSceneCodeLensProvider())
-  context.subscriptions.push(registerDraftCodeLensProvider())
   context.subscriptions.push(registerCharacterHoverProvider())
   context.subscriptions.push(
     registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder })
