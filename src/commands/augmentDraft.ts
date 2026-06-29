@@ -48,8 +48,9 @@ export interface RegisterAugmentDraftCommandDependencies {
   readonly usageRecorder: UsageRecorder
 }
 
-// NOTE: Serves the proposed draft body as a read-only virtual document so the augment preview can
-// reuse VSCode's native diff editor (left = real draft file, right = this proposed content).
+// NOTE: Both sides of the diff editor are virtual read-only documents (before = current content,
+// after = proposed content). The real draft file is intentionally excluded from the diff so that
+// VSCode auto-save and CodeLens actions on the real file cannot fire while the user reviews.
 class AugmentPreviewContentProvider implements vscode.TextDocumentContentProvider, vscode.Disposable {
   private readonly contentByUri = new Map<string, string>()
   private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>()
@@ -69,9 +70,14 @@ class AugmentPreviewContentProvider implements vscode.TextDocumentContentProvide
   }
 }
 
-function augmentPreviewUri(draftUri: vscode.Uri): vscode.Uri {
+function augmentBeforeUri(draftUri: vscode.Uri): vscode.Uri {
   const baseName = (draftUri.path.split("/").at(-1) ?? "draft.md").replace(/\.md$/, "")
-  return vscode.Uri.from({ scheme: augmentPreviewScheme, path: `/${baseName}.md`, query: draftUri.toString() })
+  return vscode.Uri.from({ scheme: augmentPreviewScheme, path: `/${baseName}-before.md`, query: draftUri.toString() })
+}
+
+function augmentAfterUri(draftUri: vscode.Uri): vscode.Uri {
+  const baseName = (draftUri.path.split("/").at(-1) ?? "draft.md").replace(/\.md$/, "")
+  return vscode.Uri.from({ scheme: augmentPreviewScheme, path: `/${baseName}-after.md`, query: draftUri.toString() })
 }
 
 interface AugmentReplacement {
@@ -313,14 +319,16 @@ async function runAugmentDraft(
 
   const replacement = buildReplacement(scope, editor.document, selectionRange, draft, augmented)
   const proposedFullText = applyReplacementToText(documentText, editor.document, replacement)
-  const previewUri = augmentPreviewUri(editor.document.uri)
+  const beforeUri = augmentBeforeUri(editor.document.uri)
+  const afterUri = augmentAfterUri(editor.document.uri)
 
-  previewProvider.setContent(previewUri, proposedFullText)
+  previewProvider.setContent(beforeUri, documentText)
+  previewProvider.setContent(afterUri, proposedFullText)
 
   await vscode.commands.executeCommand(
     "vscode.diff",
-    editor.document.uri,
-    previewUri,
+    beforeUri,
+    afterUri,
     instruction ? "초안 ↔ 수정 제안" : "초안 ↔ 보충 제안",
     { preview: true }
   )
