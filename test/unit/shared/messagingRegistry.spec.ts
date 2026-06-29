@@ -37,6 +37,7 @@ const expectedMethods = [
   "settings.updateProviderCommand",
   "settings.updateProviderModel",
   "settings.updateTaskAiConfig",
+  "studio.runAction",
   "usage.read"
 ]
 
