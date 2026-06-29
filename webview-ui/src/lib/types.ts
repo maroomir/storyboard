@@ -15,6 +15,7 @@ export type StoryboardRequestMethod =
   | "scenes.openScene"
   | "scenes.openDraft"
   | "scenes.generateDraft"
+  | "studio.runAction"
   | "ai.generateStream"
   | "usage.read"
 
@@ -161,6 +162,31 @@ export interface SidebarScenesInitialData {
   readonly usage: UsageSummaryByEntity
 }
 
+export type StudioActionId =
+  | "regenerate"
+  | "generate"
+  | "applyFormat"
+  | "grammarCheck"
+  | "continuityCheck"
+  | "expand"
+  | "augment"
+  | "augmentSelection"
+  | "editSelection"
+
+export interface StudioTarget {
+  readonly kind: "draft" | "scene" | "none"
+  readonly label?: string
+  readonly sceneUri?: string
+  readonly draftUri?: string
+  readonly hasSelection: boolean
+  readonly draftExists?: boolean
+}
+
+export interface StudioInitialData {
+  readonly title: string
+  readonly target: StudioTarget
+}
+
 export interface StoryboardEventMessage {
   readonly type: "event"
   readonly method:
@@ -168,6 +194,7 @@ export interface StoryboardEventMessage {
     | "cards.listChanged"
     | "scenes.listChanged"
     | "relations.listChanged"
+    | "studio.targetChanged"
     | "usage.changed"
     | "ai.generateStream.chunk"
   readonly payload: unknown

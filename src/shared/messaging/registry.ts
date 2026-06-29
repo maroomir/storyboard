@@ -71,6 +71,10 @@ import {
   settingsUpdateTaskAiConfigRequestPayloadSchema
 } from "./settings"
 import {
+  studioRunActionRequestPayloadSchema,
+  studioRunActionResponsePayloadSchema
+} from "./studio"
+import {
   usageReadRequestPayloadSchema,
   usageReadResponsePayloadSchema
 } from "./usage"
@@ -106,6 +110,7 @@ export const storyboardRequestPayloadSchemas = {
   "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema,
   "project.readContract": projectReadContractRequestPayloadSchema,
   "project.updateContract": projectUpdateContractRequestPayloadSchema,
+  "studio.runAction": studioRunActionRequestPayloadSchema,
   "usage.read": usageReadRequestPayloadSchema
 } as const
 
@@ -140,6 +145,7 @@ export const storyboardResponsePayloadSchemas = {
   "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema,
   "project.readContract": projectReadContractResponsePayloadSchema,
   "project.updateContract": projectUpdateContractResponsePayloadSchema,
+  "studio.runAction": studioRunActionResponsePayloadSchema,
   "usage.read": usageReadResponsePayloadSchema
 } as const
 

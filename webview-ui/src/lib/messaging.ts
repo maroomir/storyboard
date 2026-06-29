@@ -4,6 +4,8 @@ import type {
   SidebarCardCategory,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
+  StudioInitialData,
+  StudioTarget,
   UsageSummaryByEntity
 } from "./types"
 
@@ -55,6 +57,36 @@ export function parseSidebarScenesInitialData(value: unknown): SidebarScenesInit
     isStoryboardProject: false,
     usage: emptyUsageSummary
   }
+}
+
+const noneStudioTarget: StudioTarget = { kind: "none", hasSelection: false }
+
+export function parseStudioTarget(value: unknown): StudioTarget {
+  if (!value || typeof value !== "object") {
+    return noneStudioTarget
+  }
+
+  const candidate = value as Partial<StudioTarget>
+
+  if (candidate.kind !== "draft" && candidate.kind !== "scene" && candidate.kind !== "none") {
+    return noneStudioTarget
+  }
+
+  return {
+    kind: candidate.kind,
+    label: typeof candidate.label === "string" ? candidate.label : undefined,
+    sceneUri: typeof candidate.sceneUri === "string" ? candidate.sceneUri : undefined,
+    draftUri: typeof candidate.draftUri === "string" ? candidate.draftUri : undefined,
+    hasSelection: candidate.hasSelection === true,
+    draftExists: typeof candidate.draftExists === "boolean" ? candidate.draftExists : undefined
+  }
+}
+
+export function parseStudioInitialData(value: unknown): StudioInitialData {
+  const candidate = (value && typeof value === "object" ? value : {}) as Partial<StudioInitialData>
+  const title = typeof candidate.title === "string" ? candidate.title : "Studio"
+
+  return { title, target: parseStudioTarget(candidate.target) }
 }
 
 function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {
