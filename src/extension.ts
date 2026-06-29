@@ -38,6 +38,7 @@ import { registerSlopDiagnosticsProvider } from "./providers/SlopDiagnosticsProv
 import { registerInlineCompletionProvider } from "./providers/InlineCompletionProvider"
 import { registerSidebarCardsProviders } from "./providers/SidebarCardsProvider"
 import { registerSidebarScenesProvider } from "./providers/SidebarScenesProvider"
+import { registerSidebarStudioProvider } from "./providers/SidebarStudioProvider"
 import { createAiProviderRegistry } from "./services/ai/providerRegistry"
 import { createVscodeUsageLedgerFileSystem, UsageRecorder } from "./services/ai/UsageRecorder"
 import { SecretStore } from "./services/secrets/SecretStore"
@@ -121,6 +122,7 @@ export function activate(context: vscode.ExtensionContext): void {
     registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder })
   )
   context.subscriptions.push(registerSidebarScenesProvider(context, { aiProviderRegistry, usageRecorder }))
+  context.subscriptions.push(registerSidebarStudioProvider(context))
   context.subscriptions.push(registerNewSceneCommands())
   context.subscriptions.push(registerOpenRelationGraphCommand(context, { aiProviderRegistry }))
   context.subscriptions.push(
