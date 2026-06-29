@@ -10,6 +10,14 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Added the always-visible **Storyboard · Studio** sidebar panel. It auto-detects the active `draft/*.md` or `scene/*.txt` and runs draft regeneration, grammar/continuity checks, card-based supplementing, selection expand/update, instruction editing (Edit Selection input), and scene draft generation/format from one place. The buttons stay visible while scrolling, and the panel header can be moved to the right Secondary Side Bar.
+
+### Changed
+
+- Removed the draft/scene top CodeLens buttons that scrolled away with the document and moved the same actions into the Studio panel. The same actions remain available from the command palette.
+
 ## [0.4.4] - 2026-06-30
 
 ### Added

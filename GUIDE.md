@@ -2,6 +2,15 @@
 
 이 문서는 `draft/*.md` 편집 중 사용하는 기능의 실제 사용 흐름을 정리합니다.
 
+## 0) Storyboard · Studio 패널 (작업 컨트롤)
+
+- 위치: 액티비티바의 **Storyboard · Studio** 컨테이너. 항상 보이는 패널이라 본문을 끝까지 스크롤해도 버튼이 사라지지 않습니다. 편집기 우측에 두고 싶으면 뷰 헤더를 **Secondary Side Bar**(우측 패널)로 드래그하세요.
+- 대상: 현재 활성 편집기를 자동으로 인식해 헤더에 표시합니다.
+  - `draft/*.md`: **Regenerate** · **Grammar Check** · **Continuity Check** · **Augment from Cards**, 선택 영역의 **Expand** · **Update Selection**, 지시문 입력란이 있는 **Edit Selection**.
+  - `scene/*.txt`: **Generate/Regenerate Draft** · **Apply Format**.
+- 선택 영역 동작(Expand · Update Selection · Edit Selection)은 본문에서 영역을 선택해야 활성화됩니다.
+- 아래 각 기능 설명의 "Studio 패널" 버튼이 이 패널의 버튼을 가리킵니다. 같은 동작을 명령 팔레트로도 실행할 수 있습니다.
+
 ## 1) 인라인 완성
 
 - 대상: `draft/*.md`
@@ -14,7 +23,7 @@
 - 실행 방법
   - 저장 시 자동 검사
   - 명령: `Storyboard: Grammar Check (Draft)`
-  - CodeLens: `🩹 Grammar Check`
+  - Studio 패널: **Grammar Check** 버튼
 - 결과: 경고 진단(`squiggle`)이 표시됩니다.
 - 수정: 문제 구간에서 Quick Fix를 실행하면 제안 교정문을 적용할 수 있습니다.
 - 실시간 검사: `storyboard.grammar.realtimeEnabled`가 `true`일 때만 입력 중 검사합니다.
@@ -24,7 +33,7 @@
 - 대상: `draft/*.md` (프로젝트에 `.storyboard/bible/canon.yaml` 정전 설정이 있을 때)
 - 실행 방법
   - 명령: `Storyboard: Continuity Check (Draft)`
-  - CodeLens: `🧭 Continuity Check`
+  - Studio 패널: **Continuity Check** 버튼
 - 동작: 초안 본문을 등장 인물/배경의 정전(canon) 설정과 대조해 모순되는 구간을 경고 진단으로 표시합니다.
 - 주의: 해당 씬에 적용되는 canon 사실이 없으면 모델을 호출하지 않고 건너뜁니다.
 - canon 채우기: 초안을 생성하면 설정 사실 후보가 자동 추출됩니다. `Storyboard: Promote Bible Candidates to Canon` 명령으로 후보를 골라 canon으로 승격하면 주입·검사 대상이 됩니다.
@@ -32,28 +41,28 @@
 ## 4) 선택 영역 확장
 
 - 명령: `Storyboard: Expand Selection (Draft)`
-- CodeLens: `🌿 Expand`
+- Studio 패널: **Expand** 버튼(선택 영역)
 - 동작: 선택한 텍스트를 문체를 유지한 채 확장해 같은 위치에 치환합니다.
 - 주의: 선택 영역이 비어 있으면 확장하지 않고 안내 메시지를 표시합니다.
 
 ## 5) 카드 기반 보충 / 지시문 편집 (재생성 없이)
 
-- CodeLens: `✨ Augment from Cards`(본문 전체) / `🪄 Update Selection`(선택 영역) / `✏️ Edit Selection...`(지시문 편집)
+- Studio 패널: **Augment from Cards**(본문 전체) / **Update Selection**(선택 영역) / **Edit Selection**(지시문 입력란)
 - 공통: 초안을 **재생성하지 않고** 수정합니다. 적용 전 VSCode 네이티브 diff로 변경 전/후를 보여 주고, **적용**을 눌러야 반영됩니다. `storyboard.draft.keepHistory`가 켜져 있으면 적용 직전 초안을 `.draft` 히스토리에 보관합니다.
 
 ### 카드 기반 보충
 
 - 명령: `Storyboard: Supplement Draft from Cards` / `Storyboard: Update Selection from Cards`
 - 동작: 현재 캐릭터·배경 카드와 정전(canon) 설정을 기존 본문에 자연스럽게 녹여 보충합니다. 사건 전개·문체·사용자가 직접 고친 부분은 보존합니다.
-  - `✨ Augment from Cards`: 본문 전체를 대상으로 보충합니다.
-  - `🪄 Update Selection`: 선택한 영역만 보충합니다(선택이 비어 있으면 안내 메시지).
+  - **Augment from Cards**: 본문 전체를 대상으로 보충합니다.
+  - **Update Selection**: 선택한 영역만 보충합니다(선택이 비어 있으면 안내 메시지).
 - 카드를 갱신한 뒤 재생성으로 직접 편집분을 잃고 싶지 않을 때 사용합니다.
 
 ### 지시문 기반 편집
 
 - 명령: `Storyboard: Edit Selection with Instruction...`
-- CodeLens: `✏️ Edit Selection...`
-- 동작: 클릭하면 수정 방향을 입력하는 창이 열립니다. 지시문(예: "더 긴장감 있게", "짧게 줄여서", "캐릭터 감정을 강조해서")을 입력하면 현재 카드·정전 정보와 함께 AI가 선택 영역을 재작성합니다.
+- Studio 패널: **Edit Selection** 입력란 + **Apply** 버튼
+- 동작: Studio 패널의 입력란(명령으로 실행하면 입력창)에 수정 방향을 적습니다. 지시문(예: "더 긴장감 있게", "짧게 줄여서", "캐릭터 감정을 강조해서")을 입력하면 현재 카드·정전 정보와 함께 AI가 선택 영역을 재작성합니다.
   - 지시문이 없으면(취소 또는 빈 입력) 수정하지 않습니다.
   - 선택이 비어 있으면 안내 메시지를 표시합니다.
 

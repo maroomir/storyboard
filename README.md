@@ -14,8 +14,8 @@ English README: [`README.en.md`](README.en.md)
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
 - outline에서 `scene/*.txt` 씬 시드를 만들고 `draft/*.md` 초안을 생성
-- 씬 CodeLens와 사이드바 액션을 통한 드래프트 생성/재생성
-- 재생성 없이 카드 기반 보충: `✨ Augment from Cards`(본문 전체)·`🪄 Update Selection`(선택 영역) CodeLens로 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
+- **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 현재 Draft/Scene의 생성·재생성·검사·편집 실행
+- 재생성 없이 카드 기반 보충: Studio 패널의 **Augment from Cards**(본문 전체)·**Update Selection**(선택 영역)으로 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 이전 초안 히스토리 보관(`storyboard.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)

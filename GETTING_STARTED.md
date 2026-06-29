@@ -139,14 +139,15 @@ mood: 설렘
 
 ### 6) 초안 다듬기
 
-`draft/*.md`를 열면 문서 맨 위에 버튼(CodeLens)이 보입니다:
+`draft/*.md`를 열면 **Storyboard · Studio** 패널(액티비티바, 우측 패널로 이동 가능)에서 항상 보이는 버튼으로 다음을 실행할 수 있습니다:
 
 | 버튼 | 하는 일 |
 |---|---|
-| 🔁 Re-generate Draft | 연결된 씬 기준으로 초안 다시 생성 |
-| 🩹 Grammar Check | 문법·맞춤법 진단(밑줄) + Quick Fix |
-| 🧭 Continuity Check | **설정 바이블과 모순되는 부분** 진단 (아래 7번) |
-| 🌿 Expand | 선택한 문장을 문체를 유지한 채 확장 |
+| Regenerate | 연결된 씬 기준으로 초안 다시 생성 |
+| Grammar Check | 문법·맞춤법 진단(밑줄) + Quick Fix |
+| Continuity Check | **설정 바이블과 모순되는 부분** 진단 (아래 7번) |
+| Expand / Update Selection | 선택한 영역을 문체 유지한 채 확장/보충 |
+| Edit Selection | 입력란에 지시문을 적어 선택 영역 수정 |
 
 명령 팔레트의 **`Storyboard: Review & Revise Draft (Current Scene)`** 을 실행하면 연속성·비평 검수 후 차단 이슈를 재작성하고 결과를 기록합니다.
 

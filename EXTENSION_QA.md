@@ -123,14 +123,13 @@ npm run build
 
 **성공 기준**: `scene/*.txt`가 저장되고, 내용이 유지된다.
 
-### 6. 드래프트 생성 (씬 파일 CodeLens)
+### 6. 드래프트 생성 (씬 파일 + Studio 패널)
 
 1. `scene/` 아래의 `.txt` 씬 파일을 연다.
-2. 파일 **맨 위 줄 근처**에 CodeLens가 보이는지 확인한다.
-   - 드래프트가 없으면: **`▶ Generate Draft`**
-   - 이미 있으면: **`🔄 Regenerate Draft`**
-   - 드래프트가 있을 때만: **`🎭 Apply Format`**
-3. **`▶ Generate Draft`** 또는 **`🔄 Regenerate Draft`** 를 클릭한다.
+2. **Storyboard · Studio** 패널(액티비티바)을 연다. 헤더에 `씬 · <파일명>`이 표시되는지 확인한다.
+   - 드래프트가 없으면: **`Generate Draft`**
+   - 이미 있으면: **`Regenerate Draft`**, 그리고 **`Apply Format`** 활성화
+3. **`Generate Draft`** 또는 **`Regenerate Draft`** 를 클릭한다.
 
 **성공 기준**
 
@@ -141,14 +140,17 @@ npm run build
 
 - 씬 파일을 활성 에디터로 둔 상태에서: **`Storyboard: Generate Draft (Current Scene)`** 등
 
-### 7. 드래프트 파일 CodeLens
+### 7. 드래프트 파일 Studio 패널
 
-1. 생성된 `draft/*.md`를 연다.
-2. 상단 CodeLens 확인:
-   - **`🔁 Re-generate Draft`** — 동작해야 함
-   - **`🩹 Grammar Check`** — 진단(squiggle) 생성 또는 갱신
-   - **`🧭 Continuity Check`** — canon이 있으면 설정 모순 진단 생성 또는 갱신
-   - **`🌿 Expand`** — 선택 영역이 있을 때 확장문으로 치환
+1. 생성된 `draft/*.md`를 연다. Studio 패널 헤더에 `초안 · <파일명>`이 표시되는지 확인한다.
+2. **본문을 끝까지 스크롤해도** 패널 버튼이 사라지지 않는지 확인한다.
+3. 패널 버튼 동작 확인:
+   - **`Regenerate`** — 동작해야 함
+   - **`Grammar Check`** — 진단(squiggle) 생성 또는 갱신
+   - **`Continuity Check`** — canon이 있으면 설정 모순 진단 생성 또는 갱신
+   - **`Expand`** / **`Update Selection`** — 본문에서 영역을 선택해야 활성화, 선택 영역을 치환/보충
+   - **`Edit Selection`** — 입력란에 지시문을 적고 **`Apply`**를 누르면 선택 영역을 수정
+4. (선택) 패널 헤더를 우측 **Secondary Side Bar**로 드래그해도 동일하게 동작하는지 확인한다.
 
 ### 7a. 캐릭터 Hover 카드
 
