@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import { createDraft, serializeDraft } from "@/files/draft"
-import { tryParseDraftScenePartsForCodeLens } from "@/providers/draftCodeLensLogic"
+import { parseDraftSceneParts } from "@/core/draftSceneLink"
 
-describe("tryParseDraftScenePartsForCodeLens", () => {
+describe("parseDraftSceneParts", () => {
   it("returns scene parts for a valid draft frontmatter", () => {
     const raw = serializeDraft(
       createDraft({
@@ -14,7 +14,7 @@ describe("tryParseDraftScenePartsForCodeLens", () => {
       })
     )
 
-    expect(tryParseDraftScenePartsForCodeLens(raw)).toEqual({
+    expect(parseDraftSceneParts(raw)).toEqual({
       stem: "01-prologue",
       order: 1,
       orderText: "01",
@@ -23,8 +23,8 @@ describe("tryParseDraftScenePartsForCodeLens", () => {
   })
 
   it("returns undefined when frontmatter is missing or broken (graceful degradation)", () => {
-    expect(tryParseDraftScenePartsForCodeLens("본문만 있음")).toBeUndefined()
-    expect(tryParseDraftScenePartsForCodeLens("---\ninvalid: [\n---\n")).toBeUndefined()
+    expect(parseDraftSceneParts("본문만 있음")).toBeUndefined()
+    expect(parseDraftSceneParts("---\ninvalid: [\n---\n")).toBeUndefined()
   })
 
   it("returns undefined when sceneStem does not match scene stem pattern", () => {
@@ -37,6 +37,6 @@ describe("tryParseDraftScenePartsForCodeLens", () => {
       })
     )
 
-    expect(tryParseDraftScenePartsForCodeLens(raw)).toBeUndefined()
+    expect(parseDraftSceneParts(raw)).toBeUndefined()
   })
 })

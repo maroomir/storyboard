@@ -21,7 +21,7 @@ import type { AiProviderRegistry } from "../services/ai/providerRegistry"
 import { recordUsageSafely } from "../services/ai/recordUsageSafely"
 import { type AiProviderId, isCliProvider } from "../services/ai/types"
 import type { UsageRecorder } from "../services/ai/UsageRecorder"
-import { tryParseDraftScenePartsForCodeLens } from "./draftCodeLensLogic"
+import { parseDraftSceneParts } from "../core/draftSceneLink"
 
 const inlineCompletionDelayMs = 700
 const inlineCompletionPrefixChars = 1200
@@ -190,7 +190,7 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     document: vscode.TextDocument,
     workspaceFolder: vscode.WorkspaceFolder
   ): Promise<InlineCompletionContext> {
-    const parts = tryParseDraftScenePartsForCodeLens(document.getText())
+    const parts = parseDraftSceneParts(document.getText())
     if (!parts) {
       return {}
     }

@@ -1,11 +1,11 @@
 import * as vscode from "vscode"
 
 import type { StoryboardLogger } from "../core/logger"
+import { deriveSceneUri } from "../core/draftSceneLink"
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
-  isDraftMarkdownFile,
-  sceneFilePath
+  isDraftMarkdownFile
 } from "../core/pathConventions"
 import {
   buildNarrativeContext,
@@ -25,7 +25,6 @@ import { createDraft, parseDraft, serializeDraft } from "../files/draft"
 import { archiveExistingDraft } from "../files/draftHistory"
 import { readProjectJson } from "../files/projectJson"
 import { readSceneFile, SceneParseError } from "../files/scene"
-import { tryParseDraftScenePartsForCodeLens } from "../providers/draftCodeLensLogic"
 import { StoryboardAIService } from "../services/ai/AIService"
 import { formatAugmentCards, type DraftAugmentScope } from "../services/ai/prompts/draftAugment"
 import type { AiProviderRegistry } from "../services/ai/providerRegistry"
@@ -88,15 +87,6 @@ interface AugmentReplacement {
 type AugmentContextResult =
   | { readonly ok: true; readonly format: ProjectFormat; readonly sceneContext: SceneContext; readonly bibleFacts: readonly BibleFact[] }
   | { readonly ok: false; readonly message: string }
-
-function deriveSceneUri(workspaceFolder: vscode.WorkspaceFolder, documentText: string): vscode.Uri | undefined {
-  const parts = tryParseDraftScenePartsForCodeLens(documentText)
-  if (!parts) {
-    return undefined
-  }
-
-  return sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug)
-}
 
 async function loadAugmentContext(
   sceneUri: vscode.Uri,
