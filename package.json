@@ -377,6 +377,11 @@
           "id": "storyboard-scenes",
           "title": "Storyboard · Scenes",
           "icon": "assets/activity-scenes.svg"
+        },
+        {
+          "id": "storyboard-studio",
+          "title": "Storyboard · Studio",
+          "icon": "assets/activity-studio.svg"
         }
       ]
     },
@@ -401,6 +406,14 @@
         {
           "id": "storyboard.scenesView",
           "name": "Scenes",
+          "type": "webview",
+          "when": "storyboard.workspaceReady"
+        }
+      ],
+      "storyboard-studio": [
+        {
+          "id": "storyboard.studioView",
+          "name": "Studio",
           "type": "webview",
           "when": "storyboard.workspaceReady"
         }
