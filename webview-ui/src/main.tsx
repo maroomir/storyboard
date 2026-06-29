@@ -8,7 +8,13 @@ import { SettingsView } from "./components/settings/SettingsView"
 import { CardsSidebar } from "./components/sidebar/CardsSidebar"
 import { SidebarPlaceholder } from "./components/sidebar/Placeholder"
 import { ScenesSidebar } from "./components/sidebar/ScenesSidebar"
-import { parseCardEditorInitialData, parseSidebarCardsInitialData, parseSidebarScenesInitialData } from "./lib/messaging"
+import { StudioSidebar } from "./components/sidebar/StudioSidebar"
+import {
+  parseCardEditorInitialData,
+  parseSidebarCardsInitialData,
+  parseSidebarScenesInitialData,
+  parseStudioInitialData
+} from "./lib/messaging"
 import "./styles.css"
 
 function App(): React.ReactElement {
@@ -22,6 +28,10 @@ function App(): React.ReactElement {
 
   if (window.__STORYBOARD_VIEW__ === "scenes-sidebar") {
     return <ScenesSidebar initialData={parseSidebarScenesInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
+  }
+
+  if (window.__STORYBOARD_VIEW__ === "studio-sidebar") {
+    return <StudioSidebar initialData={parseStudioInitialData(window.__STORYBOARD_INITIAL_DATA__)} />
   }
 
   if (window.__STORYBOARD_VIEW__ === "relation-graph") {
