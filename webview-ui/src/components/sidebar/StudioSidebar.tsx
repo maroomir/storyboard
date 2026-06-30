@@ -1,56 +1,385 @@
-import { FileText } from "lucide-react"
-import React, { useEffect, useMemo, useState } from "react"
+import { Check, CircleAlert, FileText, MessagesSquare, Send, Sparkles } from "lucide-react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 
 import { createRequestId, parseStudioTarget } from "@webview/lib/messaging"
+import {
+  availableStudioActions,
+  interpretStudioInstruction,
+  type StudioClarifyReason
+} from "@webview/lib/studioIntent"
 import type { StoryboardEventMessage, StudioActionId, StudioInitialData, StudioTarget } from "@webview/lib/types"
 import { Button } from "../ui/Button"
 import { EmptyState } from "../ui/EmptyState"
+import { Pill } from "../ui/Pill"
 import { SectionHeader } from "../ui/SectionHeader"
 import { sbInputClass } from "../ui/formClasses"
+
+type ProposalStatus = "pending" | "running" | "done" | "failed" | "cancelled"
+
+type ChatTurn =
+  | { readonly id: string; readonly role: "user"; readonly text: string }
+  | {
+      readonly id: string
+      readonly role: "assistant"
+      readonly kind: "proposal"
+      readonly action: StudioActionId
+      readonly instruction?: string
+      readonly status: ProposalStatus
+      readonly requestId?: string
+      readonly errorMessage?: string
+    }
+  | {
+      readonly id: string
+      readonly role: "assistant"
+      readonly kind: "clarify"
+      readonly reason: StudioClarifyReason
+      readonly suggestions: readonly StudioActionId[]
+    }
+
+type StudioResponseMessage = {
+  readonly type: "response"
+  readonly id: string
+  readonly ok?: boolean
+  readonly error?: { readonly message?: string }
+}
 
 export function StudioSidebar({ initialData }: { readonly initialData: StudioInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
   const [target, setTarget] = useState<StudioTarget>(initialData.target)
-  const [instruction, setInstruction] = useState("")
+  const [turns, setTurns] = useState<readonly ChatTurn[]>([])
+  const [draft, setDraft] = useState("")
+  const logEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent<StoryboardEventMessage>): void => {
-      if (event.data.type !== "event" || event.data.method !== "studio.targetChanged") {
+    const handleMessage = (event: MessageEvent<StoryboardEventMessage | StudioResponseMessage>): void => {
+      const data = event.data
+
+      if (data.type === "response" && "id" in data) {
+        settleProposal(setTurns, data)
         return
       }
 
-      setTarget(parseStudioTarget(event.data.payload))
+      if (data.type === "event" && data.method === "studio.targetChanged") {
+        setTarget(parseStudioTarget(data.payload))
+      }
     }
 
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
   }, [])
 
-  const runAction = (action: StudioActionId, payloadInstruction?: string): void => {
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView?.({ block: "end" })
+  }, [turns])
+
+  const appendUserAndIntent = (text: string): void => {
+    const intent = interpretStudioInstruction(text, target)
+    const userTurn: ChatTurn = { id: createRequestId(), role: "user", text }
+    const assistantTurn: ChatTurn =
+      intent.kind === "action"
+        ? { id: createRequestId(), role: "assistant", kind: "proposal", action: intent.action, instruction: intent.instruction, status: "pending" }
+        : { id: createRequestId(), role: "assistant", kind: "clarify", reason: intent.reason, suggestions: intent.suggestions }
+
+    setTurns((prev) => [...prev, userTurn, assistantTurn])
+  }
+
+  const proposeAction = (action: StudioActionId): void => {
+    const userTurn: ChatTurn = { id: createRequestId(), role: "user", text: actionLabel(action) }
+    const assistantTurn: ChatTurn = { id: createRequestId(), role: "assistant", kind: "proposal", action, status: "pending" }
+    setTurns((prev) => [...prev, userTurn, assistantTurn])
+  }
+
+  const submitDraft = (): void => {
+    const text = draft.trim()
+    if (text.length === 0 || target.kind === "none") {
+      return
+    }
+
+    appendUserAndIntent(text)
+    setDraft("")
+  }
+
+  const approveProposal = (turnId: string, action: StudioActionId, instruction?: string): void => {
+    const requestId = createRequestId()
+
+    setTurns((prev) =>
+      prev.map((turn) =>
+        turn.id === turnId && turn.role === "assistant" && turn.kind === "proposal"
+          ? { ...turn, status: "running", requestId }
+          : turn
+      )
+    )
+
     vscodeApi?.postMessage({
       protocolVersion: "1.0.0",
       type: "request",
-      id: createRequestId(),
+      id: requestId,
       method: "studio.runAction",
-      payload: { action, instruction: payloadInstruction }
+      payload: { action, instruction }
     })
   }
 
+  const cancelProposal = (turnId: string): void => {
+    setTurns((prev) =>
+      prev.map((turn) =>
+        turn.id === turnId && turn.role === "assistant" && turn.kind === "proposal"
+          ? { ...turn, status: "cancelled" }
+          : turn
+      )
+    )
+  }
+
   return (
-    <main className="flex min-h-screen flex-col gap-4 bg-sb-bg-sidebar p-3">
+    <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
       <SectionHeader eyebrow="Storyboard" title={initialData.title} description={targetDescription(target)} />
-      {target.kind === "draft" ? (
-        <DraftActions target={target} runAction={runAction} instruction={instruction} setInstruction={setInstruction} />
-      ) : target.kind === "scene" ? (
-        <SceneActions target={target} runAction={runAction} />
-      ) : (
-        <EmptyState
-          icon={FileText}
-          title="대상이 없습니다"
-          description="씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 열면 여기서 재생성·검사·편집을 실행할 수 있습니다."
-        />
-      )}
+
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {turns.length === 0 ? (
+          <StudioWelcome target={target} onPick={proposeAction} />
+        ) : (
+          <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
+            {turns.map((turn) => (
+              <li key={turn.id}>
+                <TurnView turn={turn} onApprove={approveProposal} onCancel={cancelProposal} onPick={proposeAction} />
+              </li>
+            ))}
+          </ol>
+        )}
+        <div ref={logEndRef} />
+      </div>
+
+      <Composer
+        value={draft}
+        target={target}
+        onChange={setDraft}
+        onSubmit={submitDraft}
+      />
     </main>
+  )
+}
+
+function settleProposal(
+  setTurns: React.Dispatch<React.SetStateAction<readonly ChatTurn[]>>,
+  response: StudioResponseMessage
+): void {
+  setTurns((prev) =>
+    prev.map((turn) => {
+      if (turn.role !== "assistant" || turn.kind !== "proposal" || turn.requestId !== response.id) {
+        return turn
+      }
+
+      return response.ok === false
+        ? { ...turn, status: "failed", errorMessage: response.error?.message }
+        : { ...turn, status: "done" }
+    })
+  )
+}
+
+function StudioWelcome({
+  target,
+  onPick
+}: {
+  readonly target: StudioTarget
+  readonly onPick: (action: StudioActionId) => void
+}): React.ReactElement {
+  if (target.kind === "none") {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="대상이 없습니다"
+        description="씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 열면 대화로 재생성·검사·편집을 지시할 수 있습니다."
+      />
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-sb-border bg-sb-parchment/50 p-4">
+      <MessagesSquare className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
+      <p className="m-0 text-sm leading-normal text-sb-fg-muted">
+        하고 싶은 작업을 적어 주세요. 제안을 확인하고 승인하면 실행합니다.
+      </p>
+      <SuggestionChips actions={availableStudioActions(target)} onPick={onPick} />
+    </div>
+  )
+}
+
+function TurnView({
+  turn,
+  onApprove,
+  onCancel,
+  onPick
+}: {
+  readonly turn: ChatTurn
+  readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void
+  readonly onCancel: (turnId: string) => void
+  readonly onPick: (action: StudioActionId) => void
+}): React.ReactElement {
+  if (turn.role === "user") {
+    return (
+      <div className="ml-auto max-w-[92%] rounded-lg rounded-br-sm border border-sb-border bg-sb-bg-list-hover px-3 py-2 text-sm text-sb-fg">
+        {turn.text}
+      </div>
+    )
+  }
+
+  if (turn.kind === "clarify") {
+    return (
+      <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2">
+        <p className="m-0 flex items-center gap-1.5 text-sm text-sb-fg">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
+          {clarifyMessage(turn.reason)}
+        </p>
+        <SuggestionChips actions={turn.suggestions} onPick={onPick} />
+      </div>
+    )
+  }
+
+  return <ProposalCard turn={turn} onApprove={onApprove} onCancel={onCancel} />
+}
+
+function ProposalCard({
+  turn,
+  onApprove,
+  onCancel
+}: {
+  readonly turn: Extract<ChatTurn, { readonly kind: "proposal" }>
+  readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void
+  readonly onCancel: (turnId: string) => void
+}): React.ReactElement {
+  return (
+    <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2">
+      <div className="flex flex-col gap-1">
+        <p className="m-0 flex items-center gap-1.5 text-sm font-semibold text-sb-fg">
+          <Sparkles className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
+          {actionLabel(turn.action)}
+        </p>
+        {turn.instruction ? <p className="m-0 text-sm text-sb-fg-muted">“{turn.instruction}”</p> : null}
+        {showsDiff(turn.action) ? (
+          <p className="m-0 text-xs text-sb-fg-muted">적용 전 diff로 변경을 확인할 수 있어요.</p>
+        ) : null}
+      </div>
+
+      {turn.status === "pending" ? (
+        <div className="flex flex-wrap gap-1.5">
+          <Button onClick={() => onApprove(turn.id, turn.action, turn.instruction)}>승인</Button>
+          <Button variant="secondary" onClick={() => onCancel(turn.id)}>
+            취소
+          </Button>
+        </div>
+      ) : (
+        <ProposalStatusLine status={turn.status} errorMessage={turn.errorMessage} />
+      )}
+    </div>
+  )
+}
+
+function ProposalStatusLine({
+  status,
+  errorMessage
+}: {
+  readonly status: ProposalStatus
+  readonly errorMessage?: string
+}): React.ReactElement {
+  if (status === "running") {
+    return <p className="m-0 text-sm text-sb-fg-muted">실행 중…</p>
+  }
+
+  if (status === "done") {
+    return (
+      <p className="m-0 flex items-center gap-1.5 text-sm text-emerald-500">
+        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        완료
+      </p>
+    )
+  }
+
+  if (status === "failed") {
+    return (
+      <p className="m-0 flex items-center gap-1.5 text-sm text-sb-fg-error">
+        <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        실패{errorMessage ? ` · ${errorMessage}` : ""}
+      </p>
+    )
+  }
+
+  return <p className="m-0 text-sm text-sb-fg-muted">취소됨</p>
+}
+
+function SuggestionChips({
+  actions,
+  onPick
+}: {
+  readonly actions: readonly StudioActionId[]
+  readonly onPick: (action: StudioActionId) => void
+}): React.ReactElement | null {
+  if (actions.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {actions.map((action) => (
+        <button
+          key={action}
+          type="button"
+          className="cursor-pointer rounded-full border border-sb-border bg-sb-bg-widget px-2.5 py-1 text-xs text-sb-fg outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+          onClick={() => onPick(action)}
+        >
+          {actionLabel(action)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Composer({
+  value,
+  target,
+  onChange,
+  onSubmit
+}: {
+  readonly value: string
+  readonly target: StudioTarget
+  readonly onChange: (value: string) => void
+  readonly onSubmit: () => void
+}): React.ReactElement {
+  const isDisabled = target.kind === "none"
+
+  return (
+    <div className="flex flex-col gap-2">
+      <TargetChip target={target} />
+      <div className="flex items-end gap-2">
+        <textarea
+          className={`${sbInputClass} min-h-12 resize-y`}
+          rows={2}
+          disabled={isDisabled}
+          placeholder={isDisabled ? "씬 또는 초안 파일을 먼저 열어 주세요." : "예: 다시 생성해줘, 문법 봐줘, 이 부분 더 긴장감 있게"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault()
+              onSubmit()
+            }
+          }}
+        />
+        <Button aria-label="보내기" disabled={isDisabled || value.trim().length === 0} onClick={onSubmit}>
+          <Send className="h-4 w-4" aria-hidden />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function TargetChip({ target }: { readonly target: StudioTarget }): React.ReactElement {
+  if (target.kind === "none") {
+    return <Pill icon={FileText}>대상 없음</Pill>
+  }
+
+  return (
+    <Pill icon={FileText}>
+      {target.kind === "draft" ? "초안" : "씬"} · {target.label ?? ""}
+    </Pill>
   )
 }
 
@@ -66,97 +395,42 @@ function targetDescription(target: StudioTarget): string {
   return "열린 대상 없음"
 }
 
-type RunAction = (action: StudioActionId, instruction?: string) => void
-
-function DraftActions({
-  target,
-  runAction,
-  instruction,
-  setInstruction
-}: {
-  readonly target: StudioTarget
-  readonly runAction: RunAction
-  readonly instruction: string
-  readonly setInstruction: (value: string) => void
-}): React.ReactElement {
-  const trimmedInstruction = instruction.trim()
-
-  return (
-    <div className="flex flex-col gap-4">
-      <ActionGroup title="초안 전체">
-        <Button onClick={() => runAction("regenerate")}>Regenerate</Button>
-        <Button variant="secondary" onClick={() => runAction("grammarCheck")}>
-          Grammar Check
-        </Button>
-        <Button variant="secondary" onClick={() => runAction("continuityCheck")}>
-          Continuity Check
-        </Button>
-        <Button variant="secondary" onClick={() => runAction("augment")}>
-          Augment from Cards
-        </Button>
-      </ActionGroup>
-
-      <ActionGroup
-        title="선택 영역"
-        hint={target.hasSelection ? undefined : "본문에서 영역을 먼저 선택하세요."}
-      >
-        <Button variant="secondary" disabled={!target.hasSelection} onClick={() => runAction("expand")}>
-          Expand
-        </Button>
-        <Button variant="secondary" disabled={!target.hasSelection} onClick={() => runAction("augmentSelection")}>
-          Update Selection
-        </Button>
-      </ActionGroup>
-
-      <div className="flex flex-col gap-2">
-        <SectionHeader title="Edit Selection" description="선택 영역을 지시문대로 수정합니다." />
-        <textarea
-          className={`${sbInputClass} min-h-20 resize-y`}
-          placeholder="예: 더 긴장감 있게, 캐릭터 감정을 강조해서, 짧게 줄여서..."
-          value={instruction}
-          onChange={(event) => setInstruction(event.target.value)}
-        />
-        <Button
-          disabled={!target.hasSelection || trimmedInstruction.length === 0}
-          onClick={() => runAction("editSelection", trimmedInstruction)}
-        >
-          Apply
-        </Button>
-        {!target.hasSelection ? (
-          <p className="m-0 text-sm text-sb-fg-muted">본문에서 수정할 영역을 먼저 선택하세요.</p>
-        ) : null}
-      </div>
-    </div>
-  )
+function actionLabel(action: StudioActionId): string {
+  switch (action) {
+    case "regenerate":
+      return "재생성"
+    case "generate":
+      return "초안 생성"
+    case "applyFormat":
+      return "형식 적용"
+    case "grammarCheck":
+      return "문법 검사"
+    case "continuityCheck":
+      return "연속성 검사"
+    case "expand":
+      return "선택 영역 확장"
+    case "augment":
+      return "카드 기반 보충"
+    case "augmentSelection":
+      return "선택 영역 보충"
+    case "editSelection":
+      return "선택 영역 편집"
+  }
 }
 
-function SceneActions({ target, runAction }: { readonly target: StudioTarget; readonly runAction: RunAction }): React.ReactElement {
-  return (
-    <ActionGroup title="씬">
-      <Button onClick={() => runAction(target.draftExists ? "regenerate" : "generate")}>
-        {target.draftExists ? "Regenerate Draft" : "Generate Draft"}
-      </Button>
-      <Button variant="secondary" disabled={!target.draftExists} onClick={() => runAction("applyFormat")}>
-        Apply Format
-      </Button>
-    </ActionGroup>
-  )
+function clarifyMessage(reason: StudioClarifyReason): string {
+  switch (reason) {
+    case "no-target":
+      return "씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 먼저 열어 주세요."
+    case "needs-selection":
+      return "본문에서 영역을 먼저 선택한 뒤 다시 시도해 주세요."
+    case "needs-draft":
+      return "먼저 초안을 생성한 뒤 다시 시도해 주세요."
+    case "ambiguous":
+      return "무엇을 할지 이해하지 못했어요. 아래에서 골라 주세요."
+  }
 }
 
-function ActionGroup({
-  title,
-  hint,
-  children
-}: {
-  readonly title: string
-  readonly hint?: string
-  readonly children: React.ReactNode
-}): React.ReactElement {
-  return (
-    <section className="flex flex-col gap-2">
-      <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">{title}</p>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
-      {hint ? <p className="m-0 text-sm text-sb-fg-muted">{hint}</p> : null}
-    </section>
-  )
+function showsDiff(action: StudioActionId): boolean {
+  return action === "augment" || action === "augmentSelection" || action === "editSelection"
 }
