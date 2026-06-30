@@ -1,4 +1,20 @@
-import { Check, CircleAlert, FileText, MessagesSquare, Send, Sparkles } from "lucide-react"
+import {
+  Check,
+  CircleAlert,
+  Expand,
+  FileText,
+  GitCompare,
+  Layers,
+  type LucideIcon,
+  MessagesSquare,
+  RefreshCw,
+  Send,
+  Sparkles,
+  SpellCheck,
+  TextSelect,
+  Wand2,
+  WrapText
+} from "lucide-react"
 import React, { useEffect, useMemo, useRef, useState } from "react"
 
 import { createRequestId, parseStudioTarget } from "@webview/lib/messaging"
@@ -246,11 +262,13 @@ function ProposalCard({
   readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void
   readonly onCancel: (turnId: string) => void
 }): React.ReactElement {
+  const ActionIcon = actionIcon(turn.action)
+
   return (
     <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2">
       <div className="flex flex-col gap-1">
         <p className="m-0 flex items-center gap-1.5 text-sm font-semibold text-sb-fg">
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
+          <ActionIcon className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
           {actionLabel(turn.action)}
         </p>
         {turn.instruction ? <p className="m-0 text-sm text-sb-fg-muted">“{turn.instruction}”</p> : null}
@@ -318,16 +336,20 @@ function SuggestionChips({
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      {actions.map((action) => (
-        <button
-          key={action}
-          type="button"
-          className="cursor-pointer rounded-full border border-sb-border bg-sb-bg-widget px-2.5 py-1 text-xs text-sb-fg outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
-          onClick={() => onPick(action)}
-        >
-          {actionLabel(action)}
-        </button>
-      ))}
+      {actions.map((action) => {
+        const ActionIcon = actionIcon(action)
+        return (
+          <button
+            key={action}
+            type="button"
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-sb-border bg-sb-bg-widget px-2.5 py-1 text-xs text-sb-fg outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+            onClick={() => onPick(action)}
+          >
+            <ActionIcon className="h-3 w-3 shrink-0 text-sb-fg-muted" aria-hidden />
+            {actionLabel(action)}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -415,6 +437,29 @@ function actionLabel(action: StudioActionId): string {
       return "선택 영역 보충"
     case "editSelection":
       return "선택 영역 편집"
+  }
+}
+
+function actionIcon(action: StudioActionId): LucideIcon {
+  switch (action) {
+    case "regenerate":
+      return RefreshCw
+    case "generate":
+      return Sparkles
+    case "applyFormat":
+      return WrapText
+    case "grammarCheck":
+      return SpellCheck
+    case "continuityCheck":
+      return GitCompare
+    case "expand":
+      return Expand
+    case "augment":
+      return Layers
+    case "augmentSelection":
+      return TextSelect
+    case "editSelection":
+      return Wand2
   }
 }
 
