@@ -1,3 +1,4 @@
+import { ListChecks, Plug, ScrollText, Star } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createRequestId } from "@webview/lib/messaging"
@@ -204,11 +205,13 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
     {
       id: "defaults",
       label: "기본값",
+      icon: Star,
       panel: <DefaultProviderSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
     },
     {
       id: "connections",
       label: "연결",
+      icon: Plug,
       panel: (
         <section className="flex flex-col gap-3" aria-label="제공자 연결">
           <SectionHeader
@@ -242,11 +245,13 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
     {
       id: "tasks",
       label: "태스크",
+      icon: ListChecks,
       panel: <TaskAssignmentsSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
     },
     {
       id: "contract",
       label: "작품 계약",
+      icon: ScrollText,
       panel: <GenerationContractSection callRpc={callRpc} onRpcError={onRpcError} />
     }
   ]
@@ -273,7 +278,7 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
         ) : null}
 
         <div className="rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-3">
-          <Tabs items={settingsTabs} initialId="defaults" />
+          <Tabs items={settingsTabs} initialId="defaults" orientation="vertical" />
         </div>
       </div>
     </main>
