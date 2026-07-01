@@ -25,7 +25,6 @@ import {
 } from "@webview/lib/studioIntent"
 import type { StoryboardEventMessage, StudioActionId, StudioInitialData, StudioTarget } from "@webview/lib/types"
 import { Button } from "../ui/Button"
-import { EmptyState } from "../ui/EmptyState"
 import { Pill } from "../ui/Pill"
 import { SectionHeader } from "../ui/SectionHeader"
 import { sbInputClass } from "../ui/formClasses"
@@ -200,11 +199,12 @@ function StudioWelcome({
 }): React.ReactElement {
   if (target.kind === "none") {
     return (
-      <EmptyState
-        icon={FileText}
-        title="대상이 없습니다"
-        description="씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 열면 대화로 재생성·검사·편집을 지시할 수 있습니다."
-      />
+      <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
+        <FileText className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
+        <p className="m-0 text-sm leading-normal text-sb-fg-muted">
+          씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 열면 대화로 재생성·검사·편집을 지시할 수 있습니다.
+        </p>
+      </div>
     )
   }
 
