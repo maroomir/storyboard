@@ -278,7 +278,7 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
         ) : null}
 
         <div className="rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-3">
-          <Tabs items={settingsTabs} initialId="defaults" orientation="vertical" />
+          <Tabs items={settingsTabs} initialId="defaults" />
         </div>
       </div>
     </main>

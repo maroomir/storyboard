@@ -15,11 +15,9 @@ afterEach(() => {
 })
 
 describe("Tabs", () => {
-  it("selects the first tab and switches on click (horizontal default)", async () => {
+  it("selects the first tab and switches on click", async () => {
     render(<Tabs items={items} />)
 
-    const tablist = screen.getByRole("tablist")
-    expect(tablist.getAttribute("aria-orientation")).not.toBe("vertical")
     expect(screen.getByRole("tab", { name: "첫째" }).getAttribute("aria-selected")).toBe("true")
 
     fireEvent.click(screen.getByRole("tab", { name: "둘째" }))
@@ -30,17 +28,10 @@ describe("Tabs", () => {
     })
   })
 
-  it("renders a vertical icon rail when orientation is vertical", async () => {
-    render(<Tabs items={items} orientation="vertical" />)
+  it("renders an icon inside each tab", () => {
+    render(<Tabs items={items} />)
 
-    const tablist = screen.getByRole("tablist")
-    expect(tablist.getAttribute("aria-orientation")).toBe("vertical")
-
-    const firstTab = screen.getByRole("tab", { name: "첫째" })
-    expect(firstTab.querySelector("svg")).toBeTruthy()
-
-    fireEvent.click(screen.getByRole("tab", { name: "둘째" }))
-
-    await waitFor(() => expect(screen.getByText("둘째 패널")).toBeTruthy())
+    expect(screen.getByRole("tab", { name: "첫째" }).querySelector("svg")).toBeTruthy()
+    expect(screen.getByRole("tab", { name: "둘째" }).querySelector("svg")).toBeTruthy()
   })
 })
