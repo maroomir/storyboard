@@ -209,7 +209,7 @@ function StudioWelcome({
   }
 
   return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-sb-border bg-sb-parchment/50 p-4">
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
       <MessagesSquare className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
       <p className="m-0 text-sm leading-normal text-sb-fg-muted">
         하고 싶은 작업을 적어 주세요. 제안을 확인하고 승인하면 실행합니다.
