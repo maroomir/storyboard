@@ -346,6 +346,16 @@
           "type": "boolean",
           "default": false,
           "description": "Before a draft is overwritten by Generate/Regenerate, archive the previous version under '.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md' so older drafts accumulate as history. Off by default; the '.draft' folder is gitignored like 'draft'."
+        },
+        "storyboard.draft.sceneBreakEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Insert a scene-break separator between generated scene beats in a draft. When enabled, genre formatting runs once per beat, so AI formatting calls grow with the beat count."
+        },
+        "storyboard.draft.sceneBreakSeparator": {
+          "type": "string",
+          "default": "---",
+          "description": "Separator inserted between scene beats when the scene break is enabled. Enter separator text such as --- for a horizontal rule, or a number from 1 to 10 to insert that many newlines instead."
         }
       }
     },

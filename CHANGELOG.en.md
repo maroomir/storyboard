@@ -13,6 +13,7 @@ after the first public release.
 ### Added
 
 - Added the always-visible **Storyboard · Studio** sidebar panel. It auto-detects the active `draft/*.md` or `scene/*.txt` and runs draft regeneration, grammar/continuity checks, card-based supplementing, selection expand/update, instruction editing (Edit Selection input), and scene draft generation/format from one place. The buttons stay visible while scrolling, and the panel header can be moved to the right Secondary Side Bar.
+- Added scene-break separators between scenes during draft generation. Enable it with `storyboard.draft.sceneBreakEnabled` and choose a `---` divider or a newline repeat count (1-10) with `storyboard.draft.sceneBreakSeparator`; off by default. Enabling it runs the genre-format AI call per scene, increasing the number of calls, and changing the setting regenerates without cache on the next Generate Draft.
 
 ### Changed
 

@@ -56,6 +56,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly useContextCondense?: boolean
   readonly personaStore?: PersonaMemoryStore
   readonly backgroundStore?: BackgroundMemoryStore
+  readonly sceneBreakJoiner?: string
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -201,6 +202,23 @@ export function chunkDialoguePiecesByBudget(pieces: readonly string[], maxChars:
   }
 
   return chunks
+}
+
+const maxSceneBreakNewlineCount = 10
+
+export function resolveSceneBreakJoiner(rawSeparator: string | undefined): string | undefined {
+  const separator = rawSeparator?.trim()
+
+  if (!separator) {
+    return undefined
+  }
+
+  if (/^\d+$/.test(separator)) {
+    const newlineCount = Math.min(Number.parseInt(separator, 10), maxSceneBreakNewlineCount)
+    return newlineCount > 0 ? "\n".repeat(newlineCount) : undefined
+  }
+
+  return `\n\n${separator}\n\n`
 }
 
 // NOTE: 청크 포맷 호출이 소설 본문 대신 "분량 한계라 연재형/압축형 중 고르라"는 메타 안내를 돌려보내는
@@ -364,13 +382,17 @@ async function formatSceneDraft(
   dialoguePieces: readonly string[],
   format: ProjectFormat,
   providers: Readonly<SceneGenerationPipelineTaskProviders>,
+  sceneBreakJoiner: string | undefined,
   styleDirective: StyleDirective | undefined,
   aiService: Pick<SceneGenerationPipelineAiService, "applyGenreFormat">,
   sceneRef: EntityRef,
   onProgress: RunSceneGenerationPipelineInput["onProgress"],
   shouldCancel: (() => boolean) | undefined
 ): Promise<string> {
-  const formatChunks = chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget)
+  // NOTE: AI 포맷이 chunk 내부의 장면 경계를 소실시키므로, 구분자 모드에서는 장면(비트) 단위로 포맷한다.
+  const formatChunks = sceneBreakJoiner
+    ? dialoguePieces.map((piece) => [piece])
+    : chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget)
   const formattedParts: string[] = []
 
   for (let i = 0; i < formatChunks.length; i++) {
@@ -390,7 +412,9 @@ async function formatSceneDraft(
     assertNotCancelled(shouldCancel)
   }
 
-  return formattedParts.join("\n\n")
+  return sceneBreakJoiner
+    ? formattedParts.map((part) => part.trim()).join(sceneBreakJoiner)
+    : formattedParts.join("\n\n")
 }
 
 export async function runSceneGenerationPipeline(
@@ -466,6 +490,7 @@ export async function runSceneGenerationPipeline(
     dialoguePieces,
     format,
     providers,
+    input.sceneBreakJoiner,
     styleDirective,
     aiService,
     sceneRef,

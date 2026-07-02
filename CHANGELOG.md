@@ -12,6 +12,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 ### 추가
 
 - 항상 보이는 **Storyboard · Studio** 사이드바 패널을 추가했습니다. 현재 활성 `draft/*.md`·`scene/*.txt`를 자동으로 인식해, 초안 재생성·문법/연속성 검사·카드 기반 보충·선택 영역 확장/업데이트·지시문 편집(Edit Selection 입력란)과 씬 초안 생성·포맷 적용을 한곳에서 실행합니다. 본문을 스크롤해도 버튼이 사라지지 않으며, 패널 헤더를 우측 Secondary Side Bar로 옮길 수 있습니다.
+- 초안 생성 시 장면 전환마다 구분자를 삽입하는 기능을 추가했습니다. `storyboard.draft.sceneBreakEnabled`로 켜고 `storyboard.draft.sceneBreakSeparator`로 `---` 구분선 또는 줄바꿈 반복 횟수(1~10)를 선택할 수 있으며 기본값은 꺼짐입니다. 켜면 장르 포맷 AI 호출이 장면 단위로 실행되어 호출 수가 늘어나고, 설정을 바꾸면 다음 Generate Draft에서 캐시 없이 재생성됩니다.
 
 ### 변경
 

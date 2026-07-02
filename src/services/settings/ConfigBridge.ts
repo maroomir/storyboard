@@ -197,6 +197,16 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get("draft.keepHistory", false)
   }
 
+  public getDraftSceneBreakSeparator(): string | undefined {
+    const configuration = this.dependencies.getConfiguration()
+
+    if (!configuration.get("draft.sceneBreakEnabled", false)) {
+      return undefined
+    }
+
+    return configuration.get("draft.sceneBreakSeparator", "---")
+  }
+
   public onDidChange(listener: () => void): { readonly dispose: () => void } {
     if (!this.dependencies.onDidChangeConfiguration) {
       return { dispose: (): void => undefined }

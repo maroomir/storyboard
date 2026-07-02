@@ -5,6 +5,7 @@ import {
   chunkDialoguePiecesByBudget,
   dedupeSituations,
   looksLikeFormatMetaLeak,
+  resolveSceneBreakJoiner,
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
@@ -632,6 +633,30 @@ describe("runSceneGenerationPipeline", () => {
     expect(result.personasUsed.get("엘리아")).toBe("새 페르소나")
   })
 
+  it("formats each situation separately and joins the parts with the scene break joiner", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "첫 번째 상황" },
+      { characters: ["엘리아"], situation: "두 번째 상황" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockImplementation(async (situation) => `대사(${situation})`)
+    ai.applyGenreFormat.mockImplementation(async (dialogue, format) => `<<${format}>>${dialogue}`)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      sceneBreakJoiner: "\n\n---\n\n"
+    })
+
+    expect(ai.applyGenreFormat).toHaveBeenCalledTimes(2)
+    expect(ai.applyGenreFormat).toHaveBeenNthCalledWith(1, "대사(첫 번째 상황)", "novel", expect.anything())
+    expect(ai.applyGenreFormat).toHaveBeenNthCalledWith(2, "대사(두 번째 상황)", "novel", expect.anything())
+    expect(result.draftBody).toBe("<<novel>>대사(첫 번째 상황)\n\n---\n\n<<novel>>대사(두 번째 상황)")
+  })
+
   it("keeps the raw dialogue when the formatter leaks a meta message", async () => {
     const metaLeak = "분량 한계가 있어 한 번에 다 쓸 수 없습니다. 연재형과 압축형 중 어느 쪽을 원하시나요?"
 
@@ -676,6 +701,32 @@ describe("chunkDialoguePiecesByBudget", () => {
   it("preserves the original order across chunks", () => {
     const pieces = ["1", "2", "3", "4", "5"]
     expect(chunkDialoguePiecesByBudget(pieces, 2).flat()).toEqual(pieces)
+  })
+})
+
+describe("resolveSceneBreakJoiner", () => {
+  it("wraps a textual separator with blank lines", () => {
+    expect(resolveSceneBreakJoiner("---")).toBe("\n\n---\n\n")
+    expect(resolveSceneBreakJoiner("* * *")).toBe("\n\n* * *\n\n")
+  })
+
+  it("converts a numeric separator into that many newlines", () => {
+    expect(resolveSceneBreakJoiner("3")).toBe("\n\n\n")
+    expect(resolveSceneBreakJoiner(" 2 ")).toBe("\n\n")
+  })
+
+  it("caps the newline count at 10", () => {
+    expect(resolveSceneBreakJoiner("999")).toBe("\n".repeat(10))
+  })
+
+  it("returns undefined for zero newlines", () => {
+    expect(resolveSceneBreakJoiner("0")).toBeUndefined()
+  })
+
+  it("returns undefined for blank or missing separators", () => {
+    expect(resolveSceneBreakJoiner("")).toBeUndefined()
+    expect(resolveSceneBreakJoiner("   ")).toBeUndefined()
+    expect(resolveSceneBreakJoiner(undefined)).toBeUndefined()
   })
 })
 

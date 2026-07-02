@@ -34,6 +34,7 @@ import { buildStyleDirective } from "../shared/styleDirective"
 import { maybeRunReviseAfterGenerate } from "./reviseDraft"
 import { StoryboardAIService } from "../services/ai/AIService"
 import {
+  resolveSceneBreakJoiner,
   runSceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
   type SceneGenerationPipelineStage
@@ -178,6 +179,7 @@ interface SceneGenerationInputs {
   readonly project: Awaited<ReturnType<typeof readProjectJson>>
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>
   readonly previousContext: string | undefined
+  readonly sceneBreakJoiner: string | undefined
   readonly inputHash: string
   readonly draftUri: vscode.Uri
   readonly cacheUri: vscode.Uri
@@ -290,12 +292,14 @@ async function loadSceneGenerationInputs(
   }
 
   const narrativeContext = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem)
+  const sceneBreakJoiner = resolveSceneBreakJoiner(options.configBridge.getDraftSceneBreakSeparator())
   const inputHash = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
     background: context.background,
     format: project.format,
-    bibleFacts: narrativeContext.bibleFacts
+    bibleFacts: narrativeContext.bibleFacts,
+    sceneBreakJoiner
   })
 
   return {
@@ -307,6 +311,7 @@ async function loadSceneGenerationInputs(
       project,
       context,
       previousContext: narrativeContext.prompt,
+      sceneBreakJoiner,
       inputHash,
       draftUri: draftPath(workspaceFolder.uri, scene.stem),
       cacheUri: sceneCacheFilePath(paths, scene.stem)
@@ -483,7 +488,8 @@ async function runAndPersistDraft(
       shouldCancel: options.shouldCancel,
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
       personaStore: createPersonaMemoryStore(paths, scene.stem),
-      backgroundStore: createBackgroundMemoryStore(paths, scene.stem)
+      backgroundStore: createBackgroundMemoryStore(paths, scene.stem),
+      sceneBreakJoiner: inputs.sceneBreakJoiner
     })
 
     const draft = createDraft({

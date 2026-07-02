@@ -41,6 +41,7 @@ export interface SceneInputHashInput {
   readonly background?: BackgroundCard
   readonly format: ProjectFormat
   readonly bibleFacts?: readonly BibleFact[]
+  readonly sceneBreakJoiner?: string
 }
 
 const sceneCacheSituationSchema = z.object({
@@ -138,7 +139,8 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
     format: input.format,
     ...(input.bibleFacts && input.bibleFacts.length > 0
       ? { bibleFacts: digestBibleFacts(input.bibleFacts) }
-      : {})
+      : {}),
+    ...(input.sceneBreakJoiner ? { sceneBreakJoiner: input.sceneBreakJoiner } : {})
   }
   const hash = createHash("sha256").update(JSON.stringify(digestSource)).digest("hex")
 

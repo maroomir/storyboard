@@ -16,6 +16,7 @@ Korean README: [`README.md`](README.md)
 - Generate `scene/*.txt` seeds from the outline, then generate `draft/*.md` drafts.
 - Drive draft/scene actions by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe a task, review the proposed action, and approve to run it (generate, regenerate, check, edit).
 - Keep previous-draft history (`storyboard.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
+- Insert scene-break separators (`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
 - Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.

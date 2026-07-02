@@ -285,6 +285,24 @@ describe("ConfigBridge", () => {
       ).isUpdateCardsAfterGenerateEnabled()
     ).toBe(true)
   })
+
+  it("returns the scene break separator only when the scene break is enabled", () => {
+    expect(createConfigBridge(new Map()).getDraftSceneBreakSeparator()).toBeUndefined()
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.sceneBreakEnabled", false]])).getDraftSceneBreakSeparator()
+    ).toBeUndefined()
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.sceneBreakEnabled", true]])).getDraftSceneBreakSeparator()
+    ).toBe("---")
+    expect(
+      createConfigBridge(
+        new Map<string, unknown>([
+          ["draft.sceneBreakEnabled", true],
+          ["draft.sceneBreakSeparator", "3"]
+        ])
+      ).getDraftSceneBreakSeparator()
+    ).toBe("3")
+  })
 })
 
 function createConfigBridge(values: ReadonlyMap<string, unknown>): ConfigBridge {

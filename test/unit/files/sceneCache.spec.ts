@@ -155,4 +155,30 @@ describe("scene cache codec", () => {
     expect(withFacts).not.toBe(withoutFacts)
     expect(withFacts).toMatch(/^sha256:[a-f0-9]{64}$/)
   })
+
+  it("keeps the hash unchanged without a scene break joiner and changes it when one is set", () => {
+    const withoutJoiner = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel"
+    })
+    const withUndefinedJoiner = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel",
+      sceneBreakJoiner: undefined
+    })
+    const withJoiner = computeSceneInputHash({
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel",
+      sceneBreakJoiner: "\n\n---\n\n"
+    })
+
+    expect(withUndefinedJoiner).toBe(withoutJoiner)
+    expect(withJoiner).not.toBe(withoutJoiner)
+  })
 })
