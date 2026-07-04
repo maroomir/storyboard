@@ -123,7 +123,7 @@ async function loadDecodedSeedOrReport(
   }
 
   try {
-    return decodeSeedToWritePlan(bytes)
+    return await decodeSeedToWritePlan(bytes)
   } catch (error) {
     await vscode.window.showErrorMessage(formatSeedErrorMessage(error))
     return undefined
@@ -520,7 +520,7 @@ async function exportProjectToSeedFile(
       return
     }
 
-    const seedBytes = encodeWorkspaceToSeed(content)
+    const seedBytes = await encodeWorkspaceToSeed(content)
     await vscode.workspace.fs.writeFile(picked, seedBytes)
     dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`)
     await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`)

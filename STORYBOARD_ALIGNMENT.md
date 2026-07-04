@@ -1,6 +1,6 @@
 # Seeds ↔ Storyboard 정렬 (요약)
 
-Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약이다. `.seed` 저장소 형식·스키마의 단일 진실원은 [seedcoat](https://github.com/maroomir/seedcoat) (`SRS.md`, `API.md`, `@seedcoat/wasm` v0.4.0)이다.
+Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약이다. `.seed` 저장소 형식·스키마의 단일 진실원은 [seedcoat](https://github.com/maroomir/seedcoat) (`SRS.md`, `API.md`, `@seedcoat/wasm` v0.5.0)이다.
 
 `.seed`는 더 이상 암호화 컨테이너가 아니다. Git 유사 저장소(노트·스냅샷·refs)를 하나의 파일로 내보낸 **포터블 아카이브**(`seedcoat archive v1`)이며, 전체 변경 이력을 보존한다.
 
@@ -36,7 +36,8 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 
 ## 미지원·호환
 
-- **seedcoat v0.2 암호화 `.seed`는 읽을 수 없다.** 보낸 쪽(Seeds 또는 구버전 Storyboard)에서 v0.4 형식으로 다시 내보내야 한다. Seeds 앱도 `@seedcoat/wasm` v0.4 이상으로 전환되어야 교환이 성립한다.
+- **seedcoat v0.2 암호화 `.seed`는 읽을 수 없다.** 보낸 쪽(Seeds 또는 구버전 Storyboard)에서 최신 형식으로 다시 내보내야 한다. Seeds 앱도 `@seedcoat/wasm` v0.5 이상으로 전환되어야 교환이 성립한다.
+- **저장소 포맷 v1→v2 breaking.** seedcoat 0.5.0은 저장소 포맷을 v1에서 v2(매니페스트 + per-entity 블롭)로 바꿨다. 구버전 Storyboard(0.4.x, `@seedcoat/wasm` v0.4)가 내보낸 v1 `.seed`는 `UNSUPPORTED_FORMAT`으로 거부되며 자동 마이그레이션 경로가 없다 — 보낸 쪽에서 v0.5로 다시 내보내야 한다. (아카이브 래퍼 포맷은 여전히 `seedcoat archive v1`로 불변.)
 - 기존 워크스페이스의 구 `type: background` 카드(`type: background` 단일 타입)는 Zod 검증에서 실패한다. 자동 마이그레이션·변환 도구는 없으며, 카드를 `location` / `temporal` / `social` 판별 유니온으로 **수동 수정**한 뒤 보내기/읽기를 시도한다.
 - 오류 코드 → 한국어 메시지: [`src/constants/projectStorageMessages.ts`](src/constants/projectStorageMessages.ts)
 - 이력 조회(`log`)·되돌리기(`reset` / `revert`) UI는 아직 노출하지 않는다(후속 작업).

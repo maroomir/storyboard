@@ -545,7 +545,7 @@
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
     "@fontsource-variable/inter": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
-    "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.4.0.tgz",
+    "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.5.0.tgz",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",

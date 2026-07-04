@@ -16,6 +16,7 @@ import {
   checkoutSnapshot,
   init,
   load,
+  loadSeedcoat,
   log,
   note,
   save,
@@ -170,7 +171,9 @@ function parseSceneEntries(value: unknown): SeedSceneEntry[] {
   })
 }
 
-export function decodeSeedToWritePlan(bytes: Uint8Array): DecodedSeedContent {
+export async function decodeSeedToWritePlan(bytes: Uint8Array): Promise<DecodedSeedContent> {
+  await loadSeedcoat()
+
   const repo = load(bytes)
   const latestNote = log(repo)[0]
 
@@ -217,7 +220,9 @@ function toSeedBackground(card: BackgroundCard): SeedBackgroundCard {
   return { ...card, description: joinCardText(card.description) }
 }
 
-export function encodeWorkspaceToSeed(content: WorkspaceContent): Uint8Array {
+export async function encodeWorkspaceToSeed(content: WorkspaceContent): Promise<Uint8Array> {
+  await loadSeedcoat()
+
   const project = content.project
   const state: SeedState = {
     project: {
