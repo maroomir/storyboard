@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-04
+
 ### Added
 
 - Added the always-visible **Storyboard · Studio** sidebar panel. It auto-detects the active `draft/*.md` or `scene/*.txt` and runs draft regeneration, grammar/continuity checks, card-based supplementing, selection expand/update, instruction editing (Edit Selection input), and scene draft generation/format from one place. The buttons stay visible while scrolling, and the panel header can be moved to the right Secondary Side Bar.
