@@ -1,9 +1,7 @@
-import {
-  renameCardIdInBackgroundCard,
-  renameCardIdInCharacterCard,
-  setCardId
-} from "@/core/cardReferenceRewriter"
-import { cardIdPattern, type BackgroundCard, type CharacterCard } from "@/shared/card"
+import { applyIdMapping, validateIdMapping, type IdMappingIssue } from "@seedcoat/wasm"
+
+import { setCardId } from "@/core/cardReferenceRewriter"
+import type { CharacterCard } from "@/shared/card"
 import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 
 export class SeedIdMappingConflictError extends Error {
@@ -20,51 +18,32 @@ export class SeedIdMappingValidationError extends Error {
   }
 }
 
+function throwFromMappingIssues(issues: readonly IdMappingIssue[]): void {
+  const [issue] = issues
+
+  if (issue === undefined) {
+    return
+  }
+
+  switch (issue.kind) {
+    case "invalid-id":
+      throw new SeedIdMappingValidationError(`Invalid card id: ${issue.id}`)
+    case "duplicate-target":
+      throw new SeedIdMappingConflictError(
+        `Multiple source ids map to the same target id: ${issue.id}`
+      )
+    case "id-collision":
+      throw new SeedIdMappingConflictError(
+        `Target id ${issue.id} would be used by multiple cards`
+      )
+  }
+}
+
 export function validateSeedIdMapping(
   seed: DecodedSeedContent,
   mapping: ReadonlyMap<string, string>
 ): void {
-  const targetIds = new Map<string, string>()
-
-  for (const [oldId, newId] of mapping) {
-    if (oldId === newId) {
-      continue
-    }
-
-    if (!cardIdPattern.test(newId)) {
-      throw new SeedIdMappingValidationError(`Invalid card id: ${newId}`)
-    }
-
-    const previousOldId = targetIds.get(newId)
-
-    if (previousOldId !== undefined && previousOldId !== oldId) {
-      throw new SeedIdMappingConflictError(
-        `Multiple source ids map to the same target id: ${newId}`
-      )
-    }
-
-    targetIds.set(newId, oldId)
-  }
-
-  const finalIdCounts = new Map<string, number>()
-
-  for (const card of seed.characters) {
-    const finalId = mapping.get(card.id) ?? card.id
-    finalIdCounts.set(finalId, (finalIdCounts.get(finalId) ?? 0) + 1)
-  }
-
-  for (const card of seed.backgrounds) {
-    const finalId = mapping.get(card.id) ?? card.id
-    finalIdCounts.set(finalId, (finalIdCounts.get(finalId) ?? 0) + 1)
-  }
-
-  for (const [finalId, count] of finalIdCounts) {
-    if (count > 1) {
-      throw new SeedIdMappingConflictError(
-        `Target id ${finalId} would be used by multiple cards`
-      )
-    }
-  }
+  throwFromMappingIssues(validateIdMapping(seed, mapping))
 }
 
 export function applySeedIdMapping(
@@ -77,30 +56,23 @@ export function applySeedIdMapping(
 
   validateSeedIdMapping(seed, mapping)
 
-  let characters = seed.characters.map((card) => {
-    const newId = mapping.get(card.id)
+  const remapped = applyIdMapping(seed, mapping)
 
-    return newId !== undefined && newId !== card.id ? (setCardId(card, newId) as CharacterCard) : card
-  })
+  // applyIdMapping rewrites ids/relations/characterIds but deliberately leaves
+  // the app-specific profile/<id>.png path alone; sync it card-by-card so the
+  // convention in setCardId stays the single source of truth.
+  const characters = remapped.characters.map((card, index) => {
+    const previous = seed.characters[index]
 
-  let backgrounds = seed.backgrounds.map((card) => {
-    const newId = mapping.get(card.id)
-
-    return newId !== undefined && newId !== card.id ? (setCardId(card, newId) as BackgroundCard) : card
-  })
-
-  for (const [oldId, newId] of mapping) {
-    if (oldId === newId) {
-      continue
+    if (previous === undefined || previous.id === card.id) {
+      return card
     }
 
-    characters = characters.map((card) => renameCardIdInCharacterCard(card, oldId, newId))
-    backgrounds = backgrounds.map((card) => renameCardIdInBackgroundCard(card, oldId, newId))
-  }
+    return setCardId({ ...card, id: previous.id }, card.id) as CharacterCard
+  })
 
   return {
-    ...seed,
-    characters,
-    backgrounds
+    ...remapped,
+    characters
   }
 }

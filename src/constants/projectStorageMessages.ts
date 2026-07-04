@@ -1,4 +1,8 @@
-import type { SeedError, SeedErrorCode } from "@seedcoat/wasm"
+import {
+  mapSeedErrorToMessage as mapSeedErrorToMessageWith,
+  type SeedError,
+  type SeedErrorMessages
+} from "@seedcoat/wasm"
 
 export const SEED_UNSUPPORTED_FORMAT_MESSAGE =
   "지원하지 않는 Seed 파일 형식입니다. 이전 암호화 형식(패스프레이즈 기반)이나 구 저장소 형식(v1)의 `.seed` 파일은 더 이상 열 수 없습니다. 보낸 쪽에서 최신 형식으로 다시 내보낸 파일을 사용해 주세요."
@@ -30,7 +34,7 @@ export const SEED_UNKNOWN_ERROR_MESSAGE = "Seed 파일을 처리하는 중 알 �
 export const SEED_NO_HISTORY_MESSAGE =
   "Seed 파일에 기록된 변경 이력이 없어 가져올 수 없습니다."
 
-const SEED_ERROR_MESSAGES: Record<SeedErrorCode, string> = {
+const SEED_ERROR_MESSAGES: SeedErrorMessages = {
   UNSUPPORTED_FORMAT: SEED_UNSUPPORTED_FORMAT_MESSAGE,
   MALFORMED_CONTAINER: SEED_MALFORMED_CONTAINER_MESSAGE,
   HASH_MISMATCH: SEED_HASH_MISMATCH_MESSAGE,
@@ -46,5 +50,5 @@ const SEED_ERROR_MESSAGES: Record<SeedErrorCode, string> = {
 }
 
 export function mapSeedErrorToMessage(error: SeedError): string {
-  return SEED_ERROR_MESSAGES[error.code] ?? SEED_UNKNOWN_ERROR_MESSAGE
+  return mapSeedErrorToMessageWith(error, SEED_ERROR_MESSAGES, SEED_UNKNOWN_ERROR_MESSAGE)
 }

@@ -13,18 +13,18 @@ import {
 import { storyboardProjectSchema } from "@/files/projectJson"
 import { SEED_NO_HISTORY_MESSAGE } from "@/constants/projectStorageMessages"
 import {
-  checkoutSnapshot,
-  init,
-  load,
+  decodeLatestState,
+  encodeState,
+  isSeedError,
   loadSeedcoat,
-  log,
-  note,
-  save,
-  SeedError,
+  pruneOrphanReferences,
+  SeedHistoryEmptyError,
   type SeedBackgroundCard,
   type SeedCharacterCard,
   type SeedState
 } from "@seedcoat/wasm"
+
+export { isSeedError }
 
 export interface SeedSceneEntry {
   readonly stem: string
@@ -43,10 +43,6 @@ export interface WorkspaceContent {
   readonly characters: readonly CharacterCard[]
   readonly backgrounds: readonly BackgroundCard[]
   readonly scenes: readonly SeedSceneEntry[]
-}
-
-export function isSeedError(error: unknown): error is SeedError {
-  return error instanceof SeedError
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -174,29 +170,27 @@ function parseSceneEntries(value: unknown): SeedSceneEntry[] {
 export async function decodeSeedToWritePlan(bytes: Uint8Array): Promise<DecodedSeedContent> {
   await loadSeedcoat()
 
-  const repo = load(bytes)
-  const latestNote = log(repo)[0]
-
-  if (latestNote === undefined) {
-    throw new Error(SEED_NO_HISTORY_MESSAGE)
+  let state: SeedState
+  try {
+    state = decodeLatestState(bytes)
+  } catch (error) {
+    if (error instanceof SeedHistoryEmptyError) {
+      throw new Error(SEED_NO_HISTORY_MESSAGE)
+    }
+    throw error
   }
 
-  const state = checkoutSnapshot(repo, { changeId: latestNote.changeId })
+  const pruned = pruneOrphanReferences(state)
 
-  const project = parseProjectPart(state.project)
-  const characters = parseCharacterArray(state.characters)
-  const backgrounds = parseBackgroundArray(state.backgrounds)
-  const scenes = parseSceneEntries(state.scenes)
-
-  const parsedCharIds = new Set(characters.map((c) => c.id))
+  const project = parseProjectPart(pruned.project)
+  const characters = parseCharacterArray(pruned.characters)
+  const backgrounds = parseBackgroundArray(pruned.backgrounds)
+  const scenes = parseSceneEntries(pruned.scenes)
 
   return {
     project,
     characters,
-    backgrounds: backgrounds.map((bg) => ({
-      ...bg,
-      characterIds: bg.characterIds.filter((id) => parsedCharIds.has(id))
-    })),
+    backgrounds,
     scenes
   }
 }
@@ -242,7 +236,5 @@ export async function encodeWorkspaceToSeed(content: WorkspaceContent): Promise<
       .map((scene) => ({ stem: scene.stem, content: scene.content }))
   }
 
-  const staged = init(state)
-  const noted = note(staged, { comment: `storyboard export: ${project.name}` })
-  return save(noted.repo)
+  return encodeState(state, { comment: `storyboard export: ${project.name}` })
 }
