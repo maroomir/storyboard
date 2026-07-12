@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { DecodeSeedUseCase } from '../application/project/decode-seed-use-case';
 import { type StoryboardLogger } from '../core/logger';
 import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
@@ -18,7 +19,6 @@ import {
 } from '../files/seedEnvelopeFromWorkspace';
 import { listSeedExportPreflightIssues } from '../files/seedExportPreflight';
 import {
-  decodeSeedToWritePlan,
   encodeWorkspaceToSeed,
   isSeedError,
   type DecodedSeedContent,
@@ -65,6 +65,7 @@ async function reportSeedExportPreflightIssuesOrAbort(content: WorkspaceContent)
 }
 
 export interface RegisterImportSeedCommandsDependencies {
+  readonly decodeSeedUseCase: DecodeSeedUseCase;
   readonly logger: StoryboardLogger;
 }
 
@@ -111,27 +112,28 @@ function formatSeedErrorMessage(error: unknown): string {
 
 async function loadDecodedSeedOrReport(
   seedUri: vscode.Uri,
-  logger: StoryboardLogger,
+  dependencies: RegisterImportSeedCommandsDependencies,
 ): Promise<DecodedSeedContent | undefined> {
   let bytes: Uint8Array;
 
   try {
     bytes = await readSeedFile(seedUri);
   } catch (error) {
-    logger.error('Seed 파일을 읽지 못했습니다.', error);
-    logger.show();
+    dependencies.logger.error('Seed 파일을 읽지 못했습니다.', error);
+    dependencies.logger.show();
     await vscode.window.showErrorMessage(
       'Seed 파일을 읽는 데 실패했습니다. Output 패널을 확인해 주세요.',
     );
     return undefined;
   }
 
-  try {
-    return await decodeSeedToWritePlan(bytes);
-  } catch (error) {
-    await vscode.window.showErrorMessage(formatSeedErrorMessage(error));
+  const result = await dependencies.decodeSeedUseCase.execute(bytes);
+  if (!result.ok) {
+    await vscode.window.showErrorMessage(result.message);
     return undefined;
   }
+
+  return result.seed;
 }
 
 async function reportSeedWriteFailure(
@@ -398,7 +400,7 @@ async function createProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(targetRoot);
 
-  let seed = await loadDecodedSeedOrReport(seedUri, dependencies.logger);
+  let seed = await loadDecodedSeedOrReport(seedUri, dependencies);
 
   if (seed === undefined) {
     return;
@@ -463,7 +465,7 @@ async function syncProjectFromSeedFile(
 
   const paths = getStoryboardProjectPaths(workspaceFolder.uri);
 
-  let seed = await loadDecodedSeedOrReport(seedUri, dependencies.logger);
+  let seed = await loadDecodedSeedOrReport(seedUri, dependencies);
 
   if (seed === undefined) {
     return;

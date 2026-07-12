@@ -20,7 +20,10 @@ export class ProjectModule implements IApplicationModule {
       registerStoryboardWorkspaceContext(context),
       registerHelloWorldCommand(),
       registerInitCommand({ logger: this.platform.logger }),
-      registerImportSeedCommands({ logger: this.platform.logger }),
+      registerImportSeedCommands({
+        decodeSeedUseCase: this.platform.decodeSeedUseCase,
+        logger: this.platform.logger,
+      }),
       registerSetApiKeyCommand({ secretStore: this.platform.secretStore }),
     );
   }
