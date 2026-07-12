@@ -57,7 +57,11 @@ vi.mock("@/services/ai/AIService", () => ({
   }
 }))
 
-import { runNovelPipeline, type NovelPipelineOptions } from "@/core/novelPipeline"
+import {
+  NovelPipeline,
+  type NovelPipelineDependencies,
+  type NovelPipelineRunOptions
+} from "@/application/novel/novel-pipeline"
 
 const samplePlan: ChapterPlan = {
   version: "1.0.0",
@@ -105,14 +109,15 @@ function chaptersYamlBytes(plan: ChapterPlan): Uint8Array {
 }
 
 interface PipelineHarness {
-  readonly options: NovelPipelineOptions
+  readonly dependencies: NovelPipelineDependencies
+  readonly options: NovelPipelineRunOptions
   readonly progressStages: NovelStageName[]
   readonly progressMessages: { stage: NovelStageName; message: string }[]
   readonly persistedStates: NovelRunState[]
   readonly approvals: { kind: string; info: string }[]
 }
 
-function createHarness(overrides: Partial<NovelPipelineOptions> = {}): PipelineHarness {
+function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): PipelineHarness {
   const progressStages: NovelStageName[] = []
   const progressMessages: { stage: NovelStageName; message: string }[] = []
   const persistedStates: NovelRunState[] = []
@@ -138,16 +143,17 @@ function createHarness(overrides: Partial<NovelPipelineOptions> = {}): PipelineH
   })
   workspace.getWorkspaceFolder = (): undefined => undefined
 
-  const options: NovelPipelineOptions = {
+  const dependencies: NovelPipelineDependencies = {
+    aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
+    configBridge: {} as never,
+    generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
+    logger: { error: () => undefined, info: () => undefined } as never,
+    usageRecorder: {} as never
+  }
+
+  const options: NovelPipelineRunOptions = {
     workspaceUri,
     project,
-    deps: {
-      aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
-      configBridge: {} as never,
-      generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
-      logger: { error: () => undefined, info: () => undefined } as never,
-      usageRecorder: {} as never
-    },
     runMode: "auto",
     reviseMaxIterations: 2,
     onProgress: (stage, message): void => {
@@ -162,7 +168,7 @@ function createHarness(overrides: Partial<NovelPipelineOptions> = {}): PipelineH
     ...overrides
   }
 
-  return { options, progressStages, progressMessages, persistedStates, approvals }
+  return { dependencies, options, progressStages, progressMessages, persistedStates, approvals }
 }
 
 const expectedStageOrder: NovelStageName[] = [
@@ -174,7 +180,7 @@ const expectedStageOrder: NovelStageName[] = [
   "summaries"
 ]
 
-describe("runNovelPipeline", () => {
+describe("NovelPipeline", () => {
   beforeEach(() => {
     generateDraftMock.mockClear()
     runReviseDraftWorkflowMock.mockClear()
@@ -189,7 +195,7 @@ describe("runNovelPipeline", () => {
   it("emits stage progress in pipeline order and completes", async () => {
     const harness = createHarness()
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("completed")
 
@@ -202,7 +208,7 @@ describe("runNovelPipeline", () => {
   it("emits one chapters progress event per chapter group", async () => {
     const harness = createHarness()
 
-    await runNovelPipeline(harness.options)
+    await new NovelPipeline(harness.dependencies).run(harness.options)
 
     const chapterMessages = harness.progressMessages.filter((entry) => entry.stage === "chapters")
     expect(chapterMessages).toHaveLength(2)
@@ -213,7 +219,7 @@ describe("runNovelPipeline", () => {
   it("drafts and revises every scene of every chapter in order", async () => {
     const harness = createHarness()
 
-    await runNovelPipeline(harness.options)
+    await new NovelPipeline(harness.dependencies).run(harness.options)
 
     const draftedStems = generateDraftMock.mock.calls.map((call) => {
       const sceneUri = call[0] as vscode.Uri
@@ -227,7 +233,7 @@ describe("runNovelPipeline", () => {
   it("persists status done and reports completion message on success", async () => {
     const harness = createHarness()
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     const finalState = harness.persistedStates.at(-1)
@@ -248,7 +254,7 @@ describe("runNovelPipeline", () => {
     }
     const harness = createHarness({ resumeState })
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("completed")
     expect(harness.progressStages).toEqual(["assemble", "review", "summaries"])
@@ -267,9 +273,9 @@ describe("runNovelPipeline", () => {
       if (stage === "outline") {
         cancelRequested = true
       }
-    }) as NovelPipelineOptions["onProgress"]
+    }) as NovelPipelineRunOptions["onProgress"]
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("cancelled")
     expect(result.message).toContain("취소")
@@ -284,7 +290,7 @@ describe("runNovelPipeline", () => {
       requestApproval: async (): Promise<boolean> => false
     })
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("paused")
     expect(harness.progressStages).toEqual(["outline"])
@@ -299,7 +305,7 @@ describe("runNovelPipeline", () => {
     } as never)
     const harness = createHarness()
 
-    const result = await runNovelPipeline(harness.options)
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("failed")
     expect(result.message).toContain("초안")

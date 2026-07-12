@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
+import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { StoryboardLogger } from '../../core/logger';
 import {
   createAiProviderRegistry,
@@ -18,6 +19,7 @@ export interface IPlatformServices {
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
+  readonly novelPipeline: NovelPipeline;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
@@ -52,12 +54,20 @@ export class PlatformModule implements IApplicationModule {
       postGenerationUpdates,
       usageRecorder,
     });
+    const novelPipeline = new NovelPipeline({
+      aiProviderRegistry,
+      configBridge,
+      generateDraftUseCase,
+      logger,
+      usageRecorder,
+    });
 
     this.services = {
       aiProviderRegistry,
       configBridge,
       generateDraftUseCase,
       logger,
+      novelPipeline,
       postGenerationUpdates,
       secretStore,
       usageRecorder,

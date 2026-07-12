@@ -1,45 +1,45 @@
 import * as vscode from 'vscode';
 
-import type { GenerateDraftUseCase } from '../application/drafts/generate-draft-use-case';
-import { listCharacterBriefs } from './characterBriefs';
-import type { StoryboardLogger } from './logger';
-import { assembleManuscript } from './manuscriptAssembly';
-import { collectDraftsByOrder } from './manuscriptDrafts';
-import { buildManuscriptReviewMarkdown } from './manuscriptReview';
+import type { GenerateDraftUseCase } from '../drafts/generate-draft-use-case';
+import { listCharacterBriefs } from '../../core/characterBriefs';
+import type { StoryboardLogger } from '../../core/logger';
+import { assembleManuscript } from '../../core/manuscriptAssembly';
+import { collectDraftsByOrder } from '../../core/manuscriptDrafts';
+import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
 import {
   buildChapterSummariesMarkdown,
   summaryFileName,
   type ChapterSummary,
-} from './chapterSummaries';
-import { buildForeshadowingMarkdown, collectForeshadowing } from './foreshadowingTracker';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from './pathConventions';
-import { runReviseDraftWorkflow } from './reviseDraftWorkflow';
-import { recordRevisionEntry } from './revisionPlanRecorder';
-import { buildSceneSeeds } from './sceneSeedFactory';
-import { resolveScenePrefixDigitCount } from '../domain/scene-prefix-digits';
-import { type CardFileSystem } from '../files/card';
-import { readBibleFile, type BibleFileSystem } from '../files/bible';
-import { type DraftFileSystem } from '../files/draft';
+} from '../../core/chapterSummaries';
+import { buildForeshadowingMarkdown, collectForeshadowing } from '../../core/foreshadowingTracker';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
+import { runReviseDraftWorkflow } from '../../core/reviseDraftWorkflow';
+import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
+import { buildSceneSeeds } from '../../core/sceneSeedFactory';
+import { resolveScenePrefixDigitCount } from '../../domain/scene-prefix-digits';
+import { type CardFileSystem } from '../../files/card';
+import { readBibleFile, type BibleFileSystem } from '../../files/bible';
+import { type DraftFileSystem } from '../../files/draft';
 import {
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
   type OutlineFileSystem,
-} from '../files/outline';
+} from '../../files/outline';
 import {
   writeNovelRunState,
   type NovelRunMode,
   type NovelRunState,
   type NovelRunStateFileSystem,
   type NovelStageName,
-} from '../files/novelRunState';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../shared/outline';
-import type { StoryboardProject } from '../shared/project';
+} from '../../files/novelRunState';
+import { StoryboardAIService } from '../../services/ai/AIService';
+import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
+import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
+import type { UsageRecorder } from '../../services/ai/UsageRecorder';
+import type { ConfigBridge } from '../../services/settings/ConfigBridge';
+import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
+import type { StoryboardProject } from '../../shared/project';
 
 const fileSystem: DraftFileSystem &
   OutlineFileSystem &
@@ -66,10 +66,9 @@ export interface NovelPipelineDependencies {
 
 export type NovelApprovalKind = 'outline' | 'chapter';
 
-export interface NovelPipelineOptions {
+export interface NovelPipelineRunOptions {
   readonly workspaceUri: vscode.Uri;
   readonly project: StoryboardProject;
-  readonly deps: NovelPipelineDependencies;
   readonly runMode: NovelRunMode;
   readonly resumeState?: NovelRunState;
   readonly reviseMaxIterations: number;
@@ -77,6 +76,10 @@ export interface NovelPipelineOptions {
   readonly requestApproval: (kind: NovelApprovalKind, info: string) => Promise<boolean>;
   readonly shouldCancel: () => boolean;
 }
+
+type NovelPipelineOptions = NovelPipelineRunOptions & {
+  readonly deps: NovelPipelineDependencies;
+};
 
 export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'failed';
 
@@ -154,9 +157,7 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   return { paths, state, completed, persist, runStageOnce, newAiService };
 }
 
-export async function runNovelPipeline(
-  options: NovelPipelineOptions,
-): Promise<NovelPipelineResult> {
+async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
   const { paths, state, completed, persist, runStageOnce, newAiService } =
     createNovelRunContext(options);
 
@@ -234,6 +235,14 @@ export async function runNovelPipeline(
     const message = error instanceof Error ? error.message : String(error);
     await persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
+  }
+}
+
+export class NovelPipeline {
+  public constructor(private readonly dependencies: NovelPipelineDependencies) {}
+
+  public async run(options: NovelPipelineRunOptions): Promise<NovelPipelineResult> {
+    return await runNovelPipeline({ ...options, deps: this.dependencies });
   }
 }
 

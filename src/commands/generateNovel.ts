@@ -1,13 +1,11 @@
 import * as vscode from 'vscode';
 
-import type { GenerateDraftUseCase } from '../application/drafts/generate-draft-use-case';
-import { validateGenerationContract } from '../core/generationContract';
-import type { StoryboardLogger } from '../core/logger';
 import {
-  runNovelPipeline,
   type NovelApprovalKind,
+  type NovelPipeline,
   type NovelPipelineResult,
-} from '../core/novelPipeline';
+} from '../application/novel/novel-pipeline';
+import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
@@ -18,9 +16,6 @@ import {
   type NovelRunState,
   type NovelRunStateFileSystem,
 } from '../files/novelRunState';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { ContractFieldKey } from '../shared/project';
 import { resolveReviseMaxIterations } from './reviseDraft';
 
@@ -47,11 +42,7 @@ const fileSystem: NovelRunStateFileSystem = {
 };
 
 export interface RegisterGenerateNovelCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly configBridge: ConfigBridge;
-  readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
+  readonly novelPipeline: NovelPipeline;
 }
 
 export function registerGenerateNovelCommand(
@@ -103,10 +94,9 @@ async function runGenerateNovel(
       cancellable: true,
     },
     async (progress, token) => {
-      const result = await runNovelPipeline({
+      const result = await dependencies.novelPipeline.run({
         workspaceUri: workspaceRoot,
         project,
-        deps: dependencies,
         runMode: decision.runMode,
         resumeState: decision.resumeState,
         reviseMaxIterations: resolveReviseMaxIterations(),
