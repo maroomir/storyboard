@@ -1,84 +1,88 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths } from "./pathConventions"
+import { getStoryboardProjectPaths } from './pathConventions';
 
 export async function getTargetWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
-  const workspaceFolders = vscode.workspace.workspaceFolders ?? []
+  const workspaceFolders = vscode.workspace.workspaceFolders ?? [];
 
   if (workspaceFolders.length === 0) {
-    await vscode.window.showErrorMessage("Storyboard 프로젝트를 초기화하려면 먼저 폴더를 열어 주세요.")
-    return undefined
+    await vscode.window.showErrorMessage(
+      'Storyboard 프로젝트를 초기화하려면 먼저 폴더를 열어 주세요.',
+    );
+    return undefined;
   }
 
   if (workspaceFolders.length === 1) {
-    return workspaceFolders[0]
+    return workspaceFolders[0];
   }
 
   const selectedFolder = await vscode.window.showQuickPick(
     workspaceFolders.map((folder) => ({ label: folder.name, folder })),
-    { placeHolder: "Storyboard 프로젝트를 초기화할 워크스페이스 폴더를 선택하세요." }
-  )
+    { placeHolder: 'Storyboard 프로젝트를 초기화할 워크스페이스 폴더를 선택하세요.' },
+  );
 
-  return selectedFolder?.folder
+  return selectedFolder?.folder;
 }
 
 async function projectJsonExistsAtWorkspaceRoot(
   workspaceRoot: vscode.Uri,
-  exists: (uri: vscode.Uri) => Promise<boolean>
+  exists: (uri: vscode.Uri) => Promise<boolean>,
 ): Promise<boolean> {
-  const paths = getStoryboardProjectPaths(workspaceRoot)
-  return exists(paths.projectJson)
+  const paths = getStoryboardProjectPaths(workspaceRoot);
+  return exists(paths.projectJson);
 }
 
-export async function hasStoryboardProject(workspaceFolder: vscode.WorkspaceFolder): Promise<boolean> {
-  return projectJsonExistsAtWorkspaceRoot(workspaceFolder.uri, uriExists)
+export async function hasStoryboardProject(
+  workspaceFolder: vscode.WorkspaceFolder,
+): Promise<boolean> {
+  return projectJsonExistsAtWorkspaceRoot(workspaceFolder.uri, uriExists);
 }
 
 export async function anyStoryboardProjectInWorkspaceFolders(
   folders: readonly vscode.WorkspaceFolder[] | undefined,
-  exists: (uri: vscode.Uri) => Promise<boolean>
+  exists: (uri: vscode.Uri) => Promise<boolean>,
 ): Promise<boolean> {
   if (!folders?.length) {
-    return false
+    return false;
   }
 
   for (const folder of folders) {
     if (await projectJsonExistsAtWorkspaceRoot(folder.uri, exists)) {
-      return true
+      return true;
     }
   }
 
-  return false
+  return false;
 }
 
 export async function anyStoryboardProjectInWorkspace(): Promise<boolean> {
-  return anyStoryboardProjectInWorkspaceFolders(vscode.workspace.workspaceFolders ?? [], uriExists)
+  return anyStoryboardProjectInWorkspaceFolders(vscode.workspace.workspaceFolders ?? [], uriExists);
 }
 
 export async function resolveStoryboardWorkspaceRoot(): Promise<vscode.Uri | undefined> {
   for (const folder of vscode.workspace.workspaceFolders ?? []) {
     if (await hasStoryboardProject(folder)) {
-      return folder.uri
+      return folder.uri;
     }
   }
 
-  return undefined
+  return undefined;
 }
 
 export async function uriExists(uri: vscode.Uri): Promise<boolean> {
   try {
-    await vscode.workspace.fs.stat(uri)
-    return true
+    await vscode.workspace.fs.stat(uri);
+    return true;
   } catch {
-    return false
+    return false;
   }
 }
 
 export async function ensureUriDoesNotExist(uri: vscode.Uri, message: string): Promise<boolean> {
   if (await uriExists(uri)) {
-    await vscode.window.showWarningMessage(message)
-    return false
+    await vscode.window.showWarningMessage(message);
+    return false;
   }
 
-  return true
+  return true;
 }

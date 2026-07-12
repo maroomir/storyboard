@@ -1,89 +1,104 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import { CardParseError, parseCard, serializeCard } from "../files/card"
-import { applyCardCollectProposals } from "../core/cardCollect"
-import { StoryboardLogger } from "../core/logger"
-import { getStoryboardProjectPaths } from "../core/pathConventions"
-import { loadCharacterRoster } from "../core/relationGraphData"
-import { parseDraft, readDraftFile, type DraftFileSystem } from "../files/draft"
-import type { StoryboardCard } from "../shared/card"
-import type { StoryboardResponsePayload } from "../shared/messaging"
-import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
-import { StoryboardAIService } from "../services/ai/AIService"
-import { buildCardCollectProposals, type CollectDraft } from "../services/ai/cardCollectBuilder"
-import type { AiProviderRegistry } from "../services/ai/providerRegistry"
-import { recordUsageSafely } from "../services/ai/recordUsageSafely"
-import type { UsageRecorder } from "../services/ai/UsageRecorder"
-import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
+import { CardParseError, parseCard, serializeCard } from '../files/card';
+import { applyCardCollectProposals } from '../core/cardCollect';
+import { StoryboardLogger } from '../core/logger';
+import { getStoryboardProjectPaths } from '../core/pathConventions';
+import { loadCharacterRoster } from '../core/relationGraphData';
+import { parseDraft, readDraftFile, type DraftFileSystem } from '../files/draft';
+import type { StoryboardCard } from '../shared/card';
+import type { StoryboardResponsePayload } from '../shared/messaging';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { StoryboardAIService } from '../services/ai/AIService';
+import { buildCardCollectProposals, type CollectDraft } from '../services/ai/cardCollectBuilder';
+import type { AiProviderRegistry } from '../services/ai/providerRegistry';
+import { recordUsageSafely } from '../services/ai/recordUsageSafely';
+import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
-const cardEditorViewType = "storyboard.card"
+const cardEditorViewType = 'storyboard.card';
 
 export interface CardCustomEditorDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry
-  readonly usageRecorder: UsageRecorder
-  readonly logger: StoryboardLogger
+  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly usageRecorder: UsageRecorder;
+  readonly logger: StoryboardLogger;
 }
 
 const draftFileSystem: DraftFileSystem = {
   readFile: (uri) => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri, content) => vscode.workspace.fs.writeFile(uri as vscode.Uri, content)
-}
+  writeFile: (uri, content) => vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
+};
 
-const collectPreviewScheme = "storyboard-collect"
+const collectPreviewScheme = 'storyboard-collect';
 
 // NOTE: Serves the proposed-card YAML as a read-only virtual document so the collect preview can
 // reuse VSCode's native diff editor (left = real card file, right = this proposed content).
-class CollectPreviewContentProvider implements vscode.TextDocumentContentProvider, vscode.Disposable {
-  private readonly contentByUri = new Map<string, string>()
-  private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>()
-  public readonly onDidChange = this.changeEmitter.event
+class CollectPreviewContentProvider
+  implements vscode.TextDocumentContentProvider, vscode.Disposable
+{
+  private readonly contentByUri = new Map<string, string>();
+  private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>();
+  public readonly onDidChange = this.changeEmitter.event;
 
   public provideTextDocumentContent(uri: vscode.Uri): string {
-    return this.contentByUri.get(uri.toString()) ?? ""
+    return this.contentByUri.get(uri.toString()) ?? '';
   }
 
   public setContent(uri: vscode.Uri, content: string): void {
-    this.contentByUri.set(uri.toString(), content)
-    this.changeEmitter.fire(uri)
+    this.contentByUri.set(uri.toString(), content);
+    this.changeEmitter.fire(uri);
   }
 
   public dispose(): void {
-    this.changeEmitter.dispose()
+    this.changeEmitter.dispose();
   }
 }
 
 function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
-  const baseName = (documentUri.path.split("/").at(-1) ?? "card.card").replace(/\.card$/, "")
+  const baseName = (documentUri.path.split('/').at(-1) ?? 'card.card').replace(/\.card$/, '');
   // NOTE: Use .yaml extension so VSCode doesn't route the virtual doc through CardCustomEditorProvider.
-  return vscode.Uri.from({ scheme: collectPreviewScheme, path: `/${baseName}.yaml`, query: documentUri.toString() })
+  return vscode.Uri.from({
+    scheme: collectPreviewScheme,
+    path: `/${baseName}.yaml`,
+    query: documentUri.toString(),
+  });
 }
 
 interface CardEditorInitialData {
-  readonly documentUri: string
-  readonly rawText: string
-  readonly card?: StoryboardCard
-  readonly imageUri?: string
-  readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>
-  readonly error?: string
+  readonly documentUri: string;
+  readonly rawText: string;
+  readonly card?: StoryboardCard;
+  readonly imageUri?: string;
+  readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>;
+  readonly error?: string;
 }
 
 export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider {
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly dependencies: CardCustomEditorDependencies,
-    private readonly previewProvider: CollectPreviewContentProvider
+    private readonly previewProvider: CollectPreviewContentProvider,
   ) {}
 
   public resolveCustomTextEditor(
     document: vscode.TextDocument,
-    webviewPanel: vscode.WebviewPanel
+    webviewPanel: vscode.WebviewPanel,
   ): void {
     webviewPanel.webview.options = {
       enableScripts: true,
-      localResourceRoots: [getWebviewDistRoot(this.extensionUri), getDocumentWorkspaceRoot(document)]
-    }
+      localResourceRoots: [
+        getWebviewDistRoot(this.extensionUri),
+        getDocumentWorkspaceRoot(document),
+      ],
+    };
 
-    void initializeCardEditor(document, webviewPanel, this.extensionUri, this.dependencies, this.previewProvider)
+    void initializeCardEditor(
+      document,
+      webviewPanel,
+      this.extensionUri,
+      this.dependencies,
+      this.previewProvider,
+    );
   }
 }
 
@@ -92,46 +107,52 @@ async function initializeCardEditor(
   webviewPanel: vscode.WebviewPanel,
   extensionUri: vscode.Uri,
   dependencies: CardCustomEditorDependencies,
-  previewProvider: CollectPreviewContentProvider
+  previewProvider: CollectPreviewContentProvider,
 ): Promise<void> {
-  const initialData = await createInitialData(document, webviewPanel.webview)
+  const initialData = await createInitialData(document, webviewPanel.webview);
 
   webviewPanel.webview.html = createWebviewHtml(webviewPanel.webview, {
     extensionUri,
-    title: "Storyboard Card",
-    view: "card-editor",
-    initialData
-  })
+    title: 'Storyboard Card',
+    view: 'card-editor',
+    initialData,
+  });
 
-  const bridge = createWebviewBridge(webviewPanel.webview, createCardEditorHandlers(document, dependencies, previewProvider))
+  const bridge = createWebviewBridge(
+    webviewPanel.webview,
+    createCardEditorHandlers(document, dependencies, previewProvider),
+  );
   const documentChangeSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
     if (event.document.uri.toString() !== document.uri.toString()) {
-      return
+      return;
     }
 
-    void postCardChanged(document, webviewPanel)
-  })
+    void postCardChanged(document, webviewPanel);
+  });
 
   webviewPanel.onDidDispose(() => {
-    bridge.dispose()
-    documentChangeSubscription.dispose()
-  })
+    bridge.dispose();
+    documentChangeSubscription.dispose();
+  });
 }
 
-async function postCardChanged(document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel): Promise<void> {
-  const payload = await createInitialData(document, webviewPanel.webview)
+async function postCardChanged(
+  document: vscode.TextDocument,
+  webviewPanel: vscode.WebviewPanel,
+): Promise<void> {
+  const payload = await createInitialData(document, webviewPanel.webview);
   await webviewPanel.webview.postMessage({
-    type: "event",
-    method: "cards.changed",
-    payload
-  })
+    type: 'event',
+    method: 'cards.changed',
+    payload,
+  });
 }
 
 export function registerCardCustomEditorProvider(
   context: vscode.ExtensionContext,
-  dependencies: CardCustomEditorDependencies
+  dependencies: CardCustomEditorDependencies,
 ): vscode.Disposable {
-  const previewProvider = new CollectPreviewContentProvider()
+  const previewProvider = new CollectPreviewContentProvider();
 
   return vscode.Disposable.from(
     previewProvider,
@@ -141,162 +162,187 @@ export function registerCardCustomEditorProvider(
       new CardCustomEditorProvider(context.extensionUri, dependencies, previewProvider),
       {
         webviewOptions: {
-          retainContextWhenHidden: true
+          retainContextWhenHidden: true,
         },
-        supportsMultipleEditorsPerDocument: false
-      }
-    )
-  )
+        supportsMultipleEditorsPerDocument: false,
+      },
+    ),
+  );
 }
 
 function createCardEditorHandlers(
   document: vscode.TextDocument,
   dependencies: CardCustomEditorDependencies,
-  previewProvider: CollectPreviewContentProvider
+  previewProvider: CollectPreviewContentProvider,
 ): StoryboardRpcHandlers {
   return {
-    "cards.read": async (): Promise<{ readonly card: StoryboardCard }> => ({
-      card: parseCard(document.getText())
+    'cards.read': async (): Promise<{ readonly card: StoryboardCard }> => ({
+      card: parseCard(document.getText()),
     }),
-    "cards.write": async (payload): Promise<{ readonly card: StoryboardCard }> => {
-      await replaceDocumentText(document, serializeCard(payload.card))
-      return { card: payload.card }
+    'cards.write': async (payload): Promise<{ readonly card: StoryboardCard }> => {
+      await replaceDocumentText(document, serializeCard(payload.card));
+      return { card: payload.card };
     },
-    "cards.writeRaw": async (payload): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> => {
-      const card = parseCard(payload.rawText)
-      const rawText = serializeCard(card)
-      await replaceDocumentText(document, rawText)
-      return { card, rawText }
+    'cards.writeRaw': async (
+      payload,
+    ): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> => {
+      const card = parseCard(payload.rawText);
+      const rawText = serializeCard(card);
+      await replaceDocumentText(document, rawText);
+      return { card, rawText };
     },
-    "cards.collect": async (): Promise<StoryboardResponsePayload<"cards.collect">> => {
-      const card = parseCard(document.getText())
-      const workspaceRoot = getDocumentWorkspaceRoot(document)
-      const paths = getStoryboardProjectPaths(workspaceRoot)
-      const drafts = await gatherAllDrafts(paths.draftDirectory)
-      const characterRoster = await loadCharacterRoster(workspaceRoot)
+    'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
+      const card = parseCard(document.getText());
+      const workspaceRoot = getDocumentWorkspaceRoot(document);
+      const paths = getStoryboardProjectPaths(workspaceRoot);
+      const drafts = await gatherAllDrafts(paths.draftDirectory);
+      const characterRoster = await loadCharacterRoster(workspaceRoot);
       const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-        onUsage: (record): void => recordUsageSafely(dependencies.usageRecorder, workspaceRoot, record, dependencies.logger)
-      })
+        onUsage: (record): void =>
+          recordUsageSafely(dependencies.usageRecorder, workspaceRoot, record, dependencies.logger),
+      });
 
-      const proposals = await buildCardCollectProposals({ card, drafts, aiService, characterRoster })
+      const proposals = await buildCardCollectProposals({
+        card,
+        drafts,
+        aiService,
+        characterRoster,
+      });
 
-      return { proposals }
+      return { proposals };
     },
-    "cards.applyCollect": async (payload): Promise<StoryboardResponsePayload<"cards.applyCollect">> => {
-      const card = parseCard(document.getText())
-      const merged = applyCardCollectProposals(card, payload.accepted)
-      await replaceDocumentText(document, serializeCard(merged))
+    'cards.applyCollect': async (
+      payload,
+    ): Promise<StoryboardResponsePayload<'cards.applyCollect'>> => {
+      const card = parseCard(document.getText());
+      const merged = applyCardCollectProposals(card, payload.accepted);
+      await replaceDocumentText(document, serializeCard(merged));
 
-      return { card: merged }
+      return { card: merged };
     },
-    "cards.previewCollect": async (payload): Promise<StoryboardResponsePayload<"cards.previewCollect">> => {
-      const card = parseCard(document.getText())
-      const merged = applyCardCollectProposals(card, payload.accepted)
-      const previewUri = collectPreviewUri(document.uri)
-      previewProvider.setContent(previewUri, serializeCard(merged))
+    'cards.previewCollect': async (
+      payload,
+    ): Promise<StoryboardResponsePayload<'cards.previewCollect'>> => {
+      const card = parseCard(document.getText());
+      const merged = applyCardCollectProposals(card, payload.accepted);
+      const previewUri = collectPreviewUri(document.uri);
+      previewProvider.setContent(previewUri, serializeCard(merged));
 
-      const fileName = document.uri.path.split("/").at(-1) ?? "card"
-      await vscode.commands.executeCommand("vscode.diff", document.uri, previewUri, `${fileName} ↔ 수집 제안`, {
-        preview: true
-      })
+      const fileName = document.uri.path.split('/').at(-1) ?? 'card';
+      await vscode.commands.executeCommand(
+        'vscode.diff',
+        document.uri,
+        previewUri,
+        `${fileName} ↔ 수집 제안`,
+        {
+          preview: true,
+        },
+      );
 
-      return {}
-    }
-  }
+      return {};
+    },
+  };
 }
 
 async function gatherAllDrafts(draftDirectory: vscode.Uri): Promise<CollectDraft[]> {
-  let entries: [string, vscode.FileType][]
+  let entries: [string, vscode.FileType][];
 
   try {
-    entries = await vscode.workspace.fs.readDirectory(draftDirectory)
+    entries = await vscode.workspace.fs.readDirectory(draftDirectory);
   } catch {
-    return []
+    return [];
   }
 
-  const drafts: CollectDraft[] = []
+  const drafts: CollectDraft[] = [];
 
   for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith(".md")) {
-      continue
+    if (fileType !== vscode.FileType.File || !name.endsWith('.md')) {
+      continue;
     }
 
     try {
-      const raw = await readDraftFile(vscode.Uri.joinPath(draftDirectory, name), draftFileSystem)
-      const draft = parseDraft(raw)
-      drafts.push({ sceneStem: draft.sceneStem, body: draft.body })
+      const raw = await readDraftFile(vscode.Uri.joinPath(draftDirectory, name), draftFileSystem);
+      const draft = parseDraft(raw);
+      drafts.push({ sceneStem: draft.sceneStem, body: draft.body });
     } catch {
       // skip unreadable or unparsable drafts
     }
   }
 
-  return drafts
+  return drafts;
 }
 
-async function createInitialData(document: vscode.TextDocument, webview: vscode.Webview): Promise<CardEditorInitialData> {
-  const rawText = document.getText()
-  const workspaceRoot = getDocumentWorkspaceRoot(document)
+async function createInitialData(
+  document: vscode.TextDocument,
+  webview: vscode.Webview,
+): Promise<CardEditorInitialData> {
+  const rawText = document.getText();
+  const workspaceRoot = getDocumentWorkspaceRoot(document);
 
   try {
-    const card = parseCard(rawText)
-    const characterRoster = card.type === "character" ? await loadCharacterRoster(workspaceRoot) : undefined
+    const card = parseCard(rawText);
+    const characterRoster =
+      card.type === 'character' ? await loadCharacterRoster(workspaceRoot) : undefined;
 
     return {
       documentUri: document.uri.toString(),
       rawText,
       card,
       imageUri: resolveCardImageUri(document, card, webview),
-      ...(characterRoster === undefined ? {} : { characterRoster })
-    }
+      ...(characterRoster === undefined ? {} : { characterRoster }),
+    };
   } catch (error) {
     return {
       documentUri: document.uri.toString(),
       rawText,
-      error: createCardErrorMessage(error)
-    }
+      error: createCardErrorMessage(error),
+    };
   }
 }
 
 function resolveCardImageUri(
   document: vscode.TextDocument,
   card: StoryboardCard,
-  webview: vscode.Webview
+  webview: vscode.Webview,
 ): string | undefined {
-  const relativeImagePath = card.type === "character" ? card.profile : undefined
+  const relativeImagePath = card.type === 'character' ? card.profile : undefined;
 
   if (!relativeImagePath) {
-    return undefined
+    return undefined;
   }
 
-  const cardDirectory = vscode.Uri.joinPath(document.uri, "..")
-  return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString()
+  const cardDirectory = vscode.Uri.joinPath(document.uri, '..');
+  return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString();
 }
 
 function getDocumentWorkspaceRoot(document: vscode.TextDocument): vscode.Uri {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
-  return workspaceFolder?.uri ?? vscode.Uri.joinPath(document.uri, "..")
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+  return workspaceFolder?.uri ?? vscode.Uri.joinPath(document.uri, '..');
 }
 
 async function replaceDocumentText(document: vscode.TextDocument, nextText: string): Promise<void> {
-  const edit = new vscode.WorkspaceEdit()
-  const fullRange = new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length))
-  edit.replace(document.uri, fullRange, nextText)
+  const edit = new vscode.WorkspaceEdit();
+  const fullRange = new vscode.Range(
+    document.positionAt(0),
+    document.positionAt(document.getText().length),
+  );
+  edit.replace(document.uri, fullRange, nextText);
 
-  const isApplied = await vscode.workspace.applyEdit(edit)
+  const isApplied = await vscode.workspace.applyEdit(edit);
 
   if (!isApplied) {
-    throw new Error("카드 문서 변경을 적용하지 못했습니다.")
+    throw new Error('카드 문서 변경을 적용하지 못했습니다.');
   }
 }
 
 function createCardErrorMessage(error: unknown): string {
   if (error instanceof CardParseError) {
-    return error.message
+    return error.message;
   }
 
   if (error instanceof Error) {
-    return error.message
+    return error.message;
   }
 
-  return "카드를 읽을 수 없습니다."
+  return '카드를 읽을 수 없습니다.';
 }

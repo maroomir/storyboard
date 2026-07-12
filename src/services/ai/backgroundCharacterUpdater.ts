@@ -1,93 +1,100 @@
-import { isBackgroundCard, type BackgroundCard, type CharacterCard } from "@/shared/card"
-import { readCardFile, writeCardFile, type CardFileSystem } from "@/files/card"
+import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';
+import { readCardFile, writeCardFile, type CardFileSystem } from '@/files/card';
 
 export interface BackgroundCharacterUpdateLogger {
-  readonly error: (message: string, error?: unknown) => void
+  readonly error: (message: string, error?: unknown) => void;
 }
 
 export interface BackgroundCharacterUpdateSummary {
-  readonly updated: boolean
+  readonly updated: boolean;
 }
 
 export interface UpdateBackgroundCharactersFromSceneInput {
-  readonly backgroundId: string
-  readonly detectedCharacterCards: readonly CharacterCard[]
-  readonly fileSystem: CardFileSystem
-  readonly resolveBackgroundCardUri: (backgroundId: string) => unknown
-  readonly logger?: BackgroundCharacterUpdateLogger
+  readonly backgroundId: string;
+  readonly detectedCharacterCards: readonly CharacterCard[];
+  readonly fileSystem: CardFileSystem;
+  readonly resolveBackgroundCardUri: (backgroundId: string) => unknown;
+  readonly logger?: BackgroundCharacterUpdateLogger;
 }
 
 export async function updateBackgroundCharactersFromScene(
-  input: UpdateBackgroundCharactersFromSceneInput
+  input: UpdateBackgroundCharactersFromSceneInput,
 ): Promise<BackgroundCharacterUpdateSummary> {
-  const { backgroundId, detectedCharacterCards, fileSystem, resolveBackgroundCardUri, logger } = input
+  const { backgroundId, detectedCharacterCards, fileSystem, resolveBackgroundCardUri, logger } =
+    input;
 
   if (detectedCharacterCards.length === 0) {
-    return { updated: false }
+    return { updated: false };
   }
 
-  const cardUri = resolveBackgroundCardUri(backgroundId)
+  const cardUri = resolveBackgroundCardUri(backgroundId);
 
-  let current
+  let current;
   try {
-    current = await readCardFile(cardUri, fileSystem)
+    current = await readCardFile(cardUri, fileSystem);
   } catch (error) {
-    logger?.error(`Failed to read background card ${backgroundId}`, error)
-    return { updated: false }
+    logger?.error(`Failed to read background card ${backgroundId}`, error);
+    return { updated: false };
   }
 
   if (!isBackgroundCard(current)) {
-    return { updated: false }
+    return { updated: false };
   }
 
-  const existing = current.characterIds ?? []
-  const seen = new Set(existing)
-  const additions = detectedCharacterCards.map((card) => card.id).filter((id) => !seen.has(id))
+  const existing = current.characterIds ?? [];
+  const seen = new Set(existing);
+  const additions = detectedCharacterCards.map((card) => card.id).filter((id) => !seen.has(id));
 
   if (additions.length === 0) {
-    return { updated: false }
+    return { updated: false };
   }
 
-  const merged = [...existing, ...new Set(additions)]
-  const next: BackgroundCard = { ...current, characterIds: merged }
+  const merged = [...existing, ...new Set(additions)];
+  const next: BackgroundCard = { ...current, characterIds: merged };
 
   try {
-    await writeCardFile(cardUri, fileSystem, next)
+    await writeCardFile(cardUri, fileSystem, next);
   } catch (error) {
-    logger?.error(`Failed to write background card ${backgroundId}`, error)
-    return { updated: false }
+    logger?.error(`Failed to write background card ${backgroundId}`, error);
+    return { updated: false };
   }
 
-  return { updated: true }
+  return { updated: true };
 }
 
 export interface ScheduleBackgroundCharacterUpdateInput extends UpdateBackgroundCharactersFromSceneInput {
-  readonly queueKey: string
-  readonly onComplete?: (summary: BackgroundCharacterUpdateSummary) => void
+  readonly queueKey: string;
+  readonly onComplete?: (summary: BackgroundCharacterUpdateSummary) => void;
 }
 
-const backgroundCharacterQueues = new Map<string, Promise<unknown>>()
+const backgroundCharacterQueues = new Map<string, Promise<unknown>>();
 
 function enqueueKeyedJob(
   queueKey: string,
-  task: () => Promise<BackgroundCharacterUpdateSummary>
+  task: () => Promise<BackgroundCharacterUpdateSummary>,
 ): Promise<BackgroundCharacterUpdateSummary> {
-  const previous = backgroundCharacterQueues.get(queueKey) ?? Promise.resolve()
-  const next = previous.catch(() => undefined).then(() => task()) as Promise<BackgroundCharacterUpdateSummary>
-  backgroundCharacterQueues.set(queueKey, next)
+  const previous = backgroundCharacterQueues.get(queueKey) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(() => task()) as Promise<BackgroundCharacterUpdateSummary>;
+  backgroundCharacterQueues.set(queueKey, next);
 
-  return next
+  return next;
 }
 
-export function scheduleBackgroundCharacterUpdate(input: ScheduleBackgroundCharacterUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input
+export function scheduleBackgroundCharacterUpdate(
+  input: ScheduleBackgroundCharacterUpdateInput,
+): void {
+  const { queueKey, onComplete, logger, ...rest } = input;
 
-  void enqueueKeyedJob(queueKey, () => updateBackgroundCharactersFromScene({ ...rest, logger })).then(
+  void enqueueKeyedJob(queueKey, () =>
+    updateBackgroundCharactersFromScene({ ...rest, logger }),
+  ).then(
     (summary) => {
-      onComplete?.(summary)
+      onComplete?.(summary);
     },
     (error: unknown) => {
-      logger?.error("Background character background update failed", error)
-    }
-  )
+      logger?.error('Background character background update failed', error);
+    },
+  );
 }

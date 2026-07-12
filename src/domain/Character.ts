@@ -1,14 +1,14 @@
-import type { CharacterCard } from "../shared/card"
+import type { CharacterCard } from '../shared/card';
 
-export type Character = CharacterCard
+export type Character = CharacterCard;
 
 export function createEmptyCharacter(id: string, name: string): Character {
   return {
-    type: "character",
+    type: 'character',
     id,
     name,
     profile: `profile/${id}.png`,
-    role: "main",
+    role: 'main',
     attributes: {},
     tags: [],
     traits: [],
@@ -17,6 +17,6 @@ export function createEmptyCharacter(id: string, name: string): Character {
     desire: [],
     relations: [],
     arc: [],
-    recentDialogues: []
-  }
+    recentDialogues: [],
+  };
 }

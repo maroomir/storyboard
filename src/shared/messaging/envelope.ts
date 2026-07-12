@@ -1,152 +1,154 @@
-import { z } from "zod"
+import { z } from 'zod';
 
-import { aiGenerateStreamChunkEventPayloadSchema } from "./ai"
-import { methodSchema, requestIdSchema, storyboardMessageProtocolVersion } from "./atoms"
-import { studioTargetSchema } from "./studio"
+import { aiGenerateStreamChunkEventPayloadSchema } from './ai';
+import { methodSchema, requestIdSchema, storyboardMessageProtocolVersion } from './atoms';
+import { studioTargetSchema } from './studio';
 import {
   storyboardRequestPayloadSchemas,
   storyboardResponsePayloadSchemas,
   type StoryboardRequestMethod,
   type StoryboardRequestPayload,
   type StoryboardResponseMethod,
-  type StoryboardResponsePayload
-} from "./registry"
+  type StoryboardResponsePayload,
+} from './registry';
 
 export type StoryboardSettingsChangedEventMessage = {
-  readonly type: "event"
-  readonly method: "settings.changed"
-  readonly payload: StoryboardResponsePayload<"settings.read">
-}
+  readonly type: 'event';
+  readonly method: 'settings.changed';
+  readonly payload: StoryboardResponsePayload<'settings.read'>;
+};
 
 export type StoryboardUsageChangedEventMessage = {
-  readonly type: "event"
-  readonly method: "usage.changed"
-  readonly payload: StoryboardResponsePayload<"usage.read">
-}
+  readonly type: 'event';
+  readonly method: 'usage.changed';
+  readonly payload: StoryboardResponsePayload<'usage.read'>;
+};
 
 export type StoryboardAiGenerateStreamChunkEventMessage = {
-  readonly type: "event"
-  readonly method: "ai.generateStream.chunk"
-  readonly payload: z.infer<typeof aiGenerateStreamChunkEventPayloadSchema>
-}
+  readonly type: 'event';
+  readonly method: 'ai.generateStream.chunk';
+  readonly payload: z.infer<typeof aiGenerateStreamChunkEventPayloadSchema>;
+};
 
 export type StoryboardStudioTargetChangedEventMessage = {
-  readonly type: "event"
-  readonly method: "studio.targetChanged"
-  readonly payload: z.infer<typeof studioTargetSchema>
-}
+  readonly type: 'event';
+  readonly method: 'studio.targetChanged';
+  readonly payload: z.infer<typeof studioTargetSchema>;
+};
 
 type StoryboardRequestMessageMap = {
   readonly [M in StoryboardRequestMethod]: {
-    readonly protocolVersion: typeof storyboardMessageProtocolVersion
-    readonly type: "request"
-    readonly id: string
-    readonly method: M
-    readonly payload: StoryboardRequestPayload<M>
-  }
-}
+    readonly protocolVersion: typeof storyboardMessageProtocolVersion;
+    readonly type: 'request';
+    readonly id: string;
+    readonly method: M;
+    readonly payload: StoryboardRequestPayload<M>;
+  };
+};
 
 type StoryboardSuccessResponseMessageMap = {
   readonly [M in StoryboardResponseMethod]: {
-    readonly protocolVersion: typeof storyboardMessageProtocolVersion
-    readonly type: "response"
-    readonly id: string
-    readonly method: M
-    readonly ok: true
-    readonly payload: StoryboardResponsePayload<M>
-  }
-}
+    readonly protocolVersion: typeof storyboardMessageProtocolVersion;
+    readonly type: 'response';
+    readonly id: string;
+    readonly method: M;
+    readonly ok: true;
+    readonly payload: StoryboardResponsePayload<M>;
+  };
+};
 
 type StoryboardErrorResponseMessageMap = {
   readonly [M in StoryboardResponseMethod]: {
-    readonly protocolVersion: typeof storyboardMessageProtocolVersion
-    readonly type: "response"
-    readonly id: string
-    readonly method: M
-    readonly ok: false
-    readonly error: StoryboardMessageError
-  }
-}
+    readonly protocolVersion: typeof storyboardMessageProtocolVersion;
+    readonly type: 'response';
+    readonly id: string;
+    readonly method: M;
+    readonly ok: false;
+    readonly error: StoryboardMessageError;
+  };
+};
 
 export type StoryboardRequestMessage<M extends StoryboardRequestMethod = StoryboardRequestMethod> =
-  StoryboardRequestMessageMap[M]
+  StoryboardRequestMessageMap[M];
 
 export type StoryboardSuccessResponseMessage<
-  M extends StoryboardResponseMethod = StoryboardResponseMethod
-> = StoryboardSuccessResponseMessageMap[M]
+  M extends StoryboardResponseMethod = StoryboardResponseMethod,
+> = StoryboardSuccessResponseMessageMap[M];
 
 export type StoryboardErrorResponseMessage<
-  M extends StoryboardResponseMethod = StoryboardResponseMethod
-> = StoryboardErrorResponseMessageMap[M]
+  M extends StoryboardResponseMethod = StoryboardResponseMethod,
+> = StoryboardErrorResponseMessageMap[M];
 
 export interface StoryboardMessageError {
-  readonly code: string
-  readonly message: string
+  readonly code: string;
+  readonly message: string;
 }
 
-export type StoryboardResponseMessage<M extends StoryboardResponseMethod = StoryboardResponseMethod> =
-  | StoryboardSuccessResponseMessage<M>
-  | StoryboardErrorResponseMessage<M>
+export type StoryboardResponseMessage<
+  M extends StoryboardResponseMethod = StoryboardResponseMethod,
+> = StoryboardSuccessResponseMessage<M> | StoryboardErrorResponseMessage<M>;
 
-export type StoryboardIncomingMessage = StoryboardRequestMessage
-export type StoryboardOutgoingMessage = StoryboardResponseMessage
+export type StoryboardIncomingMessage = StoryboardRequestMessage;
+export type StoryboardOutgoingMessage = StoryboardResponseMessage;
 
 const requestEnvelopeSchema = z.object({
   protocolVersion: z.literal(storyboardMessageProtocolVersion),
-  type: z.literal("request"),
+  type: z.literal('request'),
   id: requestIdSchema,
   method: methodSchema,
-  payload: z.unknown()
-})
+  payload: z.unknown(),
+});
 
 export function parseStoryboardRequestMessage(message: unknown): StoryboardRequestMessage {
-  const envelope = requestEnvelopeSchema.parse(message)
+  const envelope = requestEnvelopeSchema.parse(message);
 
   if (!isStoryboardRequestMethod(envelope.method)) {
-    throw new Error(`Unsupported Storyboard RPC method: ${envelope.method}`)
+    throw new Error(`Unsupported Storyboard RPC method: ${envelope.method}`);
   }
 
-  const payload = storyboardRequestPayloadSchemas[envelope.method].parse(envelope.payload)
+  const payload = storyboardRequestPayloadSchemas[envelope.method].parse(envelope.payload);
 
   return {
     protocolVersion: envelope.protocolVersion,
     type: envelope.type,
     id: envelope.id,
     method: envelope.method,
-    payload
-  } as StoryboardRequestMessage
+    payload,
+  } as StoryboardRequestMessage;
 }
 
 export function createStoryboardSuccessResponse<M extends StoryboardResponseMethod>(
   request: { readonly id: string; readonly method: M },
-  payload: StoryboardResponsePayload<M>
+  payload: StoryboardResponsePayload<M>,
 ): StoryboardSuccessResponseMessage<M> {
-  const parsedPayload = storyboardResponsePayloadSchemas[request.method].parse(payload) as StoryboardResponsePayload<M>
+  const parsedPayload = storyboardResponsePayloadSchemas[request.method].parse(
+    payload,
+  ) as StoryboardResponsePayload<M>;
 
   return {
     protocolVersion: storyboardMessageProtocolVersion,
-    type: "response",
+    type: 'response',
     id: request.id,
     method: request.method,
     ok: true,
-    payload: parsedPayload
-  } as StoryboardSuccessResponseMessage<M>
+    payload: parsedPayload,
+  } as StoryboardSuccessResponseMessage<M>;
 }
 
 export function createStoryboardErrorResponse<M extends StoryboardResponseMethod>(
   request: { readonly id: string; readonly method: M },
-  error: StoryboardMessageError
+  error: StoryboardMessageError,
 ): StoryboardErrorResponseMessage<M> {
   return {
     protocolVersion: storyboardMessageProtocolVersion,
-    type: "response",
+    type: 'response',
     id: request.id,
     method: request.method,
     ok: false,
-    error
-  } as StoryboardErrorResponseMessage<M>
+    error,
+  } as StoryboardErrorResponseMessage<M>;
 }
 
 export function isStoryboardRequestMethod(method: string): method is StoryboardRequestMethod {
-  return Object.prototype.hasOwnProperty.call(storyboardRequestPayloadSchemas, method)
+  return Object.prototype.hasOwnProperty.call(storyboardRequestPayloadSchemas, method);
 }

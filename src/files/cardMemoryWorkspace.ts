@@ -1,96 +1,101 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from "../core/pathConventions"
-import { uriExists } from "../core/workspace"
-import { vscodeFsAdapter } from "../core/vscodeFileSystem"
-import type { BackgroundCard, CharacterCard } from "../shared/card"
+import type { StoryboardProjectPaths } from '../core/pathConventions';
+import { uriExists } from '../core/workspace';
+import { vscodeFsAdapter } from '../core/vscodeFileSystem';
+import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type {
   BackgroundMemoryStore,
-  PersonaMemoryStore
-} from "../services/ai/pipelines/sceneGenerationPipeline"
+  PersonaMemoryStore,
+} from '../services/ai/pipelines/sceneGenerationPipeline';
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
   readBackgroundMemoryFile,
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
-  writePersonaMemoryFile
-} from "./cardMemory"
+  writePersonaMemoryFile,
+} from './cardMemory';
 
 export async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
-  await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory)
+  await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory);
 }
 
-export async function ensureBackgroundMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
-  await vscode.workspace.fs.createDirectory(paths.backgroundMemoryDirectory)
+export async function ensureBackgroundMemoryDirectory(
+  paths: StoryboardProjectPaths,
+): Promise<void> {
+  await vscode.workspace.fs.createDirectory(paths.backgroundMemoryDirectory);
 }
 
 export function personaMemoryFilePath(paths: StoryboardProjectPaths, cardId: string): vscode.Uri {
-  return vscode.Uri.joinPath(paths.personaMemoryDirectory, `${cardId}.json`)
+  return vscode.Uri.joinPath(paths.personaMemoryDirectory, `${cardId}.json`);
 }
 
-export function backgroundMemoryFilePath(paths: StoryboardProjectPaths, cardId: string): vscode.Uri {
-  return vscode.Uri.joinPath(paths.backgroundMemoryDirectory, `${cardId}.json`)
+export function backgroundMemoryFilePath(
+  paths: StoryboardProjectPaths,
+  cardId: string,
+): vscode.Uri {
+  return vscode.Uri.joinPath(paths.backgroundMemoryDirectory, `${cardId}.json`);
 }
 
 export function createPersonaMemoryStore(
   paths: StoryboardProjectPaths,
-  sceneStem: string
+  sceneStem: string,
 ): PersonaMemoryStore {
   return {
     async load(card: CharacterCard): Promise<string | undefined> {
-      const uri = personaMemoryFilePath(paths, card.id)
+      const uri = personaMemoryFilePath(paths, card.id);
 
       if (!(await uriExists(uri))) {
-        return undefined
+        return undefined;
       }
 
       try {
-        const record = await readPersonaMemoryFile(uri, vscodeFsAdapter)
-        return record.cardHash === computePersonaCardHash(card) ? record.persona : undefined
+        const record = await readPersonaMemoryFile(uri, vscodeFsAdapter);
+        return record.cardHash === computePersonaCardHash(card) ? record.persona : undefined;
       } catch {
-        return undefined
+        return undefined;
       }
     },
     async save(card: CharacterCard, persona: string): Promise<void> {
-      await ensurePersonaMemoryDirectory(paths)
+      await ensurePersonaMemoryDirectory(paths);
       await writePersonaMemoryFile(personaMemoryFilePath(paths, card.id), vscodeFsAdapter, {
         cardId: card.id,
         persona,
         updatedThroughScene: sceneStem,
-        cardHash: computePersonaCardHash(card)
-      })
-    }
-  }
+        cardHash: computePersonaCardHash(card),
+      });
+    },
+  };
 }
 
 export function createBackgroundMemoryStore(
   paths: StoryboardProjectPaths,
-  sceneStem: string
+  sceneStem: string,
 ): BackgroundMemoryStore {
   return {
     async load(card: BackgroundCard): Promise<string | undefined> {
-      const uri = backgroundMemoryFilePath(paths, card.id)
+      const uri = backgroundMemoryFilePath(paths, card.id);
 
       if (!(await uriExists(uri))) {
-        return undefined
+        return undefined;
       }
 
       try {
-        const record = await readBackgroundMemoryFile(uri, vscodeFsAdapter)
-        return record.cardHash === computeBackgroundCardHash(card) ? record.atmosphere : undefined
+        const record = await readBackgroundMemoryFile(uri, vscodeFsAdapter);
+        return record.cardHash === computeBackgroundCardHash(card) ? record.atmosphere : undefined;
       } catch {
-        return undefined
+        return undefined;
       }
     },
     async save(card: BackgroundCard, atmosphere: string): Promise<void> {
-      await ensureBackgroundMemoryDirectory(paths)
+      await ensureBackgroundMemoryDirectory(paths);
       await writeBackgroundMemoryFile(backgroundMemoryFilePath(paths, card.id), vscodeFsAdapter, {
         cardId: card.id,
         atmosphere,
         updatedThroughScene: sceneStem,
-        cardHash: computeBackgroundCardHash(card)
-      })
-    }
-  }
+        cardHash: computeBackgroundCardHash(card),
+      });
+    },
+  };
 }

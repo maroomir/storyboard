@@ -1,205 +1,205 @@
-import { serializeCard } from "@/files/card"
-import { serializeProjectJson } from "@/files/projectJson"
-import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
-import { isHiddenSceneFileName, isIgnoredSampleCardFileName } from "@/core/pathConventions"
-import { parseSceneStem } from "@/shared/scene"
+import { serializeCard } from '@/files/card';
+import { serializeProjectJson } from '@/files/projectJson';
+import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
+import { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@/core/pathConventions';
+import { parseSceneStem } from '@/shared/scene';
 
 export interface SeedFileWriteEntry {
-  readonly relativePath: string
-  readonly content: string
+  readonly relativePath: string;
+  readonly content: string;
 }
 
 export class SeedWriteAbortedError extends Error {
   public constructor(
     message: string,
     public readonly writtenRelativePaths: readonly string[],
-    options?: { cause?: unknown }
+    options?: { cause?: unknown },
   ) {
-    super(message, options)
-    this.name = "SeedWriteAbortedError"
+    super(message, options);
+    this.name = 'SeedWriteAbortedError';
   }
 }
 
 export function normalizeRelativePath(relativePath: string): string {
-  return relativePath.replace(/\\/g, "/").replace(/^\.\//, "").replace(/^\/+/, "")
+  return relativePath.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '');
 }
 
 export function isSeedSyncExcludedPath(normalizedRelativePath: string): boolean {
-  const path = normalizedRelativePath
-  return path.startsWith("draft/") || path.startsWith(".storyboard/cache/")
+  const path = normalizedRelativePath;
+  return path.startsWith('draft/') || path.startsWith('.storyboard/cache/');
 }
 
 export function buildSeedWritePlan(seed: DecodedSeedContent): readonly SeedFileWriteEntry[] {
   const entries: SeedFileWriteEntry[] = [
-    { relativePath: ".storyboard/project.json", content: serializeProjectJson(seed.project) }
-  ]
+    { relativePath: '.storyboard/project.json', content: serializeProjectJson(seed.project) },
+  ];
 
-  const characters = [...seed.characters].sort((a, b) => a.id.localeCompare(b.id))
+  const characters = [...seed.characters].sort((a, b) => a.id.localeCompare(b.id));
   for (const card of characters) {
     entries.push({
       relativePath: `character/${card.id}.card`,
-      content: serializeCard(card)
-    })
+      content: serializeCard(card),
+    });
   }
 
-  const backgrounds = [...seed.backgrounds].sort((a, b) => a.id.localeCompare(b.id))
+  const backgrounds = [...seed.backgrounds].sort((a, b) => a.id.localeCompare(b.id));
   for (const card of backgrounds) {
     entries.push({
       relativePath: `background/${card.id}.card`,
-      content: serializeCard(card)
-    })
+      content: serializeCard(card),
+    });
   }
 
-  const scenes = [...seed.scenes].sort((a, b) => a.stem.localeCompare(b.stem))
+  const scenes = [...seed.scenes].sort((a, b) => a.stem.localeCompare(b.stem));
   for (const scene of scenes) {
     entries.push({
       relativePath: `scene/${scene.stem}.txt`,
-      content: scene.content
-    })
+      content: scene.content,
+    });
   }
 
-  return entries
+  return entries;
 }
 
 export function collectTrackedCardAndSceneRelativePathsFromFileNames(input: {
-  readonly characterFileNames: readonly string[]
-  readonly backgroundFileNames: readonly string[]
-  readonly sceneFileNames: readonly string[]
+  readonly characterFileNames: readonly string[];
+  readonly backgroundFileNames: readonly string[];
+  readonly sceneFileNames: readonly string[];
 }): string[] {
-  const out: string[] = []
+  const out: string[] = [];
 
   for (const name of input.characterFileNames) {
-    const rel = `character/${name}`
+    const rel = `character/${name}`;
     if (parseCharacterRootCardId(rel) !== undefined) {
-      out.push(rel)
+      out.push(rel);
     }
   }
 
   for (const name of input.backgroundFileNames) {
-    const rel = `background/${name}`
+    const rel = `background/${name}`;
     if (parseBackgroundRootCardId(rel) !== undefined) {
-      out.push(rel)
+      out.push(rel);
     }
   }
 
   for (const name of input.sceneFileNames) {
-    const rel = `scene/${name}`
+    const rel = `scene/${name}`;
     if (parseSceneRootTxtStem(rel) !== undefined) {
-      out.push(rel)
+      out.push(rel);
     }
   }
 
-  return out
+  return out;
 }
 
 export function listSeedPlanContentConflictRelativePaths(
   plan: readonly SeedFileWriteEntry[],
-  existingContentByRelativePath: ReadonlyMap<string, string | undefined>
+  existingContentByRelativePath: ReadonlyMap<string, string | undefined>,
 ): string[] {
-  const conflicts: string[] = []
+  const conflicts: string[] = [];
 
   for (const entry of plan) {
-    const norm = normalizeRelativePath(entry.relativePath)
-    const existing = existingContentByRelativePath.get(norm)
+    const norm = normalizeRelativePath(entry.relativePath);
+    const existing = existingContentByRelativePath.get(norm);
 
     if (existing !== undefined && existing !== entry.content) {
-      conflicts.push(norm)
+      conflicts.push(norm);
     }
   }
 
-  return conflicts.sort((a, b) => a.localeCompare(b))
+  return conflicts.sort((a, b) => a.localeCompare(b));
 }
 
 export function computeSeedDeletionCandidates(
   existingRelativePaths: readonly string[],
-  seed: DecodedSeedContent
+  seed: DecodedSeedContent,
 ): readonly string[] {
-  const characterIds = new Set(seed.characters.map((c) => c.id))
-  const backgroundIds = new Set(seed.backgrounds.map((b) => b.id))
-  const sceneStems = new Set(seed.scenes.map((s) => s.stem))
+  const characterIds = new Set(seed.characters.map((c) => c.id));
+  const backgroundIds = new Set(seed.backgrounds.map((b) => b.id));
+  const sceneStems = new Set(seed.scenes.map((s) => s.stem));
 
-  const candidates = new Set<string>()
+  const candidates = new Set<string>();
 
   for (const raw of existingRelativePaths) {
-    const norm = normalizeRelativePath(raw)
+    const norm = normalizeRelativePath(raw);
     if (isSeedSyncExcludedPath(norm)) {
-      continue
+      continue;
     }
 
-    const characterId = parseCharacterRootCardId(norm)
+    const characterId = parseCharacterRootCardId(norm);
     if (characterId !== undefined) {
       if (!characterIds.has(characterId)) {
-        candidates.add(norm)
+        candidates.add(norm);
       }
-      continue
+      continue;
     }
 
-    const backgroundId = parseBackgroundRootCardId(norm)
+    const backgroundId = parseBackgroundRootCardId(norm);
     if (backgroundId !== undefined) {
       if (!backgroundIds.has(backgroundId)) {
-        candidates.add(norm)
+        candidates.add(norm);
       }
-      continue
+      continue;
     }
 
-    const sceneStem = parseSceneRootTxtStem(norm)
+    const sceneStem = parseSceneRootTxtStem(norm);
     if (sceneStem !== undefined) {
       if (!sceneStems.has(sceneStem)) {
-        candidates.add(norm)
+        candidates.add(norm);
       }
     }
   }
 
-  return [...candidates].sort((a, b) => a.localeCompare(b))
+  return [...candidates].sort((a, b) => a.localeCompare(b));
 }
 
 function parseCharacterRootCardId(normalizedRelativePath: string): string | undefined {
-  const match = /^character\/([^/]+\.card)$/.exec(normalizedRelativePath)
-  const fileName = match?.[1]
+  const match = /^character\/([^/]+\.card)$/.exec(normalizedRelativePath);
+  const fileName = match?.[1];
 
-  if (!fileName?.endsWith(".card")) {
-    return undefined
+  if (!fileName?.endsWith('.card')) {
+    return undefined;
   }
 
   if (isIgnoredSampleCardFileName(fileName)) {
-    return undefined
+    return undefined;
   }
 
-  return fileName.slice(0, -".card".length)
+  return fileName.slice(0, -'.card'.length);
 }
 
 function parseBackgroundRootCardId(normalizedRelativePath: string): string | undefined {
-  const match = /^background\/([^/]+\.card)$/.exec(normalizedRelativePath)
-  const fileName = match?.[1]
+  const match = /^background\/([^/]+\.card)$/.exec(normalizedRelativePath);
+  const fileName = match?.[1];
 
-  if (!fileName?.endsWith(".card")) {
-    return undefined
+  if (!fileName?.endsWith('.card')) {
+    return undefined;
   }
 
   if (isIgnoredSampleCardFileName(fileName)) {
-    return undefined
+    return undefined;
   }
 
-  return fileName.slice(0, -".card".length)
+  return fileName.slice(0, -'.card'.length);
 }
 
 function parseSceneRootTxtStem(normalizedRelativePath: string): string | undefined {
-  const match = /^scene\/([^/]+\.txt)$/.exec(normalizedRelativePath)
-  const fileName = match?.[1]
+  const match = /^scene\/([^/]+\.txt)$/.exec(normalizedRelativePath);
+  const fileName = match?.[1];
 
-  if (!fileName?.endsWith(".txt")) {
-    return undefined
+  if (!fileName?.endsWith('.txt')) {
+    return undefined;
   }
 
   if (isHiddenSceneFileName(fileName)) {
-    return undefined
+    return undefined;
   }
 
-  const stem = fileName.slice(0, -".txt".length)
+  const stem = fileName.slice(0, -'.txt'.length);
 
   if (parseSceneStem(stem) === undefined) {
-    return undefined
+    return undefined;
   }
 
-  return stem
+  return stem;
 }

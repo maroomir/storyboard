@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 
 import { StoryboardLogger } from '../../core/logger';
-import { createAiProviderRegistry, type AiProviderRegistry } from '../../services/ai/providerRegistry';
+import {
+  createAiProviderRegistry,
+  type AiProviderRegistry,
+} from '../../services/ai/providerRegistry';
 import { createVscodeUsageLedgerFileSystem, UsageRecorder } from '../../services/ai/UsageRecorder';
 import { SecretStore } from '../../services/secrets/SecretStore';
 import { ConfigBridge } from '../../services/settings/ConfigBridge';
@@ -28,7 +31,8 @@ export class PlatformModule implements IApplicationModule {
     const logger = new StoryboardLogger();
     const secretStore = new SecretStore(context.secrets);
     const configBridge = new ConfigBridge({
-      getConfiguration: (): vscode.WorkspaceConfiguration => vscode.workspace.getConfiguration('storyboard'),
+      getConfiguration: (): vscode.WorkspaceConfiguration =>
+        vscode.workspace.getConfiguration('storyboard'),
       onDidChangeConfiguration: (listener): vscode.Disposable =>
         vscode.workspace.onDidChangeConfiguration(listener),
     });

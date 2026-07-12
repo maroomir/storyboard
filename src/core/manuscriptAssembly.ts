@@ -1,67 +1,67 @@
-import { flattenChapterPlan, type ChapterPlan, type FlatChapterScene } from "../shared/outline"
+import { flattenChapterPlan, type ChapterPlan, type FlatChapterScene } from '../shared/outline';
 
 export interface ManuscriptDraftEntry {
-  readonly stem: string
-  readonly body: string
+  readonly stem: string;
+  readonly body: string;
 }
 
 export interface AssembleManuscriptInput {
-  readonly plan: ChapterPlan
-  readonly projectName: string
-  readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>
+  readonly plan: ChapterPlan;
+  readonly projectName: string;
+  readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
 }
 
 export interface AssembledChapter {
-  readonly fileName: string
-  readonly actTitle: string
-  readonly chapterTitle: string
-  readonly markdown: string
+  readonly fileName: string;
+  readonly actTitle: string;
+  readonly chapterTitle: string;
+  readonly markdown: string;
 }
 
 export interface AssembledManuscript {
-  readonly chapters: AssembledChapter[]
-  readonly volumeMarkdown: string
-  readonly includedCount: number
-  readonly missingCount: number
-  readonly extraCount: number
+  readonly chapters: AssembledChapter[];
+  readonly volumeMarkdown: string;
+  readonly includedCount: number;
+  readonly missingCount: number;
+  readonly extraCount: number;
 }
 
 interface ChapterGroup {
-  readonly actTitle: string
-  readonly chapterTitle: string
-  readonly scenes: IndexedFlatScene[]
+  readonly actTitle: string;
+  readonly chapterTitle: string;
+  readonly scenes: IndexedFlatScene[];
 }
 
-const extraChapterTitle = "기타 (계획 외)"
+const extraChapterTitle = '기타 (계획 외)';
 
 export function assembleManuscript(input: AssembleManuscriptInput): AssembledManuscript {
-  const flatScenes = flattenChapterPlan(input.plan)
-  const groups = groupByChapter(flatScenes)
+  const flatScenes = flattenChapterPlan(input.plan);
+  const groups = groupByChapter(flatScenes);
 
-  let includedCount = 0
-  let missingCount = 0
-  const usedSlugs = new Set<string>()
+  let includedCount = 0;
+  let missingCount = 0;
+  const usedSlugs = new Set<string>();
 
   const chapters: AssembledChapter[] = groups.map((group, groupIndex) => {
     const sceneBlocks = group.scenes.map((flatScene, sceneIndexInGroup) => {
-      const order = flatScene.globalIndex + 1
-      const draft = input.draftsByOrder.get(order)
+      const order = flatScene.globalIndex + 1;
+      const draft = input.draftsByOrder.get(order);
 
       if (draft) {
-        includedCount += 1
-        return sceneBlock(flatScene.scene.title, draft.body, sceneIndexInGroup)
+        includedCount += 1;
+        return sceneBlock(flatScene.scene.title, draft.body, sceneIndexInGroup);
       }
 
-      missingCount += 1
-      return missingSceneBlock(flatScene.scene.title, sceneIndexInGroup)
-    })
+      missingCount += 1;
+      return missingSceneBlock(flatScene.scene.title, sceneIndexInGroup);
+    });
 
-    return buildChapter(group, groupIndex, sceneBlocks, usedSlugs)
-  })
+    return buildChapter(group, groupIndex, sceneBlocks, usedSlugs);
+  });
 
-  const extras = collectExtraDrafts(input.draftsByOrder, flatScenes.length)
+  const extras = collectExtraDrafts(input.draftsByOrder, flatScenes.length);
   if (extras.length > 0) {
-    chapters.push(buildExtraChapter(extras, groups.length, usedSlugs))
+    chapters.push(buildExtraChapter(extras, groups.length, usedSlugs));
   }
 
   return {
@@ -69,148 +69,151 @@ export function assembleManuscript(input: AssembleManuscriptInput): AssembledMan
     volumeMarkdown: buildVolume(input.projectName, chapters),
     includedCount,
     missingCount,
-    extraCount: extras.length
-  }
+    extraCount: extras.length,
+  };
 }
 
 interface IndexedFlatScene extends FlatChapterScene {
-  readonly globalIndex: number
+  readonly globalIndex: number;
 }
 
 function groupByChapter(flatScenes: readonly FlatChapterScene[]): ChapterGroup[] {
-  const groups: ChapterGroup[] = []
+  const groups: ChapterGroup[] = [];
 
   flatScenes.forEach((flatScene, globalIndex) => {
-    const last = groups.at(-1)
+    const last = groups.at(-1);
     const isSameChapter =
       last !== undefined &&
       last.scenes[0]?.actIndex === flatScene.actIndex &&
-      last.scenes[0]?.chapterIndex === flatScene.chapterIndex
+      last.scenes[0]?.chapterIndex === flatScene.chapterIndex;
 
-    const indexedScene: IndexedFlatScene = { ...flatScene, globalIndex }
+    const indexedScene: IndexedFlatScene = { ...flatScene, globalIndex };
 
     if (isSameChapter) {
-      last.scenes.push(indexedScene)
-      return
+      last.scenes.push(indexedScene);
+      return;
     }
 
     groups.push({
       actTitle: flatScene.actTitle,
       chapterTitle: flatScene.chapterTitle,
-      scenes: [indexedScene]
-    })
-  })
+      scenes: [indexedScene],
+    });
+  });
 
-  return groups
+  return groups;
 }
 
 function buildChapter(
   group: ChapterGroup,
   groupIndex: number,
   sceneBlocks: string[],
-  usedSlugs: Set<string>
+  usedSlugs: Set<string>,
 ): AssembledChapter {
-  const prefix = String(groupIndex + 1).padStart(2, "0")
-  const slug = reserveUniqueSlug(slugify(group.chapterTitle) ?? `chapter-${groupIndex + 1}`, usedSlugs)
-  const heading = `# ${group.chapterTitle}\n\n*${group.actTitle}*`
+  const prefix = String(groupIndex + 1).padStart(2, '0');
+  const slug = reserveUniqueSlug(
+    slugify(group.chapterTitle) ?? `chapter-${groupIndex + 1}`,
+    usedSlugs,
+  );
+  const heading = `# ${group.chapterTitle}\n\n*${group.actTitle}*`;
 
   return {
     fileName: `${prefix}-${slug}.md`,
     actTitle: group.actTitle,
     chapterTitle: group.chapterTitle,
-    markdown: `${[heading, ...sceneBlocks].join("\n\n")}\n`
-  }
+    markdown: `${[heading, ...sceneBlocks].join('\n\n')}\n`,
+  };
 }
 
 function buildExtraChapter(
   extras: readonly ManuscriptDraftEntry[],
   groupCount: number,
-  usedSlugs: Set<string>
+  usedSlugs: Set<string>,
 ): AssembledChapter {
-  const prefix = String(groupCount + 1).padStart(2, "0")
-  const slug = reserveUniqueSlug("extras", usedSlugs)
-  const blocks = extras.map((draft, index) => sceneBlock(draft.stem, draft.body, index))
+  const prefix = String(groupCount + 1).padStart(2, '0');
+  const slug = reserveUniqueSlug('extras', usedSlugs);
+  const blocks = extras.map((draft, index) => sceneBlock(draft.stem, draft.body, index));
 
   return {
     fileName: `${prefix}-${slug}.md`,
     actTitle: extraChapterTitle,
     chapterTitle: extraChapterTitle,
-    markdown: `${[`# ${extraChapterTitle}`, ...blocks].join("\n\n")}\n`
-  }
+    markdown: `${[`# ${extraChapterTitle}`, ...blocks].join('\n\n')}\n`,
+  };
 }
 
 function buildVolume(projectName: string, chapters: readonly AssembledChapter[]): string {
-  const sections: string[] = [`# ${projectName}`]
-  let lastActTitle: string | undefined
+  const sections: string[] = [`# ${projectName}`];
+  let lastActTitle: string | undefined;
 
   for (const chapter of chapters) {
     if (chapter.actTitle !== lastActTitle) {
-      sections.push(`## ${chapter.actTitle}`)
-      lastActTitle = chapter.actTitle
+      sections.push(`## ${chapter.actTitle}`);
+      lastActTitle = chapter.actTitle;
     }
 
-    sections.push(demoteHeadings(chapter.markdown.trimEnd()))
+    sections.push(demoteHeadings(chapter.markdown.trimEnd()));
   }
 
-  return `${sections.join("\n\n")}\n`
+  return `${sections.join('\n\n')}\n`;
 }
 
 function demoteHeadings(chapterMarkdown: string): string {
   return chapterMarkdown
-    .split("\n")
+    .split('\n')
     .map((line) => {
-      if (line.startsWith("## ")) {
-        return `#### ${line.slice(3)}`
+      if (line.startsWith('## ')) {
+        return `#### ${line.slice(3)}`;
       }
-      if (line.startsWith("# ")) {
-        return `### ${line.slice(2)}`
+      if (line.startsWith('# ')) {
+        return `### ${line.slice(2)}`;
       }
-      return line
+      return line;
     })
-    .join("\n")
+    .join('\n');
 }
 
 function sceneBlock(title: string, body: string, sceneIndexInGroup: number): string {
-  const heading = `## ${title.trim().length > 0 ? title : `장면 ${sceneIndexInGroup + 1}`}`
-  return `${heading}\n\n${body.trim()}`
+  const heading = `## ${title.trim().length > 0 ? title : `장면 ${sceneIndexInGroup + 1}`}`;
+  return `${heading}\n\n${body.trim()}`;
 }
 
 function missingSceneBlock(title: string, sceneIndexInGroup: number): string {
-  const label = title.trim().length > 0 ? title : `장면 ${sceneIndexInGroup + 1}`
-  return `## ${label}\n\n> (초안 없음: ${label})`
+  const label = title.trim().length > 0 ? title : `장면 ${sceneIndexInGroup + 1}`;
+  return `## ${label}\n\n> (초안 없음: ${label})`;
 }
 
 function collectExtraDrafts(
   draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>,
-  plannedSceneCount: number
+  plannedSceneCount: number,
 ): ManuscriptDraftEntry[] {
   return [...draftsByOrder.entries()]
     .filter(([order]) => order > plannedSceneCount)
     .sort(([a], [b]) => a - b)
-    .map(([, draft]) => draft)
+    .map(([, draft]) => draft);
 }
 
 function slugify(value: string): string | undefined {
   const slug = value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
-  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : undefined
+  return /^[a-z0-9][a-z0-9-]*$/.test(slug) ? slug : undefined;
 }
 
 function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
   if (!usedSlugs.has(slug)) {
-    usedSlugs.add(slug)
-    return slug
+    usedSlugs.add(slug);
+    return slug;
   }
 
-  let suffix = 2
+  let suffix = 2;
   while (usedSlugs.has(`${slug}-${suffix}`)) {
-    suffix += 1
+    suffix += 1;
   }
 
-  const uniqueSlug = `${slug}-${suffix}`
-  usedSlugs.add(uniqueSlug)
-  return uniqueSlug
+  const uniqueSlug = `${slug}-${suffix}`;
+  usedSlugs.add(uniqueSlug);
+  return uniqueSlug;
 }

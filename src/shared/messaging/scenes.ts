@@ -1,8 +1,8 @@
-import { z } from "zod"
+import { z } from 'zod';
 
-import { uriStringSchema } from "./atoms"
+import { uriStringSchema } from './atoms';
 
-export const scenesListRequestPayloadSchema = z.object({})
+export const scenesListRequestPayloadSchema = z.object({});
 
 export const sceneListItemSchema = z.object({
   stem: z.string().trim().min(1),
@@ -11,28 +11,28 @@ export const sceneListItemSchema = z.object({
   title: z.string().trim().min(1).optional(),
   sceneUri: uriStringSchema,
   draftUri: uriStringSchema.optional(),
-  status: z.enum(["ready", "stale", "missing"]),
+  status: z.enum(['ready', 'stale', 'missing']),
   sceneMtime: z.number(),
   draftMtime: z.number().optional(),
-  outlineStale: z.boolean().optional()
-})
+  outlineStale: z.boolean().optional(),
+});
 
 export const scenesListResponsePayloadSchema = z.object({
-  scenes: z.array(sceneListItemSchema)
-})
+  scenes: z.array(sceneListItemSchema),
+});
 
 export const scenesOpenSceneRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const scenesOpenDraftRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const scenesGenerateDraftRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
-export const scenesOpenSceneResponsePayloadSchema = z.object({})
-export const scenesOpenDraftResponsePayloadSchema = z.object({})
-export const scenesGenerateDraftResponsePayloadSchema = z.object({})
+export const scenesOpenSceneResponsePayloadSchema = z.object({});
+export const scenesOpenDraftResponsePayloadSchema = z.object({});
+export const scenesGenerateDraftResponsePayloadSchema = z.object({});

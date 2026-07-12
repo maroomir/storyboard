@@ -1,36 +1,36 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import { readCardFile, type CardFileSystem } from "../files/card"
-import { type OutlineCharacterBrief } from "../shared/outline"
+import { readCardFile, type CardFileSystem } from '../files/card';
+import { type OutlineCharacterBrief } from '../shared/outline';
 
 export async function listCharacterBriefs(
   characterDirectory: vscode.Uri,
-  fileSystem: CardFileSystem
+  fileSystem: CardFileSystem,
 ): Promise<OutlineCharacterBrief[]> {
-  let entries: [string, vscode.FileType][]
+  let entries: [string, vscode.FileType][];
   try {
-    entries = await vscode.workspace.fs.readDirectory(characterDirectory)
+    entries = await vscode.workspace.fs.readDirectory(characterDirectory);
   } catch {
-    return []
+    return [];
   }
 
-  const briefs: OutlineCharacterBrief[] = []
+  const briefs: OutlineCharacterBrief[] = [];
 
   for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith(".card") || name === ".sample.card") {
-      continue
+    if (fileType !== vscode.FileType.File || !name.endsWith('.card') || name === '.sample.card') {
+      continue;
     }
 
-    const uri = vscode.Uri.joinPath(characterDirectory, name)
+    const uri = vscode.Uri.joinPath(characterDirectory, name);
     try {
-      const card = await readCardFile(uri, fileSystem)
-      if (card.type === "character") {
-        briefs.push({ id: card.id, name: card.name, role: card.role })
+      const card = await readCardFile(uri, fileSystem);
+      if (card.type === 'character') {
+        briefs.push({ id: card.id, name: card.name, role: card.role });
       }
     } catch {
-      continue
+      continue;
     }
   }
 
-  return briefs
+  return briefs;
 }

@@ -1,38 +1,38 @@
-import { z } from "zod"
+import { z } from 'zod';
 
-export const novelRunStateVersion = "1.0.0"
+export const novelRunStateVersion = '1.0.0';
 
-export const novelRunModes = ["auto", "outline-approval", "chapter-approval"] as const
-export type NovelRunMode = (typeof novelRunModes)[number]
+export const novelRunModes = ['auto', 'outline-approval', 'chapter-approval'] as const;
+export type NovelRunMode = (typeof novelRunModes)[number];
 
 export const novelStageNames = [
-  "outline",
-  "seeds",
-  "chapters",
-  "assemble",
-  "review",
-  "summaries"
-] as const
-export type NovelStageName = (typeof novelStageNames)[number]
+  'outline',
+  'seeds',
+  'chapters',
+  'assemble',
+  'review',
+  'summaries',
+] as const;
+export type NovelStageName = (typeof novelStageNames)[number];
 
-export const novelRunStatuses = ["running", "paused", "done", "failed"] as const
-export type NovelRunStatus = (typeof novelRunStatuses)[number]
+export const novelRunStatuses = ['running', 'paused', 'done', 'failed'] as const;
+export type NovelRunStatus = (typeof novelRunStatuses)[number];
 
 export interface NovelRunState {
-  readonly version: typeof novelRunStateVersion
-  readonly runId: string
-  readonly startedAt: string
-  readonly updatedAt: string
-  readonly runMode: NovelRunMode
-  readonly status: NovelRunStatus
-  readonly completedStages: NovelStageName[]
-  readonly nextChapterIndex: number
-  readonly lastError?: string
+  readonly version: typeof novelRunStateVersion;
+  readonly runId: string;
+  readonly startedAt: string;
+  readonly updatedAt: string;
+  readonly runMode: NovelRunMode;
+  readonly status: NovelRunStatus;
+  readonly completedStages: NovelStageName[];
+  readonly nextChapterIndex: number;
+  readonly lastError?: string;
 }
 
 export interface NovelRunStateFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>
+  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
 }
 
 export const novelRunStateSchema = z.object({
@@ -44,29 +44,29 @@ export const novelRunStateSchema = z.object({
   status: z.enum(novelRunStatuses),
   completedStages: z.array(z.enum(novelStageNames)).default([]),
   nextChapterIndex: z.number().int().nonnegative().default(0),
-  lastError: z.string().optional()
-})
+  lastError: z.string().optional(),
+});
 
 export function parseNovelRunState(rawState: string): NovelRunState {
-  return novelRunStateSchema.parse(JSON.parse(rawState))
+  return novelRunStateSchema.parse(JSON.parse(rawState));
 }
 
 export function serializeNovelRunState(state: NovelRunState): string {
-  return `${JSON.stringify(novelRunStateSchema.parse(state), null, 2)}\n`
+  return `${JSON.stringify(novelRunStateSchema.parse(state), null, 2)}\n`;
 }
 
 export async function readNovelRunState(
   uri: unknown,
-  fileSystem: NovelRunStateFileSystem
+  fileSystem: NovelRunStateFileSystem,
 ): Promise<NovelRunState> {
-  const bytes = await fileSystem.readFile(uri)
-  return parseNovelRunState(new TextDecoder().decode(bytes))
+  const bytes = await fileSystem.readFile(uri);
+  return parseNovelRunState(new TextDecoder().decode(bytes));
 }
 
 export async function writeNovelRunState(
   uri: unknown,
   fileSystem: NovelRunStateFileSystem,
-  state: NovelRunState
+  state: NovelRunState,
 ): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNovelRunState(state)))
+  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNovelRunState(state)));
 }

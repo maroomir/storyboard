@@ -1,67 +1,67 @@
-import { z } from "zod"
+import { z } from 'zod';
 
-import { cardSchema, cardTypes, characterRoles } from "../card"
-import { cardCollectProposalSchema } from "../cardCollect"
-import { uriStringSchema } from "./atoms"
+import { cardSchema, cardTypes, characterRoles } from '../card';
+import { cardCollectProposalSchema } from '../cardCollect';
+import { uriStringSchema } from './atoms';
 
 export const cardsListRequestPayloadSchema = z.object({
-  type: z.enum(cardTypes).optional()
-})
+  type: z.enum(cardTypes).optional(),
+});
 
 export const cardsReadRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardsWriteRequestPayloadSchema = z.object({
   uri: uriStringSchema,
   card: cardSchema,
-  rawText: z.string().optional()
-})
+  rawText: z.string().optional(),
+});
 
 export const cardsWriteRawRequestPayloadSchema = z.object({
   uri: uriStringSchema,
-  rawText: z.string()
-})
+  rawText: z.string(),
+});
 
 export const cardsCreatePlaceholderRequestPayloadSchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
-  name: z.string().trim().min(1)
-})
+  name: z.string().trim().min(1),
+});
 
 export const cardsResolveImageUriRequestPayloadSchema = z.object({
   cardUri: uriStringSchema,
-  relativePath: z.string().trim().min(1)
-})
+  relativePath: z.string().trim().min(1),
+});
 
 export const cardsCollectRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardsApplyCollectRequestPayloadSchema = z.object({
   uri: uriStringSchema,
-  accepted: z.array(cardCollectProposalSchema)
-})
+  accepted: z.array(cardCollectProposalSchema),
+});
 
 export const cardsPreviewCollectRequestPayloadSchema = z.object({
   uri: uriStringSchema,
-  accepted: z.array(cardCollectProposalSchema)
-})
+  accepted: z.array(cardCollectProposalSchema),
+});
 
 export const cardsOpenRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardsDeleteRequestPayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardSummarySchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const sidebarCardSummarySchema = z.object({
   type: z.enum(cardTypes),
@@ -70,54 +70,54 @@ export const sidebarCardSummarySchema = z.object({
   uri: uriStringSchema,
   description: z.string().optional(),
   error: z.string().optional(),
-  role: z.enum(characterRoles).optional()
-})
+  role: z.enum(characterRoles).optional(),
+});
 
-export type SidebarCardSummary = z.infer<typeof sidebarCardSummarySchema>
+export type SidebarCardSummary = z.infer<typeof sidebarCardSummarySchema>;
 
 export const sidebarCardsInitialDataSchema = z.object({
-  type: z.enum(["character", "background"] as const),
+  type: z.enum(['character', 'background'] as const),
   title: z.string().trim().min(1),
   cards: z.array(sidebarCardSummarySchema),
   isStoryboardProject: z.boolean(),
-  usage: z.unknown()
-})
+  usage: z.unknown(),
+});
 
 export const cardsListResponsePayloadSchema = z.object({
-  cards: z.array(cardSummarySchema)
-})
+  cards: z.array(cardSummarySchema),
+});
 
 export const cardsReadResponsePayloadSchema = z.object({
-  card: cardSchema
-})
+  card: cardSchema,
+});
 
 export const cardsWriteResponsePayloadSchema = z.object({
-  card: cardSchema
-})
+  card: cardSchema,
+});
 
 export const cardsWriteRawResponsePayloadSchema = z.object({
   card: cardSchema,
-  rawText: z.string()
-})
+  rawText: z.string(),
+});
 
 export const cardsCreatePlaceholderResponsePayloadSchema = z.object({
   card: cardSchema,
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardsResolveImageUriResponsePayloadSchema = z.object({
-  uri: uriStringSchema
-})
+  uri: uriStringSchema,
+});
 
 export const cardsCollectResponsePayloadSchema = z.object({
-  proposals: z.array(cardCollectProposalSchema)
-})
+  proposals: z.array(cardCollectProposalSchema),
+});
 
 export const cardsApplyCollectResponsePayloadSchema = z.object({
-  card: cardSchema
-})
+  card: cardSchema,
+});
 
-export const cardsPreviewCollectResponsePayloadSchema = z.object({})
+export const cardsPreviewCollectResponsePayloadSchema = z.object({});
 
-export const cardsOpenResponsePayloadSchema = z.object({})
-export const cardsDeleteResponsePayloadSchema = z.object({})
+export const cardsOpenResponsePayloadSchema = z.object({});
+export const cardsDeleteResponsePayloadSchema = z.object({});

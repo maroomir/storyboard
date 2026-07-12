@@ -1,11 +1,11 @@
-export type PromptVariantId = "generic" | "xs" | "rich"
+export type PromptVariantId = 'generic' | 'xs' | 'rich';
 
 export interface PromptArtifact {
-  readonly system: string
-  readonly user: string
+  readonly system: string;
+  readonly user: string;
 }
 
 export interface PromptConfig {
-  readonly temperature: number
-  readonly maxTokens: number
+  readonly temperature: number;
+  readonly maxTokens: number;
 }

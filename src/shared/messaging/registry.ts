@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from 'zod';
 
 import {
   aiGenerateRequestPayloadSchema,
@@ -8,8 +8,8 @@ import {
   aiProvidersCheckConnectionRequestPayloadSchema,
   aiProvidersCheckConnectionResponsePayloadSchema,
   aiProvidersListRequestPayloadSchema,
-  aiProvidersListResponsePayloadSchema
-} from "./ai"
+  aiProvidersListResponsePayloadSchema,
+} from './ai';
 import {
   cardsApplyCollectRequestPayloadSchema,
   cardsApplyCollectResponsePayloadSchema,
@@ -32,18 +32,15 @@ import {
   cardsWriteRawRequestPayloadSchema,
   cardsWriteRawResponsePayloadSchema,
   cardsWriteRequestPayloadSchema,
-  cardsWriteResponsePayloadSchema
-} from "./cards"
+  cardsWriteResponsePayloadSchema,
+} from './cards';
 import {
   projectReadContractRequestPayloadSchema,
   projectReadContractResponsePayloadSchema,
   projectUpdateContractRequestPayloadSchema,
-  projectUpdateContractResponsePayloadSchema
-} from "./project"
-import {
-  relationsListRequestPayloadSchema,
-  relationsListResponsePayloadSchema
-} from "./relations"
+  projectUpdateContractResponsePayloadSchema,
+} from './project';
+import { relationsListRequestPayloadSchema, relationsListResponsePayloadSchema } from './relations';
 import {
   scenesGenerateDraftRequestPayloadSchema,
   scenesGenerateDraftResponsePayloadSchema,
@@ -52,14 +49,14 @@ import {
   scenesOpenDraftRequestPayloadSchema,
   scenesOpenDraftResponsePayloadSchema,
   scenesOpenSceneRequestPayloadSchema,
-  scenesOpenSceneResponsePayloadSchema
-} from "./scenes"
+  scenesOpenSceneResponsePayloadSchema,
+} from './scenes';
 import {
   secretsDeleteApiKeyRequestPayloadSchema,
   secretsDeleteApiKeyResponsePayloadSchema,
   secretsWriteApiKeyRequestPayloadSchema,
-  secretsWriteApiKeyResponsePayloadSchema
-} from "./secrets"
+  secretsWriteApiKeyResponsePayloadSchema,
+} from './secrets';
 import {
   settingsMutationOkResponsePayloadSchema,
   settingsReadRequestPayloadSchema,
@@ -68,94 +65,91 @@ import {
   settingsUpdateProviderBaseUrlRequestPayloadSchema,
   settingsUpdateProviderCommandRequestPayloadSchema,
   settingsUpdateProviderModelRequestPayloadSchema,
-  settingsUpdateTaskAiConfigRequestPayloadSchema
-} from "./settings"
+  settingsUpdateTaskAiConfigRequestPayloadSchema,
+} from './settings';
 import {
   studioRunActionRequestPayloadSchema,
-  studioRunActionResponsePayloadSchema
-} from "./studio"
-import {
-  usageReadRequestPayloadSchema,
-  usageReadResponsePayloadSchema
-} from "./usage"
+  studioRunActionResponsePayloadSchema,
+} from './studio';
+import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from './usage';
 
 export const storyboardRequestPayloadSchemas = {
-  "cards.list": cardsListRequestPayloadSchema,
-  "cards.read": cardsReadRequestPayloadSchema,
-  "cards.write": cardsWriteRequestPayloadSchema,
-  "cards.writeRaw": cardsWriteRawRequestPayloadSchema,
-  "cards.createPlaceholder": cardsCreatePlaceholderRequestPayloadSchema,
-  "cards.resolveImageUri": cardsResolveImageUriRequestPayloadSchema,
-  "cards.collect": cardsCollectRequestPayloadSchema,
-  "cards.applyCollect": cardsApplyCollectRequestPayloadSchema,
-  "cards.previewCollect": cardsPreviewCollectRequestPayloadSchema,
-  "cards.open": cardsOpenRequestPayloadSchema,
-  "cards.delete": cardsDeleteRequestPayloadSchema,
-  "scenes.list": scenesListRequestPayloadSchema,
-  "scenes.openScene": scenesOpenSceneRequestPayloadSchema,
-  "scenes.openDraft": scenesOpenDraftRequestPayloadSchema,
-  "scenes.generateDraft": scenesGenerateDraftRequestPayloadSchema,
-  "relations.list": relationsListRequestPayloadSchema,
-  "ai.providers.list": aiProvidersListRequestPayloadSchema,
-  "ai.providers.checkConnection": aiProvidersCheckConnectionRequestPayloadSchema,
-  "ai.generate": aiGenerateRequestPayloadSchema,
-  "ai.generateStream": aiGenerateStreamRequestPayloadSchema,
-  "settings.read": settingsReadRequestPayloadSchema,
-  "settings.updateDefaultProvider": settingsUpdateDefaultProviderRequestPayloadSchema,
-  "settings.updateProviderModel": settingsUpdateProviderModelRequestPayloadSchema,
-  "settings.updateProviderBaseUrl": settingsUpdateProviderBaseUrlRequestPayloadSchema,
-  "settings.updateProviderCommand": settingsUpdateProviderCommandRequestPayloadSchema,
-  "settings.updateTaskAiConfig": settingsUpdateTaskAiConfigRequestPayloadSchema,
-  "secrets.writeApiKey": secretsWriteApiKeyRequestPayloadSchema,
-  "secrets.deleteApiKey": secretsDeleteApiKeyRequestPayloadSchema,
-  "project.readContract": projectReadContractRequestPayloadSchema,
-  "project.updateContract": projectUpdateContractRequestPayloadSchema,
-  "studio.runAction": studioRunActionRequestPayloadSchema,
-  "usage.read": usageReadRequestPayloadSchema
-} as const
+  'cards.list': cardsListRequestPayloadSchema,
+  'cards.read': cardsReadRequestPayloadSchema,
+  'cards.write': cardsWriteRequestPayloadSchema,
+  'cards.writeRaw': cardsWriteRawRequestPayloadSchema,
+  'cards.createPlaceholder': cardsCreatePlaceholderRequestPayloadSchema,
+  'cards.resolveImageUri': cardsResolveImageUriRequestPayloadSchema,
+  'cards.collect': cardsCollectRequestPayloadSchema,
+  'cards.applyCollect': cardsApplyCollectRequestPayloadSchema,
+  'cards.previewCollect': cardsPreviewCollectRequestPayloadSchema,
+  'cards.open': cardsOpenRequestPayloadSchema,
+  'cards.delete': cardsDeleteRequestPayloadSchema,
+  'scenes.list': scenesListRequestPayloadSchema,
+  'scenes.openScene': scenesOpenSceneRequestPayloadSchema,
+  'scenes.openDraft': scenesOpenDraftRequestPayloadSchema,
+  'scenes.generateDraft': scenesGenerateDraftRequestPayloadSchema,
+  'relations.list': relationsListRequestPayloadSchema,
+  'ai.providers.list': aiProvidersListRequestPayloadSchema,
+  'ai.providers.checkConnection': aiProvidersCheckConnectionRequestPayloadSchema,
+  'ai.generate': aiGenerateRequestPayloadSchema,
+  'ai.generateStream': aiGenerateStreamRequestPayloadSchema,
+  'settings.read': settingsReadRequestPayloadSchema,
+  'settings.updateDefaultProvider': settingsUpdateDefaultProviderRequestPayloadSchema,
+  'settings.updateProviderModel': settingsUpdateProviderModelRequestPayloadSchema,
+  'settings.updateProviderBaseUrl': settingsUpdateProviderBaseUrlRequestPayloadSchema,
+  'settings.updateProviderCommand': settingsUpdateProviderCommandRequestPayloadSchema,
+  'settings.updateTaskAiConfig': settingsUpdateTaskAiConfigRequestPayloadSchema,
+  'secrets.writeApiKey': secretsWriteApiKeyRequestPayloadSchema,
+  'secrets.deleteApiKey': secretsDeleteApiKeyRequestPayloadSchema,
+  'project.readContract': projectReadContractRequestPayloadSchema,
+  'project.updateContract': projectUpdateContractRequestPayloadSchema,
+  'studio.runAction': studioRunActionRequestPayloadSchema,
+  'usage.read': usageReadRequestPayloadSchema,
+} as const;
 
 export const storyboardResponsePayloadSchemas = {
-  "cards.list": cardsListResponsePayloadSchema,
-  "cards.read": cardsReadResponsePayloadSchema,
-  "cards.write": cardsWriteResponsePayloadSchema,
-  "cards.writeRaw": cardsWriteRawResponsePayloadSchema,
-  "cards.createPlaceholder": cardsCreatePlaceholderResponsePayloadSchema,
-  "cards.resolveImageUri": cardsResolveImageUriResponsePayloadSchema,
-  "cards.collect": cardsCollectResponsePayloadSchema,
-  "cards.applyCollect": cardsApplyCollectResponsePayloadSchema,
-  "cards.previewCollect": cardsPreviewCollectResponsePayloadSchema,
-  "cards.open": cardsOpenResponsePayloadSchema,
-  "cards.delete": cardsDeleteResponsePayloadSchema,
-  "scenes.list": scenesListResponsePayloadSchema,
-  "scenes.openScene": scenesOpenSceneResponsePayloadSchema,
-  "scenes.openDraft": scenesOpenDraftResponsePayloadSchema,
-  "scenes.generateDraft": scenesGenerateDraftResponsePayloadSchema,
-  "relations.list": relationsListResponsePayloadSchema,
-  "ai.providers.list": aiProvidersListResponsePayloadSchema,
-  "ai.providers.checkConnection": aiProvidersCheckConnectionResponsePayloadSchema,
-  "ai.generate": aiGenerateResponsePayloadSchema,
-  "ai.generateStream": aiGenerateStreamResponsePayloadSchema,
-  "settings.read": settingsReadResponsePayloadSchema,
-  "settings.updateDefaultProvider": settingsMutationOkResponsePayloadSchema,
-  "settings.updateProviderModel": settingsMutationOkResponsePayloadSchema,
-  "settings.updateProviderBaseUrl": settingsMutationOkResponsePayloadSchema,
-  "settings.updateProviderCommand": settingsMutationOkResponsePayloadSchema,
-  "settings.updateTaskAiConfig": settingsMutationOkResponsePayloadSchema,
-  "secrets.writeApiKey": secretsWriteApiKeyResponsePayloadSchema,
-  "secrets.deleteApiKey": secretsDeleteApiKeyResponsePayloadSchema,
-  "project.readContract": projectReadContractResponsePayloadSchema,
-  "project.updateContract": projectUpdateContractResponsePayloadSchema,
-  "studio.runAction": studioRunActionResponsePayloadSchema,
-  "usage.read": usageReadResponsePayloadSchema
-} as const
+  'cards.list': cardsListResponsePayloadSchema,
+  'cards.read': cardsReadResponsePayloadSchema,
+  'cards.write': cardsWriteResponsePayloadSchema,
+  'cards.writeRaw': cardsWriteRawResponsePayloadSchema,
+  'cards.createPlaceholder': cardsCreatePlaceholderResponsePayloadSchema,
+  'cards.resolveImageUri': cardsResolveImageUriResponsePayloadSchema,
+  'cards.collect': cardsCollectResponsePayloadSchema,
+  'cards.applyCollect': cardsApplyCollectResponsePayloadSchema,
+  'cards.previewCollect': cardsPreviewCollectResponsePayloadSchema,
+  'cards.open': cardsOpenResponsePayloadSchema,
+  'cards.delete': cardsDeleteResponsePayloadSchema,
+  'scenes.list': scenesListResponsePayloadSchema,
+  'scenes.openScene': scenesOpenSceneResponsePayloadSchema,
+  'scenes.openDraft': scenesOpenDraftResponsePayloadSchema,
+  'scenes.generateDraft': scenesGenerateDraftResponsePayloadSchema,
+  'relations.list': relationsListResponsePayloadSchema,
+  'ai.providers.list': aiProvidersListResponsePayloadSchema,
+  'ai.providers.checkConnection': aiProvidersCheckConnectionResponsePayloadSchema,
+  'ai.generate': aiGenerateResponsePayloadSchema,
+  'ai.generateStream': aiGenerateStreamResponsePayloadSchema,
+  'settings.read': settingsReadResponsePayloadSchema,
+  'settings.updateDefaultProvider': settingsMutationOkResponsePayloadSchema,
+  'settings.updateProviderModel': settingsMutationOkResponsePayloadSchema,
+  'settings.updateProviderBaseUrl': settingsMutationOkResponsePayloadSchema,
+  'settings.updateProviderCommand': settingsMutationOkResponsePayloadSchema,
+  'settings.updateTaskAiConfig': settingsMutationOkResponsePayloadSchema,
+  'secrets.writeApiKey': secretsWriteApiKeyResponsePayloadSchema,
+  'secrets.deleteApiKey': secretsDeleteApiKeyResponsePayloadSchema,
+  'project.readContract': projectReadContractResponsePayloadSchema,
+  'project.updateContract': projectUpdateContractResponsePayloadSchema,
+  'studio.runAction': studioRunActionResponsePayloadSchema,
+  'usage.read': usageReadResponsePayloadSchema,
+} as const;
 
-export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas
-export type StoryboardResponseMethod = keyof typeof storyboardResponsePayloadSchemas
+export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas;
+export type StoryboardResponseMethod = keyof typeof storyboardResponsePayloadSchemas;
 
 export type StoryboardRequestPayload<M extends StoryboardRequestMethod> = z.infer<
   (typeof storyboardRequestPayloadSchemas)[M]
->
+>;
 
 export type StoryboardResponsePayload<M extends StoryboardResponseMethod> = z.infer<
   (typeof storyboardResponsePayloadSchemas)[M]
->
+>;

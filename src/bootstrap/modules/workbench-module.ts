@@ -17,7 +17,11 @@ export class WorkbenchModule implements IApplicationModule {
   public initialize(context: vscode.ExtensionContext): void {
     const { aiProviderRegistry, configBridge, secretStore } = this.platform;
     const relationGraphPanel = new RelationGraphProvider({ aiProviderRegistry });
-    const settingsPanel = new SettingsPanelProvider({ aiProviderRegistry, secretStore, configBridge });
+    const settingsPanel = new SettingsPanelProvider({
+      aiProviderRegistry,
+      secretStore,
+      configBridge,
+    });
 
     this.disposables.push(
       registerSidebarStudioProvider(context),

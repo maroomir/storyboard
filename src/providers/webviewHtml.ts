@@ -1,17 +1,18 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
 export interface WebviewHtmlOptions {
-  readonly extensionUri: vscode.Uri
-  readonly title: string
-  readonly view: string
-  readonly initialData?: unknown
+  readonly extensionUri: vscode.Uri;
+  readonly title: string;
+  readonly view: string;
+  readonly initialData?: unknown;
 }
 
 export function createWebviewHtml(webview: vscode.Webview, options: WebviewHtmlOptions): string {
-  const nonce = createNonce()
-  const scriptUri = getWebviewAssetUri(webview, options.extensionUri, "index.js")
-  const styleUri = getWebviewAssetUri(webview, options.extensionUri, "index.css")
-  const initialDataScript = options.initialData === undefined ? "undefined" : JSON.stringify(options.initialData)
+  const nonce = createNonce();
+  const scriptUri = getWebviewAssetUri(webview, options.extensionUri, 'index.js');
+  const styleUri = getWebviewAssetUri(webview, options.extensionUri, 'index.css');
+  const initialDataScript =
+    options.initialData === undefined ? 'undefined' : JSON.stringify(options.initialData);
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -30,38 +31,40 @@ export function createWebviewHtml(webview: vscode.Webview, options: WebviewHtmlO
     </script>
     <script nonce="${nonce}" type="module" src="${scriptUri}"></script>
   </body>
-</html>`
+</html>`;
 }
 
 export function getWebviewDistRoot(extensionUri: vscode.Uri): vscode.Uri {
-  return vscode.Uri.joinPath(extensionUri, "out", "webview-ui")
+  return vscode.Uri.joinPath(extensionUri, 'out', 'webview-ui');
 }
 
 function getWebviewAssetUri(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
-  filename: string
+  filename: string,
 ): vscode.Uri {
-  return webview.asWebviewUri(vscode.Uri.joinPath(getWebviewDistRoot(extensionUri), "assets", filename))
+  return webview.asWebviewUri(
+    vscode.Uri.joinPath(getWebviewDistRoot(extensionUri), 'assets', filename),
+  );
 }
 
 function createNonce(): string {
-  const possibleCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-  const nonceLength = 32
-  let nonce = ""
+  const possibleCharacters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const nonceLength = 32;
+  let nonce = '';
 
   for (let index = 0; index < nonceLength; index += 1) {
-    nonce += possibleCharacters.charAt(Math.floor(Math.random() * possibleCharacters.length))
+    nonce += possibleCharacters.charAt(Math.floor(Math.random() * possibleCharacters.length));
   }
 
-  return nonce
+  return nonce;
 }
 
 function escapeHtml(value: string): string {
   return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;")
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }

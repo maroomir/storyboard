@@ -1,16 +1,16 @@
-import type { BackgroundCard, LocationBackgroundCard } from "../shared/card"
+import type { BackgroundCard, LocationBackgroundCard } from '../shared/card';
 
-export type Background = BackgroundCard
+export type Background = BackgroundCard;
 
 export function createEmptyBackground(id: string, name: string): LocationBackgroundCard {
   return {
-    type: "location",
+    type: 'location',
     id,
     name,
-    locationKind: "place",
+    locationKind: 'place',
     characterIds: [],
     tags: [],
     description: [],
-    senses: []
-  }
+    senses: [],
+  };
 }

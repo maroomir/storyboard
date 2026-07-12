@@ -1,18 +1,18 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import { loadRelationListCharacters } from "../core/relationGraphData"
-import { resolveStoryboardWorkspaceRoot } from "../core/workspace"
-import { createWebviewBridge, type StoryboardRpcHandlers } from "../messaging/bridge"
-import { createAiRpcHandlers } from "../services/ai/rpcHandlers"
-import { type AiProviderRegistry } from "../services/ai/providerRegistry"
-import type { RelationListCharacter, StoryboardResponsePayload } from "../shared/messaging"
-import { createWebviewHtml, getWebviewDistRoot } from "./webviewHtml"
+import { loadRelationListCharacters } from '../core/relationGraphData';
+import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createAiRpcHandlers } from '../services/ai/rpcHandlers';
+import { type AiProviderRegistry } from '../services/ai/providerRegistry';
+import type { RelationListCharacter, StoryboardResponsePayload } from '../shared/messaging';
+import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
-const cardEditorViewType = "storyboard.card"
-const panelViewType = "storyboard.relationGraph"
+const cardEditorViewType = 'storyboard.card';
+const panelViewType = 'storyboard.relationGraph';
 
 export interface RelationGraphPanelDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry
+  readonly aiProviderRegistry: AiProviderRegistry;
 }
 
 export interface IRelationGraphPanel extends vscode.Disposable {
@@ -20,9 +20,9 @@ export interface IRelationGraphPanel extends vscode.Disposable {
 }
 
 interface RelationGraphInitialData {
-  readonly title: string
-  readonly characters: readonly RelationListCharacter[]
-  readonly isStoryboardProject: boolean
+  readonly title: string;
+  readonly characters: readonly RelationListCharacter[];
+  readonly isStoryboardProject: boolean;
 }
 
 export class RelationGraphProvider implements IRelationGraphPanel {
@@ -50,37 +50,44 @@ export class RelationGraphProvider implements IRelationGraphPanel {
   private async open(extensionUri: vscode.Uri): Promise<void> {
     const initialData = await createRelationGraphInitialData();
 
-  const panel = vscode.window.createWebviewPanel(panelViewType, "Character Relations", vscode.ViewColumn.Active, {
-    enableScripts: true,
-    retainContextWhenHidden: true,
-    localResourceRoots: [getWebviewDistRoot(extensionUri)]
-  })
+    const panel = vscode.window.createWebviewPanel(
+      panelViewType,
+      'Character Relations',
+      vscode.ViewColumn.Active,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [getWebviewDistRoot(extensionUri)],
+      },
+    );
 
     this.panel = panel;
 
-  panel.webview.html = createWebviewHtml(panel.webview, {
-    extensionUri,
-    title: "Character Relations",
-    view: "relation-graph",
-    initialData
-  })
+    panel.webview.html = createWebviewHtml(panel.webview, {
+      extensionUri,
+      title: 'Character Relations',
+      view: 'relation-graph',
+      initialData,
+    });
 
     this.bridge = createWebviewBridge(panel.webview, this.createHandlers());
 
-  const storyboardRoot = await resolveStoryboardWorkspaceRoot()
-  if (storyboardRoot) {
-    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(storyboardRoot, "character/*.card"))
-    const scheduleRefresh = (): void => {
-      void this.refreshWebview()
-    }
+    const storyboardRoot = await resolveStoryboardWorkspaceRoot();
+    if (storyboardRoot) {
+      const watcher = vscode.workspace.createFileSystemWatcher(
+        new vscode.RelativePattern(storyboardRoot, 'character/*.card'),
+      );
+      const scheduleRefresh = (): void => {
+        void this.refreshWebview();
+      };
 
       this.watchers = vscode.Disposable.from(
-      watcher,
-      watcher.onDidCreate(scheduleRefresh),
-      watcher.onDidChange(scheduleRefresh),
-      watcher.onDidDelete(scheduleRefresh)
-    )
-  }
+        watcher,
+        watcher.onDidCreate(scheduleRefresh),
+        watcher.onDidChange(scheduleRefresh),
+        watcher.onDidDelete(scheduleRefresh),
+      );
+    }
 
     panel.onDidDispose(() => this.clearPanelResources());
   }
@@ -91,22 +98,26 @@ export class RelationGraphProvider implements IRelationGraphPanel {
     }
 
     await this.panel.webview.postMessage({
-      type: "event",
-      method: "relations.listChanged",
-      payload: await createRelationGraphInitialData()
+      type: 'event',
+      method: 'relations.listChanged',
+      payload: await createRelationGraphInitialData(),
     });
   }
 
   private createHandlers(): StoryboardRpcHandlers {
     return {
       ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
-      "relations.list": async (): Promise<StoryboardResponsePayload<"relations.list">> => ({
-        characters: await loadRelationListCharactersForRpc()
+      'relations.list': async (): Promise<StoryboardResponsePayload<'relations.list'>> => ({
+        characters: await loadRelationListCharactersForRpc(),
       }),
-      "cards.open": async (payload): Promise<StoryboardResponsePayload<"cards.open">> => {
-        await vscode.commands.executeCommand("vscode.openWith", vscode.Uri.parse(payload.uri), cardEditorViewType);
+      'cards.open': async (payload): Promise<StoryboardResponsePayload<'cards.open'>> => {
+        await vscode.commands.executeCommand(
+          'vscode.openWith',
+          vscode.Uri.parse(payload.uri),
+          cardEditorViewType,
+        );
         return {};
-      }
+      },
     };
   }
 
@@ -120,21 +131,21 @@ export class RelationGraphProvider implements IRelationGraphPanel {
 }
 
 async function createRelationGraphInitialData(): Promise<RelationGraphInitialData> {
-  const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+  const storyboardRoot = await resolveStoryboardWorkspaceRoot();
 
   return {
-    title: "Character Relations",
+    title: 'Character Relations',
     characters: storyboardRoot ? await loadRelationListCharacters(storyboardRoot) : [],
-    isStoryboardProject: storyboardRoot !== undefined
-  }
+    isStoryboardProject: storyboardRoot !== undefined,
+  };
 }
 
 async function loadRelationListCharactersForRpc(): Promise<RelationListCharacter[]> {
-  const storyboardRoot = await resolveStoryboardWorkspaceRoot()
+  const storyboardRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!storyboardRoot) {
-    return []
+    return [];
   }
 
-  return loadRelationListCharacters(storyboardRoot)
+  return loadRelationListCharacters(storyboardRoot);
 }

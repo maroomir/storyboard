@@ -1,81 +1,84 @@
-import yaml from "js-yaml"
-import { ZodError } from "zod"
+import yaml from 'js-yaml';
+import { ZodError } from 'zod';
 
 import {
   cardSchema,
   type BackgroundCard,
   type CharacterCard,
-  type StoryboardCard
-} from "../shared/card"
+  type StoryboardCard,
+} from '../shared/card';
 
-export type CardParseErrorCode = "invalid-yaml" | "invalid-card-schema"
+export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 
 export interface CardFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>
+  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
 }
 
 export class CardParseError extends Error {
   public constructor(
     public readonly code: CardParseErrorCode,
     message: string,
-    public readonly cause?: unknown
+    public readonly cause?: unknown,
   ) {
-    super(message)
-    this.name = "CardParseError"
+    super(message);
+    this.name = 'CardParseError';
   }
 }
 
 export function parseCard(rawCard: string): StoryboardCard {
-  let parsedYaml: unknown
+  let parsedYaml: unknown;
 
   try {
-    parsedYaml = yaml.load(rawCard)
+    parsedYaml = yaml.load(rawCard);
   } catch (error) {
-    throw new CardParseError("invalid-yaml", "Card YAML을 파싱할 수 없습니다.", error)
+    throw new CardParseError('invalid-yaml', 'Card YAML을 파싱할 수 없습니다.', error);
   }
 
   try {
-    return cardSchema.parse(parsedYaml)
+    return cardSchema.parse(parsedYaml);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new CardParseError("invalid-card-schema", "Card 스키마가 올바르지 않습니다.", error)
+      throw new CardParseError('invalid-card-schema', 'Card 스키마가 올바르지 않습니다.', error);
     }
 
-    throw error
+    throw error;
   }
 }
 
 export function serializeCard(card: StoryboardCard): string {
-  const parsedCard = cardSchema.parse(card)
-  const normalizedCard = normalizeCardForSerialization(parsedCard)
+  const parsedCard = cardSchema.parse(card);
+  const normalizedCard = normalizeCardForSerialization(parsedCard);
 
   return yaml.dump(normalizedCard, {
     lineWidth: -1,
     noRefs: true,
-    sortKeys: false
-  })
+    sortKeys: false,
+  });
 }
 
-export async function readCardFile(uri: unknown, fileSystem: CardFileSystem): Promise<StoryboardCard> {
-  const bytes = await fileSystem.readFile(uri)
-  return parseCard(new TextDecoder().decode(bytes))
+export async function readCardFile(
+  uri: unknown,
+  fileSystem: CardFileSystem,
+): Promise<StoryboardCard> {
+  const bytes = await fileSystem.readFile(uri);
+  return parseCard(new TextDecoder().decode(bytes));
 }
 
 export async function writeCardFile(
   uri: unknown,
   fileSystem: CardFileSystem,
-  card: StoryboardCard
+  card: StoryboardCard,
 ): Promise<void> {
-  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)))
+  await fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
 }
 
 function normalizeCardForSerialization(card: StoryboardCard): StoryboardCard {
-  if (card.type === "character") {
-    return normalizeCharacterCard(card)
+  if (card.type === 'character') {
+    return normalizeCharacterCard(card);
   }
 
-  return normalizeBackgroundCard(card)
+  return normalizeBackgroundCard(card);
 }
 
 function normalizeCharacterCard(card: CharacterCard): CharacterCard {
@@ -94,8 +97,8 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     ...(card.desire === undefined ? {} : { desire: card.desire }),
     ...(card.relations === undefined ? {} : { relations: card.relations }),
     ...(card.arc === undefined ? {} : { arc: card.arc }),
-    ...(card.recentDialogues === undefined ? {} : { recentDialogues: card.recentDialogues })
-  }
+    ...(card.recentDialogues === undefined ? {} : { recentDialogues: card.recentDialogues }),
+  };
 }
 
 function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
@@ -108,10 +111,10 @@ function normalizeBackgroundCard(card: BackgroundCard): BackgroundCard {
     tags: card.tags,
     ...(card.time === undefined ? {} : { time: card.time }),
     ...(card.weather === undefined ? {} : { weather: card.weather }),
-    ...(card.senses === undefined ? {} : { senses: card.senses })
+    ...(card.senses === undefined ? {} : { senses: card.senses }),
+  };
+  if (card.type === 'location') {
+    return { type: 'location', ...base, locationKind: card.locationKind };
   }
-  if (card.type === "location") {
-    return { type: "location", ...base, locationKind: card.locationKind }
-  }
-  return { type: card.type, ...base }
+  return { type: card.type, ...base };
 }

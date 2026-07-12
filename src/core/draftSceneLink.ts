@@ -1,27 +1,27 @@
-import * as vscode from "vscode"
+import * as vscode from 'vscode';
 
-import { parseDraft } from "../files/draft"
-import { parseSceneStem, type SceneFileNameParts } from "../shared/scene"
-import { sceneFilePath } from "./pathConventions"
+import { parseDraft } from '../files/draft';
+import { parseSceneStem, type SceneFileNameParts } from '../shared/scene';
+import { sceneFilePath } from './pathConventions';
 
 export function parseDraftSceneParts(rawDraftText: string): SceneFileNameParts | undefined {
   try {
-    const draft = parseDraft(rawDraftText)
-    return parseSceneStem(draft.sceneStem)
+    const draft = parseDraft(rawDraftText);
+    return parseSceneStem(draft.sceneStem);
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 export function deriveSceneUri(
   workspaceFolder: vscode.WorkspaceFolder,
-  documentText: string
+  documentText: string,
 ): vscode.Uri | undefined {
-  const parts = parseDraftSceneParts(documentText)
+  const parts = parseDraftSceneParts(documentText);
 
   if (!parts) {
-    return undefined
+    return undefined;
   }
 
-  return sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug)
+  return sceneFilePath(workspaceFolder.uri, parts.orderText, parts.slug);
 }
