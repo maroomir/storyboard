@@ -4,6 +4,7 @@ import { AiGateway } from '../../application/ai/ai-gateway';
 import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
 import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-card-candidates-use-case';
 import { CollectCardProposalsUseCase } from '../../application/cards/collect-card-proposals-use-case';
+import { PromoteBibleCandidatesUseCase } from '../../application/project/promote-bible-candidates-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
@@ -12,6 +13,7 @@ import { DraftRepository } from '../../infrastructure/persistence/repositories/d
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
 import { CardCollectRepository } from '../../infrastructure/persistence/repositories/card-collect-repository';
+import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bible-candidate-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
@@ -40,6 +42,7 @@ export interface IPlatformServices {
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
+  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
@@ -76,6 +79,7 @@ export class PlatformModule implements IApplicationModule {
     const cardRecommendationRepository = new CardRecommendationRepository();
     const cardCandidateRepository = new CardCandidateRepository(logger);
     const cardCollectRepository = new CardCollectRepository();
+    const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
@@ -105,6 +109,9 @@ export class PlatformModule implements IApplicationModule {
       cardCollectRepository,
     );
     const promoteCardCandidatesUseCase = new PromoteCardCandidatesUseCase(cardCandidateRepository);
+    const promoteBibleCandidatesUseCase = new PromoteBibleCandidatesUseCase(
+      bibleCandidateRepository,
+    );
     const novelPipeline = new NovelPipeline({
       aiGateway,
       aiProviderRegistry,
@@ -126,6 +133,7 @@ export class PlatformModule implements IApplicationModule {
       logger,
       novelPipeline,
       postGenerationUpdates,
+      promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
       reviseDraftUseCase,

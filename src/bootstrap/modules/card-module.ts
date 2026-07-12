@@ -25,6 +25,7 @@ export class CardModule implements IApplicationModule {
       aiProviderRegistry,
       collectCardProposalsUseCase,
       logger,
+      promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
       usageRecorder,
@@ -36,7 +37,7 @@ export class CardModule implements IApplicationModule {
       registerRenameCardCommands(),
       registerMigrateCardTextCommand({ logger }),
       registerCardRenameParticipant({ logger }),
-      registerPromoteBibleCandidatesCommand({ logger }),
+      registerPromoteBibleCandidatesCommand({ logger, promoteBibleCandidatesUseCase }),
       registerPromoteCardCandidatesCommand({ logger, promoteCardCandidatesUseCase }),
       registerCanonDiffCommand({ logger }),
       registerCardCustomEditorProvider(context, {

@@ -1,70 +1,19 @@
 import * as vscode from 'vscode';
 
+import type { PromoteBibleCandidatesUseCase } from '../application/project/promote-bible-candidates-use-case';
 import type { StoryboardLogger } from '../core/logger';
-import { getStoryboardProjectPaths } from '../core/pathConventions';
-import {
-  aggregateCandidateFacts,
-  mergeCanonFacts,
-  seedPromotedFact,
-  selectNewCandidates,
-} from '../core/biblePromotion';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';
-import { readBibleFile, writeBibleFile } from '../files/bible';
-import { readBibleCandidateFile, type BibleCandidateRecord } from '../files/bibleCandidates';
-import { createEmptyBible, type BibleFact, type StoryBible } from '../shared/bible';
+import type { BibleFact } from '../shared/bible';
 
 const promoteCommand = 'storyboard.bible.promoteCandidates';
-
-const vscodeFs = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> =>
-    vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
 
 interface CandidateQuickPickItem extends vscode.QuickPickItem {
   readonly fact: BibleFact;
 }
-
-async function readAllCandidateRecords(
-  bibleCacheDirectory: vscode.Uri,
-): Promise<BibleCandidateRecord[]> {
-  let entries: [string, vscode.FileType][];
-
-  try {
-    entries = await vscode.workspace.fs.readDirectory(bibleCacheDirectory);
-  } catch {
-    return [];
-  }
-
-  const records: BibleCandidateRecord[] = [];
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith('.json')) {
-      continue;
-    }
-
-    try {
-      records.push(
-        await readBibleCandidateFile(vscode.Uri.joinPath(bibleCacheDirectory, name), vscodeFs),
-      );
-    } catch {
-      // skip unreadable candidate files
-    }
-  }
-
-  return records;
-}
-
-async function readCanon(canonUri: vscode.Uri): Promise<StoryBible> {
-  try {
-    return await readBibleFile(canonUri, vscodeFs);
-  } catch {
-    return createEmptyBible();
-  }
-}
-
-async function runPromote(logger: StoryboardLogger): Promise<void> {
+async function runPromote(
+  logger: StoryboardLogger,
+  useCase: PromoteBibleCandidatesUseCase,
+): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
 
   if (!folder) {
@@ -77,29 +26,23 @@ async function runPromote(logger: StoryboardLogger): Promise<void> {
     return;
   }
 
-  const paths = getStoryboardProjectPaths(folder.uri);
-  const candidates = aggregateCandidateFacts(
-    await readAllCandidateRecords(paths.bibleCacheDirectory),
-  );
+  const preparation = await useCase.prepare(folder.uri);
 
-  if (candidates.length === 0) {
+  if (preparation.kind === 'no_candidates') {
     await vscode.window.showInformationMessage(
       '승격할 설정 후보가 없습니다. 먼저 초안을 생성해 주세요.',
     );
     return;
   }
 
-  const canon = await readCanon(paths.bibleCanon);
-  const promotable = selectNewCandidates(candidates, canon);
-
-  if (promotable.length === 0) {
+  if (preparation.kind === 'no_new_candidates') {
     await vscode.window.showInformationMessage(
       '새로 승격할 후보가 없습니다. 이미 모두 canon입니다.',
     );
     return;
   }
 
-  const items: CandidateQuickPickItem[] = promotable.map((fact) => ({
+  const items: CandidateQuickPickItem[] = preparation.facts.map((fact) => ({
     label: `${fact.subject.id} — ${fact.key}: ${fact.value}`,
     description: fact.sourceScene ? `후보 · ${fact.sourceScene}` : '후보',
     fact,
@@ -115,14 +58,11 @@ async function runPromote(logger: StoryboardLogger): Promise<void> {
     return;
   }
 
-  const merged = mergeCanonFacts(
-    canon,
-    picked.map((item) => seedPromotedFact(item.fact)),
-  );
-
   try {
-    await vscode.workspace.fs.createDirectory(paths.bibleDirectory);
-    await writeBibleFile(paths.bibleCanon, vscodeFs, merged);
+    await useCase.promote(
+      folder.uri,
+      picked.map((item) => item.fact),
+    );
   } catch (error) {
     logger.error('Failed to write bible canon', error);
     logger.show();
@@ -137,6 +77,9 @@ async function runPromote(logger: StoryboardLogger): Promise<void> {
 
 export function registerPromoteBibleCandidatesCommand(dependencies: {
   readonly logger: StoryboardLogger;
+  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
 }): vscode.Disposable {
-  return vscode.commands.registerCommand(promoteCommand, () => runPromote(dependencies.logger));
+  return vscode.commands.registerCommand(promoteCommand, () =>
+    runPromote(dependencies.logger, dependencies.promoteBibleCandidatesUseCase),
+  );
 }
