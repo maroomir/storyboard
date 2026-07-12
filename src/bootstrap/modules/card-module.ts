@@ -23,6 +23,7 @@ export class CardModule implements IApplicationModule {
   public initialize(context: vscode.ExtensionContext): void {
     const {
       aiProviderRegistry,
+      collectCardProposalsUseCase,
       logger,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
@@ -38,7 +39,12 @@ export class CardModule implements IApplicationModule {
       registerPromoteBibleCandidatesCommand({ logger }),
       registerPromoteCardCandidatesCommand({ logger, promoteCardCandidatesUseCase }),
       registerCanonDiffCommand({ logger }),
-      registerCardCustomEditorProvider(context, { aiProviderRegistry, usageRecorder, logger }),
+      registerCardCustomEditorProvider(context, {
+        aiProviderRegistry,
+        collectCardProposalsUseCase,
+        usageRecorder,
+        logger,
+      }),
       registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder }),
     );
   }

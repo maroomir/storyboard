@@ -1,19 +1,15 @@
 import * as vscode from 'vscode';
 
+import type { CollectCardProposalsUseCase } from '../application/cards/collect-card-proposals-use-case';
 import { CardParseError, parseCard, serializeCard } from '../files/card';
 import { applyCardCollectProposals } from '../core/cardCollect';
 import { StoryboardLogger } from '../core/logger';
-import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { loadCharacterRoster } from '../core/relationGraphData';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../files/draft';
 import { VirtualDocumentStore } from '../presentation/providers/virtual-document-store';
 import type { StoryboardCard } from '../shared/card';
 import type { StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { StoryboardAIService } from '../services/ai/AIService';
-import { buildCardCollectProposals, type CollectDraft } from '../services/ai/cardCollectBuilder';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
@@ -21,14 +17,10 @@ const cardEditorViewType = 'storyboard.card';
 
 export interface CardCustomEditorDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
+  readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly usageRecorder: UsageRecorder;
   readonly logger: StoryboardLogger;
 }
-
-const draftFileSystem: DraftFileSystem = {
-  readFile: (uri) => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri, content) => vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
 
 const collectPreviewScheme = 'storyboard-collect';
 
@@ -172,20 +164,7 @@ function createCardEditorHandlers(
     'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
       const card = parseCard(document.getText());
       const workspaceRoot = getDocumentWorkspaceRoot(document);
-      const paths = getStoryboardProjectPaths(workspaceRoot);
-      const drafts = await gatherAllDrafts(paths.draftDirectory);
-      const characterRoster = await loadCharacterRoster(workspaceRoot);
-      const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-        onUsage: (record): void =>
-          recordUsageSafely(dependencies.usageRecorder, workspaceRoot, record, dependencies.logger),
-      });
-
-      const proposals = await buildCardCollectProposals({
-        card,
-        drafts,
-        aiService,
-        characterRoster,
-      });
+      const proposals = await dependencies.collectCardProposalsUseCase.execute(workspaceRoot, card);
 
       return { proposals };
     },
@@ -220,34 +199,6 @@ function createCardEditorHandlers(
       return {};
     },
   };
-}
-
-async function gatherAllDrafts(draftDirectory: vscode.Uri): Promise<CollectDraft[]> {
-  let entries: [string, vscode.FileType][];
-
-  try {
-    entries = await vscode.workspace.fs.readDirectory(draftDirectory);
-  } catch {
-    return [];
-  }
-
-  const drafts: CollectDraft[] = [];
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith('.md')) {
-      continue;
-    }
-
-    try {
-      const raw = await readDraftFile(vscode.Uri.joinPath(draftDirectory, name), draftFileSystem);
-      const draft = parseDraft(raw);
-      drafts.push({ sceneStem: draft.sceneStem, body: draft.body });
-    } catch {
-      // skip unreadable or unparsable drafts
-    }
-  }
-
-  return drafts;
 }
 
 async function createInitialData(

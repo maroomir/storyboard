@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { AiGateway } from '../../application/ai/ai-gateway';
 import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
 import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-card-candidates-use-case';
+import { CollectCardProposalsUseCase } from '../../application/cards/collect-card-proposals-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
@@ -10,6 +11,7 @@ import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
+import { CardCollectRepository } from '../../infrastructure/persistence/repositories/card-collect-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
@@ -32,6 +34,7 @@ export interface IPlatformServices {
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
@@ -72,6 +75,7 @@ export class PlatformModule implements IApplicationModule {
     const draftRepository = new DraftRepository(fileSystem);
     const cardRecommendationRepository = new CardRecommendationRepository();
     const cardCandidateRepository = new CardCandidateRepository(logger);
+    const cardCollectRepository = new CardCollectRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
@@ -96,6 +100,10 @@ export class PlatformModule implements IApplicationModule {
       logger,
       cardRecommendationRepository,
     );
+    const collectCardProposalsUseCase = new CollectCardProposalsUseCase(
+      aiGateway,
+      cardCollectRepository,
+    );
     const promoteCardCandidatesUseCase = new PromoteCardCandidatesUseCase(cardCandidateRepository);
     const novelPipeline = new NovelPipeline({
       aiGateway,
@@ -111,6 +119,7 @@ export class PlatformModule implements IApplicationModule {
       aiGateway,
       augmentDraftUseCase,
       aiProviderRegistry,
+      collectCardProposalsUseCase,
       configBridge,
       fileSystem,
       generateDraftUseCase,
