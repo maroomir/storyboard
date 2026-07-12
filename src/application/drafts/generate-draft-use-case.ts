@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/ai-gateway';
+import type { IFileSystem } from '../ports/file-system';
 import { buildNarrativeContext, buildSceneContext } from '../../core/sceneContext';
 import type { StoryboardLogger } from '../../core/logger';
 import {
@@ -11,12 +12,7 @@ import {
   getStoryboardProjectPaths,
   isDirectSceneTextFile,
 } from '../../core/pathConventions';
-import {
-  draftHistoryFileSystem,
-  sceneContextFileSystem,
-  sceneContextPaths,
-  vscodeFsAdapter,
-} from '../../core/vscodeFileSystem';
+import { sceneContextPaths } from '../../core/vscodeFileSystem';
 import { hasStoryboardProject, uriExists } from '../../core/workspace';
 import { createDraft, writeDraftFile } from '../../files/draft';
 import { archiveExistingDraft } from '../../files/draftHistory';
@@ -68,13 +64,14 @@ async function isCacheHit(
   cacheUri: vscode.Uri,
   draftUri: vscode.Uri,
   inputHash: string,
+  fileSystem: IFileSystem,
 ): Promise<boolean> {
   if (!(await uriExists(cacheUri)) || !(await uriExists(draftUri))) {
     return false;
   }
 
   try {
-    const record = await readSceneCacheFile(cacheUri, vscodeFsAdapter);
+    const record = await readSceneCacheFile(cacheUri, fileSystem);
     return record.inputHash === inputHash;
   } catch {
     return false;
@@ -84,6 +81,7 @@ async function isCacheHit(
 export interface GenerateDraftUseCaseDependencies {
   readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
+  readonly fileSystem: IFileSystem;
   readonly logger: StoryboardLogger;
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
 }
@@ -202,7 +200,7 @@ async function loadSceneGenerationInputs(
 
   let scene;
   try {
-    scene = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
+    scene = await readSceneFile(sceneUri, options.fileSystem, fileName);
   } catch (error) {
     if (error instanceof SceneParseError) {
       return inputsFailure(`씬 파일을 읽을 수 없습니다: ${error.message}`);
@@ -237,7 +235,7 @@ async function loadSceneGenerationInputs(
   const ctxPaths = sceneContextPaths(paths);
   let context;
   try {
-    context = await buildSceneContext(ctxPaths, scene, sceneContextFileSystem);
+    context = await buildSceneContext(ctxPaths, scene, options.fileSystem);
   } catch (error) {
     return {
       ok: false,
@@ -250,7 +248,7 @@ async function loadSceneGenerationInputs(
     };
   }
 
-  const narrativeContext = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem);
+  const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);
   const sceneBreakJoiner = resolveSceneBreakJoiner(
     options.configBridge.getDraftSceneBreakSeparator(),
   );
@@ -307,7 +305,7 @@ function schedulePostGenerationUpdates(
     draftBody: result.draftBody,
     detectedCharacterCards,
     aiService,
-    fileSystem: vscodeFsAdapter,
+    fileSystem: options.fileSystem,
     resolveCharacterCardUri: (card) => characterCardPath(workspaceFolder.uri, card.id),
     logger: options.logger,
     onComplete: options.onTraitsUpdateComplete,
@@ -319,7 +317,7 @@ function schedulePostGenerationUpdates(
     draftBody: result.draftBody,
     detectedCharacterCards,
     aiService,
-    fileSystem: vscodeFsAdapter,
+    fileSystem: options.fileSystem,
     ensureDirectory: () => ensureBibleCacheDirectory(paths),
     resolveCandidateUri: (stem) => bibleCandidateFilePath(paths, stem),
     logger: options.logger,
@@ -333,7 +331,7 @@ function schedulePostGenerationUpdates(
     characterRoster: context.characters.map((card) => ({ id: card.id, name: card.name })),
     aiService,
     verify: options.configBridge.isVerifyCardCandidatesEnabled(),
-    fileSystem: vscodeFsAdapter,
+    fileSystem: options.fileSystem,
     ensureDirectory: () => ensureCardCacheDirectory(paths),
     resolveCandidateUri: (stem) => cardCandidateFilePath(paths, stem),
     logger: options.logger,
@@ -344,7 +342,7 @@ function schedulePostGenerationUpdates(
       queueKey: `${workspaceFolder.uri.toString()}#background`,
       backgroundId: context.background.id,
       detectedCharacterCards,
-      fileSystem: vscodeFsAdapter,
+      fileSystem: options.fileSystem,
       resolveBackgroundCardUri: (backgroundId) =>
         backgroundCardPath(workspaceFolder.uri, backgroundId),
       logger: options.logger,
@@ -394,7 +392,7 @@ async function maybeArchiveExistingDraft(
       draftUri: inputs.draftUri,
       historyDirectory,
       resolveArchiveUri: (fileName) => vscode.Uri.joinPath(historyDirectory, fileName),
-      fileSystem: draftHistoryFileSystem,
+      fileSystem: options.fileSystem,
     });
   } catch (error) {
     options.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
@@ -457,8 +455,8 @@ async function runAndPersistDraft(
 
     await maybeArchiveExistingDraft(inputs, options);
 
-    await writeDraftFile(draftUri, vscodeFsAdapter, draft);
-    await writeSceneCacheFile(cacheUri, vscodeFsAdapter, cacheRecord);
+    await writeDraftFile(draftUri, options.fileSystem, draft);
+    await writeSceneCacheFile(cacheUri, options.fileSystem, cacheRecord);
 
     if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
       schedulePostGenerationUpdates(inputs, options, aiService, result);
@@ -491,7 +489,10 @@ async function generateDraftForWorkspaceSceneWorkflow(
 
   const inputs = loaded.inputs;
 
-  if (!options.force && (await isCacheHit(inputs.cacheUri, inputs.draftUri, inputs.inputHash))) {
+  if (
+    !options.force &&
+    (await isCacheHit(inputs.cacheUri, inputs.draftUri, inputs.inputHash, options.fileSystem))
+  ) {
     return await openCachedDraft(inputs.draftUri);
   }
 

@@ -61,6 +61,7 @@ function createOptions(
       getTaskProvider: () => "mock"
     } as never,
     configBridge: { isAiContextCondenseEnabled: () => false } as never,
+    fileSystem: {} as never,
     logger: logger as never,
     suppressLoggerPanel: false,
     ...overrides
