@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { ReviseAfterGenerateGate } from '../application/drafts/revise-after-generate-gate';
 import type {
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,
@@ -19,6 +20,7 @@ const maxMaxIterations = 5;
 export interface RegisterReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
 }
 
@@ -179,10 +181,14 @@ async function runReviseDraft(
     },
     async (progress, token) => {
       try {
-        const result = await runReviseGateForScene(workspaceFolder.uri, sceneStem, dependencies, {
-          onProgress: (message) => progress.report({ message }),
-          shouldCancel: () => token.isCancellationRequested,
-        });
+        const result = await dependencies.reviseAfterGenerateGate.runForScene(
+          workspaceFolder.uri,
+          sceneStem,
+          {
+            onProgress: (message) => progress.report({ message }),
+            shouldCancel: () => token.isCancellationRequested,
+          },
+        );
 
         if (!result) {
           await vscode.window.showInformationMessage(

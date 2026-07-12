@@ -48,7 +48,12 @@ export class DraftModule implements IApplicationModule {
         reviseAfterGenerateGate,
       }),
       registerApplyDraftFormatCommand({ aiGateway, logger }),
-      registerReviseDraftCommand({ configBridge, logger, reviseDraftUseCase }),
+      registerReviseDraftCommand({
+        configBridge,
+        logger,
+        reviseAfterGenerateGate,
+        reviseDraftUseCase,
+      }),
       registerExpandDraftCommand({ aiGateway, logger }),
       registerAugmentDraftCommands({ augmentDraftUseCase, configBridge, logger }),
       registerNewSceneCommands(),
