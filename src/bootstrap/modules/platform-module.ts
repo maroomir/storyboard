@@ -8,6 +8,7 @@ import { CreateCardUseCase } from '../../application/cards/create-card-use-case'
 import { PromoteBibleCandidatesUseCase } from '../../application/project/promote-bible-candidates-use-case';
 import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-case';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
+import { SeedProjectUseCase } from '../../application/project/seed-project-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generate-all-drafts-use-case';
@@ -28,6 +29,7 @@ import { SceneCacheRepository } from '../../infrastructure/persistence/repositor
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
 import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/scene-batch-repository';
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
+import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seed-project-repository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
 import { StoryboardLogger } from '../../core/logger';
 import {
@@ -48,7 +50,7 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly decodeSeedUseCase: DecodeSeedUseCase;
-  readonly prepareSeedSyncUseCase: PrepareSeedSyncUseCase;
+  readonly seedProjectUseCase: SeedProjectUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly createCardUseCase: CreateCardUseCase;
   readonly cardSidebarRepository: CardSidebarRepository;
@@ -109,6 +111,12 @@ export class PlatformModule implements IApplicationModule {
     const sceneRepository = new SceneRepository(fileSystem);
     const sceneBatchRepository = new SceneBatchRepository();
     const sceneSidebarRepository = new SceneSidebarRepository();
+    const seedProjectRepository = new SeedProjectRepository();
+    const seedProjectUseCase = new SeedProjectUseCase(
+      logger,
+      prepareSeedSyncUseCase,
+      seedProjectRepository,
+    );
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
       configBridge,
@@ -170,7 +178,6 @@ export class PlatformModule implements IApplicationModule {
       cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,
-      prepareSeedSyncUseCase,
       fileSystem,
       generateAllDraftsUseCase,
       generateDraftUseCase,
@@ -185,6 +192,7 @@ export class PlatformModule implements IApplicationModule {
       reviseDraftUseCase,
       sceneSidebarRepository,
       secretStore,
+      seedProjectUseCase,
       usageRecorder,
     };
     this.disposables.add(

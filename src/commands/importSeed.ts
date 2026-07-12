@@ -1,21 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { DecodeSeedUseCase } from '../application/project/decode-seed-use-case';
-import type { PrepareSeedSyncUseCase } from '../application/project/prepare-seed-sync-use-case';
+import type {
+  SeedCreatePreparation,
+  SeedProjectUseCase,
+} from '../application/project/seed-project-use-case';
 import { type StoryboardLogger } from '../core/logger';
 import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
-import { hasStoryboardProject, uriExists } from '../core/workspace';
-import {
-  buildSeedWritePlan,
-  collectTrackedCardAndSceneRelativePathsFromFileNames,
-  SeedWriteAbortedError,
-  type SeedFileWriteEntry,
-} from '../files/seedImport';
-import {
-  readDirectoryFileNamesOnly,
-  readParsedSeedEnvelopeFromWorkspaceRoot,
-} from '../files/seedEnvelopeFromWorkspace';
+import { hasStoryboardProject } from '../core/workspace';
+import { SeedWriteAbortedError } from '../files/seedImport';
 import { listSeedExportPreflightIssues } from '../files/seedExportPreflight';
 import {
   encodeWorkspaceToSeed,
@@ -32,19 +25,7 @@ import {
   SeedIdMappingConflictError,
   SeedIdMappingValidationError,
 } from '../files/seedRemap';
-import {
-  createStoryboardDirectories,
-  ensureWorkspaceGitignore,
-} from '../infrastructure/vscode/project-initializer';
 import { formatSeedIdRemapErrorMessage, promptSeedIdRemapping } from './seedIdRemapPrompt';
-import {
-  deleteRelativePaths,
-  readExistingContentByRelativePathForPlan,
-  readSeedFile,
-  uriForRelativeProjectPath,
-  writeReadmeIfMissing,
-  writeSeedPlanEntries,
-} from './seedWriteIo';
 
 const createFromSeedCommand = 'storyboard.seed.createFromFile';
 const syncFromSeedCommand = 'storyboard.seed.syncFromFile';
@@ -68,8 +49,8 @@ async function reportSeedExportPreflightIssuesOrAbort(content: WorkspaceContent)
 
 export interface RegisterImportSeedCommandsDependencies {
   readonly decodeSeedUseCase: DecodeSeedUseCase;
-  readonly prepareSeedSyncUseCase: PrepareSeedSyncUseCase;
   readonly logger: StoryboardLogger;
+  readonly seedProjectUseCase: SeedProjectUseCase;
 }
 
 export function registerImportSeedCommands(
@@ -86,19 +67,6 @@ export function registerImportSeedCommands(
       exportProjectToSeedFile(dependencies),
     ),
   );
-}
-
-async function collectSeedSyncRelativePaths(workspaceRoot: vscode.Uri): Promise<string[]> {
-  const paths = getStoryboardProjectPaths(workspaceRoot);
-  const characterFileNames = await readDirectoryFileNamesOnly(paths.characterDirectory);
-  const backgroundFileNames = await readDirectoryFileNamesOnly(paths.backgroundDirectory);
-  const sceneFileNames = await readDirectoryFileNamesOnly(paths.sceneDirectory);
-
-  return collectTrackedCardAndSceneRelativePathsFromFileNames({
-    characterFileNames,
-    backgroundFileNames,
-    sceneFileNames,
-  });
 }
 
 function formatSeedErrorMessage(error: unknown): string {
@@ -120,7 +88,7 @@ async function loadDecodedSeedOrReport(
   let bytes: Uint8Array;
 
   try {
-    bytes = await readSeedFile(seedUri);
+    bytes = await dependencies.seedProjectUseCase.readSeedFile(seedUri);
   } catch (error) {
     dependencies.logger.error('Seed 파일을 읽지 못했습니다.', error);
     dependencies.logger.show();
@@ -235,12 +203,9 @@ async function pickStoryboardWorkspaceFolder(): Promise<vscode.WorkspaceFolder |
 }
 
 async function confirmOrAbortStoryboardMetadataWithoutProjectJson(
-  paths: StoryboardProjectPaths,
+  preparation: SeedCreatePreparation,
 ): Promise<boolean> {
-  const hasMetadata = await uriExists(paths.metadataDirectory);
-  const hasProject = await uriExists(paths.projectJson);
-
-  if (!hasMetadata || hasProject) {
+  if (!preparation.hasMetadata || preparation.hasProject) {
     return true;
   }
 
@@ -271,20 +236,7 @@ async function confirmOverwriteDifferentSeedContent(
   return choice === '덮어쓰기';
 }
 
-async function confirmOverwriteExistingSeedTargets(
-  root: vscode.Uri,
-  entries: readonly SeedFileWriteEntry[],
-): Promise<boolean> {
-  const conflicts: string[] = [];
-
-  for (const entry of entries) {
-    const target = uriForRelativeProjectPath(root, entry.relativePath);
-
-    if (await uriExists(target)) {
-      conflicts.push(entry.relativePath);
-    }
-  }
-
+async function confirmOverwriteExistingSeedTargets(conflicts: readonly string[]): Promise<boolean> {
   if (conflicts.length === 0) {
     return true;
   }
@@ -401,8 +353,6 @@ async function createProjectFromSeedFile(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(targetRoot);
-
   let seed = await loadDecodedSeedOrReport(seedUri, dependencies);
 
   if (seed === undefined) {
@@ -410,14 +360,15 @@ async function createProjectFromSeedFile(
   }
 
   try {
-    if (await uriExists(paths.projectJson)) {
+    let preparation = await dependencies.seedProjectUseCase.prepareCreate(targetRoot, seed);
+    if (preparation.hasProject) {
       await vscode.window.showInformationMessage(
         '선택한 폴더에 이미 Storyboard 프로젝트(`project.json`)가 있습니다. 중단합니다.',
       );
       return;
     }
 
-    if (!(await confirmOrAbortStoryboardMetadataWithoutProjectJson(paths))) {
+    if (!(await confirmOrAbortStoryboardMetadataWithoutProjectJson(preparation))) {
       return;
     }
 
@@ -428,17 +379,13 @@ async function createProjectFromSeedFile(
     }
 
     seed = remappedSeed;
+    preparation = await dependencies.seedProjectUseCase.prepareCreate(targetRoot, seed);
 
-    const plan = buildSeedWritePlan(seed);
-
-    if (!(await confirmOverwriteExistingSeedTargets(targetRoot, plan))) {
+    if (!(await confirmOverwriteExistingSeedTargets(preparation.existingRelativePaths))) {
       return;
     }
 
-    await createStoryboardDirectories(paths);
-    await writeSeedPlanEntries(targetRoot, plan, dependencies.logger);
-    await ensureWorkspaceGitignore(paths.gitignore);
-    await writeReadmeIfMissing(paths, seed.project.name);
+    await dependencies.seedProjectUseCase.createProject(targetRoot, seed, preparation.plan);
     dependencies.logger.info(`Seed로 프로젝트를 생성했습니다: ${targetRoot.fsPath}`);
     await refreshStoryboardWorkspaceContext();
     await vscode.window.showInformationMessage(
@@ -466,8 +413,6 @@ async function syncProjectFromSeedFile(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-
   let seed = await loadDecodedSeedOrReport(seedUri, dependencies);
 
   if (seed === undefined) {
@@ -483,17 +428,7 @@ async function syncProjectFromSeedFile(
 
     seed = remappedSeed;
 
-    const existingRelativePaths = await collectSeedSyncRelativePaths(workspaceFolder.uri);
-    const plan = buildSeedWritePlan(seed);
-    const existingByPath = await readExistingContentByRelativePathForPlan(
-      workspaceFolder.uri,
-      plan,
-    );
-    const prepared = dependencies.prepareSeedSyncUseCase.execute({
-      existingContentByRelativePath: existingByPath,
-      existingRelativePaths,
-      seed,
-    });
+    const prepared = await dependencies.seedProjectUseCase.prepareSync(workspaceFolder.uri, seed);
     const { contentConflicts, deletions } = prepared;
 
     if (!(await confirmOverwriteDifferentSeedContent(contentConflicts))) {
@@ -504,9 +439,7 @@ async function syncProjectFromSeedFile(
       return;
     }
 
-    await writeSeedPlanEntries(workspaceFolder.uri, plan, dependencies.logger);
-    await deleteRelativePaths(workspaceFolder.uri, deletions);
-    await ensureWorkspaceGitignore(paths.gitignore);
+    await dependencies.seedProjectUseCase.syncProject(workspaceFolder.uri, prepared);
     dependencies.logger.info(`Seed로 프로젝트를 동기화했습니다: ${workspaceFolder.uri.fsPath}`);
     await refreshStoryboardWorkspaceContext();
     await vscode.window.showInformationMessage(
@@ -527,7 +460,7 @@ async function exportProjectToSeedFile(
   }
 
   try {
-    const content = await readParsedSeedEnvelopeFromWorkspaceRoot(workspaceFolder.uri);
+    const content = await dependencies.seedProjectUseCase.readWorkspaceContent(workspaceFolder.uri);
 
     if (!(await reportSeedExportPreflightIssuesOrAbort(content))) {
       return;
@@ -550,7 +483,7 @@ async function exportProjectToSeedFile(
     }
 
     const seedBytes = await encodeWorkspaceToSeed(content);
-    await vscode.workspace.fs.writeFile(picked, seedBytes);
+    await dependencies.seedProjectUseCase.writeSeedFile(picked, seedBytes);
     dependencies.logger.info(`Seed 파일을 보냈습니다: ${picked.fsPath}`);
     await vscode.window.showInformationMessage(`Seed 파일을 저장했습니다: ${picked.fsPath}`);
   } catch (error) {
