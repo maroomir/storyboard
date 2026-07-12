@@ -1,24 +1,15 @@
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '../core/pathConventions';
+import {
+  type RecommendCardsUseCase,
+  type RecommendCardsResult,
+} from '../application/cards/recommend-cards-use-case';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';
-import { parseCard } from '../files/card';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../files/draft';
-import { readSceneFile, type SceneFileSystem } from '../files/scene';
 import type { StoryboardCard } from '../shared/card';
-import { StoryboardAIService } from '../services/ai/AIService';
-import {
-  buildCardRecommendations,
-  type RecommendationSource,
-  type RecommendedCard,
-} from '../services/ai/cardRecommendationBuilder';
+import type { RecommendedCard } from '../services/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '../services/ai/prompts/cardRecommendation';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { StoryboardLogger } from '../core/logger';
 import {
   deriveUniqueCardId,
   needsCardIdPrompt,
@@ -30,19 +21,8 @@ const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';
 
 export interface RecommendCardDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly usageRecorder: UsageRecorder;
-  readonly logger: StoryboardLogger;
+  readonly recommendCardsUseCase: RecommendCardsUseCase;
 }
-
-const sceneFileSystem: SceneFileSystem = {
-  readFile: (uri) => vscode.workspace.fs.readFile(uri as vscode.Uri),
-};
-
-const draftFileSystem: DraftFileSystem = {
-  readFile: (uri) => vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri, content) => vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
 
 export function registerRecommendCardCommands(
   dependencies: RecommendCardDependencies,
@@ -68,26 +48,23 @@ async function recommendCards(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceRoot);
-  const sources = await gatherRecommendationSources(paths.sceneDirectory, paths.draftDirectory);
+  const result = await runRecommendationUseCase(category, workspaceRoot, dependencies);
 
-  if (sources.length === 0) {
+  if (!result || result.kind === 'cancelled') {
+    return;
+  }
+
+  if (result.kind === 'failed') {
+    await vscode.window.showErrorMessage(result.message);
+    return;
+  }
+
+  if (result.kind === 'no_sources') {
     await vscode.window.showInformationMessage('스캔할 scene 또는 draft가 없습니다.');
     return;
   }
 
-  const existingNames = await loadExistingCardNames(workspaceRoot, category);
-  const recommendations = await scanForRecommendations(
-    category,
-    sources,
-    existingNames,
-    workspaceRoot,
-    dependencies,
-  );
-
-  if (recommendations === undefined) {
-    return;
-  }
+  const { recommendations } = result;
 
   if (recommendations.length === 0) {
     await vscode.window.showInformationMessage(
@@ -110,40 +87,23 @@ async function recommendCards(
   );
 }
 
-async function scanForRecommendations(
+async function runRecommendationUseCase(
   category: RecommendationCategory,
-  sources: readonly RecommendationSource[],
-  existingNames: readonly string[],
   workspaceRoot: vscode.Uri,
   dependencies: RecommendCardDependencies,
-): Promise<RecommendedCard[] | undefined> {
-  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-    onUsage: (record): void =>
-      recordUsageSafely(dependencies.usageRecorder, workspaceRoot, record, dependencies.logger),
-  });
-
-  return vscode.window.withProgress(
+): Promise<RecommendCardsResult | undefined> {
+  return await vscode.window.withProgress(
     {
       location: vscode.ProgressLocation.Notification,
       title: 'scene·draft에서 새 카드를 찾는 중입니다…',
       cancellable: true,
     },
     async (_progress, token) => {
-      try {
-        const recommendations = await buildCardRecommendations({
-          category,
-          sources,
-          existingNames,
-          aiService,
-        });
-        return token.isCancellationRequested ? undefined : recommendations;
-      } catch (error) {
-        dependencies.logger.error('Card recommendation failed', error);
-        await vscode.window.showErrorMessage(
-          error instanceof Error ? error.message : '카드 추천에 실패했습니다.',
-        );
-        return undefined;
-      }
+      return await dependencies.recommendCardsUseCase.execute({
+        category,
+        shouldCancel: (): boolean => token.isCancellationRequested,
+        workspaceRoot,
+      });
     },
   );
 }
@@ -258,108 +218,4 @@ function buildCardFromRecommendation(
     ...createEmptyBackground(id, recommendation.name),
     ...description,
   };
-}
-
-async function gatherRecommendationSources(
-  sceneDirectory: vscode.Uri,
-  draftDirectory: vscode.Uri,
-): Promise<RecommendationSource[]> {
-  const sceneBodies = await readSceneBodies(sceneDirectory);
-  const draftBodies = await readDraftBodies(draftDirectory);
-
-  const stems = new Set<string>([...sceneBodies.keys(), ...draftBodies.keys()]);
-  const sources: RecommendationSource[] = [];
-
-  for (const stem of stems) {
-    const text = [sceneBodies.get(stem), draftBodies.get(stem)]
-      .filter((part): part is string => part !== undefined && part.trim().length > 0)
-      .join('\n\n');
-
-    if (text.trim().length > 0) {
-      sources.push({ sceneStem: stem, text });
-    }
-  }
-
-  return sources;
-}
-
-async function readSceneBodies(sceneDirectory: vscode.Uri): Promise<Map<string, string>> {
-  const bodies = new Map<string, string>();
-  const entries = await readDirectorySafely(sceneDirectory);
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith('.txt') || name.startsWith('.')) {
-      continue;
-    }
-
-    try {
-      const scene = await readSceneFile(
-        vscode.Uri.joinPath(sceneDirectory, name),
-        sceneFileSystem,
-        name,
-      );
-      bodies.set(scene.stem, scene.body);
-    } catch {
-      // skip unreadable or invalid scene files
-    }
-  }
-
-  return bodies;
-}
-
-async function readDraftBodies(draftDirectory: vscode.Uri): Promise<Map<string, string>> {
-  const bodies = new Map<string, string>();
-  const entries = await readDirectorySafely(draftDirectory);
-
-  for (const [name, fileType] of entries) {
-    if (fileType !== vscode.FileType.File || !name.endsWith('.md')) {
-      continue;
-    }
-
-    try {
-      const draft = parseDraft(
-        await readDraftFile(vscode.Uri.joinPath(draftDirectory, name), draftFileSystem),
-      );
-      bodies.set(draft.sceneStem, draft.body);
-    } catch {
-      // skip unreadable or unparsable drafts
-    }
-  }
-
-  return bodies;
-}
-
-async function loadExistingCardNames(
-  workspaceRoot: vscode.Uri,
-  category: RecommendationCategory,
-): Promise<string[]> {
-  const glob = category === 'character' ? 'character/*.card' : 'background/*.card';
-  const uris = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(workspaceRoot, glob),
-    undefined,
-  );
-  const names: string[] = [];
-
-  for (const uri of uris) {
-    if (isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? '')) {
-      continue;
-    }
-
-    try {
-      const card = parseCard(new TextDecoder().decode(await vscode.workspace.fs.readFile(uri)));
-      names.push(card.name, ...(card.aliases ?? []));
-    } catch {
-      // skip unreadable or invalid cards
-    }
-  }
-
-  return names;
-}
-
-async function readDirectorySafely(directory: vscode.Uri): Promise<[string, vscode.FileType][]> {
-  try {
-    return await vscode.workspace.fs.readDirectory(directory);
-  } catch {
-    return [];
-  }
 }

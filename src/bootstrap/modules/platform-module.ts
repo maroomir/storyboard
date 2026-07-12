@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 
 import { AiGateway } from '../../application/ai/ai-gateway';
+import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
+import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
@@ -31,6 +33,7 @@ export interface IPlatformServices {
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
+  readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
@@ -61,6 +64,7 @@ export class PlatformModule implements IApplicationModule {
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
+    const cardRecommendationRepository = new CardRecommendationRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
@@ -80,6 +84,11 @@ export class PlatformModule implements IApplicationModule {
       usageRecorder,
       logger,
     });
+    const recommendCardsUseCase = new RecommendCardsUseCase(
+      aiGateway,
+      logger,
+      cardRecommendationRepository,
+    );
     const novelPipeline = new NovelPipeline({
       aiGateway,
       aiProviderRegistry,
@@ -99,6 +108,7 @@ export class PlatformModule implements IApplicationModule {
       logger,
       novelPipeline,
       postGenerationUpdates,
+      recommendCardsUseCase,
       reviseDraftUseCase,
       secretStore,
       usageRecorder,
