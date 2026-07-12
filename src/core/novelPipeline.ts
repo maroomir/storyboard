@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { GenerateDraftUseCase } from '../application/drafts/generate-draft-use-case';
 import { listCharacterBriefs } from './characterBriefs';
 import type { StoryboardLogger } from './logger';
 import { assembleManuscript } from './manuscriptAssembly';
@@ -15,8 +16,7 @@ import { getStoryboardProjectPaths, type StoryboardProjectPaths } from './pathCo
 import { runReviseDraftWorkflow } from './reviseDraftWorkflow';
 import { recordRevisionEntry } from './revisionPlanRecorder';
 import { buildSceneSeeds } from './sceneSeedFactory';
-import { resolveScenePrefixDigitCount } from '../commands/scenePrefixDigits';
-import { generateDraftForWorkspaceSceneWorkflow } from '../commands/generateDraft';
+import { resolveScenePrefixDigitCount } from '../domain/scene-prefix-digits';
 import { type CardFileSystem } from '../files/card';
 import { readBibleFile, type BibleFileSystem } from '../files/bible';
 import { type DraftFileSystem } from '../files/draft';
@@ -37,7 +37,6 @@ import { StoryboardAIService } from '../services/ai/AIService';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import { recordUsageSafely } from '../services/ai/recordUsageSafely';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../shared/outline';
 import type { StoryboardProject } from '../shared/project';
@@ -60,8 +59,8 @@ async function writeTextFile(uri: vscode.Uri, text: string): Promise<void> {
 export interface NovelPipelineDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -303,16 +302,8 @@ async function runChapterDraftsAndRevise(
     }
 
     const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, `${stem}.txt`);
-    const draftResult = await generateDraftForWorkspaceSceneWorkflow(sceneUri, {
+    const draftResult = await options.deps.generateDraftUseCase.execute(sceneUri, {
       force: false,
-      aiProviderRegistry: options.deps.aiProviderRegistry,
-      configBridge: options.deps.configBridge,
-      logger: options.deps.logger,
-      postGenerationUpdates: options.deps.postGenerationUpdates,
-      usageRecorder: options.deps.usageRecorder,
-      openDocumentOnSuccess: false,
-      showCacheHitMessage: false,
-      showSuccessMessage: false,
       suppressLoggerPanel: true,
       shouldCancel: options.shouldCancel,
     });

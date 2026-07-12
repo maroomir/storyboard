@@ -9,7 +9,7 @@ import {
   formatSceneOrderPrefix,
   validateSceneSlugInput,
 } from './newSceneHelpers';
-import { resolveScenePrefixDigitCount } from './scenePrefixDigits';
+import { resolveScenePrefixDigitCount } from '../domain/scene-prefix-digits';
 
 const createSceneCommand = 'storyboard.scene.create';
 const openSceneDraftCommand = 'storyboard.scene.openDraft';

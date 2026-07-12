@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { GenerateDraftUseCase } from '../application/drafts/generate-draft-use-case';
 import { validateGenerationContract } from '../core/generationContract';
 import type { StoryboardLogger } from '../core/logger';
 import {
@@ -20,7 +21,6 @@ import {
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
 import type { ContractFieldKey } from '../shared/project';
 import { resolveReviseMaxIterations } from './reviseDraft';
 
@@ -49,8 +49,8 @@ const fileSystem: NovelRunStateFileSystem = {
 export interface RegisterGenerateNovelCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 

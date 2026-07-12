@@ -18,9 +18,6 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
 
-vi.mock("@/commands/generateDraft", () => ({
-  generateDraftForWorkspaceSceneWorkflow: (...args: unknown[]): unknown => generateDraftMock(...args)
-}))
 vi.mock("@/core/reviseDraftWorkflow", () => ({
   runReviseDraftWorkflow: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args)
 }))
@@ -147,6 +144,7 @@ function createHarness(overrides: Partial<NovelPipelineOptions> = {}): PipelineH
     deps: {
       aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
       configBridge: {} as never,
+      generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
       logger: { error: () => undefined, info: () => undefined } as never,
       usageRecorder: {} as never
     },

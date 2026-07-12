@@ -27,8 +27,12 @@ vi.mock("@/core/sceneContext", () => ({
   buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
 }))
 
-import { generateDraftForWorkspaceSceneWorkflow } from "@/commands/generateDraft"
-import type { GenerateDraftWorkflowOptions } from "@/commands/generateDraft"
+import {
+  GenerateDraftUseCase,
+  type GenerateDraftResult,
+  type GenerateDraftRequest,
+  type GenerateDraftUseCaseDependencies
+} from "@/application/drafts/generate-draft-use-case"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.txt")
@@ -48,20 +52,24 @@ function createLogger(): LoggerSpy {
 
 function createOptions(
   logger: LoggerSpy,
-  overrides: Partial<GenerateDraftWorkflowOptions> = {}
-): GenerateDraftWorkflowOptions {
+  overrides: Partial<GenerateDraftRequest> = {}
+): GenerateDraftUseCaseDependencies & GenerateDraftRequest {
   return {
     force: false,
     aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
     configBridge: { isAiContextCondenseEnabled: () => false } as never,
     logger: logger as never,
     usageRecorder: {} as never,
-    openDocumentOnSuccess: false,
-    showCacheHitMessage: false,
-    showSuccessMessage: false,
     suppressLoggerPanel: false,
     ...overrides
   }
+}
+
+async function generateDraftForWorkspaceSceneWorkflow(
+  sceneUri: vscode.Uri,
+  options: GenerateDraftUseCaseDependencies & GenerateDraftRequest
+): Promise<GenerateDraftResult> {
+  return await new GenerateDraftUseCase(options).execute(sceneUri, options)
 }
 
 const fakeScene = {

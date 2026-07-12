@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { StoryboardLogger } from '../../core/logger';
 import {
   createAiProviderRegistry,
@@ -15,6 +16,7 @@ import type { IApplicationModule } from '../lifecycle/application-module';
 export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly secretStore: SecretStore;
@@ -43,10 +45,18 @@ export class PlatformModule implements IApplicationModule {
     const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
       logger.warn(message),
     );
+    const generateDraftUseCase = new GenerateDraftUseCase({
+      aiProviderRegistry,
+      configBridge,
+      logger,
+      postGenerationUpdates,
+      usageRecorder,
+    });
 
     this.services = {
       aiProviderRegistry,
       configBridge,
+      generateDraftUseCase,
       logger,
       postGenerationUpdates,
       secretStore,

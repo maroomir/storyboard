@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
 
+import {
+  type GenerateDraftUseCase,
+  type GenerateDraftResult,
+} from '../application/drafts/generate-draft-use-case';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
@@ -8,8 +12,7 @@ import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
-import { generateDraftForWorkspaceSceneWorkflow, stageProgressLabel } from './generateDraft';
+import { stageProgressLabel } from './generateDraft';
 import { maybeRunReviseAfterGenerate } from './reviseDraft';
 
 const generateAllDraftsCommand = 'storyboard.draft.generateAll';
@@ -17,8 +20,8 @@ const generateAllDraftsCommand = 'storyboard.draft.generateAll';
 export interface RegisterGenerateAllDraftsCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -100,17 +103,9 @@ async function generateAllDraftsWithProgress(
     const label = sceneUri.path.split('/').pop() ?? sceneUri.fsPath;
     progress.report({ message: `[${index + 1}/${total}] ${label} — 준비 중…` });
 
-    const result = await generateDraftForWorkspaceSceneWorkflow(sceneUri, {
+    const result = await dependencies.generateDraftUseCase.execute(sceneUri, {
       force: false,
-      aiProviderRegistry: dependencies.aiProviderRegistry,
-      configBridge: dependencies.configBridge,
-      logger: dependencies.logger,
-      postGenerationUpdates: dependencies.postGenerationUpdates,
-      usageRecorder: dependencies.usageRecorder,
       suppressLoggerPanel: true,
-      openDocumentOnSuccess: false,
-      showCacheHitMessage: false,
-      showSuccessMessage: false,
       onPipelineProgress: (
         stage: SceneGenerationPipelineStage,
         current: number,
@@ -133,7 +128,7 @@ async function generateAllDraftsWithProgress(
       shouldCancel: () => token.isCancellationRequested,
     });
 
-    if (result.ok) {
+    if (isSuccessfulDraftResult(result)) {
       if (result.kind === 'cache_hit') {
         summary.cacheHits += 1;
       } else {
@@ -170,6 +165,12 @@ async function generateAllDraftsWithProgress(
 
     dependencies.logger.error(`Draft generation failed for ${label}`, new Error(result.message));
   }
+}
+
+function isSuccessfulDraftResult(
+  result: GenerateDraftResult,
+): result is Extract<GenerateDraftResult, { ok: true }> {
+  return result.ok;
 }
 
 async function reportGenerateAllDraftsSummary(
