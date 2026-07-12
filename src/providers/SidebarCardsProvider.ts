@@ -1,33 +1,20 @@
 import * as vscode from 'vscode';
 
-import { isIgnoredSampleCardFileName } from '../core/pathConventions';
+import type {
+  ICardSidebarRepository,
+  SidebarCardCategory,
+} from '../application/cards/card-sidebar-repository';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
-import { parseCard } from '../files/card';
 import { emptyUsageSummary } from '../files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { UsageSummaryByEntity } from '../services/ai/types';
-import { isCharacterRole, joinCardText, type CardType } from '../shared/card';
 import type { SidebarCardSummary, StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const cardEditorViewType = 'storyboard.card';
-
-function isIgnoredCardUri(uri: vscode.Uri): boolean {
-  return isIgnoredSampleCardFileName(uri.path.split('/').at(-1) ?? '');
-}
-
-type SidebarCardCategory = 'character' | 'background';
-
-function toSidebarCardCategory(cardType: CardType): SidebarCardCategory {
-  return cardType === 'character' ? 'character' : 'background';
-}
-
-function representativeCardType(category: SidebarCardCategory): CardType {
-  return category === 'character' ? 'character' : 'location';
-}
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;
@@ -46,6 +33,7 @@ interface SidebarCardsInitialData {
 
 export interface SidebarCardsProvidersDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
+  readonly cardSidebarRepository: ICardSidebarRepository;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -198,51 +186,7 @@ export class SidebarCardsProvider implements vscode.WebviewViewProvider, vscode.
       return [];
     }
 
-    const cardUris = await vscode.workspace.findFiles(
-      new vscode.RelativePattern(root, this.options.cardGlob),
-      undefined,
-    );
-    const visibleCardUris = cardUris.filter((uri) => !isIgnoredCardUri(uri));
-    const summaries = await Promise.all(visibleCardUris.map((uri) => this.loadCardSummary(uri)));
-
-    return summaries.sort((left, right) => left.name.localeCompare(right.name, 'ko'));
-  }
-
-  private async loadCardSummary(uri: vscode.Uri): Promise<SidebarCardSummary> {
-    try {
-      const rawCard = new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
-      const card = parseCard(rawCard);
-      const category = toSidebarCardCategory(card.type);
-
-      if (category !== this.options.cardType) {
-        return {
-          type: representativeCardType(this.options.cardType),
-          id: uri.path,
-          name: uri.path.split('/').at(-1) ?? uri.toString(),
-          uri: uri.toString(),
-          error: `Expected ${this.options.cardType} card, got ${card.type}.`,
-        };
-      }
-
-      const role = card.type === 'character' && isCharacterRole(card.role) ? card.role : undefined;
-
-      return {
-        type: card.type,
-        id: card.id,
-        name: card.name,
-        uri: uri.toString(),
-        description: joinCardText(card.description),
-        ...(role ? { role } : {}),
-      };
-    } catch (error) {
-      return {
-        type: representativeCardType(this.options.cardType),
-        id: uri.path,
-        name: uri.path.split('/').at(-1) ?? uri.toString(),
-        uri: uri.toString(),
-        error: error instanceof Error ? error.message : '카드를 읽을 수 없습니다.',
-      };
-    }
+    return await this.dependencies.cardSidebarRepository.list(root, this.options.cardType);
   }
 }
 

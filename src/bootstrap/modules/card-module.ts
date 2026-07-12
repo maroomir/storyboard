@@ -24,6 +24,7 @@ export class CardModule implements IApplicationModule {
     const {
       aiProviderRegistry,
       collectCardProposalsUseCase,
+      cardSidebarRepository,
       logger,
       promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
@@ -46,7 +47,11 @@ export class CardModule implements IApplicationModule {
         usageRecorder,
         logger,
       }),
-      registerSidebarCardsProviders(context, { aiProviderRegistry, usageRecorder }),
+      registerSidebarCardsProviders(context, {
+        aiProviderRegistry,
+        cardSidebarRepository,
+        usageRecorder,
+      }),
     );
   }
 

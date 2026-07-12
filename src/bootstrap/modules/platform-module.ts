@@ -14,6 +14,7 @@ import { DraftRepository } from '../../infrastructure/persistence/repositories/d
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
 import { CardCollectRepository } from '../../infrastructure/persistence/repositories/card-collect-repository';
+import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/card-sidebar-repository';
 import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bible-candidate-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
@@ -39,6 +40,7 @@ export interface IPlatformServices {
   readonly configBridge: ConfigBridge;
   readonly decodeSeedUseCase: DecodeSeedUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
+  readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
@@ -82,6 +84,7 @@ export class PlatformModule implements IApplicationModule {
     const cardRecommendationRepository = new CardRecommendationRepository();
     const cardCandidateRepository = new CardCandidateRepository(logger);
     const cardCollectRepository = new CardCollectRepository();
+    const cardSidebarRepository = new CardSidebarRepository();
     const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
@@ -130,6 +133,7 @@ export class PlatformModule implements IApplicationModule {
       augmentDraftUseCase,
       aiProviderRegistry,
       collectCardProposalsUseCase,
+      cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,
       fileSystem,
