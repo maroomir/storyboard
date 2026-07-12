@@ -7,6 +7,7 @@ import {
   type DraftExpansionContext,
   type InlineCompletionContext,
 } from './DraftAiService';
+import { SceneAiService } from './SceneAiService';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, UsageAttribution, WiredAiTaskName } from './types';
@@ -34,11 +35,6 @@ import {
   type RecommendationCategory,
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
-import { GenreFormattingPrompt } from './prompts/genreFormatting';
-import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
-import { PersonaDialoguePrompt } from './prompts/personaDialogue';
-import { PersonaGenerationPrompt } from './prompts/personaGeneration';
-import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseBulletList, parseJsonArray, parseJsonObject } from '@/utils/aiResponseParser';
@@ -55,7 +51,6 @@ import type { SceneCoverageIssue } from '@/shared/sceneCoverage';
 import {
   toFactCandidate,
   toPromptMessages,
-  toSituationWithCharacters,
   type ContinuityIssue,
   type FactCandidate,
   type GrammarIssue,
@@ -93,6 +88,7 @@ export type { DraftExpansionContext, InlineCompletionContext } from './DraftAiSe
 export class StoryboardAIService {
   private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
+  private readonly sceneAiService: SceneAiService;
 
   public constructor(
     registry: AiProviderRegistry,
@@ -100,57 +96,28 @@ export class StoryboardAIService {
   ) {
     this.gateway = new AiTextGateway(registry, serviceOptions);
     this.draftAiService = new DraftAiService(this.gateway);
+    this.sceneAiService = new SceneAiService(this.gateway);
   }
 
   public async extractSituations(
     input: string,
     options: GenerateTextOptions = {},
   ): Promise<SituationWithCharacters[]> {
-    const variant = this.gateway.resolvePromptVariant('situationExtraction', options);
-    const prompt = SituationExtractionPrompt.build(input, variant);
-    const response = await this.gateway.generate(
-      'situationExtraction',
-      toPromptMessages(prompt),
-      options,
-    );
-    const parsedArray = parseJsonArray(response.text);
-
-    if (!parsedArray) {
-      return [];
-    }
-
-    return parsedArray.flatMap((item) => toSituationWithCharacters(item));
+    return this.sceneAiService.extractSituations(input, options);
   }
 
   public async createCharacterPersona(
     character: Character,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('personaGeneration', options);
-    const prompt = PersonaGenerationPrompt.build(character, variant, options.styleDirective);
-    const response = await this.gateway.generate(
-      'personaGeneration',
-      toPromptMessages(prompt),
-      options,
-    );
-
-    return response.text.trim();
+    return this.sceneAiService.createCharacterPersona(character, options);
   }
 
   public async describeBackground(
     background: Background,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('backgroundDescription', options);
-    const prompt = BackgroundDescriptionPrompt.build(background, variant);
-    const response = await this.generateWithDefaults(
-      'backgroundDescription',
-      prompt,
-      BackgroundDescriptionPrompt.config,
-      options,
-    );
-
-    return response.text.trim();
+    return this.sceneAiService.describeBackground(background, options);
   }
 
   public async generatePersonaDialogue(
@@ -160,22 +127,13 @@ export class StoryboardAIService {
     previousContext?: string,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('personaDialogue', options);
-    const prompt = PersonaDialoguePrompt.build(
+    return this.sceneAiService.generatePersonaDialogue(
       situation,
       personas,
       background,
       previousContext,
-      variant,
-      options.styleDirective,
-    );
-    const response = await this.gateway.generate(
-      'personaDialogue',
-      toPromptMessages(prompt),
       options,
     );
-
-    return response.text.trim();
   }
 
   public async applyGenreFormat(
@@ -183,11 +141,7 @@ export class StoryboardAIService {
     format: ProjectFormat,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('sceneDraft', options);
-    const prompt = GenreFormattingPrompt.build(dialogue, format, variant, options.styleDirective);
-    const response = await this.gateway.generate('sceneDraft', toPromptMessages(prompt), options);
-
-    return response.text.trim();
+    return this.sceneAiService.applyGenreFormat(dialogue, format, options);
   }
 
   private async extractPerCharacter<T>(
