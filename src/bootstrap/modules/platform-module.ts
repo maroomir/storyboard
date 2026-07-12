@@ -4,6 +4,7 @@ import { AiGateway } from '../../application/ai/ai-gateway';
 import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
 import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-card-candidates-use-case';
 import { CollectCardProposalsUseCase } from '../../application/cards/collect-card-proposals-use-case';
+import { CreateCardUseCase } from '../../application/cards/create-card-use-case';
 import { PromoteBibleCandidatesUseCase } from '../../application/project/promote-bible-candidates-use-case';
 import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-case';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
@@ -16,6 +17,7 @@ import { DraftRepository } from '../../infrastructure/persistence/repositories/d
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
 import { CardCollectRepository } from '../../infrastructure/persistence/repositories/card-collect-repository';
+import { CardWriterRepository } from '../../infrastructure/persistence/repositories/card-writer-repository';
 import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/card-sidebar-repository';
 import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bible-candidate-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
@@ -44,6 +46,7 @@ export interface IPlatformServices {
   readonly decodeSeedUseCase: DecodeSeedUseCase;
   readonly prepareSeedSyncUseCase: PrepareSeedSyncUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
+  readonly createCardUseCase: CreateCardUseCase;
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
@@ -91,6 +94,7 @@ export class PlatformModule implements IApplicationModule {
     const cardRecommendationRepository = new CardRecommendationRepository();
     const cardCandidateRepository = new CardCandidateRepository(logger);
     const cardCollectRepository = new CardCollectRepository();
+    const cardWriterRepository = new CardWriterRepository();
     const cardSidebarRepository = new CardSidebarRepository();
     const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
@@ -127,6 +131,7 @@ export class PlatformModule implements IApplicationModule {
       aiGateway,
       cardCollectRepository,
     );
+    const createCardUseCase = new CreateCardUseCase(cardWriterRepository);
     const promoteCardCandidatesUseCase = new PromoteCardCandidatesUseCase(cardCandidateRepository);
     const promoteBibleCandidatesUseCase = new PromoteBibleCandidatesUseCase(
       bibleCandidateRepository,
@@ -146,6 +151,7 @@ export class PlatformModule implements IApplicationModule {
       augmentDraftUseCase,
       aiProviderRegistry,
       collectCardProposalsUseCase,
+      createCardUseCase,
       cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,

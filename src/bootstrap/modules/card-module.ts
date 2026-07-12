@@ -24,6 +24,7 @@ export class CardModule implements IApplicationModule {
     const {
       aiProviderRegistry,
       collectCardProposalsUseCase,
+      createCardUseCase,
       cardSidebarRepository,
       logger,
       promoteBibleCandidatesUseCase,
@@ -33,8 +34,8 @@ export class CardModule implements IApplicationModule {
     } = this.platform;
 
     this.disposables.add(
-      registerCreateCardCommands(),
-      registerRecommendCardCommands({ recommendCardsUseCase }),
+      registerCreateCardCommands({ createCardUseCase }),
+      registerRecommendCardCommands({ createCardUseCase, recommendCardsUseCase }),
       registerRenameCardCommands(),
       registerMigrateCardTextCommand({ logger }),
       registerCardRenameParticipant({ logger }),

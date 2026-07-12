@@ -10,17 +10,14 @@ import { createEmptyCharacter } from '../domain/Character';
 import type { StoryboardCard } from '../shared/card';
 import type { RecommendedCard } from '../services/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '../services/ai/prompts/cardRecommendation';
-import {
-  deriveUniqueCardId,
-  needsCardIdPrompt,
-  validateCardId,
-  writeNewCardFiles,
-} from './createCard';
+import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
+import type { CreateCardUseCase } from '../application/cards/create-card-use-case';
 
 const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';
 
 export interface RecommendCardDependencies {
+  readonly createCardUseCase: CreateCardUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
 }
 
@@ -81,7 +78,12 @@ async function recommendCards(
     return;
   }
 
-  const created = await createCardsFromRecommendations(workspaceRoot, category, picked);
+  const created = await createCardsFromRecommendations(
+    workspaceRoot,
+    category,
+    picked,
+    dependencies.createCardUseCase,
+  );
   await vscode.window.showInformationMessage(
     `${created}개의 ${category === 'character' ? '캐릭터' : '배경'} 카드를 추가했습니다.`,
   );
@@ -151,6 +153,7 @@ async function createCardsFromRecommendations(
   workspaceRoot: vscode.Uri,
   category: RecommendationCategory,
   recommendations: readonly RecommendedCard[],
+  createCardUseCase: CreateCardUseCase,
 ): Promise<number> {
   const cardType: StoryboardCard['type'] = category === 'character' ? 'character' : 'location';
   let created = 0;
@@ -162,13 +165,13 @@ async function createCardsFromRecommendations(
       continue;
     }
 
-    const id = await deriveUniqueCardId(
+    const id = await createCardUseCase.deriveUniqueId(
       workspaceRoot,
       cardType,
-      recommendation.name,
-      base ?? undefined,
+      base ?? suggestCardId(recommendation.name),
+      cardType === 'character' ? 'character' : 'background',
     );
-    await writeNewCardFiles(
+    await createCardUseCase.write(
       workspaceRoot,
       buildCardFromRecommendation(category, id, recommendation),
     );
