@@ -254,28 +254,14 @@ export interface ScheduleCardCandidateUpdateInput extends UpdateCardCandidatesFr
 
 const cardCandidateQueues = new Map<string, Promise<unknown>>();
 
-function enqueueKeyedJob(
-  queueKey: string,
-  task: () => Promise<CardCandidateUpdateSummary>,
-): Promise<CardCandidateUpdateSummary> {
+export function scheduleCardCandidateUpdate(input: ScheduleCardCandidateUpdateInput): void {
+  const { queueKey, onComplete, logger, ...rest } = input;
   const previous = cardCandidateQueues.get(queueKey) ?? Promise.resolve();
   const next = previous
     .catch(() => undefined)
-    .then(() => task()) as Promise<CardCandidateUpdateSummary>;
+    .then(() => updateCardCandidatesFromDraft({ ...rest, logger }));
   cardCandidateQueues.set(queueKey, next);
-
-  return next;
-}
-
-export function scheduleCardCandidateUpdate(input: ScheduleCardCandidateUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-
-  void enqueueKeyedJob(queueKey, () => updateCardCandidatesFromDraft({ ...rest, logger })).then(
-    (summary) => {
-      onComplete?.(summary);
-    },
-    (error: unknown) => {
-      logger?.error('Card candidate background update failed', error);
-    },
+  void next.then(onComplete, (error: unknown) =>
+    logger?.error('Card candidate background update failed', error),
   );
 }

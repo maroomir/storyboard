@@ -69,32 +69,16 @@ export interface ScheduleBackgroundCharacterUpdateInput extends UpdateBackground
 
 const backgroundCharacterQueues = new Map<string, Promise<unknown>>();
 
-function enqueueKeyedJob(
-  queueKey: string,
-  task: () => Promise<BackgroundCharacterUpdateSummary>,
-): Promise<BackgroundCharacterUpdateSummary> {
-  const previous = backgroundCharacterQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() => task()) as Promise<BackgroundCharacterUpdateSummary>;
-  backgroundCharacterQueues.set(queueKey, next);
-
-  return next;
-}
-
 export function scheduleBackgroundCharacterUpdate(
   input: ScheduleBackgroundCharacterUpdateInput,
 ): void {
   const { queueKey, onComplete, logger, ...rest } = input;
-
-  void enqueueKeyedJob(queueKey, () =>
-    updateBackgroundCharactersFromScene({ ...rest, logger }),
-  ).then(
-    (summary) => {
-      onComplete?.(summary);
-    },
-    (error: unknown) => {
-      logger?.error('Background character background update failed', error);
-    },
+  const previous = backgroundCharacterQueues.get(queueKey) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(() => updateBackgroundCharactersFromScene({ ...rest, logger }));
+  backgroundCharacterQueues.set(queueKey, next);
+  void next.then(onComplete, (error: unknown) =>
+    logger?.error('Background character background update failed', error),
   );
 }

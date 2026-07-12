@@ -228,27 +228,13 @@ export interface ScheduleCharacterTraitsUpdateInput extends UpdateCharacterTrait
 
 const traitsUpdateQueues = new Map<string, Promise<unknown>>();
 
-function enqueueKeyedTraitsJob(
-  queueKey: string,
-  task: () => Promise<TraitsUpdateSummary>,
-): Promise<TraitsUpdateSummary> {
-  const previous = traitsUpdateQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(() => task()) as Promise<TraitsUpdateSummary>;
-  traitsUpdateQueues.set(queueKey, next);
-
-  return next;
-}
-
 export function scheduleCharacterTraitsUpdate(input: ScheduleCharacterTraitsUpdateInput): void {
   const { queueKey, onComplete, logger, ...rest } = input;
-
-  void enqueueKeyedTraitsJob(queueKey, () => updateCharacterTraitsFromDraft(rest)).then(
-    (summary) => {
-      onComplete?.(summary);
-    },
-    (error: unknown) => {
-      logger?.error('Traits background update failed', error);
-    },
+  const previous = traitsUpdateQueues.get(queueKey) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(() => updateCharacterTraitsFromDraft(rest));
+  traitsUpdateQueues.set(queueKey, next);
+  void next.then(onComplete, (error: unknown) =>
+    logger?.error('Traits background update failed', error),
   );
 }
 

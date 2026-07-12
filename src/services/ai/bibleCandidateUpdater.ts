@@ -110,28 +110,14 @@ export interface ScheduleBibleCandidateUpdateInput extends UpdateBibleCandidates
 
 const bibleCandidateQueues = new Map<string, Promise<unknown>>();
 
-function enqueueKeyedJob(
-  queueKey: string,
-  task: () => Promise<BibleCandidateUpdateSummary>,
-): Promise<BibleCandidateUpdateSummary> {
+export function scheduleBibleCandidateUpdate(input: ScheduleBibleCandidateUpdateInput): void {
+  const { queueKey, onComplete, logger, ...rest } = input;
   const previous = bibleCandidateQueues.get(queueKey) ?? Promise.resolve();
   const next = previous
     .catch(() => undefined)
-    .then(() => task()) as Promise<BibleCandidateUpdateSummary>;
+    .then(() => updateBibleCandidatesFromDraft({ ...rest, logger }));
   bibleCandidateQueues.set(queueKey, next);
-
-  return next;
-}
-
-export function scheduleBibleCandidateUpdate(input: ScheduleBibleCandidateUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-
-  void enqueueKeyedJob(queueKey, () => updateBibleCandidatesFromDraft({ ...rest, logger })).then(
-    (summary) => {
-      onComplete?.(summary);
-    },
-    (error: unknown) => {
-      logger?.error('Bible candidate background update failed', error);
-    },
+  void next.then(onComplete, (error: unknown) =>
+    logger?.error('Bible candidate background update failed', error),
   );
 }
