@@ -144,6 +144,24 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
   workspace.getWorkspaceFolder = (): undefined => undefined
 
   const dependencies: NovelPipelineDependencies = {
+    aiGateway: {
+      createService: () => ({
+        generateOutlineSynopsis: async (): Promise<unknown> => ({
+          logline: "",
+          genrePromise: "",
+          mainConflicts: [],
+          ending: "",
+          theme: "",
+          tone: "",
+          styleRules: []
+        }),
+        generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
+        checkContinuity: async (): Promise<unknown[]> => [],
+        critiqueDraft: async (): Promise<unknown[]> => [],
+        summarizeChapter: async (): Promise<string> => ""
+      }),
+      getTaskProvider: () => "mock"
+    } as never,
     aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
     configBridge: {} as never,
     generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,

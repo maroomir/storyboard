@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../ai/ai-gateway';
 import type { GenerateDraftUseCase } from '../drafts/generate-draft-use-case';
 import { listCharacterBriefs } from '../../core/characterBriefs';
 import type { StoryboardLogger } from '../../core/logger';
@@ -35,7 +36,6 @@ import {
 } from '../../files/novelRunState';
 import { StoryboardAIService } from '../../services/ai/AIService';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
-import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
 import type { UsageRecorder } from '../../services/ai/UsageRecorder';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
@@ -57,6 +57,7 @@ async function writeTextFile(uri: vscode.Uri, text: string): Promise<void> {
 }
 
 export interface NovelPipelineDependencies {
+  readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
@@ -129,16 +130,7 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   };
 
   const newAiService = (): StoryboardAIService =>
-    new StoryboardAIService(options.deps.aiProviderRegistry, {
-      onUsage: (record): void => {
-        recordUsageSafely(
-          options.deps.usageRecorder,
-          options.workspaceUri,
-          record,
-          options.deps.logger,
-        );
-      },
-    });
+    options.deps.aiGateway.createService(options.workspaceUri);
 
   const runStageOnce = async (
     stage: NovelStageName,

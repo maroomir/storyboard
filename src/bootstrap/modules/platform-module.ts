@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import { AiGateway } from '../../application/ai/ai-gateway';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { StoryboardLogger } from '../../core/logger';
@@ -15,6 +16,7 @@ import { ConfigBridge } from '../../services/settings/ConfigBridge';
 import type { IApplicationModule } from '../lifecycle/application-module';
 
 export interface IPlatformServices {
+  readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
@@ -47,14 +49,15 @@ export class PlatformModule implements IApplicationModule {
     const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
       logger.warn(message),
     );
+    const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const generateDraftUseCase = new GenerateDraftUseCase({
-      aiProviderRegistry,
+      aiGateway,
       configBridge,
       logger,
       postGenerationUpdates,
-      usageRecorder,
     });
     const novelPipeline = new NovelPipeline({
+      aiGateway,
       aiProviderRegistry,
       configBridge,
       generateDraftUseCase,
@@ -63,6 +66,7 @@ export class PlatformModule implements IApplicationModule {
     });
 
     this.services = {
+      aiGateway,
       aiProviderRegistry,
       configBridge,
       generateDraftUseCase,

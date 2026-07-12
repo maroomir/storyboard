@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../ai/ai-gateway';
 import { buildNarrativeContext, buildSceneContext } from '../../core/sceneContext';
 import type { StoryboardLogger } from '../../core/logger';
 import {
@@ -34,21 +35,18 @@ import {
 } from '../../files/cardMemoryWorkspace';
 import { parseSceneFileName } from '../../shared/scene';
 import { buildStyleDirective } from '../../shared/styleDirective';
-import { StoryboardAIService } from '../../services/ai/AIService';
+import { type StoryboardAIService } from '../../services/ai/AIService';
 import {
   resolveSceneBreakJoiner,
   runSceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
   type SceneGenerationPipelineStage,
 } from '../../services/ai/pipelines/sceneGenerationPipeline';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { type TraitsUpdateSummary } from '../../services/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';
 import { bibleCandidateFilePath, ensureBibleCacheDirectory } from '../../files/bibleCacheWorkspace';
 import { cardCandidateFilePath, ensureCardCacheDirectory } from '../../files/cardCacheWorkspace';
-import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../../services/ai/UsageRecorder';
 import type { AiProviderId, AiTaskName } from '../../services/ai/types';
 import { joinCardText, type BackgroundCard } from '../../shared/card';
 
@@ -84,11 +82,10 @@ async function isCacheHit(
 }
 
 export interface GenerateDraftUseCaseDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export interface GenerateDraftRequest {
@@ -411,20 +408,16 @@ async function runAndPersistDraft(
   const { workspaceFolder, paths, scene, project, context, previousContext, draftUri, cacheUri } =
     inputs;
 
-  const aiService = new StoryboardAIService(options.aiProviderRegistry, {
-    onUsage: (record): void => {
-      recordUsageSafely(options.usageRecorder, workspaceFolder.uri, record, options.logger);
-    },
-  });
+  const aiService = options.aiGateway.createService(workspaceFolder.uri);
   const pipelineProviders = {
-    situationExtraction: options.aiProviderRegistry.getTaskProvider('situationExtraction'),
-    personaGeneration: options.aiProviderRegistry.getTaskProvider('personaGeneration'),
-    personaDialogue: options.aiProviderRegistry.getTaskProvider('personaDialogue'),
-    sceneDraft: options.aiProviderRegistry.getTaskProvider('sceneDraft'),
+    situationExtraction: options.aiGateway.getTaskProvider('situationExtraction'),
+    personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
+    personaDialogue: options.aiGateway.getTaskProvider('personaDialogue'),
+    sceneDraft: options.aiGateway.getTaskProvider('sceneDraft'),
   };
   const cacheProviders = {
     ...pipelineProviders,
-    traitsExtraction: options.aiProviderRegistry.getTaskProvider('traitsExtraction'),
+    traitsExtraction: options.aiGateway.getTaskProvider('traitsExtraction'),
   } satisfies Partial<Record<AiTaskName, AiProviderId>>;
 
   try {

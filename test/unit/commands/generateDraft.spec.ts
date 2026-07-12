@@ -56,10 +56,12 @@ function createOptions(
 ): GenerateDraftUseCaseDependencies & GenerateDraftRequest {
   return {
     force: false,
-    aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
+    aiGateway: {
+      createService: () => undefined,
+      getTaskProvider: () => "mock"
+    } as never,
     configBridge: { isAiContextCondenseEnabled: () => false } as never,
     logger: logger as never,
-    usageRecorder: {} as never,
     suppressLoggerPanel: false,
     ...overrides
   }
