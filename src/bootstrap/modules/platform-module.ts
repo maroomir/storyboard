@@ -9,6 +9,7 @@ import { PromoteBibleCandidatesUseCase } from '../../application/project/promote
 import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-case';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
 import { SeedProjectUseCase } from '../../application/project/seed-project-use-case';
+import { AssembleManuscriptUseCase } from '../../application/manuscript/assemble-manuscript-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generate-all-drafts-use-case';
@@ -30,6 +31,7 @@ import { SceneRepository } from '../../infrastructure/persistence/repositories/s
 import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/scene-batch-repository';
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
 import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seed-project-repository';
+import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscript-assembly-repository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
 import { StoryboardLogger } from '../../core/logger';
 import {
@@ -46,6 +48,7 @@ import type { IApplicationModule } from '../lifecycle/application-module';
 
 export interface IPlatformServices {
   readonly aiGateway: AiGateway;
+  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
@@ -111,11 +114,16 @@ export class PlatformModule implements IApplicationModule {
     const sceneRepository = new SceneRepository(fileSystem);
     const sceneBatchRepository = new SceneBatchRepository();
     const sceneSidebarRepository = new SceneSidebarRepository();
+    const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository();
     const seedProjectRepository = new SeedProjectRepository();
     const seedProjectUseCase = new SeedProjectUseCase(
       logger,
       prepareSeedSyncUseCase,
       seedProjectRepository,
+    );
+    const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
+      logger,
+      manuscriptAssemblyRepository,
     );
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
@@ -171,6 +179,7 @@ export class PlatformModule implements IApplicationModule {
 
     this.services = {
       aiGateway,
+      assembleManuscriptUseCase,
       augmentDraftUseCase,
       aiProviderRegistry,
       collectCardProposalsUseCase,
