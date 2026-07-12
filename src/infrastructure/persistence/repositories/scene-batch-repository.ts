@@ -1,0 +1,45 @@
+import * as vscode from 'vscode';
+
+import type {
+  BatchSceneList,
+  ISceneBatchRepository,
+} from '../../../application/drafts/generate-all-drafts-use-case';
+import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../../core/pathConventions';
+import { hasStoryboardProject } from '../../../core/workspace';
+import { parseSceneFileName } from '../../../shared/scene';
+
+export class SceneBatchRepository implements ISceneBatchRepository {
+  public async listStoryboardScenes(): Promise<BatchSceneList> {
+    const scenes: vscode.Uri[] = [];
+    let projectCount = 0;
+    for (const folder of vscode.workspace.workspaceFolders ?? []) {
+      if (!(await hasStoryboardProject(folder))) continue;
+      projectCount += 1;
+      scenes.push(
+        ...(await this.listOrdered(getStoryboardProjectPaths(folder.uri).sceneDirectory)),
+      );
+    }
+    return { projectCount, scenes };
+  }
+
+  private async listOrdered(sceneDirectory: vscode.Uri): Promise<vscode.Uri[]> {
+    const entries = await vscode.workspace.fs.readDirectory(sceneDirectory);
+    const items = entries
+      .filter(
+        ([name, type]) =>
+          type === vscode.FileType.File && name.endsWith('.txt') && !isHiddenSceneFileName(name),
+      )
+      .map(([name]) => ({ name, parts: parseSceneFileName(name) }))
+      .filter(
+        (
+          item,
+        ): item is { name: string; parts: NonNullable<ReturnType<typeof parseSceneFileName>> } =>
+          item.parts !== undefined,
+      )
+      .sort(
+        (left, right) =>
+          left.parts.order - right.parts.order || left.name.localeCompare(right.name),
+      );
+    return items.map(({ name }) => vscode.Uri.joinPath(sceneDirectory, name));
+  }
+}

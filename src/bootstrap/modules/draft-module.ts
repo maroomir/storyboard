@@ -30,6 +30,7 @@ export class DraftModule implements IApplicationModule {
       augmentDraftUseCase,
       configBridge,
       generateDraftUseCase,
+      generateAllDraftsUseCase,
       logger,
       reviseAfterGenerateGate,
       reviseDraftUseCase,
@@ -43,9 +44,8 @@ export class DraftModule implements IApplicationModule {
         reviseAfterGenerateGate,
       }),
       registerGenerateAllDraftsCommand({
-        generateDraftUseCase,
+        generateAllDraftsUseCase,
         logger,
-        reviseAfterGenerateGate,
       }),
       registerApplyDraftFormatCommand({ aiGateway, logger }),
       registerReviseDraftCommand({

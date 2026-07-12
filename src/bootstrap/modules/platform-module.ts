@@ -10,6 +10,7 @@ import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-cas
 import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
+import { GenerateAllDraftsUseCase } from '../../application/drafts/generate-all-drafts-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
 import { ReviseAfterGenerateGate } from '../../application/drafts/revise-after-generate-gate';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
@@ -25,6 +26,7 @@ import { ProjectRepository } from '../../infrastructure/persistence/repositories
 import { OutlineRepository } from '../../infrastructure/persistence/repositories/outline-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
+import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/scene-batch-repository';
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
 import { StoryboardLogger } from '../../core/logger';
@@ -52,6 +54,7 @@ export interface IPlatformServices {
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
@@ -104,6 +107,7 @@ export class PlatformModule implements IApplicationModule {
     const outlineRepository = new OutlineRepository();
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
+    const sceneBatchRepository = new SceneBatchRepository();
     const sceneSidebarRepository = new SceneSidebarRepository();
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
@@ -126,6 +130,12 @@ export class PlatformModule implements IApplicationModule {
       configBridge,
       logger,
       reviseDraftUseCase,
+    );
+    const generateAllDraftsUseCase = new GenerateAllDraftsUseCase(
+      generateDraftUseCase,
+      logger,
+      reviseAfterGenerateGate,
+      sceneBatchRepository,
     );
     const recommendCardsUseCase = new RecommendCardsUseCase(
       aiGateway,
@@ -162,6 +172,7 @@ export class PlatformModule implements IApplicationModule {
       decodeSeedUseCase,
       prepareSeedSyncUseCase,
       fileSystem,
+      generateAllDraftsUseCase,
       generateDraftUseCase,
       generateOutlineUseCase,
       logger,
