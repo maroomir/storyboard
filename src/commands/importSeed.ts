@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { DecodeSeedUseCase } from '../application/project/decode-seed-use-case';
+import type { PrepareSeedSyncUseCase } from '../application/project/prepare-seed-sync-use-case';
 import { type StoryboardLogger } from '../core/logger';
 import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
@@ -8,8 +9,6 @@ import { hasStoryboardProject, uriExists } from '../core/workspace';
 import {
   buildSeedWritePlan,
   collectTrackedCardAndSceneRelativePathsFromFileNames,
-  computeSeedDeletionCandidates,
-  listSeedPlanContentConflictRelativePaths,
   SeedWriteAbortedError,
   type SeedFileWriteEntry,
 } from '../files/seedImport';
@@ -69,6 +68,7 @@ async function reportSeedExportPreflightIssuesOrAbort(content: WorkspaceContent)
 
 export interface RegisterImportSeedCommandsDependencies {
   readonly decodeSeedUseCase: DecodeSeedUseCase;
+  readonly prepareSeedSyncUseCase: PrepareSeedSyncUseCase;
   readonly logger: StoryboardLogger;
 }
 
@@ -484,13 +484,17 @@ async function syncProjectFromSeedFile(
     seed = remappedSeed;
 
     const existingRelativePaths = await collectSeedSyncRelativePaths(workspaceFolder.uri);
-    const deletions = computeSeedDeletionCandidates(existingRelativePaths, seed);
     const plan = buildSeedWritePlan(seed);
     const existingByPath = await readExistingContentByRelativePathForPlan(
       workspaceFolder.uri,
       plan,
     );
-    const contentConflicts = listSeedPlanContentConflictRelativePaths(plan, existingByPath);
+    const prepared = dependencies.prepareSeedSyncUseCase.execute({
+      existingContentByRelativePath: existingByPath,
+      existingRelativePaths,
+      seed,
+    });
+    const { contentConflicts, deletions } = prepared;
 
     if (!(await confirmOverwriteDifferentSeedContent(contentConflicts))) {
       return;

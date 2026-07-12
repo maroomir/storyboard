@@ -23,6 +23,7 @@ export class ProjectModule implements IApplicationModule {
       registerImportSeedCommands({
         decodeSeedUseCase: this.platform.decodeSeedUseCase,
         logger: this.platform.logger,
+        prepareSeedSyncUseCase: this.platform.prepareSeedSyncUseCase,
       }),
       registerSetApiKeyCommand({ secretStore: this.platform.secretStore }),
     );

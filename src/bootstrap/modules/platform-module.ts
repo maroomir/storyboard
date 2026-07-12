@@ -6,6 +6,7 @@ import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-ca
 import { CollectCardProposalsUseCase } from '../../application/cards/collect-card-proposals-use-case';
 import { PromoteBibleCandidatesUseCase } from '../../application/project/promote-bible-candidates-use-case';
 import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-case';
+import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
@@ -41,6 +42,7 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly decodeSeedUseCase: DecodeSeedUseCase;
+  readonly prepareSeedSyncUseCase: PrepareSeedSyncUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
@@ -82,6 +84,7 @@ export class PlatformModule implements IApplicationModule {
     );
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const decodeSeedUseCase = new DecodeSeedUseCase();
+    const prepareSeedSyncUseCase = new PrepareSeedSyncUseCase();
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
@@ -146,6 +149,7 @@ export class PlatformModule implements IApplicationModule {
       cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,
+      prepareSeedSyncUseCase,
       fileSystem,
       generateDraftUseCase,
       logger,
