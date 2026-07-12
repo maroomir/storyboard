@@ -1,38 +1,20 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../application/ai/ai-gateway';
-import {
-  buildChapterSummariesMarkdown,
-  summaryFileName,
-  type ChapterSummary,
-} from '../core/chapterSummaries';
+import type { SummarizeChaptersUseCase } from '../application/manuscript/summarize-chapters-use-case';
 import type { StoryboardLogger } from '../core/logger';
-import { assembleManuscript } from '../core/manuscriptAssembly';
-import { collectDraftsByOrder } from '../core/manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../core/pathConventions';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
-import { type DraftFileSystem } from '../files/draft';
-import { readChapterPlanFile, type OutlineFileSystem } from '../files/outline';
-import { readProjectJson } from '../files/projectJson';
+import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 
-const summarizeChaptersCommand = 'storyboard.manuscript.summaries';
+const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';
 
-const fileSystem: DraftFileSystem & OutlineFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> =>
-    vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
-
-export interface RegisterSummarizeChaptersCommandDependencies {
-  readonly aiGateway: AiGateway;
+export type RegisterSummarizeChaptersCommandDependencies = {
   readonly logger: StoryboardLogger;
-}
+  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
+};
 
 export function registerSummarizeChaptersCommand(
   dependencies: RegisterSummarizeChaptersCommandDependencies,
 ): vscode.Disposable {
-  return vscode.commands.registerCommand(summarizeChaptersCommand, () =>
+  return vscode.commands.registerCommand(SUMMARIZE_CHAPTERS_COMMAND, () =>
     runSummarizeChapters(dependencies),
   );
 }
@@ -41,7 +23,6 @@ async function runSummarizeChapters(
   dependencies: RegisterSummarizeChaptersCommandDependencies,
 ): Promise<void> {
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
-
   if (!workspaceRoot) {
     await vscode.window.showErrorMessage(
       'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
@@ -49,72 +30,49 @@ async function runSummarizeChapters(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceRoot);
+  const result = await vscode.window.withProgress(
+    {
+      cancellable: true,
+      location: vscode.ProgressLocation.Notification,
+      title: 'Storyboard 장별 요약',
+    },
+    async (progress, token) =>
+      await dependencies.summarizeChaptersUseCase.execute(workspaceRoot, {
+        onProgress: (current, total) =>
+          progress.report({ message: `요약 중 (${current}/${total})…` }),
+        shouldCancel: () => token.isCancellationRequested,
+      }),
+  );
 
-  if (!(await uriExists(paths.outlineChapters))) {
+  if (!result.ok) {
+    await reportFailure(result, dependencies.logger);
+    return;
+  }
+
+  const document = await vscode.workspace.openTextDocument(result.summaryUri);
+  await vscode.window.showTextDocument(document);
+  await vscode.window.showInformationMessage(`장 ${result.summaryCount}개를 요약했습니다.`);
+}
+
+async function reportFailure(
+  result: Exclude<Awaited<ReturnType<SummarizeChaptersUseCase['execute']>>, { readonly ok: true }>,
+  logger: StoryboardLogger,
+): Promise<void> {
+  if (result.kind === 'cancelled') return;
+  if (result.kind === 'missing_outline') {
     await vscode.window.showWarningMessage(
       '아웃라인(chapters.yaml)이 없습니다. 먼저 Generate Novel Outline을 실행해 주세요.',
     );
     return;
   }
-
-  try {
-    const project = await readProjectJson(paths.projectJson);
-    const plan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
-    const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, dependencies.logger);
-
-    if (draftsByOrder.size === 0) {
-      await vscode.window.showInformationMessage(
-        '요약할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
-      );
-      return;
-    }
-
-    const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder });
-    const aiService = dependencies.aiGateway.createService(workspaceRoot);
-    const providerId = dependencies.aiGateway.getTaskProvider('chapterSummary');
-
-    const summaries = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: 'Storyboard 장별 요약',
-        cancellable: true,
-      },
-      async (progress, token) => {
-        const results: ChapterSummary[] = [];
-
-        for (const [index, chapter] of manuscript.chapters.entries()) {
-          if (token.isCancellationRequested) {
-            break;
-          }
-
-          progress.report({ message: `요약 중 (${index + 1}/${manuscript.chapters.length})…` });
-          const summary = await aiService.summarizeChapter(
-            { chapterTitle: chapter.chapterTitle, body: chapter.markdown },
-            { providerId },
-          );
-          results.push({ chapterTitle: chapter.chapterTitle, summary });
-        }
-
-        return results;
-      },
+  if (result.kind === 'missing_drafts') {
+    await vscode.window.showInformationMessage(
+      '요약할 초안이 없습니다. 먼저 Generate (All) Drafts를 실행해 주세요.',
     );
-
-    await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
-    const summaryUri = vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName);
-    await vscode.workspace.fs.writeFile(
-      summaryUri,
-      new TextEncoder().encode(buildChapterSummariesMarkdown(project.name, summaries)),
-    );
-
-    const document = await vscode.workspace.openTextDocument(summaryUri);
-    await vscode.window.showTextDocument(document);
-
-    await vscode.window.showInformationMessage(`장 ${summaries.length}개를 요약했습니다.`);
-  } catch (error) {
-    dependencies.logger.error('Chapter summarize failed', error);
-    dependencies.logger.show();
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(`장별 요약에 실패했습니다: ${message}`);
+    return;
   }
+
+  logger.error('Chapter summarize failed', new Error(result.message));
+  logger.show();
+  await vscode.window.showErrorMessage(`장별 요약에 실패했습니다: ${result.message}`);
 }

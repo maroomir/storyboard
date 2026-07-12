@@ -4,6 +4,8 @@ import type {
   IManuscriptAssemblyRepository,
   ManuscriptAssemblySource,
 } from '../../../application/manuscript/assemble-manuscript-use-case';
+import type { IChapterSummaryRepository } from '../../../application/manuscript/summarize-chapters-use-case';
+import { summaryFileName } from '../../../core/chapterSummaries';
 import type { StoryboardLogger } from '../../../core/logger';
 import type { AssembledManuscript } from '../../../core/manuscriptAssembly';
 import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
@@ -19,23 +21,36 @@ const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem = {
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
 };
 
-export class ManuscriptAssemblyRepository implements IManuscriptAssemblyRepository {
+export class ManuscriptAssemblyRepository
+  implements IManuscriptAssemblyRepository, IChapterSummaryRepository
+{
   public async hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean> {
     return await uriExists(getStoryboardProjectPaths(workspaceRoot).outlineChapters);
   }
 
   public async loadAssemblySource(
     workspaceRoot: vscode.Uri,
-    logger: Pick<StoryboardLogger, 'warn'>,
+    logger?: Pick<StoryboardLogger, 'warn'>,
   ): Promise<ManuscriptAssemblySource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder] = await Promise.all([
       readProjectJson(paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, VSCODE_FILE_SYSTEM),
-      collectDraftsByOrder(paths, VSCODE_FILE_SYSTEM, logger),
+      collectDraftsByOrder(paths, VSCODE_FILE_SYSTEM, logger ?? { warn: (): void => undefined }),
     ]);
 
     return { draftsByOrder, plan, projectName: project.name };
+  }
+
+  public async saveChapterSummaries(
+    workspaceRoot: vscode.Uri,
+    markdown: string,
+  ): Promise<vscode.Uri> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
+    const summaryUri = vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName);
+    await vscode.workspace.fs.writeFile(summaryUri, new TextEncoder().encode(markdown));
+    return summaryUri;
   }
 
   public async saveAssembly(

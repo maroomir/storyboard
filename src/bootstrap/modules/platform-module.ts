@@ -10,6 +10,7 @@ import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-cas
 import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
 import { SeedProjectUseCase } from '../../application/project/seed-project-use-case';
 import { AssembleManuscriptUseCase } from '../../application/manuscript/assemble-manuscript-use-case';
+import { SummarizeChaptersUseCase } from '../../application/manuscript/summarize-chapters-use-case';
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generate-all-drafts-use-case';
@@ -71,6 +72,7 @@ export interface IPlatformServices {
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly secretStore: SecretStore;
+  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -123,6 +125,10 @@ export class PlatformModule implements IApplicationModule {
     );
     const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
       logger,
+      manuscriptAssemblyRepository,
+    );
+    const summarizeChaptersUseCase = new SummarizeChaptersUseCase(
+      aiGateway,
       manuscriptAssemblyRepository,
     );
     const generateDraftUseCase = new GenerateDraftUseCase({
@@ -202,6 +208,7 @@ export class PlatformModule implements IApplicationModule {
       sceneSidebarRepository,
       secretStore,
       seedProjectUseCase,
+      summarizeChaptersUseCase,
       usageRecorder,
     };
     this.disposables.add(
