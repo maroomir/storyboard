@@ -587,3 +587,26 @@ ReviewIssue {
 
 - 상세 마이그레이션 계획은 로컬 `.doc/plan/storyboard-plan.md`(비추적)에 있다.
 - 기존 Picktion 저장소 (`maroomir/picktion`)는 그대로 유지(archive 예정)되며, 본 컨셉/계획 문서는 새 `maroomir/storyboard` 저장소의 출발점이 된다.
+
+## 12. Extension Host Implementation Structure
+
+`src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로 전환 중이다. 현재 구조는 완료된 이상형이 아니라, 이미 적용된 경계와 남은 legacy 영역을 함께 나타낸다.
+
+```text
+extension.ts
+  -> bootstrap/                 # StoryboardApplication, lifecycle, feature module composition
+       -> application/          # GenerateDraftUseCase, NovelPipeline, AI/file-system ports
+       -> infrastructure/       # VscodeFileSystem, aggregate persistence repositories
+       -> commands/providers/   # VS Code presentation adapters (legacy transition area)
+
+shared/                         # 다른 내부 레이어를 import하지 않는 contracts/value types
+domain/                         # runtime-agnostic policies and value types
+core/files/services/            # repository, use case, adapter로 단계적으로 이동 중인 legacy code
+```
+
+- `extension.ts`는 `bootstrap` 외 내부 구현을 import하지 않는다.
+- `StoryboardApplication`은 Platform·Project·Card·Draft·Novel·Workbench module의 초기화와 역순 종료를 소유한다.
+- 상태·I/O·수명주기를 가진 협력자는 생성자 주입으로 연결하고, `DisposableStore`가 feature module의 reverse dispose를 담당한다.
+- `shared`는 `services`, `core`, `files` 같은 상위 구현을 import하지 않는다.
+- Draft 생성은 `GenerateDraftUseCase`와 Project/Scene/Draft/Scene Cache repository를 통해 실행한다. Novel은 `NovelPipeline`, AI 전송은 `AiGateway`와 `AiTextGateway`가 담당한다.
+- legacy 영역을 단순 경로 이동만으로 새 계층에 넣지 않는다. use case·port·adapter 경계와 테스트가 함께 갖춰질 때 이동한다.

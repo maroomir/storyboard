@@ -4,14 +4,16 @@
 
 The current implementation is still smaller than that target. Treat `scene/*.txt → draft/*.md`, cards, canon, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
-## Intended Architecture
+## Current Extension-Host Architecture
 
 ```mermaid
 graph TB
     subgraph VSCode[VSCode Extension Host]
         ExtensionEntry[src/extension.ts]
-        Controller[src/core/controller]
-        Services[src/core/services]
+        Bootstrap[src/bootstrap/StoryboardApplication]
+        Application[src/application use cases and pipelines]
+        Infrastructure[src/infrastructure adapters]
+        Legacy[src/core, commands, providers, files, services]
         State[VSCode globalState/workspaceState/secrets]
     end
 
@@ -20,10 +22,12 @@ graph TB
         MessageClient[Typed message client]
     end
 
-    ExtensionEntry --> Controller
-    Controller --> Services
-    Controller --> State
-    Controller <--> MessageClient
+    ExtensionEntry --> Bootstrap
+    Bootstrap --> Application
+    Bootstrap --> Infrastructure
+    Bootstrap --> Legacy
+    Infrastructure --> State
+    Bootstrap <--> MessageClient
     MessageClient --> App
 ```
 

@@ -45,13 +45,19 @@ alwaysApply: true
 | Shared         | Message contracts, DTOs, settings interfaces, validation; **no** `vscode` or browser-only APIs                                    |
 | Webview        | Rendering, local UI state, typed client to extension host—**no** direct `vscode` import; use `acquireVsCodeApi()` (or equivalent) |
 
-## Intended layout (minimal first)
+## Current extension-host layout
 
 ```text
-src/extension.ts, src/core/, src/shared/, webview-ui/, assets/, tests/
+src/extension.ts             # Thin entry point
+src/bootstrap/               # Application lifecycle and feature modules
+src/application/             # Use cases, pipelines, ports
+src/infrastructure/          # VS Code and persistence adapters
+src/domain/, src/shared/     # Runtime-agnostic policies and contracts
+src/commands/, src/providers/# Legacy presentation adapters being migrated
+src/core/, src/files/, src/services/ # Legacy implementation areas being migrated
 ```
 
-Add deeper layers only when there is a concrete need.
+`extension.ts` imports only `bootstrap`; `shared` imports only itself; `core` must not import `commands`.
 
 ## Messaging and state
 

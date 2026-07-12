@@ -8,9 +8,9 @@ This document gives AI coding agents the project-specific context needed to work
 
 ## Current Status
 
-This repository is in its initial stage. Treat architecture described here as the intended direction until concrete source files are added.
+The extension has a working modular-monolith transition in progress. Existing source and tests are authoritative; do not treat the old `core/`-only layout as the current architecture.
 
-When source files are not present yet, do not assume implementation details. Scaffold incrementally and keep the first implementation smaller than Cline's mature architecture unless the user explicitly asks for more.
+Keep changes incremental and preserve behavior. Legacy directories remain while their workflows are moved behind explicit application objects and infrastructure ports.
 
 ## Source of Truth
 
@@ -86,21 +86,30 @@ Owns:
 
 The webview must not import `vscode` directly. Use message passing through `acquireVsCodeApi()` wrappers or an equivalent typed client.
 
-## Expected Architecture
+## Current Architecture
 
-Recommended initial shape:
+The extension host currently uses this transition shape:
 
 ```text
 src/
-  extension.ts              # VSCode extension entry point
-  core/                     # Extension-host orchestration and services
-  shared/                   # Shared message/state/domain types
-webview-ui/                 # Webview frontend, if/when introduced
-assets/                     # Extension icons and media
-tests/                      # Unit/integration tests
+  extension.ts                 # Thin VS Code entry point
+  bootstrap/                   # StoryboardApplication, lifecycle, feature modules
+  application/                 # Use cases, pipelines, ports, application-owned gateways
+  infrastructure/              # VS Code and persistence port implementations
+  domain/                      # Runtime-agnostic policies and value types
+  shared/                      # Wire contracts and runtime-agnostic values
+  commands/, providers/        # Legacy presentation adapters being migrated
+  core/, files/, services/     # Legacy orchestration, codecs, and integrations being migrated
 ```
 
-Start with the smallest useful version of this structure. Add deeper layers only when there is a concrete feature or testability need.
+Dependency rules already enforced by `npm run check:architecture`:
+
+- `extension.ts` imports only `bootstrap` (besides `vscode`).
+- `shared` imports only itself.
+- `core` must not import `commands`.
+- Lifecycle-owned objects are created by `PlatformModule` or a feature module and disposed through `DisposableStore`.
+
+Do not create a new abstraction solely to move a file. Use ports for genuine runtime boundaries such as file I/O, persistence, AI transport, or VS Code state.
 
 ## VSCode Extension Guidelines
 
