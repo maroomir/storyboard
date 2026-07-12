@@ -10,6 +10,8 @@ const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
 const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared');
 const CORE_ROOT = path.join(SOURCE_ROOT, 'core');
 const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'commands');
+const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'providers');
+const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'services', 'ai', 'AIService.ts');
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT);
 const sourceFileSet = new Set(sourceFiles);
@@ -35,6 +37,7 @@ for (const filePath of sourceFiles) {
       graph.get(filePath)?.add(target);
       validateSharedBoundary(filePath, target);
       validateCoreBoundary(filePath, target);
+      validatePresentationAiBoundary(filePath, statement, target);
     }
   }
 }
@@ -172,6 +175,28 @@ function validateCoreBoundary(filePath, target) {
       `Core layer imports commands: ${relativePath(filePath)} -> ${relativePath(target)}`,
     );
   }
+}
+
+function validatePresentationAiBoundary(filePath, statement, target) {
+  if (
+    target !== AI_SERVICE_PATH ||
+    !(isWithinDirectory(filePath, COMMANDS_ROOT) || isWithinDirectory(filePath, PROVIDERS_ROOT)) ||
+    isTypeOnlyImport(statement)
+  ) {
+    return;
+  }
+
+  failures.push(
+    `Presentation imports AIService at runtime: ${relativePath(filePath)} -> ${relativePath(target)}`,
+  );
+}
+
+function isTypeOnlyImport(statement) {
+  if (!ts.isImportDeclaration(statement)) {
+    return false;
+  }
+
+  return statement.importClause?.isTypeOnly === true;
 }
 
 function isWithinDirectory(filePath, directoryPath) {
