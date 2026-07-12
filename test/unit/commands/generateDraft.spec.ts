@@ -61,8 +61,16 @@ function createOptions(
       getTaskProvider: () => "mock"
     } as never,
     configBridge: { isAiContextCondenseEnabled: () => false } as never,
+    draftRepository: {} as never,
     fileSystem: {} as never,
     logger: logger as never,
+    projectRepository: {
+      read: (...args: unknown[]): unknown => readProjectJsonMock(...args)
+    } as never,
+    sceneCacheRepository: {} as never,
+    sceneRepository: {
+      read: (...args: unknown[]): unknown => readSceneFileMock(...args)
+    } as never,
     suppressLoggerPanel: false,
     ...overrides
   }

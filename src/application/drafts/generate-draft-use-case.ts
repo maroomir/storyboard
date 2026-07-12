@@ -2,6 +2,12 @@ import * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/ai-gateway';
 import type { IFileSystem } from '../ports/file-system';
+import type {
+  IDraftRepository,
+  IProjectRepository,
+  ISceneCacheRepository,
+  ISceneRepository,
+} from '../ports/repositories';
 import { buildNarrativeContext, buildSceneContext } from '../../core/sceneContext';
 import type { StoryboardLogger } from '../../core/logger';
 import {
@@ -14,17 +20,11 @@ import {
 } from '../../core/pathConventions';
 import { sceneContextPaths } from '../../core/vscodeFileSystem';
 import { hasStoryboardProject, uriExists } from '../../core/workspace';
-import { createDraft, writeDraftFile } from '../../files/draft';
+import { createDraft } from '../../files/draft';
 import { archiveExistingDraft } from '../../files/draftHistory';
-import { readProjectJson } from '../../files/projectJson';
-import { readSceneFile, SceneParseError } from '../../files/scene';
-import {
-  computeSceneInputHash,
-  readSceneCacheFile,
-  writeSceneCacheFile,
-  type SceneCacheRecord,
-} from '../../files/sceneCache';
-import { ensureSceneCacheDirectory, sceneCacheFilePath } from '../../files/sceneCacheWorkspace';
+import { SceneParseError } from '../../files/scene';
+import { computeSceneInputHash, type SceneCacheRecord } from '../../files/sceneCache';
+import { sceneCacheFilePath } from '../../files/sceneCacheWorkspace';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
@@ -64,14 +64,14 @@ async function isCacheHit(
   cacheUri: vscode.Uri,
   draftUri: vscode.Uri,
   inputHash: string,
-  fileSystem: IFileSystem,
+  sceneCacheRepository: ISceneCacheRepository,
 ): Promise<boolean> {
   if (!(await uriExists(cacheUri)) || !(await uriExists(draftUri))) {
     return false;
   }
 
   try {
-    const record = await readSceneCacheFile(cacheUri, fileSystem);
+    const record = await sceneCacheRepository.read(cacheUri);
     return record.inputHash === inputHash;
   } catch {
     return false;
@@ -81,9 +81,13 @@ async function isCacheHit(
 export interface GenerateDraftUseCaseDependencies {
   readonly aiGateway: AiGateway;
   readonly configBridge: ConfigBridge;
+  readonly draftRepository: IDraftRepository;
   readonly fileSystem: IFileSystem;
   readonly logger: StoryboardLogger;
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
+  readonly projectRepository: IProjectRepository;
+  readonly sceneCacheRepository: ISceneCacheRepository;
+  readonly sceneRepository: ISceneRepository;
 }
 
 export interface GenerateDraftRequest {
@@ -125,8 +129,8 @@ function reportWorkflowFailure(
 interface SceneGenerationInputs {
   readonly workspaceFolder: vscode.WorkspaceFolder;
   readonly paths: ReturnType<typeof getStoryboardProjectPaths>;
-  readonly scene: Awaited<ReturnType<typeof readSceneFile>>;
-  readonly project: Awaited<ReturnType<typeof readProjectJson>>;
+  readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
+  readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
   readonly previousContext: string | undefined;
   readonly sceneBreakJoiner: string | undefined;
@@ -200,7 +204,7 @@ async function loadSceneGenerationInputs(
 
   let scene;
   try {
-    scene = await readSceneFile(sceneUri, options.fileSystem, fileName);
+    scene = await options.sceneRepository.read(sceneUri, fileName);
   } catch (error) {
     if (error instanceof SceneParseError) {
       return inputsFailure(`씬 파일을 읽을 수 없습니다: ${error.message}`);
@@ -219,7 +223,7 @@ async function loadSceneGenerationInputs(
 
   let project;
   try {
-    project = await readProjectJson(paths.projectJson);
+    project = await options.projectRepository.read(paths.projectJson);
   } catch (error) {
     return {
       ok: false,
@@ -447,7 +451,7 @@ async function runAndPersistDraft(
       body: result.draftBody,
     });
 
-    await ensureSceneCacheDirectory(paths);
+    await options.sceneCacheRepository.ensureDirectory(paths.sceneCacheDirectory);
 
     options.onSaving?.();
 
@@ -455,8 +459,8 @@ async function runAndPersistDraft(
 
     await maybeArchiveExistingDraft(inputs, options);
 
-    await writeDraftFile(draftUri, options.fileSystem, draft);
-    await writeSceneCacheFile(cacheUri, options.fileSystem, cacheRecord);
+    await options.draftRepository.write(draftUri, draft);
+    await options.sceneCacheRepository.write(cacheUri, cacheRecord);
 
     if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
       schedulePostGenerationUpdates(inputs, options, aiService, result);
@@ -491,7 +495,12 @@ async function generateDraftForWorkspaceSceneWorkflow(
 
   if (
     !options.force &&
-    (await isCacheHit(inputs.cacheUri, inputs.draftUri, inputs.inputHash, options.fileSystem))
+    (await isCacheHit(
+      inputs.cacheUri,
+      inputs.draftUri,
+      inputs.inputHash,
+      options.sceneCacheRepository,
+    ))
   ) {
     return await openCachedDraft(inputs.draftUri);
   }

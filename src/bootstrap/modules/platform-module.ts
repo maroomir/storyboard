@@ -3,6 +3,10 @@ import * as vscode from 'vscode';
 import { AiGateway } from '../../application/ai/ai-gateway';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
+import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
+import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
+import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
+import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
 import { StoryboardLogger } from '../../core/logger';
 import {
@@ -53,12 +57,20 @@ export class PlatformModule implements IApplicationModule {
     );
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const fileSystem = new VscodeFileSystem();
+    const draftRepository = new DraftRepository(fileSystem);
+    const projectRepository = new ProjectRepository(fileSystem);
+    const sceneCacheRepository = new SceneCacheRepository(fileSystem);
+    const sceneRepository = new SceneRepository(fileSystem);
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
       configBridge,
+      draftRepository,
       fileSystem,
       logger,
       postGenerationUpdates,
+      projectRepository,
+      sceneCacheRepository,
+      sceneRepository,
     });
     const novelPipeline = new NovelPipeline({
       aiGateway,
