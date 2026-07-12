@@ -1,16 +1,10 @@
 import type { Background } from '@/domain/Background';
 import type { Character } from '@/domain/Character';
 import type { ProjectFormat } from '@/shared/project';
-import type { StyleDirective } from '@/shared/styleDirective';
-import { AiProviderRegistry } from './providerRegistry';
-import type {
-  AiGenerateResponse,
-  AiProviderId,
-  AiStreamChunk,
-  UsageAttribution,
-  UsageRecord,
-  WiredAiTaskName,
-} from './types';
+import { AiTextGateway } from './AiTextGateway';
+import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
+import type { AiProviderRegistry } from './providerRegistry';
+import type { AiGenerateResponse, AiStreamChunk, UsageAttribution, WiredAiTaskName } from './types';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import { ContinuityCheckPrompt } from './prompts/continuityCheck';
@@ -46,8 +40,7 @@ import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
-import { selectPromptVariant } from './prompts/variant';
-import { type PromptArtifact, type PromptConfig, type PromptVariantId } from './prompts/types';
+import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseBulletList, parseJsonArray, parseJsonObject } from '@/utils/aiResponseParser';
 import {
   coerceChapterPlan,
@@ -60,7 +53,6 @@ import {
 import { coerceCritiqueIssues, type DraftCritiqueIssue } from '@/shared/draftReview';
 import { coerceSceneCoverage, type SceneCoverageIssue } from '@/shared/sceneCoverage';
 import {
-  isAttributed,
   toContinuityIssue,
   toFactCandidate,
   toGrammarIssue,
@@ -78,14 +70,11 @@ export type {
   GrammarIssue,
   SituationWithCharacters,
 } from './aiResponseCoercion';
-
-export interface GenerateTextOptions {
-  readonly providerId?: AiProviderId;
-  readonly temperature?: number;
-  readonly maxTokens?: number;
-  readonly attribution?: UsageAttribution;
-  readonly styleDirective?: StyleDirective;
-}
+export type {
+  GenerateTextOptions,
+  OnUsageRecordCallback,
+  StoryboardAIServiceOptions,
+} from './ai-service-types';
 
 export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
   readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
@@ -112,25 +101,23 @@ export interface DraftExpansionContext {
   readonly background?: string;
 }
 
-export type OnUsageRecordCallback = (record: UsageRecord) => void;
-
-export interface StoryboardAIServiceOptions {
-  readonly onUsage?: OnUsageRecordCallback;
-}
-
 export class StoryboardAIService {
+  private readonly gateway: AiTextGateway;
+
   public constructor(
-    private readonly registry: AiProviderRegistry,
-    private readonly serviceOptions: StoryboardAIServiceOptions = {},
-  ) {}
+    registry: AiProviderRegistry,
+    serviceOptions: StoryboardAIServiceOptions = {},
+  ) {
+    this.gateway = new AiTextGateway(registry, serviceOptions);
+  }
 
   public async extractSituations(
     input: string,
     options: GenerateTextOptions = {},
   ): Promise<SituationWithCharacters[]> {
-    const variant = this.resolvePromptVariant('situationExtraction', options);
+    const variant = this.gateway.resolvePromptVariant('situationExtraction', options);
     const prompt = SituationExtractionPrompt.build(input, variant);
-    const response = await this.generateText(
+    const response = await this.gateway.generate(
       'situationExtraction',
       toPromptMessages(prompt),
       options,
@@ -148,9 +135,9 @@ export class StoryboardAIService {
     character: Character,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('personaGeneration', options);
+    const variant = this.gateway.resolvePromptVariant('personaGeneration', options);
     const prompt = PersonaGenerationPrompt.build(character, variant, options.styleDirective);
-    const response = await this.generateText(
+    const response = await this.gateway.generate(
       'personaGeneration',
       toPromptMessages(prompt),
       options,
@@ -163,7 +150,7 @@ export class StoryboardAIService {
     background: Background,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('backgroundDescription', options);
+    const variant = this.gateway.resolvePromptVariant('backgroundDescription', options);
     const prompt = BackgroundDescriptionPrompt.build(background, variant);
     const response = await this.generateWithDefaults(
       'backgroundDescription',
@@ -182,7 +169,7 @@ export class StoryboardAIService {
     previousContext?: string,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('personaDialogue', options);
+    const variant = this.gateway.resolvePromptVariant('personaDialogue', options);
     const prompt = PersonaDialoguePrompt.build(
       situation,
       personas,
@@ -191,7 +178,11 @@ export class StoryboardAIService {
       variant,
       options.styleDirective,
     );
-    const response = await this.generateText('personaDialogue', toPromptMessages(prompt), options);
+    const response = await this.gateway.generate(
+      'personaDialogue',
+      toPromptMessages(prompt),
+      options,
+    );
 
     return response.text.trim();
   }
@@ -201,9 +192,9 @@ export class StoryboardAIService {
     format: ProjectFormat,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('sceneDraft', options);
+    const variant = this.gateway.resolvePromptVariant('sceneDraft', options);
     const prompt = GenreFormattingPrompt.build(dialogue, format, variant, options.styleDirective);
-    const response = await this.generateText('sceneDraft', toPromptMessages(prompt), options);
+    const response = await this.gateway.generate('sceneDraft', toPromptMessages(prompt), options);
 
     return response.text.trim();
   }
@@ -249,9 +240,9 @@ export class StoryboardAIService {
       options,
       TraitsExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.resolvePromptVariant('traitsExtraction', resolvedOptions);
+        const variant = this.gateway.resolvePromptVariant('traitsExtraction', resolvedOptions);
         const prompt = TraitsExtractionPrompt.build(draftBody, name, options.aliases, variant);
-        const response = await this.generateText('traitsExtraction', toPromptMessages(prompt), {
+        const response = await this.gateway.generate('traitsExtraction', toPromptMessages(prompt), {
           ...resolvedOptions,
           attribution,
         });
@@ -271,9 +262,9 @@ export class StoryboardAIService {
       options,
       FactExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.resolvePromptVariant('factExtraction', resolvedOptions);
+        const variant = this.gateway.resolvePromptVariant('factExtraction', resolvedOptions);
         const prompt = FactExtractionPrompt.build(draftBody, name, variant);
-        const response = await this.generateText('factExtraction', toPromptMessages(prompt), {
+        const response = await this.gateway.generate('factExtraction', toPromptMessages(prompt), {
           ...resolvedOptions,
           attribution,
         });
@@ -294,17 +285,21 @@ export class StoryboardAIService {
       options,
       CardCandidateExtractionPrompt.config,
       async (name, resolvedOptions, attribution) => {
-        const variant = this.resolvePromptVariant('cardFactExtraction', resolvedOptions);
+        const variant = this.gateway.resolvePromptVariant('cardFactExtraction', resolvedOptions);
         const prompt = CardCandidateExtractionPrompt.build(
           draftBody,
           name,
           options.aliases,
           variant,
         );
-        const response = await this.generateText('cardFactExtraction', toPromptMessages(prompt), {
-          ...resolvedOptions,
-          attribution,
-        });
+        const response = await this.gateway.generate(
+          'cardFactExtraction',
+          toPromptMessages(prompt),
+          {
+            ...resolvedOptions,
+            attribution,
+          },
+        );
 
         return coerceCardCandidateExtraction(parseJsonObject(response.text));
       },
@@ -316,7 +311,7 @@ export class StoryboardAIService {
     backgroundName: string,
     options: GenerateTextOptions = {},
   ): Promise<BackgroundFactExtraction> {
-    const variant = this.resolvePromptVariant('backgroundFactExtraction', options);
+    const variant = this.gateway.resolvePromptVariant('backgroundFactExtraction', options);
     const prompt = BackgroundFactExtractionPrompt.build(draftBody, backgroundName, variant);
     const response = await this.generateWithDefaults(
       'backgroundFactExtraction',
@@ -334,7 +329,7 @@ export class StoryboardAIService {
     knownNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {
-    const variant = this.resolvePromptVariant('cardRecommendation', options);
+    const variant = this.gateway.resolvePromptVariant('cardRecommendation', options);
     const prompt = CardRecommendationPrompt.build(body, category, knownNames, variant);
     const response = await this.generateWithDefaults(
       'cardRecommendation',
@@ -356,7 +351,7 @@ export class StoryboardAIService {
       return [];
     }
 
-    const variant = this.resolvePromptVariant('cardFactVerification', options);
+    const variant = this.gateway.resolvePromptVariant('cardFactVerification', options);
     const prompt = CardCandidateVerificationPrompt.build(
       draftBody,
       characterName,
@@ -391,7 +386,7 @@ export class StoryboardAIService {
     body: string,
     options: GenerateTextOptions = {},
   ): Promise<GrammarIssue[]> {
-    const variant = this.resolvePromptVariant('grammarCheck', options);
+    const variant = this.gateway.resolvePromptVariant('grammarCheck', options);
     const prompt = GrammarCheckPrompt.build(body, variant);
     const response = await this.generateWithDefaults(
       'grammarCheck',
@@ -417,7 +412,7 @@ export class StoryboardAIService {
       return [];
     }
 
-    const variant = this.resolvePromptVariant('continuityCheck', options);
+    const variant = this.gateway.resolvePromptVariant('continuityCheck', options);
     const prompt = ContinuityCheckPrompt.build(body, facts, variant);
     const response = await this.generateWithDefaults(
       'continuityCheck',
@@ -443,7 +438,7 @@ export class StoryboardAIService {
       return [];
     }
 
-    const variant = this.resolvePromptVariant('sceneCoverage', options);
+    const variant = this.gateway.resolvePromptVariant('sceneCoverage', options);
     const prompt = SceneCoveragePrompt.build(beats, draft, variant);
     const response = await this.generateWithDefaults(
       'sceneCoverage',
@@ -460,7 +455,7 @@ export class StoryboardAIService {
     context: InlineCompletionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('inlineCompletion', options);
+    const variant = this.gateway.resolvePromptVariant('inlineCompletion', options);
     const prompt = InlineCompletionPrompt.build(prefix, context, variant);
     const response = await this.generateWithDefaults(
       'inlineCompletion',
@@ -477,7 +472,7 @@ export class StoryboardAIService {
     context: DraftExpansionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('draftExpansion', options);
+    const variant = this.gateway.resolvePromptVariant('draftExpansion', options);
     const prompt = DraftExpansionPrompt.build(selection, context, variant);
     const response = await this.generateWithDefaults(
       'draftExpansion',
@@ -493,7 +488,7 @@ export class StoryboardAIService {
     brief: OutlineBrief,
     options: GenerateTextOptions = {},
   ): Promise<OutlineSynopsis> {
-    const variant = this.resolvePromptVariant('outlineSynopsis', options);
+    const variant = this.gateway.resolvePromptVariant('outlineSynopsis', options);
     const prompt = OutlineSynopsisPrompt.build(brief, variant);
     const response = await this.generateWithDefaults(
       'outlineSynopsis',
@@ -511,7 +506,7 @@ export class StoryboardAIService {
     characters: readonly OutlineCharacterBrief[],
     options: GenerateTextOptions = {},
   ): Promise<ChapterPlan> {
-    const variant = this.resolvePromptVariant('chapterPlan', options);
+    const variant = this.gateway.resolvePromptVariant('chapterPlan', options);
     const prompt = ChapterPlanPrompt.build(brief, synopsis, characters, variant);
     const response = await this.generateWithDefaults(
       'chapterPlan',
@@ -527,7 +522,7 @@ export class StoryboardAIService {
     input: DraftCritiqueInput,
     options: GenerateTextOptions = {},
   ): Promise<DraftCritiqueIssue[]> {
-    const variant = this.resolvePromptVariant('draftCritique', options);
+    const variant = this.gateway.resolvePromptVariant('draftCritique', options);
     const prompt = DraftCritiquePrompt.build(input, variant);
     const response = await this.generateWithDefaults(
       'draftCritique',
@@ -543,7 +538,7 @@ export class StoryboardAIService {
     input: ChapterSummaryInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('chapterSummary', options);
+    const variant = this.gateway.resolvePromptVariant('chapterSummary', options);
     const prompt = ChapterSummaryPrompt.build(input, variant);
     const response = await this.generateWithDefaults(
       'chapterSummary',
@@ -559,7 +554,7 @@ export class StoryboardAIService {
     input: DraftRevisionInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('draftRevision', options);
+    const variant = this.gateway.resolvePromptVariant('draftRevision', options);
     const prompt = DraftRevisionPrompt.build(input, variant);
     const response = await this.generateWithDefaults(
       'draftRevision',
@@ -575,7 +570,7 @@ export class StoryboardAIService {
     input: DraftAugmentInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.resolvePromptVariant('draftAugment', options);
+    const variant = this.gateway.resolvePromptVariant('draftAugment', options);
     const prompt = DraftAugmentPrompt.build(input, variant);
     const response = await this.generateWithDefaults(
       'draftAugment',
@@ -593,37 +588,11 @@ export class StoryboardAIService {
     config: PromptConfig,
     options: GenerateTextOptions,
   ): Promise<AiGenerateResponse> {
-    return this.generateText(taskName, toPromptMessages(prompt), {
+    return this.gateway.generate(taskName, toPromptMessages(prompt), {
       ...options,
       temperature: options.temperature ?? config.temperature,
       maxTokens: options.maxTokens ?? config.maxTokens,
     });
-  }
-
-  private async generateText(
-    taskName: WiredAiTaskName,
-    messages: ReadonlyArray<{
-      readonly role: 'system' | 'user' | 'assistant';
-      readonly content: string;
-    }>,
-    options: GenerateTextOptions,
-  ): Promise<AiGenerateResponse> {
-    const response = options.providerId
-      ? await this.registry.generateWithProvider(options.providerId, {
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-        })
-      : await this.registry.generate({
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-        });
-
-    this.emitUsageIfNeeded(taskName, response, options.attribution);
-    return response;
   }
 
   public async *generateTextStream(
@@ -634,59 +603,6 @@ export class StoryboardAIService {
     }>,
     options: GenerateTextOptions,
   ): AsyncIterable<AiStreamChunk> {
-    const stream = options.providerId
-      ? this.registry.generateStreamWithProvider(options.providerId, {
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-        })
-      : this.registry.generateStream({
-          taskName,
-          messages,
-          temperature: options.temperature,
-          maxTokens: options.maxTokens,
-        });
-
-    for await (const chunk of stream) {
-      if (chunk.type === 'done') {
-        this.emitUsageIfNeeded(taskName, chunk.response, options.attribution);
-      }
-      yield chunk;
-    }
-  }
-
-  private resolvePromptVariant(
-    taskName: WiredAiTaskName,
-    options: GenerateTextOptions,
-  ): PromptVariantId {
-    const resolved = this.registry.getTaskAiConfig(taskName);
-    return selectPromptVariant({
-      providerId: options.providerId ?? resolved.providerId,
-      taskName,
-      model: resolved.model,
-      maxTokens: options.maxTokens,
-    });
-  }
-
-  private emitUsageIfNeeded(
-    taskName: UsageRecord['taskName'],
-    response: AiGenerateResponse,
-    attribution: UsageAttribution | undefined,
-  ): void {
-    const onUsage = this.serviceOptions.onUsage;
-
-    if (!onUsage || !attribution || !isAttributed(attribution)) {
-      return;
-    }
-
-    onUsage({
-      taskName,
-      providerId: response.providerId,
-      model: response.model,
-      usage: response.usage,
-      costUsd: response.costUsd ?? 0,
-      attribution,
-    });
+    yield* this.gateway.generateStream(taskName, messages, options);
   }
 }
