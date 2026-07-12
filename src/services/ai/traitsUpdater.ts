@@ -226,18 +226,6 @@ export interface ScheduleCharacterTraitsUpdateInput extends UpdateCharacterTrait
   readonly onComplete?: (summary: TraitsUpdateSummary) => void;
 }
 
-const traitsUpdateQueues = new Map<string, Promise<unknown>>();
-
-export function scheduleCharacterTraitsUpdate(input: ScheduleCharacterTraitsUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-  const previous = traitsUpdateQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous.catch(() => undefined).then(() => updateCharacterTraitsFromDraft(rest));
-  traitsUpdateQueues.set(queueKey, next);
-  void next.then(onComplete, (error: unknown) =>
-    logger?.error('Traits background update failed', error),
-  );
-}
-
 export function applyTraitsFromExtractedBullets(input: {
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];

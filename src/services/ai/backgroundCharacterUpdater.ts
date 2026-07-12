@@ -66,19 +66,3 @@ export interface ScheduleBackgroundCharacterUpdateInput extends UpdateBackground
   readonly queueKey: string;
   readonly onComplete?: (summary: BackgroundCharacterUpdateSummary) => void;
 }
-
-const backgroundCharacterQueues = new Map<string, Promise<unknown>>();
-
-export function scheduleBackgroundCharacterUpdate(
-  input: ScheduleBackgroundCharacterUpdateInput,
-): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-  const previous = backgroundCharacterQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() => updateBackgroundCharactersFromScene({ ...rest, logger }));
-  backgroundCharacterQueues.set(queueKey, next);
-  void next.then(onComplete, (error: unknown) =>
-    logger?.error('Background character background update failed', error),
-  );
-}

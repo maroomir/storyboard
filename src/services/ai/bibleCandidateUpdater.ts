@@ -107,17 +107,3 @@ export interface ScheduleBibleCandidateUpdateInput extends UpdateBibleCandidates
   readonly queueKey: string;
   readonly onComplete?: (summary: BibleCandidateUpdateSummary) => void;
 }
-
-const bibleCandidateQueues = new Map<string, Promise<unknown>>();
-
-export function scheduleBibleCandidateUpdate(input: ScheduleBibleCandidateUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-  const previous = bibleCandidateQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() => updateBibleCandidatesFromDraft({ ...rest, logger }));
-  bibleCandidateQueues.set(queueKey, next);
-  void next.then(onComplete, (error: unknown) =>
-    logger?.error('Bible candidate background update failed', error),
-  );
-}

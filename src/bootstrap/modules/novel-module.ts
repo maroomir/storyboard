@@ -17,7 +17,8 @@ export class NovelModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(): void {
-    const { aiProviderRegistry, configBridge, logger, usageRecorder } = this.platform;
+    const { aiProviderRegistry, configBridge, logger, postGenerationUpdates, usageRecorder } =
+      this.platform;
 
     this.disposables.push(
       registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder }),
@@ -25,7 +26,13 @@ export class NovelModule implements IApplicationModule {
       registerAssembleManuscriptCommand({ logger }),
       registerReviewManuscriptCommand({ aiProviderRegistry, logger }),
       registerSummarizeChaptersCommand({ aiProviderRegistry, logger }),
-      registerGenerateNovelCommand({ aiProviderRegistry, configBridge, logger, usageRecorder }),
+      registerGenerateNovelCommand({
+        aiProviderRegistry,
+        configBridge,
+        logger,
+        postGenerationUpdates,
+        usageRecorder,
+      }),
       registerExportManuscriptCommand({ logger }),
     );
   }

@@ -37,6 +37,7 @@ import { StoryboardAIService } from '../services/ai/AIService';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import { recordUsageSafely } from '../services/ai/recordUsageSafely';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../shared/outline';
 import type { StoryboardProject } from '../shared/project';
@@ -60,6 +61,7 @@ export interface NovelPipelineDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -306,6 +308,7 @@ async function runChapterDraftsAndRevise(
       aiProviderRegistry: options.deps.aiProviderRegistry,
       configBridge: options.deps.configBridge,
       logger: options.deps.logger,
+      postGenerationUpdates: options.deps.postGenerationUpdates,
       usageRecorder: options.deps.usageRecorder,
       openDocumentOnSuccess: false,
       showCacheHitMessage: false,

@@ -23,11 +23,24 @@ export class DraftModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(_context: vscode.ExtensionContext): void {
-    const { aiProviderRegistry, configBridge, logger, usageRecorder } = this.platform;
+    const { aiProviderRegistry, configBridge, logger, postGenerationUpdates, usageRecorder } =
+      this.platform;
 
     this.disposables.push(
-      registerGenerateDraftCommands({ aiProviderRegistry, configBridge, logger, usageRecorder }),
-      registerGenerateAllDraftsCommand({ aiProviderRegistry, configBridge, logger, usageRecorder }),
+      registerGenerateDraftCommands({
+        aiProviderRegistry,
+        configBridge,
+        logger,
+        postGenerationUpdates,
+        usageRecorder,
+      }),
+      registerGenerateAllDraftsCommand({
+        aiProviderRegistry,
+        configBridge,
+        logger,
+        postGenerationUpdates,
+        usageRecorder,
+      }),
       registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder }),
       registerReviseDraftCommand({ aiProviderRegistry, configBridge, logger, usageRecorder }),
       registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder }),

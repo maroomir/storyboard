@@ -5,6 +5,7 @@ import {
   createAiProviderRegistry,
   type AiProviderRegistry,
 } from '../../services/ai/providerRegistry';
+import { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';
 import { createVscodeUsageLedgerFileSystem, UsageRecorder } from '../../services/ai/UsageRecorder';
 import { SecretStore } from '../../services/secrets/SecretStore';
 import { ConfigBridge } from '../../services/settings/ConfigBridge';
@@ -15,6 +16,7 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
 }
@@ -37,13 +39,22 @@ export class PlatformModule implements IApplicationModule {
         vscode.workspace.onDidChangeConfiguration(listener),
     });
     const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
+    const postGenerationUpdates = new PostGenerationUpdateManager();
     const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
       logger.warn(message),
     );
 
-    this.services = { aiProviderRegistry, configBridge, logger, secretStore, usageRecorder };
+    this.services = {
+      aiProviderRegistry,
+      configBridge,
+      logger,
+      postGenerationUpdates,
+      secretStore,
+      usageRecorder,
+    };
     this.disposables = [
       logger,
+      postGenerationUpdates,
       usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
     ];

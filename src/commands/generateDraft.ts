@@ -44,13 +44,8 @@ import {
 } from '../services/ai/pipelines/sceneGenerationPipeline';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import {
-  scheduleCharacterTraitsUpdate,
-  type TraitsUpdateSummary,
-} from '../services/ai/traitsUpdater';
-import { scheduleBibleCandidateUpdate } from '../services/ai/bibleCandidateUpdater';
-import { scheduleBackgroundCharacterUpdate } from '../services/ai/backgroundCharacterUpdater';
-import { scheduleCardCandidateUpdate } from '../services/ai/cardCandidateUpdater';
+import { type TraitsUpdateSummary } from '../services/ai/traitsUpdater';
+import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
 import { bibleCandidateFilePath, ensureBibleCacheDirectory } from '../files/bibleCacheWorkspace';
 import { cardCandidateFilePath, ensureCardCacheDirectory } from '../files/cardCacheWorkspace';
 import { recordUsageSafely } from '../services/ai/recordUsageSafely';
@@ -130,6 +125,7 @@ export interface RegisterGenerateDraftCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -138,6 +134,7 @@ export interface RunGenerateDraftForWorkspaceSceneOptions {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -152,6 +149,7 @@ export interface GenerateDraftWorkflowOptions {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
   readonly openDocumentOnSuccess: boolean;
   readonly showCacheHitMessage: boolean;
@@ -365,12 +363,17 @@ function schedulePostGenerationUpdates(
   result: Awaited<ReturnType<typeof runSceneGenerationPipeline>>,
 ): void {
   const { workspaceFolder, paths, scene, context } = inputs;
+  const updates = options.postGenerationUpdates;
+
+  if (!updates) {
+    return;
+  }
 
   const detectedCharacterCards = context.characters.filter((card) =>
     result.detectedCharacters.includes(card.name),
   );
 
-  scheduleCharacterTraitsUpdate({
+  updates.scheduleCharacterTraits({
     queueKey: workspaceFolder.uri.toString(),
     sceneStem: scene.stem,
     draftBody: result.draftBody,
@@ -382,7 +385,7 @@ function schedulePostGenerationUpdates(
     onComplete: options.onTraitsUpdateComplete,
   });
 
-  scheduleBibleCandidateUpdate({
+  updates.scheduleBibleCandidates({
     queueKey: `${workspaceFolder.uri.toString()}#bible`,
     sceneStem: scene.stem,
     draftBody: result.draftBody,
@@ -394,7 +397,7 @@ function schedulePostGenerationUpdates(
     logger: options.logger,
   });
 
-  scheduleCardCandidateUpdate({
+  updates.scheduleCardCandidates({
     queueKey: `${workspaceFolder.uri.toString()}#cards`,
     sceneStem: scene.stem,
     draftBody: result.draftBody,
@@ -409,7 +412,7 @@ function schedulePostGenerationUpdates(
   });
 
   if (context.background) {
-    scheduleBackgroundCharacterUpdate({
+    updates.scheduleBackgroundCharacters({
       queueKey: `${workspaceFolder.uri.toString()}#background`,
       backgroundId: context.background.id,
       detectedCharacterCards,
@@ -599,6 +602,7 @@ export async function runGenerateDraftForWorkspaceScene(
         aiProviderRegistry: options.aiProviderRegistry,
         configBridge: options.configBridge,
         logger: options.logger,
+        postGenerationUpdates: options.postGenerationUpdates,
         usageRecorder: options.usageRecorder,
         openDocumentOnSuccess: true,
         showCacheHitMessage: false,
@@ -686,6 +690,7 @@ async function runCommand(
     aiProviderRegistry: dependencies.aiProviderRegistry,
     configBridge: dependencies.configBridge,
     logger: dependencies.logger,
+    postGenerationUpdates: dependencies.postGenerationUpdates,
     usageRecorder: dependencies.usageRecorder,
   });
 }

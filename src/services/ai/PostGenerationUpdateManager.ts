@@ -27,7 +27,10 @@ class KeyedTaskQueue {
     const previous = this.chains.get(key) ?? Promise.resolve();
     const next = previous.catch(() => undefined).then(task) as Promise<T>;
     this.chains.set(key, next);
-    void next.finally(() => this.clearCompletedChain(key, next));
+    void next.then(
+      () => this.clearCompletedChain(key, next),
+      () => this.clearCompletedChain(key, next),
+    );
 
     return next;
   }

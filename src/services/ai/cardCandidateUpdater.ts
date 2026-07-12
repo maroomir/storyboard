@@ -251,17 +251,3 @@ export interface ScheduleCardCandidateUpdateInput extends UpdateCardCandidatesFr
   readonly queueKey: string;
   readonly onComplete?: (summary: CardCandidateUpdateSummary) => void;
 }
-
-const cardCandidateQueues = new Map<string, Promise<unknown>>();
-
-export function scheduleCardCandidateUpdate(input: ScheduleCardCandidateUpdateInput): void {
-  const { queueKey, onComplete, logger, ...rest } = input;
-  const previous = cardCandidateQueues.get(queueKey) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(() => updateCardCandidatesFromDraft({ ...rest, logger }));
-  cardCandidateQueues.set(queueKey, next);
-  void next.then(onComplete, (error: unknown) =>
-    logger?.error('Card candidate background update failed', error),
-  );
-}

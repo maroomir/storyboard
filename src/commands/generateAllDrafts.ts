@@ -8,6 +8,7 @@ import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
+import type { PostGenerationUpdateManager } from '../services/ai/PostGenerationUpdateManager';
 import { generateDraftForWorkspaceSceneWorkflow, stageProgressLabel } from './generateDraft';
 import { maybeRunReviseAfterGenerate } from './reviseDraft';
 
@@ -17,6 +18,7 @@ export interface RegisterGenerateAllDraftsCommandDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
+  readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -103,6 +105,7 @@ async function generateAllDraftsWithProgress(
       aiProviderRegistry: dependencies.aiProviderRegistry,
       configBridge: dependencies.configBridge,
       logger: dependencies.logger,
+      postGenerationUpdates: dependencies.postGenerationUpdates,
       usageRecorder: dependencies.usageRecorder,
       suppressLoggerPanel: true,
       openDocumentOnSuccess: false,
