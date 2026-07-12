@@ -55,8 +55,8 @@ export class DraftModule implements IApplicationModule {
       registerNewSceneCommands(),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway }),
-      registerGrammarDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder }),
-      registerContinuityDiagnosticsProvider({ aiProviderRegistry, logger, usageRecorder }),
+      registerGrammarDiagnosticsProvider({ aiGateway, logger }),
+      registerContinuityDiagnosticsProvider({ aiGateway, logger }),
       registerSlopDiagnosticsProvider({ logger }),
       registerSidebarScenesProvider(_context, { aiProviderRegistry, usageRecorder }),
     );

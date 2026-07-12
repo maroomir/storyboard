@@ -1,15 +1,13 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
 import { LatestRequestGuard } from '../presentation/providers/latest-request-guard';
-import { StoryboardAIService, type GrammarIssue } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { GrammarIssue } from '../services/ai/AIService';
 
 const grammarCheckCommand = 'storyboard.draft.grammarCheck';
 const applyGrammarFixCommand = 'storyboard.draft.applyGrammarFix';
@@ -18,9 +16,8 @@ const grammarDebounceMs = 700;
 const quickFixKind = (vscode.CodeActionKind?.QuickFix ?? 'quickfix') as vscode.CodeActionKind;
 
 export interface RegisterGrammarDiagnosticsProviderDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export function toGrammarRange(
@@ -83,26 +80,11 @@ class GrammarCodeActionProvider implements vscode.CodeActionProvider {
 
 class GrammarDiagnosticsController {
   private readonly collection = vscode.languages.createDiagnosticCollection(grammarSource);
-  private readonly aiService: StoryboardAIService;
   private readonly latestRequests = new LatestRequestGuard();
-  private currentWorkspaceUri: vscode.Uri | undefined;
 
   public constructor(
     private readonly dependencies: RegisterGrammarDiagnosticsProviderDependencies,
-  ) {
-    this.aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-      onUsage: (record): void => {
-        if (this.currentWorkspaceUri) {
-          recordUsageSafely(
-            dependencies.usageRecorder,
-            this.currentWorkspaceUri,
-            record,
-            dependencies.logger,
-          );
-        }
-      },
-    });
-  }
+  ) {}
 
   public getDiagnosticsCollection(): vscode.DiagnosticCollection {
     return this.collection;
@@ -118,8 +100,6 @@ class GrammarDiagnosticsController {
       this.collection.delete(document.uri);
       return;
     }
-    this.currentWorkspaceUri = workspaceFolder.uri;
-
     let sceneStem = 'unknown-scene';
     try {
       sceneStem = parseDraft(document.getText()).sceneStem;
@@ -129,10 +109,12 @@ class GrammarDiagnosticsController {
     }
 
     try {
-      const issues = await this.aiService.checkGrammar(document.getText(), {
-        providerId: this.dependencies.aiProviderRegistry.getTaskProvider('grammarCheck'),
-        attribution: { primary: { kind: 'scene', id: sceneStem } },
-      });
+      const issues = await this.dependencies.aiGateway
+        .createService(workspaceFolder.uri)
+        .checkGrammar(document.getText(), {
+          providerId: this.dependencies.aiGateway.getTaskProvider('grammarCheck'),
+          attribution: { primary: { kind: 'scene', id: sceneStem } },
+        });
       this.collection.set(document.uri, this.toDiagnostics(document, issues));
     } catch (error) {
       this.dependencies.logger.error('Grammar check failed', error);

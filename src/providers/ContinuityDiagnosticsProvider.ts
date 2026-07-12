@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from '../core/pathConventions';
 import {
@@ -16,18 +17,14 @@ import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
 import { readSceneFile } from '../files/scene';
-import { StoryboardAIService, type ContinuityIssue } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { ContinuityIssue } from '../services/ai/AIService';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';
 const continuitySource = 'storyboard-continuity';
 
 export interface RegisterContinuityDiagnosticsProviderDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export function toContinuityRange(
@@ -60,25 +57,9 @@ export function mapContinuityIssuesToDiagnostics(
 
 class ContinuityDiagnosticsController {
   private readonly collection = vscode.languages.createDiagnosticCollection(continuitySource);
-  private readonly aiService: StoryboardAIService;
-  private currentWorkspaceUri: vscode.Uri | undefined;
-
   public constructor(
     private readonly dependencies: RegisterContinuityDiagnosticsProviderDependencies,
-  ) {
-    this.aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-      onUsage: (record): void => {
-        if (this.currentWorkspaceUri) {
-          recordUsageSafely(
-            dependencies.usageRecorder,
-            this.currentWorkspaceUri,
-            record,
-            dependencies.logger,
-          );
-        }
-      },
-    });
-  }
+  ) {}
 
   public getDiagnosticsCollection(): vscode.DiagnosticCollection {
     return this.collection;
@@ -122,13 +103,13 @@ class ContinuityDiagnosticsController {
       return;
     }
 
-    this.currentWorkspaceUri = workspaceFolder.uri;
-
     try {
-      const issues = await this.aiService.checkContinuity(document.getText(), factLines, {
-        providerId: this.dependencies.aiProviderRegistry.getTaskProvider('continuityCheck'),
-        attribution: { primary: { kind: 'scene', id: sceneStem } },
-      });
+      const issues = await this.dependencies.aiGateway
+        .createService(workspaceFolder.uri)
+        .checkContinuity(document.getText(), factLines, {
+          providerId: this.dependencies.aiGateway.getTaskProvider('continuityCheck'),
+          attribution: { primary: { kind: 'scene', id: sceneStem } },
+        });
       this.collection.set(document.uri, mapContinuityIssuesToDiagnostics(document, issues));
     } catch (error) {
       this.dependencies.logger.error('Continuity check failed', error);
