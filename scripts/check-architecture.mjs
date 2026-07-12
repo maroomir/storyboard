@@ -7,6 +7,7 @@ import ts from 'typescript'
 const REPOSITORY_ROOT = process.cwd()
 const SOURCE_ROOT = path.join(REPOSITORY_ROOT, 'src')
 const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts')
+const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared')
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT)
 const sourceFileSet = new Set(sourceFiles)
@@ -30,6 +31,7 @@ for (const filePath of sourceFiles) {
     const target = resolveImport(filePath, importPath)
     if (target) {
       graph.get(filePath)?.add(target)
+      validateSharedBoundary(filePath, target)
     }
   }
 }
@@ -151,6 +153,18 @@ function validateExtensionEntry() {
       failures.push(`extension.ts imports outside bootstrap: ${importPath}`)
     }
   }
+}
+
+function validateSharedBoundary(filePath, target) {
+  if (isWithinDirectory(filePath, SHARED_ROOT) && !isWithinDirectory(target, SHARED_ROOT)) {
+    failures.push(
+      `Shared layer imports outside itself: ${relativePath(filePath)} -> ${relativePath(target)}`,
+    )
+  }
+}
+
+function isWithinDirectory(filePath, directoryPath) {
+  return filePath === directoryPath || filePath.startsWith(`${directoryPath}${path.sep}`)
 }
 
 function relativePath(filePath) {

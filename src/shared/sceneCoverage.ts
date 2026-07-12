@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { parseJsonArray } from '@/utils/aiResponseParser';
+import { parseJsonArray } from './ai-response-parser';
 
 export const coverageStatuses = ['missing', 'out-of-order'] as const;
 

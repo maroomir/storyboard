@@ -11,4 +11,4 @@ export * from './usage';
 export * from './registry';
 export * from './envelope';
 
-export type { UsageSummaryByEntity } from '../../services/ai/types';
+export type { UsageSummaryByEntity } from '../ai';

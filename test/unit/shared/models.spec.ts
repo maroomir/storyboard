@@ -3,7 +3,7 @@ import path from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { storyboardModelCatalog } from "@/shared/models"
-import { aiProviderIds, type AiProviderId } from "@/services/ai/types"
+import { aiProviderIds, type AiProviderId } from "@/shared/ai"
 
 describe("storyboardModelCatalog vs package.json defaults", () => {
   it("includes every contributed provider model default from package.json", () => {

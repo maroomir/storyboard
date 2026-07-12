@@ -1,4 +1,4 @@
-import type { AiProviderId } from '../services/ai/types';
+import type { AiProviderId } from './ai';
 
 export interface ModelPricePerMillion {
   readonly inputPricePerMillion: number;
