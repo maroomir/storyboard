@@ -189,9 +189,9 @@ function selectSituationPersonas(
 
 // NOTE: 모든 대사 조각을 한 번에 포맷하면 모델 출력 한계로 뒷부분 비트가 잘려 나간다. 글자 예산 단위로
 // 조각을 묶어 여러 번 포맷한 뒤 이어 붙여, 27개 비트가 전부 살아남고 분량이 안정적으로 나오게 한다.
-const formatChunkCharBudget = 12000;
+const FORMAT_CHUNK_CHAR_BUDGET = 12000;
 
-const maxCondensedContextChars = 1200;
+const MAX_CONDENSED_CONTEXT_CHARS = 1200;
 
 export function chunkDialoguePiecesByBudget(
   pieces: readonly string[],
@@ -218,7 +218,7 @@ export function chunkDialoguePiecesByBudget(
   return chunks;
 }
 
-const maxSceneBreakNewlineCount = 10;
+const MAX_SCENE_BREAK_NEWLINE_COUNT = 10;
 
 export function resolveSceneBreakJoiner(rawSeparator: string | undefined): string | undefined {
   const separator = rawSeparator?.trim();
@@ -228,7 +228,7 @@ export function resolveSceneBreakJoiner(rawSeparator: string | undefined): strin
   }
 
   if (/^\d+$/.test(separator)) {
-    const newlineCount = Math.min(Number.parseInt(separator, 10), maxSceneBreakNewlineCount);
+    const newlineCount = Math.min(Number.parseInt(separator, 10), MAX_SCENE_BREAK_NEWLINE_COUNT);
     return newlineCount > 0 ? '\n'.repeat(newlineCount) : undefined;
   }
 
@@ -291,7 +291,7 @@ function condensePreviousContext(
     return previousContext;
   }
 
-  if (previousContext.length <= maxCondensedContextChars) {
+  if (previousContext.length <= MAX_CONDENSED_CONTEXT_CHARS) {
     return previousContext;
   }
 
@@ -302,13 +302,13 @@ function condensePreviousContext(
     .filter(isContextBearingLine);
 
   if (lines.length === 0) {
-    return previousContext.slice(-maxCondensedContextChars);
+    return previousContext.slice(-MAX_CONDENSED_CONTEXT_CHARS);
   }
 
   const condensed = lines.join('\n');
-  return condensed.length <= maxCondensedContextChars
+  return condensed.length <= MAX_CONDENSED_CONTEXT_CHARS
     ? condensed
-    : condensed.slice(-maxCondensedContextChars);
+    : condensed.slice(-MAX_CONDENSED_CONTEXT_CHARS);
 }
 
 async function buildScenePersonas(
@@ -418,7 +418,7 @@ async function formatSceneDraft(
   // NOTE: AI 포맷이 chunk 내부의 장면 경계를 소실시키므로, 구분자 모드에서는 장면(비트) 단위로 포맷한다.
   const formatChunks = sceneBreakJoiner
     ? dialoguePieces.map((piece) => [piece])
-    : chunkDialoguePiecesByBudget(dialoguePieces, formatChunkCharBudget);
+    : chunkDialoguePiecesByBudget(dialoguePieces, FORMAT_CHUNK_CHAR_BUDGET);
   const formattedParts: string[] = [];
 
   for (let i = 0; i < formatChunks.length; i++) {
