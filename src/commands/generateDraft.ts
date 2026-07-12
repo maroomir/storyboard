@@ -4,11 +4,10 @@ import {
   type GenerateDraftUseCase,
   type GenerateDraftResult,
 } from '../application/drafts/generate-draft-use-case';
+import type { ReviseDraftUseCase } from '../application/drafts/revise-draft-use-case';
 import type { StoryboardLogger } from '../core/logger';
 import { maybeRunReviseAfterGenerate } from './reviseDraft';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
@@ -18,11 +17,10 @@ const REGENERATE_SUCCESS_MESSAGE = '초안을 다시 생성해 저장했습니�
 const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
 }
 
 export function stageProgressLabel(stage: SceneGenerationPipelineStage): string {
@@ -107,9 +105,8 @@ async function runGenerateDraftForWorkspaceScene(
           sceneUri,
           dependencies.configBridge,
           {
-            aiProviderRegistry: dependencies.aiProviderRegistry,
-            usageRecorder: dependencies.usageRecorder,
             logger: dependencies.logger,
+            reviseDraftUseCase: dependencies.reviseDraftUseCase,
           },
           {
             onProgress: (message) => progress.report({ message }),

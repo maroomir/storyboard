@@ -1,16 +1,14 @@
 import * as vscode from 'vscode';
 
+import type {
+  ReviseDraftUseCase,
+  ReviseDraftWorkflowResult,
+} from '../application/drafts/revise-draft-use-case';
 import type { StoryboardLogger } from '../core/logger';
 import { draftPath, getStoryboardProjectPaths } from '../core/pathConventions';
-import {
-  runReviseDraftWorkflow,
-  type ReviseDraftWorkflowResult,
-} from '../core/reviseDraftWorkflow';
 import { recordRevisionEntry } from '../core/revisionPlanRecorder';
 import { hasStoryboardProject, uriExists } from '../core/workspace';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import { parseSceneFileName, parseSceneStem } from '../shared/scene';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';
@@ -19,10 +17,9 @@ const minMaxIterations = 1;
 const maxMaxIterations = 5;
 
 export interface RegisterReviseDraftCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
 }
 
 export function registerReviseDraftCommand(
@@ -34,9 +31,8 @@ export function registerReviseDraftCommand(
 }
 
 export interface ReviseGateDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly usageRecorder: UsageRecorder;
   readonly logger: StoryboardLogger;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
 }
 
 export interface ReviseGateHooks {
@@ -60,10 +56,7 @@ export async function runReviseGateForScene(
     return undefined;
   }
 
-  const result = await runReviseDraftWorkflow({
-    aiProviderRegistry: dependencies.aiProviderRegistry,
-    usageRecorder: dependencies.usageRecorder,
-    logger: dependencies.logger,
+  const result = await dependencies.reviseDraftUseCase.execute({
     workspaceUri,
     paths,
     draftUri,

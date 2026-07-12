@@ -4,12 +4,11 @@ import {
   type GenerateDraftUseCase,
   type GenerateDraftResult,
 } from '../application/drafts/generate-draft-use-case';
+import type { ReviseDraftUseCase } from '../application/drafts/revise-draft-use-case';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseSceneFileName } from '../shared/scene';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { stageProgressLabel } from './generateDraft';
@@ -18,11 +17,10 @@ import { maybeRunReviseAfterGenerate } from './reviseDraft';
 const generateAllDraftsCommand = 'storyboard.draft.generateAll';
 
 export interface RegisterGenerateAllDraftsCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
 }
 
 async function listSceneUrisOrdered(sceneDirectory: vscode.Uri): Promise<vscode.Uri[]> {
@@ -138,9 +136,8 @@ async function generateAllDraftsWithProgress(
           sceneUri,
           dependencies.configBridge,
           {
-            aiProviderRegistry: dependencies.aiProviderRegistry,
-            usageRecorder: dependencies.usageRecorder,
             logger: dependencies.logger,
+            reviseDraftUseCase: dependencies.reviseDraftUseCase,
           },
           {
             onWillRun: () =>

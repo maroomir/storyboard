@@ -18,9 +18,6 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
 
-vi.mock("@/core/reviseDraftWorkflow", () => ({
-  runReviseDraftWorkflow: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args)
-}))
 vi.mock("@/core/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
 }))
@@ -166,6 +163,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     configBridge: {} as never,
     generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
     logger: { error: () => undefined, info: () => undefined } as never,
+    reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
     usageRecorder: {} as never
   }
 

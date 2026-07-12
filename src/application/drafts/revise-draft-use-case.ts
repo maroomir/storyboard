@@ -1,30 +1,38 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from './logger';
-import { type StoryboardProjectPaths } from './pathConventions';
-import { buildNarrativeContext, buildSceneContext, formatBibleFactLines } from './sceneContext';
-import { sceneContextFileSystem, sceneContextPaths, vscodeFsAdapter } from './vscodeFileSystem';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../files/draft';
-import { readProjectJson } from '../files/projectJson';
-import { readSceneFile } from '../files/scene';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { StoryboardLogger } from '../../core/logger';
+import { type StoryboardProjectPaths } from '../../core/pathConventions';
+import {
+  buildNarrativeContext,
+  buildSceneContext,
+  formatBibleFactLines,
+} from '../../core/sceneContext';
+import {
+  sceneContextFileSystem,
+  sceneContextPaths,
+  vscodeFsAdapter,
+} from '../../core/vscodeFileSystem';
+import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../files/draft';
+import { readProjectJson } from '../../files/projectJson';
+import { readSceneFile } from '../../files/scene';
+import { StoryboardAIService } from '../../services/ai/AIService';
+import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
+import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
+import type { UsageRecorder } from '../../services/ai/UsageRecorder';
 import {
   buildRevisionInstructions,
   countBlockingIssues,
   scoreCritique,
   shouldPassRevise,
-} from '../shared/draftReview';
+} from '../../shared/draftReview';
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
   routeReviewIssues,
-} from '../shared/reviewRouting';
-import type { ProjectSetting } from '../shared/project';
-import { buildStyleDirective } from '../shared/styleDirective';
+} from '../../shared/reviewRouting';
+import type { ProjectSetting } from '../../shared/project';
+import { buildStyleDirective } from '../../shared/styleDirective';
 
 async function readContractGuidance(projectJsonUri: vscode.Uri): Promise<{
   styleConstraints: readonly string[];
@@ -43,10 +51,13 @@ async function readContractGuidance(projectJsonUri: vscode.Uri): Promise<{
   }
 }
 
-export interface ReviseDraftWorkflowOptions {
+export interface ReviseDraftUseCaseDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly usageRecorder: UsageRecorder;
   readonly logger: StoryboardLogger;
+}
+
+export interface ReviseDraftRequest {
   readonly workspaceUri: vscode.Uri;
   readonly paths: StoryboardProjectPaths;
   readonly draftUri: vscode.Uri;
@@ -138,8 +149,8 @@ function buildRevisionPasses(
     : [globalInstructions];
 }
 
-export async function runReviseDraftWorkflow(
-  options: ReviseDraftWorkflowOptions,
+async function runReviseDraftWorkflow(
+  options: ReviseDraftUseCaseDependencies & ReviseDraftRequest,
 ): Promise<ReviseDraftWorkflowResult> {
   const { aiProviderRegistry: registry, paths, draftUri, sceneStem, maxIterations } = options;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
@@ -262,4 +273,12 @@ export async function runReviseDraftWorkflow(
     cancelled: isCancelled(),
     instructions: lastInstructions,
   };
+}
+
+export class ReviseDraftUseCase {
+  public constructor(private readonly dependencies: ReviseDraftUseCaseDependencies) {}
+
+  public async execute(request: ReviseDraftRequest): Promise<ReviseDraftWorkflowResult> {
+    return await runReviseDraftWorkflow({ ...this.dependencies, ...request });
+  }
 }

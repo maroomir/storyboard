@@ -46,13 +46,20 @@ vi.mock("@/core/sceneContext", () => ({
   formatBibleFactLines: (): unknown[] => []
 }))
 
-import { runReviseDraftWorkflow, type ReviseDraftWorkflowOptions } from "@/core/reviseDraftWorkflow"
+import {
+  ReviseDraftUseCase,
+  type ReviseDraftRequest,
+  type ReviseDraftUseCaseDependencies,
+  type ReviseDraftWorkflowResult
+} from "@/application/drafts/revise-draft-use-case"
 
 const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
 const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }
 const highCritique: DraftCritiqueIssue = { category: "voice", severity: "high", comment: "보이스 문제" }
 
-function baseOptions(overrides: Partial<ReviseDraftWorkflowOptions> = {}): ReviseDraftWorkflowOptions {
+function baseOptions(
+  overrides: Partial<ReviseDraftRequest> = {}
+): ReviseDraftUseCaseDependencies & ReviseDraftRequest {
   return {
     aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
     usageRecorder: {} as never,
@@ -75,7 +82,13 @@ function baseOptions(overrides: Partial<ReviseDraftWorkflowOptions> = {}): Revis
   }
 }
 
-describe("runReviseDraftWorkflow", () => {
+async function runReviseDraftWorkflow(
+  options: ReviseDraftUseCaseDependencies & ReviseDraftRequest
+): Promise<ReviseDraftWorkflowResult> {
+  return await new ReviseDraftUseCase(options).execute(options)
+}
+
+describe("ReviseDraftUseCase", () => {
   beforeEach(() => {
     checkContinuityMock.mockReset()
     critiqueDraftMock.mockReset()

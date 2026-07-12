@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/ai-gateway';
 import type { GenerateDraftUseCase } from '../drafts/generate-draft-use-case';
+import type { ReviseDraftUseCase } from '../drafts/revise-draft-use-case';
 import { listCharacterBriefs } from '../../core/characterBriefs';
 import type { StoryboardLogger } from '../../core/logger';
 import { assembleManuscript } from '../../core/manuscriptAssembly';
@@ -14,7 +15,6 @@ import {
 } from '../../core/chapterSummaries';
 import { buildForeshadowingMarkdown, collectForeshadowing } from '../../core/foreshadowingTracker';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
-import { runReviseDraftWorkflow } from '../../core/reviseDraftWorkflow';
 import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../core/sceneSeedFactory';
 import { resolveScenePrefixDigitCount } from '../../domain/scene-prefix-digits';
@@ -62,6 +62,7 @@ export interface NovelPipelineDependencies {
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -316,10 +317,7 @@ async function runChapterDraftsAndRevise(
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
     }
 
-    const reviseResult = await runReviseDraftWorkflow({
-      aiProviderRegistry: options.deps.aiProviderRegistry,
-      usageRecorder: options.deps.usageRecorder,
-      logger: options.deps.logger,
+    const reviseResult = await options.deps.reviseDraftUseCase.execute({
       workspaceUri: options.workspaceUri,
       paths,
       draftUri: vscode.Uri.joinPath(paths.draftDirectory, `${stem}.md`),

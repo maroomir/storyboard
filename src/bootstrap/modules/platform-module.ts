@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { AiGateway } from '../../application/ai/ai-gateway';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
+import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
@@ -30,6 +31,7 @@ export interface IPlatformServices {
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
 }
@@ -73,12 +75,18 @@ export class PlatformModule implements IApplicationModule {
       sceneCacheRepository,
       sceneRepository,
     });
+    const reviseDraftUseCase = new ReviseDraftUseCase({
+      aiProviderRegistry,
+      usageRecorder,
+      logger,
+    });
     const novelPipeline = new NovelPipeline({
       aiGateway,
       aiProviderRegistry,
       configBridge,
       generateDraftUseCase,
       logger,
+      reviseDraftUseCase,
       usageRecorder,
     });
 
@@ -91,6 +99,7 @@ export class PlatformModule implements IApplicationModule {
       logger,
       novelPipeline,
       postGenerationUpdates,
+      reviseDraftUseCase,
       secretStore,
       usageRecorder,
     };
