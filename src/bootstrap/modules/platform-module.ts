@@ -13,6 +13,7 @@ import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-us
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
 import { ReviseAfterGenerateGate } from '../../application/drafts/revise-after-generate-gate';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
+import { GenerateOutlineUseCase } from '../../application/novel/generate-outline-use-case';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
 import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
@@ -21,6 +22,7 @@ import { CardWriterRepository } from '../../infrastructure/persistence/repositor
 import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/card-sidebar-repository';
 import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bible-candidate-repository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
+import { OutlineRepository } from '../../infrastructure/persistence/repositories/outline-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
@@ -50,6 +52,7 @@ export interface IPlatformServices {
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
@@ -98,6 +101,7 @@ export class PlatformModule implements IApplicationModule {
     const cardSidebarRepository = new CardSidebarRepository();
     const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
+    const outlineRepository = new OutlineRepository();
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
     const sceneSidebarRepository = new SceneSidebarRepository();
@@ -112,6 +116,7 @@ export class PlatformModule implements IApplicationModule {
       sceneCacheRepository,
       sceneRepository,
     });
+    const generateOutlineUseCase = new GenerateOutlineUseCase(aiGateway, outlineRepository);
     const reviseDraftUseCase = new ReviseDraftUseCase({
       aiProviderRegistry,
       usageRecorder,
@@ -158,6 +163,7 @@ export class PlatformModule implements IApplicationModule {
       prepareSeedSyncUseCase,
       fileSystem,
       generateDraftUseCase,
+      generateOutlineUseCase,
       logger,
       novelPipeline,
       postGenerationUpdates,
