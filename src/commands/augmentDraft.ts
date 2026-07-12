@@ -9,6 +9,7 @@ import { hasStoryboardProject } from '../core/workspace';
 import type { Draft } from '../domain/Draft';
 import { createDraft, parseDraft, serializeDraft } from '../files/draft';
 import { archiveExistingDraft } from '../files/draftHistory';
+import { VirtualDocumentStore } from '../presentation/providers/virtual-document-store';
 import type { DraftAugmentScope } from '../services/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { resolveExpandRange } from './expandDraft';
@@ -22,30 +23,6 @@ export interface RegisterAugmentDraftCommandDependencies {
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
-}
-
-// NOTE: Both sides of the diff editor are virtual read-only documents (before = current content,
-// after = proposed content). The real draft file is intentionally excluded from the diff so that
-// VSCode auto-save and CodeLens actions on the real file cannot fire while the user reviews.
-class AugmentPreviewContentProvider
-  implements vscode.TextDocumentContentProvider, vscode.Disposable
-{
-  private readonly contentByUri = new Map<string, string>();
-  private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>();
-  public readonly onDidChange = this.changeEmitter.event;
-
-  public provideTextDocumentContent(uri: vscode.Uri): string {
-    return this.contentByUri.get(uri.toString()) ?? '';
-  }
-
-  public setContent(uri: vscode.Uri, content: string): void {
-    this.contentByUri.set(uri.toString(), content);
-    this.changeEmitter.fire(uri);
-  }
-
-  public dispose(): void {
-    this.changeEmitter.dispose();
-  }
 }
 
 function augmentBeforeUri(draftUri: vscode.Uri): vscode.Uri {
@@ -137,7 +114,7 @@ async function maybeArchiveDraft(
 async function runAugmentDraft(
   scope: DraftAugmentScope,
   dependencies: RegisterAugmentDraftCommandDependencies,
-  previewProvider: AugmentPreviewContentProvider,
+  previewProvider: VirtualDocumentStore,
   invokedSceneUri?: vscode.Uri,
   invokedDraftUri?: vscode.Uri,
   rangeArg?: vscode.Range,
@@ -294,7 +271,7 @@ async function runAugmentDraft(
 export function registerAugmentDraftCommands(
   dependencies: RegisterAugmentDraftCommandDependencies,
 ): vscode.Disposable {
-  const previewProvider = new AugmentPreviewContentProvider();
+  const previewProvider = new VirtualDocumentStore();
 
   return vscode.Disposable.from(
     previewProvider,

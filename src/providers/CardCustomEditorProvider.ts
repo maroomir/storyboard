@@ -6,6 +6,7 @@ import { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { loadCharacterRoster } from '../core/relationGraphData';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../files/draft';
+import { VirtualDocumentStore } from '../presentation/providers/virtual-document-store';
 import type { StoryboardCard } from '../shared/card';
 import type { StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
@@ -31,29 +32,6 @@ const draftFileSystem: DraftFileSystem = {
 
 const collectPreviewScheme = 'storyboard-collect';
 
-// NOTE: Serves the proposed-card YAML as a read-only virtual document so the collect preview can
-// reuse VSCode's native diff editor (left = real card file, right = this proposed content).
-class CollectPreviewContentProvider
-  implements vscode.TextDocumentContentProvider, vscode.Disposable
-{
-  private readonly contentByUri = new Map<string, string>();
-  private readonly changeEmitter = new vscode.EventEmitter<vscode.Uri>();
-  public readonly onDidChange = this.changeEmitter.event;
-
-  public provideTextDocumentContent(uri: vscode.Uri): string {
-    return this.contentByUri.get(uri.toString()) ?? '';
-  }
-
-  public setContent(uri: vscode.Uri, content: string): void {
-    this.contentByUri.set(uri.toString(), content);
-    this.changeEmitter.fire(uri);
-  }
-
-  public dispose(): void {
-    this.changeEmitter.dispose();
-  }
-}
-
 function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
   const baseName = (documentUri.path.split('/').at(-1) ?? 'card.card').replace(/\.card$/, '');
   // NOTE: Use .yaml extension so VSCode doesn't route the virtual doc through CardCustomEditorProvider.
@@ -77,7 +55,7 @@ export class CardCustomEditorProvider implements vscode.CustomTextEditorProvider
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly dependencies: CardCustomEditorDependencies,
-    private readonly previewProvider: CollectPreviewContentProvider,
+    private readonly previewProvider: VirtualDocumentStore,
   ) {}
 
   public resolveCustomTextEditor(
@@ -107,7 +85,7 @@ async function initializeCardEditor(
   webviewPanel: vscode.WebviewPanel,
   extensionUri: vscode.Uri,
   dependencies: CardCustomEditorDependencies,
-  previewProvider: CollectPreviewContentProvider,
+  previewProvider: VirtualDocumentStore,
 ): Promise<void> {
   const initialData = await createInitialData(document, webviewPanel.webview);
 
@@ -152,7 +130,7 @@ export function registerCardCustomEditorProvider(
   context: vscode.ExtensionContext,
   dependencies: CardCustomEditorDependencies,
 ): vscode.Disposable {
-  const previewProvider = new CollectPreviewContentProvider();
+  const previewProvider = new VirtualDocumentStore();
 
   return vscode.Disposable.from(
     previewProvider,
@@ -173,7 +151,7 @@ export function registerCardCustomEditorProvider(
 function createCardEditorHandlers(
   document: vscode.TextDocument,
   dependencies: CardCustomEditorDependencies,
-  previewProvider: CollectPreviewContentProvider,
+  previewProvider: VirtualDocumentStore,
 ): StoryboardRpcHandlers {
   return {
     'cards.read': async (): Promise<{ readonly card: StoryboardCard }> => ({
