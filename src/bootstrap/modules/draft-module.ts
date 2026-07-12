@@ -32,6 +32,7 @@ export class DraftModule implements IApplicationModule {
       generateDraftUseCase,
       logger,
       reviseDraftUseCase,
+      sceneSidebarRepository,
       usageRecorder,
     } = this.platform;
 
@@ -58,7 +59,11 @@ export class DraftModule implements IApplicationModule {
       registerGrammarDiagnosticsProvider({ aiGateway, logger }),
       registerContinuityDiagnosticsProvider({ aiGateway, logger }),
       registerSlopDiagnosticsProvider({ logger }),
-      registerSidebarScenesProvider(_context, { aiProviderRegistry, usageRecorder }),
+      registerSidebarScenesProvider(_context, {
+        aiProviderRegistry,
+        sceneSidebarRepository,
+        usageRecorder,
+      }),
     );
   }
 

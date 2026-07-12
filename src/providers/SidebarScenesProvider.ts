@@ -1,29 +1,19 @@
 import * as vscode from 'vscode';
 
-import {
-  draftPath,
-  getStoryboardProjectPaths,
-  isHiddenSceneFileName,
-} from '../core/pathConventions';
-import { isOutlineStale } from '../core/sceneStatus';
+import type { ISceneSidebarRepository } from '../application/cards/scene-sidebar-repository';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 import { emptyUsageSummary } from '../files/usageLedger';
-import { readSceneFile, type SceneFileSystem } from '../files/scene';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import type { UsageSummaryByEntity } from '../services/ai/types';
 import type { StoryboardResponsePayload } from '../shared/messaging';
-import { parseSceneFileName } from '../shared/scene';
+import type { SceneListItem } from '../shared/messaging/scenes';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const generateDraftCommand = 'storyboard.draft.generate';
 const scenesSidebarViewId = 'storyboard.scenesView';
-
-const vscodeFs: SceneFileSystem = {
-  readFile: (uri: unknown) => vscode.workspace.fs.readFile(uri as vscode.Uri),
-};
 
 interface SidebarScenesInitialData {
   readonly title: string;
@@ -32,21 +22,9 @@ interface SidebarScenesInitialData {
   readonly usage: UsageSummaryByEntity;
 }
 
-export interface SceneListItem {
-  readonly stem: string;
-  readonly order: number;
-  readonly slug: string;
-  readonly title?: string;
-  readonly sceneUri: string;
-  readonly draftUri?: string;
-  readonly status: 'ready' | 'stale' | 'missing';
-  readonly sceneMtime: number;
-  readonly draftMtime?: number;
-  readonly outlineStale: boolean;
-}
-
 export interface SidebarScenesProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
+  readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -214,93 +192,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
       return [];
     }
 
-    const paths = getStoryboardProjectPaths(root);
-    const entries = await vscode.workspace.fs.readDirectory(paths.sceneDirectory);
-    const sceneFiles = entries
-      .filter(([, type]) => type === vscode.FileType.File)
-      .map(([name]) => name)
-      .filter((name) => !isHiddenSceneFileName(name))
-      .filter((name) => parseSceneFileName(name) !== undefined);
-
-    const outlineMtime = await this.tryStatMtime(paths.outlineChapters);
-    const items = await Promise.all(
-      sceneFiles.map((name) => this.buildSceneListItem(root, name, outlineMtime)),
-    );
-
-    return items.sort((a, b) => a.order - b.order);
-  }
-
-  private async tryStatMtime(uri: vscode.Uri): Promise<number | undefined> {
-    try {
-      return (await vscode.workspace.fs.stat(uri)).mtime ?? 0;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private async buildSceneListItem(
-    workspaceRoot: vscode.Uri,
-    fileName: string,
-    outlineMtime: number | undefined,
-  ): Promise<SceneListItem> {
-    const parts = parseSceneFileName(fileName);
-    if (!parts) {
-      throw new Error(`Invariant: invalid scene file name ${fileName}`);
-    }
-
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, fileName);
-    const draftUri = draftPath(workspaceRoot, parts.stem);
-
-    const sceneStat = await vscode.workspace.fs.stat(sceneUri);
-    const sceneMtime = sceneStat.mtime ?? 0;
-
-    let draftMtime: number | undefined;
-    let draftUriString: string | undefined;
-    let status: SceneListItem['status'];
-
-    try {
-      const draftStat = await vscode.workspace.fs.stat(draftUri);
-      draftMtime = draftStat.mtime ?? 0;
-      draftUriString = draftUri.toString();
-
-      if (draftMtime >= sceneMtime) {
-        status = 'ready';
-      } else {
-        status = 'stale';
-      }
-    } catch {
-      status = 'missing';
-    }
-
-    const title = await this.tryReadSceneTitle(sceneUri, fileName);
-
-    return {
-      stem: parts.stem,
-      order: parts.order,
-      slug: parts.slug,
-      title,
-      sceneUri: sceneUri.toString(),
-      draftUri: draftUriString,
-      status,
-      sceneMtime,
-      draftMtime,
-      outlineStale: isOutlineStale(outlineMtime, sceneMtime),
-    };
-  }
-
-  private async tryReadSceneTitle(
-    sceneUri: vscode.Uri,
-    fileName: string,
-  ): Promise<string | undefined> {
-    try {
-      const scene = await readSceneFile(sceneUri, vscodeFs, fileName);
-      const rawTitle = scene.frontmatter.title;
-      const trimmed = rawTitle?.trim();
-      return trimmed && trimmed.length > 0 ? trimmed : undefined;
-    } catch {
-      return undefined;
-    }
+    return await this.dependencies.sceneSidebarRepository.list(root);
   }
 }
 

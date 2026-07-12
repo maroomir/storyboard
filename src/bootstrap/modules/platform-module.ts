@@ -19,6 +19,7 @@ import { BibleCandidateRepository } from '../../infrastructure/persistence/repos
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
+import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
 import { StoryboardLogger } from '../../core/logger';
 import {
@@ -50,6 +51,7 @@ export interface IPlatformServices {
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
 }
@@ -89,6 +91,7 @@ export class PlatformModule implements IApplicationModule {
     const projectRepository = new ProjectRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
+    const sceneSidebarRepository = new SceneSidebarRepository();
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
       configBridge,
@@ -145,6 +148,7 @@ export class PlatformModule implements IApplicationModule {
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
       reviseDraftUseCase,
+      sceneSidebarRepository,
       secretStore,
       usageRecorder,
     };

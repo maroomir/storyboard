@@ -17,6 +17,8 @@ export const sceneListItemSchema = z.object({
   outlineStale: z.boolean().optional(),
 });
 
+export type SceneListItem = z.infer<typeof sceneListItemSchema>;
+
 export const scenesListResponsePayloadSchema = z.object({
   scenes: z.array(sceneListItemSchema),
 });
