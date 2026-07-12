@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../application/ports/file-system';
+import type { FileSystemDirectoryEntry, IFileSystem } from '../../application/ports/fileSystem';
 
 export class VscodeFileSystem implements IFileSystem {
   public async readFile(uri: unknown): Promise<Uint8Array> {

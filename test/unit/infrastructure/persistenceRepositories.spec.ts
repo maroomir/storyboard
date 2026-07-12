@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import type { IFileSystem } from '@/application/ports/file-system';
-import { DraftRepository } from '@/infrastructure/persistence/repositories/draft-repository';
-import { ProjectRepository } from '@/infrastructure/persistence/repositories/project-repository';
-import { SceneCacheRepository } from '@/infrastructure/persistence/repositories/scene-cache-repository';
-import { SceneRepository } from '@/infrastructure/persistence/repositories/scene-repository';
+import type { IFileSystem } from '@/application/ports/fileSystem';
+import { DraftRepository } from '@/infrastructure/persistence/repositories/draftRepository';
+import { ProjectRepository } from '@/infrastructure/persistence/repositories/projectRepository';
+import { SceneCacheRepository } from '@/infrastructure/persistence/repositories/sceneCacheRepository';
+import { SceneRepository } from '@/infrastructure/persistence/repositories/sceneRepository';
 import { createDraft, parseDraft } from '@/files/draft';
 import { parseSceneCache } from '@/files/sceneCache';
 

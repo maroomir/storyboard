@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type {
   ICardSidebarRepository,
   SidebarCardCategory,
-} from '../application/cards/card-sidebar-repository';
+} from '../application/cards/cardSidebarRepository';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 import { emptyUsageSummary } from '../files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';

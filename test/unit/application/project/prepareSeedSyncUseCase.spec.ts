@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { PrepareSeedSyncUseCase } from "@/application/project/prepare-seed-sync-use-case"
+import { PrepareSeedSyncUseCase } from "@/application/project/prepareSeedSyncUseCase"
 import { parseProjectJson } from "@/files/projectJson"
 
 describe("PrepareSeedSyncUseCase", () => {

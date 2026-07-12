@@ -14,7 +14,7 @@ import {
   type InlineCompletionContext,
 } from './DraftAiService';
 import { SceneAiService } from './SceneAiService';
-import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
+import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from './types';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
@@ -56,7 +56,7 @@ export type {
   GenerateTextOptions,
   OnUsageRecordCallback,
   StoryboardAIServiceOptions,
-} from './ai-service-types';
+} from './aiServiceTypes';
 
 export type {
   ExtractCardCandidatesByCharacterOptions,

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ISceneSidebarRepository } from '../../../application/cards/scene-sidebar-repository';
+import type { ISceneSidebarRepository } from '../../../application/cards/sceneSidebarRepository';
 import {
   draftPath,
   getStoryboardProjectPaths,

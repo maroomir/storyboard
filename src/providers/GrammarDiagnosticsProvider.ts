@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../application/ai/ai-gateway';
+import type { AiGateway } from '../application/ai/aiGateway';
 import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
-import { LatestRequestGuard } from '../presentation/providers/latest-request-guard';
+import { LatestRequestGuard } from '../presentation/providers/latestRequestGuard';
 import type { GrammarIssue } from '../services/ai/AIService';
 
 const grammarCheckCommand = 'storyboard.draft.grammarCheck';

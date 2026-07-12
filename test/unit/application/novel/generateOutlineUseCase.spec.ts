@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   GenerateOutlineUseCase,
   type IOutlineRepository
-} from "@/application/novel/generate-outline-use-case"
+} from "@/application/novel/generateOutlineUseCase"
 import { parseProjectJson } from "@/files/projectJson"
 
 function project(): ReturnType<typeof parseProjectJson> {

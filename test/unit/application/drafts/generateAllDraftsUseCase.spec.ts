@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   GenerateAllDraftsUseCase,
   type ISceneBatchRepository
-} from "@/application/drafts/generate-all-drafts-use-case"
+} from "@/application/drafts/generateAllDraftsUseCase"
 
 const firstScene = vscode.Uri.file("/workspace/.storyboard/scene/01-opening.txt")
 const secondScene = vscode.Uri.file("/workspace/.storyboard/scene/02-conflict.txt")

@@ -5,7 +5,7 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
 } from '../application/novel/novel-pipeline';
-import { resolveReviseMaxIterations } from '../application/drafts/revise-after-generate-gate';
+import { resolveReviseMaxIterations } from '../application/drafts/reviseAfterGenerateGate';
 import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';

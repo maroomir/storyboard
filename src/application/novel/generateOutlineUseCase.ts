@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { AiGateway } from '../ai/ai-gateway';
+import type { AiGateway } from '../ai/aiGateway';
 import { validateGenerationContract } from '../../core/generationContract';
 import { toOutlineBrief, type OutlineCharacterBrief } from '../../shared/outline';
 import type { ChapterPlan, OutlineSynopsis } from '../../shared/outline';

@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 
-import type { CollectCardProposalsUseCase } from '../application/cards/collect-card-proposals-use-case';
+import type { CollectCardProposalsUseCase } from '../application/cards/collectCardProposalsUseCase';
 import { CardParseError, parseCard, serializeCard } from '../files/card';
 import { applyCardCollectProposals } from '../core/cardCollect';
 import { StoryboardLogger } from '../core/logger';
 import { loadCharacterRoster } from '../core/relationGraphData';
-import { VirtualDocumentStore } from '../presentation/providers/virtual-document-store';
+import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
 import type { StoryboardCard } from '../shared/card';
 import type { StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';

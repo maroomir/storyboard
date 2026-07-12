@@ -19,7 +19,7 @@ vi.mock("@/core/sceneContext", () => ({
   formatBibleFactLines: (): string[] => []
 }))
 
-import { AugmentDraftUseCase } from "@/application/drafts/augment-draft-use-case"
+import { AugmentDraftUseCase } from "@/application/drafts/augmentDraftUseCase"
 import { SceneParseError } from "@/files/scene"
 
 function createUseCase(): {

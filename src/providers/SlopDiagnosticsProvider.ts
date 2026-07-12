@@ -5,7 +5,7 @@ import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
-import { LatestRequestGuard } from '../presentation/providers/latest-request-guard';
+import { LatestRequestGuard } from '../presentation/providers/latestRequestGuard';
 import { analyzeSlop, type SlopFinding } from '../shared/slop';
 
 const slopCheckCommand = 'storyboard.draft.slopCheck';

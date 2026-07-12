@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { StoryboardApplication } from './bootstrap/storyboard-application';
+import { StoryboardApplication } from './bootstrap/storyboardApplication';
 
 let application: StoryboardApplication | undefined;
 

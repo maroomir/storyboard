@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
-import type { DecodeSeedUseCase } from '../application/project/decode-seed-use-case';
+import type { DecodeSeedUseCase } from '../application/project/decodeSeedUseCase';
 import type {
   SeedCreatePreparation,
   SeedProjectUseCase,
-} from '../application/project/seed-project-use-case';
+} from '../application/project/seedProjectUseCase';
 import { type StoryboardLogger } from '../core/logger';
 import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
 import { hasStoryboardProject } from '../core/workspace';

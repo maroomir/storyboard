@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteCardCandidatesUseCase } from '../application/cards/promote-card-candidates-use-case';
+import type { PromoteCardCandidatesUseCase } from '../application/cards/promoteCardCandidatesUseCase';
 import type { StoryboardLogger } from '../core/logger';
 import type { CardCandidateItem } from '../core/cardCandidatePromotion';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';

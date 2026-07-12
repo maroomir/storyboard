@@ -1,7 +1,7 @@
 import type { Background } from '../../domain/Background';
 import type { Character } from '../../domain/Character';
 import type { ProjectFormat } from '../../shared/project';
-import type { GenerateTextOptions } from './ai-service-types';
+import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,
   toSituationWithCharacters,

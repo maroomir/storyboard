@@ -1,39 +1,39 @@
 import * as vscode from 'vscode';
 
-import { AiGateway } from '../../application/ai/ai-gateway';
-import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
-import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-card-candidates-use-case';
-import { CollectCardProposalsUseCase } from '../../application/cards/collect-card-proposals-use-case';
-import { CreateCardUseCase } from '../../application/cards/create-card-use-case';
-import { PromoteBibleCandidatesUseCase } from '../../application/project/promote-bible-candidates-use-case';
-import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-case';
-import { PrepareSeedSyncUseCase } from '../../application/project/prepare-seed-sync-use-case';
-import { SeedProjectUseCase } from '../../application/project/seed-project-use-case';
-import { AssembleManuscriptUseCase } from '../../application/manuscript/assemble-manuscript-use-case';
-import { SummarizeChaptersUseCase } from '../../application/manuscript/summarize-chapters-use-case';
-import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
-import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
-import { GenerateAllDraftsUseCase } from '../../application/drafts/generate-all-drafts-use-case';
+import { AiGateway } from '../../application/ai/aiGateway';
+import { RecommendCardsUseCase } from '../../application/cards/recommendCardsUseCase';
+import { PromoteCardCandidatesUseCase } from '../../application/cards/promoteCardCandidatesUseCase';
+import { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
+import { CreateCardUseCase } from '../../application/cards/createCardUseCase';
+import { PromoteBibleCandidatesUseCase } from '../../application/project/promoteBibleCandidatesUseCase';
+import { DecodeSeedUseCase } from '../../application/project/decodeSeedUseCase';
+import { PrepareSeedSyncUseCase } from '../../application/project/prepareSeedSyncUseCase';
+import { SeedProjectUseCase } from '../../application/project/seedProjectUseCase';
+import { AssembleManuscriptUseCase } from '../../application/manuscript/assembleManuscriptUseCase';
+import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
+import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
+import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
+import { GenerateAllDraftsUseCase } from '../../application/drafts/generateAllDraftsUseCase';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
-import { ReviseAfterGenerateGate } from '../../application/drafts/revise-after-generate-gate';
+import { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
-import { GenerateOutlineUseCase } from '../../application/novel/generate-outline-use-case';
-import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
-import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
-import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/card-candidate-repository';
-import { CardCollectRepository } from '../../infrastructure/persistence/repositories/card-collect-repository';
-import { CardWriterRepository } from '../../infrastructure/persistence/repositories/card-writer-repository';
-import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/card-sidebar-repository';
-import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bible-candidate-repository';
-import { ProjectRepository } from '../../infrastructure/persistence/repositories/project-repository';
-import { OutlineRepository } from '../../infrastructure/persistence/repositories/outline-repository';
-import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/scene-cache-repository';
-import { SceneRepository } from '../../infrastructure/persistence/repositories/scene-repository';
-import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/scene-batch-repository';
-import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/scene-sidebar-repository';
-import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seed-project-repository';
-import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscript-assembly-repository';
-import { VscodeFileSystem } from '../../infrastructure/vscode/vscode-file-system';
+import { GenerateOutlineUseCase } from '../../application/novel/generateOutlineUseCase';
+import { DraftRepository } from '../../infrastructure/persistence/repositories/draftRepository';
+import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/cardRecommendationRepository';
+import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/cardCandidateRepository';
+import { CardCollectRepository } from '../../infrastructure/persistence/repositories/cardCollectRepository';
+import { CardWriterRepository } from '../../infrastructure/persistence/repositories/cardWriterRepository';
+import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/cardSidebarRepository';
+import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bibleCandidateRepository';
+import { ProjectRepository } from '../../infrastructure/persistence/repositories/projectRepository';
+import { OutlineRepository } from '../../infrastructure/persistence/repositories/outlineRepository';
+import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/sceneCacheRepository';
+import { SceneRepository } from '../../infrastructure/persistence/repositories/sceneRepository';
+import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/sceneBatchRepository';
+import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/sceneSidebarRepository';
+import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seedProjectRepository';
+import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
+import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import { StoryboardLogger } from '../../core/logger';
 import {
   createAiProviderRegistry,
@@ -44,8 +44,8 @@ import { createVscodeUsageLedgerFileSystem, UsageRecorder } from '../../services
 import { SecretStore } from '../../services/secrets/SecretStore';
 import { ConfigBridge } from '../../services/settings/ConfigBridge';
 
-import { DisposableStore } from '../lifecycle/disposable-store';
-import type { IApplicationModule } from '../lifecycle/application-module';
+import { DisposableStore } from '../lifecycle/disposableStore';
+import type { IApplicationModule } from '../lifecycle/applicationModule';
 
 export interface IPlatformServices {
   readonly aiGateway: AiGateway;

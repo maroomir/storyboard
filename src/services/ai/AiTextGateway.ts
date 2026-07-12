@@ -9,7 +9,7 @@ import type {
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/variant';
 import type { PromptVariantId } from './prompts/types';
-import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
+import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 
 export class AiTextGateway {
   public constructor(

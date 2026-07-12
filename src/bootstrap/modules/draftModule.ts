@@ -14,9 +14,9 @@ import { registerInlineCompletionProvider } from '../../providers/InlineCompleti
 import { registerSidebarScenesProvider } from '../../providers/SidebarScenesProvider';
 import { registerSlopDiagnosticsProvider } from '../../providers/SlopDiagnosticsProvider';
 
-import { DisposableStore } from '../lifecycle/disposable-store';
-import type { IApplicationModule } from '../lifecycle/application-module';
-import type { IPlatformServices } from './platform-module';
+import { DisposableStore } from '../lifecycle/disposableStore';
+import type { IApplicationModule } from '../lifecycle/applicationModule';
+import type { IPlatformServices } from './platformModule';
 
 export class DraftModule implements IApplicationModule {
   private readonly disposables = new DisposableStore();

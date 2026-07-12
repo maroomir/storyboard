@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import {
   type GenerateDraftUseCase,
   type GenerateDraftResult,
-} from '../application/drafts/generate-draft-use-case';
-import type { ReviseAfterGenerateGate } from '../application/drafts/revise-after-generate-gate';
+} from '../application/drafts/generateDraftUseCase';
+import type { ReviseAfterGenerateGate } from '../application/drafts/reviseAfterGenerateGate';
 import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';

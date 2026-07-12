@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../ai/ai-gateway';
-import type { IFileSystem } from '../ports/file-system';
+import type { AiGateway } from '../ai/aiGateway';
+import type { IFileSystem } from '../ports/fileSystem';
 import type {
   IDraftRepository,
   IProjectRepository,

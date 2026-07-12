@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type {
   ISeedProjectRepository,
   SeedSyncSource,
-} from '../../../application/project/seed-project-use-case';
+} from '../../../application/project/seedProjectUseCase';
 import type { StoryboardLogger } from '../../../core/logger';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
@@ -25,7 +25,7 @@ import {
   createStoryboardDirectories,
   ensureWorkspaceGitignore,
   createWorkspaceReadme,
-} from '../../vscode/project-initializer';
+} from '../../vscode/projectInitializer';
 
 export class SeedProjectRepository implements ISeedProjectRepository {
   public async readSeedFile(seedUri: vscode.Uri): Promise<Uint8Array> {

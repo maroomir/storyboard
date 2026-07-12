@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   CollectCardProposalsUseCase,
   type ICardCollectRepository
-} from "@/application/cards/collect-card-proposals-use-case"
+} from "@/application/cards/collectCardProposalsUseCase"
 
 describe("CollectCardProposalsUseCase", () => {
   it("collects drafts and roster before requesting card proposals", async () => {

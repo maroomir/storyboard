@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { parseJsonArray } from './ai-response-parser';
+import { parseJsonArray } from './aiResponseParser';
 
 export const critiqueCategories = ['voice', 'purpose', 'repetition'] as const;
 

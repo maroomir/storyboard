@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { VscodeFileSystem } from '@/infrastructure/vscode/vscode-file-system';
+import { VscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { FileType, workspace } from '../../stubs/vscode';
 
 const workspaceFileSystem = workspace.fs as Record<string, unknown>;

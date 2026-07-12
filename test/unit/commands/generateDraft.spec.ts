@@ -32,7 +32,7 @@ import {
   type GenerateDraftResult,
   type GenerateDraftRequest,
   type GenerateDraftUseCaseDependencies
-} from "@/application/drafts/generate-draft-use-case"
+} from "@/application/drafts/generateDraftUseCase"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.txt")

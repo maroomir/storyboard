@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import type {
   IManuscriptAssemblyRepository,
   ManuscriptAssemblySource,
-} from '../../../application/manuscript/assemble-manuscript-use-case';
-import type { IChapterSummaryRepository } from '../../../application/manuscript/summarize-chapters-use-case';
+} from '../../../application/manuscript/assembleManuscriptUseCase';
+import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../../core/chapterSummaries';
 import type { StoryboardLogger } from '../../../core/logger';
 import type { AssembledManuscript } from '../../../core/manuscriptAssembly';

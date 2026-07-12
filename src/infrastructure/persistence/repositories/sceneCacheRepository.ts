@@ -1,4 +1,4 @@
-import type { IFileSystem } from '../../../application/ports/file-system';
+import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { ISceneCacheRepository } from '../../../application/ports/repositories';
 import {
   readSceneCacheFile,

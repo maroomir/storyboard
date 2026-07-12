@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type {
   GenerateOutlineResult,
   GenerateOutlineUseCase,
-} from '../application/novel/generate-outline-use-case';
+} from '../application/novel/generateOutlineUseCase';
 import type { StoryboardLogger } from '../core/logger';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 import type { ContractFieldKey } from '../shared/project';

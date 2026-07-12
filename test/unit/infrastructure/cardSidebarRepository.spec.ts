@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { CardSidebarRepository } from "@/infrastructure/persistence/repositories/card-sidebar-repository"
+import { CardSidebarRepository } from "@/infrastructure/persistence/repositories/cardSidebarRepository"
 
 describe("CardSidebarRepository", () => {
   afterEach(() => {

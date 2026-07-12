@@ -9,7 +9,7 @@ import {
   createWorkspaceReadme,
   createStoryboardDirectories,
   ensureWorkspaceGitignore,
-} from '../infrastructure/vscode/project-initializer';
+} from '../infrastructure/vscode/projectInitializer';
 
 const initCommand = 'storyboard.init';
 

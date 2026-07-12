@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { AugmentDraftUseCase } from '../application/drafts/augment-draft-use-case';
+import type { AugmentDraftUseCase } from '../application/drafts/augmentDraftUseCase';
 import type { StoryboardLogger } from '../core/logger';
 import { deriveSceneUri } from '../core/draftSceneLink';
 import { draftHistorySceneDirectory, isDraftMarkdownFile } from '../core/pathConventions';
@@ -9,7 +9,7 @@ import { hasStoryboardProject } from '../core/workspace';
 import type { Draft } from '../domain/Draft';
 import { createDraft, parseDraft, serializeDraft } from '../files/draft';
 import { archiveExistingDraft } from '../files/draftHistory';
-import { VirtualDocumentStore } from '../presentation/providers/virtual-document-store';
+import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '../services/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { resolveExpandRange } from './expandDraft';

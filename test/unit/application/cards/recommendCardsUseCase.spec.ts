@@ -4,7 +4,7 @@ import {
   RecommendCardsUseCase,
   type ICardRecommendationAiGateway,
   type ICardRecommendationRepository
-} from "@/application/cards/recommend-cards-use-case"
+} from "@/application/cards/recommendCardsUseCase"
 
 describe("RecommendCardsUseCase", () => {
   it("reports no sources without invoking the AI provider", async () => {

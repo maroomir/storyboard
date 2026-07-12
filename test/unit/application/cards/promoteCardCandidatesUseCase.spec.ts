@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   PromoteCardCandidatesUseCase,
   type ICardCandidateRepository
-} from "@/application/cards/promote-card-candidates-use-case"
+} from "@/application/cards/promoteCardCandidatesUseCase"
 
 const candidateRecord = {
   characters: [

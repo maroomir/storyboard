@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ICardCollectRepository } from '../../../application/cards/collect-card-proposals-use-case';
+import type { ICardCollectRepository } from '../../../application/cards/collectCardProposalsUseCase';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { loadCharacterRoster } from '../../../core/relationGraphData';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../files/draft';

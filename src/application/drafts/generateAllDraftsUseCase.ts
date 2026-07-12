@@ -2,8 +2,8 @@ import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../core/logger';
 import type { SceneGenerationPipelineStage } from '../pipelines/scene-generation-pipeline';
-import type { GenerateDraftUseCase } from './generate-draft-use-case';
-import type { ReviseAfterGenerateGate } from './revise-after-generate-gate';
+import type { GenerateDraftUseCase } from './generateDraftUseCase';
+import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
 
 export interface ISceneBatchRepository {
   listStoryboardScenes(): Promise<BatchSceneList>;

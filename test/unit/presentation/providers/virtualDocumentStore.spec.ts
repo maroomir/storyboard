@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { describe, expect, it, vi } from "vitest"
 
-import { VirtualDocumentStore } from "@/presentation/providers/virtual-document-store"
+import { VirtualDocumentStore } from "@/presentation/providers/virtualDocumentStore"
 
 describe("VirtualDocumentStore", () => {
   it("returns stored content and emits a change for the updated URI", () => {

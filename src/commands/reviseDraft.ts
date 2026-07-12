@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ReviseAfterGenerateGate } from '../application/drafts/revise-after-generate-gate';
+import type { ReviseAfterGenerateGate } from '../application/drafts/reviseAfterGenerateGate';
 import type {
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,

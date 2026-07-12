@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type {
   BatchSceneList,
   ISceneBatchRepository,
-} from '../../../application/drafts/generate-all-drafts-use-case';
+} from '../../../application/drafts/generateAllDraftsUseCase';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../../core/pathConventions';
 import { hasStoryboardProject } from '../../../core/workspace';
 import { parseSceneFileName } from '../../../shared/scene';

@@ -3,7 +3,7 @@ import type * as vscode from 'vscode';
 import type { StoryboardLogger } from '../../core/logger';
 import { buildSeedWritePlan, type SeedFileWriteEntry } from '../../files/seedImport';
 import type { DecodedSeedContent, WorkspaceContent } from '../../services/seedcoat/projectAdapter';
-import type { PrepareSeedSyncUseCase, PreparedSeedSync } from './prepare-seed-sync-use-case';
+import type { PrepareSeedSyncUseCase, PreparedSeedSync } from './prepareSeedSyncUseCase';
 
 export type SeedCreatePreparation = {
   readonly existingRelativePaths: readonly string[];

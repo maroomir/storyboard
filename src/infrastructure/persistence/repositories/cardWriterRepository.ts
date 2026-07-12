@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ICardWriterRepository } from '../../../application/cards/create-card-use-case';
+import type { ICardWriterRepository } from '../../../application/cards/createCardUseCase';
 import {
   backgroundCardPath,
   characterCardPath,

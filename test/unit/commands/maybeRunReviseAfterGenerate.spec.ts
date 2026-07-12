@@ -8,7 +8,7 @@ vi.mock("@/core/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true
 }))
 
-import { ReviseAfterGenerateGate } from "@/application/drafts/revise-after-generate-gate"
+import { ReviseAfterGenerateGate } from "@/application/drafts/reviseAfterGenerateGate"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const folder: WorkspaceFolder = { uri: workspaceRoot as never, name: "ws", index: 0 }

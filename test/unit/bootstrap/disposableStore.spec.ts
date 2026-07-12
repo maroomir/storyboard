@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { DisposableStore } from '@/bootstrap/lifecycle/disposable-store';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 
 describe('DisposableStore', () => {
   it('disposes registered resources in reverse order and is idempotent', () => {

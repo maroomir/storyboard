@@ -4,8 +4,8 @@ import { describe, expect, it, vi } from "vitest"
 import {
   SeedProjectUseCase,
   type ISeedProjectRepository
-} from "@/application/project/seed-project-use-case"
-import { PrepareSeedSyncUseCase } from "@/application/project/prepare-seed-sync-use-case"
+} from "@/application/project/seedProjectUseCase"
+import { PrepareSeedSyncUseCase } from "@/application/project/prepareSeedSyncUseCase"
 import { parseProjectJson } from "@/files/projectJson"
 
 function seed(): never {

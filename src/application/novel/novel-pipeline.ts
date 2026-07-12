@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../ai/ai-gateway';
-import type { GenerateDraftUseCase } from '../drafts/generate-draft-use-case';
+import type { AiGateway } from '../ai/aiGateway';
+import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
 import type { ReviseDraftUseCase } from '../drafts/revise-draft-use-case';
 import { listCharacterBriefs } from '../../core/characterBriefs';
 import type { StoryboardLogger } from '../../core/logger';

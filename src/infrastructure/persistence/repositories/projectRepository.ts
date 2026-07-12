@@ -1,4 +1,4 @@
-import type { IFileSystem } from '../../../application/ports/file-system';
+import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { IProjectRepository } from '../../../application/ports/repositories';
 import { parseProjectJson } from '../../../files/projectJson';
 import type { StoryboardProject } from '../../../shared/project';

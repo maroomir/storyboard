@@ -6,4 +6,4 @@ export {
   parseJsonNestedArray,
   parseJsonObject,
   parseMBTI,
-} from '../shared/ai-response-parser';
+} from '../shared/aiResponseParser';

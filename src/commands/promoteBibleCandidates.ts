@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteBibleCandidatesUseCase } from '../application/project/promote-bible-candidates-use-case';
+import type { PromoteBibleCandidatesUseCase } from '../application/project/promoteBibleCandidatesUseCase';
 import type { StoryboardLogger } from '../core/logger';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';
 import type { BibleFact } from '../shared/bible';

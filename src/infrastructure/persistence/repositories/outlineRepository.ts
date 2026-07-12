@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { IOutlineRepository } from '../../../application/novel/generate-outline-use-case';
+import type { IOutlineRepository } from '../../../application/novel/generateOutlineUseCase';
 import { listCharacterBriefs } from '../../../core/characterBriefs';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';

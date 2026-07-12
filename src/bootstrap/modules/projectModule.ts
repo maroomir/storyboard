@@ -6,9 +6,9 @@ import { registerInitCommand } from '../../commands/init';
 import { registerSetApiKeyCommand } from '../../commands/setApiKey';
 import { registerStoryboardWorkspaceContext } from '../../core/storyboardWorkspaceContext';
 
-import { DisposableStore } from '../lifecycle/disposable-store';
-import type { IApplicationModule } from '../lifecycle/application-module';
-import type { IPlatformServices } from './platform-module';
+import { DisposableStore } from '../lifecycle/disposableStore';
+import type { IApplicationModule } from '../lifecycle/applicationModule';
+import type { IPlatformServices } from './platformModule';
 
 export class ProjectModule implements IApplicationModule {
   private readonly disposables = new DisposableStore();

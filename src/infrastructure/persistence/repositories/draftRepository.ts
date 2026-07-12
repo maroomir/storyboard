@@ -1,5 +1,5 @@
 import type { IDraftRepository } from '../../../application/ports/repositories';
-import type { IFileSystem } from '../../../application/ports/file-system';
+import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { Draft } from '../../../domain/Draft';
 import { writeDraftFile } from '../../../files/draft';
 

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {
   type RecommendCardsUseCase,
   type RecommendCardsResult,
-} from '../application/cards/recommend-cards-use-case';
+} from '../application/cards/recommendCardsUseCase';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';
@@ -11,7 +11,7 @@ import type { StoryboardCard } from '../shared/card';
 import type { RecommendedCard } from '../services/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '../services/ai/prompts/cardRecommendation';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
-import type { CreateCardUseCase } from '../application/cards/create-card-use-case';
+import type { CreateCardUseCase } from '../application/cards/createCardUseCase';
 
 const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';

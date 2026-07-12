@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { LatestRequestGuard } from "@/presentation/providers/latest-request-guard"
+import { LatestRequestGuard } from "@/presentation/providers/latestRequestGuard"
 
 describe("LatestRequestGuard", () => {
   afterEach(() => {

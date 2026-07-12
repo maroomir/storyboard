@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ICardCandidateRepository } from '../../../application/cards/promote-card-candidates-use-case';
+import type { ICardCandidateRepository } from '../../../application/cards/promoteCardCandidatesUseCase';
 import type { StoryboardLogger } from '../../../core/logger';
 import { characterCardPath, getStoryboardProjectPaths } from '../../../core/pathConventions';
 import {

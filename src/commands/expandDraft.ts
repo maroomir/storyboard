@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../application/ai/ai-gateway';
+import type { AiGateway } from '../application/ai/aiGateway';
 import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';

@@ -1,4 +1,4 @@
-import type { GenerateTextOptions } from './ai-service-types';
+import type { GenerateTextOptions } from './aiServiceTypes';
 import { AiTextGateway } from './AiTextGateway';
 import {
   toContinuityIssue,

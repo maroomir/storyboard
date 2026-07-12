@@ -6,9 +6,9 @@ import { registerGenerateSceneSeedsCommand } from '../../commands/generateSceneS
 import { registerReviewManuscriptCommand } from '../../commands/reviewManuscript';
 import { registerSummarizeChaptersCommand } from '../../commands/summarizeChapters';
 
-import { DisposableStore } from '../lifecycle/disposable-store';
-import type { IApplicationModule } from '../lifecycle/application-module';
-import type { IPlatformServices } from './platform-module';
+import { DisposableStore } from '../lifecycle/disposableStore';
+import type { IApplicationModule } from '../lifecycle/applicationModule';
+import type { IPlatformServices } from './platformModule';
 
 export class NovelModule implements IApplicationModule {
   private readonly disposables = new DisposableStore();

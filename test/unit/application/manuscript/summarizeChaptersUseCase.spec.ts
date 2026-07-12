@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   SummarizeChaptersUseCase,
   type IChapterSummaryRepository
-} from "@/application/manuscript/summarize-chapters-use-case"
+} from "@/application/manuscript/summarizeChaptersUseCase"
 import type { ChapterPlan } from "@/shared/outline"
 
 const plan: ChapterPlan = {

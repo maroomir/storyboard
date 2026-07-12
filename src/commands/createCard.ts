@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { CreateCardUseCase } from '../application/cards/create-card-use-case';
+import type { CreateCardUseCase } from '../application/cards/createCardUseCase';
 import { getTargetWorkspaceFolder } from '../core/workspace';
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';

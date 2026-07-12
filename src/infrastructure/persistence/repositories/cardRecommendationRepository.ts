@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type {
   CardRecommendationInput,
   ICardRecommendationRepository,
-} from '../../../application/cards/recommend-cards-use-case';
+} from '../../../application/cards/recommendCardsUseCase';
 import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,

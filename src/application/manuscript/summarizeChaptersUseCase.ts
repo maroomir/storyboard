@@ -1,9 +1,9 @@
 import type * as vscode from 'vscode';
 
-import type { AiGateway } from '../ai/ai-gateway';
+import type { AiGateway } from '../ai/aiGateway';
 import { buildChapterSummariesMarkdown, type ChapterSummary } from '../../core/chapterSummaries';
 import { assembleManuscript } from '../../core/manuscriptAssembly';
-import type { ManuscriptAssemblySource } from './assemble-manuscript-use-case';
+import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {
   hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean>;
