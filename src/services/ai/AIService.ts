@@ -2,15 +2,19 @@ import type { Background } from '@/domain/Background';
 import type { Character } from '@/domain/Character';
 import type { ProjectFormat } from '@/shared/project';
 import { AiTextGateway } from './AiTextGateway';
+import {
+  DraftAiService,
+  type DraftExpansionContext,
+  type InlineCompletionContext,
+} from './DraftAiService';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, UsageAttribution, WiredAiTaskName } from './types';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
-import { ContinuityCheckPrompt } from './prompts/continuityCheck';
-import { DraftCritiquePrompt, type DraftCritiqueInput } from './prompts/draftCritique';
-import { DraftAugmentPrompt, type DraftAugmentInput } from './prompts/draftAugment';
-import { DraftRevisionPrompt, type DraftRevisionInput } from './prompts/draftRevision';
+import type { DraftAugmentInput } from './prompts/draftAugment';
+import type { DraftCritiqueInput } from './prompts/draftCritique';
+import type { DraftRevisionInput } from './prompts/draftRevision';
 import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { FactExtractionPrompt } from './prompts/factExtraction';
 import {
@@ -30,14 +34,10 @@ import {
   type RecommendationCategory,
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
-import { DraftExpansionPrompt } from './prompts/draftExpansion';
 import { GenreFormattingPrompt } from './prompts/genreFormatting';
-import { GrammarCheckPrompt } from './prompts/grammarCheck';
-import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
 import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
-import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
@@ -50,12 +50,10 @@ import {
   type OutlineCharacterBrief,
   type OutlineSynopsis,
 } from '@/shared/outline';
-import { coerceCritiqueIssues, type DraftCritiqueIssue } from '@/shared/draftReview';
-import { coerceSceneCoverage, type SceneCoverageIssue } from '@/shared/sceneCoverage';
+import type { DraftCritiqueIssue } from '@/shared/draftReview';
+import type { SceneCoverageIssue } from '@/shared/sceneCoverage';
 import {
-  toContinuityIssue,
   toFactCandidate,
-  toGrammarIssue,
   toPromptMessages,
   toSituationWithCharacters,
   type ContinuityIssue,
@@ -90,18 +88,10 @@ export interface ExtractCardCandidatesByCharacterOptions extends GenerateTextOpt
   readonly aliases?: readonly string[];
 }
 
-export interface InlineCompletionContext {
-  readonly activeCharacter?: string;
-  readonly background?: string;
-  readonly sceneIntent?: string;
-}
-
-export interface DraftExpansionContext {
-  readonly activeCharacter?: string;
-  readonly background?: string;
-}
+export type { DraftExpansionContext, InlineCompletionContext } from './DraftAiService';
 
 export class StoryboardAIService {
+  private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
 
   public constructor(
@@ -109,6 +99,7 @@ export class StoryboardAIService {
     serviceOptions: StoryboardAIServiceOptions = {},
   ) {
     this.gateway = new AiTextGateway(registry, serviceOptions);
+    this.draftAiService = new DraftAiService(this.gateway);
   }
 
   public async extractSituations(
@@ -386,21 +377,7 @@ export class StoryboardAIService {
     body: string,
     options: GenerateTextOptions = {},
   ): Promise<GrammarIssue[]> {
-    const variant = this.gateway.resolvePromptVariant('grammarCheck', options);
-    const prompt = GrammarCheckPrompt.build(body, variant);
-    const response = await this.generateWithDefaults(
-      'grammarCheck',
-      prompt,
-      GrammarCheckPrompt.config,
-      options,
-    );
-    const parsedArray = parseJsonArray(response.text);
-
-    if (!parsedArray) {
-      return [];
-    }
-
-    return parsedArray.flatMap((value) => toGrammarIssue(value));
+    return this.draftAiService.checkGrammar(body, options);
   }
 
   public async checkContinuity(
@@ -408,25 +385,7 @@ export class StoryboardAIService {
     facts: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<ContinuityIssue[]> {
-    if (facts.length === 0) {
-      return [];
-    }
-
-    const variant = this.gateway.resolvePromptVariant('continuityCheck', options);
-    const prompt = ContinuityCheckPrompt.build(body, facts, variant);
-    const response = await this.generateWithDefaults(
-      'continuityCheck',
-      prompt,
-      ContinuityCheckPrompt.config,
-      options,
-    );
-    const parsedArray = parseJsonArray(response.text);
-
-    if (!parsedArray) {
-      return [];
-    }
-
-    return parsedArray.flatMap((value) => toContinuityIssue(value));
+    return this.draftAiService.checkContinuity(body, facts, options);
   }
 
   public async checkSceneCoverage(
@@ -434,20 +393,7 @@ export class StoryboardAIService {
     draft: string,
     options: GenerateTextOptions = {},
   ): Promise<SceneCoverageIssue[]> {
-    if (beats.length === 0) {
-      return [];
-    }
-
-    const variant = this.gateway.resolvePromptVariant('sceneCoverage', options);
-    const prompt = SceneCoveragePrompt.build(beats, draft, variant);
-    const response = await this.generateWithDefaults(
-      'sceneCoverage',
-      prompt,
-      SceneCoveragePrompt.config,
-      options,
-    );
-
-    return coerceSceneCoverage(response.text, beats.length);
+    return this.draftAiService.checkSceneCoverage(beats, draft, options);
   }
 
   public async completeInline(
@@ -455,16 +401,7 @@ export class StoryboardAIService {
     context: InlineCompletionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('inlineCompletion', options);
-    const prompt = InlineCompletionPrompt.build(prefix, context, variant);
-    const response = await this.generateWithDefaults(
-      'inlineCompletion',
-      prompt,
-      InlineCompletionPrompt.config,
-      options,
-    );
-
-    return response.text.trim();
+    return this.draftAiService.completeInline(prefix, context, options);
   }
 
   public async expandDraft(
@@ -472,16 +409,7 @@ export class StoryboardAIService {
     context: DraftExpansionContext = {},
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftExpansion', options);
-    const prompt = DraftExpansionPrompt.build(selection, context, variant);
-    const response = await this.generateWithDefaults(
-      'draftExpansion',
-      prompt,
-      DraftExpansionPrompt.config,
-      options,
-    );
-
-    return response.text.trim();
+    return this.draftAiService.expandDraft(selection, context, options);
   }
 
   public async generateOutlineSynopsis(
@@ -522,16 +450,7 @@ export class StoryboardAIService {
     input: DraftCritiqueInput,
     options: GenerateTextOptions = {},
   ): Promise<DraftCritiqueIssue[]> {
-    const variant = this.gateway.resolvePromptVariant('draftCritique', options);
-    const prompt = DraftCritiquePrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
-      'draftCritique',
-      prompt,
-      DraftCritiquePrompt.config,
-      options,
-    );
-
-    return coerceCritiqueIssues(response.text);
+    return this.draftAiService.critiqueDraft(input, options);
   }
 
   public async summarizeChapter(
@@ -554,32 +473,14 @@ export class StoryboardAIService {
     input: DraftRevisionInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftRevision', options);
-    const prompt = DraftRevisionPrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
-      'draftRevision',
-      prompt,
-      DraftRevisionPrompt.config,
-      options,
-    );
-
-    return response.text.trim();
+    return this.draftAiService.reviseDraft(input, options);
   }
 
   public async augmentDraft(
     input: DraftAugmentInput,
     options: GenerateTextOptions = {},
   ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('draftAugment', options);
-    const prompt = DraftAugmentPrompt.build(input, variant);
-    const response = await this.generateWithDefaults(
-      'draftAugment',
-      prompt,
-      DraftAugmentPrompt.config,
-      options,
-    );
-
-    return response.text.trim();
+    return this.draftAiService.augmentDraft(input, options);
   }
 
   private async generateWithDefaults(
