@@ -26,6 +26,7 @@ export class DraftModule implements IApplicationModule {
   public initialize(_context: vscode.ExtensionContext): void {
     const {
       aiProviderRegistry,
+      augmentDraftUseCase,
       configBridge,
       generateDraftUseCase,
       logger,
@@ -49,7 +50,7 @@ export class DraftModule implements IApplicationModule {
       registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder }),
       registerReviseDraftCommand({ configBridge, logger, reviseDraftUseCase }),
       registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder }),
-      registerAugmentDraftCommands({ aiProviderRegistry, configBridge, logger, usageRecorder }),
+      registerAugmentDraftCommands({ augmentDraftUseCase, configBridge, logger }),
       registerNewSceneCommands(),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiProviderRegistry, logger, usageRecorder }),

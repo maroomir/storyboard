@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { AiGateway } from '../../application/ai/ai-gateway';
 import { RecommendCardsUseCase } from '../../application/cards/recommend-cards-use-case';
 import { PromoteCardCandidatesUseCase } from '../../application/cards/promote-card-candidates-use-case';
+import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
@@ -28,6 +29,7 @@ import type { IApplicationModule } from '../lifecycle/application-module';
 
 export interface IPlatformServices {
   readonly aiGateway: AiGateway;
+  readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly fileSystem: VscodeFileSystem;
@@ -65,6 +67,7 @@ export class PlatformModule implements IApplicationModule {
       logger.warn(message),
     );
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
+    const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
     const cardRecommendationRepository = new CardRecommendationRepository();
@@ -106,6 +109,7 @@ export class PlatformModule implements IApplicationModule {
 
     this.services = {
       aiGateway,
+      augmentDraftUseCase,
       aiProviderRegistry,
       configBridge,
       fileSystem,

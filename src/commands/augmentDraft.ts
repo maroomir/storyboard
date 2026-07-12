@@ -1,38 +1,16 @@
 import * as vscode from 'vscode';
 
+import type { AugmentDraftUseCase } from '../application/drafts/augment-draft-use-case';
 import type { StoryboardLogger } from '../core/logger';
 import { deriveSceneUri } from '../core/draftSceneLink';
-import {
-  draftHistorySceneDirectory,
-  getStoryboardProjectPaths,
-  isDraftMarkdownFile,
-} from '../core/pathConventions';
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  type SceneContext,
-} from '../core/sceneContext';
-import {
-  draftHistoryFileSystem,
-  sceneContextFileSystem,
-  sceneContextPaths,
-  vscodeFsAdapter,
-} from '../core/vscodeFileSystem';
+import { draftHistorySceneDirectory, isDraftMarkdownFile } from '../core/pathConventions';
+import { draftHistoryFileSystem } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
 import type { Draft } from '../domain/Draft';
 import { createDraft, parseDraft, serializeDraft } from '../files/draft';
 import { archiveExistingDraft } from '../files/draftHistory';
-import { readProjectJson } from '../files/projectJson';
-import { readSceneFile, SceneParseError } from '../files/scene';
-import { StoryboardAIService } from '../services/ai/AIService';
-import { formatAugmentCards, type DraftAugmentScope } from '../services/ai/prompts/draftAugment';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { DraftAugmentScope } from '../services/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { BibleFact } from '../shared/bible';
-import type { ProjectFormat } from '../shared/project';
 import { resolveExpandRange } from './expandDraft';
 
 const augmentDraftCommand = 'storyboard.draft.augment';
@@ -41,10 +19,9 @@ const editSelectionCommand = 'storyboard.draft.editSelection';
 const augmentPreviewScheme = 'storyboard-augment';
 
 export interface RegisterAugmentDraftCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly configBridge: ConfigBridge;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 // NOTE: Both sides of the diff editor are virtual read-only documents (before = current content,
@@ -92,64 +69,6 @@ function augmentAfterUri(draftUri: vscode.Uri): vscode.Uri {
 interface AugmentReplacement {
   readonly range: vscode.Range;
   readonly text: string;
-}
-
-type AugmentContextResult =
-  | {
-      readonly ok: true;
-      readonly format: ProjectFormat;
-      readonly sceneContext: SceneContext;
-      readonly bibleFacts: readonly BibleFact[];
-    }
-  | { readonly ok: false; readonly message: string };
-
-async function loadAugmentContext(
-  sceneUri: vscode.Uri,
-  workspaceFolder: vscode.WorkspaceFolder,
-): Promise<AugmentContextResult> {
-  const fileName = sceneUri.path.split('/').pop() ?? '';
-
-  let scene;
-  try {
-    scene = await readSceneFile(sceneUri, vscodeFsAdapter, fileName);
-  } catch (error) {
-    if (error instanceof SceneParseError) {
-      return { ok: false, message: `연결된 씬 파일을 읽을 수 없습니다: ${error.message}` };
-    }
-
-    return { ok: false, message: '연결된 씬 파일을 찾을 수 없습니다.' };
-  }
-
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-
-  let project;
-  try {
-    project = await readProjectJson(paths.projectJson);
-  } catch {
-    return { ok: false, message: 'project.json을 읽을 수 없습니다.' };
-  }
-
-  const ctxPaths = sceneContextPaths(paths);
-
-  let sceneContext;
-  try {
-    sceneContext = await buildSceneContext(ctxPaths, scene, sceneContextFileSystem);
-  } catch {
-    return { ok: false, message: '씬 컨텍스트를 구성하지 못했습니다.' };
-  }
-
-  const narrativeContext = await buildNarrativeContext(
-    ctxPaths,
-    sceneContext,
-    sceneContextFileSystem,
-  );
-
-  return {
-    ok: true,
-    format: project.format,
-    sceneContext,
-    bibleFacts: narrativeContext.bibleFacts,
-  };
 }
 
 function buildReplacement(
@@ -293,70 +212,39 @@ async function runAugmentDraft(
     return;
   }
 
-  const context = await loadAugmentContext(sceneUri, workspaceFolder);
-
-  if (!context.ok) {
-    await vscode.window.showErrorMessage(context.message);
-    return;
-  }
-
-  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-    onUsage: (record): void => {
-      recordUsageSafely(
-        dependencies.usageRecorder,
-        workspaceFolder.uri,
-        record,
-        dependencies.logger,
-      );
+  const result = await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: instruction
+        ? 'Storyboard 선택 영역 편집'
+        : scope === 'selection'
+          ? 'Storyboard 선택 영역 보충'
+          : 'Storyboard 초안 보충',
+      cancellable: false,
     },
-  });
+    async () =>
+      await dependencies.augmentDraftUseCase.execute({
+        draftSceneStem: draft.sceneStem,
+        instruction,
+        sceneUri,
+        scope,
+        target,
+        workspaceRoot: workspaceFolder.uri,
+      }),
+  );
 
-  let augmented: string;
-  try {
-    augmented = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: instruction
-          ? 'Storyboard 선택 영역 편집'
-          : scope === 'selection'
-            ? 'Storyboard 선택 영역 보충'
-            : 'Storyboard 초안 보충',
-        cancellable: false,
-      },
-      async () =>
-        aiService.augmentDraft(
-          {
-            target,
-            scope,
-            format: context.format,
-            cards: formatAugmentCards(
-              context.sceneContext.characters,
-              context.sceneContext.background,
-            ),
-            facts: formatBibleFactLines(context.sceneContext, context.bibleFacts),
-            intent: context.sceneContext.scene.body,
-            instruction,
-          },
-          {
-            providerId: dependencies.aiProviderRegistry.getTaskProvider('draftAugment'),
-            attribution: { primary: { kind: 'scene', id: draft.sceneStem } },
-          },
-        ),
-    );
-  } catch (error) {
-    dependencies.logger.error('Augment draft failed', error);
+  if (!result.ok) {
+    if (result.kind === 'empty') {
+      await vscode.window.showWarningMessage('보충 결과가 비어 있어 적용하지 않았습니다.');
+      return;
+    }
+
     dependencies.logger.show();
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(`초안 보충에 실패했습니다: ${message}`);
+    await vscode.window.showErrorMessage(`초안 보충에 실패했습니다: ${result.message}`);
     return;
   }
 
-  if (augmented.trim().length === 0) {
-    await vscode.window.showWarningMessage('보충 결과가 비어 있어 적용하지 않았습니다.');
-    return;
-  }
-
-  const replacement = buildReplacement(scope, editor.document, selectionRange, draft, augmented);
+  const replacement = buildReplacement(scope, editor.document, selectionRange, draft, result.text);
   const proposedFullText = applyReplacementToText(documentText, editor.document, replacement);
   const beforeUri = augmentBeforeUri(editor.document.uri);
   const afterUri = augmentAfterUri(editor.document.uri);
