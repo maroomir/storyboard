@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../core/logger';
+import type { AiGateway } from '../application/ai/ai-gateway';
 import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
@@ -16,11 +16,8 @@ import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
 import { readSceneFile } from '../files/scene';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
-import { type InlineCompletionContext, StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
+import type { InlineCompletionContext } from '../services/ai/AIService';
 import { type AiProviderId, isCliProvider } from '../services/ai/types';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import { parseDraftSceneParts } from '../core/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;
@@ -31,9 +28,7 @@ const inlineSceneIntentChars = 300;
 const inlineMaxActiveCharacters = 3;
 
 export interface RegisterInlineCompletionProviderDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
+  readonly aiGateway: AiGateway;
 }
 
 interface InlineCompletionCacheValue {
@@ -148,23 +143,8 @@ export function pruneInlineCompletionCache(cache: Map<string, InlineCompletionCa
 class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
   private readonly cache = new Map<string, InlineCompletionCacheValue>();
   private readonly sceneContextCache = new Map<string, CachedSceneContext>();
-  private readonly aiService: StoryboardAIService;
-  private currentWorkspaceUri: vscode.Uri | undefined;
 
-  public constructor(private readonly dependencies: RegisterInlineCompletionProviderDependencies) {
-    this.aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-      onUsage: (record): void => {
-        if (this.currentWorkspaceUri) {
-          recordUsageSafely(
-            dependencies.usageRecorder,
-            this.currentWorkspaceUri,
-            record,
-            dependencies.logger,
-          );
-        }
-      },
-    });
-  }
+  public constructor(private readonly dependencies: RegisterInlineCompletionProviderDependencies) {}
 
   private canCompleteDraft(
     documentUri: vscode.Uri,
@@ -172,9 +152,7 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
   ): boolean {
     return (
       isDraftMarkdownFile(documentUri, workspaceFolder) &&
-      shouldRunInlineCompletion(
-        this.dependencies.aiProviderRegistry.getTaskProvider('inlineCompletion'),
-      )
+      shouldRunInlineCompletion(this.dependencies.aiGateway.getTaskProvider('inlineCompletion'))
     );
   }
 
@@ -226,8 +204,6 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
     if (!workspaceFolder) {
       return undefined;
     }
-    this.currentWorkspaceUri = workspaceFolder.uri;
-
     if (!this.canCompleteDraft(document.uri, workspaceFolder)) {
       return undefined;
     }
@@ -262,10 +238,12 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
       return undefined;
     }
 
-    const completion = await this.aiService.completeInline(prefix, sceneContext, {
-      providerId: this.dependencies.aiProviderRegistry.getTaskProvider('inlineCompletion'),
-      attribution: { primary: { kind: 'scene', id: sceneStem } },
-    });
+    const completion = await this.dependencies.aiGateway
+      .createService(workspaceFolder.uri)
+      .completeInline(prefix, sceneContext, {
+        providerId: this.dependencies.aiGateway.getTaskProvider('inlineCompletion'),
+        attribution: { primary: { kind: 'scene', id: sceneStem } },
+      });
 
     if (token.isCancellationRequested || completion.trim().length === 0) {
       return undefined;
