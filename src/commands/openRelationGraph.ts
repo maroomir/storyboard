@@ -1,12 +1,12 @@
 import * as vscode from "vscode"
 
-import { revealRelationGraphPanel, type RelationGraphPanelDependencies } from "../providers/RelationGraphProvider"
+import type { IRelationGraphPanel } from "../providers/RelationGraphProvider"
 
 export function registerOpenRelationGraphCommand(
   context: vscode.ExtensionContext,
-  dependencies: RelationGraphPanelDependencies
+  relationGraphPanel: IRelationGraphPanel
 ): vscode.Disposable {
   return vscode.commands.registerCommand("storyboard.relationGraph.open", () => {
-    revealRelationGraphPanel(context.extensionUri, dependencies)
+    relationGraphPanel.reveal(context.extensionUri)
   })
 }

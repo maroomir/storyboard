@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 
 import { registerOpenRelationGraphCommand } from '../../commands/openRelationGraph';
 import { registerOpenSettingsCommand } from '../../commands/openSettings';
+import { RelationGraphProvider } from '../../providers/RelationGraphProvider';
+import { SettingsPanelProvider } from '../../providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '../../providers/SidebarStudioProvider';
 
 import type { IApplicationModule } from '../lifecycle/application-module';
@@ -14,11 +16,15 @@ export class WorkbenchModule implements IApplicationModule {
 
   public initialize(context: vscode.ExtensionContext): void {
     const { aiProviderRegistry, configBridge, secretStore } = this.platform;
+    const relationGraphPanel = new RelationGraphProvider({ aiProviderRegistry });
+    const settingsPanel = new SettingsPanelProvider({ aiProviderRegistry, secretStore, configBridge });
 
     this.disposables.push(
       registerSidebarStudioProvider(context),
-      registerOpenRelationGraphCommand(context, { aiProviderRegistry }),
-      registerOpenSettingsCommand(context, { aiProviderRegistry, secretStore, configBridge }),
+      registerOpenRelationGraphCommand(context, relationGraphPanel),
+      registerOpenSettingsCommand(context, settingsPanel),
+      relationGraphPanel,
+      settingsPanel,
     );
   }
 

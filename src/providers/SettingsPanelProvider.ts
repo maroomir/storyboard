@@ -19,90 +19,105 @@ export interface SettingsPanelDependencies {
   readonly configBridge: ConfigBridge
 }
 
-let settingsPanel: vscode.WebviewPanel | undefined
-let settingsBridge: { readonly dispose: () => void } | undefined
-let settingsHostSubscriptions: vscode.Disposable | undefined
+export interface ISettingsPanel extends vscode.Disposable {
+  reveal(extensionUri: vscode.Uri): void;
+}
 
-export function revealSettingsPanel(extensionUri: vscode.Uri, dependencies: SettingsPanelDependencies): void {
-  if (settingsPanel) {
-    settingsPanel.reveal(vscode.ViewColumn.Active)
-    void postSettingsChanged(dependencies)
-    return
+export class SettingsPanelProvider implements ISettingsPanel {
+  private panel: vscode.WebviewPanel | undefined;
+  private bridge: { readonly dispose: () => void } | undefined;
+  private hostSubscriptions: vscode.Disposable | undefined;
+
+  public constructor(private readonly dependencies: SettingsPanelDependencies) {}
+
+  public reveal(extensionUri: vscode.Uri): void {
+    if (this.panel) {
+      this.panel.reveal(vscode.ViewColumn.Active);
+      void this.postSettingsChanged();
+      return;
+    }
+
+    void this.open(extensionUri);
   }
 
-  void openSettingsPanel(extensionUri, dependencies)
-}
-
-async function openSettingsPanel(extensionUri: vscode.Uri, dependencies: SettingsPanelDependencies): Promise<void> {
-  const initialSnapshot = await getSettingsReadSnapshot({
-    configBridge: dependencies.configBridge,
-    registry: dependencies.aiProviderRegistry
-  })
-
-  const panel = vscode.window.createWebviewPanel(panelViewType, "Storyboard Settings", vscode.ViewColumn.Active, {
-    enableScripts: true,
-    retainContextWhenHidden: true,
-    localResourceRoots: [getWebviewDistRoot(extensionUri)]
-  })
-
-  settingsPanel = panel
-
-  panel.webview.html = createWebviewHtml(panel.webview, {
-    extensionUri,
-    title: "Storyboard Settings",
-    view: "settings",
-    initialData: initialSnapshot
-  })
-
-  settingsBridge = createWebviewBridge(panel.webview, createSettingsPanelHandlers(dependencies))
-
-  const secretDisposables = aiProviderIds.map((providerId) =>
-    dependencies.secretStore.onDidChangeApiKey(providerId, () => {
-      void postSettingsChanged(dependencies)
-    })
-  )
-
-  settingsHostSubscriptions = vscode.Disposable.from(
-    dependencies.configBridge.onDidChange(() => {
-      void postSettingsChanged(dependencies)
-    }),
-    ...secretDisposables
-  )
-
-  panel.onDidDispose(() => {
-    settingsBridge?.dispose()
-    settingsBridge = undefined
-    settingsHostSubscriptions?.dispose()
-    settingsHostSubscriptions = undefined
-    settingsPanel = undefined
-  })
-}
-
-async function postSettingsChanged(dependencies: SettingsPanelDependencies): Promise<void> {
-  if (!settingsPanel) {
-    return
+  public dispose(): void {
+    this.panel?.dispose();
+    this.clearPanelResources();
   }
 
-  const payload: StoryboardResponsePayload<"settings.read"> = await getSettingsReadSnapshot({
-    configBridge: dependencies.configBridge,
-    registry: dependencies.aiProviderRegistry
-  })
+  private async open(extensionUri: vscode.Uri): Promise<void> {
+    const initialSnapshot = await getSettingsReadSnapshot({
+      configBridge: this.dependencies.configBridge,
+      registry: this.dependencies.aiProviderRegistry
+    });
 
-  await settingsPanel.webview.postMessage({
-    type: "event",
-    method: "settings.changed",
-    payload
-  })
-}
+    const panel = vscode.window.createWebviewPanel(panelViewType, "Storyboard Settings", vscode.ViewColumn.Active, {
+      enableScripts: true,
+      retainContextWhenHidden: true,
+      localResourceRoots: [getWebviewDistRoot(extensionUri)]
+    });
 
-function createSettingsPanelHandlers(dependencies: SettingsPanelDependencies): StoryboardRpcHandlers {
-  return {
-    ...createAiRpcHandlers(dependencies.aiProviderRegistry),
-    ...createSettingsRpcHandlers({
-      configBridge: dependencies.configBridge,
-      secretStore: dependencies.secretStore,
-      registry: dependencies.aiProviderRegistry
-    }),
-    ...createContractRpcHandlers()
+    this.panel = panel;
+
+    panel.webview.html = createWebviewHtml(panel.webview, {
+      extensionUri,
+      title: "Storyboard Settings",
+      view: "settings",
+      initialData: initialSnapshot
+    });
+
+    this.bridge = createWebviewBridge(panel.webview, this.createHandlers());
+
+    const secretDisposables = aiProviderIds.map((providerId) =>
+      this.dependencies.secretStore.onDidChangeApiKey(providerId, () => {
+        void this.postSettingsChanged();
+      })
+    );
+
+    this.hostSubscriptions = vscode.Disposable.from(
+      this.dependencies.configBridge.onDidChange(() => {
+        void this.postSettingsChanged();
+      }),
+      ...secretDisposables
+    );
+
+    panel.onDidDispose(() => this.clearPanelResources());
+  }
+
+  private async postSettingsChanged(): Promise<void> {
+    if (!this.panel) {
+      return;
+    }
+
+    const payload: StoryboardResponsePayload<"settings.read"> = await getSettingsReadSnapshot({
+      configBridge: this.dependencies.configBridge,
+      registry: this.dependencies.aiProviderRegistry
+    });
+
+    await this.panel.webview.postMessage({
+      type: "event",
+      method: "settings.changed",
+      payload
+    });
+  }
+
+  private createHandlers(): StoryboardRpcHandlers {
+    return {
+      ...createAiRpcHandlers(this.dependencies.aiProviderRegistry),
+      ...createSettingsRpcHandlers({
+        configBridge: this.dependencies.configBridge,
+        secretStore: this.dependencies.secretStore,
+        registry: this.dependencies.aiProviderRegistry
+      }),
+      ...createContractRpcHandlers()
+    };
+  }
+
+  private clearPanelResources(): void {
+    this.bridge?.dispose();
+    this.bridge = undefined;
+    this.hostSubscriptions?.dispose();
+    this.hostSubscriptions = undefined;
+    this.panel = undefined;
   }
 }

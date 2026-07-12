@@ -1,12 +1,12 @@
 import * as vscode from "vscode"
 
-import { revealSettingsPanel, type SettingsPanelDependencies } from "../providers/SettingsPanelProvider"
+import type { ISettingsPanel } from "../providers/SettingsPanelProvider"
 
 export function registerOpenSettingsCommand(
   context: vscode.ExtensionContext,
-  dependencies: SettingsPanelDependencies
+  settingsPanel: ISettingsPanel
 ): vscode.Disposable {
   return vscode.commands.registerCommand("storyboard.settings.open", () => {
-    revealSettingsPanel(context.extensionUri, dependencies)
+    settingsPanel.reveal(context.extensionUri)
   })
 }
