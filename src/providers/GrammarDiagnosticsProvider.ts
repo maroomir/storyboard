@@ -5,6 +5,7 @@ import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
+import { LatestRequestGuard } from '../presentation/providers/latest-request-guard';
 import { StoryboardAIService, type GrammarIssue } from '../services/ai/AIService';
 import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import { recordUsageSafely } from '../services/ai/recordUsageSafely';
@@ -20,12 +21,6 @@ export interface RegisterGrammarDiagnosticsProviderDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly logger: StoryboardLogger;
   readonly usageRecorder: UsageRecorder;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 export function toGrammarRange(
@@ -89,7 +84,7 @@ class GrammarCodeActionProvider implements vscode.CodeActionProvider {
 class GrammarDiagnosticsController {
   private readonly collection = vscode.languages.createDiagnosticCollection(grammarSource);
   private readonly aiService: StoryboardAIService;
-  private readonly pendingByUri = new Map<string, number>();
+  private readonly latestRequests = new LatestRequestGuard();
   private currentWorkspaceUri: vscode.Uri | undefined;
 
   public constructor(
@@ -146,20 +141,19 @@ class GrammarDiagnosticsController {
   }
 
   public scheduleRealtimeCheck(document: vscode.TextDocument): void {
-    const key = document.uri.toString();
-    const nextToken = (this.pendingByUri.get(key) ?? 0) + 1;
-    this.pendingByUri.set(key, nextToken);
+    this.latestRequests.schedule(
+      document.uri.toString(),
+      grammarDebounceMs,
+      async (): Promise<void> => await this.runForDocument(document),
+    );
+  }
 
-    void (async (): Promise<void> => {
-      await sleep(grammarDebounceMs);
-      if (this.pendingByUri.get(key) !== nextToken) {
-        return;
-      }
-      await this.runForDocument(document);
-    })();
+  public cancelRealtimeCheck(document: vscode.TextDocument): void {
+    this.latestRequests.cancel(document.uri.toString());
   }
 
   public dispose(): void {
+    this.latestRequests.dispose();
     this.collection.dispose();
   }
 
@@ -254,6 +248,7 @@ export function registerGrammarDiagnosticsProvider(
     controller.scheduleRealtimeCheck(event.document);
   });
   const closeListener = vscode.workspace.onDidCloseTextDocument((document) => {
+    controller.cancelRealtimeCheck(document);
     controller.getDiagnosticsCollection().delete(document.uri);
   });
 

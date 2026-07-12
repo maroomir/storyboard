@@ -5,6 +5,7 @@ import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
+import { LatestRequestGuard } from '../presentation/providers/latest-request-guard';
 import { analyzeSlop, type SlopFinding } from '../shared/slop';
 
 const slopCheckCommand = 'storyboard.draft.slopCheck';
@@ -13,12 +14,6 @@ const slopDebounceMs = 700;
 
 export interface RegisterSlopDiagnosticsProviderDependencies {
   readonly logger: StoryboardLogger;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }
 
 export function computeBodyOffset(documentText: string, body: string): number {
@@ -63,7 +58,7 @@ export function mapSlopFindingsToDiagnostics(
 
 class SlopDiagnosticsController {
   private readonly collection = vscode.languages.createDiagnosticCollection(slopSource);
-  private readonly pendingByUri = new Map<string, number>();
+  private readonly latestRequests = new LatestRequestGuard();
 
   public constructor(private readonly dependencies: RegisterSlopDiagnosticsProviderDependencies) {}
 
@@ -94,20 +89,19 @@ class SlopDiagnosticsController {
   }
 
   public scheduleRealtimeCheck(document: vscode.TextDocument): void {
-    const key = document.uri.toString();
-    const nextToken = (this.pendingByUri.get(key) ?? 0) + 1;
-    this.pendingByUri.set(key, nextToken);
+    this.latestRequests.schedule(
+      document.uri.toString(),
+      slopDebounceMs,
+      async (): Promise<void> => await this.runForDocument(document),
+    );
+  }
 
-    void (async (): Promise<void> => {
-      await sleep(slopDebounceMs);
-      if (this.pendingByUri.get(key) !== nextToken) {
-        return;
-      }
-      await this.runForDocument(document);
-    })();
+  public cancelRealtimeCheck(document: vscode.TextDocument): void {
+    this.latestRequests.cancel(document.uri.toString());
   }
 
   public dispose(): void {
+    this.latestRequests.dispose();
     this.collection.dispose();
   }
 
@@ -161,6 +155,7 @@ export function registerSlopDiagnosticsProvider(
     controller.scheduleRealtimeCheck(document);
   });
   const closeListener = vscode.workspace.onDidCloseTextDocument((document) => {
+    controller.cancelRealtimeCheck(document);
     controller.getDiagnosticsCollection().delete(document.uri);
   });
 
