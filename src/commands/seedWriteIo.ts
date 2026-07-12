@@ -8,7 +8,7 @@ import {
   SeedWriteAbortedError,
   type SeedFileWriteEntry,
 } from '../files/seedImport';
-import { createWorkspaceReadme } from './init';
+import { createWorkspaceReadme } from '../infrastructure/vscode/project-initializer';
 
 export function uriForRelativeProjectPath(root: vscode.Uri, relativePath: string): vscode.Uri {
   const segments = relativePath.split('/').filter((s) => s.length > 0);

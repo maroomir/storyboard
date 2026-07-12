@@ -6,6 +6,7 @@ import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/
 import { ensureUriDoesNotExist, getTargetWorkspaceFolder, uriExists } from '../core/workspace';
 import { createDefaultProjectJson, writeProjectJson } from '../files/projectJson';
 import {
+  createWorkspaceReadme,
   createStoryboardDirectories,
   ensureWorkspaceGitignore,
 } from '../infrastructure/vscode/project-initializer';
@@ -120,20 +121,5 @@ function createSampleScene(): string {
 
 Storyboard 프로젝트를 시작하기 위한 샘플 텍스트입니다.
 실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
-`;
-}
-
-export function createWorkspaceReadme(projectName: string): string {
-  return `# ${projectName}
-
-Storyboard 프로젝트 노트입니다.
-
-## 구조
-
-- \`.storyboard/project.json\`: 프로젝트 메타데이터
-- \`character/\`: 캐릭터 카드
-- \`background/\`: 배경 카드
-- \`scene/\`: 사용자가 작성하는 씬 시드
-- \`draft/\`: AI가 생성하는 원고 산출물
 `;
 }
