@@ -3,6 +3,12 @@ import type { Character } from '@/domain/Character';
 import type { ProjectFormat } from '@/shared/project';
 import { AiTextGateway } from './AiTextGateway';
 import {
+  CardAiService,
+  type ExtractCardCandidatesByCharacterOptions,
+  type ExtractFactsByCharacterOptions,
+  type ExtractTraitsByCharacterOptions,
+} from './CardAiService';
+import {
   DraftAiService,
   type DraftExpansionContext,
   type InlineCompletionContext,
@@ -10,34 +16,18 @@ import {
 import { SceneAiService } from './SceneAiService';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './ai-service-types';
 import type { AiProviderRegistry } from './providerRegistry';
-import type { AiGenerateResponse, AiStreamChunk, UsageAttribution, WiredAiTaskName } from './types';
+import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from './types';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';
 import type { DraftCritiqueInput } from './prompts/draftCritique';
 import type { DraftRevisionInput } from './prompts/draftRevision';
 import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
-import { FactExtractionPrompt } from './prompts/factExtraction';
-import {
-  CardCandidateExtractionPrompt,
-  coerceCardCandidateExtraction,
-  type CardCandidateExtraction,
-} from './prompts/cardCandidateExtraction';
-import { CardCandidateVerificationPrompt } from './prompts/cardCandidateVerification';
-import {
-  BackgroundFactExtractionPrompt,
-  coerceBackgroundFactExtraction,
-  type BackgroundFactExtraction,
-} from './prompts/backgroundFactExtraction';
-import {
-  CardRecommendationPrompt,
-  coerceCardRecommendations,
-  type RecommendationCategory,
-  type RecommendedEntity,
-} from './prompts/cardRecommendation';
-import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
+import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
+import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
+import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
-import { parseBulletList, parseJsonArray, parseJsonObject } from '@/utils/aiResponseParser';
+import { parseJsonObject } from '@/utils/aiResponseParser';
 import {
   coerceChapterPlan,
   coerceOutlineSynopsis,
@@ -49,7 +39,6 @@ import {
 import type { DraftCritiqueIssue } from '@/shared/draftReview';
 import type { SceneCoverageIssue } from '@/shared/sceneCoverage';
 import {
-  toFactCandidate,
   toPromptMessages,
   type ContinuityIssue,
   type FactCandidate,
@@ -69,23 +58,15 @@ export type {
   StoryboardAIServiceOptions,
 } from './ai-service-types';
 
-export interface ExtractTraitsByCharacterOptions extends GenerateTextOptions {
-  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
-  readonly aliases?: readonly string[];
-}
-
-export interface ExtractFactsByCharacterOptions extends GenerateTextOptions {
-  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
-}
-
-export interface ExtractCardCandidatesByCharacterOptions extends GenerateTextOptions {
-  readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
-  readonly aliases?: readonly string[];
-}
-
+export type {
+  ExtractCardCandidatesByCharacterOptions,
+  ExtractFactsByCharacterOptions,
+  ExtractTraitsByCharacterOptions,
+} from './CardAiService';
 export type { DraftExpansionContext, InlineCompletionContext } from './DraftAiService';
 
 export class StoryboardAIService {
+  private readonly cardAiService: CardAiService;
   private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
   private readonly sceneAiService: SceneAiService;
@@ -95,6 +76,7 @@ export class StoryboardAIService {
     serviceOptions: StoryboardAIServiceOptions = {},
   ) {
     this.gateway = new AiTextGateway(registry, serviceOptions);
+    this.cardAiService = new CardAiService(this.gateway);
     this.draftAiService = new DraftAiService(this.gateway);
     this.sceneAiService = new SceneAiService(this.gateway);
   }
@@ -144,57 +126,12 @@ export class StoryboardAIService {
     return this.sceneAiService.applyGenreFormat(dialogue, format, options);
   }
 
-  private async extractPerCharacter<T>(
-    characterNames: readonly string[],
-    options: GenerateTextOptions & {
-      readonly attributionForCharacter?: (characterName: string) => UsageAttribution | undefined;
-    },
-    config: PromptConfig,
-    runForName: (
-      name: string,
-      resolvedOptions: GenerateTextOptions,
-      attribution: UsageAttribution | undefined,
-    ) => Promise<T>,
-  ): Promise<Record<string, T>> {
-    const uniqueNames = [
-      ...new Set(characterNames.map((name) => name.trim()).filter((name) => name.length > 0)),
-    ];
-    const resolved = {
-      ...options,
-      temperature: options.temperature ?? config.temperature,
-      maxTokens: options.maxTokens ?? config.maxTokens,
-    };
-
-    const entries = await Promise.all(
-      uniqueNames.map(async (name) => {
-        const attribution = resolved.attributionForCharacter?.(name) ?? resolved.attribution;
-        return [name, await runForName(name, resolved, attribution)] as const;
-      }),
-    );
-
-    return Object.fromEntries(entries);
-  }
-
   public async extractTraitsByCharacter(
     draftBody: string,
     characterNames: readonly string[],
     options: ExtractTraitsByCharacterOptions = {},
   ): Promise<Record<string, string[]>> {
-    return this.extractPerCharacter(
-      characterNames,
-      options,
-      TraitsExtractionPrompt.config,
-      async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('traitsExtraction', resolvedOptions);
-        const prompt = TraitsExtractionPrompt.build(draftBody, name, options.aliases, variant);
-        const response = await this.gateway.generate('traitsExtraction', toPromptMessages(prompt), {
-          ...resolvedOptions,
-          attribution,
-        });
-
-        return parseBulletList(response.text);
-      },
-    );
+    return this.cardAiService.extractTraitsByCharacter(draftBody, characterNames, options);
   }
 
   public async extractFactsByCharacter(
@@ -202,22 +139,7 @@ export class StoryboardAIService {
     characterNames: readonly string[],
     options: ExtractFactsByCharacterOptions = {},
   ): Promise<Record<string, FactCandidate[]>> {
-    return this.extractPerCharacter(
-      characterNames,
-      options,
-      FactExtractionPrompt.config,
-      async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('factExtraction', resolvedOptions);
-        const prompt = FactExtractionPrompt.build(draftBody, name, variant);
-        const response = await this.gateway.generate('factExtraction', toPromptMessages(prompt), {
-          ...resolvedOptions,
-          attribution,
-        });
-        const parsedArray = parseJsonArray(response.text);
-
-        return parsedArray ? parsedArray.flatMap((value) => toFactCandidate(value)) : [];
-      },
-    );
+    return this.cardAiService.extractFactsByCharacter(draftBody, characterNames, options);
   }
 
   public async extractCardCandidatesByCharacter(
@@ -225,30 +147,7 @@ export class StoryboardAIService {
     characterNames: readonly string[],
     options: ExtractCardCandidatesByCharacterOptions = {},
   ): Promise<Record<string, CardCandidateExtraction>> {
-    return this.extractPerCharacter(
-      characterNames,
-      options,
-      CardCandidateExtractionPrompt.config,
-      async (name, resolvedOptions, attribution) => {
-        const variant = this.gateway.resolvePromptVariant('cardFactExtraction', resolvedOptions);
-        const prompt = CardCandidateExtractionPrompt.build(
-          draftBody,
-          name,
-          options.aliases,
-          variant,
-        );
-        const response = await this.gateway.generate(
-          'cardFactExtraction',
-          toPromptMessages(prompt),
-          {
-            ...resolvedOptions,
-            attribution,
-          },
-        );
-
-        return coerceCardCandidateExtraction(parseJsonObject(response.text));
-      },
-    );
+    return this.cardAiService.extractCardCandidatesByCharacter(draftBody, characterNames, options);
   }
 
   public async extractBackgroundFactsFromDraft(
@@ -256,16 +155,7 @@ export class StoryboardAIService {
     backgroundName: string,
     options: GenerateTextOptions = {},
   ): Promise<BackgroundFactExtraction> {
-    const variant = this.gateway.resolvePromptVariant('backgroundFactExtraction', options);
-    const prompt = BackgroundFactExtractionPrompt.build(draftBody, backgroundName, variant);
-    const response = await this.generateWithDefaults(
-      'backgroundFactExtraction',
-      prompt,
-      BackgroundFactExtractionPrompt.config,
-      options,
-    );
-
-    return coerceBackgroundFactExtraction(parseJsonObject(response.text));
+    return this.cardAiService.extractBackgroundFactsFromDraft(draftBody, backgroundName, options);
   }
 
   public async extractCardRecommendations(
@@ -274,16 +164,7 @@ export class StoryboardAIService {
     knownNames: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {
-    const variant = this.gateway.resolvePromptVariant('cardRecommendation', options);
-    const prompt = CardRecommendationPrompt.build(body, category, knownNames, variant);
-    const response = await this.generateWithDefaults(
-      'cardRecommendation',
-      prompt,
-      CardRecommendationPrompt.config,
-      options,
-    );
-
-    return coerceCardRecommendations(parseJsonArray(response.text), category);
+    return this.cardAiService.extractCardRecommendations(body, category, knownNames, options);
   }
 
   public async verifyCardCandidatesByCharacter(
@@ -292,39 +173,12 @@ export class StoryboardAIService {
     statements: readonly string[],
     options: GenerateTextOptions = {},
   ): Promise<number[] | null> {
-    if (statements.length === 0) {
-      return [];
-    }
-
-    const variant = this.gateway.resolvePromptVariant('cardFactVerification', options);
-    const prompt = CardCandidateVerificationPrompt.build(
+    return this.cardAiService.verifyCardCandidatesByCharacter(
       draftBody,
       characterName,
       statements,
-      variant,
-    );
-    const response = await this.generateWithDefaults(
-      'cardFactVerification',
-      prompt,
-      CardCandidateVerificationPrompt.config,
       options,
     );
-    const parsedArray = parseJsonArray(response.text);
-
-    if (!parsedArray) {
-      return null;
-    }
-
-    const approved = new Set<number>();
-
-    for (const value of parsedArray) {
-      const index = typeof value === 'number' ? value : Number(value);
-      if (Number.isInteger(index) && index >= 0 && index < statements.length) {
-        approved.add(index);
-      }
-    }
-
-    return [...approved];
   }
 
   public async checkGrammar(
