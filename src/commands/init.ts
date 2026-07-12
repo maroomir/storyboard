@@ -5,18 +5,12 @@ import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceCo
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
 import { ensureUriDoesNotExist, getTargetWorkspaceFolder, uriExists } from '../core/workspace';
 import { createDefaultProjectJson, writeProjectJson } from '../files/projectJson';
+import {
+  createStoryboardDirectories,
+  ensureWorkspaceGitignore,
+} from '../infrastructure/vscode/project-initializer';
 
 const initCommand = 'storyboard.init';
-const storyboardGitignoreBlock = `
-# Storyboard generated files
-.storyboard/cache/
-draft/
-.draft/
-manuscript/
-character/.sample.card
-background/.sample.card
-scene/.sample.txt
-`;
 
 export interface RegisterInitCommandDependencies {
   readonly logger: StoryboardLogger;
@@ -82,44 +76,12 @@ async function validateCanInitialize(paths: StoryboardProjectPaths): Promise<boo
   );
 }
 
-export async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {
-  await Promise.all([
-    vscode.workspace.fs.createDirectory(paths.sceneCacheDirectory),
-    vscode.workspace.fs.createDirectory(paths.characterProfileDirectory),
-    vscode.workspace.fs.createDirectory(paths.backgroundDirectory),
-    vscode.workspace.fs.createDirectory(paths.sceneDirectory),
-    vscode.workspace.fs.createDirectory(paths.draftDirectory),
-  ]);
-}
-
 async function writeFileIfMissing(uri: vscode.Uri, content: string): Promise<void> {
   if (await uriExists(uri)) {
     return;
   }
 
   await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
-}
-
-export async function ensureWorkspaceGitignore(gitignoreUri: vscode.Uri): Promise<void> {
-  if (!(await uriExists(gitignoreUri))) {
-    await vscode.workspace.fs.writeFile(
-      gitignoreUri,
-      new TextEncoder().encode(storyboardGitignoreBlock.trimStart()),
-    );
-    return;
-  }
-
-  const currentGitignore = new TextDecoder().decode(
-    await vscode.workspace.fs.readFile(gitignoreUri),
-  );
-
-  if (currentGitignore.includes('# Storyboard generated files')) {
-    return;
-  }
-
-  const separator = currentGitignore.endsWith('\n') ? '' : '\n';
-  const nextGitignore = `${currentGitignore}${separator}${storyboardGitignoreBlock}`;
-  await vscode.workspace.fs.writeFile(gitignoreUri, new TextEncoder().encode(nextGitignore));
 }
 
 function createSampleCharacterCard(): string {

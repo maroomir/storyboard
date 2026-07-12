@@ -33,7 +33,10 @@ import {
   SeedIdMappingConflictError,
   SeedIdMappingValidationError,
 } from '../files/seedRemap';
-import { createStoryboardDirectories, ensureWorkspaceGitignore } from './init';
+import {
+  createStoryboardDirectories,
+  ensureWorkspaceGitignore,
+} from '../infrastructure/vscode/project-initializer';
 import { formatSeedIdRemapErrorMessage, promptSeedIdRemapping } from './seedIdRemapPrompt';
 import {
   deleteRelativePaths,
