@@ -34,10 +34,10 @@ import { buildStyleDirective } from '../../shared/styleDirective';
 import { type StoryboardAIService } from '../../services/ai/AIService';
 import {
   resolveSceneBreakJoiner,
-  runSceneGenerationPipeline,
+  SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
   type SceneGenerationPipelineStage,
-} from '../../services/ai/pipelines/sceneGenerationPipeline';
+} from '../pipelines/scene-generation-pipeline';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { type TraitsUpdateSummary } from '../../services/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';
@@ -290,7 +290,7 @@ function schedulePostGenerationUpdates(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
   aiService: StoryboardAIService,
-  result: Awaited<ReturnType<typeof runSceneGenerationPipeline>>,
+  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
 ): void {
   const { workspaceFolder, paths, scene, context } = inputs;
   const updates = options.postGenerationUpdates;
@@ -356,7 +356,7 @@ function schedulePostGenerationUpdates(
 
 function buildSceneCacheRecord(
   inputs: SceneGenerationInputs,
-  result: Awaited<ReturnType<typeof runSceneGenerationPipeline>>,
+  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
   providers: SceneCacheRecord['providers'],
 ): SceneCacheRecord {
   const { scene, context, previousContext, inputHash } = inputs;
@@ -423,7 +423,7 @@ async function runAndPersistDraft(
   } satisfies Partial<Record<AiTaskName, AiProviderId>>;
 
   try {
-    const result = await runSceneGenerationPipeline({
+    const result = await new SceneGenerationPipeline({
       sceneStem: scene.stem,
       context,
       aiService,
@@ -431,7 +431,7 @@ async function runAndPersistDraft(
       styleDirective: buildStyleDirective(project.setting, scene.frontmatter.relationStage),
       previousContext,
       providers: pipelineProviders,
-      onProgress: (stage, current, total) => {
+      onProgress: (stage, current, total): void => {
         if (options.shouldCancel?.()) {
           return;
         }
@@ -443,7 +443,7 @@ async function runAndPersistDraft(
       personaStore: createPersonaMemoryStore(paths, scene.stem),
       backgroundStore: createBackgroundMemoryStore(paths, scene.stem),
       sceneBreakJoiner: inputs.sceneBreakJoiner,
-    });
+    }).run();
 
     const draft = createDraft({
       sceneStem: scene.stem,

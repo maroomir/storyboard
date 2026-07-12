@@ -5,9 +5,9 @@ import { uriExists } from '../core/workspace';
 import { vscodeFsAdapter } from '../core/vscodeFileSystem';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type {
-  BackgroundMemoryStore,
-  PersonaMemoryStore,
-} from '../services/ai/pipelines/sceneGenerationPipeline';
+  IBackgroundMemoryStore,
+  IPersonaMemoryStore,
+} from '../application/ports/memory-store';
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
@@ -41,7 +41,7 @@ export function backgroundMemoryFilePath(
 export function createPersonaMemoryStore(
   paths: StoryboardProjectPaths,
   sceneStem: string,
-): PersonaMemoryStore {
+): IPersonaMemoryStore {
   return {
     async load(card: CharacterCard): Promise<string | undefined> {
       const uri = personaMemoryFilePath(paths, card.id);
@@ -72,7 +72,7 @@ export function createPersonaMemoryStore(
 export function createBackgroundMemoryStore(
   paths: StoryboardProjectPaths,
   sceneStem: string,
-): BackgroundMemoryStore {
+): IBackgroundMemoryStore {
   return {
     async load(card: BackgroundCard): Promise<string | undefined> {
       const uri = backgroundMemoryFilePath(paths, card.id);

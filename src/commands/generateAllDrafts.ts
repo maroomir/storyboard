@@ -9,7 +9,7 @@ import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseSceneFileName } from '../shared/scene';
-import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
+import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { stageProgressLabel } from './generateDraft';
 import { maybeRunReviseAfterGenerate } from './reviseDraft';

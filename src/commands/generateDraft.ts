@@ -8,7 +8,7 @@ import type { ReviseDraftUseCase } from '../application/drafts/revise-draft-use-
 import type { StoryboardLogger } from '../core/logger';
 import { maybeRunReviseAfterGenerate } from './reviseDraft';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
-import type { SceneGenerationPipelineStage } from '../services/ai/pipelines/sceneGenerationPipeline';
+import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';

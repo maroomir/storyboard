@@ -1,15 +1,16 @@
-import type { SceneContext } from '@/core/sceneContext';
-import type { Background } from '@/domain/Background';
-import { createEmptyBackground } from '@/domain/Background';
-import type { BackgroundCard, CharacterCard } from '@/shared/card';
-import type { ProjectFormat } from '@/shared/project';
-import type { StyleDirective } from '@/shared/styleDirective';
+import type { SceneContext } from '../../core/sceneContext';
+import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../ports/memory-store';
+import type { Background } from '../../domain/Background';
+import { createEmptyBackground } from '../../domain/Background';
+import type { BackgroundCard, CharacterCard } from '../../shared/card';
+import type { ProjectFormat } from '../../shared/project';
+import type { StyleDirective } from '../../shared/styleDirective';
 import type {
   GenerateTextOptions,
   SituationWithCharacters,
   StoryboardAIService,
-} from '../AIService';
-import type { AiProviderId, EntityRef } from '../types';
+} from '../../services/ai/AIService';
+import type { AiProviderId, EntityRef } from '../../services/ai/types';
 
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
@@ -33,15 +34,8 @@ export interface SceneGenerationPipelineTaskProviders {
   readonly sceneDraft?: AiProviderId;
 }
 
-export interface PersonaMemoryStore {
-  readonly load: (card: CharacterCard) => Promise<string | undefined>;
-  readonly save: (card: CharacterCard, persona: string) => Promise<void>;
-}
-
-export interface BackgroundMemoryStore {
-  readonly load: (card: BackgroundCard) => Promise<string | undefined>;
-  readonly save: (card: BackgroundCard, atmosphere: string) => Promise<void>;
-}
+export type PersonaMemoryStore = IPersonaMemoryStore;
+export type BackgroundMemoryStore = IBackgroundMemoryStore;
 
 export class SceneGenerationPipelineCancelledError extends Error {
   public constructor() {
@@ -452,7 +446,7 @@ async function formatSceneDraft(
     : formattedParts.join('\n\n');
 }
 
-export async function runSceneGenerationPipeline(
+async function executeSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput,
 ): Promise<RunSceneGenerationPipelineResult> {
   const {
@@ -556,4 +550,18 @@ export async function runSceneGenerationPipeline(
     personasUsed,
     providers,
   };
+}
+
+export class SceneGenerationPipeline {
+  public constructor(private readonly input: RunSceneGenerationPipelineInput) {}
+
+  public async run(): Promise<RunSceneGenerationPipelineResult> {
+    return await executeSceneGenerationPipeline(this.input);
+  }
+}
+
+export async function runSceneGenerationPipeline(
+  input: RunSceneGenerationPipelineInput,
+): Promise<RunSceneGenerationPipelineResult> {
+  return await new SceneGenerationPipeline(input).run();
 }
