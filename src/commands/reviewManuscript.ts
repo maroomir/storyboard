@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import type { StoryboardLogger } from '../core/logger';
 import { assembleManuscript } from '../core/manuscriptAssembly';
 import { collectDraftsByOrder } from '../core/manuscriptDrafts';
@@ -10,8 +11,6 @@ import { readBibleFile, type BibleFileSystem } from '../files/bible';
 import { type DraftFileSystem } from '../files/draft';
 import { readChapterPlanFile, type OutlineFileSystem } from '../files/outline';
 import { readProjectJson } from '../files/projectJson';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 import { flattenChapterPlan, type ChapterPlan } from '../shared/outline';
 
 const reviewManuscriptCommand = 'storyboard.manuscript.review';
@@ -25,7 +24,7 @@ const fileSystem: DraftFileSystem & OutlineFileSystem & BibleFileSystem = {
 };
 
 export interface RegisterReviewManuscriptCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
 }
 
@@ -74,8 +73,8 @@ async function runReviewManuscript(
     const factLines = await loadCanonFactLines(paths.bibleCanon);
     const characters = collectCharacterIds(plan);
 
-    const aiService = new StoryboardAIService(dependencies.aiProviderRegistry);
-    const registry = dependencies.aiProviderRegistry;
+    const aiService = dependencies.aiGateway.createService(workspaceRoot);
+    const aiGateway = dependencies.aiGateway;
 
     const { continuityIssues, critiqueIssues } = await vscode.window.withProgress(
       {
@@ -88,7 +87,7 @@ async function runReviewManuscript(
 
         const [continuity, critique] = await Promise.all([
           aiService.checkContinuity(manuscript.volumeMarkdown, factLines, {
-            providerId: registry.getTaskProvider('continuityCheck'),
+            providerId: aiGateway.getTaskProvider('continuityCheck'),
           }),
           aiService.critiqueDraft(
             {
@@ -99,7 +98,7 @@ async function runReviewManuscript(
               styleConstraints: project.setting?.styleConstraints ?? [],
               qualityCriteria: project.setting?.qualityCriteria ?? [],
             },
-            { providerId: registry.getTaskProvider('draftCritique') },
+            { providerId: aiGateway.getTaskProvider('draftCritique') },
           ),
         ]);
 

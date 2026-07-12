@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import { validateGenerationContract } from '../core/generationContract';
 import { listCharacterBriefs } from '../core/characterBriefs';
 import type { StoryboardLogger } from '../core/logger';
@@ -8,10 +9,6 @@ import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
 import { type CardFileSystem } from '../files/card';
 import { writeChapterPlanFile, writeSynopsisFile, type OutlineFileSystem } from '../files/outline';
 import { readProjectJson } from '../files/projectJson';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 import { toOutlineBrief } from '../shared/outline';
 import type { ContractFieldKey } from '../shared/project';
 
@@ -39,9 +36,8 @@ const cardFileSystem: CardFileSystem = {
 };
 
 export interface RegisterGenerateOutlineCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export function registerGenerateOutlineCommand(
@@ -115,11 +111,7 @@ async function runGenerateOutline(
       cancellable: false,
     },
     async (progress) => {
-      const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-        onUsage: (record): void => {
-          recordUsageSafely(dependencies.usageRecorder, workspaceRoot, record, dependencies.logger);
-        },
-      });
+      const aiService = dependencies.aiGateway.createService(workspaceRoot);
       const brief = toOutlineBrief(project);
 
       try {

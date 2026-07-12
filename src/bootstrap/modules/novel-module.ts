@@ -16,14 +16,14 @@ export class NovelModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(): void {
-    const { aiProviderRegistry, logger, novelPipeline, usageRecorder } = this.platform;
+    const { aiGateway, logger, novelPipeline } = this.platform;
 
     this.disposables.add(
-      registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder }),
+      registerGenerateOutlineCommand({ aiGateway, logger }),
       registerGenerateSceneSeedsCommand(),
       registerAssembleManuscriptCommand({ logger }),
-      registerReviewManuscriptCommand({ aiProviderRegistry, logger }),
-      registerSummarizeChaptersCommand({ aiProviderRegistry, logger }),
+      registerReviewManuscriptCommand({ aiGateway, logger }),
+      registerSummarizeChaptersCommand({ aiGateway, logger }),
       registerGenerateNovelCommand({ novelPipeline }),
       registerExportManuscriptCommand({ logger }),
     );

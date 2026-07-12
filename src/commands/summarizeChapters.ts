@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import {
   buildChapterSummariesMarkdown,
   summaryFileName,
@@ -13,8 +14,6 @@ import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
 import { type DraftFileSystem } from '../files/draft';
 import { readChapterPlanFile, type OutlineFileSystem } from '../files/outline';
 import { readProjectJson } from '../files/projectJson';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
 
 const summarizeChaptersCommand = 'storyboard.manuscript.summaries';
 
@@ -26,7 +25,7 @@ const fileSystem: DraftFileSystem & OutlineFileSystem = {
 };
 
 export interface RegisterSummarizeChaptersCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
 }
 
@@ -72,8 +71,8 @@ async function runSummarizeChapters(
     }
 
     const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder });
-    const aiService = new StoryboardAIService(dependencies.aiProviderRegistry);
-    const providerId = dependencies.aiProviderRegistry.getTaskProvider('chapterSummary');
+    const aiService = dependencies.aiGateway.createService(workspaceRoot);
+    const providerId = dependencies.aiGateway.getTaskProvider('chapterSummary');
 
     const summaries = await vscode.window.withProgress(
       {
