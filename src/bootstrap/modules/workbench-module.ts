@@ -6,11 +6,12 @@ import { RelationGraphProvider } from '../../providers/RelationGraphProvider';
 import { SettingsPanelProvider } from '../../providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '../../providers/SidebarStudioProvider';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 import type { IPlatformServices } from './platform-module';
 
 export class WorkbenchModule implements IApplicationModule {
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
@@ -23,7 +24,7 @@ export class WorkbenchModule implements IApplicationModule {
       configBridge,
     });
 
-    this.disposables.push(
+    this.disposables.add(
       registerSidebarStudioProvider(context),
       registerOpenRelationGraphCommand(context, relationGraphPanel),
       registerOpenSettingsCommand(context, settingsPanel),
@@ -33,8 +34,6 @@ export class WorkbenchModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
   }
 }

@@ -1,5 +1,3 @@
-import * as vscode from 'vscode';
-
 import { registerAssembleManuscriptCommand } from '../../commands/assembleManuscript';
 import { registerExportManuscriptCommand } from '../../commands/exportManuscript';
 import { registerGenerateNovelCommand } from '../../commands/generateNovel';
@@ -8,18 +6,19 @@ import { registerGenerateSceneSeedsCommand } from '../../commands/generateSceneS
 import { registerReviewManuscriptCommand } from '../../commands/reviewManuscript';
 import { registerSummarizeChaptersCommand } from '../../commands/summarizeChapters';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 import type { IPlatformServices } from './platform-module';
 
 export class NovelModule implements IApplicationModule {
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(): void {
     const { aiProviderRegistry, logger, novelPipeline, usageRecorder } = this.platform;
 
-    this.disposables.push(
+    this.disposables.add(
       registerGenerateOutlineCommand({ aiProviderRegistry, logger, usageRecorder }),
       registerGenerateSceneSeedsCommand(),
       registerAssembleManuscriptCommand({ logger }),
@@ -31,8 +30,6 @@ export class NovelModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
   }
 }

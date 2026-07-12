@@ -6,16 +6,17 @@ import { registerInitCommand } from '../../commands/init';
 import { registerSetApiKeyCommand } from '../../commands/setApiKey';
 import { registerStoryboardWorkspaceContext } from '../../core/storyboardWorkspaceContext';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 import type { IPlatformServices } from './platform-module';
 
 export class ProjectModule implements IApplicationModule {
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    this.disposables.push(
+    this.disposables.add(
       registerStoryboardWorkspaceContext(context),
       registerHelloWorldCommand(),
       registerInitCommand({ logger: this.platform.logger }),
@@ -25,8 +26,6 @@ export class ProjectModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
   }
 }

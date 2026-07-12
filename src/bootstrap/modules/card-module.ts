@@ -11,18 +11,19 @@ import { registerCardCustomEditorProvider } from '../../providers/CardCustomEdit
 import { registerCardRenameParticipant } from '../../providers/CardRenameParticipant';
 import { registerSidebarCardsProviders } from '../../providers/SidebarCardsProvider';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 import type { IPlatformServices } from './platform-module';
 
 export class CardModule implements IApplicationModule {
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
     const { aiProviderRegistry, logger, usageRecorder } = this.platform;
 
-    this.disposables.push(
+    this.disposables.add(
       registerCreateCardCommands(),
       registerRecommendCardCommands({ aiProviderRegistry, usageRecorder, logger }),
       registerRenameCardCommands(),
@@ -37,8 +38,6 @@ export class CardModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
   }
 }

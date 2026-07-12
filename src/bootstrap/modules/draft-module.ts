@@ -14,11 +14,12 @@ import { registerInlineCompletionProvider } from '../../providers/InlineCompleti
 import { registerSidebarScenesProvider } from '../../providers/SidebarScenesProvider';
 import { registerSlopDiagnosticsProvider } from '../../providers/SlopDiagnosticsProvider';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 import type { IPlatformServices } from './platform-module';
 
 export class DraftModule implements IApplicationModule {
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public constructor(private readonly platform: IPlatformServices) {}
 
@@ -26,7 +27,7 @@ export class DraftModule implements IApplicationModule {
     const { aiProviderRegistry, configBridge, generateDraftUseCase, logger, usageRecorder } =
       this.platform;
 
-    this.disposables.push(
+    this.disposables.add(
       registerGenerateDraftCommands({
         aiProviderRegistry,
         configBridge,
@@ -56,8 +57,6 @@ export class DraftModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
   }
 }

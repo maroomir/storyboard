@@ -18,6 +18,7 @@ import { createVscodeUsageLedgerFileSystem, UsageRecorder } from '../../services
 import { SecretStore } from '../../services/secrets/SecretStore';
 import { ConfigBridge } from '../../services/settings/ConfigBridge';
 
+import { DisposableStore } from '../lifecycle/disposable-store';
 import type { IApplicationModule } from '../lifecycle/application-module';
 
 export interface IPlatformServices {
@@ -35,7 +36,7 @@ export interface IPlatformServices {
 
 export class PlatformModule implements IApplicationModule {
   private services: IPlatformServices | undefined;
-  private disposables: vscode.Disposable[] = [];
+  private readonly disposables = new DisposableStore();
 
   public initialize(context: vscode.ExtensionContext): void {
     if (this.services) {
@@ -93,12 +94,12 @@ export class PlatformModule implements IApplicationModule {
       secretStore,
       usageRecorder,
     };
-    this.disposables = [
+    this.disposables.add(
       logger,
       postGenerationUpdates,
       usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
-    ];
+    );
 
     logger.info('Activating Storyboard extension');
   }
@@ -112,9 +113,7 @@ export class PlatformModule implements IApplicationModule {
   }
 
   public dispose(): void {
-    for (const disposable of this.disposables.splice(0).reverse()) {
-      disposable.dispose();
-    }
+    this.disposables.dispose();
 
     this.services = undefined;
   }
