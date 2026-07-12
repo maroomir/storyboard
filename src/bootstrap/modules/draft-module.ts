@@ -50,7 +50,7 @@ export class DraftModule implements IApplicationModule {
       }),
       registerApplyDraftFormatCommand({ aiGateway, logger }),
       registerReviseDraftCommand({ configBridge, logger, reviseDraftUseCase }),
-      registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder }),
+      registerExpandDraftCommand({ aiGateway, logger }),
       registerAugmentDraftCommands({ augmentDraftUseCase, configBridge, logger }),
       registerNewSceneCommands(),
       registerCharacterHoverProvider(),

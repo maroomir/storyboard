@@ -1,20 +1,16 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseDraft } from '../files/draft';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 
 const expandDraftCommand = 'storyboard.draft.expand';
 
 export interface RegisterExpandDraftCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export function resolveExpandRange(
@@ -90,17 +86,6 @@ async function runExpandDraftCommand(
     sceneStem = fallbackName.replace(/\.md$/i, '');
   }
 
-  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-    onUsage: (record): void => {
-      recordUsageSafely(
-        dependencies.usageRecorder,
-        workspaceFolder.uri,
-        record,
-        dependencies.logger,
-      );
-    },
-  });
-
   try {
     await vscode.window.withProgress(
       {
@@ -109,14 +94,16 @@ async function runExpandDraftCommand(
         cancellable: false,
       },
       async () => {
-        const expanded = await aiService.expandDraft(
-          selectedText,
-          {},
-          {
-            providerId: dependencies.aiProviderRegistry.getTaskProvider('draftExpansion'),
-            attribution: { primary: { kind: 'scene', id: sceneStem } },
-          },
-        );
+        const expanded = await dependencies.aiGateway
+          .createService(workspaceFolder.uri)
+          .expandDraft(
+            selectedText,
+            {},
+            {
+              providerId: dependencies.aiGateway.getTaskProvider('draftExpansion'),
+              attribution: { primary: { kind: 'scene', id: sceneStem } },
+            },
+          );
 
         if (!expanded) {
           await vscode.window.showWarningMessage('확장 결과가 비어 있어 적용하지 않았습니다.');
