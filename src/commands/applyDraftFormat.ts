@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../application/ai/ai-gateway';
 import type { StoryboardLogger } from '../core/logger';
 import {
   draftPath,
@@ -11,10 +12,6 @@ import { hasStoryboardProject } from '../core/workspace';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../files/draft';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';
-import { StoryboardAIService } from '../services/ai/AIService';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import { recordUsageSafely } from '../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
 
@@ -33,9 +30,8 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
 }
 
 export interface RegisterApplyDraftFormatCommandDependencies {
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly logger: StoryboardLogger;
-  readonly usageRecorder: UsageRecorder;
 }
 
 export async function runApplyDraftFormatForScene(
@@ -111,17 +107,6 @@ export async function runApplyDraftFormatForScene(
     return;
   }
 
-  const aiService = new StoryboardAIService(dependencies.aiProviderRegistry, {
-    onUsage: (record): void => {
-      recordUsageSafely(
-        dependencies.usageRecorder,
-        workspaceFolder.uri,
-        record,
-        dependencies.logger,
-      );
-    },
-  });
-
   try {
     await vscode.window.withProgress(
       {
@@ -131,12 +116,12 @@ export async function runApplyDraftFormatForScene(
       },
       (progress, token) =>
         applyDraftFormatWithProgress(progress, token, {
-          aiService,
-          aiProviderRegistry: dependencies.aiProviderRegistry,
+          aiGateway: dependencies.aiGateway,
           existing,
           project,
           draftUri,
           sceneStem: nameParts.stem,
+          workspaceRoot: workspaceFolder.uri,
         }),
     );
   } catch (error) {
@@ -148,12 +133,12 @@ export async function runApplyDraftFormatForScene(
 }
 
 interface ApplyDraftFormatWithProgressOptions {
-  readonly aiService: StoryboardAIService;
-  readonly aiProviderRegistry: AiProviderRegistry;
+  readonly aiGateway: AiGateway;
   readonly existing: ReturnType<typeof parseDraft>;
   readonly project: Awaited<ReturnType<typeof readProjectJson>>;
   readonly draftUri: vscode.Uri;
   readonly sceneStem: string;
+  readonly workspaceRoot: vscode.Uri;
 }
 
 async function applyDraftFormatWithProgress(
@@ -161,7 +146,7 @@ async function applyDraftFormatWithProgress(
   token: vscode.CancellationToken,
   options: ApplyDraftFormatWithProgressOptions,
 ): Promise<void> {
-  const { aiService, aiProviderRegistry, existing, project, draftUri, sceneStem } = options;
+  const { aiGateway, existing, project, draftUri, sceneStem, workspaceRoot } = options;
 
   progress.report({ message: '장르 포맷 적용 중…' });
 
@@ -169,10 +154,12 @@ async function applyDraftFormatWithProgress(
     return;
   }
 
-  const formattedBody = await aiService.applyGenreFormat(existing.body, project.format, {
-    providerId: aiProviderRegistry.getTaskProvider('sceneDraft'),
-    attribution: { primary: { kind: 'scene', id: sceneStem } },
-  });
+  const formattedBody = await aiGateway
+    .createService(workspaceRoot)
+    .applyGenreFormat(existing.body, project.format, {
+      providerId: aiGateway.getTaskProvider('sceneDraft'),
+      attribution: { primary: { kind: 'scene', id: sceneStem } },
+    });
 
   if (token.isCancellationRequested) {
     return;

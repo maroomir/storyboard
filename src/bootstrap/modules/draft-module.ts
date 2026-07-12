@@ -48,7 +48,7 @@ export class DraftModule implements IApplicationModule {
         logger,
         reviseDraftUseCase,
       }),
-      registerApplyDraftFormatCommand({ aiProviderRegistry, logger, usageRecorder }),
+      registerApplyDraftFormatCommand({ aiGateway, logger }),
       registerReviseDraftCommand({ configBridge, logger, reviseDraftUseCase }),
       registerExpandDraftCommand({ aiProviderRegistry, logger, usageRecorder }),
       registerAugmentDraftCommands({ augmentDraftUseCase, configBridge, logger }),
