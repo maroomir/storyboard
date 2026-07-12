@@ -4,23 +4,20 @@ import {
   type GenerateDraftUseCase,
   type GenerateDraftResult,
 } from '../application/drafts/generate-draft-use-case';
-import type { ReviseDraftUseCase } from '../application/drafts/revise-draft-use-case';
+import type { ReviseAfterGenerateGate } from '../application/drafts/revise-after-generate-gate';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
 import { parseSceneFileName } from '../shared/scene';
 import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { stageProgressLabel } from './generateDraft';
-import { maybeRunReviseAfterGenerate } from './reviseDraft';
 
 const generateAllDraftsCommand = 'storyboard.draft.generateAll';
 
 export interface RegisterGenerateAllDraftsCommandDependencies {
-  readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
 }
 
 async function listSceneUrisOrdered(sceneDirectory: vscode.Uri): Promise<vscode.Uri[]> {
@@ -132,19 +129,11 @@ async function generateAllDraftsWithProgress(
       } else {
         summary.generated += 1;
 
-        await maybeRunReviseAfterGenerate(
-          sceneUri,
-          dependencies.configBridge,
-          {
-            logger: dependencies.logger,
-            reviseDraftUseCase: dependencies.reviseDraftUseCase,
-          },
-          {
-            onWillRun: () =>
-              progress.report({ message: `[${index + 1}/${total}] ${label} — 검수·재작성 중…` }),
-            shouldCancel: () => token.isCancellationRequested,
-          },
-        );
+        await dependencies.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+          onWillRun: () =>
+            progress.report({ message: `[${index + 1}/${total}] ${label} — 검수·재작성 중…` }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
       }
 
       continue;

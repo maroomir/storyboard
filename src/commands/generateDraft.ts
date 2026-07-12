@@ -4,10 +4,7 @@ import {
   type GenerateDraftUseCase,
   type GenerateDraftResult,
 } from '../application/drafts/generate-draft-use-case';
-import type { ReviseDraftUseCase } from '../application/drafts/revise-draft-use-case';
-import type { StoryboardLogger } from '../core/logger';
-import { maybeRunReviseAfterGenerate } from './reviseDraft';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
+import type { ReviseAfterGenerateGate } from '../application/drafts/revise-after-generate-gate';
 import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
@@ -17,10 +14,8 @@ const REGENERATE_SUCCESS_MESSAGE = '초안을 다시 생성해 저장했습니�
 const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
-  readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly logger: StoryboardLogger;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
 }
 
 export function stageProgressLabel(stage: SceneGenerationPipelineStage): string {
@@ -101,18 +96,10 @@ async function runGenerateDraftForWorkspaceScene(
       await openDraftResult(result);
 
       if (result.kind === 'generated') {
-        await maybeRunReviseAfterGenerate(
-          sceneUri,
-          dependencies.configBridge,
-          {
-            logger: dependencies.logger,
-            reviseDraftUseCase: dependencies.reviseDraftUseCase,
-          },
-          {
-            onProgress: (message) => progress.report({ message }),
-            shouldCancel: () => token.isCancellationRequested,
-          },
-        );
+        await dependencies.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+          onProgress: (message) => progress.report({ message }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
       }
 
       progress.report({

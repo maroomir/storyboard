@@ -8,15 +8,13 @@ vi.mock("@/core/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true
 }))
 
-import { maybeRunReviseAfterGenerate } from "@/commands/reviseDraft"
+import { ReviseAfterGenerateGate } from "@/application/drafts/revise-after-generate-gate"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const folder: WorkspaceFolder = { uri: workspaceRoot as never, name: "ws", index: 0 }
 const validScene = vscode.Uri.file("/ws/scene/01-intro.txt")
 
 const dependencies = {
-  aiProviderRegistry: {} as never,
-  usageRecorder: {} as never,
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), show: vi.fn(), dispose: vi.fn() } as never
 }
 
@@ -35,7 +33,11 @@ describe("maybeRunReviseAfterGenerate", () => {
     workspace.getWorkspaceFolder = (): WorkspaceFolder => folder
     const onWillRun = vi.fn()
 
-    await maybeRunReviseAfterGenerate(validScene as never, configBridge(false), dependencies, { onWillRun })
+    await new ReviseAfterGenerateGate(
+      configBridge(false),
+      dependencies.logger,
+      {} as never
+    ).maybeRunAfterGenerate(validScene as never, { onWillRun })
 
     expect(onWillRun).not.toHaveBeenCalled()
   })
@@ -44,7 +46,11 @@ describe("maybeRunReviseAfterGenerate", () => {
     workspace.getWorkspaceFolder = (): WorkspaceFolder => folder
     const onWillRun = vi.fn()
 
-    await maybeRunReviseAfterGenerate(validScene as never, configBridge(true), dependencies, {
+    await new ReviseAfterGenerateGate(
+      configBridge(true),
+      dependencies.logger,
+      {} as never
+    ).maybeRunAfterGenerate(validScene as never, {
       onWillRun,
       shouldCancel: () => true
     })
@@ -57,7 +63,11 @@ describe("maybeRunReviseAfterGenerate", () => {
     const onWillRun = vi.fn()
     const badScene = vscode.Uri.file("/ws/scene/not-a-scene.md")
 
-    await maybeRunReviseAfterGenerate(badScene as never, configBridge(true), dependencies, { onWillRun })
+    await new ReviseAfterGenerateGate(
+      configBridge(true),
+      dependencies.logger,
+      {} as never
+    ).maybeRunAfterGenerate(badScene as never, { onWillRun })
 
     expect(onWillRun).not.toHaveBeenCalled()
   })
@@ -66,7 +76,11 @@ describe("maybeRunReviseAfterGenerate", () => {
     workspace.getWorkspaceFolder = (): WorkspaceFolder => folder
     const onWillRun = vi.fn()
 
-    await maybeRunReviseAfterGenerate(validScene as never, configBridge(true), dependencies, { onWillRun })
+    await new ReviseAfterGenerateGate(
+      configBridge(true),
+      dependencies.logger,
+      {} as never
+    ).maybeRunAfterGenerate(validScene as never, { onWillRun })
 
     expect(onWillRun).toHaveBeenCalledTimes(1)
   })

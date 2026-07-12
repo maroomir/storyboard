@@ -5,6 +5,7 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
 } from '../application/novel/novel-pipeline';
+import { resolveReviseMaxIterations } from '../application/drafts/revise-after-generate-gate';
 import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
@@ -17,7 +18,6 @@ import {
   type NovelRunStateFileSystem,
 } from '../files/novelRunState';
 import type { ContractFieldKey } from '../shared/project';
-import { resolveReviseMaxIterations } from './reviseDraft';
 
 const generateNovelCommand = 'storyboard.novel.generate';
 

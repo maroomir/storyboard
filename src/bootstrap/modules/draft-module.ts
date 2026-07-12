@@ -31,6 +31,7 @@ export class DraftModule implements IApplicationModule {
       configBridge,
       generateDraftUseCase,
       logger,
+      reviseAfterGenerateGate,
       reviseDraftUseCase,
       sceneSidebarRepository,
       usageRecorder,
@@ -38,16 +39,13 @@ export class DraftModule implements IApplicationModule {
 
     this.disposables.add(
       registerGenerateDraftCommands({
-        configBridge,
         generateDraftUseCase,
-        logger,
-        reviseDraftUseCase,
+        reviseAfterGenerateGate,
       }),
       registerGenerateAllDraftsCommand({
-        configBridge,
         generateDraftUseCase,
         logger,
-        reviseDraftUseCase,
+        reviseAfterGenerateGate,
       }),
       registerApplyDraftFormatCommand({ aiGateway, logger }),
       registerReviseDraftCommand({ configBridge, logger, reviseDraftUseCase }),

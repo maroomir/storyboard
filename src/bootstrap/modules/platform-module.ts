@@ -9,6 +9,7 @@ import { DecodeSeedUseCase } from '../../application/project/decode-seed-use-cas
 import { AugmentDraftUseCase } from '../../application/drafts/augment-draft-use-case';
 import { GenerateDraftUseCase } from '../../application/drafts/generate-draft-use-case';
 import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
+import { ReviseAfterGenerateGate } from '../../application/drafts/revise-after-generate-gate';
 import { NovelPipeline } from '../../application/novel/novel-pipeline';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draft-repository';
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/card-recommendation-repository';
@@ -51,6 +52,7 @@ export interface IPlatformServices {
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly secretStore: SecretStore;
   readonly usageRecorder: UsageRecorder;
@@ -108,6 +110,11 @@ export class PlatformModule implements IApplicationModule {
       usageRecorder,
       logger,
     });
+    const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
+      configBridge,
+      logger,
+      reviseDraftUseCase,
+    );
     const recommendCardsUseCase = new RecommendCardsUseCase(
       aiGateway,
       logger,
@@ -147,6 +154,7 @@ export class PlatformModule implements IApplicationModule {
       promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
+      reviseAfterGenerateGate,
       reviseDraftUseCase,
       sceneSidebarRepository,
       secretStore,
