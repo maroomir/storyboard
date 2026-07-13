@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { aiProviderIds, type AiProviderId } from '../services/ai/types';
+import { aiProviderIds, type AiProviderId } from '../shared/aiTypes';
 import { SecretStore } from '../services/secrets/SecretStore';
 
 const setApiKeyCommand = 'storyboard.apiKey.set';

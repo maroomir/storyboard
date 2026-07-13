@@ -1,6 +1,6 @@
 import { type ModelPricePerMillion, storyboardModelPricing } from '@/shared/pricing';
 
-import type { AiGenerateResponse, AiProviderId, AiUsage } from './types';
+import type { AiGenerateResponse, AiProviderId, AiUsage } from '../../shared/aiTypes';
 
 export function aiGenerateResponseWithUsage(params: {
   readonly providerId: AiProviderId;

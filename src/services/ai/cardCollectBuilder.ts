@@ -7,7 +7,7 @@ import {
 } from '@/shared/cardCollect';
 import type { StoryboardAIService } from './AIService';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
-import type { EntityRef, UsageAttribution } from './types';
+import type { EntityRef, UsageAttribution } from '../../shared/aiTypes';
 
 export interface CollectDraft {
   readonly sceneStem: string;

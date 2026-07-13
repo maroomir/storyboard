@@ -1,4 +1,9 @@
-import { aiProviderIds, aiTaskNames, type AiProviderId, type AiTaskName } from '../ai/types';
+import {
+  aiProviderIds,
+  aiTaskNames,
+  type AiProviderId,
+  type AiTaskName,
+} from '../../shared/aiTypes';
 import { storyboardModelCatalog } from '@/shared/models';
 
 const storyboardWorkspaceConfigurationTarget = 2;

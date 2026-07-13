@@ -1,4 +1,4 @@
-import { type AiProviderId, type AiTaskName } from '@/services/ai/types';
+import { type AiProviderId, type AiTaskName } from '@/shared/aiTypes';
 
 import { type PromptVariantId } from './types';
 

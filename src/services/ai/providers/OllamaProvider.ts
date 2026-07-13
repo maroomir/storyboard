@@ -1,7 +1,7 @@
 import axios, { type AxiosInstance } from 'axios';
 
 import { aiGenerateResponseWithUsage } from '../cost';
-import { AiProviderError } from '../AiProviderError';
+import { AiProviderError } from '../../../shared/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -9,7 +9,7 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../types';
+} from '../../../shared/aiTypes';
 
 export interface OllamaClientLike {
   readonly get: (path: string) => Promise<unknown>;

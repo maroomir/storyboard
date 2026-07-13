@@ -16,7 +16,7 @@ import {
 import { SceneAiService } from './SceneAiService';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
-import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from './types';
+import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../../shared/aiTypes';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';

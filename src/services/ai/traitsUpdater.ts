@@ -3,7 +3,7 @@ import { readCardFile, writeCardFile, type CardFileSystem } from '@/files/card';
 import { parseBulletList } from '@/shared/aiResponseParser';
 import { reconcileCharacterTraits } from '@/domain/traitsProcessor';
 import type { StoryboardAIService } from './AIService';
-import type { UsageAttribution } from './types';
+import type { UsageAttribution } from '../../shared/aiTypes';
 
 export interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;

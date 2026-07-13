@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-import { type AiMessage } from '../types';
+import { type AiMessage } from '../../../shared/aiTypes';
 
 export interface CliRunInput {
   readonly command: string;

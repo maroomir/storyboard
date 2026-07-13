@@ -16,7 +16,7 @@ import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
 import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 import { createSettingsRpcHandlers } from "@/services/settings/settingsRpcHandlers"
-import { aiProviderIds, aiTaskNames } from "@/services/ai/types"
+import { aiProviderIds, aiTaskNames } from "@/shared/aiTypes"
 
 class MutableFakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: Map<string, unknown>) {}

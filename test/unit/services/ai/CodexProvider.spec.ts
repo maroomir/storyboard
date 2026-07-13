@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError } from "@/services/ai/AiProviderError"
+import { AiProviderError } from "@/shared/aiProviderError"
 import { CodexProvider } from "@/services/ai/providers/CodexProvider"
 import { type CliRunInput, type CliRunResult, type CliRunner } from "@/services/ai/providers/cliRunner"
 

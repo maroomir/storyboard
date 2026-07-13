@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { UsageSummaryByEntity } from '../services/ai/types';
+import type { UsageSummaryByEntity } from '../shared/aiTypes';
 import {
   aiProviderIds,
   aiTaskNames,
@@ -10,7 +10,7 @@ import {
   type EntityKind,
   type UsageAttribution,
   type UsageRecord,
-} from '../services/ai/types';
+} from '../shared/aiTypes';
 
 const usageLedgerVersion = 1 as const;
 

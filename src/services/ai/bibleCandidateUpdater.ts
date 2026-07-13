@@ -2,7 +2,7 @@ import type { CharacterCard } from '@/shared/card';
 import { buildCandidateFact, type BibleFact } from '@/shared/bible';
 import { writeBibleCandidateFile, type BibleCandidateFileSystem } from '@/files/bibleCandidates';
 import type { StoryboardAIService } from './AIService';
-import type { UsageAttribution } from './types';
+import type { UsageAttribution } from '../../shared/aiTypes';
 
 export interface BibleCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;

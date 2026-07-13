@@ -6,7 +6,7 @@ import {
   type AiProviderId,
   type AiTaskName,
   type AiUsage,
-} from '../types';
+} from '../../../shared/aiTypes';
 
 const mockCatalogModelId = 'mock-default';
 

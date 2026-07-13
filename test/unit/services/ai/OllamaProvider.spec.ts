@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError } from "@/services/ai/AiProviderError"
+import { AiProviderError } from "@/shared/aiProviderError"
 import { OllamaProvider, type OllamaClientLike } from "@/services/ai/providers/OllamaProvider"
 
 describe("OllamaProvider", () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { StoryboardAIService } from "@/services/ai/AIService"
 import { createAiProviderRegistry } from "@/services/ai/providerRegistry"
 import { type OpenAiClientLike } from "@/services/ai/providers/OpenAiProvider"
-import { type AiMessage } from "@/services/ai/types"
+import { type AiMessage } from "@/shared/aiTypes"
 import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
 

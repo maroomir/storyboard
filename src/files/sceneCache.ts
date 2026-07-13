@@ -14,7 +14,7 @@ import {
   aiTaskCatalog,
   type AiProviderId,
   type AiTaskName,
-} from '../services/ai/types';
+} from '../shared/aiTypes';
 
 export interface SceneCacheSituation {
   readonly summary: string;

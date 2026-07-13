@@ -5,7 +5,7 @@ import type {
   UsageAttribution,
   UsageRecord,
   WiredAiTaskName,
-} from './types';
+} from '../../shared/aiTypes';
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/variant';
 import type { PromptVariantId } from './prompts/types';

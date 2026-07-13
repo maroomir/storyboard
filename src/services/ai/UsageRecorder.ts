@@ -12,7 +12,7 @@ import {
   type UsageLedgerFileSystem,
   writeUsageLedgerToUri,
 } from '@/files/usageLedger';
-import type { UsageRecord, UsageSummaryByEntity } from './types';
+import type { UsageRecord, UsageSummaryByEntity } from '../../shared/aiTypes';
 
 interface WorkspaceUsageCache {
   entries: UsageLedgerEntry[];

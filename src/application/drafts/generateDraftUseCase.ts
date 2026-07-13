@@ -15,7 +15,7 @@ import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
 } from '../pipelines/sceneGenerationPipeline';
-import type { AiProviderId, AiTaskName } from '../../services/ai/types';
+import type { AiProviderId, AiTaskName } from '../../shared/aiTypes';
 import { joinCardText, type BackgroundCard } from '../../shared/card';
 import type {
   GenerateDraftRequest,

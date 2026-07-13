@@ -1,4 +1,4 @@
-import type { AiProviderId, AiTaskName } from '../../shared/ai';
+import type { AiProviderId, AiTaskName } from './ai';
 
 export {
   aiProviderIds,
@@ -7,7 +7,7 @@ export {
   aiTaskNames,
   isAiProviderId,
   isCliProvider,
-} from '../../shared/ai';
+} from './ai';
 export type {
   AiProviderId,
   AiTaskCatalogEntry,
@@ -15,7 +15,7 @@ export type {
   AiTaskStatus,
   UsageSummaryByEntity,
   WiredAiTaskName,
-} from '../../shared/ai';
+} from './ai';
 
 export type AiMessageRole = 'system' | 'user' | 'assistant';
 

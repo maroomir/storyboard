@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { type MessageParam, type TextBlockParam } from '@anthropic-ai/sdk/resources/messages';
 
 import { aiGenerateResponseWithUsage } from '../cost';
-import { AiProviderError } from '../AiProviderError';
+import { AiProviderError } from '../../../shared/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -11,7 +11,7 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../types';
+} from '../../../shared/aiTypes';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 

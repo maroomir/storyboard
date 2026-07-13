@@ -10,7 +10,7 @@ import type {
   SituationWithCharacters,
   StoryboardAIService,
 } from '../../services/ai/AIService';
-import type { AiProviderId, EntityRef } from '../../services/ai/types';
+import type { AiProviderId, EntityRef } from '../../shared/aiTypes';
 import {
   chunkDialoguePiecesByBudget,
   condensePreviousContext,

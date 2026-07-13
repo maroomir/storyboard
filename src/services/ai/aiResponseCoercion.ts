@@ -1,6 +1,6 @@
 import type { Severity } from '@/shared/draftReview';
 import type { PromptArtifact } from './prompts/types';
-import type { UsageAttribution } from './types';
+import type { UsageAttribution } from '../../shared/aiTypes';
 
 export interface SituationWithCharacters {
   readonly characters: readonly string[];

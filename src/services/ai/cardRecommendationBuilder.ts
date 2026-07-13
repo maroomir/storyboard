@@ -1,6 +1,6 @@
 import type { StoryboardAIService } from './AIService';
 import type { RecommendationCategory, RecommendedEntity } from './prompts/cardRecommendation';
-import type { UsageAttribution } from './types';
+import type { UsageAttribution } from '../../shared/aiTypes';
 
 export interface RecommendationSource {
   readonly sceneStem: string;

@@ -16,7 +16,7 @@ import { GrammarCheckPrompt } from './prompts/grammarCheck';
 import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, WiredAiTaskName } from './types';
+import type { AiGenerateResponse, WiredAiTaskName } from '../../shared/aiTypes';
 import { coerceCritiqueIssues, type DraftCritiqueIssue } from '../../shared/draftReview';
 import { coerceSceneCoverage, type SceneCoverageIssue } from '../../shared/sceneCoverage';
 import { parseJsonArray } from '../../shared/aiResponseParser';

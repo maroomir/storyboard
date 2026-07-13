@@ -1,4 +1,4 @@
-import { AiProviderError } from './AiProviderError';
+import { AiProviderError } from '../../shared/aiProviderError';
 import { type CliRunner } from './providers/cliRunner';
 import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
@@ -18,7 +18,7 @@ import {
   type AiProviderStatus,
   type AiTaskName,
   isCliProvider,
-} from './types';
+} from '../../shared/aiTypes';
 import { SecretStore } from '../secrets/SecretStore';
 import { ConfigBridge } from '../settings/ConfigBridge';
 

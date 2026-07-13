@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { computeCostUsd } from "@/services/ai/cost"
-import { AiProviderError } from "@/services/ai/AiProviderError"
+import { AiProviderError } from "@/shared/aiProviderError"
 import { ClaudeProvider, type ClaudeClientLike } from "@/services/ai/providers/ClaudeProvider"
 
 describe("ClaudeProvider", () => {

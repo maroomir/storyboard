@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 
 import { recordUsageSafely } from "@/services/ai/recordUsageSafely"
 import type { UsageRecorder } from "@/services/ai/UsageRecorder"
-import type { UsageRecord } from "@/services/ai/types"
+import type { UsageRecord } from "@/shared/aiTypes"
 
 describe("recordUsageSafely", () => {
   it("logs when ledger record fails", async () => {

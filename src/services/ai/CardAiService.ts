@@ -21,7 +21,7 @@ import {
 import { FactExtractionPrompt } from './prompts/factExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, UsageAttribution, WiredAiTaskName } from './types';
+import type { AiGenerateResponse, UsageAttribution, WiredAiTaskName } from '../../shared/aiTypes';
 import { parseBulletList, parseJsonArray, parseJsonObject } from '../../shared/aiResponseParser';
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {

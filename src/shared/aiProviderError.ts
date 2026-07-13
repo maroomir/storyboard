@@ -1,4 +1,4 @@
-import { type AiConnectionFailureReason, type AiProviderId } from './types';
+import { type AiConnectionFailureReason, type AiProviderId } from './aiTypes';
 
 export type AiProviderErrorCode =
   | 'provider-not-registered'

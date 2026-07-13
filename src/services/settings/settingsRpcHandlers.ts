@@ -7,7 +7,7 @@ import {
   aiTaskNames,
   isCliProvider,
   type AiTaskName,
-} from '../ai/types';
+} from '../../shared/aiTypes';
 import type { AiProviderRegistry } from '../ai/providerRegistry';
 import type { SecretStore } from '../secrets/SecretStore';
 import type { ConfigBridge } from './ConfigBridge';

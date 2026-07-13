@@ -1,5 +1,5 @@
 import type { StyleDirective } from '../../shared/styleDirective';
-import type { AiProviderId, UsageAttribution, UsageRecord } from './types';
+import type { AiProviderId, UsageAttribution, UsageRecord } from '../../shared/aiTypes';
 
 export interface GenerateTextOptions {
   readonly providerId?: AiProviderId;

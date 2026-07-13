@@ -7,7 +7,7 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/br
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../services/ai/providerRegistry';
 import type { UsageRecorder } from '../services/ai/UsageRecorder';
-import type { UsageSummaryByEntity } from '../services/ai/types';
+import type { UsageSummaryByEntity } from '../shared/aiTypes';
 import type { StoryboardResponsePayload } from '../shared/messaging';
 import type { SceneListItem } from '../shared/messaging/scenes';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

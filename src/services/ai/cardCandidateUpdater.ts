@@ -7,7 +7,7 @@ import type {
 } from '@/shared/cardCandidates';
 import { writeCardCandidateFile, type CardCandidateFileSystem } from '@/files/cardCandidates';
 import type { StoryboardAIService } from './AIService';
-import type { UsageAttribution } from './types';
+import type { UsageAttribution } from '../../shared/aiTypes';
 
 export interface CardCandidateRosterEntry {
   readonly id: string;

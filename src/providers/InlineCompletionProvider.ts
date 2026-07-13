@@ -17,7 +17,7 @@ import { parseDraft } from '../files/draft';
 import { readSceneFile } from '../files/scene';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type { InlineCompletionContext } from '../services/ai/AIService';
-import { type AiProviderId, isCliProvider } from '../services/ai/types';
+import { type AiProviderId, isCliProvider } from '../shared/aiTypes';
 import { parseDraftSceneParts } from '../core/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;

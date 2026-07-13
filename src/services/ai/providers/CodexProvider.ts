@@ -1,6 +1,6 @@
 import os from 'node:os';
 
-import { AiProviderError } from '../AiProviderError';
+import { AiProviderError } from '../../../shared/aiProviderError';
 import { aiGenerateResponseWithUsage } from '../cost';
 import {
   type AiGenerateRequest,
@@ -8,7 +8,7 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../types';
+} from '../../../shared/aiTypes';
 import {
   type CliRunner,
   type CliRunResult,

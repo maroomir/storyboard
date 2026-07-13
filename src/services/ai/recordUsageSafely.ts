@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '@/core/logger';
 import type { UsageRecorder } from './UsageRecorder';
-import type { UsageRecord } from './types';
+import type { UsageRecord } from '../../shared/aiTypes';
 
 export function recordUsageSafely(
   recorder: UsageRecorder,
