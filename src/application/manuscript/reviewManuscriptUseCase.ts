@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../core/logger';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { assembleManuscript } from '../../domain/manuscriptAssembly';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import { flattenChapterPlan, type ChapterPlan } from '../../shared/outline';

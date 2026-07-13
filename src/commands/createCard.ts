@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { CreateCardUseCase } from '../application/cards/createCardUseCase';
-import { getTargetWorkspaceFolder } from '../core/workspace';
+import { getTargetWorkspaceFolder } from '../infrastructure/vscode/workspace';
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';
 import { cardIdPattern, type StoryboardCard } from '../shared/card';

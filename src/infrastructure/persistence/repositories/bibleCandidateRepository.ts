@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { IBibleCandidateRepository } from '../../../application/project/promoteBibleCandidatesUseCase';
-import { getStoryboardProjectPaths } from '../../../core/pathConventions';
+import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { readBibleFile, writeBibleFile } from '../../../domain/files/bible';
 import {
   readBibleCandidateFile,

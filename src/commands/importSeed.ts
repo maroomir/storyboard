@@ -5,9 +5,9 @@ import type {
   SeedCreatePreparation,
   SeedProjectUseCase,
 } from '../application/project/seedProjectUseCase';
-import { type StoryboardLogger } from '../core/logger';
-import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
-import { hasStoryboardProject } from '../core/workspace';
+import { type StoryboardLogger } from '../infrastructure/vscode/logger';
+import { refreshStoryboardWorkspaceContext } from '../infrastructure/vscode/storyboardWorkspaceContext';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { SeedWriteAbortedError } from '../files/seedImport';
 import { listSeedExportPreflightIssues } from '../files/seedExportPreflight';
 import {

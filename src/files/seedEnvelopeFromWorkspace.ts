@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths } from '@/core/pathConventions';
+import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
 import { parseCard } from '@/domain/files/card';
 import { readProjectJson } from '@/files/projectJson';
 import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/files/seedImport';

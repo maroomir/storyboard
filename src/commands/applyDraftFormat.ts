@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '../application/ai/aiGateway';
-import type { StoryboardLogger } from '../core/logger';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
 import {
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneTextFile,
-} from '../core/pathConventions';
-import { vscodeFsAdapter } from '../core/vscodeFileSystem';
-import { hasStoryboardProject } from '../core/workspace';
+} from '../infrastructure/vscode/pathConventions';
+import { vscodeFsAdapter } from '../infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../domain/files/draft';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';

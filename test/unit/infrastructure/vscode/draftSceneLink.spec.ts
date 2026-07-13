@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { createDraft, serializeDraft } from "@/domain/files/draft"
-import { parseDraftSceneParts } from "@/core/draftSceneLink"
+import { parseDraftSceneParts } from "@/infrastructure/vscode/draftSceneLink"
 
 describe("parseDraftSceneParts", () => {
   it("returns scene parts for a valid draft frontmatter", () => {

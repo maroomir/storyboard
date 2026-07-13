@@ -1,7 +1,15 @@
 import * as vscode from 'vscode';
 
-import { draftPath, getStoryboardProjectPaths, sceneFilePath } from '../core/pathConventions';
-import { getTargetWorkspaceFolder, hasStoryboardProject, uriExists } from '../core/workspace';
+import {
+  draftPath,
+  getStoryboardProjectPaths,
+  sceneFilePath,
+} from '../infrastructure/vscode/pathConventions';
+import {
+  getTargetWorkspaceFolder,
+  hasStoryboardProject,
+  uriExists,
+} from '../infrastructure/vscode/workspace';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 import {

@@ -5,8 +5,8 @@ import {
   backgroundCardPath,
   characterCardPath,
   characterProfilePath,
-} from '../../../core/pathConventions';
-import { uriExists } from '../../../core/workspace';
+} from '../../vscode/pathConventions';
+import { uriExists } from '../../vscode/workspace';
 import { serializeCard } from '../../../domain/files/card';
 import type { StoryboardCard } from '../../../shared/card';
 

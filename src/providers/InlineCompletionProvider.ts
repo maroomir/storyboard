@@ -5,20 +5,20 @@ import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
   sceneFilePath,
-} from '../core/pathConventions';
+} from '../infrastructure/vscode/pathConventions';
 import { buildSceneContext } from '../domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
-} from '../core/vscodeFileSystem';
-import { hasStoryboardProject } from '../core/workspace';
+} from '../infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { parseDraft } from '../domain/files/draft';
 import { readSceneFile } from '../domain/files/scene';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type { InlineCompletionContext } from '../services/ai/AIService';
 import { type AiProviderId, isCliProvider } from '../shared/aiTypes';
-import { parseDraftSceneParts } from '../core/draftSceneLink';
+import { parseDraftSceneParts } from '../infrastructure/vscode/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;
 const inlineCompletionPrefixChars = 1200;

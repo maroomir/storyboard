@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { AssembleManuscriptUseCase } from '../application/manuscript/assembleManuscriptUseCase';
-import type { StoryboardLogger } from '../core/logger';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 
 const ASSEMBLE_MANUSCRIPT_COMMAND = 'storyboard.manuscript.assemble';
 

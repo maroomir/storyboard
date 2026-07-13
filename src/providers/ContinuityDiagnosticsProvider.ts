@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '../application/ai/aiGateway';
-import type { StoryboardLogger } from '../core/logger';
-import { getStoryboardProjectPaths, isDraftMarkdownFile } from '../core/pathConventions';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import {
+  getStoryboardProjectPaths,
+  isDraftMarkdownFile,
+} from '../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -12,9 +15,9 @@ import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
-} from '../core/vscodeFileSystem';
+} from '../infrastructure/vscode/workspaceFsAdapters';
 import { createDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../core/workspace';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { parseDraft } from '../domain/files/draft';
 import { readSceneFile } from '../domain/files/scene';
 import type { ContinuityIssue } from '../services/ai/AIService';

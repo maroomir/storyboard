@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../../core/logger';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { StoryboardAIService } from '../../services/ai/AIService';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import { recordUsageSafely } from '../../services/ai/recordUsageSafely';

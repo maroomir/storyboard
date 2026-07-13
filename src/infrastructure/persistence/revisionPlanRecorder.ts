@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import { type StoryboardProjectPaths } from './pathConventions';
-import { uriExists } from './workspace';
+import { type StoryboardProjectPaths } from '../vscode/pathConventions';
+import { uriExists } from '../vscode/workspace';
 import {
   createEmptyRevisionPlan,
   readRevisionPlanFile,
@@ -10,7 +10,7 @@ import {
   type RevisionPlan,
   type RevisionPlanEntry,
   type RevisionPlanFileSystem,
-} from '../domain/files/revisionPlan';
+} from '../../domain/files/revisionPlan';
 
 const fileSystem: RevisionPlanFileSystem = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>

@@ -4,7 +4,7 @@ import {
   type RecommendCardsUseCase,
   type RecommendCardsResult,
 } from '../application/cards/recommendCardsUseCase';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';
 import type { StoryboardCard } from '../shared/card';

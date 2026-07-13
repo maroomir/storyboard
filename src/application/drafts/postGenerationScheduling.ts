@@ -1,4 +1,4 @@
-import { backgroundCardPath, characterCardPath } from '../../core/pathConventions';
+import { backgroundCardPath, characterCardPath } from '../../infrastructure/vscode/pathConventions';
 import { bibleCandidateFilePath, ensureBibleCacheDirectory } from '../../files/bibleCacheWorkspace';
 import { cardCandidateFilePath, ensureCardCacheDirectory } from '../../files/cardCacheWorkspace';
 import { type StoryboardAIService } from '../../services/ai/AIService';

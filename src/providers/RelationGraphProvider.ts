@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import { loadRelationListCharacters } from '../core/relationGraphData';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import { loadRelationListCharacters } from '../infrastructure/persistence/relationGraphData';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers } from '../services/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../services/ai/providerRegistry';

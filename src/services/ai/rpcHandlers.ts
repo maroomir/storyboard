@@ -1,4 +1,4 @@
-import { resolveStoryboardWorkspaceRoot } from '@/core/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@/domain/files/usageLedger';
 import { type StoryboardRpcHandlers } from '@/messaging/bridge';
 import { type StoryboardResponsePayload } from '@/shared/messaging';

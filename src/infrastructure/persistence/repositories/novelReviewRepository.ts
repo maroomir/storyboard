@@ -4,8 +4,8 @@ import type {
   INovelReviewRepository,
   NovelReviewSource,
 } from '../../../application/novel/novelPipeline';
-import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../../core/pathConventions';
+import { collectDraftsByOrder } from '../manuscriptDrafts';
+import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { readBibleFile, type BibleFileSystem } from '../../../domain/files/bible';
 import type { DraftFileSystem } from '../../../domain/files/draft';
 

@@ -5,7 +5,7 @@ import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
 import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import type { StoryboardLogger } from '../../core/logger';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import type { UsageRecorder } from '../../services/ai/UsageRecorder';

@@ -15,7 +15,7 @@ vi.mock("@/domain/files/scene", async () => {
     readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
   }
 })
-vi.mock("@/core/workspace", () => ({
+vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,
   uriExists: async (): Promise<boolean> => false
 }))

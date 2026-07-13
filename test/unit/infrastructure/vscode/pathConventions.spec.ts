@@ -6,8 +6,8 @@ import {
   isDraftMarkdownFile,
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName
-} from "@/core/pathConventions"
-import { Uri, type WorkspaceFolder } from "../../stubs/vscode"
+} from "@/infrastructure/vscode/pathConventions"
+import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("pathConventions", () => {
   it("uses hidden sample paths for initialized sample files", () => {

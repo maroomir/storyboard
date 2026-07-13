@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { ISceneCacheRepository } from '../ports/repositories';
-import { draftHistorySceneDirectory } from '../../core/pathConventions';
-import { uriExists } from '../../core/workspace';
+import { draftHistorySceneDirectory } from '../../infrastructure/vscode/pathConventions';
+import { uriExists } from '../../infrastructure/vscode/workspace';
 import { createDraft } from '../../domain/files/draft';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { type SceneCacheRecord } from '../../domain/files/sceneCache';

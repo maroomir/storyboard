@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 
-import { validateCardRenameId } from '../core/cardRenameEdit';
+import { validateCardRenameId } from '../infrastructure/vscode/cardRenameEdit';
 import {
   backgroundCardPath,
   characterCardPath,
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
   parseCardIdFromPath,
-} from '../core/pathConventions';
-import { hasStoryboardProject, uriExists } from '../core/workspace';
+} from '../infrastructure/vscode/pathConventions';
+import { hasStoryboardProject, uriExists } from '../infrastructure/vscode/workspace';
 
 const renameCharacterCommand = 'storyboard.character.rename';
 const renameBackgroundCommand = 'storyboard.background.rename';

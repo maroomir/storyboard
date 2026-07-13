@@ -1,8 +1,8 @@
 import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../core/logger';
-import { getStoryboardProjectPaths } from '../../core/pathConventions';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -13,7 +13,7 @@ import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
-} from '../../core/vscodeFileSystem';
+} from '../../infrastructure/vscode/workspaceFsAdapters';
 import { readProjectJson } from '../../files/projectJson';
 import { readSceneFile, SceneParseError } from '../../domain/files/scene';
 import { formatAugmentCards, type DraftAugmentScope } from '../../services/ai/prompts/draftAugment';

@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 
-import { deriveSceneUri } from '../core/draftSceneLink';
-import { draftPath, isDirectSceneTextFile, isDraftMarkdownFile } from '../core/pathConventions';
-import { hasStoryboardProject, uriExists } from '../core/workspace';
+import { deriveSceneUri } from '../infrastructure/vscode/draftSceneLink';
+import {
+  draftPath,
+  isDirectSceneTextFile,
+  isDraftMarkdownFile,
+} from '../infrastructure/vscode/pathConventions';
+import { hasStoryboardProject, uriExists } from '../infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { parseSceneFileName } from '../shared/scene';
 import type { StoryboardResponsePayload, StudioAction, StudioTarget } from '../shared/messaging';

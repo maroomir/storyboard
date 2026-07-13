@@ -16,11 +16,11 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
 
-vi.mock("@/core/revisionPlanRecorder", () => ({
+vi.mock("@/infrastructure/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
 }))
-vi.mock("@/core/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
-vi.mock("@/core/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
+vi.mock("@/infrastructure/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
+vi.mock("@/infrastructure/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
 vi.mock("@/domain/manuscriptAssembly", () => ({
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))

@@ -9,8 +9,8 @@ import {
 import { resolveReviseMaxIterations } from '../application/drafts/reviseAfterGenerateGate';
 import { validateGenerationContract } from '../domain/generationContract';
 import { isResumable } from '../domain/novelRunPlan';
-import { getStoryboardProjectPaths } from '../core/pathConventions';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
+import { getStoryboardProjectPaths } from '../infrastructure/vscode/pathConventions';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '../infrastructure/vscode/workspace';
 import { type NovelRunMode, type NovelRunState } from '../domain/files/novelRunState';
 import type { ContractFieldKey } from '../shared/project';
 

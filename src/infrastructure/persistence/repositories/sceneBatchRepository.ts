@@ -4,8 +4,8 @@ import type {
   BatchSceneList,
   ISceneBatchRepository,
 } from '../../../application/drafts/generateAllDraftsUseCase';
-import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../../core/pathConventions';
-import { hasStoryboardProject } from '../../../core/workspace';
+import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../vscode/pathConventions';
+import { hasStoryboardProject } from '../../vscode/workspace';
 import { parseSceneFileName } from '../../../shared/scene';
 
 export class SceneBatchRepository implements ISceneBatchRepository {

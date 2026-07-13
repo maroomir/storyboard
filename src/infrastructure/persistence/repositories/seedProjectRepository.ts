@@ -4,9 +4,9 @@ import type {
   ISeedProjectRepository,
   SeedSyncSource,
 } from '../../../application/project/seedProjectUseCase';
-import type { StoryboardLogger } from '../../../core/logger';
-import { getStoryboardProjectPaths } from '../../../core/pathConventions';
-import { uriExists } from '../../../core/workspace';
+import type { StoryboardLogger } from '../../vscode/logger';
+import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { uriExists } from '../../vscode/workspace';
 import {
   collectTrackedCardAndSceneRelativePathsFromFileNames,
   normalizeRelativePath,

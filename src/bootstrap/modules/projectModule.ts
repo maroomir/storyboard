@@ -4,7 +4,7 @@ import { registerHelloWorldCommand } from '../../commands/helloWorld';
 import { registerImportSeedCommands } from '../../commands/importSeed';
 import { registerInitCommand } from '../../commands/init';
 import { registerSetApiKeyCommand } from '../../commands/setApiKey';
-import { registerStoryboardWorkspaceContext } from '../../core/storyboardWorkspaceContext';
+import { registerStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

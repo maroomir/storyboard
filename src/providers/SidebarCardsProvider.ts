@@ -4,7 +4,7 @@ import type {
   ICardSidebarRepository,
   SidebarCardCategory,
 } from '../application/cards/cardSidebarRepository';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '../domain/files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';

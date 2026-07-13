@@ -7,7 +7,7 @@ import type {
 import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
-} from '../../../core/pathConventions';
+} from '../../vscode/pathConventions';
 import { parseCard } from '../../../domain/files/card';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
 import { readSceneFile, type SceneFileSystem } from '../../../domain/files/scene';

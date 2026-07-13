@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../../core/logger';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   buildCardRecommendations,
   type CardRecommendationAiService,

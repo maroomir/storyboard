@@ -5,7 +5,7 @@ import type {
   GenerateAllDraftsSummary,
   GenerateAllDraftsUseCase,
 } from '../application/drafts/generateAllDraftsUseCase';
-import type { StoryboardLogger } from '../core/logger';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
 import { stageProgressLabel } from './generateDraft';
 
 const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';

@@ -6,9 +6,9 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneTextFile,
-} from '../../core/pathConventions';
-import { sceneContextPaths } from '../../core/vscodeFileSystem';
-import { hasStoryboardProject } from '../../core/workspace';
+} from '../../infrastructure/vscode/pathConventions';
+import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { SceneParseError } from '../../domain/files/scene';
 import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../files/sceneCacheWorkspace';

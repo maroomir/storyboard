@@ -39,7 +39,7 @@ import { SceneSidebarRepository } from '../../infrastructure/persistence/reposit
 import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seedProjectRepository';
 import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
-import { StoryboardLogger } from '../../core/logger';
+import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   createAiProviderRegistry,
   type AiProviderRegistry,

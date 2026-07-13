@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-import { CardParseError, parseCard, serializeCard } from '../domain/files/card';
-import { cardIdPattern } from '../shared/card';
-import { rewriteCardIdReferences, setCardId } from '../domain/cardReferenceRewriter';
+import { CardParseError, parseCard, serializeCard } from '../../domain/files/card';
+import { cardIdPattern } from '../../shared/card';
+import { rewriteCardIdReferences, setCardId } from '../../domain/cardReferenceRewriter';
 import {
   characterProfilePath,
   getStoryboardProjectPaths,

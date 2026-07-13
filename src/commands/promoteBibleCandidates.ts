@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { PromoteBibleCandidatesUseCase } from '../application/project/promoteBibleCandidatesUseCase';
-import type { StoryboardLogger } from '../core/logger';
-import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import { getTargetWorkspaceFolder, hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import type { BibleFact } from '../shared/bible';
 
 const promoteCommand = 'storyboard.bible.promoteCandidates';

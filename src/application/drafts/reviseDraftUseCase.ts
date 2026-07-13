@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../../core/logger';
-import { type StoryboardProjectPaths } from '../../core/pathConventions';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { type StoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -11,7 +11,7 @@ import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
-} from '../../core/vscodeFileSystem';
+} from '../../infrastructure/vscode/workspaceFsAdapters';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../domain/files/draft';
 import { readProjectJson } from '../../files/projectJson';
 import { readSceneFile } from '../../domain/files/scene';

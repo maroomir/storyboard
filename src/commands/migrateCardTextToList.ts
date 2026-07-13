@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 
 import { migrateCardTextFieldsToList } from '../domain/cardTextMigration';
-import type { StoryboardLogger } from '../core/logger';
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '../core/pathConventions';
-import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import {
+  getStoryboardProjectPaths,
+  isIgnoredSampleCardFileName,
+} from '../infrastructure/vscode/pathConventions';
+import { getTargetWorkspaceFolder, hasStoryboardProject } from '../infrastructure/vscode/workspace';
 
 const migrateCommand = 'storyboard.cards.migrateTextToList';
 

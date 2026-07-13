@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from '../core/pathConventions';
-import { uriExists } from '../core/workspace';
-import { vscodeFsAdapter } from '../core/vscodeFileSystem';
+import type { StoryboardProjectPaths } from '../infrastructure/vscode/pathConventions';
+import { uriExists } from '../infrastructure/vscode/workspace';
+import { vscodeFsAdapter } from '../infrastructure/vscode/workspaceFsAdapters';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../application/ports/memoryStore';
 import {

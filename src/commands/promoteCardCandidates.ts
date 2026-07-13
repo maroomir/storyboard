@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 import type { PromoteCardCandidatesUseCase } from '../application/cards/promoteCardCandidatesUseCase';
-import type { StoryboardLogger } from '../core/logger';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
 import type { CardCandidateItem } from '../domain/cardCandidatePromotion';
-import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';
+import { getTargetWorkspaceFolder, hasStoryboardProject } from '../infrastructure/vscode/workspace';
 
 const promoteCommand = 'storyboard.cards.promoteCandidates';
 

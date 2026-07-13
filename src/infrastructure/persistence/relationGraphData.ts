@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import { isIgnoredSampleCardFileName } from './pathConventions';
-import { parseCard } from '../domain/files/card';
-import { isCharacterRole, type CharacterRole } from '../shared/card';
-import type { RelationListCharacter } from '../shared/messaging';
+import { isIgnoredSampleCardFileName } from '../vscode/pathConventions';
+import { parseCard } from '../../domain/files/card';
+import { isCharacterRole, type CharacterRole } from '../../shared/card';
+import type { RelationListCharacter } from '../../shared/messaging';
 
 export interface CharacterRosterEntry {
   readonly id: string;

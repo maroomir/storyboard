@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from '../../core/pathConventions';
-import { uriExists } from '../../core/workspace';
+import type { StoryboardProjectPaths } from './pathConventions';
+import { uriExists } from './workspace';
 
 const STORYBOARD_GITIGNORE_BLOCK = `
 # Storyboard generated files

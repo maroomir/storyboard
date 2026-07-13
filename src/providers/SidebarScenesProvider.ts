@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { ISceneSidebarRepository } from '../application/cards/sceneSidebarRepository';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '../domain/files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';

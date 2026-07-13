@@ -1,9 +1,12 @@
 import * as vscode from 'vscode';
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '../domain/canonDiff';
-import type { StoryboardLogger } from '../core/logger';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import {
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths,
+} from '../infrastructure/vscode/pathConventions';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '../infrastructure/vscode/workspace';
 import { readBibleFile, type BibleFileSystem } from '../domain/files/bible';
 import {
   readBibleCandidateFile,

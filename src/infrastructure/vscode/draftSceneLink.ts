@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import { parseDraft } from '../domain/files/draft';
-import { parseSceneStem, type SceneFileNameParts } from '../shared/scene';
+import { parseDraft } from '../../domain/files/draft';
+import { parseSceneStem, type SceneFileNameParts } from '../../shared/scene';
 import { sceneFilePath } from './pathConventions';
 
 export function parseDraftSceneParts(rawDraftText: string): SceneFileNameParts | undefined {

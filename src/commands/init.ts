@@ -1,9 +1,16 @@
 import * as vscode from 'vscode';
 
-import { type StoryboardLogger } from '../core/logger';
-import { refreshStoryboardWorkspaceContext } from '../core/storyboardWorkspaceContext';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
-import { ensureUriDoesNotExist, getTargetWorkspaceFolder, uriExists } from '../core/workspace';
+import { type StoryboardLogger } from '../infrastructure/vscode/logger';
+import { refreshStoryboardWorkspaceContext } from '../infrastructure/vscode/storyboardWorkspaceContext';
+import {
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths,
+} from '../infrastructure/vscode/pathConventions';
+import {
+  ensureUriDoesNotExist,
+  getTargetWorkspaceFolder,
+  uriExists,
+} from '../infrastructure/vscode/workspace';
 import { createDefaultProjectJson, writeProjectJson } from '../files/projectJson';
 import {
   createWorkspaceReadme,

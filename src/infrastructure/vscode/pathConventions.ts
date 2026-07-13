@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-export { isIgnoredSampleCardFileName } from '../domain/sampleCard';
+export { isIgnoredSampleCardFileName } from '../../domain/sampleCard';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: vscode.Uri;

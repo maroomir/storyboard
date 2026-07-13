@@ -4,8 +4,12 @@ import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscript
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import { assembleManuscript } from '../../domain/manuscriptAssembly';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
-import { draftPath, scenePath, type StoryboardProjectPaths } from '../../core/pathConventions';
-import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
+import {
+  draftPath,
+  scenePath,
+  type StoryboardProjectPaths,
+} from '../../infrastructure/vscode/pathConventions';
+import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';

@@ -14,11 +14,11 @@ import type {
 } from '../../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../../domain/chapterSummaries';
-import type { StoryboardLogger } from '../../../core/logger';
+import type { StoryboardLogger } from '../../vscode/logger';
 import type { AssembledManuscript } from '../../../domain/manuscriptAssembly';
-import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../../core/pathConventions';
-import { uriExists } from '../../../core/workspace';
+import { collectDraftsByOrder } from '../manuscriptDrafts';
+import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { uriExists } from '../../vscode/workspace';
 import { readBibleFile, type BibleFileSystem } from '../../../domain/files/bible';
 import type { DraftFileSystem } from '../../../domain/files/draft';
 import { readChapterPlanFile, type OutlineFileSystem } from '../../../domain/files/outline';

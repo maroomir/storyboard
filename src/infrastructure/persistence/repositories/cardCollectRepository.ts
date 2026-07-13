@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { ICardCollectRepository } from '../../../application/cards/collectCardProposalsUseCase';
-import { getStoryboardProjectPaths } from '../../../core/pathConventions';
-import { loadCharacterRoster } from '../../../core/relationGraphData';
+import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { loadCharacterRoster } from '../relationGraphData';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
 import type { CollectDraft, CollectRosterEntry } from '../../../services/ai/cardCollectBuilder';
 

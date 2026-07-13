@@ -4,8 +4,8 @@ import { join } from "node:path"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { loadCharacterRoster, loadRelationListCharacters } from "@/core/relationGraphData"
-import { Uri } from "../../stubs/vscode"
+import { loadCharacterRoster, loadRelationListCharacters } from "@/infrastructure/persistence/relationGraphData"
+import { Uri } from "../../../stubs/vscode"
 
 const characterFixture = readFileSync(join(process.cwd(), "test", "fixtures", "cards", "character.card"), "utf8")
 

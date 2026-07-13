@@ -4,8 +4,8 @@ import {
   appendCardRenameWorkspaceEdit,
   CardRenameValidationError,
   parseCardRenameCandidate,
-} from '../core/cardRenameEdit';
-import type { StoryboardLogger } from '../core/logger';
+} from '../infrastructure/vscode/cardRenameEdit';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
 
 export function registerCardRenameParticipant({
   logger,

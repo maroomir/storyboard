@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { AugmentDraftUseCase } from '../application/drafts/augmentDraftUseCase';
-import type { StoryboardLogger } from '../core/logger';
-import { deriveSceneUri } from '../core/draftSceneLink';
-import { draftHistorySceneDirectory, isDraftMarkdownFile } from '../core/pathConventions';
-import { draftHistoryFileSystem } from '../core/vscodeFileSystem';
-import { hasStoryboardProject } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import { deriveSceneUri } from '../infrastructure/vscode/draftSceneLink';
+import {
+  draftHistorySceneDirectory,
+  isDraftMarkdownFile,
+} from '../infrastructure/vscode/pathConventions';
+import { draftHistoryFileSystem } from '../infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import type { Draft } from '../domain/Draft';
 import { createDraft, parseDraft, serializeDraft } from '../domain/files/draft';
 import { archiveExistingDraft } from '../domain/files/draftHistory';

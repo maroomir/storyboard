@@ -1,4 +1,7 @@
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
+import {
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths,
+} from '../../infrastructure/vscode/pathConventions';
 import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import {

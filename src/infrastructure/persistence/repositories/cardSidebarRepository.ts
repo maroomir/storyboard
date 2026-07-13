@@ -4,7 +4,7 @@ import type {
   ICardSidebarRepository,
   SidebarCardCategory,
 } from '../../../application/cards/cardSidebarRepository';
-import { isIgnoredSampleCardFileName } from '../../../core/pathConventions';
+import { isIgnoredSampleCardFileName } from '../../vscode/pathConventions';
 import { parseCard } from '../../../domain/files/card';
 import { isCharacterRole, joinCardText, type CardType } from '../../../shared/card';
 import type { SidebarCardSummary } from '../../../shared/messaging';

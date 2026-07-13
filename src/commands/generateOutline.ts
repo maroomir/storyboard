@@ -4,8 +4,8 @@ import type {
   GenerateOutlineResult,
   GenerateOutlineUseCase,
 } from '../application/novel/generateOutlineUseCase';
-import type { StoryboardLogger } from '../core/logger';
-import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import type { ContractFieldKey } from '../shared/project';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';

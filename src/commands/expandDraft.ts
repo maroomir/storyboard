@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '../application/ai/aiGateway';
-import type { StoryboardLogger } from '../core/logger';
-import { isDraftMarkdownFile } from '../core/pathConventions';
-import { hasStoryboardProject } from '../core/workspace';
+import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import { isDraftMarkdownFile } from '../infrastructure/vscode/pathConventions';
+import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { parseDraft } from '../domain/files/draft';
 
 const expandDraftCommand = 'storyboard.draft.expand';

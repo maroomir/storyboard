@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../../core/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../core/pathConventions';
-import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
-import { uriExists } from '../../core/workspace';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
+import { uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { parseSceneFileName } from '../../shared/scene';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';

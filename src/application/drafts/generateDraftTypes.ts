@@ -8,7 +8,7 @@ import type {
   ISceneCacheRepository,
   ISceneRepository,
 } from '../ports/repositories';
-import type { StoryboardLogger } from '../../core/logger';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import type { TraitsUpdateSummary } from '../../services/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';

@@ -5,9 +5,9 @@ import {
   buildCardRenameWorkspaceEdit,
   parseCardRenameCandidate,
   validateCardRenameId
-} from "@/core/cardRenameEdit"
+} from "@/infrastructure/vscode/cardRenameEdit"
 import { registerCardRenameParticipant } from "@/providers/CardRenameParticipant"
-import type { StoryboardLogger } from "@/core/logger"
+import type { StoryboardLogger } from "@/infrastructure/vscode/logger"
 import {
   fireWillRenameFiles,
   FileType,

@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { workspace, type WorkspaceFolder } from "../../stubs/vscode"
 
-vi.mock("@/core/workspace", () => ({
+vi.mock("@/infrastructure/vscode/workspace", () => ({
   uriExists: async (): Promise<boolean> => false,
   hasStoryboardProject: async (): Promise<boolean> => true
 }))
