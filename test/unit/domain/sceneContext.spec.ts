@@ -5,7 +5,7 @@ import {
   buildSceneContext,
   type SceneContext,
   type SceneContextWorkspaceFileSystem
-} from "@/core/sceneContext"
+} from "@/domain/sceneContext"
 import type { SceneFile } from "@/shared/scene"
 import { serializeCard } from "@/domain/files/card"
 import { serializeBible } from "@/domain/files/bible"
@@ -398,7 +398,7 @@ describe("readPreviousSceneContext", () => {
 
   it("returns undefined for the first scene (order 1)", async () => {
     const fileSystem = new MockFileSystem()
-    const context = await import("@/core/sceneContext.js").then((m) =>
+    const context = await import("@/domain/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 1, fileSystem)
     )
     expect(context).toBeUndefined()
@@ -414,7 +414,7 @@ describe("readPreviousSceneContext", () => {
     const longText = "A".repeat(2000) + "이전 씬의 마지막 문장입니다."
     fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longText)
 
-    const context = await import("@/core/sceneContext.js").then((m) =>
+    const context = await import("@/domain/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 2, fileSystem)
     )
 
@@ -429,7 +429,7 @@ describe("readPreviousSceneContext", () => {
       ["02-chapter-1.md", { type: "file" }]
     ])
 
-    const context = await import("@/core/sceneContext.js").then((m) =>
+    const context = await import("@/domain/sceneContext.js").then((m) =>
       m.readPreviousSceneContext(mockPaths, 3, fileSystem)
     )
 
@@ -460,7 +460,7 @@ describe("readPreviousSceneContext rolling summary", () => {
     order: number,
     fileSystem: MockFileSystem
   ): Promise<string | undefined> =>
-    import("@/core/sceneContext.js").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
+    import("@/domain/sceneContext.js").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
 
   it("QAS-C6-01: prefers the rolling summary over the previous draft tail", async () => {
     const fileSystem = new MockFileSystem()

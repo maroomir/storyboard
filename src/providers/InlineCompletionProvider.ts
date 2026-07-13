@@ -6,7 +6,7 @@ import {
   isDraftMarkdownFile,
   sceneFilePath,
 } from '../core/pathConventions';
-import { buildSceneContext } from '../core/sceneContext';
+import { buildSceneContext } from '../domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

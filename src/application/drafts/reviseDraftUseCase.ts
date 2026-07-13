@@ -6,7 +6,7 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-} from '../../core/sceneContext';
+} from '../../domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

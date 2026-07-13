@@ -13,7 +13,7 @@ vi.mock("@/domain/files/scene", () => ({
 vi.mock("@/files/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-vi.mock("@/core/sceneContext", () => ({
+vi.mock("@/domain/sceneContext", () => ({
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   formatBibleFactLines: (): string[] => []

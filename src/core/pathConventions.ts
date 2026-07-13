@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+export { isIgnoredSampleCardFileName } from '../domain/sampleCard';
+
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: vscode.Uri;
   readonly metadataDirectory: vscode.Uri;
@@ -74,10 +76,6 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     gitignore: vscode.Uri.joinPath(workspaceRoot, '.gitignore'),
     readme: vscode.Uri.joinPath(workspaceRoot, 'README.md'),
   };
-}
-
-export function isIgnoredSampleCardFileName(fileName: string): boolean {
-  return fileName === '.sample.card';
 }
 
 export function isHiddenSceneFileName(fileName: string): boolean {

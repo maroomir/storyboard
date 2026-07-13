@@ -11,7 +11,7 @@ const uriExistsMock = vi.fn()
 const archiveExistingDraftMock = vi.fn()
 const pipelineRunMock = vi.fn()
 
-vi.mock("@/core/sceneContext", () => ({
+vi.mock("@/domain/sceneContext", () => ({
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
 }))

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { SceneContext } from "@/core/sceneContext"
+import type { SceneContext } from "@/domain/sceneContext"
 import {
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,

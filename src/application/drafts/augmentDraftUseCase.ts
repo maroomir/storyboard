@@ -8,7 +8,7 @@ import {
   buildSceneContext,
   formatBibleFactLines,
   type SceneContext,
-} from '../../core/sceneContext';
+} from '../../domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

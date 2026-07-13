@@ -1,7 +1,7 @@
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '../shared/card';
 import type { SceneFile } from '../shared/scene';
-import { readCardFile } from '../domain/files/card';
-import { readBibleFile } from '../domain/files/bible';
+import { readCardFile } from './files/card';
+import { readBibleFile } from './files/bible';
 import {
   createEmptyBible,
   selectInjectedFacts,
@@ -9,8 +9,8 @@ import {
   type BibleFactSubject,
   type StoryBible,
 } from '../shared/bible';
-import { isIgnoredSampleCardFileName } from './pathConventions';
-import { detectCharactersInText } from '../domain/characterDetector';
+import { isIgnoredSampleCardFileName } from './sampleCard';
+import { detectCharactersInText } from './characterDetector';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown;

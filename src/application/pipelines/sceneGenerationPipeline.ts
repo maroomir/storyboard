@@ -1,4 +1,4 @@
-import type { SceneContext } from '../../core/sceneContext';
+import type { SceneContext } from '../../domain/sceneContext';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../ports/memoryStore';
 import type { Background } from '../../domain/Background';
 import { createEmptyBackground } from '../../domain/Background';

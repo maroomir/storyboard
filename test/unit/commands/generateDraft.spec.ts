@@ -22,7 +22,7 @@ vi.mock("@/core/workspace", () => ({
 vi.mock("@/files/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-vi.mock("@/core/sceneContext", () => ({
+vi.mock("@/domain/sceneContext", () => ({
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
 }))

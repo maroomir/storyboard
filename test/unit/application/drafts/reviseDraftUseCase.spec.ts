@@ -37,7 +37,7 @@ vi.mock("@/domain/files/draft", () => ({
   readDraftFile: async (): Promise<string> => "raw",
   writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args)
 }))
-vi.mock("@/core/sceneContext", () => ({
+vi.mock("@/domain/sceneContext", () => ({
   buildSceneContext: async (): Promise<unknown> => ({
     scene: { body: "씬 의도" },
     characters: [{ name: "주인공" }]

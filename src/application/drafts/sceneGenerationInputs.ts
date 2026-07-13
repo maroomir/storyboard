@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { IProjectRepository, ISceneRepository } from '../ports/repositories';
-import { buildNarrativeContext, buildSceneContext } from '../../core/sceneContext';
+import { buildNarrativeContext, buildSceneContext } from '../../domain/sceneContext';
 import {
   draftPath,
   getStoryboardProjectPaths,
