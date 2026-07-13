@@ -7,7 +7,7 @@ import {
   applyCardCandidateItems,
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
-} from '../../../core/cardCandidatePromotion';
+} from '../../../domain/cardCandidatePromotion';
 import { readCardFile, writeCardFile } from '../../../domain/files/card';
 import {
   readCardCandidateFile,

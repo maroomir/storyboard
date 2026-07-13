@@ -5,7 +5,7 @@ import {
   mergeCanonFacts,
   seedPromotedFact,
   selectNewCandidates,
-} from '../../core/biblePromotion';
+} from '../../domain/biblePromotion';
 import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
 import type { BibleFact, StoryBible } from '../../shared/bible';
 

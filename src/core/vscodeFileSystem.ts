@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { summaryFileName } from './chapterSummaries';
+import { summaryFileName } from '../domain/chapterSummaries';
 import { type StoryboardProjectPaths } from './pathConventions';
 import {
   type SceneContextWorkspaceFileSystem,

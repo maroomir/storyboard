@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ExportManuscriptUseCase } from '../application/manuscript/exportManuscriptUseCase';
 import type { StoryboardLogger } from '../core/logger';
-import type { ManuscriptExportFormat } from '../core/manuscriptExport';
+import type { ManuscriptExportFormat } from '../domain/manuscriptExport';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 
 const exportManuscriptCommand = 'storyboard.draft.export';

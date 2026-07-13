@@ -2,11 +2,11 @@ import type * as vscode from 'vscode';
 
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import { assembleManuscript } from '../../core/manuscriptAssembly';
-import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
+import { assembleManuscript } from '../../domain/manuscriptAssembly';
+import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import { draftPath, scenePath, type StoryboardProjectPaths } from '../../core/pathConventions';
 import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
-import { buildSceneSeeds } from '../../core/sceneSeedFactory';
+import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';

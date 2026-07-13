@@ -2,8 +2,8 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../core/logger';
-import { assembleManuscript } from '../../core/manuscriptAssembly';
-import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
+import { assembleManuscript } from '../../domain/manuscriptAssembly';
+import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import { flattenChapterPlan, type ChapterPlan } from '../../shared/outline';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 

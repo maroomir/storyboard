@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { renderManuscriptExport, toPlainText } from "@/core/manuscriptExport"
+import { renderManuscriptExport, toPlainText } from "@/domain/manuscriptExport"
 
 describe("toPlainText", () => {
   it("strips heading markers, blockquotes, bold, and inline code", () => {

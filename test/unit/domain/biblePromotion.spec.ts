@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/core/biblePromotion"
+import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/domain/biblePromotion"
 import { buildCandidateFact, type StoryBible } from "@/shared/bible"
 import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 

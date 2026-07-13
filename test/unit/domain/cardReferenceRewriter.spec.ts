@@ -5,7 +5,7 @@ import {
   renameCardIdInCharacterCard,
   rewriteCardIdReferences,
   setCardId
-} from "@/core/cardReferenceRewriter"
+} from "@/domain/cardReferenceRewriter"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 const hero: CharacterCard = {

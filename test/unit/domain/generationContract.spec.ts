@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { validateGenerationContract } from "@/core/generationContract"
+import { validateGenerationContract } from "@/domain/generationContract"
 import { type ProjectSetting } from "@/shared/project"
 
 function buildSetting(overrides: Partial<ProjectSetting> = {}): ProjectSetting {

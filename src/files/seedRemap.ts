@@ -1,6 +1,6 @@
 import { applyIdMapping, validateIdMapping, type IdMappingIssue } from '@seedcoat/wasm';
 
-import { setCardId } from '@/core/cardReferenceRewriter';
+import { setCardId } from '@/domain/cardReferenceRewriter';
 import type { CharacterCard } from '@/shared/card';
 import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
 

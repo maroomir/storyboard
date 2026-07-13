@@ -4,7 +4,7 @@ import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing
-} from "@/core/foreshadowingTracker"
+} from "@/domain/foreshadowingTracker"
 import type { ChapterPlan } from "@/shared/outline"
 
 const plan: ChapterPlan = {

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '../core/canonDiff';
+import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '../domain/canonDiff';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';

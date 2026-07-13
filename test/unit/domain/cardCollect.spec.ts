@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { applyCardCollectProposals, shouldProposeCardCollect } from "@/core/cardCollect"
+import { applyCardCollectProposals, shouldProposeCardCollect } from "@/domain/cardCollect"
 import type { CharacterCard, LocationBackgroundCard } from "@/shared/card"
 import { cardCollectProposalId, type CardCollectProposal, type CardCollectProposalDraft } from "@/shared/cardCollect"
 

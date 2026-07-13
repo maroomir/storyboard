@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildSceneSeeds } from "@/core/sceneSeedFactory"
+import { buildSceneSeeds } from "@/domain/sceneSeedFactory"
 import { parseScene } from "@/domain/files/scene"
 import type { ChapterPlan } from "@/shared/outline"
 

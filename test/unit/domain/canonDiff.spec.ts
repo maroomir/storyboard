@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from "@/core/canonDiff"
+import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from "@/domain/canonDiff"
 import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 import type { BibleFact, StoryBible } from "@/shared/bible"
 

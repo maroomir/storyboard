@@ -1,5 +1,5 @@
 import type { BibleFact, StoryBible } from '../shared/bible';
-import type { BibleCandidateRecord } from '../domain/files/bibleCandidates';
+import type { BibleCandidateRecord } from './files/bibleCandidates';
 import { resolveSceneOrder } from '../shared/scene';
 
 // NOTE: Anchor a freshly promoted fact to the scene it was first observed so it becomes a

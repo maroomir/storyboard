@@ -6,7 +6,7 @@ import {
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
 } from '../../../core/pathConventions';
-import { isOutlineStale } from '../../../core/sceneStatus';
+import { isOutlineStale } from '../../../domain/sceneStatus';
 import { readSceneFile, type SceneFileSystem } from '../../../domain/files/scene';
 import type { SceneListItem } from '../../../shared/messaging/scenes';
 import { parseSceneFileName } from '../../../shared/scene';

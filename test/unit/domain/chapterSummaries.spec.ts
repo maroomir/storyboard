@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildChapterSummariesMarkdown } from "@/core/chapterSummaries"
+import { buildChapterSummariesMarkdown } from "@/domain/chapterSummaries"
 
 describe("buildChapterSummariesMarkdown", () => {
   it("renders each chapter summary with a recap of the previous chapter", () => {

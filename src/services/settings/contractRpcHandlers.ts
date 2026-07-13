@@ -1,7 +1,7 @@
 import type { StoryboardRpcHandlers } from '@/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@/shared/messaging';
 import { contractFieldKeys, type ProjectSetting, type StoryboardProject } from '@/shared/project';
-import { validateGenerationContract } from '@/core/generationContract';
+import { validateGenerationContract } from '@/domain/generationContract';
 import { getStoryboardProjectPaths } from '@/core/pathConventions';
 import { resolveStoryboardWorkspaceRoot } from '@/core/workspace';
 import { readProjectJson, writeProjectJson } from '@/files/projectJson';

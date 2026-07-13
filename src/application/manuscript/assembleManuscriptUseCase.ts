@@ -5,12 +5,12 @@ import {
   assembleManuscript,
   type AssembledManuscript,
   type ManuscriptDraftEntry,
-} from '../../core/manuscriptAssembly';
+} from '../../domain/manuscriptAssembly';
 import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
-} from '../../core/foreshadowingTracker';
+} from '../../domain/foreshadowingTracker';
 import type { ChapterPlan } from '../../shared/outline';
 
 export type ManuscriptAssemblySource = {

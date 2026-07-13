@@ -21,10 +21,10 @@ vi.mock("@/core/revisionPlanRecorder", () => ({
 }))
 vi.mock("@/core/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
 vi.mock("@/core/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
-vi.mock("@/core/manuscriptAssembly", () => ({
+vi.mock("@/domain/manuscriptAssembly", () => ({
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
-vi.mock("@/core/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
+vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
 vi.mock("@/services/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@/services/ai/AIService", () => ({
   StoryboardAIService: class {

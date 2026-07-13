@@ -1,4 +1,4 @@
-import { shouldProposeCardCollect } from '@/core/cardCollect';
+import { shouldProposeCardCollect } from '@/domain/cardCollect';
 import type { BackgroundCard, CharacterCard, StoryboardCard } from '@/shared/card';
 import {
   cardCollectProposalId,

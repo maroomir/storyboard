@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { StoryboardLogger } from './logger';
-import type { ManuscriptDraftEntry } from './manuscriptAssembly';
+import type { ManuscriptDraftEntry } from '../domain/manuscriptAssembly';
 import type { StoryboardProjectPaths } from './pathConventions';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../domain/files/draft';
 import { parseSceneStem } from '../shared/scene';

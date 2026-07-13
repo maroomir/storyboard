@@ -5,7 +5,7 @@ import {
   collectCardCandidateItems,
   selectNewCardCandidateItems,
   type CardCandidateItem,
-} from '../../core/cardCandidatePromotion';
+} from '../../domain/cardCandidatePromotion';
 import type { CharacterCard } from '../../shared/card';
 import type { CardCandidateRecord } from '../../shared/cardCandidates';
 

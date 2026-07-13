@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { migrateCardTextFieldsToList } from '../core/cardTextMigration';
+import { migrateCardTextFieldsToList } from '../domain/cardTextMigration';
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '../core/pathConventions';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '../core/workspace';

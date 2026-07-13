@@ -7,8 +7,8 @@ import {
   type NovelPipelineResult,
 } from '../application/novel/novelPipeline';
 import { resolveReviseMaxIterations } from '../application/drafts/reviseAfterGenerateGate';
-import { validateGenerationContract } from '../core/generationContract';
-import { isResumable } from '../core/novelRunPlan';
+import { validateGenerationContract } from '../domain/generationContract';
+import { isResumable } from '../domain/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
 import { type NovelRunMode, type NovelRunState } from '../domain/files/novelRunState';

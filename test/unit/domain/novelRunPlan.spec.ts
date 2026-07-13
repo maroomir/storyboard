@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { isResumable, planRemainingStages } from "@/core/novelRunPlan"
+import { isResumable, planRemainingStages } from "@/domain/novelRunPlan"
 import type { NovelRunState } from "@/domain/files/novelRunState"
 
 const baseState: NovelRunState = {

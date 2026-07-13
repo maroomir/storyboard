@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
-import type { ManuscriptDraftEntry } from '../../core/manuscriptAssembly';
-import type { GeneratedSceneSeed } from '../../core/sceneSeedFactory';
+import type { ManuscriptDraftEntry } from '../../domain/manuscriptAssembly';
+import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
 import type { NovelRunState } from '../../domain/files/novelRunState';
 import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis } from '../../shared/outline';
 import type { StoryboardProject } from '../../shared/project';

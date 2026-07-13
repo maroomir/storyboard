@@ -6,7 +6,7 @@ import {
   collectCardCandidateItems,
   pruneRecordByPromotedKeys,
   selectNewCardCandidateItems
-} from "@/core/cardCandidatePromotion"
+} from "@/domain/cardCandidatePromotion"
 import type { CardCandidateRecord } from "@/shared/cardCandidates"
 import type { CharacterCard } from "@/shared/card"
 

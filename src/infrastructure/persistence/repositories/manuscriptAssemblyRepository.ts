@@ -13,9 +13,9 @@ import type {
   ManuscriptReviewSource,
 } from '../../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
-import { summaryFileName } from '../../../core/chapterSummaries';
+import { summaryFileName } from '../../../domain/chapterSummaries';
 import type { StoryboardLogger } from '../../../core/logger';
-import type { AssembledManuscript } from '../../../core/manuscriptAssembly';
+import type { AssembledManuscript } from '../../../domain/manuscriptAssembly';
 import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';

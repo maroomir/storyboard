@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { CollectCardProposalsUseCase } from '../application/cards/collectCardProposalsUseCase';
 import { CardParseError, parseCard, serializeCard } from '../domain/files/card';
-import { applyCardCollectProposals } from '../core/cardCollect';
+import { applyCardCollectProposals } from '../domain/cardCollect';
 import { StoryboardLogger } from '../core/logger';
 import { loadCharacterRoster } from '../core/relationGraphData';
 import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';

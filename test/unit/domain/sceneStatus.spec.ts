@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { isOutlineStale } from "@/core/sceneStatus"
+import { isOutlineStale } from "@/domain/sceneStatus"
 
 describe("isOutlineStale", () => {
   it("is true when the outline is newer than the scene", () => {
