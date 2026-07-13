@@ -4,9 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { ChapterPlan } from "@/shared/outline"
 import type { StoryboardProject } from "@/shared/project"
 import type { NovelRunState, NovelStageName } from "@/files/novelRunState"
-import { parseNovelRunState } from "@/files/novelRunState"
-import { serializeChapterPlan } from "@/files/outline"
-import { workspace } from "../../stubs/vscode"
+import { parseNovelRunState, serializeNovelRunState } from "@/files/novelRunState"
 
 const generateDraftMock = vi.fn(async () => ({ ok: true, kind: "generated" }) as const)
 const runReviseDraftWorkflowMock = vi.fn(async () => ({
@@ -90,12 +88,6 @@ const project: StoryboardProject = {
 }
 
 const workspaceUri = vscode.Uri.file("/ws/project")
-const novelRunStatePath = vscode.Uri.joinPath(workspaceUri, ".storyboard", "cache", "novel-run.json").fsPath
-const chaptersPath = vscode.Uri.joinPath(workspaceUri, ".storyboard", "outline", "chapters.yaml").fsPath
-
-function chaptersYamlBytes(plan: ChapterPlan): Uint8Array {
-  return new TextEncoder().encode(serializeChapterPlan(plan))
-}
 
 interface PipelineHarness {
   readonly dependencies: NovelPipelineDependencies
@@ -111,26 +103,6 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
   const progressMessages: { stage: NovelStageName; message: string }[] = []
   const persistedStates: NovelRunState[] = []
   const approvals: { kind: string; info: string }[] = []
-
-  workspace.fs.readFile = async (uri): Promise<Uint8Array> => {
-    if (uri.fsPath === chaptersPath) {
-      return chaptersYamlBytes(samplePlan)
-    }
-    throw new Error(`unexpected read: ${uri.fsPath}`)
-  }
-  ;(workspace.fs as Record<string, unknown>).writeFile = async (
-    uri: vscode.Uri,
-    content: Uint8Array
-  ): Promise<void> => {
-    if (uri.fsPath === novelRunStatePath) {
-      persistedStates.push(parseNovelRunState(new TextDecoder().decode(content)))
-    }
-  }
-  ;(workspace.fs as Record<string, unknown>).createDirectory = async (): Promise<void> => undefined
-  ;(workspace as Record<string, unknown>).getConfiguration = (): { inspect: () => undefined } => ({
-    inspect: () => undefined
-  })
-  workspace.getWorkspaceFolder = (): undefined => undefined
 
   const dependencies: NovelPipelineDependencies = {
     aiGateway: {
@@ -155,10 +127,30 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     assembleManuscriptUseCase: {
       execute: async (): Promise<unknown> => ({ ok: true, kind: "assembled" })
     } as never,
-    configBridge: {} as never,
+    configBridge: { inspectScenePrefixDigits: (): undefined => undefined } as never,
     generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
     logger: { error: () => undefined, info: () => undefined } as never,
+    novelReviewRepository: {
+      loadReviewSource: async (): Promise<unknown> => ({
+        draftsByOrder: new Map(),
+        canonFactLines: []
+      }),
+      saveReview: async (): Promise<void> => undefined
+    } as never,
+    novelRunStateRepository: {
+      readExisting: async (): Promise<undefined> => undefined,
+      loadProject: async (): Promise<unknown> => project,
+      save: async (_root: unknown, state: NovelRunState): Promise<void> => {
+        persistedStates.push(parseNovelRunState(serializeNovelRunState(state)))
+      }
+    } as never,
+    outlineRepository: {
+      loadCharacterBriefs: async (): Promise<unknown[]> => [],
+      loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
+      save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
+    } as never,
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
+    sceneSeedRepository: { saveSeeds: async (): Promise<void> => undefined } as never,
     summarizeChaptersUseCase: {
       execute: async (): Promise<unknown> => ({ ok: true, kind: "summarized" })
     } as never,

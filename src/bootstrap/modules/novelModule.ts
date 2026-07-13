@@ -22,6 +22,7 @@ export class NovelModule implements IApplicationModule {
       generateOutlineUseCase,
       logger,
       novelPipeline,
+      novelRunStateRepository,
       reviewManuscriptUseCase,
       summarizeChaptersUseCase,
     } = this.platform;
@@ -32,7 +33,7 @@ export class NovelModule implements IApplicationModule {
       registerAssembleManuscriptCommand({ assembleManuscriptUseCase, logger }),
       registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
       registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),
-      registerGenerateNovelCommand({ novelPipeline }),
+      registerGenerateNovelCommand({ novelPipeline, novelRunStateRepository }),
       registerExportManuscriptCommand({ exportManuscriptUseCase, logger }),
     );
   }

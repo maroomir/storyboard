@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import {
+  type INovelRunStateRepository,
   type NovelApprovalKind,
   type NovelPipeline,
   type NovelPipelineResult,
@@ -10,13 +11,7 @@ import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
-import { readProjectJson } from '../files/projectJson';
-import {
-  readNovelRunState,
-  type NovelRunMode,
-  type NovelRunState,
-  type NovelRunStateFileSystem,
-} from '../files/novelRunState';
+import { type NovelRunMode, type NovelRunState } from '../files/novelRunState';
 import type { ContractFieldKey } from '../shared/project';
 
 const generateNovelCommand = 'storyboard.novel.generate';
@@ -34,15 +29,9 @@ const runModeLabels: Record<NovelRunMode, string> = {
   'chapter-approval': '장별 승인 후 진행',
 };
 
-const fileSystem: NovelRunStateFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> =>
-    vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
-
 export interface RegisterGenerateNovelCommandDependencies {
   readonly novelPipeline: NovelPipeline;
+  readonly novelRunStateRepository: INovelRunStateRepository;
 }
 
 export function registerGenerateNovelCommand(
@@ -66,7 +55,7 @@ async function runGenerateNovel(
   }
 
   const paths = getStoryboardProjectPaths(workspaceRoot);
-  const project = await readProjectJson(paths.projectJson);
+  const project = await dependencies.novelRunStateRepository.loadProject(workspaceRoot);
 
   const readiness = validateGenerationContract(project.setting);
   if (readiness.missing.length > 0) {
@@ -82,7 +71,7 @@ async function runGenerateNovel(
     return;
   }
 
-  const decision = await decideRun(paths.novelRunState);
+  const decision = await decideRun(dependencies.novelRunStateRepository, workspaceRoot);
   if (!decision) {
     return;
   }
@@ -115,8 +104,11 @@ interface RunDecision {
   readonly resumeState?: NovelRunState;
 }
 
-async function decideRun(novelRunStateUri: vscode.Uri): Promise<RunDecision | undefined> {
-  const existing = await readExistingRunState(novelRunStateUri);
+async function decideRun(
+  novelRunStateRepository: INovelRunStateRepository,
+  workspaceRoot: vscode.Uri,
+): Promise<RunDecision | undefined> {
+  const existing = await novelRunStateRepository.readExisting(workspaceRoot);
 
   if (isResumable(existing)) {
     const resume = `이어서 진행 (${runModeLabels[existing.runMode]})`;
@@ -156,17 +148,6 @@ async function pickRunMode(): Promise<NovelRunMode | undefined> {
     placeHolder: '실행 모드를 선택하세요.',
   });
   return picked?.mode;
-}
-
-async function readExistingRunState(uri: vscode.Uri): Promise<NovelRunState | undefined> {
-  if (!(await uriExists(uri))) {
-    return undefined;
-  }
-  try {
-    return await readNovelRunState(uri, fileSystem);
-  } catch {
-    return undefined;
-  }
 }
 
 async function requestApproval(_kind: NovelApprovalKind, info: string): Promise<boolean> {

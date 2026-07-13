@@ -4,6 +4,7 @@ import {
   type AiProviderId,
   type AiTaskName,
 } from '../../shared/aiTypes';
+import type { ScenePrefixDigitsInspectLike } from '../../domain/scenePrefixDigits';
 import { storyboardModelCatalog } from '@/shared/models';
 
 const storyboardWorkspaceConfigurationTarget = 2;
@@ -34,6 +35,14 @@ export interface TaskAiConfigResolved {
 
 export interface StoryboardConfigurationLike {
   readonly get: <T>(section: string, defaultValue: T) => T;
+  readonly inspect?: <T>(section: string) =>
+    | {
+        readonly globalValue?: T;
+        readonly workspaceValue?: T;
+        readonly workspaceFolderValue?: T;
+        readonly defaultValue?: T;
+      }
+    | undefined;
   readonly update?: <T>(section: string, value: T, configurationTarget?: number) => Thenable<void>;
 }
 
@@ -185,6 +194,10 @@ export class ConfigBridge {
 
   public getScenePrefixDigits(): number {
     return this.dependencies.getConfiguration().get('scene.prefixDigits', 2);
+  }
+
+  public inspectScenePrefixDigits(): ScenePrefixDigitsInspectLike | undefined {
+    return this.dependencies.getConfiguration().inspect?.<number>('scene.prefixDigits');
   }
 
   public isAiContextCondenseEnabled(): boolean {

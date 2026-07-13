@@ -29,6 +29,9 @@ import { CardSidebarRepository } from '../../infrastructure/persistence/reposito
 import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bibleCandidateRepository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/projectRepository';
 import { OutlineRepository } from '../../infrastructure/persistence/repositories/outlineRepository';
+import { NovelRunStateRepository } from '../../infrastructure/persistence/repositories/novelRunStateRepository';
+import { NovelReviewRepository } from '../../infrastructure/persistence/repositories/novelReviewRepository';
+import { SceneSeedRepository } from '../../infrastructure/persistence/repositories/sceneSeedRepository';
 import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/sceneCacheRepository';
 import { SceneRepository } from '../../infrastructure/persistence/repositories/sceneRepository';
 import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/sceneBatchRepository';
@@ -67,6 +70,7 @@ export interface IPlatformServices {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly logger: StoryboardLogger;
   readonly novelPipeline: NovelPipeline;
+  readonly novelRunStateRepository: NovelRunStateRepository;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
@@ -116,6 +120,9 @@ export class PlatformModule implements IApplicationModule {
     const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const outlineRepository = new OutlineRepository();
+    const novelRunStateRepository = new NovelRunStateRepository();
+    const novelReviewRepository = new NovelReviewRepository();
+    const sceneSeedRepository = new SceneSeedRepository();
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
     const sceneBatchRepository = new SceneBatchRepository();
@@ -190,7 +197,11 @@ export class PlatformModule implements IApplicationModule {
       configBridge,
       generateDraftUseCase,
       logger,
+      novelReviewRepository,
+      novelRunStateRepository,
+      outlineRepository,
       reviseDraftUseCase,
+      sceneSeedRepository,
       summarizeChaptersUseCase,
       usageRecorder,
     });
@@ -212,6 +223,7 @@ export class PlatformModule implements IApplicationModule {
       generateOutlineUseCase,
       logger,
       novelPipeline,
+      novelRunStateRepository,
       postGenerationUpdates,
       promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,

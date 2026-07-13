@@ -1,97 +1,40 @@
-import * as vscode from 'vscode';
-
-import type { AiGateway } from '../ai/aiGateway';
-import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
-import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
-import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
-import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import { listCharacterBriefs } from '../../core/characterBriefs';
-import type { StoryboardLogger } from '../../core/logger';
-import { assembleManuscript } from '../../core/manuscriptAssembly';
-import { collectDraftsByOrder } from '../../core/manuscriptDrafts';
-import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
-import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
-import { buildSceneSeeds } from '../../core/sceneSeedFactory';
 import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
-import { type CardFileSystem } from '../../files/card';
-import { readBibleFile, type BibleFileSystem } from '../../files/bible';
-import { type DraftFileSystem } from '../../files/draft';
+import type { NovelRunState, NovelStageName } from '../../files/novelRunState';
 import {
-  readChapterPlanFile,
-  writeChapterPlanFile,
-  writeSynopsisFile,
-  type OutlineFileSystem,
-} from '../../files/outline';
-import {
-  writeNovelRunState,
-  type NovelRunMode,
-  type NovelRunState,
-  type NovelRunStateFileSystem,
-  type NovelStageName,
-} from '../../files/novelRunState';
-import { StoryboardAIService } from '../../services/ai/AIService';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
-import type { UsageRecorder } from '../../services/ai/UsageRecorder';
-import type { ConfigBridge } from '../../services/settings/ConfigBridge';
-import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
-import type { StoryboardProject } from '../../shared/project';
+  cancel,
+  groupChapterStems,
+  pauseForApproval,
+  runAssembleStage,
+  runChapterStages,
+  runOutlineStage,
+  runReviewStage,
+  runSeedsStage,
+  runSummariesStage,
+} from './novelStages';
+import type {
+  NovelAiService,
+  NovelPipelineDependencies,
+  NovelPipelineOptions,
+  NovelPipelineResult,
+  NovelPipelineRunOptions,
+} from './novelPipelineTypes';
 
-const fileSystem: DraftFileSystem &
-  OutlineFileSystem &
-  BibleFileSystem &
-  CardFileSystem &
-  NovelRunStateFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> =>
-    vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
-};
-
-async function writeTextFile(uri: vscode.Uri, text: string): Promise<void> {
-  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
-}
-
-export interface NovelPipelineDependencies {
-  readonly aiGateway: AiGateway;
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
-  readonly configBridge: ConfigBridge;
-  readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly logger: StoryboardLogger;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
-  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
-  readonly usageRecorder: UsageRecorder;
-}
-
-export type NovelApprovalKind = 'outline' | 'chapter';
-
-export interface NovelPipelineRunOptions {
-  readonly workspaceUri: vscode.Uri;
-  readonly project: StoryboardProject;
-  readonly runMode: NovelRunMode;
-  readonly resumeState?: NovelRunState;
-  readonly reviseMaxIterations: number;
-  readonly onProgress: (stage: NovelStageName, message: string) => void;
-  readonly requestApproval: (kind: NovelApprovalKind, info: string) => Promise<boolean>;
-  readonly shouldCancel: () => boolean;
-}
-
-type NovelPipelineOptions = NovelPipelineRunOptions & {
-  readonly deps: NovelPipelineDependencies;
-};
-
-export type NovelPipelineOutcome = 'completed' | 'paused' | 'cancelled' | 'failed';
-
-export interface NovelPipelineResult {
-  readonly outcome: NovelPipelineOutcome;
-  readonly message: string;
-}
-
-interface ChapterGroup {
-  readonly title: string;
-  readonly stems: readonly string[];
-}
+export type {
+  INovelOutlineRepository,
+  INovelReviewRepository,
+  INovelRunStateRepository,
+  ISceneSeedRepository,
+  NovelReviewSource,
+} from './novelPipelinePorts';
+export type {
+  NovelApprovalKind,
+  NovelPipelineDependencies,
+  NovelPipelineOptions,
+  NovelPipelineOutcome,
+  NovelPipelineResult,
+  NovelPipelineRunOptions,
+} from './novelPipelineTypes';
 
 interface NovelRunContext {
   readonly paths: StoryboardProjectPaths;
@@ -103,7 +46,7 @@ interface NovelRunContext {
     label: string,
     run: () => Promise<void>,
   ) => Promise<void>;
-  readonly newAiService: () => StoryboardAIService;
+  readonly newAiService: () => NovelAiService;
 }
 
 function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
@@ -124,11 +67,10 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
 
   const persist = async (patch: Partial<NovelRunState>): Promise<void> => {
     Object.assign(state, { ...patch, updatedAt: now(), completedStages: [...completed] });
-    await vscode.workspace.fs.createDirectory(paths.cacheDirectory);
-    await writeNovelRunState(paths.novelRunState, fileSystem, state);
+    await options.deps.novelRunStateRepository.save(options.workspaceUri, state);
   };
 
-  const newAiService = (): StoryboardAIService =>
+  const newAiService = (): NovelAiService =>
     options.deps.aiGateway.createService(options.workspaceUri);
 
   const runStageOnce = async (
@@ -157,7 +99,12 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
 
     const outlineWasCompleted = completed.has('outline');
     await runStageOnce('outline', '아웃라인 생성 중…', () =>
-      runOutlineStage(paths, options.project, newAiService()),
+      runOutlineStage(
+        options.workspaceUri,
+        options.project,
+        newAiService(),
+        options.deps.outlineRepository,
+      ),
     );
 
     if (!outlineWasCompleted && options.runMode !== 'auto') {
@@ -174,14 +121,16 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
       return await cancel(persist);
     }
 
-    const plan = await readChapterPlanFile(paths.outlineChapters, fileSystem);
+    const plan = await options.deps.outlineRepository.loadChapterPlan(options.workspaceUri);
     const digitCount = resolveScenePrefixDigitCount(
       options.project.editor.scenePrefixDigits,
-      vscode.workspace.getConfiguration('storyboard').inspect<number>('scene.prefixDigits'),
+      options.deps.configBridge.inspectScenePrefixDigits(),
     );
     const groups = groupChapterStems(plan, digitCount);
 
-    await runStageOnce('seeds', '씬 시드 생성 중…', () => runSeedsStage(paths, plan, digitCount));
+    await runStageOnce('seeds', '씬 시드 생성 중…', () =>
+      runSeedsStage(options.workspaceUri, plan, digitCount, options.deps.sceneSeedRepository),
+    );
     if (options.shouldCancel()) {
       return await cancel(persist);
     }
@@ -206,7 +155,14 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     );
 
     await runStageOnce('review', '원고 최종 검사 중…', () =>
-      runReviewStage(paths, options.project, plan, newAiService(), options.deps.aiProviderRegistry),
+      runReviewStage(
+        options.workspaceUri,
+        options.project,
+        plan,
+        newAiService(),
+        options.deps.aiProviderRegistry,
+        options.deps.novelReviewRepository,
+      ),
     );
 
     await runStageOnce('summaries', '장별 요약 중…', () =>
@@ -229,282 +185,6 @@ export class NovelPipeline {
   public async run(options: NovelPipelineRunOptions): Promise<NovelPipelineResult> {
     return await runNovelPipeline({ ...options, deps: this.dependencies });
   }
-}
-
-async function cancel(
-  persist: (patch: Partial<NovelRunState>) => Promise<void>,
-): Promise<NovelPipelineResult> {
-  await persist({ status: 'paused' });
-  return { outcome: 'cancelled', message: '실행을 취소했습니다. 다시 실행하면 이어서 진행합니다.' };
-}
-
-interface ApprovalRequest {
-  readonly kind: NovelApprovalKind;
-  readonly info: string;
-  readonly pausedMessage: string;
-}
-
-async function pauseForApproval(
-  options: NovelPipelineOptions,
-  persist: (patch: Partial<NovelRunState>) => Promise<void>,
-  request: ApprovalRequest,
-): Promise<NovelPipelineResult | undefined> {
-  const approved = await options.requestApproval(request.kind, request.info);
-  if (approved) {
-    return undefined;
-  }
-  await persist({ status: 'paused' });
-  return { outcome: 'paused', message: request.pausedMessage };
-}
-
-async function runOutlineStage(
-  paths: StoryboardProjectPaths,
-  project: StoryboardProject,
-  aiService: StoryboardAIService,
-): Promise<void> {
-  const brief = toOutlineBrief(project);
-  const synopsis = await aiService.generateOutlineSynopsis(brief);
-  const characters = await listCharacterBriefs(paths.characterDirectory, fileSystem);
-  const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
-
-  await vscode.workspace.fs.createDirectory(paths.outlineDirectory);
-  await writeSynopsisFile(paths.outlineSynopsis, fileSystem, synopsis);
-  await writeChapterPlanFile(paths.outlineChapters, fileSystem, chapterPlan);
-}
-
-async function runSeedsStage(
-  paths: StoryboardProjectPaths,
-  plan: ChapterPlan,
-  digitCount: number,
-): Promise<void> {
-  await vscode.workspace.fs.createDirectory(paths.sceneDirectory);
-
-  for (const seed of buildSceneSeeds(plan, digitCount)) {
-    const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, seed.fileName);
-    await writeTextFile(sceneUri, seed.content);
-  }
-}
-
-async function runChapterDraftsAndRevise(
-  group: ChapterGroup,
-  paths: StoryboardProjectPaths,
-  options: NovelPipelineOptions,
-): Promise<void> {
-  for (const stem of group.stems) {
-    if (options.shouldCancel()) {
-      return;
-    }
-
-    const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, `${stem}.txt`);
-    const draftResult = await options.deps.generateDraftUseCase.execute(sceneUri, {
-      force: false,
-      suppressLoggerPanel: true,
-      shouldCancel: options.shouldCancel,
-    });
-
-    if (!draftResult.ok) {
-      if (draftResult.kind === 'cancelled') {
-        return;
-      }
-      throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
-    }
-
-    const reviseResult = await options.deps.reviseDraftUseCase.execute({
-      workspaceUri: options.workspaceUri,
-      paths,
-      draftUri: vscode.Uri.joinPath(paths.draftDirectory, `${stem}.md`),
-      sceneStem: stem,
-      maxIterations: options.reviseMaxIterations,
-      reviseScoreThreshold: 0,
-      shouldCancel: options.shouldCancel,
-    });
-
-    await recordRevisionEntry(paths, {
-      sceneStem: stem,
-      checkedAt: new Date().toISOString(),
-      revisionCount: reviseResult.revisionCount,
-      remainingBlocking: reviseResult.remainingBlocking,
-      instructions: reviseResult.instructions,
-    });
-  }
-}
-
-interface ChapterStageContext {
-  readonly options: NovelPipelineOptions;
-  readonly paths: StoryboardProjectPaths;
-  readonly groups: readonly ChapterGroup[];
-  readonly state: NovelRunState;
-  readonly completed: Set<NovelStageName>;
-  readonly persist: (patch: Partial<NovelRunState>) => Promise<void>;
-}
-
-async function runChapterStages(
-  ctx: ChapterStageContext,
-): Promise<NovelPipelineResult | undefined> {
-  const { options, paths, groups, state, completed, persist } = ctx;
-  if (completed.has('chapters')) {
-    return undefined;
-  }
-
-  for (let chapterIndex = state.nextChapterIndex; chapterIndex < groups.length; chapterIndex += 1) {
-    const group = groups[chapterIndex];
-    if (!group) {
-      continue;
-    }
-    options.onProgress(
-      'chapters',
-      `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`,
-    );
-
-    await runChapterDraftsAndRevise(group, paths, options);
-
-    await persist({ nextChapterIndex: chapterIndex + 1 });
-
-    if (options.shouldCancel()) {
-      return await cancel(persist);
-    }
-
-    const isLastChapter = chapterIndex === groups.length - 1;
-    if (options.runMode === 'chapter-approval' && !isLastChapter) {
-      const paused = await pauseForApproval(options, persist, {
-        kind: 'chapter',
-        info: `${chapterIndex + 1}장을 마쳤습니다. 다음 장으로 진행할까요?`,
-        pausedMessage: `${chapterIndex + 1}장까지 진행하고 멈췄습니다.`,
-      });
-      if (paused) {
-        return paused;
-      }
-    }
-  }
-
-  completed.add('chapters');
-  await persist({});
-  return undefined;
-}
-
-async function loadAssembledManuscript(
-  paths: StoryboardProjectPaths,
-  project: StoryboardProject,
-  plan: ChapterPlan,
-): Promise<ReturnType<typeof assembleManuscript>> {
-  const draftsByOrder = await collectDraftsByOrder(paths, fileSystem, { warn: () => undefined });
-  return assembleManuscript({ plan, projectName: project.name, draftsByOrder });
-}
-
-async function runAssembleStage(
-  workspaceUri: vscode.Uri,
-  assembleManuscriptUseCase: AssembleManuscriptUseCase,
-): Promise<void> {
-  const result = await assembleManuscriptUseCase.execute(workspaceUri);
-  if (!result.ok) {
-    throw new Error(
-      result.kind === 'failed' ? result.message : `원고를 조립할 수 없습니다: ${result.kind}`,
-    );
-  }
-}
-
-async function runReviewStage(
-  paths: StoryboardProjectPaths,
-  project: StoryboardProject,
-  plan: ChapterPlan,
-  aiService: StoryboardAIService,
-  registry: AiProviderRegistry,
-): Promise<void> {
-  const manuscript = await loadAssembledManuscript(paths, project, plan);
-  const factLines = await loadCanonFactLines(paths.bibleCanon);
-  const characters = collectCharacterIds(plan);
-
-  const [continuityIssues, critiqueIssues] = await Promise.all([
-    aiService.checkContinuity(manuscript.volumeMarkdown, factLines, {
-      providerId: registry.getTaskProvider('continuityCheck'),
-    }),
-    aiService.critiqueDraft(
-      {
-        body: manuscript.volumeMarkdown,
-        intent: '전체 원고 최종 검수',
-        characters,
-        facts: factLines,
-        styleConstraints: project.setting?.styleConstraints ?? [],
-        qualityCriteria: project.setting?.qualityCriteria ?? [],
-      },
-      { providerId: registry.getTaskProvider('draftCritique') },
-    ),
-  ]);
-
-  const reportMarkdown = buildManuscriptReviewMarkdown({
-    projectName: project.name,
-    sceneCount: manuscript.includedCount,
-    generatedAt: new Date().toISOString(),
-    continuityIssues,
-    critiqueIssues,
-  });
-
-  await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
-  await writeTextFile(vscode.Uri.joinPath(paths.manuscriptDirectory, 'REVIEW.md'), reportMarkdown);
-}
-
-async function runSummariesStage(
-  workspaceUri: vscode.Uri,
-  summarizeChaptersUseCase: SummarizeChaptersUseCase,
-): Promise<void> {
-  const result = await summarizeChaptersUseCase.execute(workspaceUri);
-  if (!result.ok) {
-    throw new Error(
-      result.kind === 'failed' ? result.message : `장별 요약을 완료할 수 없습니다: ${result.kind}`,
-    );
-  }
-}
-
-function groupChapterStems(plan: ChapterPlan, digitCount: number): ChapterGroup[] {
-  const seeds = buildSceneSeeds(plan, digitCount);
-  const flat = flattenChapterPlan(plan);
-  const groups: { title: string; stems: string[]; actIndex: number; chapterIndex: number }[] = [];
-
-  flat.forEach((flatScene, index) => {
-    const stem = seeds[index]?.stem;
-    if (stem === undefined) {
-      return;
-    }
-
-    const last = groups.at(-1);
-    if (
-      last &&
-      last.actIndex === flatScene.actIndex &&
-      last.chapterIndex === flatScene.chapterIndex
-    ) {
-      last.stems.push(stem);
-      return;
-    }
-    groups.push({
-      title: flatScene.chapterTitle,
-      stems: [stem],
-      actIndex: flatScene.actIndex,
-      chapterIndex: flatScene.chapterIndex,
-    });
-  });
-
-  return groups.map(({ title, stems }) => ({ title, stems }));
-}
-
-async function loadCanonFactLines(bibleCanonUri: vscode.Uri): Promise<string[]> {
-  try {
-    const bible = await readBibleFile(bibleCanonUri, fileSystem);
-    return bible.facts
-      .filter((fact) => fact.status === 'canon')
-      .map((fact) => `${fact.subject.id} — ${fact.key}: ${fact.value}`);
-  } catch {
-    return [];
-  }
-}
-
-function collectCharacterIds(plan: ChapterPlan): string[] {
-  const ids = new Set<string>();
-  for (const flatScene of flattenChapterPlan(plan)) {
-    for (const id of flatScene.scene.characters) {
-      ids.add(id);
-    }
-  }
-  return [...ids];
 }
 
 function cryptoRunId(): string {

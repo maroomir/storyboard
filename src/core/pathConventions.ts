@@ -132,6 +132,10 @@ export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: s
   return vscode.Uri.joinPath(workspaceRoot, 'scene', `${prefix}-${slug}.txt`);
 }
 
+export function scenePath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, 'scene', `${sceneStem}.txt`);
+}
+
 export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
   return vscode.Uri.joinPath(workspaceRoot, 'draft', `${sceneStem}.md`);
 }

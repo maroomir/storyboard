@@ -6,6 +6,7 @@ import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
 import type { CardFileSystem } from '../../../files/card';
 import {
+  readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
   type OutlineFileSystem,
@@ -37,6 +38,13 @@ export class OutlineRepository implements IOutlineRepository {
 
   public async loadProject(workspaceRoot: vscode.Uri): Promise<StoryboardProject> {
     return await readProjectJson(getStoryboardProjectPaths(workspaceRoot).projectJson);
+  }
+
+  public async loadChapterPlan(workspaceRoot: vscode.Uri): Promise<ChapterPlan> {
+    return await readChapterPlanFile(
+      getStoryboardProjectPaths(workspaceRoot).outlineChapters,
+      VSCODE_FILE_SYSTEM,
+    );
   }
 
   public async save(
