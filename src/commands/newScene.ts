@@ -10,7 +10,7 @@ import {
   hasStoryboardProject,
   uriExists,
 } from '../infrastructure/vscode/workspace';
-import { readProjectJson } from '../files/projectJson';
+import { readProjectJson } from '../infrastructure/persistence/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 import {
   computeNextSceneOrderFromSceneFileNames,

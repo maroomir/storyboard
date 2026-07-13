@@ -1,6 +1,6 @@
 import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { IProjectRepository } from '../../../application/ports/repositories';
-import { parseProjectJson } from '../../../files/projectJson';
+import { parseProjectJson } from '../projectJson';
 import type { StoryboardProject } from '../../../shared/project';
 
 export class ProjectRepository implements IProjectRepository {

@@ -1,6 +1,12 @@
 import { backgroundCardPath, characterCardPath } from '../../infrastructure/vscode/pathConventions';
-import { bibleCandidateFilePath, ensureBibleCacheDirectory } from '../../files/bibleCacheWorkspace';
-import { cardCandidateFilePath, ensureCardCacheDirectory } from '../../files/cardCacheWorkspace';
+import {
+  bibleCandidateFilePath,
+  ensureBibleCacheDirectory,
+} from '../../infrastructure/persistence/bibleCacheWorkspace';
+import {
+  cardCandidateFilePath,
+  ensureCardCacheDirectory,
+} from '../../infrastructure/persistence/cardCacheWorkspace';
 import { type StoryboardAIService } from '../../services/ai/AIService';
 import { SceneGenerationPipeline } from '../pipelines/sceneGenerationPipeline';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';

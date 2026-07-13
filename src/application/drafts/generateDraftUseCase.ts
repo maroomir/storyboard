@@ -9,7 +9,7 @@ import { type SceneCacheRecord } from '../../domain/files/sceneCache';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
-} from '../../files/cardMemoryWorkspace';
+} from '../../infrastructure/persistence/cardMemoryWorkspace';
 import { buildStyleDirective } from '../../shared/styleDirective';
 import {
   SceneGenerationPipeline,

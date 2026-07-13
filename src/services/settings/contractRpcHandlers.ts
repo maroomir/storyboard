@@ -4,7 +4,7 @@ import { contractFieldKeys, type ProjectSetting, type StoryboardProject } from '
 import { validateGenerationContract } from '@/domain/generationContract';
 import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { readProjectJson, writeProjectJson } from '@/files/projectJson';
+import { readProjectJson, writeProjectJson } from '@/infrastructure/persistence/projectJson';
 
 type ProjectContractSnapshot = StoryboardResponsePayload<'project.readContract'>;
 

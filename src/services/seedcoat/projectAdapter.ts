@@ -10,8 +10,8 @@ import {
   type BackgroundCard,
   type CharacterCard,
 } from '@/shared/card';
-import { storyboardProjectSchema } from '@/files/projectJson';
-import { SEED_NO_HISTORY_MESSAGE } from '@/constants/projectStorageMessages';
+import { storyboardProjectSchema } from '@/infrastructure/persistence/projectJson';
+import { SEED_NO_HISTORY_MESSAGE } from '@/infrastructure/seedcoat/projectStorageMessages';
 import {
   decodeLatestState,
   encodeState,

@@ -13,7 +13,7 @@ import {
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
 } from '../domain/files/bibleCandidates';
-import { readProjectJson } from '../files/projectJson';
+import { readProjectJson } from '../infrastructure/persistence/projectJson';
 import { createEmptyBible } from '../shared/bible';
 
 const canonDiffCommand = 'storyboard.bible.canonDiff';

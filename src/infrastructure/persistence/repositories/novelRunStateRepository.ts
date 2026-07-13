@@ -9,7 +9,7 @@ import {
   type NovelRunState,
   type NovelRunStateFileSystem,
 } from '../../../domain/files/novelRunState';
-import { readProjectJson } from '../../../files/projectJson';
+import { readProjectJson } from '../projectJson';
 import type { StoryboardProject } from '../../../shared/project';
 
 const VSCODE_FILE_SYSTEM: NovelRunStateFileSystem = {

@@ -10,7 +10,7 @@ import {
 import { vscodeFsAdapter } from '../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../domain/files/draft';
-import { readProjectJson } from '../files/projectJson';
+import { readProjectJson } from '../infrastructure/persistence/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';

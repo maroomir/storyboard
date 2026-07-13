@@ -10,7 +10,7 @@ vi.mock("@/domain/files/scene", () => ({
   SceneParseError: class SceneParseError extends Error {},
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
 }))
-vi.mock("@/files/projectJson", () => ({
+vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
 vi.mock("@/domain/sceneContext", () => ({

@@ -12,11 +12,11 @@ import {
   normalizeRelativePath,
   SeedWriteAbortedError,
   type SeedFileWriteEntry,
-} from '../../../files/seedImport';
+} from '../../seedcoat/seedImport';
 import {
   readDirectoryFileNamesOnly,
   readParsedSeedEnvelopeFromWorkspaceRoot,
-} from '../../../files/seedEnvelopeFromWorkspace';
+} from '../seedEnvelopeFromWorkspace';
 import type {
   DecodedSeedContent,
   WorkspaceContent,

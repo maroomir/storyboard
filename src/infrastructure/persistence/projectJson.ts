@@ -8,7 +8,7 @@ import {
   type ProjectFormat,
   type StoryboardProject,
   storyboardProjectVersion,
-} from '../shared/project';
+} from '../../shared/project';
 
 const projectEditorSchema = z.object({
   scenePrefixDigits: z.number().int().positive(),

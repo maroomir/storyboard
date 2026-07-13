@@ -22,7 +22,7 @@ import { uriExists } from '../../vscode/workspace';
 import { readBibleFile, type BibleFileSystem } from '../../../domain/files/bible';
 import type { DraftFileSystem } from '../../../domain/files/draft';
 import { readChapterPlanFile, type OutlineFileSystem } from '../../../domain/files/outline';
-import { readProjectJson } from '../../../files/projectJson';
+import { readProjectJson } from '../projectJson';
 
 const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem & BibleFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

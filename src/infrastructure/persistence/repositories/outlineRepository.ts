@@ -11,7 +11,7 @@ import {
   writeSynopsisFile,
   type OutlineFileSystem,
 } from '../../../domain/files/outline';
-import { readProjectJson } from '../../../files/projectJson';
+import { readProjectJson } from '../projectJson';
 import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis } from '../../../shared/outline';
 import type { StoryboardProject } from '../../../shared/project';
 

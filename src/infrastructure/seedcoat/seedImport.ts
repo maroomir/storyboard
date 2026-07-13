@@ -1,5 +1,5 @@
 import { serializeCard } from '@/domain/files/card';
-import { serializeProjectJson } from '@/files/projectJson';
+import { serializeProjectJson } from '@/infrastructure/persistence/projectJson';
 import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
 import {
   isHiddenSceneFileName,

@@ -26,7 +26,7 @@ vi.mock("@/domain/files/scene", () => ({
     body: "씬 의도"
   })
 }))
-vi.mock("@/files/projectJson", () => ({
+vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: async (): Promise<unknown> => ({
     setting: { styleConstraints: [], qualityCriteria: [] }
   })

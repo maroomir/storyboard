@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { parseProjectJson } from "@/files/projectJson"
+import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
 import {
   applySeedIdMapping,
   SeedIdMappingConflictError,
   SeedIdMappingValidationError,
   validateSeedIdMapping
-} from "@/files/seedRemap"
+} from "@/infrastructure/seedcoat/seedRemap"
 import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 
 function minimalSeed(overrides?: Partial<DecodedSeedContent>): DecodedSeedContent {

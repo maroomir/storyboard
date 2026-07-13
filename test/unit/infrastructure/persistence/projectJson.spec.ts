@@ -4,7 +4,7 @@ import {
   createDefaultProjectJson,
   parseProjectJson,
   serializeProjectJson
-} from "@/files/projectJson"
+} from "@/infrastructure/persistence/projectJson"
 import { type StoryboardProject } from "@/shared/project"
 
 function baseProject(): StoryboardProject {

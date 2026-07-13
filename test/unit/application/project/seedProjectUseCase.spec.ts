@@ -6,7 +6,7 @@ import {
   type ISeedProjectRepository
 } from "@/application/project/seedProjectUseCase"
 import { PrepareSeedSyncUseCase } from "@/application/project/prepareSeedSyncUseCase"
-import { parseProjectJson } from "@/files/projectJson"
+import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
 
 function seed(): never {
   return {

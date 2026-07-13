@@ -14,7 +14,7 @@ import {
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
-import { readProjectJson } from '../../files/projectJson';
+import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile, SceneParseError } from '../../domain/files/scene';
 import { formatAugmentCards, type DraftAugmentScope } from '../../services/ai/prompts/draftAugment';
 import type { BibleFact } from '../../shared/bible';

@@ -3,7 +3,7 @@ import {
   computeSeedDeletionCandidates,
   listSeedPlanContentConflictRelativePaths,
   type SeedFileWriteEntry,
-} from '../../files/seedImport';
+} from '../../infrastructure/seedcoat/seedImport';
 import type { DecodedSeedContent } from '../../services/seedcoat/projectAdapter';
 
 export type PrepareSeedSyncRequest = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { PrepareSeedSyncUseCase } from "@/application/project/prepareSeedSyncUseCase"
-import { parseProjectJson } from "@/files/projectJson"
+import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
 
 describe("PrepareSeedSyncUseCase", () => {
   it("returns writes, changed content conflicts, and obsolete tracked files together", () => {

@@ -1,7 +1,7 @@
 import {
   SEED_UNKNOWN_ERROR_MESSAGE,
   mapSeedErrorToMessage,
-} from '../../constants/projectStorageMessages';
+} from '../../infrastructure/seedcoat/projectStorageMessages';
 import {
   decodeSeedToWritePlan,
   isSeedError,

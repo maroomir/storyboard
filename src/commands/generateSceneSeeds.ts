@@ -8,7 +8,7 @@ import {
   readChapterPlanFile,
   type OutlineFileSystem,
 } from '../domain/files/outline';
-import { readProjectJson } from '../files/projectJson';
+import { readProjectJson } from '../infrastructure/persistence/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 import { resolveScenePrefixDigitCount } from '../domain/scenePrefixDigits';
 

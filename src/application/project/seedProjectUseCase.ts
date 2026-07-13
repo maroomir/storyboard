@@ -1,7 +1,10 @@
 import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { buildSeedWritePlan, type SeedFileWriteEntry } from '../../files/seedImport';
+import {
+  buildSeedWritePlan,
+  type SeedFileWriteEntry,
+} from '../../infrastructure/seedcoat/seedImport';
 import type { DecodedSeedContent, WorkspaceContent } from '../../services/seedcoat/projectAdapter';
 import type { PrepareSeedSyncUseCase, PreparedSeedSync } from './prepareSeedSyncUseCase';
 

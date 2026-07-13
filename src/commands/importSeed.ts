@@ -8,8 +8,8 @@ import type {
 import { type StoryboardLogger } from '../infrastructure/vscode/logger';
 import { refreshStoryboardWorkspaceContext } from '../infrastructure/vscode/storyboardWorkspaceContext';
 import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
-import { SeedWriteAbortedError } from '../files/seedImport';
-import { listSeedExportPreflightIssues } from '../files/seedExportPreflight';
+import { SeedWriteAbortedError } from '../infrastructure/seedcoat/seedImport';
+import { listSeedExportPreflightIssues } from '../infrastructure/seedcoat/seedExportPreflight';
 import {
   encodeWorkspaceToSeed,
   isSeedError,
@@ -19,12 +19,12 @@ import {
 import {
   mapSeedErrorToMessage,
   SEED_UNKNOWN_ERROR_MESSAGE,
-} from '../constants/projectStorageMessages';
+} from '../infrastructure/seedcoat/projectStorageMessages';
 import {
   applySeedIdMapping,
   SeedIdMappingConflictError,
   SeedIdMappingValidationError,
-} from '../files/seedRemap';
+} from '../infrastructure/seedcoat/seedRemap';
 import { formatSeedIdRemapErrorMessage, promptSeedIdRemapping } from './seedIdRemapPrompt';
 
 const createFromSeedCommand = 'storyboard.seed.createFromFile';

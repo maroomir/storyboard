@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from '../infrastructure/vscode/pathConventions';
-import { uriExists } from '../infrastructure/vscode/workspace';
-import { vscodeFsAdapter } from '../infrastructure/vscode/workspaceFsAdapters';
-import type { BackgroundCard, CharacterCard } from '../shared/card';
-import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../application/ports/memoryStore';
+import type { StoryboardProjectPaths } from '../vscode/pathConventions';
+import { uriExists } from '../vscode/workspace';
+import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
+import type { BackgroundCard, CharacterCard } from '../../shared/card';
+import type {
+  IBackgroundMemoryStore,
+  IPersonaMemoryStore,
+} from '../../application/ports/memoryStore';
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
@@ -12,7 +15,7 @@ import {
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
-} from '../domain/files/cardMemory';
+} from '../../domain/files/cardMemory';
 
 export async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory);

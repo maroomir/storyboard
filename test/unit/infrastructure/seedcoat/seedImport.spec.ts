@@ -7,8 +7,8 @@ import {
   isSeedSyncExcludedPath,
   listSeedPlanContentConflictRelativePaths,
   normalizeRelativePath
-} from "@/files/seedImport"
-import { parseProjectJson } from "@/files/projectJson"
+} from "@/infrastructure/seedcoat/seedImport"
+import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
 import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
 
 function minimalDecodedSeed(): DecodedSeedContent {

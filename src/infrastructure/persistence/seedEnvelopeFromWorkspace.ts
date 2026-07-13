@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
 import { parseCard } from '@/domain/files/card';
-import { readProjectJson } from '@/files/projectJson';
-import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/files/seedImport';
+import { readProjectJson } from '@/infrastructure/persistence/projectJson';
+import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/infrastructure/seedcoat/seedImport';
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';
 import type { WorkspaceContent, SeedSceneEntry } from '@/services/seedcoat/projectAdapter';
 

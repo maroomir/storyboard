@@ -4,7 +4,7 @@ import {
   GenerateOutlineUseCase,
   type IOutlineRepository
 } from "@/application/novel/generateOutlineUseCase"
-import { parseProjectJson } from "@/files/projectJson"
+import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
 
 function project(): ReturnType<typeof parseProjectJson> {
   return parseProjectJson(

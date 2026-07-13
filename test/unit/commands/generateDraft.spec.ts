@@ -19,7 +19,7 @@ vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,
   uriExists: async (): Promise<boolean> => false
 }))
-vi.mock("@/files/projectJson", () => ({
+vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
 vi.mock("@/domain/sceneContext", () => ({

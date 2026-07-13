@@ -11,7 +11,10 @@ import {
   getTargetWorkspaceFolder,
   uriExists,
 } from '../infrastructure/vscode/workspace';
-import { createDefaultProjectJson, writeProjectJson } from '../files/projectJson';
+import {
+  createDefaultProjectJson,
+  writeProjectJson,
+} from '../infrastructure/persistence/projectJson';
 import {
   createWorkspaceReadme,
   createStoryboardDirectories,
