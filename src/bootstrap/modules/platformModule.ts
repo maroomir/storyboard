@@ -10,6 +10,7 @@ import { DecodeSeedUseCase } from '../../application/project/decodeSeedUseCase';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepareSeedSyncUseCase';
 import { SeedProjectUseCase } from '../../application/project/seedProjectUseCase';
 import { AssembleManuscriptUseCase } from '../../application/manuscript/assembleManuscriptUseCase';
+import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
 import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
 import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
 import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
@@ -68,6 +69,7 @@ export interface IPlatformServices {
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
+  readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly sceneSidebarRepository: SceneSidebarRepository;
@@ -130,6 +132,11 @@ export class PlatformModule implements IApplicationModule {
     const summarizeChaptersUseCase = new SummarizeChaptersUseCase(
       aiGateway,
       manuscriptAssemblyRepository,
+    );
+    const reviewManuscriptUseCase = new ReviewManuscriptUseCase(
+      aiGateway,
+      manuscriptAssemblyRepository,
+      logger,
     );
     const generateDraftUseCase = new GenerateDraftUseCase({
       aiGateway,
@@ -203,6 +210,7 @@ export class PlatformModule implements IApplicationModule {
       promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
+      reviewManuscriptUseCase,
       reviseAfterGenerateGate,
       reviseDraftUseCase,
       sceneSidebarRepository,

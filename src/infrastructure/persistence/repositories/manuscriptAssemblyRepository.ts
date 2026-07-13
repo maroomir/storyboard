@@ -4,6 +4,10 @@ import type {
   IManuscriptAssemblyRepository,
   ManuscriptAssemblySource,
 } from '../../../application/manuscript/assembleManuscriptUseCase';
+import type {
+  IManuscriptReviewRepository,
+  ManuscriptReviewSource,
+} from '../../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../../core/chapterSummaries';
 import type { StoryboardLogger } from '../../../core/logger';
@@ -11,18 +15,19 @@ import type { AssembledManuscript } from '../../../core/manuscriptAssembly';
 import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
+import { readBibleFile, type BibleFileSystem } from '../../../files/bible';
 import type { DraftFileSystem } from '../../../files/draft';
 import { readChapterPlanFile, type OutlineFileSystem } from '../../../files/outline';
 import { readProjectJson } from '../../../files/projectJson';
 
-const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem = {
+const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem & BibleFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri, content): Thenable<void> =>
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
 };
 
 export class ManuscriptAssemblyRepository
-  implements IManuscriptAssemblyRepository, IChapterSummaryRepository
+  implements IManuscriptAssemblyRepository, IChapterSummaryRepository, IManuscriptReviewRepository
 {
   public async hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean> {
     return await uriExists(getStoryboardProjectPaths(workspaceRoot).outlineChapters);
@@ -40,6 +45,34 @@ export class ManuscriptAssemblyRepository
     ]);
 
     return { draftsByOrder, plan, projectName: project.name };
+  }
+
+  public async loadReviewSource(
+    workspaceRoot: vscode.Uri,
+    logger: Pick<StoryboardLogger, 'warn'>,
+  ): Promise<ManuscriptReviewSource> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const [project, plan, draftsByOrder, canonFactLines] = await Promise.all([
+      readProjectJson(paths.projectJson),
+      readChapterPlanFile(paths.outlineChapters, VSCODE_FILE_SYSTEM),
+      collectDraftsByOrder(paths, VSCODE_FILE_SYSTEM, logger),
+      this.loadCanonFactLines(paths.bibleCanon),
+    ]);
+
+    return {
+      source: { draftsByOrder, plan, projectName: project.name },
+      styleConstraints: project.setting?.styleConstraints ?? [],
+      qualityCriteria: project.setting?.qualityCriteria ?? [],
+      canonFactLines,
+    };
+  }
+
+  public async saveReview(workspaceRoot: vscode.Uri, markdown: string): Promise<vscode.Uri> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
+    const reportUri = vscode.Uri.joinPath(paths.manuscriptDirectory, 'REVIEW.md');
+    await vscode.workspace.fs.writeFile(reportUri, new TextEncoder().encode(markdown));
+    return reportUri;
   }
 
   public async saveChapterSummaries(
@@ -77,5 +110,16 @@ export class ManuscriptAssemblyRepository
     );
 
     return paths.manuscriptVolume;
+  }
+
+  private async loadCanonFactLines(bibleCanonUri: vscode.Uri): Promise<string[]> {
+    if (!(await uriExists(bibleCanonUri))) {
+      return [];
+    }
+
+    const bible = await readBibleFile(bibleCanonUri, VSCODE_FILE_SYSTEM);
+    return bible.facts
+      .filter((fact) => fact.status === 'canon')
+      .map((fact) => `${fact.subject.id} — ${fact.key}: ${fact.value}`);
   }
 }

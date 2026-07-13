@@ -17,11 +17,11 @@ export class NovelModule implements IApplicationModule {
 
   public initialize(): void {
     const {
-      aiGateway,
       assembleManuscriptUseCase,
       generateOutlineUseCase,
       logger,
       novelPipeline,
+      reviewManuscriptUseCase,
       summarizeChaptersUseCase,
     } = this.platform;
 
@@ -29,7 +29,7 @@ export class NovelModule implements IApplicationModule {
       registerGenerateOutlineCommand({ generateOutlineUseCase, logger }),
       registerGenerateSceneSeedsCommand(),
       registerAssembleManuscriptCommand({ assembleManuscriptUseCase, logger }),
-      registerReviewManuscriptCommand({ aiGateway, logger }),
+      registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
       registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),
       registerGenerateNovelCommand({ novelPipeline }),
       registerExportManuscriptCommand({ logger }),
