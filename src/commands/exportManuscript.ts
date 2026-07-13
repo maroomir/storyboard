@@ -1,10 +1,9 @@
 import * as vscode from 'vscode';
 
+import type { ExportManuscriptUseCase } from '../application/manuscript/exportManuscriptUseCase';
 import type { StoryboardLogger } from '../core/logger';
-import { renderManuscriptExport, type ManuscriptExportFormat } from '../core/manuscriptExport';
-import { getStoryboardProjectPaths } from '../core/pathConventions';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
-import { readProjectJson } from '../files/projectJson';
+import type { ManuscriptExportFormat } from '../core/manuscriptExport';
+import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
 
 const exportManuscriptCommand = 'storyboard.draft.export';
 
@@ -19,6 +18,7 @@ const exportFormatItems: ExportFormatItem[] = [
 ];
 
 export interface RegisterExportManuscriptCommandDependencies {
+  readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly logger: StoryboardLogger;
 }
 
@@ -42,12 +42,16 @@ async function runExportManuscript(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceRoot);
+  const source = await dependencies.exportManuscriptUseCase.loadSource(workspaceRoot);
 
-  if (!(await uriExists(paths.manuscriptVolume))) {
+  if (source.kind === 'missing_volume') {
     await vscode.window.showInformationMessage(
       '내보낼 원고가 없습니다. 먼저 Assemble Manuscript를 실행해 주세요.',
     );
+    return;
+  }
+  if (source.kind === 'failed') {
+    await reportFailure(source.message, dependencies.logger);
     return;
   }
 
@@ -58,30 +62,31 @@ async function runExportManuscript(
     return;
   }
 
-  try {
-    const project = await readProjectJson(paths.projectJson);
-    const markdown = new TextDecoder().decode(
-      await vscode.workspace.fs.readFile(paths.manuscriptVolume),
-    );
-    const content = renderManuscriptExport(markdown, picked.format);
-
-    const targetUri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.joinPath(workspaceRoot, `${project.name}.${picked.extension}`),
-      filters: { [picked.label]: [picked.extension] },
-    });
-    if (!targetUri) {
-      return;
-    }
-
-    await vscode.workspace.fs.writeFile(targetUri, new TextEncoder().encode(content));
-
-    const document = await vscode.workspace.openTextDocument(targetUri);
-    await vscode.window.showTextDocument(document);
-    await vscode.window.showInformationMessage(`원고를 내보냈습니다: ${targetUri.fsPath}`);
-  } catch (error) {
-    dependencies.logger.error('Manuscript export failed', error);
-    dependencies.logger.show();
-    const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(`원고 내보내기에 실패했습니다: ${message}`);
+  const targetUri = await vscode.window.showSaveDialog({
+    defaultUri: vscode.Uri.joinPath(workspaceRoot, `${source.projectName}.${picked.extension}`),
+    filters: { [picked.label]: [picked.extension] },
+  });
+  if (!targetUri) {
+    return;
   }
+
+  const result = await dependencies.exportManuscriptUseCase.writeExport(
+    targetUri,
+    source.markdown,
+    picked.format,
+  );
+  if (!result.ok) {
+    await reportFailure(result.message, dependencies.logger);
+    return;
+  }
+
+  const document = await vscode.workspace.openTextDocument(result.targetUri);
+  await vscode.window.showTextDocument(document);
+  await vscode.window.showInformationMessage(`원고를 내보냈습니다: ${result.targetUri.fsPath}`);
+}
+
+async function reportFailure(message: string, logger: StoryboardLogger): Promise<void> {
+  logger.error('Manuscript export failed', new Error(message));
+  logger.show();
+  await vscode.window.showErrorMessage(`원고 내보내기에 실패했습니다: ${message}`);
 }

@@ -10,6 +10,7 @@ import { DecodeSeedUseCase } from '../../application/project/decodeSeedUseCase';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepareSeedSyncUseCase';
 import { SeedProjectUseCase } from '../../application/project/seedProjectUseCase';
 import { AssembleManuscriptUseCase } from '../../application/manuscript/assembleManuscriptUseCase';
+import { ExportManuscriptUseCase } from '../../application/manuscript/exportManuscriptUseCase';
 import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
 import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
 import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
@@ -55,6 +56,7 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly decodeSeedUseCase: DecodeSeedUseCase;
+  readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly seedProjectUseCase: SeedProjectUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly createCardUseCase: CreateCardUseCase;
@@ -129,6 +131,7 @@ export class PlatformModule implements IApplicationModule {
       logger,
       manuscriptAssemblyRepository,
     );
+    const exportManuscriptUseCase = new ExportManuscriptUseCase(manuscriptAssemblyRepository);
     const summarizeChaptersUseCase = new SummarizeChaptersUseCase(
       aiGateway,
       manuscriptAssemblyRepository,
@@ -200,6 +203,7 @@ export class PlatformModule implements IApplicationModule {
       cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,
+      exportManuscriptUseCase,
       fileSystem,
       generateAllDraftsUseCase,
       generateDraftUseCase,

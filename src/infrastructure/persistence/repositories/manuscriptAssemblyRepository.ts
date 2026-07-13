@@ -5,6 +5,10 @@ import type {
   ManuscriptAssemblySource,
 } from '../../../application/manuscript/assembleManuscriptUseCase';
 import type {
+  IManuscriptExportRepository,
+  ManuscriptExportSource,
+} from '../../../application/manuscript/exportManuscriptUseCase';
+import type {
   IManuscriptReviewRepository,
   ManuscriptReviewSource,
 } from '../../../application/manuscript/reviewManuscriptUseCase';
@@ -27,10 +31,32 @@ const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem & BibleFileSystem 
 };
 
 export class ManuscriptAssemblyRepository
-  implements IManuscriptAssemblyRepository, IChapterSummaryRepository, IManuscriptReviewRepository
+  implements
+    IManuscriptAssemblyRepository,
+    IChapterSummaryRepository,
+    IManuscriptReviewRepository,
+    IManuscriptExportRepository
 {
   public async hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean> {
     return await uriExists(getStoryboardProjectPaths(workspaceRoot).outlineChapters);
+  }
+
+  public async hasManuscriptVolume(workspaceRoot: vscode.Uri): Promise<boolean> {
+    return await uriExists(getStoryboardProjectPaths(workspaceRoot).manuscriptVolume);
+  }
+
+  public async loadVolume(workspaceRoot: vscode.Uri): Promise<ManuscriptExportSource> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const [project, volumeBytes] = await Promise.all([
+      readProjectJson(paths.projectJson),
+      vscode.workspace.fs.readFile(paths.manuscriptVolume),
+    ]);
+
+    return { markdown: new TextDecoder().decode(volumeBytes), projectName: project.name };
+  }
+
+  public async saveExport(targetUri: vscode.Uri, content: string): Promise<void> {
+    await vscode.workspace.fs.writeFile(targetUri, new TextEncoder().encode(content));
   }
 
   public async loadAssemblySource(

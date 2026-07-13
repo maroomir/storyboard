@@ -18,6 +18,7 @@ export class NovelModule implements IApplicationModule {
   public initialize(): void {
     const {
       assembleManuscriptUseCase,
+      exportManuscriptUseCase,
       generateOutlineUseCase,
       logger,
       novelPipeline,
@@ -32,7 +33,7 @@ export class NovelModule implements IApplicationModule {
       registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
       registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),
       registerGenerateNovelCommand({ novelPipeline }),
-      registerExportManuscriptCommand({ logger }),
+      registerExportManuscriptCommand({ exportManuscriptUseCase, logger }),
     );
   }
 
