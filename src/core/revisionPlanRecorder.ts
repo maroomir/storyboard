@@ -10,7 +10,7 @@ import {
   type RevisionPlan,
   type RevisionPlanEntry,
   type RevisionPlanFileSystem,
-} from '../files/revisionPlan';
+} from '../domain/files/revisionPlan';
 
 const fileSystem: RevisionPlanFileSystem = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>

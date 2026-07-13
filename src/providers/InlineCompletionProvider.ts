@@ -13,8 +13,8 @@ import {
   vscodeFsAdapter,
 } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
-import { parseDraft } from '../files/draft';
-import { readSceneFile } from '../files/scene';
+import { parseDraft } from '../domain/files/draft';
+import { readSceneFile } from '../domain/files/scene';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
 import type { InlineCompletionContext } from '../services/ai/AIService';
 import { type AiProviderId, isCliProvider } from '../shared/aiTypes';

@@ -5,7 +5,7 @@ import {
   parseChapterPlan,
   serializeChapterPlan,
   serializeSynopsisMarkdown
-} from "@/files/outline"
+} from "@/domain/files/outline"
 import type { ChapterPlan, OutlineSynopsis } from "@/shared/outline"
 
 const plan: ChapterPlan = {

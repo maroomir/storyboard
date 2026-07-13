@@ -6,8 +6,8 @@ import type {
 } from '../../../application/novel/novelPipeline';
 import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
-import { readBibleFile, type BibleFileSystem } from '../../../files/bible';
-import type { DraftFileSystem } from '../../../files/draft';
+import { readBibleFile, type BibleFileSystem } from '../../../domain/files/bible';
+import type { DraftFileSystem } from '../../../domain/files/draft';
 
 const VSCODE_FILE_SYSTEM: DraftFileSystem & BibleFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@/core/pathConventions';
-import { parseCard } from '@/files/card';
+import { parseCard } from '@/domain/files/card';
 import { readProjectJson } from '@/files/projectJson';
 import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/files/seedImport';
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';

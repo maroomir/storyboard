@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import type { BackgroundCard, CharacterCard } from '../shared/card';
-import { cardIdPattern, formatCardAttributes, joinCardText } from '../shared/card';
+import type { BackgroundCard, CharacterCard } from '../../shared/card';
+import { cardIdPattern, formatCardAttributes, joinCardText } from '../../shared/card';
 
 export interface PersonaMemoryRecord {
   readonly cardId: string;

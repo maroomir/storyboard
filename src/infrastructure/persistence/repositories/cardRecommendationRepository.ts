@@ -8,9 +8,9 @@ import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
 } from '../../../core/pathConventions';
-import { parseCard } from '../../../files/card';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../files/draft';
-import { readSceneFile, type SceneFileSystem } from '../../../files/scene';
+import { parseCard } from '../../../domain/files/card';
+import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
+import { readSceneFile, type SceneFileSystem } from '../../../domain/files/scene';
 import type { RecommendationSource } from '../../../services/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '../../../services/ai/prompts/cardRecommendation';
 

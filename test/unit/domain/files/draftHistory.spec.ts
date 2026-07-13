@@ -7,7 +7,7 @@ import {
   nextDraftHistoryRevision,
   parseDraftHistoryRevision,
   type DraftHistoryFileSystem
-} from "@/files/draftHistory"
+} from "@/domain/files/draftHistory"
 
 describe("draft history naming", () => {
   it("formats the timestamp as yyyy-mm-dd-hh-mm in local time", () => {

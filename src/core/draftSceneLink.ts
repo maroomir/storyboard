@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { parseDraft } from '../files/draft';
+import { parseDraft } from '../domain/files/draft';
 import { parseSceneStem, type SceneFileNameParts } from '../shared/scene';
 import { sceneFilePath } from './pathConventions';
 

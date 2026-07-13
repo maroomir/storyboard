@@ -1,6 +1,9 @@
 import type { CharacterCard } from '@/shared/card';
 import { buildCandidateFact, type BibleFact } from '@/shared/bible';
-import { writeBibleCandidateFile, type BibleCandidateFileSystem } from '@/files/bibleCandidates';
+import {
+  writeBibleCandidateFile,
+  type BibleCandidateFileSystem,
+} from '@/domain/files/bibleCandidates';
 import type { StoryboardAIService } from './AIService';
 import type { UsageAttribution } from '../../shared/aiTypes';
 

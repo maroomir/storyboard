@@ -7,7 +7,7 @@ import {
   serializeRevisionPlan,
   upsertRevisionEntry,
   type RevisionPlanEntry
-} from "@/files/revisionPlan"
+} from "@/domain/files/revisionPlan"
 
 const entry = (sceneStem: string, remainingBlocking: number): RevisionPlanEntry => ({
   sceneStem,

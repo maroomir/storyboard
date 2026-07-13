@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSceneSeeds } from "@/core/sceneSeedFactory"
-import { parseScene } from "@/files/scene"
+import { parseScene } from "@/domain/files/scene"
 import type { ChapterPlan } from "@/shared/outline"
 
 const plan: ChapterPlan = {

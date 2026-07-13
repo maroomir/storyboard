@@ -1,7 +1,7 @@
 import type { IDraftRepository } from '../../../application/ports/repositories';
 import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { Draft } from '../../../domain/Draft';
-import { writeDraftFile } from '../../../files/draft';
+import { writeDraftFile } from '../../../domain/files/draft';
 
 export class DraftRepository implements IDraftRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

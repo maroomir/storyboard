@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { parseBibleCandidates, serializeBibleCandidates, type BibleCandidateRecord } from "@/files/bibleCandidates"
+import { parseBibleCandidates, serializeBibleCandidates, type BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 import { buildCandidateFact } from "@/shared/bible"
 
 const record: BibleCandidateRecord = {

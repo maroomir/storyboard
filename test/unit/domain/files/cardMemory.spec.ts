@@ -10,7 +10,7 @@ import {
   serializePersonaMemory,
   type BackgroundMemoryRecord,
   type PersonaMemoryRecord
-} from "@/files/cardMemory"
+} from "@/domain/files/cardMemory"
 
 const eliaCard: CharacterCard = {
   type: "character",

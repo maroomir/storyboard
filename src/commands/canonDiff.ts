@@ -4,12 +4,12 @@ import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '../core/cano
 import type { StoryboardLogger } from '../core/logger';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
-import { readBibleFile, type BibleFileSystem } from '../files/bible';
+import { readBibleFile, type BibleFileSystem } from '../domain/files/bible';
 import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
-} from '../files/bibleCandidates';
+} from '../domain/files/bibleCandidates';
 import { readProjectJson } from '../files/projectJson';
 import { createEmptyBible } from '../shared/bible';
 

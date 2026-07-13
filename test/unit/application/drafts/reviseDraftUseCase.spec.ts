@@ -16,7 +16,7 @@ vi.mock("@/services/ai/AIService", () => ({
   }
 }))
 vi.mock("@/services/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
-vi.mock("@/files/scene", () => ({
+vi.mock("@/domain/files/scene", () => ({
   readSceneFile: async (): Promise<unknown> => ({
     stem: "01-scene",
     order: 1,
@@ -31,7 +31,7 @@ vi.mock("@/files/projectJson", () => ({
     setting: { styleConstraints: [], qualityCriteria: [] }
   })
 }))
-vi.mock("@/files/draft", () => ({
+vi.mock("@/domain/files/draft", () => ({
   parseDraft: (): unknown => ({ format: "novel", body: "원본 본문" }),
   createDraft: (input: unknown): unknown => input,
   readDraftFile: async (): Promise<string> => "raw",

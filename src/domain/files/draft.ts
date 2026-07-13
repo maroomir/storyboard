@@ -1,8 +1,8 @@
 import yaml from 'js-yaml';
 import { ZodError, z } from 'zod';
 
-import type { Draft } from '../domain/Draft';
-import { projectFormats, type ProjectFormat } from '../shared/project';
+import type { Draft } from '../Draft';
+import { projectFormats, type ProjectFormat } from '../../shared/project';
 
 export type DraftParseErrorCode =
   | 'missing-frontmatter'

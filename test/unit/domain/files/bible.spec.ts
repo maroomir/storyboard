@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { BibleParseError, parseBible, serializeBible } from "@/files/bible"
+import { BibleParseError, parseBible, serializeBible } from "@/domain/files/bible"
 import type { StoryBible } from "@/shared/bible"
 
 const bible: StoryBible = {

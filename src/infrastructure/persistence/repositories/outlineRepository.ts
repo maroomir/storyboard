@@ -4,13 +4,13 @@ import type { IOutlineRepository } from '../../../application/novel/generateOutl
 import { listCharacterBriefs } from '../../../core/characterBriefs';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
-import type { CardFileSystem } from '../../../files/card';
+import type { CardFileSystem } from '../../../domain/files/card';
 import {
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
   type OutlineFileSystem,
-} from '../../../files/outline';
+} from '../../../domain/files/outline';
 import { readProjectJson } from '../../../files/projectJson';
 import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis } from '../../../shared/outline';
 import type { StoryboardProject } from '../../../shared/project';

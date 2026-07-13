@@ -1,5 +1,5 @@
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';
-import { readCardFile, writeCardFile, type CardFileSystem } from '@/files/card';
+import { readCardFile, writeCardFile, type CardFileSystem } from '@/domain/files/card';
 
 export interface BackgroundCharacterUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;

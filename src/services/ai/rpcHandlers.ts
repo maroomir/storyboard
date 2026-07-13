@@ -1,5 +1,5 @@
 import { resolveStoryboardWorkspaceRoot } from '@/core/workspace';
-import { emptyUsageSummary } from '@/files/usageLedger';
+import { emptyUsageSummary } from '@/domain/files/usageLedger';
 import { type StoryboardRpcHandlers } from '@/messaging/bridge';
 import { type StoryboardResponsePayload } from '@/shared/messaging';
 import { AiProviderRegistry } from './providerRegistry';

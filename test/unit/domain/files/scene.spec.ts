@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { parseScene, SceneParseError } from "@/files/scene"
+import { parseScene, SceneParseError } from "@/domain/files/scene"
 import { parseSceneFileName, parseSceneStem, resolveSceneOrder } from "@/shared/scene"
 
 const scenesFixtureDirectory = join(process.cwd(), "test", "fixtures", "scenes")

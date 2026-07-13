@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { updateCardCandidatesFromDraft } from "@/services/ai/cardCandidateUpdater"
 import type { StoryboardAIService } from "@/services/ai/AIService"
-import type { CardCandidateFileSystem } from "@/files/cardCandidates"
+import type { CardCandidateFileSystem } from "@/domain/files/cardCandidates"
 import type { CharacterCard } from "@/shared/card"
 import type { CardCandidateExtraction } from "@/services/ai/prompts/cardCandidateExtraction"
 

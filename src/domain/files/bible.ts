@@ -1,7 +1,7 @@
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
-import { storyBibleSchema, type StoryBible } from '../shared/bible';
+import { storyBibleSchema, type StoryBible } from '../../shared/bible';
 
 export type BibleParseErrorCode = 'invalid-yaml' | 'invalid-bible-schema';
 

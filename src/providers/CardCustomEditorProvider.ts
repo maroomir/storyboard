@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { CollectCardProposalsUseCase } from '../application/cards/collectCardProposalsUseCase';
-import { CardParseError, parseCard, serializeCard } from '../files/card';
+import { CardParseError, parseCard, serializeCard } from '../domain/files/card';
 import { applyCardCollectProposals } from '../core/cardCollect';
 import { StoryboardLogger } from '../core/logger';
 import { loadCharacterRoster } from '../core/relationGraphData';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, serializeDraft } from "@/files/draft"
+import { createDraft, serializeDraft } from "@/domain/files/draft"
 import { parseDraftSceneParts } from "@/core/draftSceneLink"
 
 describe("parseDraftSceneParts", () => {

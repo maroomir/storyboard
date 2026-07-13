@@ -8,8 +8,11 @@ import {
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
 } from '../../../core/cardCandidatePromotion';
-import { readCardFile, writeCardFile } from '../../../files/card';
-import { readCardCandidateFile, writeCardCandidateFile } from '../../../files/cardCandidates';
+import { readCardFile, writeCardFile } from '../../../domain/files/card';
+import {
+  readCardCandidateFile,
+  writeCardCandidateFile,
+} from '../../../domain/files/cardCandidates';
 import type { CharacterCard } from '../../../shared/card';
 import type { CardCandidateRecord } from '../../../shared/cardCandidates';
 

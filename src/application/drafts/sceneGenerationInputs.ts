@@ -9,8 +9,8 @@ import {
 } from '../../core/pathConventions';
 import { sceneContextPaths } from '../../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../../core/workspace';
-import { SceneParseError } from '../../files/scene';
-import { computeSceneInputHash } from '../../files/sceneCache';
+import { SceneParseError } from '../../domain/files/scene';
+import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../files/sceneCacheWorkspace';
 import { parseSceneFileName } from '../../shared/scene';
 import { resolveSceneBreakJoiner } from '../pipelines/sceneGenerationPolicies';

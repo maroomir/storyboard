@@ -3,7 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { CardParseError, parseCard, serializeCard } from "@/files/card"
+import { CardParseError, parseCard, serializeCard } from "@/domain/files/card"
 import type { StoryboardCard } from "@/shared/card"
 
 const cardsFixtureDirectory = join(process.cwd(), "test", "fixtures", "cards")

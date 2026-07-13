@@ -7,7 +7,7 @@ import {
   characterProfilePath,
 } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
-import { serializeCard } from '../../../files/card';
+import { serializeCard } from '../../../domain/files/card';
 import type { StoryboardCard } from '../../../shared/card';
 
 const TRANSPARENT_PNG_BYTES = Uint8Array.from([

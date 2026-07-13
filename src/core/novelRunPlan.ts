@@ -1,4 +1,8 @@
-import { novelStageNames, type NovelRunState, type NovelStageName } from '../files/novelRunState';
+import {
+  novelStageNames,
+  type NovelRunState,
+  type NovelStageName,
+} from '../domain/files/novelRunState';
 
 export interface NovelRunPlan {
   readonly stages: NovelStageName[];

@@ -19,9 +19,9 @@ import type { AssembledManuscript } from '../../../core/manuscriptAssembly';
 import { collectDraftsByOrder } from '../../../core/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { uriExists } from '../../../core/workspace';
-import { readBibleFile, type BibleFileSystem } from '../../../files/bible';
-import type { DraftFileSystem } from '../../../files/draft';
-import { readChapterPlanFile, type OutlineFileSystem } from '../../../files/outline';
+import { readBibleFile, type BibleFileSystem } from '../../../domain/files/bible';
+import type { DraftFileSystem } from '../../../domain/files/draft';
+import { readChapterPlanFile, type OutlineFileSystem } from '../../../domain/files/outline';
 import { readProjectJson } from '../../../files/projectJson';
 
 const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem & BibleFileSystem = {

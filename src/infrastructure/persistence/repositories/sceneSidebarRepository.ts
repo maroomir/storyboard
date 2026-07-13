@@ -7,7 +7,7 @@ import {
   isHiddenSceneFileName,
 } from '../../../core/pathConventions';
 import { isOutlineStale } from '../../../core/sceneStatus';
-import { readSceneFile, type SceneFileSystem } from '../../../files/scene';
+import { readSceneFile, type SceneFileSystem } from '../../../domain/files/scene';
 import type { SceneListItem } from '../../../shared/messaging/scenes';
 import { parseSceneFileName } from '../../../shared/scene';
 

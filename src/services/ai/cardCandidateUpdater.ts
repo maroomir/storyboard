@@ -5,7 +5,10 @@ import type {
   CardCandidateCharacter,
   CardRelationCandidate,
 } from '@/shared/cardCandidates';
-import { writeCardCandidateFile, type CardCandidateFileSystem } from '@/files/cardCandidates';
+import {
+  writeCardCandidateFile,
+  type CardCandidateFileSystem,
+} from '@/domain/files/cardCandidates';
 import type { StoryboardAIService } from './AIService';
 import type { UsageAttribution } from '../../shared/aiTypes';
 

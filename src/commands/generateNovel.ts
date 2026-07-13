@@ -11,7 +11,7 @@ import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';
 import { getStoryboardProjectPaths } from '../core/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../core/workspace';
-import { type NovelRunMode, type NovelRunState } from '../files/novelRunState';
+import { type NovelRunMode, type NovelRunState } from '../domain/files/novelRunState';
 import type { ContractFieldKey } from '../shared/project';
 
 const generateNovelCommand = 'storyboard.novel.generate';

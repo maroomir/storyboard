@@ -2,8 +2,11 @@ import * as vscode from 'vscode';
 
 import type { IBibleCandidateRepository } from '../../../application/project/promoteBibleCandidatesUseCase';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
-import { readBibleFile, writeBibleFile } from '../../../files/bible';
-import { readBibleCandidateFile, type BibleCandidateRecord } from '../../../files/bibleCandidates';
+import { readBibleFile, writeBibleFile } from '../../../domain/files/bible';
+import {
+  readBibleCandidateFile,
+  type BibleCandidateRecord,
+} from '../../../domain/files/bibleCandidates';
 import { createEmptyBible, type StoryBible } from '../../../shared/bible';
 
 const VSCODE_FILE_SYSTEM = {

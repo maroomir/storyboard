@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from "@/core/canonDiff"
-import type { BibleCandidateRecord } from "@/files/bibleCandidates"
+import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 import type { BibleFact, StoryBible } from "@/shared/bible"
 
 const fact = (id: string, key: string, value: string, status: BibleFact["status"]): BibleFact => ({

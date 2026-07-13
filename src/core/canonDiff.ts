@@ -1,4 +1,4 @@
-import type { BibleCandidateRecord } from '../files/bibleCandidates';
+import type { BibleCandidateRecord } from '../domain/files/bibleCandidates';
 import type { BibleFact, StoryBible } from '../shared/bible';
 import { resolveSceneOrder } from '../shared/scene';
 

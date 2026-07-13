@@ -1,5 +1,5 @@
 import type { Draft } from '../../domain/Draft';
-import type { SceneCacheRecord } from '../../files/sceneCache';
+import type { SceneCacheRecord } from '../../domain/files/sceneCache';
 import type { StoryboardProject } from '../../shared/project';
 import type { SceneFile } from '../../shared/scene';
 

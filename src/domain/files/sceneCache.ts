@@ -6,15 +6,15 @@ import {
   joinCardText,
   type BackgroundCard,
   type CharacterCard,
-} from '../shared/card';
-import type { BibleFact } from '../shared/bible';
-import type { ProjectFormat } from '../shared/project';
+} from '../../shared/card';
+import type { BibleFact } from '../../shared/bible';
+import type { ProjectFormat } from '../../shared/project';
 import {
   aiProviderIds,
   aiTaskCatalog,
   type AiProviderId,
   type AiTaskName,
-} from '../shared/aiTypes';
+} from '../../shared/aiTypes';
 
 export interface SceneCacheSituation {
   readonly summary: string;

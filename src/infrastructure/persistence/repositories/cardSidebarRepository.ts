@@ -5,7 +5,7 @@ import type {
   SidebarCardCategory,
 } from '../../../application/cards/cardSidebarRepository';
 import { isIgnoredSampleCardFileName } from '../../../core/pathConventions';
-import { parseCard } from '../../../files/card';
+import { parseCard } from '../../../domain/files/card';
 import { isCharacterRole, joinCardText, type CardType } from '../../../shared/card';
 import type { SidebarCardSummary } from '../../../shared/messaging';
 

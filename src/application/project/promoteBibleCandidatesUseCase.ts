@@ -6,7 +6,7 @@ import {
   seedPromotedFact,
   selectNewCandidates,
 } from '../../core/biblePromotion';
-import type { BibleCandidateRecord } from '../../files/bibleCandidates';
+import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
 import type { BibleFact, StoryBible } from '../../shared/bible';
 
 export interface IBibleCandidateRepository {

@@ -4,7 +4,7 @@ import {
   parseNovelRunState,
   serializeNovelRunState,
   type NovelRunState
-} from "@/files/novelRunState"
+} from "@/domain/files/novelRunState"
 
 const state: NovelRunState = {
   version: "1.0.0",

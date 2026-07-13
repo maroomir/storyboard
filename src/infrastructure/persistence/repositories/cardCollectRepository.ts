@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ICardCollectRepository } from '../../../application/cards/collectCardProposalsUseCase';
 import { getStoryboardProjectPaths } from '../../../core/pathConventions';
 import { loadCharacterRoster } from '../../../core/relationGraphData';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../files/draft';
+import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
 import type { CollectDraft, CollectRosterEntry } from '../../../services/ai/cardCollectBuilder';
 
 const VSCODE_DRAFT_FILE_SYSTEM: DraftFileSystem = {

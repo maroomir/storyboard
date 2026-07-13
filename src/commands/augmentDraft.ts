@@ -7,8 +7,8 @@ import { draftHistorySceneDirectory, isDraftMarkdownFile } from '../core/pathCon
 import { draftHistoryFileSystem } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
 import type { Draft } from '../domain/Draft';
-import { createDraft, parseDraft, serializeDraft } from '../files/draft';
-import { archiveExistingDraft } from '../files/draftHistory';
+import { createDraft, parseDraft, serializeDraft } from '../domain/files/draft';
+import { archiveExistingDraft } from '../domain/files/draftHistory';
 import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '../services/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';

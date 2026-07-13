@@ -5,7 +5,7 @@ import type {
   SidebarCardCategory,
 } from '../application/cards/cardSidebarRepository';
 import { resolveStoryboardWorkspaceRoot } from '../core/workspace';
-import { emptyUsageSummary } from '../files/usageLedger';
+import { emptyUsageSummary } from '../domain/files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../services/ai/providerRegistry';

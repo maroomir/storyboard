@@ -7,8 +7,8 @@ import {
   type SceneContextWorkspaceFileSystem
 } from "@/core/sceneContext"
 import type { SceneFile } from "@/shared/scene"
-import { serializeCard } from "@/files/card"
-import { serializeBible } from "@/files/bible"
+import { serializeCard } from "@/domain/files/card"
+import { serializeBible } from "@/domain/files/bible"
 import type { StoryBible } from "@/shared/bible"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 

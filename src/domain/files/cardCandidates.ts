@@ -1,4 +1,4 @@
-import { cardCandidateRecordSchema, type CardCandidateRecord } from '../shared/cardCandidates';
+import { cardCandidateRecordSchema, type CardCandidateRecord } from '../../shared/cardCandidates';
 
 export interface CardCandidateFileSystem {
   readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;

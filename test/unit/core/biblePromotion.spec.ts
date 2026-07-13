@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/core/biblePromotion"
 import { buildCandidateFact, type StoryBible } from "@/shared/bible"
-import type { BibleCandidateRecord } from "@/files/bibleCandidates"
+import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 
 function candidateRecord(sceneStem: string, facts: BibleCandidateRecord["facts"]): BibleCandidateRecord {
   return { sceneStem, generatedAt: "2026-06-14T09:00:00.000Z", facts }

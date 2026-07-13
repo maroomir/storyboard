@@ -6,7 +6,7 @@ import {
   type BackgroundCard,
   type CharacterCard,
   type StoryboardCard,
-} from '../shared/card';
+} from '../../shared/card';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 

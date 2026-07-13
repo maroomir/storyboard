@@ -5,8 +5,8 @@ import { DraftRepository } from '@/infrastructure/persistence/repositories/draft
 import { ProjectRepository } from '@/infrastructure/persistence/repositories/projectRepository';
 import { SceneCacheRepository } from '@/infrastructure/persistence/repositories/sceneCacheRepository';
 import { SceneRepository } from '@/infrastructure/persistence/repositories/sceneRepository';
-import { createDraft, parseDraft } from '@/files/draft';
-import { parseSceneCache } from '@/files/sceneCache';
+import { createDraft, parseDraft } from '@/domain/files/draft';
+import { parseSceneCache } from '@/domain/files/sceneCache';
 
 class InMemoryFileSystem implements IFileSystem {
   public readonly directories: unknown[] = [];

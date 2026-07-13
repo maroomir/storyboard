@@ -3,9 +3,9 @@ import * as vscode from 'vscode';
 import type { ISceneCacheRepository } from '../ports/repositories';
 import { draftHistorySceneDirectory } from '../../core/pathConventions';
 import { uriExists } from '../../core/workspace';
-import { createDraft } from '../../files/draft';
-import { archiveExistingDraft } from '../../files/draftHistory';
-import { type SceneCacheRecord } from '../../files/sceneCache';
+import { createDraft } from '../../domain/files/draft';
+import { archiveExistingDraft } from '../../domain/files/draftHistory';
+import { type SceneCacheRecord } from '../../domain/files/sceneCache';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,

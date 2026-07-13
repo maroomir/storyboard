@@ -4,7 +4,7 @@ import type { AiGateway } from '../application/ai/aiGateway';
 import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { hasStoryboardProject } from '../core/workspace';
-import { parseDraft } from '../files/draft';
+import { parseDraft } from '../domain/files/draft';
 
 const expandDraftCommand = 'storyboard.draft.expand';
 

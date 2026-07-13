@@ -9,7 +9,7 @@ import {
 } from '../core/pathConventions';
 import { vscodeFsAdapter } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../files/draft';
+import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../domain/files/draft';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 

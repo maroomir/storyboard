@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCardCandidates, serializeCardCandidates } from "@/files/cardCandidates"
+import { parseCardCandidates, serializeCardCandidates } from "@/domain/files/cardCandidates"
 import type { CardCandidateRecord } from "@/shared/cardCandidates"
 
 describe("card candidate codec", () => {

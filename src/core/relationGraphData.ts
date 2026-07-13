@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { isIgnoredSampleCardFileName } from './pathConventions';
-import { parseCard } from '../files/card';
+import { parseCard } from '../domain/files/card';
 import { isCharacterRole, type CharacterRole } from '../shared/card';
 import type { RelationListCharacter } from '../shared/messaging';
 

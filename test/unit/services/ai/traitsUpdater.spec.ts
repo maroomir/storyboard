@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import type { CharacterCard } from "@/shared/card"
-import type { CardFileSystem } from "@/files/card"
-import { parseCard, serializeCard } from "@/files/card"
+import type { CardFileSystem } from "@/domain/files/card"
+import { parseCard, serializeCard } from "@/domain/files/card"
 import {
   applyTraitsFromExtractedBullets,
   extractQuotedUtterancesForCharacter

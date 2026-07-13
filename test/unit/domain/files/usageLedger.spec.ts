@@ -7,7 +7,7 @@ import {
   parseUsageLedgerBytes,
   serializeUsageLedger,
   type UsageLedgerEntry
-} from "@/files/usageLedger"
+} from "@/domain/files/usageLedger"
 
 function entry(partial: Omit<UsageLedgerEntry, "id" | "recordedAt"> & { readonly id?: string; readonly recordedAt?: string }): UsageLedgerEntry {
   return {

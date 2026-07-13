@@ -6,7 +6,7 @@ import {
   parseSceneCache,
   serializeSceneCache,
   type SceneCacheRecord
-} from "@/files/sceneCache"
+} from "@/domain/files/sceneCache"
 
 const sampleCharacter: CharacterCard = {
   type: "character",

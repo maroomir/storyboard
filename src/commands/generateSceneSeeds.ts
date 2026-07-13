@@ -7,7 +7,7 @@ import {
   ChapterPlanParseError,
   readChapterPlanFile,
   type OutlineFileSystem,
-} from '../files/outline';
+} from '../domain/files/outline';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';
 import { resolveScenePrefixDigitCount } from '../domain/scenePrefixDigits';

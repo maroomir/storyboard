@@ -6,7 +6,7 @@ import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import type { StoryboardLogger } from '../../core/logger';
-import type { NovelRunMode, NovelRunState, NovelStageName } from '../../files/novelRunState';
+import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import type { UsageRecorder } from '../../services/ai/UsageRecorder';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';

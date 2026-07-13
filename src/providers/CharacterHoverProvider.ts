@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from '../core/pathConventions';
 import { vscodeFsAdapter } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
-import { readCardFile } from '../files/card';
+import { readCardFile } from '../domain/files/card';
 import type { CharacterCard } from '../shared/card';
 import { detectCharactersInText } from '../domain/characterDetector';
 

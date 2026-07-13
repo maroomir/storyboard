@@ -1,15 +1,15 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { SceneParseError } from "@/files/scene"
+import { SceneParseError } from "@/domain/files/scene"
 import { workspace, type WorkspaceFolder } from "../../stubs/vscode"
 
 const readSceneFileMock = vi.fn()
 const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 
-vi.mock("@/files/scene", async () => {
-  const actual = await vi.importActual<typeof import("@/files/scene")>("@/files/scene")
+vi.mock("@/domain/files/scene", async () => {
+  const actual = await vi.importActual<typeof import("@/domain/files/scene")>("@/domain/files/scene")
   return {
     ...actual,
     readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)

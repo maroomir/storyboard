@@ -15,8 +15,8 @@ import {
 } from '../core/vscodeFileSystem';
 import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
-import { parseDraft } from '../files/draft';
-import { readSceneFile } from '../files/scene';
+import { parseDraft } from '../domain/files/draft';
+import { readSceneFile } from '../domain/files/scene';
 import type { ContinuityIssue } from '../services/ai/AIService';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';

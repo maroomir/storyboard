@@ -6,7 +6,7 @@ const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 const buildNarrativeContextMock = vi.fn()
 
-vi.mock("@/files/scene", () => ({
+vi.mock("@/domain/files/scene", () => ({
   SceneParseError: class SceneParseError extends Error {},
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
 }))
@@ -20,7 +20,7 @@ vi.mock("@/core/sceneContext", () => ({
 }))
 
 import { AugmentDraftUseCase } from "@/application/drafts/augmentDraftUseCase"
-import { SceneParseError } from "@/files/scene"
+import { SceneParseError } from "@/domain/files/scene"
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }

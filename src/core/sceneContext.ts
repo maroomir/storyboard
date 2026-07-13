@@ -1,7 +1,7 @@
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '../shared/card';
 import type { SceneFile } from '../shared/scene';
-import { readCardFile } from '../files/card';
-import { readBibleFile } from '../files/bible';
+import { readCardFile } from '../domain/files/card';
+import { readBibleFile } from '../domain/files/bible';
 import {
   createEmptyBible,
   selectInjectedFacts,

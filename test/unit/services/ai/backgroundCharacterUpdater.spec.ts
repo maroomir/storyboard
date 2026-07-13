@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { updateBackgroundCharactersFromScene } from "@/services/ai/backgroundCharacterUpdater"
-import { parseCard, serializeCard, type CardFileSystem } from "@/files/card"
+import { parseCard, serializeCard, type CardFileSystem } from "@/domain/files/card"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }

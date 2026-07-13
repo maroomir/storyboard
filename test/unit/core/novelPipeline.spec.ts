@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ChapterPlan } from "@/shared/outline"
 import type { StoryboardProject } from "@/shared/project"
-import type { NovelRunState, NovelStageName } from "@/files/novelRunState"
-import { parseNovelRunState, serializeNovelRunState } from "@/files/novelRunState"
+import type { NovelRunState, NovelStageName } from "@/domain/files/novelRunState"
+import { parseNovelRunState, serializeNovelRunState } from "@/domain/files/novelRunState"
 
 const generateDraftMock = vi.fn(async () => ({ ok: true, kind: "generated" }) as const)
 const runReviseDraftWorkflowMock = vi.fn(async () => ({

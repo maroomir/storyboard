@@ -15,7 +15,7 @@ import {
   vscodeFsAdapter,
 } from '../../core/vscodeFileSystem';
 import { readProjectJson } from '../../files/projectJson';
-import { readSceneFile, SceneParseError } from '../../files/scene';
+import { readSceneFile, SceneParseError } from '../../domain/files/scene';
 import { formatAugmentCards, type DraftAugmentScope } from '../../services/ai/prompts/draftAugment';
 import type { BibleFact } from '../../shared/bible';
 import type { ProjectFormat } from '../../shared/project';

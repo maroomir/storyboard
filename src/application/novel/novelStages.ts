@@ -7,7 +7,7 @@ import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
 import { draftPath, scenePath, type StoryboardProjectPaths } from '../../core/pathConventions';
 import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../core/sceneSeedFactory';
-import type { NovelRunState, NovelStageName } from '../../files/novelRunState';
+import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
 import type { StoryboardProject } from '../../shared/project';

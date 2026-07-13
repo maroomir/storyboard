@@ -12,9 +12,9 @@ import {
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../core/vscodeFileSystem';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../files/draft';
+import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../domain/files/draft';
 import { readProjectJson } from '../../files/projectJson';
-import { readSceneFile } from '../../files/scene';
+import { readSceneFile } from '../../domain/files/scene';
 import { StoryboardAIService } from '../../services/ai/AIService';
 import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
 import { recordUsageSafely } from '../../services/ai/recordUsageSafely';

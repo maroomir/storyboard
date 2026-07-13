@@ -5,7 +5,7 @@ import type { StoryboardLogger } from '../core/logger';
 import { isDraftMarkdownFile } from '../core/pathConventions';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../core/workspace';
-import { parseDraft } from '../files/draft';
+import { parseDraft } from '../domain/files/draft';
 import { LatestRequestGuard } from '../presentation/providers/latestRequestGuard';
 import type { GrammarIssue } from '../services/ai/AIService';
 
