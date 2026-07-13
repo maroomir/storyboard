@@ -27,14 +27,6 @@ vi.mock("@/core/manuscriptAssembly", () => ({
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
 vi.mock("@/core/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
-vi.mock("@/core/chapterSummaries", () => ({
-  buildChapterSummariesMarkdown: (): string => "",
-  summaryFileName: "SUMMARY.md"
-}))
-vi.mock("@/core/foreshadowingTracker", () => ({
-  collectForeshadowing: (): unknown[] => [],
-  buildForeshadowingMarkdown: (): string => ""
-}))
 vi.mock("@/services/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@/services/ai/AIService", () => ({
   StoryboardAIService: class {
@@ -160,10 +152,16 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       getTaskProvider: () => "mock"
     } as never,
     aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
+    assembleManuscriptUseCase: {
+      execute: async (): Promise<unknown> => ({ ok: true, kind: "assembled" })
+    } as never,
     configBridge: {} as never,
     generateDraftUseCase: { execute: (...args: unknown[]): unknown => generateDraftMock(...args) } as never,
     logger: { error: () => undefined, info: () => undefined } as never,
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
+    summarizeChaptersUseCase: {
+      execute: async (): Promise<unknown> => ({ ok: true, kind: "summarized" })
+    } as never,
     usageRecorder: {} as never
   }
 

@@ -3,17 +3,13 @@ import * as vscode from 'vscode';
 import type { AiGateway } from '../ai/aiGateway';
 import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
 import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
+import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
+import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import { listCharacterBriefs } from '../../core/characterBriefs';
 import type { StoryboardLogger } from '../../core/logger';
 import { assembleManuscript } from '../../core/manuscriptAssembly';
 import { collectDraftsByOrder } from '../../core/manuscriptDrafts';
 import { buildManuscriptReviewMarkdown } from '../../core/manuscriptReview';
-import {
-  buildChapterSummariesMarkdown,
-  summaryFileName,
-  type ChapterSummary,
-} from '../../core/chapterSummaries';
-import { buildForeshadowingMarkdown, collectForeshadowing } from '../../core/foreshadowingTracker';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
 import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../core/sceneSeedFactory';
@@ -59,10 +55,12 @@ async function writeTextFile(uri: vscode.Uri, text: string): Promise<void> {
 export interface NovelPipelineDependencies {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
+  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: StoryboardLogger;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly usageRecorder: UsageRecorder;
 }
 
@@ -204,7 +202,7 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     }
 
     await runStageOnce('assemble', '원고 조립 중…', () =>
-      runAssembleStage(paths, options.project, plan),
+      runAssembleStage(options.workspaceUri, options.deps.assembleManuscriptUseCase),
     );
 
     await runStageOnce('review', '원고 최종 검사 중…', () =>
@@ -212,13 +210,7 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     );
 
     await runStageOnce('summaries', '장별 요약 중…', () =>
-      runSummariesStage(
-        paths,
-        options.project,
-        plan,
-        newAiService(),
-        options.deps.aiProviderRegistry,
-      ),
+      runSummariesStage(options.workspaceUri, options.deps.summarizeChaptersUseCase),
     );
 
     await persist({ status: 'done' });
@@ -400,25 +392,15 @@ async function loadAssembledManuscript(
 }
 
 async function runAssembleStage(
-  paths: StoryboardProjectPaths,
-  project: StoryboardProject,
-  plan: ChapterPlan,
+  workspaceUri: vscode.Uri,
+  assembleManuscriptUseCase: AssembleManuscriptUseCase,
 ): Promise<void> {
-  const manuscript = await loadAssembledManuscript(paths, project, plan);
-
-  await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
-
-  for (const chapter of manuscript.chapters) {
-    await writeTextFile(
-      vscode.Uri.joinPath(paths.manuscriptDirectory, chapter.fileName),
-      chapter.markdown,
+  const result = await assembleManuscriptUseCase.execute(workspaceUri);
+  if (!result.ok) {
+    throw new Error(
+      result.kind === 'failed' ? result.message : `원고를 조립할 수 없습니다: ${result.kind}`,
     );
   }
-  await writeTextFile(paths.manuscriptVolume, manuscript.volumeMarkdown);
-  await writeTextFile(
-    vscode.Uri.joinPath(paths.manuscriptDirectory, 'FORESHADOWING.md'),
-    buildForeshadowingMarkdown(project.name, collectForeshadowing(plan)),
-  );
 }
 
 async function runReviewStage(
@@ -462,29 +444,15 @@ async function runReviewStage(
 }
 
 async function runSummariesStage(
-  paths: StoryboardProjectPaths,
-  project: StoryboardProject,
-  plan: ChapterPlan,
-  aiService: StoryboardAIService,
-  registry: AiProviderRegistry,
+  workspaceUri: vscode.Uri,
+  summarizeChaptersUseCase: SummarizeChaptersUseCase,
 ): Promise<void> {
-  const manuscript = await loadAssembledManuscript(paths, project, plan);
-  const providerId = registry.getTaskProvider('chapterSummary');
-
-  const summaries: ChapterSummary[] = [];
-  for (const chapter of manuscript.chapters) {
-    const summary = await aiService.summarizeChapter(
-      { chapterTitle: chapter.chapterTitle, body: chapter.markdown },
-      { providerId },
+  const result = await summarizeChaptersUseCase.execute(workspaceUri);
+  if (!result.ok) {
+    throw new Error(
+      result.kind === 'failed' ? result.message : `장별 요약을 완료할 수 없습니다: ${result.kind}`,
     );
-    summaries.push({ chapterTitle: chapter.chapterTitle, summary });
   }
-
-  await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
-  await writeTextFile(
-    vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
-    buildChapterSummariesMarkdown(project.name, summaries),
-  );
 }
 
 function groupChapterStems(plan: ChapterPlan, digitCount: number): ChapterGroup[] {

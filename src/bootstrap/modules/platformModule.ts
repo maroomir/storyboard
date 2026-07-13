@@ -186,10 +186,12 @@ export class PlatformModule implements IApplicationModule {
     const novelPipeline = new NovelPipeline({
       aiGateway,
       aiProviderRegistry,
+      assembleManuscriptUseCase,
       configBridge,
       generateDraftUseCase,
       logger,
       reviseDraftUseCase,
+      summarizeChaptersUseCase,
       usageRecorder,
     });
 
