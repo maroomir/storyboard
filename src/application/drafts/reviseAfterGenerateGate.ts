@@ -6,7 +6,7 @@ import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
 import { uriExists } from '../../core/workspace';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { parseSceneFileName } from '../../shared/scene';
-import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './revise-draft-use-case';
+import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 
 const DEFAULT_MAX_ITERATIONS = 2;
 const MIN_MAX_ITERATIONS = 1;

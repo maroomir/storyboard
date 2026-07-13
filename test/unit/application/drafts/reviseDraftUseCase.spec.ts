@@ -51,7 +51,7 @@ import {
   type ReviseDraftRequest,
   type ReviseDraftUseCaseDependencies,
   type ReviseDraftWorkflowResult
-} from "@/application/drafts/revise-draft-use-case"
+} from "@/application/drafts/reviseDraftUseCase"
 
 const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
 const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }

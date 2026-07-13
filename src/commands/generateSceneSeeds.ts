@@ -10,7 +10,7 @@ import {
 } from '../files/outline';
 import { readProjectJson } from '../files/projectJson';
 import { parseSceneFileName } from '../shared/scene';
-import { resolveScenePrefixDigitCount } from '../domain/scene-prefix-digits';
+import { resolveScenePrefixDigitCount } from '../domain/scenePrefixDigits';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';
 

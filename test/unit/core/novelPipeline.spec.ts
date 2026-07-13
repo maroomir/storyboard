@@ -58,7 +58,7 @@ import {
   NovelPipeline,
   type NovelPipelineDependencies,
   type NovelPipelineRunOptions
-} from "@/application/novel/novel-pipeline"
+} from "@/application/novel/novelPipeline"
 
 const samplePlan: ChapterPlan = {
   version: "1.0.0",

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
-import type { ReviseDraftUseCase } from '../drafts/revise-draft-use-case';
+import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
 import { listCharacterBriefs } from '../../core/characterBriefs';
 import type { StoryboardLogger } from '../../core/logger';
 import { assembleManuscript } from '../../core/manuscriptAssembly';
@@ -17,7 +17,7 @@ import { buildForeshadowingMarkdown, collectForeshadowing } from '../../core/for
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../core/pathConventions';
 import { recordRevisionEntry } from '../../core/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../core/sceneSeedFactory';
-import { resolveScenePrefixDigitCount } from '../../domain/scene-prefix-digits';
+import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
 import { type CardFileSystem } from '../../files/card';
 import { readBibleFile, type BibleFileSystem } from '../../files/bible';
 import { type DraftFileSystem } from '../../files/draft';

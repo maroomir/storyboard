@@ -4,7 +4,7 @@ import type { ReviseAfterGenerateGate } from '../application/drafts/reviseAfterG
 import type {
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,
-} from '../application/drafts/revise-draft-use-case';
+} from '../application/drafts/reviseDraftUseCase';
 import type { StoryboardLogger } from '../core/logger';
 import { draftPath, getStoryboardProjectPaths } from '../core/pathConventions';
 import { recordRevisionEntry } from '../core/revisionPlanRecorder';

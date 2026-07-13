@@ -4,7 +4,7 @@ import {
   type NovelApprovalKind,
   type NovelPipeline,
   type NovelPipelineResult,
-} from '../application/novel/novel-pipeline';
+} from '../application/novel/novelPipeline';
 import { resolveReviseMaxIterations } from '../application/drafts/reviseAfterGenerateGate';
 import { validateGenerationContract } from '../core/generationContract';
 import { isResumable } from '../core/novelRunPlan';

@@ -16,9 +16,9 @@ import { SummarizeChaptersUseCase } from '../../application/manuscript/summarize
 import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
 import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generateAllDraftsUseCase';
-import { ReviseDraftUseCase } from '../../application/drafts/revise-draft-use-case';
+import { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
 import { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
-import { NovelPipeline } from '../../application/novel/novel-pipeline';
+import { NovelPipeline } from '../../application/novel/novelPipeline';
 import { GenerateOutlineUseCase } from '../../application/novel/generateOutlineUseCase';
 import { DraftRepository } from '../../infrastructure/persistence/repositories/draftRepository';
 import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/cardRecommendationRepository';

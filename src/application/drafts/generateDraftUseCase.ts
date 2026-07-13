@@ -37,7 +37,7 @@ import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
   type SceneGenerationPipelineStage,
-} from '../pipelines/scene-generation-pipeline';
+} from '../pipelines/sceneGenerationPipeline';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import { type TraitsUpdateSummary } from '../../services/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';

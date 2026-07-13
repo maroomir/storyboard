@@ -5,7 +5,7 @@ import {
   type GenerateDraftResult,
 } from '../application/drafts/generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from '../application/drafts/reviseAfterGenerateGate';
-import type { SceneGenerationPipelineStage } from '../application/pipelines/scene-generation-pipeline';
+import type { SceneGenerationPipelineStage } from '../application/pipelines/sceneGenerationPipeline';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';

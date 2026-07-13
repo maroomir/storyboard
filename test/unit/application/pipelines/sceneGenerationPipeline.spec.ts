@@ -9,7 +9,7 @@ import {
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
-} from "@/application/pipelines/scene-generation-pipeline"
+} from "@/application/pipelines/sceneGenerationPipeline"
 import type { SceneFile } from "@/shared/scene"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
