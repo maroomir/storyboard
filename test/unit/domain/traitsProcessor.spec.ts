@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs"
 
 import { describe, expect, it } from "vitest"
 
-import { parseCharacterTraitSections } from "@/utils/aiResponseParser"
+import { parseCharacterTraitSections } from "@/shared/aiResponseParser"
 import {
   calculateSimilarity,
   reconcileCharacterTraits,
   removeDuplicateTraits,
   removeExistingTraits,
   validateTraits
-} from "@/utils/traitsProcessor"
+} from "@/domain/traitsProcessor"
 
 describe("traitsProcessor", () => {
   it("calculates simple word-overlap similarity", () => {

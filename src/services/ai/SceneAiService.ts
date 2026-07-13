@@ -13,7 +13,7 @@ import { GenreFormattingPrompt } from './prompts/genreFormatting';
 import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
-import { parseJsonArray } from '../../utils/aiResponseParser';
+import { parseJsonArray } from '../../shared/aiResponseParser';
 
 export class SceneAiService {
   public constructor(private readonly gateway: AiTextGateway) {}

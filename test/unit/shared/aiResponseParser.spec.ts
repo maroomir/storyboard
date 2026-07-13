@@ -8,7 +8,7 @@ import {
   parseJsonNestedArray,
   parseJsonObject,
   parseMBTI
-} from "@/utils/aiResponseParser"
+} from "@/shared/aiResponseParser"
 
 describe("aiResponseParser", () => {
   it("extracts JSON arrays and objects embedded in prose", () => {

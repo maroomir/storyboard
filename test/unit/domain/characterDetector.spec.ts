@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { detectCharactersInText } from "@/utils/characterDetector"
+import { detectCharactersInText } from "@/domain/characterDetector"
 
 describe("characterDetector", () => {
   it("detects characters using simple substring matching", () => {

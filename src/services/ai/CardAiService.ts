@@ -22,7 +22,7 @@ import { FactExtractionPrompt } from './prompts/factExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
 import type { AiGenerateResponse, UsageAttribution, WiredAiTaskName } from './types';
-import { parseBulletList, parseJsonArray, parseJsonObject } from '../../utils/aiResponseParser';
+import { parseBulletList, parseJsonArray, parseJsonObject } from '../../shared/aiResponseParser';
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {
   readonly aliases?: readonly string[];

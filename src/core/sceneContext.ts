@@ -10,7 +10,7 @@ import {
   type StoryBible,
 } from '../shared/bible';
 import { isIgnoredSampleCardFileName } from './pathConventions';
-import { detectCharactersInText } from '../utils/characterDetector';
+import { detectCharactersInText } from '../domain/characterDetector';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown;

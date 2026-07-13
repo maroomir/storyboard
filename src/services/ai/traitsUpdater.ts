@@ -1,7 +1,7 @@
 import type { CharacterCard } from '@/shared/card';
 import { readCardFile, writeCardFile, type CardFileSystem } from '@/files/card';
-import { parseBulletList } from '@/utils/aiResponseParser';
-import { reconcileCharacterTraits } from '@/utils/traitsProcessor';
+import { parseBulletList } from '@/shared/aiResponseParser';
+import { reconcileCharacterTraits } from '@/domain/traitsProcessor';
 import type { StoryboardAIService } from './AIService';
 import type { UsageAttribution } from './types';
 

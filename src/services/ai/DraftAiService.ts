@@ -19,7 +19,7 @@ import type { PromptArtifact, PromptConfig } from './prompts/types';
 import type { AiGenerateResponse, WiredAiTaskName } from './types';
 import { coerceCritiqueIssues, type DraftCritiqueIssue } from '../../shared/draftReview';
 import { coerceSceneCoverage, type SceneCoverageIssue } from '../../shared/sceneCoverage';
-import { parseJsonArray } from '../../utils/aiResponseParser';
+import { parseJsonArray } from '../../shared/aiResponseParser';
 
 export type InlineCompletionContext = {
   readonly activeCharacter?: string;

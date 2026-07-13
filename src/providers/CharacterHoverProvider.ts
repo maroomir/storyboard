@@ -5,7 +5,7 @@ import { vscodeFsAdapter } from '../core/vscodeFileSystem';
 import { hasStoryboardProject } from '../core/workspace';
 import { readCardFile } from '../files/card';
 import type { CharacterCard } from '../shared/card';
-import { detectCharactersInText } from '../utils/characterDetector';
+import { detectCharactersInText } from '../domain/characterDetector';
 
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 

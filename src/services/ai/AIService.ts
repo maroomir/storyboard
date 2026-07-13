@@ -27,7 +27,7 @@ import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction'
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
-import { parseJsonObject } from '@/utils/aiResponseParser';
+import { parseJsonObject } from '@/shared/aiResponseParser';
 import {
   coerceChapterPlan,
   coerceOutlineSynopsis,
