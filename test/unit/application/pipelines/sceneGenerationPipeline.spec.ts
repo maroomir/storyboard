@@ -2,14 +2,16 @@ import { describe, expect, it, vi } from "vitest"
 
 import type { SceneContext } from "@/core/sceneContext"
 import {
-  chunkDialoguePiecesByBudget,
-  dedupeSituations,
-  looksLikeFormatMetaLeak,
-  resolveSceneBreakJoiner,
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
 } from "@/application/pipelines/sceneGenerationPipeline"
+import {
+  chunkDialoguePiecesByBudget,
+  dedupeSituations,
+  looksLikeFormatMetaLeak,
+  resolveSceneBreakJoiner
+} from "@/application/pipelines/sceneGenerationPolicies"
 import type { SceneFile } from "@/shared/scene"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 

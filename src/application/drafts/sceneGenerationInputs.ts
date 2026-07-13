@@ -13,7 +13,7 @@ import { SceneParseError } from '../../files/scene';
 import { computeSceneInputHash } from '../../files/sceneCache';
 import { sceneCacheFilePath } from '../../files/sceneCacheWorkspace';
 import { parseSceneFileName } from '../../shared/scene';
-import { resolveSceneBreakJoiner } from '../pipelines/sceneGenerationPipeline';
+import { resolveSceneBreakJoiner } from '../pipelines/sceneGenerationPolicies';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 
 export interface SceneGenerationInputs {
