@@ -15,10 +15,10 @@ import {
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../domain/files/draft';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile } from '../../domain/files/scene';
-import { StoryboardAIService } from '../../services/ai/AIService';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
-import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../../services/ai/UsageRecorder';
+import { StoryboardAIService } from '../../infrastructure/ai/AIService';
+import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import {
   buildRevisionInstructions,
   countBlockingIssues,

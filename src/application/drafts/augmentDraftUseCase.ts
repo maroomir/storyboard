@@ -16,7 +16,10 @@ import {
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile, SceneParseError } from '../../domain/files/scene';
-import { formatAugmentCards, type DraftAugmentScope } from '../../services/ai/prompts/draftAugment';
+import {
+  formatAugmentCards,
+  type DraftAugmentScope,
+} from '../../infrastructure/ai/prompts/draftAugment';
 import type { BibleFact } from '../../shared/bible';
 import type { ProjectFormat } from '../../shared/project';
 

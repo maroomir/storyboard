@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import type { Character } from "@/domain/Character"
-import { GenreFormattingPrompt } from "@/services/ai/prompts/genreFormatting"
-import { PersonaDialoguePrompt } from "@/services/ai/prompts/personaDialogue"
-import { PersonaGenerationPrompt } from "@/services/ai/prompts/personaGeneration"
+import { GenreFormattingPrompt } from "@/infrastructure/ai/prompts/genreFormatting"
+import { PersonaDialoguePrompt } from "@/infrastructure/ai/prompts/personaDialogue"
+import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGeneration"
 import type { Background } from "@/domain/Background"
 import type { ProjectSetting } from "@/shared/project"
 import {

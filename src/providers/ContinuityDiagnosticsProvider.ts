@@ -20,7 +20,7 @@ import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { parseDraft } from '../domain/files/draft';
 import { readSceneFile } from '../domain/files/scene';
-import type { ContinuityIssue } from '../services/ai/AIService';
+import type { ContinuityIssue } from '../infrastructure/ai/AIService';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';
 const continuitySource = 'storyboard-continuity';

@@ -12,7 +12,7 @@ import {
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
+import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
 import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
 import type { StoryboardProject } from '../../shared/project';
 import type {

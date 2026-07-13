@@ -9,7 +9,7 @@ import type {
   GenerateTextOptions,
   SituationWithCharacters,
   StoryboardAIService,
-} from '../../services/ai/AIService';
+} from '../../infrastructure/ai/AIService';
 import type { AiProviderId, EntityRef } from '../../shared/aiTypes';
 import {
   chunkDialoguePiecesByBudget,

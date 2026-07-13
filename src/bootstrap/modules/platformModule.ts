@@ -43,9 +43,12 @@ import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   createAiProviderRegistry,
   type AiProviderRegistry,
-} from '../../services/ai/providerRegistry';
-import { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';
-import { createVscodeUsageLedgerFileSystem, UsageRecorder } from '../../services/ai/UsageRecorder';
+} from '../../infrastructure/ai/providerRegistry';
+import { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
+import {
+  createVscodeUsageLedgerFileSystem,
+  UsageRecorder,
+} from '../../infrastructure/ai/UsageRecorder';
 import { SecretStore } from '../../services/secrets/SecretStore';
 import { ConfigBridge } from '../../services/settings/ConfigBridge';
 

@@ -1,4 +1,4 @@
-import type { SituationWithCharacters } from '../../services/ai/AIService';
+import type { SituationWithCharacters } from '../../infrastructure/ai/AIService';
 
 export function dedupeSituations(
   items: readonly SituationWithCharacters[],

@@ -13,7 +13,7 @@ import type { Draft } from '../domain/Draft';
 import { createDraft, parseDraft, serializeDraft } from '../domain/files/draft';
 import { archiveExistingDraft } from '../domain/files/draftHistory';
 import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
-import type { DraftAugmentScope } from '../services/ai/prompts/draftAugment';
+import type { DraftAugmentScope } from '../infrastructure/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../services/settings/ConfigBridge';
 import { resolveExpandRange } from './expandDraft';
 

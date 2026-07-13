@@ -10,8 +10,8 @@ import type {
 } from '../ports/repositories';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
-import type { TraitsUpdateSummary } from '../../services/ai/traitsUpdater';
-import type { PostGenerationUpdateManager } from '../../services/ai/PostGenerationUpdateManager';
+import type { TraitsUpdateSummary } from '../../infrastructure/ai/traitsUpdater';
+import type { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '../pipelines/sceneGenerationPipeline';
 
 export interface GenerateDraftUseCaseDependencies {

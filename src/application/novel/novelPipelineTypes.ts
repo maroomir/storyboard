@@ -7,8 +7,8 @@ import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscript
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
-import type { UsageRecorder } from '../../services/ai/UsageRecorder';
+import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import type { ConfigBridge } from '../../services/settings/ConfigBridge';
 import type { StoryboardProject } from '../../shared/project';
 import type {

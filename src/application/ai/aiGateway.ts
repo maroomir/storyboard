@@ -1,10 +1,10 @@
 import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { StoryboardAIService } from '../../services/ai/AIService';
-import type { AiProviderRegistry } from '../../services/ai/providerRegistry';
-import { recordUsageSafely } from '../../services/ai/recordUsageSafely';
-import type { UsageRecorder } from '../../services/ai/UsageRecorder';
+import { StoryboardAIService } from '../../infrastructure/ai/AIService';
+import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import type { AiProviderId, AiTaskName } from '../../shared/ai';
 
 export class AiGateway {

@@ -7,9 +7,9 @@ import type {
 import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '../domain/files/usageLedger';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { createAiRpcHandlers, createUsageRpcHandlers } from '../services/ai/rpcHandlers';
-import { type AiProviderRegistry } from '../services/ai/providerRegistry';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import { createAiRpcHandlers, createUsageRpcHandlers } from '../infrastructure/ai/rpcHandlers';
+import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
 import type { UsageSummaryByEntity } from '../shared/aiTypes';
 import type { SidebarCardSummary, StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

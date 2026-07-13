@@ -5,7 +5,7 @@ import {
   mapContinuityIssuesToDiagnostics,
   toContinuityRange
 } from "@/providers/ContinuityDiagnosticsProvider"
-import type { ContinuityIssue } from "@/services/ai/AIService"
+import type { ContinuityIssue } from "@/infrastructure/ai/AIService"
 
 function createDocument(text: string): vscode.TextDocument {
   return {

@@ -5,7 +5,7 @@ import {
   buildCardCollectProposals,
   type CollectDraft,
   type CollectRosterEntry,
-} from '../../services/ai/cardCollectBuilder';
+} from '../../infrastructure/ai/cardCollectBuilder';
 import type { StoryboardCard } from '../../shared/card';
 import type { CardCollectProposal } from '../../shared/cardCollect';
 

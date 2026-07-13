@@ -6,8 +6,8 @@ import {
   type CardRecommendationAiService,
   type RecommendationSource,
   type RecommendedCard,
-} from '../../services/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../../services/ai/prompts/cardRecommendation';
+} from '../../infrastructure/ai/cardRecommendationBuilder';
+import type { RecommendationCategory } from '../../infrastructure/ai/prompts/cardRecommendation';
 
 export interface ICardRecommendationRepository {
   load(

@@ -11,8 +11,8 @@ import {
 import { parseCard } from '../../../domain/files/card';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
 import { readSceneFile, type SceneFileSystem } from '../../../domain/files/scene';
-import type { RecommendationSource } from '../../../services/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../../../services/ai/prompts/cardRecommendation';
+import type { RecommendationSource } from '../../../infrastructure/ai/cardRecommendationBuilder';
+import type { RecommendationCategory } from '../../../infrastructure/ai/prompts/cardRecommendation';
 
 const SCENE_FILE_SYSTEM: SceneFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

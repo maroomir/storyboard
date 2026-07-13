@@ -9,8 +9,8 @@ import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentS
 import type { StoryboardCard } from '../shared/card';
 import type { StoryboardResponsePayload } from '../shared/messaging';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import type { AiProviderRegistry } from '../services/ai/providerRegistry';
-import type { UsageRecorder } from '../services/ai/UsageRecorder';
+import type { AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const cardEditorViewType = 'storyboard.card';

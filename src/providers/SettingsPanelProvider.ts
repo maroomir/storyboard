@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { createAiRpcHandlers } from '../services/ai/rpcHandlers';
-import { type AiProviderRegistry } from '../services/ai/providerRegistry';
+import { createAiRpcHandlers } from '../infrastructure/ai/rpcHandlers';
+import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
 import { aiProviderIds } from '../shared/aiTypes';
 import { type SecretStore } from '../services/secrets/SecretStore';
 import { type ConfigBridge } from '../services/settings/ConfigBridge';

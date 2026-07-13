@@ -16,7 +16,7 @@ import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
 import { parseDraft } from '../domain/files/draft';
 import { readSceneFile } from '../domain/files/scene';
 import type { BackgroundCard, CharacterCard } from '../shared/card';
-import type { InlineCompletionContext } from '../services/ai/AIService';
+import type { InlineCompletionContext } from '../infrastructure/ai/AIService';
 import { type AiProviderId, isCliProvider } from '../shared/aiTypes';
 import { parseDraftSceneParts } from '../infrastructure/vscode/draftSceneLink';
 

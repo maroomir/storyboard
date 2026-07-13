@@ -8,14 +8,14 @@ const critiqueDraftMock = vi.fn<[], Promise<DraftCritiqueIssue[]>>()
 const reviseDraftMock = vi.fn(async () => "수정된 본문")
 const writeDraftFileMock = vi.fn(async () => undefined)
 
-vi.mock("@/services/ai/AIService", () => ({
+vi.mock("@/infrastructure/ai/AIService", () => ({
   StoryboardAIService: class {
     checkContinuity = (): Promise<ContinuityIssueLike[]> => checkContinuityMock()
     critiqueDraft = (): Promise<DraftCritiqueIssue[]> => critiqueDraftMock()
     reviseDraft = (): Promise<string> => reviseDraftMock()
   }
 }))
-vi.mock("@/services/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
+vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@/domain/files/scene", () => ({
   readSceneFile: async (): Promise<unknown> => ({
     stem: "01-scene",

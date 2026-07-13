@@ -25,8 +25,8 @@ vi.mock("@/domain/manuscriptAssembly", () => ({
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
 vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
-vi.mock("@/services/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
-vi.mock("@/services/ai/AIService", () => ({
+vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
+vi.mock("@/infrastructure/ai/AIService", () => ({
   StoryboardAIService: class {
     generateOutlineSynopsis = async (): Promise<unknown> => ({
       logline: "",

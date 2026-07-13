@@ -4,7 +4,10 @@ import type { ICardCollectRepository } from '../../../application/cards/collectC
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { loadCharacterRoster } from '../relationGraphData';
 import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
-import type { CollectDraft, CollectRosterEntry } from '../../../services/ai/cardCollectBuilder';
+import type {
+  CollectDraft,
+  CollectRosterEntry,
+} from '../../../infrastructure/ai/cardCollectBuilder';
 
 const VSCODE_DRAFT_FILE_SYSTEM: DraftFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

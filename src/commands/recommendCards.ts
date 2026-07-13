@@ -8,8 +8,8 @@ import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspa
 import { createEmptyBackground } from '../domain/Background';
 import { createEmptyCharacter } from '../domain/Character';
 import type { StoryboardCard } from '../shared/card';
-import type { RecommendedCard } from '../services/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../services/ai/prompts/cardRecommendation';
+import type { RecommendedCard } from '../infrastructure/ai/cardRecommendationBuilder';
+import type { RecommendationCategory } from '../infrastructure/ai/prompts/cardRecommendation';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import type { CreateCardUseCase } from '../application/cards/createCardUseCase';
 
