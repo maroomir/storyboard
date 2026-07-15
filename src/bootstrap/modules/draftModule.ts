@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-import { registerApplyDraftFormatCommand } from '../../commands/applyDraftFormat';
-import { registerAugmentDraftCommands } from '../../commands/augmentDraft';
-import { registerExpandDraftCommand } from '../../commands/expandDraft';
-import { registerGenerateAllDraftsCommand } from '../../commands/generateAllDrafts';
-import { registerGenerateDraftCommands } from '../../commands/generateDraft';
-import { registerNewSceneCommands } from '../../commands/newScene';
-import { registerReviseDraftCommand } from '../../commands/reviseDraft';
+import { registerApplyDraftFormatCommand } from '../../presentation/commands/applyDraftFormat';
+import { registerAugmentDraftCommands } from '../../presentation/commands/augmentDraft';
+import { registerExpandDraftCommand } from '../../presentation/commands/expandDraft';
+import { registerGenerateAllDraftsCommand } from '../../presentation/commands/generateAllDrafts';
+import { registerGenerateDraftCommands } from '../../presentation/commands/generateDraft';
+import { registerNewSceneCommands } from '../../presentation/commands/newScene';
+import { registerReviseDraftCommand } from '../../presentation/commands/reviseDraft';
 import { registerCharacterHoverProvider } from '../../presentation/providers/CharacterHoverProvider';
 import { registerContinuityDiagnosticsProvider } from '../../presentation/providers/ContinuityDiagnosticsProvider';
 import { registerGrammarDiagnosticsProvider } from '../../presentation/providers/GrammarDiagnosticsProvider';

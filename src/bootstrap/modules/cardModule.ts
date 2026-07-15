@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-import { registerCanonDiffCommand } from '../../commands/canonDiff';
-import { registerCreateCardCommands } from '../../commands/createCard';
-import { registerMigrateCardTextCommand } from '../../commands/migrateCardTextToList';
-import { registerPromoteBibleCandidatesCommand } from '../../commands/promoteBibleCandidates';
-import { registerPromoteCardCandidatesCommand } from '../../commands/promoteCardCandidates';
-import { registerRecommendCardCommands } from '../../commands/recommendCards';
-import { registerRenameCardCommands } from '../../commands/renameCard';
+import { registerCanonDiffCommand } from '../../presentation/commands/canonDiff';
+import { registerCreateCardCommands } from '../../presentation/commands/createCard';
+import { registerMigrateCardTextCommand } from '../../presentation/commands/migrateCardTextToList';
+import { registerPromoteBibleCandidatesCommand } from '../../presentation/commands/promoteBibleCandidates';
+import { registerPromoteCardCandidatesCommand } from '../../presentation/commands/promoteCardCandidates';
+import { registerRecommendCardCommands } from '../../presentation/commands/recommendCards';
+import { registerRenameCardCommands } from '../../presentation/commands/renameCard';
 import { registerCardCustomEditorProvider } from '../../presentation/providers/CardCustomEditorProvider';
 import { registerCardRenameParticipant } from '../../presentation/providers/CardRenameParticipant';
 import { registerSidebarCardsProviders } from '../../presentation/providers/SidebarCardsProvider';

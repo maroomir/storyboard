@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import { registerOpenRelationGraphCommand } from '../../commands/openRelationGraph';
-import { registerOpenSettingsCommand } from '../../commands/openSettings';
+import { registerOpenRelationGraphCommand } from '../../presentation/commands/openRelationGraph';
+import { registerOpenSettingsCommand } from '../../presentation/commands/openSettings';
 import { RelationGraphProvider } from '../../presentation/providers/RelationGraphProvider';
 import { SettingsPanelProvider } from '../../presentation/providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '../../presentation/providers/SidebarStudioProvider';

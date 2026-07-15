@@ -1,10 +1,10 @@
-import { registerAssembleManuscriptCommand } from '../../commands/assembleManuscript';
-import { registerExportManuscriptCommand } from '../../commands/exportManuscript';
-import { registerGenerateNovelCommand } from '../../commands/generateNovel';
-import { registerGenerateOutlineCommand } from '../../commands/generateOutline';
-import { registerGenerateSceneSeedsCommand } from '../../commands/generateSceneSeeds';
-import { registerReviewManuscriptCommand } from '../../commands/reviewManuscript';
-import { registerSummarizeChaptersCommand } from '../../commands/summarizeChapters';
+import { registerAssembleManuscriptCommand } from '../../presentation/commands/assembleManuscript';
+import { registerExportManuscriptCommand } from '../../presentation/commands/exportManuscript';
+import { registerGenerateNovelCommand } from '../../presentation/commands/generateNovel';
+import { registerGenerateOutlineCommand } from '../../presentation/commands/generateOutline';
+import { registerGenerateSceneSeedsCommand } from '../../presentation/commands/generateSceneSeeds';
+import { registerReviewManuscriptCommand } from '../../presentation/commands/reviewManuscript';
+import { registerSummarizeChaptersCommand } from '../../presentation/commands/summarizeChapters';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';
