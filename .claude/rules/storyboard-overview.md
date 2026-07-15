@@ -11,9 +11,11 @@ graph TB
     subgraph VSCode[VSCode Extension Host]
         ExtensionEntry[src/extension.ts]
         Bootstrap[src/bootstrap/StoryboardApplication]
+        Presentation[src/presentation commands, providers, messaging]
         Application[src/application use cases and pipelines]
         Infrastructure[src/infrastructure adapters]
-        Legacy[src/core, commands, providers, files, services]
+        Domain[src/domain policies and codecs]
+        Shared[src/shared contracts]
         State[VSCode globalState/workspaceState/secrets]
     end
 
@@ -23,13 +25,18 @@ graph TB
     end
 
     ExtensionEntry --> Bootstrap
-    Bootstrap --> Application
+    Bootstrap --> Presentation
     Bootstrap --> Infrastructure
-    Bootstrap --> Legacy
+    Presentation --> Application
+    Infrastructure --> Application
+    Application --> Domain
+    Domain --> Shared
     Infrastructure --> State
-    Bootstrap <--> MessageClient
+    Presentation <--> MessageClient
     MessageClient --> App
 ```
+
+The legacy `core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants` directories have been fully migrated into the target layers; `scripts/check-architecture.mjs` now enforces layer direction (no reverse imports, no cycles, no `vscode` import outside the allowed layers).
 
 ## Domain Boundaries
 

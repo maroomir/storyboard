@@ -1,6 +1,6 @@
 ---
 description: Webview UI, messaging, security, and UX for storyboard
-globs: webview-ui/**/*,src/shared/**/*,src/core/**/*
+globs: webview-ui/**/*,src/shared/**/*,src/presentation/messaging/**/*
 alwaysApply: false
 ---
 

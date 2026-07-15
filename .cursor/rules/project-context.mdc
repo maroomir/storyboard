@@ -50,14 +50,14 @@ alwaysApply: true
 ```text
 src/extension.ts             # Thin entry point
 src/bootstrap/               # Application lifecycle and feature modules
+src/presentation/            # Commands, providers, webview RPC (VS Code I/O only)
 src/application/             # Use cases, pipelines, ports
-src/infrastructure/          # VS Code and persistence adapters
-src/domain/, src/shared/     # Runtime-agnostic policies and contracts
-src/commands/, src/providers/# Legacy presentation adapters being migrated
-src/core/, src/files/, src/services/ # Legacy implementation areas being migrated
+src/infrastructure/          # persistence, ai, vscode/settings/secrets/seedcoat adapters
+src/domain/                  # Runtime-agnostic policies, codecs, value types (no vscode)
+src/shared/                  # Contracts and value types (imports no other layer)
 ```
 
-`extension.ts` imports only `bootstrap`; `shared` imports only itself; `core` must not import `commands`.
+Legacy dirs (`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`) are fully migrated into these layers. `scripts/check-architecture.mjs` enforces: `extension.ts` imports only `bootstrap`; `shared` imports only itself; `domain` imports no outer layer and no `vscode`; `application` does not import `presentation`/`bootstrap` and uses `vscode` type-only.
 
 ## Messaging and state
 
