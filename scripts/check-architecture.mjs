@@ -8,10 +8,22 @@ const REPOSITORY_ROOT = process.cwd();
 const SOURCE_ROOT = path.join(REPOSITORY_ROOT, 'src');
 const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
 const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared');
-const CORE_ROOT = path.join(SOURCE_ROOT, 'core');
+const APPLICATION_ROOT = path.join(SOURCE_ROOT, 'application');
+const DOMAIN_ROOT = path.join(SOURCE_ROOT, 'domain');
+const PRESENTATION_ROOT = path.join(SOURCE_ROOT, 'presentation');
+const INFRASTRUCTURE_ROOT = path.join(SOURCE_ROOT, 'infrastructure');
+const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
 const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'commands');
 const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'providers');
 const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIService.ts');
+
+// Compat boundary: application code still touching vscode at runtime; converge behind ports then remove.
+const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([
+  path.join(APPLICATION_ROOT, 'drafts', 'reviseAfterGenerateGate.ts'),
+  path.join(APPLICATION_ROOT, 'drafts', 'generateDraftUseCase.ts'),
+  path.join(APPLICATION_ROOT, 'drafts', 'sceneGenerationInputs.ts'),
+  path.join(APPLICATION_ROOT, 'drafts', 'reviseDraftUseCase.ts'),
+]);
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT);
 const sourceFileSet = new Set(sourceFiles);
@@ -32,11 +44,15 @@ for (const filePath of sourceFiles) {
       continue;
     }
 
+    validateDomainVscodeBoundary(filePath, importPath);
+    validateApplicationVscodeBoundary(filePath, statement, importPath);
+
     const target = resolveImport(filePath, importPath);
     if (target) {
       graph.get(filePath)?.add(target);
       validateSharedBoundary(filePath, target);
-      validateCoreBoundary(filePath, target);
+      validateDomainBoundary(filePath, target);
+      validateApplicationBoundary(filePath, target);
       validatePresentationAiBoundary(filePath, statement, target);
     }
   }
@@ -169,12 +185,48 @@ function validateSharedBoundary(filePath, target) {
   }
 }
 
-function validateCoreBoundary(filePath, target) {
-  if (isWithinDirectory(filePath, CORE_ROOT) && isWithinDirectory(target, COMMANDS_ROOT)) {
+function validateDomainBoundary(filePath, target) {
+  if (!isWithinDirectory(filePath, DOMAIN_ROOT)) {
+    return;
+  }
+
+  const forbiddenRoots = [APPLICATION_ROOT, INFRASTRUCTURE_ROOT, PRESENTATION_ROOT, BOOTSTRAP_ROOT];
+  if (forbiddenRoots.some((root) => isWithinDirectory(target, root))) {
     failures.push(
-      `Core layer imports commands: ${relativePath(filePath)} -> ${relativePath(target)}`,
+      `Domain layer imports outer layer: ${relativePath(filePath)} -> ${relativePath(target)}`,
     );
   }
+}
+
+function validateDomainVscodeBoundary(filePath, importPath) {
+  if (isWithinDirectory(filePath, DOMAIN_ROOT) && importPath === 'vscode') {
+    failures.push(`Domain layer imports vscode: ${relativePath(filePath)}`);
+  }
+}
+
+function validateApplicationBoundary(filePath, target) {
+  if (!isWithinDirectory(filePath, APPLICATION_ROOT)) {
+    return;
+  }
+
+  if (isWithinDirectory(target, PRESENTATION_ROOT) || isWithinDirectory(target, BOOTSTRAP_ROOT)) {
+    failures.push(
+      `Application layer imports outer layer: ${relativePath(filePath)} -> ${relativePath(target)}`,
+    );
+  }
+}
+
+function validateApplicationVscodeBoundary(filePath, statement, importPath) {
+  if (
+    !isWithinDirectory(filePath, APPLICATION_ROOT) ||
+    importPath !== 'vscode' ||
+    isTypeOnlyImport(statement) ||
+    APPLICATION_RUNTIME_VSCODE_ALLOWLIST.has(filePath)
+  ) {
+    return;
+  }
+
+  failures.push(`Application layer imports vscode at runtime: ${relativePath(filePath)}`);
 }
 
 function validatePresentationAiBoundary(filePath, statement, target) {

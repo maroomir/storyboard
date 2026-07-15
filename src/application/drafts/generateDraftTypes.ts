@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { IFileSystem } from '../ports/fileSystem';
