@@ -5,7 +5,7 @@ import { parseCard } from '@/domain/files/card';
 import { readProjectJson } from '@/infrastructure/persistence/projectJson';
 import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/infrastructure/seedcoat/seedImport';
 import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';
-import type { WorkspaceContent, SeedSceneEntry } from '@/services/seedcoat/projectAdapter';
+import type { WorkspaceContent, SeedSceneEntry } from '@/infrastructure/seedcoat/projectAdapter';
 
 export async function readDirectoryFileNamesOnly(directory: vscode.Uri): Promise<string[]> {
   try {

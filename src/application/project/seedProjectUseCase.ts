@@ -5,7 +5,10 @@ import {
   buildSeedWritePlan,
   type SeedFileWriteEntry,
 } from '../../infrastructure/seedcoat/seedImport';
-import type { DecodedSeedContent, WorkspaceContent } from '../../services/seedcoat/projectAdapter';
+import type {
+  DecodedSeedContent,
+  WorkspaceContent,
+} from '../../infrastructure/seedcoat/projectAdapter';
 import type { PrepareSeedSyncUseCase, PreparedSeedSync } from './prepareSeedSyncUseCase';
 
 export type SeedCreatePreparation = {

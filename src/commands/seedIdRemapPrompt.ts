@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { validateCardRenameId } from '@/infrastructure/vscode/cardRenameEdit';
-import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
+import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 
 interface SeedIdRemapQuickPickItem extends vscode.QuickPickItem {
   readonly action: 'continue' | 'remap';

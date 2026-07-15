@@ -2,7 +2,7 @@ import { applyIdMapping, validateIdMapping, type IdMappingIssue } from '@seedcoa
 
 import { setCardId } from '@/domain/cardReferenceRewriter';
 import type { CharacterCard } from '@/shared/card';
-import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
+import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 
 export class SeedIdMappingConflictError extends Error {
   public constructor(message: string) {

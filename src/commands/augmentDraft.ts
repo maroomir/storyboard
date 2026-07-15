@@ -14,7 +14,7 @@ import { createDraft, parseDraft, serializeDraft } from '../domain/files/draft';
 import { archiveExistingDraft } from '../domain/files/draftHistory';
 import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '../infrastructure/ai/prompts/draftAugment';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
+import type { ConfigBridge } from '../infrastructure/settings/ConfigBridge';
 import { resolveExpandRange } from './expandDraft';
 
 const augmentDraftCommand = 'storyboard.draft.augment';

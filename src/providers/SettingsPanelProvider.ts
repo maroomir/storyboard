@@ -4,8 +4,8 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/br
 import { createAiRpcHandlers } from '../infrastructure/ai/rpcHandlers';
 import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
 import { aiProviderIds } from '../shared/aiTypes';
-import { type SecretStore } from '../services/secrets/SecretStore';
-import { type ConfigBridge } from '../services/settings/ConfigBridge';
+import { type SecretStore } from '../infrastructure/secrets/SecretStore';
+import { type ConfigBridge } from '../infrastructure/settings/ConfigBridge';
 import { createContractRpcHandlers } from '../services/settings/contractRpcHandlers';
 import {
   createSettingsRpcHandlers,

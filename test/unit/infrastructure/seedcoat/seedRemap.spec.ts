@@ -7,7 +7,7 @@ import {
   SeedIdMappingValidationError,
   validateSeedIdMapping
 } from "@/infrastructure/seedcoat/seedRemap"
-import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
+import type { DecodedSeedContent } from "@/infrastructure/seedcoat/projectAdapter"
 
 function minimalSeed(overrides?: Partial<DecodedSeedContent>): DecodedSeedContent {
   return {

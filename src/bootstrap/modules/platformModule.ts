@@ -49,8 +49,8 @@ import {
   createVscodeUsageLedgerFileSystem,
   UsageRecorder,
 } from '../../infrastructure/ai/UsageRecorder';
-import { SecretStore } from '../../services/secrets/SecretStore';
-import { ConfigBridge } from '../../services/settings/ConfigBridge';
+import { SecretStore } from '../../infrastructure/secrets/SecretStore';
+import { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

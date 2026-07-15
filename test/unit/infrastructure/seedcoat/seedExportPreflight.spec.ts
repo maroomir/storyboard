@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { listSeedExportPreflightIssues } from "@/infrastructure/seedcoat/seedExportPreflight"
-import type { WorkspaceContent } from "@/services/seedcoat/projectAdapter"
+import type { WorkspaceContent } from "@/infrastructure/seedcoat/projectAdapter"
 
 function minimalWorkspace(overrides?: Partial<WorkspaceContent>): WorkspaceContent {
   return {

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { aiProviderIds, type AiProviderId } from '../shared/aiTypes';
-import { SecretStore } from '../services/secrets/SecretStore';
+import { SecretStore } from '../infrastructure/secrets/SecretStore';
 
 const setApiKeyCommand = 'storyboard.apiKey.set';
 const apiKeyProviderIds = aiProviderIds.filter((providerId) => providerId !== 'mock');

@@ -5,7 +5,7 @@ import {
   SecretStore,
   type StoryboardSecretStorageChangeEvent,
   type StoryboardSecretStorageLike
-} from "@/services/secrets/SecretStore"
+} from "@/infrastructure/secrets/SecretStore"
 
 class FakeSecretStorage implements StoryboardSecretStorageLike {
   public readonly values = new Map<string, string>()

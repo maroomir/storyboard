@@ -8,8 +8,8 @@ import { GrammarCheckPrompt } from "@/infrastructure/ai/prompts/grammarCheck"
 import { OutlineSynopsisPrompt } from "@/infrastructure/ai/prompts/outlineSynopsis"
 import { DraftRevisionPrompt } from "@/infrastructure/ai/prompts/draftRevision"
 import { InlineCompletionPrompt } from "@/infrastructure/ai/prompts/inlineCompletion"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
 
 const stubResponse: AiGenerateResponse = { text: "[]", providerId: "openai" }
 

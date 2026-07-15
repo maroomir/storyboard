@@ -7,7 +7,7 @@ import {
   decodeSeedToWritePlan,
   encodeWorkspaceToSeed,
   type WorkspaceContent
-} from "@/services/seedcoat/projectAdapter"
+} from "@/infrastructure/seedcoat/projectAdapter"
 
 function minimalWorkspaceContent(overrides?: Partial<WorkspaceContent>): WorkspaceContent {
   return {

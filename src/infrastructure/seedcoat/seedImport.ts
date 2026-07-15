@@ -1,6 +1,6 @@
 import { serializeCard } from '@/domain/files/card';
 import { serializeProjectJson } from '@/infrastructure/persistence/projectJson';
-import type { DecodedSeedContent } from '@/services/seedcoat/projectAdapter';
+import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 import {
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName,

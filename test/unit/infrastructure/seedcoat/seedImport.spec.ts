@@ -9,7 +9,7 @@ import {
   normalizeRelativePath
 } from "@/infrastructure/seedcoat/seedImport"
 import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
-import type { DecodedSeedContent } from "@/services/seedcoat/projectAdapter"
+import type { DecodedSeedContent } from "@/infrastructure/seedcoat/projectAdapter"
 
 function minimalDecodedSeed(): DecodedSeedContent {
   return {

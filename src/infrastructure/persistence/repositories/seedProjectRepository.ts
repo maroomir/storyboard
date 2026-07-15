@@ -17,10 +17,7 @@ import {
   readDirectoryFileNamesOnly,
   readParsedSeedEnvelopeFromWorkspaceRoot,
 } from '../seedEnvelopeFromWorkspace';
-import type {
-  DecodedSeedContent,
-  WorkspaceContent,
-} from '../../../services/seedcoat/projectAdapter';
+import type { DecodedSeedContent, WorkspaceContent } from '../../seedcoat/projectAdapter';
 import {
   createStoryboardDirectories,
   ensureWorkspaceGitignore,

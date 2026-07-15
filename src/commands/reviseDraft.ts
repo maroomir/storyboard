@@ -9,7 +9,7 @@ import type { StoryboardLogger } from '../infrastructure/vscode/logger';
 import { draftPath, getStoryboardProjectPaths } from '../infrastructure/vscode/pathConventions';
 import { recordRevisionEntry } from '../infrastructure/persistence/revisionPlanRecorder';
 import { hasStoryboardProject, uriExists } from '../infrastructure/vscode/workspace';
-import type { ConfigBridge } from '../services/settings/ConfigBridge';
+import type { ConfigBridge } from '../infrastructure/settings/ConfigBridge';
 import { parseSceneFileName, parseSceneStem } from '../shared/scene';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';

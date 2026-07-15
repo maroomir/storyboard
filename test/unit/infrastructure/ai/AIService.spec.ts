@@ -4,8 +4,8 @@ import { StoryboardAIService } from "@/infrastructure/ai/AIService"
 import { createAiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
 import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
 import { type AiMessage } from "@/shared/aiTypes"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
 
 describe("StoryboardAIService", () => {
   it("extracts situations from JSON-shaped model output", async () => {

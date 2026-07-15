@@ -6,8 +6,8 @@ import { type ClaudeClientLike } from "@/infrastructure/ai/providers/ClaudeProvi
 import { type GoogleClientLike } from "@/infrastructure/ai/providers/GoogleProvider"
 import { type OllamaClientLike } from "@/infrastructure/ai/providers/OllamaProvider"
 import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/services/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/services/settings/ConfigBridge"
+import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
 
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {

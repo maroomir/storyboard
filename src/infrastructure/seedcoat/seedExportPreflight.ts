@@ -1,6 +1,6 @@
 import { listSceneStemIssues } from '@seedcoat/wasm';
 
-import type { WorkspaceContent } from '@/services/seedcoat/projectAdapter';
+import type { WorkspaceContent } from '@/infrastructure/seedcoat/projectAdapter';
 
 const SEEDCOAT_SCENE_PREFIX_DIGITS = 2;
 

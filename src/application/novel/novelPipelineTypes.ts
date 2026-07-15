@@ -9,7 +9,7 @@ import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
-import type { ConfigBridge } from '../../services/settings/ConfigBridge';
+import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import type { StoryboardProject } from '../../shared/project';
 import type {
   INovelOutlineRepository,

@@ -19,8 +19,8 @@ import {
   type AiTaskName,
   isCliProvider,
 } from '../../shared/aiTypes';
-import { SecretStore } from '../../services/secrets/SecretStore';
-import { ConfigBridge } from '../../services/settings/ConfigBridge';
+import { SecretStore } from '../secrets/SecretStore';
+import { ConfigBridge } from '../settings/ConfigBridge';
 
 export interface AiProviderRegistryOptions {
   readonly secretStore: SecretStore;

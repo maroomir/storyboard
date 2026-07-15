@@ -15,7 +15,7 @@ import {
   isSeedError,
   type DecodedSeedContent,
   type WorkspaceContent,
-} from '../services/seedcoat/projectAdapter';
+} from '../infrastructure/seedcoat/projectAdapter';
 import {
   mapSeedErrorToMessage,
   SEED_UNKNOWN_ERROR_MESSAGE,

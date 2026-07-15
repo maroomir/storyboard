@@ -6,7 +6,7 @@ import {
   decodeSeedToWritePlan,
   isSeedError,
   type DecodedSeedContent,
-} from '../../services/seedcoat/projectAdapter';
+} from '../../infrastructure/seedcoat/projectAdapter';
 
 export type DecodeSeedResult =
   | { readonly kind: 'decoded'; readonly ok: true; readonly seed: DecodedSeedContent }

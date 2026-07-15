@@ -4,7 +4,7 @@ import {
   listSeedPlanContentConflictRelativePaths,
   type SeedFileWriteEntry,
 } from '../../infrastructure/seedcoat/seedImport';
-import type { DecodedSeedContent } from '../../services/seedcoat/projectAdapter';
+import type { DecodedSeedContent } from '../../infrastructure/seedcoat/projectAdapter';
 
 export type PrepareSeedSyncRequest = {
   readonly existingContentByRelativePath: ReadonlyMap<string, string | undefined>;

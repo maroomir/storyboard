@@ -4,7 +4,7 @@ import {
   ConfigBridge,
   type StoryboardConfigurationChangeEventLike,
   type StoryboardConfigurationLike
-} from "@/services/settings/ConfigBridge"
+} from "@/infrastructure/settings/ConfigBridge"
 
 class FakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: ReadonlyMap<string, unknown>) {}
