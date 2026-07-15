@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { IRelationGraphPanel } from '../providers/RelationGraphProvider';
+import type { IRelationGraphPanel } from '../presentation/providers/RelationGraphProvider';
 
 export function registerOpenRelationGraphCommand(
   context: vscode.ExtensionContext,

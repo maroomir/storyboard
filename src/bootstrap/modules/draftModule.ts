@@ -7,12 +7,12 @@ import { registerGenerateAllDraftsCommand } from '../../commands/generateAllDraf
 import { registerGenerateDraftCommands } from '../../commands/generateDraft';
 import { registerNewSceneCommands } from '../../commands/newScene';
 import { registerReviseDraftCommand } from '../../commands/reviseDraft';
-import { registerCharacterHoverProvider } from '../../providers/CharacterHoverProvider';
-import { registerContinuityDiagnosticsProvider } from '../../providers/ContinuityDiagnosticsProvider';
-import { registerGrammarDiagnosticsProvider } from '../../providers/GrammarDiagnosticsProvider';
-import { registerInlineCompletionProvider } from '../../providers/InlineCompletionProvider';
-import { registerSidebarScenesProvider } from '../../providers/SidebarScenesProvider';
-import { registerSlopDiagnosticsProvider } from '../../providers/SlopDiagnosticsProvider';
+import { registerCharacterHoverProvider } from '../../presentation/providers/CharacterHoverProvider';
+import { registerContinuityDiagnosticsProvider } from '../../presentation/providers/ContinuityDiagnosticsProvider';
+import { registerGrammarDiagnosticsProvider } from '../../presentation/providers/GrammarDiagnosticsProvider';
+import { registerInlineCompletionProvider } from '../../presentation/providers/InlineCompletionProvider';
+import { registerSidebarScenesProvider } from '../../presentation/providers/SidebarScenesProvider';
+import { registerSlopDiagnosticsProvider } from '../../presentation/providers/SlopDiagnosticsProvider';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

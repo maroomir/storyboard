@@ -5,7 +5,7 @@ import {
   computeBodyOffset,
   mapSlopFindingsToDiagnostics,
   toSlopRange
-} from "@/providers/SlopDiagnosticsProvider"
+} from "@/presentation/providers/SlopDiagnosticsProvider"
 import { analyzeSlop, type SlopFinding } from "@/shared/slop"
 
 function createDocument(text: string): vscode.TextDocument {

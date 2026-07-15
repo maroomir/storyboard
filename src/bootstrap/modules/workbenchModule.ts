@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 
 import { registerOpenRelationGraphCommand } from '../../commands/openRelationGraph';
 import { registerOpenSettingsCommand } from '../../commands/openSettings';
-import { RelationGraphProvider } from '../../providers/RelationGraphProvider';
-import { SettingsPanelProvider } from '../../providers/SettingsPanelProvider';
-import { registerSidebarStudioProvider } from '../../providers/SidebarStudioProvider';
+import { RelationGraphProvider } from '../../presentation/providers/RelationGraphProvider';
+import { SettingsPanelProvider } from '../../presentation/providers/SettingsPanelProvider';
+import { registerSidebarStudioProvider } from '../../presentation/providers/SidebarStudioProvider';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

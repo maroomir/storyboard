@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildCharacterHoverMarkdown } from "@/providers/CharacterHoverProvider"
+import { buildCharacterHoverMarkdown } from "@/presentation/providers/CharacterHoverProvider"
 import type { CharacterCard } from "@/shared/card"
 
 describe("CharacterHoverProvider helpers", () => {

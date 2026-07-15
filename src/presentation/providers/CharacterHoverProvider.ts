@@ -3,12 +3,12 @@ import * as vscode from 'vscode';
 import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
-} from '../infrastructure/vscode/pathConventions';
-import { vscodeFsAdapter } from '../infrastructure/vscode/workspaceFsAdapters';
-import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
-import { readCardFile } from '../domain/files/card';
-import type { CharacterCard } from '../shared/card';
-import { detectCharactersInText } from '../domain/characterDetector';
+} from '../../infrastructure/vscode/pathConventions';
+import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { readCardFile } from '../../domain/files/card';
+import type { CharacterCard } from '../../shared/card';
+import { detectCharactersInText } from '../../domain/characterDetector';
 
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 

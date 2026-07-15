@@ -1,4 +1,4 @@
-import type { StudioAction } from '../shared/messaging';
+import type { StudioAction } from '../../shared/messaging';
 
 export type StudioArgSlot = 'scene' | 'draft' | 'selection' | 'instruction';
 

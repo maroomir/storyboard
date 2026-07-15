@@ -7,9 +7,9 @@ import { registerPromoteBibleCandidatesCommand } from '../../commands/promoteBib
 import { registerPromoteCardCandidatesCommand } from '../../commands/promoteCardCandidates';
 import { registerRecommendCardCommands } from '../../commands/recommendCards';
 import { registerRenameCardCommands } from '../../commands/renameCard';
-import { registerCardCustomEditorProvider } from '../../providers/CardCustomEditorProvider';
-import { registerCardRenameParticipant } from '../../providers/CardRenameParticipant';
-import { registerSidebarCardsProviders } from '../../providers/SidebarCardsProvider';
+import { registerCardCustomEditorProvider } from '../../presentation/providers/CardCustomEditorProvider';
+import { registerCardRenameParticipant } from '../../presentation/providers/CardRenameParticipant';
+import { registerSidebarCardsProviders } from '../../presentation/providers/SidebarCardsProvider';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

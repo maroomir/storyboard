@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
-import { createAiRpcHandlers } from '../presentation/messaging/aiRpcHandlers';
-import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
-import { aiProviderIds } from '../shared/aiTypes';
-import { type SecretStore } from '../infrastructure/secrets/SecretStore';
-import { type ConfigBridge } from '../infrastructure/settings/ConfigBridge';
-import { createContractRpcHandlers } from '../presentation/messaging/contractRpcHandlers';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createAiRpcHandlers } from '../messaging/aiRpcHandlers';
+import { type AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import { aiProviderIds } from '../../shared/aiTypes';
+import { type SecretStore } from '../../infrastructure/secrets/SecretStore';
+import { type ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import { createContractRpcHandlers } from '../messaging/contractRpcHandlers';
 import {
   createSettingsRpcHandlers,
   getSettingsReadSnapshot,
-} from '../presentation/messaging/settingsRpcHandlers';
-import type { StoryboardResponsePayload } from '../shared/messaging';
+} from '../messaging/settingsRpcHandlers';
+import type { StoryboardResponsePayload } from '../../shared/messaging';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const panelViewType = 'storyboard.settings';

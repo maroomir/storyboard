@@ -4,7 +4,7 @@ import * as vscode from "vscode"
 import {
   mapContinuityIssuesToDiagnostics,
   toContinuityRange
-} from "@/providers/ContinuityDiagnosticsProvider"
+} from "@/presentation/providers/ContinuityDiagnosticsProvider"
 import type { ContinuityIssue } from "@/infrastructure/ai/AIService"
 
 function createDocument(text: string): vscode.TextDocument {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { planStudioAction } from "@/providers/studioActions"
+import { planStudioAction } from "@/presentation/providers/studioActions"
 import type { StudioAction } from "@/shared/messaging"
 
 describe("planStudioAction", () => {

@@ -1,26 +1,26 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../application/ai/aiGateway';
-import type { StoryboardLogger } from '../infrastructure/vscode/logger';
+import type { AiGateway } from '../../application/ai/aiGateway';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
-} from '../infrastructure/vscode/pathConventions';
+} from '../../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-} from '../domain/sceneContext';
+} from '../../domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
-} from '../infrastructure/vscode/workspaceFsAdapters';
+} from '../../infrastructure/vscode/workspaceFsAdapters';
 import { createDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
-import { parseDraft } from '../domain/files/draft';
-import { readSceneFile } from '../domain/files/scene';
-import type { ContinuityIssue } from '../infrastructure/ai/AIService';
+import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { parseDraft } from '../../domain/files/draft';
+import { readSceneFile } from '../../domain/files/scene';
+import type { ContinuityIssue } from '../../infrastructure/ai/AIService';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';
 const continuitySource = 'storyboard-continuity';

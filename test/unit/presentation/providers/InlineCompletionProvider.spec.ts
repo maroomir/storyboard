@@ -7,7 +7,7 @@ import {
   pruneInlineCompletionCache,
   shouldRunInlineCompletion,
   trimInlineCompletionPrefix
-} from "@/providers/InlineCompletionProvider"
+} from "@/presentation/providers/InlineCompletionProvider"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 
 describe("InlineCompletionProvider helpers", () => {

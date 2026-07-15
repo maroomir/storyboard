@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
 
-import type { CollectCardProposalsUseCase } from '../application/cards/collectCardProposalsUseCase';
-import { CardParseError, parseCard, serializeCard } from '../domain/files/card';
-import { applyCardCollectProposals } from '../domain/cardCollect';
-import { StoryboardLogger } from '../infrastructure/vscode/logger';
-import { loadCharacterRoster } from '../infrastructure/persistence/relationGraphData';
-import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
-import type { StoryboardCard } from '../shared/card';
-import type { StoryboardResponsePayload } from '../shared/messaging';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
-import type { AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
-import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
+import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
+import { CardParseError, parseCard, serializeCard } from '../../domain/files/card';
+import { applyCardCollectProposals } from '../../domain/cardCollect';
+import { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
+import { VirtualDocumentStore } from './virtualDocumentStore';
+import type { StoryboardCard } from '../../shared/card';
+import type { StoryboardResponsePayload } from '../../shared/messaging';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const cardEditorViewType = 'storyboard.card';

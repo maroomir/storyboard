@@ -1,18 +1,15 @@
 import * as vscode from 'vscode';
 
-import type { ISceneSidebarRepository } from '../application/cards/sceneSidebarRepository';
-import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '../domain/files/usageLedger';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
-import {
-  createAiRpcHandlers,
-  createUsageRpcHandlers,
-} from '../presentation/messaging/aiRpcHandlers';
-import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
-import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
-import type { UsageSummaryByEntity } from '../shared/aiTypes';
-import type { StoryboardResponsePayload } from '../shared/messaging';
-import type { SceneListItem } from '../shared/messaging/scenes';
+import type { ISceneSidebarRepository } from '../../application/cards/sceneSidebarRepository';
+import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { emptyUsageSummary } from '../../domain/files/usageLedger';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createAiRpcHandlers, createUsageRpcHandlers } from '../messaging/aiRpcHandlers';
+import { type AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
+import type { UsageSummaryByEntity } from '../../shared/aiTypes';
+import type { StoryboardResponsePayload } from '../../shared/messaging';
+import type { SceneListItem } from '../../shared/messaging/scenes';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const generateDraftCommand = 'storyboard.draft.generate';

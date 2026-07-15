@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../infrastructure/vscode/logger';
-import { isDraftMarkdownFile } from '../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../infrastructure/vscode/workspace';
-import { parseDraft } from '../domain/files/draft';
-import { LatestRequestGuard } from '../presentation/providers/latestRequestGuard';
-import { analyzeSlop, type SlopFinding } from '../shared/slop';
+import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { parseDraft } from '../../domain/files/draft';
+import { LatestRequestGuard } from './latestRequestGuard';
+import { analyzeSlop, type SlopFinding } from '../../shared/slop';
 
 const slopCheckCommand = 'storyboard.draft.slopCheck';
 const slopSource = 'storyboard-slop';

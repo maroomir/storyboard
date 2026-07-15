@@ -10,7 +10,7 @@ const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
 const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared');
 const CORE_ROOT = path.join(SOURCE_ROOT, 'core');
 const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'commands');
-const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'providers');
+const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'providers');
 const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIService.ts');
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT);

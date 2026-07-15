@@ -6,7 +6,7 @@ import {
   parseCardRenameCandidate,
   validateCardRenameId
 } from "@/infrastructure/vscode/cardRenameEdit"
-import { registerCardRenameParticipant } from "@/providers/CardRenameParticipant"
+import { registerCardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
 import type { StoryboardLogger } from "@/infrastructure/vscode/logger"
 import {
   fireWillRenameFiles,
@@ -14,7 +14,7 @@ import {
   workspace,
   type WorkspaceEdit as StubWorkspaceEdit,
   type WorkspaceFolder
-} from "../../stubs/vscode"
+} from "../../../stubs/vscode"
 
 describe("CardRenameParticipant helpers", () => {
   const workspaceRoot = vscode.Uri.file("/ws/project")
