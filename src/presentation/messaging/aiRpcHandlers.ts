@@ -1,9 +1,9 @@
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@/domain/files/usageLedger';
-import { type StoryboardRpcHandlers } from '@/messaging/bridge';
+import { type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { type StoryboardResponsePayload } from '@/shared/messaging';
-import { AiProviderRegistry } from './providerRegistry';
-import type { UsageRecorder } from './UsageRecorder';
+import { AiProviderRegistry } from '@/infrastructure/ai/providerRegistry';
+import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 
 export interface AiRpcHandlersOptions {
   readonly onStreamChunk?: (requestId: string, delta: string) => Promise<void>;

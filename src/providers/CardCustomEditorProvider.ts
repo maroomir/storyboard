@@ -8,7 +8,7 @@ import { loadCharacterRoster } from '../infrastructure/persistence/relationGraph
 import { VirtualDocumentStore } from '../presentation/providers/virtualDocumentStore';
 import type { StoryboardCard } from '../shared/card';
 import type { StoryboardResponsePayload } from '../shared/messaging';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
 import type { AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
 import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

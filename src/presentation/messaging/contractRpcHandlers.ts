@@ -1,4 +1,4 @@
-import type { StoryboardRpcHandlers } from '@/messaging/bridge';
+import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@/shared/messaging';
 import { contractFieldKeys, type ProjectSetting, type StoryboardProject } from '@/shared/project';
 import { validateGenerationContract } from '@/domain/generationContract';

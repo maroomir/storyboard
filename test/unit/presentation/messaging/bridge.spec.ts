@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createWebviewBridge, type StoryboardWebviewLike } from "@/messaging/bridge"
+import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { storyboardMessageProtocolVersion } from "@/shared/messaging"
 
 class FakeWebview implements StoryboardWebviewLike {

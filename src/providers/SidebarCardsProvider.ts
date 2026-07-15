@@ -6,8 +6,11 @@ import type {
 } from '../application/cards/cardSidebarRepository';
 import { resolveStoryboardWorkspaceRoot } from '../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '../domain/files/usageLedger';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { createAiRpcHandlers, createUsageRpcHandlers } from '../infrastructure/ai/rpcHandlers';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
+import {
+  createAiRpcHandlers,
+  createUsageRpcHandlers,
+} from '../presentation/messaging/aiRpcHandlers';
 import { type AiProviderRegistry } from '../infrastructure/ai/providerRegistry';
 import type { UsageRecorder } from '../infrastructure/ai/UsageRecorder';
 import type { UsageSummaryByEntity } from '../shared/aiTypes';

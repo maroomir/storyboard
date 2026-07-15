@@ -1,4 +1,4 @@
-import type { StoryboardRpcHandlers } from '@/messaging/bridge';
+import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardResponsePayload } from '@/shared/messaging';
 import { storyboardModelCatalog } from '@/shared/models';
 import {

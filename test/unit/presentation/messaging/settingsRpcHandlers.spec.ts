@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createWebviewBridge, type StoryboardWebviewLike } from "@/messaging/bridge"
+import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import {
   parseStoryboardRequestMessage,
   settingsUpdateProviderModelRequestPayloadSchema,
@@ -15,7 +15,7 @@ import { type OllamaClientLike } from "@/infrastructure/ai/providers/OllamaProvi
 import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
 import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
 import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
-import { createSettingsRpcHandlers } from "@/services/settings/settingsRpcHandlers"
+import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"
 import { aiProviderIds, aiTaskNames } from "@/shared/aiTypes"
 
 class MutableFakeConfiguration implements StoryboardConfigurationLike {

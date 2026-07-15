@@ -7,7 +7,7 @@ import {
   isDraftMarkdownFile,
 } from '../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject, uriExists } from '../infrastructure/vscode/workspace';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '../presentation/messaging/bridge';
 import { parseSceneFileName } from '../shared/scene';
 import type { StoryboardResponsePayload, StudioAction, StudioTarget } from '../shared/messaging';
 import { planStudioAction, type StudioArgSlot } from './studioActions';
