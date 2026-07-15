@@ -6,11 +6,11 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
 } from '../../application/novel/novelPipeline';
-import { resolveReviseMaxIterations } from '../../application/drafts/reviseAfterGenerateGate';
 import { validateGenerationContract } from '../../domain/generationContract';
 import { isResumable } from '../../domain/novelRunPlan';
 import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
+import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import { type NovelRunMode, type NovelRunState } from '../../domain/files/novelRunState';
 import type { ContractFieldKey } from '../../shared/project';
 
@@ -30,6 +30,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
 };
 
 export interface RegisterGenerateNovelCommandDependencies {
+  readonly configBridge: ConfigBridge;
   readonly novelPipeline: NovelPipeline;
   readonly novelRunStateRepository: INovelRunStateRepository;
 }
@@ -88,7 +89,7 @@ async function runGenerateNovel(
         project,
         runMode: decision.runMode,
         resumeState: decision.resumeState,
-        reviseMaxIterations: resolveReviseMaxIterations(),
+        reviseMaxIterations: dependencies.configBridge.getReviseMaxIterations(),
         onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
         requestApproval: (kind, info) => requestApproval(kind, info),
         shouldCancel: () => token.isCancellationRequested,

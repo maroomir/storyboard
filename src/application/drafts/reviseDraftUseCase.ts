@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { type StoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import { joinUri, type StoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -94,7 +94,7 @@ async function prepareReviseDraftContext(
 ): Promise<ReviseDraftContext> {
   const sceneFileName = `${sceneStem}.txt`;
   const scene = await readSceneFile(
-    vscode.Uri.joinPath(paths.sceneDirectory, sceneFileName),
+    joinUri(paths.sceneDirectory, sceneFileName),
     vscodeFsAdapter,
     sceneFileName,
   );

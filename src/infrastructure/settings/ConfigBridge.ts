@@ -18,6 +18,10 @@ export interface ProviderModelConfig {
 
 const defaultCliGenerateTimeoutMs = 600_000;
 
+const defaultReviseMaxIterations = 2;
+const minReviseMaxIterations = 1;
+const maxReviseMaxIterations = 5;
+
 export interface TaskAiStoredEntry {
   readonly provider: AiProviderId;
   readonly model?: string;
@@ -206,6 +210,22 @@ export class ConfigBridge {
 
   public isReviseAfterGenerateEnabled(): boolean {
     return this.dependencies.getConfiguration().get('draft.reviseAfterGenerate', true);
+  }
+
+  public getReviseMaxIterations(): number {
+    const configured = this.dependencies
+      .getConfiguration()
+      .get('draft.reviseMaxIterations', defaultReviseMaxIterations);
+    const value = Math.floor(Number.isFinite(configured) ? configured : defaultReviseMaxIterations);
+
+    return Math.min(maxReviseMaxIterations, Math.max(minReviseMaxIterations, value));
+  }
+
+  public getReviseScoreThreshold(): number {
+    const configured = this.dependencies.getConfiguration().get('draft.reviseScoreThreshold', 0);
+    const value = Math.floor(Number.isFinite(configured) ? configured : 0);
+
+    return Math.min(100, Math.max(0, value));
   }
 
   public isUpdateCardsAfterGenerateEnabled(): boolean {

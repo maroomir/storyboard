@@ -277,6 +277,32 @@ describe("ConfigBridge", () => {
     ).toBe(false)
   })
 
+  it("clamps revise max iterations to [1, 5] with a default of 2", () => {
+    expect(createConfigBridge(new Map()).getReviseMaxIterations()).toBe(2)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 0]])).getReviseMaxIterations()
+    ).toBe(1)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 9]])).getReviseMaxIterations()
+    ).toBe(5)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 3]])).getReviseMaxIterations()
+    ).toBe(3)
+  })
+
+  it("clamps revise score threshold to [0, 100] with a default of 0", () => {
+    expect(createConfigBridge(new Map()).getReviseScoreThreshold()).toBe(0)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", -5]])).getReviseScoreThreshold()
+    ).toBe(0)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", 150]])).getReviseScoreThreshold()
+    ).toBe(100)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", 42]])).getReviseScoreThreshold()
+    ).toBe(42)
+  })
+
   it("disables update-cards-after-generate by default and reads the configured value", () => {
     expect(createConfigBridge(new Map()).isUpdateCardsAfterGenerateEnabled()).toBe(false)
     expect(

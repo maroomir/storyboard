@@ -138,6 +138,10 @@ export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.
   return vscode.Uri.joinPath(workspaceRoot, 'draft', `${sceneStem}.md`);
 }
 
+export function joinUri(base: vscode.Uri, ...segments: string[]): vscode.Uri {
+  return vscode.Uri.joinPath(base, ...segments);
+}
+
 export function draftHistorySceneDirectory(
   workspaceRoot: vscode.Uri,
   sceneStem: string,

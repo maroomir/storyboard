@@ -1,16 +1,13 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { uriExists } from '../../infrastructure/vscode/workspace';
+import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
 import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import { parseSceneFileName } from '../../shared/scene';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
-
-const DEFAULT_MAX_ITERATIONS = 2;
-const MIN_MAX_ITERATIONS = 1;
-const MAX_MAX_ITERATIONS = 5;
 
 export type ReviseGateHooks = {
   readonly onProgress?: (message: string) => void;
@@ -36,7 +33,7 @@ export class ReviseAfterGenerateGate {
       return;
     }
 
-    const folder = vscode.workspace.getWorkspaceFolder(sceneUri);
+    const folder = resolveWorkspaceFolder(sceneUri);
     const sceneStem = parseSceneFileName(sceneUri.path.split('/').at(-1) ?? '')?.stem;
 
     if (!folder || !sceneStem) {
@@ -64,8 +61,8 @@ export class ReviseAfterGenerateGate {
       paths,
       draftUri,
       sceneStem,
-      maxIterations: resolveReviseMaxIterations(),
-      reviseScoreThreshold: resolveReviseScoreThreshold(),
+      maxIterations: this.configBridge.getReviseMaxIterations(),
+      reviseScoreThreshold: this.configBridge.getReviseScoreThreshold(),
       onProgress: hooks.onProgress,
       shouldCancel: hooks.shouldCancel,
     });
@@ -86,22 +83,4 @@ export class ReviseAfterGenerateGate {
 
     return result;
   }
-}
-
-export function resolveReviseMaxIterations(): number {
-  const configured = vscode.workspace
-    .getConfiguration('storyboard')
-    .get<number>('draft.reviseMaxIterations', DEFAULT_MAX_ITERATIONS);
-  const value = Math.floor(Number.isFinite(configured) ? configured : DEFAULT_MAX_ITERATIONS);
-
-  return Math.min(MAX_MAX_ITERATIONS, Math.max(MIN_MAX_ITERATIONS, value));
-}
-
-function resolveReviseScoreThreshold(): number {
-  const configured = vscode.workspace
-    .getConfiguration('storyboard')
-    .get<number>('draft.reviseScoreThreshold', 0);
-  const value = Math.floor(Number.isFinite(configured) ? configured : 0);
-
-  return Math.min(100, Math.max(0, value));
 }

@@ -1,4 +1,4 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 import type { IProjectRepository, ISceneRepository } from '../ports/repositories';
 import { buildNarrativeContext, buildSceneContext } from '../../domain/sceneContext';
@@ -9,6 +9,7 @@ import {
 } from '../../infrastructure/vscode/pathConventions';
 import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
 import { SceneParseError } from '../../domain/files/scene';
 import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../infrastructure/persistence/sceneCacheWorkspace';
@@ -64,7 +65,7 @@ function inputsFailure(message: string): { ok: false; result: GenerateDraftResul
 async function resolveSceneGenerationTarget(
   sceneUri: vscode.Uri,
 ): Promise<SceneGenerationTargetResult> {
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(sceneUri);
+  const workspaceFolder = resolveWorkspaceFolder(sceneUri);
 
   if (!workspaceFolder) {
     return inputsFailure('씬 파일이 속한 워크스페이스 폴더를 찾을 수 없습니다.');

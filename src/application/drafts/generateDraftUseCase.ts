@@ -1,7 +1,7 @@
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 
 import type { ISceneCacheRepository } from '../ports/repositories';
-import { draftHistorySceneDirectory } from '../../infrastructure/vscode/pathConventions';
+import { draftHistorySceneDirectory, joinUri } from '../../infrastructure/vscode/pathConventions';
 import { uriExists } from '../../infrastructure/vscode/workspace';
 import { createDraft } from '../../domain/files/draft';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
@@ -113,7 +113,7 @@ async function maybeArchiveExistingDraft(
     await archiveExistingDraft({
       draftUri: inputs.draftUri,
       historyDirectory,
-      resolveArchiveUri: (fileName) => vscode.Uri.joinPath(historyDirectory, fileName),
+      resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
       fileSystem: options.fileSystem,
     });
   } catch (error) {

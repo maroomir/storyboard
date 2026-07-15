@@ -17,13 +17,8 @@ const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'commands');
 const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'providers');
 const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIService.ts');
 
-// Compat boundary: application code still touching vscode at runtime; converge behind ports then remove.
-const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([
-  path.join(APPLICATION_ROOT, 'drafts', 'reviseAfterGenerateGate.ts'),
-  path.join(APPLICATION_ROOT, 'drafts', 'generateDraftUseCase.ts'),
-  path.join(APPLICATION_ROOT, 'drafts', 'sceneGenerationInputs.ts'),
-  path.join(APPLICATION_ROOT, 'drafts', 'reviseDraftUseCase.ts'),
-]);
+// Compat boundary is now closed: no application file may import vscode at runtime.
+const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([]);
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT);
 const sourceFileSet = new Set(sourceFiles);
