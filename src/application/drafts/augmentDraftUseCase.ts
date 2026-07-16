@@ -2,7 +2,12 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import {
+  draftHistorySceneDirectory,
+  getStoryboardProjectPaths,
+  joinUri,
+} from '../../infrastructure/vscode/pathConventions';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -10,10 +15,12 @@ import {
   type SceneContext,
 } from '../../domain/sceneContext';
 import {
+  draftHistoryFileSystem,
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
+import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile, SceneParseError } from '../../domain/files/scene';
 import {
@@ -46,13 +53,20 @@ export type AugmentDraftResult =
   | { readonly kind: 'empty'; readonly ok: false }
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false };
 
+export type ApplyAugmentedDraftRequest = {
+  readonly draftUri: vscode.Uri;
+  readonly sceneStem: string;
+  readonly workspaceRoot: vscode.Uri;
+};
+
 export class AugmentDraftUseCase {
   public constructor(
     private readonly aiGateway: AiGateway,
     private readonly logger: StoryboardLogger,
+    private readonly configBridge: ConfigBridge,
   ) {}
 
-  public async execute(request: AugmentDraftRequest): Promise<AugmentDraftResult> {
+  public async prepareAugmentedDraft(request: AugmentDraftRequest): Promise<AugmentDraftResult> {
     const context = await this.loadContext(request.sceneUri, request.workspaceRoot);
 
     if (!context.ok) {
@@ -90,6 +104,25 @@ export class AugmentDraftUseCase {
         message: error instanceof Error ? error.message : String(error),
         ok: false,
       };
+    }
+  }
+
+  public async applyAugmentedDraft(request: ApplyAugmentedDraftRequest): Promise<void> {
+    if (!this.configBridge.isKeepDraftHistoryEnabled()) {
+      return;
+    }
+
+    const historyDirectory = draftHistorySceneDirectory(request.workspaceRoot, request.sceneStem);
+
+    try {
+      await archiveExistingDraft({
+        draftUri: request.draftUri,
+        historyDirectory,
+        resolveArchiveUri: (archiveFileName) => joinUri(historyDirectory, archiveFileName),
+        fileSystem: draftHistoryFileSystem,
+      });
+    } catch (error) {
+      this.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
     }
   }
 

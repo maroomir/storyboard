@@ -33,11 +33,15 @@ function createUseCase(): {
 
   return {
     gateway,
-    useCase: new AugmentDraftUseCase(gateway as never, { error: vi.fn() } as never)
+    useCase: new AugmentDraftUseCase(
+      gateway as never,
+      { error: vi.fn(), warn: vi.fn() } as never,
+      { isKeepDraftHistoryEnabled: () => false } as never
+    )
   }
 }
 
-function request(): Parameters<AugmentDraftUseCase["execute"]>[0] {
+function request(): Parameters<AugmentDraftUseCase["prepareAugmentedDraft"]>[0] {
   return {
     draftSceneStem: "01-arrival",
     sceneUri: vscode.Uri.file("/workspace/scene/01-arrival.txt"),
@@ -59,7 +63,7 @@ describe("AugmentDraftUseCase", () => {
     readSceneFileMock.mockRejectedValue(new SceneParseError("frontmatter 오류"))
     const { gateway, useCase } = createUseCase()
 
-    const result = await useCase.execute(request())
+    const result = await useCase.prepareAugmentedDraft(request())
 
     expect(result).toEqual({
       kind: "failed",
@@ -82,7 +86,7 @@ describe("AugmentDraftUseCase", () => {
     const { gateway, useCase } = createUseCase()
     gateway.createService.mockReturnValue({ augmentDraft })
 
-    const result = await useCase.execute(request())
+    const result = await useCase.prepareAugmentedDraft(request())
 
     expect(result).toEqual({ kind: "empty", ok: false })
   })

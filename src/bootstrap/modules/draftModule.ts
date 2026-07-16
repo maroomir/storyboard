@@ -55,7 +55,7 @@ export class DraftModule implements IApplicationModule {
         reviseDraftUseCase,
       }),
       registerExpandDraftCommand({ aiGateway, logger }),
-      registerAugmentDraftCommands({ augmentDraftUseCase, configBridge, logger }),
+      registerAugmentDraftCommands({ augmentDraftUseCase, logger }),
       registerNewSceneCommands(),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway }),

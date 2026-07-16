@@ -112,7 +112,7 @@ export class PlatformModule implements IApplicationModule {
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const decodeSeedUseCase = new DecodeSeedUseCase();
     const prepareSeedSyncUseCase = new PrepareSeedSyncUseCase();
-    const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger);
+    const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
     const cardRecommendationRepository = new CardRecommendationRepository();
