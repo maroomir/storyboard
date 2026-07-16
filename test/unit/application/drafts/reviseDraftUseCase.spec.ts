@@ -228,4 +228,22 @@ describe("ReviseDraftUseCase", () => {
     // continuity(canon)·repetition(narrator) 두 타깃 그룹을 매 반복마다 스코프 재작성: 2그룹 × 2반복.
     expect(reviseDraftMock).toHaveBeenCalledTimes(4)
   })
+
+  it("cancels as the revision phase begins without applying or writing", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    critiqueDraftMock.mockResolvedValue([highCritique])
+    let cancelChecks = 0
+    const shouldCancel = (): boolean => {
+      cancelChecks += 1
+      return cancelChecks > 2
+    }
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2, shouldCancel }))
+
+    expect(result.cancelled).toBe(true)
+    expect(result.passed).toBe(false)
+    expect(result.revisionCount).toBe(0)
+    expect(reviseDraftMock).not.toHaveBeenCalled()
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
+  })
 })

@@ -16,6 +16,7 @@ import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../do
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile } from '../../domain/files/scene';
 import { StoryboardAIService } from '../../infrastructure/ai/AIService';
+import type { UsageAttribution } from '../../shared/aiTypes';
 import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
 import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
@@ -149,10 +150,101 @@ function buildRevisionPasses(
     : [globalInstructions];
 }
 
+interface ReviseSession {
+  readonly aiService: StoryboardAIService;
+  readonly registry: AiProviderRegistry;
+  readonly attribution: UsageAttribution;
+  readonly ctx: ReviseDraftContext;
+}
+
+async function runReviewChecks(
+  session: ReviseSession,
+  body: string,
+): Promise<{
+  continuityIssues: Awaited<ReturnType<StoryboardAIService['checkContinuity']>>;
+  critiqueIssues: Awaited<ReturnType<StoryboardAIService['critiqueDraft']>>;
+}> {
+  const { aiService, registry, attribution, ctx } = session;
+
+  const [continuityIssues, critiqueIssues] = await Promise.all([
+    aiService.checkContinuity(body, ctx.factLines, {
+      providerId: registry.getTaskProvider('continuityCheck'),
+      attribution,
+    }),
+    aiService.critiqueDraft(
+      {
+        body,
+        intent: ctx.intent,
+        characters: ctx.characterNames,
+        facts: ctx.factLines,
+        styleConstraints: ctx.styleConstraints,
+        qualityCriteria: ctx.qualityCriteria,
+        styleDirective: ctx.styleDirective,
+      },
+      { providerId: registry.getTaskProvider('draftCritique'), attribution },
+    ),
+  ]);
+
+  return { continuityIssues, critiqueIssues };
+}
+
+function evaluateReviewResult(
+  continuityIssues: Awaited<ReturnType<StoryboardAIService['checkContinuity']>>,
+  critiqueIssues: Awaited<ReturnType<StoryboardAIService['critiqueDraft']>>,
+  threshold: number,
+): { blocking: number; instructions: string[]; passed: boolean } {
+  const blocking = countBlockingIssues(continuityIssues, critiqueIssues);
+  const instructions = buildRevisionInstructions(continuityIssues, critiqueIssues);
+  const score = scoreCritique(critiqueIssues);
+  const highContinuityCount = continuityIssues.filter((issue) => issue.severity === 'high').length;
+
+  const passed = shouldPassRevise({
+    blocking,
+    score: score.overall,
+    threshold,
+    highContinuityCount,
+  });
+
+  return { blocking, instructions, passed };
+}
+
+async function applyRevisionPasses(
+  session: ReviseSession,
+  revisionPasses: readonly (readonly string[])[],
+  currentBody: string,
+  isCancelled: () => boolean,
+): Promise<{ body: string; appliedAnyPass: boolean }> {
+  const { aiService, registry, attribution, ctx } = session;
+
+  let body = currentBody;
+  let appliedAnyPass = false;
+
+  for (const instructions of revisionPasses) {
+    if (isCancelled()) {
+      break;
+    }
+
+    body = await aiService.reviseDraft(
+      {
+        body,
+        format: ctx.draft.format,
+        instructions,
+        intent: ctx.intent,
+        facts: ctx.factLines,
+      },
+      { providerId: registry.getTaskProvider('draftRevision'), attribution },
+    );
+    appliedAnyPass = true;
+  }
+
+  return { body, appliedAnyPass };
+}
+
 async function runReviseDraftWorkflow(
   options: ReviseDraftUseCaseDependencies & ReviseDraftRequest,
 ): Promise<ReviseDraftWorkflowResult> {
-  const { aiProviderRegistry: registry, paths, draftUri, sceneStem, maxIterations } = options;
+  const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold } = options;
+  const registry = options.aiProviderRegistry;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
 
   const aiService = new StoryboardAIService(registry, {
@@ -160,20 +252,11 @@ async function runReviseDraftWorkflow(
       recordUsageSafely(options.usageRecorder, options.workspaceUri, record, options.logger);
     },
   });
-  const attribution = { primary: { kind: 'scene' as const, id: sceneStem } };
+  const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+  const ctx = await prepareReviseDraftContext(paths, draftUri, sceneStem);
+  const session: ReviseSession = { aiService, registry, attribution, ctx };
 
-  const {
-    context,
-    factLines,
-    characterNames,
-    intent,
-    styleConstraints,
-    qualityCriteria,
-    styleDirective,
-    draft,
-  } = await prepareReviseDraftContext(paths, draftUri, sceneStem);
-
-  let body = draft.body;
+  let body = ctx.draft.body;
   let revisionCount = 0;
   let blocking = 0;
   let passed = false;
@@ -182,41 +265,12 @@ async function runReviseDraftWorkflow(
   while (!isCancelled()) {
     options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`);
 
-    const [continuityIssues, critiqueIssues] = await Promise.all([
-      aiService.checkContinuity(body, factLines, {
-        providerId: registry.getTaskProvider('continuityCheck'),
-        attribution,
-      }),
-      aiService.critiqueDraft(
-        {
-          body,
-          intent,
-          characters: characterNames,
-          facts: factLines,
-          styleConstraints,
-          qualityCriteria,
-          styleDirective,
-        },
-        { providerId: registry.getTaskProvider('draftCritique'), attribution },
-      ),
-    ]);
+    const { continuityIssues, critiqueIssues } = await runReviewChecks(session, body);
+    const review = evaluateReviewResult(continuityIssues, critiqueIssues, reviseScoreThreshold);
+    blocking = review.blocking;
+    lastInstructions = review.instructions;
 
-    blocking = countBlockingIssues(continuityIssues, critiqueIssues);
-    lastInstructions = buildRevisionInstructions(continuityIssues, critiqueIssues);
-
-    const score = scoreCritique(critiqueIssues);
-    const highContinuityCount = continuityIssues.filter(
-      (issue) => issue.severity === 'high',
-    ).length;
-
-    if (
-      shouldPassRevise({
-        blocking,
-        score: score.overall,
-        threshold: options.reviseScoreThreshold,
-        highContinuityCount,
-      })
-    ) {
+    if (review.passed) {
       passed = true;
       break;
     }
@@ -230,38 +284,20 @@ async function runReviseDraftWorkflow(
     const revisionPasses = buildRevisionPasses(
       continuityIssues,
       critiqueIssues,
-      context.characters,
+      ctx.context.characters,
       lastInstructions,
     );
+    const applied = await applyRevisionPasses(session, revisionPasses, body, isCancelled);
+    body = applied.body;
 
-    let appliedAnyPass = false;
-
-    for (const instructions of revisionPasses) {
-      if (isCancelled()) {
-        break;
-      }
-
-      body = await aiService.reviseDraft(
-        {
-          body,
-          format: draft.format,
-          instructions,
-          intent,
-          facts: factLines,
-        },
-        { providerId: registry.getTaskProvider('draftRevision'), attribution },
-      );
-      appliedAnyPass = true;
-    }
-
-    if (!appliedAnyPass) {
+    if (!applied.appliedAnyPass) {
       break;
     }
 
     await writeDraftFile(
       draftUri,
       vscodeFsAdapter,
-      createDraft({ sceneStem, format: draft.format, body }),
+      createDraft({ sceneStem, format: ctx.draft.format, body }),
     );
     revisionCount += 1;
   }
