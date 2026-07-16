@@ -27,6 +27,7 @@ export class DraftModule implements IApplicationModule {
     const {
       aiProviderRegistry,
       aiGateway,
+      applyDraftFormatUseCase,
       augmentDraftUseCase,
       configBridge,
       generateDraftUseCase,
@@ -47,7 +48,7 @@ export class DraftModule implements IApplicationModule {
         generateAllDraftsUseCase,
         logger,
       }),
-      registerApplyDraftFormatCommand({ aiGateway, logger }),
+      registerApplyDraftFormatCommand({ applyDraftFormatUseCase, logger }),
       registerReviseDraftCommand({
         configBridge,
         logger,

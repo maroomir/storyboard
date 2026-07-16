@@ -13,6 +13,7 @@ import { AssembleManuscriptUseCase } from '../../application/manuscript/assemble
 import { ExportManuscriptUseCase } from '../../application/manuscript/exportManuscriptUseCase';
 import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
 import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
+import { ApplyDraftFormatUseCase } from '../../application/drafts/applyDraftFormatUseCase';
 import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
 import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generateAllDraftsUseCase';
@@ -57,6 +58,7 @@ import type { IApplicationModule } from '../lifecycle/applicationModule';
 
 export interface IPlatformServices {
   readonly aiGateway: AiGateway;
+  readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly aiProviderRegistry: AiProviderRegistry;
@@ -112,6 +114,7 @@ export class PlatformModule implements IApplicationModule {
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
     const decodeSeedUseCase = new DecodeSeedUseCase();
     const prepareSeedSyncUseCase = new PrepareSeedSyncUseCase();
+    const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger);
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
@@ -211,6 +214,7 @@ export class PlatformModule implements IApplicationModule {
 
     this.services = {
       aiGateway,
+      applyDraftFormatUseCase,
       assembleManuscriptUseCase,
       augmentDraftUseCase,
       aiProviderRegistry,

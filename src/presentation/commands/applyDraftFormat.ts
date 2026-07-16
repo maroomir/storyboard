@@ -1,16 +1,12 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../../application/ai/aiGateway';
+import type {
+  ApplyDraftFormatResult,
+  ApplyDraftFormatUseCase,
+} from '../../application/drafts/applyDraftFormatUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import {
-  draftPath,
-  getStoryboardProjectPaths,
-  isDirectSceneTextFile,
-} from '../../infrastructure/vscode/pathConventions';
-import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
+import { isDirectSceneTextFile } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../domain/files/draft';
-import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { parseSceneFileName } from '../../shared/scene';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
@@ -30,8 +26,39 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
 }
 
 export interface RegisterApplyDraftFormatCommandDependencies {
-  readonly aiGateway: AiGateway;
+  readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly logger: StoryboardLogger;
+}
+
+async function reportApplyFormatFailure(
+  result: Extract<ApplyDraftFormatResult, { ok: false }>,
+  logger: StoryboardLogger,
+): Promise<void> {
+  switch (result.kind) {
+    case 'cancelled':
+      return;
+    case 'project_unreadable':
+      await vscode.window.showErrorMessage(
+        'project.json을 읽을 수 없습니다. Output 패널을 확인해 주세요.',
+      );
+      logger.show();
+      return;
+    case 'draft_missing':
+      await vscode.window.showErrorMessage(
+        '해당 씬의 초안 파일을 찾을 수 없습니다. 먼저 초안을 생성해 주세요.',
+      );
+      return;
+    case 'draft_invalid':
+      await vscode.window.showErrorMessage(
+        '초안 파일 형식이 올바르지 않습니다. Output 패널을 확인해 주세요.',
+      );
+      logger.show();
+      return;
+    case 'failed':
+      logger.show();
+      await vscode.window.showErrorMessage(`장르 포맷 적용에 실패했습니다: ${result.message}`);
+      return;
+  }
 }
 
 export async function runApplyDraftFormatForScene(
@@ -67,46 +94,6 @@ export async function runApplyDraftFormatForScene(
     return;
   }
 
-  const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-  const draftUri = draftPath(workspaceFolder.uri, nameParts.stem);
-
-  let project;
-
-  try {
-    project = await readProjectJson(paths.projectJson);
-  } catch (error) {
-    dependencies.logger.error('Failed to read project.json', error);
-    await vscode.window.showErrorMessage(
-      'project.json을 읽을 수 없습니다. Output 패널을 확인해 주세요.',
-    );
-    dependencies.logger.show();
-    return;
-  }
-
-  let rawDraft: string;
-
-  try {
-    rawDraft = await readDraftFile(draftUri, vscodeFsAdapter);
-  } catch {
-    await vscode.window.showErrorMessage(
-      '해당 씬의 초안 파일을 찾을 수 없습니다. 먼저 초안을 생성해 주세요.',
-    );
-    return;
-  }
-
-  let existing;
-
-  try {
-    existing = parseDraft(rawDraft);
-  } catch (error) {
-    dependencies.logger.error('Failed to parse draft', error);
-    await vscode.window.showErrorMessage(
-      '초안 파일 형식이 올바르지 않습니다. Output 패널을 확인해 주세요.',
-    );
-    dependencies.logger.show();
-    return;
-  }
-
   try {
     await vscode.window.withProgress(
       {
@@ -114,15 +101,26 @@ export async function runApplyDraftFormatForScene(
         title: 'Storyboard 장르 포맷 적용',
         cancellable: true,
       },
-      (progress, token) =>
-        applyDraftFormatWithProgress(progress, token, {
-          aiGateway: dependencies.aiGateway,
-          existing,
-          project,
-          draftUri,
-          sceneStem: nameParts.stem,
+      async (progress, token) => {
+        progress.report({ message: '장르 포맷 적용 중…' });
+
+        const result = await dependencies.applyDraftFormatUseCase.execute({
           workspaceRoot: workspaceFolder.uri,
-        }),
+          sceneStem: nameParts.stem,
+          onSaving: () => progress.report({ message: '저장 중…' }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
+
+        if (!result.ok) {
+          await reportApplyFormatFailure(result, dependencies.logger);
+          return;
+        }
+
+        const doc = await vscode.workspace.openTextDocument(result.draftUri);
+        await vscode.window.showTextDocument(doc);
+        progress.report({ message: '완료' });
+        void vscode.window.showInformationMessage('장르 포맷을 적용해 초안을 저장했습니다.');
+      },
     );
   } catch (error) {
     dependencies.logger.error('Apply draft format failed', error);
@@ -130,55 +128,6 @@ export async function runApplyDraftFormatForScene(
     const message = error instanceof Error ? error.message : String(error);
     await vscode.window.showErrorMessage(`장르 포맷 적용에 실패했습니다: ${message}`);
   }
-}
-
-interface ApplyDraftFormatWithProgressOptions {
-  readonly aiGateway: AiGateway;
-  readonly existing: ReturnType<typeof parseDraft>;
-  readonly project: Awaited<ReturnType<typeof readProjectJson>>;
-  readonly draftUri: vscode.Uri;
-  readonly sceneStem: string;
-  readonly workspaceRoot: vscode.Uri;
-}
-
-async function applyDraftFormatWithProgress(
-  progress: vscode.Progress<{ message?: string }>,
-  token: vscode.CancellationToken,
-  options: ApplyDraftFormatWithProgressOptions,
-): Promise<void> {
-  const { aiGateway, existing, project, draftUri, sceneStem, workspaceRoot } = options;
-
-  progress.report({ message: '장르 포맷 적용 중…' });
-
-  if (token.isCancellationRequested) {
-    return;
-  }
-
-  const formattedBody = await aiGateway
-    .createService(workspaceRoot)
-    .applyGenreFormat(existing.body, project.format, {
-      providerId: aiGateway.getTaskProvider('sceneDraft'),
-      attribution: { primary: { kind: 'scene', id: sceneStem } },
-    });
-
-  if (token.isCancellationRequested) {
-    return;
-  }
-
-  const draft = createDraft({
-    sceneStem: existing.sceneStem,
-    format: project.format,
-    body: formattedBody,
-    generatedAt: existing.generatedAt,
-  });
-
-  progress.report({ message: '저장 중…' });
-  await writeDraftFile(draftUri, vscodeFsAdapter, draft);
-
-  const doc = await vscode.workspace.openTextDocument(draftUri);
-  await vscode.window.showTextDocument(doc);
-  progress.report({ message: '완료' });
-  void vscode.window.showInformationMessage('장르 포맷을 적용해 초안을 저장했습니다.');
 }
 
 async function runCommand(
