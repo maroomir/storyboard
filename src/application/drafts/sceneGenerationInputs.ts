@@ -97,17 +97,20 @@ async function resolveSceneGenerationTarget(
   };
 }
 
-export async function loadSceneGenerationInputs(
+type SceneAndProjectResult =
+  | { ok: false; result: GenerateDraftResult }
+  | {
+      ok: true;
+      scene: Awaited<ReturnType<ISceneRepository['read']>>;
+      project: Awaited<ReturnType<IProjectRepository['read']>>;
+    };
+
+async function loadSceneAndProject(
   sceneUri: vscode.Uri,
+  fileName: string,
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
   options: GenerateDraftWorkflowOptions,
-): Promise<SceneGenerationInputsResult> {
-  const target = await resolveSceneGenerationTarget(sceneUri);
-  if (!target.ok) {
-    return target;
-  }
-
-  const { workspaceFolder, paths, fileName } = target;
-
+): Promise<SceneAndProjectResult> {
   let scene;
   try {
     scene = await options.sceneRepository.read(sceneUri, fileName);
@@ -142,6 +145,67 @@ export async function loadSceneGenerationInputs(
     };
   }
 
+  return { ok: true, scene, project };
+}
+
+export async function loadSceneGenerationInputs(
+  sceneUri: vscode.Uri,
+  options: GenerateDraftWorkflowOptions,
+): Promise<SceneGenerationInputsResult> {
+  const target = await resolveSceneGenerationTarget(sceneUri);
+  if (!target.ok) {
+    return target;
+  }
+
+  const { workspaceFolder, paths, fileName } = target;
+
+  const loaded = await loadSceneAndProject(sceneUri, fileName, paths, options);
+  if (!loaded.ok) {
+    return loaded;
+  }
+
+  const { scene, project } = loaded;
+
+  const contextResult = await loadSceneContextBundle(paths, scene, project, options);
+  if (!contextResult.ok) {
+    return contextResult;
+  }
+
+  const { context, previousContext, sceneBreakJoiner, inputHash } = contextResult;
+
+  return {
+    ok: true,
+    inputs: {
+      workspaceFolder,
+      paths,
+      scene,
+      project,
+      context,
+      previousContext,
+      sceneBreakJoiner,
+      inputHash,
+      draftUri: draftPath(workspaceFolder.uri, scene.stem),
+      cacheUri: sceneCacheFilePath(paths, scene.stem),
+    },
+  };
+}
+
+type SceneContextBundleResult =
+  | { ok: false; result: GenerateDraftResult }
+  | {
+      ok: true;
+      context: Awaited<ReturnType<typeof buildSceneContext>>;
+      previousContext: string | undefined;
+      sceneBreakJoiner: string | undefined;
+      inputHash: string;
+    };
+
+async function loadSceneContextBundle(
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+  scene: Awaited<ReturnType<ISceneRepository['read']>>,
+  project: Awaited<ReturnType<IProjectRepository['read']>>,
+  options: GenerateDraftWorkflowOptions,
+): Promise<SceneContextBundleResult> {
   const ctxPaths = sceneContextPaths(paths);
   let context;
   try {
@@ -173,17 +237,9 @@ export async function loadSceneGenerationInputs(
 
   return {
     ok: true,
-    inputs: {
-      workspaceFolder,
-      paths,
-      scene,
-      project,
-      context,
-      previousContext: narrativeContext.prompt,
-      sceneBreakJoiner,
-      inputHash,
-      draftUri: draftPath(workspaceFolder.uri, scene.stem),
-      cacheUri: sceneCacheFilePath(paths, scene.stem),
-    },
+    context,
+    previousContext: narrativeContext.prompt,
+    sceneBreakJoiner,
+    inputHash,
   };
 }

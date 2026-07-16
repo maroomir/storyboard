@@ -96,13 +96,16 @@ interface AugmentTarget {
   readonly sceneUri: vscode.Uri;
 }
 
-async function resolveAugmentTarget(
-  scope: DraftAugmentScope,
-  invokedSceneUri: vscode.Uri | undefined,
+interface AugmentEditorContext {
+  readonly editor: vscode.TextEditor;
+  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly documentText: string;
+  readonly draft: Draft;
+}
+
+async function resolveAugmentEditorContext(
   invokedDraftUri: vscode.Uri | undefined,
-  rangeArg: vscode.Range | undefined,
-  instruction: string | undefined,
-): Promise<AugmentTarget | undefined> {
+): Promise<AugmentEditorContext | undefined> {
   const editor = vscode.window.activeTextEditor;
 
   if (!editor || editor.document.uri.scheme !== 'file') {
@@ -148,6 +151,21 @@ async function resolveAugmentTarget(
     return undefined;
   }
 
+  return { editor, workspaceFolder, documentText, draft };
+}
+
+interface AugmentSelection {
+  readonly selectionRange: vscode.Selection | vscode.Range;
+  readonly target: string;
+}
+
+async function resolveAugmentSelection(
+  scope: DraftAugmentScope,
+  editor: vscode.TextEditor,
+  draft: Draft,
+  rangeArg: vscode.Range | undefined,
+  instruction: string | undefined,
+): Promise<AugmentSelection | undefined> {
   const selectionRange = resolveExpandRange(editor, rangeArg);
 
   if (scope === 'selection' && selectionRange.isEmpty) {
@@ -165,6 +183,30 @@ async function resolveAugmentTarget(
     return undefined;
   }
 
+  return { selectionRange, target };
+}
+
+async function resolveAugmentTarget(
+  scope: DraftAugmentScope,
+  invokedSceneUri: vscode.Uri | undefined,
+  invokedDraftUri: vscode.Uri | undefined,
+  rangeArg: vscode.Range | undefined,
+  instruction: string | undefined,
+): Promise<AugmentTarget | undefined> {
+  const context = await resolveAugmentEditorContext(invokedDraftUri);
+
+  if (!context) {
+    return undefined;
+  }
+
+  const { editor, workspaceFolder, documentText, draft } = context;
+
+  const selection = await resolveAugmentSelection(scope, editor, draft, rangeArg, instruction);
+
+  if (!selection) {
+    return undefined;
+  }
+
   const sceneUri = invokedSceneUri ?? deriveSceneUri(workspaceFolder, documentText);
 
   if (!sceneUri) {
@@ -172,7 +214,15 @@ async function resolveAugmentTarget(
     return undefined;
   }
 
-  return { editor, workspaceFolder, documentText, draft, selectionRange, target, sceneUri };
+  return {
+    editor,
+    workspaceFolder,
+    documentText,
+    draft,
+    selectionRange: selection.selectionRange,
+    target: selection.target,
+    sceneUri,
+  };
 }
 
 interface AugmentLabels {
