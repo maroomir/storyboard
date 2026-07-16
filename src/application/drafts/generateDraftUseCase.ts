@@ -11,6 +11,7 @@ import {
   createPersonaMemoryStore,
 } from '../../infrastructure/persistence/cardMemoryWorkspace';
 import { buildStyleDirective } from '../../shared/styleDirective';
+import { type StoryboardAIService } from '../../infrastructure/ai/AIService';
 import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
@@ -121,12 +122,44 @@ async function maybeArchiveExistingDraft(
   }
 }
 
+async function persistGeneratedDraft(
+  inputs: SceneGenerationInputs,
+  options: GenerateDraftWorkflowOptions,
+  aiService: StoryboardAIService,
+  result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
+  cacheProviders: SceneCacheRecord['providers'],
+): Promise<GenerateDraftResult> {
+  const { paths, scene, project, draftUri, cacheUri } = inputs;
+
+  const draft = createDraft({
+    sceneStem: scene.stem,
+    format: project.format,
+    body: result.draftBody,
+  });
+
+  await options.sceneCacheRepository.ensureDirectory(paths.sceneCacheDirectory);
+
+  options.onSaving?.();
+
+  const cacheRecord = buildSceneCacheRecord(inputs, result, cacheProviders);
+
+  await maybeArchiveExistingDraft(inputs, options);
+
+  await options.draftRepository.write(draftUri, draft);
+  await options.sceneCacheRepository.write(cacheUri, cacheRecord);
+
+  if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
+    schedulePostGenerationUpdates(inputs, options, aiService, result);
+  }
+
+  return { ok: true, kind: 'generated', draftUri };
+}
+
 async function runAndPersistDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
 ): Promise<GenerateDraftResult> {
-  const { workspaceFolder, paths, scene, project, context, previousContext, draftUri, cacheUri } =
-    inputs;
+  const { workspaceFolder, paths, scene, project, context, previousContext } = inputs;
 
   const aiService = options.aiGateway.createService(workspaceFolder.uri);
   const pipelineProviders = {
@@ -163,28 +196,7 @@ async function runAndPersistDraft(
       sceneBreakJoiner: inputs.sceneBreakJoiner,
     }).run();
 
-    const draft = createDraft({
-      sceneStem: scene.stem,
-      format: project.format,
-      body: result.draftBody,
-    });
-
-    await options.sceneCacheRepository.ensureDirectory(paths.sceneCacheDirectory);
-
-    options.onSaving?.();
-
-    const cacheRecord = buildSceneCacheRecord(inputs, result, cacheProviders);
-
-    await maybeArchiveExistingDraft(inputs, options);
-
-    await options.draftRepository.write(draftUri, draft);
-    await options.sceneCacheRepository.write(cacheUri, cacheRecord);
-
-    if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
-      schedulePostGenerationUpdates(inputs, options, aiService, result);
-    }
-
-    return { ok: true, kind: 'generated', draftUri };
+    return await persistGeneratedDraft(inputs, options, aiService, result, cacheProviders);
   } catch (error) {
     if (error instanceof SceneGenerationPipelineCancelledError) {
       return { ok: false, kind: 'cancelled' };
