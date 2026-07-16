@@ -15,6 +15,7 @@ import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManu
 import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
 import { ApplyDraftFormatUseCase } from '../../application/drafts/applyDraftFormatUseCase';
 import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
+import { ExpandDraftUseCase } from '../../application/drafts/expandDraftUseCase';
 import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
 import { GenerateAllDraftsUseCase } from '../../application/drafts/generateAllDraftsUseCase';
 import { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
@@ -64,6 +65,7 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly decodeSeedUseCase: DecodeSeedUseCase;
+  readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly seedProjectUseCase: SeedProjectUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
@@ -116,6 +118,7 @@ export class PlatformModule implements IApplicationModule {
     const prepareSeedSyncUseCase = new PrepareSeedSyncUseCase();
     const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger);
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
+    const expandDraftUseCase = new ExpandDraftUseCase(aiGateway, logger);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
     const cardRecommendationRepository = new CardRecommendationRepository();
@@ -223,6 +226,7 @@ export class PlatformModule implements IApplicationModule {
       cardSidebarRepository,
       configBridge,
       decodeSeedUseCase,
+      expandDraftUseCase,
       exportManuscriptUseCase,
       fileSystem,
       generateAllDraftsUseCase,
