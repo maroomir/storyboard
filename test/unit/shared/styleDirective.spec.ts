@@ -74,6 +74,16 @@ describe("buildStyleDirective", () => {
   it("drops a blank relationStage", () => {
     expect(buildStyleDirective(undefined, "   ")).toBeUndefined()
   })
+
+  it("returns a directive from targetWordCount alone, without setting", () => {
+    expect(buildStyleDirective(undefined, undefined, 3000)?.targetWordCount).toBe(3000)
+  })
+
+  it("drops a non-positive or non-integer targetWordCount", () => {
+    expect(buildStyleDirective(undefined, undefined, 0)).toBeUndefined()
+    expect(buildStyleDirective(undefined, undefined, -100)).toBeUndefined()
+    expect(buildStyleDirective(undefined, undefined, 1500.5)).toBeUndefined()
+  })
 })
 
 describe("style lines", () => {
@@ -81,23 +91,26 @@ describe("style lines", () => {
     pov: "first",
     genre: "로맨스",
     styleConstraints: ["간결체"],
-    relationStage: "적대적 첫 만남"
+    relationStage: "적대적 첫 만남",
+    targetWordCount: 3000
   }
 
-  it("narrativeStyleLines includes pov, genre, style constraints, and relation stage", () => {
+  it("narrativeStyleLines includes pov, genre, style constraints, relation stage, and length", () => {
     const lines = narrativeStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(true)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
+    expect(lines.some((line) => line.includes("목표 분량") && line.includes("3,000자"))).toBe(true)
   })
 
-  it("voiceStyleLines omits pov but keeps genre, style, and relation stage", () => {
+  it("voiceStyleLines omits pov and length but keeps genre, style, and relation stage", () => {
     const lines = voiceStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(false)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
+    expect(lines.some((line) => line.includes("목표 분량"))).toBe(false)
   })
 
   it("returns empty arrays for an undefined directive", () => {

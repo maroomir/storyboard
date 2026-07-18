@@ -111,7 +111,11 @@ async function prepareReviseDraftContext(
   const { styleConstraints, qualityCriteria, setting } = await readContractGuidance(
     paths.projectJson,
   );
-  const styleDirective = buildStyleDirective(setting, scene.frontmatter.relationStage);
+  const styleDirective = buildStyleDirective(
+    setting,
+    scene.frontmatter.relationStage,
+    scene.frontmatter.targetWordCount,
+  );
 
   const draft = parseDraft(await readDraftFile(draftUri, vscodeFsAdapter));
 

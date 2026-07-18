@@ -179,7 +179,11 @@ async function runAndPersistDraft(
       context,
       aiService,
       format: project.format,
-      styleDirective: buildStyleDirective(project.setting, scene.frontmatter.relationStage),
+      styleDirective: buildStyleDirective(
+        project.setting,
+        scene.frontmatter.relationStage,
+        scene.frontmatter.targetWordCount,
+      ),
       previousContext,
       providers: pipelineProviders,
       onProgress: (stage, current, total): void => {

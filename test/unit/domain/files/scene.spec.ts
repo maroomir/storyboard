@@ -27,6 +27,24 @@ describe("scene file codec", () => {
     })
   })
 
+  it("parses a numeric targetWordCount from frontmatter", () => {
+    const scene = parseScene("---\ntitle: 장면\ntargetWordCount: 5000\n---\n본문", "01-scene.txt")
+
+    expect(scene.frontmatter.targetWordCount).toBe(5000)
+  })
+
+  it("rejects a non-integer targetWordCount in frontmatter", () => {
+    const rawScene = "---\ntitle: 장면\ntargetWordCount: many\n---\n본문"
+
+    expect(() => parseScene(rawScene, "01-scene.txt")).toThrow(SceneParseError)
+
+    try {
+      parseScene(rawScene, "01-scene.txt")
+    } catch (error) {
+      expect((error as SceneParseError).code).toBe("invalid-frontmatter-schema")
+    }
+  })
+
   it("keeps the full body when frontmatter is omitted", () => {
     const rawScene = readFixtureScene("02-no-frontmatter.txt")
     const scene = parseScene(rawScene, "02-no-frontmatter.txt")

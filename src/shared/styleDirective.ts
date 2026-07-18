@@ -9,11 +9,13 @@ export interface StyleDirective {
   readonly genre?: string;
   readonly styleConstraints?: readonly string[];
   readonly relationStage?: string;
+  readonly targetWordCount?: number;
 }
 
 export function buildStyleDirective(
   setting: ProjectSetting | undefined,
   relationStage?: string,
+  targetWordCount?: number,
 ): StyleDirective | undefined {
   const styleConstraints =
     setting?.styleConstraints && setting.styleConstraints.length > 0
@@ -26,9 +28,19 @@ export function buildStyleDirective(
     styleConstraints,
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
+    targetWordCount:
+      typeof targetWordCount === 'number' &&
+      Number.isInteger(targetWordCount) &&
+      targetWordCount > 0
+        ? targetWordCount
+        : undefined,
   };
 
-  return directive.pov || directive.genre || directive.styleConstraints || directive.relationStage
+  return directive.pov ||
+    directive.genre ||
+    directive.styleConstraints ||
+    directive.relationStage ||
+    directive.targetWordCount
     ? directive
     : undefined;
 }
@@ -55,6 +67,12 @@ function relationLine(directive: StyleDirective): string | undefined {
     : undefined;
 }
 
+function lengthLine(directive: StyleDirective): string | undefined {
+  return directive.targetWordCount
+    ? `이 장면의 목표 분량: 약 ${directive.targetWordCount.toLocaleString()}자 (공백 포함). ±20% 안에서 마무리하라.`
+    : undefined;
+}
+
 // genreFormatting처럼 최종 시점을 확정하는 단계용: 시점까지 포함한다.
 export function narrativeStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
@@ -66,6 +84,7 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     genreLine(directive),
     styleConstraintLine(directive),
     relationLine(directive),
+    lengthLine(directive),
   ].filter((line): line is string => Boolean(line));
 }
 

@@ -355,7 +355,11 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   }
 
   const narrative = await buildNarrativeContext(paths, context, fileSystem)
-  const styleDirective = buildStyleDirective(project.setting, scene.frontmatter.relationStage)
+  const styleDirective = buildStyleDirective(
+    project.setting,
+    scene.frontmatter.relationStage,
+    scene.frontmatter.targetWordCount
+  )
   const aiService = new StoryboardAIService(createRegistry())
 
   const result = await runSceneGenerationPipeline({

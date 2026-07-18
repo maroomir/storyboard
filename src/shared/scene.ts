@@ -10,6 +10,7 @@ export const sceneFrontmatterSchema = z
     location: z.string().trim().min(1).optional(),
     mood: z.string().trim().min(1).optional(),
     relationStage: z.string().trim().min(1).optional(),
+    targetWordCount: z.number().int().positive().optional(),
   })
   .passthrough();
 
