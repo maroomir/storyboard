@@ -6,6 +6,14 @@ import { storyboardModelCatalog } from "@/shared/models"
 import { aiProviderIds, type AiProviderId } from "@/shared/ai"
 
 describe("storyboardModelCatalog vs package.json defaults", () => {
+  it("includes every GPT-5.6 Codex model", () => {
+    const codexModelIds = storyboardModelCatalog.codex.map((option) => option.id)
+
+    expect(codexModelIds).toEqual(
+      expect.arrayContaining(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
+    )
+  })
+
   it("includes every contributed provider model default from package.json", () => {
     const packageJsonPath = path.join(process.cwd(), "package.json")
     const raw = readFileSync(packageJsonPath, "utf8")

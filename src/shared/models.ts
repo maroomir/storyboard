@@ -32,6 +32,9 @@ export const storyboardModelCatalog = {
     { id: 'haiku', displayName: 'Claude Code · Haiku' },
   ],
   codex: [
+    { id: 'gpt-5.6-sol', displayName: 'Codex · GPT-5.6 Sol' },
+    { id: 'gpt-5.6-terra', displayName: 'Codex · GPT-5.6 Terra' },
+    { id: 'gpt-5.6-luna', displayName: 'Codex · GPT-5.6 Luna' },
     { id: 'gpt-5.5', displayName: 'Codex · GPT-5.5' },
     { id: 'gpt-5.4', displayName: 'Codex · GPT-5.4' },
     { id: 'gpt-5.4-mini', displayName: 'Codex · GPT-5.4 mini' },

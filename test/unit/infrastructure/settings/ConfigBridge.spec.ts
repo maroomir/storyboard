@@ -231,7 +231,7 @@ describe("ConfigBridge", () => {
     })
     expect(configBridge.getProviderConfig("codex")).toEqual({
       command: "codex",
-      model: "gpt-5.5",
+      model: "gpt-5.6-sol",
       timeoutMs: 600000
     })
   })
@@ -255,12 +255,12 @@ describe("ConfigBridge", () => {
 
     expect(configBridge.getProviderConfig("codex")).toEqual({
       command: "codex",
-      model: "gpt-5.5",
+      model: "gpt-5.6-sol",
       timeoutMs: 600000
     })
     expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
       providerId: "codex",
-      model: "gpt-5.5"
+      model: "gpt-5.6-sol"
     })
   })
 

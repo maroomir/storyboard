@@ -380,7 +380,7 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
     case 'claude-code':
       return 'sonnet';
     case 'codex':
-      return 'gpt-5.5';
+      return 'gpt-5.6-sol';
     case 'mock':
     case 'ollama':
       return undefined;

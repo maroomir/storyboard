@@ -254,7 +254,7 @@
         },
         "storyboard.providers.codex.model": {
           "type": "string",
-          "default": "gpt-5.5",
+          "default": "gpt-5.6-sol",
           "description": "Model passed to the Codex CLI. Uses your Codex login; no API key required."
         },
         "storyboard.providers.codex.timeoutMs": {
