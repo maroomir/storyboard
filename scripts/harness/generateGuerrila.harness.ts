@@ -38,6 +38,8 @@ import {
 } from "@/shared/reviewRouting"
 import { buildStyleDirective } from "@/shared/styleDirective"
 
+import { createUsageSummary } from "./usageSummary"
+
 // NOTE: reasoning calls can exceed the provider's 180s default; lengthen only in the harness so a
 // single slow beat does not abort a full long-form regeneration.
 const harnessCliTimeoutMs = 600_000
@@ -360,82 +362,87 @@ test("regenerate guerrila draft via codex pipeline", async () => {
     scene.frontmatter.relationStage,
     scene.frontmatter.targetWordCount
   )
-  const aiService = new StoryboardAIService(createRegistry())
+  const usage = createUsageSummary()
+  const aiService = new StoryboardAIService(createRegistry(), { onUsage: usage.onUsage })
 
-  const result = await runSceneGenerationPipeline({
-    sceneStem: scene.stem,
-    context,
-    aiService,
-    format: project.format,
-    styleDirective,
-    previousContext: narrative.prompt,
-    providers: {
-      situationExtraction: harnessProviderId,
-      personaGeneration: harnessProviderId,
-      personaDialogue: harnessProviderId,
-      sceneDraft: harnessProviderId
-    },
-    personaStore: createHarnessPersonaStore(scene.stem),
-    backgroundStore: createHarnessBackgroundStore(scene.stem),
-    onProgress: (stage, current, total) => {
-      // eslint-disable-next-line no-console
-      console.log(`[${stage}] ${current}/${total}`)
-    },
-    useContextCondense: false
-  })
-
-  // eslint-disable-next-line no-console
-  console.log(`situations=${result.situations.length} characters=${result.detectedCharacters.join(", ")}`)
-
-  const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
-
-  if (harnessKeepHistory) {
-    const historyDirectory = path.join(workspace, ".draft", scene.stem)
-    const archivedFileName = await archiveExistingDraft({
-      draftUri: draftPath,
-      historyDirectory,
-      resolveArchiveUri: (fileName) => path.join(historyDirectory, fileName),
-      fileSystem: draftHistoryFs
-    })
-
-    if (archivedFileName) {
-      // eslint-disable-next-line no-console
-      console.log(`[harness] archived previous draft → .draft/${scene.stem}/${archivedFileName}`)
-    }
-  }
-
-  let body = result.draftBody
-  await nodeFs.writeFile(
-    draftPath,
-    serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
-    "utf8"
-  )
-
-  if (harnessRunRevise) {
-    const revision = await runHarnessReviseLoop({
-      aiService,
-      providerId: harnessProviderId,
+  try {
+    const result = await runSceneGenerationPipeline({
+      sceneStem: scene.stem,
       context,
-      intent: scene.body,
-      factLines: formatBibleFactLines(context, narrative.bibleFacts),
-      styleDirective,
-      styleConstraints: project.setting?.styleConstraints ?? [],
-      qualityCriteria: project.setting?.qualityCriteria ?? [],
+      aiService,
       format: project.format,
-      initialBody: body,
-      sceneStem: scene.stem
+      styleDirective,
+      previousContext: narrative.prompt,
+      providers: {
+        situationExtraction: harnessProviderId,
+        personaGeneration: harnessProviderId,
+        personaDialogue: harnessProviderId,
+        sceneDraft: harnessProviderId
+      },
+      personaStore: createHarnessPersonaStore(scene.stem),
+      backgroundStore: createHarnessBackgroundStore(scene.stem),
+      onProgress: (stage, current, total) => {
+        // eslint-disable-next-line no-console
+        console.log(`[${stage}] ${current}/${total}`)
+      },
+      useContextCondense: false
     })
 
-    body = revision.body
+    // eslint-disable-next-line no-console
+    console.log(`situations=${result.situations.length} characters=${result.detectedCharacters.join(", ")}`)
+
+    const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
+
+    if (harnessKeepHistory) {
+      const historyDirectory = path.join(workspace, ".draft", scene.stem)
+      const archivedFileName = await archiveExistingDraft({
+        draftUri: draftPath,
+        historyDirectory,
+        resolveArchiveUri: (fileName) => path.join(historyDirectory, fileName),
+        fileSystem: draftHistoryFs
+      })
+
+      if (archivedFileName) {
+        // eslint-disable-next-line no-console
+        console.log(`[harness] archived previous draft → .draft/${scene.stem}/${archivedFileName}`)
+      }
+    }
+
+    let body = result.draftBody
     await nodeFs.writeFile(
       draftPath,
       serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
       "utf8"
     )
 
-    // eslint-disable-next-line no-console
-    console.log(
-      `[revise done] passed=${revision.passed} revisions=${revision.revisionCount} remainingBlocking=${revision.remainingBlocking}`
-    )
+    if (harnessRunRevise) {
+      const revision = await runHarnessReviseLoop({
+        aiService,
+        providerId: harnessProviderId,
+        context,
+        intent: scene.body,
+        factLines: formatBibleFactLines(context, narrative.bibleFacts),
+        styleDirective,
+        styleConstraints: project.setting?.styleConstraints ?? [],
+        qualityCriteria: project.setting?.qualityCriteria ?? [],
+        format: project.format,
+        initialBody: body,
+        sceneStem: scene.stem
+      })
+
+      body = revision.body
+      await nodeFs.writeFile(
+        draftPath,
+        serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
+        "utf8"
+      )
+
+      // eslint-disable-next-line no-console
+      console.log(
+        `[revise done] passed=${revision.passed} revisions=${revision.revisionCount} remainingBlocking=${revision.remainingBlocking}`
+      )
+    }
+  } finally {
+    usage.print()
   }
 }, 7_200_000)

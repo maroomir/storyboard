@@ -13,6 +13,8 @@ import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/p
 import type { AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
 import { summarizeSceneCoverage } from "@/shared/sceneCoverage"
 
+import { createUsageSummary } from "./usageSummary"
+
 // NOTE: Diagnostic — runs the new checkSceneCoverage feature against the current draft to verify
 // every source beat is dramatized in order. Re-extracts beats so it does not depend on stale cache.
 const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
@@ -62,23 +64,35 @@ function createRegistry(): AiProviderRegistry {
 test("check scene coverage of current draft", async () => {
   const scene = await readSceneFile(path.join(workspace, "scene", sceneFileName), fileSystem, sceneFileName)
   const context = await buildSceneContext(paths, scene, fileSystem)
-  const aiService = new StoryboardAIService(createRegistry())
+  const usage = createUsageSummary()
+  const aiService = new StoryboardAIService(createRegistry(), { onUsage: usage.onUsage })
+  const attribution = { primary: { kind: "scene" as const, id: scene.stem } }
 
-  // eslint-disable-next-line no-console
-  console.log("characters:", context.characters.map((character) => character.name).join(", "))
-  const situations = await aiService.extractSituations(scene.body, { providerId: providerId as never })
-  const beats = situations.map((situation) => situation.situation)
-
-  const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
-  const draft = await nodeFs.readFile(draftPath, "utf8")
-
-  const issues = await aiService.checkSceneCoverage(beats, draft, { providerId: providerId as never })
-  const report = summarizeSceneCoverage(issues, beats.length)
-
-  // eslint-disable-next-line no-console
-  console.log(`COVERAGE total=${report.totalBeats} missing=[${report.missing.join(",")}] outOfOrder=[${report.outOfOrder.join(",")}] coveredRatio=${report.coveredRatio.toFixed(3)}`)
-  issues.forEach((issue) => {
+  try {
     // eslint-disable-next-line no-console
-    console.log(`#${issue.index} ${issue.status} — ${issue.note ?? ""} :: ${beats[issue.index - 1] ?? ""}`)
-  })
+    console.log("characters:", context.characters.map((character) => character.name).join(", "))
+    const situations = await aiService.extractSituations(scene.body, {
+      providerId: providerId as never,
+      attribution
+    })
+    const beats = situations.map((situation) => situation.situation)
+
+    const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
+    const draft = await nodeFs.readFile(draftPath, "utf8")
+
+    const issues = await aiService.checkSceneCoverage(beats, draft, {
+      providerId: providerId as never,
+      attribution
+    })
+    const report = summarizeSceneCoverage(issues, beats.length)
+
+    // eslint-disable-next-line no-console
+    console.log(`COVERAGE total=${report.totalBeats} missing=[${report.missing.join(",")}] outOfOrder=[${report.outOfOrder.join(",")}] coveredRatio=${report.coveredRatio.toFixed(3)}`)
+    issues.forEach((issue) => {
+      // eslint-disable-next-line no-console
+      console.log(`#${issue.index} ${issue.status} — ${issue.note ?? ""} :: ${beats[issue.index - 1] ?? ""}`)
+    })
+  } finally {
+    usage.print()
+  }
 }, 600_000)
