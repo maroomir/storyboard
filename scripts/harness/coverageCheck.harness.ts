@@ -3,14 +3,14 @@ import path from "node:path"
 
 import { test } from "vitest"
 
-import { buildSceneContext } from "@/core/sceneContext"
-import { readSceneFile } from "@/files/scene"
-import { StoryboardAIService } from "@/services/ai/AIService"
-import type { AiProviderRegistry } from "@/services/ai/providerRegistry"
-import { ClaudeCodeProvider } from "@/services/ai/providers/ClaudeCodeProvider"
-import { CodexProvider } from "@/services/ai/providers/CodexProvider"
-import { createDefaultCliRunner, type CliRunResult } from "@/services/ai/providers/cliRunner"
-import type { AiGenerateResponse, AiProvider } from "@/services/ai/types"
+import { buildSceneContext } from "@/domain/sceneContext"
+import { readSceneFile } from "@/domain/files/scene"
+import { StoryboardAIService } from "@/infrastructure/ai/AIService"
+import type { AiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
+import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProvider"
+import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
+import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/providers/cliRunner"
+import type { AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
 import { summarizeSceneCoverage } from "@/shared/sceneCoverage"
 
 // NOTE: Diagnostic — runs the new checkSceneCoverage feature against the current draft to verify

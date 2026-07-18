@@ -3,7 +3,12 @@ import path from "node:path"
 
 import { test } from "vitest"
 
-import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@/core/sceneContext"
+import {
+  runSceneGenerationPipeline,
+  type BackgroundMemoryStore,
+  type PersonaMemoryStore
+} from "@/application/pipelines/sceneGenerationPipeline"
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@/domain/sceneContext"
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
@@ -11,21 +16,17 @@ import {
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile
-} from "@/files/cardMemory"
-import { createDraft, serializeDraft } from "@/files/draft"
-import { archiveExistingDraft } from "@/files/draftHistory"
-import { readSceneFile } from "@/files/scene"
-import { StoryboardAIService } from "@/services/ai/AIService"
-import {
-  runSceneGenerationPipeline,
-  type BackgroundMemoryStore,
-  type PersonaMemoryStore
-} from "@/services/ai/pipelines/sceneGenerationPipeline"
-import type { AiProviderRegistry } from "@/services/ai/providerRegistry"
-import { ClaudeCodeProvider } from "@/services/ai/providers/ClaudeCodeProvider"
-import { CodexProvider } from "@/services/ai/providers/CodexProvider"
-import { createDefaultCliRunner, type CliRunResult } from "@/services/ai/providers/cliRunner"
-import type { AiGenerateRequest, AiGenerateResponse, AiProvider, AiProviderId } from "@/services/ai/types"
+} from "@/domain/files/cardMemory"
+import { createDraft, serializeDraft } from "@/domain/files/draft"
+import { archiveExistingDraft } from "@/domain/files/draftHistory"
+import { readSceneFile } from "@/domain/files/scene"
+import { StoryboardAIService } from "@/infrastructure/ai/AIService"
+import type { AiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
+import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProvider"
+import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
+import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/providers/cliRunner"
+import type { AiProviderId } from "@/shared/ai"
+import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
 import type { BackgroundCard, CharacterCard } from "@/shared/card"
 import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "@/shared/draftReview"
 import type { ProjectFormat } from "@/shared/project"
