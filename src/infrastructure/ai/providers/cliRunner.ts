@@ -25,8 +25,8 @@ export function createDefaultCliRunner(): CliRunner {
       // 사용자·외부 입력이 섞인 프롬프트는 인자가 아니라 stdin으로만 전달한다.
       const child = spawn(input.command, [...input.args], { shell: false, cwd: input.cwd });
 
-      let stdout = '';
-      let stderr = '';
+      const stdoutChunks: Buffer[] = [];
+      const stderrChunks: Buffer[] = [];
       let settled = false;
 
       const finish = (action: () => void): void => {
@@ -50,17 +50,25 @@ export function createDefaultCliRunner(): CliRunner {
             }, input.timeoutMs)
           : undefined;
 
+      // NOTE: 청크 단위 toString()은 멀티바이트 문자가 청크 경계에서 잘리면 U+FFFD로 깨진다.
+      // 버퍼를 모아 종료 시점에 한 번만 디코딩한다.
       child.stdout?.on('data', (chunk: Buffer) => {
-        stdout += chunk.toString();
+        stdoutChunks.push(chunk);
       });
       child.stderr?.on('data', (chunk: Buffer) => {
-        stderr += chunk.toString();
+        stderrChunks.push(chunk);
       });
       child.on('error', (error) => {
         finish(() => reject(error));
       });
       child.on('close', (code) => {
-        finish(() => resolve({ stdout, stderr, exitCode: code }));
+        finish(() =>
+          resolve({
+            stdout: Buffer.concat(stdoutChunks).toString('utf8'),
+            stderr: Buffer.concat(stderrChunks).toString('utf8'),
+            exitCode: code,
+          }),
+        );
       });
 
       // NOTE: 사용자 지정 command가 stdin 소비 전 종료하면 stdin에 EPIPE 'error'가 발생하는데,

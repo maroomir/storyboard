@@ -149,6 +149,18 @@ describe("createDefaultCliRunner", () => {
     await expect(running).resolves.toEqual({ stdout: "out-aout-b", stderr: "err-a", exitCode: 0 })
   })
 
+  it("decodes multibyte characters split across chunk boundaries", async () => {
+    const runner = createDefaultCliRunner()
+    const running = runner({ command: "codex", args: [] })
+
+    const encoded = Buffer.from("빗소리가 굵어졌다")
+    child.stdout.emit("data", encoded.subarray(0, 4))
+    child.stdout.emit("data", encoded.subarray(4))
+    child.emitClose(0)
+
+    await expect(running).resolves.toMatchObject({ stdout: "빗소리가 굵어졌다" })
+  })
+
   it("preserves a non-zero exit code on close", async () => {
     const runner = createDefaultCliRunner()
     const running = runner({ command: "claude", args: [] })
