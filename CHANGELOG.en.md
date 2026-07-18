@@ -10,6 +10,12 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-19
+
+### Changed
+
+- Reorganized the extension host into bootstrap, application, domain, infrastructure, and presentation layers while preserving extension behavior. Added architecture-boundary checks and use-case coverage to make future changes safer.
+
 ## [0.5.0] - 2026-07-04
 
 ### Added

@@ -9,6 +9,12 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-07-19
+
+### 변경
+
+- 확장 기능의 동작을 유지하면서 extension host 코드를 bootstrap·application·domain·infrastructure·presentation 계층으로 재구성했습니다. 의존성 방향을 검증하는 아키텍처 검사와 유스케이스 단위 테스트를 추가해 이후 변경의 안정성을 높였습니다.
+
 ## [0.5.0] - 2026-07-04
 
 ### 추가
