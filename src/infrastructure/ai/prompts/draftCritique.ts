@@ -6,6 +6,7 @@ export interface DraftCritiqueInput {
   readonly body: string;
   readonly intent: string;
   readonly characters: readonly string[];
+  readonly characterCards?: readonly string[];
   readonly facts: readonly string[];
   readonly styleConstraints?: readonly string[];
   readonly qualityCriteria?: readonly string[];
@@ -28,6 +29,7 @@ function buildGeneric(input: DraftCritiqueInput): PromptArtifact {
       '한국어 장편 소설 초안을 비평하는 도우미다.',
       '다음 세 관점만 검토한다: 캐릭터 보이스(voice), 장면 목적 달성(purpose), 불필요한 반복(repetition).',
       '[문체 제약]·[시점]·[장르·톤]·[관계 단계]를 위반한 서술·대사는 voice로, [품질 기준] 미달은 purpose로 보고한다.',
+      '[캐릭터 카드]의 말투·보이스는 캐릭터 판단의 최우선 기준이다. [품질 기준]과 충돌하면 캐릭터 카드를 따르고, 그 충돌을 본문 문제로 보고하지 마라.',
       '문법·맞춤법은 보지 않는다. 명백한 문제만 보고하고, 사소하면 severity를 low로 둔다.',
       '설명 없이 JSON 배열만 출력하라.',
       '[{"category":"voice","severity":"high","excerpt":"","comment":""}]',
@@ -41,7 +43,7 @@ function buildGeneric(input: DraftCritiqueInput): PromptArtifact {
 function buildXs(input: DraftCritiqueInput): PromptArtifact {
   return {
     system:
-      '초안의 voice/purpose/repetition 문제만 JSON 배열로 반환: [{"category":"voice","severity":"high","excerpt":"","comment":""}] (없으면 []).',
+      '초안의 voice/purpose/repetition 문제만 JSON 배열로 반환하라. 캐릭터 보이스는 [캐릭터 카드]를 최우선으로 따른다: [{"category":"voice","severity":"high","excerpt":"","comment":""}] (없으면 []).',
     user: buildUserBlock(input),
   };
 }
@@ -72,6 +74,9 @@ function buildUserBlock(input: DraftCritiqueInput): string {
   }
   if (input.qualityCriteria && input.qualityCriteria.length > 0) {
     sections.push(`[품질 기준]\n${input.qualityCriteria.join('\n')}`);
+  }
+  if (input.characterCards && input.characterCards.length > 0) {
+    sections.push(`[캐릭터 카드]\n${input.characterCards.join('\n\n')}`);
   }
 
   sections.push(`[본문]\n${input.body}`);

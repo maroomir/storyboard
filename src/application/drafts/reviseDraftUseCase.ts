@@ -16,6 +16,7 @@ import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../do
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 import { readSceneFile } from '../../domain/files/scene';
 import { StoryboardAIService } from '../../infrastructure/ai/AIService';
+import { formatAugmentCards } from '../../infrastructure/ai/prompts/draftAugment';
 import type { UsageAttribution } from '../../shared/aiTypes';
 import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
 import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
@@ -81,6 +82,7 @@ interface ReviseDraftContext {
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
   readonly factLines: readonly string[];
   readonly characterNames: readonly string[];
+  readonly characterCards: readonly string[];
   readonly intent: string;
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
@@ -104,6 +106,7 @@ async function prepareReviseDraftContext(
   const narrative = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem);
   const factLines = formatBibleFactLines(context, narrative.bibleFacts);
   const characterNames = context.characters.map((character) => character.name);
+  const characterCards = formatAugmentCards(context.characters, undefined);
   const intent = scene.body;
   const { styleConstraints, qualityCriteria, setting } = await readContractGuidance(
     paths.projectJson,
@@ -116,6 +119,7 @@ async function prepareReviseDraftContext(
     context,
     factLines,
     characterNames,
+    characterCards,
     intent,
     styleConstraints,
     qualityCriteria,
@@ -176,6 +180,7 @@ async function runReviewChecks(
         body,
         intent: ctx.intent,
         characters: ctx.characterNames,
+        characterCards: ctx.characterCards,
         facts: ctx.factLines,
         styleConstraints: ctx.styleConstraints,
         qualityCriteria: ctx.qualityCriteria,
@@ -231,6 +236,7 @@ async function applyRevisionPasses(
         instructions,
         intent: ctx.intent,
         facts: ctx.factLines,
+        characterCards: ctx.characterCards,
       },
       { providerId: registry.getTaskProvider('draftRevision'), attribution },
     );

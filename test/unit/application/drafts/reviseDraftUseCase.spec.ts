@@ -4,15 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { ContinuityIssueLike, DraftCritiqueIssue } from "@/shared/draftReview"
 
 const checkContinuityMock = vi.fn<[], Promise<ContinuityIssueLike[]>>()
-const critiqueDraftMock = vi.fn<[], Promise<DraftCritiqueIssue[]>>()
-const reviseDraftMock = vi.fn(async () => "수정된 본문")
+const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIssue[]> => {
+  void input
+  return []
+})
+const reviseDraftMock = vi.fn(async (input: unknown): Promise<string> => {
+  void input
+  return "수정된 본문"
+})
 const writeDraftFileMock = vi.fn(async () => undefined)
 
 vi.mock("@/infrastructure/ai/AIService", () => ({
   StoryboardAIService: class {
     checkContinuity = (): Promise<ContinuityIssueLike[]> => checkContinuityMock()
-    critiqueDraft = (): Promise<DraftCritiqueIssue[]> => critiqueDraftMock()
-    reviseDraft = (): Promise<string> => reviseDraftMock()
+    critiqueDraft = (input: unknown): Promise<DraftCritiqueIssue[]> => critiqueDraftMock(input)
+    reviseDraft = (input: unknown): Promise<string> => reviseDraftMock(input)
   }
 }))
 vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
@@ -40,7 +46,15 @@ vi.mock("@/domain/files/draft", () => ({
 vi.mock("@/domain/sceneContext", () => ({
   buildSceneContext: async (): Promise<unknown> => ({
     scene: { body: "씬 의도" },
-    characters: [{ name: "주인공" }]
+    characters: [
+      {
+        type: "character",
+        id: "hero",
+        name: "주인공",
+        role: "main",
+        voice: ["짧은 존댓말"]
+      }
+    ]
   }),
   buildNarrativeContext: async (): Promise<unknown> => ({ bibleFacts: [] }),
   formatBibleFactLines: (): unknown[] => []
@@ -133,6 +147,24 @@ describe("ReviseDraftUseCase", () => {
     expect(result.remainingBlocking).toBe(0)
     expect(reviseDraftMock).toHaveBeenCalledTimes(1)
     expect(writeDraftFileMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("passes character cards to both critique and revision", async () => {
+    critiqueDraftMock.mockResolvedValueOnce([highCritique]).mockResolvedValue([])
+
+    await runReviseDraftWorkflow(baseOptions({ maxIterations: 1 }))
+
+    const critiqueInput = critiqueDraftMock.mock.calls[0]?.[0] as {
+      readonly characterCards: readonly string[]
+    }
+    const revisionInput = reviseDraftMock.mock.calls[0]?.[0] as {
+      readonly characterCards: readonly string[]
+    }
+
+    expect(critiqueInput.characterCards).toEqual([
+      "[주인공] 역할: main\n말투: 짧은 존댓말"
+    ])
+    expect(revisionInput.characterCards).toEqual(critiqueInput.characterCards)
   })
 
   it("Q6: stops at maxIterations and reports remaining blocking when issues persist", async () => {
