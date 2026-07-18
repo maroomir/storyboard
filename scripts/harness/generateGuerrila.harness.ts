@@ -342,6 +342,18 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   // eslint-disable-next-line no-console
   console.log("detected characters:", context.characters.map((character) => character.name).join(", "))
 
+  // NOTE: 배경 카드가 스키마 검증에 실패하면 조용히 탈락해 frontmatter.location이 무시된다.
+  // 헤드리스 사용자가 미부착을 즉시 알 수 있도록 부착 결과를 로그로 남긴다.
+  if (context.background) {
+    // eslint-disable-next-line no-console
+    console.log(`detected background: ${context.background.name}`)
+  } else if (scene.frontmatter.location) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[harness] frontmatter.location='${scene.frontmatter.location}'에 해당하는 배경 카드를 찾지 못했습니다. background/*.card의 id와 스키마(locationKind: place|affiliation 등)를 확인하세요.`
+    )
+  }
+
   const narrative = await buildNarrativeContext(paths, context, fileSystem)
   const styleDirective = buildStyleDirective(project.setting, scene.frontmatter.relationStage)
   const aiService = new StoryboardAIService(createRegistry())
