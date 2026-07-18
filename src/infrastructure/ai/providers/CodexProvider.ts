@@ -23,6 +23,7 @@ const defaultGenerateTimeoutMs = 600_000;
 export interface CodexProviderOptions {
   readonly command: string | undefined;
   readonly model: string | undefined;
+  readonly reasoningEffort?: string;
   readonly generateTimeoutMs?: number;
   readonly createRunner?: () => CliRunner;
 }
@@ -32,6 +33,7 @@ export class CodexProvider implements AiProvider {
   public readonly displayName = 'Codex (CLI)';
   private readonly command: string;
   private readonly model: string;
+  private readonly reasoningEffort: string | undefined;
   private readonly generateTimeoutMs: number;
   private readonly run: CliRunner;
 
@@ -53,6 +55,7 @@ export class CodexProvider implements AiProvider {
 
     this.command = command;
     this.model = model;
+    this.reasoningEffort = options.reasoningEffort?.trim() || undefined;
     this.generateTimeoutMs = options.generateTimeoutMs ?? defaultGenerateTimeoutMs;
     this.run = options.createRunner?.() ?? createDefaultCliRunner();
   }
@@ -116,6 +119,11 @@ export class CodexProvider implements AiProvider {
       '--skip-git-repo-check',
       '--json',
     ];
+
+    if (this.reasoningEffort) {
+      // NOTE: codex CLI에는 reasoning effort 전용 플래그가 없어 -c 설정 오버라이드로 전달한다.
+      args.push('-c', `model_reasoning_effort="${this.reasoningEffort}"`);
+    }
 
     let result;
     try {

@@ -101,6 +101,44 @@ describe("CodexProvider", () => {
     expect(response.usage).toEqual({ inputTokens: 100, outputTokens: 50, cacheReadInputTokens: 40 })
   })
 
+  it("passes reasoning effort as a -c config override when configured", async () => {
+    const calls: CliRunInput[] = []
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5.6-terra",
+      reasoningEffort: "high",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout: "ok", onRun: (input) => calls.push(input) })
+    })
+
+    await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(calls[0]?.args).toEqual([
+      "exec",
+      "--model",
+      "gpt-5.6-terra",
+      "--sandbox",
+      "read-only",
+      "--skip-git-repo-check",
+      "--json",
+      "-c",
+      'model_reasoning_effort="high"'
+    ])
+  })
+
+  it("omits the reasoning effort override for blank values", async () => {
+    const calls: CliRunInput[] = []
+    const provider = new CodexProvider({
+      command: "codex",
+      model: "gpt-5.5",
+      reasoningEffort: "  ",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 0, stdout: "ok", onRun: (input) => calls.push(input) })
+    })
+
+    await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+
+    expect(calls[0]?.args).not.toContain("-c")
+  })
+
   it("does not add reasoning tokens onto output tokens", async () => {
     const stdout = [
       JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),

@@ -52,6 +52,9 @@ const harnessModel =
   (harnessProviderId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
 const harnessCommand = harnessProviderId === "claude-code" ? "claude" : "codex"
 
+// NOTE: SCENE_EFFORT=minimal|low|medium|high — codex 전용 reasoning effort. 미지정 시 CLI 기본값.
+const harnessReasoningEffort = process.env.SCENE_EFFORT ?? process.env.GUERRILA_EFFORT
+
 // NOTE: Headless harness that drives the REAL scene-generation pipeline against the codex CLI so
 // the guerrila draft can be regenerated outside the VSCode extension host. Faithful to the product
 // flow: background only attaches via scene frontmatter.location (the source has none, so none here).
@@ -163,7 +166,12 @@ function createCliProvider(): AiProvider {
     return claude
   }
 
-  const codex = new CodexProvider({ command: harnessCommand, model: harnessModel, createRunner })
+  const codex = new CodexProvider({
+    command: harnessCommand,
+    model: harnessModel,
+    reasoningEffort: harnessReasoningEffort,
+    createRunner
+  })
   return new FallbackCliProvider(codex, claude)
 }
 
