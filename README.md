@@ -83,6 +83,8 @@ CLI provider 사용 시 참고할 점:
 - **사용량·비용**: Claude Code 비용은 CLI가 보고하는 `total_cost_usd`를 그대로 씁니다. Codex 사용량은
   `codex exec --json`에서 파싱합니다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 USD 비용은
   `0`으로 기록합니다.
+- **추론 강도(Codex)**: `storyboard.providers.codex.reasoningEffort`를 `minimal`·`low`·`medium`·`high`로 지정하면
+  Codex CLI에 `model_reasoning_effort`로 전달됩니다. 비워 두면 CLI 기본값을 씁니다.
 - **스트리밍**: 두 CLI는 실시간 토큰 스트리밍 대신 생성을 끝까지 마친 뒤 전체 결과를 한 번에 전달합니다(의도된 동작).
 - **인라인 완성**: CLI provider에서는 인라인 완성이 비활성화됩니다. 키 입력마다 CLI 프로세스를 새로 띄우는 비용이
   크고, 두 CLI가 길이·`temperature` 제어를 노출하지 않기 때문입니다(의도된 동작).

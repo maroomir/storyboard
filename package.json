@@ -264,6 +264,18 @@
           "maximum": 1800000,
           "description": "Per-call timeout (ms) for the Codex CLI. Long reasoning beats can exceed the previous 180s; default 600000 (10 min)."
         },
+        "storyboard.providers.codex.reasoningEffort": {
+          "type": "string",
+          "enum": [
+            "",
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ],
+          "default": "",
+          "description": "Reasoning effort passed to the Codex CLI as model_reasoning_effort. Empty uses the CLI default."
+        },
         "storyboard.tasks": {
           "type": "object",
           "default": {},

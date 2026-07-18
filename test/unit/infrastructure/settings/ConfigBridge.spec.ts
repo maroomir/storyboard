@@ -245,6 +245,27 @@ describe("ConfigBridge", () => {
     expect(configBridge.getProviderConfig("claude-code").timeoutMs).toBe(600000)
   })
 
+  it("reads a configured Codex reasoning effort for codex only", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([["providers.codex.reasoningEffort", "high"]])
+    )
+
+    expect(configBridge.getProviderConfig("codex").reasoningEffort).toBe("high")
+    expect(configBridge.getProviderConfig("claude-code").reasoningEffort).toBeUndefined()
+  })
+
+  it("omits the Codex reasoning effort when blank", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([["providers.codex.reasoningEffort", "  "]])
+    )
+
+    expect(configBridge.getProviderConfig("codex")).toEqual({
+      command: "codex",
+      model: "gpt-5.6-sol",
+      timeoutMs: 600000
+    })
+  })
+
   it("falls back from legacy Codex models to the current catalog default", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([

@@ -14,6 +14,7 @@ export interface ProviderModelConfig {
   readonly baseUrl?: string;
   readonly command?: string;
   readonly timeoutMs?: number;
+  readonly reasoningEffort?: string;
 }
 
 const defaultCliGenerateTimeoutMs = 600_000;
@@ -81,6 +82,11 @@ export class ConfigBridge {
     if (providerId === 'claude-code' || providerId === 'codex') {
       const model = configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId));
 
+      const reasoningEffort =
+        providerId === 'codex'
+          ? configuration.get('providers.codex.reasoningEffort', '').trim() || undefined
+          : undefined;
+
       return {
         command: configuration.get(
           `providers.${providerId}.command`,
@@ -94,6 +100,7 @@ export class ConfigBridge {
           `providers.${providerId}.timeoutMs`,
           defaultCliGenerateTimeoutMs,
         ),
+        ...(reasoningEffort ? { reasoningEffort } : {}),
       };
     }
 

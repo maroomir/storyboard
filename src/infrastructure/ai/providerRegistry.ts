@@ -166,7 +166,7 @@ export class AiProviderRegistry {
 
     return providerId === 'claude-code'
       ? new ClaudeCodeProvider(settings)
-      : new CodexProvider(settings);
+      : new CodexProvider({ ...settings, reasoningEffort: config.reasoningEffort });
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {

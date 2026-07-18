@@ -40,6 +40,26 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("mock")
   })
 
+  it("passes the configured Codex reasoning effort through to the CLI args", async () => {
+    const calls: Parameters<CliRunner>[0][] = []
+    const capturingRunner: CliRunner = async (input) => {
+      calls.push(input)
+      return { stdout: "ok", stderr: "", exitCode: 0 }
+    }
+    const registry = createRegistry(
+      new Map<string, unknown>([
+        ["defaultProvider", "codex"],
+        ["providers.codex.reasoningEffort", "high"]
+      ]),
+      createDefaultSecretValues(),
+      capturingRunner
+    )
+
+    await registry.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "테스트" }] })
+
+    expect(calls[0]?.args).toContain('model_reasoning_effort="high"')
+  })
+
   it("uses per-task model override for generate when stored in workspace tasks", async () => {
     const registry = createRegistry(
       new Map<string, unknown>([
