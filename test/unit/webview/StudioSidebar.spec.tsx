@@ -115,6 +115,68 @@ describe("StudioSidebar chat loop", () => {
     await waitFor(() => expect(screen.getAllByText(/01-intro\.md/).length).toBeGreaterThan(0))
   })
 
+  it("opens a slash menu, filters it, and inserts without submitting", () => {
+    const postMessage = renderStudio(draftTarget)
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/" } })
+    expect(screen.getByRole("listbox")).toBeTruthy()
+
+    fireEvent.change(composer, { target: { value: "/gr" } })
+    const options = screen.getAllByRole("option")
+    expect(options).toHaveLength(1)
+    expect(options[0].textContent).toContain("/grammar")
+
+    fireEvent.keyDown(composer, { key: "ArrowDown" })
+    fireEvent.keyDown(composer, { key: "Enter" })
+
+    expect((composer as HTMLTextAreaElement).value).toBe("/grammar ")
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it("closes the slash menu on Escape", () => {
+    renderStudio(draftTarget)
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/gr" } })
+    expect(screen.queryByRole("listbox")).toBeTruthy()
+
+    fireEvent.keyDown(composer, { key: "Escape" })
+    expect(screen.queryByRole("listbox")).toBeNull()
+  })
+
+  it("runs a slash command directly without an approval step", async () => {
+    const postMessage = renderStudio(draftTarget)
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/grammar" } })
+    fireEvent.click(screen.getByLabelText("보내기"))
+
+    expect(screen.queryByText("승인")).toBeNull()
+    expect(screen.getByText("실행 중…")).toBeTruthy()
+    expect(postMessage).toHaveBeenCalledTimes(1)
+    const sent = postMessage.mock.calls[0][0]
+    expect(sent.method).toBe("studio.runAction")
+    expect(sent.payload.action).toBe("grammarCheck")
+
+    window.dispatchEvent(
+      new MessageEvent("message", { data: { type: "response", id: sent.id, ok: true } })
+    )
+    await waitFor(() => expect(screen.getByText("완료")).toBeTruthy())
+  })
+
+  it("forwards the trailing instruction of a slash command", () => {
+    const postMessage = renderStudio({ ...draftTarget, hasSelection: true })
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/edit 더 밝게" } })
+    fireEvent.click(screen.getByLabelText("보내기"))
+
+    const sent = postMessage.mock.calls[0][0]
+    expect(sent.payload.action).toBe("editSelection")
+    expect(sent.payload.instruction).toBe("더 밝게")
+  })
+
   it("keeps a project target from the host instead of downgrading it", async () => {
     renderStudio({ kind: "none", hasSelection: false })
 

@@ -1,27 +1,19 @@
-import {
-  Check,
-  CircleAlert,
-  Expand,
-  FileText,
-  GitCompare,
-  Layers,
-  type LucideIcon,
-  MessagesSquare,
-  RefreshCw,
-  Send,
-  Sparkles,
-  SpellCheck,
-  TextSelect,
-  Wand2,
-  WrapText,
-} from 'lucide-react';
+import { Check, CircleAlert, FileText, MessagesSquare, Send, Sparkles } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { createRequestId, parseStudioTarget } from '@webview/lib/messaging';
 import {
+  actionIcon,
+  actionLabel,
+  parseSlashInput,
+  slashCandidates,
+  slashMenuState,
+} from '@webview/lib/studioCommands';
+import {
   availableStudioActions,
   interpretStudioInstruction,
   type StudioClarifyReason,
+  type StudioIntent,
 } from '@webview/lib/studioIntent';
 import type {
   StoryboardEventMessage,
@@ -33,6 +25,7 @@ import { Button } from '../ui/Button';
 import { Pill } from '../ui/Pill';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbInputClass } from '../ui/formClasses';
+import { SlashCommandMenu } from './SlashCommandMenu';
 
 type ProposalStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
 
@@ -98,28 +91,56 @@ export function StudioSidebar({
     logEndRef.current?.scrollIntoView?.({ block: 'end' });
   }, [turns]);
 
-  const appendUserAndIntent = (text: string): void => {
-    const intent = interpretStudioInstruction(text, target);
-    const userTurn: ChatTurn = { id: createRequestId(), role: 'user', text };
-    const assistantTurn: ChatTurn =
-      intent.kind === 'action'
-        ? {
-            id: createRequestId(),
-            role: 'assistant',
-            kind: 'proposal',
-            action: intent.action,
-            instruction: intent.instruction,
-            status: 'pending',
-          }
-        : {
-            id: createRequestId(),
-            role: 'assistant',
-            kind: 'clarify',
-            reason: intent.reason,
-            suggestions: intent.suggestions,
-          };
+  const postRunAction = (requestId: string, action: StudioActionId, instruction?: string): void => {
+    vscodeApi?.postMessage({
+      protocolVersion: '1.0.0',
+      type: 'request',
+      id: requestId,
+      method: 'studio.runAction',
+      payload: { action, instruction },
+    });
+  };
 
-    setTurns((prev) => [...prev, userTurn, assistantTurn]);
+  const appendTurnsForIntent = (text: string, intent: StudioIntent, autoRun: boolean): void => {
+    const userTurn: ChatTurn = { id: createRequestId(), role: 'user', text };
+
+    if (intent.kind === 'clarify') {
+      const clarifyTurn: ChatTurn = {
+        id: createRequestId(),
+        role: 'assistant',
+        kind: 'clarify',
+        reason: intent.reason,
+        suggestions: intent.suggestions,
+      };
+      setTurns((prev) => [...prev, userTurn, clarifyTurn]);
+      return;
+    }
+
+    if (!autoRun) {
+      const proposalTurn: ChatTurn = {
+        id: createRequestId(),
+        role: 'assistant',
+        kind: 'proposal',
+        action: intent.action,
+        instruction: intent.instruction,
+        status: 'pending',
+      };
+      setTurns((prev) => [...prev, userTurn, proposalTurn]);
+      return;
+    }
+
+    const requestId = createRequestId();
+    const proposalTurn: ChatTurn = {
+      id: createRequestId(),
+      role: 'assistant',
+      kind: 'proposal',
+      action: intent.action,
+      instruction: intent.instruction,
+      status: 'running',
+      requestId,
+    };
+    setTurns((prev) => [...prev, userTurn, proposalTurn]);
+    postRunAction(requestId, intent.action, intent.instruction);
   };
 
   const proposeAction = (action: StudioActionId): void => {
@@ -140,7 +161,9 @@ export function StudioSidebar({
       return;
     }
 
-    appendUserAndIntent(text);
+    const slashIntent = parseSlashInput(text, target);
+    const intent = slashIntent ?? interpretStudioInstruction(text, target);
+    appendTurnsForIntent(text, intent, slashIntent?.kind === 'action');
     setDraft('');
   };
 
@@ -155,13 +178,7 @@ export function StudioSidebar({
       ),
     );
 
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: requestId,
-      method: 'studio.runAction',
-      payload: { action, instruction },
-    });
+    postRunAction(requestId, action, instruction);
   };
 
   const cancelProposal = (turnId: string): void => {
@@ -402,29 +419,87 @@ function Composer({
   readonly onSubmit: () => void;
 }): React.ReactElement {
   const isDisabled = target.kind === 'none';
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  const menu = isDisabled ? undefined : slashMenuState(value);
+  const candidates = menu ? slashCandidates(menu.token, target) : [];
+  const isMenuOpen = !isDismissed && candidates.length > 0;
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [menu?.token, candidates.length]);
+
+  const changeValue = (next: string): void => {
+    setIsDismissed(false);
+    onChange(next);
+  };
+
+  const selectCandidate = (command: string): void => {
+    setIsDismissed(false);
+    onChange(`/${command} `);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (isMenuOpen) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setActiveIndex((index) => (index + 1) % candidates.length);
+        return;
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveIndex((index) => (index - 1 + candidates.length) % candidates.length);
+        return;
+      }
+      if (event.key === 'Enter' || event.key === 'Tab') {
+        event.preventDefault();
+        selectCandidate(candidates[activeIndex].command);
+        return;
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsDismissed(true);
+        return;
+      }
+    }
+
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      onSubmit();
+    }
+  };
 
   return (
     <div className="flex flex-col gap-2">
       <TargetChip target={target} />
       <div className="flex items-end gap-2">
-        <textarea
-          className={`${sbInputClass} min-h-12 resize-y`}
-          rows={2}
-          disabled={isDisabled}
-          placeholder={
-            isDisabled
-              ? 'Storyboard 프로젝트를 먼저 열어 주세요.'
-              : '예: 완결해줘, 씬에서 카드 구성해줘, 다시 생성해줘'
-          }
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              onSubmit();
+        <div className="relative flex-1">
+          {isMenuOpen ? (
+            <SlashCommandMenu
+              items={candidates}
+              activeIndex={activeIndex}
+              onSelect={selectCandidate}
+              onHover={setActiveIndex}
+            />
+          ) : null}
+          <textarea
+            className={`${sbInputClass} min-h-12 w-full resize-y`}
+            rows={2}
+            disabled={isDisabled}
+            role="textbox"
+            aria-controls={isMenuOpen ? 'studio-slash-menu' : undefined}
+            aria-activedescendant={isMenuOpen ? `studio-slash-option-${activeIndex}` : undefined}
+            placeholder={
+              isDisabled
+                ? 'Storyboard 프로젝트를 먼저 열어 주세요.'
+                : '예: 완결해줘, 씬에서 카드 구성해줘, 다시 생성해줘 (/ 명령)'
             }
-          }}
-        />
+            value={value}
+            onChange={(event) => changeValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
         <Button
           aria-label="보내기"
           disabled={isDisabled || value.trim().length === 0}
@@ -464,64 +539,6 @@ function targetDescription(target: StudioTarget): string {
   }
 
   return '열린 대상 없음';
-}
-
-function actionLabel(action: StudioActionId): string {
-  switch (action) {
-    case 'regenerate':
-      return '재생성';
-    case 'generate':
-      return '초안 생성';
-    case 'applyFormat':
-      return '형식 적용';
-    case 'grammarCheck':
-      return '문법 검사';
-    case 'continuityCheck':
-      return '연속성 검사';
-    case 'expand':
-      return '선택 영역 확장';
-    case 'augment':
-      return '카드 기반 보충';
-    case 'augmentSelection':
-      return '선택 영역 보충';
-    case 'editSelection':
-      return '선택 영역 편집';
-    case 'condense':
-      return '원본 축소';
-    case 'completeStory':
-      return '이야기 완결';
-    case 'buildCardsFromScenes':
-      return '씬 기반 카드 구성';
-  }
-}
-
-function actionIcon(action: StudioActionId): LucideIcon {
-  switch (action) {
-    case 'regenerate':
-      return RefreshCw;
-    case 'generate':
-      return Sparkles;
-    case 'applyFormat':
-      return WrapText;
-    case 'grammarCheck':
-      return SpellCheck;
-    case 'continuityCheck':
-      return GitCompare;
-    case 'expand':
-      return Expand;
-    case 'augment':
-      return Layers;
-    case 'augmentSelection':
-      return TextSelect;
-    case 'editSelection':
-      return Wand2;
-    case 'condense':
-      return WrapText;
-    case 'completeStory':
-      return FileText;
-    case 'buildCardsFromScenes':
-      return Layers;
-  }
 }
 
 function clarifyMessage(reason: StudioClarifyReason): string {
