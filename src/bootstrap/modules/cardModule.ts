@@ -8,6 +8,7 @@ import { registerPromoteCardCandidatesCommand } from '../../presentation/command
 import { registerRecommendCardCommands } from '../../presentation/commands/recommendCards';
 import { registerRenameCardCommands } from '../../presentation/commands/renameCard';
 import { registerCardCustomEditorProvider } from '../../presentation/providers/CardCustomEditorProvider';
+import { registerCardDiagnosticsProvider } from '../../presentation/providers/CardDiagnosticsProvider';
 import { registerCardRenameParticipant } from '../../presentation/providers/CardRenameParticipant';
 import { registerSidebarCardsProviders } from '../../presentation/providers/SidebarCardsProvider';
 
@@ -42,6 +43,7 @@ export class CardModule implements IApplicationModule {
       registerPromoteBibleCandidatesCommand({ logger, promoteBibleCandidatesUseCase }),
       registerPromoteCardCandidatesCommand({ logger, promoteCardCandidatesUseCase }),
       registerCanonDiffCommand({ logger }),
+      registerCardDiagnosticsProvider({ logger }),
       registerCardCustomEditorProvider(context, {
         aiProviderRegistry,
         collectCardProposalsUseCase,
