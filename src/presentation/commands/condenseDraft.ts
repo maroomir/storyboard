@@ -137,14 +137,39 @@ async function showCondenseDiff(
   draftUri: vscode.Uri,
   before: string,
   after: string,
+  title: string,
 ): Promise<void> {
   const beforeUri = previewUri(draftUri, 'before');
   const afterUri = previewUri(draftUri, 'after');
   previewProvider.setContent(beforeUri, before);
   previewProvider.setContent(afterUri, after);
-  await vscode.commands.executeCommand('vscode.diff', beforeUri, afterUri, '초안 ↔ 축소 제안', {
+  await vscode.commands.executeCommand('vscode.diff', beforeUri, afterUri, title, {
     preview: true,
   });
+}
+
+export interface CondenseReviewLabels {
+  readonly diffTitle: string;
+  readonly confirmPrompt: string;
+  readonly cancelLabel: string;
+}
+
+export function buildCondenseReviewLabels(
+  result: Extract<CondenseDraftResult, { readonly ok: true }>,
+): CondenseReviewLabels {
+  if (result.kind === 'review-required') {
+    return {
+      diffTitle: '안전 기준 미달 · 초안 ↔ 축소 제안',
+      confirmPrompt: `축소안이 안전 기준보다 짧습니다 (후보 ${result.candidateLength}자 / 최소 ${result.minimumLength}자). 검토 후 적용하시겠습니까?`,
+      cancelLabel: '원본 유지',
+    };
+  }
+
+  return {
+    diffTitle: '초안 ↔ 축소 제안',
+    confirmPrompt: '축소 결과를 적용하시겠습니까?',
+    cancelLabel: '취소',
+  };
 }
 
 async function archiveDraftBeforeApply(
@@ -222,6 +247,8 @@ async function runCondenseDraft(
     return;
   }
 
+  const labels = buildCondenseReviewLabels(result);
+
   const proposed = serializeDraft(
     createDraft({
       sceneStem: target.draft.sceneStem,
@@ -234,12 +261,13 @@ async function runCondenseDraft(
     target.editor.document.uri,
     target.documentText,
     proposed,
+    labels.diffTitle,
   );
 
   const decision = await vscode.window.showInformationMessage(
-    '축소 결과를 적용하시겠습니까?',
+    labels.confirmPrompt,
     '적용',
-    '취소',
+    labels.cancelLabel,
   );
   if (decision !== '적용') {
     return;

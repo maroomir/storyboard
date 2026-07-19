@@ -24,6 +24,13 @@ export interface CondenseDraftRequest {
 export type CondenseDraftResult =
   | { readonly kind: 'condensed'; readonly ok: true; readonly text: string }
   | {
+      readonly kind: 'review-required';
+      readonly ok: true;
+      readonly text: string;
+      readonly candidateLength: number;
+      readonly minimumLength: number;
+    }
+  | {
       readonly kind: 'rejected';
       readonly ok: false;
       readonly reason: DraftCandidateRejectionReason;
@@ -70,6 +77,16 @@ export class CondenseDraftUseCase {
       );
 
       if (!validation.accepted) {
+        if (validation.reason === 'too-short') {
+          return {
+            kind: 'review-required',
+            ok: true,
+            text,
+            candidateLength: validation.candidateLength,
+            minimumLength: validation.minimumLength,
+          };
+        }
+
         return {
           kind: 'rejected',
           ok: false,
