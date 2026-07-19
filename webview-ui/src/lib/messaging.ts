@@ -68,7 +68,12 @@ export function parseStudioTarget(value: unknown): StudioTarget {
 
   const candidate = value as Partial<StudioTarget>
 
-  if (candidate.kind !== "draft" && candidate.kind !== "scene" && candidate.kind !== "none") {
+  if (
+    candidate.kind !== "draft" &&
+    candidate.kind !== "scene" &&
+    candidate.kind !== "project" &&
+    candidate.kind !== "none"
+  ) {
     return noneStudioTarget
   }
 

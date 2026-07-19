@@ -114,4 +114,20 @@ describe("StudioSidebar chat loop", () => {
 
     await waitFor(() => expect(screen.getAllByText(/01-intro\.md/).length).toBeGreaterThan(0))
   })
+
+  it("keeps a project target from the host instead of downgrading it", async () => {
+    renderStudio({ kind: "none", hasSelection: false })
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "event",
+          method: "studio.targetChanged",
+          payload: { kind: "project", label: "내 소설", hasSelection: false }
+        }
+      })
+    )
+
+    await waitFor(() => expect(screen.getAllByText(/프로젝트/).length).toBeGreaterThan(0))
+  })
 })
