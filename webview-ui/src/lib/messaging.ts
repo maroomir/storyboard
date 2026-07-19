@@ -4,7 +4,10 @@ import type {
   SidebarCardCategory,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
+  StudioChatTurn,
   StudioInitialData,
+  StudioSessionSnapshot,
+  StudioSessionSummary,
   StudioTarget,
   UsageSummaryByEntity
 } from "./types"
@@ -91,7 +94,90 @@ export function parseStudioInitialData(value: unknown): StudioInitialData {
   const candidate = (value && typeof value === "object" ? value : {}) as Partial<StudioInitialData>
   const title = typeof candidate.title === "string" ? candidate.title : "Studio"
 
-  return { title, target: parseStudioTarget(candidate.target) }
+  return {
+    title,
+    target: parseStudioTarget(candidate.target),
+    session: parseStudioSessionSnapshot(candidate.session)
+  }
+}
+
+function parseStudioSessionSnapshot(value: unknown): StudioSessionSnapshot | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined
+  }
+
+  const candidate = value as Partial<StudioSessionSnapshot>
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.createdAt !== "string" ||
+    !Array.isArray(candidate.turns)
+  ) {
+    return undefined
+  }
+
+  return {
+    id: candidate.id,
+    createdAt: candidate.createdAt,
+    updatedAt: typeof candidate.updatedAt === "string" ? candidate.updatedAt : candidate.createdAt,
+    title: typeof candidate.title === "string" ? candidate.title : "",
+    turns: candidate.turns as readonly StudioChatTurn[]
+  }
+}
+
+export function parseSessionListPayload(payload: unknown): readonly StudioSessionSummary[] {
+  if (!payload || typeof payload !== "object") {
+    return []
+  }
+
+  const sessions = (payload as { sessions?: unknown }).sessions
+  if (!Array.isArray(sessions)) {
+    return []
+  }
+
+  return sessions.filter(isStudioSessionSummary)
+}
+
+export function parseSessionLoadPayload(payload: unknown): StudioSessionSnapshot | undefined {
+  if (!payload || typeof payload !== "object") {
+    return undefined
+  }
+
+  return parseStudioSessionSnapshot((payload as { session?: unknown }).session)
+}
+
+function isStudioSessionSummary(value: unknown): value is StudioSessionSummary {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<StudioSessionSummary>
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.updatedAt === "string" &&
+    typeof candidate.turnCount === "number"
+  )
+}
+
+export function normalizeRestoredTurns(
+  turns: readonly StudioChatTurn[]
+): readonly StudioChatTurn[] {
+  return turns.map((turn) => {
+    if (turn.role !== "assistant" || turn.kind !== "proposal") {
+      return turn
+    }
+
+    if (turn.status === "pending") {
+      return { ...turn, status: "cancelled", requestId: undefined }
+    }
+
+    if (turn.status === "running") {
+      return { ...turn, status: "failed", requestId: undefined, errorMessage: "중단됨" }
+    }
+
+    return turn
+  })
 }
 
 function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {

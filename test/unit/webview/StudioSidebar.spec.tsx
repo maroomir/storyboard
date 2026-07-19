@@ -22,6 +22,19 @@ function renderStudio(target: StudioTarget): ReturnType<typeof vi.fn> {
   return postMessage
 }
 
+function messagesByMethod(
+  postMessage: ReturnType<typeof vi.fn>,
+  method: string
+): Array<Record<string, unknown>> {
+  return postMessage.mock.calls
+    .map((call) => call[0] as { method?: string })
+    .filter((message) => message.method === method) as Array<Record<string, unknown>>
+}
+
+function runActionCalls(postMessage: ReturnType<typeof vi.fn>): Array<Record<string, unknown>> {
+  return messagesByMethod(postMessage, "studio.runAction")
+}
+
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -40,9 +53,9 @@ describe("StudioSidebar chat loop", () => {
 
     fireEvent.click(screen.getByText("승인"))
 
-    expect(postMessage).toHaveBeenCalledTimes(1)
-    const sent = postMessage.mock.calls[0][0]
-    expect(sent.method).toBe("studio.runAction")
+    const calls = runActionCalls(postMessage)
+    expect(calls).toHaveLength(1)
+    const sent = calls[0] as { id: string; payload: { action: string } }
     expect(sent.payload.action).toBe("grammarCheck")
     expect(screen.getByText("실행 중…")).toBeTruthy()
 
@@ -62,7 +75,7 @@ describe("StudioSidebar chat loop", () => {
 
     fireEvent.click(screen.getByText("취소"))
 
-    expect(postMessage).not.toHaveBeenCalled()
+    expect(runActionCalls(postMessage)).toHaveLength(0)
     expect(screen.getByText("취소됨")).toBeTruthy()
   })
 
@@ -77,7 +90,7 @@ describe("StudioSidebar chat loop", () => {
 
     fireEvent.click(screen.getByText("승인"))
 
-    const sent = postMessage.mock.calls[0][0]
+    const sent = runActionCalls(postMessage)[0] as { payload: { action: string; instruction: string } }
     expect(sent.payload.action).toBe("editSelection")
     expect(sent.payload.instruction).toBe("더 긴장감 있게 고쳐줘")
   })
@@ -131,7 +144,7 @@ describe("StudioSidebar chat loop", () => {
     fireEvent.keyDown(composer, { key: "Enter" })
 
     expect((composer as HTMLTextAreaElement).value).toBe("/grammar ")
-    expect(postMessage).not.toHaveBeenCalled()
+    expect(runActionCalls(postMessage)).toHaveLength(0)
   })
 
   it("closes the slash menu on Escape", () => {
@@ -154,9 +167,9 @@ describe("StudioSidebar chat loop", () => {
 
     expect(screen.queryByText("승인")).toBeNull()
     expect(screen.getByText("실행 중…")).toBeTruthy()
-    expect(postMessage).toHaveBeenCalledTimes(1)
-    const sent = postMessage.mock.calls[0][0]
-    expect(sent.method).toBe("studio.runAction")
+    const calls = runActionCalls(postMessage)
+    expect(calls).toHaveLength(1)
+    const sent = calls[0] as { id: string; payload: { action: string } }
     expect(sent.payload.action).toBe("grammarCheck")
 
     window.dispatchEvent(
@@ -172,7 +185,7 @@ describe("StudioSidebar chat loop", () => {
     fireEvent.change(composer, { target: { value: "/edit 더 밝게" } })
     fireEvent.click(screen.getByLabelText("보내기"))
 
-    const sent = postMessage.mock.calls[0][0]
+    const sent = runActionCalls(postMessage)[0] as { payload: { action: string; instruction: string } }
     expect(sent.payload.action).toBe("editSelection")
     expect(sent.payload.instruction).toBe("더 밝게")
   })
@@ -191,5 +204,126 @@ describe("StudioSidebar chat loop", () => {
     )
 
     await waitFor(() => expect(screen.getAllByText(/프로젝트/).length).toBeGreaterThan(0))
+  })
+})
+
+describe("StudioSidebar session persistence", () => {
+  function renderStudioWithSession(
+    session: StudioInitialData["session"]
+  ): ReturnType<typeof vi.fn> {
+    const postMessage = vi.fn()
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage }))
+    render(<StudioSidebar initialData={{ title: "Studio", target: draftTarget, session }} />)
+    return postMessage
+  }
+
+  it("restores turns and normalizes a running proposal to failed", () => {
+    renderStudioWithSession({
+      id: "11111111-1111-1111-1111-111111111111",
+      createdAt: "2026-07-19T00:00:00.000Z",
+      updatedAt: "2026-07-19T00:01:00.000Z",
+      title: "맞춤법 봐줘",
+      turns: [
+        { id: "u1", role: "user", text: "맞춤법 봐줘" },
+        { id: "a1", role: "assistant", kind: "proposal", action: "grammarCheck", status: "running" }
+      ]
+    })
+
+    expect(screen.getByText("맞춤법 봐줘")).toBeTruthy()
+    expect(screen.getByText(/중단됨/)).toBeTruthy()
+  })
+
+  it("saves the session after a proposal is run", () => {
+    const postMessage = renderStudio(draftTarget)
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/grammar" } })
+    fireEvent.click(screen.getByLabelText("보내기"))
+
+    const saved = messagesByMethod(postMessage, "studio.session.save").at(-1) as {
+      payload: { id: string; createdAt: string; turns: unknown[] }
+    }
+    expect(saved).toBeTruthy()
+    expect(saved.payload.turns).toHaveLength(2)
+    expect(typeof saved.payload.id).toBe("string")
+  })
+
+  it("lists sessions from history and opens one", async () => {
+    const postMessage = renderStudio(draftTarget)
+
+    fireEvent.click(screen.getByLabelText("대화 기록"))
+
+    const listCall = messagesByMethod(postMessage, "studio.session.list")[0] as { id: string }
+    expect(listCall).toBeTruthy()
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "response",
+          id: listCall.id,
+          ok: true,
+          payload: {
+            sessions: [
+              {
+                id: "22222222-2222-2222-2222-222222222222",
+                title: "지난 대화",
+                updatedAt: "2026-07-18T09:00:00.000Z",
+                turnCount: 2
+              }
+            ]
+          }
+        }
+      })
+    )
+
+    await waitFor(() => expect(screen.getByText("지난 대화")).toBeTruthy())
+
+    fireEvent.click(screen.getByText("지난 대화"))
+    const loadCall = messagesByMethod(postMessage, "studio.session.load")[0] as {
+      id: string
+      payload: { id: string }
+    }
+    expect(loadCall.payload.id).toBe("22222222-2222-2222-2222-222222222222")
+
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: {
+          type: "response",
+          id: loadCall.id,
+          ok: true,
+          payload: {
+            session: {
+              id: "22222222-2222-2222-2222-222222222222",
+              createdAt: "2026-07-18T09:00:00.000Z",
+              updatedAt: "2026-07-18T09:00:00.000Z",
+              title: "지난 대화",
+              turns: [{ id: "u9", role: "user", text: "지난 지시" }]
+            }
+          }
+        }
+      })
+    )
+
+    await waitFor(() => expect(screen.getByText("지난 지시")).toBeTruthy())
+  })
+
+  it("starts a new session with a fresh id", () => {
+    const postMessage = renderStudio(draftTarget)
+
+    const composer = screen.getByPlaceholderText(/다시 생성/)
+    fireEvent.change(composer, { target: { value: "/grammar" } })
+    fireEvent.click(screen.getByLabelText("보내기"))
+    const firstId = (
+      messagesByMethod(postMessage, "studio.session.save").at(-1) as { payload: { id: string } }
+    ).payload.id
+
+    fireEvent.click(screen.getByLabelText("새 대화"))
+    fireEvent.change(composer, { target: { value: "/grammar" } })
+    fireEvent.click(screen.getByLabelText("보내기"))
+    const secondId = (
+      messagesByMethod(postMessage, "studio.session.save").at(-1) as { payload: { id: string } }
+    ).payload.id
+
+    expect(secondId).not.toBe(firstId)
   })
 })

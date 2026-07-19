@@ -1,6 +1,6 @@
-import type { StudioActionId, StudioTarget } from './types';
+import type { StudioActionId, StudioClarifyReason, StudioTarget } from './types';
 
-export type StudioClarifyReason = 'no-target' | 'needs-selection' | 'needs-draft' | 'ambiguous';
+export type { StudioClarifyReason };
 
 export type StudioIntent =
   | { readonly kind: 'action'; readonly action: StudioActionId; readonly instruction?: string }

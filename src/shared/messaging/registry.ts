@@ -70,6 +70,12 @@ import {
 import {
   studioRunActionRequestPayloadSchema,
   studioRunActionResponsePayloadSchema,
+  studioSessionListRequestPayloadSchema,
+  studioSessionListResponsePayloadSchema,
+  studioSessionLoadRequestPayloadSchema,
+  studioSessionLoadResponsePayloadSchema,
+  studioSessionSaveRequestPayloadSchema,
+  studioSessionSaveResponsePayloadSchema,
 } from './studio';
 import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from './usage';
 
@@ -105,6 +111,9 @@ export const storyboardRequestPayloadSchemas = {
   'project.readContract': projectReadContractRequestPayloadSchema,
   'project.updateContract': projectUpdateContractRequestPayloadSchema,
   'studio.runAction': studioRunActionRequestPayloadSchema,
+  'studio.session.save': studioSessionSaveRequestPayloadSchema,
+  'studio.session.list': studioSessionListRequestPayloadSchema,
+  'studio.session.load': studioSessionLoadRequestPayloadSchema,
   'usage.read': usageReadRequestPayloadSchema,
 } as const;
 
@@ -140,6 +149,9 @@ export const storyboardResponsePayloadSchemas = {
   'project.readContract': projectReadContractResponsePayloadSchema,
   'project.updateContract': projectUpdateContractResponsePayloadSchema,
   'studio.runAction': studioRunActionResponsePayloadSchema,
+  'studio.session.save': studioSessionSaveResponsePayloadSchema,
+  'studio.session.list': studioSessionListResponsePayloadSchema,
+  'studio.session.load': studioSessionLoadResponsePayloadSchema,
   'usage.read': usageReadResponsePayloadSchema,
 } as const;
 

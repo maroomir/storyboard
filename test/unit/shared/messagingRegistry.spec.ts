@@ -38,6 +38,9 @@ const expectedMethods = [
   "settings.updateProviderModel",
   "settings.updateTaskAiConfig",
   "studio.runAction",
+  "studio.session.list",
+  "studio.session.load",
+  "studio.session.save",
   "usage.read"
 ]
 

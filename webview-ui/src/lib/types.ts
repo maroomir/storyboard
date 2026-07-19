@@ -16,6 +16,9 @@ export type StoryboardRequestMethod =
   | "scenes.openDraft"
   | "scenes.generateDraft"
   | "studio.runAction"
+  | "studio.session.save"
+  | "studio.session.list"
+  | "studio.session.load"
   | "ai.generateStream"
   | "usage.read"
 
@@ -185,9 +188,49 @@ export interface StudioTarget {
   readonly draftExists?: boolean
 }
 
+export type StudioProposalStatus = "pending" | "running" | "done" | "failed" | "cancelled"
+
+export type StudioClarifyReason = "no-target" | "needs-selection" | "needs-draft" | "ambiguous"
+
+export type StudioChatTurn =
+  | { readonly id: string; readonly role: "user"; readonly text: string }
+  | {
+      readonly id: string
+      readonly role: "assistant"
+      readonly kind: "proposal"
+      readonly action: StudioActionId
+      readonly instruction?: string
+      readonly status: StudioProposalStatus
+      readonly requestId?: string
+      readonly errorMessage?: string
+    }
+  | {
+      readonly id: string
+      readonly role: "assistant"
+      readonly kind: "clarify"
+      readonly reason: StudioClarifyReason
+      readonly suggestions: readonly StudioActionId[]
+    }
+
+export interface StudioSessionSummary {
+  readonly id: string
+  readonly title: string
+  readonly updatedAt: string
+  readonly turnCount: number
+}
+
+export interface StudioSessionSnapshot {
+  readonly id: string
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly title: string
+  readonly turns: readonly StudioChatTurn[]
+}
+
 export interface StudioInitialData {
   readonly title: string
   readonly target: StudioTarget
+  readonly session?: StudioSessionSnapshot
 }
 
 export interface StoryboardEventMessage {

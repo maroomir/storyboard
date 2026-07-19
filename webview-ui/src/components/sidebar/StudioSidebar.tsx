@@ -1,7 +1,22 @@
-import { Check, CircleAlert, FileText, MessagesSquare, Send, Sparkles } from 'lucide-react';
+import {
+  Check,
+  CircleAlert,
+  FileText,
+  History,
+  MessagesSquare,
+  Send,
+  Sparkles,
+  SquarePen,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { createRequestId, parseStudioTarget } from '@webview/lib/messaging';
+import {
+  createRequestId,
+  normalizeRestoredTurns,
+  parseSessionListPayload,
+  parseSessionLoadPayload,
+  parseStudioTarget,
+} from '@webview/lib/messaging';
 import {
   actionIcon,
   actionLabel,
@@ -18,7 +33,10 @@ import {
 import type {
   StoryboardEventMessage,
   StudioActionId,
+  StudioChatTurn,
   StudioInitialData,
+  StudioProposalStatus,
+  StudioSessionSummary,
   StudioTarget,
 } from '@webview/lib/types';
 import { Button } from '../ui/Button';
@@ -26,34 +44,14 @@ import { Pill } from '../ui/Pill';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbInputClass } from '../ui/formClasses';
 import { SlashCommandMenu } from './SlashCommandMenu';
-
-type ProposalStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
-
-type ChatTurn =
-  | { readonly id: string; readonly role: 'user'; readonly text: string }
-  | {
-      readonly id: string;
-      readonly role: 'assistant';
-      readonly kind: 'proposal';
-      readonly action: StudioActionId;
-      readonly instruction?: string;
-      readonly status: ProposalStatus;
-      readonly requestId?: string;
-      readonly errorMessage?: string;
-    }
-  | {
-      readonly id: string;
-      readonly role: 'assistant';
-      readonly kind: 'clarify';
-      readonly reason: StudioClarifyReason;
-      readonly suggestions: readonly StudioActionId[];
-    };
+import { StudioSessionList } from './StudioSessionList';
 
 type StudioResponseMessage = {
   readonly type: 'response';
   readonly id: string;
   readonly ok?: boolean;
   readonly error?: { readonly message?: string };
+  readonly payload?: unknown;
 };
 
 export function StudioSidebar({
@@ -63,9 +61,19 @@ export function StudioSidebar({
 }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), []);
   const [target, setTarget] = useState<StudioTarget>(initialData.target);
-  const [turns, setTurns] = useState<readonly ChatTurn[]>([]);
+  const [sessionId, setSessionId] = useState(() => initialData.session?.id ?? createRequestId());
+  const [createdAt, setCreatedAt] = useState(
+    () => initialData.session?.createdAt ?? new Date().toISOString(),
+  );
+  const [turns, setTurns] = useState<readonly StudioChatTurn[]>(() =>
+    initialData.session ? normalizeRestoredTurns(initialData.session.turns) : [],
+  );
+  const [view, setView] = useState<'chat' | 'history'>('chat');
+  const [sessions, setSessions] = useState<readonly StudioSessionSummary[]>([]);
   const [draft, setDraft] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
+  const listRequestIdRef = useRef<string | undefined>(undefined);
+  const loadRequestIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const handleMessage = (
@@ -74,6 +82,24 @@ export function StudioSidebar({
       const data = event.data;
 
       if (data.type === 'response' && 'id' in data) {
+        if (data.id === listRequestIdRef.current) {
+          listRequestIdRef.current = undefined;
+          setSessions(parseSessionListPayload(data.payload));
+          return;
+        }
+
+        if (data.id === loadRequestIdRef.current) {
+          loadRequestIdRef.current = undefined;
+          const snapshot = parseSessionLoadPayload(data.payload);
+          if (snapshot) {
+            setSessionId(snapshot.id);
+            setCreatedAt(snapshot.createdAt);
+            setTurns(normalizeRestoredTurns(snapshot.turns));
+            setView('chat');
+          }
+          return;
+        }
+
         settleProposal(setTurns, data);
         return;
       }
@@ -91,6 +117,52 @@ export function StudioSidebar({
     logEndRef.current?.scrollIntoView?.({ block: 'end' });
   }, [turns]);
 
+  useEffect(() => {
+    if (turns.length === 0) {
+      return;
+    }
+
+    vscodeApi?.postMessage({
+      protocolVersion: '1.0.0',
+      type: 'request',
+      id: createRequestId(),
+      method: 'studio.session.save',
+      payload: { id: sessionId, createdAt, turns },
+    });
+  }, [turns]);
+
+  const startNewSession = (): void => {
+    setSessionId(createRequestId());
+    setCreatedAt(new Date().toISOString());
+    setTurns([]);
+    setView('chat');
+  };
+
+  const openHistory = (): void => {
+    const requestId = createRequestId();
+    listRequestIdRef.current = requestId;
+    vscodeApi?.postMessage({
+      protocolVersion: '1.0.0',
+      type: 'request',
+      id: requestId,
+      method: 'studio.session.list',
+      payload: {},
+    });
+    setView('history');
+  };
+
+  const openSession = (id: string): void => {
+    const requestId = createRequestId();
+    loadRequestIdRef.current = requestId;
+    vscodeApi?.postMessage({
+      protocolVersion: '1.0.0',
+      type: 'request',
+      id: requestId,
+      method: 'studio.session.load',
+      payload: { id },
+    });
+  };
+
   const postRunAction = (requestId: string, action: StudioActionId, instruction?: string): void => {
     vscodeApi?.postMessage({
       protocolVersion: '1.0.0',
@@ -102,10 +174,10 @@ export function StudioSidebar({
   };
 
   const appendTurnsForIntent = (text: string, intent: StudioIntent, autoRun: boolean): void => {
-    const userTurn: ChatTurn = { id: createRequestId(), role: 'user', text };
+    const userTurn: StudioChatTurn = { id: createRequestId(), role: 'user', text };
 
     if (intent.kind === 'clarify') {
-      const clarifyTurn: ChatTurn = {
+      const clarifyTurn: StudioChatTurn = {
         id: createRequestId(),
         role: 'assistant',
         kind: 'clarify',
@@ -117,7 +189,7 @@ export function StudioSidebar({
     }
 
     if (!autoRun) {
-      const proposalTurn: ChatTurn = {
+      const proposalTurn: StudioChatTurn = {
         id: createRequestId(),
         role: 'assistant',
         kind: 'proposal',
@@ -130,7 +202,7 @@ export function StudioSidebar({
     }
 
     const requestId = createRequestId();
-    const proposalTurn: ChatTurn = {
+    const proposalTurn: StudioChatTurn = {
       id: createRequestId(),
       role: 'assistant',
       kind: 'proposal',
@@ -144,8 +216,8 @@ export function StudioSidebar({
   };
 
   const proposeAction = (action: StudioActionId): void => {
-    const userTurn: ChatTurn = { id: createRequestId(), role: 'user', text: actionLabel(action) };
-    const assistantTurn: ChatTurn = {
+    const userTurn: StudioChatTurn = { id: createRequestId(), role: 'user', text: actionLabel(action) };
+    const assistantTurn: StudioChatTurn = {
       id: createRequestId(),
       role: 'assistant',
       kind: 'proposal',
@@ -191,16 +263,31 @@ export function StudioSidebar({
     );
   };
 
+  const isHistoryView = view === 'history';
+
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
-      <SectionHeader
-        eyebrow="Storyboard"
-        title={initialData.title}
-        description={targetDescription(target)}
-      />
+      <div className="flex items-start justify-between gap-2">
+        <SectionHeader
+          eyebrow="Storyboard"
+          title={initialData.title}
+          description={targetDescription(target)}
+        />
+        <div className="flex shrink-0 items-center gap-1">
+          <HeaderButton label="새 대화" icon={SquarePen} onClick={startNewSession} />
+          <HeaderButton
+            label={isHistoryView ? '대화로 돌아가기' : '대화 기록'}
+            icon={History}
+            isActive={isHistoryView}
+            onClick={isHistoryView ? () => setView('chat') : openHistory}
+          />
+        </div>
+      </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-3">
-        {turns.length === 0 ? (
+        {isHistoryView ? (
+          <StudioSessionList sessions={sessions} onOpen={openSession} />
+        ) : turns.length === 0 ? (
           <StudioWelcome target={target} onPick={proposeAction} />
         ) : (
           <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
@@ -219,13 +306,41 @@ export function StudioSidebar({
         <div ref={logEndRef} />
       </div>
 
-      <Composer value={draft} target={target} onChange={setDraft} onSubmit={submitDraft} />
+      {isHistoryView ? null : (
+        <Composer value={draft} target={target} onChange={setDraft} onSubmit={submitDraft} />
+      )}
     </main>
   );
 }
 
+function HeaderButton({
+  label,
+  icon: Icon,
+  isActive = false,
+  onClick,
+}: {
+  readonly label: string;
+  readonly icon: typeof History;
+  readonly isActive?: boolean;
+  readonly onClick: () => void;
+}): React.ReactElement {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={isActive}
+      className={`inline-flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded border border-sb-border bg-sb-bg-widget text-sb-fg-muted outline-none hover:border-sb-border-focus hover:text-sb-fg focus-visible:ring-1 focus-visible:ring-sb-border-focus ${
+        isActive ? 'text-sb-fg' : ''
+      }`}
+      onClick={onClick}
+    >
+      <Icon className="h-4 w-4" aria-hidden />
+    </button>
+  );
+}
+
 function settleProposal(
-  setTurns: React.Dispatch<React.SetStateAction<readonly ChatTurn[]>>,
+  setTurns: React.Dispatch<React.SetStateAction<readonly StudioChatTurn[]>>,
   response: StudioResponseMessage,
 ): void {
   setTurns((prev) =>
@@ -276,7 +391,7 @@ function TurnView({
   onCancel,
   onPick,
 }: {
-  readonly turn: ChatTurn;
+  readonly turn: StudioChatTurn;
   readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void;
   readonly onCancel: (turnId: string) => void;
   readonly onPick: (action: StudioActionId) => void;
@@ -309,7 +424,7 @@ function ProposalCard({
   onApprove,
   onCancel,
 }: {
-  readonly turn: Extract<ChatTurn, { readonly kind: 'proposal' }>;
+  readonly turn: Extract<StudioChatTurn, { readonly kind: 'proposal' }>;
   readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void;
   readonly onCancel: (turnId: string) => void;
 }): React.ReactElement {
@@ -348,7 +463,7 @@ function ProposalStatusLine({
   status,
   errorMessage,
 }: {
-  readonly status: ProposalStatus;
+  readonly status: StudioProposalStatus;
   readonly errorMessage?: string;
 }): React.ReactElement {
   if (status === 'running') {

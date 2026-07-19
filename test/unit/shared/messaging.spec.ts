@@ -349,6 +349,84 @@ describe("storyboard messaging protocol", () => {
     }
   })
 
+  it("parses studio.session.save and rejects an empty turn list", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "studio-save-1",
+      method: "studio.session.save",
+      payload: {
+        id: "11111111-1111-1111-1111-111111111111",
+        createdAt: "2026-07-19T00:00:00.000Z",
+        turns: [{ id: "u1", role: "user", text: "맞춤법 봐줘" }]
+      }
+    })
+    expect(request.method).toBe("studio.session.save")
+
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "studio-save-2",
+        method: "studio.session.save",
+        payload: {
+          id: "11111111-1111-1111-1111-111111111111",
+          createdAt: "2026-07-19T00:00:00.000Z",
+          turns: []
+        }
+      })
+    ).toThrow()
+  })
+
+  it("strips the transient requestId from persisted proposal turns", () => {
+    const request = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "studio-save-3",
+      method: "studio.session.save",
+      payload: {
+        id: "11111111-1111-1111-1111-111111111111",
+        createdAt: "2026-07-19T00:00:00.000Z",
+        turns: [
+          {
+            id: "a1",
+            role: "assistant",
+            kind: "proposal",
+            action: "grammarCheck",
+            status: "running",
+            requestId: "should-be-stripped"
+          }
+        ]
+      }
+    })
+
+    if (request.method !== "studio.session.save") {
+      throw new Error("Expected studio.session.save")
+    }
+    expect(request.payload.turns[0]).not.toHaveProperty("requestId")
+  })
+
+  it("parses studio.session.list and studio.session.load requests", () => {
+    const listRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "studio-list-1",
+      method: "studio.session.list",
+      payload: {}
+    })
+    expect(listRequest.method).toBe("studio.session.list")
+
+    const loadRequest = parseStoryboardRequestMessage({
+      protocolVersion: storyboardMessageProtocolVersion,
+      type: "request",
+      id: "studio-load-1",
+      method: "studio.session.load",
+      payload: { id: "11111111-1111-1111-1111-111111111111" }
+    })
+    expect(loadRequest.method).toBe("studio.session.load")
+    expect(loadRequest.payload).toEqual({ id: "11111111-1111-1111-1111-111111111111" })
+  })
+
   it("creates validated success and error responses", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,

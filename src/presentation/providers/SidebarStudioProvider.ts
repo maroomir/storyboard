@@ -6,10 +6,24 @@ import {
   isDirectSceneTextFile,
   isDraftMarkdownFile,
 } from '../../infrastructure/vscode/pathConventions';
-import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
+import {
+  hasStoryboardProject,
+  resolveStoryboardWorkspaceRoot,
+  uriExists,
+} from '../../infrastructure/vscode/workspace';
+import {
+  StudioSessionRepository,
+  type IStudioSessionRepository,
+} from '../../infrastructure/persistence/repositories/studioSessionRepository';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { parseSceneFileName } from '../../shared/scene';
-import type { StoryboardResponsePayload, StudioAction, StudioTarget } from '../../shared/messaging';
+import type {
+  StoryboardResponsePayload,
+  StudioAction,
+  StudioSessionSnapshot,
+  StudioTarget,
+} from '../../shared/messaging';
+import { createStudioSessionRpcHandlers } from '../messaging/studioSessionRpcHandlers';
 import { planStudioAction, type StudioArgSlot } from './studioActions';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
@@ -19,6 +33,7 @@ const noneTarget: StudioTarget = { kind: 'none', hasSelection: false };
 interface SidebarStudioInitialData {
   readonly title: string;
   readonly target: StudioTarget;
+  readonly session?: StudioSessionSnapshot;
 }
 
 export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode.Disposable {
@@ -26,7 +41,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   private readonly disposables: vscode.Disposable[] = [];
   private lastTargetKey: string | undefined;
 
-  public constructor(private readonly extensionUri: vscode.Uri) {}
+  public constructor(
+    private readonly extensionUri: vscode.Uri,
+    private readonly sessionRepository: IStudioSessionRepository,
+  ) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.webviewView = webviewView;
@@ -49,7 +67,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     const target = await computeStudioTarget(vscode.window.activeTextEditor);
     this.lastTargetKey = JSON.stringify(target);
 
-    const initialData: SidebarStudioInitialData = { title: 'Studio', target };
+    const root = await resolveStoryboardWorkspaceRoot();
+    const session = root ? await this.sessionRepository.loadLatest(root) : undefined;
+
+    const initialData: SidebarStudioInitialData = { title: 'Studio', target, session };
 
     webviewView.webview.html = createWebviewHtml(webviewView.webview, {
       extensionUri: this.extensionUri,
@@ -81,6 +102,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         await runStudioAction(payload.action, payload.instruction);
         return {};
       },
+      ...createStudioSessionRpcHandlers({
+        repository: this.sessionRepository,
+        getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+      }),
     };
   }
 
@@ -198,7 +223,7 @@ function currentSelectionRange(draftUri: string | undefined): vscode.Range | und
 }
 
 export function registerSidebarStudioProvider(context: vscode.ExtensionContext): vscode.Disposable {
-  const provider = new SidebarStudioProvider(context.extensionUri);
+  const provider = new SidebarStudioProvider(context.extensionUri, new StudioSessionRepository());
 
   return vscode.Disposable.from(
     vscode.window.registerWebviewViewProvider(studioSidebarViewId, provider),
