@@ -102,6 +102,11 @@
         "title": "%storyboard.scene.generateAllSeeds.title%"
       },
       {
+        "command": "storyboard.scene.completeStory",
+        "title": "%storyboard.scene.completeStory.title%",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "storyboard.manuscript.assemble",
         "title": "%storyboard.manuscript.assemble.title%"
       },

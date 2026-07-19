@@ -314,4 +314,15 @@ export class StoryboardAIService {
   ): AsyncIterable<AiStreamChunk> {
     yield* this.gateway.generateStream(taskName, messages, options);
   }
+
+  public async generateText(
+    taskName: WiredAiTaskName,
+    messages: ReadonlyArray<{
+      readonly role: 'system' | 'user' | 'assistant';
+      readonly content: string;
+    }>,
+    options: GenerateTextOptions = {},
+  ): Promise<AiGenerateResponse> {
+    return await this.gateway.generate(taskName, messages, options);
+  }
 }

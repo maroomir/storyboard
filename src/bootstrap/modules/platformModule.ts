@@ -5,6 +5,8 @@ import { RecommendCardsUseCase } from '../../application/cards/recommendCardsUse
 import { PromoteCardCandidatesUseCase } from '../../application/cards/promoteCardCandidatesUseCase';
 import { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
 import { CreateCardUseCase } from '../../application/cards/createCardUseCase';
+import { BuildStoryCardsUseCase } from '../../application/story/buildStoryCardsUseCase';
+import { CompleteStoryScenesUseCase } from '../../application/story/completeStoryScenesUseCase';
 import { PromoteBibleCandidatesUseCase } from '../../application/project/promoteBibleCandidatesUseCase';
 import { DecodeSeedUseCase } from '../../application/project/decodeSeedUseCase';
 import { PrepareSeedSyncUseCase } from '../../application/project/prepareSeedSyncUseCase';
@@ -28,6 +30,7 @@ import { CardCandidateRepository } from '../../infrastructure/persistence/reposi
 import { CardCollectRepository } from '../../infrastructure/persistence/repositories/cardCollectRepository';
 import { CardWriterRepository } from '../../infrastructure/persistence/repositories/cardWriterRepository';
 import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/cardSidebarRepository';
+import { StoryFeatureRepository } from '../../infrastructure/persistence/repositories/storyFeatureRepository';
 import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bibleCandidateRepository';
 import { ProjectRepository } from '../../infrastructure/persistence/repositories/projectRepository';
 import { OutlineRepository } from '../../infrastructure/persistence/repositories/outlineRepository';
@@ -53,6 +56,7 @@ import {
 } from '../../infrastructure/ai/UsageRecorder';
 import { SecretStore } from '../../infrastructure/secrets/SecretStore';
 import { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import { ProposalReviewService } from '../../presentation/providers/proposalReviewService';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';
@@ -69,6 +73,8 @@ export interface IPlatformServices {
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly seedProjectUseCase: SeedProjectUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
+  readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
+  readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly createCardUseCase: CreateCardUseCase;
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
@@ -89,6 +95,7 @@ export interface IPlatformServices {
   readonly secretStore: SecretStore;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly usageRecorder: UsageRecorder;
+  readonly proposalReviewService: ProposalReviewService;
 }
 
 export class PlatformModule implements IApplicationModule {
@@ -126,6 +133,8 @@ export class PlatformModule implements IApplicationModule {
     const cardCollectRepository = new CardCollectRepository();
     const cardWriterRepository = new CardWriterRepository();
     const cardSidebarRepository = new CardSidebarRepository();
+    const storyFeatureRepository = new StoryFeatureRepository();
+    const proposalReviewService = new ProposalReviewService(context);
     const bibleCandidateRepository = new BibleCandidateRepository();
     const projectRepository = new ProjectRepository(fileSystem);
     const outlineRepository = new OutlineRepository();
@@ -195,6 +204,11 @@ export class PlatformModule implements IApplicationModule {
       cardCollectRepository,
     );
     const createCardUseCase = new CreateCardUseCase(cardWriterRepository);
+    const buildStoryCardsUseCase = new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository);
+    const completeStoryScenesUseCase = new CompleteStoryScenesUseCase(
+      aiGateway,
+      storyFeatureRepository,
+    );
     const promoteCardCandidatesUseCase = new PromoteCardCandidatesUseCase(cardCandidateRepository);
     const promoteBibleCandidatesUseCase = new PromoteBibleCandidatesUseCase(
       bibleCandidateRepository,
@@ -222,6 +236,8 @@ export class PlatformModule implements IApplicationModule {
       augmentDraftUseCase,
       aiProviderRegistry,
       collectCardProposalsUseCase,
+      buildStoryCardsUseCase,
+      completeStoryScenesUseCase,
       createCardUseCase,
       cardSidebarRepository,
       configBridge,
@@ -247,12 +263,14 @@ export class PlatformModule implements IApplicationModule {
       seedProjectUseCase,
       summarizeChaptersUseCase,
       usageRecorder,
+      proposalReviewService,
     };
     this.disposables.add(
       logger,
       postGenerationUpdates,
       usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
+      proposalReviewService,
     );
 
     logger.info('Activating Storyboard extension');

@@ -1,4 +1,7 @@
+import * as vscode from 'vscode';
+
 import { registerAssembleManuscriptCommand } from '../../presentation/commands/assembleManuscript';
+import { registerCompleteStoryScenesCommand } from '../../presentation/commands/completeStoryScenes';
 import { registerExportManuscriptCommand } from '../../presentation/commands/exportManuscript';
 import { registerGenerateNovelCommand } from '../../presentation/commands/generateNovel';
 import { registerGenerateOutlineCommand } from '../../presentation/commands/generateOutline';
@@ -15,9 +18,10 @@ export class NovelModule implements IApplicationModule {
 
   public constructor(private readonly platform: IPlatformServices) {}
 
-  public initialize(): void {
+  public initialize(context: vscode.ExtensionContext): void {
     const {
       assembleManuscriptUseCase,
+      completeStoryScenesUseCase,
       configBridge,
       exportManuscriptUseCase,
       generateOutlineUseCase,
@@ -25,12 +29,18 @@ export class NovelModule implements IApplicationModule {
       novelPipeline,
       novelRunStateRepository,
       reviewManuscriptUseCase,
+      proposalReviewService,
       summarizeChaptersUseCase,
     } = this.platform;
 
     this.disposables.add(
       registerGenerateOutlineCommand({ generateOutlineUseCase, logger }),
       registerGenerateSceneSeedsCommand(),
+      registerCompleteStoryScenesCommand(
+        context,
+        completeStoryScenesUseCase,
+        proposalReviewService,
+      ),
       registerAssembleManuscriptCommand({ assembleManuscriptUseCase, logger }),
       registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
       registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),

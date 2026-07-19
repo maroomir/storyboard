@@ -82,6 +82,23 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       });
     case 'cardRecommendation':
       return '[]';
+    case 'storyCompletion':
+      return JSON.stringify({
+        scenes: [
+          {
+            slug: 'the-last-recall',
+            title: '마지막 기억의 행방',
+            characterIds: [],
+            body: '[목적]\n기억세공소의 중심 갈등을 선택으로 매듭짓는다.\n\n[결말]\n주인공은 잃어버린 기억을 돌려주고, 대가를 감당하며 다음 이야기를 위한 작은 여지를 남긴다.',
+            resolvedThreads: ['중심 갈등'],
+            openThreads: ['새로운 의뢰'],
+          },
+        ],
+        centralQuestion: '무엇을 기억으로 남길 것인가?',
+        climaxChoice: '기억을 소유하지 않고 돌려준다.',
+      });
+    case 'storyCardBuild':
+      return JSON.stringify({ entities: [] });
     case 'cardFactVerification':
       return '[]';
     case 'inlineCompletion':

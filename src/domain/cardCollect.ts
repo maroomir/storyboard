@@ -30,6 +30,8 @@ function applyToCharacter(
   let description = [...(card.description ?? [])];
   let voice = [...(card.voice ?? [])];
   let desire = [...(card.desire ?? [])];
+  let aliases = [...(card.aliases ?? [])];
+  let tags = [...(card.tags ?? [])];
 
   for (const proposal of accepted) {
     switch (proposal.kind) {
@@ -65,6 +67,12 @@ function applyToCharacter(
       case 'trait':
         traits = addUnique(traits, proposal.value);
         break;
+      case 'alias':
+        aliases = addUnique(aliases, proposal.value);
+        break;
+      case 'tag':
+        tags = addUnique(tags, proposal.value);
+        break;
       case 'recentDialogue':
         recentDialogues = addUnique(recentDialogues, proposal.value);
         break;
@@ -92,6 +100,8 @@ function applyToCharacter(
     ...(description.length > 0 ? { description } : {}),
     ...(voice.length > 0 ? { voice } : {}),
     ...(desire.length > 0 ? { desire } : {}),
+    ...(aliases.length > 0 ? { aliases } : {}),
+    ...(tags.length > 0 ? { tags } : {}),
   };
 }
 
@@ -104,6 +114,8 @@ function applyToBackground(
   let characterIds = [...(card.characterIds ?? [])];
   let time = card.time;
   let weather = card.weather;
+  let aliases = [...(card.aliases ?? [])];
+  let tags = [...(card.tags ?? [])];
 
   for (const proposal of accepted) {
     if (proposal.kind === 'descriptionLine') {
@@ -118,6 +130,10 @@ function applyToBackground(
       } else {
         weather = proposal.after;
       }
+    } else if (proposal.kind === 'alias') {
+      aliases = addUnique(aliases, proposal.value);
+    } else if (proposal.kind === 'tag') {
+      tags = addUnique(tags, proposal.value);
     }
   }
 
@@ -128,6 +144,8 @@ function applyToBackground(
     ...(senses.length > 0 ? { senses } : {}),
     ...(time ? { time } : {}),
     ...(weather ? { weather } : {}),
+    ...(aliases.length > 0 ? { aliases } : {}),
+    ...(tags.length > 0 ? { tags } : {}),
   };
 }
 
@@ -168,6 +186,10 @@ export function shouldProposeCardCollect(
       }
       case 'trait':
         return isNewListValue(card.traits, proposal.value);
+      case 'alias':
+        return isNewListValue(card.aliases, proposal.value);
+      case 'tag':
+        return isNewListValue(card.tags, proposal.value);
       case 'recentDialogue':
         return isNewListValue(card.recentDialogues, proposal.value);
       case 'descriptionLine':
@@ -182,6 +204,10 @@ export function shouldProposeCardCollect(
   }
 
   switch (proposal.kind) {
+    case 'alias':
+      return isNewListValue(card.aliases, proposal.value);
+    case 'tag':
+      return isNewListValue(card.tags, proposal.value);
     case 'descriptionLine':
       return isNewListValue(card.description, proposal.value);
     case 'sense':

@@ -33,6 +33,8 @@ export const aiTaskCatalog = [
   { name: 'chapterSummary', label: '장 요약', status: 'wired' },
   { name: 'sceneCoverage', label: '장면 커버리지 검사', status: 'wired' },
   { name: 'cardRecommendation', label: '카드 추천', status: 'wired' },
+  { name: 'storyCompletion', label: '이야기 완결', status: 'wired' },
+  { name: 'storyCardBuild', label: '씬 기반 카드 구성', status: 'wired' },
 ] as const;
 
 export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number];
