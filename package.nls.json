@@ -11,6 +11,7 @@
   "storyboard.background.create.title": "Storyboard: Create Background",
   "storyboard.character.recommend.title": "Storyboard: Recommend Characters",
   "storyboard.background.recommend.title": "Storyboard: Recommend Backgrounds",
+  "storyboard.cards.buildFromScenes.title": "Storyboard: Build Cards from Scenes",
   "storyboard.character.rename.title": "Storyboard: Rename Character ID...",
   "storyboard.background.rename.title": "Storyboard: Rename Background ID...",
   "storyboard.apiKey.set.title": "Storyboard: Set API Key...",

@@ -66,6 +66,11 @@
         "icon": "$(sparkle)"
       },
       {
+        "command": "storyboard.cards.buildFromScenes",
+        "title": "%storyboard.cards.buildFromScenes.title%",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "storyboard.character.rename",
         "title": "%storyboard.character.rename.title%"
       },
@@ -486,9 +491,19 @@
           "group": "navigation@1"
         },
         {
+          "command": "storyboard.cards.buildFromScenes",
+          "when": "view == storyboard.charactersView || view == storyboard.backgroundsView",
+          "group": "navigation@2"
+        },
+        {
           "command": "storyboard.scene.create",
           "when": "view == storyboard.scenesView",
           "group": "navigation"
+        },
+        {
+          "command": "storyboard.scene.completeStory",
+          "when": "view == storyboard.scenesView",
+          "group": "navigation@1"
         },
         {
           "command": "storyboard.settings.open",

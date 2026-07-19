@@ -103,16 +103,20 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
 }
 
 async function computeStudioTarget(editor: vscode.TextEditor | undefined): Promise<StudioTarget> {
-  if (!editor || editor.document.uri.scheme !== 'file') {
-    return noneTarget;
-  }
-
-  const uri = editor.document.uri;
-  const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+  const workspaceFolder =
+    editor && editor.document.uri.scheme === 'file'
+      ? vscode.workspace.getWorkspaceFolder(editor.document.uri)
+      : vscode.workspace.workspaceFolders?.[0];
 
   if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     return noneTarget;
   }
+
+  if (!editor || editor.document.uri.scheme !== 'file') {
+    return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
+  }
+
+  const uri = editor.document.uri;
 
   const hasSelection = !editor.selection.isEmpty;
   const label = uri.path.split('/').pop();
@@ -133,7 +137,7 @@ async function computeStudioTarget(editor: vscode.TextEditor | undefined): Promi
     const parts = parseSceneFileName(uri.path.split('/').pop() ?? '');
 
     if (!parts) {
-      return noneTarget;
+      return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
     }
 
     const draftUri = draftPath(workspaceFolder.uri, parts.stem);
@@ -148,7 +152,7 @@ async function computeStudioTarget(editor: vscode.TextEditor | undefined): Promi
     };
   }
 
-  return noneTarget;
+  return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
 }
 
 async function runStudioAction(action: StudioAction, instruction?: string): Promise<void> {
@@ -160,6 +164,9 @@ async function runStudioAction(action: StudioAction, instruction?: string): Prom
   }
 
   if (plan.requires === 'draft' && !target.draftUri) {
+    return;
+  }
+  if (plan.requires === 'project' && target.kind === 'none') {
     return;
   }
 

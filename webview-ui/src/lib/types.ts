@@ -172,9 +172,11 @@ export type StudioActionId =
   | "augment"
   | "augmentSelection"
   | "editSelection"
+  | "completeStory"
+  | "buildCardsFromScenes"
 
 export interface StudioTarget {
-  readonly kind: "draft" | "scene" | "none"
+  readonly kind: "draft" | "scene" | "project" | "none"
   readonly label?: string
   readonly sceneUri?: string
   readonly draftUri?: string
@@ -209,4 +211,3 @@ declare global {
     }
   }
 }
-

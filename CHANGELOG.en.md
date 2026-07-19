@@ -10,6 +10,15 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- Added manual **Complete Story** and **Build Cards from Scenes** workflows. Command Palette, Studio, and the relevant sidebar headers invoke the same use cases through AI proposal, selection, native VS Code diff, confirmation, and apply.
+- Completion appends only new `scene/*.txt` files after the final number. Card building uses scenes as the only source of new facts, proposes new cards and field-level enrichments together, and supports selective alias and tag updates.
+
+### Safety
+
+- The feature verifies SHA-256 snapshots of proposal inputs and targets immediately before apply. Any review-time change stops the operation for regeneration rather than rebasing or overwriting. Apply uses one `WorkspaceEdit`, not a crash-proof transaction.
+
 ## [0.5.1] - 2026-07-19
 
 ### Changed

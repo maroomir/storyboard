@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { registerCanonDiffCommand } from '../../presentation/commands/canonDiff';
+import { registerBuildStoryCardsFromScenesCommand } from '../../presentation/commands/buildStoryCardsFromScenes';
 import { registerCreateCardCommands } from '../../presentation/commands/createCard';
 import { registerMigrateCardTextCommand } from '../../presentation/commands/migrateCardTextToList';
 import { registerPromoteBibleCandidatesCommand } from '../../presentation/commands/promoteBibleCandidates';
@@ -24,6 +25,7 @@ export class CardModule implements IApplicationModule {
   public initialize(context: vscode.ExtensionContext): void {
     const {
       aiProviderRegistry,
+      buildStoryCardsUseCase,
       collectCardProposalsUseCase,
       createCardUseCase,
       cardSidebarRepository,
@@ -31,12 +33,18 @@ export class CardModule implements IApplicationModule {
       promoteBibleCandidatesUseCase,
       promoteCardCandidatesUseCase,
       recommendCardsUseCase,
+      proposalReviewService,
       usageRecorder,
     } = this.platform;
 
     this.disposables.add(
       registerCreateCardCommands({ createCardUseCase }),
       registerRecommendCardCommands({ createCardUseCase, recommendCardsUseCase }),
+      registerBuildStoryCardsFromScenesCommand(
+        context,
+        buildStoryCardsUseCase,
+        proposalReviewService,
+      ),
       registerRenameCardCommands(),
       registerMigrateCardTextCommand({ logger }),
       registerCardRenameParticipant({ logger }),

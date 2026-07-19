@@ -12,12 +12,14 @@ export const studioActionSchema = z.enum([
   'augment',
   'augmentSelection',
   'editSelection',
+  'completeStory',
+  'buildCardsFromScenes',
 ]);
 
 export type StudioAction = z.infer<typeof studioActionSchema>;
 
 export const studioTargetSchema = z.object({
-  kind: z.enum(['draft', 'scene', 'none']),
+  kind: z.enum(['draft', 'scene', 'project', 'none']),
   label: z.string().optional(),
   sceneUri: uriStringSchema.optional(),
   draftUri: uriStringSchema.optional(),

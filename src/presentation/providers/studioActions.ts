@@ -5,7 +5,7 @@ export type StudioArgSlot = 'scene' | 'draft' | 'selection' | 'instruction';
 export interface StudioActionPlan {
   readonly command: string;
   readonly slots: readonly StudioArgSlot[];
-  readonly requires: 'scene' | 'draft';
+  readonly requires: 'scene' | 'draft' | 'project';
 }
 
 export function planStudioAction(action: StudioAction): StudioActionPlan {
@@ -40,5 +40,9 @@ export function planStudioAction(action: StudioAction): StudioActionPlan {
         slots: ['scene', 'draft', 'selection', 'instruction'],
         requires: 'draft',
       };
+    case 'completeStory':
+      return { command: 'storyboard.scene.completeStory', slots: [], requires: 'project' };
+    case 'buildCardsFromScenes':
+      return { command: 'storyboard.cards.buildFromScenes', slots: [], requires: 'project' };
   }
 }

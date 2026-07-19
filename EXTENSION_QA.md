@@ -88,12 +88,21 @@ npm run build
 | **Storyboard · Characters** → 뷰 제목 줄 **+** | **`Storyboard: Create Character`** — `character/<이름>.card` 생성 |
 | **Storyboard · Backgrounds** → 뷰 제목 줄 **+** | **`Storyboard: Create Background`** — `background/<이름>.card` 생성 |
 | **Storyboard · Scenes** → 뷰 제목 줄 **+** | **`Storyboard: New Scene`** — `scene/*.txt` 생성 흐름 |
+| **Storyboard · Scenes** → 완결 아이콘 | **`Storyboard: Complete Story Scenes`** — 기존 씬을 수정하지 않고 새 완결 씬 제안 |
+| **Storyboard · Characters / Backgrounds** → 반짝임 아이콘 | **`Storyboard: Build Cards from Scenes`** — 씬 근거 신규/보강 카드 제안 |
 | 각 뷰 제목 줄 **톱니바퀴** | **`Storyboard: Open Settings`** — 세 뷰 모두 **동일한** Storyboard 설정 패널(웹뷰)이 열림 |
 | **Characters** 목록 vs **Backgrounds** 목록 | 캐릭터 카드(`character/*.card`)와 배경 카드(`background/*.card`)가 **서로 섞이지 않음** |
 | **Characters / Backgrounds** 카드 항목 | 이미지 없는 컴팩트 카드로 보이며, 항목 클릭은 카드 열기, 휴지통 버튼은 삭제 확인 후 `.card` 파일 삭제 |
 | **Scenes** 목록 | 씬·드래프트 상태가 갱신되는지(준비/미생성 등 배지·버튼) |
 
 **성공 기준**: 위 표가 모두 맞고, Characters **+** 로 만든 파일이 Backgrounds 목록에 나타나지 않으며 그 반대도 같다. 카드 삭제 시 VS Code 확인 다이얼로그가 뜨고, 확인하면 해당 항목과 파일이 사라진다.
+
+### 3b. 이야기 완결과 씬 기반 카드 구성
+
+1. 유효한 `scene/*.txt`를 둘 이상 만들고 Studio를 연다. 다른 파일이 활성화되어도 프로젝트 칩과 **이야기 완결**·**씬 기반 카드 구성** 칩이 보이는지 확인한다.
+2. **이야기 완결**을 승인한다. 연속 prefix 선택, 빈 문서와의 diff, 최종 확인을 거쳐 새 씬만 추가되는지 확인한다. 기존 씬의 내용과 파일명은 바뀌면 안 된다.
+3. **씬 기반 카드 구성**을 승인한다. 필드별 QuickPick에서 일부만 고르고 카드 YAML diff를 확인한 뒤 적용한다. 신규 한국어 이름 카드에는 고유 ID 입력 상자가 뜨고 profile PNG가 생기지 않아야 한다.
+4. diff를 연 뒤 씬 또는 카드 하나를 수정하고 적용한다. 변경이 중단되고 다시 제안하라는 메시지가 보여야 한다.
 
 ### 4. 캐릭터·배경 카드 추가
 
