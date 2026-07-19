@@ -10,7 +10,7 @@ const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIss
 })
 const reviseDraftMock = vi.fn(async (input: unknown): Promise<string> => {
   void input
-  return "수정된 본문"
+  return "인물은 창가에서 잠시 숨을 골랐다."
 })
 const writeDraftFileMock = vi.fn(async () => undefined)
 
@@ -91,6 +91,7 @@ function baseOptions(
     draftUri: vscode.Uri.file("/ws/project/draft/01-scene.md"),
     sceneStem: "01-scene",
     maxIterations: 2,
+    maxCompressionPercent: 50,
     reviseScoreThreshold: 0,
     ...overrides
   }
@@ -176,8 +177,8 @@ describe("ReviseDraftUseCase", () => {
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
     expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
-    // continuity(canon)·voice(persona) 두 타깃 그룹을 매 반복마다 스코프 재작성: 2그룹 × 2반복.
-    expect(reviseDraftMock).toHaveBeenCalledTimes(4)
+    // 모든 타깃 지시를 한 번의 전체 재작성에 통합한다.
+    expect(reviseDraftMock).toHaveBeenCalledTimes(2)
     expect(result.instructions.length).toBeGreaterThan(0)
   })
 
@@ -189,6 +190,32 @@ describe("ReviseDraftUseCase", () => {
     expect(result.passed).toBe(true)
     expect(result.revisionCount).toBe(0)
     expect(reviseDraftMock).not.toHaveBeenCalled()
+  })
+
+  it("preserves the original draft when a revision candidate is too short", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock.mockResolvedValueOnce("끝.")
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.preservedOriginal).toBe(true)
+    expect(result.rejection).toMatchObject({ reason: "too-short", candidateLength: 2 })
+    expect(result.revisionCount).toBe(0)
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
+    expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not write an earlier valid candidate when a later candidate is rejected", async () => {
+    checkContinuityMock.mockResolvedValue([blockingContinuity])
+    reviseDraftMock
+      .mockResolvedValueOnce("인물은 창가에서 오래 숨을 골랐다.")
+      .mockResolvedValueOnce("끝.")
+
+    const result = await runReviseDraftWorkflow(baseOptions({ maxIterations: 2 }))
+
+    expect(result.preservedOriginal).toBe(true)
+    expect(result.revisionCount).toBe(1)
+    expect(writeDraftFileMock).not.toHaveBeenCalled()
   })
 
   it("checks once and never revises when maxIterations is zero", async () => {
@@ -234,7 +261,7 @@ describe("ReviseDraftUseCase", () => {
     expect(reviseDraftMock).toHaveBeenCalledTimes(1)
   })
 
-  it("G-3: makes one scoped call per targeted agent across canon/persona/narrator", async () => {
+  it("G-3: combines canon/persona/narrator instructions into one revision call", async () => {
     const purposeCritique: DraftCritiqueIssue = { category: "purpose", severity: "high", comment: "목적 미달" }
     checkContinuityMock.mockResolvedValueOnce([blockingContinuity]).mockResolvedValue([])
     critiqueDraftMock.mockResolvedValueOnce([highCritique, purposeCritique]).mockResolvedValue([])
@@ -243,8 +270,7 @@ describe("ReviseDraftUseCase", () => {
 
     expect(result.passed).toBe(true)
     expect(result.revisionCount).toBe(1)
-    // canon(continuity) + persona(voice) + narrator(purpose) 세 그룹 → 한 반복에 3회 스코프 재작성.
-    expect(reviseDraftMock).toHaveBeenCalledTimes(3)
+    expect(reviseDraftMock).toHaveBeenCalledTimes(1)
   })
 
   it("QAS-C3-12: does not early-pass on a high score when reviseScoreThreshold is 0", async () => {
@@ -257,8 +283,7 @@ describe("ReviseDraftUseCase", () => {
     expect(result.passed).toBe(false)
     expect(result.revisionCount).toBe(2)
     expect(result.remainingBlocking).toBeGreaterThanOrEqual(1)
-    // continuity(canon)·repetition(narrator) 두 타깃 그룹을 매 반복마다 스코프 재작성: 2그룹 × 2반복.
-    expect(reviseDraftMock).toHaveBeenCalledTimes(4)
+    expect(reviseDraftMock).toHaveBeenCalledTimes(2)
   })
 
   it("cancels as the revision phase begins without applying or writing", async () => {

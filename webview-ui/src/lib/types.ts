@@ -172,6 +172,7 @@ export type StudioActionId =
   | "augment"
   | "augmentSelection"
   | "editSelection"
+  | "condense"
   | "completeStory"
   | "buildCardsFromScenes"
 

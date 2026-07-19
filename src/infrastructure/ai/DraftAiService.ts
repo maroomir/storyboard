@@ -10,6 +10,7 @@ import {
 import { ContinuityCheckPrompt } from './prompts/continuityCheck';
 import { DraftAugmentPrompt, type DraftAugmentInput } from './prompts/draftAugment';
 import { DraftCritiquePrompt, type DraftCritiqueInput } from './prompts/draftCritique';
+import { DraftCondensePrompt, type DraftCondenseInput } from './prompts/draftCondense';
 import { DraftExpansionPrompt } from './prompts/draftExpansion';
 import { DraftRevisionPrompt, type DraftRevisionInput } from './prompts/draftRevision';
 import { GrammarCheckPrompt } from './prompts/grammarCheck';
@@ -151,6 +152,22 @@ export class DraftAiService {
       'draftRevision',
       prompt,
       DraftRevisionPrompt.config,
+      options,
+    );
+
+    return response.text.trim();
+  }
+
+  public async condenseDraft(
+    input: DraftCondenseInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    const variant = this.gateway.resolvePromptVariant('draftRevision', options);
+    const prompt = DraftCondensePrompt.build(input, variant);
+    const response = await this.generateWithDefaults(
+      'draftRevision',
+      prompt,
+      DraftCondensePrompt.config,
       options,
     );
 

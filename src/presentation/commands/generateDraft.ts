@@ -96,10 +96,18 @@ async function runGenerateDraftForWorkspaceScene(
       await openDraftResult(result);
 
       if (result.kind === 'generated') {
-        await dependencies.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
-          onProgress: (message) => progress.report({ message }),
-          shouldCancel: () => token.isCancellationRequested,
-        });
+        const reviseResult = await dependencies.reviseAfterGenerateGate.maybeRunAfterGenerate(
+          sceneUri,
+          {
+            onProgress: (message) => progress.report({ message }),
+            shouldCancel: () => token.isCancellationRequested,
+          },
+        );
+        if (reviseResult?.preservedOriginal && reviseResult.rejection) {
+          await vscode.window.showWarningMessage(
+            `검수 재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다 (${reviseResult.rejection.candidateLength}자 / 원본 ${reviseResult.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
+          );
+        }
       }
 
       progress.report({

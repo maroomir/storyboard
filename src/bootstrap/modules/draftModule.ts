@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { registerApplyDraftFormatCommand } from '../../presentation/commands/applyDraftFormat';
 import { registerAugmentDraftCommands } from '../../presentation/commands/augmentDraft';
 import { registerExpandDraftCommand } from '../../presentation/commands/expandDraft';
+import { registerCondenseDraftCommand } from '../../presentation/commands/condenseDraft';
 import { registerGenerateAllDraftsCommand } from '../../presentation/commands/generateAllDrafts';
 import { registerGenerateDraftCommands } from '../../presentation/commands/generateDraft';
 import { registerNewSceneCommands } from '../../presentation/commands/newScene';
@@ -30,6 +31,7 @@ export class DraftModule implements IApplicationModule {
       applyDraftFormatUseCase,
       augmentDraftUseCase,
       configBridge,
+      condenseDraftUseCase,
       expandDraftUseCase,
       generateDraftUseCase,
       generateAllDraftsUseCase,
@@ -57,6 +59,7 @@ export class DraftModule implements IApplicationModule {
         reviseDraftUseCase,
       }),
       registerExpandDraftCommand({ expandDraftUseCase, logger }),
+      registerCondenseDraftCommand({ condenseDraftUseCase, configBridge, logger }),
       registerAugmentDraftCommands({ augmentDraftUseCase, logger }),
       registerNewSceneCommands(),
       registerCharacterHoverProvider(),

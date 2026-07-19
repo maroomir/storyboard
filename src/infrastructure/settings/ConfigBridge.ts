@@ -235,6 +235,13 @@ export class ConfigBridge {
     return Math.min(100, Math.max(0, value));
   }
 
+  public getMaxCompressionPercent(): number {
+    const configured = this.dependencies.getConfiguration().get('draft.maxCompressionPercent', 50);
+    const value = Math.floor(Number.isFinite(configured) ? configured : 50);
+
+    return Math.min(90, Math.max(0, value));
+  }
+
   public isUpdateCardsAfterGenerateEnabled(): boolean {
     return this.dependencies.getConfiguration().get('draft.updateCardsAfterGenerate', false);
   }

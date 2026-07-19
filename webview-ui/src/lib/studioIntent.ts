@@ -26,7 +26,7 @@ export function availableStudioActions(target: StudioTarget): readonly StudioAct
       actions.push('regenerate');
     }
 
-    actions.push('grammarCheck', 'continuityCheck', 'augment');
+    actions.push('grammarCheck', 'continuityCheck', 'augment', 'condense');
 
     if (target.hasSelection) {
       actions.push('expand', 'augmentSelection');
@@ -90,6 +90,10 @@ function interpretDraftInstruction(text: string, target: StudioTarget): StudioIn
 
   if (matchesContinuity(lowered)) {
     return action('continuityCheck');
+  }
+
+  if (matchesCondense(lowered)) {
+    return action('condense');
   }
 
   if (matchesExpand(lowered)) {
@@ -159,6 +163,18 @@ function matchesContinuity(text: string): boolean {
 
 function matchesExpand(text: string): boolean {
   return includesAny(text, ['expand', '확장', '늘려', '늘리', '더 길']);
+}
+
+function matchesCondense(text: string): boolean {
+  return includesAny(text, [
+    'condense',
+    'compress',
+    '초안 축소',
+    '원본 축소',
+    '전체 압축',
+    '원본 줄이',
+    '전체 줄이',
+  ]);
 }
 
 function matchesAugment(text: string): boolean {

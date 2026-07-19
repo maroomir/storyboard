@@ -33,6 +33,7 @@
   "storyboard.draft.continuityCheck.title": "Storyboard: 연속성 검사 (초안)",
   "storyboard.draft.slopCheck.title": "Storyboard: 상투 표현 검사 (초안)",
   "storyboard.draft.reviseLoop.title": "Storyboard: 초안 검수·재작성 (현재 씬)",
+  "storyboard.draft.condense.title": "Storyboard: 원본 축소",
   "storyboard.bible.promoteCandidates.title": "Storyboard: 설정 후보를 정전으로 승격",
   "storyboard.cards.migrateTextToList.title": "Storyboard: 카드 텍스트 필드를 목록형으로 변환",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff 보고서",

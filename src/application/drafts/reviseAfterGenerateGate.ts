@@ -28,20 +28,20 @@ export class ReviseAfterGenerateGate {
   public async maybeRunAfterGenerate(
     sceneUri: vscode.Uri,
     hooks: ReviseAfterGenerateHooks = {},
-  ): Promise<void> {
+  ): Promise<ReviseDraftWorkflowResult | undefined> {
     if (!this.configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
-      return;
+      return undefined;
     }
 
     const folder = resolveWorkspaceFolder(sceneUri);
     const sceneStem = parseSceneFileName(sceneUri.path.split('/').at(-1) ?? '')?.stem;
 
     if (!folder || !sceneStem) {
-      return;
+      return undefined;
     }
 
     hooks.onWillRun?.();
-    await this.runForScene(folder.uri, sceneStem, hooks);
+    return await this.runForScene(folder.uri, sceneStem, hooks);
   }
 
   public async runForScene(
@@ -62,6 +62,7 @@ export class ReviseAfterGenerateGate {
       draftUri,
       sceneStem,
       maxIterations: this.configBridge.getReviseMaxIterations(),
+      maxCompressionPercent: this.configBridge.getMaxCompressionPercent(),
       reviseScoreThreshold: this.configBridge.getReviseScoreThreshold(),
       onProgress: hooks.onProgress,
       shouldCancel: hooks.shouldCancel,
@@ -74,6 +75,8 @@ export class ReviseAfterGenerateGate {
         revisionCount: result.revisionCount,
         remainingBlocking: result.remainingBlocking,
         instructions: result.instructions,
+        preservedOriginal: result.preservedOriginal,
+        rejection: result.rejection,
       });
     } catch (error) {
       this.logger.warn(

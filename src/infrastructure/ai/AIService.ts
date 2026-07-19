@@ -22,6 +22,7 @@ import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapte
 import type { DraftAugmentInput } from './prompts/draftAugment';
 import type { DraftCritiqueInput } from './prompts/draftCritique';
 import type { DraftRevisionInput } from './prompts/draftRevision';
+import type { DraftCondenseInput } from './prompts/draftCondense';
 import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
@@ -282,6 +283,13 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {},
   ): Promise<string> {
     return this.draftAiService.reviseDraft(input, options);
+  }
+
+  public async condenseDraft(
+    input: DraftCondenseInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    return this.draftAiService.condenseDraft(input, options);
   }
 
   public async augmentDraft(

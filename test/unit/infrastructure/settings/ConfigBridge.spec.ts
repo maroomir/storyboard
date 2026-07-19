@@ -324,6 +324,19 @@ describe("ConfigBridge", () => {
     ).toBe(42)
   })
 
+  it("clamps max compression percent to [0, 90] with a default of 50", () => {
+    expect(createConfigBridge(new Map()).getMaxCompressionPercent()).toBe(50)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", -5]])).getMaxCompressionPercent()
+    ).toBe(0)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", 100]])).getMaxCompressionPercent()
+    ).toBe(90)
+    expect(
+      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", 42]])).getMaxCompressionPercent()
+    ).toBe(42)
+  })
+
   it("disables update-cards-after-generate by default and reads the configured value", () => {
     expect(createConfigBridge(new Map()).isUpdateCardsAfterGenerateEnabled()).toBe(false)
     expect(

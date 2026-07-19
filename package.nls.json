@@ -33,6 +33,7 @@
   "storyboard.draft.continuityCheck.title": "Storyboard: Continuity Check (Draft)",
   "storyboard.draft.slopCheck.title": "Storyboard: Slop Check (Draft)",
   "storyboard.draft.reviseLoop.title": "Storyboard: Review & Revise Draft (Current Scene)",
+  "storyboard.draft.condense.title": "Storyboard: Condense Draft",
   "storyboard.bible.promoteCandidates.title": "Storyboard: Promote Bible Candidates to Canon",
   "storyboard.cards.promoteCandidates.title": "Storyboard: Promote Card Candidates",
   "storyboard.cards.migrateTextToList.title": "Storyboard: Migrate Card Text Fields to List",

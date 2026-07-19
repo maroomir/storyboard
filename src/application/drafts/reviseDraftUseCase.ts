@@ -35,6 +35,11 @@ import {
 } from '../../shared/reviewRouting';
 import type { ProjectSetting } from '../../shared/project';
 import { buildStyleDirective } from '../../shared/styleDirective';
+import {
+  type DraftCandidateRejectionReason,
+  resolveSceneTargetLength,
+  validateDraftCandidate,
+} from './draftCandidateValidation';
 
 async function readContractGuidance(projectJsonUri: vscode.Uri): Promise<{
   styleConstraints: readonly string[];
@@ -65,6 +70,7 @@ export interface ReviseDraftRequest {
   readonly draftUri: vscode.Uri;
   readonly sceneStem: string;
   readonly maxIterations: number;
+  readonly maxCompressionPercent: number;
   readonly reviseScoreThreshold: number;
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
@@ -76,6 +82,12 @@ export interface ReviseDraftWorkflowResult {
   readonly remainingBlocking: number;
   readonly cancelled: boolean;
   readonly instructions: readonly string[];
+  readonly preservedOriginal: boolean;
+  readonly rejection?: {
+    readonly reason: DraftCandidateRejectionReason;
+    readonly originalLength: number;
+    readonly candidateLength: number;
+  };
 }
 
 interface ReviseDraftContext {
@@ -88,6 +100,7 @@ interface ReviseDraftContext {
   readonly qualityCriteria: readonly string[];
   readonly styleDirective: ReturnType<typeof buildStyleDirective>;
   readonly draft: ReturnType<typeof parseDraft>;
+  readonly targetLength?: number;
 }
 
 async function prepareReviseDraftContext(
@@ -129,6 +142,7 @@ async function prepareReviseDraftContext(
     qualityCriteria,
     styleDirective,
     draft,
+    targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
   };
 }
 
@@ -147,15 +161,11 @@ function buildRevisionPasses(
     characters.map((character) => [character.id, character.name] as const),
   );
 
-  // 타깃 그룹은 에이전트별로 스코프 재작성하고, 타깃 없는 전역 이슈만 전체 재작성으로 한 번 더 덮는다.
-  return routing.groups.length > 0
-    ? [
-        ...routing.groups.map((group) =>
-          buildScopedInstructions(group, (cardId) => cardNameById.get(cardId)),
-        ),
-        ...(routing.global.length > 0 ? [globalInstructions] : []),
-      ]
-    : [globalInstructions];
+  const scoped = routing.groups.flatMap((group) =>
+    buildScopedInstructions(group, (cardId) => cardNameById.get(cardId)),
+  );
+
+  return [[...scoped, ...(routing.global.length > 0 ? globalInstructions : [])]];
 }
 
 interface ReviseSession {
@@ -222,7 +232,19 @@ async function applyRevisionPasses(
   revisionPasses: readonly (readonly string[])[],
   currentBody: string,
   isCancelled: () => boolean,
-): Promise<{ body: string; appliedAnyPass: boolean }> {
+  maxCompressionPercent: number,
+): Promise<
+  | { body: string; appliedAnyPass: boolean; rejection?: undefined }
+  | {
+      body: string;
+      appliedAnyPass: false;
+      rejection: {
+        readonly reason: DraftCandidateRejectionReason;
+        readonly candidateLength: number;
+        readonly originalLength: number;
+      };
+    }
+> {
   const { aiService, registry, attribution, ctx } = session;
 
   let body = currentBody;
@@ -233,7 +255,7 @@ async function applyRevisionPasses(
       break;
     }
 
-    body = await aiService.reviseDraft(
+    const candidate = await aiService.reviseDraft(
       {
         body,
         format: ctx.draft.format,
@@ -244,6 +266,24 @@ async function applyRevisionPasses(
       },
       { providerId: registry.getTaskProvider('draftRevision'), attribution },
     );
+    const validation = validateDraftCandidate(currentBody, candidate, {
+      maxCompressionPercent,
+      targetLength: ctx.targetLength,
+    });
+
+    if (!validation.accepted) {
+      return {
+        body: currentBody,
+        appliedAnyPass: false,
+        rejection: {
+          reason: validation.reason ?? 'empty',
+          candidateLength: validation.candidateLength,
+          originalLength: currentBody.length,
+        },
+      };
+    }
+
+    body = candidate;
     appliedAnyPass = true;
   }
 
@@ -253,7 +293,8 @@ async function applyRevisionPasses(
 async function runReviseDraftWorkflow(
   options: ReviseDraftUseCaseDependencies & ReviseDraftRequest,
 ): Promise<ReviseDraftWorkflowResult> {
-  const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold } = options;
+  const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
+    options;
   const registry = options.aiProviderRegistry;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;
 
@@ -271,6 +312,7 @@ async function runReviseDraftWorkflow(
   let blocking = 0;
   let passed = false;
   let lastInstructions: string[] = [];
+  let rejection: ReviseDraftWorkflowResult['rejection'];
 
   while (!isCancelled()) {
     options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`);
@@ -297,19 +339,33 @@ async function runReviseDraftWorkflow(
       ctx.context.characters,
       lastInstructions,
     );
-    const applied = await applyRevisionPasses(session, revisionPasses, body, isCancelled);
+    const applied = await applyRevisionPasses(
+      session,
+      revisionPasses,
+      body,
+      isCancelled,
+      maxCompressionPercent,
+    );
     body = applied.body;
+
+    if (applied.rejection) {
+      rejection = applied.rejection;
+      break;
+    }
 
     if (!applied.appliedAnyPass) {
       break;
     }
 
+    revisionCount += 1;
+  }
+
+  if (revisionCount > 0 && !rejection && !isCancelled()) {
     await writeDraftFile(
       draftUri,
       vscodeFsAdapter,
       createDraft({ sceneStem, format: ctx.draft.format, body }),
     );
-    revisionCount += 1;
   }
 
   return {
@@ -318,6 +374,8 @@ async function runReviseDraftWorkflow(
     remainingBlocking: blocking,
     cancelled: isCancelled(),
     instructions: lastInstructions,
+    preservedOriginal: rejection !== undefined,
+    rejection,
   };
 }
 

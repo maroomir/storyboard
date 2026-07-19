@@ -111,6 +111,7 @@ async function runChapterDraftsAndRevise(
       draftUri: draftPath(options.workspaceUri, stem),
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? 50,
       reviseScoreThreshold: 0,
       shouldCancel: options.shouldCancel,
     });
@@ -121,6 +122,8 @@ async function runChapterDraftsAndRevise(
       revisionCount: reviseResult.revisionCount,
       remainingBlocking: reviseResult.remainingBlocking,
       instructions: reviseResult.instructions,
+      preservedOriginal: reviseResult.preservedOriginal,
+      rejection: reviseResult.rejection,
     });
   }
 }

@@ -50,6 +50,11 @@ describe('planStudioAction', () => {
       slots: ['scene', 'draft', 'selection', 'instruction'],
       requires: 'draft',
     });
+    expect(planStudioAction('condense')).toEqual({
+      command: 'storyboard.draft.condense',
+      slots: ['draft'],
+      requires: 'draft',
+    });
     expect(planStudioAction('completeStory')).toEqual({
       command: 'storyboard.scene.completeStory',
       slots: [],
@@ -70,6 +75,7 @@ describe('planStudioAction', () => {
       'augment',
       'augmentSelection',
       'editSelection',
+      'condense',
     ];
 
     for (const action of draftActions) {

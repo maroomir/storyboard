@@ -63,6 +63,7 @@ describe('availableStudioActions', () => {
       'grammarCheck',
       'continuityCheck',
       'augment',
+      'condense',
     ]);
   });
 
@@ -74,6 +75,7 @@ describe('availableStudioActions', () => {
       'grammarCheck',
       'continuityCheck',
       'augment',
+      'condense',
       'expand',
       'augmentSelection',
     ]);
@@ -93,6 +95,7 @@ describe('availableStudioActions', () => {
       'grammarCheck',
       'continuityCheck',
       'augment',
+      'condense',
     ]);
   });
 });
@@ -164,6 +167,17 @@ describe('interpretStudioInstruction', () => {
     expect(interpretStudioInstruction('연속성 확인', draftTarget)).toEqual({
       kind: 'action',
       action: 'continuityCheck',
+    });
+  });
+
+  it('maps whole-draft condense wording to condense', () => {
+    expect(interpretStudioInstruction('원본 축소', draftTarget)).toEqual({
+      kind: 'action',
+      action: 'condense',
+    });
+    expect(interpretStudioInstruction('전체 압축', draftTarget)).toEqual({
+      kind: 'action',
+      action: 'condense',
     });
   });
 

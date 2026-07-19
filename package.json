@@ -162,6 +162,10 @@
         "title": "%storyboard.draft.reviseLoop.title%"
       },
       {
+        "command": "storyboard.draft.condense",
+        "title": "%storyboard.draft.condense.title%"
+      },
+      {
         "command": "storyboard.bible.promoteCandidates",
         "title": "%storyboard.bible.promoteCandidates.title%"
       },
@@ -353,6 +357,13 @@
           "minimum": 0,
           "maximum": 100,
           "description": "Optional critique-score quality bar (0–100) that lets the Review & Revise loop pass early once the deterministic rubric score reaches it. 0 disables this and keeps the loop's stop behavior and AI-call count identical to before. High-severity continuity issues still block regardless."
+        },
+        "storyboard.draft.maxCompressionPercent": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 90,
+          "description": "Maximum percentage a reviewed or manually condensed draft may be shortened. 50 keeps at least half of the original draft when no scene target length is set."
         },
         "storyboard.draft.updateCardsAfterGenerate": {
           "type": "boolean",

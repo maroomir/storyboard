@@ -486,6 +486,8 @@ function actionLabel(action: StudioActionId): string {
       return '선택 영역 보충';
     case 'editSelection':
       return '선택 영역 편집';
+    case 'condense':
+      return '원본 축소';
     case 'completeStory':
       return '이야기 완결';
     case 'buildCardsFromScenes':
@@ -513,6 +515,8 @@ function actionIcon(action: StudioActionId): LucideIcon {
       return TextSelect;
     case 'editSelection':
       return Wand2;
+    case 'condense':
+      return WrapText;
     case 'completeStory':
       return FileText;
     case 'buildCardsFromScenes':
@@ -538,6 +542,7 @@ function showsDiff(action: StudioActionId): boolean {
     action === 'augment' ||
     action === 'augmentSelection' ||
     action === 'editSelection' ||
+    action === 'condense' ||
     action === 'completeStory' ||
     action === 'buildCardsFromScenes'
   );

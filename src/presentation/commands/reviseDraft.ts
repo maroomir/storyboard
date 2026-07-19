@@ -64,6 +64,7 @@ export async function runReviseGateForScene(
     draftUri,
     sceneStem,
     maxIterations: resolveReviseMaxIterations(),
+    maxCompressionPercent: resolveMaxCompressionPercent(),
     reviseScoreThreshold: resolveReviseScoreThreshold(),
     onProgress: hooks.onProgress,
     shouldCancel: hooks.shouldCancel,
@@ -76,6 +77,8 @@ export async function runReviseGateForScene(
       revisionCount: result.revisionCount,
       remainingBlocking: result.remainingBlocking,
       instructions: result.instructions,
+      preservedOriginal: result.preservedOriginal,
+      rejection: result.rejection,
     });
   } catch (error) {
     dependencies.logger.warn(
@@ -137,6 +140,14 @@ function resolveReviseScoreThreshold(): number {
     .get<number>('draft.reviseScoreThreshold', 0);
   const value = Math.floor(Number.isFinite(configured) ? configured : 0);
   return Math.min(100, Math.max(0, value));
+}
+
+function resolveMaxCompressionPercent(): number {
+  const configured = vscode.workspace
+    .getConfiguration('storyboard')
+    .get<number>('draft.maxCompressionPercent', 50);
+  const value = Math.floor(Number.isFinite(configured) ? configured : 50);
+  return Math.min(90, Math.max(0, value));
 }
 
 async function runReviseDraft(
@@ -215,7 +226,20 @@ async function reportResult(result: {
   readonly revisionCount: number;
   readonly remainingBlocking: number;
   readonly cancelled: boolean;
+  readonly preservedOriginal: boolean;
+  readonly rejection?: {
+    readonly reason: string;
+    readonly originalLength: number;
+    readonly candidateLength: number;
+  };
 }): Promise<void> {
+  if (result.preservedOriginal && result.rejection) {
+    await vscode.window.showWarningMessage(
+      `재작성 결과가 너무 짧거나 본문 형식이 아니어서 원본을 유지했습니다 (${result.rejection.candidateLength}자 / 원본 ${result.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,
+    );
+    return;
+  }
+
   if (result.cancelled && !result.passed) {
     await vscode.window.showWarningMessage(
       `검수·재작성을 취소했습니다. (재작성 ${result.revisionCount}회)`,

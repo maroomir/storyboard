@@ -10,6 +10,12 @@ export interface RevisionPlanEntry {
   readonly revisionCount: number;
   readonly remainingBlocking: number;
   readonly instructions: readonly string[];
+  readonly preservedOriginal?: boolean;
+  readonly rejection?: {
+    readonly reason: 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
+    readonly originalLength: number;
+    readonly candidateLength: number;
+  };
 }
 
 export interface RevisionPlan {
@@ -41,6 +47,14 @@ const revisionPlanEntrySchema = z.object({
   revisionCount: z.number().int().nonnegative(),
   remainingBlocking: z.number().int().nonnegative(),
   instructions: z.array(z.string().trim().min(1)).default([]),
+  preservedOriginal: z.boolean().optional(),
+  rejection: z
+    .object({
+      reason: z.enum(['empty', 'meta-response', 'too-short', 'not-shorter']),
+      originalLength: z.number().int().nonnegative(),
+      candidateLength: z.number().int().nonnegative(),
+    })
+    .optional(),
 });
 
 export const revisionPlanSchema = z.object({

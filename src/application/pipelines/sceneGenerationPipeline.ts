@@ -4,7 +4,11 @@ import type { ProjectFormat } from '../../shared/project';
 import type { StyleDirective } from '../../shared/styleDirective';
 import type { GenerateTextOptions } from '../../infrastructure/ai/AIService';
 import type { EntityRef } from '../../shared/aiTypes';
-import { condensePreviousContext, dedupeSituations } from './sceneGenerationPolicies';
+import {
+  condensePreviousContext,
+  dedupeSituations,
+  mergeSituationsToSourceBlockLimit,
+} from './sceneGenerationPolicies';
 import {
   assertNotCancelled,
   buildGenerateOptions,
@@ -117,7 +121,7 @@ async function executeSceneGenerationPipeline(
   onProgress?.('extractSituations', 1, 1);
   assertNotCancelled(shouldCancel);
 
-  const situations = dedupeSituations(situationsRaw);
+  const situations = mergeSituationsToSourceBlockLimit(dedupeSituations(situationsRaw), body);
   if (situations.length === 0) {
     throw new Error('상황을 추출할 수 없습니다.');
   }

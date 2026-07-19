@@ -17,6 +17,54 @@ export function dedupeSituations(
   });
 }
 
+export function mergeSituationsToSourceBlockLimit(
+  items: readonly SituationWithCharacters[],
+  sourceBody: string,
+): SituationWithCharacters[] {
+  const blocks = sourceBody
+    .split(/\n\s*\n+/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0);
+  if (blocks.length < 2) {
+    return [...items];
+  }
+
+  const limit = Math.max(1, blocks.length);
+  const merged = [...items];
+
+  while (merged.length > limit) {
+    let mergeIndex = 0;
+    let smallestLength = Number.POSITIVE_INFINITY;
+
+    for (let index = 0; index < merged.length - 1; index += 1) {
+      const first = merged[index];
+      const second = merged[index + 1];
+      if (!first || !second) {
+        continue;
+      }
+
+      const length = first.situation.length + second.situation.length;
+      if (length < smallestLength) {
+        smallestLength = length;
+        mergeIndex = index;
+      }
+    }
+
+    const first = merged[mergeIndex];
+    const second = merged[mergeIndex + 1];
+    if (!first || !second) {
+      break;
+    }
+
+    merged.splice(mergeIndex, 2, {
+      situation: `${first.situation}\n${second.situation}`,
+      characters: [...new Set([...first.characters, ...second.characters])],
+    });
+  }
+
+  return merged;
+}
+
 export function chunkDialoguePiecesByBudget(
   pieces: readonly string[],
   maxChars: number,

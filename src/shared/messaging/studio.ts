@@ -12,6 +12,7 @@ export const studioActionSchema = z.enum([
   'augment',
   'augmentSelection',
   'editSelection',
+  'condense',
   'completeStory',
   'buildCardsFromScenes',
 ]);

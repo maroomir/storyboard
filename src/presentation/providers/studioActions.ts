@@ -40,6 +40,8 @@ export function planStudioAction(action: StudioAction): StudioActionPlan {
         slots: ['scene', 'draft', 'selection', 'instruction'],
         requires: 'draft',
       };
+    case 'condense':
+      return { command: 'storyboard.draft.condense', slots: ['draft'], requires: 'draft' };
     case 'completeStory':
       return { command: 'storyboard.scene.completeStory', slots: [], requires: 'project' };
     case 'buildCardsFromScenes':
