@@ -41,8 +41,9 @@ import { buildStyleDirective } from "@/shared/styleDirective"
 import { createUsageSummary } from "./usageSummary"
 
 // NOTE: reasoning calls can exceed the provider's 180s default; lengthen only in the harness so a
-// single slow beat does not abort a full long-form regeneration.
-const harnessCliTimeoutMs = 600_000
+// single slow beat does not abort a full long-form regeneration. High-effort revise passes on long
+// drafts can exceed even 600s — override with SCENE_CLI_TIMEOUT (ms) when needed.
+const harnessCliTimeoutMs = Number(process.env.SCENE_CLI_TIMEOUT ?? "600000")
 
 // NOTE: codex (gpt-5.5) is the default; on codex usage-limit fall back to claude-code (sonnet) via
 // SCENE_PROVIDER=claude-code, per the project's provider fallback policy. Project-neutral SCENE_*
