@@ -28,7 +28,7 @@ jobs:
       - name: Check tag matches package version
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
-          package_version="$(node -p "require('./package.json').version")"
+          package_version="$(node -p "require('./apps/desktop/package.json').version")"
           test "$tag_version" = "$package_version"
 
       - name: Lint
@@ -38,15 +38,15 @@ jobs:
         run: npm test
 
       - name: Package VSIX
+        working-directory: apps/desktop
         run: |
           version="$(node -p "require('./package.json').version")"
           mkdir -p dist
           npm run package:vsix -- --out "dist/storyboard-${version}.vsix"
 
       - name: Create checksum
-        run: |
-          cd dist
-          shasum -a 256 *.vsix > SHA256SUMS
+        working-directory: apps/desktop/dist
+        run: shasum -a 256 *.vsix > SHA256SUMS
 
       - name: Create GitHub Release
         env:
@@ -54,7 +54,7 @@ jobs:
         run: |
           gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
           gh release create "$GITHUB_REF_NAME" \
-            dist/*.vsix \
-            dist/SHA256SUMS \
+            apps/desktop/dist/*.vsix \
+            apps/desktop/dist/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
-            --notes-file CHANGELOG.md
+            --notes-file apps/desktop/CHANGELOG.md

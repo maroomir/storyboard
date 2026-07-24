@@ -4,15 +4,15 @@ import { fileURLToPath } from "node:url"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vitest/config"
 
-const workspaceRoot = path.dirname(fileURLToPath(import.meta.url))
+const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      vscode: path.join(workspaceRoot, "test/stubs/vscode.ts"),
-      "@": path.join(workspaceRoot, "src"),
-      "@webview": path.join(workspaceRoot, "webview-ui/src")
+      vscode: path.join(packageRoot, "test/stubs/vscode.ts"),
+      "@": path.join(packageRoot, "src"),
+      "@webview": path.join(packageRoot, "webview-ui/src")
     }
   },
   test: {

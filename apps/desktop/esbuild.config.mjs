@@ -4,10 +4,12 @@ import { fileURLToPath } from "node:url"
 
 import * as esbuild from "esbuild"
 
-const repoRoot = path.dirname(fileURLToPath(import.meta.url))
+const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 const isWatchMode = process.argv.includes("--watch")
 
-const seedcoatDistDir = path.join(repoRoot, "node_modules/@seedcoat/wasm/dist")
+// NOTE: npm workspaces hoist dependencies to the monorepo root, so @seedcoat/wasm is not under
+// this package's node_modules. Resolve it instead of joining a fixed node_modules path.
+const seedcoatDistDir = path.dirname(fileURLToPath(import.meta.resolve("@seedcoat/wasm")))
 const seedcoatWasmAssets = ["seedcoat.js", "seedcoat.wasm"]
 
 // The @seedcoat/wasm loader dynamically imports its emscripten glue via
@@ -23,7 +25,7 @@ const seedcoatWasmPlugin = {
     }))
 
     build.onEnd(() => {
-      const outDir = path.join(repoRoot, "out")
+      const outDir = path.join(packageRoot, "out")
       fs.mkdirSync(outDir, { recursive: true })
 
       for (const asset of seedcoatWasmAssets) {
@@ -46,7 +48,7 @@ const extensionConfig = {
   sourcemap: true,
   target: "node18",
   alias: {
-    "@": path.join(repoRoot, "src")
+    "@": path.join(packageRoot, "src")
   },
   // esbuild leaves import.meta.url as an empty object in a CJS bundle, which
   // breaks @seedcoat/wasm's new URL("./seedcoat.js", import.meta.url) loader.

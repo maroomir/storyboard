@@ -1,11 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 import ts from 'typescript';
 
-const REPOSITORY_ROOT = process.cwd();
-const SOURCE_ROOT = path.join(REPOSITORY_ROOT, 'src');
+// NOTE: Anchored to this file, not the cwd, so the check is identical whether npm runs it from the
+// monorepo root or from this package.
+const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
 const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
 const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared');
 const APPLICATION_ROOT = path.join(SOURCE_ROOT, 'application');
@@ -251,5 +254,5 @@ function isWithinDirectory(filePath, directoryPath) {
 }
 
 function relativePath(filePath) {
-  return path.relative(REPOSITORY_ROOT, filePath).replaceAll(path.sep, '/');
+  return path.relative(PACKAGE_ROOT, filePath).replaceAll(path.sep, '/');
 }

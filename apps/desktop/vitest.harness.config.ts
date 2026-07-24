@@ -5,14 +5,14 @@ import { defineConfig } from "vitest/config"
 
 // NOTE: Separate from vitest.config.ts so the codex-backed generation harness never runs during
 // `npm test`. Run explicitly: `npx vitest run --config vitest.harness.config.ts`.
-const workspaceRoot = path.dirname(fileURLToPath(import.meta.url))
+const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   resolve: {
     alias: {
-      vscode: path.join(workspaceRoot, "test/stubs/vscode.ts"),
-      "@": path.join(workspaceRoot, "src"),
-      "@webview": path.join(workspaceRoot, "webview-ui/src")
+      vscode: path.join(packageRoot, "test/stubs/vscode.ts"),
+      "@": path.join(packageRoot, "src"),
+      "@webview": path.join(packageRoot, "webview-ui/src")
     }
   },
   test: {
