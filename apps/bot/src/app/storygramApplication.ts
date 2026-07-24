@@ -35,6 +35,7 @@ import { CommandRegistry } from '../chat/registry';
 import { UpdateRouter } from '../chat/router';
 import type { StorygramConfig } from '../config/config';
 import { ContentService } from '../content/contentService';
+import { startDashboardServer, type DashboardHandle } from '../dashboard/server';
 import { createGenJobs, type GenJobs } from './createGenJobs';
 import { SceneDraftGenerator } from '../gen/sceneDraftGenerator';
 import { openDatabase, type StorygramDatabase } from '../store/db';
@@ -64,8 +65,9 @@ export class StorygramApplication {
   private readonly router: UpdateRouter;
   private readonly db: StorygramDatabase;
   private readonly genJobs: GenJobs;
+  private dashboard: DashboardHandle | undefined;
 
-  public constructor(options: StorygramApplicationOptions) {
+  public constructor(private readonly options: StorygramApplicationOptions) {
     const { config, logger } = options;
     this.logger = logger;
 
@@ -172,6 +174,24 @@ export class StorygramApplication {
     }
 
     this.genJobs.start();
+
+    if (this.options.config.dashboard.enabled) {
+      try {
+        this.dashboard = await startDashboardServer(this.options.config.dashboard.port, {
+          store: this.store,
+          content: this.content,
+          sync: this.sync,
+          jobs: this.genJobs.manager,
+          logger: this.logger,
+        });
+        this.logger.info(`대시보드: http://127.0.0.1:${this.dashboard.port}/`);
+      } catch (error) {
+        // The panel is a convenience; a port clash must not stop the bot.
+        this.logger.warn('대시보드를 시작하지 못했습니다. 봇은 계속 동작합니다.');
+        this.logger.error('dashboard bind 실패', error);
+      }
+    }
+
     await this.gateway.start(this.router);
     this.logger.info('storygram이 폴링을 시작했습니다.');
   }
@@ -179,6 +199,7 @@ export class StorygramApplication {
   public async stop(): Promise<void> {
     this.pushScheduler.stop();
     await this.genJobs.stop();
+    await this.dashboard?.stop();
     await this.gateway.stop();
     this.db.close();
   }
