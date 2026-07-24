@@ -12,7 +12,7 @@ import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConve
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import { type NovelRunMode, type NovelRunState } from '../../domain/files/novelRunState';
-import type { ContractFieldKey } from '../../shared/project';
+import type { ContractFieldKey } from '@storyboard/story-format';
 
 const generateNovelCommand = 'storyboard.novel.generate';
 

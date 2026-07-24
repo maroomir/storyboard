@@ -1,5 +1,5 @@
 import type { Character } from '@/domain/Character';
-import { formatCardAttributes, joinCardText } from '@/shared/card';
+import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import { voiceStyleLines, type StyleDirective } from '@/shared/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

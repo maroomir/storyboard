@@ -5,7 +5,7 @@ import { GenreFormattingPrompt } from "@/infrastructure/ai/prompts/genreFormatti
 import { PersonaDialoguePrompt } from "@/infrastructure/ai/prompts/personaDialogue"
 import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGeneration"
 import type { Background } from "@/domain/Background"
-import type { ProjectSetting } from "@/shared/project"
+import type { ProjectSetting } from '@storyboard/story-format';
 import {
   buildStyleDirective,
   narrativeStyleLines,

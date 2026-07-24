@@ -2,14 +2,13 @@ import { z } from 'zod';
 
 import type { AiGateway } from '@/application/ai/aiGateway';
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { StoryboardCard } from '@/shared/card';
+import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@/shared/aiResponseParser';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '@/shared/cardCollect';
-import type { SceneFile } from '@/shared/scene';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 

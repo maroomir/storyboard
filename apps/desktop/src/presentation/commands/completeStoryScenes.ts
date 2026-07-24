@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { CompleteStoryScenesUseCase } from '@/application/story/completeStoryScenesUseCase';
-import { parseScene } from '@/domain/files/scene';
+import { parseScene } from '@storyboard/story-format';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
 const completeStoryCommand = 'storyboard.scene.completeStory';

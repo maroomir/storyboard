@@ -1,6 +1,5 @@
-import { pointOfViewLabels } from './outline';
-import type { PointOfView, ProjectSetting } from './project';
-
+import { pointOfViewLabels } from '@storyboard/story-format';
+import type { PointOfView, ProjectSetting } from '@storyboard/story-format';
 // NOTE: Shared narrative-style context injected into every scene-generation prompt so point of
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.

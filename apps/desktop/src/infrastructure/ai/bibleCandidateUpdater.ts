@@ -1,5 +1,5 @@
-import type { CharacterCard } from '@/shared/card';
-import { buildCandidateFact, type BibleFact } from '@/shared/bible';
+import { buildCandidateFact } from '@storyboard/story-format';
+import type { BibleFact, CharacterCard } from '@storyboard/story-format';
 import {
   writeBibleCandidateFile,
   type BibleCandidateFileSystem,

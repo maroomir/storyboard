@@ -1,10 +1,5 @@
-import {
-  formatCardAttributes,
-  joinCardText,
-  type BackgroundCard,
-  type CharacterCard,
-} from '@/shared/card';
-import type { ProjectFormat } from '@/shared/project';
+import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export type DraftAugmentScope = 'draft' | 'selection';

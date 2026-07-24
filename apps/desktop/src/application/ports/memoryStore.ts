@@ -1,4 +1,4 @@
-import type { BackgroundCard, CharacterCard } from '../../shared/card';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 
 export interface IPersonaMemoryStore {
   load(card: CharacterCard): Promise<string | undefined>;

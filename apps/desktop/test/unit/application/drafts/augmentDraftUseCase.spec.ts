@@ -6,21 +6,19 @@ const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 const buildNarrativeContextMock = vi.fn()
 
-vi.mock("@/domain/files/scene", () => ({
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   SceneParseError: class SceneParseError extends Error {},
-  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
-}))
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
-  readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
-}))
-vi.mock("@/domain/sceneContext", () => ({
+  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   formatBibleFactLines: (): string[] => []
 }))
-
+vi.mock("@/infrastructure/persistence/projectJson", () => ({
+  readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
+}))
 import { AugmentDraftUseCase } from "@/application/drafts/augmentDraftUseCase"
-import { SceneParseError } from "@/domain/files/scene"
+import { SceneParseError } from '@storyboard/story-format';
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }

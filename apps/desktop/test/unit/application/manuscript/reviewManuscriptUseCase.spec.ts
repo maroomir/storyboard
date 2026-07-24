@@ -6,7 +6,7 @@ import {
   type IManuscriptReviewRepository,
   type ManuscriptReviewSource
 } from "@/application/manuscript/reviewManuscriptUseCase"
-import type { ChapterPlan } from "@/shared/outline"
+import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

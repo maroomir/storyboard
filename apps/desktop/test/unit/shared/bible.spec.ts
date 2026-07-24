@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { bibleFactSchema, createEmptyBible, selectBibleFacts, type StoryBible } from "@/shared/bible"
+import { bibleFactSchema, createEmptyBible, selectBibleFacts } from '@storyboard/story-format';
+import type { StoryBible } from '@storyboard/story-format';
 
 const bible: StoryBible = {
   version: "1.0.0",

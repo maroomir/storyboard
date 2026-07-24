@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { contractFieldKeys, pointOfViews, projectFormats } from '../project';
+import { contractFieldKeys, pointOfViews, projectFormats } from '@storyboard/story-format';
 
 const generationContractReadinessSchema = z.object({
   isReady: z.boolean(),

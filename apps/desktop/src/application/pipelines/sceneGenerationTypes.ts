@@ -1,6 +1,5 @@
-import type { SceneContext } from '../../domain/sceneContext';
+import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../ports/memoryStore';
-import type { ProjectFormat } from '../../shared/project';
 import type { StyleDirective } from '../../shared/styleDirective';
 import type {
   SituationWithCharacters,

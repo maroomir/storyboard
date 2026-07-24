@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { SceneContext } from "@/domain/sceneContext"
+import type { BackgroundCard, CharacterCard, SceneContext, SceneFile } from '@storyboard/story-format';
 import {
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
@@ -12,9 +12,6 @@ import {
   looksLikeFormatMetaLeak,
   resolveSceneBreakJoiner
 } from "@/application/pipelines/sceneGenerationPolicies"
-import type { SceneFile } from "@/shared/scene"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
-
 const eliaCard: CharacterCard = {
   type: "character",
   id: "elia",

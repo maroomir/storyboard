@@ -1,14 +1,13 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import {
-  formatCardAttributes,
-  joinCardText,
-  type BackgroundCard,
-  type CharacterCard,
-} from '../../shared/card';
-import type { BibleFact } from '../../shared/bible';
-import type { ProjectFormat } from '../../shared/project';
+import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
+import type {
+  BackgroundCard,
+  BibleFact,
+  CharacterCard,
+  ProjectFormat,
+} from '@storyboard/story-format';
 import {
   aiProviderIds,
   aiTaskCatalog,

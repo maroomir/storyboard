@@ -1,7 +1,6 @@
 import type { BibleCandidateRecord } from './files/bibleCandidates';
-import type { BibleFact, StoryBible } from '../shared/bible';
-import { resolveSceneOrder } from '../shared/scene';
-
+import { resolveSceneOrder } from '@storyboard/story-format';
+import type { BibleFact, StoryBible } from '@storyboard/story-format';
 export interface CanonDiffResult {
   readonly pending: BibleFact[];
 }

@@ -1,6 +1,13 @@
 import type { Background } from '@/domain/Background';
 import type { Character } from '@/domain/Character';
-import type { ProjectFormat } from '@/shared/project';
+import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-format';
+import type {
+  ChapterPlan,
+  OutlineBrief,
+  OutlineCharacterBrief,
+  OutlineSynopsis,
+  ProjectFormat,
+} from '@storyboard/story-format';
 import { AiTextGateway } from './AiTextGateway';
 import {
   CardAiService,
@@ -29,14 +36,6 @@ import { type BackgroundFactExtraction } from './prompts/backgroundFactExtractio
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseJsonObject } from '@/shared/aiResponseParser';
-import {
-  coerceChapterPlan,
-  coerceOutlineSynopsis,
-  type ChapterPlan,
-  type OutlineBrief,
-  type OutlineCharacterBrief,
-  type OutlineSynopsis,
-} from '@/shared/outline';
 import type { DraftCritiqueIssue } from '@/shared/draftReview';
 import type { SceneCoverageIssue } from '@/shared/sceneCoverage';
 import {

@@ -2,10 +2,10 @@ import * as vscode from 'vscode';
 
 import { summaryFileName } from '../../domain/chapterSummaries';
 import { type StoryboardProjectPaths } from './pathConventions';
-import {
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths,
-} from '../../domain/sceneContext';
+import type {
+  SceneContextWorkspaceFileSystem,
+  SceneContextWorkspacePaths,
+} from '@storyboard/story-format';
 
 export const vscodeFsAdapter = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>

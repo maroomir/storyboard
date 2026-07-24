@@ -1,8 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ChapterPlan } from "@/shared/outline"
-import type { StoryboardProject } from "@/shared/project"
+import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type { NovelRunState, NovelStageName } from "@/domain/files/novelRunState"
 import { parseNovelRunState, serializeNovelRunState } from "@/domain/files/novelRunState"
 

@@ -7,7 +7,7 @@ import type {
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { isDirectSceneTextFile } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { parseSceneFileName } from '../../shared/scene';
+import { parseSceneFileName } from '@storyboard/story-format';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
 

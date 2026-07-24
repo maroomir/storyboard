@@ -10,7 +10,7 @@ import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/f
 import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
-import type { StoryboardProject } from '../../shared/project';
+import type { StoryboardProject } from '@storyboard/story-format';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

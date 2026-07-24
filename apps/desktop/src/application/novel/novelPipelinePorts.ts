@@ -3,9 +3,12 @@ import type * as vscode from 'vscode';
 import type { ManuscriptDraftEntry } from '../../domain/manuscriptAssembly';
 import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
 import type { NovelRunState } from '../../domain/files/novelRunState';
-import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis } from '../../shared/outline';
-import type { StoryboardProject } from '../../shared/project';
-
+import type {
+  ChapterPlan,
+  OutlineCharacterBrief,
+  OutlineSynopsis,
+  StoryboardProject,
+} from '@storyboard/story-format';
 export interface INovelRunStateRepository {
   readExisting(workspaceRoot: vscode.Uri): Promise<NovelRunState | undefined>;
   loadProject(workspaceRoot: vscode.Uri): Promise<StoryboardProject>;

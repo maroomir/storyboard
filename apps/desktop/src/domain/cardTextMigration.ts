@@ -1,6 +1,6 @@
 import yaml from 'js-yaml';
 
-import { splitCardTextToList } from '../shared/card';
+import { splitCardTextToList } from '@storyboard/story-format';
 
 const listTextFields = ['description', 'voice'] as const;
 

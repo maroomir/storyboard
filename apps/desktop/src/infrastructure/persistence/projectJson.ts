@@ -2,13 +2,8 @@ import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
-import {
-  pointOfViews,
-  projectFormats,
-  type ProjectFormat,
-  type StoryboardProject,
-  storyboardProjectVersion,
-} from '../../shared/project';
+import { pointOfViews, projectFormats, storyboardProjectVersion } from '@storyboard/story-format';
+import type { ProjectFormat, StoryboardProject } from '@storyboard/story-format';
 
 const projectEditorSchema = z.object({
   scenePrefixDigits: z.number().int().positive(),

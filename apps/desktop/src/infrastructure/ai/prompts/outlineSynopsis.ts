@@ -1,4 +1,5 @@
-import { pointOfViewLabels, type OutlineBrief } from '@/shared/outline';
+import { pointOfViewLabels } from '@storyboard/story-format';
+import type { OutlineBrief } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export const OutlineSynopsisPrompt = {

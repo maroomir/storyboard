@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { BibleParseError, parseBible, serializeBible } from "@/domain/files/bible"
-import type { StoryBible } from "@/shared/bible"
-
+import { BibleParseError, parseBible, serializeBible } from '@storyboard/story-format';
+import type { StoryBible } from '@storyboard/story-format';
 const bible: StoryBible = {
   version: "1.0.0",
   facts: [

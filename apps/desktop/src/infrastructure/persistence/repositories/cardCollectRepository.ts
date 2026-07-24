@@ -3,7 +3,8 @@ import * as vscode from 'vscode';
 import type { ICardCollectRepository } from '../../../application/cards/collectCardProposalsUseCase';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { loadCharacterRoster } from '../relationGraphData';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../../../domain/files/draft';
+import { parseDraft, readDraftFile } from '@storyboard/story-format';
+import type { DraftFileSystem } from '@storyboard/story-format';
 import type {
   CollectDraft,
   CollectRosterEntry,

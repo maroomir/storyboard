@@ -1,7 +1,7 @@
 import { applyIdMapping, validateIdMapping, type IdMappingIssue } from '@seedcoat/wasm';
 
-import { setCardId } from '@/domain/cardReferenceRewriter';
-import type { CharacterCard } from '@/shared/card';
+import { setCardId } from '@storyboard/story-format';
+import type { CharacterCard } from '@storyboard/story-format';
 import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 
 export class SeedIdMappingConflictError extends Error {

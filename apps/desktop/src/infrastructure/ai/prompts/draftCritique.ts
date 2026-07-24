@@ -1,4 +1,4 @@
-import { pointOfViewLabels } from '@/shared/outline';
+import { pointOfViewLabels } from '@storyboard/story-format';
 import type { StyleDirective } from '@/shared/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

@@ -5,7 +5,7 @@ import {
   formatAugmentCards,
   type DraftAugmentInput
 } from "@/infrastructure/ai/prompts/draftAugment"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 
 const baseInput: DraftAugmentInput = {
   target: "엘리아가 교실로 들어왔다.",

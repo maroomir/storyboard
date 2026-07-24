@@ -3,9 +3,7 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { parseScene, SceneParseError } from "@/domain/files/scene"
-import { parseSceneFileName, parseSceneStem, resolveSceneOrder } from "@/shared/scene"
-
+import { parseScene, parseSceneFileName, parseSceneStem, resolveSceneOrder, SceneParseError } from '@storyboard/story-format';
 const scenesFixtureDirectory = join(process.cwd(), "test", "fixtures", "scenes")
 
 describe("scene file codec", () => {

@@ -1,8 +1,5 @@
-import type { Draft } from '../../domain/Draft';
+import type { Draft, SceneFile, StoryboardProject } from '@storyboard/story-format';
 import type { SceneCacheRecord } from '../../domain/files/sceneCache';
-import type { StoryboardProject } from '../../shared/project';
-import type { SceneFile } from '../../shared/scene';
-
 export interface IProjectRepository {
   read(uri: unknown): Promise<StoryboardProject>;
 }

@@ -1,5 +1,5 @@
 import { shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { BackgroundCard, CharacterCard, StoryboardCard } from '@/shared/card';
+import type { BackgroundCard, CharacterCard, StoryboardCard } from '@storyboard/story-format';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

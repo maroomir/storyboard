@@ -1,7 +1,6 @@
-import type { BibleFact, StoryBible } from '../shared/bible';
+import { resolveSceneOrder } from '@storyboard/story-format';
+import type { BibleFact, StoryBible } from '@storyboard/story-format';
 import type { BibleCandidateRecord } from './files/bibleCandidates';
-import { resolveSceneOrder } from '../shared/scene';
-
 // NOTE: Anchor a freshly promoted fact to the scene it was first observed so it becomes a
 // time-scoped canon version. The `@order` id suffix keeps it distinct from later versions of
 // the same subject:key under id-keyed merge. Candidates without a resolvable sourceScene stay

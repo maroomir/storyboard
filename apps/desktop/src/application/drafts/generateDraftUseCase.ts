@@ -3,7 +3,8 @@ import type * as vscode from 'vscode';
 import type { ISceneCacheRepository } from '../ports/repositories';
 import { draftHistorySceneDirectory, joinUri } from '../../infrastructure/vscode/pathConventions';
 import { uriExists } from '../../infrastructure/vscode/workspace';
-import { createDraft } from '../../domain/files/draft';
+import { createDraft, joinCardText } from '@storyboard/story-format';
+import type { BackgroundCard } from '@storyboard/story-format';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { type SceneCacheRecord } from '../../domain/files/sceneCache';
 import {
@@ -17,7 +18,6 @@ import {
   SceneGenerationPipelineCancelledError,
 } from '../pipelines/sceneGenerationPipeline';
 import type { AiProviderId, AiTaskName } from '../../shared/aiTypes';
-import { joinCardText, type BackgroundCard } from '../../shared/card';
 import type {
   GenerateDraftRequest,
   GenerateDraftResult,

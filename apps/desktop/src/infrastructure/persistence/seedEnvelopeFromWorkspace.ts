@@ -1,10 +1,10 @@
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
-import { parseCard } from '@/domain/files/card';
+import { isBackgroundCard, parseCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import { readProjectJson } from '@/infrastructure/persistence/projectJson';
 import { collectTrackedCardAndSceneRelativePathsFromFileNames } from '@/infrastructure/seedcoat/seedImport';
-import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '@/shared/card';
 import type { WorkspaceContent, SeedSceneEntry } from '@/infrastructure/seedcoat/projectAdapter';
 
 export async function readDirectoryFileNamesOnly(directory: vscode.Uri): Promise<string[]> {

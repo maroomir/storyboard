@@ -6,16 +6,14 @@ import {
   isDraftMarkdownFile,
   sceneFilePath,
 } from '../../infrastructure/vscode/pathConventions';
-import { buildSceneContext } from '../../domain/sceneContext';
+import { buildSceneContext, parseDraft, readSceneFile } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { parseDraft } from '../../domain/files/draft';
-import { readSceneFile } from '../../domain/files/scene';
-import type { BackgroundCard, CharacterCard } from '../../shared/card';
 import type { InlineCompletionContext } from '../../infrastructure/ai/AIService';
 import { type AiProviderId, isCliProvider } from '../../shared/aiTypes';
 import { parseDraftSceneParts } from '../../infrastructure/vscode/draftSceneLink';

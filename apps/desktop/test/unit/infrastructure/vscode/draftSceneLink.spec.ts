@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, serializeDraft } from "@/domain/files/draft"
+import { createDraft, serializeDraft } from '@storyboard/story-format';
 import { parseDraftSceneParts } from "@/infrastructure/vscode/draftSceneLink"
 
 describe("parseDraftSceneParts", () => {

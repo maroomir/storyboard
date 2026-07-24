@@ -11,7 +11,8 @@ const uriExistsMock = vi.fn()
 const archiveExistingDraftMock = vi.fn()
 const pipelineRunMock = vi.fn()
 
-vi.mock("@/domain/sceneContext", () => ({
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
 }))

@@ -1,15 +1,13 @@
 import { ZodError } from 'zod';
 
-import { storyboardProjectVersion } from '@/shared/project';
-import type { StoryboardProject } from '@/shared/project';
 import {
   backgroundCardSchema,
   characterCardSchema,
   joinCardText,
   splitCardTextToList,
-  type BackgroundCard,
-  type CharacterCard,
-} from '@/shared/card';
+  storyboardProjectVersion,
+} from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, StoryboardProject } from '@storyboard/story-format';
 import { storyboardProjectSchema } from '@/infrastructure/persistence/projectJson';
 import { SEED_NO_HISTORY_MESSAGE } from '@/infrastructure/seedcoat/projectStorageMessages';
 import {

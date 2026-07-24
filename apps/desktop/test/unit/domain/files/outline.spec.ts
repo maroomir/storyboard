@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  ChapterPlanParseError,
-  parseChapterPlan,
-  serializeChapterPlan,
-  serializeSynopsisMarkdown
-} from "@/domain/files/outline"
-import type { ChapterPlan, OutlineSynopsis } from "@/shared/outline"
-
+import { ChapterPlanParseError, parseChapterPlan, serializeChapterPlan, serializeSynopsisMarkdown } from '@storyboard/story-format';
+import type { ChapterPlan, OutlineSynopsis } from '@storyboard/story-format';
 const plan: ChapterPlan = {
   version: "1.0.0",
   acts: [

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildCharacterHoverMarkdown } from "@/presentation/providers/CharacterHoverProvider"
-import type { CharacterCard } from "@/shared/card"
+import type { CharacterCard } from '@storyboard/story-format';
 
 describe("CharacterHoverProvider helpers", () => {
   it("renders compact character summary markdown", () => {

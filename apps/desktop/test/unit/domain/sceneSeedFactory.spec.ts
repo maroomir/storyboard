@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSceneSeeds } from "@/domain/sceneSeedFactory"
-import { parseScene } from "@/domain/files/scene"
-import type { ChapterPlan } from "@/shared/outline"
-
+import { parseScene } from '@storyboard/story-format';
+import type { ChapterPlan } from '@storyboard/story-format';
 const plan: ChapterPlan = {
   version: "1.0.0",
   acts: [

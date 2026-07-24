@@ -1,6 +1,5 @@
 import type { Background } from '../../domain/Background';
-import type { BackgroundCard, CharacterCard } from '../../shared/card';
-import type { ProjectFormat } from '../../shared/project';
+import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
 import type { StyleDirective } from '../../shared/styleDirective';
 import type {
   GenerateTextOptions,

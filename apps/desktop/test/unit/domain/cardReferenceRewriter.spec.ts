@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  renameCardIdInBackgroundCard,
-  renameCardIdInCharacterCard,
-  rewriteCardIdReferences,
-  setCardId
-} from "@/domain/cardReferenceRewriter"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
-
+import { renameCardIdInBackgroundCard, renameCardIdInCharacterCard, rewriteCardIdReferences, setCardId } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 const hero: CharacterCard = {
   type: "character",
   id: "hero",

@@ -1,8 +1,8 @@
-import {
-  type OutlineBrief,
-  type OutlineCharacterBrief,
-  type OutlineSynopsis,
-} from '@/shared/outline';
+import type {
+  OutlineBrief,
+  OutlineCharacterBrief,
+  OutlineSynopsis,
+} from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { briefToUserBlock } from './outlineSynopsis';
 

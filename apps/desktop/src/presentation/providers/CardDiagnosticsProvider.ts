@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
-import { CardParseError, parseCard } from '../../domain/files/card';
+import { CardParseError, parseCard } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { isIgnoredSampleCardFileName } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';

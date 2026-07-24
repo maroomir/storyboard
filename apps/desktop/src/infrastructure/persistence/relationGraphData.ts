@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { isIgnoredSampleCardFileName } from '../vscode/pathConventions';
-import { parseCard } from '../../domain/files/card';
-import { isCharacterRole, type CharacterRole } from '../../shared/card';
+import { isCharacterRole, parseCard } from '@storyboard/story-format';
+import type { CharacterRole } from '@storyboard/story-format';
 import type { RelationListCharacter } from '../../shared/messaging';
 
 export interface CharacterRosterEntry {

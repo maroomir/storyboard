@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { StoryboardProjectPaths } from '../vscode/pathConventions';
 import { uriExists } from '../vscode/workspace';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
-import type { BackgroundCard, CharacterCard } from '../../shared/card';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,

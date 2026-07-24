@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { CharacterCard, LocationBackgroundCard } from '@/shared/card';
+import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

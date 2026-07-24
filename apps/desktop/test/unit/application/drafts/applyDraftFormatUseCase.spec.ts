@@ -10,7 +10,8 @@ const writeDraftFileMock = vi.fn()
 vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-vi.mock("@/domain/files/draft", () => ({
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   readDraftFile: (...args: unknown[]): unknown => readDraftFileMock(...args),
   parseDraft: (...args: unknown[]): unknown => parseDraftMock(...args),
   createDraft: (...args: unknown[]): unknown => createDraftMock(...args),

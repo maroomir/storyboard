@@ -4,17 +4,20 @@ import type { IOutlineRepository } from '../../../application/novel/generateOutl
 import { listCharacterBriefs } from '../characterBriefs';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { uriExists } from '../../vscode/workspace';
-import type { CardFileSystem } from '../../../domain/files/card';
 import {
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
-  type OutlineFileSystem,
-} from '../../../domain/files/outline';
+} from '@storyboard/story-format';
+import type {
+  CardFileSystem,
+  ChapterPlan,
+  OutlineCharacterBrief,
+  OutlineFileSystem,
+  OutlineSynopsis,
+  StoryboardProject,
+} from '@storyboard/story-format';
 import { readProjectJson } from '../projectJson';
-import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis } from '../../../shared/outline';
-import type { StoryboardProject } from '../../../shared/project';
-
 const VSCODE_FILE_SYSTEM: CardFileSystem & OutlineFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri, content): Thenable<void> =>

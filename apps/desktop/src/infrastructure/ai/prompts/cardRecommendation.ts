@@ -1,4 +1,5 @@
-import { isCharacterRole, type CharacterRole } from '@/shared/card';
+import { isCharacterRole } from '@storyboard/story-format';
+import type { CharacterRole } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export type RecommendationCategory = 'character' | 'background';

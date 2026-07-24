@@ -1,3 +1,3 @@
-import type { SceneFile } from '../shared/scene';
+import type { SceneFile } from '@storyboard/story-format';
 
 export type Scene = SceneFile;

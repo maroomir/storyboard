@@ -11,7 +11,7 @@ import {
   uriExists,
 } from '../../infrastructure/vscode/workspace';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { parseSceneFileName } from '../../shared/scene';
+import { parseSceneFileName } from '@storyboard/story-format';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,

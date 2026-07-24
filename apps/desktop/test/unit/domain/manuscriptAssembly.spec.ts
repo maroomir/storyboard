@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { assembleManuscript, type ManuscriptDraftEntry } from "@/domain/manuscriptAssembly"
-import type { ChapterPlan } from "@/shared/outline"
+import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

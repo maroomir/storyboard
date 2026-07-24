@@ -3,9 +3,8 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { CardParseError, parseCard, serializeCard } from "@/domain/files/card"
-import type { StoryboardCard } from "@/shared/card"
-
+import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
+import type { StoryboardCard } from '@storyboard/story-format';
 const cardsFixtureDirectory = join(process.cwd(), "test", "fixtures", "cards")
 
 describe("card file codec", () => {

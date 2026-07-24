@@ -2,10 +2,14 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import { validateGenerationContract } from '../../domain/generationContract';
-import { toOutlineBrief, type OutlineCharacterBrief } from '../../shared/outline';
-import type { ChapterPlan, OutlineSynopsis } from '../../shared/outline';
-import type { ContractFieldKey, StoryboardProject } from '../../shared/project';
-
+import { toOutlineBrief } from '@storyboard/story-format';
+import type {
+  ChapterPlan,
+  ContractFieldKey,
+  OutlineCharacterBrief,
+  OutlineSynopsis,
+  StoryboardProject,
+} from '@storyboard/story-format';
 export interface IOutlineRepository {
   hasExisting(workspaceRoot: vscode.Uri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: vscode.Uri): Promise<readonly OutlineCharacterBrief[]>;

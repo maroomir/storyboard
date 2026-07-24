@@ -4,7 +4,8 @@ import type { CreateCardUseCase } from '../../application/cards/createCardUseCas
 import { getTargetWorkspaceFolder } from '../../infrastructure/vscode/workspace';
 import { createEmptyBackground } from '../../domain/Background';
 import { createEmptyCharacter } from '../../domain/Character';
-import { cardIdPattern, type StoryboardCard } from '../../shared/card';
+import { cardIdPattern } from '@storyboard/story-format';
+import type { StoryboardCard } from '@storyboard/story-format';
 
 const createCharacterCommand = 'storyboard.character.create';
 const createBackgroundCommand = 'storyboard.background.create';

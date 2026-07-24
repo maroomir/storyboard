@@ -1,4 +1,5 @@
-import { flattenChapterPlan, type ChapterPlan } from '../shared/outline';
+import { flattenChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@storyboard/story-format';
 
 export interface ForeshadowingEntry {
   readonly item: string;

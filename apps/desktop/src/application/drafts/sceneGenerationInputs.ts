@@ -1,7 +1,12 @@
 import type * as vscode from 'vscode';
 
 import type { IProjectRepository, ISceneRepository } from '../ports/repositories';
-import { buildNarrativeContext, buildSceneContext } from '../../domain/sceneContext';
+import {
+  buildNarrativeContext,
+  buildSceneContext,
+  parseSceneFileName,
+  SceneParseError,
+} from '@storyboard/story-format';
 import {
   draftPath,
   getStoryboardProjectPaths,
@@ -10,10 +15,8 @@ import {
 import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
-import { SceneParseError } from '../../domain/files/scene';
 import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../infrastructure/persistence/sceneCacheWorkspace';
-import { parseSceneFileName } from '../../shared/scene';
 import { resolveSceneBreakJoiner } from '../pipelines/sceneGenerationPolicies';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 

@@ -1,5 +1,5 @@
 import type { Background } from '@/domain/Background';
-import { joinCardText } from '@/shared/card';
+import { joinCardText } from '@storyboard/story-format';
 import { voiceStyleLines, type StyleDirective } from '@/shared/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

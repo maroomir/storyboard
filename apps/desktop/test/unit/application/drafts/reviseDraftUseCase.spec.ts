@@ -22,7 +22,8 @@ vi.mock("@/infrastructure/ai/AIService", () => ({
   }
 }))
 vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
-vi.mock("@/domain/files/scene", () => ({
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   readSceneFile: async (): Promise<unknown> => ({
     stem: "01-scene",
     order: 1,
@@ -30,20 +31,11 @@ vi.mock("@/domain/files/scene", () => ({
     slug: "scene",
     frontmatter: {},
     body: "씬 의도"
-  })
-}))
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
-  readProjectJson: async (): Promise<unknown> => ({
-    setting: { styleConstraints: [], qualityCriteria: [] }
-  })
-}))
-vi.mock("@/domain/files/draft", () => ({
+  }),
   parseDraft: (): unknown => ({ format: "novel", body: "원본 본문" }),
   createDraft: (input: unknown): unknown => input,
   readDraftFile: async (): Promise<string> => "raw",
-  writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args)
-}))
-vi.mock("@/domain/sceneContext", () => ({
+  writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args),
   buildSceneContext: async (): Promise<unknown> => ({
     scene: { body: "씬 의도" },
     characters: [
@@ -59,7 +51,11 @@ vi.mock("@/domain/sceneContext", () => ({
   buildNarrativeContext: async (): Promise<unknown> => ({ bibleFacts: [] }),
   formatBibleFactLines: (): unknown[] => []
 }))
-
+vi.mock("@/infrastructure/persistence/projectJson", () => ({
+  readProjectJson: async (): Promise<unknown> => ({
+    setting: { styleConstraints: [], qualityCriteria: [] }
+  })
+}))
 import {
   ReviseDraftUseCase,
   type ReviseDraftRequest,

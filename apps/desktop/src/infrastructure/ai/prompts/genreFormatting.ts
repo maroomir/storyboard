@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@/shared/project';
+import type { ProjectFormat } from '@storyboard/story-format';
 import { narrativeStyleLines, type StyleDirective } from '@/shared/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

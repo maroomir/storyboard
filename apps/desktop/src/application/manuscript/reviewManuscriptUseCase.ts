@@ -4,7 +4,8 @@ import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { assembleManuscript } from '../../domain/manuscriptAssembly';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
-import { flattenChapterPlan, type ChapterPlan } from '../../shared/outline';
+import { flattenChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export type ManuscriptReviewSource = {

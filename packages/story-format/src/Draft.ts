@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '../shared/project';
+import type { ProjectFormat } from './project';
 
 export interface Draft {
   readonly sceneStem: string;

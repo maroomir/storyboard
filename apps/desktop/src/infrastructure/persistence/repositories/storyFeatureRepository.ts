@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 
 import * as vscode from 'vscode';
 
-import { parseCard } from '@/domain/files/card';
-import { parseScene } from '@/domain/files/scene';
+import { parseCard, parseScene } from '@storyboard/story-format';
+import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
@@ -15,9 +15,6 @@ import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
 } from '@/infrastructure/vscode/pathConventions';
-import type { StoryboardCard } from '@/shared/card';
-import type { SceneFile } from '@/shared/scene';
-
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public async load(workspaceRoot: vscode.Uri): Promise<StoryFeatureSource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);

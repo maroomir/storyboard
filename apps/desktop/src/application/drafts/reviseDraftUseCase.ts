@@ -5,16 +5,20 @@ import { joinUri, type StoryboardProjectPaths } from '../../infrastructure/vscod
 import {
   buildNarrativeContext,
   buildSceneContext,
+  createDraft,
   formatBibleFactLines,
-} from '../../domain/sceneContext';
+  parseDraft,
+  readDraftFile,
+  readSceneFile,
+  writeDraftFile,
+} from '@storyboard/story-format';
+import type { ProjectSetting } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '../../domain/files/draft';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { readSceneFile } from '../../domain/files/scene';
 import { StoryboardAIService } from '../../infrastructure/ai/AIService';
 import { formatAugmentCards } from '../../infrastructure/ai/prompts/draftAugment';
 import type { UsageAttribution } from '../../shared/aiTypes';
@@ -33,7 +37,6 @@ import {
   buildScopedInstructions,
   routeReviewIssues,
 } from '../../shared/reviewRouting';
-import type { ProjectSetting } from '../../shared/project';
 import { buildStyleDirective } from '../../shared/styleDirective';
 import {
   type DraftCandidateRejectionReason,

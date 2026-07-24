@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@/shared/project';
+import type { ProjectFormat } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface DraftRevisionInput {

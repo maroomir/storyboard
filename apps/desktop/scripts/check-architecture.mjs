@@ -20,6 +20,10 @@ const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'commands');
 const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'providers');
 const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIService.ts');
 
+// Shared workspace package: every app consumes it, so it must stay runtime-agnostic and must never
+// import back into an app.
+const STORY_FORMAT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-format', 'src');
+
 // Compat boundary is now closed: no application file may import vscode at runtime.
 const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([]);
 
@@ -61,6 +65,7 @@ for (const cycle of findCycles(graph)) {
 }
 
 validateExtensionEntry();
+const storyFormatFiles = validateStoryFormatPurity();
 
 if (failures.length > 0) {
   for (const failure of failures) {
@@ -68,7 +73,10 @@ if (failures.length > 0) {
   }
   process.exitCode = 1;
 } else {
-  console.log(`Architecture check passed: ${sourceFiles.length} source files, no import cycles.`);
+  console.log(
+    `Architecture check passed: ${sourceFiles.length} extension files, ` +
+      `${storyFormatFiles} story-format files, no import cycles.`,
+  );
 }
 
 function collectSourceFiles(directoryPath) {
@@ -173,6 +181,43 @@ function validateExtensionEntry() {
       failures.push(`extension.ts imports outside bootstrap: ${importPath}`);
     }
   }
+}
+
+function validateStoryFormatPurity() {
+  if (!fs.existsSync(STORY_FORMAT_ROOT)) {
+    failures.push(`story-format package missing at ${STORY_FORMAT_ROOT}`);
+    return 0;
+  }
+
+  const packageFiles = collectSourceFiles(STORY_FORMAT_ROOT);
+
+  for (const filePath of packageFiles) {
+    const sourceFile = ts.createSourceFile(
+      filePath,
+      fs.readFileSync(filePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+
+    for (const statement of sourceFile.statements) {
+      const importPath = getImportPath(statement);
+      if (!importPath) {
+        continue;
+      }
+
+      const relative = path.relative(STORY_FORMAT_ROOT, filePath).replaceAll(path.sep, '/');
+
+      if (importPath === 'vscode') {
+        failures.push(`story-format imports vscode: ${relative}`);
+      }
+
+      if (importPath.startsWith('@/') || importPath.startsWith('@webview/')) {
+        failures.push(`story-format imports an app module: ${relative} -> ${importPath}`);
+      }
+    }
+  }
+
+  return packageFiles.length;
 }
 
 function validateSharedBoundary(filePath, target) {

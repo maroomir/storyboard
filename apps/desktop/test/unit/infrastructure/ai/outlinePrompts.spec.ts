@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { ChapterPlanPrompt } from "@/infrastructure/ai/prompts/chapterPlan"
 import { OutlineSynopsisPrompt } from "@/infrastructure/ai/prompts/outlineSynopsis"
-import type { OutlineBrief, OutlineCharacterBrief, OutlineSynopsis } from "@/shared/outline"
+import type { OutlineBrief, OutlineCharacterBrief, OutlineSynopsis } from '@storyboard/story-format';
 
 const brief: OutlineBrief = {
   projectName: "MagicBoy",

@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { ProjectFormat } from '../../shared/project';
+import type { ProjectFormat } from '@storyboard/story-format';
 import {
   resolveMinimumDraftLength,
   validateDraftCandidate,

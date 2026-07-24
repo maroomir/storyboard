@@ -2,13 +2,12 @@ import * as vscode from 'vscode';
 
 import type { IBibleCandidateRepository } from '../../../application/project/promoteBibleCandidatesUseCase';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
-import { readBibleFile, writeBibleFile } from '../../../domain/files/bible';
+import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
+import type { StoryBible } from '@storyboard/story-format';
 import {
   readBibleCandidateFile,
   type BibleCandidateRecord,
 } from '../../../domain/files/bibleCandidates';
-import { createEmptyBible, type StoryBible } from '../../../shared/bible';
-
 const VSCODE_FILE_SYSTEM = {
   readFile: (uri: unknown): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri: unknown, content: Uint8Array): Thenable<void> =>

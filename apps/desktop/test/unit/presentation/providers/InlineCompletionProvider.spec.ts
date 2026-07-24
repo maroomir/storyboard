@@ -8,7 +8,7 @@ import {
   shouldRunInlineCompletion,
   trimInlineCompletionPrefix
 } from "@/presentation/providers/InlineCompletionProvider"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 
 describe("InlineCompletionProvider helpers", () => {
   it("trims prefix to the most recent 1200 characters", () => {

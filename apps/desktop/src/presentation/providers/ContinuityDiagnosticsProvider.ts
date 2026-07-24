@@ -10,7 +10,9 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-} from '../../domain/sceneContext';
+  parseDraft,
+  readSceneFile,
+} from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
   sceneContextPaths,
@@ -18,8 +20,6 @@ import {
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { parseDraft } from '../../domain/files/draft';
-import { readSceneFile } from '../../domain/files/scene';
 import type { ContinuityIssue } from '../../infrastructure/ai/AIService';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';

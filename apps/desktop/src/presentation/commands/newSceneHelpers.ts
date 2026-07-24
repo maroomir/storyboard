@@ -1,4 +1,4 @@
-import { parseSceneFileName, sceneFileNamePattern } from '../../shared/scene';
+import { parseSceneFileName, sceneFileNamePattern } from '@storyboard/story-format';
 
 const sceneSlugInputPattern = /^[a-z0-9][a-z0-9-]*$/;
 

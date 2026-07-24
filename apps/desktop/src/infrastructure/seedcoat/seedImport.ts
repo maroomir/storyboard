@@ -1,12 +1,10 @@
-import { serializeCard } from '@/domain/files/card';
+import { parseSceneStem, serializeCard } from '@storyboard/story-format';
 import { serializeProjectJson } from '@/infrastructure/persistence/projectJson';
 import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 import {
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName,
 } from '@/infrastructure/vscode/pathConventions';
-import { parseSceneStem } from '@/shared/scene';
-
 export interface SeedFileWriteEntry {
   readonly relativePath: string;
   readonly content: string;

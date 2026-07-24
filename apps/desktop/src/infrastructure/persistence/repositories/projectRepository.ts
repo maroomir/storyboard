@@ -1,7 +1,7 @@
 import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { IProjectRepository } from '../../../application/ports/repositories';
 import { parseProjectJson } from '../projectJson';
-import type { StoryboardProject } from '../../../shared/project';
+import type { StoryboardProject } from '@storyboard/story-format';
 
 export class ProjectRepository implements IProjectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

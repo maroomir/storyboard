@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cardSchema, cardTypes, characterRoles } from '../card';
+import { cardSchema, cardTypes, characterRoles } from '@storyboard/story-format';
 import { cardCollectProposalSchema } from '../cardCollect';
 import { uriStringSchema } from './atoms';
 

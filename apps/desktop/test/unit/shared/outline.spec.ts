@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  coerceChapterPlan,
-  coerceOutlineSynopsis,
-  outlineVersion,
-  toOutlineBrief,
-  type OutlineBrief
-} from "@/shared/outline"
-import type { StoryboardProject } from "@/shared/project"
-
+import { coerceChapterPlan, coerceOutlineSynopsis, outlineVersion, toOutlineBrief } from '@storyboard/story-format';
+import type { OutlineBrief, StoryboardProject } from '@storyboard/story-format';
 const brief: OutlineBrief = {
   projectName: "MagicBoy",
   format: "novel",

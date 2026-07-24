@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCard } from "@/domain/files/card"
+import { parseCard } from '@storyboard/story-format';
 import { mapCardErrorToSpans } from "@/presentation/providers/CardDiagnosticsProvider"
 
 function errorFrom(rawCard: string): unknown {

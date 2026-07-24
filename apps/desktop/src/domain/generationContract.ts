@@ -1,4 +1,5 @@
-import { contractFieldKeys, type ContractFieldKey, type ProjectSetting } from '../shared/project';
+import { contractFieldKeys } from '@storyboard/story-format';
+import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-format';
 
 export const minReasonableTargetWordCount = 1_000;
 export const maxReasonableTargetWordCount = 2_000_000;

@@ -7,7 +7,7 @@ import {
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { createEmptyBackground } from '../../domain/Background';
 import { createEmptyCharacter } from '../../domain/Character';
-import type { StoryboardCard } from '../../shared/card';
+import type { StoryboardCard } from '@storyboard/story-format';
 import type { RecommendedCard } from '../../infrastructure/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '../../infrastructure/ai/prompts/cardRecommendation';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';

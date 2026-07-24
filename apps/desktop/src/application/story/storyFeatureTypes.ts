@@ -1,9 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { StoryboardCard } from '@/shared/card';
-import type { SceneFile } from '@/shared/scene';
-import type { StoryboardProject } from '@/shared/project';
-
+import type { SceneFile, StoryboardCard, StoryboardProject } from '@storyboard/story-format';
 export interface StoryFileSnapshot {
   readonly uri: vscode.Uri;
   readonly sha256: string;

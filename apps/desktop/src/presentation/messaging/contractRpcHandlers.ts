@@ -1,6 +1,7 @@
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@/shared/messaging';
-import { contractFieldKeys, type ProjectSetting, type StoryboardProject } from '@/shared/project';
+import { contractFieldKeys } from '@storyboard/story-format';
+import type { ProjectSetting, StoryboardProject } from '@storyboard/story-format';
 import { validateGenerationContract } from '@/domain/generationContract';
 import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';

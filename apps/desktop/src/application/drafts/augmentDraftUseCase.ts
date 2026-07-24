@@ -12,8 +12,10 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-  type SceneContext,
-} from '../../domain/sceneContext';
+  readSceneFile,
+  SceneParseError,
+} from '@storyboard/story-format';
+import type { BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-format';
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,
@@ -22,14 +24,10 @@ import {
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { readSceneFile, SceneParseError } from '../../domain/files/scene';
 import {
   formatAugmentCards,
   type DraftAugmentScope,
 } from '../../infrastructure/ai/prompts/draftAugment';
-import type { BibleFact } from '../../shared/bible';
-import type { ProjectFormat } from '../../shared/project';
-
 type AugmentContextResult =
   | {
       readonly bibleFacts: readonly BibleFact[];

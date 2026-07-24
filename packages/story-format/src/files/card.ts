@@ -1,12 +1,7 @@
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
-import {
-  cardSchema,
-  type BackgroundCard,
-  type CharacterCard,
-  type StoryboardCard,
-} from '../../shared/card';
+import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '../card';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 

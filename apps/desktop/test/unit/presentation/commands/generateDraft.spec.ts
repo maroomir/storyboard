@@ -1,20 +1,19 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { SceneParseError } from "@/domain/files/scene"
+import { SceneParseError } from '@storyboard/story-format';
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const readSceneFileMock = vi.fn()
 const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 
-vi.mock("@/domain/files/scene", async () => {
-  const actual = await vi.importActual<typeof import("@/domain/files/scene")>("@/domain/files/scene")
-  return {
-    ...actual,
-    readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args)
-  }
-})
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+  readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
+  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
+  buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
+}))
 vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,
   uriExists: async (): Promise<boolean> => false
@@ -22,11 +21,6 @@ vi.mock("@/infrastructure/vscode/workspace", () => ({
 vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-vi.mock("@/domain/sceneContext", () => ({
-  buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
-}))
-
 import {
   GenerateDraftUseCase,
   type GenerateDraftResult,

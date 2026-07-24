@@ -5,11 +5,11 @@ import { buildSceneSeeds, type GeneratedSceneSeed } from '../../domain/sceneSeed
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import {
   ChapterPlanParseError,
+  parseSceneFileName,
   readChapterPlanFile,
-  type OutlineFileSystem,
-} from '../../domain/files/outline';
+} from '@storyboard/story-format';
+import type { OutlineFileSystem } from '@storyboard/story-format';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { parseSceneFileName } from '../../shared/scene';
 import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';

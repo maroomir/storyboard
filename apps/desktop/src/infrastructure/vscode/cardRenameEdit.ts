@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
 
-import { CardParseError, parseCard, serializeCard } from '../../domain/files/card';
-import { cardIdPattern } from '../../shared/card';
-import { rewriteCardIdReferences, setCardId } from '../../domain/cardReferenceRewriter';
+import {
+  cardIdPattern,
+  CardParseError,
+  parseCard,
+  rewriteCardIdReferences,
+  serializeCard,
+  setCardId,
+} from '@storyboard/story-format';
 import {
   characterProfilePath,
   getStoryboardProjectPaths,

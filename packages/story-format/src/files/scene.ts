@@ -7,7 +7,7 @@ import {
   type SceneFile,
   type SceneFileNameParts,
   type SceneFrontmatter,
-} from '../../shared/scene';
+} from '../scene';
 
 export type SceneParseErrorCode =
   | 'invalid-scene-file-name'

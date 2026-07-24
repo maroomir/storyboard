@@ -3,9 +3,8 @@ import * as vscode from 'vscode';
 import type { StoryboardLogger } from '../vscode/logger';
 import type { ManuscriptDraftEntry } from '../../domain/manuscriptAssembly';
 import type { StoryboardProjectPaths } from '../vscode/pathConventions';
-import { parseDraft, readDraftFile, type DraftFileSystem } from '../../domain/files/draft';
-import { parseSceneStem } from '../../shared/scene';
-
+import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-format';
+import type { DraftFileSystem } from '@storyboard/story-format';
 export async function collectDraftsByOrder(
   paths: StoryboardProjectPaths,
   fileSystem: DraftFileSystem,

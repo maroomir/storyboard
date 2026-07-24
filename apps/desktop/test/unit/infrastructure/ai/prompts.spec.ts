@@ -10,7 +10,7 @@ import { PersonaDialoguePrompt } from "@/infrastructure/ai/prompts/personaDialog
 import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGeneration"
 import { SituationExtractionPrompt } from "@/infrastructure/ai/prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "@/infrastructure/ai/prompts/traitsExtraction"
-import type { ProjectFormat } from "@/shared/project"
+import type { ProjectFormat } from '@storyboard/story-format';
 
 describe("AI prompts", () => {
   const character: Character = {

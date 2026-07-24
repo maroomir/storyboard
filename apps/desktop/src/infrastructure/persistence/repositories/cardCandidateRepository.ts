@@ -8,12 +8,12 @@ import {
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
 } from '../../../domain/cardCandidatePromotion';
-import { readCardFile, writeCardFile } from '../../../domain/files/card';
+import { readCardFile, writeCardFile } from '@storyboard/story-format';
+import type { CharacterCard } from '@storyboard/story-format';
 import {
   readCardCandidateFile,
   writeCardCandidateFile,
 } from '../../../domain/files/cardCandidates';
-import type { CharacterCard } from '../../../shared/card';
 import type { CardCandidateRecord } from '../../../shared/cardCandidates';
 
 const VSCODE_FILE_SYSTEM = {

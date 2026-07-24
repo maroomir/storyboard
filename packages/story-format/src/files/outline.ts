@@ -6,7 +6,7 @@ import {
   pointOfViewLabels,
   type ChapterPlan,
   type OutlineSynopsis,
-} from '../../shared/outline';
+} from '../outline';
 
 export type ChapterPlanParseErrorCode = 'invalid-yaml' | 'invalid-chapter-plan-schema';
 

@@ -13,8 +13,8 @@ import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPl
 import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
-import { flattenChapterPlan, toOutlineBrief, type ChapterPlan } from '../../shared/outline';
-import type { StoryboardProject } from '../../shared/project';
+import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
+import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

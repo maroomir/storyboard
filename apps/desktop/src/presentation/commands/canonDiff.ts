@@ -7,15 +7,14 @@ import {
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
-import { readBibleFile, type BibleFileSystem } from '../../domain/files/bible';
+import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
+import type { BibleFileSystem } from '@storyboard/story-format';
 import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
 } from '../../domain/files/bibleCandidates';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { createEmptyBible } from '../../shared/bible';
-
 const canonDiffCommand = 'storyboard.bible.canonDiff';
 
 const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {

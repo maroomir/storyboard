@@ -11,7 +11,7 @@ import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGene
 import { SituationExtractionPrompt } from "@/infrastructure/ai/prompts/situationExtraction"
 import { TraitsExtractionPrompt } from "@/infrastructure/ai/prompts/traitsExtraction"
 import type { PromptArtifact, PromptVariantId } from "@/infrastructure/ai/prompts/types"
-import type { ProjectFormat } from "@/shared/project"
+import type { ProjectFormat } from '@storyboard/story-format';
 
 interface PromptLengthSample {
   readonly name: string

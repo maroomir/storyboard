@@ -1,5 +1,5 @@
-import { isBackgroundCard, type BackgroundCard, type CharacterCard } from '../shared/card';
-import type { SceneFile } from '../shared/scene';
+import { isBackgroundCard, type BackgroundCard, type CharacterCard } from './card';
+import type { SceneFile } from './scene';
 import { readCardFile } from './files/card';
 import { readBibleFile } from './files/bible';
 import {
@@ -8,7 +8,7 @@ import {
   type BibleFact,
   type BibleFactSubject,
   type StoryBible,
-} from '../shared/bible';
+} from './bible';
 import { isIgnoredSampleCardFileName } from './sampleCard';
 import { detectCharactersInText } from './characterDetector';
 

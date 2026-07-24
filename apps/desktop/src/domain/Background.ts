@@ -1,4 +1,4 @@
-import type { BackgroundCard, LocationBackgroundCard } from '../shared/card';
+import type { BackgroundCard, LocationBackgroundCard } from '@storyboard/story-format';
 
 export type Background = BackgroundCard;
 

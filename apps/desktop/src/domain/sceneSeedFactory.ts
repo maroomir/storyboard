@@ -1,11 +1,7 @@
 import yaml from 'js-yaml';
 
-import {
-  flattenChapterPlan,
-  type ChapterPlan,
-  type FlatChapterScene,
-  type ScenePlan,
-} from '../shared/outline';
+import { flattenChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan, FlatChapterScene, ScenePlan } from '@storyboard/story-format';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;

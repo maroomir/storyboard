@@ -5,7 +5,7 @@ import {
   parseProjectJson,
   serializeProjectJson
 } from "@/infrastructure/persistence/projectJson"
-import { type StoryboardProject } from "@/shared/project"
+import type { StoryboardProject } from '@storyboard/story-format';
 
 function baseProject(): StoryboardProject {
   return createDefaultProjectJson({ name: "MagicBoy" })

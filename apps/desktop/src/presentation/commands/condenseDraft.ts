@@ -5,14 +5,16 @@ import type {
   CondenseDraftUseCase,
 } from '../../application/drafts/condenseDraftUseCase';
 import { resolveSceneTargetLength } from '../../application/drafts/draftCandidateValidation';
-import { createDraft, parseDraft, serializeDraft } from '../../domain/files/draft';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import {
   buildNarrativeContext,
   buildSceneContext,
+  createDraft,
   formatBibleFactLines,
-} from '../../domain/sceneContext';
-import { readSceneFile } from '../../domain/files/scene';
+  parseDraft,
+  readSceneFile,
+  serializeDraft,
+} from '@storyboard/story-format';
+import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { formatAugmentCards } from '../../infrastructure/ai/prompts/draftAugment';
 import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';

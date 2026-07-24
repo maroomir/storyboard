@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { bibleFactSchema, type BibleFact } from '../../shared/bible';
+import { bibleFactSchema } from '@storyboard/story-format';
+import type { BibleFact } from '@storyboard/story-format';
 
 export interface BibleCandidateRecord {
   readonly sceneStem: string;

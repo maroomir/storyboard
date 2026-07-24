@@ -1,4 +1,4 @@
-import type { CharacterCard } from '../shared/card';
+import type { CharacterCard } from '@storyboard/story-format';
 import type { CardCandidateRecord } from '../shared/cardCandidates';
 
 export type CardCandidateItem =

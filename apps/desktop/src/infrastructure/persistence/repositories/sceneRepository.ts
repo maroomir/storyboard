@@ -1,8 +1,7 @@
 import type { IFileSystem } from '../../../application/ports/fileSystem';
 import type { ISceneRepository } from '../../../application/ports/repositories';
-import { readSceneFile } from '../../../domain/files/scene';
-import type { SceneFile } from '../../../shared/scene';
-
+import { readSceneFile } from '@storyboard/story-format';
+import type { SceneFile } from '@storyboard/story-format';
 export class SceneRepository implements ISceneRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

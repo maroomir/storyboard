@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { cardSchema, isCardType } from "@/shared/card"
+import { cardSchema, isCardType } from '@storyboard/story-format';
 
 describe("card schema", () => {
   it("parses a minimal character card", () => {

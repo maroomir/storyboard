@@ -11,7 +11,7 @@ import {
   collectForeshadowing,
   countForeshadowing,
 } from '../../domain/foreshadowingTracker';
-import type { ChapterPlan } from '../../shared/outline';
+import type { ChapterPlan } from '@storyboard/story-format';
 
 export type ManuscriptAssemblySource = {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;

@@ -1,6 +1,6 @@
 import type { Background } from '../../domain/Background';
 import type { Character } from '../../domain/Character';
-import type { ProjectFormat } from '../../shared/project';
+import type { ProjectFormat } from '@storyboard/story-format';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,

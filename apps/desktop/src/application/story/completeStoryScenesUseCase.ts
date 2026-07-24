@@ -2,8 +2,8 @@ import yaml from 'js-yaml';
 import { z } from 'zod';
 
 import type { AiGateway } from '@/application/ai/aiGateway';
-import type { StoryboardCard } from '@/shared/card';
-import { sceneFileNamePattern, type SceneFile } from '@/shared/scene';
+import { sceneFileNamePattern } from '@storyboard/story-format';
+import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@/shared/aiResponseParser';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
