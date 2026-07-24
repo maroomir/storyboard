@@ -8,7 +8,7 @@ import {
   ensureCardCacheDirectory,
 } from '../../infrastructure/persistence/cardCacheWorkspace';
 import type { StoryboardAIService } from '@storyboard/story-ai';
-import { SceneGenerationPipeline } from '../pipelines/sceneGenerationPipeline';
+import { SceneGenerationPipeline } from '@storyboard/story-pipeline';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 

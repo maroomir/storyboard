@@ -17,7 +17,7 @@ import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
 import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../infrastructure/persistence/sceneCacheWorkspace';
-import { resolveSceneBreakJoiner } from '../pipelines/sceneGenerationPolicies';
+import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 
 export interface SceneGenerationInputs {

@@ -16,7 +16,7 @@ import type { AiProviderId, AiTaskName, StoryboardAIService } from '@storyboard/
 import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
-} from '../pipelines/sceneGenerationPipeline';
+} from '@storyboard/story-pipeline';
 import type {
   GenerateDraftRequest,
   GenerateDraftResult,

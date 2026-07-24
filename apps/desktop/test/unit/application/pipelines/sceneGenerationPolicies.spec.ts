@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { mergeSituationsToSourceBlockLimit } from '@/application/pipelines/sceneGenerationPolicies';
+import { mergeSituationsToSourceBlockLimit } from '@storyboard/story-pipeline';
 
 describe('mergeSituationsToSourceBlockLimit', () => {
   it('merges the shortest adjacent situations until it matches source block count', () => {

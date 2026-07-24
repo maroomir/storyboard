@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { SceneGenerationPipelineStage } from '../pipelines/sceneGenerationPipeline';
+import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
 

@@ -5,13 +5,13 @@ import {
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
-} from "@/application/pipelines/sceneGenerationPipeline"
+} from '@storyboard/story-pipeline'
 import {
   chunkDialoguePiecesByBudget,
   dedupeSituations,
   looksLikeFormatMetaLeak,
   resolveSceneBreakJoiner
-} from "@/application/pipelines/sceneGenerationPolicies"
+} from '@storyboard/story-pipeline'
 const eliaCard: CharacterCard = {
   type: "character",
   id: "elia",

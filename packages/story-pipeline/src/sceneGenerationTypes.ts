@@ -1,5 +1,5 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
-import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../ports/memoryStore';
+import type { IBackgroundMemoryStore, IPersonaMemoryStore } from './memoryStore';
 import type {
   AiProviderId,
   SituationWithCharacters,

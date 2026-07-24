@@ -593,6 +593,7 @@
     "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.6.0.tgz",
     "@storyboard/story-ai": "*",
     "@storyboard/story-format": "*",
+    "@storyboard/story-pipeline": "*",
     "axios": "^1.16.0",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",
