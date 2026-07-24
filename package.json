@@ -12,9 +12,11 @@
   "scripts": {
     "build": "npm run build --workspace storyboard",
     "compile": "npm run compile --workspace storyboard",
-    "lint": "npm run lint --workspace storyboard",
-    "test": "npm run test --workspace storyboard",
-    "package:vsix": "npm run package:vsix --workspace storyboard"
+    "lint": "npm run lint --workspace storyboard && npm run lint --workspace storygram",
+    "test": "npm run test --workspace storyboard && npm run test --workspace storygram",
+    "package:vsix": "npm run package:vsix --workspace storyboard",
+    "bot:build": "npm run build --workspace storygram",
+    "bot:start": "npm run start --workspace storygram"
   },
   "devDependencies": {
     "prettier": "^3.3.3"

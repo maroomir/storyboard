@@ -18,7 +18,7 @@ export class DraftParseError extends Error {
   public constructor(
     public readonly code: DraftParseErrorCode,
     message: string,
-    public readonly cause?: unknown,
+    public override readonly cause?: unknown,
   ) {
     super(message);
     this.name = 'DraftParseError';

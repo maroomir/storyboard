@@ -22,7 +22,7 @@ export class SceneParseError extends Error {
   public constructor(
     public readonly code: SceneParseErrorCode,
     message: string,
-    public readonly cause?: unknown,
+    public override readonly cause?: unknown,
   ) {
     super(message);
     this.name = 'SceneParseError';

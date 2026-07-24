@@ -19,7 +19,7 @@ export class ChapterPlanParseError extends Error {
   public constructor(
     public readonly code: ChapterPlanParseErrorCode,
     message: string,
-    public readonly cause?: unknown,
+    public override readonly cause?: unknown,
   ) {
     super(message);
     this.name = 'ChapterPlanParseError';

@@ -14,7 +14,7 @@ export class CardParseError extends Error {
   public constructor(
     public readonly code: CardParseErrorCode,
     message: string,
-    public readonly cause?: unknown,
+    public override readonly cause?: unknown,
   ) {
     super(message);
     this.name = 'CardParseError';
