@@ -3,7 +3,10 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "jsx": "react-jsx",
     "strict": true,
     "noImplicitReturns": true,
@@ -13,12 +16,26 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@webview/*": ["webview-ui/src/*"],
-      "@storyboard/story-format": ["../../packages/story-format/src/index.ts"]
+      "@/*": [
+        "src/*"
+      ],
+      "@webview/*": [
+        "webview-ui/src/*"
+      ],
+      "@storyboard/story-format": [
+        "../../packages/story-format/src/index.ts"
+      ],
+      "@storyboard/story-ai": [
+        "../../packages/story-ai/src/index.ts"
+      ]
     },
     "noEmit": true,
-    "types": ["node", "vscode"]
+    "types": [
+      "node",
+      "vscode"
+    ]
   },
-  "include": ["src/**/*.ts"]
+  "include": [
+    "src/**/*.ts"
+  ]
 }

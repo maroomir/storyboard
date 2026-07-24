@@ -17,7 +17,7 @@ import {
   formatSceneOrderPrefix,
   validateSceneSlugInput,
 } from './newSceneHelpers';
-import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
+import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 
 const createSceneCommand = 'storyboard.scene.create';
 const openSceneDraftCommand = 'storyboard.scene.openDraft';

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { DraftCritiquePrompt } from "@/infrastructure/ai/prompts/draftCritique"
-import { DraftRevisionPrompt } from "@/infrastructure/ai/prompts/draftRevision"
-
+import { DraftCritiquePrompt, DraftRevisionPrompt } from '@storyboard/story-ai';
 describe("DraftCritiquePrompt", () => {
   const input = {
     body: "엘리아가 교실로 들어왔다.",

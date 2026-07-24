@@ -7,7 +7,7 @@ import {
   type RecommendationSource,
   type RecommendedCard,
 } from '../../infrastructure/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../../infrastructure/ai/prompts/cardRecommendation';
+import type { RecommendationCategory } from '@storyboard/story-ai';
 
 export interface ICardRecommendationRepository {
   load(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { ChapterSummaryPrompt } from "@/infrastructure/ai/prompts/chapterSummary"
+import { ChapterSummaryPrompt } from '@storyboard/story-ai';
 
 const input = { chapterTitle: "1장", body: "엘리아가 학교에 도착했다." }
 

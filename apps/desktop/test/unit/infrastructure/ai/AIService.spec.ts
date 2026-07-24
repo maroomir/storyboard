@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { StoryboardAIService } from "@/infrastructure/ai/AIService"
-import { createAiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-import { type AiMessage } from "@/shared/aiTypes"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
-
+import { ConfigBridge, createAiProviderRegistry, SecretStore, StoryboardAIService } from '@storyboard/story-ai';
+import type { AiMessage, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 describe("StoryboardAIService", () => {
   it("extracts situations from JSON-shaped model output", async () => {
     const service = createAIService({

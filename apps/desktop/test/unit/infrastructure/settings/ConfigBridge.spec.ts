@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  ConfigBridge,
-  type StoryboardConfigurationChangeEventLike,
-  type StoryboardConfigurationLike
-} from "@/infrastructure/settings/ConfigBridge"
+import { ConfigBridge } from '@storyboard/story-ai';
+import type { StoryboardConfigurationChangeEventLike, StoryboardConfigurationLike } from '@storyboard/story-ai';
 
 class FakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: ReadonlyMap<string, unknown>) {}

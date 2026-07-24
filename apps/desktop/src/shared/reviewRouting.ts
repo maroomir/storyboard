@@ -1,4 +1,4 @@
-import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from './draftReview';
+import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from '@storyboard/story-ai';
 
 export const reviewAgents = ['canon', 'persona', 'narrator', 'setting'] as const;
 

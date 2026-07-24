@@ -2,7 +2,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { emptyUsageSummary } from '@/domain/files/usageLedger';
 import { type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { type StoryboardResponsePayload } from '@/shared/messaging';
-import { AiProviderRegistry } from '@/infrastructure/ai/providerRegistry';
+import { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 
 export interface AiRpcHandlersOptions {

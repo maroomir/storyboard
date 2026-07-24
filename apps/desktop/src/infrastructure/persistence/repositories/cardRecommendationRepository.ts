@@ -11,7 +11,7 @@ import {
 import { parseCard, parseDraft, readDraftFile, readSceneFile } from '@storyboard/story-format';
 import type { DraftFileSystem, SceneFileSystem } from '@storyboard/story-format';
 import type { RecommendationSource } from '../../../infrastructure/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../../../infrastructure/ai/prompts/cardRecommendation';
+import type { RecommendationCategory } from '@storyboard/story-ai';
 
 const SCENE_FILE_SYSTEM: SceneFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

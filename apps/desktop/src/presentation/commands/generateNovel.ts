@@ -10,7 +10,7 @@ import { validateGenerationContract } from '../../domain/generationContract';
 import { isResumable } from '../../domain/novelRunPlan';
 import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import { type NovelRunMode, type NovelRunState } from '../../domain/files/novelRunState';
 import type { ContractFieldKey } from '@storyboard/story-format';
 

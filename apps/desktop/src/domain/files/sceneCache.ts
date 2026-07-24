@@ -8,12 +8,8 @@ import type {
   CharacterCard,
   ProjectFormat,
 } from '@storyboard/story-format';
-import {
-  aiProviderIds,
-  aiTaskCatalog,
-  type AiProviderId,
-  type AiTaskName,
-} from '../../shared/aiTypes';
+import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
+import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
 
 export interface SceneCacheSituation {
   readonly summary: string;

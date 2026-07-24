@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { AiGateway } from '@/application/ai/aiGateway';
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
 import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
-import { parseJsonObject } from '@/shared/aiResponseParser';
+import { parseJsonObject } from '@storyboard/story-ai';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

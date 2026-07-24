@@ -1,18 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import type { Character } from "@/domain/Character"
-import { GenreFormattingPrompt } from "@/infrastructure/ai/prompts/genreFormatting"
-import { PersonaDialoguePrompt } from "@/infrastructure/ai/prompts/personaDialogue"
-import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGeneration"
-import type { Background } from "@/domain/Background"
+import { buildStyleDirective, GenreFormattingPrompt, narrativeStyleLines, PersonaDialoguePrompt, PersonaGenerationPrompt, voiceStyleLines } from '@storyboard/story-ai';
+import type { StyleDirective } from '@storyboard/story-ai';
+import type { Background, Character } from '@storyboard/story-format';
 import type { ProjectSetting } from '@storyboard/story-format';
-import {
-  buildStyleDirective,
-  narrativeStyleLines,
-  voiceStyleLines,
-  type StyleDirective
-} from "@/shared/styleDirective"
-
 function settingOf(overrides: Partial<ProjectSetting>): ProjectSetting {
   return { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], ...overrides }
 }

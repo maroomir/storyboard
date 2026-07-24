@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { MockAiProvider } from "@/infrastructure/ai/providers/MockAiProvider"
+import { MockAiProvider } from '@storyboard/story-ai';
 
 describe("MockAiProvider", () => {
   it("always reports a successful connection", async () => {

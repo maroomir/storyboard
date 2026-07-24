@@ -1,10 +1,9 @@
-import { scoreCritique } from '../shared/draftReview';
+import { scoreCritique } from '@storyboard/story-ai';
 import type {
   ContinuityIssueLike,
   CritiqueCategory,
   DraftCritiqueIssue,
-} from '../shared/draftReview';
-
+} from '@storyboard/story-ai';
 export interface ManuscriptReviewInput {
   readonly projectName: string;
   readonly sceneCount: number;

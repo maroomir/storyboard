@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "@/infrastructure/ai/cost"
-import { AiProviderError } from "@/shared/aiProviderError"
-import { GoogleProvider, type GoogleClientLike } from "@/infrastructure/ai/providers/GoogleProvider"
-
+import { AiProviderError, computeCostUsd, GoogleProvider } from '@storyboard/story-ai';
+import type { GoogleClientLike } from '@storyboard/story-ai';
 describe("GoogleProvider", () => {
   it("requires an API key", () => {
     expect(() => new GoogleProvider({ apiKey: undefined, model: "gemini-2.5-flash" })).toThrow(

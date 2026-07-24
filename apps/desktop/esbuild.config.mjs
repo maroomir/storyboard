@@ -49,6 +49,7 @@ const extensionConfig = {
   target: "node18",
   alias: {
     "@storyboard/story-format": path.join(packageRoot, "../../packages/story-format/src/index.ts"),
+    "@storyboard/story-ai": path.join(packageRoot, "../../packages/story-ai/src/index.ts"),
     "@": path.join(packageRoot, "src")
   },
   // esbuild leaves import.meta.url as an empty object in a CJS bundle, which

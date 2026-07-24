@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 
 import { describe, expect, it } from "vitest"
 
-import { parseCharacterTraitSections } from "@/shared/aiResponseParser"
+import { parseCharacterTraitSections } from '@storyboard/story-ai';
 import {
   calculateSimilarity,
   reconcileCharacterTraits,

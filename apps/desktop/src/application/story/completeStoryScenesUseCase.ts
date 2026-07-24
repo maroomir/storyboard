@@ -4,7 +4,7 @@ import { z } from 'zod';
 import type { AiGateway } from '@/application/ai/aiGateway';
 import { sceneFileNamePattern } from '@storyboard/story-format';
 import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
-import { parseJsonObject } from '@/shared/aiResponseParser';
+import { parseJsonObject } from '@storyboard/story-ai';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 

@@ -25,7 +25,8 @@ vi.mock("@/domain/manuscriptAssembly", () => ({
 }))
 vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
 vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
-vi.mock("@/infrastructure/ai/AIService", () => ({
+vi.mock("@storyboard/story-ai", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
   StoryboardAIService: class {
     generateOutlineSynopsis = async (): Promise<unknown> => ({
       logline: "",

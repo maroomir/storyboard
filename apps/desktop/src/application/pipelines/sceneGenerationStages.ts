@@ -1,12 +1,12 @@
-import type { Background } from '../../domain/Background';
-import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
-import type { StyleDirective } from '../../shared/styleDirective';
 import type {
+  EntityRef,
   GenerateTextOptions,
   SituationWithCharacters,
   StoryboardAIService,
-} from '../../infrastructure/ai/AIService';
-import type { EntityRef } from '../../shared/aiTypes';
+  StyleDirective,
+} from '@storyboard/story-ai';
+import type { Background } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
 import {
   chunkDialoguePiecesByBudget,
   condensePreviousContext,

@@ -9,7 +9,7 @@ import { loadCharacterRoster } from '../../infrastructure/persistence/relationGr
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '../../shared/messaging';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 

@@ -1,12 +1,11 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '../ports/memoryStore';
-import type { StyleDirective } from '../../shared/styleDirective';
 import type {
+  AiProviderId,
   SituationWithCharacters,
   StoryboardAIService,
-} from '../../infrastructure/ai/AIService';
-import type { AiProviderId } from '../../shared/aiTypes';
-
+  StyleDirective,
+} from '@storyboard/story-ai';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
   | 'extractSituations'

@@ -5,7 +5,7 @@ import {
   normalizeRecommendationKey,
   type CardRecommendationAiService
 } from "@/infrastructure/ai/cardRecommendationBuilder"
-import type { RecommendedEntity } from "@/infrastructure/ai/prompts/cardRecommendation"
+import type { RecommendedEntity } from '@storyboard/story-ai';
 
 function aiServiceFor(responses: Record<string, readonly RecommendedEntity[]>): CardRecommendationAiService {
   return {

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  BackgroundFactExtractionPrompt,
-  coerceBackgroundFactExtraction
-} from "@/infrastructure/ai/prompts/backgroundFactExtraction"
+import { BackgroundFactExtractionPrompt, coerceBackgroundFactExtraction } from '@storyboard/story-ai';
 import { cardCollectProposalSchema } from "@/shared/cardCollect"
 
 describe("coerceBackgroundFactExtraction", () => {

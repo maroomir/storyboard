@@ -19,25 +19,24 @@ import {
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { StoryboardAIService } from '../../infrastructure/ai/AIService';
-import { formatAugmentCards } from '../../infrastructure/ai/prompts/draftAugment';
-import type { UsageAttribution } from '../../shared/aiTypes';
-import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
-import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
-import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import {
   buildRevisionInstructions,
+  buildStyleDirective,
   countBlockingIssues,
+  formatAugmentCards,
   scoreCritique,
   shouldPassRevise,
-} from '../../shared/draftReview';
+  StoryboardAIService,
+} from '@storyboard/story-ai';
+import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
+import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
+import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
   routeReviewIssues,
 } from '../../shared/reviewRouting';
-import { buildStyleDirective } from '../../shared/styleDirective';
 import {
   type DraftCandidateRejectionReason,
   resolveSceneTargetLength,

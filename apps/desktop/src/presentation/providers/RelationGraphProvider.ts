@@ -4,7 +4,7 @@ import { loadRelationListCharacters } from '../../infrastructure/persistence/rel
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers } from '../messaging/aiRpcHandlers';
-import { type AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '../../shared/messaging';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 

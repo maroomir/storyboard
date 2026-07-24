@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  detectCharactersFromDialogue,
-  parseBulletList,
-  parseCharacterTraitSections,
-  parseJsonArray,
-  parseJsonNestedArray,
-  parseJsonObject,
-  parseMBTI
-} from "@/shared/aiResponseParser"
+import { detectCharactersFromDialogue, parseBulletList, parseCharacterTraitSections, parseJsonArray, parseJsonNestedArray, parseJsonObject, parseMBTI } from '@storyboard/story-ai';
 
 describe("aiResponseParser", () => {
   it("extracts JSON arrays and objects embedded in prose", () => {

@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  aiGenerateResponseWithUsage,
-  computeCostUsd
-} from "@/infrastructure/ai/cost"
+import { aiGenerateResponseWithUsage, computeCostUsd } from '@storyboard/story-ai';
 
 describe("computeCostUsd", () => {
   it("returns 0 when model is missing from the catalog", () => {

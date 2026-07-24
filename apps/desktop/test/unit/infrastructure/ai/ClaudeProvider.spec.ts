@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "@/infrastructure/ai/cost"
-import { AiProviderError } from "@/shared/aiProviderError"
-import { ClaudeProvider, type ClaudeClientLike } from "@/infrastructure/ai/providers/ClaudeProvider"
-
+import { AiProviderError, ClaudeProvider, computeCostUsd } from '@storyboard/story-ai';
+import type { ClaudeClientLike } from '@storyboard/story-ai';
 describe("ClaudeProvider", () => {
   it("requires an API key", () => {
     expect(() => new ClaudeProvider({ apiKey: undefined, model: "claude-sonnet-4-6" })).toThrow(

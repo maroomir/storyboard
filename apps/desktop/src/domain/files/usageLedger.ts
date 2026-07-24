@@ -1,17 +1,15 @@
 import { z } from 'zod';
 
-import type { UsageSummaryByEntity } from '../../shared/aiTypes';
-import {
-  aiProviderIds,
-  aiTaskNames,
-  type AiProviderId,
-  type AiTaskName,
-  type AiUsage,
-  type EntityKind,
-  type UsageAttribution,
-  type UsageRecord,
-} from '../../shared/aiTypes';
-
+import { aiProviderIds, aiTaskNames } from '@storyboard/story-ai';
+import type {
+  AiProviderId,
+  AiTaskName,
+  AiUsage,
+  EntityKind,
+  UsageAttribution,
+  UsageRecord,
+  UsageSummaryByEntity,
+} from '@storyboard/story-ai';
 const usageLedgerVersion = 1 as const;
 
 export type UsageLedgerEntry = UsageRecord & {

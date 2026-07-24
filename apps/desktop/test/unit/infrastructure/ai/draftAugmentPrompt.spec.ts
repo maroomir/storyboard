@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  DraftAugmentPrompt,
-  formatAugmentCards,
-  type DraftAugmentInput
-} from "@/infrastructure/ai/prompts/draftAugment"
+import { DraftAugmentPrompt, formatAugmentCards } from '@storyboard/story-ai';
+import type { DraftAugmentInput } from '@storyboard/story-ai';
 import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 
 const baseInput: DraftAugmentInput = {

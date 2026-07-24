@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { SceneCoveragePrompt } from "@/infrastructure/ai/prompts/sceneCoverage"
+import { SceneCoveragePrompt } from '@storyboard/story-ai';
 
 const beats = ["엘리아가 복도를 걷는다.", "잠긴 문 앞에 선다.", "문이 열린다."]
 const draft = "엘리아는 복도를 천천히 걸었다. 문이 스르륵 열렸다."

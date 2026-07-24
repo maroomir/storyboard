@@ -11,13 +11,12 @@ import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
 } from '../../infrastructure/persistence/cardMemoryWorkspace';
-import { buildStyleDirective } from '../../shared/styleDirective';
-import { type StoryboardAIService } from '../../infrastructure/ai/AIService';
+import { buildStyleDirective } from '@storyboard/story-ai';
+import type { AiProviderId, AiTaskName, StoryboardAIService } from '@storyboard/story-ai';
 import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
 } from '../pipelines/sceneGenerationPipeline';
-import type { AiProviderId, AiTaskName } from '../../shared/aiTypes';
 import type {
   GenerateDraftRequest,
   GenerateDraftResult,

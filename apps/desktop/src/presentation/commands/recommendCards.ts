@@ -5,11 +5,10 @@ import {
   type RecommendCardsResult,
 } from '../../application/cards/recommendCardsUseCase';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import { createEmptyBackground } from '../../domain/Background';
-import { createEmptyCharacter } from '../../domain/Character';
+import type { RecommendationCategory } from '@storyboard/story-ai';
+import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 import type { RecommendedCard } from '../../infrastructure/ai/cardRecommendationBuilder';
-import type { RecommendationCategory } from '../../infrastructure/ai/prompts/cardRecommendation';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';
 

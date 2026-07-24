@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { CardRecommendationPrompt, coerceCardRecommendations } from "@/infrastructure/ai/prompts/cardRecommendation"
+import { CardRecommendationPrompt, coerceCardRecommendations } from '@storyboard/story-ai';
 
 describe("coerceCardRecommendations", () => {
   it("returns empty when the parsed value is null", () => {

@@ -1,4 +1,4 @@
-import type { SituationWithCharacters } from '../../infrastructure/ai/AIService';
+import type { SituationWithCharacters } from '@storyboard/story-ai';
 
 export function dedupeSituations(
   items: readonly SituationWithCharacters[],

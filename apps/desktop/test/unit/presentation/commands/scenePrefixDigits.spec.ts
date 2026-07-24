@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { clampScenePrefixDigits, resolveScenePrefixDigitCount } from "@/domain/scenePrefixDigits"
+import { clampScenePrefixDigits, resolveScenePrefixDigitCount } from '@storyboard/story-format';
 
 describe("clampScenePrefixDigits", () => {
   it("clamps to 1..4", () => {

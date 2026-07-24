@@ -1,17 +1,18 @@
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardResponsePayload } from '@/shared/messaging';
-import { storyboardModelCatalog } from '@/shared/models';
 import {
   aiProviderIds,
   aiTaskCatalog,
   aiTaskNames,
   isCliProvider,
-  type AiTaskName,
-} from '../../shared/aiTypes';
-import type { AiProviderRegistry } from '../../infrastructure/ai/providerRegistry';
-import type { SecretStore } from '../../infrastructure/secrets/SecretStore';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
-
+  storyboardModelCatalog,
+} from '@storyboard/story-ai';
+import type {
+  AiProviderRegistry,
+  AiTaskName,
+  ConfigBridge,
+  SecretStore,
+} from '@storyboard/story-ai';
 export interface SettingsRpcHandlersDependencies {
   readonly configBridge: ConfigBridge;
   readonly secretStore: SecretStore;

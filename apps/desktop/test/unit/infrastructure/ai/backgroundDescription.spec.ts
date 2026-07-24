@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import type { Background } from "@/domain/Background"
-import { BackgroundDescriptionPrompt } from "@/infrastructure/ai/prompts/backgroundDescription"
-
+import { BackgroundDescriptionPrompt } from '@storyboard/story-ai';
+import type { Background } from '@storyboard/story-format';
 const baseBackground: Background = {
   type: "location",
   id: "school",

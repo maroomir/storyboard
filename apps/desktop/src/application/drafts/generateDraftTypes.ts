@@ -9,7 +9,7 @@ import type {
   ISceneRepository,
 } from '../ports/repositories';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '../../infrastructure/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '../pipelines/sceneGenerationPipeline';

@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  createApiKeySecretKey,
-  SecretStore,
-  type StoryboardSecretStorageChangeEvent,
-  type StoryboardSecretStorageLike
-} from "@/infrastructure/secrets/SecretStore"
+import { createApiKeySecretKey, SecretStore } from '@storyboard/story-ai';
+import type { StoryboardSecretStorageChangeEvent, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 
 class FakeSecretStorage implements StoryboardSecretStorageLike {
   public readonly values = new Map<string, string>()

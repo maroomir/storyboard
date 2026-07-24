@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError } from "@/shared/aiProviderError"
-import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
-import { type CliRunInput, type CliRunResult, type CliRunner } from "@/infrastructure/ai/providers/cliRunner"
-
+import { AiProviderError, CodexProvider } from '@storyboard/story-ai';
+import type { CliRunInput, CliRunner, CliRunResult } from '@storyboard/story-ai';
 describe("CodexProvider", () => {
   it("requires a command and a model", () => {
     expect(() => new CodexProvider({ command: undefined, model: "gpt-5.5" })).toThrow(AiProviderError)

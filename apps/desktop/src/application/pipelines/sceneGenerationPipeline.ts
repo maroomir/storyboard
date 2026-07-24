@@ -1,8 +1,6 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
-import { createEmptyBackground } from '../../domain/Background';
-import type { StyleDirective } from '../../shared/styleDirective';
-import type { GenerateTextOptions } from '../../infrastructure/ai/AIService';
-import type { EntityRef } from '../../shared/aiTypes';
+import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
+import { createEmptyBackground } from '@storyboard/story-format';
 import {
   condensePreviousContext,
   dedupeSituations,

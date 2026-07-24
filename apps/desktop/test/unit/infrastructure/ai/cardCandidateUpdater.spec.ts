@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import { updateCardCandidatesFromDraft } from "@/infrastructure/ai/cardCandidateUpdater"
-import type { StoryboardAIService } from "@/infrastructure/ai/AIService"
+import type { CardCandidateExtraction, StoryboardAIService } from '@storyboard/story-ai';
 import type { CardCandidateFileSystem } from "@/domain/files/cardCandidates"
 import type { CharacterCard } from '@storyboard/story-format';
-import type { CardCandidateExtraction } from "@/infrastructure/ai/prompts/cardCandidateExtraction"
-
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 
 class CaptureFileSystem implements CardCandidateFileSystem {

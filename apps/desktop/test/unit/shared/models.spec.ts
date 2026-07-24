@@ -2,9 +2,8 @@ import { readFileSync } from "node:fs"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
 
-import { storyboardModelCatalog } from "@/shared/models"
-import { aiProviderIds, type AiProviderId } from "@/shared/ai"
-
+import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
+import type { AiProviderId } from '@storyboard/story-ai';
 describe("storyboardModelCatalog vs package.json defaults", () => {
   it("includes every GPT-5.6 Codex model", () => {
     const codexModelIds = storyboardModelCatalog.codex.map((option) => option.id)

@@ -23,6 +23,7 @@ const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIServic
 // Shared workspace package: every app consumes it, so it must stay runtime-agnostic and must never
 // import back into an app.
 const STORY_FORMAT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-format', 'src');
+const STORY_AI_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-ai', 'src');
 
 // Compat boundary is now closed: no application file may import vscode at runtime.
 const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([]);
@@ -65,7 +66,8 @@ for (const cycle of findCycles(graph)) {
 }
 
 validateExtensionEntry();
-const storyFormatFiles = validateStoryFormatPurity();
+const storyFormatFiles = validatePackagePurity(STORY_FORMAT_ROOT, 'story-format');
+const storyAiFiles = validatePackagePurity(STORY_AI_ROOT, 'story-ai');
 
 if (failures.length > 0) {
   for (const failure of failures) {
@@ -75,7 +77,7 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Architecture check passed: ${sourceFiles.length} extension files, ` +
-      `${storyFormatFiles} story-format files, no import cycles.`,
+      `${storyFormatFiles} story-format files, ${storyAiFiles} story-ai files, no import cycles.`,
   );
 }
 
@@ -183,13 +185,13 @@ function validateExtensionEntry() {
   }
 }
 
-function validateStoryFormatPurity() {
-  if (!fs.existsSync(STORY_FORMAT_ROOT)) {
-    failures.push(`story-format package missing at ${STORY_FORMAT_ROOT}`);
+function validatePackagePurity(packageRoot, packageName) {
+  if (!fs.existsSync(packageRoot)) {
+    failures.push(`${packageName} package missing at ${packageRoot}`);
     return 0;
   }
 
-  const packageFiles = collectSourceFiles(STORY_FORMAT_ROOT);
+  const packageFiles = collectSourceFiles(packageRoot);
 
   for (const filePath of packageFiles) {
     const sourceFile = ts.createSourceFile(
@@ -205,14 +207,14 @@ function validateStoryFormatPurity() {
         continue;
       }
 
-      const relative = path.relative(STORY_FORMAT_ROOT, filePath).replaceAll(path.sep, '/');
+      const relative = path.relative(packageRoot, filePath).replaceAll(path.sep, '/');
 
       if (importPath === 'vscode') {
-        failures.push(`story-format imports vscode: ${relative}`);
+        failures.push(`${packageName} imports vscode: ${relative}`);
       }
 
       if (importPath.startsWith('@/') || importPath.startsWith('@webview/')) {
-        failures.push(`story-format imports an app module: ${relative} -> ${importPath}`);
+        failures.push(`${packageName} imports an app module: ${relative} -> ${importPath}`);
       }
     }
   }

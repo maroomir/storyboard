@@ -1,16 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { StoryboardAIService } from "@/infrastructure/ai/AIService"
-import { AiProviderRegistry, createAiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-import { type AiGenerateRequest, type AiGenerateResponse } from "@/shared/aiTypes"
-import { GrammarCheckPrompt } from "@/infrastructure/ai/prompts/grammarCheck"
-import { OutlineSynopsisPrompt } from "@/infrastructure/ai/prompts/outlineSynopsis"
-import { DraftRevisionPrompt } from "@/infrastructure/ai/prompts/draftRevision"
-import { InlineCompletionPrompt } from "@/infrastructure/ai/prompts/inlineCompletion"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
-
+import { AiProviderRegistry, ConfigBridge, createAiProviderRegistry, DraftRevisionPrompt, GrammarCheckPrompt, InlineCompletionPrompt, OutlineSynopsisPrompt, SecretStore, StoryboardAIService } from '@storyboard/story-ai';
+import type { AiGenerateRequest, AiGenerateResponse, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 const stubResponse: AiGenerateResponse = { text: "[]", providerId: "openai" }
 
 function createRegistry(): AiProviderRegistry {

@@ -2,7 +2,8 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import { formatAugmentCards } from '@storyboard/story-ai';
+import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
@@ -24,10 +25,6 @@ import {
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import {
-  formatAugmentCards,
-  type DraftAugmentScope,
-} from '../../infrastructure/ai/prompts/draftAugment';
 type AugmentContextResult =
   | {
       readonly bibleFacts: readonly BibleFact[];

@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import type { Background } from "@/domain/Background"
-import type { Character } from "@/domain/Character"
-import { DraftExpansionPrompt } from "@/infrastructure/ai/prompts/draftExpansion"
-import { GenreFormattingPrompt } from "@/infrastructure/ai/prompts/genreFormatting"
-import { GrammarCheckPrompt } from "@/infrastructure/ai/prompts/grammarCheck"
-import { InlineCompletionPrompt } from "@/infrastructure/ai/prompts/inlineCompletion"
-import { PersonaDialoguePrompt } from "@/infrastructure/ai/prompts/personaDialogue"
-import { PersonaGenerationPrompt } from "@/infrastructure/ai/prompts/personaGeneration"
-import { SituationExtractionPrompt } from "@/infrastructure/ai/prompts/situationExtraction"
-import { TraitsExtractionPrompt } from "@/infrastructure/ai/prompts/traitsExtraction"
-import type { PromptArtifact, PromptVariantId } from "@/infrastructure/ai/prompts/types"
+import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaDialoguePrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
+import type { PromptArtifact, PromptVariantId } from '@storyboard/story-ai';
+import type { Background, Character } from '@storyboard/story-format';
 import type { ProjectFormat } from '@storyboard/story-format';
 
 interface PromptLengthSample {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { storyboardModelCatalog } from '../models';
+import { storyboardModelCatalog } from '@storyboard/story-ai';
 import { aiProviderStatusSchema } from './ai';
 import { aiTaskNameSchema, providerIdSchema } from './atoms';
 

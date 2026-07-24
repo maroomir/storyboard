@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError } from "@/shared/aiProviderError"
-import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProvider"
-import { type CliRunInput, type CliRunResult, type CliRunner } from "@/infrastructure/ai/providers/cliRunner"
-
+import { AiProviderError, ClaudeCodeProvider } from '@storyboard/story-ai';
+import type { CliRunInput, CliRunner, CliRunResult } from '@storyboard/story-ai';
 describe("ClaudeCodeProvider", () => {
   it("requires a command and a model", () => {
     expect(() => new ClaudeCodeProvider({ command: undefined, model: "sonnet" })).toThrow(AiProviderError)

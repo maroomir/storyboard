@@ -15,8 +15,8 @@ import {
   serializeDraft,
 } from '@storyboard/story-format';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
-import { formatAugmentCards } from '../../infrastructure/ai/prompts/draftAugment';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import { formatAugmentCards } from '@storyboard/story-ai';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import {

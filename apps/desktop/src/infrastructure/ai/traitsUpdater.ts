@@ -1,10 +1,8 @@
 import { readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
-import { parseBulletList } from '@/shared/aiResponseParser';
+import { parseBulletList } from '@storyboard/story-ai';
+import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
 import { reconcileCharacterTraits } from '@/domain/traitsProcessor';
-import type { StoryboardAIService } from './AIService';
-import type { UsageAttribution } from '../../shared/aiTypes';
-
 export interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }

@@ -12,7 +12,7 @@ import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { createDraft, parseDraft, serializeDraft } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';
 import { VirtualDocumentStore } from '../../presentation/providers/virtualDocumentStore';
-import type { DraftAugmentScope } from '../../infrastructure/ai/prompts/draftAugment';
+import type { DraftAugmentScope } from '@storyboard/story-ai';
 import { resolveExpandRange } from './expandDraft';
 
 const augmentDraftCommand = 'storyboard.draft.augment';

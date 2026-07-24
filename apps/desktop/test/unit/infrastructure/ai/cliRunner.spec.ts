@@ -8,7 +8,7 @@ vi.mock("node:child_process", () => ({
   spawn: (...args: unknown[]): unknown => spawnMock(...args)
 }))
 
-import { createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from "@/infrastructure/ai/providers/cliRunner"
+import { createDefaultCliRunner, isCommandNotFound, splitCliPrompt } from '@storyboard/story-ai';
 
 interface SpawnCall {
   readonly command: string

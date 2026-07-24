@@ -7,17 +7,9 @@ import {
   settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion
 } from "@/shared/messaging"
-import { storyboardModelCatalog } from "@/shared/models"
-import { createAiProviderRegistry, type AiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { type ClaudeClientLike } from "@/infrastructure/ai/providers/ClaudeProvider"
-import { type GoogleClientLike } from "@/infrastructure/ai/providers/GoogleProvider"
-import { type OllamaClientLike } from "@/infrastructure/ai/providers/OllamaProvider"
-import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
+import { aiProviderIds, aiTaskNames, ConfigBridge, createAiProviderRegistry, SecretStore, storyboardModelCatalog } from '@storyboard/story-ai';
+import type { AiProviderRegistry, ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"
-import { aiProviderIds, aiTaskNames } from "@/shared/aiTypes"
-
 class MutableFakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: Map<string, unknown>) {}
 

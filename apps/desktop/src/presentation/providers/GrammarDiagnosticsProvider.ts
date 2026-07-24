@@ -7,7 +7,7 @@ import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
-import type { GrammarIssue } from '../../infrastructure/ai/AIService';
+import type { GrammarIssue } from '@storyboard/story-ai';
 
 const grammarCheckCommand = 'storyboard.draft.grammarCheck';
 const applyGrammarFixCommand = 'storyboard.draft.applyGrammarFix';

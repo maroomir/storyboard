@@ -46,17 +46,13 @@ import { SeedProjectRepository } from '../../infrastructure/persistence/reposito
 import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import {
-  createAiProviderRegistry,
-  type AiProviderRegistry,
-} from '../../infrastructure/ai/providerRegistry';
+import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
 import {
   createVscodeUsageLedgerFileSystem,
   UsageRecorder,
 } from '../../infrastructure/ai/UsageRecorder';
-import { SecretStore } from '../../infrastructure/secrets/SecretStore';
-import { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
 import { ProposalReviewService } from '../../presentation/providers/proposalReviewService';
 
 import { DisposableStore } from '../lifecycle/disposableStore';

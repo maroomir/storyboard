@@ -1,3 +1,6 @@
+export * from './scenePrefixDigits';
+export * from './Character';
+export * from './Background';
 export * from './bible';
 export * from './card';
 export * from './cardReferenceRewriter';

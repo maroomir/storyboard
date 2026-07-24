@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  coerceSceneCoverage,
-  summarizeSceneCoverage,
-  type SceneCoverageIssue
-} from "@/shared/sceneCoverage"
+import { coerceSceneCoverage, summarizeSceneCoverage } from '@storyboard/story-ai';
+import type { SceneCoverageIssue } from '@storyboard/story-ai';
 
 describe("coerceSceneCoverage", () => {
   it("parses a JSON array of valid issues with optional notes", () => {

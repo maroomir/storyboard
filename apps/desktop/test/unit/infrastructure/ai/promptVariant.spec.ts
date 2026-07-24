@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { selectPromptVariant } from "@/infrastructure/ai/prompts/variant"
+import { selectPromptVariant } from '@storyboard/story-ai';
 
 describe("selectPromptVariant", () => {
   it("returns xs for compact ollama tasks", () => {

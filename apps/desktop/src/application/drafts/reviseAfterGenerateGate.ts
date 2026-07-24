@@ -5,7 +5,7 @@ import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscod
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { uriExists } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
-import type { ConfigBridge } from '../../infrastructure/settings/ConfigBridge';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneFileName } from '@storyboard/story-format';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 

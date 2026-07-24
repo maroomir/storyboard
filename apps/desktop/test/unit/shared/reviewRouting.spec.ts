@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { DraftCritiqueIssue } from "@/shared/draftReview"
+import type { DraftCritiqueIssue } from '@storyboard/story-ai';
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,

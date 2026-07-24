@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import * as vscode from "vscode"
 
 import { mapGrammarIssuesToDiagnostics, toGrammarRange } from "@/presentation/providers/GrammarDiagnosticsProvider"
-import type { GrammarIssue } from "@/infrastructure/ai/AIService"
+import type { GrammarIssue } from '@storyboard/story-ai';
 
 function createDocument(text: string): vscode.TextDocument {
   return {

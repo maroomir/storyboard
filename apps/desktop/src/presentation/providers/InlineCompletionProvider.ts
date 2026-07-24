@@ -14,8 +14,8 @@ import {
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import type { InlineCompletionContext } from '../../infrastructure/ai/AIService';
-import { type AiProviderId, isCliProvider } from '../../shared/aiTypes';
+import { isCliProvider } from '@storyboard/story-ai';
+import type { AiProviderId, InlineCompletionContext } from '@storyboard/story-ai';
 import { parseDraftSceneParts } from '../../infrastructure/vscode/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;

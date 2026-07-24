@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderRegistry, createAiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { type CliRunner } from "@/infrastructure/ai/providers/cliRunner"
-import { type ClaudeClientLike } from "@/infrastructure/ai/providers/ClaudeProvider"
-import { type GoogleClientLike } from "@/infrastructure/ai/providers/GoogleProvider"
-import { type OllamaClientLike } from "@/infrastructure/ai/providers/OllamaProvider"
-import { type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-import { SecretStore, type StoryboardSecretStorageLike } from "@/infrastructure/secrets/SecretStore"
-import { ConfigBridge, type StoryboardConfigurationLike } from "@/infrastructure/settings/ConfigBridge"
-
+import { AiProviderRegistry, ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
+import type { ClaudeClientLike, CliRunner, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {
     const registry = createRegistry()

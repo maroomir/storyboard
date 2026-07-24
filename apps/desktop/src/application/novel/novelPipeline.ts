@@ -2,7 +2,7 @@ import {
   getStoryboardProjectPaths,
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
-import { resolveScenePrefixDigitCount } from '../../domain/scenePrefixDigits';
+import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import {
   cancel,

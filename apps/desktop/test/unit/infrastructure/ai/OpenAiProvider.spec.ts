@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { computeCostUsd } from "@/infrastructure/ai/cost"
-import { AiProviderError } from "@/shared/aiProviderError"
-import { OpenAiProvider, type OpenAiClientLike } from "@/infrastructure/ai/providers/OpenAiProvider"
-
+import { AiProviderError, computeCostUsd, OpenAiProvider } from '@storyboard/story-ai';
+import type { OpenAiClientLike } from '@storyboard/story-ai';
 describe("OpenAiProvider", () => {
   it("requires an API key", () => {
     expect(() => new OpenAiProvider({ apiKey: undefined, model: "gpt-5.4-mini" })).toThrow(AiProviderError)
