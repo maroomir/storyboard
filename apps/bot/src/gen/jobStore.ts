@@ -8,42 +8,42 @@ import type {
   JobSpec,
   JobState,
   JobTarget,
-  JobUsage
-} from "./types"
-import { buildTargetKey, EMPTY_JOB_USAGE } from "./types"
-import type { IAccessJobStore, StateTransition, UsageLedgerEntry } from "./jobStorePort"
-import type { StorygramDatabase } from "../store/db"
+  JobUsage,
+} from './types';
+import { buildTargetKey, EMPTY_JOB_USAGE } from './types';
+import type { IAccessJobStore, StateTransition, UsageLedgerEntry } from './jobStorePort';
+import type { StorygramDatabase } from '../store/db';
 
 interface GenJobRow {
-  readonly id: number
-  readonly kind: string
-  readonly class: string
-  readonly target: string
-  readonly target_key: string
-  readonly options: string
-  readonly state: string
-  readonly failure_reason: string | null
-  readonly provider: string
-  readonly chat_id: number
-  readonly progress_message_id: number | null
-  readonly usage: string
-  readonly result_ref: string | null
-  readonly created_at: number
-  readonly started_at: number | null
-  readonly finished_at: number | null
+  readonly id: number;
+  readonly kind: string;
+  readonly class: string;
+  readonly target: string;
+  readonly target_key: string;
+  readonly options: string;
+  readonly state: string;
+  readonly failure_reason: string | null;
+  readonly provider: string;
+  readonly chat_id: number;
+  readonly progress_message_id: number | null;
+  readonly usage: string;
+  readonly result_ref: string | null;
+  readonly created_at: number;
+  readonly started_at: number | null;
+  readonly finished_at: number | null;
 }
 
 interface UsageTotalsRow {
-  readonly input_tokens: number | null
-  readonly output_tokens: number | null
-  readonly cost_usd: number | null
+  readonly input_tokens: number | null;
+  readonly output_tokens: number | null;
+  readonly cost_usd: number | null;
 }
 
 export class SqliteJobStore implements IAccessJobStore {
   public constructor(private readonly db: StorygramDatabase) {}
 
   public insert(spec: JobSpec, now: number): GenJob {
-    const targetKey = buildTargetKey(spec.target)
+    const targetKey = buildTargetKey(spec.target);
     const result = this.db
       .prepare(
         `INSERT INTO gen_jobs (
@@ -52,7 +52,7 @@ export class SqliteJobStore implements IAccessJobStore {
         ) VALUES (
           @kind, @class, @target, @targetKey, @options, 'queued', NULL, @provider,
           @chatId, NULL, @usage, NULL, @createdAt, NULL, NULL
-        )`
+        )`,
       )
       .run({
         kind: spec.kind,
@@ -63,19 +63,19 @@ export class SqliteJobStore implements IAccessJobStore {
         provider: JSON.stringify(spec.provider ?? {}),
         chatId: spec.chatId,
         usage: JSON.stringify(EMPTY_JOB_USAGE),
-        createdAt: now
-      })
+        createdAt: now,
+      });
 
-    return this.load(Number(result.lastInsertRowid))!
+    return this.load(Number(result.lastInsertRowid))!;
   }
 
   public updateState(jobId: number, transition: StateTransition): GenJob {
-    const existing = this.load(jobId)
+    const existing = this.load(jobId);
     if (!existing) {
-      throw new Error(`job not found: ${jobId}`)
+      throw new Error(`job not found: ${jobId}`);
     }
 
-    const nextUsage = transition.usage ?? existing.usage
+    const nextUsage = transition.usage ?? existing.usage;
     this.db
       .prepare(
         `UPDATE gen_jobs SET
@@ -86,7 +86,7 @@ export class SqliteJobStore implements IAccessJobStore {
           result_ref = COALESCE(@resultRef, result_ref),
           progress_message_id = COALESCE(@progressMessageId, progress_message_id),
           usage = @usage
-        WHERE id = @jobId`
+        WHERE id = @jobId`,
       )
       .run({
         jobId,
@@ -96,23 +96,24 @@ export class SqliteJobStore implements IAccessJobStore {
         finishedAt: transition.finishedAt ?? null,
         resultRef: transition.resultRef ?? null,
         progressMessageId: transition.progressMessageId ?? null,
-        usage: JSON.stringify(nextUsage)
-      })
+        usage: JSON.stringify(nextUsage),
+      });
 
-    return this.load(jobId)!
+    return this.load(jobId)!;
   }
 
   public load(jobId: number): GenJob | undefined {
     const row = this.db.prepare(`SELECT * FROM gen_jobs WHERE id = ?`).get(jobId) as
-      GenJobRow | undefined
-    return row ? toGenJob(row) : undefined
+      | GenJobRow
+      | undefined;
+    return row ? toGenJob(row) : undefined;
   }
 
   public loadByState(state: JobState): GenJob[] {
     const rows = this.db
       .prepare(`SELECT * FROM gen_jobs WHERE state = ? ORDER BY created_at ASC`)
-      .all(state) as GenJobRow[]
-    return rows.map(toGenJob)
+      .all(state) as GenJobRow[];
+    return rows.map(toGenJob);
   }
 
   public findActiveByTarget(targetKey: string): GenJob | undefined {
@@ -121,56 +122,56 @@ export class SqliteJobStore implements IAccessJobStore {
         `SELECT * FROM gen_jobs
          WHERE target_key = ? AND state IN ('queued', 'running')
          ORDER BY created_at ASC
-         LIMIT 1`
+         LIMIT 1`,
       )
-      .get(targetKey) as GenJobRow | undefined
-    return row ? toGenJob(row) : undefined
+      .get(targetKey) as GenJobRow | undefined;
+    return row ? toGenJob(row) : undefined;
   }
 
   public listRecent(limit: number): GenJob[] {
     const rows = this.db
       .prepare(`SELECT * FROM gen_jobs ORDER BY created_at DESC LIMIT ?`)
-      .all(limit) as GenJobRow[]
-    return rows.map(toGenJob)
+      .all(limit) as GenJobRow[];
+    return rows.map(toGenJob);
   }
 
-  public recordUsage(entry: Omit<UsageLedgerEntry, "recordedAt">, recordedAt: number): void {
+  public recordUsage(entry: Omit<UsageLedgerEntry, 'recordedAt'>, recordedAt: number): void {
     this.db
       .prepare(
         `INSERT INTO usage_ledger (
           job_id, task_name, provider_id, input_tokens, output_tokens, cost_usd, recorded_at
         ) VALUES (
           @jobId, @taskName, @providerId, @inputTokens, @outputTokens, @costUsd, @recordedAt
-        )`
+        )`,
       )
-      .run({ ...entry, recordedAt })
+      .run({ ...entry, recordedAt });
 
-    const job = this.load(entry.jobId)
+    const job = this.load(entry.jobId);
     if (!job) {
-      return
+      return;
     }
 
     const usage: JobUsage = {
       inputTokens: job.usage.inputTokens + entry.inputTokens,
       outputTokens: job.usage.outputTokens + entry.outputTokens,
-      costUsd: job.usage.costUsd + entry.costUsd
-    }
-    this.updateState(entry.jobId, { state: job.state, usage })
+      costUsd: job.usage.costUsd + entry.costUsd,
+    };
+    this.updateState(entry.jobId, { state: job.state, usage });
   }
 
-  public appendLog(jobId: number, entry: Omit<JobLogEntry, "at">, at: number): void {
+  public appendLog(jobId: number, entry: Omit<JobLogEntry, 'at'>, at: number): void {
     this.db
       .prepare(
         `INSERT INTO gen_job_log (job_id, level, stage, message, recorded_at)
-         VALUES (@jobId, @level, @stage, @message, @recordedAt)`
+         VALUES (@jobId, @level, @stage, @message, @recordedAt)`,
       )
       .run({
         jobId,
         level: entry.level,
         stage: entry.stage,
         message: entry.message,
-        recordedAt: at
-      })
+        recordedAt: at,
+      });
   }
 
   public getLog(jobId: number): JobLog {
@@ -179,24 +180,24 @@ export class SqliteJobStore implements IAccessJobStore {
         `SELECT level, stage, message, recorded_at
          FROM gen_job_log
          WHERE job_id = ?
-         ORDER BY recorded_at ASC`
+         ORDER BY recorded_at ASC`,
       )
       .all(jobId) as Array<{
-      readonly level: string
-      readonly stage: string
-      readonly message: string
-      readonly recorded_at: number
-    }>
+      readonly level: string;
+      readonly stage: string;
+      readonly message: string;
+      readonly recorded_at: number;
+    }>;
 
     return {
       jobId,
       entries: rows.map((row) => ({
         at: row.recorded_at,
-        level: row.level as JobLogEntry["level"],
+        level: row.level as JobLogEntry['level'],
         stage: row.stage,
-        message: row.message
-      }))
-    }
+        message: row.message,
+      })),
+    };
   }
 
   public sumUsageSince(since: number): JobUsage {
@@ -207,15 +208,15 @@ export class SqliteJobStore implements IAccessJobStore {
           COALESCE(SUM(output_tokens), 0) AS output_tokens,
           COALESCE(SUM(cost_usd), 0) AS cost_usd
          FROM usage_ledger
-         WHERE recorded_at >= ?`
+         WHERE recorded_at >= ?`,
       )
-      .get(since) as UsageTotalsRow
+      .get(since) as UsageTotalsRow;
 
     return {
       inputTokens: Number(row.input_tokens ?? 0),
       outputTokens: Number(row.output_tokens ?? 0),
-      costUsd: Number(row.cost_usd ?? 0)
-    }
+      costUsd: Number(row.cost_usd ?? 0),
+    };
   }
 }
 
@@ -236,6 +237,6 @@ function toGenJob(row: GenJobRow): GenJob {
     resultRef: row.result_ref,
     createdAt: row.created_at,
     startedAt: row.started_at,
-    finishedAt: row.finished_at
-  }
+    finishedAt: row.finished_at,
+  };
 }

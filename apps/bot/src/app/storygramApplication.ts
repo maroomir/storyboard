@@ -1,4 +1,14 @@
-import { GitClient, PushScheduler, SyncService, inspectWorkspaceRepository } from '@storyboard/story-git';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+
+import {
+  GitClient,
+  PushScheduler,
+  SyncService,
+  inspectWorkspaceRepository,
+} from '@storyboard/story-git';
+
+import { createAiService } from '../ai/aiGateway';
 
 import { ChatContext } from '../chat/context';
 import {
@@ -12,11 +22,22 @@ import {
 } from '../chat/handlers/read';
 import { createDoctorHandler } from '../chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../chat/handlers/edit';
+import {
+  createDraftCommandHandler,
+  createJobsHandler,
+  createManuscriptCommandHandler,
+  createOutlineCommandHandler,
+  createPlanCommandHandler,
+  createStopHandler,
+} from '../chat/handlers/generate';
 import type { IncomingUpdate } from '../chat/ports';
 import { CommandRegistry } from '../chat/registry';
 import { UpdateRouter } from '../chat/router';
 import type { StorygramConfig } from '../config/config';
 import { ContentService } from '../content/contentService';
+import { createGenJobs, type GenJobs } from './createGenJobs';
+import { SceneDraftGenerator } from '../gen/sceneDraftGenerator';
+import { openDatabase, type StorygramDatabase } from '../store/db';
 import { TelegramGateway } from '../telegram/gateway';
 import { createAllowlist } from '../telegram/allowlist';
 import type { Logger } from '../util/logger';
@@ -26,6 +47,7 @@ import { WorkspaceStore } from '../workspace/workspaceStore';
 export interface StorygramApplicationOptions {
   readonly config: StorygramConfig;
   readonly logger: Logger;
+  readonly stateDbPath: string;
 }
 
 // Composition root: builds the object graph once and owns the process lifecycle. Nothing else in
@@ -40,6 +62,8 @@ export class StorygramApplication {
   private readonly gateway: TelegramGateway;
   private readonly registry = new CommandRegistry();
   private readonly router: UpdateRouter;
+  private readonly db: StorygramDatabase;
+  private readonly genJobs: GenJobs;
 
   public constructor(options: StorygramApplicationOptions) {
     const { config, logger } = options;
@@ -62,6 +86,35 @@ export class StorygramApplication {
     });
     this.content = new ContentService(this.store, gate);
 
+    this.gateway = new TelegramGateway({
+      botToken: config.telegram.botToken,
+      allowlist: createAllowlist(config.telegram),
+      logger,
+    });
+
+    mkdirSync(dirname(options.stateDbPath), { recursive: true });
+    this.db = openDatabase(options.stateDbPath);
+    const aiService = createAiService({ providers: config.providers });
+    this.genJobs = createGenJobs({
+      db: this.db,
+      store: this.store,
+      content: this.content,
+      aiService,
+      draftGenerator: new SceneDraftGenerator({ store: this.store, aiService }),
+      sender: this.gateway,
+      jobsConfig: config.jobs,
+      logger,
+      notifyInterrupted: (jobs) => {
+        for (const job of jobs) {
+          void this.gateway
+            .sendMessage(job.chatId, {
+              text: `⚠️ 봇이 재시작되어 작업 #${job.id} (${job.kind})이 중단되었습니다. 필요하면 명령을 다시 실행해주세요.`,
+            })
+            .catch((error) => logger.error('중단 알림 전송 실패', error));
+        }
+      },
+    });
+
     for (const handler of [
       createStartHandler(),
       createStatusHandler(),
@@ -73,15 +126,15 @@ export class StorygramApplication {
       createDoctorHandler(),
       createRenameHandler(),
       createSetHandler(),
+      createDraftCommandHandler(),
+      createOutlineCommandHandler(),
+      createPlanCommandHandler(),
+      createManuscriptCommandHandler(),
+      createJobsHandler(),
+      createStopHandler(),
     ]) {
       this.registry.register(handler);
     }
-
-    this.gateway = new TelegramGateway({
-      botToken: config.telegram.botToken,
-      allowlist: createAllowlist(config.telegram),
-      logger,
-    });
 
     // The gateway takes its handler at start(), which is what breaks the gateway/router cycle.
     this.router = new UpdateRouter({
@@ -118,17 +171,26 @@ export class StorygramApplication {
       this.pushScheduler.startPeriodic();
     }
 
+    this.genJobs.start();
     await this.gateway.start(this.router);
     this.logger.info('storygram이 폴링을 시작했습니다.');
   }
 
   public async stop(): Promise<void> {
     this.pushScheduler.stop();
+    await this.genJobs.stop();
     await this.gateway.stop();
+    this.db.close();
   }
 
-
   private buildContext(update: IncomingUpdate): ChatContext {
-    return new ChatContext(update, this.gateway, this.content, this.store, this.sync);
+    return new ChatContext(
+      update,
+      this.gateway,
+      this.content,
+      this.store,
+      this.sync,
+      this.genJobs.manager,
+    );
   }
 }

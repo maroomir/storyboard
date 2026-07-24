@@ -1,6 +1,7 @@
 import type { SyncService } from '@storyboard/story-git';
 
 import type { ContentService } from '../content/contentService';
+import type { IEnqueueJob } from '../gen/jobManager';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 import type { ISendMessage, IncomingUpdate, MessageView, SentMessageRef } from './ports';
 
@@ -13,6 +14,7 @@ export class ChatContext {
     public readonly content: ContentService,
     public readonly store: WorkspaceStore,
     public readonly sync: SyncService,
+    public readonly jobs?: IEnqueueJob,
   ) {}
 
   public get chatId(): number {

@@ -6,9 +6,9 @@ import {
   renameSync,
   unlinkSync,
   writeFileSync,
-  writeSync
-} from "node:fs"
-import { basename, dirname, join } from "node:path"
+  writeSync,
+} from 'node:fs';
+import { basename, dirname, join } from 'node:path';
 
 // Writes via a temp file + rename so readers never observe a partially written file (QA-06,
 // File I/O connector). The rename is atomic within a directory on POSIX filesystems. When `mode` is
@@ -16,24 +16,24 @@ import { basename, dirname, join } from "node:path"
 // never briefly world-readable and a crash-interrupted rename cannot leave a permissive file —
 // rename preserves the temp's mode. On failure the temp is unlinked so no orphan leaks into the dir.
 export function atomicWriteFile(path: string, content: string, mode?: number): void {
-  const directory = dirname(path)
-  mkdirSync(directory, { recursive: true })
+  const directory = dirname(path);
+  mkdirSync(directory, { recursive: true });
 
-  const tempPath = join(directory, `.${basename(path)}.${process.pid}.tmp`)
+  const tempPath = join(directory, `.${basename(path)}.${process.pid}.tmp`);
   try {
     writeFileSync(
       tempPath,
       content,
-      mode === undefined ? { encoding: "utf8" } : { encoding: "utf8", mode }
-    )
-    renameSync(tempPath, path)
+      mode === undefined ? { encoding: 'utf8' } : { encoding: 'utf8', mode },
+    );
+    renameSync(tempPath, path);
   } catch (error) {
     try {
-      unlinkSync(tempPath)
+      unlinkSync(tempPath);
     } catch {
       // The temp file may never have been created; nothing to clean up.
     }
-    throw error
+    throw error;
   }
 }
 
@@ -42,25 +42,25 @@ export function atomicWriteFile(path: string, content: string, mode?: number): v
 // cannot leave the rename persisted while the bytes are not (a truncated, unrecoverable file). A
 // failed write unlinks the temp file so ENOSPC does not leak orphans into ~/.storygram.
 export function atomicWriteBytes(path: string, bytes: Uint8Array): void {
-  const directory = dirname(path)
-  mkdirSync(directory, { recursive: true })
+  const directory = dirname(path);
+  mkdirSync(directory, { recursive: true });
 
-  const tempPath = join(directory, `.${basename(path)}.${process.pid}.tmp`)
+  const tempPath = join(directory, `.${basename(path)}.${process.pid}.tmp`);
   try {
-    const fd = openSync(tempPath, "w")
+    const fd = openSync(tempPath, 'w');
     try {
-      writeSync(fd, bytes)
-      fsyncSync(fd)
+      writeSync(fd, bytes);
+      fsyncSync(fd);
     } finally {
-      closeSync(fd)
+      closeSync(fd);
     }
-    renameSync(tempPath, path)
+    renameSync(tempPath, path);
   } catch (error) {
     try {
-      unlinkSync(tempPath)
+      unlinkSync(tempPath);
     } catch {
       // The temp file may never have been created; nothing to clean up.
     }
-    throw error
+    throw error;
   }
 }

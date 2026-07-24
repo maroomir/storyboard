@@ -7,6 +7,7 @@ import {
   type ChapterPlan,
   type OutlineSynopsis,
 } from '../outline';
+import type { PointOfView } from '../project';
 
 export type ChapterPlanParseErrorCode = 'invalid-yaml' | 'invalid-chapter-plan-schema';
 
@@ -106,4 +107,75 @@ function appendTextSection(sections: string[], heading: string, value: string): 
 function appendListSection(sections: string[], heading: string, values: readonly string[]): void {
   const body = values.length > 0 ? values.map((value) => `- ${value}`).join('\n') : '_미작성_';
   sections.push(`## ${heading}\n\n${body}`);
+}
+
+export type SynopsisParseErrorCode = 'invalid-synopsis-markdown';
+
+export class SynopsisParseError extends Error {
+  public constructor(
+    public readonly code: SynopsisParseErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'SynopsisParseError';
+  }
+}
+
+// Inverse of serializeSynopsisMarkdown, so a synopsis written by one app can seed chapter planning
+// in the other. Only the exact sectioned format that serializer emits is accepted.
+export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
+  const sections = new Map<string, string>();
+  let currentHeading: string | undefined;
+  let currentLines: string[] = [];
+
+  const flush = (): void => {
+    if (currentHeading !== undefined) {
+      sections.set(currentHeading, currentLines.join('\n').trim());
+    }
+    currentLines = [];
+  };
+
+  for (const line of rawSynopsis.replace(/\r\n/g, '\n').split('\n')) {
+    const heading = line.match(/^## (.+)$/);
+    if (heading?.[1] !== undefined) {
+      flush();
+      currentHeading = heading[1].trim();
+      continue;
+    }
+    currentLines.push(line);
+  }
+  flush();
+
+  const text = (heading: string): string => {
+    const value = sections.get(heading) ?? '';
+    return value === '_미작성_' ? '' : value;
+  };
+  const list = (heading: string): string[] =>
+    text(heading)
+      .split('\n')
+      .map((line) => line.replace(/^- /, '').trim())
+      .filter((line) => line.length > 0);
+
+  if (!sections.has('로그라인')) {
+    throw new SynopsisParseError(
+      'invalid-synopsis-markdown',
+      'synopsis.md가 Storyboard 시놉시스 형식이 아닙니다. (## 로그라인 섹션 없음)',
+    );
+  }
+
+  const povLabel = text('시점');
+  const pov = (Object.entries(pointOfViewLabels) as [PointOfView, string][]).find(
+    ([, label]) => label === povLabel,
+  )?.[0];
+
+  return {
+    logline: text('로그라인'),
+    genrePromise: text('장르 약속'),
+    mainConflicts: list('주요 갈등'),
+    ending: text('결말'),
+    theme: text('주제'),
+    tone: text('톤'),
+    ...(pov !== undefined ? { pov } : {}),
+    styleRules: list('문체 규칙'),
+  };
 }

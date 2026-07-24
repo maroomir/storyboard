@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { ManuscriptDraftEntry } from '../../domain/manuscriptAssembly';
+import type { ManuscriptDraftEntry } from '@storyboard/story-format';
 import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
 import type { NovelRunState } from '../../domain/files/novelRunState';
 import type {

@@ -43,7 +43,9 @@ export function describeStale(files: readonly StaleFile[]): string {
     }
   });
 
-  return ['⚠️ 편집을 기준 시점 이후 내용이 바뀌어 저장하지 않았습니다.', ...lines, '다시 열어주세요.'].join(
-    '\n',
-  );
+  return [
+    '⚠️ 편집을 기준 시점 이후 내용이 바뀌어 저장하지 않았습니다.',
+    ...lines,
+    '다시 열어주세요.',
+  ].join('\n');
 }

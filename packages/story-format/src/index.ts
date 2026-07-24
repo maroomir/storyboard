@@ -6,6 +6,7 @@ export * from './card';
 export * from './cardReferenceRewriter';
 export * from './characterDetector';
 export * from './Draft';
+export * from './manuscriptAssembly';
 export * from './outline';
 export * from './paths';
 export * from './project';

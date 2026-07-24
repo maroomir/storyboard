@@ -25,7 +25,11 @@ export class DraftPipeline implements IPipeline {
   public async run(job: GenJob, context: PipelineContext): Promise<PipelineResult> {
     const sceneStem = typeof job.target.scene === 'string' ? job.target.scene : '';
     if (sceneStem.length === 0) {
-      return { success: false, failureReason: 'provider_error', errorMessage: '씬이 지정되지 않았습니다.' };
+      return {
+        success: false,
+        failureReason: 'provider_error',
+        errorMessage: '씬이 지정되지 않았습니다.',
+      };
     }
 
     await context.reportStage('씬 확인');
@@ -72,7 +76,11 @@ function describeFailure(outcome: MutateOutcome): string {
   return '알 수 없는 실패';
 }
 
-export function draftHistoryRelativePath(sceneStem: string, revision: number, stamp: string): string {
+export function draftHistoryRelativePath(
+  sceneStem: string,
+  revision: number,
+  stamp: string,
+): string {
   const suffix = String(revision).padStart(2, '0');
   return `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}/${stamp}-rev-${suffix}.md`;
 }

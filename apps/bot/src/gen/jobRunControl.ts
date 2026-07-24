@@ -1,26 +1,26 @@
 export class JobRunControl {
-  private readonly controllers = new Map<number, AbortController>()
+  private readonly controllers = new Map<number, AbortController>();
 
   public start(jobId: number): AbortSignal {
-    const existing = this.controllers.get(jobId)
+    const existing = this.controllers.get(jobId);
     if (existing) {
-      return existing.signal
+      return existing.signal;
     }
 
-    const controller = new AbortController()
-    this.controllers.set(jobId, controller)
-    return controller.signal
+    const controller = new AbortController();
+    this.controllers.set(jobId, controller);
+    return controller.signal;
   }
 
   public cancel(jobId: number): void {
-    this.controllers.get(jobId)?.abort()
+    this.controllers.get(jobId)?.abort();
   }
 
   public finish(jobId: number): void {
-    this.controllers.delete(jobId)
+    this.controllers.delete(jobId);
   }
 
   public getSignal(jobId: number): AbortSignal | undefined {
-    return this.controllers.get(jobId)?.signal
+    return this.controllers.get(jobId)?.signal;
   }
 }

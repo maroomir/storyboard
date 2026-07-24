@@ -15,7 +15,7 @@ import type {
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../../domain/chapterSummaries';
 import type { StoryboardLogger } from '../../vscode/logger';
-import type { AssembledManuscript } from '../../../domain/manuscriptAssembly';
+import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { uriExists } from '../../vscode/workspace';

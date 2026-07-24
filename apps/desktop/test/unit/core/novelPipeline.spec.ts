@@ -20,7 +20,8 @@ vi.mock("@/infrastructure/persistence/revisionPlanRecorder", () => ({
 }))
 vi.mock("@/infrastructure/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
 vi.mock("@/infrastructure/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
-vi.mock("@/domain/manuscriptAssembly", () => ({
+vi.mock("@storyboard/story-format", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
 vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))

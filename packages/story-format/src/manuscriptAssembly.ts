@@ -1,5 +1,5 @@
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan, FlatChapterScene } from '@storyboard/story-format';
+import { flattenChapterPlan } from './outline';
+import type { ChapterPlan, FlatChapterScene } from './outline';
 
 export interface ManuscriptDraftEntry {
   readonly stem: string;

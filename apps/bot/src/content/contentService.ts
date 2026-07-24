@@ -1,8 +1,18 @@
-import { STORYBOARD_RELATIVE_PATHS, draftRelativePath, type StoryboardCard } from '@storyboard/story-format';
+import {
+  STORYBOARD_RELATIVE_PATHS,
+  draftRelativePath,
+  type StoryboardCard,
+} from '@storyboard/story-format';
 
 import type { MutateGate } from '../workspace/mutateGate';
 import type { MutateOutcome, WorkspacePlan } from '../workspace/workspaceChanges';
-import type { CardSummary, ReadFile, SceneSummary, WorkspaceStore } from '../workspace/workspaceStore';
+import { hashContent } from '../workspace/workspaceStore';
+import type {
+  CardSummary,
+  ReadFile,
+  SceneSummary,
+  WorkspaceStore,
+} from '../workspace/workspaceStore';
 import { planCardListUpdate, planCardRename, type CardListField } from './cardEditor';
 
 export type CardKind = 'character' | 'background';
@@ -60,6 +70,39 @@ export class ContentService {
     }
 
     return this.gate.apply({ writes }, `storygram: generate ${relativePath}`);
+  }
+
+  // Tracked generated outputs (synopsis.md, chapters.yaml) commit with the enqueue-time baseline,
+  // so a Desktop edit that lands while the job runs wins and the job reports a conflict.
+  public writeTracked(
+    relativePath: string,
+    body: string,
+    baselineHash: string | undefined,
+    commitMessage: string,
+  ): Promise<MutateOutcome> {
+    return this.gate.apply(
+      { writes: [{ relativePath, content: body, baselineHash }] },
+      commitMessage,
+    );
+  }
+
+  // Gitignored artifacts (manuscript/) overwrite in place: they are always reproducible from the
+  // tracked inputs, so last-writer-wins is acceptable and no commit is attempted.
+  public async writeArtifact(relativePath: string, body: string): Promise<MutateOutcome> {
+    const current = await this.tryReadText(relativePath);
+    return this.gate.apply(
+      { writes: [{ relativePath, content: body, baselineHash: current }] },
+      `storygram: generate ${relativePath}`,
+    );
+  }
+
+  private async tryReadText(relativePath: string): Promise<string | undefined> {
+    try {
+      const raw = await this.store.readText(relativePath);
+      return hashContent(raw);
+    } catch {
+      return undefined;
+    }
   }
 
   private async nextDraftHistoryPath(sceneStem: string): Promise<string> {

@@ -146,7 +146,9 @@ export function createSyncHandler(): ICommandHandler {
         });
         return;
       case 'clean':
-        await ctx.reply({ text: report.pushed ? '✅ 원격에 반영했습니다.' : '✅ 이미 최신입니다.' });
+        await ctx.reply({
+          text: report.pushed ? '✅ 원격에 반영했습니다.' : '✅ 이미 최신입니다.',
+        });
         return;
       case 'offline':
         await ctx.reply({ text: '⚠️ 원격에 연결할 수 없습니다. 로컬 커밋은 그대로 보존됩니다.' });
@@ -178,7 +180,10 @@ export function createStatusHandler(): ICommandHandler {
 }
 
 function renderCard(card: { readonly [key: string]: unknown }, relativePath: string): string {
-  const lines = [`🗂 ${String(card.name ?? card.id)} (${String(card.type)})`, `파일: ${relativePath}`];
+  const lines = [
+    `🗂 ${String(card.name ?? card.id)} (${String(card.type)})`,
+    `파일: ${relativePath}`,
+  ];
 
   for (const field of ['aliases', 'tags', 'description', 'traits', 'voice', 'desire']) {
     const value = card[field];

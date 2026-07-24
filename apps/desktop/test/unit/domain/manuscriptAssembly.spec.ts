@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { assembleManuscript, type ManuscriptDraftEntry } from "@/domain/manuscriptAssembly"
+import { assembleManuscript, type ManuscriptDraftEntry } from '@storyboard/story-format'
 import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {

@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import { assembleManuscript } from '../../domain/manuscriptAssembly';
+import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import {
   draftPath,

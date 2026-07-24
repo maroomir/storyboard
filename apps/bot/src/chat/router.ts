@@ -1,6 +1,7 @@
 import type { Logger } from '../util/logger';
 import type { ChatContext } from './context';
 import type { IHandleUpdate, IncomingUpdate, ISendMessage } from './ports';
+import { handleJobCallback } from './handlers/generate';
 import type { CommandRegistry } from './registry';
 import { commandName } from './registry';
 
@@ -28,6 +29,9 @@ export class UpdateRouter implements IHandleUpdate {
       }
 
       if (update.kind === 'callback') {
+        if (await handleJobCallback(ctx, update.data)) {
+          return;
+        }
         await ctx.answerCallback();
         return;
       }

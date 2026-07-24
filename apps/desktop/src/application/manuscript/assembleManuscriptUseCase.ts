@@ -5,7 +5,7 @@ import {
   assembleManuscript,
   type AssembledManuscript,
   type ManuscriptDraftEntry,
-} from '../../domain/manuscriptAssembly';
+} from '@storyboard/story-format';
 import {
   buildForeshadowingMarkdown,
   collectForeshadowing,

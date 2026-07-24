@@ -23,7 +23,11 @@ async function main(): Promise<number> {
     logger.warn(warning);
   }
 
-  const application = new StorygramApplication({ config: loaded.config, logger });
+  const application = new StorygramApplication({
+    config: loaded.config,
+    logger,
+    stateDbPath: paths.stateDb,
+  });
 
   try {
     await application.start();

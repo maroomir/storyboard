@@ -130,7 +130,10 @@ export class WorkspaceStore {
     return [...character, ...background];
   }
 
-  public async readCard(kind: 'character' | 'background', id: string): Promise<ReadFile<StoryboardCard>> {
+  public async readCard(
+    kind: 'character' | 'background',
+    id: string,
+  ): Promise<ReadFile<StoryboardCard>> {
     const relativePath =
       kind === 'character' ? characterCardRelativePath(id) : backgroundCardRelativePath(id);
     const raw = await this.readText(relativePath);

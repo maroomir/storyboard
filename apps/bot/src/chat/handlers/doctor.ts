@@ -1,4 +1,8 @@
-import { GitClient, inspectWorkspaceRepository, initializeWorkspaceRepository } from '@storyboard/story-git';
+import {
+  GitClient,
+  inspectWorkspaceRepository,
+  initializeWorkspaceRepository,
+} from '@storyboard/story-git';
 
 import type { ChatContext } from '../context';
 import type { IncomingUpdate } from '../ports';
@@ -77,7 +81,9 @@ async function runInit(ctx: ChatContext): Promise<void> {
       result.gitignoreUpdated
         ? '✅ .gitignore에 Storyboard 생성물 제외 규칙을 추가했습니다.'
         : 'ℹ️ .gitignore는 이미 설정되어 있었습니다.',
-      result.committed ? '✅ 현재 내용으로 초기 커밋을 만들었습니다.' : 'ℹ️ 커밋할 변경이 없었습니다.',
+      result.committed
+        ? '✅ 현재 내용으로 초기 커밋을 만들었습니다.'
+        : 'ℹ️ 커밋할 변경이 없었습니다.',
       after.status === 'ready' ? '✅ 이제 편집 명령을 쓸 수 있습니다.' : `⚠️ ${after.detail}`,
     ].join('\n'),
   });
