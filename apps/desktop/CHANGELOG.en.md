@@ -10,6 +10,11 @@ after the first public release.
 
 ## [Unreleased]
 
+### Structure
+
+- Rearranged the repository into an npm-workspaces monorepo. The extension moved to `apps/desktop`, and the workspace file format (`@storyboard/story-format`), the AI engine (`@storyboard/story-ai`), the scene generation pipeline (`@storyboard/story-pipeline`), and the git sync layer (`@storyboard/story-git`) became shared packages. User-facing extension behavior and the VSIX contents are unchanged.
+- Added `storygram`, a Telegram bot at `apps/bot` that edits the very same workspace. Both apps consume the same codecs and pipeline, so a save from either side writes identical bytes.
+
 ## [0.5.2] - 2026-07-24
 
 ### Added
