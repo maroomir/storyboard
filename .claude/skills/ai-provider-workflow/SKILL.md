@@ -3,7 +3,7 @@ name: ai-provider-workflow
 description: >-
   Guides AI provider, SecretStorage, ConfigBridge, and RPC work in Storyboard:
   keys only in secrets, settings via configuration, registry boundaries, and
-  deterministic tests. Use when changing apps/desktop/src/infrastructure/ai, secrets,
+  deterministic tests. Use when changing packages/story-ai/src/ai, secrets,
   provider config, or webview/extension AI messaging.
 ---
 
@@ -22,7 +22,7 @@ Authoritative detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) (settings and command
 ## Implementation boundaries
 
 - Shared RPC/message schemas: [`apps/desktop/src/shared/messaging/`](apps/desktop/src/shared/messaging/) and related zod schemas—extend in one place, validate at the extension boundary.
-- Provider registry: [`apps/desktop/src/infrastructure/ai/providerRegistry.ts`](apps/desktop/src/infrastructure/ai/providerRegistry.ts) composes `SecretStore` + `ConfigBridge`.
+- Provider registry: [`packages/story-ai/src/ai/providerRegistry.ts`](packages/story-ai/src/ai/providerRegistry.ts) composes `SecretStore` + `ConfigBridge`.
 - New provider: implement the shared `AiProvider` surface, register in the registry, add tests with injected clients (no real network in unit tests by default).
 
 ## Verification

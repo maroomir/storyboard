@@ -13,7 +13,7 @@ description: >-
 
 > Mirror of the Claude Code skill `.claude/skills/scene-quality/SKILL.md` — keep the two in sync.
 
-Pushes one workspace scene's generated draft toward its human-written gt. The pipeline (extraction → persona → dialogue → chunked format) lives in `apps/desktop/src/infrastructure/ai/`; this skill drives it headlessly, measures quality objectively + qualitatively, and tunes code/data until the four axes pass.
+Pushes one workspace scene's generated draft toward its human-written gt. The pipeline (extraction → persona → dialogue → chunked format) lives in `packages/story-ai/src/ai/`; this skill drives it headlessly, measures quality objectively + qualitatively, and tunes code/data until the four axes pass.
 
 All harness and test commands below run from `apps/desktop` (the harness include glob resolves against the current working directory; running it from the repo root collects zero tests).
 
@@ -63,6 +63,6 @@ Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (ski
 
 - Rubric: `./rubric.md` (mirror of `apps/desktop/docs/scene-quality-rubric.md`)
 - Harness + coverage probe: `apps/desktop/scripts/harness/generateGuerrila.harness.ts`, `apps/desktop/scripts/harness/coverageCheck.harness.ts`, `apps/desktop/vitest.harness.config.ts`
-- Coverage feature: `AIService.checkSceneCoverage`, `apps/desktop/src/shared/sceneCoverage.ts`, task `sceneCoverage`
+- Coverage feature: `AIService.checkSceneCoverage`, `packages/story-ai/src/contracts/sceneCoverage.ts`, task `sceneCoverage`
 - Parameter impact: `apps/desktop/docs/card-parameter-impact.md`
-- Pipeline: `apps/desktop/src/application/pipelines/sceneGenerationPipeline.ts`, `apps/desktop/src/infrastructure/ai/prompts/`
+- Pipeline: `packages/story-pipeline/src/sceneGenerationPipeline.ts`, `packages/story-ai/src/ai/prompts/`

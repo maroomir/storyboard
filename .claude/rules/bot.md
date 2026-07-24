@@ -7,7 +7,7 @@ except operational state.
 ## Non-negotiable invariants
 
 - **A successful save of a tracked file is always a commit.** Writes go through
-  `MutateGate` (`src/workspace/mutateGate.ts`) and nothing else. Adding a new write path means
+  `MutateGate` (`apps/bot/src/workspace/mutateGate.ts`) and nothing else. Adding a new write path means
   routing it through `ContentService`, not calling the filesystem directly.
 - **Freshness guard.** Every write re-reads its target immediately before writing and refuses when
   the bytes no longer hash to the baseline the edit was derived from. This is what makes it safe for
@@ -17,7 +17,7 @@ except operational state.
   user's unrelated uncommitted work.
 - **Generated artifacts are written but not committed.** `draft/`, `.draft/`, `manuscript/`, and
   `.storyboard/cache/` are gitignored exactly as the extension scaffolds them.
-- **No seedcoat.** The bot was rebuilt without the `.seed` archive. `scripts/check-architecture.mjs`
+- **No seedcoat.** The bot was rebuilt without the `.seed` archive. `apps/bot/scripts/check-architecture.mjs`
   fails the build if a `seed` import reappears.
 
 ## Security
@@ -31,7 +31,7 @@ except operational state.
 ## Layering
 
 `util → config → store → workspace → sync → content → ai → provider → gen → chat → telegram →
-dashboard → app`. A layer may import itself and anything to its left. `scripts/check-architecture.mjs`
+dashboard → app`. A layer may import itself and anything to its left. `apps/bot/scripts/check-architecture.mjs`
 enforces the direction and rejects cycles.
 
 ## Config
