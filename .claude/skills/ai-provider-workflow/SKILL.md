@@ -3,8 +3,8 @@ name: ai-provider-workflow
 description: >-
   Guides AI provider, SecretStorage, ConfigBridge, and RPC work in Storyboard:
   keys only in secrets, settings via configuration, registry boundaries, and
-  deterministic tests. Use when changing src/services/ai, secrets, provider
-  config, or webview/extension AI messaging.
+  deterministic tests. Use when changing apps/desktop/src/infrastructure/ai, secrets,
+  provider config, or webview/extension AI messaging.
 ---
 
 # AI provider workflow (Storyboard)
@@ -21,8 +21,8 @@ Authoritative detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) (settings and command
 
 ## Implementation boundaries
 
-- Shared RPC/message schemas: [`src/shared/messaging.ts`](src/shared/messaging.ts) and related zod schemas—extend in one place, validate at the extension boundary.
-- Provider registry: [`src/services/ai/providerRegistry.ts`](src/services/ai/providerRegistry.ts) composes `SecretStore` + `ConfigBridge`.
+- Shared RPC/message schemas: [`apps/desktop/src/shared/messaging/`](apps/desktop/src/shared/messaging/) and related zod schemas—extend in one place, validate at the extension boundary.
+- Provider registry: [`apps/desktop/src/infrastructure/ai/providerRegistry.ts`](apps/desktop/src/infrastructure/ai/providerRegistry.ts) composes `SecretStore` + `ConfigBridge`.
 - New provider: implement the shared `AiProvider` surface, register in the registry, add tests with injected clients (no real network in unit tests by default).
 
 ## Verification
@@ -32,4 +32,4 @@ npm run compile
 npm test
 ```
 
-Target tests under `test/unit/services/ai/`, `test/unit/services/secrets/`, and `test/unit/services/settings/` when touching providers or config.
+Target tests under `apps/desktop/test/unit/infrastructure/ai/`, `apps/desktop/test/unit/infrastructure/secrets/`, and `apps/desktop/test/unit/infrastructure/settings/` when touching providers or config.

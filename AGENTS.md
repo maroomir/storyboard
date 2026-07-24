@@ -8,9 +8,9 @@ This document gives AI coding agents the project-specific context needed to work
 
 ## Current Status
 
-The extension has a working modular-monolith transition in progress. Existing source and tests are authoritative; do not treat the old `core/`-only layout as the current architecture.
+The extension source is fully migrated into the layered structure below; the legacy `core/`, `files/`, `services/`, `commands/`, and `providers/` directories no longer exist. Existing source and tests are authoritative.
 
-Keep changes incremental and preserve behavior. Legacy directories remain while their workflows are moved behind explicit application objects and infrastructure ports.
+Keep changes incremental and preserve behavior.
 
 ## Source of Truth
 
@@ -18,7 +18,7 @@ Apply this priority when instructions conflict:
 
 1. The user's latest explicit instruction.
 2. Existing source files and tests.
-3. `package.json` for extension metadata, scripts, activation events, commands, views, menus, and configuration.
+3. `apps/desktop/package.json` for extension metadata, scripts, activation events, commands, views, menus, and configuration.
 4. Tracked product and architecture documentation.
 5. `.claude/rules/` and `AGENTS.md` for AI-agent working rules.
 6. `CLAUDE.md` as the Claude Code rule index.
@@ -33,9 +33,9 @@ If documents conflict in a way that could change behavior, investigate and ask b
 ## Core Principles
 
 - This is a VSCode extension project.
-- Check `package.json` scripts before running build, lint, test, or packaging commands.
-- When updating the project version or release notes, update both `CHANGELOG.md` and `CHANGELOG.en.md` in the same change.
-- Tracked docs at repo root: `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `EXTENSION_QA.md`, `RELEASE.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
+- Check `apps/desktop/package.json` scripts before running build, lint, test, or packaging commands; the root `package.json` re-exports only `build`, `compile`, `lint`, `test`, and `package:vsix` to that workspace.
+- When updating the project version or release notes, update both `apps/desktop/CHANGELOG.md` and `apps/desktop/CHANGELOG.en.md` in the same change. The extension version lives only in `apps/desktop/package.json`.
+- Tracked docs at repo root: `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `RELEASE.md`. Extension-scoped docs live in `apps/desktop/`: `EXTENSION_QA.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
 - Inspect nearby files and existing conventions before editing.
 - For non-trivial work, state assumptions and success criteria before editing; ask when ambiguity could change the implementation.
 - Keep changes surgical: every changed line should trace directly to the user's request.
@@ -48,10 +48,10 @@ If documents conflict in a way that could change behavior, investigate and ask b
 
 ## Import aliases
 
-- **`@/`** → repository [`src/`](src/) (extension host code and anything compiled into the extension bundle).
-- **`@webview/`** → [`webview-ui/src/`](webview-ui/src/) (webview UI only). Do not use `@/` from webview code; keep the extension/webview boundary obvious.
+- **`@/`** → [`apps/desktop/src/`](apps/desktop/src/) (extension host code and anything compiled into the extension bundle).
+- **`@webview/`** → [`apps/desktop/webview-ui/src/`](apps/desktop/webview-ui/src/) (webview UI only). Do not use `@/` from webview code; keep the extension/webview boundary obvious.
 - Prefer these aliases over long `../../` chains; short same-folder or single-level sibling imports (`./`, `../`) are fine when they stay readable.
-- Aliases are wired in [`tsconfig.json`](tsconfig.json), [`webview-ui/tsconfig.json`](webview-ui/tsconfig.json), [`esbuild.config.mjs`](esbuild.config.mjs), [`vite.config.mjs`](vite.config.mjs), and [`vitest.config.mts`](vitest.config.mts).
+- Aliases are wired in [`apps/desktop/tsconfig.json`](apps/desktop/tsconfig.json), [`apps/desktop/webview-ui/tsconfig.json`](apps/desktop/webview-ui/tsconfig.json), [`apps/desktop/esbuild.config.mjs`](apps/desktop/esbuild.config.mjs), [`apps/desktop/vite.config.mjs`](apps/desktop/vite.config.mjs), and [`apps/desktop/vitest.config.mts`](apps/desktop/vitest.config.mts).
 
 ## Domain Boundaries
 
@@ -88,25 +88,33 @@ The webview must not import `vscode` directly. Use message passing through `acqu
 
 ## Current Architecture
 
+The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard` workspace at `apps/desktop/`; `apps/bot` (Telegram bot) and shared `packages/*` are planned but not present yet.
+
 The extension host currently uses this transition shape:
 
 ```text
-src/
-  extension.ts                 # Thin VS Code entry point
-  bootstrap/                   # StoryboardApplication, lifecycle, feature modules
-  application/                 # Use cases, pipelines, ports, application-owned gateways
-  infrastructure/              # VS Code and persistence port implementations
-  domain/                      # Runtime-agnostic policies and value types
-  shared/                      # Wire contracts and runtime-agnostic values
-  commands/, providers/        # Legacy presentation adapters being migrated
-  core/, files/, services/     # Legacy orchestration, codecs, and integrations being migrated
+apps/desktop/                  # `storyboard` workspace: the VSCode extension
+  package.json                 # Extension manifest, scripts, and version
+  src/
+    extension.ts               # Thin VS Code entry point
+    bootstrap/                 # StoryboardApplication, lifecycle, feature modules
+    application/               # Use cases, pipelines, ports, application-owned gateways
+    infrastructure/            # VS Code and persistence port implementations
+    presentation/              # Commands, providers, and webview messaging
+    domain/                    # Runtime-agnostic policies and value types
+    shared/                    # Wire contracts and runtime-agnostic values
+  webview-ui/                  # Webview UI source
+  test/                        # Vitest suites and fixtures
+  scripts/                     # Build and architecture-check scripts
 ```
 
-Dependency rules already enforced by `npm run check:architecture`:
+Dependency rules already enforced by `npm run check:architecture` (run from `apps/desktop`, or `npm run check:architecture --workspace storyboard` from the repo root):
 
 - `extension.ts` imports only `bootstrap` (besides `vscode`).
 - `shared` imports only itself.
-- `core` must not import `commands`.
+- `domain` must not import `application`, `infrastructure`, `presentation`, `bootstrap`, or `vscode`.
+- `application` must not import `vscode` at runtime.
+- No import cycles anywhere in `src/`.
 - Lifecycle-owned objects are created by `PlatformModule` or a feature module and disposed through `DisposableStore`.
 
 Do not create a new abstraction solely to move a file. Use ports for genuine runtime boundaries such as file I/O, persistence, AI transport, or VS Code state.
@@ -114,7 +122,7 @@ Do not create a new abstraction solely to move a file. Use ports for genuine run
 ## VSCode Extension Guidelines
 
 - Command IDs should use the `storyboard.*` namespace.
-- Contributions should be declared in `package.json` and registered in extension activation code where required.
+- Contributions should be declared in `apps/desktop/package.json` and registered in extension activation code where required.
 - Keep contributed commands, views, menus, configuration, and activation events aligned with runtime registration code.
 - Always dispose VSCode resources through `context.subscriptions` or explicit disposables.
 - Webviews must use CSP, nonces, and `webview.asWebviewUri(...)` for local assets.
@@ -193,6 +201,8 @@ npm run compile
 npm run lint
 npm test
 ```
+
+These, plus `npm run build` and `npm run package:vsix`, run from the repo root and delegate to the `storyboard` workspace. Scripts that exist only in `apps/desktop/package.json` — `check:architecture`, `watch`, `build:webview`, `format`, `format:check:src` — must be run from `apps/desktop`, or as `npm run <script> --workspace storyboard` from the repo root.
 
 If scripts do not exist yet, explain that verification is limited and inspect the files manually.
 

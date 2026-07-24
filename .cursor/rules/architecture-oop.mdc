@@ -1,6 +1,6 @@
 ---
 description: Runtime boundaries and pattern adoption when complexity warrants it
-globs: src/**/*,webview-ui/src/**/*,tests/**/*
+globs: apps/desktop/src/**/*,apps/desktop/webview-ui/src/**/*,apps/desktop/test/**/*
 alwaysApply: false
 ---
 

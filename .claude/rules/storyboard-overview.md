@@ -4,23 +4,25 @@
 
 The current implementation is still smaller than that target. Treat `scene/*.txt → draft/*.md`, cards, canon, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
+The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json`; the VSCode extension lives in `apps/desktop`. A Telegram bot (`apps/bot`) and shared `packages/*` are planned but not implemented yet.
+
 ## Current Extension-Host Architecture
 
 ```mermaid
 graph TB
     subgraph VSCode[VSCode Extension Host]
-        ExtensionEntry[src/extension.ts]
-        Bootstrap[src/bootstrap/StoryboardApplication]
-        Presentation[src/presentation commands, providers, messaging]
-        Application[src/application use cases and pipelines]
-        Infrastructure[src/infrastructure adapters]
-        Domain[src/domain policies and codecs]
-        Shared[src/shared contracts]
+        ExtensionEntry[apps/desktop/src/extension.ts]
+        Bootstrap[apps/desktop/src/bootstrap/StoryboardApplication]
+        Presentation[apps/desktop/src/presentation commands, providers, messaging]
+        Application[apps/desktop/src/application use cases and pipelines]
+        Infrastructure[apps/desktop/src/infrastructure adapters]
+        Domain[apps/desktop/src/domain policies and codecs]
+        Shared[apps/desktop/src/shared contracts]
         State[VSCode globalState/workspaceState/secrets]
     end
 
     subgraph Webview[Webview UI]
-        App[webview-ui]
+        App[apps/desktop/webview-ui]
         MessageClient[Typed message client]
     end
 
@@ -36,7 +38,7 @@ graph TB
     MessageClient --> App
 ```
 
-The legacy `core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants` directories have been fully migrated into the target layers; `scripts/check-architecture.mjs` now enforces layer direction (no reverse imports, no cycles, no `vscode` import outside the allowed layers).
+The legacy `core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants` directories have been fully migrated into the target layers; `apps/desktop/scripts/check-architecture.mjs` now enforces layer direction (no reverse imports, no cycles, no `vscode` import outside the allowed layers).
 
 ## Domain Boundaries
 
@@ -69,9 +71,9 @@ Cline demonstrates a mature VSCode extension architecture with extension-host or
 
 ## Tracked documentation
 
-- `ARCHITECTURE.md` for product concept, workspace layout, and file formats.
-- `STORYBOARD_ALIGNMENT.md` for `.seed` exchange policy with Seeds.
-- `EXTENSION_QA.md` for manual extension QA.
-- `RELEASE.md` for version commits, tags, and GitHub Releases.
-- `GUIDE.md` for draft editor features.
+- `ARCHITECTURE.md` (repo root) for product concept, workspace layout, and file formats.
+- `STORYBOARD_ALIGNMENT.md` (repo root) for `.seed` exchange policy with Seeds.
+- `RELEASE.md` (repo root) for version commits, tags, and GitHub Releases.
+- `apps/desktop/EXTENSION_QA.md` for manual extension QA.
+- `apps/desktop/GUIDE.md` for draft editor features.
 - Optional local-only `.doc/` (gitignored) for migration plans and ADRs.

@@ -4,7 +4,7 @@
 명령은 모두 명령 팔레트(`Cmd/Ctrl + Shift + P`)에서 이름으로 검색해 실행할 수 있고,
 자주 쓰는 것은 사이드바 버튼으로도 있습니다.
 
-> 더 자세한 초안 편집 기능은 [`GUIDE.md`](GUIDE.md), 내부 구조·파일 포맷은 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 보세요.
+> 더 자세한 초안 편집 기능은 [`GUIDE.md`](GUIDE.md), 내부 구조·파일 포맷은 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 보세요.
 
 ---
 
@@ -175,7 +175,7 @@ mood: 설렘
 > **중요**: 작가가 **승격한 설정(canon)만** 생성·검사에 쓰입니다. AI의 후보는 제안일 뿐이라, 검토 전에는
 > 본문에 영향을 주지 않습니다. 설정을 손으로 직접 적고 싶으면 `.storyboard/bible/canon.yaml`을 편집해도 됩니다.
 
-설정 바이블을 직접 적는 형식 예시는 [`ARCHITECTURE.md`](ARCHITECTURE.md)의 4.7절을 참고하세요.
+설정 바이블을 직접 적는 형식 예시는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)의 4.7절을 참고하세요.
 
 ### 8) 원고 조립·검사·내보내기
 
@@ -197,7 +197,7 @@ mood: 설렘
 - **`Storyboard: Export Project to Seed...`** → 프로젝트를 `.seed` 아카이브 한 파일로 내보냅니다(변경 이력 포함).
 - 받은 `.seed`는 **`Create Project from Seed...`**(새 프로젝트) 또는 **`Sync Project from Seed...`**
   (기존에 병합, 탐색기에서 `.seed` 우클릭)로 가져옵니다.
-- 초안·캐시·후보는 재생성 가능하므로 `.seed`에 포함되지 않습니다. 정책: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md).
+- 초안·캐시·후보는 재생성 가능하므로 `.seed`에 포함되지 않습니다. 정책: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md).
 
 ---
 
@@ -270,6 +270,6 @@ mood: 설렘
 ## 7. 더 보기
 
 - [`GUIDE.md`](GUIDE.md) — 초안 편집 기능(완성/문법/확장/연속성) 사용법
-- [`ARCHITECTURE.md`](ARCHITECTURE.md) — 폴더·파일 포맷·명령·설정 키 전체
-- [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md) — `.seed` 교환 정책
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md) — 폴더·파일 포맷·명령·설정 키 전체
+- [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md) — `.seed` 교환 정책
 - [`EXTENSION_QA.md`](EXTENSION_QA.md) — 수동 점검 체크리스트

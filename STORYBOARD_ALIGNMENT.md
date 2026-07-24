@@ -6,8 +6,8 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 
 **구현**
 
-- 인코딩·디코딩: [`src/services/seedcoat/projectAdapter.ts`](src/services/seedcoat/projectAdapter.ts)
-- VS Code 명령: [`src/commands/importSeed.ts`](src/commands/importSeed.ts)
+- 인코딩·디코딩: [`apps/desktop/src/infrastructure/seedcoat/projectAdapter.ts`](apps/desktop/src/infrastructure/seedcoat/projectAdapter.ts)
+- VS Code 명령: [`apps/desktop/src/presentation/commands/importSeed.ts`](apps/desktop/src/presentation/commands/importSeed.ts)
 
 ## 디스크 매핑
 
@@ -26,7 +26,7 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 - **내보내기**는 워크스페이스 상태로 새 저장소를 만들고(`init` → `note` → `save`) 노트 1개를 기록한다. 기존 `.seed`의 이력을 이어가지 않는다.
 - 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`는 `.seed` 왕복에서 보존되지 않는다(seedcoat canonical 스키마가 알려진 필드만 기록).
 - `draft/`, `.storyboard/cache/`는 아카이브에 포함하지 않으며 Seed 동기화 시에도 소스로 취급하지 않는다.
-- 씬 `stem`은 seedcoat 기준으로 숫자 prefix(`^[0-9]+-`)면 유효하지만, Storyboard 내보내기는 **두 자리 prefix**(`^\d{2}-`) 정책을 유지한다. 보내기 전 [`src/files/seedExportPreflight.ts`](src/files/seedExportPreflight.ts)로 `editor.scenePrefixDigits === 2`와 stem 규칙을 사전 검사한다.
+- 씬 `stem`은 seedcoat 기준으로 숫자 prefix(`^[0-9]+-`)면 유효하지만, Storyboard 내보내기는 **두 자리 prefix**(`^\d{2}-`) 정책을 유지한다. 보내기 전 [`apps/desktop/src/infrastructure/seedcoat/seedExportPreflight.ts`](apps/desktop/src/infrastructure/seedcoat/seedExportPreflight.ts)로 `editor.scenePrefixDigits === 2`와 stem 규칙을 사전 검사한다.
 - `project.json`의 `editor.trackDraft`는 seed `project`에 **포함하지 않는다**. Seed로 **동기화**하면 디스크의 `project.json`이 디코드 결과로 덮어쓰이므로 `trackDraft`는 유지되지 않을 수 있다. 로컬에서만 쓰는 값은 동기화 전 백업하거나, 동기화 후 다시 설정한다.
 
 ## 씬 stem: Seeds vs Storyboard
@@ -39,5 +39,5 @@ Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약�
 - **seedcoat v0.2 암호화 `.seed`는 읽을 수 없다.** 보낸 쪽(Seeds 또는 구버전 Storyboard)에서 최신 형식으로 다시 내보내야 한다. Seeds 앱도 `@seedcoat/wasm` v0.5 이상으로 전환되어야 교환이 성립한다.
 - **저장소 포맷 v1→v2 breaking.** seedcoat 0.5.0은 저장소 포맷을 v1에서 v2(매니페스트 + per-entity 블롭)로 바꿨다. 구버전 Storyboard(0.4.x, `@seedcoat/wasm` v0.4)가 내보낸 v1 `.seed`는 `UNSUPPORTED_FORMAT`으로 거부되며 자동 마이그레이션 경로가 없다 — 보낸 쪽에서 v0.5로 다시 내보내야 한다. (아카이브 래퍼 포맷은 여전히 `seedcoat archive v1`로 불변.)
 - 기존 워크스페이스의 구 `type: background` 카드(`type: background` 단일 타입)는 Zod 검증에서 실패한다. 자동 마이그레이션·변환 도구는 없으며, 카드를 `location` / `temporal` / `social` 판별 유니온으로 **수동 수정**한 뒤 보내기/읽기를 시도한다.
-- 오류 코드 → 한국어 메시지: [`src/constants/projectStorageMessages.ts`](src/constants/projectStorageMessages.ts)
+- 오류 코드 → 한국어 메시지: [`apps/desktop/src/infrastructure/seedcoat/projectStorageMessages.ts`](apps/desktop/src/infrastructure/seedcoat/projectStorageMessages.ts)
 - 이력 조회(`log`)·되돌리기(`reset` / `revert`) UI는 아직 노출하지 않는다(후속 작업).

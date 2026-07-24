@@ -4,13 +4,13 @@ Use project-defined scripts and keep verification appropriate to the current rep
 
 ## Before Running Commands
 
-- Inspect `package.json` first.
+- Inspect `package.json` first. The repo-root manifest defines only `build`, `compile`, `lint`, `test`, and `package:vsix` (each delegating to the extension workspace); every other script lives in `apps/desktop/package.json`.
 - Prefer existing scripts over ad-hoc commands.
 - Do not assume script names; VSCode extensions often use `compile` rather than `build`.
 
 ## Recommended Verification Layers
 
-When available:
+When available, run these from the repo root:
 
 ```bash
 npm run compile
@@ -18,7 +18,7 @@ npm run lint
 npm test
 ```
 
-For webview-specific work, use webview-specific scripts if the repository defines them.
+For webview-specific work, use webview-specific scripts if the repository defines them; those live only in `apps/desktop/package.json`, so run them from `apps/desktop`.
 
 Run focused tests first for narrow changes. Broaden verification when shared behavior, message contracts, persistence, or extension lifecycle code changes.
 
@@ -41,6 +41,6 @@ Mock external APIs, subprocesses, Git repositories, and network access in unit t
 If automated scripts do not exist yet, state that verification is limited and manually inspect:
 
 - File paths and imports.
-- `package.json` contribution consistency.
+- `apps/desktop/package.json` contribution consistency.
 - Message contracts between extension host and webview.
 - TypeScript syntax and obvious runtime issues.

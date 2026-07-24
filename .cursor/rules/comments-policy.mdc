@@ -42,7 +42,7 @@ Do not add untracked `TODO` or `FIXME` comments.
 
 ## Tooling
 
-- ESLint policy is duplicated at the top of `.eslintrc.cjs`; `no-warning-comments` discourages ambiguous `xxx`-style markers.
+- ESLint policy is duplicated at the top of `apps/desktop/.eslintrc.cjs`; `no-warning-comments` discourages ambiguous `xxx`-style markers.
 
 ## Webview / extension boundaries
 

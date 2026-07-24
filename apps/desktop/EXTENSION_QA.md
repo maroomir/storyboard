@@ -2,7 +2,7 @@
 
 Storyboard의 기본 동작과 장편 생성 흐름을 검증하는 **dogfooding** 체크리스트입니다. GitHub Releases용 VSIX를 준비하기 전에, 아래 절차로 **실제 VS Code**에서 한 번씩 확인합니다.
 
-문서상 출시 로드맵과 현재 파이프라인 범위는 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 기준으로 한다. `.picktion` import는 비목표다.
+문서상 출시 로드맵과 현재 파이프라인 범위는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 기준으로 한다. `.picktion` import는 비목표다.
 
 자동화 테스트(`npm test`)는 결정적 로직 위주입니다. 이 문서의 항목은 **Extension Development Host(F5)** 또는 **로컬 VSIX**로 확인합니다.
 
@@ -33,12 +33,12 @@ npm install
 npm run build
 ```
 
-- **성공 기준**: 에러 없이 끝나고, `out/extension.js` 및 `out/webview-ui/` 산출물이 생깁니다.
+- **성공 기준**: 에러 없이 끝나고, `apps/desktop/out/extension.js` 및 `apps/desktop/out/webview-ui/` 산출물이 생깁니다.
 
 **웹뷰(UI)만 수정하고 다시 확인할 때**
 
-- 저장소 루트에서 **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함).
-- 확장 호스트 코드(`src/` 등)는 바뀌지 않았다면 `npm run compile`은 생략 가능합니다.
+- **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함). 이 스크립트는 루트에 없으므로 `cd apps/desktop` 후 실행하거나 `npm run build:webview --workspace storyboard`로 실행합니다.
+- 확장 호스트 코드(`apps/desktop/src/` 등)는 바뀌지 않았다면 `npm run compile`은 생략 가능합니다(루트에서 실행 가능).
 - 이미 떠 있는 **Extension Development Host** 창에서는 빌드 후 **`Developer: Reload Window`**로 리로드해야 변경된 웹뷰가 보이는 경우가 많습니다.
 
 ### 1. Extension Development Host 열기
@@ -251,7 +251,7 @@ npm run build
 ### 11. API 키·기본 provider (`storyboard.defaultProvider`)
 
 Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`로 고릅니다.  
-가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`package.json`의 `contributes.configuration`과 동일).
+가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`apps/desktop/package.json`의 `contributes.configuration`과 동일).
 
 #### A. 키 없이 스모크 (`mock`)
 
@@ -315,14 +315,15 @@ Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`
 
 ## B안: VSIX로 검증 (배포 없이 “설치 경험”만)
 
-저장소 루트에서:
+저장소 루트에서 빌드한 뒤, 패키징은 확장 워크스페이스에서 실행한다:
 
 ```bash
 npm run build
+cd apps/desktop
 npx @vscode/vsce package
 ```
 
-- **성공 기준**: `storyboard-<version>.vsix`(또는 지정한 출력 이름)가 생성된다.
+- **성공 기준**: `apps/desktop/storyboard-<version>.vsix`(또는 지정한 출력 이름)가 생성된다.
 - **용량**: `.vsix`가 **50MB 미만**인지 확인한다 (`du -h *.vsix` 등).
 
 일반 VS Code 창에서:
@@ -335,7 +336,7 @@ npx @vscode/vsce package
 
 ## `.seed` 저장소 아카이브 (seedcoat v0.4)
 
-**전제**: `npm run compile` 결과 번들(`out/extension.js`)에 `@seedcoat/wasm`이 포함된 상태에서 F5 또는 VSIX로 검증한다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope `.seed`는 지원하지 않는다.
+**전제**: `npm run compile` 결과 번들(`apps/desktop/out/extension.js`)에 `@seedcoat/wasm`이 포함된 상태에서 F5 또는 VSIX로 검증한다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope `.seed`는 지원하지 않는다.
 
 ### 준비
 
@@ -372,12 +373,12 @@ npx @vscode/vsce package
 ### 데이터·호환
 
 - [ ] 보내기 다이얼로그에 arc/profile 등 **미포함** 안내가 있다. round-trip 후 해당 필드가 사라지는지 확인한다(의도된 동작).
-- [ ] `trackDraft` 등 seed `project` envelope에 없는 필드는 동기화 시 덮어쓰기 정책을 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)와 대조한다.
+- [ ] `trackDraft` 등 seed `project` envelope에 없는 필드는 동기화 시 덮어쓰기 정책을 [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)와 대조한다.
 - [ ] 구 `type: background` 카드가 있는 워크스페이스는 보내기/읽기 실패 시 메시지로 원인을 파악할 수 있다.
 
 ### VSIX 패키징
 
-- [ ] `npm run package:vsix -- --out dist/storyboard-<version>.vsix` 성공.
+- [ ] `apps/desktop`에서 `npm run package:vsix -- --out dist/storyboard-<version>.vsix` 성공.
 - [ ] VSIX 설치 후 위 **보내기·가져오기**를 **최소 1회** 반복한다.
 
 ---
@@ -421,10 +422,10 @@ npm test
 - [ ] `npm run build` 성공
 - [ ] `npm run lint` 성공
 - [ ] `npm test` 성공
-- [ ] `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
+- [ ] `apps/desktop`에서 `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
 - [ ] 위 A안 또는 B안의 수동 플로우를 최소 1회 통과
 - [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리와 Characters / Backgrounds 컴팩트 카드 열기·삭제를 확인
 - [ ] **8a~8c** 절차로 작품 계약, outline, 씬 시드, 장편 산출물 명령을 확인
 - [ ] **1주 dogfooding** (매일 짧게라도 실제 작업 흐름에 넣고 이슈 적기)
 
-저장소 릴리스 태그 생성과 GitHub Release 업로드는 별도 릴리스 절차([`RELEASE.md`](RELEASE.md))에서 확인한다.
+저장소 릴리스 태그 생성과 GitHub Release 업로드는 별도 릴리스 절차([`RELEASE.md`](../../RELEASE.md))에서 확인한다.

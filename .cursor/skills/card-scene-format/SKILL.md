@@ -8,7 +8,7 @@ description: >-
 
 # Card and scene formats (Storyboard)
 
-Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/card.ts`](src/shared/card.ts), [`src/shared/scene.ts`](src/shared/scene.ts). Extended ADR (local): `.doc/decisions/02-card-files-and-editor.md`.
+Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`apps/desktop/src/shared/card.ts`](apps/desktop/src/shared/card.ts), [`apps/desktop/src/shared/scene.ts`](apps/desktop/src/shared/scene.ts). Extended ADR (local): `.doc/decisions/02-card-files-and-editor.md`.
 
 ## Workspace model
 
@@ -19,24 +19,24 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`src/shared/car
 ## `.card` (YAML)
 
 - On disk: YAML; UI: custom text editor for `*.card`.
-- **Card `id`**: `^[a-z0-9][a-z0-9-]*$` only (ASCII). Human-readable names go in `name`. Keeps filenames and refs portable—see `cardIdPattern` / `cardSchema` in [`src/shared/card.ts`](src/shared/card.ts).
+- **Card `id`**: `^[a-z0-9][a-z0-9-]*$` only (ASCII). Human-readable names go in `name`. Keeps filenames and refs portable—see `cardIdPattern` / `cardSchema` in [`apps/desktop/src/shared/card.ts`](apps/desktop/src/shared/card.ts).
 - **Source of truth for edits**: `TextDocument`; webview/form changes serialize to YAML and replace document text (full replace is acceptable until diff sync is needed).
-- **Codec**: keep `parseCard` / `serializeCard` in [`src/files/card.ts`](src/files/card.ts) testable with round-trip tests.
-- **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `src/shared/card.ts`) wherever a field is fed to prompts/hashes. Legacy prose cards are converted by the `storyboard.cards.migrateTextToList` command (`src/core/cardTextMigration.ts`).
+- **Codec**: keep `parseCard` / `serializeCard` in [`apps/desktop/src/domain/files/card.ts`](apps/desktop/src/domain/files/card.ts) testable with round-trip tests.
+- **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `apps/desktop/src/shared/card.ts`) wherever a field is fed to prompts/hashes. Legacy prose cards are converted by the `storyboard.cards.migrateTextToList` command (`apps/desktop/src/domain/cardTextMigration.ts`).
 
 ## Scenes (`scene/*.txt`)
 
-- Filename: `NN-<slug>.txt` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`src/shared/scene.ts`](src/shared/scene.ts).
+- Filename: `NN-<slug>.txt` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`apps/desktop/src/shared/scene.ts`](apps/desktop/src/shared/scene.ts).
 - Optional YAML frontmatter for title, characters, location, mood; body is the scene seed text.
-- **Background attachment**: a scene attaches a background via frontmatter `location: <id>`, or—when absent—by auto-detecting a background whose `name`/`aliases` appear in the body (most-specific/longest match wins). Mirrors character name/alias detection; see `resolveSceneBackground`/`detectSceneBackground` in [`src/core/sceneContext.ts`](src/core/sceneContext.ts). Backgrounds support an optional `aliases: string[]` for body surface forms.
+- **Background attachment**: a scene attaches a background via frontmatter `location: <id>`, or—when absent—by auto-detecting a background whose `name`/`aliases` appear in the body (most-specific/longest match wins). Mirrors character name/alias detection; see `resolveSceneBackground`/`detectSceneBackground` in [`apps/desktop/src/domain/sceneContext.ts`](apps/desktop/src/domain/sceneContext.ts). Backgrounds support an optional `aliases: string[]` for body surface forms.
 
 ## Drafts and cache
 
 - `draft/<scene>.md`: AI-generated prose; may be overwritten on regenerate.
-- `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`: previous-draft history archived before an overwrite when `storyboard.draft.keepHistory` is on (off by default). Local archive time + per-scene incrementing revision; gitignored like `draft/`. See `archiveExistingDraft` in [`src/files/draftHistory.ts`](src/files/draftHistory.ts), wired in [`src/commands/generateDraft.ts`](src/commands/generateDraft.ts).
+- `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`: previous-draft history archived before an overwrite when `storyboard.draft.keepHistory` is on (off by default). Local archive time + per-scene incrementing revision; gitignored like `draft/`. See `archiveExistingDraft` in [`apps/desktop/src/domain/files/draftHistory.ts`](apps/desktop/src/domain/files/draftHistory.ts), wired in [`apps/desktop/src/presentation/commands/generateDraft.ts`](apps/desktop/src/presentation/commands/generateDraft.ts).
 - `.storyboard/cache/scenes/<scene>.json`: extension-managed context snapshots; users should not hand-edit paths outside the tool.
 
 ## When changing formats
 
-- Update zod schemas, file helpers, and **fixtures** under `test/fixtures/` together.
+- Update zod schemas, file helpers, and **fixtures** under `apps/desktop/test/fixtures/` together.
 - Run: `npm run test` and any card/scene-specific specs you touched.

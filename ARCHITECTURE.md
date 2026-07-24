@@ -234,15 +234,15 @@ description:
 
 #### 파라미터 입력 주체 (수기 vs AI 자동)
 
-카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `docs/card-parameter-impact.md`.
+카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `apps/desktop/docs/card-parameter-impact.md`.
 
 - **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
 - **AI 자동 갱신(이야기 진행으로 누적되는 값)**: 캐릭터 `traits`·`recentDialogues`·`attributes`·`arc`·`relations`, 배경 `characterIds`. 스키마/YAML에는 유지되지만 `편집` 탭에 입력란을 두지 않는다.
-  - `traits`·`recentDialogues`는 `src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
-  - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`src/infrastructure/ai/backgroundCharacterUpdater.ts`).
-  - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
+  - `traits`·`recentDialogues`는 `apps/desktop/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
+  - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/desktop/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
+  - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/desktop/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
   - 적재 전 자기검증: `storyboard.draft.verifyCardCandidates` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
-  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
+  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`apps/desktop/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
   - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.3 `.png`
@@ -361,7 +361,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 ### 4.8a `.storyboard/cache/cards/<scene>.json` (카드 필드 후보)
 
 bible candidate와 같은 결을 가지는, **캐릭터 카드 필드용** 후보 캐시다. 초안 생성 시 등장 인물별로
-`relations`·`arc`·`attributes`를 AI가 추출(`cardFactExtraction`)해 여기에 적재한다(`src/infrastructure/ai/cardCandidateUpdater.ts`).
+`relations`·`arc`·`attributes`를 AI가 추출(`cardFactExtraction`)해 여기에 적재한다(`apps/desktop/src/infrastructure/ai/cardCandidateUpdater.ts`).
 `Storyboard: Promote Card Candidates` 명령으로 작가가 고른 항목만 해당 캐릭터 카드에 병합한다.
 relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고, attributes는 카드에 없는 key만 제안한다(기존 값 비파괴).
 배경 `characterIds`는 후보를 거치지 않고 배경 카드에 결정적으로 직접 기록된다.
@@ -426,7 +426,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 
 ## 6. 설정 키
 
-`package.json#contributes.configuration`에 다음을 노출한다.
+`apps/desktop/package.json#contributes.configuration`에 다음을 노출한다.
 
 - `storyboard.defaultProvider`: `"openai" | "claude" | "google" | "ollama" | "claude-code" | "codex" | "mock"`
 - `storyboard.providers.openai.model`
@@ -513,7 +513,7 @@ ReviewIssue {
 
 - `category → target.agent` 매핑은 **결정적 규칙**이다(감독이 LLM으로 추론하지 않음): voice→persona(cardId), continuity→canon, repetition·purpose→narrator, grammar→copy-editor(검수자 직접 수정).
 - 감독은 타깃별로 그룹핑해 해당 에이전트만 재호출하고, 다른 단계는 씬 캐시(4.6)·카드 메모리(4.9)에서 재사용한다. 타깃이 없는 전역 이슈일 때만 전체 재작성으로 폴백한다.
-- 구현됨(Phase G-3). `src/shared/reviewRouting.ts`가 `category→agent` 결정 매핑과 `routeReviewIssues`(canon→persona→narrator 고정 순서)를 제공하고, `reviseDraftWorkflow`가 그룹별로 스코프된 지시를 만들어 `reviseDraft`를 순차 호출한다. `voice.cardId`는 `excerpt`를 등장인물 name·alias와 대조해 best-effort로 채우며(단일 매칭일 때만), 매칭 실패 시 persona 그룹을 등장 캐릭터 전체 대상으로 처리한다. grammar는 현 revise 루프에 검사 경로가 없어 라우팅 대상에서 제외하고 타입에만 둔다. setting 라우팅은 G-4 전까지 비활성이다.
+- 구현됨(Phase G-3). `apps/desktop/src/shared/reviewRouting.ts`가 `category→agent` 결정 매핑과 `routeReviewIssues`(canon→persona→narrator 고정 순서)를 제공하고, `reviseDraftWorkflow`가 그룹별로 스코프된 지시를 만들어 `reviseDraft`를 순차 호출한다. `voice.cardId`는 `excerpt`를 등장인물 name·alias와 대조해 best-effort로 채우며(단일 매칭일 때만), 매칭 실패 시 persona 그룹을 등장 캐릭터 전체 대상으로 처리한다. grammar는 현 revise 루프에 검사 경로가 없어 라우팅 대상에서 제외하고 타입에만 둔다. setting 라우팅은 G-4 전까지 비활성이다.
 
 ### 8.4 비목표
 
@@ -590,7 +590,15 @@ ReviewIssue {
 
 ## 12. Extension Host Implementation Structure
 
-`src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로의 구조 전환을 완료했다. legacy 디렉토리(`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`)는 모두 목표 계층으로 이동했고, layer 방향은 `scripts/check-architecture.mjs`가 CI에서 강제한다.
+### 12.0 모노레포 배치
+
+저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. VSCode 확장은 `apps/desktop/`에 있으며 확장 매니페스트(버전 포함)는 `apps/desktop/package.json`이다. 텔레그램 봇(`apps/bot/`)과 공유 패키지(`packages/*`)는 계획 단계다.
+
+아래 12.1의 경로는 모두 `apps/desktop/` 기준이며, import alias는 `@/*` → `apps/desktop/src/*`, `@webview/*` → `apps/desktop/webview-ui/src/*`이다.
+
+### 12.1 계층 구조
+
+`apps/desktop/src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로의 구조 전환을 완료했다. legacy 디렉토리(`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`)는 모두 목표 계층으로 이동했고, layer 방향은 `apps/desktop/scripts/check-architecture.mjs`가 CI에서 강제한다.
 
 ```text
 extension.ts
