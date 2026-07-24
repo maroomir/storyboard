@@ -4,7 +4,25 @@
 
 The current implementation is still smaller than that target. Treat `scene/*.txt → draft/*.md`, cards, canon, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
-The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json`; the VSCode extension lives in `apps/desktop`. A Telegram bot (`apps/bot`) and shared `packages/*` are planned but not implemented yet.
+The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json`.
+
+## Monorepo Layout
+
+| Workspace | Name | Role |
+|---|---|---|
+| `apps/desktop` | `storyboard` | The VSCode extension. Holds the released version and the only `v*` tag. |
+| `apps/bot` | `storygram` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
+| `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
+| `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
+| `packages/story-git` | `@storyboard/story-git` | Commit/sync layer: `GitClient`, `SyncService`, push scheduling, and workspace git onboarding. |
+
+Packages expose TypeScript **source** (no build step); each app resolves them through its own
+tsconfig `paths`, esbuild `alias`, and vitest `alias`. `apps/desktop/scripts/check-architecture.mjs`
+enforces that no package imports `vscode` or an app module.
+
+Both apps write through the same codecs, so a card edited in Telegram and a card edited in VSCode
+serialize to identical bytes — the shared fixtures in `packages/story-format/test/fixtures/` are the
+round-trip guard for that claim.
 
 ## Current Extension-Host Architecture
 

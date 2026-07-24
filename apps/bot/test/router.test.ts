@@ -7,6 +7,7 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatContext } from '../src/chat/context';
+import { createDoctorHandler } from '../src/chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit';
 import {
   createBibleHandler,
@@ -193,5 +194,78 @@ describe('UpdateRouter', () => {
     await router.handleUpdate(message('/rename elia 엘리아나'));
 
     expect(sent[0]).toContain('지금은 저장할 수 없습니다');
+  });
+});
+
+describe('/doctor', () => {
+  let fixture: WorkspaceFixture;
+  let router: UpdateRouter;
+  let sent: string[];
+
+  function build(root: string): void {
+    const store = new WorkspaceStore(root);
+    const client = new GitClient(root);
+    const sync = new SyncService(client, {}, silentLogger);
+    const gate = new MutateGate(store, client, sync, silentLogger, {
+      isTrackedPath: createDefaultTrackedPathPredicate(),
+    });
+    const content = new ContentService(store, gate);
+    const sender = {
+      sendMessage: async (_c: number, view: MessageView): Promise<SentMessageRef> => {
+        sent.push(view.text);
+        return { chatId: 1, messageId: sent.length };
+      },
+      editMessage: async (): Promise<void> => undefined,
+      answerCallback: async (): Promise<void> => undefined,
+      sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
+    };
+    const registry = new CommandRegistry();
+    registry.register(createDoctorHandler());
+    router = new UpdateRouter({
+      sender,
+      registry,
+      buildContext: (update) => new ChatContext(update, sender, content, store, sync),
+      logger: silentLogger,
+    });
+  }
+
+  beforeEach(() => {
+    sent = [];
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it('reports a healthy workspace', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root);
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('✅ git: 커밋 가능');
+    expect(sent[0]).toContain('✅ 동기화 상태: no-remote');
+  });
+
+  it('flags a workspace that is not a repository and offers the repair', async () => {
+    fixture = createWorkspaceFixture({ initGit: false });
+    build(fixture.root);
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('❌ git:');
+    expect(sent[0]).toContain('/doctor init');
+  });
+
+  it('initializes the repository on explicit confirmation, ignoring generated files', async () => {
+    fixture = createWorkspaceFixture({ initGit: false });
+    fixture.write('draft/01-first.md', 'generated\n');
+    build(fixture.root);
+
+    await router.handleUpdate(message('/doctor init'));
+
+    expect(sent[0]).toContain('git 저장소를 초기화했습니다');
+    expect(sent[0]).toContain('이제 편집 명령을 쓸 수 있습니다');
+    expect(git(fixture.root, 'ls-files')).not.toContain('draft/01-first.md');
   });
 });

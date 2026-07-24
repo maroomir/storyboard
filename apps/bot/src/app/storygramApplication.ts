@@ -10,6 +10,7 @@ import {
   createStatusHandler,
   createSyncHandler,
 } from '../chat/handlers/read';
+import { createDoctorHandler } from '../chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../chat/handlers/edit';
 import type { IncomingUpdate } from '../chat/ports';
 import { CommandRegistry } from '../chat/registry';
@@ -69,6 +70,7 @@ export class StorygramApplication {
       createScenesHandler(),
       createBibleHandler(),
       createSyncHandler(),
+      createDoctorHandler(),
       createRenameHandler(),
       createSetHandler(),
     ]) {
