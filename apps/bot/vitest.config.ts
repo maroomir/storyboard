@@ -12,6 +12,7 @@ export default defineConfig({
         packageRoot,
         '../../packages/story-format/src/index.ts',
       ),
+      '@storyboard/story-git': path.join(packageRoot, '../../packages/story-git/src/index.ts'),
     },
   },
   test: {

@@ -24,6 +24,9 @@
     "paths": {
       "@storyboard/story-format": [
         "../../packages/story-format/src/index.ts"
+      ],
+      "@storyboard/story-git": [
+        "../../packages/story-git/src/index.ts"
       ]
     },
     "noEmit": true

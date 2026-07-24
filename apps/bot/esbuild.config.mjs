@@ -21,5 +21,6 @@ await esbuild.build({
   banner: { js: '#!/usr/bin/env node' },
   alias: {
     '@storyboard/story-format': path.join(packageRoot, '../../packages/story-format/src/index.ts'),
+    '@storyboard/story-git': path.join(packageRoot, '../../packages/story-git/src/index.ts'),
   },
 });

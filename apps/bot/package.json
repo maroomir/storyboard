@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@storyboard/story-format": "*",
+    "@storyboard/story-git": "*",
     "better-sqlite3": "^11.8.1",
     "grammy": "^1.30.0",
     "js-yaml": "^4.1.1",
