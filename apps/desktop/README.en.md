@@ -29,7 +29,7 @@ Korean README: [`README.md`](README.md)
 - Localize extension command titles through `package.nls.json` and `package.nls.ko.json`.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
 
-The current implementation supports both the manual `scene/*.txt` → `draft/*.md` flow and the one-click long-form generation flow. One-click generation stores resumable stage state in `.storyboard/cache/novel-run.json`; long-manuscript PDF/DOCX export and deeper batch review remain follow-up work. See [`ARCHITECTURE.md`](ARCHITECTURE.md) for the structure.
+The current implementation supports both the manual `scene/*.txt` → `draft/*.md` flow and the one-click long-form generation flow. One-click generation stores resumable stage state in `.storyboard/cache/novel-run.json`; long-manuscript PDF/DOCX export and deeper batch review remain follow-up work. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md) for the structure.
 
 ## Project Model
 
@@ -86,18 +86,18 @@ For webview-only changes, run `npm run build:webview`, then run `Developer: Relo
 - `.seed` files are **repository archives** (`seedcoat archive v1`) produced by [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 and preserve the full change history. Old encrypted binaries (v0.2) and legacy plaintext JSON envelopes are not supported.
 - `.seed` files are **not encrypted**. Passphrases are no longer used; exporting shows a one-time unencrypted-file notice.
 - Character `arc` / `recentDialogues` / `profile` / `attributes` and `draft/` are not included in `.seed` files.
-- Policy summary: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
+- Policy summary: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)
 
 ## Documentation
 
 Public docs live at the repo root as uppercase Markdown files. Extended plans and decision logs are not shipped in the remote repo; maintain a local-only `.doc/` directory when needed.
 
 - [`GETTING_STARTED.md`](GETTING_STARTED.md): writer-facing getting started guide (beginner walkthrough)
-- [`ARCHITECTURE.md`](ARCHITECTURE.md): product architecture and file model
-- [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` policy
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md): product architecture and file model
+- [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` policy
 - [`GUIDE.md`](GUIDE.md): draft editor feature guide
 - [`EXTENSION_QA.md`](EXTENSION_QA.md): manual QA checklist
-- [`RELEASE.md`](RELEASE.md): release process
+- [`RELEASE.md`](../../RELEASE.md): release process
 - [`CHANGELOG.en.md`](CHANGELOG.en.md): changelog (English)
 
 ## License

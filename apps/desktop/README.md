@@ -35,7 +35,7 @@ English README: [`README.en.md`](README.en.md)
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 
-현재 구현은 수동 `scene/*.txt → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](ARCHITECTURE.md)를 봅니다.
+현재 구현은 수동 `scene/*.txt → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
 
 이야기 완결과 씬 기반 카드 구성은 수동 작업이며 자동 장편 파이프라인에 포함되지 않습니다. 두 기능 모두 검토 중 입력 씬·카드·디렉터리가 달라지면 적용을 중단하고 다시 제안해야 합니다. 선택 결과는 하나의 VS Code `WorkspaceEdit`로 적용하지만, 프로세스 크래시까지 보장하는 트랜잭션은 아닙니다.
 
@@ -112,18 +112,18 @@ CLI provider 사용 시 참고할 점:
 - `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
 - `.seed`는 **암호화되지 않습니다**. 패스프레이즈는 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시합니다.
 - 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
-- 정책 요약: [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)
+- 정책 요약: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)
 
 ## 문서
 
 공개 문서는 저장소 루트의 대문자 Markdown을 기준으로 합니다. 상세 계획·의사결정 기록 등 확장 문서는 원격에 포함되지 않으며, 필요 시 로컬에만 `.doc/` 디렉터리를 두고 관리할 수 있습니다.
 
 - [`GETTING_STARTED.md`](GETTING_STARTED.md): 작가용 시작 가이드 (초보자용 전체 흐름)
-- [`ARCHITECTURE.md`](ARCHITECTURE.md): 제품 아키텍처와 파일 모델
-- [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` 정책
+- [`ARCHITECTURE.md`](../../ARCHITECTURE.md): 제품 아키텍처와 파일 모델
+- [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` 정책
 - [`GUIDE.md`](GUIDE.md): draft 편집 기능 사용법
 - [`EXTENSION_QA.md`](EXTENSION_QA.md): 수동 QA 체크리스트
-- [`RELEASE.md`](RELEASE.md): 릴리스 절차
+- [`RELEASE.md`](../../RELEASE.md): 릴리스 절차
 - [`CHANGELOG.md`](CHANGELOG.md): 변경 내역 (한국어)
 
 ## 라이선스
