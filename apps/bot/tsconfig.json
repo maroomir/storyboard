@@ -27,6 +27,12 @@
       ],
       "@storyboard/story-git": [
         "../../packages/story-git/src/index.ts"
+      ],
+      "@storyboard/story-ai": [
+        "../../packages/story-ai/src/index.ts"
+      ],
+      "@storyboard/story-pipeline": [
+        "../../packages/story-pipeline/src/index.ts"
       ]
     },
     "noEmit": true

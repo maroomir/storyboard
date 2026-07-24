@@ -249,6 +249,10 @@ export class WorkspaceStore {
     return cards.sort((left, right) => left.id.localeCompare(right.id));
   }
 
+  public listDirectoryNames(relativePath: string): Promise<string[]> {
+    return this.listDirectory(relativePath);
+  }
+
   private async listDirectory(relativePath: string): Promise<string[]> {
     try {
       return await readdir(this.absolutePath(relativePath));
