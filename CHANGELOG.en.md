@@ -10,10 +10,28 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-07-24
+
 ### Added
 
 - Added manual **Complete Story** and **Build Cards from Scenes** workflows. Command Palette, Studio, and the relevant sidebar headers invoke the same use cases through AI proposal, selection, native VS Code diff, confirmation, and apply.
 - Completion appends only new `scene/*.txt` files after the final number. Card building uses scenes as the only source of new facts, proposes new cards and field-level enrichments together, and supports selective alias and tag updates.
+- Studio conversations are now persisted per session under `.storyboard/cache/studio-sessions/`. Reopening the view restores the latest session, and a recent-session list (last 20 kept) lets you reopen past conversations or start a new one.
+- Added slash commands to the Studio composer. Typing `/` autocompletes commands for the current target, and a selected slash command runs immediately without the approval step.
+- Added **draft condensation** to Studio. It shortens a draft toward configurable limits and applies only after VS Code diff review. Invalid or too-short automatic revision output preserves the existing draft, and over-fragmented situations are merged to reduce repeated generated scenes.
+- Card files violating the schema (`character/*.card`, `background/*.card`) now appear in the Problems panel with field-level error locations. Previously such cards were silently dropped from scene generation.
+- Added optional `targetWordCount` (positive integer) to scene frontmatter. When set, the genre-format stage receives a per-scene target length directive.
+- Added the `storyboard.providers.codex.reasoningEffort` setting. An empty value falls back to the CLI default.
+- Added the GPT-5.6 Codex models (Sol, Terra, Luna) to the model catalog, with Sol as the default codex model.
+- Improved the headless harness: per-task token usage summary at the end of a run, per-scene background attachment logs with a warning when attachment fails, `SCENE_CLI_TIMEOUT` to override the CLI timeout (default 600s), and `SCENE_EFFORT` to set codex reasoning effort.
+
+### Fixed
+
+- Fixed codex CLI output being decoded per chunk, which corrupted multibyte characters into U+FFFD replacement characters at chunk boundaries. Output is now buffered and UTF-8 decoded once at process exit.
+- Fixed the draft review and rewrite stages losing character voice: neither stage received the scene's character cards, so project quality guidelines could override card voices. Both stages now receive the cards and prioritize card voice.
+- Fixed the Studio webview demoting project targets to none.
+- Fixed valid but undersized manual condensation results being rejected instead of routed to diff review.
+- Fixed headless harness runs failing on stale import paths left over from the architecture reorganization.
 
 ### Safety
 

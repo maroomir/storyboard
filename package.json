@@ -2,7 +2,7 @@
   "name": "storyboard",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "maroomir",
   "license": "Apache-2.0",
   "repository": {
