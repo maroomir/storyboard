@@ -26,6 +26,20 @@ export const workspaceConfigSchema = z.object({
   syncIntervalSec: z.number().int().positive().default(300),
 });
 
+// Slim provider selection. The AI engine itself lives in @storyboard/story-ai; this block only
+// chooses which provider and model it runs with.
+const providerSectionSchema = z.object({
+  model: z.string().trim().min(1).optional(),
+  command: z.string().trim().min(1).optional(),
+  timeoutMs: z.number().int().positive().optional(),
+});
+
+export const providersConfigSchema = z.object({
+  default: z.string().trim().min(1).optional(),
+  tasks: z.record(z.string(), z.unknown()).optional(),
+  models: z.record(z.string(), providerSectionSchema).optional(),
+});
+
 export const privacyConfigSchema = z.object({
   minimizeChatBody: z.boolean().default(false),
 });
@@ -45,6 +59,7 @@ export const dashboardConfigSchema = z.object({
 export const configSchema = z.object({
   telegram: telegramConfigSchema,
   workspace: workspaceConfigSchema,
+  providers: providersConfigSchema.optional(),
   privacy: privacyConfigSchema.default({ minimizeChatBody: false }),
   jobs: jobsConfigSchema.default({ heavyConcurrency: 1, lightConcurrency: 1 }),
   dashboard: dashboardConfigSchema.default({ enabled: true, port: 8787 }),
@@ -52,6 +67,7 @@ export const configSchema = z.object({
 
 export type TelegramConfig = z.infer<typeof telegramConfigSchema>;
 export type WorkspaceConfig = z.infer<typeof workspaceConfigSchema>;
+export type ProvidersConfig = z.infer<typeof providersConfigSchema>;
 export type PrivacyConfig = z.infer<typeof privacyConfigSchema>;
 export type JobsConfig = z.infer<typeof jobsConfigSchema>;
 export type DashboardConfig = z.infer<typeof dashboardConfigSchema>;
