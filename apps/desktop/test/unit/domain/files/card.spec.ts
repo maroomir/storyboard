@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
 import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
-const cardsFixtureDirectory = join(process.cwd(), "test", "fixtures", "cards")
+const cardsFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-format/test/fixtures/cards/", import.meta.url))
 
 describe("card file codec", () => {
   it.each(["character.card", "background.card"])(

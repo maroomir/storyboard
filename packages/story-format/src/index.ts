@@ -4,6 +4,7 @@ export * from './cardReferenceRewriter';
 export * from './characterDetector';
 export * from './Draft';
 export * from './outline';
+export * from './paths';
 export * from './project';
 export * from './sampleCard';
 export * from './scene';

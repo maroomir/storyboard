@@ -1,6 +1,19 @@
+import {
+  STORYBOARD_RELATIVE_PATHS,
+  backgroundCardRelativePath,
+  characterCardRelativePath,
+  characterProfileRelativePath,
+  draftHistorySceneRelativeDirectory,
+  draftRelativePath,
+  isDirectSceneTextRelativePath,
+  isDraftMarkdownRelativePath,
+  parseCardIdFromFileName,
+  sceneFileRelativePath,
+  sceneRelativePath,
+} from '@storyboard/story-format';
 import * as vscode from 'vscode';
 
-export { isIgnoredSampleCardFileName } from '@storyboard/story-format';
+export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: vscode.Uri;
@@ -36,108 +49,96 @@ export interface StoryboardProjectPaths {
   readonly readme: vscode.Uri;
 }
 
+function resolveWorkspacePath(workspaceRoot: vscode.Uri, relativePath: string): vscode.Uri {
+  return vscode.Uri.joinPath(workspaceRoot, ...relativePath.split('/'));
+}
+
 export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): StoryboardProjectPaths {
-  const metadataDirectory = vscode.Uri.joinPath(workspaceRoot, '.storyboard');
-  const cacheDirectory = vscode.Uri.joinPath(metadataDirectory, 'cache');
-  const bibleDirectory = vscode.Uri.joinPath(metadataDirectory, 'bible');
-  const outlineDirectory = vscode.Uri.joinPath(metadataDirectory, 'outline');
-  const characterDirectory = vscode.Uri.joinPath(workspaceRoot, 'character');
-  const backgroundDirectory = vscode.Uri.joinPath(workspaceRoot, 'background');
-  const sceneDirectory = vscode.Uri.joinPath(workspaceRoot, 'scene');
+  const resolve = (relativePath: string): vscode.Uri =>
+    resolveWorkspacePath(workspaceRoot, relativePath);
 
   return {
     workspaceRoot,
-    metadataDirectory,
-    projectJson: vscode.Uri.joinPath(metadataDirectory, 'project.json'),
-    cacheDirectory,
-    usageLedger: vscode.Uri.joinPath(cacheDirectory, 'usage.json'),
-    novelRunState: vscode.Uri.joinPath(cacheDirectory, 'novel-run.json'),
-    sceneCacheDirectory: vscode.Uri.joinPath(cacheDirectory, 'scenes'),
-    personaMemoryDirectory: vscode.Uri.joinPath(cacheDirectory, 'personas'),
-    backgroundMemoryDirectory: vscode.Uri.joinPath(cacheDirectory, 'backgrounds'),
-    bibleCacheDirectory: vscode.Uri.joinPath(cacheDirectory, 'bible'),
-    cardCacheDirectory: vscode.Uri.joinPath(cacheDirectory, 'cards'),
-    studioSessionDirectory: vscode.Uri.joinPath(cacheDirectory, 'studio-sessions'),
-    bibleDirectory,
-    bibleCanon: vscode.Uri.joinPath(bibleDirectory, 'canon.yaml'),
-    outlineDirectory,
-    outlineSynopsis: vscode.Uri.joinPath(outlineDirectory, 'synopsis.md'),
-    outlineChapters: vscode.Uri.joinPath(outlineDirectory, 'chapters.yaml'),
-    outlineRevisionPlan: vscode.Uri.joinPath(outlineDirectory, 'revision-plan.yaml'),
-    characterDirectory,
-    characterProfileDirectory: vscode.Uri.joinPath(characterDirectory, 'profile'),
-    sampleCharacterCard: vscode.Uri.joinPath(characterDirectory, '.sample.card'),
-    backgroundDirectory,
-    sampleBackgroundCard: vscode.Uri.joinPath(backgroundDirectory, '.sample.card'),
-    sceneDirectory,
-    sampleScene: vscode.Uri.joinPath(sceneDirectory, '.sample.txt'),
-    draftDirectory: vscode.Uri.joinPath(workspaceRoot, 'draft'),
-    draftHistoryDirectory: vscode.Uri.joinPath(workspaceRoot, '.draft'),
-    manuscriptDirectory: vscode.Uri.joinPath(workspaceRoot, 'manuscript'),
-    manuscriptVolume: vscode.Uri.joinPath(workspaceRoot, 'manuscript', 'manuscript.md'),
-    gitignore: vscode.Uri.joinPath(workspaceRoot, '.gitignore'),
-    readme: vscode.Uri.joinPath(workspaceRoot, 'README.md'),
+    metadataDirectory: resolve(STORYBOARD_RELATIVE_PATHS.metadataDirectory),
+    projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
+    cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
+    usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
+    novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
+    sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
+    personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
+    backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
+    bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),
+    cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
+    studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
+    bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
+    bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),
+    outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
+    outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
+    outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
+    outlineRevisionPlan: resolve(STORYBOARD_RELATIVE_PATHS.outlineRevisionPlan),
+    characterDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterDirectory),
+    characterProfileDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterProfileDirectory),
+    sampleCharacterCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleCharacterCard),
+    backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
+    sampleBackgroundCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard),
+    sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
+    sampleScene: resolve(STORYBOARD_RELATIVE_PATHS.sampleScene),
+    draftDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftDirectory),
+    draftHistoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory),
+    manuscriptDirectory: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory),
+    manuscriptVolume: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptVolume),
+    gitignore: resolve(STORYBOARD_RELATIVE_PATHS.gitignore),
+    readme: resolve(STORYBOARD_RELATIVE_PATHS.readme),
   };
 }
 
-export function isHiddenSceneFileName(fileName: string): boolean {
-  return fileName.startsWith('.') && fileName.endsWith('.txt');
+function workspaceRelativePath(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): string {
+  const rootPath = workspaceFolder.uri.fsPath.replace(/\\/g, '/');
+  const filePath = uri.fsPath.replace(/\\/g, '/');
+
+  if (!filePath.startsWith(`${rootPath}/`)) {
+    return '';
+  }
+
+  return filePath.slice(rootPath.length + 1);
 }
 
 export function isDraftMarkdownFile(
   uri: vscode.Uri,
   workspaceFolder: vscode.WorkspaceFolder,
 ): boolean {
-  const draftDir = vscode.Uri.joinPath(workspaceFolder.uri, 'draft');
-  const dirPath = draftDir.fsPath.replace(/\\/g, '/').toLowerCase();
-  const filePath = uri.fsPath.replace(/\\/g, '/').toLowerCase();
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false;
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1);
-  return !remainder.includes('/') && remainder.endsWith('.md');
+  return isDraftMarkdownRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
 export function isDirectSceneTextFile(
   uri: vscode.Uri,
   workspaceFolder: vscode.WorkspaceFolder,
 ): boolean {
-  const sceneDir = vscode.Uri.joinPath(workspaceFolder.uri, 'scene');
-  const dirPath = sceneDir.fsPath.replace(/\\/g, '/').toLowerCase();
-  const filePath = uri.fsPath.replace(/\\/g, '/').toLowerCase();
-
-  if (!filePath.startsWith(`${dirPath}/`)) {
-    return false;
-  }
-
-  const remainder = filePath.slice(dirPath.length + 1);
-  return !remainder.includes('/') && remainder.endsWith('.txt');
+  return isDirectSceneTextRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
 export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'character', `${id}.card`);
+  return resolveWorkspacePath(workspaceRoot, characterCardRelativePath(id));
 }
 
 export function characterProfilePath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'character', 'profile', `${id}.png`);
+  return resolveWorkspacePath(workspaceRoot, characterProfileRelativePath(id));
 }
 
 export function backgroundCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'background', `${id}.card`);
+  return resolveWorkspacePath(workspaceRoot, backgroundCardRelativePath(id));
 }
 
 export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'scene', `${prefix}-${slug}.txt`);
+  return resolveWorkspacePath(workspaceRoot, sceneFileRelativePath(prefix, slug));
 }
 
 export function scenePath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'scene', `${sceneStem}.txt`);
+  return resolveWorkspacePath(workspaceRoot, sceneRelativePath(sceneStem));
 }
 
 export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, 'draft', `${sceneStem}.md`);
+  return resolveWorkspacePath(workspaceRoot, draftRelativePath(sceneStem));
 }
 
 export function joinUri(base: vscode.Uri, ...segments: string[]): vscode.Uri {
@@ -148,15 +149,11 @@ export function draftHistorySceneDirectory(
   workspaceRoot: vscode.Uri,
   sceneStem: string,
 ): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, '.draft', sceneStem);
+  return resolveWorkspacePath(workspaceRoot, draftHistorySceneRelativeDirectory(sceneStem));
 }
 
 export function parseCardIdFromPath(uri: vscode.Uri): string | undefined {
   const fileName = uri.path.split('/').at(-1);
 
-  if (!fileName?.endsWith('.card')) {
-    return undefined;
-  }
-
-  return fileName.slice(0, -'.card'.length);
+  return fileName === undefined ? undefined : parseCardIdFromFileName(fileName);
 }
