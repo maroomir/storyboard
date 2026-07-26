@@ -179,3 +179,21 @@ describe("card file codec", () => {
 function readFixtureCard(fixtureName: string): string {
   return readFileSync(join(cardsFixtureDirectory, fixtureName), "utf8")
 }
+
+describe("character role near-misses", () => {
+  it("maps 'support' to the supporting cast instead of demoting to extra", () => {
+    const card = parseCard(
+      ["type: character", "id: junhee", "name: 준희", "role: support"].join("\n")
+    )
+
+    expect(card.type === "character" ? card.role : undefined).toBe("supporting")
+  })
+
+  it("still demotes an unknown role to extra", () => {
+    const card = parseCard(
+      ["type: character", "id: x", "name: 엑스", "role: hero"].join("\n")
+    )
+
+    expect(card.type === "character" ? card.role : undefined).toBe("extra")
+  })
+})

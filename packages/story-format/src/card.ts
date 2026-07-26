@@ -25,6 +25,12 @@ export const characterRoleSchema = z.preprocess((value) => {
     return undefined;
   }
 
+  // Near-miss the demotion-to-extra fallback must not swallow: authors writing the English word
+  // "support" mean the supporting cast, not an extra.
+  if (trimmed === 'support') {
+    return 'supporting';
+  }
+
   return isCharacterRole(trimmed) ? trimmed : 'extra';
 }, z.enum(characterRoles).optional());
 
