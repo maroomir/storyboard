@@ -8,7 +8,7 @@ import { ContentService } from '../src/content/contentService';
 import { startDashboardServer, type DashboardHandle } from '../src/dashboard/server';
 import type { IEnqueueJob } from '../src/gen/jobManager';
 import type { JobView } from '../src/gen/types';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore } from '../src/workspace/workspaceStore';
 import {
   copySharedFixture,
@@ -46,7 +46,7 @@ describe('dashboard server', () => {
     const client = new GitClient(fixture.root);
     const sync = new SyncService(client, {}, silentLogger);
     const gate = new MutateGate(store, client, sync, silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(client),
     });
 
     handle = await startDashboardServer(0, {

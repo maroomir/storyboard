@@ -20,7 +20,7 @@ import { UpdateRouter } from '../src/chat/router';
 import { ContentService } from '../src/content/contentService';
 import { createGenJobs, type GenJobs } from '../src/app/createGenJobs';
 import { openDatabase, type StorygramDatabase } from '../src/store/db';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';
 import {
   copySharedFixture,
@@ -61,7 +61,15 @@ describe('generation jobs end to end', () => {
     copySharedFixture(fixture, 'cards', 'background.card', 'background/school.card');
     fixture.write(
       'scene/01-prologue.txt',
-      ['---', 'title: 프롤로그', 'characters: [elia]', 'location: school', '---', '엘리아의 첫 장면.', ''].join('\n'),
+      [
+        '---',
+        'title: 프롤로그',
+        'characters: [elia]',
+        'location: school',
+        '---',
+        '엘리아의 첫 장면.',
+        '',
+      ].join('\n'),
     );
     execFileSync('git', ['-C', fixture.root, 'add', '--all'], { shell: false });
     execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'seed'], { shell: false });
@@ -70,7 +78,7 @@ describe('generation jobs end to end', () => {
     const client = new GitClient(fixture.root);
     const sync = new SyncService(client, {}, silentLogger);
     const gate = new MutateGate(store, client, sync, silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(client),
     });
     const content = new ContentService(store, gate);
     const aiService = createAiService({ providers: { default: 'mock' } });
@@ -150,9 +158,7 @@ describe('generation jobs end to end', () => {
   it('runs /outline and commits synopsis.md with the enqueue baseline', async () => {
     await router.handleUpdate(message('/outline'));
 
-    await waitFor(() =>
-      existsSync(join(fixture.root, '.storyboard', 'outline', 'synopsis.md')),
-    );
+    await waitFor(() => existsSync(join(fixture.root, '.storyboard', 'outline', 'synopsis.md')));
     await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
 
     const log = execFileSync('git', ['-C', fixture.root, 'log', '-1', '--format=%s'], {
@@ -165,7 +171,9 @@ describe('generation jobs end to end', () => {
   // Decision #14: a Desktop edit landing while the job runs must win over the generated output.
   it('fails the outline job instead of clobbering a Desktop edit made after enqueue', async () => {
     fixture.write('.storyboard/outline/synopsis.md', '# 시놉시스\n\n## 로그라인\n\n원래 내용\n');
-    const originalHash = hashContent(readFileSync(join(fixture.root, '.storyboard/outline/synopsis.md'), 'utf8'));
+    const originalHash = hashContent(
+      readFileSync(join(fixture.root, '.storyboard/outline/synopsis.md'), 'utf8'),
+    );
 
     // Simulate the enqueue-then-desktop-edit race by enqueueing with the pre-edit baseline and
     // editing the file before the worker picks the job up.
@@ -176,7 +184,10 @@ describe('generation jobs end to end', () => {
       options: { baselineHash: originalHash },
       chatId: 1,
     });
-    fixture.write('.storyboard/outline/synopsis.md', '# 시놉시스\n\n## 로그라인\n\nDesktop이 고친 내용\n');
+    fixture.write(
+      '.storyboard/outline/synopsis.md',
+      '# 시놉시스\n\n## 로그라인\n\nDesktop이 고친 내용\n',
+    );
 
     await waitFor(() => sent.some((text) => text.includes('❌ 잡')));
 

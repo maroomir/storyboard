@@ -5,10 +5,7 @@ import { join } from 'node:path';
 import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  MutateGate,
-  createDefaultTrackedPathPredicate,
-} from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';
 import { createWorkspaceFixture, type WorkspaceFixture } from './helpers/workspaceFixture';
 
@@ -31,7 +28,7 @@ describe('MutateGate', () => {
     client = new GitClient(fixture.root);
     const sync = new SyncService(client, {}, silentLogger);
     gate = new MutateGate(store, client, sync, silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(client),
     });
   });
 
@@ -41,7 +38,11 @@ describe('MutateGate', () => {
 
   it('writes a new tracked file and commits exactly that path', async () => {
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined }] },
+      {
+        writes: [
+          { relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined },
+        ],
+      },
       'storygram: create character/elia.card',
     );
 
@@ -50,7 +51,9 @@ describe('MutateGate', () => {
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
       'storygram: create character/elia.card',
     );
-    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe('character/elia.card');
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
+      'character/elia.card',
+    );
   });
 
   it('updates an existing file when the baseline still matches', async () => {
@@ -60,13 +63,23 @@ describe('MutateGate', () => {
     const baseline = hashContent('id: elia\n');
 
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: elia\nname: Elia\n', baselineHash: baseline }] },
+      {
+        writes: [
+          {
+            relativePath: 'character/elia.card',
+            content: 'id: elia\nname: Elia\n',
+            baselineHash: baseline,
+          },
+        ],
+      },
       'storygram: update character/elia.card',
     );
 
     expect(before).toBeUndefined();
     expect(outcome.status).toBe('committed');
-    expect(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8')).toContain('name: Elia');
+    expect(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8')).toContain(
+      'name: Elia',
+    );
   });
 
   // The core concurrent-editing guarantee: a Desktop save between read and write must win.
@@ -79,7 +92,15 @@ describe('MutateGate', () => {
     fixture.write('character/elia.card', 'id: elia\nname: EditedInDesktop\n');
 
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: elia\nname: FromBot\n', baselineHash: baseline }] },
+      {
+        writes: [
+          {
+            relativePath: 'character/elia.card',
+            content: 'id: elia\nname: FromBot\n',
+            baselineHash: baseline,
+          },
+        ],
+      },
       'storygram: update character/elia.card',
     );
 
@@ -98,7 +119,11 @@ describe('MutateGate', () => {
     fixture.write('character/elia.card', 'id: elia\n');
 
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: other\n', baselineHash: undefined }] },
+      {
+        writes: [
+          { relativePath: 'character/elia.card', content: 'id: other\n', baselineHash: undefined },
+        ],
+      },
       'storygram: create character/elia.card',
     );
 
@@ -110,7 +135,15 @@ describe('MutateGate', () => {
 
   it('refuses an update when the file was deleted on disk', async () => {
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/gone.card', content: 'id: gone\n', baselineHash: hashContent('x') }] },
+      {
+        writes: [
+          {
+            relativePath: 'character/gone.card',
+            content: 'id: gone\n',
+            baselineHash: hashContent('x'),
+          },
+        ],
+      },
       'storygram: update character/gone.card',
     );
 
@@ -125,7 +158,15 @@ describe('MutateGate', () => {
     client.commit(['character/elia.card'], 'seed');
 
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: hashContent('id: elia\n') }] },
+      {
+        writes: [
+          {
+            relativePath: 'character/elia.card',
+            content: 'id: elia\n',
+            baselineHash: hashContent('id: elia\n'),
+          },
+        ],
+      },
       'storygram: update character/elia.card',
     );
 
@@ -135,7 +176,11 @@ describe('MutateGate', () => {
 
   it('writes gitignored artifacts without committing them', async () => {
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'draft/01-first.md', content: '# draft\n', baselineHash: undefined }] },
+      {
+        writes: [
+          { relativePath: 'draft/01-first.md', content: '# draft\n', baselineHash: undefined },
+        ],
+      },
       'storygram: generate draft/01-first.md',
     );
 
@@ -149,7 +194,11 @@ describe('MutateGate', () => {
     fixture.write('.git/index.lock', '');
 
     const outcome = await gate.apply(
-      { writes: [{ relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined }] },
+      {
+        writes: [
+          { relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined },
+        ],
+      },
       'storygram: create character/elia.card',
     );
 
@@ -170,9 +219,8 @@ describe('MutateGate', () => {
     );
 
     expect(outcome.status).toBe('committed');
-    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort()).toEqual([
-      'character/a.card',
-      'character/b.card',
-    ]);
+    expect(
+      git(fixture.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort(),
+    ).toEqual(['character/a.card', 'character/b.card']);
   });
 });

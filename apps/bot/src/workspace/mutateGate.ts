@@ -111,10 +111,9 @@ export class MutateGate {
   }
 }
 
-// Generated artifacts live inside the workspace but are gitignored, exactly as the extension
-// scaffolds them. Everything else the bot writes is tracked and therefore committed.
-export function createDefaultTrackedPathPredicate(): (relativePath: string) => boolean {
-  const ignoredPrefixes = ['draft/', '.draft/', 'manuscript/', '.storyboard/cache/'];
-
-  return (relativePath) => !ignoredPrefixes.some((prefix) => relativePath.startsWith(prefix));
+// Tracked-ness follows the WORKSPACE's own git rules, not a fixed list: a project that tracks
+// draft/ (Desktop's trackDraft) gets its generated drafts committed, while the scaffold default
+// (draft/ ignored) keeps them out of history. git check-ignore is the single source of truth.
+export function createGitTrackedPathPredicate(git: GitClient): (relativePath: string) => boolean {
+  return (relativePath) => !git.isIgnored(relativePath);
 }

@@ -21,7 +21,7 @@ import type { IncomingUpdate, MessageView, SentMessageRef } from '../src/chat/po
 import { CommandRegistry } from '../src/chat/registry';
 import { UpdateRouter } from '../src/chat/router';
 import { ContentService } from '../src/content/contentService';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore } from '../src/workspace/workspaceStore';
 import {
   copySharedFixture,
@@ -58,7 +58,7 @@ describe('UpdateRouter', () => {
     const client = new GitClient(fixture.root);
     const sync = new SyncService(client, {}, silentLogger);
     const gate = new MutateGate(store, client, sync, silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(client),
     });
     const content = new ContentService(store, gate);
 
@@ -207,7 +207,7 @@ describe('/doctor', () => {
     const client = new GitClient(root);
     const sync = new SyncService(client, {}, silentLogger);
     const gate = new MutateGate(store, client, sync, silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(client),
     });
     const content = new ContentService(store, gate);
     const sender = {

@@ -6,7 +6,7 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ContentService } from '../src/content/contentService';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore } from '../src/workspace/workspaceStore';
 import { createWorkspaceFixture, type WorkspaceFixture } from './helpers/workspaceFixture';
 
@@ -30,7 +30,7 @@ describe('draft writes', () => {
       client,
       new SyncService(client, {}, silentLogger),
       silentLogger,
-      { isTrackedPath: createDefaultTrackedPathPredicate() },
+      { isTrackedPath: createGitTrackedPathPredicate(client) },
     );
     content = new ContentService(store, gate);
   });
@@ -43,7 +43,9 @@ describe('draft writes', () => {
     const outcome = await content.writeDraft('01-prologue', '# 프롤로그\n본문\n');
 
     expect(outcome).toEqual({ status: 'written', paths: ['draft/01-prologue.md'] });
-    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toContain('프롤로그');
+    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toContain(
+      '프롤로그',
+    );
     // draft/ is gitignored, so history must be untouched.
     expect(git(fixture.root, 'log', '--format=%s').split('\n')).toHaveLength(1);
   });
@@ -54,7 +56,9 @@ describe('draft writes', () => {
     const outcome = await content.writeDraft('01-prologue', '두 번째 초안\n');
 
     expect(outcome.status).toBe('written');
-    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toBe('두 번째 초안\n');
+    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toBe(
+      '두 번째 초안\n',
+    );
 
     const historyDirectory = join(fixture.root, '.draft', '01-prologue');
     expect(existsSync(historyDirectory)).toBe(true);
@@ -90,5 +94,58 @@ describe('draft writes', () => {
 
     expect(outcome.status).toBe('blocked');
     expect(existsSync(join(fixture.root, 'draft', '01-prologue.md'))).toBe(false);
+  });
+});
+
+// A workspace that tracks draft/ (Desktop's trackDraft: no draft/ line in .gitignore) must get its
+// generated drafts committed — tracked-ness follows the workspace's own git rules.
+describe('draft writes in a trackDraft workspace', () => {
+  let fixture: WorkspaceFixture;
+  let content: ContentService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fixture = createWorkspaceFixture();
+    fixture.write('.gitignore', ['.storyboard/cache/', '.draft/', 'manuscript/', ''].join('\n'));
+    git(fixture.root, 'add', '--all');
+    git(fixture.root, 'commit', '--quiet', '-m', 'track drafts');
+
+    const store = new WorkspaceStore(fixture.root);
+    const client = new GitClient(fixture.root);
+    const gate = new MutateGate(
+      store,
+      client,
+      new SyncService(client, {}, silentLogger),
+      silentLogger,
+      { isTrackedPath: createGitTrackedPathPredicate(client) },
+    );
+    content = new ContentService(store, gate);
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it('commits the generated draft and leaves the tree clean', async () => {
+    const outcome = await content.writeDraft('01-prologue', '# 초안\n');
+
+    expect(outcome).toEqual({ status: 'committed', paths: ['draft/01-prologue.md'] });
+    expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
+      'storygram: generate draft/01-prologue.md',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+  });
+
+  it('keeps the .draft/ history archive out of the commit', async () => {
+    await content.writeDraft('01-prologue', 'v1\n');
+    const outcome = await content.writeDraft('01-prologue', 'v2\n');
+
+    expect(outcome.status).toBe('committed');
+    // The archive was written but .draft/ stays ignored, so only the draft itself is in history.
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
+      'draft/01-prologue.md',
+    );
+    expect(readdirSync(join(fixture.root, '.draft', '01-prologue'))).toHaveLength(1);
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });
 });

@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CardEditError } from '../src/content/cardEditor';
 import { ContentService } from '../src/content/contentService';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore } from '../src/workspace/workspaceStore';
 import {
   copySharedFixture,
@@ -38,9 +38,15 @@ describe('ContentService', () => {
 
     const store = new WorkspaceStore(fixture.root);
     const client = new GitClient(fixture.root);
-    const gate = new MutateGate(store, client, new SyncService(client, {}, silentLogger), silentLogger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
-    });
+    const gate = new MutateGate(
+      store,
+      client,
+      new SyncService(client, {}, silentLogger),
+      silentLogger,
+      {
+        isTrackedPath: createGitTrackedPathPredicate(client),
+      },
+    );
     content = new ContentService(store, gate);
   });
 
@@ -68,7 +74,10 @@ describe('ContentService', () => {
   });
 
   it('replaces a list field and keeps the file parseable', async () => {
-    const outcome = await content.updateCardList('character', 'elia', 'traits', ['용감함', '신중함']);
+    const outcome = await content.updateCardList('character', 'elia', 'traits', [
+      '용감함',
+      '신중함',
+    ]);
 
     expect(outcome.status).toBe('committed');
     const saved = parseCard(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8'));
@@ -77,14 +86,16 @@ describe('ContentService', () => {
   });
 
   it('rejects a character-only field on a background card', async () => {
-    await expect(content.updateCardList('background', 'school', 'traits', ['x'])).rejects.toBeInstanceOf(
-      CardEditError,
-    );
+    await expect(
+      content.updateCardList('background', 'school', 'traits', ['x']),
+    ).rejects.toBeInstanceOf(CardEditError);
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe('seed cards');
   });
 
   it('rejects an empty value without touching the workspace', async () => {
-    await expect(content.renameCard('character', 'elia', '   ')).rejects.toBeInstanceOf(CardEditError);
+    await expect(content.renameCard('character', 'elia', '   ')).rejects.toBeInstanceOf(
+      CardEditError,
+    );
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });
 
@@ -93,18 +104,24 @@ describe('ContentService', () => {
     const store = new WorkspaceStore(fixture.root);
     const before = await store.readCard('character', 'elia');
 
-    fixture.write('character/elia.card', `${readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8')}\ntags:\n  - desktop\n`);
+    fixture.write(
+      'character/elia.card',
+      `${readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8')}\ntags:\n  - desktop\n`,
+    );
 
     // The service re-reads on its own, so it now sees the Desktop bytes and succeeds; the guard is
     // proven by planning against the stale snapshot explicitly.
     const { planCardRename } = await import('../src/content/cardEditor');
     const stalePlan = planCardRename(before, '엘리아');
+    const client = new GitClient(fixture.root);
     const gate = new MutateGate(
       store,
-      new GitClient(fixture.root),
-      new SyncService(new GitClient(fixture.root), {}, silentLogger),
+      client,
+      new SyncService(client, {}, silentLogger),
       silentLogger,
-      { isTrackedPath: createDefaultTrackedPathPredicate() },
+      {
+        isTrackedPath: createGitTrackedPathPredicate(client),
+      },
     );
 
     const outcome = await gate.apply(stalePlan.changes, stalePlan.commitMessage);

@@ -44,10 +44,15 @@ describe('GitClient', () => {
     fixture.write('character/elia.card', 'id: elia\nname: Elia\n');
     fixture.write('character/unrelated.card', 'id: unrelated\n');
 
-    const committed = client.commit(['character/elia.card'], 'storygram: update character/elia.card');
+    const committed = client.commit(
+      ['character/elia.card'],
+      'storygram: update character/elia.card',
+    );
 
     expect(committed).toBe(true);
-    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe('character/elia.card');
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
+      'character/elia.card',
+    );
     expect(git(fixture.root, 'status', '--porcelain')).toContain('character/unrelated.card');
   });
 
@@ -112,7 +117,9 @@ describe('workspace onboarding', () => {
       shell: false,
     });
     execFileSync('git', ['-C', bare.root, 'config', 'user.name', 'Fixture'], { shell: false });
-    execFileSync('git', ['-C', bare.root, 'config', 'user.email', 'f@example.com'], { shell: false });
+    execFileSync('git', ['-C', bare.root, 'config', 'user.email', 'f@example.com'], {
+      shell: false,
+    });
 
     const result = initializeWorkspaceRepository(bare.root);
 
@@ -181,7 +188,11 @@ describe('SyncService', () => {
     git(fixture.root, 'remote', 'add', 'origin', origin);
     git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
 
-    const service = new SyncService(new GitClient(fixture.root), { remote: 'origin' }, silentLogger);
+    const service = new SyncService(
+      new GitClient(fixture.root),
+      { remote: 'origin' },
+      silentLogger,
+    );
     fixture.write('character/elia.card', 'id: elia\n');
     service.commitOnWrite(['character/elia.card'], 'storygram: create character/elia.card');
 
@@ -235,7 +246,11 @@ describe('SyncService', () => {
   it('reports offline when the remote is unreachable', () => {
     git(fixture.root, 'remote', 'add', 'origin', join(tmpdir(), 'storygram-missing-origin.git'));
 
-    const service = new SyncService(new GitClient(fixture.root), { remote: 'origin' }, silentLogger);
+    const service = new SyncService(
+      new GitClient(fixture.root),
+      { remote: 'origin' },
+      silentLogger,
+    );
     const report = service.syncNow();
 
     expect(report.state).toBe('offline');
@@ -260,7 +275,11 @@ describe('SyncService', () => {
     git(other, 'commit', '--quiet', '-m', 'remote scene');
     git(other, 'push', '--quiet');
 
-    const service = new SyncService(new GitClient(fixture.root), { remote: 'origin' }, silentLogger);
+    const service = new SyncService(
+      new GitClient(fixture.root),
+      { remote: 'origin' },
+      silentLogger,
+    );
     const invalidate = vi.fn();
     service.setRemoteCommitsAppliedHook(invalidate);
 

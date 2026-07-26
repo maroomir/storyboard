@@ -10,7 +10,7 @@ import { ContentService } from '../src/content/contentService';
 import { DraftPipeline } from '../src/gen/draftPipeline';
 import { SceneDraftGenerator } from '../src/gen/sceneDraftGenerator';
 import type { GenJob } from '../src/gen/types';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../src/workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore } from '../src/workspace/workspaceStore';
 import {
   copySharedFixture,
@@ -71,7 +71,16 @@ describe('scene draft generation', () => {
     // The shared fixture points at sample ids; wire it to the fixture cards this test copies in.
     fixture.write(
       'scene/01-prologue.txt',
-      ['---', 'title: 프롤로그', 'characters: [elia]', 'location: school', 'mood: 시작', '---', '엘리아가 학교에서 첫 장면을 시작한다.', ''].join('\n'),
+      [
+        '---',
+        'title: 프롤로그',
+        'characters: [elia]',
+        'location: school',
+        'mood: 시작',
+        '---',
+        '엘리아가 학교에서 첫 장면을 시작한다.',
+        '',
+      ].join('\n'),
     );
     execFileSync('git', ['-C', fixture.root, 'add', '--all'], { shell: false });
     execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'seed'], { shell: false });
@@ -83,7 +92,7 @@ describe('scene draft generation', () => {
       client,
       new SyncService(client, {}, silentLogger),
       silentLogger,
-      { isTrackedPath: createDefaultTrackedPathPredicate() },
+      { isTrackedPath: createGitTrackedPathPredicate(client) },
     );
     content = new ContentService(store, gate);
   });
@@ -135,7 +144,10 @@ describe('scene draft generation', () => {
     };
     const pipeline = new DraftPipeline({ store, content, generator });
 
-    const result = await pipeline.run(job('01-prologue'), context(() => true));
+    const result = await pipeline.run(
+      job('01-prologue'),
+      context(() => true),
+    );
 
     expect(result).toEqual({ success: false, failureReason: 'cancelled' });
   });

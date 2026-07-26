@@ -42,7 +42,7 @@ import { openDatabase, type StorygramDatabase } from '../store/db';
 import { TelegramGateway } from '../telegram/gateway';
 import { createAllowlist } from '../telegram/allowlist';
 import type { Logger } from '../util/logger';
-import { MutateGate, createDefaultTrackedPathPredicate } from '../workspace/mutateGate';
+import { MutateGate, createGitTrackedPathPredicate } from '../workspace/mutateGate';
 import { WorkspaceStore } from '../workspace/workspaceStore';
 
 export interface StorygramApplicationOptions {
@@ -84,7 +84,7 @@ export class StorygramApplication {
     this.sync.setPushRequest(() => this.pushScheduler.requestPush());
 
     const gate = new MutateGate(this.store, this.git, this.sync, logger, {
-      isTrackedPath: createDefaultTrackedPathPredicate(),
+      isTrackedPath: createGitTrackedPathPredicate(this.git),
     });
     this.content = new ContentService(this.store, gate);
 

@@ -21,9 +21,7 @@ describe('bot AI gateway', () => {
   it('defaults to the mock provider when no providers block is configured', async () => {
     const service = createAiService({ providers: undefined });
 
-    const response = await service.generateText('sceneDraft', [
-      { role: 'user', content: '안녕' },
-    ]);
+    const response = await service.generateText('sceneDraft', [{ role: 'user', content: '안녕' }]);
 
     expect(response.text.length).toBeGreaterThan(0);
   });
