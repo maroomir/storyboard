@@ -27,17 +27,35 @@ export const workspaceConfigSchema = z.object({
 });
 
 // Slim provider selection. The AI engine itself lives in @storyboard/story-ai; this block only
-// chooses which provider and model it runs with.
-const providerSectionSchema = z.object({
+// chooses which provider and model it runs with. The bot is CLI-only by decision #22/#33: API-key
+// providers are rejected here with a clear message instead of failing at job time, and every
+// section is strict so a typo or an unsupported field errors loudly instead of being silently
+// stripped (blind-pass B5/M1/M2/M3).
+export const botProviderIds = ['mock', 'claude-code', 'codex'] as const;
+
+const botProviderIdSchema = z.enum(botProviderIds, {
+  message: `프로바이더는 CLI 전용입니다: ${['mock', 'claude-code', 'codex'].join(', ')} (openai·claude·google은 봇에서 지원하지 않습니다)`,
+});
+
+const providerSectionSchema = z.strictObject({
   model: z.string().trim().min(1).optional(),
   command: z.string().trim().min(1).optional(),
   timeoutMs: z.number().int().positive().optional(),
+  reasoningEffort: z.enum(['minimal', 'low', 'medium', 'high']).optional(),
 });
 
-export const providersConfigSchema = z.object({
-  default: z.string().trim().min(1).optional(),
-  tasks: z.record(z.string(), z.unknown()).optional(),
-  models: z.record(z.string(), providerSectionSchema).optional(),
+const taskEntrySchema = z.union([
+  botProviderIdSchema,
+  z.strictObject({
+    provider: botProviderIdSchema,
+    model: z.string().trim().min(1).optional(),
+  }),
+]);
+
+export const providersConfigSchema = z.strictObject({
+  default: botProviderIdSchema.optional(),
+  tasks: z.record(z.string(), taskEntrySchema).optional(),
+  models: z.partialRecord(botProviderIdSchema, providerSectionSchema).optional(),
 });
 
 export const privacyConfigSchema = z.object({
@@ -105,12 +123,34 @@ export function loadConfig(configPath: string): ConfigLoadResult {
 // Story content moved back out of the `.seed` archive into the git workspace, so a config written
 // for the seed era names a store this build cannot read.
 function collectLegacyWarnings(parsed: unknown): string[] {
-  if (typeof parsed === 'object' && parsed !== null && 'seed' in parsed) {
-    return [
-      '`seed.*` 설정은 더 이상 사용되지 않습니다. 스토리는 이제 `workspace.path`가 가리키는 Storyboard 워크스페이스에 보관됩니다.',
-    ];
+  if (typeof parsed !== 'object' || parsed === null) {
+    return [];
   }
-  return [];
+
+  const warnings: string[] = [];
+  if ('seed' in parsed) {
+    warnings.push(
+      '`seed.*` 설정은 더 이상 사용되지 않습니다. 스토리는 이제 `workspace.path`가 가리키는 Storyboard 워크스페이스에 보관됩니다.',
+    );
+  }
+
+  // A misspelled top-level section would otherwise be stripped without a trace.
+  const knownKeys = new Set([
+    'telegram',
+    'workspace',
+    'providers',
+    'privacy',
+    'jobs',
+    'dashboard',
+    'seed',
+  ]);
+  for (const key of Object.keys(parsed)) {
+    if (!knownKeys.has(key)) {
+      warnings.push(`알 수 없는 설정 항목을 무시합니다: \`${key}\``);
+    }
+  }
+
+  return warnings;
 }
 
 function readConfigFile(configPath: string): string {

@@ -8,6 +8,8 @@ import {
   inspectWorkspaceRepository,
 } from '@storyboard/story-git';
 
+import { aiTaskCatalog } from '@storyboard/story-ai';
+
 import { createAiService } from '../ai/aiGateway';
 import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
 
@@ -159,6 +161,15 @@ export class StorygramApplication {
 
   public async start(): Promise<void> {
     await this.store.assertIsWorkspace();
+
+    // A mistyped task name in providers.tasks would silently never apply; name the ones we do
+    // not recognize so the operator can fix the key.
+    const knownTasks = new Set(aiTaskCatalog.map((entry) => entry.name));
+    for (const taskName of Object.keys(this.options.config.providers?.tasks ?? {})) {
+      if (!knownTasks.has(taskName as never)) {
+        this.logger.warn(`알 수 없는 태스크 이름을 무시합니다: providers.tasks.${taskName}`);
+      }
+    }
 
     const repository = inspectWorkspaceRepository(this.store.root);
     if (repository.status !== 'ready') {

@@ -1,4 +1,5 @@
 import {
+  isCliProvider,
   aiProviderIds,
   aiTaskNames,
   type AiProviderId,
@@ -365,6 +366,14 @@ function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string):
   return storyboardModelCatalog[providerId].some((entry) => entry.id === modelId);
 }
 
+// Model ids retired from the CLI backends. A setting saved by an old install must upgrade to the
+// current default instead of reaching the CLI as a dead model; anything NOT in this list passes
+// through for CLI providers (decision #32), because the CLIs ship new names faster than the
+// catalog can track and validate models themselves.
+const retiredCliModelIds: Partial<Record<AiProviderId, ReadonlySet<string>>> = {
+  codex: new Set(['gpt-5-codex']),
+};
+
 function resolveEffectiveModelForTask(
   configuredGlobal: string | undefined,
   fallbackModelId: string,
@@ -372,11 +381,15 @@ function resolveEffectiveModelForTask(
 ): string {
   const trimmed = configuredGlobal?.trim();
 
-  if (
-    trimmed !== undefined &&
-    trimmed.length > 0 &&
-    isModelInCatalogForProvider(providerId, trimmed)
-  ) {
+  if (trimmed === undefined || trimmed.length === 0) {
+    return fallbackModelId;
+  }
+
+  if (isCliProvider(providerId) || providerId === 'mock') {
+    return retiredCliModelIds[providerId]?.has(trimmed) === true ? fallbackModelId : trimmed;
+  }
+
+  if (isModelInCatalogForProvider(providerId, trimmed)) {
     return trimmed;
   }
 

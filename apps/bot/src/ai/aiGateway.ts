@@ -53,6 +53,9 @@ function createConfiguration(providers: ProvidersConfig | undefined): Storyboard
     if (section.timeoutMs !== undefined) {
       settings.set(`providers.${providerId}.timeoutMs`, section.timeoutMs);
     }
+    if (section.reasoningEffort !== undefined) {
+      settings.set(`providers.${providerId}.reasoningEffort`, section.reasoningEffort);
+    }
   }
 
   return {
