@@ -54,7 +54,9 @@ export interface OutgoingDocument {
 // Implemented by TelegramGateway, required by ChatOrchestrator and the job progress reporter.
 export interface ISendMessage {
   sendMessage(chatId: number, view: MessageView): Promise<SentMessageRef>;
-  editMessage(ref: SentMessageRef, view: MessageView): Promise<void>;
+  // NOTE: Returns the ref that now holds the content — a new one when the text outgrew the edit
+  // limit and had to be re-sent. Callers tracking a live message must adopt the returned ref.
+  editMessage(ref: SentMessageRef, view: MessageView): Promise<SentMessageRef>;
   answerCallback(callbackQueryId: string, text?: string): Promise<void>;
   sendDocument(chatId: number, doc: OutgoingDocument): Promise<SentMessageRef>;
 }

@@ -14,6 +14,7 @@ export interface TelegramProgressReporterOptions {
 export class TelegramProgressReporter implements IJobProgressListener {
   private progressRef: SentMessageRef | null = null;
   private lastStage = '';
+  private lastText = '';
 
   public constructor(private readonly options: TelegramProgressReporterOptions) {}
 
@@ -56,7 +57,10 @@ export class TelegramProgressReporter implements IJobProgressListener {
 
     try {
       if (this.progressRef) {
-        await this.options.sender.editMessage(this.progressRef, { text, keyboard });
+        this.progressRef = await this.options.sender.editMessage(this.progressRef, {
+          text,
+          keyboard,
+        });
       } else {
         await this.options.sender.sendMessage(job.chatId, { text, keyboard });
       }
@@ -70,11 +74,19 @@ export class TelegramProgressReporter implements IJobProgressListener {
       return;
     }
 
+    const text = formatProgress(job, stage, elapsedMs);
+    if (text === this.lastText) {
+      // Telegram rejects an edit with unchanged content ("message is not modified"); a fast
+      // heartbeat inside the same elapsed second would otherwise spam the error log.
+      return;
+    }
+
     try {
-      await this.options.sender.editMessage(this.progressRef, {
-        text: formatProgress(job, stage, elapsedMs),
+      this.progressRef = await this.options.sender.editMessage(this.progressRef, {
+        text,
         keyboard: stopKeyboard(job),
       });
+      this.lastText = text;
     } catch (error) {
       this.options.logger.error(`진행 메시지 편집 실패: job=${job.id}`, error);
     }

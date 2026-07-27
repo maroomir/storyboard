@@ -147,11 +147,13 @@ export class StorygramApplication {
       logger,
       notifyInterrupted: (jobs) => {
         for (const job of jobs) {
-          void this.gateway
-            .sendMessage(job.chatId, {
-              text: `⚠️ 봇이 재시작되어 작업 #${job.id} (${job.kind})이 중단되었습니다. 필요하면 명령을 다시 실행해주세요.`,
-            })
-            .catch((error) => logger.error('중단 알림 전송 실패', error));
+          const text = `⚠️ 봇이 재시작되어 작업 #${job.id} (${job.kind})이 중단되었습니다. 필요하면 명령을 다시 실행해주세요.`;
+          // Editing the stale progress message also retires its ⏳ text and Stop button; jobs
+          // interrupted before a progress message existed fall back to a fresh message.
+          const deliver = job.progressMessageId
+            ? this.gateway.editMessage({ chatId: job.chatId, messageId: job.progressMessageId }, { text })
+            : this.gateway.sendMessage(job.chatId, { text });
+          void deliver.catch((error) => logger.error('중단 알림 전송 실패', error));
         }
       },
     });

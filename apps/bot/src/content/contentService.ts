@@ -108,7 +108,13 @@ export class ContentService {
   private async nextDraftHistoryPath(sceneStem: string): Promise<string> {
     const directory = `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}`;
     const existing = await this.store.listDirectoryNames(directory);
-    const revision = String(existing.length + 1).padStart(2, '0');
+    // Count-based numbering would collide after a manual deletion; continue from the highest
+    // revision actually present.
+    const highestRevision = existing.reduce((highest, name) => {
+      const match = /-rev-(\d+)\.md$/.exec(name);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    const revision = String(highestRevision + 1).padStart(2, '0');
 
     return `${directory}/${this.stamp()}-rev-${revision}.md`;
   }

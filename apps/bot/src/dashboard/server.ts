@@ -34,6 +34,9 @@ export function startDashboardServer(port: number, deps: DashboardDeps): Promise
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, '127.0.0.1', () => {
+      // After a successful bind, a later 'error' with no listener would crash the process; the
+      // panel is a convenience, so runtime errors only get logged.
+      server.on('error', (error) => deps.logger.error('대시보드 서버 오류', error));
       const address = server.address();
       const boundPort = typeof address === 'object' && address !== null ? address.port : port;
       resolve({ port: boundPort, stop: () => close(server) });
@@ -148,6 +151,12 @@ const PANEL_HTML = `<!doctype html>
   <tbody id="jobs"></tbody>
 </table>
 <script>
+// Workspace values (project name, scene stems, commit subjects) are author-controlled text, not
+// trusted markup — escape them before they reach innerHTML.
+const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+}[ch]));
+
 async function refresh() {
   try {
     const ws = await (await fetch('/api/workspace')).json();
@@ -155,13 +164,13 @@ async function refresh() {
       ['프로젝트', ws.name], ['경로', ws.path],
       ['카드', ws.cards], ['씬', ws.scenes + ' (초안 ' + ws.drafts + ')'],
       ['동기화', ws.syncState], ['마지막 커밋', ws.lastCommit ?? '-'],
-    ].map(([k, v]) => '<dt>' + k + '</dt><dd>' + v + '</dd>').join('');
+    ].map(([k, v]) => '<dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd>').join('');
 
     const data = await (await fetch('/api/jobs')).json();
     document.getElementById('jobs').innerHTML = data.jobs.map((job) =>
-      '<tr><td>' + job.id + '</td><td>' + job.kind + '</td><td>' +
-      (job.target.scene ?? job.target.file ?? '-') + '</td><td class="state-' + job.state + '">' +
-      job.state + '</td><td>' + (job.resultRef ?? job.failureReason ?? '-') + '</td></tr>'
+      '<tr><td>' + esc(job.id) + '</td><td>' + esc(job.kind) + '</td><td>' +
+      esc(job.target.scene ?? job.target.file ?? '-') + '</td><td class="state-' + esc(job.state) + '">' +
+      esc(job.state) + '</td><td>' + esc(job.resultRef ?? job.failureReason ?? '-') + '</td></tr>'
     ).join('');
   } catch (error) {
     console.error(error);

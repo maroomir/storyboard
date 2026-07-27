@@ -45,6 +45,10 @@ export class UpdateRouter implements IHandleUpdate {
     } catch (error) {
       // A handler failure must never take the bot down or leave the user without a reply.
       this.deps.logger.error('명령 처리 중 오류가 발생했습니다.', error);
+      if (update.kind === 'callback') {
+        // An unanswered callback keeps the client spinner running until Telegram times out.
+        await ctx.answerCallback('⚠️ 처리 중 오류가 발생했습니다.').catch(() => undefined);
+      }
       await ctx
         .reply({ text: '⚠️ 처리 중 오류가 발생했습니다. 로그를 확인해주세요.' })
         .catch(() => undefined);

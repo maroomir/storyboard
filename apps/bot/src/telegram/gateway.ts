@@ -59,6 +59,10 @@ export class TelegramGateway implements ISendMessage {
     this.handler = handler;
     this.registerListeners();
 
+    // Verifies the token against getMe before polling: a misconfigured token must fail boot
+    // loudly instead of leaving a bot that "started" but can never receive an update.
+    await this.bot.init();
+
     this.bot
       .start({ onStart: (info) => this.logger.info(`long polling 시작: @${info.username}`) })
       .catch((error) => this.logger.error('폴링 루프가 종료되었습니다.', error));
@@ -84,12 +88,11 @@ export class TelegramGateway implements ISendMessage {
     return { chatId, messageId: lastMessageId };
   }
 
-  public async editMessage(ref: SentMessageRef, view: MessageView): Promise<void> {
+  public async editMessage(ref: SentMessageRef, view: MessageView): Promise<SentMessageRef> {
     // A single message cannot be edited into several; if it grew past the limit, fall back to a
     // fresh (split) message rather than truncating content.
     if (view.text.length > TELEGRAM_MAX_MESSAGE_LENGTH) {
-      await this.sendMessage(ref.chatId, view);
-      return;
+      return this.sendMessage(ref.chatId, view);
     }
 
     // An omitted reply_markup would leave the prior keyboard in place, so an empty keyboard is sent
@@ -100,6 +103,7 @@ export class TelegramGateway implements ISendMessage {
         reply_markup: replyMarkup,
       }),
     );
+    return ref;
   }
 
   public async sendDocument(chatId: number, doc: OutgoingDocument): Promise<SentMessageRef> {

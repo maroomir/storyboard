@@ -80,7 +80,7 @@ export class SqliteJobStore implements IAccessJobStore {
       .prepare(
         `UPDATE gen_jobs SET
           state = @state,
-          failure_reason = @failureReason,
+          failure_reason = COALESCE(@failureReason, failure_reason),
           started_at = COALESCE(@startedAt, started_at),
           finished_at = COALESCE(@finishedAt, finished_at),
           result_ref = COALESCE(@resultRef, result_ref),
