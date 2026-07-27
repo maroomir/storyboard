@@ -22,7 +22,25 @@ if [[ ! -f "$BOT_ENTRY" ]]; then
   exit 1
 fi
 
-NODE_BIN="$(command -v node)"
+NODE_BIN="$(command -v node || true)"
+if [[ -z "$NODE_BIN" ]]; then
+  echo "error: node not found on PATH — install Node.js (or activate your version manager) first." >&2
+  exit 1
+fi
+
+# Paths land inside plist XML; &, <, > in a path would corrupt it.
+xml_escape() {
+  local value="$1"
+  value="${value//&/&amp;}"
+  value="${value//</&lt;}"
+  value="${value//>/&gt;}"
+  printf '%s' "$value"
+}
+NODE_BIN_XML="$(xml_escape "$NODE_BIN")"
+BOT_ENTRY_XML="$(xml_escape "$BOT_ENTRY")"
+PACKAGE_ROOT_XML="$(xml_escape "$PACKAGE_ROOT")"
+LOG_DIR_XML="$(xml_escape "$LOG_DIR")"
+
 mkdir -p "$LOG_DIR" "$(dirname "$PLIST")"
 
 cat > "$PLIST" <<PLIST_EOF
@@ -33,15 +51,16 @@ cat > "$PLIST" <<PLIST_EOF
   <key>Label</key><string>${LABEL}</string>
   <key>ProgramArguments</key>
   <array>
-    <string>${NODE_BIN}</string>
-    <string>${BOT_ENTRY}</string>
+    <string>${NODE_BIN_XML}</string>
+    <string>${BOT_ENTRY_XML}</string>
   </array>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key>
   <dict><key>SuccessfulExit</key><false/></dict>
-  <key>StandardOutPath</key><string>${LOG_DIR}/storygram.log</string>
-  <key>StandardErrorPath</key><string>${LOG_DIR}/storygram.err.log</string>
-  <key>WorkingDirectory</key><string>${PACKAGE_ROOT}</string>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>${LOG_DIR_XML}/storygram.log</string>
+  <key>StandardErrorPath</key><string>${LOG_DIR_XML}/storygram.err.log</string>
+  <key>WorkingDirectory</key><string>${PACKAGE_ROOT_XML}</string>
 </dict>
 </plist>
 PLIST_EOF
