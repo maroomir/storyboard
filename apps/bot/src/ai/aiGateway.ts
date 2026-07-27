@@ -3,6 +3,7 @@ import {
   SecretStore,
   StoryboardAIService,
   createAiProviderRegistry,
+  type CliRunner,
   type StoryboardConfigurationLike,
   type StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
@@ -66,6 +67,7 @@ function createConfiguration(providers: ProvidersConfig | undefined): Storyboard
 export interface AiGatewayOptions {
   readonly providers: ProvidersConfig | undefined;
   readonly apiKeys?: Readonly<Record<string, string>>;
+  readonly cliRunner?: CliRunner;
 }
 
 export interface AiEngine {
@@ -78,6 +80,7 @@ export function createAiEngine(options: AiGatewayOptions): AiEngine {
   const registry = createAiProviderRegistry({
     secretStore: new SecretStore(new InMemorySecretStorage(options.apiKeys)),
     configBridge: new ConfigBridge({ getConfiguration: () => configuration }),
+    ...(options.cliRunner ? { createCliRunner: (): CliRunner => options.cliRunner! } : {}),
   });
 
   return { service: new StoryboardAIService(registry), registry };

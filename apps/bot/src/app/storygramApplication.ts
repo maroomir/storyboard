@@ -11,6 +11,7 @@ import {
 import { aiTaskCatalog } from '@storyboard/story-ai';
 
 import { createAiEngine } from '../ai/aiGateway';
+import { createJobAwareCliRunner } from '../provider/abortableCliRunner';
 import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
 
 import { ChatContext } from '../chat/context';
@@ -108,7 +109,10 @@ export class StorygramApplication {
 
     mkdirSync(dirname(options.stateDbPath), { recursive: true });
     this.db = openDatabase(options.stateDbPath);
-    const { service: aiService, registry } = createAiEngine({ providers: config.providers });
+    const { service: aiService, registry } = createAiEngine({
+      providers: config.providers,
+      cliRunner: createJobAwareCliRunner(),
+    });
     this.genJobs = createGenJobs({
       db: this.db,
       store: this.store,
