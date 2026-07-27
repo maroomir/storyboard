@@ -188,14 +188,21 @@ export function createStatusHandler(): ICommandHandler {
     const cards = await ctx.content.listCards();
     const scenes = await ctx.content.listScenes();
 
-    await ctx.reply({
-      text: [
-        `📖 ${project.value.name}`,
-        `경로: ${ctx.store.root}`,
-        `카드 ${cards.length} · 씬 ${scenes.length}`,
-        `동기화: ${ctx.sync.getState()}`,
-      ].join('\n'),
-    });
+    const lines = [
+      `📖 ${project.value.name}`,
+      `경로: ${ctx.store.root}`,
+      `카드 ${cards.length} · 씬 ${scenes.length}`,
+      `동기화: ${ctx.sync.getState()}`,
+    ];
+
+    const usage = ctx.jobs?.getUsageSince(Date.now() - 24 * 60 * 60 * 1000);
+    if (usage) {
+      lines.push(
+        `24시간 사용량: 입력 ${usage.inputTokens} · 출력 ${usage.outputTokens} 토큰 · $${usage.costUsd.toFixed(4)}`,
+      );
+    }
+
+    await ctx.reply({ text: lines.join('\n') });
   });
 }
 

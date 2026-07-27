@@ -4,6 +4,7 @@ import {
   StoryboardAIService,
   createAiProviderRegistry,
   type CliRunner,
+  type OnUsageRecordCallback,
   type StoryboardConfigurationLike,
   type StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
@@ -68,6 +69,7 @@ export interface AiGatewayOptions {
   readonly providers: ProvidersConfig | undefined;
   readonly apiKeys?: Readonly<Record<string, string>>;
   readonly cliRunner?: CliRunner;
+  readonly onUsage?: OnUsageRecordCallback;
 }
 
 export interface AiEngine {
@@ -83,7 +85,11 @@ export function createAiEngine(options: AiGatewayOptions): AiEngine {
     ...(options.cliRunner ? { createCliRunner: (): CliRunner => options.cliRunner! } : {}),
   });
 
-  return { service: new StoryboardAIService(registry), registry };
+  const service = options.onUsage
+    ? new StoryboardAIService(registry, { onUsage: options.onUsage })
+    : new StoryboardAIService(registry);
+
+  return { service, registry };
 }
 
 export function createAiService(options: AiGatewayOptions): StoryboardAIService {

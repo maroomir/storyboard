@@ -5,7 +5,7 @@ import {
   createAbortableCliRunner,
   createJobAwareCliRunner,
 } from '../src/provider/abortableCliRunner';
-import { runWithJobSignal } from '../src/provider/jobSignalContext';
+import { runWithJobContext } from '../src/provider/jobSignalContext';
 
 const NODE = process.execPath;
 
@@ -41,7 +41,7 @@ describe('abortable CLI runner', () => {
     const runner = createJobAwareCliRunner();
     const controller = new AbortController();
 
-    const pending = runWithJobSignal(controller.signal, () =>
+    const pending = runWithJobContext({ jobId: 7, signal: controller.signal }, () =>
       runner({ command: NODE, args: ['-e', 'setTimeout(() => {}, 60000);'] }),
     );
     setTimeout(() => controller.abort(), 50);

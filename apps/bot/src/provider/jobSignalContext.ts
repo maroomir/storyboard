@@ -1,15 +1,24 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-// CLI providers cache their runner once at registry construction, so per-job cancellation cannot be
-// injected through the provider factory. The executor instead publishes the running job's abort
-// signal here, and the shared runner picks it up at call time — safe under concurrent jobs because
-// the context follows the async call chain.
-const activeJobSignal = new AsyncLocalStorage<AbortSignal>();
+export interface JobRunContext {
+  readonly jobId: number;
+  readonly signal: AbortSignal;
+}
 
-export function runWithJobSignal<T>(signal: AbortSignal, run: () => Promise<T>): Promise<T> {
-  return activeJobSignal.run(signal, run);
+// CLI providers cache their runner once at registry construction, so per-job cancellation cannot be
+// injected through the provider factory. The executor instead publishes the running job's context
+// here, and the shared runner (and the usage recorder) pick it up at call time — safe under
+// concurrent jobs because the context follows the async call chain.
+const activeJobContext = new AsyncLocalStorage<JobRunContext>();
+
+export function runWithJobContext<T>(context: JobRunContext, run: () => Promise<T>): Promise<T> {
+  return activeJobContext.run(context, run);
 }
 
 export function getActiveJobSignal(): AbortSignal | undefined {
-  return activeJobSignal.getStore();
+  return activeJobContext.getStore()?.signal;
+}
+
+export function getActiveJobId(): number | undefined {
+  return activeJobContext.getStore()?.jobId;
 }

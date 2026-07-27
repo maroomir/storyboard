@@ -9,10 +9,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { JobExecutor } from '../src/gen/jobExecutor';
 import { JobManager } from '../src/gen/jobManager';
 import { JobQueue } from '../src/gen/jobQueue';
+import { JobRunControl } from '../src/gen/jobRunControl';
 import { JobStateMachine } from '../src/gen/jobStateMachine';
 import { SqliteJobStore } from '../src/gen/jobStore';
 import { JobWorker } from '../src/gen/jobWorker';
 import { PipelineRunner, type IPipeline } from '../src/gen/pipelineRunner';
+import { getActiveJobId } from '../src/provider/jobSignalContext';
 import { openDatabase, type StorygramDatabase } from '../src/store/db';
 import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';
@@ -243,5 +245,54 @@ describe('job worker resilience', () => {
     const final = jobStore.load(jobId);
     expect(final?.state).toBe('succeeded');
     expect(final?.resultRef).toBe('draft/01-x.md');
+  });
+
+  // Usage callbacks fire on a shared AI service; the executor's job context is what attributes
+  // each record to the right ledger row.
+  it('publishes the running job id so usage records attribute correctly', async () => {
+    const jobStore = new SqliteJobStore(db);
+    const queue = new JobQueue(jobStore);
+    const stateMachine = new JobStateMachine();
+    const manager = new JobManager({ store: jobStore, queue, stateMachine });
+
+    const pipeline: IPipeline = {
+      run: async () => {
+        const jobId = getActiveJobId();
+        if (jobId !== undefined) {
+          manager.recordUsage({
+            jobId,
+            taskName: 'sceneDraft',
+            providerId: 'mock',
+            inputTokens: 11,
+            outputTokens: 22,
+            costUsd: 0,
+          });
+        }
+        return { success: true };
+      },
+    };
+    const executor = new JobExecutor({
+      store: jobStore,
+      stateMachine,
+      manager,
+      pipelineRunner: new PipelineRunner({ store: jobStore, pipeline }),
+      jobRunControl: new JobRunControl(),
+      logger: silentLogger,
+    });
+
+    const jobId = manager.enqueue({
+      kind: 'draft',
+      class: 'heavy',
+      target: { scene: '02-x' },
+      chatId: 1,
+    });
+    const job = jobStore.load(jobId);
+    expect(job).toBeDefined();
+    if (job) {
+      await executor.execute(job);
+    }
+
+    expect(jobStore.load(jobId)?.usage).toEqual({ inputTokens: 11, outputTokens: 22, costUsd: 0 });
+    expect(manager.getUsageSince(0)).toEqual({ inputTokens: 11, outputTokens: 22, costUsd: 0 });
   });
 });

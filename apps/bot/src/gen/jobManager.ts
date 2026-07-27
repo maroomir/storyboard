@@ -1,4 +1,4 @@
-import type { IAccessJobStore } from './jobStorePort';
+import type { IAccessJobStore, UsageLedgerEntry } from './jobStorePort';
 import { JobQueue } from './jobQueue';
 import { JobStateMachine } from './jobStateMachine';
 import type { JobLog, JobSpec, JobUsage, JobView } from './types';
@@ -90,6 +90,10 @@ export class JobManager implements IEnqueueJob {
 
   public getUsageSince(since: number): JobUsage {
     return this.options.store.sumUsageSince(since);
+  }
+
+  public recordUsage(entry: Omit<UsageLedgerEntry, 'recordedAt'>): void {
+    this.options.store.recordUsage(entry, this.now());
   }
 
   public isCancelled(jobId: number): boolean {

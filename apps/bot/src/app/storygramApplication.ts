@@ -12,6 +12,7 @@ import { aiTaskCatalog } from '@storyboard/story-ai';
 
 import { createAiEngine } from '../ai/aiGateway';
 import { createJobAwareCliRunner } from '../provider/abortableCliRunner';
+import { getActiveJobId } from '../provider/jobSignalContext';
 import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
 
 import { ChatContext } from '../chat/context';
@@ -112,6 +113,22 @@ export class StorygramApplication {
     const { service: aiService, registry } = createAiEngine({
       providers: config.providers,
       cliRunner: createJobAwareCliRunner(),
+      // Every AI call made while a job runs lands in that job's ledger row; `this.genJobs` is
+      // assigned below, but usage callbacks only fire once jobs execute.
+      onUsage: (record) => {
+        const jobId = getActiveJobId();
+        if (jobId === undefined) {
+          return;
+        }
+        this.genJobs.manager.recordUsage({
+          jobId,
+          taskName: record.taskName,
+          providerId: record.providerId,
+          inputTokens: record.usage?.inputTokens ?? 0,
+          outputTokens: record.usage?.outputTokens ?? 0,
+          costUsd: record.costUsd,
+        });
+      },
     });
     this.genJobs = createGenJobs({
       db: this.db,

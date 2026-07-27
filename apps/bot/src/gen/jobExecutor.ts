@@ -1,4 +1,4 @@
-import { runWithJobSignal } from '../provider/jobSignalContext';
+import { runWithJobContext } from '../provider/jobSignalContext';
 import type { Logger } from '../util/logger';
 import type { IAccessJobStore } from './jobStorePort';
 import type { JobManager } from './jobManager';
@@ -38,7 +38,9 @@ export class JobExecutor {
         this.options.pipelineRunner.run(running, () => this.options.manager.isCancelled(job.id));
 
       const signal = this.options.jobRunControl?.getSignal(job.id);
-      const result = signal ? await runWithJobSignal(signal, runPipeline) : await runPipeline();
+      const result = signal
+        ? await runWithJobContext({ jobId: job.id, signal }, runPipeline)
+        : await runPipeline();
       this.finalize(job, result);
     } catch (error) {
       this.failAfterError(job, error);
