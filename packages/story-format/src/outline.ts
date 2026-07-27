@@ -176,13 +176,30 @@ export function toOutlineBrief(project: StoryboardProject): OutlineBrief {
 }
 
 export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): OutlineSynopsis {
-  const parsed = outlineSynopsisSchema.safeParse(isRecord(raw) ? raw : {});
-  const data = parsed.success ? parsed.data : outlineSynopsisSchema.parse({});
+  const record = isRecord(raw) ? raw : {};
+  const parsed = outlineSynopsisSchema.safeParse(record);
 
-  return {
-    ...data,
-    pov: data.pov ?? brief.pov,
-  };
+  if (parsed.success) {
+    return { ...parsed.data, pov: parsed.data.pov ?? brief.pov };
+  }
+
+  // One malformed field (e.g. a blank conflict entry) must not reset the whole synopsis: salvage
+  // every field that validates on its own and default only the broken ones.
+  const empty = outlineSynopsisSchema.parse({});
+  const salvaged: Record<string, unknown> = { ...empty };
+  for (const key of Object.keys(
+    outlineSynopsisSchema.shape,
+  ) as (keyof typeof outlineSynopsisSchema.shape)[]) {
+    const fieldSchema = outlineSynopsisSchema.shape[key];
+    const fieldValue = record[key];
+    const fieldParsed = fieldSchema.safeParse(fieldValue);
+    if (fieldParsed.success && fieldParsed.data !== undefined) {
+      salvaged[key] = fieldParsed.data;
+    }
+  }
+
+  const data = salvaged as unknown as OutlineSynopsis;
+  return { ...data, pov: data.pov ?? brief.pov };
 }
 
 export function coerceChapterPlan(raw: unknown): ChapterPlan {

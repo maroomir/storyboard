@@ -101,12 +101,33 @@ export async function writeSynopsisFile(
 }
 
 function appendTextSection(sections: string[], heading: string, value: string): void {
-  sections.push(`## ${heading}\n\n${value.trim().length > 0 ? value.trim() : '_미작성_'}`);
+  const trimmed = value.trim();
+  sections.push(
+    `## ${heading}\n\n${trimmed.length > 0 ? escapeSynopsisValue(trimmed) : '_미작성_'}`,
+  );
 }
 
 function appendListSection(sections: string[], heading: string, values: readonly string[]): void {
-  const body = values.length > 0 ? values.map((value) => `- ${value}`).join('\n') : '_미작성_';
+  const body =
+    values.length > 0
+      ? values.map((value) => `- ${escapeSynopsisValue(value)}`).join('\n')
+      : '_미작성_';
   sections.push(`## ${heading}\n\n${body}`);
+}
+
+// The markdown form uses three in-band markers: '## ' opens a section, '- ' opens a list item and
+// '_미작성_' means "empty". A VALUE containing any of those would corrupt the round trip, so
+// serialization escapes them and parsing reverses it — parse(serialize(x)) must equal x.
+function escapeSynopsisValue(value: string): string {
+  let escaped = value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n');
+  if (escaped.startsWith('#') || escaped === '_미작성_') {
+    escaped = `\\${escaped}`;
+  }
+  return escaped;
+}
+
+function unescapeSynopsisValue(value: string): string {
+  return value.replace(/\\(.)/g, (_match, next: string) => (next === 'n' ? '\n' : next));
 }
 
 export type SynopsisParseErrorCode = 'invalid-synopsis-markdown';
@@ -148,13 +169,19 @@ export function parseSynopsisMarkdown(rawSynopsis: string): OutlineSynopsis {
 
   const text = (heading: string): string => {
     const value = sections.get(heading) ?? '';
-    return value === '_미작성_' ? '' : value;
+    return value === '_미작성_' ? '' : unescapeSynopsisValue(value);
   };
-  const list = (heading: string): string[] =>
-    text(heading)
+  const list = (heading: string): string[] => {
+    const raw = sections.get(heading) ?? '';
+    if (raw === '_미작성_') {
+      return [];
+    }
+    return raw
       .split('\n')
       .map((line) => line.replace(/^- /, '').trim())
-      .filter((line) => line.length > 0);
+      .filter((line) => line.length > 0)
+      .map((line) => unescapeSynopsisValue(line));
+  };
 
   if (!sections.has('로그라인')) {
     throw new SynopsisParseError(

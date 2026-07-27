@@ -51,7 +51,7 @@ describe("isDraftMarkdownFile contract", () => {
     { label: "nested under a subdirectory", filePath: "/workspace/story/draft/sub/foo.md", expected: false },
     { label: "outside the draft dir", filePath: "/workspace/story/notes/foo.md", expected: false },
     { label: "sibling sharing the draft prefix", filePath: "/workspace/story/draftxyz/foo.md", expected: false },
-    { label: "case-insensitive dir and file", filePath: "/workspace/story/Draft/Foo.MD", expected: true }
+    { label: "case-mismatched dir and file (codec is lowercase-only)", filePath: "/workspace/story/Draft/Foo.MD", expected: false }
   ]
 
   it.each(cases)("$label → $expected", ({ filePath, expected }) => {
@@ -73,7 +73,7 @@ describe("isDirectSceneTextFile contract", () => {
     { label: "nested under a subdirectory", filePath: "/workspace/story/scene/sub/01.txt", expected: false },
     { label: "outside the scene dir", filePath: "/workspace/story/notes/01.txt", expected: false },
     { label: "sibling sharing the scene prefix", filePath: "/workspace/story/scenexyz/01.txt", expected: false },
-    { label: "case-insensitive dir and file", filePath: "/workspace/story/SCENE/01.TXT", expected: true }
+    { label: "case-mismatched dir and file (codec is lowercase-only)", filePath: "/workspace/story/SCENE/01.TXT", expected: false }
   ]
 
   it.each(cases)("$label → $expected", ({ filePath, expected }) => {

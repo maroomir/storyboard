@@ -11,28 +11,36 @@ export function isCharacterRole(value: string | undefined): value is CharacterRo
   return value === 'main' || value === 'supporting' || value === 'extra';
 }
 
-export const characterRoleSchema = z.preprocess((value) => {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
+// Decision #29: forgive casing and the known near-miss "support", but surface anything else as a
+// validation error instead of silently demoting the character to an extra — a lenient fallback
+// here rewrites authorial intent on the next save.
+export const characterRoleSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
 
-  if (typeof value !== 'string') {
-    return 'extra';
-  }
+    if (typeof value !== 'string') {
+      return value;
+    }
 
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return undefined;
-  }
+    const normalized = value.trim().toLowerCase();
+    if (normalized.length === 0) {
+      return undefined;
+    }
 
-  // Near-miss the demotion-to-extra fallback must not swallow: authors writing the English word
-  // "support" mean the supporting cast, not an extra.
-  if (trimmed === 'support') {
-    return 'supporting';
-  }
+    if (normalized === 'support') {
+      return 'supporting';
+    }
 
-  return isCharacterRole(trimmed) ? trimmed : 'extra';
-}, z.enum(characterRoles).optional());
+    return normalized;
+  },
+  z
+    .enum(characterRoles, {
+      message: "role은 'main' | 'supporting' | 'extra' 중 하나여야 합니다.",
+    })
+    .optional(),
+);
 
 const cardIdSchema = z.string().regex(cardIdPattern, {
   message: 'Card id must use lowercase letters, numbers, and hyphens.',

@@ -108,13 +108,15 @@ export function parseCardIdFromFileName(fileName: string): string | undefined {
   return fileName.slice(0, -'.card'.length);
 }
 
+// Case-sensitive on purpose: the codecs only accept lowercase directory and file names, so a
+// case-insensitive match here would classify files the parsers then reject.
 function isDirectChildWithExtension(
   relativePath: string,
   directory: string,
   extension: string,
 ): boolean {
-  const normalized = relativePath.replace(/\\/g, '/').toLowerCase();
-  const prefix = `${directory.toLowerCase()}/`;
+  const normalized = relativePath.replace(/\\/g, '/');
+  const prefix = `${directory}/`;
 
   if (!normalized.startsWith(prefix)) {
     return false;

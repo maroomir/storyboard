@@ -34,7 +34,17 @@ export function parseCard(rawCard: string): StoryboardCard {
     return cardSchema.parse(parsedYaml);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new CardParseError('invalid-card-schema', 'Card 스키마가 올바르지 않습니다.', error);
+      const details = error.issues
+        .map((issue) => {
+          const path = issue.path.join('.');
+          return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
+        })
+        .join('; ');
+      throw new CardParseError(
+        'invalid-card-schema',
+        `Card 스키마가 올바르지 않습니다. (${details})`,
+        error,
+      );
     }
 
     throw error;
