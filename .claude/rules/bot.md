@@ -39,7 +39,9 @@ enforces the direction and rejects cycles.
 `~/.storygram/config.json`, overridable with `STORYGRAM_HOME`. `workspace.path` must be an absolute
 path to a real Storyboard workspace (`.storyboard/project.json` must exist). `workspace.remote` is
 optional: with no remote the bot still commits every save and `/sync` settles as `no-remote` without
-touching the network.
+touching the network. `draft.reviseAfterGenerate` (default true) runs the shared review→revise loop
+after every generation; `draft.reviseMaxIterations` (1–5, default 2) bounds it. Full example:
+`apps/bot/config.example.json`; operator docs: `apps/bot/README.md`.
 
 ## Git onboarding
 
