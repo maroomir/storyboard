@@ -4,7 +4,7 @@ import {
   resolveMinimumDraftLength,
   resolveSceneTargetLength,
   validateDraftCandidate,
-} from '@/application/drafts/draftCandidateValidation';
+} from '@storyboard/story-pipeline';
 
 describe('draft candidate validation', () => {
   it('uses the configured compression limit when no scene target exists', () => {

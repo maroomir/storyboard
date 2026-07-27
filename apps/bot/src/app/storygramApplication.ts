@@ -10,7 +10,7 @@ import {
 
 import { aiTaskCatalog } from '@storyboard/story-ai';
 
-import { createAiService } from '../ai/aiGateway';
+import { createAiEngine } from '../ai/aiGateway';
 import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
 
 import { ChatContext } from '../chat/context';
@@ -108,13 +108,19 @@ export class StorygramApplication {
 
     mkdirSync(dirname(options.stateDbPath), { recursive: true });
     this.db = openDatabase(options.stateDbPath);
-    const aiService = createAiService({ providers: config.providers });
+    const { service: aiService, registry } = createAiEngine({ providers: config.providers });
     this.genJobs = createGenJobs({
       db: this.db,
       store: this.store,
       content: this.content,
       aiService,
-      draftGenerator: new SceneDraftGenerator({ store: this.store, aiService }),
+      draftGenerator: new SceneDraftGenerator({
+        store: this.store,
+        content: this.content,
+        aiService,
+        registry,
+        draftConfig: config.draft,
+      }),
       sender: this.gateway,
       jobsConfig: config.jobs,
       logger,

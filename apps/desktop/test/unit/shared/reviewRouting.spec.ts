@@ -8,7 +8,7 @@ import {
   resolveAgent,
   routeReviewIssues,
   type ReviewIssue
-} from "@/shared/reviewRouting"
+} from "@storyboard/story-pipeline"
 
 const characters = [
   { id: "elia", name: "엘리아", aliases: ["엘리"] },

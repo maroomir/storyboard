@@ -75,6 +75,24 @@ describe('strict bot provider config', () => {
     expect(config.providers?.models?.['codex']?.reasoningEffort).toBe('high');
   });
 
+  it('defaults the revise gate on and clamps its iteration range', () => {
+    const defaulted = loadConfig(writeConfig(dir, BASE));
+    expect(defaulted.config.draft).toEqual({ reviseAfterGenerate: true, reviseMaxIterations: 2 });
+
+    const explicit = loadConfig(
+      writeConfig(dir, { ...BASE, draft: { reviseAfterGenerate: false, reviseMaxIterations: 5 } }),
+    );
+    expect(explicit.config.draft.reviseAfterGenerate).toBe(false);
+    expect(explicit.config.draft.reviseMaxIterations).toBe(5);
+
+    expect(() =>
+      loadConfig(writeConfig(dir, { ...BASE, draft: { reviseMaxIterations: 9 } })),
+    ).toThrow(ConfigError);
+    expect(() => loadConfig(writeConfig(dir, { ...BASE, draft: { revise: true } }))).toThrow(
+      ConfigError,
+    );
+  });
+
   it('warns on an unknown top-level section', () => {
     const path = writeConfig(dir, { ...BASE, dashbaord: { port: 1 } });
 

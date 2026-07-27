@@ -2,11 +2,16 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createAiService } from '../src/ai/aiGateway';
+import { createAiEngine } from '../src/ai/aiGateway';
 import { ContentService } from '../src/content/contentService';
+import {
+  createBackgroundMemoryStore,
+  createPersonaMemoryStore,
+} from '../src/gen/cardMemoryStores';
 import { DraftPipeline } from '../src/gen/draftPipeline';
 import { SceneDraftGenerator } from '../src/gen/sceneDraftGenerator';
 import type { GenJob } from '../src/gen/types';
@@ -103,9 +108,13 @@ describe('scene draft generation', () => {
 
   // The bot runs the extension's staged pipeline, not a bot-specific shortcut.
   it('generates a draft through the shared pipeline and writes it without committing', async () => {
+    const engine = createAiEngine({ providers: { default: 'mock' } });
     const generator = new SceneDraftGenerator({
       store,
-      aiService: createAiService({ providers: { default: 'mock' } }),
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -126,9 +135,13 @@ describe('scene draft generation', () => {
   });
 
   it('fails cleanly when the scene disappeared while the job was queued', async () => {
+    const engine = createAiEngine({ providers: { default: 'mock' } });
     const generator = new SceneDraftGenerator({
       store,
-      aiService: createAiService({ providers: { default: 'mock' } }),
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -136,6 +149,68 @@ describe('scene draft generation', () => {
 
     expect(result.success).toBe(false);
     expect(result.errorMessage).toContain('99-missing');
+  });
+
+  // Decision #31: the shared review→revise loop runs after generation unless the operator turns
+  // it off in config.
+  it('runs the shared revise loop after generation when the gate is on', async () => {
+    const stages: string[] = [];
+    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2 },
+      onStage: (stage) => {
+        stages.push(stage);
+      },
+    });
+
+    const body = await generator.generate('01-prologue', () => false);
+
+    expect(body.length).toBeGreaterThan(0);
+    expect(stages.some((stage) => stage.startsWith('검사 중'))).toBe(true);
+  });
+
+  it('skips the revise loop when the gate is off', async () => {
+    const stages: string[] = [];
+    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      onStage: (stage) => {
+        stages.push(stage);
+      },
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    expect(stages.some((stage) => stage.startsWith('검사 중'))).toBe(false);
+  });
+
+  // The memory caches must serialize to the extension's exact record format, treat an edited card
+  // as a miss, and never produce a commit (.storyboard/cache/ is gitignored).
+  it('round-trips persona and background memory through the shared codec', async () => {
+    const character = (await store.readCard('character', 'elia')).value as CharacterCard;
+    const background = (await store.readCard('background', 'school')).value as BackgroundCard;
+    const commitsBefore = fixture.git('log', '--format=%s').split('\n').length;
+
+    const personaStore = createPersonaMemoryStore(store, content, '01-prologue');
+    await personaStore.save(character, '조용하지만 단단한 화자.');
+    expect(await personaStore.load(character)).toBe('조용하지만 단단한 화자.');
+
+    const backgroundStore = createBackgroundMemoryStore(store, content, '01-prologue');
+    await backgroundStore.save(background, '봄비 냄새가 남은 복도.');
+    expect(await backgroundStore.load(background)).toBe('봄비 냄새가 남은 복도.');
+
+    const editedCharacter = { ...character, name: `${character.name}2` };
+    expect(await personaStore.load(editedCharacter)).toBeUndefined();
+
+    expect(fixture.git('log', '--format=%s').split('\n')).toHaveLength(commitsBefore);
   });
 
   it('reports cancellation instead of writing', async () => {

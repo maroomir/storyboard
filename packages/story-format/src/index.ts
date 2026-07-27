@@ -15,6 +15,7 @@ export * from './scene';
 export * from './sceneContext';
 export * from './files/bible';
 export * from './files/card';
+export * from './files/cardMemory';
 export * from './files/draft';
 export * from './files/outline';
 export * from './files/scene';

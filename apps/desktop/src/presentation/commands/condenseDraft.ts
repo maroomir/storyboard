@@ -4,7 +4,7 @@ import type {
   CondenseDraftResult,
   CondenseDraftUseCase,
 } from '../../application/drafts/condenseDraftUseCase';
-import { resolveSceneTargetLength } from '../../application/drafts/draftCandidateValidation';
+import { resolveSceneTargetLength } from '@storyboard/story-pipeline';
 import {
   buildNarrativeContext,
   buildSceneContext,

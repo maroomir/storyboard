@@ -12,7 +12,7 @@ import {
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
-} from '../../domain/files/cardMemory';
+} from '@storyboard/story-format';
 
 export async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory);

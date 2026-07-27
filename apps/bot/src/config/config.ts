@@ -58,6 +58,13 @@ export const providersConfigSchema = z.strictObject({
   models: z.partialRecord(botProviderIdSchema, providerSectionSchema).optional(),
 });
 
+// Mirrors the extension's `storyboard.draft.*` settings (decision #31): the revise gate runs after
+// every generation unless the operator switches it off.
+export const draftConfigSchema = z.strictObject({
+  reviseAfterGenerate: z.boolean().default(true),
+  reviseMaxIterations: z.number().int().min(1).max(5).default(2),
+});
+
 export const privacyConfigSchema = z.object({
   minimizeChatBody: z.boolean().default(false),
 });
@@ -78,6 +85,7 @@ export const configSchema = z.object({
   telegram: telegramConfigSchema,
   workspace: workspaceConfigSchema,
   providers: providersConfigSchema.optional(),
+  draft: draftConfigSchema.default({ reviseAfterGenerate: true, reviseMaxIterations: 2 }),
   privacy: privacyConfigSchema.default({ minimizeChatBody: false }),
   jobs: jobsConfigSchema.default({ heavyConcurrency: 1, lightConcurrency: 1 }),
   dashboard: dashboardConfigSchema.default({ enabled: true, port: 8787 }),
@@ -86,6 +94,7 @@ export const configSchema = z.object({
 export type TelegramConfig = z.infer<typeof telegramConfigSchema>;
 export type WorkspaceConfig = z.infer<typeof workspaceConfigSchema>;
 export type ProvidersConfig = z.infer<typeof providersConfigSchema>;
+export type DraftConfig = z.infer<typeof draftConfigSchema>;
 export type PrivacyConfig = z.infer<typeof privacyConfigSchema>;
 export type JobsConfig = z.infer<typeof jobsConfigSchema>;
 export type DashboardConfig = z.infer<typeof dashboardConfigSchema>;
@@ -139,6 +148,7 @@ function collectLegacyWarnings(parsed: unknown): string[] {
     'telegram',
     'workspace',
     'providers',
+    'draft',
     'privacy',
     'jobs',
     'dashboard',

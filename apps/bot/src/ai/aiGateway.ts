@@ -68,12 +68,21 @@ export interface AiGatewayOptions {
   readonly apiKeys?: Readonly<Record<string, string>>;
 }
 
-export function createAiService(options: AiGatewayOptions): StoryboardAIService {
+export interface AiEngine {
+  readonly service: StoryboardAIService;
+  readonly registry: ReturnType<typeof createAiProviderRegistry>;
+}
+
+export function createAiEngine(options: AiGatewayOptions): AiEngine {
   const configuration = createConfiguration(options.providers);
   const registry = createAiProviderRegistry({
     secretStore: new SecretStore(new InMemorySecretStorage(options.apiKeys)),
     configBridge: new ConfigBridge({ getConfiguration: () => configuration }),
   });
 
-  return new StoryboardAIService(registry);
+  return { service: new StoryboardAIService(registry), registry };
+}
+
+export function createAiService(options: AiGatewayOptions): StoryboardAIService {
+  return createAiEngine(options).service;
 }

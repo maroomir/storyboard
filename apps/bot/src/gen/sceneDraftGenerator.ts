@@ -3,14 +3,24 @@ import { join } from 'node:path';
 
 import {
   STORYBOARD_RELATIVE_PATHS,
+  buildNarrativeContext,
   buildSceneContext,
+  formatBibleFactLines,
   type SceneContextWorkspaceFileSystem,
   type SceneContextWorkspacePaths,
 } from '@storyboard/story-format';
-import type { StoryboardAIService } from '@storyboard/story-ai';
-import { runSceneGenerationPipeline } from '@storyboard/story-pipeline';
+import { buildStyleDirective, formatAugmentCards } from '@storyboard/story-ai';
+import type { AiProviderRegistry, StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import {
+  resolveSceneTargetLength,
+  runReviseLoop,
+  runSceneGenerationPipeline,
+} from '@storyboard/story-pipeline';
 
+import type { DraftConfig } from '../config/config';
+import type { ContentService } from '../content/contentService';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
+import { createBackgroundMemoryStore, createPersonaMemoryStore } from './cardMemoryStores';
 import type { DraftGenerator } from './draftPipeline';
 
 // The scene-context helpers take opaque `unknown` locations so the extension can pass vscode.Uri.
@@ -23,6 +33,7 @@ function createPaths(root: string): SceneContextWorkspacePaths {
     backgroundDirectory: at(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
     draftDirectory: at(STORYBOARD_RELATIVE_PATHS.draftDirectory),
     bibleCanon: at(STORYBOARD_RELATIVE_PATHS.bibleCanon),
+    manuscriptSummary: join(at(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory), 'SUMMARY.md'),
     joinPath: (base, ...segments) => join(String(base), ...segments),
   };
 }
@@ -46,33 +57,80 @@ function createFileSystem(): SceneContextWorkspaceFileSystem {
 
 export interface SceneDraftGeneratorOptions {
   readonly store: WorkspaceStore;
+  readonly content: ContentService;
   readonly aiService: StoryboardAIService;
+  readonly registry: AiProviderRegistry;
+  readonly draftConfig: DraftConfig;
   readonly onStage?: (stage: string, current: number, total: number) => void;
 }
 
-// Runs the very same staged pipeline the extension runs, assembled from the workspace on disk.
+// Runs the very same staged pipeline the extension runs, assembled from the workspace on disk, and
+// finishes with the shared review→revise loop (decision #31) before the body is written.
 export class SceneDraftGenerator implements DraftGenerator {
   public constructor(private readonly options: SceneDraftGeneratorOptions) {}
 
   public async generate(sceneStem: string, isCancelled: () => boolean): Promise<string> {
-    const scene = await this.options.store.readScene(sceneStem);
-    const project = await this.options.store.readProject();
+    const { store, content, aiService, registry } = this.options;
+    const scene = await store.readScene(sceneStem);
+    const project = await store.readProject();
 
-    const context = await buildSceneContext(
-      createPaths(this.options.store.root),
-      scene.value,
-      createFileSystem(),
+    const paths = createPaths(store.root);
+    const fileSystem = createFileSystem();
+    const context = await buildSceneContext(paths, scene.value, fileSystem);
+    const narrative = await buildNarrativeContext(paths, context, fileSystem);
+
+    const format = project.value.format ?? 'novel';
+    const styleDirective = buildStyleDirective(
+      project.value.setting,
+      scene.value.frontmatter.relationStage,
+      scene.value.frontmatter.targetWordCount,
     );
 
     const result = await runSceneGenerationPipeline({
       context,
-      aiService: this.options.aiService,
-      format: project.value.format ?? 'novel',
+      aiService,
+      format,
       sceneStem,
+      styleDirective,
+      previousContext: narrative.prompt,
+      personaStore: createPersonaMemoryStore(store, content, sceneStem),
+      backgroundStore: createBackgroundMemoryStore(store, content, sceneStem),
       shouldCancel: isCancelled,
       onProgress: (stage, current, total) => this.options.onStage?.(stage, current, total),
     });
 
-    return result.draftBody;
+    if (!this.options.draftConfig.reviseAfterGenerate || isCancelled()) {
+      return result.draftBody;
+    }
+
+    const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+    const revised = await runReviseLoop({
+      aiService,
+      registry,
+      attribution,
+      ctx: {
+        format,
+        intent: scene.value.body,
+        factLines: formatBibleFactLines(context, narrative.bibleFacts),
+        characterNames: context.characters.map((character) => character.name),
+        characterCards: formatAugmentCards(context.characters, undefined),
+        styleConstraints: project.value.setting?.styleConstraints ?? [],
+        qualityCriteria: project.value.setting?.qualityCriteria ?? [],
+        styleDirective,
+        characters: context.characters,
+        targetLength: resolveSceneTargetLength(
+          scene.value.frontmatter.targetWordCount,
+          scene.value.body,
+        ),
+      },
+      body: result.draftBody,
+      maxIterations: this.options.draftConfig.reviseMaxIterations,
+      reviseScoreThreshold: 0,
+      maxCompressionPercent: 50,
+      shouldCancel: isCancelled,
+      onProgress: (message) => this.options.onStage?.(message, 0, 0),
+    });
+
+    return revised.body;
   }
 }

@@ -7,7 +7,7 @@ import {
   resolveMinimumDraftLength,
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
-} from './draftCandidateValidation';
+} from '@storyboard/story-pipeline';
 
 export interface CondenseDraftRequest {
   readonly workspaceRoot: vscode.Uri;
