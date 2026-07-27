@@ -27,6 +27,7 @@ export interface StaleFile {
 export type MutateOutcome =
   | { readonly status: 'committed'; readonly paths: readonly string[] }
   | { readonly status: 'written'; readonly paths: readonly string[] }
+  | { readonly status: 'commit-failed'; readonly paths: readonly string[] }
   | { readonly status: 'no-op' }
   | { readonly status: 'stale'; readonly files: readonly StaleFile[] }
   | { readonly status: 'blocked'; readonly detail: string };

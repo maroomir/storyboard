@@ -1,13 +1,17 @@
 import type { GitClient } from './gitClient';
+import { runRemoteSync, type RemoteSyncOutcome } from './remoteSync';
 
 // `no-remote` is a first-class resting state, not a degraded one: with no remote configured the bot
 // still commits every save locally and /sync settles instantly without touching the network.
-export type SyncState = 'clean' | 'no-remote' | 'offline' | 'conflict';
+// `dirty` means the user has uncommitted tracked changes (normal while editing in Desktop) that
+// block a rebase; `error` covers setup problems such as an unborn branch or detached HEAD.
+export type SyncState = 'clean' | 'no-remote' | 'offline' | 'conflict' | 'dirty' | 'error';
 
 export interface SyncReport {
   readonly state: SyncState;
   readonly pushed: boolean;
   readonly conflicts: readonly string[];
+  readonly detail?: string;
 }
 
 export interface SyncLogger {
@@ -17,11 +21,19 @@ export interface SyncLogger {
 }
 
 export interface CommitHook {
-  commitOnWrite(relativePaths: readonly string[], message: string): void;
+  // Returns whether the commit actually landed; a swallowed failure here would silently break the
+  // "a successful save is always a commit" invariant.
+  commitOnWrite(relativePaths: readonly string[], message: string): boolean;
 }
 
 export interface SyncServiceOptions {
   readonly remote?: string;
+  // Runs the remote-sync operation. The default executes inline; a host may substitute a worker
+  // thread so network-bound git calls never block its event loop.
+  readonly executeRemoteSync?: (
+    workspaceRoot: string,
+    remote: string,
+  ) => Promise<RemoteSyncOutcome>;
 }
 
 // Every content write becomes a commit; fetch/rebase/push and the SyncState live here. A rebase
@@ -32,6 +44,10 @@ export class SyncService implements CommitHook {
   private conflicts: string[] = [];
   private requestPush: (() => void) | undefined;
   private onRemoteCommitsApplied: (() => void) | undefined;
+  private readonly executeRemoteSync: (
+    workspaceRoot: string,
+    remote: string,
+  ) => Promise<RemoteSyncOutcome>;
 
   public constructor(
     private readonly git: GitClient,
@@ -40,6 +56,8 @@ export class SyncService implements CommitHook {
     private readonly notify?: (text: string) => void,
   ) {
     this.state = options.remote === undefined ? 'no-remote' : 'clean';
+    this.executeRemoteSync =
+      options.executeRemoteSync ?? ((root, remote) => Promise.resolve(runRemoteSync(root, remote)));
   }
 
   // Wired after construction to break the SyncService/PushScheduler cycle.
@@ -53,57 +71,51 @@ export class SyncService implements CommitHook {
     this.onRemoteCommitsApplied = hook;
   }
 
-  public commitOnWrite(relativePaths: readonly string[], message: string): void {
+  public commitOnWrite(relativePaths: readonly string[], message: string): boolean {
     try {
       const committed = this.git.commit(relativePaths, message);
       if (committed && this.options.remote !== undefined) {
         this.requestPush?.();
       }
+      return true;
     } catch (error) {
       this.logger.error('커밋에 실패했습니다.', error);
+      return false;
     }
   }
 
-  public syncNow(): SyncReport {
+  public async syncNow(): Promise<SyncReport> {
     const remote = this.options.remote;
 
-    if (remote === undefined || !this.git.hasRemote(remote)) {
-      return this.settle('no-remote', false);
+    if (remote === undefined) {
+      return this.settle({ state: 'no-remote', pushed: false });
     }
 
-    const branch = this.git.currentBranch();
+    const outcome = await this.executeRemoteSync(this.git.root, remote);
 
-    try {
-      this.git.fetch(remote);
-    } catch {
-      this.logger.warn('원격 fetch에 실패했습니다(offline).');
-      return this.settle('offline', false);
-    }
-
-    if (this.git.countBehind(remote, branch) > 0) {
-      const rebase = this.git.rebase(remote, branch);
-      if (!rebase.ok) {
-        this.git.rebaseAbort();
-        this.conflicts = rebase.conflicts;
-        this.state = 'conflict';
-        this.notify?.(conflictMessage(rebase.conflicts));
-        return { state: 'conflict', pushed: false, conflicts: rebase.conflicts };
-      }
+    if (outcome.appliedRemote) {
       this.onRemoteCommitsApplied?.();
     }
 
-    let pushed = false;
-    if (this.git.countAhead(remote, branch) > 0) {
-      try {
-        this.git.push(remote, branch);
-        pushed = true;
-      } catch {
-        this.logger.warn('원격 push에 실패했습니다(offline).');
-        return this.settle('offline', false);
-      }
+    if (outcome.state === 'conflict') {
+      this.conflicts = [...outcome.conflicts];
+      this.state = 'conflict';
+      this.notify?.(conflictMessage(outcome.conflicts));
+      return { state: 'conflict', pushed: false, conflicts: outcome.conflicts };
     }
 
-    return this.settle('clean', pushed);
+    if (outcome.state === 'offline') {
+      this.logger.warn(outcome.detail ?? '원격에 연결할 수 없습니다(offline).');
+    }
+    if (outcome.state === 'error') {
+      this.logger.warn(`동기화 실패: ${outcome.detail ?? '원인 미상'}`);
+    }
+
+    return this.settle({
+      state: outcome.state,
+      pushed: outcome.pushed,
+      ...(outcome.detail === undefined ? {} : { detail: outcome.detail }),
+    });
   }
 
   public getState(): SyncState {
@@ -114,10 +126,14 @@ export class SyncService implements CommitHook {
     return [...this.conflicts];
   }
 
-  private settle(state: Exclude<SyncState, 'conflict'>, pushed: boolean): SyncReport {
-    this.state = state;
+  private settle(report: {
+    readonly state: Exclude<SyncState, 'conflict'>;
+    readonly pushed: boolean;
+    readonly detail?: string;
+  }): SyncReport {
+    this.state = report.state;
     this.conflicts = [];
-    return { state, pushed, conflicts: [] };
+    return { ...report, conflicts: [] };
   }
 }
 

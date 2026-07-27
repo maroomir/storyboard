@@ -25,6 +25,13 @@ function enqueueBaseline(job: GenJob): string | undefined {
 }
 
 function writeFailure(outcome: MutateOutcome): PipelineResult | undefined {
+  if (outcome.status === 'commit-failed') {
+    return {
+      success: false,
+      failureReason: 'provider_error',
+      errorMessage: `파일은 저장됐지만 커밋에 실패했습니다: ${outcome.paths.join(', ')}`,
+    };
+  }
   if (outcome.status === 'blocked') {
     return { success: false, failureReason: 'provider_error', errorMessage: outcome.detail };
   }

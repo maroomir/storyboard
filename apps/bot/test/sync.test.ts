@@ -160,10 +160,10 @@ describe('SyncService', () => {
     fixture.cleanup();
   });
 
-  it('settles as no-remote without touching the network when no remote is configured', () => {
+  it('settles as no-remote without touching the network when no remote is configured', async () => {
     const service = new SyncService(new GitClient(fixture.root), {}, silentLogger);
 
-    const report = service.syncNow();
+    const report = await service.syncNow();
 
     expect(report).toEqual({ state: 'no-remote', pushed: false, conflicts: [] });
     expect(service.getState()).toBe('no-remote');
@@ -180,7 +180,7 @@ describe('SyncService', () => {
     );
   });
 
-  it('pushes ahead commits to a real bare origin', () => {
+  it('pushes ahead commits to a real bare origin', async () => {
     const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
@@ -196,7 +196,7 @@ describe('SyncService', () => {
     fixture.write('character/elia.card', 'id: elia\n');
     service.commitOnWrite(['character/elia.card'], 'storygram: create character/elia.card');
 
-    const report = service.syncNow();
+    const report = await service.syncNow();
 
     expect(report.state).toBe('clean');
     expect(report.pushed).toBe(true);
@@ -204,7 +204,7 @@ describe('SyncService', () => {
     rmSync(origin, { recursive: true, force: true });
   });
 
-  it('aborts a conflicting rebase, preserves the local commit, and reports conflict', () => {
+  it('aborts a conflicting rebase, preserves the local commit, and reports conflict', async () => {
     const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
@@ -230,7 +230,7 @@ describe('SyncService', () => {
 
     const notify = vi.fn();
     const service = new SyncService(client, { remote: 'origin' }, silentLogger, notify);
-    const report = service.syncNow();
+    const report = await service.syncNow();
 
     expect(report.state).toBe('conflict');
     expect(report.conflicts).toContain('character/elia.card');
@@ -243,7 +243,7 @@ describe('SyncService', () => {
     rmSync(other, { recursive: true, force: true });
   });
 
-  it('reports offline when the remote is unreachable', () => {
+  it('reports offline when the remote is unreachable', async () => {
     git(fixture.root, 'remote', 'add', 'origin', join(tmpdir(), 'storygram-missing-origin.git'));
 
     const service = new SyncService(
@@ -251,13 +251,13 @@ describe('SyncService', () => {
       { remote: 'origin' },
       silentLogger,
     );
-    const report = service.syncNow();
+    const report = await service.syncNow();
 
     expect(report.state).toBe('offline');
     expect(report.pushed).toBe(false);
   });
 
-  it('invalidates edit baselines when a rebase applies remote commits', () => {
+  it('invalidates edit baselines when a rebase applies remote commits', async () => {
     const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
@@ -283,12 +283,125 @@ describe('SyncService', () => {
     const invalidate = vi.fn();
     service.setRemoteCommitsAppliedHook(invalidate);
 
-    const report = service.syncNow();
+    const report = await service.syncNow();
 
     expect(report.state).toBe('clean');
     expect(invalidate).toHaveBeenCalledOnce();
 
     rmSync(origin, { recursive: true, force: true });
     rmSync(other, { recursive: true, force: true });
+  });
+});
+
+describe('SyncService hardened failure paths', () => {
+  let fixture: WorkspaceFixture;
+
+  beforeEach(() => {
+    fixture = createWorkspaceFixture();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  // B1: a brand-new remote has no branch; the first sync must create it, not report fake clean.
+  it('pushes the initial branch to an empty remote instead of reporting clean', async () => {
+    const origin = mkdtempSync(join(tmpdir(), 'storygram-empty-origin-'));
+    execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
+      shell: false,
+    });
+    git(fixture.root, 'remote', 'add', 'origin', origin);
+
+    const service = new SyncService(
+      new GitClient(fixture.root),
+      { remote: 'origin' },
+      silentLogger,
+    );
+    const report = await service.syncNow();
+
+    expect(report.state).toBe('clean');
+    expect(report.pushed).toBe(true);
+    const remoteHead = execFileSync('git', ['-C', origin, 'rev-parse', 'refs/heads/main'], {
+      encoding: 'utf8',
+      shell: false,
+    }).trim();
+    expect(remoteHead.length).toBeGreaterThan(0);
+
+    rmSync(origin, { recursive: true, force: true });
+  });
+
+  // B2: an unborn branch must settle as an error report, never throw out of the periodic timer.
+  it('reports error for an unborn branch instead of throwing', async () => {
+    const unborn = mkdtempSync(join(tmpdir(), 'storygram-unborn-'));
+    execFileSync('git', ['-C', unborn, 'init', '--quiet', '--initial-branch=main'], {
+      shell: false,
+    });
+    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    execFileSync('git', ['init', '--bare', '--quiet', origin], { shell: false });
+    execFileSync('git', ['-C', unborn, 'remote', 'add', 'origin', origin], { shell: false });
+
+    const service = new SyncService(new GitClient(unborn), { remote: 'origin' }, silentLogger);
+    const report = await service.syncNow();
+
+    expect(report.state).toBe('error');
+    expect(service.getState()).toBe('error');
+
+    rmSync(unborn, { recursive: true, force: true });
+    rmSync(origin, { recursive: true, force: true });
+  });
+
+  // B3: uncommitted tracked changes are the normal Desktop-editing state, not a conflict.
+  it('reports dirty when local uncommitted changes block a rebase', async () => {
+    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
+      shell: false,
+    });
+    git(fixture.root, 'remote', 'add', 'origin', origin);
+    git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
+
+    const other = mkdtempSync(join(tmpdir(), 'storygram-other-'));
+    execFileSync('git', ['clone', '--quiet', origin, other], { shell: false });
+    git(other, 'config', 'user.name', 'O');
+    git(other, 'config', 'user.email', 'o@example.com');
+    mkdirSync(join(other, 'scene'), { recursive: true });
+    writeFileSync(join(other, 'scene', '01-remote.txt'), 'remote\n');
+    git(other, 'add', '--all');
+    git(other, 'commit', '--quiet', '-m', 'remote scene');
+    git(other, 'push', '--quiet');
+
+    // The user is mid-edit in Desktop: tracked file modified, uncommitted.
+    writeFileSync(join(fixture.root, '.storyboard', 'project.json'), '{"edited": true}\n');
+
+    const service = new SyncService(
+      new GitClient(fixture.root),
+      { remote: 'origin' },
+      silentLogger,
+    );
+    const report = await service.syncNow();
+
+    expect(report.state).toBe('dirty');
+    // The user's uncommitted edit is untouched.
+    expect(readFileSync(join(fixture.root, '.storyboard', 'project.json'), 'utf8')).toContain(
+      'edited',
+    );
+
+    rmSync(origin, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  });
+
+  // Commit failures must surface instead of reporting success.
+  it('returns false from commitOnWrite when a hook rejects the commit', () => {
+    const hookPath = join(fixture.root, '.git', 'hooks', 'pre-commit');
+    writeFileSync(hookPath, '#!/bin/sh\nexit 1\n');
+    execFileSync('chmod', ['+x', hookPath], { shell: false });
+
+    const service = new SyncService(new GitClient(fixture.root), {}, silentLogger);
+    fixture.write('character/elia.card', 'id: elia\n');
+
+    const committed = service.commitOnWrite(['character/elia.card'], 'storygram: create');
+
+    expect(committed).toBe(false);
+    expect(silentLogger.error).toHaveBeenCalled();
   });
 });

@@ -53,7 +53,12 @@ export class MutateGate {
       return { status: 'written', paths: changed };
     }
 
-    this.commitHook.commitOnWrite(tracked, commitMessage);
+    const committed = this.commitHook.commitOnWrite(tracked, commitMessage);
+    if (!committed) {
+      // The bytes are on disk but history was not updated — surfacing this is what keeps the
+      // "save = commit" invariant honest when a hook or a racing git operation rejects the commit.
+      return { status: 'commit-failed', paths: changed };
+    }
     return { status: 'committed', paths: changed };
   }
 

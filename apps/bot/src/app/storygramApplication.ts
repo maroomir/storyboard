@@ -1,5 +1,5 @@
 import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import {
   GitClient,
@@ -9,6 +9,7 @@ import {
 } from '@storyboard/story-git';
 
 import { createAiService } from '../ai/aiGateway';
+import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
 
 import { ChatContext } from '../chat/context';
 import {
@@ -73,12 +74,21 @@ export class StorygramApplication {
 
     this.store = new WorkspaceStore(config.workspace.path);
     this.git = new GitClient(config.workspace.path);
-    this.sync = new SyncService(this.git, { remote: config.workspace.remote }, logger);
+    // NOTE: the bundled worker sits next to the bundled entry (dist/syncWorker.js); network git
+    // calls run there so the polling loop never stalls (decision #30).
+    this.sync = new SyncService(
+      this.git,
+      {
+        remote: config.workspace.remote,
+        executeRemoteSync: createWorkerRemoteSyncExecutor(join(__dirname, 'syncWorker.js')),
+      },
+      logger,
+    );
     this.pushScheduler = new PushScheduler(
       config.workspace.pushDebounceSec * 1000,
       config.workspace.syncIntervalSec * 1000,
       () => {
-        this.sync.syncNow();
+        void this.sync.syncNow().catch((error) => logger.error('주기 동기화 실패', error));
       },
     );
     this.sync.setPushRequest(() => this.pushScheduler.requestPush());

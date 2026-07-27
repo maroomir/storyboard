@@ -137,7 +137,7 @@ export function createBibleHandler(): ICommandHandler {
 
 export function createSyncHandler(): ICommandHandler {
   return handler('/sync', '원격 동기화', async (ctx) => {
-    const report = ctx.sync.syncNow();
+    const report = await ctx.sync.syncNow();
 
     switch (report.state) {
       case 'no-remote':
@@ -151,11 +151,31 @@ export function createSyncHandler(): ICommandHandler {
         });
         return;
       case 'offline':
-        await ctx.reply({ text: '⚠️ 원격에 연결할 수 없습니다. 로컬 커밋은 그대로 보존됩니다.' });
+        await ctx.reply({
+          text: [
+            '⚠️ 원격에 연결할 수 없습니다. 로컬 커밋은 그대로 보존됩니다.',
+            ...(report.detail === undefined ? [] : [`(${report.detail})`]),
+          ].join('\n'),
+        });
+        return;
+      case 'dirty':
+        await ctx.reply({
+          text: [
+            '⚠️ Desktop에서 저장 중인(커밋되지 않은) 변경이 있어 원격 변경을 적용하지 않았습니다.',
+            'Desktop에서 변경을 정리한 뒤 다시 /sync 해주세요. 로컬 파일은 건드리지 않았습니다.',
+          ].join('\n'),
+        });
+        return;
+      case 'error':
+        await ctx.reply({
+          text: `⚠️ 동기화할 수 없습니다: ${report.detail ?? '원인 미상'}
+/doctor 로 워크스페이스 상태를 확인해주세요.`,
+        });
         return;
       case 'conflict':
         await ctx.reply({
-          text: `⚠️ 충돌로 원격 변경을 적용하지 못했습니다: ${report.conflicts.join(', ')}\nDesktop에서 해결해주세요.`,
+          text: `⚠️ 충돌로 원격 변경을 적용하지 못했습니다: ${report.conflicts.join(', ')}
+Desktop에서 해결해주세요.`,
         });
         return;
     }
