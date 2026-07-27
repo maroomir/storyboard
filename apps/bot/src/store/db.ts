@@ -13,17 +13,6 @@ export function openDatabase(path: string): StorygramDatabase {
 
 function migrate(db: StorygramDatabase): void {
   db.exec(`
-    CREATE TABLE IF NOT EXISTS wizard_sessions (
-      id TEXT PRIMARY KEY,
-      chat_id INTEGER NOT NULL,
-      def_id TEXT NOT NULL,
-      cursor TEXT NOT NULL,
-      data TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      expires_at INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_wizard_sessions_chat ON wizard_sessions (chat_id);
-
     CREATE TABLE IF NOT EXISTS gen_jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       kind TEXT NOT NULL,

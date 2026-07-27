@@ -2,8 +2,7 @@ import type { IAccessJobStore } from './jobStorePort';
 import { JobAbortedError } from '../provider/abortableCliRunner';
 import type { IJobProgressListener } from './progress';
 import { NullProgressListener } from './progress';
-import type { GenJob, JobUsage, PipelineResult } from './types';
-import { EMPTY_JOB_USAGE } from './types';
+import type { GenJob, PipelineResult } from './types';
 
 export const HEARTBEAT_INTERVAL_MS = 30_000;
 
@@ -92,58 +91,3 @@ async function notifyStage(
 ): Promise<void> {
   await Promise.all(listeners.map((listener) => listener.onStage(job, stage)));
 }
-
-export class FakePipeline implements IPipeline {
-  public constructor(
-    private readonly stages: readonly string[] = ['sync', 'context', 'generate'],
-    private readonly stepDelayMs = 5,
-  ) {}
-
-  public async run(job: GenJob, context: PipelineContext): Promise<PipelineResult> {
-    for (const stage of this.stages) {
-      if (context.isCancelled()) {
-        return {
-          success: false,
-          failureReason: 'cancelled',
-          errorMessage: 'cancelled by user',
-        };
-      }
-
-      context.log(stage, `stage started: ${stage}`);
-      await context.reportStage(stage);
-      await delay(this.stepDelayMs);
-      context.log(stage, `stage finished: ${stage}`);
-    }
-
-    const usage: JobUsage = {
-      inputTokens: 10,
-      outputTokens: 20,
-      costUsd: 0,
-    };
-    const scene = typeof job.target.scene === 'string' ? job.target.scene : 'unknown';
-
-    return {
-      success: true,
-      resultRef: `draft/${scene}.md`,
-      usage,
-    };
-  }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-export function mergeUsage(current: JobUsage, next: JobUsage | undefined): JobUsage {
-  if (!next) {
-    return current;
-  }
-
-  return {
-    inputTokens: current.inputTokens + next.inputTokens,
-    outputTokens: current.outputTokens + next.outputTokens,
-    costUsd: current.costUsd + next.costUsd,
-  };
-}
-
-export const ZERO_USAGE: JobUsage = EMPTY_JOB_USAGE;

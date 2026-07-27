@@ -1,4 +1,4 @@
-import { STORYBOARD_RELATIVE_PATHS, draftRelativePath } from '@storyboard/story-format';
+import { draftRelativePath } from '@storyboard/story-format';
 
 import type { ContentService } from '../content/contentService';
 import type { MutateOutcome } from '../workspace/workspaceChanges';
@@ -74,13 +74,4 @@ function describeFailure(outcome: MutateOutcome): string {
     return outcome.files.map((file) => file.relativePath).join(', ');
   }
   return '알 수 없는 실패';
-}
-
-export function draftHistoryRelativePath(
-  sceneStem: string,
-  revision: number,
-  stamp: string,
-): string {
-  const suffix = String(revision).padStart(2, '0');
-  return `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}/${stamp}-rev-${suffix}.md`;
 }
