@@ -88,6 +88,8 @@ function describeOutcome(outcome: MutateOutcome): string {
       return `✅ 저장했습니다: ${outcome.paths.join(', ')}`;
     case 'commit-failed':
       return `⚠️ 파일은 저장했지만 커밋에 실패했습니다: ${outcome.paths.join(', ')}\n워크스페이스의 git 상태(훅·잠금)를 확인해주세요.`;
+    case 'write-failed':
+      return `⚠️ 파일 쓰기에 실패했습니다: ${outcome.detail}`;
     case 'no-op':
       return '변경된 내용이 없습니다.';
     case 'stale':

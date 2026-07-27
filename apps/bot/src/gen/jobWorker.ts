@@ -7,6 +7,9 @@ export interface JobWorkerOptions {
   readonly executor: JobExecutor;
   readonly jobsConfig: JobsConfig;
   readonly pollIntervalMs?: number;
+  readonly logger?: {
+    error(message: string, error?: unknown): void;
+  };
 }
 
 // Owns concurrency and polling: one loop per configured slot in each job class pulls the next job
@@ -49,26 +52,33 @@ export class JobWorker {
 
   private async runLoop(jobClass: JobClass): Promise<void> {
     while (this.running) {
-      const active = this.activeByClass.get(jobClass) ?? 0;
-      const limit =
-        jobClass === 'heavy'
-          ? this.options.jobsConfig.heavyConcurrency
-          : this.options.jobsConfig.lightConcurrency;
+      // One transient failure (sqlite hiccup, fs error) must never kill a poll slot permanently —
+      // with concurrency 1 that would silently stop all generation until a restart.
+      try {
+        const active = this.activeByClass.get(jobClass) ?? 0;
+        const limit =
+          jobClass === 'heavy'
+            ? this.options.jobsConfig.heavyConcurrency
+            : this.options.jobsConfig.lightConcurrency;
 
-      if (active >= limit) {
-        await delay(this.pollIntervalMs);
-        continue;
+        if (active >= limit) {
+          await delay(this.pollIntervalMs);
+          continue;
+        }
+
+        const job = this.options.queue.takeNext(jobClass);
+        if (!job) {
+          await delay(this.pollIntervalMs);
+          continue;
+        }
+
+        const task = this.executeJob(job);
+        this.inFlight.add(task);
+        void task.finally(() => this.inFlight.delete(task));
+      } catch (error) {
+        this.options.logger?.error(`잡 폴링 오류(${jobClass}) — 계속 진행합니다.`, error);
+        await delay(this.pollIntervalMs * 10);
       }
-
-      const job = this.options.queue.takeNext(jobClass);
-      if (!job) {
-        await delay(this.pollIntervalMs);
-        continue;
-      }
-
-      const task = this.executeJob(job);
-      this.inFlight.add(task);
-      void task.finally(() => this.inFlight.delete(task));
     }
   }
 

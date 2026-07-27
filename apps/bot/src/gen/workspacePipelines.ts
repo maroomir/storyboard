@@ -25,6 +25,9 @@ function enqueueBaseline(job: GenJob): string | undefined {
 }
 
 function writeFailure(outcome: MutateOutcome): PipelineResult | undefined {
+  if (outcome.status === 'write-failed') {
+    return { success: false, failureReason: 'provider_error', errorMessage: outcome.detail };
+  }
   if (outcome.status === 'commit-failed') {
     return {
       success: false,

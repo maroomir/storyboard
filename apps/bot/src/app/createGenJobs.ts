@@ -104,7 +104,12 @@ export function createGenJobs(options: CreateGenJobsOptions): GenJobs {
     logger: options.logger,
   });
 
-  const worker = new JobWorker({ queue, executor, jobsConfig: options.jobsConfig });
+  const worker = new JobWorker({
+    queue,
+    executor,
+    jobsConfig: options.jobsConfig,
+    logger: options.logger,
+  });
 
   const recovery = new JobRecoveryService({
     store: jobStore,

@@ -59,12 +59,15 @@ export class JobExecutor {
   }
 
   private finalize(job: GenJob, result: PipelineResult): void {
-    if (this.options.manager.isCancelled(job.id)) {
+    // A cancellation that lands after the pipeline already wrote its output must not relabel the
+    // completed work: the draft on disk is the new reality, so report success and drop the flag.
+    if (this.options.manager.isCancelled(job.id) && !result.success) {
       this.options.manager.markRunningCancelled(job.id);
       return;
     }
 
     if (result.success) {
+      this.options.manager.clearCancellation(job.id);
       this.options.stateMachine.assertAllowed('running', 'succeeded');
       const latest = this.options.store.load(job.id);
       const usage =
