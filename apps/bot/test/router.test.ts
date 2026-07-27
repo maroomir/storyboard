@@ -67,7 +67,7 @@ describe('UpdateRouter', () => {
         sent.push(view.text);
         return { chatId: 1, messageId: sent.length };
       },
-      editMessage: async (): Promise<void> => undefined,
+      editMessage: async (ref: SentMessageRef): Promise<SentMessageRef> => ref,
       answerCallback: async (): Promise<void> => undefined,
       sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
     };
@@ -215,7 +215,7 @@ describe('/doctor', () => {
         sent.push(view.text);
         return { chatId: 1, messageId: sent.length };
       },
-      editMessage: async (): Promise<void> => undefined,
+      editMessage: async (ref: SentMessageRef): Promise<SentMessageRef> => ref,
       answerCallback: async (): Promise<void> => undefined,
       sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
     };

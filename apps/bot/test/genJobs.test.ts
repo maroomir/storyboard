@@ -88,8 +88,9 @@ describe('generation jobs end to end', () => {
         sent.push(view.text);
         return { chatId: 1, messageId: sent.length };
       },
-      editMessage: async (_ref: SentMessageRef, view: MessageView): Promise<void> => {
+      editMessage: async (ref: SentMessageRef, view: MessageView): Promise<SentMessageRef> => {
         sent.push(view.text);
+        return ref;
       },
       answerCallback: async (): Promise<void> => undefined,
       sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
