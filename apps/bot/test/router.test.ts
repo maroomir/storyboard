@@ -268,4 +268,53 @@ describe('/doctor', () => {
     expect(sent[0]).toContain('이제 편집 명령을 쓸 수 있습니다');
     expect(git(fixture.root, 'ls-files')).not.toContain('draft/01-first.md');
   });
+
+  // Hand-authored cards use inline sequences and their own key order. Normalizing is offered as a
+  // separate command so it never rides along inside a content edit's diff.
+  it('flags hand-authored card formatting and normalizes it in one commit on confirmation', async () => {
+    fixture = createWorkspaceFixture();
+    const handAuthored = [
+      'type: character',
+      'id: seoha',
+      'name: 서하',
+      'tags: [기억 세공사, 유년 기억 상실]',
+      'voice:',
+      '  - 짧고 건조한 사무체',
+      'role: main',
+      '',
+    ].join('\n');
+    fixture.write('character/seoha.card', handAuthored);
+    fixture.git('add', '--all');
+    fixture.git('commit', '--quiet', '-m', 'add hand-authored card');
+    build(fixture.root);
+
+    await router.handleUpdate(message('/doctor'));
+    expect(sent[0]).toContain('표준 서식이 아닌 카드 1개: seoha');
+    expect(sent[0]).toContain('/doctor format');
+
+    await router.handleUpdate(message('/doctor format'));
+
+    expect(sent[1]).toContain('카드 1개를 표준 서식으로 정리했습니다');
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
+      'character/seoha.card',
+    );
+    expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
+      'storygram: normalize card formatting',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+
+    // Content is preserved; only the layout changed.
+    const normalized = readFileSync(join(fixture.root, 'character', 'seoha.card'), 'utf8');
+    expect(normalized).toContain('  - 기억 세공사');
+    expect(normalized).not.toContain('tags: [');
+    expect(parseCard(normalized)).toEqual(parseCard(handAuthored));
+
+    // Running it again is a no-op, and a later report stays quiet.
+    sent.length = 0;
+    await router.handleUpdate(message('/doctor format'));
+    expect(sent[0]).toContain('이미 표준 서식입니다');
+
+    await router.handleUpdate(message('/doctor'));
+    expect(sent[1]).not.toContain('표준 서식이 아닌');
+  });
 });

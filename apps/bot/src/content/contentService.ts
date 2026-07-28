@@ -1,11 +1,12 @@
 import {
   STORYBOARD_RELATIVE_PATHS,
+  canonicalizeCardText,
   draftRelativePath,
   type StoryboardCard,
 } from '@storyboard/story-format';
 
 import type { MutateGate } from '../workspace/mutateGate';
-import type { MutateOutcome, WorkspacePlan } from '../workspace/workspaceChanges';
+import type { MutateOutcome, WorkspacePlan, WorkspaceWrite } from '../workspace/workspaceChanges';
 import { hashContent } from '../workspace/workspaceStore';
 import type {
   CardSummary,
@@ -51,6 +52,53 @@ export class ContentService {
   ): Promise<MutateOutcome> {
     const current = await this.store.readCard(kind, id);
     return this.applyPlan(planCardListUpdate(current, field, values));
+  }
+
+  public async listUnformattedCardIds(): Promise<string[]> {
+    return (await this.collectFormattingWrites()).ids;
+  }
+
+  // Rewrites every card that is not already in canonical form, as one commit of its own, so a
+  // later content edit produces a diff of just that edit. Returns undefined when nothing needs it.
+  public async normalizeCardFormatting(): Promise<
+    { readonly outcome: MutateOutcome; readonly ids: readonly string[] } | undefined
+  > {
+    const { writes, ids } = await this.collectFormattingWrites();
+
+    if (writes.length === 0) {
+      return undefined;
+    }
+
+    return {
+      outcome: await this.gate.apply({ writes }, 'storygram: normalize card formatting'),
+      ids,
+    };
+  }
+
+  private async collectFormattingWrites(): Promise<{
+    writes: WorkspaceWrite[];
+    ids: string[];
+  }> {
+    const writes: WorkspaceWrite[] = [];
+    const ids: string[] = [];
+
+    for (const card of await this.store.listCards()) {
+      const raw = await this.store.readText(card.relativePath);
+      const canonical = canonicalizeCardText(raw);
+
+      if (!canonical.changed) {
+        continue;
+      }
+
+      writes.push({
+        relativePath: card.relativePath,
+        content: canonical.text,
+        baselineHash: hashContent(raw),
+      });
+      ids.push(card.id);
+    }
+
+    return { writes, ids };
   }
 
   // Generated drafts are gitignored, so a regenerate cannot be undone with git. The previous

@@ -62,6 +62,18 @@ export function serializeCard(card: StoryboardCard): string {
   });
 }
 
+// Serialization is canonical (fixed key order, block sequences), but a hand-authored card may use
+// inline sequences or its own key order. Without this, the first programmatic edit would fold that
+// reformatting into an unrelated content diff; callers use it to normalize deliberately instead.
+export function canonicalizeCardText(rawCard: string): {
+  readonly text: string;
+  readonly changed: boolean;
+} {
+  const text = serializeCard(parseCard(rawCard));
+
+  return { text, changed: text !== rawCard };
+}
+
 export async function readCardFile(
   uri: unknown,
   fileSystem: CardFileSystem,

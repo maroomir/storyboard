@@ -80,7 +80,7 @@ async function runEdit(
   await ctx.reply({ text: describeOutcome(outcome) });
 }
 
-function describeOutcome(outcome: MutateOutcome): string {
+export function describeOutcome(outcome: MutateOutcome): string {
   switch (outcome.status) {
     case 'committed':
       return `✅ 저장하고 커밋했습니다: ${outcome.paths.join(', ')}`;

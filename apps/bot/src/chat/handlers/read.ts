@@ -45,7 +45,7 @@ export function createStartHandler(): ICommandHandler {
         '',
         '🛠 운영',
         '/sync — 원격 동기화',
-        '/doctor — 워크스페이스·git 상태 점검',
+        '/doctor — 워크스페이스·git 점검 (init·format)',
       ].join('\n'),
     });
   });
