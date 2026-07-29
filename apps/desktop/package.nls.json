@@ -43,5 +43,6 @@
   "storyboard.draft.augmentSelection.title": "Storyboard: Update Selection from Cards",
   "storyboard.draft.editSelection.title": "Storyboard: Edit Selection with Instruction...",
   "storyboard.draft.export.title": "Storyboard: Export Draft…",
+  "storyboard.bot.setup.title": "Storyboard: Set Up Telegram Bot…",
   "storyboard.bot.openDashboard.title": "Storyboard: Open Telegram Bot Dashboard"
 }

@@ -21,6 +21,8 @@ mkdir -p ~/.storygram
 cp apps/bot/config.example.json ~/.storygram/config.json
 chmod 600 ~/.storygram/config.json
 # botToken·allowedChatIds·workspace.path를 실제 값으로 수정
+# — 또는 VSCode 확장의 `Storyboard: 텔레그램 봇 설정…` 명령이 이 단계를 대신합니다
+#   (토큰 getMe 검증, 워크스페이스 자동 기입, 0600 저장, macOS launchd 설치 안내 포함)
 
 # 실행
 node apps/bot/dist/index.js

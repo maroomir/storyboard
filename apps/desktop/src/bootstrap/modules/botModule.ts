@@ -1,4 +1,5 @@
 import { registerOpenBotDashboardCommand } from '../../presentation/commands/openBotDashboard';
+import { registerSetupBotCommand } from '../../presentation/commands/setupBot';
 import { BotStatusBarItem } from '../../presentation/providers/BotStatusBarItem';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
@@ -8,7 +9,11 @@ export class BotModule implements IApplicationModule {
   private readonly disposables = new DisposableStore();
 
   public initialize(): void {
-    this.disposables.add(registerOpenBotDashboardCommand(), new BotStatusBarItem());
+    this.disposables.add(
+      registerSetupBotCommand(),
+      registerOpenBotDashboardCommand(),
+      new BotStatusBarItem(),
+    );
   }
 
   public dispose(): void {

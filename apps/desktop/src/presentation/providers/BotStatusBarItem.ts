@@ -40,9 +40,8 @@ export class BotStatusBarItem implements vscode.Disposable {
     switch (health.status) {
       case 'unconfigured':
         this.item.text = '$(comment-discussion) storygram 미설정';
-        this.item.tooltip =
-          '텔레그램 봇 설정(~/.storygram/config.json)이 없습니다. apps/bot/README.md를 참고하세요.';
-        this.item.command = undefined;
+        this.item.tooltip = '텔레그램 봇 설정이 없습니다. 클릭해 설정 마법사를 시작하세요.';
+        this.item.command = 'storyboard.bot.setup';
         return;
       case 'dashboard-disabled':
         this.item.text = '$(comment-discussion) storygram ◌';
