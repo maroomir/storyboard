@@ -28,6 +28,7 @@ Korean README: [`README.md`](README.md)
 - Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
 - Localize extension command titles through `package.nls.json` and `package.nls.ko.json`.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
+- Watch the Telegram companion bot ([storygram](../bot/README.md)) from the status bar — shows run/sync state, and `Storyboard: Open Telegram Bot Dashboard` opens the loopback operations panel.
 
 The current implementation supports both the manual `scene/*.txt` → `draft/*.md` flow and the one-click long-form generation flow. One-click generation stores resumable stage state in `.storyboard/cache/novel-run.json`; long-manuscript PDF/DOCX export and deeper batch review remain follow-up work. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md) for the structure.
 

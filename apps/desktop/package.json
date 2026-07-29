@@ -200,6 +200,10 @@
       {
         "command": "storyboard.draft.export",
         "title": "%storyboard.draft.export.title%"
+      },
+      {
+        "command": "storyboard.bot.openDashboard",
+        "title": "%storyboard.bot.openDashboard.title%"
       }
     ],
     "configuration": {

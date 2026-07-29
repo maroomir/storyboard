@@ -34,6 +34,7 @@ English README: [`README.en.md`](README.en.md)
 - Claude Code(`claude`)·Codex(`codex`) CLI provider 지원 — API 키 없이 구독 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
+- 텔레그램 동반 봇([storygram](../bot/README.md)) 상태바 관찰 — 실행 여부·동기화 상태 표시, `Storyboard: 텔레그램 봇 대시보드 열기` 명령으로 운영 패널(`127.0.0.1`) 열기
 
 현재 구현은 수동 `scene/*.txt → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
 
