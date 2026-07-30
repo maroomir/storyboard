@@ -17,6 +17,7 @@ import {
   writeStorygramConfigFile,
   type BotProviderId,
 } from '../../infrastructure/storygram/storygramSetup';
+import { buildWorkspacePickOptions } from './setupBotHelpers';
 
 export function registerSetupBotCommand(): vscode.Disposable {
   return vscode.commands.registerCommand('storyboard.bot.setup', async (): Promise<void> => {
@@ -118,48 +119,78 @@ async function askChatIds(): Promise<number[] | undefined> {
   return parseChatIds(input);
 }
 
+function hasStoryboardProject(folderPath: string): boolean {
+  return existsSync(join(folderPath, '.storyboard', 'project.json'));
+}
+
 async function askWorkspacePath(): Promise<string | undefined> {
-  const candidates = (vscode.workspace.workspaceFolders ?? [])
-    .map((folder) => folder.uri.fsPath)
-    .filter((fsPath) => existsSync(join(fsPath, '.storyboard', 'project.json')));
+  const options = buildWorkspacePickOptions(
+    (vscode.workspace.workspaceFolders ?? []).map((folder) => ({
+      path: folder.uri.fsPath,
+      hasProject: hasStoryboardProject(folder.uri.fsPath),
+    })),
+  );
 
-  const PICK_FOLDER = '폴더 직접 선택…';
-  let selected: string | undefined;
-  if (candidates.length > 0) {
-    selected = await vscode.window.showQuickPick([...candidates, PICK_FOLDER], {
-      title: 'storygram 설정 3/4 — 봇이 편집할 Storyboard 워크스페이스',
-      ignoreFocusOut: true,
-    });
-    if (selected === undefined) {
-      return undefined;
-    }
-  } else {
-    selected = PICK_FOLDER;
+  const picked = await vscode.window.showQuickPick(options, {
+    title: 'storygram 설정 3/4 — 봇이 편집할 Storyboard 워크스페이스',
+    ignoreFocusOut: true,
+  });
+  if (picked === undefined) {
+    return undefined;
   }
 
-  if (selected !== PICK_FOLDER) {
-    return selected;
+  const folderPath = picked.path ?? (await browseForFolder());
+  if (folderPath === undefined) {
+    return undefined;
   }
 
+  if (hasStoryboardProject(folderPath)) {
+    return folderPath;
+  }
+  return initializeWorkspace(folderPath);
+}
+
+async function browseForFolder(): Promise<string | undefined> {
   const picked = await vscode.window.showOpenDialog({
     title: 'Storyboard 워크스페이스 폴더 선택',
     canSelectFiles: false,
     canSelectFolders: true,
     canSelectMany: false,
   });
-  const folder = picked?.[0]?.fsPath;
-  if (folder === undefined) {
-    return undefined;
-  }
+  return picked?.[0]?.fsPath;
+}
 
-  if (!existsSync(join(folder, '.storyboard', 'project.json'))) {
+// storyboard.init only targets folders that are open in the workspace, so a browsed-in folder
+// outside the workspace has to be opened first — say that instead of failing silently.
+async function initializeWorkspace(folderPath: string): Promise<string | undefined> {
+  const isOpenInWorkspace = (vscode.workspace.workspaceFolders ?? []).some(
+    (folder) => folder.uri.fsPath === folderPath,
+  );
+  if (!isOpenInWorkspace) {
     await vscode.window.showErrorMessage(
-      `Storyboard 워크스페이스가 아닙니다: ${folder} (.storyboard/project.json 없음). ` +
-        'Storyboard: Init 명령으로 먼저 초기화한 뒤 다시 실행하세요.',
+      `Storyboard 워크스페이스가 아닙니다: ${folderPath} (.storyboard/project.json 없음). ` +
+        '이 폴더를 VSCode에서 먼저 열면 마법사가 초기화까지 처리합니다.',
     );
     return undefined;
   }
-  return folder;
+
+  const choice = await vscode.window.showInformationMessage(
+    `${folderPath}는 아직 Storyboard 프로젝트가 아닙니다. 지금 초기화할까요?`,
+    { modal: true },
+    '초기화',
+  );
+  if (choice !== '초기화') {
+    return undefined;
+  }
+
+  await vscode.commands.executeCommand('storyboard.init');
+  if (!hasStoryboardProject(folderPath)) {
+    await vscode.window.showErrorMessage(
+      '워크스페이스 초기화가 완료되지 않았습니다. Storyboard: Init 명령을 직접 실행한 뒤 다시 시도하세요.',
+    );
+    return undefined;
+  }
+  return folderPath;
 }
 
 async function askDefaultProvider(): Promise<BotProviderId | undefined> {
