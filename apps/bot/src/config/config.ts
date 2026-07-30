@@ -202,8 +202,9 @@ function formatSchemaIssues(error: ZodError): string {
 
 // SECURITY: the config file holds the bot token, so it should be readable only by its owner
 // (mode 0600). We warn rather than fail because filesystem semantics vary; on Windows POSIX
-// permission bits are not meaningful.
-function collectPermissionWarnings(configPath: string): string[] {
+// permission bits are not meaningful. Exported so /doctor reports the same finding the boot check
+// logs — an operator who never reads the log still sees it.
+export function collectPermissionWarnings(configPath: string): string[] {
   if (process.platform === 'win32') {
     return [];
   }

@@ -4,17 +4,27 @@ import {
   initializeWorkspaceRepository,
 } from '@storyboard/story-git';
 
+import { collectPermissionWarnings, type ProvidersConfig } from '../../config/config';
+import { collectCliProviderCommands, findExecutableOnPath } from '../../config/environment';
 import type { ChatContext } from '../context';
 import type { IncomingUpdate } from '../ports';
 import { commandArgs, isCommand, type ICommandHandler } from '../registry';
 import { describeOutcome } from './edit';
 
+// Everything the report needs that does not live in the workspace: the bot's own config file and
+// the provider selection it was booted with.
+export interface DoctorEnvironment {
+  readonly configFile: string;
+  readonly providers: ProvidersConfig | undefined;
+  readonly remote: string | undefined;
+}
+
 // Reports whether the bot can actually do its job right now, and — only on explicit confirmation —
 // performs the one repair it is allowed to make (turning the workspace into a git repository).
-export function createDoctorHandler(): ICommandHandler {
+export function createDoctorHandler(environment: DoctorEnvironment): ICommandHandler {
   return {
     command: '/doctor',
-    description: '워크스페이스·git 점검 (/doctor init · /doctor format)',
+    description: '워크스페이스·git·프로바이더 점검 (/doctor init · /doctor format)',
     match: (update: IncomingUpdate) => isCommand(update, '/doctor'),
     execute: async (ctx) => {
       if (commandArgs(ctx.update) === 'init') {
@@ -27,12 +37,12 @@ export function createDoctorHandler(): ICommandHandler {
         return;
       }
 
-      await ctx.reply({ text: (await buildReport(ctx)).join('\n') });
+      await ctx.reply({ text: (await buildReport(ctx, environment)).join('\n') });
     },
   };
 }
 
-async function buildReport(ctx: ChatContext): Promise<string[]> {
+async function buildReport(ctx: ChatContext, environment: DoctorEnvironment): Promise<string[]> {
   const lines = ['🩺 진단'];
 
   try {
@@ -56,7 +66,20 @@ async function buildReport(ctx: ChatContext): Promise<string[]> {
     lines.push(`   마지막 커밋: ${head.hash} ${head.subject}`);
   }
 
+  // A tracked change sitting uncommitted is usually the user's own work-in-progress from the
+  // extension; the bot will not sweep it up, so it only reports it.
+  if (repository.status === 'ready' && git.hasTrackedChanges()) {
+    lines.push('⚠️ 커밋되지 않은 변경이 있습니다 (봇 커밋에는 포함되지 않습니다).');
+  }
+
+  lines.push(...describeRemote(git, environment.remote));
   lines.push(`✅ 동기화 상태: ${ctx.sync.getState()}`);
+  lines.push(...describeProviders(environment.providers));
+  lines.push(...describeJobs(ctx));
+
+  for (const warning of collectPermissionWarnings(environment.configFile)) {
+    lines.push(`⚠️ ${warning}`);
+  }
 
   const cards = await ctx.content.listCards();
   const scenes = await ctx.content.listScenes();
@@ -71,6 +94,45 @@ async function buildReport(ctx: ChatContext): Promise<string[]> {
   }
 
   return lines;
+}
+
+function describeRemote(git: GitClient, remote: string | undefined): string[] {
+  if (remote === undefined) {
+    return ['ℹ️ 원격 없음: 로컬 커밋만 하고 `/sync`는 no-remote로 끝납니다.'];
+  }
+
+  return git.hasRemote(remote)
+    ? [`✅ 원격: ${remote}`]
+    : [`❌ 원격 \`${remote}\`이 저장소에 없습니다 — \`/sync\`가 실패합니다.`];
+}
+
+function describeProviders(providers: ProvidersConfig | undefined): string[] {
+  const commands = collectCliProviderCommands(providers);
+  if (commands.length === 0) {
+    return ['ℹ️ 프로바이더: CLI 미사용 (mock)'];
+  }
+
+  return commands.map(({ providerId, command }) => {
+    const resolved = findExecutableOnPath(command);
+    return resolved === undefined
+      ? `❌ 프로바이더 ${providerId}: \`${command}\`을 PATH에서 찾을 수 없어 생성이 실패합니다.`
+      : `✅ 프로바이더 ${providerId}: ${resolved}`;
+  });
+}
+
+function describeJobs(ctx: ChatContext): string[] {
+  if (!ctx.jobs) {
+    return [];
+  }
+
+  const recent = ctx.jobs.getRecent(20);
+  const queued = recent.filter(({ job }) => job.state === 'queued').length;
+  const running = recent.filter(({ job }) => job.state === 'running').length;
+  if (queued === 0 && running === 0) {
+    return ['✅ 작업: 대기 없음'];
+  }
+
+  return [`⏳ 작업: 실행 ${running} · 대기 ${queued} (\`/jobs\`로 확인)`];
 }
 
 async function runFormat(ctx: ChatContext): Promise<void> {

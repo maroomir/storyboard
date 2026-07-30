@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { chmodSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { parseCard } from '@storyboard/story-format';
@@ -7,7 +7,7 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatContext } from '../src/chat/context';
-import { createDoctorHandler } from '../src/chat/handlers/doctor';
+import { createDoctorHandler, type DoctorEnvironment } from '../src/chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit';
 import {
   createBibleHandler,
@@ -202,7 +202,7 @@ describe('/doctor', () => {
   let router: UpdateRouter;
   let sent: string[];
 
-  function build(root: string): void {
+  function build(root: string, environment: Partial<DoctorEnvironment> = {}): void {
     const store = new WorkspaceStore(root);
     const client = new GitClient(root);
     const sync = new SyncService(client, {}, silentLogger);
@@ -220,7 +220,14 @@ describe('/doctor', () => {
       sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
     };
     const registry = new CommandRegistry();
-    registry.register(createDoctorHandler());
+    registry.register(
+      createDoctorHandler({
+        configFile: join(root, 'absent-config.json'),
+        providers: undefined,
+        remote: undefined,
+        ...environment,
+      }),
+    );
     router = new UpdateRouter({
       sender,
       registry,
@@ -316,5 +323,78 @@ describe('/doctor', () => {
 
     await router.handleUpdate(message('/doctor'));
     expect(sent[1]).not.toContain('표준 서식이 아닌');
+  });
+
+  it('reports a missing provider CLI as the reason generation would fail', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root, {
+      providers: { default: 'claude-code', models: { 'claude-code': { command: '/nope/claude' } } },
+    });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('❌ 프로바이더 claude-code');
+    expect(sent[0]).toContain('/nope/claude');
+  });
+
+  it('reports a resolvable provider CLI with the path it found', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root, {
+      providers: {
+        default: 'claude-code',
+        models: { 'claude-code': { command: process.execPath } },
+      },
+    });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain(`✅ 프로바이더 claude-code: ${process.execPath}`);
+  });
+
+  it('stays quiet about CLI providers when only mock is configured', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root, { providers: { default: 'mock' } });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('ℹ️ 프로바이더: CLI 미사용 (mock)');
+  });
+
+  it('reports a configured remote that the repository does not have', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root, { remote: 'origin' });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('❌ 원격 `origin`이 저장소에 없습니다');
+  });
+
+  // A tracked file the user edited in the extension but has not committed: the bot reports it and
+  // leaves it alone, because its own commits name explicit paths.
+  it('reports uncommitted tracked changes without touching them', async () => {
+    fixture = createWorkspaceFixture();
+    copySharedFixture(fixture, 'cards', 'character.card', 'character/elia.card');
+    fixture.git('add', '--all');
+    fixture.git('commit', '--quiet', '-m', 'add card');
+    fixture.write('character/elia.card', 'type: character\nid: elia\nname: 편집 중\n');
+    build(fixture.root);
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('⚠️ 커밋되지 않은 변경이 있습니다');
+    expect(git(fixture.root, 'status', '--porcelain')).toContain('character/elia.card');
+  });
+
+  // SECURITY: the boot check logs this, but an operator who only ever sees Telegram would miss it.
+  it('surfaces a world-readable config file as a permission warning', async () => {
+    fixture = createWorkspaceFixture();
+    fixture.write('loose-config.json', '{}\n');
+    const configFile = join(fixture.root, 'loose-config.json');
+    chmodSync(configFile, 0o644);
+    build(fixture.root, { configFile });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('설정 파일 권한이 0644입니다');
   });
 });

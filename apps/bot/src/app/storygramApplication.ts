@@ -54,6 +54,7 @@ export interface StorygramApplicationOptions {
   readonly config: StorygramConfig;
   readonly logger: Logger;
   readonly stateDbPath: string;
+  readonly configFilePath: string;
 }
 
 // Composition root: builds the object graph once and owns the process lifecycle. Nothing else in
@@ -151,7 +152,10 @@ export class StorygramApplication {
           // Editing the stale progress message also retires its ⏳ text and Stop button; jobs
           // interrupted before a progress message existed fall back to a fresh message.
           const deliver = job.progressMessageId
-            ? this.gateway.editMessage({ chatId: job.chatId, messageId: job.progressMessageId }, { text })
+            ? this.gateway.editMessage(
+                { chatId: job.chatId, messageId: job.progressMessageId },
+                { text },
+              )
             : this.gateway.sendMessage(job.chatId, { text });
           void deliver.catch((error) => logger.error('중단 알림 전송 실패', error));
         }
@@ -166,7 +170,11 @@ export class StorygramApplication {
       createScenesHandler(),
       createBibleHandler(),
       createSyncHandler(),
-      createDoctorHandler(),
+      createDoctorHandler({
+        configFile: options.configFilePath,
+        providers: config.providers,
+        remote: config.workspace.remote,
+      }),
       createRenameHandler(),
       createSetHandler(),
       createDraftCommandHandler(),

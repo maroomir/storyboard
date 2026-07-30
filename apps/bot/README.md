@@ -66,7 +66,7 @@ node apps/bot/dist/index.js
 | `/outline` · `/plan` · `/manuscript` | 시놉시스·챕터 계획·원고 조립 |
 | `/jobs` · `/stop <번호>` | 작업 목록·취소(실행 중 CLI 프로세스까지 중단) |
 | `/sync` | 원격 동기화(fetch→rebase→push, 충돌 시 자동 중단·보고) |
-| `/doctor` | 워크스페이스·git 점검. `/doctor init` 저장소 초기화, `/doctor format` 카드 서식 정규화 |
+| `/doctor` | 워크스페이스·git·원격·프로바이더 CLI·설정 권한·작업 적체 점검. `/doctor init` 저장소 초기화, `/doctor format` 카드 서식 정규화 |
 
 ## 카드 서식
 

@@ -29,6 +29,7 @@ async function main(): Promise<number> {
     config: loaded.config,
     logger,
     stateDbPath: paths.stateDb,
+    configFilePath: paths.configFile,
   });
 
   try {
