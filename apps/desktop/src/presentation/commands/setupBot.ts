@@ -7,6 +7,12 @@ import {
   resolveStorygramPaths,
   type StorygramPaths,
 } from '../../infrastructure/storygram/storygramConfigFile';
+import { checkStorygramHealth } from '../../infrastructure/storygram/storygramHealth';
+import {
+  buildInstallSteps,
+  runInstallSteps,
+  waitForStorygramOnline,
+} from '../../infrastructure/storygram/storygramInstaller';
 import {
   BOT_PROVIDER_IDS,
   buildStorygramConfig,
@@ -235,7 +241,7 @@ async function offerTestMessage(botToken: string, chatId: number | undefined): P
 }
 
 // The bot ships inside the storyboard repository, not inside the extension, so autostart install
-// asks where that repository is and runs the repo's own installer in a visible terminal.
+// asks where that repository is and runs the repo's own installer.
 async function offerAutostartInstall(paths: StorygramPaths): Promise<void> {
   if (process.platform !== 'darwin') {
     void vscode.window.showInformationMessage(
@@ -247,14 +253,41 @@ async function offerAutostartInstall(paths: StorygramPaths): Promise<void> {
   }
 
   const choice = await vscode.window.showInformationMessage(
-    '봇을 로그인 시 자동 시작(launchd)으로 설치할까요? storyboard 레포 위치가 필요합니다.',
-    '설치',
+    '봇을 지금 설치해 실행할까요? 빌드와 로그인 시 자동 시작(launchd) 등록까지 진행한 뒤 대시보드를 엽니다.',
+    '설치하고 실행',
     '나중에',
   );
-  if (choice !== '설치') {
+  if (choice !== '설치하고 실행') {
     return;
   }
 
+  const repoRoot = await askRepoRoot();
+  if (repoRoot === undefined) {
+    return;
+  }
+
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: 'storygram 설치', cancellable: false },
+    (progress) =>
+      runInstallSteps(
+        repoRoot,
+        buildInstallSteps({ repoRoot, hasNodeModules: existsSync(join(repoRoot, 'node_modules')) }),
+        {
+          onStepStart: (step, index, total): void =>
+            progress.report({ message: `${index + 1}/${total} ${step.title}…` }),
+        },
+      ),
+  );
+
+  if (!result.ok) {
+    await showInstallFailure(`설치 실패 — ${result.failedStep}`, result.output);
+    return;
+  }
+
+  await openDashboardWhenOnline(result.output);
+}
+
+async function askRepoRoot(): Promise<string | undefined> {
   const picked = await vscode.window.showOpenDialog({
     title: 'storyboard 레포 루트 선택 (apps/bot이 있는 폴더)',
     canSelectFiles: false,
@@ -263,18 +296,50 @@ async function offerAutostartInstall(paths: StorygramPaths): Promise<void> {
   });
   const repoRoot = picked?.[0]?.fsPath;
   if (repoRoot === undefined) {
-    return;
+    return undefined;
   }
 
-  const installerPath = join(repoRoot, 'apps', 'bot', 'scripts', 'install-launchd.sh');
-  if (!existsSync(installerPath)) {
+  if (!existsSync(join(repoRoot, 'apps', 'bot', 'scripts', 'install-launchd.sh'))) {
     await vscode.window.showErrorMessage(
       `storyboard 레포가 아닙니다: ${repoRoot} (apps/bot/scripts/install-launchd.sh 없음).`,
+    );
+    return undefined;
+  }
+  return repoRoot;
+}
+
+const ONLINE_POLL_ATTEMPTS = 10;
+const ONLINE_POLL_DELAY_MS = 1_000;
+
+async function openDashboardWhenOnline(installOutput: string): Promise<void> {
+  const online = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '봇이 올라오기를 기다리는 중…' },
+    () =>
+      waitForStorygramOnline({
+        check: () => checkStorygramHealth(),
+        isOnline: (health) => health.status === 'online',
+        attempts: ONLINE_POLL_ATTEMPTS,
+        delayMs: ONLINE_POLL_DELAY_MS,
+      }),
+  );
+
+  if (!online) {
+    await showInstallFailure(
+      '설치는 끝났지만 봇이 응답하지 않습니다. 로그(~/Library/Logs/storygram/)를 확인하세요.',
+      installOutput,
     );
     return;
   }
 
-  const terminal = vscode.window.createTerminal({ name: 'storygram 설치', cwd: repoRoot });
-  terminal.show();
-  terminal.sendText('npm install && npm run bot:build && ./apps/bot/scripts/install-launchd.sh');
+  await vscode.commands.executeCommand('storyboard.bot.openDashboard');
+}
+
+async function showInstallFailure(message: string, output: string): Promise<void> {
+  const choice = await vscode.window.showErrorMessage(message, '로그 보기');
+  if (choice !== '로그 보기') {
+    return;
+  }
+
+  const document = await vscode.workspace.openTextDocument({ content: output });
+  await vscode.window.showTextDocument(document);
 }
