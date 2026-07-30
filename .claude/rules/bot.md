@@ -50,6 +50,17 @@ repository yet. `inspectWorkspaceRepository` reports that, and `initializeWorksp
 it in the required order: init → ensure the ignore block → commit the existing content. Doing the
 ignore step first is what keeps generated drafts out of the first commit.
 
+## Extension-side integration (`apps/desktop/src/infrastructure/storygram/`)
+
+The extension is a **read-only observer** of the bot plus a writer of one file. It polls the
+loopback dashboard for health (status bar, `storyboard.bot.openDashboard`) and the
+`storyboard.bot.setup` wizard writes `~/.storygram/config.json` at mode 0600 — nothing else. Do not
+make the extension own the bot's lifecycle beyond the wizard's one-shot install (build → launchd →
+wait for health → open dashboard): the bot must keep running when VSCode is closed, which is its
+whole reason to exist. Path and `STORYGRAM_HOME` rules are duplicated from
+`apps/bot/src/config/paths.ts`; keep the two in step. The wizard's generated config must stay
+acceptable to the bot's strict `configSchema`.
+
 ## Card formatting
 
 Card serialization is canonical (fixed key order, block sequences), so a hand-authored card using
