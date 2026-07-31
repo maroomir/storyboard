@@ -8,10 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiEngine } from '../src/ai/aiGateway';
 import { ContentService } from '../src/content/contentService';
-import {
-  createBackgroundMemoryStore,
-  createPersonaMemoryStore,
-} from '../src/gen/cardMemoryStores';
+import { createBackgroundMemoryStore, createPersonaMemoryStore } from '../src/gen/cardMemoryStores';
 import { DraftPipeline } from '../src/gen/draftPipeline';
 import { SceneDraftGenerator } from '../src/gen/sceneDraftGenerator';
 import type { GenJob } from '../src/gen/types';

@@ -10,7 +10,11 @@ import {
   type SceneContextWorkspacePaths,
 } from '@storyboard/story-format';
 import { buildStyleDirective, formatAugmentCards } from '@storyboard/story-ai';
-import type { AiProviderRegistry, StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import type {
+  AiProviderRegistry,
+  StoryboardAIService,
+  UsageAttribution,
+} from '@storyboard/story-ai';
 import {
   resolveSceneTargetLength,
   runReviseLoop,
@@ -22,6 +26,7 @@ import type { ContentService } from '../content/contentService';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 import { createBackgroundMemoryStore, createPersonaMemoryStore } from './cardMemoryStores';
 import type { DraftGenerator } from './draftPipeline';
+import type { DraftReviser, DraftRevisionReport } from './reviewPipeline';
 
 // The scene-context helpers take opaque `unknown` locations so the extension can pass vscode.Uri.
 // Headless, the location is simply an absolute path string.
@@ -66,33 +71,20 @@ export interface SceneDraftGeneratorOptions {
 
 // Runs the very same staged pipeline the extension runs, assembled from the workspace on disk, and
 // finishes with the shared review→revise loop (decision #31) before the body is written.
-export class SceneDraftGenerator implements DraftGenerator {
+export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
   public constructor(private readonly options: SceneDraftGeneratorOptions) {}
 
   public async generate(sceneStem: string, isCancelled: () => boolean): Promise<string> {
-    const { store, content, aiService, registry } = this.options;
-    const scene = await store.readScene(sceneStem);
-    const project = await store.readProject();
-
-    const paths = createPaths(store.root);
-    const fileSystem = createFileSystem();
-    const context = await buildSceneContext(paths, scene.value, fileSystem);
-    const narrative = await buildNarrativeContext(paths, context, fileSystem);
-
-    const format = project.value.format ?? 'novel';
-    const styleDirective = buildStyleDirective(
-      project.value.setting,
-      scene.value.frontmatter.relationStage,
-      scene.value.frontmatter.targetWordCount,
-    );
+    const { store, content, aiService } = this.options;
+    const assembled = await this.assembleSceneContext(sceneStem);
 
     const result = await runSceneGenerationPipeline({
-      context,
+      context: assembled.context,
       aiService,
-      format,
+      format: assembled.format,
       sceneStem,
-      styleDirective,
-      previousContext: narrative.prompt,
+      styleDirective: assembled.styleDirective,
+      previousContext: assembled.narrative.prompt,
       personaStore: createPersonaMemoryStore(store, content, sceneStem),
       backgroundStore: createBackgroundMemoryStore(store, content, sceneStem),
       shouldCancel: isCancelled,
@@ -103,34 +95,103 @@ export class SceneDraftGenerator implements DraftGenerator {
       return result.draftBody;
     }
 
+    const revised = await this.runSharedReviseLoop(
+      sceneStem,
+      result.draftBody,
+      assembled,
+      isCancelled,
+    );
+    return revised.body;
+  }
+
+  // The /review command: runs the same review→revise loop over the draft that already exists,
+  // without regenerating it (UC-06).
+  public async revise(
+    sceneStem: string,
+    draftBody: string,
+    isCancelled: () => boolean,
+  ): Promise<DraftRevisionReport> {
+    const assembled = await this.assembleSceneContext(sceneStem);
+    const revised = await this.runSharedReviseLoop(sceneStem, draftBody, assembled, isCancelled);
+
+    return {
+      body: revised.body,
+      passed: revised.passed,
+      revisionCount: revised.revisionCount,
+      remainingBlocking: revised.remainingBlocking,
+      cancelled: revised.cancelled,
+    };
+  }
+
+  private async assembleSceneContext(sceneStem: string): Promise<AssembledSceneContext> {
+    const { store } = this.options;
+    const scene = await store.readScene(sceneStem);
+    const project = await store.readProject();
+
+    const paths = createPaths(store.root);
+    const fileSystem = createFileSystem();
+    const context = await buildSceneContext(paths, scene.value, fileSystem);
+    const narrative = await buildNarrativeContext(paths, context, fileSystem);
+
+    return {
+      scene: scene.value,
+      project: project.value,
+      context,
+      narrative,
+      format: project.value.format ?? 'novel',
+      styleDirective: buildStyleDirective(
+        project.value.setting,
+        scene.value.frontmatter.relationStage,
+        scene.value.frontmatter.targetWordCount,
+      ),
+    };
+  }
+
+  private runSharedReviseLoop(
+    sceneStem: string,
+    body: string,
+    assembled: AssembledSceneContext,
+    isCancelled: () => boolean,
+  ): ReturnType<typeof runReviseLoop> {
+    const { aiService, registry } = this.options;
     const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
-    const revised = await runReviseLoop({
+
+    return runReviseLoop({
       aiService,
       registry,
       attribution,
       ctx: {
-        format,
-        intent: scene.value.body,
-        factLines: formatBibleFactLines(context, narrative.bibleFacts),
-        characterNames: context.characters.map((character) => character.name),
-        characterCards: formatAugmentCards(context.characters, undefined),
-        styleConstraints: project.value.setting?.styleConstraints ?? [],
-        qualityCriteria: project.value.setting?.qualityCriteria ?? [],
-        styleDirective,
-        characters: context.characters,
+        format: assembled.format,
+        intent: assembled.scene.body,
+        factLines: formatBibleFactLines(assembled.context, assembled.narrative.bibleFacts),
+        characterNames: assembled.context.characters.map((character) => character.name),
+        characterCards: formatAugmentCards(assembled.context.characters, undefined),
+        styleConstraints: assembled.project.setting?.styleConstraints ?? [],
+        qualityCriteria: assembled.project.setting?.qualityCriteria ?? [],
+        styleDirective: assembled.styleDirective,
+        characters: assembled.context.characters,
         targetLength: resolveSceneTargetLength(
-          scene.value.frontmatter.targetWordCount,
-          scene.value.body,
+          assembled.scene.frontmatter.targetWordCount,
+          assembled.scene.body,
         ),
       },
-      body: result.draftBody,
+      body,
       maxIterations: this.options.draftConfig.reviseMaxIterations,
       reviseScoreThreshold: 0,
       maxCompressionPercent: 50,
       shouldCancel: isCancelled,
       onProgress: (message) => this.options.onStage?.(message, 0, 0),
     });
-
-    return revised.body;
   }
+}
+
+interface AssembledSceneContext {
+  readonly scene: Awaited<ReturnType<WorkspaceStore['readScene']>>['value'];
+  readonly project: Awaited<ReturnType<WorkspaceStore['readProject']>>['value'];
+  readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
+  readonly narrative: Awaited<ReturnType<typeof buildNarrativeContext>>;
+  readonly format: NonNullable<
+    Awaited<ReturnType<WorkspaceStore['readProject']>>['value']['format']
+  >;
+  readonly styleDirective: ReturnType<typeof buildStyleDirective>;
 }

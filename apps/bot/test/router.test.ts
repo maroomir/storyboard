@@ -16,6 +16,7 @@ import {
   createReadDraftHandler,
   createScenesHandler,
   createShowHandler,
+  createStartHandler,
   createStatusHandler,
   createSyncHandler,
 } from '../src/chat/handlers/read';
@@ -85,6 +86,7 @@ describe('UpdateRouter', () => {
 
     const registry = new CommandRegistry();
     for (const handler of [
+      createStartHandler(),
       createStatusHandler(),
       createCardsHandler(),
       createShowHandler(),
@@ -191,6 +193,13 @@ describe('UpdateRouter', () => {
     await router.handleUpdate(message('/nope'));
 
     expect(sent[0]).toContain('알 수 없는 명령');
+  });
+
+  it('answers /help with the same summary as /start', async () => {
+    await router.handleUpdate(message('/help'));
+
+    expect(sent[0]).toContain('/cards');
+    expect(sent[0]).toContain('/doctor');
   });
 
   it('guides the user on free text', async () => {

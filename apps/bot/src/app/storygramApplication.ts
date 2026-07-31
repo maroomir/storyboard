@@ -31,11 +31,14 @@ import { createRenameHandler, createSetHandler } from '../chat/handlers/edit';
 import { createSceneCommandHandler } from '../chat/handlers/scene';
 import {
   createDraftCommandHandler,
+  createJobLogHandler,
   createJobsHandler,
   createManuscriptCommandHandler,
   createOutlineCommandHandler,
   createPlanCommandHandler,
+  createReviewCommandHandler,
   createStopHandler,
+  createUsageHandler,
 } from '../chat/handlers/generate';
 import type { IncomingUpdate } from '../chat/ports';
 import { CommandRegistry } from '../chat/registry';
@@ -133,18 +136,20 @@ export class StorygramApplication {
         });
       },
     });
+    const sceneDraftGenerator = new SceneDraftGenerator({
+      store: this.store,
+      content: this.content,
+      aiService,
+      registry,
+      draftConfig: config.draft,
+    });
     this.genJobs = createGenJobs({
       db: this.db,
       store: this.store,
       content: this.content,
       aiService,
-      draftGenerator: new SceneDraftGenerator({
-        store: this.store,
-        content: this.content,
-        aiService,
-        registry,
-        draftConfig: config.draft,
-      }),
+      draftGenerator: sceneDraftGenerator,
+      draftReviser: sceneDraftGenerator,
       sender: this.gateway,
       jobsConfig: config.jobs,
       logger,
@@ -182,10 +187,13 @@ export class StorygramApplication {
       createSetHandler(),
       createSceneCommandHandler(),
       createDraftCommandHandler(),
+      createReviewCommandHandler(),
       createOutlineCommandHandler(),
       createPlanCommandHandler(),
       createManuscriptCommandHandler(),
       createJobsHandler(),
+      createJobLogHandler(),
+      createUsageHandler(),
       createStopHandler(),
     ]) {
       this.registry.register(handler);

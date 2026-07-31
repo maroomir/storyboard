@@ -48,7 +48,7 @@ export async function enqueueDraftJob(ctx: ChatContext, sceneStem: string): Prom
 export function createDraftCommandHandler(): ICommandHandler {
   return {
     command: '/draft',
-    description: '씬 초안 생성 (/draft <씬 stem>)',
+    description: '씬 초안 생성 (/draft <씬 stem> · /draft all)',
     match: (update: IncomingUpdate) => isCommand(update, '/draft'),
     execute: async (ctx) => {
       const sceneStem = commandArgs(ctx.update);
@@ -56,11 +56,16 @@ export function createDraftCommandHandler(): ICommandHandler {
         const scenes = await ctx.content.listScenes();
         await ctx.reply({
           text: [
-            '사용법: /draft <씬 stem>',
+            '사용법: /draft <씬 stem> (초안 없는 전체는 /draft all)',
             '',
             ...scenes.slice(0, 20).map((scene) => `  ${scene.stem}`),
           ].join('\n'),
         });
+        return;
+      }
+
+      if (sceneStem === 'all') {
+        await enqueueMissingDrafts(ctx);
         return;
       }
 
@@ -71,6 +76,61 @@ export function createDraftCommandHandler(): ICommandHandler {
       }
 
       await enqueueDraftJob(ctx, sceneStem);
+    },
+  };
+}
+
+// `/draft all` fills the gaps only: regenerating an existing draft is a paid decision the user
+// makes per scene, never in bulk.
+async function enqueueMissingDrafts(ctx: ChatContext): Promise<void> {
+  const scenes = await ctx.content.listScenes();
+  const missing: string[] = [];
+  for (const scene of scenes) {
+    if ((await ctx.store.readDraft(scene.stem)) === undefined) {
+      missing.push(scene.stem);
+    }
+  }
+
+  if (missing.length === 0) {
+    await ctx.reply({
+      text: '모든 씬에 초안이 있습니다. 특정 씬을 다시 생성하려면 /draft <씬 stem> 을 쓰세요.',
+    });
+    return;
+  }
+
+  for (const sceneStem of missing) {
+    await enqueueDraftJob(ctx, sceneStem);
+  }
+  await ctx.reply({
+    text: `초안 없는 씬 ${missing.length}개를 큐에 넣었습니다: ${missing.join(', ')}\n/jobs 로 진행을 확인하세요.`,
+  });
+}
+
+export function createReviewCommandHandler(): ICommandHandler {
+  return {
+    command: '/review',
+    description: '초안 검수·수정 (/review <씬 stem>)',
+    match: (update: IncomingUpdate) => isCommand(update, '/review'),
+    execute: async (ctx) => {
+      const sceneStem = commandArgs(ctx.update);
+      if (sceneStem.length === 0) {
+        await ctx.reply({ text: '사용법: /review <씬 stem> — 기존 초안을 검수하고 수정합니다.' });
+        return;
+      }
+
+      if ((await ctx.store.readDraft(sceneStem)) === undefined) {
+        await ctx.reply({
+          text: `검수할 초안이 없습니다: ${sceneStem}\n/draft ${sceneStem} 로 먼저 생성하세요.`,
+        });
+        return;
+      }
+
+      await enqueue(ctx, {
+        kind: 'review',
+        class: defaultJobClass('review'),
+        target: { scene: sceneStem },
+        chatId: ctx.chatId,
+      });
     },
   };
 }
@@ -159,6 +219,61 @@ export function createJobsHandler(): ICommandHandler {
       });
 
       await ctx.reply({ text: ['🧵 최근 작업', ...lines, '', '/stop <번호> 로 취소'].join('\n') });
+    },
+  };
+}
+
+export function createJobLogHandler(): ICommandHandler {
+  return {
+    command: '/log',
+    description: '작업 단계 이력 (/log <작업 번호>)',
+    match: (update: IncomingUpdate) => isCommand(update, '/log'),
+    execute: async (ctx) => {
+      const jobId = Number.parseInt(commandArgs(ctx.update), 10);
+      if (!Number.isInteger(jobId) || ctx.jobs === undefined) {
+        await ctx.reply({ text: '사용법: /log <작업 번호> — 번호는 /jobs 로 확인합니다.' });
+        return;
+      }
+
+      const log = ctx.jobs.getLog(jobId);
+      if (log.entries.length === 0) {
+        await ctx.reply({ text: `작업 #${jobId} 의 기록이 없습니다.` });
+        return;
+      }
+
+      const lines = log.entries.map((entry) => {
+        const time = new Date(entry.at).toLocaleTimeString('ko-KR', { hour12: false });
+        const mark = entry.level === 'error' ? '❌' : '•';
+        return `${mark} ${time} [${entry.stage}] ${entry.message}`;
+      });
+      await ctx.reply({ text: [`🧾 작업 #${jobId}`, ...lines].join('\n') });
+    },
+  };
+}
+
+const USAGE_WINDOWS = [
+  { label: '24시간', ms: 24 * 60 * 60 * 1000 },
+  { label: '7일', ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: '30일', ms: 30 * 24 * 60 * 60 * 1000 },
+] as const;
+
+export function createUsageHandler(): ICommandHandler {
+  return {
+    command: '/usage',
+    description: '기간별 토큰·비용 사용량',
+    match: (update: IncomingUpdate) => isCommand(update, '/usage'),
+    execute: async (ctx) => {
+      if (ctx.jobs === undefined) {
+        await ctx.reply({ text: '생성 기능이 아직 초기화되지 않았습니다.' });
+        return;
+      }
+
+      const now = Date.now();
+      const lines = USAGE_WINDOWS.map(({ label, ms }) => {
+        const usage = ctx.jobs!.getUsageSince(now - ms);
+        return `${label}: 입력 ${usage.inputTokens.toLocaleString()} · 출력 ${usage.outputTokens.toLocaleString()} 토큰 · $${usage.costUsd.toFixed(4)}`;
+      });
+      await ctx.reply({ text: ['💳 사용량', ...lines].join('\n') });
     },
   };
 }

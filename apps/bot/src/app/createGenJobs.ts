@@ -7,6 +7,7 @@ import { TelegramProgressReporter } from '../telegram/jobProgressReporter';
 import type { Logger } from '../util/logger';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 import { DraftPipeline, type DraftGenerator } from '../gen/draftPipeline';
+import { ReviewPipeline, type DraftReviser } from '../gen/reviewPipeline';
 import { JobExecutor } from '../gen/jobExecutor';
 import { JobManager, type IEnqueueJob } from '../gen/jobManager';
 import { JobQueue } from '../gen/jobQueue';
@@ -30,6 +31,7 @@ export interface CreateGenJobsOptions {
   readonly content: ContentService;
   readonly aiService: StoryboardAIService;
   readonly draftGenerator: DraftGenerator;
+  readonly draftReviser: DraftReviser;
   readonly sender: ISendMessage;
   readonly jobsConfig: JobsConfig;
   readonly logger: Logger;
@@ -63,6 +65,11 @@ export function createGenJobs(options: CreateGenJobsOptions): GenJobs {
       store: options.store,
       content: options.content,
       generator: options.draftGenerator,
+    }),
+    review: new ReviewPipeline({
+      store: options.store,
+      content: options.content,
+      reviser: options.draftReviser,
     }),
     outline: new OutlinePipeline({
       store: options.store,

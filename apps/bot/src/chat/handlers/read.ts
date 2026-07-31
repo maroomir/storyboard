@@ -17,7 +17,7 @@ function handler(
 }
 
 export function createStartHandler(): ICommandHandler {
-  return handler('/start', '봇 소개와 사용 가능한 명령', async (ctx) => {
+  const base = handler('/start', '봇 소개와 사용 가능한 명령', async (ctx) => {
     const project = await ctx.store.readProject();
     await ctx.reply({
       text: [
@@ -40,19 +40,28 @@ export function createStartHandler(): ICommandHandler {
         '/scene edit·append <씬 stem> — 씬 본문 교체·덧붙이기',
         '',
         '🤖 생성',
-        '/draft <씬 stem> — 씬 초안 생성',
+        '/draft <씬 stem> — 씬 초안 생성 (all = 초안 없는 전체)',
+        '/review <씬 stem> — 기존 초안 검수·수정',
         '/outline — 시놉시스 생성',
         '/plan — 챕터 계획 생성',
         '/manuscript — 원고 조립',
         '/jobs — 최근 생성 작업 목록',
+        '/log <작업 번호> — 작업 단계 이력',
         '/stop <작업 번호> — 진행 중 작업 취소',
         '',
         '🛠 운영',
         '/sync — 원격 동기화',
+        '/usage — 기간별 토큰·비용 사용량',
         '/doctor — 워크스페이스·git 점검 (init·format)',
       ].join('\n'),
     });
   });
+
+  // `/help` is the name new users guess first; both spellings land on the same summary.
+  return {
+    ...base,
+    match: (update: IncomingUpdate) => isCommand(update, '/start') || isCommand(update, '/help'),
+  };
 }
 
 export function createCardsHandler(): ICommandHandler {

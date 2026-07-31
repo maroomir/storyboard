@@ -10,9 +10,12 @@ import { createAiService } from '../src/ai/aiGateway';
 import { ChatContext } from '../src/chat/context';
 import {
   createDraftCommandHandler,
+  createJobLogHandler,
   createJobsHandler,
   createManuscriptCommandHandler,
   createOutlineCommandHandler,
+  createReviewCommandHandler,
+  createUsageHandler,
 } from '../src/chat/handlers/generate';
 import type { IncomingUpdate, MessageView, SentMessageRef } from '../src/chat/ports';
 import { CommandRegistry } from '../src/chat/registry';
@@ -107,6 +110,15 @@ describe('generation jobs end to end', () => {
       draftGenerator: {
         generate: async (sceneStem) => `# ${sceneStem}\n\n생성된 본문입니다.\n`,
       },
+      draftReviser: {
+        revise: async (_sceneStem, draftBody) => ({
+          body: `${draftBody}수정된 문장.\n`,
+          passed: true,
+          revisionCount: 1,
+          remainingBlocking: 0,
+          cancelled: false,
+        }),
+      },
       sender,
       jobsConfig: { heavyConcurrency: 1, lightConcurrency: 1 },
       logger: silentLogger,
@@ -116,9 +128,12 @@ describe('generation jobs end to end', () => {
     const registry = new CommandRegistry();
     for (const handler of [
       createDraftCommandHandler(),
+      createReviewCommandHandler(),
       createOutlineCommandHandler(),
       createManuscriptCommandHandler(),
       createJobsHandler(),
+      createJobLogHandler(),
+      createUsageHandler(),
     ]) {
       registry.register(handler);
     }
@@ -227,5 +242,61 @@ describe('generation jobs end to end', () => {
     const listing = sent[sent.length - 1] ?? '';
     expect(listing).toContain('초안 생성 01-prologue');
     expect(listing).toContain('succeeded');
+  });
+
+  // UC-06: /review runs the shared revise loop over the existing draft, without regenerating.
+  it('revises an existing draft with /review and refuses when no draft exists', async () => {
+    await router.handleUpdate(message('/review 01-prologue'));
+    expect(sent[sent.length - 1]).toContain('검수할 초안이 없습니다');
+
+    await router.handleUpdate(message('/draft 01-prologue'));
+    await waitFor(() => existsSync(join(fixture.root, 'draft', '01-prologue.md')));
+    await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
+    const generated = readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8');
+
+    await router.handleUpdate(message('/review 01-prologue'));
+    await waitFor(() =>
+      readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8').includes('수정된 문장.'),
+    );
+    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toBe(
+      `${generated}수정된 문장.\n`,
+    );
+  });
+
+  it('queues only draftless scenes for /draft all and reports the batch', async () => {
+    fixture.write('scene/02-turn.txt', 'turn seed\n');
+    fixture.write('draft/01-prologue.md', '이미 있는 초안\n');
+
+    await router.handleUpdate(message('/draft all'));
+
+    expect(sent[0]).toContain('초안 없는 씬 1개');
+    expect(sent[0]).toContain('02-turn');
+    await waitFor(() => existsSync(join(fixture.root, 'draft', '02-turn.md')));
+    // The existing draft is money already spent — bulk mode must not regenerate it.
+    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toBe(
+      '이미 있는 초안\n',
+    );
+  });
+
+  it('shows the stage history with /log', async () => {
+    await router.handleUpdate(message('/draft 01-prologue'));
+    await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
+
+    await router.handleUpdate(message('/log 1'));
+    const log = sent[sent.length - 1] ?? '';
+    expect(log).toContain('작업 #1');
+    expect(log).toContain('저장');
+
+    await router.handleUpdate(message('/log'));
+    expect(sent[sent.length - 1]).toContain('사용법');
+  });
+
+  it('summarizes usage windows with /usage', async () => {
+    await router.handleUpdate(message('/usage'));
+
+    const summary = sent[sent.length - 1] ?? '';
+    expect(summary).toContain('💳 사용량');
+    expect(summary).toContain('24시간');
+    expect(summary).toContain('30일');
   });
 });

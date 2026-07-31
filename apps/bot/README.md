@@ -66,14 +66,16 @@ JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을
 
 | 명령 | 설명 |
 |---|---|
-| `/start` | 소개와 전체 명령 안내 |
+| `/start` · `/help` | 소개와 전체 명령 안내 |
 | `/cards` · `/show <id>` · `/scenes` · `/bible` · `/status` | 조회 |
 | `/read <씬 stem>` | 초안 열람 — 장문은 미리보기+Markdown 첨부, 인자 없이 부르면 버튼 선택. `privacy.minimizeChatBody`가 켜져 있으면 본문 없이 첨부만 |
 | `/rename <id> <새 이름>` · `/set <id> <항목> <값1> \| <값2>` | 카드 편집(저장=커밋) |
 | `/scene new <slug>` · `/scene edit·append <씬 stem>` | 씬 시드 생성·본문 교체·덧붙이기(본문은 다음 줄부터, frontmatter 보존) |
-| `/draft <씬 stem>` | 씬 초안 생성(확장과 동일한 파이프라인 + 검토→수정 루프) |
+| `/draft <씬 stem>` | 씬 초안 생성(확장과 동일한 파이프라인 + 검토→수정 루프). `/draft all`은 초안 없는 씬만 일괄 큐잉(기존 초안 재생성 안 함) |
+| `/review <씬 stem>` | 기존 초안을 재생성 없이 검수·수정(공유 review→revise 루프) |
 | `/outline` · `/plan` · `/manuscript` | 시놉시스·챕터 계획·원고 조립 |
-| `/jobs` · `/stop <번호>` | 작업 목록·취소(실행 중 CLI 프로세스까지 중단) |
+| `/jobs` · `/log <번호>` · `/stop <번호>` | 작업 목록·단계 이력·취소(실행 중 CLI 프로세스까지 중단) |
+| `/usage` | 24시간·7일·30일 토큰·비용 사용량 |
 | `/sync` | 원격 동기화(fetch→rebase→push, 충돌 시 자동 중단·보고) |
 | `/doctor` | 워크스페이스·git·원격·프로바이더 CLI·설정 권한·작업 적체 점검. `/doctor init` 저장소 초기화, `/doctor format` 카드 서식 정규화 |
 
