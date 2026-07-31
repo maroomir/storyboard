@@ -1,3 +1,7 @@
+import {
+  registerOpenBotConfigCommand,
+  registerRestartBotCommand,
+} from '../../presentation/commands/manageBotConfig';
 import { registerOpenBotDashboardCommand } from '../../presentation/commands/openBotDashboard';
 import { registerSetupBotCommand } from '../../presentation/commands/setupBot';
 import { BotStatusBarItem } from '../../presentation/providers/BotStatusBarItem';
@@ -11,6 +15,8 @@ export class BotModule implements IApplicationModule {
   public initialize(): void {
     this.disposables.add(
       registerSetupBotCommand(),
+      registerOpenBotConfigCommand(),
+      registerRestartBotCommand(),
       registerOpenBotDashboardCommand(),
       new BotStatusBarItem(),
     );

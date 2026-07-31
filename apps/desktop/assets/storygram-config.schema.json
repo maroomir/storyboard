@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "storygram config",
+  "type": "object",
+  "properties": {
+    "telegram": {
+      "type": "object",
+      "properties": {
+        "botToken": {
+          "type": "string",
+          "minLength": 1
+        },
+        "allowedChatIds": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "allowedUserIds": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "required": [
+        "botToken"
+      ]
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "remote": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pushDebounceSec": {
+          "default": 30,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "syncIntervalSec": {
+          "default": 300,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "type": "string",
+          "enum": [
+            "mock",
+            "claude-code",
+            "codex"
+          ]
+        },
+        "tasks": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "mock",
+                  "claude-code",
+                  "codex"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "mock",
+                      "claude-code",
+                      "codex"
+                    ]
+                  },
+                  "model": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "provider"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "claude-code",
+              "codex"
+            ]
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string",
+                "minLength": 1
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "reasoningEffort": {
+                "type": "string",
+                "enum": [
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "draft": {
+      "default": {
+        "reviseAfterGenerate": true,
+        "reviseMaxIterations": 2
+      },
+      "type": "object",
+      "properties": {
+        "reviseAfterGenerate": {
+          "default": true,
+          "type": "boolean"
+        },
+        "reviseMaxIterations": {
+          "default": 2,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "privacy": {
+      "default": {
+        "minimizeChatBody": false
+      },
+      "type": "object",
+      "properties": {
+        "minimizeChatBody": {
+          "default": false,
+          "type": "boolean"
+        }
+      }
+    },
+    "jobs": {
+      "default": {
+        "heavyConcurrency": 1,
+        "lightConcurrency": 1
+      },
+      "type": "object",
+      "properties": {
+        "heavyConcurrency": {
+          "default": 1,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        "lightConcurrency": {
+          "default": 1,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "dashboard": {
+      "default": {
+        "enabled": true,
+        "port": 8787
+      },
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": true,
+          "type": "boolean"
+        },
+        "port": {
+          "default": 8787,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    }
+  },
+  "required": [
+    "telegram",
+    "workspace"
+  ]
+}

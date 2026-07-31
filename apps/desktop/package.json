@@ -206,8 +206,22 @@
         "title": "%storyboard.bot.setup.title%"
       },
       {
+        "command": "storyboard.bot.openConfig",
+        "title": "%storyboard.bot.openConfig.title%"
+      },
+      {
+        "command": "storyboard.bot.restart",
+        "title": "%storyboard.bot.restart.title%"
+      },
+      {
         "command": "storyboard.bot.openDashboard",
         "title": "%storyboard.bot.openDashboard.title%"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "**/.storygram/config.json",
+        "url": "./assets/storygram-config.schema.json"
       }
     ],
     "configuration": {

@@ -34,6 +34,12 @@ node apps/bot/dist/index.js
 
 `STORYGRAM_HOME` 환경변수로 `~/.storygram` 위치를 바꿀 수 있습니다.
 
+설정을 나중에 고칠 때는 확장의 `Storyboard: 텔레그램 봇 설정 파일 열기`가 편합니다 — 확장이 이 설정의
+JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을 받습니다. 봇은 설정을 **부팅 때만** 읽으므로
+편집 후 `Storyboard: 텔레그램 봇 재시작`(launchd)으로 반영합니다. 스키마 파일
+(`apps/desktop/assets/storygram-config.schema.json`)은 이 봇의 zod 스키마에서 생성되며
+`npm run schema:emit --workspace storygram`으로 갱신하고, 어긋나면 봇 테스트가 실패합니다.
+
 ## 설정
 
 `~/.storygram/config.json` (권장 mode 0600). 전체 예시는 [`config.example.json`](./config.example.json).
