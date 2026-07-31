@@ -10,10 +10,27 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-01
+
+### Added
+
+- Added **storygram**, a Telegram companion bot. It is a resident bot that edits the **same** workspace the extension opens, so while away from the desk you can read drafts (`/read`), create and edit scene seeds (`/scene`), edit cards, and queue draft generation with live progress. Every successful save is a commit, and each write re-reads its target immediately beforehand, so editing from the bot and the extension at the same time never overwrites the other side's changes.
+- Added the `Storyboard: Set Up Telegram Bot…` onboarding wizard. It validates the token against Telegram first, then collects allowed chat IDs, the workspace, and the default provider, and writes `~/.storygram/config.json` with mode 0600. Picking a folder that is not initialized yet runs Init in place and continues the wizard; on macOS it installs dependencies, builds, and registers launchd with progress reporting, then confirms the bot actually responds and opens the dashboard. The token never reaches logs or error messages.
+- Added a status bar item showing bot state (not configured, unobservable, stopped, running) and the `Storyboard: Open Telegram Bot Dashboard` command for the loopback operations panel. Clicking the not-configured state starts the setup wizard.
+- Added ways to change the bot configuration after setup. The **Telegram Bot** tab in the settings panel edits allowed chat IDs and the default provider, and «Connect this project to the bot» switches the workspace the bot watches. `Storyboard: Open Telegram Bot Config File` opens the file in an editor backed by JSON schema validation (completion and typo checks), and `Storyboard: Restart Telegram Bot` restarts through launchd and confirms health. The token is shown only as a masked hint and can be changed only from the wizard.
+
+### Fixed
+
+- Fixed cards with `role: support` being silently demoted to `extra` instead of `supporting`, which affected canon injection and how the generation pipeline treated those characters.
+- Fixed unknown role values (`주연`, `Main`, …) being silently demoted to `extra` and losing the original value on the next save. Only case and known aliases are corrected now; anything still unknown surfaces in the Problems panel with the offending field and reason.
+- Fixed synopsis values containing markdown markers (`## `, `- `, `_미작성_`) or newlines being truncated or split apart across a save and reload.
+- Fixed a single malformed synopsis field resetting the whole synopsis to empty. Valid fields are preserved now and only the malformed field falls back to its default.
+- Fixed case-insensitive path classification, which routed files such as `SCENE/01.TXT` to the scene parser only to have it reject them.
+
 ### Structure
 
 - Rearranged the repository into an npm-workspaces monorepo. The extension moved to `apps/desktop`, and the workspace file format (`@storyboard/story-format`), the AI engine (`@storyboard/story-ai`), the scene generation pipeline (`@storyboard/story-pipeline`), and the git sync layer (`@storyboard/story-git`) became shared packages. User-facing extension behavior and the VSIX contents are unchanged.
-- Added `storygram`, a Telegram bot at `apps/bot` that edits the very same workspace. Both apps consume the same codecs and pipeline, so a save from either side writes identical bytes.
+- The bot lives at `apps/bot` and consumes the same codecs and pipeline as the extension, so a save from either side writes identical bytes.
 
 ## [0.5.2] - 2026-07-24
 
