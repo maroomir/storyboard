@@ -4,6 +4,7 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/br
 import { createAiRpcHandlers } from '../messaging/aiRpcHandlers';
 import { aiProviderIds } from '@storyboard/story-ai';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
+import { createBotRpcHandlers } from '../messaging/botRpcHandlers';
 import { createContractRpcHandlers } from '../messaging/contractRpcHandlers';
 import {
   createSettingsRpcHandlers,
@@ -116,6 +117,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
         registry: this.dependencies.aiProviderRegistry,
       }),
       ...createContractRpcHandlers(),
+      ...createBotRpcHandlers(),
     };
   }
 

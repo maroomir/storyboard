@@ -29,6 +29,7 @@ Korean README: [`README.md`](README.md)
 - Localize extension command titles through `package.nls.json` and `package.nls.ko.json`.
 - Import and export seedcoat `.seed` repository archives (compatible with Seeds).
 - Watch the Telegram companion bot ([storygram](../bot/README.md)) from the status bar — shows run/sync state, and `Storyboard: Open Telegram Bot Dashboard` opens the loopback operations panel.
+- Manage the bot from the settings panel's **Telegram bot** tab — edit allowed chat ids and the default provider, switch the connected workspace with «connect this work», and restart after saving. The token is shown masked only; changing it goes through the wizard.
 - Edit the bot config later with `Storyboard: Open Telegram Bot Config File` (JSON Schema validation) and apply it with `Storyboard: Restart Telegram Bot` (launchd).
 - Onboard the bot with the `Storyboard: Set Up Telegram Bot…` wizard — verifies the token (getMe), collects allowed chat ids, the workspace path, and the provider, writes `~/.storygram/config.json` (0600), sends a test message, and on macOS offers the launchd autostart install.
 

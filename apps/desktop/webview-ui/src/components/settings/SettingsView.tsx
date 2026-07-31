@@ -1,4 +1,4 @@
-import { ListChecks, Plug, ScrollText, Star } from "lucide-react"
+import { ListChecks, Plug, ScrollText, Send, Star } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { createRequestId } from "@webview/lib/messaging"
@@ -6,6 +6,7 @@ import { createRequestId } from "@webview/lib/messaging"
 import { Button } from "../ui/Button"
 import { SectionHeader } from "../ui/SectionHeader"
 import { Tabs } from "../ui/Tabs"
+import { BotSection } from "./BotSection"
 import { DefaultProviderSection } from "./DefaultProviderSection"
 import { GenerationContractSection } from "./GenerationContractSection"
 import { ProviderConfigCard } from "./ProviderConfigCard"
@@ -253,6 +254,12 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
       label: "작품 계약",
       icon: ScrollText,
       panel: <GenerationContractSection callRpc={callRpc} onRpcError={onRpcError} />
+    },
+    {
+      id: "bot",
+      label: "텔레그램 봇",
+      icon: Send,
+      panel: <BotSection callRpc={callRpc} onRpcError={onRpcError} />
     }
   ]
 

@@ -11,6 +11,13 @@ import {
   aiProvidersListResponsePayloadSchema,
 } from './ai';
 import {
+  botConfigReadRequestPayloadSchema,
+  botConfigReadResponsePayloadSchema,
+  botConfigUpdateRequestPayloadSchema,
+  botRestartRequestPayloadSchema,
+  botRestartResponsePayloadSchema,
+} from './bot';
+import {
   cardsApplyCollectRequestPayloadSchema,
   cardsApplyCollectResponsePayloadSchema,
   cardsCollectRequestPayloadSchema,
@@ -115,6 +122,9 @@ export const storyboardRequestPayloadSchemas = {
   'studio.session.list': studioSessionListRequestPayloadSchema,
   'studio.session.load': studioSessionLoadRequestPayloadSchema,
   'usage.read': usageReadRequestPayloadSchema,
+  'bot.config.read': botConfigReadRequestPayloadSchema,
+  'bot.config.update': botConfigUpdateRequestPayloadSchema,
+  'bot.restart': botRestartRequestPayloadSchema,
 } as const;
 
 export const storyboardResponsePayloadSchemas = {
@@ -153,6 +163,9 @@ export const storyboardResponsePayloadSchemas = {
   'studio.session.list': studioSessionListResponsePayloadSchema,
   'studio.session.load': studioSessionLoadResponsePayloadSchema,
   'usage.read': usageReadResponsePayloadSchema,
+  'bot.config.read': botConfigReadResponsePayloadSchema,
+  'bot.config.update': botConfigReadResponsePayloadSchema,
+  'bot.restart': botRestartResponsePayloadSchema,
 } as const;
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas;

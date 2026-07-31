@@ -35,6 +35,7 @@ English README: [`README.en.md`](README.en.md)
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 - seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 - 텔레그램 동반 봇([storygram](../bot/README.md)) 상태바 관찰 — 실행 여부·동기화 상태 표시, `Storyboard: 텔레그램 봇 대시보드 열기` 명령으로 운영 패널(`127.0.0.1`) 열기
+- 설정 패널 **텔레그램 봇** 탭 — 허용 채팅 ID·기본 프로바이더 편집, «이 작품을 봇에 연결» 버튼으로 워크스페이스 전환, 저장 후 재시작 안내(토큰은 마스킹 표시만 하며 변경은 마법사에서만)
 - `Storyboard: 텔레그램 봇 설정 파일 열기`(JSON 스키마 검증 포함) · `Storyboard: 텔레그램 봇 재시작`(launchd) — 설정을 나중에 고치고 즉시 반영
 - `Storyboard: 텔레그램 봇 설정…` 온보딩 마법사 — 토큰 검증(getMe)·허용 chat id·워크스페이스 경로·프로바이더를 받아 `~/.storygram/config.json`(0600) 생성, 테스트 메시지 발송, macOS에서는 launchd 자동 시작 설치까지 안내
 
