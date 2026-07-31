@@ -56,6 +56,7 @@ JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을
 | | `models.<id>` | — | `model` · `command` · `timeoutMs` · `reasoningEffort`(codex) |
 | `draft` | `reviseAfterGenerate` | `true` | 생성 직후 공유 검토→수정 루프 실행 여부 |
 | | `reviseMaxIterations` | `2` | 수정 반복 상한(1~5) |
+| `privacy` | `minimizeChatBody` | `false` | 켜면 `/read`가 초안 본문을 채팅에 싣지 않고 파일 첨부로만 전달 |
 | `jobs` | `heavyConcurrency` / `lightConcurrency` | 1 / 1 | 잡 클래스별 동시 실행 수 |
 | `dashboard` | `enabled` / `port` | `true` / 8787 | 루프백 전용 읽기 패널 `http://127.0.0.1:<port>/` |
 
@@ -67,6 +68,7 @@ JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을
 |---|---|
 | `/start` | 소개와 전체 명령 안내 |
 | `/cards` · `/show <id>` · `/scenes` · `/bible` · `/status` | 조회 |
+| `/read <씬 stem>` | 초안 열람 — 장문은 미리보기+Markdown 첨부, 인자 없이 부르면 버튼 선택. `privacy.minimizeChatBody`가 켜져 있으면 본문 없이 첨부만 |
 | `/rename <id> <새 이름>` · `/set <id> <항목> <값1> \| <값2>` | 카드 편집(저장=커밋) |
 | `/draft <씬 stem>` | 씬 초안 생성(확장과 동일한 파이프라인 + 검토→수정 루프) |
 | `/outline` · `/plan` · `/manuscript` | 시놉시스·챕터 계획·원고 조립 |

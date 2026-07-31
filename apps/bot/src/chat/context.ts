@@ -3,7 +3,13 @@ import type { SyncService } from '@storyboard/story-git';
 import type { ContentService } from '../content/contentService';
 import type { IEnqueueJob } from '../gen/jobManager';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
-import type { ISendMessage, IncomingUpdate, MessageView, SentMessageRef } from './ports';
+import type {
+  ISendMessage,
+  IncomingUpdate,
+  MessageView,
+  OutgoingDocument,
+  SentMessageRef,
+} from './ports';
 
 // Facade handed to each command handler. Handlers reach the outside world only through this
 // object, so they stay decoupled from the gateway and from each other.
@@ -23,6 +29,10 @@ export class ChatContext {
 
   public reply(view: MessageView): Promise<SentMessageRef> {
     return this.sender.sendMessage(this.chatId, view);
+  }
+
+  public replyDocument(doc: OutgoingDocument): Promise<SentMessageRef> {
+    return this.sender.sendDocument(this.chatId, doc);
   }
 
   public answerCallback(text?: string): Promise<void> {

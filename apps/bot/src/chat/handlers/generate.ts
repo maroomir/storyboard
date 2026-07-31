@@ -36,6 +36,15 @@ async function enqueue(ctx: ChatContext, spec: JobSpec): Promise<void> {
   }
 }
 
+export async function enqueueDraftJob(ctx: ChatContext, sceneStem: string): Promise<void> {
+  await enqueue(ctx, {
+    kind: 'draft',
+    class: defaultJobClass('draft'),
+    target: { scene: sceneStem },
+    chatId: ctx.chatId,
+  });
+}
+
 export function createDraftCommandHandler(): ICommandHandler {
   return {
     command: '/draft',
@@ -61,12 +70,7 @@ export function createDraftCommandHandler(): ICommandHandler {
         return;
       }
 
-      await enqueue(ctx, {
-        kind: 'draft',
-        class: defaultJobClass('draft'),
-        target: { scene: sceneStem },
-        chatId: ctx.chatId,
-      });
+      await enqueueDraftJob(ctx, sceneStem);
     },
   };
 }

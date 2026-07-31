@@ -19,6 +19,7 @@ import { ChatContext } from '../chat/context';
 import {
   createBibleHandler,
   createCardsHandler,
+  createReadDraftHandler,
   createScenesHandler,
   createShowHandler,
   createStartHandler,
@@ -168,6 +169,7 @@ export class StorygramApplication {
       createCardsHandler(),
       createShowHandler(),
       createScenesHandler(),
+      createReadDraftHandler({ minimizeChatBody: config.privacy.minimizeChatBody }),
       createBibleHandler(),
       createSyncHandler(),
       createDoctorHandler({

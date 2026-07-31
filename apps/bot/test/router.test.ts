@@ -12,12 +12,18 @@ import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit
 import {
   createBibleHandler,
   createCardsHandler,
+  createReadDraftHandler,
   createScenesHandler,
   createShowHandler,
   createStatusHandler,
   createSyncHandler,
 } from '../src/chat/handlers/read';
-import type { IncomingUpdate, MessageView, SentMessageRef } from '../src/chat/ports';
+import type {
+  IncomingUpdate,
+  MessageView,
+  OutgoingDocument,
+  SentMessageRef,
+} from '../src/chat/ports';
 import { CommandRegistry } from '../src/chat/registry';
 import { UpdateRouter } from '../src/chat/router';
 import { ContentService } from '../src/content/contentService';
@@ -37,6 +43,10 @@ function git(root: string, ...args: string[]): string {
 
 function message(text: string): IncomingUpdate {
   return { kind: 'message', chatId: 1, userId: 1, messageId: 1, text };
+}
+
+function callback(data: string): IncomingUpdate {
+  return { kind: 'callback', chatId: 1, userId: 1, messageId: 1, callbackQueryId: 'q1', data };
 }
 
 describe('UpdateRouter', () => {
@@ -396,5 +406,120 @@ describe('/doctor', () => {
     await router.handleUpdate(message('/doctor'));
 
     expect(sent[0]).toContain('설정 파일 권한이 0644입니다');
+  });
+});
+
+describe('/read', () => {
+  let fixture: WorkspaceFixture;
+  let router: UpdateRouter;
+  let sent: MessageView[];
+  let docs: OutgoingDocument[];
+
+  function build(root: string, options = { minimizeChatBody: false }): void {
+    const store = new WorkspaceStore(root);
+    const client = new GitClient(root);
+    const sync = new SyncService(client, {}, silentLogger);
+    const gate = new MutateGate(store, client, sync, silentLogger, {
+      isTrackedPath: createGitTrackedPathPredicate(client),
+    });
+    const content = new ContentService(store, gate);
+    const sender = {
+      sendMessage: async (_c: number, view: MessageView): Promise<SentMessageRef> => {
+        sent.push(view);
+        return { chatId: 1, messageId: sent.length };
+      },
+      editMessage: async (ref: SentMessageRef): Promise<SentMessageRef> => ref,
+      answerCallback: async (): Promise<void> => undefined,
+      sendDocument: async (_c: number, doc: OutgoingDocument): Promise<SentMessageRef> => {
+        docs.push(doc);
+        return { chatId: 1, messageId: 0 };
+      },
+    };
+    const registry = new CommandRegistry();
+    registry.register(createReadDraftHandler(options));
+    router = new UpdateRouter({
+      sender,
+      registry,
+      buildContext: (update) => new ChatContext(update, sender, content, store, sync),
+      logger: silentLogger,
+    });
+  }
+
+  beforeEach(() => {
+    sent = [];
+    docs = [];
+    fixture = createWorkspaceFixture();
+    fixture.write('scene/01-prologue.txt', 'prologue\n');
+    fixture.write('scene/02-turn.txt', 'turn\n');
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it('sends a short draft inline with its length header', async () => {
+    fixture.write('draft/01-prologue.md', '짧은 초안 본문');
+    build(fixture.root);
+
+    await router.handleUpdate(message('/read 01-prologue'));
+
+    expect(sent[0]?.text).toContain('📄 01-prologue');
+    expect(sent[0]?.text).toContain('짧은 초안 본문');
+    expect(docs).toHaveLength(0);
+  });
+
+  it('switches to preview plus Markdown attachment for a long draft', async () => {
+    const body = '가'.repeat(4000);
+    fixture.write('draft/01-prologue.md', body);
+    build(fixture.root);
+
+    await router.handleUpdate(message('/read 01-prologue'));
+
+    expect(sent[0]?.text).toContain('…');
+    expect(sent[0]?.text.length).toBeLessThan(1000);
+    expect(docs).toHaveLength(1);
+    expect(docs[0]?.fileName).toBe('01-prologue.md');
+    expect(new TextDecoder().decode(docs[0]?.bytes)).toBe(body);
+  });
+
+  // Privacy mode (BG-05): the body must not enter the chat transcript at all.
+  it('sends only the attachment when minimizeChatBody is on', async () => {
+    fixture.write('draft/01-prologue.md', '민감한 본문');
+    build(fixture.root, { minimizeChatBody: true });
+
+    await router.handleUpdate(message('/read 01-prologue'));
+
+    expect(sent).toHaveLength(0);
+    expect(docs).toHaveLength(1);
+    expect(new TextDecoder().decode(docs[0]?.bytes)).toBe('민감한 본문');
+  });
+
+  it('offers drafted scenes as inline buttons when called bare', async () => {
+    fixture.write('draft/01-prologue.md', 'a');
+    build(fixture.root);
+
+    await router.handleUpdate(message('/read'));
+
+    expect(sent[0]?.keyboard).toEqual([[{ text: '01-prologue', callbackData: 'rd:01-prologue' }]]);
+  });
+
+  it('opens a draft from its inline button callback', async () => {
+    fixture.write('draft/01-prologue.md', '버튼으로 연 초안');
+    build(fixture.root);
+
+    await router.handleUpdate(callback('rd:01-prologue'));
+
+    expect(sent[0]?.text).toContain('버튼으로 연 초안');
+  });
+
+  it('guides generation when the draft is missing and rejects unknown scenes', async () => {
+    build(fixture.root);
+
+    await router.handleUpdate(message('/read 02-turn'));
+    expect(sent[0]?.text).toContain('아직 초안이 없습니다');
+    expect(sent[0]?.keyboard).toEqual([[{ text: '지금 생성', callbackData: 'rd:gen:02-turn' }]]);
+
+    await router.handleUpdate(message('/read 99-nope'));
+    expect(sent[1]?.text).toContain('씬을 찾을 수 없습니다');
   });
 });
