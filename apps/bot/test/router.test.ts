@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { chmodSync, readFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { parseCard } from '@storyboard/story-format';
@@ -294,6 +295,25 @@ describe('/doctor', () => {
     expect(sent[0]).toContain('git 저장소를 초기화했습니다');
     expect(sent[0]).toContain('이제 편집 명령을 쓸 수 있습니다');
     expect(git(fixture.root, 'ls-files')).not.toContain('draft/01-first.md');
+  });
+
+  it('refuses to initialize without a git identity instead of failing opaquely', async () => {
+    fixture = createWorkspaceFixture({ initGit: false });
+    build(fixture.root);
+
+    const configuredGlobal = process.env.GIT_CONFIG_GLOBAL;
+    const emptyConfig = join(mkdtempSync(join(tmpdir(), 'storygram-no-identity-')), 'global');
+    writeFileSync(emptyConfig, '', 'utf8');
+    process.env.GIT_CONFIG_GLOBAL = emptyConfig;
+
+    try {
+      await router.handleUpdate(message('/doctor init'));
+    } finally {
+      process.env.GIT_CONFIG_GLOBAL = configuredGlobal;
+    }
+
+    expect(sent[0]).toContain('git 사용자 정보');
+    expect(existsSync(join(fixture.root, '.git'))).toBe(false);
   });
 
   // Hand-authored cards use inline sequences and their own key order. Normalizing is offered as a

@@ -42,6 +42,17 @@ export interface OnboardingResult {
 export function inspectWorkspaceRepository(workspaceRoot: string): OnboardingReport {
   const git = new GitClient(workspaceRoot);
 
+  // NOTE: Identity is checked before the repository check because `git init` cannot supply it.
+  // Reporting 'needs-init' first would send the user to /doctor init, whose commit then fails.
+  if (!git.hasIdentity()) {
+    return {
+      status: 'needs-identity',
+      detail:
+        'git 사용자 정보(user.name / user.email)가 설정되어 있지 않아 커밋할 수 없습니다. `git config --global user.name` 과 `user.email` 을 설정해주세요.',
+      blocker: 'no-identity',
+    };
+  }
+
   if (!git.isRepository()) {
     return {
       status: 'needs-init',
@@ -52,15 +63,6 @@ export function inspectWorkspaceRepository(workspaceRoot: string): OnboardingRep
   }
 
   const blocker = git.findBlocker();
-
-  if (blocker === 'no-identity') {
-    return {
-      status: 'needs-identity',
-      detail:
-        'git 사용자 정보(user.name / user.email)가 설정되어 있지 않아 커밋할 수 없습니다. `git config --global user.name` 과 `user.email` 을 설정해주세요.',
-      blocker,
-    };
-  }
 
   if (blocker !== undefined) {
     return { status: 'busy', detail: describeBlocker(blocker), blocker };
