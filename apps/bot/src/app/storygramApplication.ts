@@ -28,6 +28,7 @@ import {
 } from '../chat/handlers/read';
 import { createDoctorHandler } from '../chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../chat/handlers/edit';
+import { createSceneCommandHandler } from '../chat/handlers/scene';
 import {
   createDraftCommandHandler,
   createJobsHandler,
@@ -179,6 +180,7 @@ export class StorygramApplication {
       }),
       createRenameHandler(),
       createSetHandler(),
+      createSceneCommandHandler(),
       createDraftCommandHandler(),
       createOutlineCommandHandler(),
       createPlanCommandHandler(),

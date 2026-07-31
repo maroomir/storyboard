@@ -36,6 +36,8 @@ export function createStartHandler(): ICommandHandler {
         '✏️ 편집',
         '/rename <id> <새 이름> — 카드 이름 변경',
         '/set <id> <항목> <값1> | <값2> — 카드 목록 항목 수정',
+        '/scene new <slug> — 씬 시드 생성 (본문은 다음 줄부터)',
+        '/scene edit·append <씬 stem> — 씬 본문 교체·덧붙이기',
         '',
         '🤖 생성',
         '/draft <씬 stem> — 씬 초안 생성',

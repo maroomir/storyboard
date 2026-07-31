@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatContext } from '../src/chat/context';
 import { createDoctorHandler, type DoctorEnvironment } from '../src/chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit';
+import { createSceneCommandHandler } from '../src/chat/handlers/scene';
 import {
   createBibleHandler,
   createCardsHandler,
@@ -521,5 +522,109 @@ describe('/read', () => {
 
     await router.handleUpdate(message('/read 99-nope'));
     expect(sent[1]?.text).toContain('씬을 찾을 수 없습니다');
+  });
+});
+
+describe('/scene', () => {
+  let fixture: WorkspaceFixture;
+  let router: UpdateRouter;
+  let sent: MessageView[];
+
+  function build(root: string): void {
+    const store = new WorkspaceStore(root);
+    const client = new GitClient(root);
+    const sync = new SyncService(client, {}, silentLogger);
+    const gate = new MutateGate(store, client, sync, silentLogger, {
+      isTrackedPath: createGitTrackedPathPredicate(client),
+    });
+    const content = new ContentService(store, gate);
+    const sender = {
+      sendMessage: async (_c: number, view: MessageView): Promise<SentMessageRef> => {
+        sent.push(view);
+        return { chatId: 1, messageId: sent.length };
+      },
+      editMessage: async (ref: SentMessageRef): Promise<SentMessageRef> => ref,
+      answerCallback: async (): Promise<void> => undefined,
+      sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
+    };
+    const registry = new CommandRegistry();
+    registry.register(createSceneCommandHandler());
+    router = new UpdateRouter({
+      sender,
+      registry,
+      buildContext: (update) => new ChatContext(update, sender, content, store, sync),
+      logger: silentLogger,
+    });
+  }
+
+  beforeEach(() => {
+    sent = [];
+    fixture = createWorkspaceFixture();
+    fixture.write('scene/01-prologue.txt', 'prologue seed\n');
+    fixture.git('add', '--all');
+    fixture.git('commit', '--quiet', '-m', 'seed scenes');
+    build(fixture.root);
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  // The end-to-end create path: numbering follows the existing scenes and the write is a commit.
+  it('creates the next-numbered scene from a multi-line message and commits it', async () => {
+    await router.handleUpdate(
+      message('/scene new first-kiss\n골목에서 우연히 마주친다.\n비가 온다.'),
+    );
+
+    expect(sent[0]?.text).toContain('씬을 만들었습니다: 02-first-kiss');
+    expect(readFileSync(join(fixture.root, 'scene', '02-first-kiss.txt'), 'utf8')).toBe(
+      '골목에서 우연히 마주친다.\n비가 온다.\n',
+    );
+    expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
+      'storygram: create scene/02-first-kiss.txt',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+  });
+
+  it('rejects an invalid slug and a bodyless create without writing', async () => {
+    await router.handleUpdate(message('/scene new 한글슬러그\n본문'));
+    expect(sent[0]?.text).toContain('슬러그');
+
+    await router.handleUpdate(message('/scene new valid-slug'));
+    expect(sent[1]?.text).toContain('본문');
+
+    expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe('seed scenes');
+  });
+
+  it('replaces a scene body while preserving its frontmatter', async () => {
+    fixture.write('scene/03-meet.txt', '---\ntitle: 만남\ncharacters:\n  - elia\n---\n예전 본문\n');
+    fixture.git('add', '--all');
+    fixture.git('commit', '--quiet', '-m', 'add frontmatter scene');
+
+    await router.handleUpdate(message('/scene edit 03-meet\n새 본문입니다.'));
+
+    expect(sent[0]?.text).toContain('본문을 교체했습니다');
+    const saved = readFileSync(join(fixture.root, 'scene', '03-meet.txt'), 'utf8');
+    expect(saved).toBe('---\ntitle: 만남\ncharacters:\n  - elia\n---\n새 본문입니다.\n');
+  });
+
+  it('appends to an existing scene body', async () => {
+    await router.handleUpdate(message('/scene append 01-prologue\n덧붙인 문단.'));
+
+    expect(sent[0]?.text).toContain('덧붙였습니다');
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8')).toBe(
+      'prologue seed\n\n덧붙인 문단.\n',
+    );
+  });
+
+  it('rejects edits to unknown scenes and shows usage for malformed input', async () => {
+    await router.handleUpdate(message('/scene edit 99-nope\n본문'));
+    expect(sent[0]?.text).toContain('씬을 찾을 수 없습니다');
+
+    await router.handleUpdate(message('/scene'));
+    expect(sent[1]?.text).toContain('사용법');
+
+    await router.handleUpdate(message('/scene delete 01-prologue'));
+    expect(sent[2]?.text).toContain('사용법');
   });
 });

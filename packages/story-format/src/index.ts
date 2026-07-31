@@ -12,6 +12,7 @@ export * from './paths';
 export * from './project';
 export * from './sampleCard';
 export * from './scene';
+export * from './sceneNaming';
 export * from './sceneContext';
 export * from './files/bible';
 export * from './files/card';
