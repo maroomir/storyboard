@@ -4,6 +4,7 @@ import { Button } from "../ui/Button"
 import { ConnectionTestButton, StatusPill } from "./SettingsPrimitives"
 import {
   getProviderStatus,
+  requiresApiKey,
   type AiProviderId,
   type ConnectionTestState,
   type SettingsReadSnapshot
@@ -45,7 +46,7 @@ export function ProviderConfigCard({
   const displayName = status?.displayName ?? providerId
   const config = snapshot.providerConfigs[providerId]
   const isCli = providerId === "claude-code" || providerId === "codex"
-  const showApiKey = providerId !== "mock" && providerId !== "ollama" && !isCli
+  const showApiKey = requiresApiKey(providerId)
   const isOllama = providerId === "ollama"
   const testState = connectionTest[providerId] ?? "idle"
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider)

@@ -3,6 +3,9 @@ export const sbInputClass =
 
 export const sbSelectClass = `${sbInputClass} max-w-md`
 
+export const sbInlineSelectClass =
+  "min-w-[8.5rem] rounded-md border border-[color:var(--vscode-input-border)] bg-sb-bg-input px-2 py-1 text-xs text-sb-fg-input outline-none transition focus:border-sb-border-focus focus:ring-1 focus:ring-sb-border-focus"
+
 export const sectionCardClass = "flex flex-col gap-4 rounded-lg border border-sb-border bg-sb-bg-sidebar/80 p-4"
 
 export const fieldGroupClass =

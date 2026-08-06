@@ -10,11 +10,10 @@ import { BotSection } from "./BotSection"
 import { DefaultProviderSection } from "./DefaultProviderSection"
 import { GenerationContractSection } from "./GenerationContractSection"
 import { ProviderConfigCard } from "./ProviderConfigCard"
-import { StatusPill } from "./SettingsPrimitives"
+import { SettingsSummaryCards } from "./SettingsSummaryCards"
 import { TaskAssignmentsSection } from "./TaskAssignmentsSection"
 import {
   AI_PROVIDER_IDS,
-  formatDefaultProviderSummary,
   parseSettingsReadSnapshot,
   type AiProviderId,
   type ConnectionTestState,
@@ -115,6 +114,7 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
   const baseUrlFocusedRef = useRef(baseUrlFocused)
   baseUrlFocusedRef.current = baseUrlFocused
   const [connectionTest, setConnectionTest] = useState<Partial<Record<AiProviderId, ConnectionTestState>>>({})
+  const [activeTabId, setActiveTabId] = useState("defaults")
 
   const { callRpc, vscodeApi } = useStoryboardRpc()
 
@@ -266,13 +266,13 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
   return (
     <main className="flex min-h-screen bg-sb-bg p-5">
       <div className={settingsPanelClass}>
-        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-sb-border pb-4">
+        <header className="flex flex-col gap-3 border-b border-sb-border pb-4">
           <SectionHeader
             eyebrow="Storyboard"
             title="설정"
             description="AI 기본값, 연결 정보, 태스크별 덮어쓰기를 필요한 범위만 열어 관리합니다."
           />
-          <StatusPill tone="neutral">{formatDefaultProviderSummary(snapshot)}</StatusPill>
+          <SettingsSummaryCards snapshot={snapshot} onNavigate={setActiveTabId} />
         </header>
 
         {rpcError ? (
@@ -285,7 +285,7 @@ export function SettingsView({ initialData }: { readonly initialData: unknown })
         ) : null}
 
         <div className="rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-3">
-          <Tabs items={settingsTabs} initialId="defaults" />
+          <Tabs items={settingsTabs} activeId={activeTabId} onActiveIdChange={setActiveTabId} />
         </div>
       </div>
     </main>
