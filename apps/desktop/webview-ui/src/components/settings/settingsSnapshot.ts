@@ -29,7 +29,7 @@ interface TaskAiAssignment {
   readonly model: string | null
 }
 
-interface TaskCatalogItem {
+export interface TaskCatalogItem {
   readonly name: AiTaskName
   readonly label: string
   readonly status: AiTaskStatus
@@ -126,6 +126,15 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
   }
 
   return candidate as SettingsReadSnapshot
+}
+
+export function requiresApiKey(providerId: AiProviderId): boolean {
+  return providerId !== "mock" && providerId !== "ollama" && providerId !== "claude-code" && providerId !== "codex"
+}
+
+export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {
+  const assignment = snapshot.taskAssignments[taskName]
+  return assignment !== undefined && assignment.providerId !== null
 }
 
 export function getProviderStatus(
