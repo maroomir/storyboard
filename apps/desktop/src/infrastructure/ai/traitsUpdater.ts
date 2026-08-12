@@ -3,7 +3,7 @@ import type { CharacterCard } from '@seedkernel/wasm';
 import type { CardFileSystem } from '@/domain/files/storyFiles';
 import { parseBulletList } from '@storyboard/story-ai';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
-import { reconcileCharacterTraits } from '@/domain/traitsProcessor';
+import { reconcileCharacterTraits } from '@weeding/wasm';
 export interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }

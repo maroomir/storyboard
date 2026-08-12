@@ -1,4 +1,5 @@
 import { loadSeedkernel } from '@seedkernel/wasm';
+import { loadWeeding } from '@weeding/wasm';
 
 import { StorygramApplication } from './app/storygramApplication';
 import { ConfigError, loadConfig } from './config/config';
@@ -12,8 +13,10 @@ async function main(): Promise<number> {
   const logger = createLogger();
   const paths = resolvePaths();
 
-  // NOTE: The workspace format engine is WebAssembly; load it before any codec runs.
+  // NOTE: The workspace format engine and diagnostics engine are WebAssembly; load them before
+  // any codec or diagnostic runs.
   await loadSeedkernel();
+  await loadWeeding();
 
   let loaded;
   try {

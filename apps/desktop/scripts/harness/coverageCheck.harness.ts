@@ -11,7 +11,7 @@ import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProv
 import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
 import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/providers/cliRunner"
 import type { AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
-import { summarizeSceneCoverage } from "@/shared/sceneCoverage"
+import { summarizeSceneCoverage } from "@storyboard/story-ai"
 
 import { createUsageSummary } from "./usageSummary"
 

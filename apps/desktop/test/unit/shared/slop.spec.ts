@@ -1,10 +1,6 @@
-import { readFileSync } from "node:fs"
-import { fileURLToPath } from "node:url"
-
 import { describe, expect, it } from "vitest"
 
-import { analyzeSlop, type SlopFinding } from "@/shared/slop"
-import { slopPhrases } from "@/shared/slopPhrases"
+import { analyzeSlop, slopPhrases, type SlopFinding } from "@weeding/wasm"
 
 function findingsByKind(findings: SlopFinding[], kind: SlopFinding["kind"]): SlopFinding[] {
   return findings.filter((finding) => finding.kind === kind)
@@ -83,7 +79,7 @@ describe("analyzeSlop", () => {
   })
 
   it("QAS-C4-11: matches KO phrase literally as exact substring, not a near-miss", () => {
-    const koPhrase = slopPhrases.ko[0] ?? ""
+    const koPhrase = slopPhrases().ko[0] ?? ""
     expect(koPhrase.length).toBeGreaterThan(0)
 
     const exactHit = analyzeSlop(`${koPhrase} 그는 멈췄다.`)
@@ -114,16 +110,6 @@ describe("analyzeSlop", () => {
 
     const six = analyzeSlop("네 네 네 네 네 네")
     expect(findingsByKind(six, "trigram")).toHaveLength(0)
-  })
-
-  it("QAS-C4-19: analyzer source has no vscode, AI service, or network imports", () => {
-    const sourcePath = fileURLToPath(new URL("../../../src/shared/slop.ts", import.meta.url))
-    const source = readFileSync(sourcePath, "utf8")
-
-    expect(source.length).toBeGreaterThan(0)
-    expect(source).not.toMatch(/from\s+["']vscode["']/)
-    expect(source).not.toMatch(/services\/ai/)
-    expect(source).not.toMatch(/from\s+["']https?:\/\//)
   })
 
   it("QAS-C4-20: KO D1 message starts with the '상투 표현:' prefix", () => {

@@ -21,6 +21,6 @@ export default defineConfig({
     environment: "node",
     environmentMatchGlobs: [["**/*.spec.tsx", "jsdom"]],
     include: ["test/unit/**/*.spec.ts", "test/unit/**/*.spec.tsx"],
-    setupFiles: ["test/setup/seedkernel.ts"]
+    setupFiles: ["test/setup/seedkernel.ts", "test/setup/weeding.ts"]
   }
 })

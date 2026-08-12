@@ -9,7 +9,7 @@ import {
   removeDuplicateTraits,
   removeExistingTraits,
   validateTraits
-} from "@/domain/traitsProcessor"
+} from "@weeding/wasm"
 
 describe("traitsProcessor", () => {
   it("calculates simple word-overlap similarity", () => {

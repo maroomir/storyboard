@@ -16,7 +16,7 @@ export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
     environment: 'node',
-    setupFiles: ['test/helpers/gitEnv.ts', 'test/helpers/seedkernel.ts'],
+    setupFiles: ['test/helpers/gitEnv.ts', 'test/helpers/seedkernel.ts', 'test/helpers/weeding.ts'],
     // These suites shell out to real git and real provider runners rather than stubbing them, so
     // the default 5s budget is unrealistic on a loaded machine.
     testTimeout: 30_000,

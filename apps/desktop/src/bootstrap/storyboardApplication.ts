@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { loadSeedkernel } from '@seedkernel/wasm';
+import { loadWeeding } from '@weeding/wasm';
 
 import type { IApplicationModule } from './lifecycle/applicationModule';
 import { BotModule } from './modules/botModule';
@@ -27,6 +28,7 @@ export class StoryboardApplication implements vscode.Disposable {
     }
 
     await loadSeedkernel();
+    await loadWeeding();
 
     const platformModule = new PlatformModule();
     const modules: IApplicationModule[] = [platformModule];

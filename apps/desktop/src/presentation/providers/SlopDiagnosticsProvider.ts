@@ -6,7 +6,7 @@ import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnostic
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseDraft } from '@seedkernel/wasm';
 import { LatestRequestGuard } from './latestRequestGuard';
-import { analyzeSlop, type SlopFinding } from '../../shared/slop';
+import { analyzeSlop, type SlopFinding } from '@weeding/wasm';
 
 const slopCheckCommand = 'storyboard.draft.slopCheck';
 const slopSource = 'storyboard-slop';

@@ -64,7 +64,8 @@ const extensionConfig = {
   },
   plugins: [
     wasmAssetsPlugin("@seedcoat/wasm", "seedcoat"),
-    wasmAssetsPlugin("@seedkernel/wasm", "seedkernel")
+    wasmAssetsPlugin("@seedkernel/wasm", "seedkernel"),
+    wasmAssetsPlugin("@weeding/wasm", "weeding")
   ]
 }
 
