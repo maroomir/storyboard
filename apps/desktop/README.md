@@ -113,7 +113,7 @@ CLI provider 사용 시 참고할 점:
 ## `.seed` 가져오기/보내기
 
 - 명령: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
-- `.seed`는 [`@seedcoat/wasm`](https://github.com/maroomir/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
+- `.seed`는 [`@seedcoat/wasm`](https://github.com/webfic/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
 - `.seed`는 **암호화되지 않습니다**. 패스프레이즈는 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시합니다.
 - 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
 - 정책 요약: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)

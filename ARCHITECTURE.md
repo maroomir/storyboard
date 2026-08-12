@@ -409,7 +409,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |
 | `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → `.seed` 아카이브 |
 
-디스크 교환용 `.seed` 저장소 아카이브 명세는 [seedcoat](https://github.com/maroomir/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
+디스크 교환용 `.seed` 저장소 아카이브 명세는 [seedcoat](https://github.com/webfic/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
 
 ### 5.1 활성화 조건
 

@@ -1,6 +1,6 @@
 # Seeds ↔ Storyboard 정렬 (요약)
 
-Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약이다. `.seed` 저장소 형식·스키마의 단일 진실원은 [seedcoat](https://github.com/maroomir/seedcoat) (`SRS.md`, `API.md`)이며, 최신 릴리즈는 `@seedcoat/wasm` **v0.7.0**(저장소 포맷 `seed repository v3`)이다.
+Storyboard와 Seeds가 공유하는 **도메인·`.seed` 교환 정책** 요약이다. `.seed` 저장소 형식·스키마의 단일 진실원은 [seedcoat](https://github.com/webfic/seedcoat) (`SRS.md`, `API.md`)이며, 최신 릴리즈는 `@seedcoat/wasm` **v0.7.0**(저장소 포맷 `seed repository v3`)이다.
 
 `.seed`는 Git 유사 저장소(노트·스냅샷·refs)를 하나의 파일로 내보낸 **포터블 아카이브**(`seedcoat archive v1`)이며, 전체 변경 이력을 보존한다. 암호화 컨테이너가 아니다.
 
