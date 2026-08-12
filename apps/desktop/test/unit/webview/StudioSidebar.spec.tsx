@@ -117,7 +117,7 @@ describe("StudioSidebar chat loop", () => {
   it("reflects target changes from the host", async () => {
     renderStudio({ kind: "none", hasSelection: false })
 
-    expect(screen.getByText("대상 없음")).toBeTruthy()
+    expect(screen.getByText(/Storyboard 프로젝트를 열면/)).toBeTruthy()
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -204,6 +204,76 @@ describe("StudioSidebar chat loop", () => {
     )
 
     await waitFor(() => expect(screen.getAllByText(/프로젝트/).length).toBeGreaterThan(0))
+  })
+})
+
+describe("StudioSidebar stage", () => {
+  function stageCalls(postMessage: ReturnType<typeof vi.fn>): Array<{ id: string }> {
+    return messagesByMethod(postMessage, "studio.stage") as Array<{ id: string }>
+  }
+
+  function answerStage(id: string, stage: Record<string, unknown>): void {
+    window.dispatchEvent(
+      new MessageEvent("message", {
+        data: { type: "response", id, ok: true, payload: { stage } }
+      })
+    )
+  }
+
+  const sceneStage = {
+    sceneStem: "01-intro",
+    title: "첫 등교",
+    draftLength: 1240,
+    draftUpdatedAt: new Date().toISOString(),
+    draftRevision: 2,
+    review: "unreviewed",
+    cards: [
+      { kind: "character", name: "엘리아" },
+      { kind: "background", name: "학교 옥상" }
+    ]
+  }
+
+  it("asks the host for stage metadata once a scene is targeted", () => {
+    const postMessage = renderStudio(draftTarget)
+
+    expect(stageCalls(postMessage)).toHaveLength(1)
+  })
+
+  it("does not ask for stage metadata without a scene", () => {
+    const postMessage = renderStudio({ kind: "none", hasSelection: false })
+
+    expect(stageCalls(postMessage)).toHaveLength(0)
+  })
+
+  it("shows the scene, its facts, and its linked cards on the stage card", async () => {
+    const postMessage = renderStudio(draftTarget)
+    answerStage(stageCalls(postMessage)[0].id, sceneStage)
+
+    await waitFor(() => expect(screen.getByText("씬 01 · 첫 등교")).toBeTruthy())
+    expect(screen.getByText("1,240자 · 초안 v2 · 오늘 · 검수 전")).toBeTruthy()
+    expect(screen.getByText("엘리아")).toBeTruthy()
+    expect(screen.getByText("학교 옥상")).toBeTruthy()
+  })
+
+  it("recommends the next actions with a reason before any turn exists", () => {
+    renderStudio(draftTarget)
+
+    expect(screen.getByText("맞춤법과 어색한 문장을 진단으로 표시합니다.")).toBeTruthy()
+  })
+
+  it("refetches the stage after an action finishes", async () => {
+    const postMessage = renderStudio(draftTarget)
+    expect(stageCalls(postMessage)).toHaveLength(1)
+
+    fireEvent.click(screen.getByText("문법 검사"))
+    fireEvent.click(screen.getByText("승인"))
+    const runId = (runActionCalls(postMessage)[0] as { id: string }).id
+
+    window.dispatchEvent(
+      new MessageEvent("message", { data: { type: "response", id: runId, ok: true } })
+    )
+
+    await waitFor(() => expect(stageCalls(postMessage)).toHaveLength(2))
   })
 })
 

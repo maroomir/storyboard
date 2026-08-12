@@ -42,6 +42,36 @@ export function availableStudioActions(target: StudioTarget): readonly StudioAct
   return [];
 }
 
+const recommendationLimit = 3;
+
+export function recommendedStudioActions(target: StudioTarget): readonly StudioActionId[] {
+  const available = availableStudioActions(target);
+
+  return preferredActionOrder(target)
+    .filter((action) => available.includes(action))
+    .slice(0, recommendationLimit);
+}
+
+function preferredActionOrder(target: StudioTarget): readonly StudioActionId[] {
+  if (target.kind === 'scene') {
+    return target.draftExists
+      ? ['regenerate', 'applyFormat', 'completeStory']
+      : ['generate', 'buildCardsFromScenes', 'completeStory'];
+  }
+
+  if (target.kind === 'draft') {
+    return target.hasSelection
+      ? ['expand', 'augmentSelection', 'regenerate', 'grammarCheck', 'continuityCheck']
+      : ['regenerate', 'grammarCheck', 'continuityCheck', 'augment', 'condense'];
+  }
+
+  if (target.kind === 'project') {
+    return ['completeStory', 'buildCardsFromScenes'];
+  }
+
+  return [];
+}
+
 export function interpretStudioInstruction(
   instruction: string,
   target: StudioTarget,

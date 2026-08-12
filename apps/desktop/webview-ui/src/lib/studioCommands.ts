@@ -64,6 +64,35 @@ export function actionLabel(action: StudioActionId): string {
   }
 }
 
+export function actionRationale(action: StudioActionId): string {
+  switch (action) {
+    case "regenerate":
+      return "씬 시드와 연결된 카드를 반영해 초안을 다시 씁니다."
+    case "generate":
+      return "아직 초안이 없습니다. 씬 시드로 첫 초안을 씁니다."
+    case "applyFormat":
+      return "문단과 대사 형식을 작품 계약에 맞춰 정리합니다."
+    case "grammarCheck":
+      return "맞춤법과 어색한 문장을 진단으로 표시합니다."
+    case "continuityCheck":
+      return "앞선 씬·canon과의 설정 충돌을 찾습니다."
+    case "expand":
+      return "선택한 영역을 더 길게 풀어 씁니다."
+    case "augment":
+      return "연결된 카드의 내용을 초안에 보충합니다."
+    case "augmentSelection":
+      return "선택한 영역에만 카드 내용을 보충합니다."
+    case "editSelection":
+      return "선택한 영역을 지시한 대로 고쳐 씁니다."
+    case "condense":
+      return "원본을 줄여 핵심만 남깁니다."
+    case "completeStory":
+      return "남은 씬을 이어서 끝까지 생성합니다."
+    case "buildCardsFromScenes":
+      return "씬 본문에서 인물·배경 카드를 뽑아냅니다."
+  }
+}
+
 export function actionIcon(action: StudioActionId): LucideIcon {
   switch (action) {
     case "regenerate":
