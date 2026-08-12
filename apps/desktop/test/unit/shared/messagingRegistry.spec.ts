@@ -44,6 +44,7 @@ const expectedMethods = [
   "studio.session.list",
   "studio.session.load",
   "studio.session.save",
+  "studio.stage",
   "usage.read"
 ]
 

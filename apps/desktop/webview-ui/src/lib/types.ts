@@ -16,6 +16,7 @@ export type StoryboardRequestMethod =
   | "scenes.openDraft"
   | "scenes.generateDraft"
   | "studio.runAction"
+  | "studio.stage"
   | "studio.session.save"
   | "studio.session.list"
   | "studio.session.load"
@@ -178,6 +179,23 @@ export interface StudioTarget {
   readonly draftUri?: string
   readonly hasSelection: boolean
   readonly draftExists?: boolean
+}
+
+export interface StudioStageCard {
+  readonly kind: "character" | "background"
+  readonly name: string
+}
+
+export type StudioReviewState = "unreviewed" | "clean" | "issues"
+
+export interface StudioStage {
+  readonly sceneStem: string
+  readonly title?: string
+  readonly draftLength?: number
+  readonly draftUpdatedAt?: string
+  readonly draftRevision?: number
+  readonly review: StudioReviewState
+  readonly cards: readonly StudioStageCard[]
 }
 
 export type StudioProposalStatus = "pending" | "running" | "done" | "failed" | "cancelled"

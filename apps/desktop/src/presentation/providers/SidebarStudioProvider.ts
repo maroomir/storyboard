@@ -15,6 +15,7 @@ import {
   StudioSessionRepository,
   type IStudioSessionRepository,
 } from '../../infrastructure/persistence/repositories/studioSessionRepository';
+import { readStudioStage } from '../../infrastructure/persistence/studioStage';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { parseSceneFileName } from '@storyboard/story-format';
 import type {
@@ -101,6 +102,16 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       ): Promise<StoryboardResponsePayload<'studio.runAction'>> => {
         await runStudioAction(payload.action, payload.instruction);
         return {};
+      },
+      'studio.stage': async (): Promise<StoryboardResponsePayload<'studio.stage'>> => {
+        const root = await resolveStoryboardWorkspaceRoot();
+
+        if (!root) {
+          return {};
+        }
+
+        const target = await computeStudioTarget(vscode.window.activeTextEditor);
+        return { stage: await readStudioStage(root, target) };
       },
       ...createStudioSessionRpcHandlers({
         repository: this.sessionRepository,

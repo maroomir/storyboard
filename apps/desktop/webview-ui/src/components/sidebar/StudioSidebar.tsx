@@ -1,12 +1,15 @@
 import {
   Check,
+  ChevronRight,
   CircleAlert,
   FileText,
   History,
+  MapPin,
   MessagesSquare,
   Send,
   Sparkles,
   SquarePen,
+  User,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
@@ -15,21 +18,24 @@ import {
   normalizeRestoredTurns,
   parseSessionListPayload,
   parseSessionLoadPayload,
+  parseStagePayload,
   parseStudioTarget,
 } from '@webview/lib/messaging';
 import {
   actionIcon,
   actionLabel,
+  actionRationale,
   parseSlashInput,
   slashCandidates,
   slashMenuState,
 } from '@webview/lib/studioCommands';
 import {
-  availableStudioActions,
   interpretStudioInstruction,
+  recommendedStudioActions,
   type StudioClarifyReason,
   type StudioIntent,
 } from '@webview/lib/studioIntent';
+import { stageFacts, stageTitle } from '@webview/lib/studioStage';
 import type {
   StoryboardEventMessage,
   StudioActionId,
@@ -37,6 +43,7 @@ import type {
   StudioInitialData,
   StudioProposalStatus,
   StudioSessionSummary,
+  StudioStage,
   StudioTarget,
 } from '@webview/lib/types';
 import { Button } from '../ui/Button';
@@ -70,10 +77,14 @@ export function StudioSidebar({
   );
   const [view, setView] = useState<'chat' | 'history'>('chat');
   const [sessions, setSessions] = useState<readonly StudioSessionSummary[]>([]);
+  const [stage, setStage] = useState<StudioStage | undefined>(undefined);
+  const [stageToken, setStageToken] = useState(0);
   const [draft, setDraft] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
   const listRequestIdRef = useRef<string | undefined>(undefined);
   const loadRequestIdRef = useRef<string | undefined>(undefined);
+  const stageRequestIdRef = useRef<string | undefined>(undefined);
+  const runningRequestIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const handleMessage = (
@@ -100,7 +111,17 @@ export function StudioSidebar({
           return;
         }
 
-        settleProposal(setTurns, data);
+        if (data.id === stageRequestIdRef.current) {
+          stageRequestIdRef.current = undefined;
+          setStage(parseStagePayload(data.payload));
+          return;
+        }
+
+        if (runningRequestIdsRef.current.delete(data.id)) {
+          settleProposal(setTurns, data);
+          setStageToken((token) => token + 1);
+        }
+
         return;
       }
 
@@ -112,6 +133,23 @@ export function StudioSidebar({
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  useEffect(() => {
+    if (target.kind === 'none' || !target.sceneUri) {
+      setStage(undefined);
+      return;
+    }
+
+    const requestId = createRequestId();
+    stageRequestIdRef.current = requestId;
+    vscodeApi?.postMessage({
+      protocolVersion: '1.0.0',
+      type: 'request',
+      id: requestId,
+      method: 'studio.stage',
+      payload: {},
+    });
+  }, [target.kind, target.sceneUri, stageToken]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView?.({ block: 'end' });
@@ -164,6 +202,7 @@ export function StudioSidebar({
   };
 
   const postRunAction = (requestId: string, action: StudioActionId, instruction?: string): void => {
+    runningRequestIdsRef.current.add(requestId);
     vscodeApi?.postMessage({
       protocolVersion: '1.0.0',
       type: 'request',
@@ -268,11 +307,7 @@ export function StudioSidebar({
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
       <div className="flex items-start justify-between gap-2">
-        <SectionHeader
-          eyebrow="Storyboard"
-          title={initialData.title}
-          description={targetDescription(target)}
-        />
+        <SectionHeader eyebrow="Storyboard" title={initialData.title} />
         <div className="flex shrink-0 items-center gap-1">
           <HeaderButton label="새 대화" icon={SquarePen} onClick={startNewSession} />
           <HeaderButton
@@ -287,27 +322,40 @@ export function StudioSidebar({
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         {isHistoryView ? (
           <StudioSessionList sessions={sessions} onOpen={openSession} />
-        ) : turns.length === 0 ? (
-          <StudioWelcome target={target} onPick={proposeAction} />
+        ) : target.kind === 'none' ? (
+          <StudioWelcome />
         ) : (
-          <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
-            {turns.map((turn) => (
-              <li key={turn.id}>
-                <TurnView
-                  turn={turn}
-                  onApprove={approveProposal}
-                  onCancel={cancelProposal}
-                  onPick={proposeAction}
-                />
-              </li>
-            ))}
-          </ol>
+          <>
+            <StageCard target={target} stage={stage} />
+            {turns.length === 0 ? (
+              <RecommendationList target={target} onPick={proposeAction} />
+            ) : (
+              <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
+                {turns.map((turn) => (
+                  <li key={turn.id}>
+                    <TurnView
+                      turn={turn}
+                      onApprove={approveProposal}
+                      onCancel={cancelProposal}
+                      onPick={proposeAction}
+                    />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </>
         )}
         <div ref={logEndRef} />
       </div>
 
       {isHistoryView ? null : (
-        <Composer value={draft} target={target} onChange={setDraft} onSubmit={submitDraft} />
+        <Composer
+          value={draft}
+          target={target}
+          stage={stage}
+          onChange={setDraft}
+          onSubmit={submitDraft}
+        />
       )}
     </main>
   );
@@ -356,32 +404,93 @@ function settleProposal(
   );
 }
 
-function StudioWelcome({
+function StudioWelcome(): React.ReactElement {
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
+      <FileText className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
+      <p className="m-0 text-sm leading-normal text-sb-fg-muted">
+        Storyboard 프로젝트를 열면 이야기 완결과 씬 기반 카드 구성을 실행할 수 있습니다.
+      </p>
+    </div>
+  );
+}
+
+const stageLabelClass =
+  'm-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted';
+
+function StageCard({
+  target,
+  stage,
+}: {
+  readonly target: StudioTarget;
+  readonly stage?: StudioStage;
+}): React.ReactElement {
+  const facts = stageFacts(stage);
+
+  return (
+    <section
+      aria-label="지금 무대"
+      className="flex flex-col gap-1.5 rounded-lg border border-sb-border border-l-2 border-l-sb-accent-character bg-sb-bg-widget px-3 py-2.5"
+    >
+      <p className={stageLabelClass}>지금 무대</p>
+      <p className="m-0 text-sm font-semibold text-sb-fg">{stageTitle(target, stage)}</p>
+      {facts.length > 0 ? (
+        <p className="m-0 text-xs text-sb-fg-muted">{facts.join(' · ')}</p>
+      ) : null}
+      {stage && stage.cards.length > 0 ? (
+        <div className="flex flex-wrap gap-1">
+          {stage.cards.map((card) => (
+            <Pill
+              key={`${card.kind}-${card.name}`}
+              tone={card.kind === 'character' ? 'character' : 'background'}
+              icon={card.kind === 'character' ? User : MapPin}
+            >
+              {card.name}
+            </Pill>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function RecommendationList({
   target,
   onPick,
 }: {
   readonly target: StudioTarget;
   readonly onPick: (action: StudioActionId) => void;
-}): React.ReactElement {
-  if (target.kind === 'none') {
-    return (
-      <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
-        <FileText className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
-        <p className="m-0 text-sm leading-normal text-sb-fg-muted">
-          Storyboard 프로젝트를 열면 이야기 완결과 씬 기반 카드 구성을 실행할 수 있습니다.
-        </p>
-      </div>
-    );
+}): React.ReactElement | null {
+  const actions = recommendedStudioActions(target);
+
+  if (actions.length === 0) {
+    return null;
   }
 
   return (
-    <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
-      <MessagesSquare className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
-      <p className="m-0 text-sm leading-normal text-sb-fg-muted">
-        하고 싶은 작업을 적어 주세요. 제안을 확인하고 승인하면 실행합니다.
-      </p>
-      <SuggestionChips actions={availableStudioActions(target)} onPick={onPick} />
-    </div>
+    <section aria-label="다음으로 추천" className="flex flex-col gap-1.5">
+      <p className={stageLabelClass}>다음으로 추천</p>
+      {actions.map((action) => {
+        const ActionIcon = actionIcon(action);
+        return (
+          <button
+            key={action}
+            type="button"
+            className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-sb-border bg-sb-bg-widget px-3 py-2 text-left outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+            onClick={() => onPick(action)}
+          >
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-sb-fg">
+                <ActionIcon className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
+                {actionLabel(action)}
+              </span>
+              <span className="text-xs text-sb-fg-muted">{actionRationale(action)}</span>
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
+          </button>
+        );
+      })}
+    </section>
   );
 }
 
@@ -525,11 +634,13 @@ function SuggestionChips({
 function Composer({
   value,
   target,
+  stage,
   onChange,
   onSubmit,
 }: {
   readonly value: string;
   readonly target: StudioTarget;
+  readonly stage?: StudioStage;
   readonly onChange: (value: string) => void;
   readonly onSubmit: () => void;
 }): React.ReactElement {
@@ -587,7 +698,11 @@ function Composer({
 
   return (
     <div className="flex flex-col gap-2">
-      <TargetChip target={target} />
+      {isDisabled ? null : (
+        <p className="m-0 text-xs text-sb-fg-muted">
+          지시는 «{stageTitle(target, stage)}»를 대상으로 실행됩니다.
+        </p>
+      )}
       <div className="flex items-end gap-2">
         <div className="relative flex-1">
           {isMenuOpen ? (
@@ -625,35 +740,6 @@ function Composer({
       </div>
     </div>
   );
-}
-
-function TargetChip({ target }: { readonly target: StudioTarget }): React.ReactElement {
-  if (target.kind === 'none') {
-    return <Pill icon={FileText}>대상 없음</Pill>;
-  }
-
-  return (
-    <Pill icon={FileText}>
-      {target.kind === 'draft' ? '초안' : target.kind === 'scene' ? '씬' : '프로젝트'} ·{' '}
-      {target.label ?? ''}
-    </Pill>
-  );
-}
-
-function targetDescription(target: StudioTarget): string {
-  if (target.kind === 'draft') {
-    return `초안 · ${target.label ?? ''}`;
-  }
-
-  if (target.kind === 'scene') {
-    return `씬 · ${target.label ?? ''}`;
-  }
-
-  if (target.kind === 'project') {
-    return `프로젝트 · ${target.label ?? ''}`;
-  }
-
-  return '열린 대상 없음';
 }
 
 function clarifyMessage(reason: StudioClarifyReason): string {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { availableStudioActions, interpretStudioInstruction } from '@webview/lib/studioIntent';
+import {
+  availableStudioActions,
+  interpretStudioInstruction,
+  recommendedStudioActions,
+} from '@webview/lib/studioIntent';
 import type { StudioTarget } from '@webview/lib/types';
 
 const noneTarget: StudioTarget = { kind: 'none', hasSelection: false };
@@ -240,5 +244,50 @@ describe('interpretStudioInstruction', () => {
       reason: 'needs-selection',
       suggestions: availableStudioActions(draftTarget),
     });
+  });
+});
+
+describe('recommendedStudioActions', () => {
+  it('recommends nothing without a target', () => {
+    expect(recommendedStudioActions(noneTarget)).toEqual([]);
+  });
+
+  it('leads with the first draft when a scene has none', () => {
+    expect(recommendedStudioActions(sceneWithoutDraft)).toEqual([
+      'generate',
+      'buildCardsFromScenes',
+      'completeStory',
+    ]);
+  });
+
+  it('leads with regenerate once a scene has a draft', () => {
+    expect(recommendedStudioActions(sceneWithDraft)).toEqual([
+      'regenerate',
+      'applyFormat',
+      'completeStory',
+    ]);
+  });
+
+  it('leads with review actions on a draft', () => {
+    expect(recommendedStudioActions(draftTarget)).toEqual([
+      'regenerate',
+      'grammarCheck',
+      'continuityCheck',
+    ]);
+  });
+
+  it('leads with selection actions when the draft has a selection', () => {
+    expect(recommendedStudioActions(draftWithSelection)).toEqual([
+      'expand',
+      'augmentSelection',
+      'regenerate',
+    ]);
+  });
+
+  it('caps the list at three actions', () => {
+    expect(recommendedStudioActions(projectTarget)).toEqual([
+      'completeStory',
+      'buildCardsFromScenes',
+    ]);
   });
 });

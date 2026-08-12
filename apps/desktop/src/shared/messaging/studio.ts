@@ -30,6 +30,30 @@ export const studioTargetSchema = z.object({
 
 export type StudioTarget = z.infer<typeof studioTargetSchema>;
 
+export const studioStageCardSchema = z.object({
+  kind: z.enum(['character', 'background']),
+  name: z.string().min(1),
+});
+
+export const studioStageSchema = z.object({
+  sceneStem: z.string().min(1),
+  title: z.string().optional(),
+  draftLength: z.number().int().nonnegative().optional(),
+  draftUpdatedAt: z.string().datetime().optional(),
+  draftRevision: z.number().int().positive().optional(),
+  review: z.enum(['unreviewed', 'clean', 'issues']),
+  cards: z.array(studioStageCardSchema),
+});
+
+export type StudioStageCard = z.infer<typeof studioStageCardSchema>;
+export type StudioStage = z.infer<typeof studioStageSchema>;
+
+export const studioStageRequestPayloadSchema = z.object({});
+
+export const studioStageResponsePayloadSchema = z.object({
+  stage: studioStageSchema.optional(),
+});
+
 export const studioRunActionRequestPayloadSchema = z.object({
   action: studioActionSchema,
   instruction: z.string().optional(),

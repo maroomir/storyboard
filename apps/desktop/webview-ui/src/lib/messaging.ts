@@ -6,8 +6,11 @@ import type {
   SidebarScenesInitialData,
   StudioChatTurn,
   StudioInitialData,
+  StudioReviewState,
   StudioSessionSnapshot,
   StudioSessionSummary,
+  StudioStage,
+  StudioStageCard,
   StudioTarget,
   UsageSummaryByEntity
 } from "./types"
@@ -136,6 +139,49 @@ export function parseSessionListPayload(payload: unknown): readonly StudioSessio
   }
 
   return sessions.filter(isStudioSessionSummary)
+}
+
+export function parseStagePayload(payload: unknown): StudioStage | undefined {
+  if (!payload || typeof payload !== "object") {
+    return undefined
+  }
+
+  const stage = (payload as { stage?: unknown }).stage
+  if (!stage || typeof stage !== "object") {
+    return undefined
+  }
+
+  const candidate = stage as Partial<StudioStage>
+  if (typeof candidate.sceneStem !== "string" || candidate.sceneStem.length === 0) {
+    return undefined
+  }
+
+  return {
+    sceneStem: candidate.sceneStem,
+    title: typeof candidate.title === "string" ? candidate.title : undefined,
+    draftLength: typeof candidate.draftLength === "number" ? candidate.draftLength : undefined,
+    draftUpdatedAt: typeof candidate.draftUpdatedAt === "string" ? candidate.draftUpdatedAt : undefined,
+    draftRevision: typeof candidate.draftRevision === "number" ? candidate.draftRevision : undefined,
+    review: isStudioReviewState(candidate.review) ? candidate.review : "unreviewed",
+    cards: Array.isArray(candidate.cards) ? candidate.cards.filter(isStudioStageCard) : []
+  }
+}
+
+function isStudioReviewState(value: unknown): value is StudioReviewState {
+  return value === "unreviewed" || value === "clean" || value === "issues"
+}
+
+function isStudioStageCard(value: unknown): value is StudioStageCard {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<StudioStageCard>
+  return (
+    (candidate.kind === "character" || candidate.kind === "background") &&
+    typeof candidate.name === "string" &&
+    candidate.name.length > 0
+  )
 }
 
 export function parseSessionLoadPayload(payload: unknown): StudioSessionSnapshot | undefined {
