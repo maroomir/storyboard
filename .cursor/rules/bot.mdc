@@ -73,7 +73,7 @@ Card serialization is canonical (fixed key order, block sequences), so a hand-au
 inline sequences reformats on its first programmatic write. That normalization is offered as its own
 command — `/doctor` reports non-canonical cards and `/doctor format` rewrites them in a single
 commit — so it never rides along inside a content edit's diff. `canonicalizeCardText`
-(`packages/story-format/src/files/card.ts`) is the shared predicate; do not add a second one.
+(`@seedkernel/wasm`) is the shared predicate; do not add a second one.
 
 ## Verification
 

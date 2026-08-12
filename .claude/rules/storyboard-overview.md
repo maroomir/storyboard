@@ -12,7 +12,7 @@ The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/
 |---|---|---|
 | `apps/desktop` | `storyboard` | The VSCode extension. Holds the released version and the only `v*` tag. |
 | `apps/bot` | `storygram` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
-| `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
+| (external) | `@seedkernel/wasm` | Workspace **format engine** compiled to WebAssembly: card/scene/draft/outline/bible codecs, path conventions, canon, manuscript assembly. Lives in the [seedkernel](https://github.com/webfic/seedkernel) repository and is vendored as `vendor/seedkernel-wasm-*.tgz`. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-git` | `@storyboard/story-git` | Commit/sync layer: `GitClient`, `SyncService`, push scheduling, and workspace git onboarding. |
 
@@ -20,9 +20,17 @@ Packages expose TypeScript **source** (no build step); each app resolves them th
 tsconfig `paths`, esbuild `alias`, and vitest `alias`. `apps/desktop/scripts/check-architecture.mjs`
 enforces that no package imports `vscode` or an app module.
 
+The format engine is WebAssembly, so it must be loaded once before any codec runs: the extension
+awaits it in `StoryboardApplication.initialize`, the bot in `src/index.ts`, and the test suites in
+their vitest setup files. Everything downstream stays synchronous. Both esbuild configs copy the
+emscripten glue and `.wasm` next to the bundle so the loader self-locates. What the engine does not
+own — reading and writing workspace files, scene-context assembly, and the zod adapters for webview
+messages — lives in `apps/desktop/src/domain/files/storyFiles.ts`,
+`apps/desktop/src/domain/sceneContext.ts`, and `apps/desktop/src/shared/cardSchema.ts`.
+
 Both apps write through the same codecs, so a card edited in Telegram and a card edited in VSCode
-serialize to identical bytes — the shared fixtures in `packages/story-format/test/fixtures/` are the
-round-trip guard for that claim.
+serialize to identical bytes — both apps run the same wasm codec, and the fixtures copied into
+`apps/desktop/test/fixtures/` and `apps/bot/test/fixtures/` are the round-trip guard for that claim.
 
 ## Current Extension-Host Architecture
 

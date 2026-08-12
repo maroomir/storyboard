@@ -17,9 +17,6 @@
       "node"
     ],
     "paths": {
-      "@storyboard/story-format": [
-        "../story-format/src/index.ts"
-      ]
     }
   },
   "include": [

@@ -92,9 +92,9 @@ describe('WorkspaceStore', () => {
   });
 });
 
-// The whole point of packages/story-format is that both apps agree on the bytes. If the bot ever
+// The whole point of the shared wasm engine is that both apps agree on the bytes. If the bot ever
 // re-serializes a card differently from the extension, this fails.
-describe('story-format round-trip', () => {
+describe('format engine round-trip', () => {
   it.each(['character.card', 'background.card'])(
     'round-trips %s without changing the serialized bytes',
     (fixtureName) => {
