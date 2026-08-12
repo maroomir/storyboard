@@ -13,6 +13,7 @@ The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/
 | `apps/desktop` | `storyboard` | The VSCode extension. Holds the released version and the only `v*` tag. |
 | `apps/bot` | `storygram` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
 | (external) | `@seedkernel/wasm` | Workspace **format engine** compiled to WebAssembly: card/scene/draft/outline/bible codecs, path conventions, canon, manuscript assembly. Lives in the [seedkernel](https://github.com/webfic/seedkernel) repository and is vendored as `vendor/seedkernel-wasm-*.tgz`. |
+| (external) | `@weeding/wasm` | Draft **diagnostics engine** compiled to WebAssembly: `analyzeSlop` + phrase dictionary, JSON array repair, trait similarity/reconciliation, scene-coverage coercion and summary. Lives in the weeding repository (webfic/weeding) and is vendored as `vendor/weeding-wasm-*.tgz`. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-git` | `@storyboard/story-git` | Commit/sync layer: `GitClient`, `SyncService`, push scheduling, and workspace git onboarding. |
 
@@ -20,9 +21,9 @@ Packages expose TypeScript **source** (no build step); each app resolves them th
 tsconfig `paths`, esbuild `alias`, and vitest `alias`. `apps/desktop/scripts/check-architecture.mjs`
 enforces that no package imports `vscode` or an app module.
 
-The format engine is WebAssembly, so it must be loaded once before any codec runs: the extension
-awaits it in `StoryboardApplication.initialize`, the bot in `src/index.ts`, and the test suites in
-their vitest setup files. Everything downstream stays synchronous. Both esbuild configs copy the
+The format and diagnostics engines are WebAssembly, so each must be loaded once before any codec
+or diagnostic runs: the extension awaits them in `StoryboardApplication.initialize`, the bot in
+`src/index.ts`, and the test suites in their vitest setup files. Everything downstream stays synchronous. Both esbuild configs copy the
 emscripten glue and `.wasm` next to the bundle so the loader self-locates. What the engine does not
 own — reading and writing workspace files, scene-context assembly, and the zod adapters for webview
 messages — lives in `apps/desktop/src/domain/files/storyFiles.ts`,
