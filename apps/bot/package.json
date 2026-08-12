@@ -24,6 +24,7 @@
     "@storyboard/story-ai": "*",
     "@seedkernel/wasm": "file:../../vendor/seedkernel-wasm-0.1.1.tgz",
     "@storyboard/story-git": "*",
+    "@weeding/wasm": "file:../../vendor/weeding-wasm-0.1.0.tgz",
     "@storyboard/story-pipeline": "*",
     "better-sqlite3": "^11.8.1",
     "grammy": "^1.30.0",

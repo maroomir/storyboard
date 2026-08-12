@@ -614,6 +614,7 @@
     "@storyboard/story-ai": "*",
     "@seedkernel/wasm": "file:../../vendor/seedkernel-wasm-0.1.1.tgz",
     "@storyboard/story-pipeline": "*",
+    "@weeding/wasm": "file:../../vendor/weeding-wasm-0.1.0.tgz",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",
     "d3-force": "^3.0.0",

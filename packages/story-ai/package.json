@@ -13,6 +13,7 @@
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "^0.24.1",
     "@seedkernel/wasm": "file:../../vendor/seedkernel-wasm-0.1.1.tgz",
+    "@weeding/wasm": "file:../../vendor/weeding-wasm-0.1.0.tgz",
     "axios": "^1.16.0",
     "openai": "^6.35.0",
     "zod": "^4.4.2"
