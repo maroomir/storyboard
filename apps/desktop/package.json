@@ -7,7 +7,7 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/webfic/storyboard.git"
+    "url": "git+ssh://git@github.com/maroomir/storyboard.git"
   },
   "engines": {
     "vscode": "^1.90.0"
@@ -579,7 +579,7 @@
     "format": "prettier --write .",
     "format:check:src": "prettier --check src",
     "package": "npm run package:vsix",
-    "package:vsix": "mkdir -p dist && npm run build && vsce package --no-dependencies --baseContentUrl https://github.com/webfic/storyboard/blob/HEAD/apps/desktop/"
+    "package:vsix": "mkdir -p dist && npm run build && vsce package --no-dependencies --baseContentUrl https://github.com/maroomir/storyboard/blob/HEAD/apps/desktop/"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
