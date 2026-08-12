@@ -1,5 +1,5 @@
-import type { Character } from '@storyboard/story-format';
-import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
+import type { Character } from '@seedkernel/wasm';
+import { formatCardAttributes, joinCardText } from '@seedkernel/wasm';
 import { voiceStyleLines, type StyleDirective } from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

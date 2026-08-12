@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { ZodError, type ZodIssue } from 'zod';
-
-import { CardParseError, parseCard } from '@storyboard/story-format';
+import { CardParseError, parseCard } from '@seedkernel/wasm';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { isIgnoredSampleCardFileName } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
@@ -22,15 +20,18 @@ export interface RegisterCardDiagnosticsProviderDependencies {
 }
 
 // NOTE: 무효 카드는 씬 생성에서 조용히 탈락하므로(sceneContext), Problems 패널이 사용자에게 유일한
-// 신호다. ZodError.issues를 필드 단위 스팬으로 옮겨 어떤 키가 왜 틀렸는지 보여준다.
+// 신호다. 엔진이 돌려주는 `키: 사유` 목록을 필드 단위 스팬으로 옮겨 어떤 키가 왜 틀렸는지 보여준다.
 export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosticSpan[] {
   if (error instanceof CardParseError) {
-    if (error.code === 'invalid-card-schema' && error.cause instanceof ZodError) {
-      return error.cause.issues.map((issue) => schemaIssueToSpan(text, issue));
+    if (error.code === 'invalid-card-schema') {
+      const issues = parseSchemaIssues(error.message);
+      if (issues.length > 0) {
+        return issues.map((issue) => schemaIssueToSpan(text, issue));
+      }
     }
 
     if (error.code === 'invalid-yaml') {
-      return [yamlErrorToSpan(text, error.cause, error.message)];
+      return [yamlErrorToSpan(text, undefined, error.message)];
     }
   }
 
@@ -38,12 +39,34 @@ export function mapCardErrorToSpans(text: string, error: unknown): CardDiagnosti
   return [{ line: 0, start: 0, end: firstLineLength(text), message }];
 }
 
-function schemaIssueToSpan(text: string, issue: ZodIssue): CardDiagnosticSpan {
-  const message =
-    issue.path.length > 0 ? `${issue.path.join('.')}: ${issue.message}` : issue.message;
-  const key = [...issue.path]
+interface CardSchemaIssue {
+  readonly path: string;
+  readonly message: string;
+}
+
+// The engine reports `Card 스키마가 올바르지 않습니다. (path: reason; path: reason)`; each entry
+// carries the dotted field path the reason belongs to.
+function parseSchemaIssues(message: string): CardSchemaIssue[] {
+  const detail = /\((.*)\)\s*$/s.exec(message)?.[1];
+  if (detail === undefined) {
+    return [];
+  }
+
+  return detail.split('; ').flatMap((entry) => {
+    const separator = entry.indexOf(': ');
+    if (separator === -1) {
+      return [{ path: '', message: entry }];
+    }
+    return [{ path: entry.slice(0, separator), message: entry }];
+  });
+}
+
+function schemaIssueToSpan(text: string, issue: CardSchemaIssue): CardDiagnosticSpan {
+  const message = issue.message;
+  const key = issue.path
+    .split('.')
     .reverse()
-    .find((segment): segment is string => typeof segment === 'string');
+    .find((segment) => segment.length > 0);
   const position = key ? locateKey(text, key) : undefined;
 
   return position

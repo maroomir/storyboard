@@ -4,7 +4,8 @@ import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';
+import { createDraft, parseDraft } from '@seedkernel/wasm';
+import { readDraftFile, writeDraftFile } from '@/domain/files/storyFiles';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 
 export type ApplyDraftFormatRequest = {

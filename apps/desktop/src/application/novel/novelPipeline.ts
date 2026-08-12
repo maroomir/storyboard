@@ -2,7 +2,7 @@ import {
   getStoryboardProjectPaths,
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import { resolveScenePrefixDigitCount } from '@seedkernel/wasm';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import {
   cancel,

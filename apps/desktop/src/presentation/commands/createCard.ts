@@ -2,9 +2,9 @@ import * as vscode from 'vscode';
 
 import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';
 import { getTargetWorkspaceFolder } from '../../infrastructure/vscode/workspace';
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
-import { cardIdPattern } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { createEmptyBackground, createEmptyCharacter } from '@seedkernel/wasm';
+import { cardIdPattern } from '@seedkernel/wasm';
+import type { StoryboardCard } from '@seedkernel/wasm';
 
 const createCharacterCommand = 'storyboard.character.create';
 const createBackgroundCommand = 'storyboard.background.create';

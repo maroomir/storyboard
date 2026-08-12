@@ -1,13 +1,8 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
-import type {
-  BackgroundCard,
-  BibleFact,
-  CharacterCard,
-  ProjectFormat,
-} from '@storyboard/story-format';
+import { formatCardAttributes, joinCardText } from '@seedkernel/wasm';
+import type { BackgroundCard, BibleFact, CharacterCard, ProjectFormat } from '@seedkernel/wasm';
 import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
 

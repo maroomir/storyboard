@@ -7,7 +7,7 @@ import type {
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-format';
+import { parseDraft } from '@seedkernel/wasm';
 
 const expandDraftCommand = 'storyboard.draft.expand';
 

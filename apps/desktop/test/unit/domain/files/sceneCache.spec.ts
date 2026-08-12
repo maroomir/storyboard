@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 import {
   computeSceneInputHash,
   parseSceneCache,

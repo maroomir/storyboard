@@ -6,8 +6,8 @@ import {
 } from '../../application/cards/recommendCardsUseCase';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import type { RecommendationCategory } from '@storyboard/story-ai';
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { createEmptyBackground, createEmptyCharacter } from '@seedkernel/wasm';
+import type { StoryboardCard } from '@seedkernel/wasm';
 import type { RecommendedCard } from '../../infrastructure/ai/cardRecommendationBuilder';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';

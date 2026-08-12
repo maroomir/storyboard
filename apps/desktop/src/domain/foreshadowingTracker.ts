@@ -1,5 +1,5 @@
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { flattenChapterPlan } from '@seedkernel/wasm';
+import type { ChapterPlan } from '@seedkernel/wasm';
 
 export interface ForeshadowingEntry {
   readonly item: string;

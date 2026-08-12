@@ -10,7 +10,7 @@ import {
   type NovelRunStateFileSystem,
 } from '../../../domain/files/novelRunState';
 import { readProjectJson } from '../projectJson';
-import type { StoryboardProject } from '@storyboard/story-format';
+import type { StoryboardProject } from '@seedkernel/wasm';
 
 const VSCODE_FILE_SYSTEM: NovelRunStateFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

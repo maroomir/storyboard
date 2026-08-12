@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest"
 
-import { bibleFactSchema, createEmptyBible, selectBibleFacts } from '@storyboard/story-format';
-import type { StoryBible } from '@storyboard/story-format';
+import { createEmptyBible, parseBible, selectBibleFacts } from '@seedkernel/wasm';
+
+// Fact validation lives in the wasm engine; a single fact is checked by parsing a one-fact bible.
+const bibleFactSchema = {
+  safeParse: (fact: unknown): { success: boolean } => {
+    try {
+      parseBible(JSON.stringify({ version: '1.0.0', facts: [fact] }));
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  },
+};
+import type { StoryBible } from '@seedkernel/wasm';
 
 const bible: StoryBible = {
   version: "1.0.0",

@@ -3,8 +3,8 @@ import type * as vscode from 'vscode';
 import type { ISceneCacheRepository } from '../ports/repositories';
 import { draftHistorySceneDirectory, joinUri } from '../../infrastructure/vscode/pathConventions';
 import { uriExists } from '../../infrastructure/vscode/workspace';
-import { createDraft, joinCardText } from '@storyboard/story-format';
-import type { BackgroundCard } from '@storyboard/story-format';
+import { createDraft, joinCardText } from '@seedkernel/wasm';
+import type { BackgroundCard } from '@seedkernel/wasm';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { type SceneCacheRecord } from '../../domain/files/sceneCache';
 import {

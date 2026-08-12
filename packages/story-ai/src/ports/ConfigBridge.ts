@@ -5,7 +5,7 @@ import {
   type AiProviderId,
   type AiTaskName,
 } from '../contracts/aiTypes';
-import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
+import type { ScenePrefixDigitsInspectLike } from '@seedkernel/wasm';
 import { storyboardModelCatalog } from '../contracts/models';
 
 const storyboardWorkspaceConfigurationTarget = 2;

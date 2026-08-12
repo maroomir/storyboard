@@ -1,5 +1,6 @@
-import { readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
+import { readCardFile, writeCardFile } from '@/domain/files/storyFiles';
+import type { CharacterCard } from '@seedkernel/wasm';
+import type { CardFileSystem } from '@/domain/files/storyFiles';
 import { parseBulletList } from '@storyboard/story-ai';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
 import { reconcileCharacterTraits } from '@/domain/traitsProcessor';

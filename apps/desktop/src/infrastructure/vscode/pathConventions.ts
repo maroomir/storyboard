@@ -1,5 +1,5 @@
 import {
-  STORYBOARD_RELATIVE_PATHS,
+  storyboardRelativePaths,
   backgroundCardRelativePath,
   characterCardRelativePath,
   characterProfileRelativePath,
@@ -10,10 +10,11 @@ import {
   parseCardIdFromFileName,
   sceneFileRelativePath,
   sceneRelativePath,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import * as vscode from 'vscode';
 
-export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
+export { isHiddenSceneFileName } from '@seedkernel/wasm';
+export { isIgnoredSampleCardFileName } from '@/domain/sampleCard';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: vscode.Uri;
@@ -56,39 +57,40 @@ function resolveWorkspacePath(workspaceRoot: vscode.Uri, relativePath: string): 
 export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): StoryboardProjectPaths {
   const resolve = (relativePath: string): vscode.Uri =>
     resolveWorkspacePath(workspaceRoot, relativePath);
+  const relativePaths = storyboardRelativePaths();
 
   return {
     workspaceRoot,
-    metadataDirectory: resolve(STORYBOARD_RELATIVE_PATHS.metadataDirectory),
-    projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
-    cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
-    usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
-    novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
-    sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
-    personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
-    backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
-    bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),
-    cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
-    studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
-    bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
-    bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),
-    outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),
-    outlineSynopsis: resolve(STORYBOARD_RELATIVE_PATHS.outlineSynopsis),
-    outlineChapters: resolve(STORYBOARD_RELATIVE_PATHS.outlineChapters),
-    outlineRevisionPlan: resolve(STORYBOARD_RELATIVE_PATHS.outlineRevisionPlan),
-    characterDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterDirectory),
-    characterProfileDirectory: resolve(STORYBOARD_RELATIVE_PATHS.characterProfileDirectory),
-    sampleCharacterCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleCharacterCard),
-    backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
-    sampleBackgroundCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard),
-    sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
-    sampleScene: resolve(STORYBOARD_RELATIVE_PATHS.sampleScene),
-    draftDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftDirectory),
-    draftHistoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory),
-    manuscriptDirectory: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory),
-    manuscriptVolume: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptVolume),
-    gitignore: resolve(STORYBOARD_RELATIVE_PATHS.gitignore),
-    readme: resolve(STORYBOARD_RELATIVE_PATHS.readme),
+    metadataDirectory: resolve(relativePaths.metadataDirectory),
+    projectJson: resolve(relativePaths.projectJson),
+    cacheDirectory: resolve(relativePaths.cacheDirectory),
+    usageLedger: resolve(relativePaths.usageLedger),
+    novelRunState: resolve(relativePaths.novelRunState),
+    sceneCacheDirectory: resolve(relativePaths.sceneCacheDirectory),
+    personaMemoryDirectory: resolve(relativePaths.personaMemoryDirectory),
+    backgroundMemoryDirectory: resolve(relativePaths.backgroundMemoryDirectory),
+    bibleCacheDirectory: resolve(relativePaths.bibleCacheDirectory),
+    cardCacheDirectory: resolve(relativePaths.cardCacheDirectory),
+    studioSessionDirectory: resolve(relativePaths.studioSessionDirectory),
+    bibleDirectory: resolve(relativePaths.bibleDirectory),
+    bibleCanon: resolve(relativePaths.bibleCanon),
+    outlineDirectory: resolve(relativePaths.outlineDirectory),
+    outlineSynopsis: resolve(relativePaths.outlineSynopsis),
+    outlineChapters: resolve(relativePaths.outlineChapters),
+    outlineRevisionPlan: resolve(relativePaths.outlineRevisionPlan),
+    characterDirectory: resolve(relativePaths.characterDirectory),
+    characterProfileDirectory: resolve(relativePaths.characterProfileDirectory),
+    sampleCharacterCard: resolve(relativePaths.sampleCharacterCard),
+    backgroundDirectory: resolve(relativePaths.backgroundDirectory),
+    sampleBackgroundCard: resolve(relativePaths.sampleBackgroundCard),
+    sceneDirectory: resolve(relativePaths.sceneDirectory),
+    sampleScene: resolve(relativePaths.sampleScene),
+    draftDirectory: resolve(relativePaths.draftDirectory),
+    draftHistoryDirectory: resolve(relativePaths.draftHistoryDirectory),
+    manuscriptDirectory: resolve(relativePaths.manuscriptDirectory),
+    manuscriptVolume: resolve(relativePaths.manuscriptVolume),
+    gitignore: resolve(relativePaths.gitignore),
+    readme: resolve(relativePaths.readme),
   };
 }
 

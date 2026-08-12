@@ -6,8 +6,10 @@ import {
   isDraftMarkdownFile,
   sceneFilePath,
 } from '../../infrastructure/vscode/pathConventions';
-import { buildSceneContext, parseDraft, readSceneFile } from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import { parseDraft } from '@seedkernel/wasm';
+import { readSceneFile } from '@/domain/files/storyFiles';
+import { buildSceneContext } from '@/domain/sceneContext';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

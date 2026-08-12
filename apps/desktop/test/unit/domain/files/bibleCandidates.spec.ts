@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { parseBibleCandidates, serializeBibleCandidates, type BibleCandidateRecord } from "@/domain/files/bibleCandidates"
-import { buildCandidateFact } from '@storyboard/story-format';
+import { buildCandidateFact } from '@seedkernel/wasm';
 
 const record: BibleCandidateRecord = {
   sceneStem: "01-prologue",

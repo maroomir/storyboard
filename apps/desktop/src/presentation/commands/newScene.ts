@@ -11,13 +11,13 @@ import {
   uriExists,
 } from '../../infrastructure/vscode/workspace';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneFileName } from '@seedkernel/wasm';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
   validateSceneSlugInput,
 } from './newSceneHelpers';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import { resolveScenePrefixDigitCount } from '@seedkernel/wasm';
 
 const createSceneCommand = 'storyboard.scene.create';
 const openSceneDraftCommand = 'storyboard.scene.openDraft';

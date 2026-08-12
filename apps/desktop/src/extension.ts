@@ -4,9 +4,9 @@ import { StoryboardApplication } from './bootstrap/storyboardApplication';
 
 let application: StoryboardApplication | undefined;
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   application = new StoryboardApplication();
-  application.initialize(context);
+  await application.initialize(context);
 }
 
 export function deactivate(): void {

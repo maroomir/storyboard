@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import { buildChapterSummariesMarkdown, type ChapterSummary } from '../../domain/chapterSummaries';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript } from '@seedkernel/wasm';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {

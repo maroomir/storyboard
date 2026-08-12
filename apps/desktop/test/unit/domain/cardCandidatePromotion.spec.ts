@@ -8,7 +8,7 @@ import {
   selectNewCardCandidateItems
 } from "@/domain/cardCandidatePromotion"
 import type { CardCandidateRecord } from "@/shared/cardCandidates"
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@seedkernel/wasm';
 
 function record(sceneStem: string, characters: CardCandidateRecord["characters"]): CardCandidateRecord {
   return { sceneStem, generatedAt: "2026-06-25T00:00:00.000Z", characters }

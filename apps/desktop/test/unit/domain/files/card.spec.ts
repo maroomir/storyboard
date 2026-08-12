@@ -4,10 +4,10 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { CardParseError, parseCard, serializeCard } from '@seedkernel/wasm';
+import type { StoryboardCard } from '@seedkernel/wasm';
 const cardsFixtureDirectory = fileURLToPath(
-  new URL('../../../../../../packages/story-format/test/fixtures/cards/', import.meta.url),
+  new URL('../../../fixtures/cards/', import.meta.url),
 );
 
 describe('card file codec', () => {

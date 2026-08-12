@@ -5,13 +5,13 @@ import {
   assembleManuscript,
   type AssembledManuscript,
   type ManuscriptDraftEntry,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
 } from '../../domain/foreshadowingTracker';
-import type { ChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@seedkernel/wasm';
 
 export type ManuscriptAssemblySource = {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;

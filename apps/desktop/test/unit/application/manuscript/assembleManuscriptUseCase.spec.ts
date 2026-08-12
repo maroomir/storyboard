@@ -5,7 +5,7 @@ import {
   AssembleManuscriptUseCase,
   type IManuscriptAssemblyRepository
 } from "@/application/manuscript/assembleManuscriptUseCase"
-import type { ChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@seedkernel/wasm';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

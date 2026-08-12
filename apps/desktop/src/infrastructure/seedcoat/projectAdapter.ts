@@ -1,13 +1,13 @@
 import { ZodError } from 'zod';
 
 import {
-  backgroundCardSchema,
-  characterCardSchema,
+  CardParseError,
   joinCardText,
+  parseCard,
   splitCardTextToList,
   storyboardProjectVersion,
-} from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard, StoryboardProject } from '@storyboard/story-format';
+} from '@seedkernel/wasm';
+import type { BackgroundCard, CharacterCard, StoryboardProject } from '@seedkernel/wasm';
 import { storyboardProjectSchema } from '@/infrastructure/persistence/projectJson';
 import { SEED_NO_HISTORY_MESSAGE } from '@/infrastructure/seedcoat/projectStorageMessages';
 import {
@@ -126,18 +126,21 @@ function parseProjectPart(value: unknown): StoryboardProject {
   }
 }
 
+// NOTE: The engine parses text, so an already-normalized object is handed over as JSON.
+function parseSeedCard(card: unknown): CharacterCard | BackgroundCard {
+  return parseCard(JSON.stringify(card));
+}
+
 function parseCharacterArray(value: unknown): CharacterCard[] {
   if (!Array.isArray(value)) {
     throw new Error('characters: 데이터 형식이 올바르지 않습니다.');
   }
   return value.map((item, i) => {
     try {
-      return characterCardSchema.parse(normalizeSeedCharacter(item));
+      return parseSeedCard(normalizeSeedCharacter(item)) as CharacterCard;
     } catch (error) {
-      if (error instanceof ZodError) {
-        throw new Error(
-          `characters[${i}]: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`,
-        );
+      if (error instanceof CardParseError) {
+        throw new Error(`characters[${i}]: 스키마 검증에 실패했습니다 — ${error.message}`);
       }
       throw error;
     }
@@ -150,12 +153,10 @@ function parseBackgroundArray(value: unknown): BackgroundCard[] {
   }
   return value.map((item, i) => {
     try {
-      return backgroundCardSchema.parse(normalizeSeedBackground(item));
+      return parseSeedCard(normalizeSeedBackground(item)) as BackgroundCard;
     } catch (error) {
-      if (error instanceof ZodError) {
-        throw new Error(
-          `backgrounds[${i}]: 스키마 검증에 실패했습니다 — ${describeZodIssues(error)}`,
-        );
+      if (error instanceof CardParseError) {
+        throw new Error(`backgrounds[${i}]: 스키마 검증에 실패했습니다 — ${error.message}`);
       }
       throw error;
     }
@@ -227,7 +228,7 @@ export async function encodeWorkspaceToSeed(content: WorkspaceContent): Promise<
   const project = content.project;
   const state: SeedState = {
     project: {
-      version: project.version,
+      version: storyboardProjectVersion,
       id: project.id,
       name: project.name,
       format: project.format,

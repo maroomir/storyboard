@@ -1,6 +1,7 @@
-import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
+import type { ProjectFormat } from '@seedkernel/wasm';
+import type { SceneContext } from '../../../apps/desktop/src/domain/sceneContext';
 import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
-import { createEmptyBackground } from '@storyboard/story-format';
+import { createEmptyBackground } from '@seedkernel/wasm';
 import {
   condensePreviousContext,
   dedupeSituations,

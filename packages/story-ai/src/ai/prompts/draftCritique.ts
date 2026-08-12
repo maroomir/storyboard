@@ -1,4 +1,4 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
+import { pointOfViewLabel } from '@seedkernel/wasm';
 import type { StyleDirective } from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
@@ -64,7 +64,7 @@ function buildUserBlock(input: DraftCritiqueInput): string {
     sections.push(`[문체 제약]\n${input.styleConstraints.join('\n')}`);
   }
   if (input.styleDirective?.pov) {
-    sections.push(`[시점]\n${pointOfViewLabels[input.styleDirective.pov]}`);
+    sections.push(`[시점]\n${pointOfViewLabel(input.styleDirective.pov)}`);
   }
   if (input.styleDirective?.genre) {
     sections.push(`[장르·톤]\n${input.styleDirective.genre}`);

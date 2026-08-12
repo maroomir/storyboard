@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { SceneFile, StoryboardCard, StoryboardProject } from '@storyboard/story-format';
+import type { SceneFile, StoryboardCard, StoryboardProject } from '@seedkernel/wasm';
 export interface StoryFileSnapshot {
   readonly uri: vscode.Uri;
   readonly sha256: string;

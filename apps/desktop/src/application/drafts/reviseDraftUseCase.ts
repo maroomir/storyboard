@@ -2,17 +2,14 @@ import type * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { joinUri, type StoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import { createDraft, parseDraft } from '@seedkernel/wasm';
+import { readDraftFile, readSceneFile, writeDraftFile } from '@/domain/files/storyFiles';
 import {
   buildNarrativeContext,
   buildSceneContext,
-  createDraft,
   formatBibleFactLines,
-  parseDraft,
-  readDraftFile,
-  readSceneFile,
-  writeDraftFile,
-} from '@storyboard/story-format';
-import type { ProjectSetting } from '@storyboard/story-format';
+} from '@/domain/sceneContext';
+import type { ProjectSetting } from '@seedkernel/wasm';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

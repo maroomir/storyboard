@@ -1,4 +1,4 @@
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { storyboardRelativePaths } from '@seedkernel/wasm';
 
 import { DuplicateJobError, type IEnqueueJob } from '../../gen/jobManager';
 import { defaultJobClass, type JobKind, type JobSpec } from '../../gen/types';
@@ -171,7 +171,7 @@ export function createOutlineCommandHandler(): ICommandHandler {
     '/outline',
     '시놉시스 생성 (.storyboard/outline/synopsis.md)',
     'outline',
-    STORYBOARD_RELATIVE_PATHS.outlineSynopsis,
+    storyboardRelativePaths().outlineSynopsis,
   );
 }
 
@@ -180,7 +180,7 @@ export function createPlanCommandHandler(): ICommandHandler {
     '/plan',
     '챕터 계획 생성 (.storyboard/outline/chapters.yaml)',
     'plan',
-    STORYBOARD_RELATIVE_PATHS.outlineChapters,
+    storyboardRelativePaths().outlineChapters,
   );
 }
 
@@ -193,7 +193,7 @@ export function createManuscriptCommandHandler(): ICommandHandler {
       await enqueue(ctx, {
         kind: 'manuscript',
         class: defaultJobClass('manuscript'),
-        target: { file: STORYBOARD_RELATIVE_PATHS.manuscriptVolume },
+        target: { file: storyboardRelativePaths().manuscriptVolume },
         chatId: ctx.chatId,
       });
     },

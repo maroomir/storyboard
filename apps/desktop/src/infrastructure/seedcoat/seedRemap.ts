@@ -1,7 +1,12 @@
-import { applyIdMapping, validateIdMapping, type IdMappingIssue } from '@seedcoat/wasm';
+import {
+  applyIdMapping,
+  validateIdMapping,
+  type IdMappableState,
+  type IdMappingIssue,
+} from '@seedcoat/wasm';
 
-import { setCardId } from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+import { setCardId } from '@seedkernel/wasm';
+import type { CharacterCard } from '@seedkernel/wasm';
 import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 
 export class SeedIdMappingConflictError extends Error {
@@ -37,11 +42,18 @@ function throwFromMappingIssues(issues: readonly IdMappingIssue[]): void {
   }
 }
 
+// NOTE: seedcoat's IdMappableState requires an index signature that seedkernel's card interfaces
+// deliberately do not declare. The shapes match field-for-field, so this adapter is where the two
+// engines' contracts are reconciled.
+function asIdMappableState(seed: DecodedSeedContent): IdMappableState {
+  return seed as unknown as IdMappableState;
+}
+
 export function validateSeedIdMapping(
   seed: DecodedSeedContent,
   mapping: ReadonlyMap<string, string>,
 ): void {
-  throwFromMappingIssues(validateIdMapping(seed, mapping));
+  throwFromMappingIssues(validateIdMapping(asIdMappableState(seed), mapping));
 }
 
 export function applySeedIdMapping(
@@ -54,7 +66,10 @@ export function applySeedIdMapping(
 
   validateSeedIdMapping(seed, mapping);
 
-  const remapped = applyIdMapping(seed, mapping);
+  const remapped = applyIdMapping(
+    asIdMappableState(seed),
+    mapping,
+  ) as unknown as DecodedSeedContent;
 
   // applyIdMapping rewrites ids/relations/characterIds but deliberately leaves
   // the app-specific profile/<id>.png path alone; sync it card-by-card so the

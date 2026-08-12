@@ -15,12 +15,16 @@ import type {
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../../domain/chapterSummaries';
 import type { StoryboardLogger } from '../../vscode/logger';
-import type { AssembledManuscript } from '@storyboard/story-format';
+import type { AssembledManuscript } from '@seedkernel/wasm';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 import { uriExists } from '../../vscode/workspace';
-import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
-import type { BibleFileSystem, DraftFileSystem, OutlineFileSystem } from '@storyboard/story-format';
+import { readBibleFile, readChapterPlanFile } from '@/domain/files/storyFiles';
+import type {
+  BibleFileSystem,
+  DraftFileSystem,
+  OutlineFileSystem,
+} from '@/domain/files/storyFiles';
 import { readProjectJson } from '../projectJson';
 
 const VSCODE_FILE_SYSTEM: DraftFileSystem & OutlineFileSystem & BibleFileSystem = {

@@ -3,14 +3,11 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { buildSceneSeeds, type GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
-import {
-  ChapterPlanParseError,
-  parseSceneFileName,
-  readChapterPlanFile,
-} from '@storyboard/story-format';
-import type { OutlineFileSystem } from '@storyboard/story-format';
+import { ChapterPlanParseError, parseSceneFileName } from '@seedkernel/wasm';
+import { readChapterPlanFile } from '@/domain/files/storyFiles';
+import type { OutlineFileSystem } from '@/domain/files/storyFiles';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import { resolveScenePrefixDigitCount } from '@seedkernel/wasm';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';
 

@@ -2,7 +2,7 @@ import type {
   OutlineBrief,
   OutlineCharacterBrief,
   OutlineSynopsis,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { briefToUserBlock } from './outlineSynopsis';
 

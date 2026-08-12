@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/domain/biblePromotion"
-import { buildCandidateFact } from '@storyboard/story-format';
-import type { StoryBible } from '@storyboard/story-format';
+import { buildCandidateFact } from '@seedkernel/wasm';
+import type { StoryBible } from '@seedkernel/wasm';
 import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
 
 function candidateRecord(sceneStem: string, facts: BibleCandidateRecord["facts"]): BibleCandidateRecord {

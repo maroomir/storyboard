@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { ProjectFormat } from '@seedkernel/wasm';
 import { narrativeStyleLines, type StyleDirective } from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 

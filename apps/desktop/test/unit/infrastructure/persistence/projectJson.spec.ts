@@ -5,7 +5,7 @@ import {
   parseProjectJson,
   serializeProjectJson
 } from "@/infrastructure/persistence/projectJson"
-import type { StoryboardProject } from '@storyboard/story-format';
+import type { StoryboardProject } from '@seedkernel/wasm';
 
 function baseProject(): StoryboardProject {
   return createDefaultProjectJson({ name: "MagicBoy" })

@@ -7,8 +7,9 @@ import {
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
-import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
-import type { BibleFileSystem } from '@storyboard/story-format';
+import { createEmptyBible } from '@seedkernel/wasm';
+import { readBibleFile } from '@/domain/files/storyFiles';
+import type { BibleFileSystem } from '@/domain/files/storyFiles';
 import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,

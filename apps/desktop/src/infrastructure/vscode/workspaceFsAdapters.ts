@@ -5,7 +5,7 @@ import { type StoryboardProjectPaths } from './pathConventions';
 import type {
   SceneContextWorkspaceFileSystem,
   SceneContextWorkspacePaths,
-} from '@storyboard/story-format';
+} from '@/domain/sceneContext';
 
 export const vscodeFsAdapter = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>

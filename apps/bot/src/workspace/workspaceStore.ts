@@ -3,11 +3,10 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 
 import {
-  STORYBOARD_RELATIVE_PATHS,
+  storyboardRelativePaths,
   backgroundCardRelativePath,
   characterCardRelativePath,
   draftRelativePath,
-  isIgnoredSampleCardFileName,
   parseCard,
   parseCardIdFromFileName,
   parseChapterPlan,
@@ -20,7 +19,8 @@ import {
   type StoryBible,
   type StoryboardCard,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
+import { isIgnoredSampleCardFileName } from './sampleCard';
 
 export type WorkspaceErrorCode = 'not-a-workspace' | 'unreadable' | 'invalid-project';
 
@@ -84,7 +84,7 @@ export class WorkspaceStore {
   // A directory is a Storyboard workspace when it carries the project manifest the extension
   // activates on.
   public async assertIsWorkspace(): Promise<void> {
-    const projectPath = this.absolutePath(STORYBOARD_RELATIVE_PATHS.projectJson);
+    const projectPath = this.absolutePath(storyboardRelativePaths().projectJson);
 
     try {
       const stats = await stat(projectPath);
@@ -104,7 +104,7 @@ export class WorkspaceStore {
   }
 
   public async readProject(): Promise<ReadFile<StoryboardProject>> {
-    const relativePath = STORYBOARD_RELATIVE_PATHS.projectJson;
+    const relativePath = storyboardRelativePaths().projectJson;
     const raw = await this.readText(relativePath);
 
     let value: StoryboardProject;
@@ -119,11 +119,11 @@ export class WorkspaceStore {
 
   public async listCards(): Promise<CardSummary[]> {
     const character = await this.listCardsIn(
-      STORYBOARD_RELATIVE_PATHS.characterDirectory,
+      storyboardRelativePaths().characterDirectory,
       'character',
     );
     const background = await this.listCardsIn(
-      STORYBOARD_RELATIVE_PATHS.backgroundDirectory,
+      storyboardRelativePaths().backgroundDirectory,
       'background',
     );
 
@@ -142,7 +142,7 @@ export class WorkspaceStore {
   }
 
   public async listScenes(): Promise<SceneSummary[]> {
-    const names = await this.listDirectory(STORYBOARD_RELATIVE_PATHS.sceneDirectory);
+    const names = await this.listDirectory(storyboardRelativePaths().sceneDirectory);
     const scenes: SceneSummary[] = [];
 
     for (const name of names) {
@@ -159,7 +159,7 @@ export class WorkspaceStore {
         stem: `${parts.orderText}-${parts.slug}`,
         order: parts.order,
         slug: parts.slug,
-        relativePath: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${name}`,
+        relativePath: `${storyboardRelativePaths().sceneDirectory}/${name}`,
       });
     }
 
@@ -189,7 +189,7 @@ export class WorkspaceStore {
   }
 
   public async readBible(): Promise<ReadFile<StoryBible> | undefined> {
-    const relativePath = STORYBOARD_RELATIVE_PATHS.bibleCanon;
+    const relativePath = storyboardRelativePaths().bibleCanon;
 
     try {
       const raw = await this.readText(relativePath);
@@ -200,7 +200,7 @@ export class WorkspaceStore {
   }
 
   public async readChapterPlan(): Promise<ReadFile<ChapterPlan> | undefined> {
-    const relativePath = STORYBOARD_RELATIVE_PATHS.outlineChapters;
+    const relativePath = storyboardRelativePaths().outlineChapters;
 
     try {
       const raw = await this.readText(relativePath);
@@ -211,7 +211,7 @@ export class WorkspaceStore {
   }
 
   public async readSynopsis(): Promise<ReadFile<string> | undefined> {
-    const relativePath = STORYBOARD_RELATIVE_PATHS.outlineSynopsis;
+    const relativePath = storyboardRelativePaths().outlineSynopsis;
 
     try {
       const raw = await this.readText(relativePath);

@@ -1,9 +1,9 @@
 import {
-  STORYBOARD_RELATIVE_PATHS,
+  storyboardRelativePaths,
   canonicalizeCardText,
   draftRelativePath,
   type StoryboardCard,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 
 import type { MutateGate } from '../workspace/mutateGate';
 import type { MutateOutcome, WorkspacePlan, WorkspaceWrite } from '../workspace/workspaceChanges';
@@ -154,7 +154,7 @@ export class ContentService {
   }
 
   private async nextDraftHistoryPath(sceneStem: string): Promise<string> {
-    const directory = `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}`;
+    const directory = `${storyboardRelativePaths().draftHistoryDirectory}/${sceneStem}`;
     const existing = await this.store.listDirectoryNames(directory);
     // Count-based numbering would collide after a manual deletion; continue from the highest
     // revision actually present.

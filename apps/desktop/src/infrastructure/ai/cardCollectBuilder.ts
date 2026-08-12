@@ -1,5 +1,5 @@
 import { shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { BackgroundCard, CharacterCard, StoryboardCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, StoryboardCard } from '@seedkernel/wasm';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

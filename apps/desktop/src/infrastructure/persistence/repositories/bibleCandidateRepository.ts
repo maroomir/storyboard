@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 
 import type { IBibleCandidateRepository } from '../../../application/project/promoteBibleCandidatesUseCase';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
-import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
-import type { StoryBible } from '@storyboard/story-format';
+import { createEmptyBible } from '@seedkernel/wasm';
+import { readBibleFile, writeBibleFile } from '@/domain/files/storyFiles';
+import type { StoryBible } from '@seedkernel/wasm';
 import {
   readBibleCandidateFile,
   type BibleCandidateRecord,

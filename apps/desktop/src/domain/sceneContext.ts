@@ -1,16 +1,18 @@
-import { isBackgroundCard, type BackgroundCard, type CharacterCard } from './card';
-import type { SceneFile } from './scene';
-import { readCardFile } from './files/card';
-import { readBibleFile } from './files/bible';
 import {
   createEmptyBible,
+  isBackgroundCard,
+  detectCharactersInText,
   selectInjectedFacts,
+  type BackgroundCard,
   type BibleFact,
   type BibleFactSubject,
+  type CharacterCard,
+  type SceneFile,
   type StoryBible,
-} from './bible';
+} from '@seedkernel/wasm';
+
+import { readBibleFile, readCardFile } from './files/storyFiles';
 import { isIgnoredSampleCardFileName } from './sampleCard';
-import { detectCharactersInText } from './characterDetector';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown;

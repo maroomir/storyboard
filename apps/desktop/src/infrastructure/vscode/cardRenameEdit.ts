@@ -7,7 +7,7 @@ import {
   rewriteCardIdReferences,
   serializeCard,
   setCardId,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import {
   characterProfilePath,
   getStoryboardProjectPaths,

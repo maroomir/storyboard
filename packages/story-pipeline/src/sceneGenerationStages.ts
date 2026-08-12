@@ -5,8 +5,8 @@ import type {
   StoryboardAIService,
   StyleDirective,
 } from '@storyboard/story-ai';
-import type { Background } from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
+import type { Background } from '@seedkernel/wasm';
+import type { BackgroundCard, CharacterCard, ProjectFormat } from '@seedkernel/wasm';
 import {
   chunkDialoguePiecesByBudget,
   condensePreviousContext,

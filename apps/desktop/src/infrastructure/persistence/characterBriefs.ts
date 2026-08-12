@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 
-import { readCardFile } from '@storyboard/story-format';
-import type { CardFileSystem, OutlineCharacterBrief } from '@storyboard/story-format';
+import { readCardFile } from '@/domain/files/storyFiles';
+import type { OutlineCharacterBrief } from '@seedkernel/wasm';
+import type { CardFileSystem } from '@/domain/files/storyFiles';
 export async function listCharacterBriefs(
   characterDirectory: vscode.Uri,
   fileSystem: CardFileSystem,

@@ -8,8 +8,8 @@ import {
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
 } from '../../../domain/cardCandidatePromotion';
-import { readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+import { readCardFile, writeCardFile } from '@/domain/files/storyFiles';
+import type { CharacterCard } from '@seedkernel/wasm';
 import {
   readCardCandidateFile,
   writeCardCandidateFile,

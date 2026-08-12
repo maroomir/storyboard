@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
+import type { ChapterPlan, StoryboardProject } from '@seedkernel/wasm';
 import type { NovelRunState, NovelStageName } from "@/domain/files/novelRunState"
 import { parseNovelRunState, serializeNovelRunState } from "@/domain/files/novelRunState"
 
@@ -20,8 +20,8 @@ vi.mock("@/infrastructure/persistence/revisionPlanRecorder", () => ({
 }))
 vi.mock("@/infrastructure/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
 vi.mock("@/infrastructure/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@seedkernel/wasm", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@seedkernel/wasm")>()),
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
 vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))

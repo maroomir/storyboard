@@ -1,5 +1,5 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
-import type { OutlineBrief } from '@storyboard/story-format';
+import { pointOfViewLabel } from '@seedkernel/wasm';
+import type { OutlineBrief } from '@seedkernel/wasm';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export const OutlineSynopsisPrompt = {
@@ -42,7 +42,7 @@ export function briefToUserBlock(brief: OutlineBrief): string {
 
   appendField(lines, '장르', brief.genre);
   appendField(lines, '독자층', brief.audience);
-  appendField(lines, '시점', brief.pov ? pointOfViewLabels[brief.pov] : undefined);
+  appendField(lines, '시점', brief.pov ? pointOfViewLabel(brief.pov) : undefined);
   appendField(lines, '목표 분량', brief.targetWordCount ? `${brief.targetWordCount}자` : undefined);
   appendField(lines, '컨셉', brief.concept);
   appendField(lines, '설명', brief.description);

@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 
 import * as vscode from 'vscode';
 
-import { parseCard, parseScene } from '@storyboard/story-format';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
+import { parseCard, parseScene } from '@seedkernel/wasm';
+import type { SceneFile, StoryboardCard } from '@seedkernel/wasm';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,

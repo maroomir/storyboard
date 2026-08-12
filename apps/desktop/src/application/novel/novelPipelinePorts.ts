@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { ManuscriptDraftEntry } from '@storyboard/story-format';
+import type { ManuscriptDraftEntry } from '@seedkernel/wasm';
 import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
 import type { NovelRunState } from '../../domain/files/novelRunState';
 import type {
@@ -8,7 +8,7 @@ import type {
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 export interface INovelRunStateRepository {
   readExisting(workspaceRoot: vscode.Uri): Promise<NovelRunState | undefined>;
   loadProject(workspaceRoot: vscode.Uri): Promise<StoryboardProject>;

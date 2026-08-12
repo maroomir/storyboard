@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+import { loadSeedkernel } from '@seedkernel/wasm';
+
 import type { IApplicationModule } from './lifecycle/applicationModule';
 import { BotModule } from './modules/botModule';
 import { CardModule } from './modules/cardModule';
@@ -17,10 +19,14 @@ type ApplicationState =
 export class StoryboardApplication implements vscode.Disposable {
   private state: ApplicationState = { status: 'created' };
 
-  public initialize(context: vscode.ExtensionContext): void {
+  // NOTE: The workspace format engine is WebAssembly, so the composition root loads it before any
+  // module wires a codec. Everything downstream stays synchronous once this resolves.
+  public async initialize(context: vscode.ExtensionContext): Promise<void> {
     if (this.state.status !== 'created') {
       throw new Error(`StoryboardApplication cannot initialize from ${this.state.status}.`);
     }
+
+    await loadSeedkernel();
 
     const platformModule = new PlatformModule();
     const modules: IApplicationModule[] = [platformModule];

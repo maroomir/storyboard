@@ -4,12 +4,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { storyboardRelativePaths } from '@seedkernel/wasm';
 
 // The round-trip fixtures the extension is also tested against, so both apps prove they read and
 // write the exact same bytes.
 export const SHARED_FIXTURE_ROOT = fileURLToPath(
-  new URL('../../../../packages/story-format/test/fixtures/', import.meta.url),
+  new URL('../fixtures/', import.meta.url),
 );
 
 export interface WorkspaceFixture {
@@ -47,18 +47,18 @@ export function createWorkspaceFixture(options?: { readonly initGit?: boolean })
     execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', shell: false }).trim();
 
   for (const directory of [
-    STORYBOARD_RELATIVE_PATHS.characterDirectory,
-    STORYBOARD_RELATIVE_PATHS.backgroundDirectory,
-    STORYBOARD_RELATIVE_PATHS.sceneDirectory,
-    STORYBOARD_RELATIVE_PATHS.draftDirectory,
-    STORYBOARD_RELATIVE_PATHS.cacheDirectory,
+    storyboardRelativePaths().characterDirectory,
+    storyboardRelativePaths().backgroundDirectory,
+    storyboardRelativePaths().sceneDirectory,
+    storyboardRelativePaths().draftDirectory,
+    storyboardRelativePaths().cacheDirectory,
   ]) {
     mkdirSync(join(root, ...directory.split('/')), { recursive: true });
   }
 
-  write(STORYBOARD_RELATIVE_PATHS.projectJson, `${JSON.stringify(DEFAULT_PROJECT, null, 2)}\n`);
+  write(storyboardRelativePaths().projectJson, `${JSON.stringify(DEFAULT_PROJECT, null, 2)}\n`);
   write(
-    STORYBOARD_RELATIVE_PATHS.gitignore,
+    storyboardRelativePaths().gitignore,
     ['.storyboard/cache/', 'draft/', '.draft/', 'manuscript/', ''].join('\n'),
   );
 

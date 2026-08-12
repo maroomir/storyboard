@@ -1,5 +1,7 @@
-import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { BackgroundCard, CardFileSystem, CharacterCard } from '@storyboard/story-format';
+import { isBackgroundCard } from '@seedkernel/wasm';
+import { readCardFile, writeCardFile } from '@/domain/files/storyFiles';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
+import type { CardFileSystem } from '@/domain/files/storyFiles';
 export interface BackgroundCharacterUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { isIgnoredSampleCardFileName } from '../vscode/pathConventions';
-import { isCharacterRole, parseCard } from '@storyboard/story-format';
-import type { CharacterRole } from '@storyboard/story-format';
+import { isCharacterRole, parseCard } from '@seedkernel/wasm';
+import type { CharacterRole } from '@seedkernel/wasm';
 import type { RelationListCharacter } from '../../shared/messaging';
 
 export interface CharacterRosterEntry {

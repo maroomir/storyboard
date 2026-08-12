@@ -1,5 +1,5 @@
-import { buildCandidateFact } from '@storyboard/story-format';
-import type { BibleFact, CharacterCard } from '@storyboard/story-format';
+import { buildCandidateFact } from '@seedkernel/wasm';
+import type { BibleFact, CharacterCard } from '@seedkernel/wasm';
 import {
   writeBibleCandidateFile,
   type BibleCandidateFileSystem,

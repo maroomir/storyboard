@@ -5,8 +5,8 @@ import {
   type BuildStoryCardsUseCase,
   type StoryCardTarget,
 } from '@/application/story/buildStoryCardsUseCase';
-import { parseCard, serializeCard } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { parseCard, serializeCard } from '@seedkernel/wasm';
+import type { StoryboardCard } from '@seedkernel/wasm';
 import { backgroundCardPath, characterCardPath } from '@/infrastructure/vscode/pathConventions';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type { CardCollectProposal } from '@/shared/cardCollect';

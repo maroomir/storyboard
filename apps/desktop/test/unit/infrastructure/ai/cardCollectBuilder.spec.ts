@@ -6,7 +6,7 @@ import {
   type CardCollectAiService,
   type CollectDraft
 } from "@/infrastructure/ai/cardCollectBuilder"
-import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
+import type { CharacterCard, LocationBackgroundCard } from '@seedkernel/wasm';
 
 const roster = [
   { id: "elia", name: "엘리아" },

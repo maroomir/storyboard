@@ -11,10 +11,10 @@ const uriExistsMock = vi.fn()
 const archiveExistingDraftMock = vi.fn()
 const pipelineRunMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@/domain/sceneContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/sceneContext")>()),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
+  buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
 }))
 vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,

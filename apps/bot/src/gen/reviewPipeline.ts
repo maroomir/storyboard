@@ -1,4 +1,4 @@
-import { draftRelativePath } from '@storyboard/story-format';
+import { draftRelativePath } from '@seedkernel/wasm';
 
 import type { ContentService } from '../content/contentService';
 import type { WorkspaceStore } from '../workspace/workspaceStore';

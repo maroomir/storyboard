@@ -1,3 +1,5 @@
+import { loadSeedkernel } from '@seedkernel/wasm';
+
 import { StorygramApplication } from './app/storygramApplication';
 import { ConfigError, loadConfig } from './config/config';
 import { resolvePaths } from './config/paths';
@@ -9,6 +11,9 @@ const SHUTDOWN_TIMEOUT_MS = 15_000;
 async function main(): Promise<number> {
   const logger = createLogger();
   const paths = resolvePaths();
+
+  // NOTE: The workspace format engine is WebAssembly; load it before any codec runs.
+  await loadSeedkernel();
 
   let loaded;
   try {

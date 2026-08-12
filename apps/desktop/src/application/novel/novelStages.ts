@@ -2,7 +2,7 @@ import type * as vscode from 'vscode';
 
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript } from '@seedkernel/wasm';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import {
   draftPath,
@@ -13,8 +13,8 @@ import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPl
 import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
-import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
+import { flattenChapterPlan, toOutlineBrief } from '@seedkernel/wasm';
+import type { ChapterPlan, StoryboardProject } from '@seedkernel/wasm';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

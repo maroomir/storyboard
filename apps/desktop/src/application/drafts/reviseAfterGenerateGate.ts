@@ -6,7 +6,7 @@ import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPl
 import { uriExists } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneFileName } from '@seedkernel/wasm';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 
 export type ReviseGateHooks = {

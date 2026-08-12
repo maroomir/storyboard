@@ -2,10 +2,10 @@ import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript } from '@seedkernel/wasm';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { flattenChapterPlan } from '@seedkernel/wasm';
+import type { ChapterPlan } from '@seedkernel/wasm';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export type ManuscriptReviewSource = {

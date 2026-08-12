@@ -5,7 +5,7 @@ import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-format';
+import { parseDraft } from '@seedkernel/wasm';
 import { LatestRequestGuard } from './latestRequestGuard';
 import type { GrammarIssue } from '@storyboard/story-ai';
 

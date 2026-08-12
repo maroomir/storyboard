@@ -6,7 +6,7 @@ import {
   selectNewCardCandidateItems,
   type CardCandidateItem,
 } from '../../domain/cardCandidatePromotion';
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@seedkernel/wasm';
 import type { CardCandidateRecord } from '../../shared/cardCandidates';
 
 export interface ICardCandidateRepository {

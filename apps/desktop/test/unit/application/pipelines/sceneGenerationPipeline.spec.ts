@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { BackgroundCard, CharacterCard, SceneContext, SceneFile } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, SceneFile } from '@seedkernel/wasm';
+import type { SceneContext } from '../../../../src/domain/sceneContext';
 import {
   runSceneGenerationPipeline,
   type SceneGenerationPipelineAiService,

@@ -6,7 +6,7 @@ import type {
 } from '../../../application/drafts/generateAllDraftsUseCase';
 import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../vscode/pathConventions';
 import { hasStoryboardProject } from '../../vscode/workspace';
-import { parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneFileName } from '@seedkernel/wasm';
 
 export class SceneBatchRepository implements ISceneBatchRepository {
   public async listStoryboardScenes(): Promise<BatchSceneList> {

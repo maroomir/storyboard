@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
+import type { CharacterCard, LocationBackgroundCard } from '@seedkernel/wasm';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

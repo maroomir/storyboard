@@ -1,0 +1,20 @@
+type: location
+id: school
+name: 학교 정문
+aliases:
+  - 학교
+  - 교문
+  - 정문
+description:
+  - 주인공이 처음 등교하는 고등학교 정문.
+  - 아침 햇빛과 등교하는 학생들로 붐빈다.
+characterIds: []
+tags:
+  - 학교
+  - 도시
+time: 아침
+weather: 맑음
+senses:
+  - 멀리서 울리는 등교 종소리
+  - 갓 자른 잔디 냄새
+locationKind: place

@@ -1,12 +1,8 @@
 import type * as vscode from 'vscode';
 
 import type { IProjectRepository, ISceneRepository } from '../ports/repositories';
-import {
-  buildNarrativeContext,
-  buildSceneContext,
-  parseSceneFileName,
-  SceneParseError,
-} from '@storyboard/story-format';
+import { parseSceneFileName, SceneParseError } from '@seedkernel/wasm';
+import { buildNarrativeContext, buildSceneContext } from '@/domain/sceneContext';
 import {
   draftPath,
   getStoryboardProjectPaths,

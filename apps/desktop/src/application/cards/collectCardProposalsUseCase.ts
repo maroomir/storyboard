@@ -6,7 +6,7 @@ import {
   type CollectDraft,
   type CollectRosterEntry,
 } from '../../infrastructure/ai/cardCollectBuilder';
-import type { StoryboardCard } from '@storyboard/story-format';
+import type { StoryboardCard } from '@seedkernel/wasm';
 import type { CardCollectProposal } from '../../shared/cardCollect';
 
 export interface ICardCollectRepository {

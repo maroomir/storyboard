@@ -11,7 +11,6 @@ export default defineConfig({
   resolve: {
     alias: {
       vscode: path.join(packageRoot, "test/stubs/vscode.ts"),
-      "@storyboard/story-format": path.join(packageRoot, "../../packages/story-format/src/index.ts"),
       "@storyboard/story-ai": path.join(packageRoot, "../../packages/story-ai/src/index.ts"),
       "@storyboard/story-pipeline": path.join(packageRoot, "../../packages/story-pipeline/src/index.ts"),
       "@": path.join(packageRoot, "src"),

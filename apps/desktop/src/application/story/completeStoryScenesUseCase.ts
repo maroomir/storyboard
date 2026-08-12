@@ -2,8 +2,8 @@ import yaml from 'js-yaml';
 import { z } from 'zod';
 
 import type { AiGateway } from '@/application/ai/aiGateway';
-import { sceneFileNamePattern } from '@storyboard/story-format';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
+import { sceneFileNamePattern } from '@seedkernel/wasm';
+import type { SceneFile, StoryboardCard } from '@seedkernel/wasm';
 import { parseJsonObject } from '@storyboard/story-ai';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';

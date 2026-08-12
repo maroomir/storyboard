@@ -1,4 +1,4 @@
-import type { Draft, SceneFile, StoryboardProject } from '@storyboard/story-format';
+import type { Draft, SceneFile, StoryboardProject } from '@seedkernel/wasm';
 import type { SceneCacheRecord } from '../../domain/files/sceneCache';
 export interface IProjectRepository {
   read(uri: unknown): Promise<StoryboardProject>;

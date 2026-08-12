@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCard } from '@storyboard/story-format';
+import { parseCard } from '@seedkernel/wasm';
 import { mapCardErrorToSpans } from "@/presentation/providers/CardDiagnosticsProvider"
 
 function errorFrom(rawCard: string): unknown {

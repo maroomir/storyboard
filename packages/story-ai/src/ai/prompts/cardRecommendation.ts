@@ -1,5 +1,5 @@
-import { isCharacterRole } from '@storyboard/story-format';
-import type { CharacterRole } from '@storyboard/story-format';
+import { isCharacterRole } from '@seedkernel/wasm';
+import type { CharacterRole } from '@seedkernel/wasm';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export type RecommendationCategory = 'character' | 'background';

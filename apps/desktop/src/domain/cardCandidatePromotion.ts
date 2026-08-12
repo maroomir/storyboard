@@ -1,4 +1,4 @@
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@seedkernel/wasm';
 import type { CardCandidateRecord } from '../shared/cardCandidates';
 
 export type CardCandidateItem =

@@ -1,4 +1,4 @@
-import { parseCard, serializeCard, type StoryboardCard } from '@storyboard/story-format';
+import { parseCard, serializeCard, type StoryboardCard } from '@seedkernel/wasm';
 
 import type { WorkspacePlan } from '../workspace/workspaceChanges';
 import type { ReadFile } from '../workspace/workspaceStore';

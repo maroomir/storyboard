@@ -8,7 +8,7 @@ import { loadCharacterRoster, loadRelationListCharacters } from "@/infrastructur
 import { Uri } from "../../../stubs/vscode"
 
 const characterFixture = readFileSync(
-  fileURLToPath(new URL("../../../../../../packages/story-format/test/fixtures/cards/character.card", import.meta.url)),
+  fileURLToPath(new URL("../../../fixtures/cards/character.card", import.meta.url)),
   "utf8"
 )
 

@@ -16,7 +16,7 @@ import {
   type IStudioSessionRepository,
 } from '../../infrastructure/persistence/repositories/studioSessionRepository';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneFileName } from '@seedkernel/wasm';
 import type {
   StoryboardResponsePayload,
   StudioAction,

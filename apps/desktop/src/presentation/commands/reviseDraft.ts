@@ -10,7 +10,7 @@ import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscod
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneFileName, parseSceneStem } from '@storyboard/story-format';
+import { parseSceneFileName, parseSceneStem } from '@seedkernel/wasm';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';
 const defaultMaxIterations = 2;

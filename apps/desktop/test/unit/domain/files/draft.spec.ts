@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, DraftParseError, parseDraft, serializeDraft } from '@storyboard/story-format';
+import { createDraft, DraftParseError, parseDraft, serializeDraft } from '@seedkernel/wasm';
 
 describe("draft file codec", () => {
   it("serializes and parses a draft with stable frontmatter", () => {

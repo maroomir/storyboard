@@ -8,7 +8,7 @@ import {
   shouldRunInlineCompletion,
   trimInlineCompletionPrefix
 } from "@/presentation/providers/InlineCompletionProvider"
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 
 describe("InlineCompletionProvider helpers", () => {
   it("trims prefix to the most recent 1200 characters", () => {

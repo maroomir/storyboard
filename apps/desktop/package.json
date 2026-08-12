@@ -612,7 +612,7 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.6.0.tgz",
     "@storyboard/story-ai": "*",
-    "@seedkernel/wasm": "file:../../vendor/seedkernel-wasm-0.1.0.tgz",
+    "@seedkernel/wasm": "file:../../vendor/seedkernel-wasm-0.1.1.tgz",
     "@storyboard/story-pipeline": "*",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",

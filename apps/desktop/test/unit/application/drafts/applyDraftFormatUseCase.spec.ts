@@ -10,12 +10,16 @@ const writeDraftFileMock = vi.fn()
 vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
-  readDraftFile: (...args: unknown[]): unknown => readDraftFileMock(...args),
+vi.mock("@seedkernel/wasm", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@seedkernel/wasm")>()),
+  ...(await importOriginal<typeof import("@seedkernel/wasm")>()),
   parseDraft: (...args: unknown[]): unknown => parseDraftMock(...args),
   createDraft: (...args: unknown[]): unknown => createDraftMock(...args),
-  writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args)
+}))
+vi.mock("@/domain/files/storyFiles", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/files/storyFiles")>()),
+  readDraftFile: (...args: unknown[]): unknown => readDraftFileMock(...args),
+  writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args),
 }))
 
 import { ApplyDraftFormatUseCase } from "@/application/drafts/applyDraftFormatUseCase"

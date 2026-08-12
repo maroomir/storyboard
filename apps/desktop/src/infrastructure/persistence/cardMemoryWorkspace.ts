@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { StoryboardProjectPaths } from '../vscode/pathConventions';
 import { uriExists } from '../vscode/workspace';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '@storyboard/story-pipeline';
 import {
   computeBackgroundCardHash,
@@ -12,7 +12,7 @@ import {
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
-} from '@storyboard/story-format';
+} from '@/domain/files/storyFiles';
 
 export async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory);

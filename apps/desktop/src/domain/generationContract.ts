@@ -1,5 +1,5 @@
-import { contractFieldKeys } from '@storyboard/story-format';
-import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-format';
+import { contractFieldKeys } from '@seedkernel/wasm';
+import type { ContractFieldKey, ProjectSetting } from '@seedkernel/wasm';
 
 export const minReasonableTargetWordCount = 1_000;
 export const maxReasonableTargetWordCount = 2_000_000;

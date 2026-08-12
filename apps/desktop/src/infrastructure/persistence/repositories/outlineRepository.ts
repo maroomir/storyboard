@@ -8,15 +8,14 @@ import {
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
-} from '@storyboard/story-format';
+} from '@/domain/files/storyFiles';
 import type {
-  CardFileSystem,
   ChapterPlan,
   OutlineCharacterBrief,
-  OutlineFileSystem,
   OutlineSynopsis,
   StoryboardProject,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
+import type { CardFileSystem, OutlineFileSystem } from '@/domain/files/storyFiles';
 import { readProjectJson } from '../projectJson';
 const VSCODE_FILE_SYSTEM: CardFileSystem & OutlineFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

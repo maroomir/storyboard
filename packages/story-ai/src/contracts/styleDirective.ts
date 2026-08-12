@@ -1,5 +1,5 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
-import type { PointOfView, ProjectSetting } from '@storyboard/story-format';
+import { pointOfViewLabel } from '@seedkernel/wasm';
+import type { PointOfView, ProjectSetting } from '@seedkernel/wasm';
 // NOTE: Shared narrative-style context injected into every scene-generation prompt so point of
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.
@@ -46,7 +46,7 @@ export function buildStyleDirective(
 
 function povLine(directive: StyleDirective): string | undefined {
   return directive.pov
-    ? `서술 시점: ${pointOfViewLabels[directive.pov]} — 처음부터 끝까지 이 시점을 유지하라.`
+    ? `서술 시점: ${pointOfViewLabel(directive.pov)} — 처음부터 끝까지 이 시점을 유지하라.`
     : undefined;
 }
 

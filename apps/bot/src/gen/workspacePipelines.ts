@@ -1,6 +1,6 @@
 import type { StoryboardAIService } from '@storyboard/story-ai';
 import {
-  STORYBOARD_RELATIVE_PATHS,
+  storyboardRelativePaths,
   assembleManuscript,
   parseSynopsisMarkdown,
   serializeChapterPlan,
@@ -8,7 +8,7 @@ import {
   toOutlineBrief,
   type ManuscriptDraftEntry,
   type OutlineCharacterBrief,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 
 import type { ContentService } from '../content/contentService';
 import type { MutateOutcome } from '../workspace/workspaceChanges';
@@ -70,7 +70,7 @@ export class OutlinePipeline implements IPipeline {
     }
 
     await context.reportStage('저장');
-    const relativePath = STORYBOARD_RELATIVE_PATHS.outlineSynopsis;
+    const relativePath = storyboardRelativePaths().outlineSynopsis;
     const outcome = await this.options.content.writeTracked(
       relativePath,
       serializeSynopsisMarkdown(synopsis),
@@ -108,7 +108,7 @@ export class PlanPipeline implements IPipeline {
     }
 
     await context.reportStage('저장');
-    const relativePath = STORYBOARD_RELATIVE_PATHS.outlineChapters;
+    const relativePath = storyboardRelativePaths().outlineChapters;
     const outcome = await this.options.content.writeTracked(
       relativePath,
       serializeChapterPlan(plan),
@@ -170,7 +170,7 @@ export class ManuscriptPipeline implements IPipeline {
       draftsByOrder,
     });
 
-    const relativePath = STORYBOARD_RELATIVE_PATHS.manuscriptVolume;
+    const relativePath = storyboardRelativePaths().manuscriptVolume;
     const outcome = await this.options.content.writeArtifact(
       relativePath,
       assembled.volumeMarkdown,

@@ -22,9 +22,6 @@
       "@webview/*": [
         "webview-ui/src/*"
       ],
-      "@storyboard/story-format": [
-        "../../packages/story-format/src/index.ts"
-      ],
       "@storyboard/story-ai": [
         "../../packages/story-ai/src/index.ts"
       ],

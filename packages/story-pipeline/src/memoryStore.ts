@@ -1,4 +1,4 @@
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 
 export interface IPersonaMemoryStore {
   load(card: CharacterCard): Promise<string | undefined>;

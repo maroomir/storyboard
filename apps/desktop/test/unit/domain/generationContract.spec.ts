@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { validateGenerationContract } from "@/domain/generationContract"
-import type { ProjectSetting } from '@storyboard/story-format';
+import type { ProjectSetting } from '@seedkernel/wasm';
 
 function buildSetting(overrides: Partial<ProjectSetting> = {}): ProjectSetting {
   return {

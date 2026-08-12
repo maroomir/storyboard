@@ -6,19 +6,26 @@ const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 const buildNarrativeContextMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@seedkernel/wasm", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@seedkernel/wasm")>()),
+  ...(await importOriginal<typeof import("@seedkernel/wasm")>()),
   SceneParseError: class SceneParseError extends Error {},
+}))
+vi.mock("@/domain/files/storyFiles", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/files/storyFiles")>()),
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
+}))
+vi.mock("@/domain/sceneContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/sceneContext")>()),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  formatBibleFactLines: (): string[] => []
+  formatBibleFactLines: (): string[] => [],
 }))
 vi.mock("@/infrastructure/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
 import { AugmentDraftUseCase } from "@/application/drafts/augmentDraftUseCase"
-import { SceneParseError } from '@storyboard/story-format';
+import { SceneParseError } from '@seedkernel/wasm';
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }

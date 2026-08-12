@@ -1,3 +1,3 @@
-import type { SceneFile } from '@storyboard/story-format';
+import type { SceneFile } from '@seedkernel/wasm';
 
 export type Scene = SceneFile;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { BackgroundDescriptionPrompt } from '@storyboard/story-ai';
-import type { Background } from '@storyboard/story-format';
+import type { Background } from '@seedkernel/wasm';
 const baseBackground: Background = {
   type: "location",
   id: "school",

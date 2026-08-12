@@ -1,7 +1,7 @@
 import yaml from 'js-yaml';
 
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan, FlatChapterScene, ScenePlan } from '@storyboard/story-format';
+import { flattenChapterPlan } from '@seedkernel/wasm';
+import type { ChapterPlan, FlatChapterScene, ScenePlan } from '@seedkernel/wasm';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;

@@ -5,15 +5,13 @@ import type {
   CondenseDraftUseCase,
 } from '../../application/drafts/condenseDraftUseCase';
 import { resolveSceneTargetLength } from '@storyboard/story-pipeline';
+import { createDraft, parseDraft, serializeDraft } from '@seedkernel/wasm';
+import { readSceneFile } from '@/domain/files/storyFiles';
 import {
   buildNarrativeContext,
   buildSceneContext,
-  createDraft,
   formatBibleFactLines,
-  parseDraft,
-  readSceneFile,
-  serializeDraft,
-} from '@storyboard/story-format';
+} from '@/domain/sceneContext';
 import { archiveExistingDraft } from '../../domain/files/draftHistory';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';

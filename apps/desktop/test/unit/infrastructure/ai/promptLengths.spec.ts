@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaDialoguePrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
 import type { PromptArtifact, PromptVariantId } from '@storyboard/story-ai';
-import type { Background, Character } from '@storyboard/story-format';
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { Background, Character } from '@seedkernel/wasm';
+import type { ProjectFormat } from '@seedkernel/wasm';
 
 interface PromptLengthSample {
   readonly name: string

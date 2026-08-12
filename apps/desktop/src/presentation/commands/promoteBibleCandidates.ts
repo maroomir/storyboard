@@ -6,7 +6,7 @@ import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,
 } from '../../infrastructure/vscode/workspace';
-import type { BibleFact } from '@storyboard/story-format';
+import type { BibleFact } from '@seedkernel/wasm';
 
 const promoteCommand = 'storyboard.bible.promoteCandidates';
 

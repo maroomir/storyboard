@@ -3,7 +3,7 @@ import type {
   CharacterCard,
   CharacterRelation,
   StoryboardCard,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import type { CardCollectProposal } from '../shared/cardCollect';
 
 function addUnique(list: readonly string[], value: string): string[] {

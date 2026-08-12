@@ -1,18 +1,21 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { SceneParseError } from '@storyboard/story-format';
+import { SceneParseError } from '@seedkernel/wasm';
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const readSceneFileMock = vi.fn()
 const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@/domain/files/storyFiles", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/files/storyFiles")>()),
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
+}))
+vi.mock("@/domain/sceneContext", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/domain/sceneContext")>()),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
-  buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })
+  buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] }),
 }))
 vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,

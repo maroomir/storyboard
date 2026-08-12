@@ -1,12 +1,12 @@
 import {
-  STORYBOARD_RELATIVE_PATHS,
+  storyboardRelativePaths,
   clampScenePrefixDigits,
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
   sceneFileRelativePath,
   sceneRelativePath,
   validateSceneSlugInput,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 
 import { hashContent } from '../../workspace/workspaceStore';
 import type { ChatContext } from '../context';
@@ -85,7 +85,7 @@ async function createScene(ctx: ChatContext, slug: string, body: string): Promis
   const project = await ctx.store.readProject();
   const digitCount = clampScenePrefixDigits(project.value.editor?.scenePrefixDigits ?? 2);
   const sceneFileNames = await ctx.store.listDirectoryNames(
-    STORYBOARD_RELATIVE_PATHS.sceneDirectory,
+    storyboardRelativePaths().sceneDirectory,
   );
   const order = computeNextSceneOrderFromSceneFileNames(sceneFileNames);
   const prefix = formatSceneOrderPrefix(order, digitCount);

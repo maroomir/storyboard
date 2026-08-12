@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '../vscode/logger';
-import type { ManuscriptDraftEntry } from '@storyboard/story-format';
+import type { ManuscriptDraftEntry } from '@seedkernel/wasm';
 import type { StoryboardProjectPaths } from '../vscode/pathConventions';
-import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-format';
-import type { DraftFileSystem } from '@storyboard/story-format';
+import { parseDraft, parseSceneStem } from '@seedkernel/wasm';
+import { readDraftFile } from '@/domain/files/storyFiles';
+import type { DraftFileSystem } from '@/domain/files/storyFiles';
 export async function collectDraftsByOrder(
   paths: StoryboardProjectPaths,
   fileSystem: DraftFileSystem,

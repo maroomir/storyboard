@@ -9,7 +9,7 @@ import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
-import type { StoryboardProject } from '@storyboard/story-format';
+import type { StoryboardProject } from '@seedkernel/wasm';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

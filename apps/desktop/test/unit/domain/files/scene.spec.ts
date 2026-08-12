@@ -4,8 +4,8 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { parseScene, parseSceneFileName, parseSceneStem, resolveSceneOrder, SceneParseError } from '@storyboard/story-format';
-const scenesFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-format/test/fixtures/scenes/", import.meta.url))
+import { parseScene, parseSceneFileName, parseSceneStem, resolveSceneOrder, SceneParseError } from '@seedkernel/wasm';
+const scenesFixtureDirectory = fileURLToPath(new URL("../../../fixtures/scenes/", import.meta.url))
 
 describe("scene file codec", () => {
   it("parses frontmatter and body from a scene seed", () => {

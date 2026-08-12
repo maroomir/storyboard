@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { StoryboardCard } from '@storyboard/story-format';
+import type { StoryboardCard } from '@seedkernel/wasm';
 
 export interface ICardWriterRepository {
   exists(workspaceRoot: vscode.Uri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { parseCard, serializeCard } from '@storyboard/story-format';
+import { parseCard, serializeCard } from '@seedkernel/wasm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { WorkspaceError, WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';

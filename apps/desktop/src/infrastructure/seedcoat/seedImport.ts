@@ -1,4 +1,4 @@
-import { parseSceneStem, serializeCard } from '@storyboard/story-format';
+import { parseSceneStem, serializeCard } from '@seedkernel/wasm';
 import { serializeProjectJson } from '@/infrastructure/persistence/projectJson';
 import type { DecodedSeedContent } from '@/infrastructure/seedcoat/projectAdapter';
 import {

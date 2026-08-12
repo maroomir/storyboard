@@ -108,7 +108,9 @@ export function createShowHandler(): ICommandHandler {
     }
 
     const card = await ctx.content.readCard(summary.kind, id);
-    await ctx.reply({ text: renderCard(card.value, summary.relativePath) });
+    await ctx.reply({
+      text: renderCard(card.value as unknown as { readonly [key: string]: unknown }, summary.relativePath),
+    });
   });
 }
 

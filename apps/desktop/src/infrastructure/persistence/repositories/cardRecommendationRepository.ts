@@ -8,8 +8,9 @@ import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
 } from '../../vscode/pathConventions';
-import { parseCard, parseDraft, readDraftFile, readSceneFile } from '@storyboard/story-format';
-import type { DraftFileSystem, SceneFileSystem } from '@storyboard/story-format';
+import { parseCard, parseDraft } from '@seedkernel/wasm';
+import { readDraftFile, readSceneFile } from '@/domain/files/storyFiles';
+import type { DraftFileSystem, SceneFileSystem } from '@/domain/files/storyFiles';
 import type { RecommendationSource } from '../../../infrastructure/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 

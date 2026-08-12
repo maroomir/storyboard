@@ -6,7 +6,7 @@ import type {
 } from '../../application/novel/generateOutlineUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import type { ContractFieldKey } from '@storyboard/story-format';
+import type { ContractFieldKey } from '@seedkernel/wasm';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
 

@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { ProjectFormat } from '@seedkernel/wasm';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface DraftCondenseInput {

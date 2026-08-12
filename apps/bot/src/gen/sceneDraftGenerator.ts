@@ -1,14 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import {
-  STORYBOARD_RELATIVE_PATHS,
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths,
-} from '@storyboard/story-format';
+import { storyboardRelativePaths } from '@seedkernel/wasm';
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContextWorkspaceFileSystem, type SceneContextWorkspacePaths } from '../../../desktop/src/domain/sceneContext';
 import { buildStyleDirective, formatAugmentCards } from '@storyboard/story-ai';
 import type {
   AiProviderRegistry,
@@ -34,11 +28,11 @@ function createPaths(root: string): SceneContextWorkspacePaths {
   const at = (relative: string): string => join(root, ...relative.split('/'));
 
   return {
-    characterDirectory: at(STORYBOARD_RELATIVE_PATHS.characterDirectory),
-    backgroundDirectory: at(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
-    draftDirectory: at(STORYBOARD_RELATIVE_PATHS.draftDirectory),
-    bibleCanon: at(STORYBOARD_RELATIVE_PATHS.bibleCanon),
-    manuscriptSummary: join(at(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory), 'SUMMARY.md'),
+    characterDirectory: at(storyboardRelativePaths().characterDirectory),
+    backgroundDirectory: at(storyboardRelativePaths().backgroundDirectory),
+    draftDirectory: at(storyboardRelativePaths().draftDirectory),
+    bibleCanon: at(storyboardRelativePaths().bibleCanon),
+    manuscriptSummary: join(at(storyboardRelativePaths().manuscriptDirectory), 'SUMMARY.md'),
     joinPath: (base, ...segments) => join(String(base), ...segments),
   };
 }

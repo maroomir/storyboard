@@ -1,26 +1,19 @@
 import { readFile } from 'node:fs/promises';
 
-import {
-  STORYBOARD_RELATIVE_PATHS,
-  computeBackgroundCardHash,
-  computePersonaCardHash,
-  parseBackgroundMemory,
-  parsePersonaMemory,
-  serializeBackgroundMemory,
-  serializePersonaMemory,
-} from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import { storyboardRelativePaths, parseBackgroundMemory, parsePersonaMemory, serializeBackgroundMemory, serializePersonaMemory } from '@seedkernel/wasm';
+import { computeBackgroundCardHash, computePersonaCardHash } from '../../../desktop/src/domain/files/storyFiles';
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from '@storyboard/story-pipeline';
 
 import type { ContentService } from '../content/contentService';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 
 function personaMemoryRelativePath(cardId: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory}/${cardId}.json`;
+  return `${storyboardRelativePaths().personaMemoryDirectory}/${cardId}.json`;
 }
 
 function backgroundMemoryRelativePath(cardId: string): string {
-  return `${STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory}/${cardId}.json`;
+  return `${storyboardRelativePaths().backgroundMemoryDirectory}/${cardId}.json`;
 }
 
 // Same cache files the extension maintains: a stale record (card edited since) reads as a miss, and

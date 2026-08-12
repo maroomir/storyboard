@@ -1,16 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
-import {
-  computeBackgroundCardHash,
-  computePersonaCardHash,
-  parseBackgroundMemory,
-  parsePersonaMemory,
-  serializeBackgroundMemory,
-  serializePersonaMemory,
-  type BackgroundMemoryRecord,
-  type PersonaMemoryRecord
-} from "@storyboard/story-format"
+import type { BackgroundCard, CharacterCard } from '@seedkernel/wasm';
+import { parseBackgroundMemory, parsePersonaMemory, serializeBackgroundMemory, serializePersonaMemory, type BackgroundMemoryRecord, type PersonaMemoryRecord } from '@seedkernel/wasm';
+import { computeBackgroundCardHash, computePersonaCardHash } from '../../../../src/domain/files/storyFiles';
 
 const eliaCard: CharacterCard = {
   type: "character",

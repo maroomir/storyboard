@@ -1,6 +1,6 @@
-import type { Background } from '@storyboard/story-format';
-import type { Character } from '@storyboard/story-format';
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { Background } from '@seedkernel/wasm';
+import type { Character } from '@seedkernel/wasm';
+import type { ProjectFormat } from '@seedkernel/wasm';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,

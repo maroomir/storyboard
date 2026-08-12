@@ -7,7 +7,7 @@ import {
   selectNewCandidates,
 } from '../../domain/biblePromotion';
 import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
-import type { BibleFact, StoryBible } from '@storyboard/story-format';
+import type { BibleFact, StoryBible } from '@seedkernel/wasm';
 
 export interface IBibleCandidateRepository {
   loadCanon(workspaceRoot: vscode.Uri): Promise<StoryBible>;

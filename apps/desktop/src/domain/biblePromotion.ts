@@ -1,5 +1,5 @@
-import { resolveSceneOrder } from '@storyboard/story-format';
-import type { BibleFact, StoryBible } from '@storyboard/story-format';
+import { resolveSceneOrder } from '@seedkernel/wasm';
+import type { BibleFact, StoryBible } from '@seedkernel/wasm';
 import type { BibleCandidateRecord } from './files/bibleCandidates';
 // NOTE: Anchor a freshly promoted fact to the scene it was first observed so it becomes a
 // time-scoped canon version. The `@order` id suffix keeps it distinct from later versions of

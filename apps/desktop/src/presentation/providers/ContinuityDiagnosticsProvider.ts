@@ -6,13 +6,13 @@ import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
 } from '../../infrastructure/vscode/pathConventions';
+import { parseDraft } from '@seedkernel/wasm';
+import { readSceneFile } from '@/domain/files/storyFiles';
 import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-  parseDraft,
-  readSceneFile,
-} from '@storyboard/story-format';
+} from '@/domain/sceneContext';
 import {
   sceneContextFileSystem,
   sceneContextPaths,

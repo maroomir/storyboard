@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import { buildStyleDirective, GenreFormattingPrompt, narrativeStyleLines, PersonaDialoguePrompt, PersonaGenerationPrompt, voiceStyleLines } from '@storyboard/story-ai';
 import type { StyleDirective } from '@storyboard/story-ai';
-import type { Background, Character } from '@storyboard/story-format';
-import type { ProjectSetting } from '@storyboard/story-format';
+import type { Background, Character } from '@seedkernel/wasm';
+import type { ProjectSetting } from '@seedkernel/wasm';
 function settingOf(overrides: Partial<ProjectSetting>): ProjectSetting {
   return { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], ...overrides }
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { BibleParseError, parseBible, serializeBible } from '@storyboard/story-format';
-import type { StoryBible } from '@storyboard/story-format';
+import { BibleParseError, parseBible, serializeBible } from '@seedkernel/wasm';
+import type { StoryBible } from '@seedkernel/wasm';
 const bible: StoryBible = {
   version: "1.0.0",
   facts: [

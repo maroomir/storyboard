@@ -5,8 +5,8 @@ import {
   coerceOutlineSynopsis,
   outlineVersion,
   toOutlineBrief,
-} from '@storyboard/story-format';
-import type { OutlineBrief, StoryboardProject } from '@storyboard/story-format';
+} from '@seedkernel/wasm';
+import type { OutlineBrief, StoryboardProject } from '@seedkernel/wasm';
 const brief: OutlineBrief = {
   projectName: 'MagicBoy',
   format: 'novel',
@@ -78,7 +78,7 @@ describe('coerceOutlineSynopsis', () => {
         pov: 'first',
         styleRules: ['짧은 문장'],
       },
-      brief,
+      brief.pov,
     );
 
     expect(synopsis.logline).toBe('소년이 마법을 배운다.');
@@ -87,7 +87,7 @@ describe('coerceOutlineSynopsis', () => {
   });
 
   it('fills defaults and falls back pov to the brief', () => {
-    const synopsis = coerceOutlineSynopsis({ logline: '한 문장' }, brief);
+    const synopsis = coerceOutlineSynopsis({ logline: '한 문장' }, brief.pov);
 
     expect(synopsis.logline).toBe('한 문장');
     expect(synopsis.genrePromise).toBe('');
@@ -96,7 +96,7 @@ describe('coerceOutlineSynopsis', () => {
   });
 
   it('returns defaults for non-object input', () => {
-    const synopsis = coerceOutlineSynopsis('not-json', brief);
+    const synopsis = coerceOutlineSynopsis('not-json', brief.pov);
 
     expect(synopsis.logline).toBe('');
     expect(synopsis.mainConflicts).toEqual([]);
@@ -196,7 +196,7 @@ describe('coerceOutlineSynopsis field-level salvage', () => {
       styleRules: [],
     };
 
-    const coerced = coerceOutlineSynopsis(raw, brief);
+    const coerced = coerceOutlineSynopsis(raw, brief.pov);
 
     expect(coerced.logline).toBe('살아남은 로그라인');
     expect(coerced.ending).toBe('결말');

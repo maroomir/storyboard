@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { cardSchema, cardTypes, characterRoles } from '@storyboard/story-format';
+import { cardTypes, characterRoles } from '@seedkernel/wasm';
+import { cardSchema } from '../cardSchema';
 import { cardCollectProposalSchema } from '../cardCollect';
 import { uriStringSchema } from './atoms';
 

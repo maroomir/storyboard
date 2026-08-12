@@ -6,8 +6,9 @@ import {
 } from '../../infrastructure/vscode/pathConventions';
 import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
-import { detectCharactersInText, readCardFile } from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+import { detectCharactersInText } from '@seedkernel/wasm';
+import { readCardFile } from '@/domain/files/storyFiles';
+import type { CharacterCard } from '@seedkernel/wasm';
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 
 interface CharacterHoverContext {

@@ -22,7 +22,6 @@ const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIServic
 
 // Shared workspace package: every app consumes it, so it must stay runtime-agnostic and must never
 // import back into an app.
-const STORY_FORMAT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-format', 'src');
 const STORY_AI_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-ai', 'src');
 const STORY_PIPELINE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-pipeline', 'src');
 
@@ -67,7 +66,6 @@ for (const cycle of findCycles(graph)) {
 }
 
 validateExtensionEntry();
-const storyFormatFiles = validatePackagePurity(STORY_FORMAT_ROOT, 'story-format');
 const storyAiFiles = validatePackagePurity(STORY_AI_ROOT, 'story-ai');
 const storyPipelineFiles = validatePackagePurity(STORY_PIPELINE_ROOT, 'story-pipeline');
 
@@ -79,7 +77,7 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Architecture check passed: ${sourceFiles.length} extension files, ` +
-      `${storyFormatFiles} story-format, ${storyAiFiles} story-ai, ` +
+      `${storyAiFiles} story-ai, ` +
       `${storyPipelineFiles} story-pipeline files, no import cycles.`,
   );
 }

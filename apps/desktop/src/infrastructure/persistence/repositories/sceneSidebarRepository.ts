@@ -7,8 +7,9 @@ import {
   isHiddenSceneFileName,
 } from '../../vscode/pathConventions';
 import { isOutlineStale } from '../../../domain/sceneStatus';
-import { parseSceneFileName, readSceneFile } from '@storyboard/story-format';
-import type { SceneFileSystem } from '@storyboard/story-format';
+import { parseSceneFileName } from '@seedkernel/wasm';
+import { readSceneFile } from '@/domain/files/storyFiles';
+import type { SceneFileSystem } from '@/domain/files/storyFiles';
 import type { SceneListItem } from '../../../shared/messaging/scenes';
 const VSCODE_FILE_SYSTEM: SceneFileSystem = {
   readFile: (uri): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

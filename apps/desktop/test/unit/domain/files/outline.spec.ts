@@ -6,8 +6,8 @@ import {
   parseSynopsisMarkdown,
   serializeChapterPlan,
   serializeSynopsisMarkdown,
-} from '@storyboard/story-format';
-import type { ChapterPlan, OutlineSynopsis } from '@storyboard/story-format';
+} from '@seedkernel/wasm';
+import type { ChapterPlan, OutlineSynopsis } from '@seedkernel/wasm';
 const plan: ChapterPlan = {
   version: '1.0.0',
   acts: [

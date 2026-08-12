@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { assembleManuscript, type ManuscriptDraftEntry } from '@storyboard/story-format'
-import type { ChapterPlan } from '@storyboard/story-format';
+import { assembleManuscript, type ManuscriptDraftEntry } from '@seedkernel/wasm'
+import type { ChapterPlan } from '@seedkernel/wasm';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

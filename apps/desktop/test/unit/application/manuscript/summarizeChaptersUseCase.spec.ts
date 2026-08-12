@@ -5,7 +5,7 @@ import {
   SummarizeChaptersUseCase,
   type IChapterSummaryRepository
 } from "@/application/manuscript/summarizeChaptersUseCase"
-import type { ChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@seedkernel/wasm';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

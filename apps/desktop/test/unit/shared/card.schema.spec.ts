@@ -1,6 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardSchema, isCardType } from '@storyboard/story-format';
+import { isCardType, parseCard, type StoryboardCard } from '@seedkernel/wasm';
+
+// The validation rules live in the wasm engine now; these keep the zod-shaped call sites so the
+// cases still read as schema acceptance/rejection.
+const cardSchema = {
+  parse: (value: unknown): StoryboardCard => parseCard(JSON.stringify(value)),
+  safeParse: (value: unknown): { success: boolean } => {
+    try {
+      parseCard(JSON.stringify(value));
+      return { success: true };
+    } catch {
+      return { success: false };
+    }
+  },
+};
 
 describe('card schema', () => {
   it('parses a minimal character card', () => {

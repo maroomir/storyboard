@@ -1,13 +1,13 @@
-import type { Background } from '@storyboard/story-format';
-import type { Character } from '@storyboard/story-format';
-import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-format';
+import type { Background } from '@seedkernel/wasm';
+import type { Character } from '@seedkernel/wasm';
+import { coerceChapterPlan, coerceOutlineSynopsis } from '@seedkernel/wasm';
 import type {
   ChapterPlan,
   OutlineBrief,
   OutlineCharacterBrief,
   OutlineSynopsis,
   ProjectFormat,
-} from '@storyboard/story-format';
+} from '@seedkernel/wasm';
 import { AiTextGateway } from './AiTextGateway';
 import {
   CardAiService,
@@ -233,7 +233,7 @@ export class StoryboardAIService {
       options,
     );
 
-    return coerceOutlineSynopsis(parseJsonObject(response.text), brief);
+    return coerceOutlineSynopsis(parseJsonObject(response.text), brief.pov);
   }
 
   public async generateChapterPlan(

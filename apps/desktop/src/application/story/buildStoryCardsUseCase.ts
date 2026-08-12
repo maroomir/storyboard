@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import type { AiGateway } from '@/application/ai/aiGateway';
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
+import type { SceneFile, StoryboardCard } from '@seedkernel/wasm';
 import { parseJsonObject } from '@storyboard/story-ai';
 import {
   cardCollectProposalId,

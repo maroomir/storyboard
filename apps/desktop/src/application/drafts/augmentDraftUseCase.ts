@@ -9,14 +9,15 @@ import {
   getStoryboardProjectPaths,
   joinUri,
 } from '../../infrastructure/vscode/pathConventions';
+import { SceneParseError } from '@seedkernel/wasm';
+import { readSceneFile } from '@/domain/files/storyFiles';
 import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-  readSceneFile,
-  SceneParseError,
-} from '@storyboard/story-format';
-import type { BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-format';
+} from '@/domain/sceneContext';
+import type { BibleFact, ProjectFormat } from '@seedkernel/wasm';
+import type { SceneContext } from '@/domain/sceneContext';
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,

@@ -1,31 +1,15 @@
-import { z } from 'zod';
+import {
+  parseBibleCandidates,
+  serializeBibleCandidates,
+  type BibleCandidateRecord,
+} from '@seedkernel/wasm';
 
-import { bibleFactSchema } from '@storyboard/story-format';
-import type { BibleFact } from '@storyboard/story-format';
-
-export interface BibleCandidateRecord {
-  readonly sceneStem: string;
-  readonly generatedAt: string;
-  readonly facts: readonly BibleFact[];
-}
+export type { BibleCandidateRecord };
+export { parseBibleCandidates, serializeBibleCandidates };
 
 export interface BibleCandidateFileSystem {
   readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
   readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
-}
-
-const bibleCandidateRecordSchema = z.object({
-  sceneStem: z.string().trim().min(1),
-  generatedAt: z.string().datetime(),
-  facts: z.array(bibleFactSchema),
-});
-
-export function serializeBibleCandidates(record: BibleCandidateRecord): string {
-  return `${JSON.stringify(record, null, 2)}\n`;
-}
-
-export function parseBibleCandidates(rawCandidates: string): BibleCandidateRecord {
-  return bibleCandidateRecordSchema.parse(JSON.parse(rawCandidates));
 }
 
 export async function readBibleCandidateFile(

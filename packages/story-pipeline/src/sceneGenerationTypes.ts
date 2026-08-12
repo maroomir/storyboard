@@ -1,4 +1,5 @@
-import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
+import type { ProjectFormat } from '@seedkernel/wasm';
+import type { SceneContext } from '../../../apps/desktop/src/domain/sceneContext';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from './memoryStore';
 import type {
   AiProviderId,

@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
-import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { CardParseError, parseCard, serializeCard } from '@seedkernel/wasm';
+import type { StoryboardCard } from '@seedkernel/wasm';
 import { applyCardCollectProposals } from '../../domain/cardCollect';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';

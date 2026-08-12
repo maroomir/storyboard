@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSceneSeeds } from "@/domain/sceneSeedFactory"
-import { parseScene } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { parseScene } from '@seedkernel/wasm';
+import type { ChapterPlan } from '@seedkernel/wasm';
 const plan: ChapterPlan = {
   version: "1.0.0",
   acts: [
