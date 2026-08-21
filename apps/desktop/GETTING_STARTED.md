@@ -192,13 +192,6 @@ mood: 설렘
 - **`Storyboard: Open Character Relation Graph`** → 인물 관계를 그래프로 시각화합니다.
   노드를 더블클릭하면 해당 카드가 열립니다. (관계는 캐릭터 카드의 Relations 탭에서 입력)
 
-### 10) 백업·공유 (.seed)
-
-- **`Storyboard: Export Project to Seed...`** → 프로젝트를 `.seed` 아카이브 한 파일로 내보냅니다(변경 이력 포함).
-- 받은 `.seed`는 **`Create Project from Seed...`**(새 프로젝트) 또는 **`Sync Project from Seed...`**
-  (기존에 병합, 탐색기에서 `.seed` 우클릭)로 가져옵니다.
-- 초안·캐시·후보는 재생성 가능하므로 `.seed`에 포함되지 않습니다. 정책: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md).
-
 ---
 
 ## 4. 추천 작업 순서 (한 권 쓰기)
@@ -212,7 +205,7 @@ mood: 설렘
 6. Generate Novel 또는 Generate Scene Seeds + Generate All Drafts
 7. Review & Revise / Promote Bible Candidates로 초안과 canon 정리
 8. Assemble / Review / Summarize Manuscript
-9. Export Draft 또는 Export to Seed로 내보내기·공유
+9. Export Draft로 내보내기·공유
 ```
 
 ---
@@ -247,7 +240,6 @@ mood: 설렘
 | `Storyboard: Canon Diff Report` | 미승격 설정 후보 보고서 생성 |
 | `Storyboard: Export Draft…` | 조립 원고를 Markdown/TXT로 내보내기 |
 | `Storyboard: Open Character Relation Graph` | 관계 그래프 |
-| `Storyboard: Create/Sync/Export ... Seed` | 프로젝트 가져오기/내보내기 |
 
 ---
 
@@ -271,5 +263,4 @@ mood: 설렘
 
 - [`GUIDE.md`](GUIDE.md) — 초안 편집 기능(완성/문법/확장/연속성) 사용법
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md) — 폴더·파일 포맷·명령·설정 키 전체
-- [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md) — `.seed` 교환 정책
 - [`EXTENSION_QA.md`](EXTENSION_QA.md) — 수동 점검 체크리스트

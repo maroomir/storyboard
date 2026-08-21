@@ -17,10 +17,7 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:.storyboard/project.json",
-    "onCommand:storyboard.seed.createFromFile",
-    "onCommand:storyboard.seed.syncFromFile",
-    "onCommand:storyboard.seed.exportToFile"
+    "workspaceContains:.storyboard/project.json"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -32,18 +29,6 @@
       {
         "command": "storyboard.init",
         "title": "%storyboard.init.title%"
-      },
-      {
-        "command": "storyboard.seed.createFromFile",
-        "title": "%storyboard.seed.createFromFile.title%"
-      },
-      {
-        "command": "storyboard.seed.syncFromFile",
-        "title": "%storyboard.seed.syncFromFile.title%"
-      },
-      {
-        "command": "storyboard.seed.exportToFile",
-        "title": "%storyboard.seed.exportToFile.title%"
       },
       {
         "command": "storyboard.character.create",
@@ -487,11 +472,6 @@
     "menus": {
       "explorer/context": [
         {
-          "command": "storyboard.seed.syncFromFile",
-          "when": "resourceExtname == .seed",
-          "group": "storyboard@98"
-        },
-        {
           "command": "storyboard.character.rename",
           "when": "resourceExtname == .card && resourceFilename != .sample.card",
           "group": "storyboard@1"
@@ -610,7 +590,6 @@
   "dependencies": {
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
     "@fontsource-variable/inter": "^5.2.8",
-    "@seedcoat/wasm": "file:vendor/seedcoat-wasm-0.6.0.tgz",
     "@storyboard/story-ai": "*",
     "@storyboard/story-format": "*",
     "@storyboard/story-pipeline": "*",

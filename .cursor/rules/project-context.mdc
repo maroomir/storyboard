@@ -54,7 +54,7 @@ apps/desktop/src/extension.ts       # Thin entry point
 apps/desktop/src/bootstrap/         # Application lifecycle and feature modules
 apps/desktop/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
 apps/desktop/src/application/       # Use cases, pipelines, ports
-apps/desktop/src/infrastructure/    # persistence, ai, vscode/settings/secrets/seedcoat adapters
+apps/desktop/src/infrastructure/    # persistence, ai, vscode/settings/secrets adapters
 apps/desktop/src/domain/            # Runtime-agnostic policies, codecs, value types (no vscode)
 apps/desktop/src/shared/            # Contracts and value types (imports no other layer)
 ```

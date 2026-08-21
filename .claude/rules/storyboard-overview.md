@@ -90,7 +90,6 @@ Cline demonstrates a mature VSCode extension architecture with extension-host or
 ## Tracked documentation
 
 - `ARCHITECTURE.md` (repo root) for product concept, workspace layout, and file formats.
-- `STORYBOARD_ALIGNMENT.md` (repo root) for `.seed` exchange policy with Seeds.
 - `RELEASE.md` (repo root) for version commits, tags, and GitHub Releases.
 - `apps/desktop/EXTENSION_QA.md` for manual extension QA.
 - `apps/desktop/GUIDE.md` for draft editor features.

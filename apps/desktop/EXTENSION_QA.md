@@ -334,52 +334,12 @@ npx @vscode/vsce package
 
 ---
 
-## `.seed` 저장소 아카이브 (seedcoat v0.4)
-
-**전제**: `npm run compile` 결과 번들(`apps/desktop/out/extension.js`)에 `@seedcoat/wasm`이 포함된 상태에서 F5 또는 VSIX로 검증한다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope `.seed`는 지원하지 않는다.
-
-### 준비
-
-- [ ] 테스트용 Storyboard 워크스페이스(캐릭터·배경·씬 `01-…` stem)가 있다.
-- [ ] 동일 워크스페이스를 **보내기**한 `.seed` 파일 1개를 만든다.
-
-### 형식·레거시
-
-- [ ] 저장된 `.seed`를 텍스트 에디터로 열면 첫 줄이 `seedcoat archive v1`이다.
-- [ ] 구 암호화 `.seed`(v0.2) 또는 평문 JSON `.seed`로 **가져오기** 시 지원하지 않는 형식이라는 한국어 거부 메시지가 뜬다.
-
-### 보내기 (export)
-
-- [ ] 명령 **Storyboard: Export Project to Seed...** → 저장 대화상자 → **비암호화 고지** 확인 대화상자 1회 → 즉시 완료된다(패스프레이즈 입력 없음).
-- [ ] `scene/1-opening.txt`처럼 **두 자리 prefix가 아닌 stem**이 있으면 보내기 **전**에 한국어 사전 검사로 중단된다.
-- [ ] `editor.scenePrefixDigits`가 `2`가 아니면 보내기가 사전 검사로 중단된다.
-
-### 가져오기·동기화 (import / sync)
-
-- [ ] 패스프레이즈 입력 없이 즉시 진행되고, 손상·변조된 파일은 한국어 오류(형식/해시 불일치)가 표시된다.
-- [ ] **새 폴더에 만들기** 후 `project.json`, 카드, `scene/*.txt`가 기대와 일치한다.
-- [ ] 디코드 직후 **ID 매핑 검토** QuickPick이 뜬다. 항목에서 새 ID를 지정하면 import/sync 결과 파일명·본문 `id`·참조가 함께 바뀌고, **변경 없이 계속**이면 seedcoat ID가 그대로 반영된다.
-- [ ] 기존 워크스페이스 **동기화** 시 충돌·삭제 확인 후 반영된다.
-
----
-
 ## 카드 ID rename
 
 - [ ] 탐색기 F2, Storyboard 사이드바 카드 컨텍스트 **ID 변경**, 명령 팔레트(`storyboard.character.rename` / `storyboard.background.rename`) 세 경로 모두 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
 - [ ] `.sample.card` rename은 후처리 대상에서 제외된다.
 - [ ] 규칙에 맞지 않는 새 ID(대문자·공백 등)는 경고 후 rename이 취소된다.
 - [ ] Finder·터미널 등 VSCode 밖에서 파일명을 바꾼 경우는 자동 갱신되지 않는다. 본문·참조·프로필을 맞추려면 사이드바 **ID 변경** 또는 명령 팔레트 rename을 사용한다.
-
-### 데이터·호환
-
-- [ ] 보내기 다이얼로그에 arc/profile 등 **미포함** 안내가 있다. round-trip 후 해당 필드가 사라지는지 확인한다(의도된 동작).
-- [ ] `trackDraft` 등 seed `project` envelope에 없는 필드는 동기화 시 덮어쓰기 정책을 [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)와 대조한다.
-- [ ] 구 `type: background` 카드가 있는 워크스페이스는 보내기/읽기 실패 시 메시지로 원인을 파악할 수 있다.
-
-### VSIX 패키징
-
-- [ ] `apps/desktop`에서 `npm run package:vsix -- --out dist/storyboard-<version>.vsix` 성공.
-- [ ] VSIX 설치 후 위 **보내기·가져오기**를 **최소 1회** 반복한다.
 
 ---
 

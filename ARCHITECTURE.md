@@ -405,20 +405,14 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.apiKey.set` | `Storyboard: Set API Key…` | provider 선택 → 키 입력 → `SecretStorage` |
 | `storyboard.relationGraph.open` | `Storyboard: Open Character Relation Graph` | 관계 그래프 webview Panel |
 | `storyboard.draft.export` | `Storyboard: Export Draft…` | 조립 원고(`manuscript/manuscript.md`)를 Markdown/TXT로 내보내기 (PDF/DOCX 후속) |
-| `storyboard.seed.createFromFile` | `Storyboard: Create Project from Seed...` | `.seed` 아카이브 → 새 워크스페이스 폴더 |
-| `storyboard.seed.syncFromFile` | `Storyboard: Sync Project from Seed...` | `.seed` 아카이브 → 기존 프로젝트 동기화 |
-| `storyboard.seed.exportToFile` | `Storyboard: Export Project to Seed...` | 워크스페이스 → `.seed` 아카이브 |
 
-디스크 교환용 `.seed` 저장소 아카이브 명세는 [seedcoat](https://github.com/webfic/seedcoat)가 단일 진실원이다. Storyboard·Seeds 공통 정책은 [`STORYBOARD_ALIGNMENT.md`](STORYBOARD_ALIGNMENT.md)를 따른다.
+Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아카이브 포맷은 두지 않는다.
 
 ### 5.1 활성화 조건
 
 ```json
 "activationEvents": [
-  "workspaceContains:.storyboard/project.json",
-  "onCommand:storyboard.seed.createFromFile",
-  "onCommand:storyboard.seed.syncFromFile",
-  "onCommand:storyboard.seed.exportToFile"
+  "workspaceContains:.storyboard/project.json"
 ]
 ```
 
@@ -605,7 +599,7 @@ extension.ts
   -> bootstrap/                 # StoryboardApplication, lifecycle, feature module composition
        -> presentation/         # commands, providers, messaging(웹뷰 RPC) — VS Code 입출력 전용
        -> application/          # use cases, pipelines, ports (GenerateDraftUseCase, NovelPipeline …)
-       -> infrastructure/       # persistence·ai·vscode·settings·secrets·seedcoat 어댑터/repository
+       -> infrastructure/       # persistence·ai·vscode·settings·secrets 어댑터/repository
        -> domain/               # runtime-agnostic policies·codecs·value types (vscode 없음)
        -> shared/               # 다른 내부 레이어를 import하지 않는 contracts/value types
 ```
@@ -616,4 +610,4 @@ extension.ts
 - 상태·I/O·수명주기를 가진 협력자는 생성자 주입으로 연결하고, `DisposableStore`가 feature module의 reverse dispose를 담당한다.
 - `shared`·`domain`은 상위 계층과 `vscode`를 import하지 않는다(강제됨). `application`은 `vscode`를 type-only로만 참조한다.
 - Draft 생성은 `GenerateDraftUseCase`와 Project/Scene/Draft/Scene Cache repository를 통해 실행한다. Novel은 `NovelPipeline`, AI 전송은 `AiGateway`와 `AiTextGateway`가 담당한다.
-- 350 LOC 초과 예외(근거 있는 유지): `presentation/commands/importSeed.ts`(정당한 QuickPick/확인 대화 흐름), `infrastructure/settings/ConfigBridge.ts`·`infrastructure/ai/providers/CodexProvider.ts`(cohesive 어댑터, 함수 복잡도 낮음 — 길이만으로 분해하지 않음).
+- 350 LOC 초과 예외(근거 있는 유지): `infrastructure/settings/ConfigBridge.ts`·`infrastructure/ai/providers/CodexProvider.ts`(cohesive 어댑터, 함수 복잡도 낮음 — 길이만으로 분해하지 않음).

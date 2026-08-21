@@ -17,8 +17,8 @@ except operational state.
   user's unrelated uncommitted work.
 - **Generated artifacts are written but not committed.** `draft/`, `.draft/`, `manuscript/`, and
   `.storyboard/cache/` are gitignored exactly as the extension scaffolds them.
-- **No seedcoat.** The bot was rebuilt without the `.seed` archive. `apps/bot/scripts/check-architecture.mjs`
-  fails the build if a `seed` import reappears.
+- **No seedcoat.** The `.seed` archive is gone from the whole repository — story content lives in the
+  git workspace only. `apps/bot/scripts/check-architecture.mjs` fails the build if a `seed` import reappears.
 
 ## Security
 

@@ -33,7 +33,6 @@ English README: [`README.en.md`](README.en.md)
 - `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
 - Claude Code(`claude`)·Codex(`codex`) CLI provider 지원 — API 키 없이 구독 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
-- seedcoat `.seed` 저장소 아카이브 가져오기/보내기(Seeds와 호환)
 - 텔레그램 동반 봇([storygram](../bot/README.md)) 상태바 관찰 — 실행 여부·동기화 상태 표시, `Storyboard: 텔레그램 봇 대시보드 열기` 명령으로 운영 패널(`127.0.0.1`) 열기
 - 설정 패널 **텔레그램 봇** 탭 — 허용 채팅 ID·기본 프로바이더 편집, «이 작품을 봇에 연결» 버튼으로 워크스페이스 전환, 저장 후 재시작 안내(토큰은 마스킹 표시만 하며 변경은 마법사에서만)
 - `Storyboard: 텔레그램 봇 설정 파일 열기`(JSON 스키마 검증 포함) · `Storyboard: 텔레그램 봇 재시작`(launchd) — 설정을 나중에 고치고 즉시 반영
@@ -110,21 +109,12 @@ CLI provider 사용 시 참고할 점:
 
 웹뷰만 수정한 경우에는 `npm run build:webview` 후 Extension Development Host에서 `Developer: Reload Window`를 실행하면 됩니다.
 
-## `.seed` 가져오기/보내기
-
-- 명령: `Storyboard: Create Project from Seed...`, `Sync Project from Seed...`, `Export Project to Seed...`
-- `.seed`는 [`@seedcoat/wasm`](https://github.com/webfic/seedcoat) v0.4.0 **저장소 아카이브**(`seedcoat archive v1`)이며 전체 변경 이력을 보존합니다. 구 암호화 바이너리(v0.2)와 평문 JSON envelope는 지원하지 않습니다.
-- `.seed`는 **암호화되지 않습니다**. 패스프레이즈는 사용하지 않으며, 내보내기 시 비암호화 고지를 1회 표시합니다.
-- 캐릭터 `arc` / `recentDialogues` / `profile` / `attributes`와 `draft/`는 `.seed`에 포함되지 않습니다.
-- 정책 요약: [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md)
-
 ## 문서
 
 공개 문서는 저장소 루트의 대문자 Markdown을 기준으로 합니다. 상세 계획·의사결정 기록 등 확장 문서는 원격에 포함되지 않으며, 필요 시 로컬에만 `.doc/` 디렉터리를 두고 관리할 수 있습니다.
 
 - [`GETTING_STARTED.md`](GETTING_STARTED.md): 작가용 시작 가이드 (초보자용 전체 흐름)
 - [`ARCHITECTURE.md`](../../ARCHITECTURE.md): 제품 아키텍처와 파일 모델
-- [`STORYBOARD_ALIGNMENT.md`](../../STORYBOARD_ALIGNMENT.md): Seeds ↔ Storyboard `.seed` 정책
 - [`GUIDE.md`](GUIDE.md): draft 편집 기능 사용법
 - [`EXTENSION_QA.md`](EXTENSION_QA.md): 수동 QA 체크리스트
 - [`RELEASE.md`](../../RELEASE.md): 릴리스 절차

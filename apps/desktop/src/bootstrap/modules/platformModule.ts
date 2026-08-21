@@ -8,9 +8,6 @@ import { CreateCardUseCase } from '../../application/cards/createCardUseCase';
 import { BuildStoryCardsUseCase } from '../../application/story/buildStoryCardsUseCase';
 import { CompleteStoryScenesUseCase } from '../../application/story/completeStoryScenesUseCase';
 import { PromoteBibleCandidatesUseCase } from '../../application/project/promoteBibleCandidatesUseCase';
-import { DecodeSeedUseCase } from '../../application/project/decodeSeedUseCase';
-import { PrepareSeedSyncUseCase } from '../../application/project/prepareSeedSyncUseCase';
-import { SeedProjectUseCase } from '../../application/project/seedProjectUseCase';
 import { AssembleManuscriptUseCase } from '../../application/manuscript/assembleManuscriptUseCase';
 import { ExportManuscriptUseCase } from '../../application/manuscript/exportManuscriptUseCase';
 import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
@@ -42,7 +39,6 @@ import { SceneCacheRepository } from '../../infrastructure/persistence/repositor
 import { SceneRepository } from '../../infrastructure/persistence/repositories/sceneRepository';
 import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/sceneBatchRepository';
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/sceneSidebarRepository';
-import { SeedProjectRepository } from '../../infrastructure/persistence/repositories/seedProjectRepository';
 import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
@@ -66,10 +62,8 @@ export interface IPlatformServices {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
-  readonly decodeSeedUseCase: DecodeSeedUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
-  readonly seedProjectUseCase: SeedProjectUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
@@ -119,8 +113,6 @@ export class PlatformModule implements IApplicationModule {
       logger.warn(message),
     );
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
-    const decodeSeedUseCase = new DecodeSeedUseCase();
-    const prepareSeedSyncUseCase = new PrepareSeedSyncUseCase();
     const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger);
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
     const expandDraftUseCase = new ExpandDraftUseCase(aiGateway, logger);
@@ -145,12 +137,6 @@ export class PlatformModule implements IApplicationModule {
     const sceneBatchRepository = new SceneBatchRepository();
     const sceneSidebarRepository = new SceneSidebarRepository();
     const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository();
-    const seedProjectRepository = new SeedProjectRepository();
-    const seedProjectUseCase = new SeedProjectUseCase(
-      logger,
-      prepareSeedSyncUseCase,
-      seedProjectRepository,
-    );
     const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
       logger,
       manuscriptAssemblyRepository,
@@ -241,7 +227,6 @@ export class PlatformModule implements IApplicationModule {
       cardSidebarRepository,
       configBridge,
       condenseDraftUseCase,
-      decodeSeedUseCase,
       expandDraftUseCase,
       exportManuscriptUseCase,
       fileSystem,
@@ -260,7 +245,6 @@ export class PlatformModule implements IApplicationModule {
       reviseDraftUseCase,
       sceneSidebarRepository,
       secretStore,
-      seedProjectUseCase,
       summarizeChaptersUseCase,
       usageRecorder,
       proposalReviewService,

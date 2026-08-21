@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import { registerHelloWorldCommand } from '../../presentation/commands/helloWorld';
-import { registerImportSeedCommands } from '../../presentation/commands/importSeed';
 import { registerInitCommand } from '../../presentation/commands/init';
 import { registerSetApiKeyCommand } from '../../presentation/commands/setApiKey';
 import { registerStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
@@ -20,11 +19,6 @@ export class ProjectModule implements IApplicationModule {
       registerStoryboardWorkspaceContext(context),
       registerHelloWorldCommand(),
       registerInitCommand({ logger: this.platform.logger }),
-      registerImportSeedCommands({
-        decodeSeedUseCase: this.platform.decodeSeedUseCase,
-        logger: this.platform.logger,
-        seedProjectUseCase: this.platform.seedProjectUseCase,
-      }),
       registerSetApiKeyCommand({ secretStore: this.platform.secretStore }),
     );
   }

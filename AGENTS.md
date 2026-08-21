@@ -35,7 +35,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 - This is a VSCode extension project.
 - Check `apps/desktop/package.json` scripts before running build, lint, test, or packaging commands; the root `package.json` re-exports only `build`, `compile`, `lint`, `test`, and `package:vsix` to that workspace.
 - When updating the project version or release notes, update both `apps/desktop/CHANGELOG.md` and `apps/desktop/CHANGELOG.en.md` in the same change. The extension version lives only in `apps/desktop/package.json`.
-- Tracked docs at repo root: `ARCHITECTURE.md`, `STORYBOARD_ALIGNMENT.md`, `RELEASE.md`. Extension-scoped docs live in `apps/desktop/`: `EXTENSION_QA.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
+- Tracked docs at repo root: `ARCHITECTURE.md`, `RELEASE.md`. Extension-scoped docs live in `apps/desktop/`: `EXTENSION_QA.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
 - Inspect nearby files and existing conventions before editing.
 - For non-trivial work, state assumptions and success criteria before editing; ask when ambiguity could change the implementation.
 - Keep changes surgical: every changed line should trace directly to the user's request.
