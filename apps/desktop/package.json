@@ -558,7 +558,6 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check:src": "prettier --check src",
-    "package": "npm run package:vsix",
     "package:vsix": "mkdir -p dist && npm run build && vsce package --no-dependencies --baseContentUrl https://github.com/maroomir/storyboard/blob/HEAD/apps/desktop/"
   },
   "devDependencies": {

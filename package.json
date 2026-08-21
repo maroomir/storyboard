@@ -17,8 +17,5 @@
     "package:vsix": "npm run package:vsix --workspace storyboard",
     "bot:build": "npm run build --workspace storygram",
     "bot:start": "npm run start --workspace storygram"
-  },
-  "devDependencies": {
-    "prettier": "^3.3.3"
   }
 }
