@@ -3,15 +3,14 @@ import path from "node:path"
 
 import { test } from "vitest"
 
-import { buildSceneContext } from "@/domain/sceneContext"
-import { readSceneFile } from "@/domain/files/scene"
-import { StoryboardAIService } from "@/infrastructure/ai/AIService"
-import type { AiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProvider"
-import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
-import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/providers/cliRunner"
-import type { AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
-import { summarizeSceneCoverage } from "@/shared/sceneCoverage"
+import { buildSceneContext, readSceneFile } from "@storyboard/story-format"
+import { StoryboardAIService } from "@storyboard/story-ai"
+import type { AiProviderRegistry } from "@storyboard/story-ai"
+import { ClaudeCodeProvider } from "@storyboard/story-ai"
+import { CodexProvider } from "@storyboard/story-ai"
+import { createDefaultCliRunner, type CliRunResult } from "@storyboard/story-ai"
+import type { AiGenerateResponse, AiProvider } from "@storyboard/story-ai"
+import { summarizeSceneCoverage } from "@storyboard/story-ai"
 
 import { createUsageSummary } from "./usageSummary"
 
