@@ -7,8 +7,8 @@ import {
   runSceneGenerationPipeline,
   type BackgroundMemoryStore,
   type PersonaMemoryStore
-} from "@/application/pipelines/sceneGenerationPipeline"
-import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@/domain/sceneContext"
+} from "@storyboard/story-pipeline"
+import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@storyboard/story-format"
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
@@ -16,27 +16,27 @@ import {
   readPersonaMemoryFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile
-} from "@/domain/files/cardMemory"
-import { createDraft, serializeDraft } from "@/domain/files/draft"
+} from "@storyboard/story-format"
+import { createDraft, serializeDraft } from "@storyboard/story-format"
 import { archiveExistingDraft } from "@/domain/files/draftHistory"
-import { readSceneFile } from "@/domain/files/scene"
-import { StoryboardAIService } from "@/infrastructure/ai/AIService"
-import type { AiProviderRegistry } from "@/infrastructure/ai/providerRegistry"
-import { ClaudeCodeProvider } from "@/infrastructure/ai/providers/ClaudeCodeProvider"
-import { CodexProvider } from "@/infrastructure/ai/providers/CodexProvider"
-import { createDefaultCliRunner, type CliRunResult } from "@/infrastructure/ai/providers/cliRunner"
-import type { AiProviderId } from "@/shared/ai"
-import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from "@/shared/aiTypes"
-import type { BackgroundCard, CharacterCard } from "@/shared/card"
-import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "@/shared/draftReview"
-import type { ProjectFormat } from "@/shared/project"
+import { readSceneFile } from "@storyboard/story-format"
+import { StoryboardAIService } from "@storyboard/story-ai"
+import type { AiProviderRegistry } from "@storyboard/story-ai"
+import { ClaudeCodeProvider } from "@storyboard/story-ai"
+import { CodexProvider } from "@storyboard/story-ai"
+import { createDefaultCliRunner, type CliRunResult } from "@storyboard/story-ai"
+import type { AiProviderId } from "@storyboard/story-ai"
+import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from "@storyboard/story-ai"
+import type { BackgroundCard, CharacterCard } from "@storyboard/story-format"
+import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "@storyboard/story-ai"
+import type { ProjectFormat } from "@storyboard/story-format"
 import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
   routeReviewIssues
-} from "@/shared/reviewRouting"
-import { buildStyleDirective } from "@/shared/styleDirective"
+} from "@storyboard/story-pipeline"
+import { buildStyleDirective } from "@storyboard/story-ai"
 
 import { createUsageSummary } from "./usageSummary"
 
