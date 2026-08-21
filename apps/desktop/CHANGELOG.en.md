@@ -10,6 +10,24 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-08-21
+
+### Removed
+
+- Removed the seedcoat `.seed` repository archive feature: the three `Storyboard: Create/Sync/Export Project ... Seed` commands, the explorer `.seed` menu, and the `@seedcoat/wasm` dependency are gone. A project lives in its git workspace itself; there is no separate exchange archive format.
+- Removed the leftover scaffolding command `Storyboard: Hello World`.
+
+### Fixed
+
+- Repaired the scene coverage diagnostic harness (`coverageCheck.harness.ts`), which imported pre-restructure paths and could not start.
+- Removed two card-rename tree context menu contributions that could never appear on webview views. The explorer right-click and command palette paths keep working.
+- Added the missing Korean translation for the `Storyboard: Promote Card Candidates` command title.
+
+### Structure
+
+- Cleaned up unreferenced code and dependencies: deleted unused modules, functions, and types, un-exported internal-only symbols, and dropped unused dependencies such as the bot's `js-yaml`. No user-facing behavior changes.
+- Corrected 13 stale pre-restructure file paths in `ARCHITECTURE.md` and other docs.
+
 ## [0.6.0] - 2026-08-01
 
 ### Added
