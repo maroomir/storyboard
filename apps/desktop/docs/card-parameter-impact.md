@@ -18,11 +18,11 @@
 
 핵심 근거 (코드 위치):
 
-- `src/services/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
-- `src/services/ai/prompts/personaDialogue.ts:37-38` — `background.description`, `background.tags`만 사용.
-- `src/core/sceneContext.ts:285-289` — `name` + `aliases`로 인물 **탐지**.
-- `src/services/ai/pipelines/sceneGenerationPipeline.ts:152` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
-- `src/core/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
+- `packages/story-ai/src/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
+- `packages/story-ai/src/ai/prompts/personaDialogue.ts` — `background.description`, `background.tags`만 사용.
+- `packages/story-format/src/sceneContext.ts` — `name` + `aliases`로 인물 **탐지**.
+- `packages/story-pipeline/src/sceneGenerationPipeline.ts` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
+- `packages/story-format/src/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
 
 ## 영향력 높은 파라미터
 
@@ -82,9 +82,9 @@
 
 | 필드 | 자동화 방식 | 코드 |
 |---|---|---|
-| `traits`·`recentDialogues` | 카드에 직접 기록(append) | `src/services/ai/traitsUpdater.ts` |
-| 배경 `characterIds` | 부착 배경 카드에 등장 인물 id를 결정적 append | `src/services/ai/backgroundCharacterUpdater.ts` |
-| `attributes`·`arc`·`relations` | AI 추출 → `.storyboard/cache/cards/<scene>.json` 후보 → `Promote Card Candidates`로 승격 | `src/services/ai/cardCandidateUpdater.ts`, `src/core/cardCandidatePromotion.ts` |
+| `traits`·`recentDialogues` | 카드에 직접 기록(append) | `src/infrastructure/ai/traitsUpdater.ts` |
+| 배경 `characterIds` | 부착 배경 카드에 등장 인물 id를 결정적 append | `src/infrastructure/ai/backgroundCharacterUpdater.ts` |
+| `attributes`·`arc`·`relations` | AI 추출 → `.storyboard/cache/cards/<scene>.json` 후보 → `Promote Card Candidates`로 승격 | `src/infrastructure/ai/cardCandidateUpdater.ts`, `src/domain/cardCandidatePromotion.ts` |
 
 - `arc`·`relations`는 카드 에디터 `AI 기록` 탭에서 **읽기 전용 시각화**(아크 곡선·관계 미리보기)로 표시된다.
 - 환각 완화: 후보는 승격 게이트를 거치고, relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
