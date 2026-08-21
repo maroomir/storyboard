@@ -1,22 +1,22 @@
 import { z } from 'zod';
 
-export const cardAttributeCandidateSchema = z.object({
+const cardAttributeCandidateSchema = z.object({
   key: z.string().trim().min(1),
   value: z.string().trim().min(1),
 });
 
-export const cardRelationCandidateSchema = z.object({
+const cardRelationCandidateSchema = z.object({
   target: z.string().trim().min(1),
   type: z.string().trim().min(1),
 });
 
-export const cardArcCandidateSchema = z.object({
+const cardArcCandidateSchema = z.object({
   stage: z.string().trim().min(1).optional(),
   summary: z.string().trim().min(1),
   sceneRef: z.string().trim().min(1),
 });
 
-export const cardCandidateCharacterSchema = z.object({
+const cardCandidateCharacterSchema = z.object({
   cardId: z.string().trim().min(1),
   attributes: z.array(cardAttributeCandidateSchema).default([]),
   relations: z.array(cardRelationCandidateSchema).default([]),

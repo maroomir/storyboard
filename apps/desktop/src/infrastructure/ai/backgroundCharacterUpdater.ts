@@ -1,6 +1,6 @@
 import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { BackgroundCard, CardFileSystem, CharacterCard } from '@storyboard/story-format';
-export interface BackgroundCharacterUpdateLogger {
+interface BackgroundCharacterUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }
 

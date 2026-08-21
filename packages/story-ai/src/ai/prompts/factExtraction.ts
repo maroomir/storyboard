@@ -1,10 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
 
-export interface FactCandidatePayload {
-  readonly key: string;
-  readonly value: string;
-}
-
 export const FactExtractionPrompt = {
   config: {
     temperature: 0.2,

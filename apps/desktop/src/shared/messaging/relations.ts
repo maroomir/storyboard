@@ -4,12 +4,12 @@ import { uriStringSchema } from './atoms';
 
 export const relationsListRequestPayloadSchema = z.object({});
 
-export const relationListItemRelationSchema = z.object({
+const relationListItemRelationSchema = z.object({
   target: z.string().trim().min(1),
   type: z.string().trim().min(1),
 });
 
-export const relationListCharacterSchema = z.object({
+const relationListCharacterSchema = z.object({
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
   role: z.string().trim().min(1).optional(),

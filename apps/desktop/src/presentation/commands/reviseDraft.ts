@@ -1,21 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
-import type {
-  ReviseDraftUseCase,
-  ReviseDraftWorkflowResult,
-} from '../../application/drafts/reviseDraftUseCase';
+import type { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
-import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
+import { draftPath } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneFileName, parseSceneStem } from '@storyboard/story-format';
+import { parseSceneStem } from '@storyboard/story-format';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';
-const defaultMaxIterations = 2;
-const minMaxIterations = 1;
-const maxMaxIterations = 5;
 
 export interface RegisterReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
@@ -32,122 +25,10 @@ export function registerReviseDraftCommand(
   );
 }
 
-export interface ReviseGateDependencies {
-  readonly logger: StoryboardLogger;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
-}
-
-export interface ReviseGateHooks {
-  readonly onProgress?: (message: string) => void;
-  readonly shouldCancel?: () => boolean;
-}
-
-// NOTE: Shared revise gate so Generate Draft / Generate All Drafts can verify-before-commit
-// with the same continuity+critique loop the manual reviseLoop command uses. Returns undefined
-// when the scene has no draft yet.
-export async function runReviseGateForScene(
-  workspaceUri: vscode.Uri,
-  sceneStem: string,
-  dependencies: ReviseGateDependencies,
-  hooks: ReviseGateHooks = {},
-): Promise<ReviseDraftWorkflowResult | undefined> {
-  const paths = getStoryboardProjectPaths(workspaceUri);
-  const draftUri = draftPath(workspaceUri, sceneStem);
-
-  if (!(await uriExists(draftUri))) {
-    return undefined;
-  }
-
-  const result = await dependencies.reviseDraftUseCase.execute({
-    workspaceUri,
-    paths,
-    draftUri,
-    sceneStem,
-    maxIterations: resolveReviseMaxIterations(),
-    maxCompressionPercent: resolveMaxCompressionPercent(),
-    reviseScoreThreshold: resolveReviseScoreThreshold(),
-    onProgress: hooks.onProgress,
-    shouldCancel: hooks.shouldCancel,
-  });
-
-  try {
-    await recordRevisionEntry(paths, {
-      sceneStem,
-      checkedAt: new Date().toISOString(),
-      revisionCount: result.revisionCount,
-      remainingBlocking: result.remainingBlocking,
-      instructions: result.instructions,
-      preservedOriginal: result.preservedOriginal,
-      rejection: result.rejection,
-    });
-  } catch (error) {
-    dependencies.logger.warn(
-      `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
-
-  return result;
-}
-
-export interface ReviseAfterGenerateHooks extends ReviseGateHooks {
-  readonly onWillRun?: () => void;
-}
-
-// NOTE: Shared post-generate revise gate so Generate Draft / Generate All Drafts apply the
-// revise-after-generate setting identically. No-ops when disabled, cancelled, or the scene has no
-// parseable stem; onWillRun fires only right before the gate actually runs.
-export async function maybeRunReviseAfterGenerate(
-  sceneUri: vscode.Uri,
-  configBridge: ConfigBridge,
-  dependencies: ReviseGateDependencies,
-  hooks: ReviseAfterGenerateHooks = {},
-): Promise<void> {
-  if (!configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
-    return;
-  }
-
-  const folder = vscode.workspace.getWorkspaceFolder(sceneUri);
-  const stem = parseSceneFileName(sceneUri.path.split('/').pop() ?? '')?.stem;
-
-  if (!folder || !stem) {
-    return;
-  }
-
-  hooks.onWillRun?.();
-  await runReviseGateForScene(folder.uri, stem, dependencies, {
-    onProgress: hooks.onProgress,
-    shouldCancel: hooks.shouldCancel,
-  });
-}
-
 function resolveSceneStem(uri: vscode.Uri): string | undefined {
   const fileName = uri.path.split('/').pop() ?? '';
   const stem = fileName.replace(/\.(md|txt)$/, '');
   return parseSceneStem(stem) ? stem : undefined;
-}
-
-export function resolveReviseMaxIterations(): number {
-  const configured = vscode.workspace
-    .getConfiguration('storyboard')
-    .get<number>('draft.reviseMaxIterations', defaultMaxIterations);
-  const value = Math.floor(Number.isFinite(configured) ? configured : defaultMaxIterations);
-  return Math.min(maxMaxIterations, Math.max(minMaxIterations, value));
-}
-
-function resolveReviseScoreThreshold(): number {
-  const configured = vscode.workspace
-    .getConfiguration('storyboard')
-    .get<number>('draft.reviseScoreThreshold', 0);
-  const value = Math.floor(Number.isFinite(configured) ? configured : 0);
-  return Math.min(100, Math.max(0, value));
-}
-
-function resolveMaxCompressionPercent(): number {
-  const configured = vscode.workspace
-    .getConfiguration('storyboard')
-    .get<number>('draft.maxCompressionPercent', 50);
-  const value = Math.floor(Number.isFinite(configured) ? configured : 50);
-  return Math.min(90, Math.max(0, value));
 }
 
 async function runReviseDraft(

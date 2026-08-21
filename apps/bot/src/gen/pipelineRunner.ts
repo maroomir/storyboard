@@ -4,7 +4,7 @@ import type { IJobProgressListener } from './progress';
 import { NullProgressListener } from './progress';
 import type { GenJob, PipelineResult } from './types';
 
-export const HEARTBEAT_INTERVAL_MS = 30_000;
+const HEARTBEAT_INTERVAL_MS = 30_000;
 
 export interface PipelineContext {
   readonly isCancelled: () => boolean;

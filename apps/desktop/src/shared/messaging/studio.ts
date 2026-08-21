@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { uriStringSchema } from './atoms';
 
-export const studioActionSchema = z.enum([
+const studioActionSchema = z.enum([
   'regenerate',
   'generate',
   'applyFormat',
@@ -37,9 +37,9 @@ export const studioRunActionRequestPayloadSchema = z.object({
 
 export const studioRunActionResponsePayloadSchema = z.object({});
 
-export const studioTurnStatusSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled']);
+const studioTurnStatusSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled']);
 
-export const studioClarifyReasonSchema = z.enum([
+const studioClarifyReasonSchema = z.enum([
   'no-target',
   'needs-selection',
   'needs-draft',
@@ -78,7 +78,7 @@ export const studioChatTurnSchema = z.union([
 
 export type StudioChatTurn = z.infer<typeof studioChatTurnSchema>;
 
-export const studioSessionSnapshotSchema = z.object({
+const studioSessionSnapshotSchema = z.object({
   id: z.string().min(1),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -88,7 +88,7 @@ export const studioSessionSnapshotSchema = z.object({
 
 export type StudioSessionSnapshot = z.infer<typeof studioSessionSnapshotSchema>;
 
-export const studioSessionSummarySchema = z.object({
+const studioSessionSummarySchema = z.object({
   id: z.string().min(1),
   title: z.string(),
   updatedAt: z.string().datetime(),

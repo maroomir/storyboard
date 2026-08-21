@@ -20,7 +20,7 @@ export interface StudioSession {
   readonly turns: readonly StudioChatTurn[];
 }
 
-export const studioSessionSchema = z.object({
+const studioSessionSchema = z.object({
   version: z.literal(studioSessionVersion),
   id: z.string().min(1),
   createdAt: z.string().datetime(),

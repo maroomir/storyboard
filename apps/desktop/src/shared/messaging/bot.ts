@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const botProviderIdSchema = z.enum(['mock', 'claude-code', 'codex']);
+const botProviderIdSchema = z.enum(['mock', 'claude-code', 'codex']);
 
 const botWorkspaceCandidateSchema = z.object({
   path: z.string().min(1),
@@ -8,12 +8,7 @@ const botWorkspaceCandidateSchema = z.object({
   isConnected: z.boolean(),
 });
 
-export const botHealthStatusSchema = z.enum([
-  'unconfigured',
-  'dashboard-disabled',
-  'offline',
-  'online',
-]);
+const botHealthStatusSchema = z.enum(['unconfigured', 'dashboard-disabled', 'offline', 'online']);
 
 // SECURITY: the bot token never crosses this boundary. The read payload carries only a masked hint
 // so the panel can show that a token exists, and there is no update method that accepts one —

@@ -2,7 +2,7 @@
 // it implements these ports, so chat never depends on the Telegram SDK and the transport stays
 // swappable and testable. Adapters (telegram/) depend on this file, not the other way around.
 
-export interface InlineButton {
+interface InlineButton {
   readonly text: string;
   readonly callbackData: string;
 }
@@ -21,7 +21,7 @@ export interface BotCommand {
   readonly description: string;
 }
 
-export interface IncomingMessageUpdate {
+interface IncomingMessageUpdate {
   readonly kind: 'message';
   readonly chatId: number;
   readonly userId: number | undefined;
@@ -29,7 +29,7 @@ export interface IncomingMessageUpdate {
   readonly text: string;
 }
 
-export interface IncomingCallbackUpdate {
+interface IncomingCallbackUpdate {
   readonly kind: 'callback';
   readonly chatId: number;
   readonly userId: number | undefined;

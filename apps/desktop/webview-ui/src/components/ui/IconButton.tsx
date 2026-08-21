@@ -2,8 +2,8 @@ import clsx from "clsx"
 import { Minus, Pencil, Plus, Save, X } from "lucide-react"
 import type React from "react"
 
-export type IconButtonSize = "sm" | "md"
-export type IconButtonIcon = "add" | "remove" | "edit" | "save" | "cancel"
+type IconButtonSize = "sm" | "md"
+type IconButtonIcon = "add" | "remove" | "edit" | "save" | "cancel"
 
 const sizeClass: Record<IconButtonSize, { button: string; icon: string }> = {
   sm: { button: "h-7 w-7", icon: "h-3.5 w-3.5" },

@@ -1,6 +1,6 @@
 import type { CharacterRole, SidebarCardSummary } from "./types"
 
-export type CharacterSidebarGroupKey = CharacterRole | "unclassified"
+type CharacterSidebarGroupKey = CharacterRole | "unclassified"
 
 export interface CharacterSidebarSection {
   readonly key: CharacterSidebarGroupKey
@@ -8,7 +8,7 @@ export interface CharacterSidebarSection {
   readonly cards: readonly SidebarCardSummary[]
 }
 
-export const CHARACTER_SIDEBAR_SECTIONS: readonly {
+const CHARACTER_SIDEBAR_SECTIONS: readonly {
   readonly key: CharacterSidebarGroupKey
   readonly label: string
 }[] = [

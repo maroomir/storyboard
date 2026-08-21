@@ -1,7 +1,7 @@
 import { flattenChapterPlan } from '@storyboard/story-format';
 import type { ChapterPlan } from '@storyboard/story-format';
 
-export interface ForeshadowingEntry {
+interface ForeshadowingEntry {
   readonly item: string;
   readonly sceneTitle: string;
   readonly sceneOrder: number;

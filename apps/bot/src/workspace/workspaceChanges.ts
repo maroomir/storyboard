@@ -17,7 +17,7 @@ export interface WorkspacePlan {
   readonly commitMessage: string;
 }
 
-export type StaleReason = 'changed-on-disk' | 'deleted-on-disk' | 'already-exists';
+type StaleReason = 'changed-on-disk' | 'deleted-on-disk' | 'already-exists';
 
 export interface StaleFile {
   readonly relativePath: string;

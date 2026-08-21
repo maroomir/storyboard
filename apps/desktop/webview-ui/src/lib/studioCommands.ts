@@ -20,7 +20,7 @@ export interface StudioSlashCommand {
   readonly action: StudioActionId
 }
 
-export const studioSlashCommands: readonly StudioSlashCommand[] = [
+const studioSlashCommands: readonly StudioSlashCommand[] = [
   { command: "regenerate", action: "regenerate" },
   { command: "generate", action: "generate" },
   { command: "format", action: "applyFormat" },

@@ -2,7 +2,7 @@ import clsx from "clsx"
 import type { LucideIcon } from "lucide-react"
 import type React from "react"
 
-export type PillTone = "character" | "background" | "neutral"
+type PillTone = "character" | "background" | "neutral"
 
 const toneClass: Record<PillTone, string> = {
   character: "border-sb-accent-character/40 bg-sb-accent-character/15 text-sb-fg",

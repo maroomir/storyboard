@@ -53,8 +53,6 @@ export const settingsReadResponsePayloadSchema = z.object({
   taskCatalog: z.array(taskCatalogEntrySchema).min(1),
 });
 
-export const settingsChangedEventPayloadSchema = settingsReadResponsePayloadSchema;
-
 export const settingsReadRequestPayloadSchema = z.object({});
 
 export const settingsUpdateDefaultProviderRequestPayloadSchema = z.object({

@@ -2,7 +2,7 @@ import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { z } from 'zod';
 
-export const revisionPlanVersion = '1.0.0';
+const revisionPlanVersion = '1.0.0';
 
 export interface RevisionPlanEntry {
   readonly sceneStem: string;
@@ -57,7 +57,7 @@ const revisionPlanEntrySchema = z.object({
     .optional(),
 });
 
-export const revisionPlanSchema = z.object({
+const revisionPlanSchema = z.object({
   version: z.literal(revisionPlanVersion),
   entries: z.array(revisionPlanEntrySchema).default([]),
 });

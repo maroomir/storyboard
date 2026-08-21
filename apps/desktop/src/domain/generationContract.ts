@@ -1,8 +1,8 @@
 import { contractFieldKeys } from '@storyboard/story-format';
 import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-format';
 
-export const minReasonableTargetWordCount = 1_000;
-export const maxReasonableTargetWordCount = 2_000_000;
+const minReasonableTargetWordCount = 1_000;
+const maxReasonableTargetWordCount = 2_000_000;
 
 export interface GenerationContractReadiness {
   readonly isReady: boolean;

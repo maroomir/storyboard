@@ -24,7 +24,7 @@ const projectSettingSchema = z.object({
   qualityCriteria: z.array(z.string()).default([]),
 });
 
-export const storyboardProjectSchema = z.object({
+const storyboardProjectSchema = z.object({
   version: z.literal(storyboardProjectVersion),
   id: z.string().min(1),
   name: z.string().trim().min(1),

@@ -203,7 +203,7 @@ export function sumUsageMap(map: Readonly<Record<string, number>>): number {
   return total
 }
 
-export function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
+function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
   if (!value || typeof value !== "object") {
     return emptyUsageSummary
   }

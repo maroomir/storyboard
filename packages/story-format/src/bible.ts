@@ -8,7 +8,6 @@ export const bibleFactStatuses = ['canon', 'candidate'] as const;
 export type BibleFactStatus = (typeof bibleFactStatuses)[number];
 
 export const bibleSubjectKinds = ['character', 'background'] as const;
-export type BibleSubjectKind = (typeof bibleSubjectKinds)[number];
 
 export const bibleFactSubjectSchema = z.object({
   kind: z.enum(bibleSubjectKinds),

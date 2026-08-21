@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-export const novelRunStateVersion = '1.0.0';
+const novelRunStateVersion = '1.0.0';
 
-export const novelRunModes = ['auto', 'outline-approval', 'chapter-approval'] as const;
+const novelRunModes = ['auto', 'outline-approval', 'chapter-approval'] as const;
 export type NovelRunMode = (typeof novelRunModes)[number];
 
 export const novelStageNames = [
@@ -15,8 +15,8 @@ export const novelStageNames = [
 ] as const;
 export type NovelStageName = (typeof novelStageNames)[number];
 
-export const novelRunStatuses = ['running', 'paused', 'done', 'failed'] as const;
-export type NovelRunStatus = (typeof novelRunStatuses)[number];
+const novelRunStatuses = ['running', 'paused', 'done', 'failed'] as const;
+type NovelRunStatus = (typeof novelRunStatuses)[number];
 
 export interface NovelRunState {
   readonly version: typeof novelRunStateVersion;
@@ -35,7 +35,7 @@ export interface NovelRunStateFileSystem {
   readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
 }
 
-export const novelRunStateSchema = z.object({
+const novelRunStateSchema = z.object({
   version: z.literal(novelRunStateVersion),
   runId: z.string().trim().min(1),
   startedAt: z.string().datetime(),

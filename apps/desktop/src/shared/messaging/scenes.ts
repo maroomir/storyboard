@@ -4,7 +4,7 @@ import { uriStringSchema } from './atoms';
 
 export const scenesListRequestPayloadSchema = z.object({});
 
-export const sceneListItemSchema = z.object({
+const sceneListItemSchema = z.object({
   stem: z.string().trim().min(1),
   order: z.number().int(),
   slug: z.string().trim().min(1),

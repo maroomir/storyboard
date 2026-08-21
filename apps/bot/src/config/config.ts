@@ -5,7 +5,7 @@ import { z, ZodError } from 'zod';
 
 import { expandHome } from './paths';
 
-export const telegramConfigSchema = z.object({
+const telegramConfigSchema = z.object({
   botToken: z.string().trim().min(1),
   allowedChatIds: z.array(z.number().int()).default([]),
   allowedUserIds: z.array(z.number().int()).default([]),
@@ -14,7 +14,7 @@ export const telegramConfigSchema = z.object({
 // The Storyboard workspace this bot edits. `path` points at the very same directory the VSCode
 // extension opens — there is no clone and no separate copy. `remote` is optional: with no remote,
 // saving still commits locally and `/sync` reports `no-remote` without touching the network.
-export const workspaceConfigSchema = z.object({
+const workspaceConfigSchema = z.object({
   path: z
     .string()
     .trim()
@@ -31,7 +31,7 @@ export const workspaceConfigSchema = z.object({
 // providers are rejected here with a clear message instead of failing at job time, and every
 // section is strict so a typo or an unsupported field errors loudly instead of being silently
 // stripped (blind-pass B5/M1/M2/M3).
-export const botProviderIds = ['mock', 'claude-code', 'codex'] as const;
+const botProviderIds = ['mock', 'claude-code', 'codex'] as const;
 
 const botProviderIdSchema = z.enum(botProviderIds, {
   message: `프로바이더는 CLI 전용입니다: ${['mock', 'claude-code', 'codex'].join(', ')} (openai·claude·google은 봇에서 지원하지 않습니다)`,
@@ -52,7 +52,7 @@ const taskEntrySchema = z.union([
   }),
 ]);
 
-export const providersConfigSchema = z.strictObject({
+const providersConfigSchema = z.strictObject({
   default: botProviderIdSchema.optional(),
   tasks: z.record(z.string(), taskEntrySchema).optional(),
   models: z.partialRecord(botProviderIdSchema, providerSectionSchema).optional(),
@@ -60,23 +60,23 @@ export const providersConfigSchema = z.strictObject({
 
 // Mirrors the extension's `storyboard.draft.*` settings (decision #31): the revise gate runs after
 // every generation unless the operator switches it off.
-export const draftConfigSchema = z.strictObject({
+const draftConfigSchema = z.strictObject({
   reviseAfterGenerate: z.boolean().default(true),
   reviseMaxIterations: z.number().int().min(1).max(5).default(2),
 });
 
-export const privacyConfigSchema = z.object({
+const privacyConfigSchema = z.object({
   minimizeChatBody: z.boolean().default(false),
 });
 
-export const jobsConfigSchema = z.object({
+const jobsConfigSchema = z.object({
   heavyConcurrency: z.number().int().positive().default(1),
   lightConcurrency: z.number().int().positive().default(1),
 });
 
 // SECURITY: the dashboard server binds 127.0.0.1 only; `enabled` lets an operator turn it off
 // entirely without touching the port.
-export const dashboardConfigSchema = z.object({
+const dashboardConfigSchema = z.object({
   enabled: z.boolean().default(true),
   port: z.number().int().min(1).max(65535).default(8787),
 });
@@ -91,13 +91,9 @@ export const configSchema = z.object({
   dashboard: dashboardConfigSchema.default({ enabled: true, port: 8787 }),
 });
 
-export type TelegramConfig = z.infer<typeof telegramConfigSchema>;
-export type WorkspaceConfig = z.infer<typeof workspaceConfigSchema>;
 export type ProvidersConfig = z.infer<typeof providersConfigSchema>;
 export type DraftConfig = z.infer<typeof draftConfigSchema>;
-export type PrivacyConfig = z.infer<typeof privacyConfigSchema>;
 export type JobsConfig = z.infer<typeof jobsConfigSchema>;
-export type DashboardConfig = z.infer<typeof dashboardConfigSchema>;
 export type StorygramConfig = z.infer<typeof configSchema>;
 
 export type ConfigErrorCode = 'not-found' | 'invalid-json' | 'invalid-schema';

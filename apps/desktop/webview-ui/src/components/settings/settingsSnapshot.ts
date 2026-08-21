@@ -1,7 +1,7 @@
 export const AI_PROVIDER_IDS = ["openai", "claude", "google", "ollama", "claude-code", "codex", "mock"] as const
 export type AiProviderId = (typeof AI_PROVIDER_IDS)[number]
 export type AiTaskName = string
-export type AiTaskStatus = "wired" | "planned"
+type AiTaskStatus = "wired" | "planned"
 
 export type ConnectionTestState = "idle" | "loading" | "ok" | "error" | "not-installed"
 
@@ -13,23 +13,23 @@ export interface AiProviderStatus {
   readonly isAvailable: boolean
 }
 
-export interface ProviderModelOption {
+interface ProviderModelOption {
   readonly id: string
   readonly displayName: string
 }
 
-export interface ProviderRuntimeConfig {
+interface ProviderRuntimeConfig {
   readonly model: string
   readonly baseUrl?: string
   readonly command?: string
 }
 
-export interface TaskAiAssignment {
+interface TaskAiAssignment {
   readonly providerId: AiProviderId | null
   readonly model: string | null
 }
 
-export interface TaskCatalogItem {
+interface TaskCatalogItem {
   readonly name: AiTaskName
   readonly label: string
   readonly status: AiTaskStatus

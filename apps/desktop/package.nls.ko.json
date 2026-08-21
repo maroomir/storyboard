@@ -2,7 +2,6 @@
   "displayName": "Storyboard",
   "description": "VSCode에서 소설·시나리오를 집필하는 AI 기반 픽션 IDE.",
   "storyboard.novel.generate.title": "Storyboard: 장편 생성",
-  "storyboard.helloWorld.title": "Storyboard: 헬로 월드",
   "storyboard.init.title": "Storyboard: 프로젝트 초기화",
   "storyboard.character.create.title": "Storyboard: 캐릭터 생성",
   "storyboard.background.create.title": "Storyboard: 배경 생성",

@@ -3,7 +3,7 @@ import type React from "react"
 
 import { sbControlButtonClass } from "./formClasses"
 
-export type ButtonVariant = "primary" | "secondary" | "ghost"
+type ButtonVariant = "primary" | "secondary" | "ghost"
 
 const variantClass: Record<ButtonVariant, string> = {
   primary: sbControlButtonClass,

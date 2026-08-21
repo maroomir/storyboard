@@ -106,12 +106,6 @@ export const socialBackgroundSchema = z.object({
   ...backgroundBaseFields,
 });
 
-export const backgroundCardSchema = z.discriminatedUnion('type', [
-  locationBackgroundSchema,
-  temporalBackgroundSchema,
-  socialBackgroundSchema,
-]);
-
 export const cardSchema = z.discriminatedUnion('type', [
   characterCardSchema,
   locationBackgroundSchema,

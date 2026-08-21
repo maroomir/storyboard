@@ -5,7 +5,6 @@ import {
   parseSceneFileName,
   sceneFrontmatterSchema,
   type SceneFile,
-  type SceneFileNameParts,
   type SceneFrontmatter,
 } from '../scene';
 
@@ -117,11 +116,3 @@ function parseSceneFrontmatter(rawFrontmatter: string): SceneFrontmatter {
   }
 }
 
-export function getSceneFileNameParts(scene: SceneFile): SceneFileNameParts {
-  return {
-    stem: scene.stem,
-    order: scene.order,
-    orderText: scene.orderText,
-    slug: scene.slug,
-  };
-}

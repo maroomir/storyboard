@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import type { ProvidersConfig } from './config';
 
-export type CliProviderId = 'claude-code' | 'codex';
+type CliProviderId = 'claude-code' | 'codex';
 
 export interface CliProviderCommand {
   readonly providerId: CliProviderId;

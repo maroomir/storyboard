@@ -54,7 +54,7 @@ interface SceneCommand {
 
 // `/scene <action> <target>` on the first line, the body on the lines after it. Telegram sends the
 // whole message as one text, so multi-line bodies arrive naturally.
-export function parseSceneCommand(args: string): SceneCommand | undefined {
+function parseSceneCommand(args: string): SceneCommand | undefined {
   const firstLineEnd = args.indexOf('\n');
   const firstLine = (firstLineEnd === -1 ? args : args.slice(0, firstLineEnd)).trim();
   const body = firstLineEnd === -1 ? '' : args.slice(firstLineEnd + 1).trim();
@@ -157,7 +157,7 @@ async function updateScene(
 
 // Replaces only the body: an existing frontmatter block (--- fenced, same rules as parseScene)
 // is preserved byte-for-byte because the bot has no frontmatter serializer to round-trip it.
-export function replaceSceneBody(raw: string, newBody: string): string {
+function replaceSceneBody(raw: string, newBody: string): string {
   const normalized = raw.replace(/\r\n/g, '\n');
 
   if (normalized.startsWith('---\n')) {

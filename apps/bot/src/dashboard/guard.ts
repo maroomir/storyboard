@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 // SECURITY: the dashboard binds 127.0.0.1 only, but a misconfigured proxy or a DNS-rebinding page
 // could still route a request to it. Every request is re-checked here regardless of how it arrived.
-export function isLoopbackAddress(address: string | undefined): boolean {
+function isLoopbackAddress(address: string | undefined): boolean {
   if (address === undefined) {
     return false;
   }
@@ -15,7 +15,7 @@ export function isLoopbackAddress(address: string | undefined): boolean {
 // SECURITY: rejects DNS rebinding — a page on an attacker's domain that resolves to 127.0.0.1
 // would still send a Host header naming the attacker's domain, which this allowlist rejects even
 // though the TCP connection itself is loopback.
-export function isAllowedHost(hostHeader: string | undefined): boolean {
+function isAllowedHost(hostHeader: string | undefined): boolean {
   const hostname = extractHostname(hostHeader);
   return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 }

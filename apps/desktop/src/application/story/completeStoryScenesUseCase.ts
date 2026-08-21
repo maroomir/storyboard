@@ -33,7 +33,7 @@ const completionResponseSchema = z.object({
   climaxChoice: z.string().trim().min(1).optional(),
 });
 
-export interface CompletedStoryScene {
+interface CompletedStoryScene {
   readonly fileName: string;
   readonly content: string;
   readonly title: string;

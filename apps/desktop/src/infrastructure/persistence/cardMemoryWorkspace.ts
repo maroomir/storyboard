@@ -14,24 +14,19 @@ import {
   writePersonaMemoryFile,
 } from '@storyboard/story-format';
 
-export async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
+async function ensurePersonaMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.personaMemoryDirectory);
 }
 
-export async function ensureBackgroundMemoryDirectory(
-  paths: StoryboardProjectPaths,
-): Promise<void> {
+async function ensureBackgroundMemoryDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.backgroundMemoryDirectory);
 }
 
-export function personaMemoryFilePath(paths: StoryboardProjectPaths, cardId: string): vscode.Uri {
+function personaMemoryFilePath(paths: StoryboardProjectPaths, cardId: string): vscode.Uri {
   return vscode.Uri.joinPath(paths.personaMemoryDirectory, `${cardId}.json`);
 }
 
-export function backgroundMemoryFilePath(
-  paths: StoryboardProjectPaths,
-  cardId: string,
-): vscode.Uri {
+function backgroundMemoryFilePath(paths: StoryboardProjectPaths, cardId: string): vscode.Uri {
   return vscode.Uri.joinPath(paths.backgroundMemoryDirectory, `${cardId}.json`);
 }
 

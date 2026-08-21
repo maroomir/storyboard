@@ -61,7 +61,7 @@ export type CardCollectProposal =
     })
   | (CardCollectProposalBase & { readonly kind: "characterId"; readonly value: string })
 
-export type CardAttributeValue = string | number | boolean | null
+type CardAttributeValue = string | number | boolean | null
 
 export interface CharacterRelation {
   readonly target: string
@@ -135,14 +135,6 @@ export interface SidebarCardsInitialData {
   readonly cards: readonly SidebarCardSummary[]
   readonly isStoryboardProject: boolean
   readonly usage: UsageSummaryByEntity
-}
-
-export interface StoryboardRequestMessage {
-  readonly protocolVersion: "1.0.0"
-  readonly type: "request"
-  readonly id: string
-  readonly method: StoryboardRequestMethod
-  readonly payload: Record<string, unknown>
 }
 
 export interface SceneListItem {

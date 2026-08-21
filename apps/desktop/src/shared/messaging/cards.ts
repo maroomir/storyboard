@@ -56,32 +56,22 @@ export const cardsDeleteRequestPayloadSchema = z.object({
   uri: uriStringSchema,
 });
 
-export const cardSummarySchema = z.object({
+const cardSummarySchema = z.object({
   type: z.enum(cardTypes),
   id: z.string().trim().min(1),
   name: z.string().trim().min(1),
   uri: uriStringSchema,
 });
 
-export const sidebarCardSummarySchema = z.object({
-  type: z.enum(cardTypes),
-  id: z.string().trim().min(1),
-  name: z.string().trim().min(1),
-  uri: uriStringSchema,
-  description: z.string().optional(),
-  error: z.string().optional(),
-  role: z.enum(characterRoles).optional(),
-});
-
-export type SidebarCardSummary = z.infer<typeof sidebarCardSummarySchema>;
-
-export const sidebarCardsInitialDataSchema = z.object({
-  type: z.enum(['character', 'background'] as const),
-  title: z.string().trim().min(1),
-  cards: z.array(sidebarCardSummarySchema),
-  isStoryboardProject: z.boolean(),
-  usage: z.unknown(),
-});
+export type SidebarCardSummary = {
+  type: (typeof cardTypes)[number];
+  id: string;
+  name: string;
+  uri: string;
+  description?: string;
+  error?: string;
+  role?: (typeof characterRoles)[number];
+};
 
 export const cardsListResponsePayloadSchema = z.object({
   cards: z.array(cardSummarySchema),

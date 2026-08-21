@@ -1,13 +1,4 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
-import { type Severity } from '../../contracts/draftReview';
-
-export interface ContinuityIssuePayload {
-  readonly start: number;
-  readonly end: number;
-  readonly original: string;
-  readonly reason: string;
-  readonly severity: Severity;
-}
 
 export const ContinuityCheckPrompt = {
   config: {

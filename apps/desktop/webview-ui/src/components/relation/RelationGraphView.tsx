@@ -41,7 +41,7 @@ function shortenLineSegment(
   }
 }
 
-export interface RelationListCharacter {
+interface RelationListCharacter {
   readonly id: string
   readonly name: string
   readonly role?: string

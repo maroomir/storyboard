@@ -422,6 +422,3 @@ function getDefaultCommand(providerId: 'claude-code' | 'codex'): string {
   return providerId === 'claude-code' ? 'claude' : 'codex';
 }
 
-export function getConfigurableTaskNames(): readonly AiTaskName[] {
-  return aiTaskNames;
-}

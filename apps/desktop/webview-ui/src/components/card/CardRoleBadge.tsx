@@ -4,7 +4,7 @@ import type React from "react"
 import { CHARACTER_ROLE_OPTIONS } from "@webview/lib/characterSidebarGroups"
 import type { CharacterRole } from "@webview/lib/types"
 
-export type CardRoleBadgeSize = "sm" | "md"
+type CardRoleBadgeSize = "sm" | "md"
 
 export type CardRoleBadgeProps = {
   readonly role: CharacterRole

@@ -55,7 +55,7 @@ export function buildCharacterHoverMarkdown(context: CharacterHoverContext): vsc
   return markdown;
 }
 
-export async function listCharacterCardsInWorkspace(
+async function listCharacterCardsInWorkspace(
   workspaceFolder: vscode.WorkspaceFolder,
 ): Promise<CharacterCard[]> {
   const paths = getStoryboardProjectPaths(workspaceFolder.uri);

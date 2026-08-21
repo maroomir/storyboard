@@ -11,12 +11,12 @@ import type {
 import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
 
-export interface SceneCacheSituation {
+interface SceneCacheSituation {
   readonly summary: string;
   readonly characters: readonly string[];
 }
 
-export interface SceneCacheBackgroundSnapshot {
+interface SceneCacheBackgroundSnapshot {
   readonly id: string;
   readonly name: string;
   readonly description?: string;

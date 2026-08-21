@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
-import { aiGenerateStreamChunkEventPayloadSchema } from './ai';
 import { methodSchema, requestIdSchema, storyboardMessageProtocolVersion } from './atoms';
-import { studioTargetSchema } from './studio';
 import {
   storyboardRequestPayloadSchemas,
   storyboardResponsePayloadSchemas,
@@ -11,30 +9,6 @@ import {
   type StoryboardResponseMethod,
   type StoryboardResponsePayload,
 } from './registry';
-
-export type StoryboardSettingsChangedEventMessage = {
-  readonly type: 'event';
-  readonly method: 'settings.changed';
-  readonly payload: StoryboardResponsePayload<'settings.read'>;
-};
-
-export type StoryboardUsageChangedEventMessage = {
-  readonly type: 'event';
-  readonly method: 'usage.changed';
-  readonly payload: StoryboardResponsePayload<'usage.read'>;
-};
-
-export type StoryboardAiGenerateStreamChunkEventMessage = {
-  readonly type: 'event';
-  readonly method: 'ai.generateStream.chunk';
-  readonly payload: z.infer<typeof aiGenerateStreamChunkEventPayloadSchema>;
-};
-
-export type StoryboardStudioTargetChangedEventMessage = {
-  readonly type: 'event';
-  readonly method: 'studio.targetChanged';
-  readonly payload: z.infer<typeof studioTargetSchema>;
-};
 
 type StoryboardRequestMessageMap = {
   readonly [M in StoryboardRequestMethod]: {
@@ -83,13 +57,6 @@ export interface StoryboardMessageError {
   readonly code: string;
   readonly message: string;
 }
-
-export type StoryboardResponseMessage<
-  M extends StoryboardResponseMethod = StoryboardResponseMethod,
-> = StoryboardSuccessResponseMessage<M> | StoryboardErrorResponseMessage<M>;
-
-export type StoryboardIncomingMessage = StoryboardRequestMessage;
-export type StoryboardOutgoingMessage = StoryboardResponseMessage;
 
 const requestEnvelopeSchema = z.object({
   protocolVersion: z.literal(storyboardMessageProtocolVersion),

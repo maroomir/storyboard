@@ -10,7 +10,7 @@ export interface ICommandHandler {
   execute(ctx: ChatContext): Promise<void>;
 }
 
-export interface IRegisterHandler {
+interface IRegisterHandler {
   register(handler: ICommandHandler): void;
 }
 

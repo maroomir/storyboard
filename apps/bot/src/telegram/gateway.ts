@@ -19,7 +19,7 @@ const TELEGRAM_COMMAND_MAX_DESCRIPTION = 256;
 
 // QA-04: authorization gate. Unauthorized updates are dropped silently (no reply reveals the
 // bot's existence) and only audited. Extracted from the grammy wiring so it is unit-testable.
-export async function dispatchUpdate(
+async function dispatchUpdate(
   update: IncomingUpdate,
   allowlist: IAllowlist,
   handler: IHandleUpdate,
@@ -192,7 +192,7 @@ export class TelegramGateway implements ISendMessage {
 
 // Maps command handlers (`/help`, "명령 목록 보기") to Telegram menu entries, dropping the leading
 // slash and any name that violates Telegram's `[a-z0-9_]{1,32}` rule (e.g. multi-word aliases).
-export function toBotCommandMenu(commands: readonly BotCommand[]): BotCommand[] {
+function toBotCommandMenu(commands: readonly BotCommand[]): BotCommand[] {
   const seen = new Set<string>();
   const menu: BotCommand[] = [];
 

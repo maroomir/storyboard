@@ -5,7 +5,7 @@ import {
   type BibleCandidateFileSystem,
 } from '@/domain/files/bibleCandidates';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
-export interface BibleCandidateUpdateLogger {
+interface BibleCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }
 

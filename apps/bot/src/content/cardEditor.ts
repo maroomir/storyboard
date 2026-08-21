@@ -7,8 +7,8 @@ import type { ReadFile } from '../workspace/workspaceStore';
 const SHARED_LIST_FIELDS = ['aliases', 'tags', 'description'] as const;
 const CHARACTER_LIST_FIELDS = ['traits', 'voice', 'desire'] as const;
 
-export type SharedListField = (typeof SHARED_LIST_FIELDS)[number];
-export type CharacterListField = (typeof CHARACTER_LIST_FIELDS)[number];
+type SharedListField = (typeof SHARED_LIST_FIELDS)[number];
+type CharacterListField = (typeof CHARACTER_LIST_FIELDS)[number];
 export type CardListField = SharedListField | CharacterListField;
 
 export const cardListFields: readonly CardListField[] = [

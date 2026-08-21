@@ -51,7 +51,7 @@ const entitySchema = z.object({
 const responseSchema = z.object({ entities: z.array(entitySchema) });
 type StoryCardEntity = z.infer<typeof entitySchema>;
 
-export interface StoryCardChange {
+interface StoryCardChange {
   readonly proposal: CardCollectProposal;
   readonly label: string;
 }

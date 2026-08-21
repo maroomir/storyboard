@@ -61,7 +61,7 @@ async function reportApplyFormatFailure(
   }
 }
 
-export async function runApplyDraftFormatForScene(
+async function runApplyDraftFormatForScene(
   sceneUri: vscode.Uri,
   dependencies: RegisterApplyDraftFormatCommandDependencies,
 ): Promise<void> {

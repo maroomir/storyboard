@@ -10,5 +10,3 @@ export * from './studio';
 export * from './usage';
 export * from './registry';
 export * from './envelope';
-
-export type { UsageSummaryByEntity } from '@storyboard/story-ai';

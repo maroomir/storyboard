@@ -1,5 +1,4 @@
-export const manuscriptExportFormats = ['md', 'txt'] as const;
-export type ManuscriptExportFormat = (typeof manuscriptExportFormats)[number];
+export type ManuscriptExportFormat = 'md' | 'txt';
 
 export function toPlainText(markdown: string): string {
   return markdown

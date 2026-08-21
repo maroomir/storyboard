@@ -10,12 +10,12 @@ import {
   type CardCandidateFileSystem,
 } from '@/domain/files/cardCandidates';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
-export interface CardCandidateRosterEntry {
+interface CardCandidateRosterEntry {
   readonly id: string;
   readonly name: string;
 }
 
-export interface CardCandidateUpdateLogger {
+interface CardCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }
 

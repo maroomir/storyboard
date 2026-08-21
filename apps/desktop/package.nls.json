@@ -2,7 +2,6 @@
   "displayName": "Storyboard",
   "description": "AI-powered fiction IDE for writing novels and screenplays in VSCode.",
   "storyboard.novel.generate.title": "Storyboard: Generate Novel",
-  "storyboard.helloWorld.title": "Storyboard: Hello World",
   "storyboard.init.title": "Storyboard: Initialize Project",
   "storyboard.character.create.title": "Storyboard: Create Character",
   "storyboard.background.create.title": "Storyboard: Create Background",

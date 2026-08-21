@@ -23,10 +23,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "storyboard.helloWorld",
-        "title": "%storyboard.helloWorld.title%"
-      },
-      {
         "command": "storyboard.init",
         "title": "%storyboard.init.title%"
       },
@@ -532,18 +528,6 @@
           "command": "storyboard.settings.open",
           "when": "view == storyboard.scenesView",
           "group": "navigation@99"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "storyboard.character.rename",
-          "when": "view == storyboard.charactersView",
-          "group": "inline"
-        },
-        {
-          "command": "storyboard.background.rename",
-          "when": "view == storyboard.backgroundsView",
-          "group": "inline"
         }
       ]
     }

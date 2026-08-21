@@ -1,13 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
 
-export interface GrammarCheckIssuePayload {
-  readonly start: number;
-  readonly end: number;
-  readonly original: string;
-  readonly suggestion: string;
-  readonly reason: string;
-}
-
 export const GrammarCheckPrompt = {
   config: {
     temperature: 0.1,

@@ -2,7 +2,7 @@ export type BotProviderId = "mock" | "claude-code" | "codex"
 
 export type BotHealth = "unconfigured" | "dashboard-disabled" | "offline" | "online"
 
-export interface BotWorkspaceCandidate {
+interface BotWorkspaceCandidate {
   readonly path: string
   readonly hasProject: boolean
   readonly isConnected: boolean

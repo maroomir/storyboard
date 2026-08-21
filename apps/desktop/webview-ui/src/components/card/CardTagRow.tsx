@@ -50,17 +50,3 @@ export function CardTagRow({
   )
 }
 
-export function CardFooterTags({ tags }: { readonly tags?: readonly string[] }): React.ReactElement | null {
-  if (!tags?.length) {
-    return null
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {tags.slice(0, 8).map((tag) => (
-        <Pill key={tag} tone="neutral">
-          {tag}
-        </Pill>
-      ))}
-    </div>
-  )
-}
