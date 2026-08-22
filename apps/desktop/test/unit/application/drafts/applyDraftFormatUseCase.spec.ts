@@ -27,14 +27,15 @@ function createUseCase(): {
 } {
   const gateway = {
     createService: vi.fn(),
-    getTaskProvider: vi.fn(() => "mock")
+    getTaskProvider: vi.fn(() => "mock"),
+    getTaskAiConfig: vi.fn(() => ({ providerId: "mock", model: "mock-model" }))
   }
   const logger = { error: vi.fn() }
 
   return {
     gateway,
     logger,
-    useCase: new ApplyDraftFormatUseCase(gateway as never, logger as never)
+    useCase: new ApplyDraftFormatUseCase(gateway as never, logger as never, "storyboard@0.0.0-test")
   }
 }
 
@@ -132,7 +133,10 @@ describe("ApplyDraftFormatUseCase", () => {
       sceneStem: "01-arrival",
       format: "novel",
       body: "포맷됨",
-      generatedAt: "2024-01-01T00:00:00.000Z"
+      generatedAt: "2024-01-01T00:00:00.000Z",
+      generator: "storyboard@0.0.0-test",
+      providerId: "mock",
+      model: "mock-model"
     })
     expect(applyGenreFormat).toHaveBeenCalledWith("원문", "novel", {
       providerId: "mock",

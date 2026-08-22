@@ -72,9 +72,13 @@ function baseOptions(
   overrides: Partial<ReviseDraftRequest> = {}
 ): ReviseDraftUseCaseDependencies & ReviseDraftRequest {
   return {
-    aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
+    aiProviderRegistry: {
+      getTaskProvider: () => "mock",
+      getTaskAiConfig: () => ({ providerId: "mock", model: "mock-model" })
+    } as never,
     usageRecorder: {} as never,
     logger: { error: () => undefined } as never,
+    generator: "storyboard@0.0.0-test",
     workspaceUri: vscode.Uri.file("/ws/project"),
     paths: {
       sceneDirectory: vscode.Uri.file("/ws/project/scene"),

@@ -113,7 +113,8 @@ export class PlatformModule implements IApplicationModule {
       logger.warn(message),
     );
     const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
-    const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger);
+    const generator = `storyboard@${context.extension.packageJSON.version}`;
+    const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger, generator);
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
     const expandDraftUseCase = new ExpandDraftUseCase(aiGateway, logger);
     const condenseDraftUseCase = new CondenseDraftUseCase(aiGateway, logger);
@@ -156,6 +157,7 @@ export class PlatformModule implements IApplicationModule {
       configBridge,
       draftRepository,
       fileSystem,
+      generator,
       logger,
       postGenerationUpdates,
       projectRepository,
@@ -167,6 +169,7 @@ export class PlatformModule implements IApplicationModule {
       aiProviderRegistry,
       usageRecorder,
       logger,
+      generator,
     });
     const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
       configBridge,

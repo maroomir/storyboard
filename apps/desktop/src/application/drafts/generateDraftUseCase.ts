@@ -130,10 +130,14 @@ async function persistGeneratedDraft(
 ): Promise<GenerateDraftResult> {
   const { paths, scene, project, draftUri, cacheUri } = inputs;
 
+  const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
   const draft = createDraft({
     sceneStem: scene.stem,
     format: project.format,
     body: result.draftBody,
+    generator: options.generator,
+    providerId: sceneDraftConfig.providerId,
+    model: sceneDraftConfig.model,
   });
 
   await options.sceneCacheRepository.ensureDirectory(paths.sceneCacheDirectory);

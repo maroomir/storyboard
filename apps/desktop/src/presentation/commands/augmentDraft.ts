@@ -69,6 +69,9 @@ function buildReplacement(
       format: draft.format,
       body: augmented,
       generatedAt: draft.generatedAt,
+      generator: draft.generator,
+      providerId: draft.providerId,
+      model: draft.model,
     }),
   );
 

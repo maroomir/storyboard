@@ -51,6 +51,7 @@ export interface ReviseDraftUseCaseDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly usageRecorder: UsageRecorder;
   readonly logger: StoryboardLogger;
+  readonly generator: string;
 }
 
 export interface ReviseDraftRequest {
@@ -154,10 +155,18 @@ async function runReviseDraftWorkflow(
   });
 
   if (result.revisionCount > 0 && !result.rejection && !result.cancelled) {
+    const revisionConfig = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
     await writeDraftFile(
       draftUri,
       vscodeFsAdapter,
-      createDraft({ sceneStem, format: ctx.draft.format, body: result.body }),
+      createDraft({
+        sceneStem,
+        format: ctx.draft.format,
+        body: result.body,
+        generator: options.generator,
+        providerId: revisionConfig.providerId,
+        model: revisionConfig.model,
+      }),
     );
   }
 

@@ -22,4 +22,11 @@ export class AiGateway {
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
     return this.providerRegistry.getTaskProvider(taskName);
   }
+
+  public getTaskAiConfig(taskName: AiTaskName): {
+    readonly providerId: AiProviderId;
+    readonly model: string;
+  } {
+    return this.providerRegistry.getTaskAiConfig(taskName);
+  }
 }

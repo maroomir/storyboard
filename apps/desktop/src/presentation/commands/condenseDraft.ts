@@ -256,6 +256,9 @@ async function runCondenseDraft(
       sceneStem: target.draft.sceneStem,
       format: target.draft.format,
       body: result.text,
+      generator: target.draft.generator,
+      providerId: target.draft.providerId,
+      model: target.draft.model,
     }),
   );
   await showCondenseDiff(

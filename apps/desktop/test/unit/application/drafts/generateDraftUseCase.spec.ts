@@ -186,11 +186,13 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
   return {
     aiGateway: {
       createService: () => aiServiceStub,
-      getTaskProvider: (task: string) => `provider:${task}`
+      getTaskProvider: (task: string) => `provider:${task}`,
+      getTaskAiConfig: (task: string) => ({ providerId: `provider:${task}`, model: `model:${task}` })
     },
     configBridge: overrides.configBridge ?? createConfigBridge(),
     draftRepository: overrides.draftRepository ?? createDraftRepository(),
     fileSystem: {},
+    generator: "storyboard@0.0.0-test",
     logger: overrides.logger ?? createLogger(),
     postGenerationUpdates: overrides.postGenerationUpdates,
     projectRepository: { read: vi.fn(async () => fakeProject) },
@@ -264,6 +266,14 @@ describe("GenerateDraftUseCase", () => {
       expect(cacheRead).not.toHaveBeenCalled()
       expect(pipelineRunMock).toHaveBeenCalledTimes(1)
       expect(draftRepository.write).toHaveBeenCalledTimes(1)
+      expect(draftRepository.write).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          generator: "storyboard@0.0.0-test",
+          providerId: "provider:sceneDraft",
+          model: "model:sceneDraft"
+        })
+      )
       expect(sceneCacheRepository.write).toHaveBeenCalledTimes(1)
     })
   })

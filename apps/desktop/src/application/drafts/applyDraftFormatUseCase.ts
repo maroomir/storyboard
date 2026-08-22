@@ -26,6 +26,7 @@ export class ApplyDraftFormatUseCase {
   public constructor(
     private readonly aiGateway: AiGateway,
     private readonly logger: StoryboardLogger,
+    private readonly generator: string,
   ) {}
 
   public async execute(request: ApplyDraftFormatRequest): Promise<ApplyDraftFormatResult> {
@@ -71,11 +72,15 @@ export class ApplyDraftFormatUseCase {
         return { kind: 'cancelled', ok: false };
       }
 
+      const sceneDraftConfig = this.aiGateway.getTaskAiConfig('sceneDraft');
       const draft = createDraft({
         sceneStem: existing.sceneStem,
         format: project.format,
         body: formattedBody,
         generatedAt: existing.generatedAt,
+        generator: this.generator,
+        providerId: sceneDraftConfig.providerId,
+        model: sceneDraftConfig.model,
       });
 
       request.onSaving?.();

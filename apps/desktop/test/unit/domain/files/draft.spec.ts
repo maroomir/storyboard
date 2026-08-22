@@ -27,6 +27,36 @@ describe("draft file codec", () => {
     expect(parseDraft(serializedDraft)).toEqual(draft)
   })
 
+  it("round-trips provenance keys when present", () => {
+    const draft = createDraft({
+      sceneStem: "01-prologue",
+      format: "novel",
+      generatedAt: "2026-05-03T14:00:00.000Z",
+      generator: "storyboard@0.6.1",
+      providerId: "claude-code",
+      model: "claude-sonnet-5",
+      body: "샘플 원고입니다.\n"
+    })
+
+    const serializedDraft = serializeDraft(draft)
+
+    expect(serializedDraft).toBe(
+      [
+        "---",
+        "sceneStem: 01-prologue",
+        "format: novel",
+        "generatedAt: '2026-05-03T14:00:00.000Z'",
+        "generator: storyboard@0.6.1",
+        "providerId: claude-code",
+        "model: claude-sonnet-5",
+        "---",
+        "샘플 원고입니다.",
+        ""
+      ].join("\n")
+    )
+    expect(parseDraft(serializedDraft)).toEqual(draft)
+  })
+
   it("rejects drafts without frontmatter", () => {
     expect(() => parseDraft("샘플 원고입니다.")).toThrow(DraftParseError)
   })

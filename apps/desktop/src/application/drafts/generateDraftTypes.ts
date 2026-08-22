@@ -19,6 +19,7 @@ export interface GenerateDraftUseCaseDependencies {
   readonly configBridge: ConfigBridge;
   readonly draftRepository: IDraftRepository;
   readonly fileSystem: IFileSystem;
+  readonly generator: string;
   readonly logger: StoryboardLogger;
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly projectRepository: IProjectRepository;
