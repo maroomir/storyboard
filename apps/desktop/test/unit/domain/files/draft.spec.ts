@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { createDraft, DraftParseError, parseDraft, serializeDraft } from '@storyboard/story-format';
+import {
+  createDraft,
+  DraftParseError,
+  extractDraftBody,
+  parseDraft,
+  serializeDraft
+} from '@storyboard/story-format';
 
 describe("draft file codec", () => {
   it("serializes and parses a draft with stable frontmatter", () => {
@@ -59,5 +65,17 @@ describe("draft file codec", () => {
 
   it("rejects drafts without frontmatter", () => {
     expect(() => parseDraft("샘플 원고입니다.")).toThrow(DraftParseError)
+  })
+
+  it("extracts the body from a frontmattered draft and falls back to raw text", () => {
+    const draft = createDraft({
+      sceneStem: "01-prologue",
+      format: "novel",
+      generatedAt: "2026-05-03T14:00:00.000Z",
+      body: "샘플 원고입니다.\n"
+    })
+
+    expect(extractDraftBody(serializeDraft(draft))).toBe("샘플 원고입니다.\n")
+    expect(extractDraftBody("frontmatter 없는 초안\n")).toBe("frontmatter 없는 초안\n")
   })
 })

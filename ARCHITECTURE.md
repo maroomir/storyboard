@@ -284,6 +284,19 @@ relationStage: 첫 만남, 어색한 거리
 
 `draft/<scene>.md`는 AI가 생성한다. 사용자가 직접 손볼 수 있고, `Re-generate`를 누르면 덮어써진다.
 
+파일 머리에는 YAML frontmatter가 붙는다. `sceneStem`·`format`·`generatedAt`에 더해, 어떤 도구·AI가 만든 초안인지 추적할 수 있도록 생성 주체를 기록한다(옵셔널 — 없는 구버전 초안도 그대로 읽힌다).
+
+```yaml
+---
+sceneStem: 01-prologue
+format: novel
+generatedAt: '2026-08-22T12:00:00.000Z'
+generator: storyboard@0.6.1   # 확장은 storyboard@<버전>, 봇은 storygram@<버전>
+providerId: claude-code
+model: claude-sonnet-5
+---
+```
+
 - `format=novel`: 일반 산문 마크다운
 - `format=screenplay`: Fountain 스타일 또는 `**캐릭터:** 대사`
 - `format=play`: 희곡 형식 (지문 + 대사)

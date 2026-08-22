@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import { parseDraft, type BackgroundCard, type CharacterCard } from '@storyboard/story-format';
 import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -112,6 +112,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      generator: 'storygram@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -120,8 +121,12 @@ describe('scene draft generation', () => {
     expect(result.success).toBe(true);
     expect(result.resultRef).toBe('draft/01-prologue.md');
 
-    const body = readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8');
-    expect(body.length).toBeGreaterThan(0);
+    const draftText = readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8');
+    const draft = parseDraft(draftText);
+    expect(draft.body.length).toBeGreaterThan(0);
+    expect(draft.generator).toBe('storygram@0.0.0-test');
+    expect(draft.providerId).toBe('mock');
+    expect(draft.model).toBeDefined();
 
     // draft/ is gitignored, so generation must not add a commit.
     const log = execFileSync('git', ['-C', fixture.root, 'log', '--format=%s'], {
@@ -139,6 +144,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      generator: 'storygram@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -159,6 +165,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2 },
+      generator: 'storygram@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
       },
@@ -179,6 +186,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      generator: 'storygram@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
       },

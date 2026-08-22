@@ -1,6 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import packageJson from '../../package.json';
+
 import {
   GitClient,
   PushScheduler,
@@ -142,6 +144,7 @@ export class StorygramApplication {
       aiService,
       registry,
       draftConfig: config.draft,
+      generator: `storygram@${packageJson.version}`,
     });
     this.genJobs = createGenJobs({
       db: this.db,

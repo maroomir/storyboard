@@ -2,6 +2,7 @@ import type { StoryboardAIService } from '@storyboard/story-ai';
 import {
   STORYBOARD_RELATIVE_PATHS,
   assembleManuscript,
+  extractDraftBody,
   parseSynopsisMarkdown,
   serializeChapterPlan,
   serializeSynopsisMarkdown,
@@ -159,7 +160,7 @@ export class ManuscriptPipeline implements IPipeline {
     for (const scene of scenes) {
       const draft = await this.options.store.readDraft(scene.stem);
       if (draft !== undefined) {
-        draftsByOrder.set(scene.order, { stem: scene.stem, body: draft.value });
+        draftsByOrder.set(scene.order, { stem: scene.stem, body: extractDraftBody(draft.value) });
       }
     }
 

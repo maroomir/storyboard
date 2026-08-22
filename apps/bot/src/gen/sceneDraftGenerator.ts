@@ -5,7 +5,10 @@ import {
   STORYBOARD_RELATIVE_PATHS,
   buildNarrativeContext,
   buildSceneContext,
+  createDraft,
+  extractDraftBody,
   formatBibleFactLines,
+  serializeDraft,
   type SceneContextWorkspaceFileSystem,
   type SceneContextWorkspacePaths,
 } from '@storyboard/story-format';
@@ -66,6 +69,7 @@ export interface SceneDraftGeneratorOptions {
   readonly aiService: StoryboardAIService;
   readonly registry: AiProviderRegistry;
   readonly draftConfig: DraftConfig;
+  readonly generator: string;
   readonly onStage?: (stage: string, current: number, total: number) => void;
 }
 
@@ -92,7 +96,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     });
 
     if (!this.options.draftConfig.reviseAfterGenerate || isCancelled()) {
-      return result.draftBody;
+      return this.serializeWithProvenance(sceneStem, assembled, result.draftBody, 'sceneDraft');
     }
 
     const revised = await this.runSharedReviseLoop(
@@ -101,26 +105,56 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
       assembled,
       isCancelled,
     );
-    return revised.body;
+    return this.serializeWithProvenance(
+      sceneStem,
+      assembled,
+      revised.body,
+      revised.revisionCount > 0 ? 'draftRevision' : 'sceneDraft',
+    );
   }
 
   // The /review command: runs the same review→revise loop over the draft that already exists,
   // without regenerating it (UC-06).
   public async revise(
     sceneStem: string,
-    draftBody: string,
+    draftText: string,
     isCancelled: () => boolean,
   ): Promise<DraftRevisionReport> {
     const assembled = await this.assembleSceneContext(sceneStem);
+    const draftBody = extractDraftBody(draftText);
     const revised = await this.runSharedReviseLoop(sceneStem, draftBody, assembled, isCancelled);
 
     return {
-      body: revised.body,
+      // An unrevised draft returns the original text unchanged so the caller skips the write.
+      body:
+        revised.body === draftBody
+          ? draftText
+          : this.serializeWithProvenance(sceneStem, assembled, revised.body, 'draftRevision'),
       passed: revised.passed,
       revisionCount: revised.revisionCount,
       remainingBlocking: revised.remainingBlocking,
       cancelled: revised.cancelled,
     };
+  }
+
+  private serializeWithProvenance(
+    sceneStem: string,
+    assembled: AssembledSceneContext,
+    body: string,
+    taskName: 'sceneDraft' | 'draftRevision',
+  ): string {
+    const { providerId, model } = this.options.registry.getTaskAiConfig(taskName);
+
+    return serializeDraft(
+      createDraft({
+        sceneStem,
+        format: assembled.format,
+        body,
+        generator: this.options.generator,
+        providerId,
+        model,
+      }),
+    );
   }
 
   private async assembleSceneContext(sceneStem: string): Promise<AssembledSceneContext> {

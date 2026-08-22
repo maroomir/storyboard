@@ -7,7 +7,8 @@ import type { IPipeline, PipelineContext } from './pipelineRunner';
 import type { GenJob, PipelineResult } from './types';
 
 export interface DraftGenerator {
-  // Produces the draft body for a scene. Injected so the pipeline stays testable without a provider.
+  // Produces the full draft file content (frontmatter + body) for a scene. Injected so the
+  // pipeline stays testable without a provider.
   generate(sceneStem: string, isCancelled: () => boolean): Promise<string>;
 }
 

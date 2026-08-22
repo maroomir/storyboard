@@ -1,3 +1,5 @@
+import { extractDraftBody } from '@storyboard/story-format';
+
 import type { ChatContext } from '../context';
 import { commandArgs, isCommand, type ICommandHandler } from '../registry';
 import type { IncomingUpdate, InlineKeyboard } from '../ports';
@@ -237,7 +239,7 @@ async function deliverDraft(
     return;
   }
 
-  const body = draft.value;
+  const body = extractDraftBody(draft.value);
   const header = `📄 ${sceneStem} (${body.length.toLocaleString()}자)`;
   const attachment = {
     bytes: new TextEncoder().encode(body),
