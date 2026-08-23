@@ -1,3 +1,5 @@
+export { resolveSceneTargetLength } from '@storyboard/story-format';
+
 export type DraftCandidateRejectionReason = 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
 
 export interface DraftCandidateLengthPolicy {
@@ -33,23 +35,6 @@ export function resolveMinimumDraftLength(
 
   const retainedPercent = 100 - normalizeMaxCompressionPercent(policy.maxCompressionPercent);
   return Math.ceil(originalLength * (retainedPercent / 100));
-}
-
-export function resolveSceneTargetLength(
-  frontmatterTargetLength: number | undefined,
-  sceneBody: string,
-): number | undefined {
-  if (frontmatterTargetLength !== undefined && frontmatterTargetLength > 0) {
-    return frontmatterTargetLength;
-  }
-
-  const match = /\[목표 분량\]\s*\n?\s*(?:약\s*)?([\d,]+)\s*자/.exec(sceneBody);
-  if (!match?.[1]) {
-    return undefined;
-  }
-
-  const parsed = Number.parseInt(match[1].replace(/,/g, ''), 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 export function validateDraftCandidate(

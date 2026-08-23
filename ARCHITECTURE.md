@@ -151,9 +151,18 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
   "banTelling": true,            // 대사로 드러난 의미를 뒤이은 서술로 다시 설명하지 않기
   "motifRepeatLimit": 3,         // 같은 심상(예: "흐릿한 길") 반복 상한
   "stockGestureBlacklist": ["어깨가 떨렸다", "눈물이 뺨을 타고 흘렀다"],
-  "requireCharacterInterior": true  // 조언·위로하는 인물도 자기 목적이나 결점을 드러내기
+  "requireCharacterInterior": true, // 조언·위로하는 인물도 자기 목적이나 결점을 드러내기
+  "sceneLengthMultiplier": 12       // 목표 분량이 없는 씬의 기본 예산 = 씬 시드 길이 × 배수
 }
 ```
+
+`motifRepeatLimit`은 심상뿐 아니라 **같은 대사·후렴구**에도 걸린다. 제목 후렴이 반복되는 씬에서
+심상만 제한하면 후렴이 규제 밖으로 새어 몇 배로 늘어나기 때문이다.
+
+씬 목표 분량은 `frontmatter.targetWordCount` → 본문의 `[목표 분량] N자` 마커 →
+`sceneLengthMultiplier` 기반 파생(2,000–20,000자로 클램프) 순으로 정해진다. 파생 단계가 없으면
+목표가 없는 씬은 프롬프트에 분량 제약이 전혀 걸리지 않아 원고가 무한정 늘어난다.
+`sceneLengthMultiplier: 0`으로 두면 종전처럼 제한하지 않는다.
 
 ```jsonc
 "setting": {

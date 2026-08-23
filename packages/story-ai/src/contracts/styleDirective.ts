@@ -1,6 +1,7 @@
 import {
   pointOfViewLabels,
   resolveCraftContract,
+  resolveSceneTargetLength,
   sceneGroundingFieldLabels,
 } from '@storyboard/story-format';
 import type {
@@ -21,11 +22,22 @@ export interface StyleDirective {
   readonly craftContract?: CraftContractOverride;
 }
 
+// NOTE: sceneBody를 주면 목표 분량이 없는 씬도 작법 계약의 배수로 예산을 파생한다. 주지 않으면
+// 종전대로 명시값이 있을 때만 분량 제약이 걸린다.
 export function buildStyleDirective(
   setting: ProjectSetting | undefined,
   relationStage?: string,
   targetWordCount?: number,
+  sceneBody?: string,
 ): StyleDirective | undefined {
+  const resolvedTargetWordCount =
+    sceneBody === undefined
+      ? targetWordCount
+      : resolveSceneTargetLength(
+          targetWordCount,
+          sceneBody,
+          resolveCraftContract(setting?.craftContract).sceneLengthMultiplier,
+        );
   const styleConstraints =
     setting?.styleConstraints && setting.styleConstraints.length > 0
       ? setting.styleConstraints
@@ -39,10 +51,10 @@ export function buildStyleDirective(
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
     targetWordCount:
-      typeof targetWordCount === 'number' &&
-      Number.isInteger(targetWordCount) &&
-      targetWordCount > 0
-        ? targetWordCount
+      typeof resolvedTargetWordCount === 'number' &&
+      Number.isInteger(resolvedTargetWordCount) &&
+      resolvedTargetWordCount > 0
+        ? resolvedTargetWordCount
         : undefined,
   };
 
@@ -67,8 +79,9 @@ export function craftContractLines(override: CraftContractOverride | undefined):
     );
   }
 
+  // NOTE: 심상만 제한하면 제목·후렴 같은 반복 대사가 규제 밖으로 새어 몇 배로 늘어난다.
   lines.push(
-    `같은 심상·소재(예: 흐릿한 길, 문틈)를 장면 전체에서 ${contract.motifRepeatLimit}회를 넘겨 반복하지 마라.`,
+    `같은 심상·소재(예: 흐릿한 길, 문틈)는 물론 같은 대사·후렴구·문장도 장면 전체에서 ${contract.motifRepeatLimit}회를 넘겨 반복하지 마라.`,
   );
 
   if (contract.stockGestureBlacklist.length > 0) {

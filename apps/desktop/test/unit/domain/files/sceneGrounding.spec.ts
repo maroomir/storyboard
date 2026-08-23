@@ -7,8 +7,10 @@ import {
   mergeSceneGrounding,
   missingSceneGroundingFields,
   parseScene,
-  resolveCraftContract
+  resolveCraftContract,
+  resolveSceneTargetLength
 } from '@storyboard/story-format';
+import { buildStyleDirective, narrativeStyleLines } from '@storyboard/story-ai';
 
 const fullGrounding = {
   incident: "임용시험 최종 면접에서 떨어졌다",
@@ -119,5 +121,37 @@ describe("craft contract", () => {
     expect(resolved.banTelling).toBe(false)
     expect(resolved.stockGestureBlacklist).toEqual(defaultCraftContract.stockGestureBlacklist)
     expect(resolved.requireCharacterInterior).toBe(true)
+  })
+})
+
+describe("scene length budget", () => {
+  const sceneSeed = "가".repeat(1000)
+
+  it("keeps an explicit target and the in-body marker ahead of the derived one", () => {
+    expect(resolveSceneTargetLength(2400, sceneSeed, 12)).toBe(2400)
+    expect(resolveSceneTargetLength(undefined, "[목표 분량]\n약 3,000자", 12)).toBe(3000)
+  })
+
+  it("derives a budget from the scene seed length when nothing is set", () => {
+    expect(resolveSceneTargetLength(undefined, sceneSeed, 12)).toBe(12000)
+  })
+
+  it("clamps the derived budget and honours a disabled multiplier", () => {
+    expect(resolveSceneTargetLength(undefined, "짧은 씬", 12)).toBe(2000)
+    expect(resolveSceneTargetLength(undefined, "가".repeat(9000), 12)).toBe(20000)
+    expect(resolveSceneTargetLength(undefined, sceneSeed, 0)).toBeUndefined()
+    expect(resolveSceneTargetLength(undefined, sceneSeed)).toBeUndefined()
+  })
+
+  // 이 경로가 끊기면 목표 분량 없는 씬이 다시 무한정 길어진다.
+  it("puts the derived budget into the generation prompt lines", () => {
+    const directive = buildStyleDirective(undefined, undefined, undefined, sceneSeed)
+
+    expect(directive?.targetWordCount).toBe(12000)
+    expect(narrativeStyleLines(directive).some((line) => line.includes("12,000자"))).toBe(true)
+  })
+
+  it("adds no length line when the scene body is not supplied", () => {
+    expect(buildStyleDirective(undefined, undefined, undefined)).toBeUndefined()
   })
 })

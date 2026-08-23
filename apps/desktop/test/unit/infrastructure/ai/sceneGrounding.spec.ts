@@ -68,6 +68,8 @@ describe("craft contract lines", () => {
 
     expect(lines.some((line) => line.includes("다시 설명하지 마라"))).toBe(true)
     expect(lines.some((line) => line.includes("3회를 넘겨 반복하지 마라"))).toBe(true)
+    // 후렴·반복 대사도 같은 상한에 걸려야 한다.
+    expect(lines.some((line) => line.includes("대사·후렴구"))).toBe(true)
     expect(lines.some((line) => line.includes("어깨가 떨렸다"))).toBe(true)
     expect(lines.some((line) => line.includes("자기 목적이나 결점"))).toBe(true)
   })
@@ -77,10 +79,13 @@ describe("craft contract lines", () => {
       banTelling: false,
       motifRepeatLimit: 5,
       stockGestureBlacklist: [],
-      requireCharacterInterior: false
+      requireCharacterInterior: false,
+      sceneLengthMultiplier: 0
     })
 
-    expect(lines).toEqual(["같은 심상·소재(예: 흐릿한 길, 문틈)를 장면 전체에서 5회를 넘겨 반복하지 마라."])
+    expect(lines).toEqual([
+      "같은 심상·소재(예: 흐릿한 길, 문틈)는 물론 같은 대사·후렴구·문장도 장면 전체에서 5회를 넘겨 반복하지 마라."
+    ])
   })
 
   it("reaches the generation prompt even without a style directive", () => {

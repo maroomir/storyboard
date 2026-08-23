@@ -17,7 +17,7 @@ English README: [`README.en.md`](README.en.md)
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 현재 Draft/Scene에 대해 대화로 작업을 지시 → 제안 확인 → 승인으로 실행(생성·재생성·검사·편집)
 - 재생성 없이 카드 기반 보충: Studio 패널에서 **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역)을 요청해 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `storyboard.grounding.autoApprove`를 켜면 자동 수락
-- 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프 반복 상한·상투 표현 블랙리스트·인물 내면 요구를 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기)
+- 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 이전 초안 히스토리 보관(`storyboard.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
 - 장면 전환 구분자 삽입(`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사

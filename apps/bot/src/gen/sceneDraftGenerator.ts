@@ -191,6 +191,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
         project.value.setting,
         groundedScene.frontmatter.relationStage,
         groundedScene.frontmatter.targetWordCount,
+        groundedScene.body,
       ),
     };
   }

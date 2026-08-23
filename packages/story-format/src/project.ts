@@ -23,6 +23,8 @@ export interface CraftContract {
   readonly motifRepeatLimit: number;
   readonly stockGestureBlacklist: readonly string[];
   readonly requireCharacterInterior: boolean;
+  // 목표 분량이 없는 씬의 기본 예산을 씬 시드 길이의 배수로 정한다. 0이면 제한을 걸지 않는다.
+  readonly sceneLengthMultiplier: number;
 }
 
 export type CraftContractOverride = Partial<CraftContract>;
@@ -39,6 +41,7 @@ export const defaultCraftContract: CraftContract = {
     '심장이 내려앉았다',
   ],
   requireCharacterInterior: true,
+  sceneLengthMultiplier: 12,
 };
 
 export function resolveCraftContract(override: CraftContractOverride | undefined): CraftContract {
@@ -53,6 +56,8 @@ export function resolveCraftContract(override: CraftContractOverride | undefined
       override.stockGestureBlacklist ?? defaultCraftContract.stockGestureBlacklist,
     requireCharacterInterior:
       override.requireCharacterInterior ?? defaultCraftContract.requireCharacterInterior,
+    sceneLengthMultiplier:
+      override.sceneLengthMultiplier ?? defaultCraftContract.sceneLengthMultiplier,
   };
 }
 

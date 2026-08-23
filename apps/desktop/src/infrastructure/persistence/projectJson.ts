@@ -15,6 +15,7 @@ const craftContractOverrideSchema = z.object({
   motifRepeatLimit: z.number().int().positive().optional(),
   stockGestureBlacklist: z.array(z.string()).optional(),
   requireCharacterInterior: z.boolean().optional(),
+  sceneLengthMultiplier: z.number().nonnegative().optional(),
 });
 
 const projectSettingSchema = z.object({

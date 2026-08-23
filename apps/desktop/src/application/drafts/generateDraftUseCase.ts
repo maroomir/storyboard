@@ -186,6 +186,7 @@ async function runAndPersistDraft(
         project.setting,
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
+        scene.body,
       ),
       previousContext,
       providers: pipelineProviders,
