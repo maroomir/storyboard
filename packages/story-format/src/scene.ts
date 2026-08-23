@@ -3,6 +3,28 @@ import { z } from 'zod';
 export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.txt$/;
 export const sceneStemPattern = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
 
+// 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
+// 생성되는 것을 막는다.
+export const sceneGroundingFieldKeys = ['incident', 'place', 'relation', 'time'] as const;
+
+export type SceneGroundingFieldKey = (typeof sceneGroundingFieldKeys)[number];
+
+export const sceneGroundingSchema = z.object({
+  incident: z.string().trim().min(1).optional(),
+  place: z.string().trim().min(1).optional(),
+  relation: z.string().trim().min(1).optional(),
+  time: z.string().trim().min(1).optional(),
+});
+
+export type SceneGrounding = z.infer<typeof sceneGroundingSchema>;
+
+export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, string>> = {
+  incident: '사건',
+  place: '장소',
+  relation: '관계',
+  time: '시점',
+};
+
 export const sceneFrontmatterSchema = z
   .object({
     title: z.string().trim().min(1).optional(),
@@ -11,6 +33,7 @@ export const sceneFrontmatterSchema = z
     mood: z.string().trim().min(1).optional(),
     relationStage: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
+    grounding: sceneGroundingSchema.optional(),
   })
   .passthrough();
 

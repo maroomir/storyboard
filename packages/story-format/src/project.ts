@@ -17,6 +17,45 @@ export interface ProjectEditor {
   readonly trackDraft?: boolean;
 }
 
+// 생성 프롬프트에 항상 주입되는 작법 규칙. 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸린다.
+export interface CraftContract {
+  readonly banTelling: boolean;
+  readonly motifRepeatLimit: number;
+  readonly stockGestureBlacklist: readonly string[];
+  readonly requireCharacterInterior: boolean;
+}
+
+export type CraftContractOverride = Partial<CraftContract>;
+
+export const defaultCraftContract: CraftContract = {
+  banTelling: true,
+  motifRepeatLimit: 3,
+  stockGestureBlacklist: [
+    '어깨가 떨렸다',
+    '눈물이 뺨을 타고 흘렀다',
+    '이를 악물었다',
+    '눈썹이 떨렸다',
+    '입술을 깨물었다',
+    '심장이 내려앉았다',
+  ],
+  requireCharacterInterior: true,
+};
+
+export function resolveCraftContract(override: CraftContractOverride | undefined): CraftContract {
+  if (!override) {
+    return defaultCraftContract;
+  }
+
+  return {
+    banTelling: override.banTelling ?? defaultCraftContract.banTelling,
+    motifRepeatLimit: override.motifRepeatLimit ?? defaultCraftContract.motifRepeatLimit,
+    stockGestureBlacklist:
+      override.stockGestureBlacklist ?? defaultCraftContract.stockGestureBlacklist,
+    requireCharacterInterior:
+      override.requireCharacterInterior ?? defaultCraftContract.requireCharacterInterior,
+  };
+}
+
 export interface ProjectSetting {
   readonly genre?: string;
   readonly country?: string;
@@ -29,6 +68,7 @@ export interface ProjectSetting {
   readonly prohibitions: string[];
   readonly styleConstraints: string[];
   readonly qualityCriteria: string[];
+  readonly craftContract?: CraftContractOverride;
 }
 
 export interface StoryboardProject {
