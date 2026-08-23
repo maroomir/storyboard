@@ -21,12 +21,24 @@ This file carries the reusable agent workflow adopted from `remote-coder`.
 
 ## Commit Messages
 
-Write commits in English as `type: title`, followed by a blank line and `-`-prefixed body sentences.
+Write commits with an English subject and a Korean four-label body:
 
-- Keep the subject at 50 characters or less with no trailing period.
-- Prefer body lines at 100 characters or less.
-- Use `feat`, `fix`, `docs`, `test`, `refact`, `style`, or `chore`.
-- Do not add `Co-Authored-By` trailers.
+```text
+type(topic): Subject
+
+[Issue] N/A
+[Problem] 증상
+[Cause & Measure] 원인과 조치
+[Checking Method] 검증 방법과 결과
+
+Signed-off-by: Maroomir Yoon <maroomir@gmail.com>
+```
+
+- Keep the subject at 50 characters or less with no trailing period; `(topic)` is optional.
+- Use `feat`, `fix`, `docs`, `test`, `refactor`, `style`, or `chore`.
+- Keep all four labels in order and write `N/A` for a label the change does not support.
+- Write the body in Korean; state only what the diff supports and never invent a verification result.
+- End with the `Signed-off-by` trailer. Do not add `Co-Authored-By` trailers.
 
 ## Final Report
 

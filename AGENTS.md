@@ -212,20 +212,25 @@ Run focused tests first for narrow changes, then broaden verification when share
 
 ## Commit Message Style
 
-Write all commit messages in English using this format:
+Write an English subject with a Korean four-label body using this format:
 
 ```text
-type: Title
+type(topic): Subject
 
-- Body sentence.
-- Body sentence.
+[Issue] N/A
+[Problem] 증상
+[Cause & Measure] 원인과 조치
+[Checking Method] 검증 방법과 결과
+
+Signed-off-by: Maroomir Yoon <maroomir@gmail.com>
 ```
 
-- The subject format is `type: title`, is 50 characters or less, clearly describes the change, and has no trailing period.
+- The subject is `type(topic): Subject`, is 50 characters or less, clearly describes the change, and has no trailing period. `(topic)` is optional.
 - Keep one blank line between the subject and body.
-- Start each body line with `-` and write complete sentences, preferably 100 characters or less.
-- Allowed types: `feat`, `fix`, `docs`, `test`, `refact`, `style`, and `chore`.
-- Do not append a `Co-Authored-By` trailer.
+- Keep all four labels in order and write `N/A` for a label the change does not support.
+- Write the body in Korean, state only what the diff supports, and never invent a verification result.
+- Allowed types: `feat`, `fix`, `docs`, `test`, `refactor`, `style`, and `chore`.
+- End with the `Signed-off-by` trailer. Do not append a `Co-Authored-By` trailer.
 
 ## Pull Requests
 

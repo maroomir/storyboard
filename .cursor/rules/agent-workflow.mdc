@@ -22,10 +22,11 @@ alwaysApply: true
 
 ## Commit messages
 
-- Write English commits as `type: title`, then a blank line and `-`-prefixed complete sentences.
-- Keep the subject at 50 characters or less with no trailing period; prefer body lines at 100 characters or less.
-- Allowed types: `feat`, `fix`, `docs`, `test`, `refact`, `style`, `chore`.
-- Do not add `Co-Authored-By` trailers.
+- Write an English `type(topic): Subject` line, then a blank line and a Korean body carrying `[Issue]`, `[Problem]`, `[Cause & Measure]`, and `[Checking Method]` in that order.
+- Keep the subject at 50 characters or less with no trailing period; `(topic)` is optional.
+- Allowed types: `feat`, `fix`, `docs`, `test`, `refactor`, `style`, `chore`.
+- Write `N/A` for a label the change does not support, and never invent a verification result.
+- End with `Signed-off-by: Maroomir Yoon <maroomir@gmail.com>`. Do not add `Co-Authored-By` trailers.
 
 ## Final report
 
