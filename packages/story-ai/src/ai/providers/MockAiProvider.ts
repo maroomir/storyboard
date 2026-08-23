@@ -101,6 +101,13 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       return JSON.stringify({ entities: [] });
     case 'cardFactVerification':
       return '[]';
+    case 'sceneGrounding':
+      return JSON.stringify({
+        incident: '모의 사건',
+        place: '모의 장소',
+        relation: '모의 관계',
+        time: '모의 시점',
+      });
     case 'inlineCompletion':
       return createMockInlineCompletion(promptSummary);
     case 'draftExpansion':

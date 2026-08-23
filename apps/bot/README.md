@@ -55,6 +55,7 @@ JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을
 | | `tasks` | `{}` | 태스크별 프로바이더(문자열 또는 `{provider, model}`) |
 | | `models.<id>` | — | `model` · `command` · `timeoutMs` · `reasoningEffort`(codex) |
 | `draft` | `reviseAfterGenerate` | `true` | 생성 직후 공유 검토→수정 루프 실행 여부 |
+| `draft` | `autoGrounding` | `true` | 생성 전 씬 사실 시트(사건·장소·관계·시점)의 빈 항목을 채워 씬 frontmatter에 커밋. 끄면 grounding을 건드리지 않는다 |
 | | `reviseMaxIterations` | `2` | 수정 반복 상한(1~5) |
 | `privacy` | `minimizeChatBody` | `false` | 켜면 `/read`가 초안 본문을 채팅에 싣지 않고 파일 첨부로만 전달 |
 | `jobs` | `heavyConcurrency` / `lightConcurrency` | 1 / 1 | 잡 클래스별 동시 실행 수 |

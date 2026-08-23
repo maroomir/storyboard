@@ -3,14 +3,18 @@ import { join } from 'node:path';
 
 import {
   STORYBOARD_RELATIVE_PATHS,
+  applySceneGrounding,
   buildNarrativeContext,
   buildSceneContext,
   createDraft,
   extractDraftBody,
   formatBibleFactLines,
+  mergeSceneGrounding,
+  missingSceneGroundingFields,
   serializeDraft,
   type SceneContextWorkspaceFileSystem,
   type SceneContextWorkspacePaths,
+  type SceneFile,
 } from '@storyboard/story-format';
 import { buildStyleDirective, formatAugmentCards } from '@storyboard/story-ai';
 import type {
@@ -164,19 +168,29 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
 
     const paths = createPaths(store.root);
     const fileSystem = createFileSystem();
-    const context = await buildSceneContext(paths, scene.value, fileSystem);
+    const builtContext = await buildSceneContext(paths, scene.value, fileSystem);
+
+    // The extension resolves grounding the same way and for the same reason: the facts must be
+    // settled before the dialogue prompt runs, and the proposal needs resolved card names.
+    const groundedScene = await resolveGrounding(
+      sceneStem,
+      scene,
+      builtContext.characters.map((character) => character.name),
+      this.options,
+    );
+    const context = { ...builtContext, scene: groundedScene };
     const narrative = await buildNarrativeContext(paths, context, fileSystem);
 
     return {
-      scene: scene.value,
+      scene: groundedScene,
       project: project.value,
       context,
       narrative,
       format: project.value.format ?? 'novel',
       styleDirective: buildStyleDirective(
         project.value.setting,
-        scene.value.frontmatter.relationStage,
-        scene.value.frontmatter.targetWordCount,
+        groundedScene.frontmatter.relationStage,
+        groundedScene.frontmatter.targetWordCount,
       ),
     };
   }
@@ -217,6 +231,52 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
       onProgress: (message) => this.options.onStage?.(message, 0, 0),
     });
   }
+}
+
+// Fills the empty grounding fields and commits them to the scene frontmatter. `scene/` is tracked,
+// so this write is a commit like every other authored change — never a silent edit.
+async function resolveGrounding(
+  sceneStem: string,
+  scene: Awaited<ReturnType<WorkspaceStore['readScene']>>,
+  characterNames: readonly string[],
+  options: SceneDraftGeneratorOptions,
+): Promise<SceneFile> {
+  const missingFields = missingSceneGroundingFields(scene.value.frontmatter.grounding);
+
+  if (!options.draftConfig.autoGrounding || missingFields.length === 0) {
+    return scene.value;
+  }
+
+  const proposed = await options.aiService.proposeSceneGrounding(
+    {
+      sceneBody: scene.value.body,
+      missingFields,
+      characterNames,
+      knownGrounding: scene.value.frontmatter.grounding,
+    },
+    { attribution: { primary: { kind: 'scene', id: sceneStem } } },
+  );
+  const merged = mergeSceneGrounding(scene.value.frontmatter.grounding, proposed);
+
+  if (Object.keys(merged).length === 0) {
+    return scene.value;
+  }
+
+  const raw = await options.store.readText(scene.relativePath);
+  const outcome = await options.content.writeTracked(
+    scene.relativePath,
+    applySceneGrounding(raw, merged),
+    scene.contentHash,
+    `storygram: ground ${scene.relativePath}`,
+  );
+
+  // A stale or blocked write means Desktop touched the scene mid-job. The facts still steer this
+  // generation; the next run re-proposes against whatever landed on disk.
+  if (outcome.status !== 'committed' && outcome.status !== 'written') {
+    options.onStage?.('사실 시트 저장 건너뜀 (동시 편집 감지)', 0, 0);
+  }
+
+  return { ...scene.value, frontmatter: { ...scene.value.frontmatter, grounding: merged } };
 }
 
 interface AssembledSceneContext {

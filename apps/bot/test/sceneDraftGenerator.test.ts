@@ -111,7 +111,7 @@ describe('scene draft generation', () => {
       content,
       aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
       generator: 'storygram@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
@@ -136,6 +136,87 @@ describe('scene draft generation', () => {
     expect(log.split('\n')).toHaveLength(2);
   });
 
+
+  // Ported from the extension: the four grounding facts are settled before the dialogue prompt
+  // runs, and `scene/` is tracked so filling them is a commit of its own.
+  it('fills missing scene grounding and commits it to the scene frontmatter', async () => {
+    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
+      generator: 'storygram@0.0.0-test',
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    const scene = await store.readScene('01-prologue');
+    expect(scene.value.frontmatter.grounding).toBeDefined();
+    // The surgical write keeps every other key, including the inline sequence, byte-for-byte.
+    const raw = readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8');
+    expect(raw).toContain('characters: [elia]');
+    expect(raw).toContain('grounding:');
+    expect(raw).toContain('엘리아가 학교에서 첫 장면을 시작한다.');
+
+    const log = fixture.git('log', '--format=%s').split('\n');
+    expect(log[0]).toBe('storygram: ground scene/01-prologue.txt');
+  });
+
+  it('leaves the scene untouched when auto grounding is off', async () => {
+    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const before = readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8');
+    const logBefore = fixture.git('log', '--format=%s');
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
+      generator: 'storygram@0.0.0-test',
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8')).toBe(before);
+    expect(fixture.git('log', '--format=%s')).toBe(logBefore);
+  });
+
+  it('keeps user-authored grounding and only fills the empty fields', async () => {
+    fixture.write(
+      'scene/01-prologue.txt',
+      [
+        '---',
+        'title: 프롤로그',
+        'characters: [elia]',
+        'location: school',
+        'grounding:',
+        '  incident: 사용자가 적어 둔 사건',
+        '---',
+        '엘리아가 학교에서 첫 장면을 시작한다.',
+        '',
+      ].join('\n'),
+    );
+    fixture.git('add', '--all');
+    fixture.git('commit', '--quiet', '-m', 'author grounding');
+
+    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      aiService: engine.service,
+      registry: engine.registry,
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
+      generator: 'storygram@0.0.0-test',
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    const grounding = (await store.readScene('01-prologue')).value.frontmatter.grounding;
+    expect(grounding?.incident).toBe('사용자가 적어 둔 사건');
+  });
+
   it('fails cleanly when the scene disappeared while the job was queued', async () => {
     const engine = createAiEngine({ providers: { default: 'mock' } });
     const generator = new SceneDraftGenerator({
@@ -143,7 +224,7 @@ describe('scene draft generation', () => {
       content,
       aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
       generator: 'storygram@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
@@ -164,7 +245,7 @@ describe('scene draft generation', () => {
       content,
       aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2 },
+      draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2, autoGrounding: false },
       generator: 'storygram@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
@@ -185,7 +266,7 @@ describe('scene draft generation', () => {
       content,
       aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2 },
+      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
       generator: 'storygram@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);

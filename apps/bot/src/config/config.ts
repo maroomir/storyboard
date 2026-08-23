@@ -63,6 +63,9 @@ const providersConfigSchema = z.strictObject({
 const draftConfigSchema = z.strictObject({
   reviseAfterGenerate: z.boolean().default(true),
   reviseMaxIterations: z.number().int().min(1).max(5).default(2),
+  // Mirrors `storyboard.grounding.autoApprove`, but a queued job cannot stop to ask Telegram for
+  // approval, so off means the bot leaves grounding alone instead of prompting.
+  autoGrounding: z.boolean().default(true),
 });
 
 const privacyConfigSchema = z.object({
@@ -85,7 +88,11 @@ export const configSchema = z.object({
   telegram: telegramConfigSchema,
   workspace: workspaceConfigSchema,
   providers: providersConfigSchema.optional(),
-  draft: draftConfigSchema.default({ reviseAfterGenerate: true, reviseMaxIterations: 2 }),
+  draft: draftConfigSchema.default({
+    reviseAfterGenerate: true,
+    reviseMaxIterations: 2,
+    autoGrounding: true,
+  }),
   privacy: privacyConfigSchema.default({ minimizeChatBody: false }),
   jobs: jobsConfigSchema.default({ heavyConcurrency: 1, lightConcurrency: 1 }),
   dashboard: dashboardConfigSchema.default({ enabled: true, port: 8787 }),

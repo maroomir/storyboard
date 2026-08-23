@@ -77,7 +77,11 @@ describe('strict bot provider config', () => {
 
   it('defaults the revise gate on and clamps its iteration range', () => {
     const defaulted = loadConfig(writeConfig(dir, BASE));
-    expect(defaulted.config.draft).toEqual({ reviseAfterGenerate: true, reviseMaxIterations: 2 });
+    expect(defaulted.config.draft).toEqual({
+      reviseAfterGenerate: true,
+      reviseMaxIterations: 2,
+      autoGrounding: true,
+    });
 
     const explicit = loadConfig(
       writeConfig(dir, { ...BASE, draft: { reviseAfterGenerate: false, reviseMaxIterations: 5 } }),

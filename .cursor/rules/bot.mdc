@@ -67,6 +67,19 @@ whole reason to exist. Path and `STORYGRAM_HOME` rules are duplicated from
 `apps/bot/src/config/paths.ts`; keep the two in step. The wizard's generated config must stay
 acceptable to the bot's strict `configSchema`.
 
+## Scene grounding
+
+Generation resolves the scene's four grounding facts (incident/place/relation/time) before the
+dialogue prompt runs, exactly as the extension does. Two consequences are specific to the bot:
+`scene/` is **tracked**, so filling grounding is a commit of its own
+(`storygram: ground scene/<stem>.txt`) written through `ContentService.writeTracked` with the
+read-time hash as baseline — a Desktop edit landing mid-job makes it stale and the job skips the
+save rather than clobbering it. And a queued job cannot stop to ask Telegram for approval, so
+`draft.autoGrounding` (default true) means *fill and commit*; off means leave grounding alone.
+Never re-implement the merge or the frontmatter write: `mergeSceneGrounding` and
+`applySceneGrounding` in `packages/story-format/src/files/sceneGrounding.ts` are shared with the
+extension.
+
 ## Card formatting
 
 Card serialization is canonical (fixed key order, block sequences), so a hand-authored card using

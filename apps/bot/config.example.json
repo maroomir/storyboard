@@ -23,6 +23,7 @@
   },
   "draft": {
     "reviseAfterGenerate": true,
+    "autoGrounding": true,
     "reviseMaxIterations": 2
   },
   "jobs": {

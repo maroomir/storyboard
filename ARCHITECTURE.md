@@ -308,6 +308,10 @@ grounding:
 - 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
   무효화되어 다음 생성에 그대로 반영된다.
 - grounding 블록만 잘라 끼워 넣기 때문에 나머지 frontmatter 키의 표기는 바이트 그대로 보존된다.
+- 봇(storygram)도 같은 단계를 돌린다. 다만 큐에 올라간 작업이 승인을 기다릴 수 없으므로
+  `draft.autoGrounding`(기본 켜짐)이 "채우고 커밋"을 뜻하고, 끄면 grounding을 건드리지 않는다.
+  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storygram: ground scene/<stem>.txt` 커밋으로
+  남는다.
 
 #### 파일명 규칙 (강제)
 
