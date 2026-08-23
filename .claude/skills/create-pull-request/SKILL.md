@@ -57,23 +57,21 @@ Ask the user for missing critical information.
 
 ## PR Body
 
-If `.github/pull_request_template.md` exists, follow it exactly.
+Use `.github/pull_request_template.md` as the body skeleton. Keep every section and heading; fill
+them as follows:
 
-Otherwise use:
+- **요약**: one or two sentences on what changed and why, replacing the HTML comment.
+- **반영 내용**: one table row per change, grouped by workspace (`desktop`, `bot`, `story-format`,
+  `story-ai`, `story-git`, `docs`, `rules`, `ci`). Derive rows from `git diff origin/main..HEAD --stat`
+  and the commit subjects; list the main files in backticks, not every file.
+- **배경**: fill `[Problem]` and `[Cause & Measure]` from the commit bodies (same labels as the commit
+  convention). Write `N/A` for a label the change does not support.
+- **검증**: tick only the scripts that were actually run; put manual checks under **수동 확인**, or
+  `N/A` when none were done. Never invent a result.
+- **참고**: related issue (`N/A` if none), review hotspots, and follow-up work.
 
-```markdown
-## Summary
-
-- ...
-
-## Testing
-
-- ...
-
-## Notes
-
-- ...
-```
+Write the body in Korean except code, paths, and identifiers. Remove the HTML comments from the
+final body.
 
 ## Create the PR
 
