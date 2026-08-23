@@ -170,20 +170,18 @@ export async function loadSceneGenerationInputs(
 
   const { project } = loaded;
 
-  // NOTE: 사실 시트를 먼저 확정해야 inputHash와 생성 프롬프트가 같은 사실 위에서 돈다.
-  const grounded = await resolveSceneGrounding(sceneUri, loaded.scene, options);
-  if (grounded.kind === 'cancelled') {
-    return { ok: false, result: { ok: false, kind: 'cancelled' } };
-  }
-
-  const scene = grounded.scene;
-
-  const contextResult = await loadSceneContextBundle(paths, scene, project, options);
+  const contextResult = await loadSceneContextBundle(
+    paths,
+    sceneUri,
+    loaded.scene,
+    project,
+    options,
+  );
   if (!contextResult.ok) {
     return contextResult;
   }
 
-  const { context, previousContext, sceneBreakJoiner, inputHash } = contextResult;
+  const { scene, context, previousContext, sceneBreakJoiner, inputHash } = contextResult;
 
   return {
     ok: true,
@@ -206,6 +204,7 @@ type SceneContextBundleResult =
   | { ok: false; result: GenerateDraftResult }
   | {
       ok: true;
+      scene: Awaited<ReturnType<ISceneRepository['read']>>;
       context: Awaited<ReturnType<typeof buildSceneContext>>;
       previousContext: string | undefined;
       sceneBreakJoiner: string | undefined;
@@ -214,14 +213,15 @@ type SceneContextBundleResult =
 
 async function loadSceneContextBundle(
   paths: ReturnType<typeof getStoryboardProjectPaths>,
-  scene: Awaited<ReturnType<ISceneRepository['read']>>,
+  sceneUri: vscode.Uri,
+  rawScene: Awaited<ReturnType<ISceneRepository['read']>>,
   project: Awaited<ReturnType<IProjectRepository['read']>>,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneContextBundleResult> {
   const ctxPaths = sceneContextPaths(paths);
-  let context;
+  let builtContext;
   try {
-    context = await buildSceneContext(ctxPaths, scene, options.fileSystem);
+    builtContext = await buildSceneContext(ctxPaths, rawScene, options.fileSystem);
   } catch (error) {
     return {
       ok: false,
@@ -233,6 +233,22 @@ async function loadSceneContextBundle(
       ),
     };
   }
+
+  // NOTE: 사실 시트는 컨텍스트를 만든 뒤 확정한다. 그래야 카드 id가 아닌 실제 인물 이름으로 제안받고,
+  // 확정된 사실이 inputHash와 생성 프롬프트에 같이 반영된다. grounding은 characters/location을
+  // 건드리지 않으므로 컨텍스트를 다시 만들지 않고 씬만 갈아 끼운다.
+  const grounded = await resolveSceneGrounding(
+    sceneUri,
+    rawScene,
+    builtContext.characters.map((character) => character.name),
+    options,
+  );
+  if (grounded.kind === 'cancelled') {
+    return { ok: false, result: { ok: false, kind: 'cancelled' } };
+  }
+
+  const scene = grounded.scene;
+  const context = { ...builtContext, scene };
 
   const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);
   const sceneBreakJoiner = resolveSceneBreakJoiner(
@@ -250,6 +266,7 @@ async function loadSceneContextBundle(
 
   return {
     ok: true,
+    scene,
     context,
     previousContext: narrativeContext.prompt,
     sceneBreakJoiner,

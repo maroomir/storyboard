@@ -511,13 +511,15 @@ describe("GenerateDraftUseCase", () => {
       expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledWith(
         expect.objectContaining({
           sceneBody: fakeScene.body,
-          missingFields: ["incident", "place", "relation", "time"]
+          missingFields: ["incident", "place", "relation", "time"],
+          // 카드 id가 아니라 해석된 인물 이름으로 제안받아야 본문에 슬러그가 새지 않는다.
+          characterNames: ["준서", "하나"]
         }),
         expect.anything()
       )
       expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "제안된 사건" })
-      expect(buildSceneContextMock.mock.calls[0]?.[1]).toMatchObject({
-        frontmatter: { grounding: { incident: "제안된 사건" } }
+      expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
+        context: { scene: { frontmatter: { grounding: { incident: "제안된 사건" } } } }
       })
     })
 

@@ -17,6 +17,7 @@ export type SceneGroundingOutcome =
 export async function resolveSceneGrounding(
   sceneUri: vscode.Uri,
   scene: SceneFile,
+  characterNames: readonly string[],
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGroundingOutcome> {
   const existing = scene.frontmatter.grounding;
@@ -26,7 +27,7 @@ export async function resolveSceneGrounding(
     return { kind: 'resolved', scene };
   }
 
-  const proposed = await proposeGrounding(sceneUri, scene, missingFields, options);
+  const proposed = await proposeGrounding(sceneUri, scene, characterNames, missingFields, options);
   const merged = mergeSceneGrounding(existing, proposed);
 
   const approved = options.configBridge.isSceneGroundingAutoApproveEnabled()
@@ -52,6 +53,7 @@ export async function resolveSceneGrounding(
 async function proposeGrounding(
   sceneUri: vscode.Uri,
   scene: SceneFile,
+  characterNames: readonly string[],
   missingFields: ReturnType<typeof missingSceneGroundingFields>,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGrounding> {
@@ -60,7 +62,7 @@ async function proposeGrounding(
       {
         sceneBody: scene.body,
         missingFields,
-        characterNames: scene.frontmatter.characters ?? [],
+        characterNames,
         knownGrounding: scene.frontmatter.grounding,
       },
       {
