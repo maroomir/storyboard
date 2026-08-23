@@ -48,3 +48,6 @@ docs/refactor
 
 # 개발용
 TODO.md
+
+# 일회성 검증 스크립트 (커밋 대상 아님)
+*.tmp.ts
