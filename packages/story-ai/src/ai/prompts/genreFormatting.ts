@@ -1,5 +1,9 @@
 import type { ProjectFormat } from '@storyboard/story-format';
-import { narrativeStyleLines, type StyleDirective } from '../../contracts/styleDirective';
+import {
+  craftContractLines,
+  narrativeStyleLines,
+  type StyleDirective,
+} from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 const formatGuides: Readonly<Record<ProjectFormat, string>> = {
@@ -47,6 +51,7 @@ function buildGeneric(
       '입력에 없는 새로운 사건·설정·인물은 만들어내지 마라.',
       '출력은 한국어로 작성하라.',
       ...narrativeStyleLines(style),
+      ...craftContractLines(style?.craftContract),
     ].join('\n'),
     user: dialogue,
   };
@@ -78,6 +83,7 @@ function buildRich(
       '같은 표현이나 상투구를 반복하지 말고 변주하라.',
       '출력은 한국어로 작성하라.',
       ...narrativeStyleLines(style),
+      ...craftContractLines(style?.craftContract),
     ].join('\n'),
     user: dialogue,
   };

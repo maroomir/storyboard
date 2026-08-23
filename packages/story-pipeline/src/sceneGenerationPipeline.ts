@@ -144,6 +144,7 @@ async function executeSceneGenerationPipeline(
   const dialogueOptions: GenerateTextOptions = {
     ...buildGenerateOptions(providers, 'personaDialogue'),
     styleDirective,
+    sceneGrounding: context.scene.frontmatter.grounding,
   };
   const backgroundParticipantId = context.background?.id ?? input.backgroundId;
   assertNotCancelled(shouldCancel);

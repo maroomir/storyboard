@@ -1,5 +1,14 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
-import type { PointOfView, ProjectSetting } from '@storyboard/story-format';
+import {
+  pointOfViewLabels,
+  resolveCraftContract,
+  sceneGroundingFieldLabels,
+} from '@storyboard/story-format';
+import type {
+  CraftContractOverride,
+  PointOfView,
+  ProjectSetting,
+  SceneGrounding,
+} from '@storyboard/story-format';
 // NOTE: Shared narrative-style context injected into every scene-generation prompt so point of
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.
@@ -9,6 +18,7 @@ export interface StyleDirective {
   readonly styleConstraints?: readonly string[];
   readonly relationStage?: string;
   readonly targetWordCount?: number;
+  readonly craftContract?: CraftContractOverride;
 }
 
 export function buildStyleDirective(
@@ -24,6 +34,7 @@ export function buildStyleDirective(
   const directive: StyleDirective = {
     pov: setting?.pov,
     genre: setting?.genre,
+    craftContract: setting?.craftContract,
     styleConstraints,
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
@@ -37,11 +48,56 @@ export function buildStyleDirective(
 
   return directive.pov ||
     directive.genre ||
+    directive.craftContract ||
     directive.styleConstraints ||
     directive.relationStage ||
     directive.targetWordCount
     ? directive
     : undefined;
+}
+
+// NOTE: 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸리도록, directive가 없어도 항상 렌더한다.
+export function craftContractLines(override: CraftContractOverride | undefined): string[] {
+  const contract = resolveCraftContract(override);
+  const lines: string[] = [];
+
+  if (contract.banTelling) {
+    lines.push(
+      '대사나 행동으로 이미 드러난 감정·의미를 뒤이은 서술로 다시 설명하지 마라. 해석은 독자 몫으로 남겨라.',
+    );
+  }
+
+  lines.push(
+    `같은 심상·소재(예: 흐릿한 길, 문틈)를 장면 전체에서 ${contract.motifRepeatLimit}회를 넘겨 반복하지 마라.`,
+  );
+
+  if (contract.stockGestureBlacklist.length > 0) {
+    lines.push(
+      `다음 상투 표현은 쓰지 말고 그 인물만의 구체적 반응으로 대체하라: ${contract.stockGestureBlacklist.join(', ')}.`,
+    );
+  }
+
+  if (contract.requireCharacterInterior) {
+    lines.push(
+      '위로하거나 조언하는 인물도 자기 목적이나 결점을 최소 한 번 드러내라. 조언만 하는 장치가 되지 않게 하라.',
+    );
+  }
+
+  return lines;
+}
+
+// 씬을 구체적 사건에 못박는 사실. 추상적 씬이 은유만으로 전개되는 것을 막는다.
+export function sceneGroundingLines(grounding: SceneGrounding | undefined): string[] {
+  if (!grounding) {
+    return [];
+  }
+
+  const entries = Object.entries(sceneGroundingFieldLabels).flatMap(([key, label]) => {
+    const value = grounding[key as keyof SceneGrounding];
+    return value ? [`- ${label}: ${value}`] : [];
+  });
+
+  return entries.length > 0 ? ['[이 장면의 확정 사실]', ...entries] : [];
 }
 
 function povLine(directive: StyleDirective): string | undefined {

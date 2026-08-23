@@ -11,6 +11,7 @@ export const aiProviderIds = [
 export type AiProviderId = (typeof aiProviderIds)[number];
 
 export const aiTaskCatalog = [
+  { name: 'sceneGrounding', label: '씬 사실 시트', status: 'wired' },
   { name: 'situationExtraction', label: '상황 추출', status: 'wired' },
   { name: 'personaGeneration', label: '페르소나 생성', status: 'wired' },
   { name: 'personaDialogue', label: '페르소나 대화', status: 'wired' },

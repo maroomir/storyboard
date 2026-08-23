@@ -1,6 +1,12 @@
 import type { Background } from '@storyboard/story-format';
 import { joinCardText } from '@storyboard/story-format';
-import { voiceStyleLines, type StyleDirective } from '../../contracts/styleDirective';
+import type { SceneGrounding } from '@storyboard/story-format';
+import {
+  craftContractLines,
+  sceneGroundingLines,
+  voiceStyleLines,
+  type StyleDirective,
+} from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 function buildSystemLines(
@@ -42,6 +48,7 @@ function buildSystemLines(
       ? `태그: ${background.tags.join(', ')}`
       : undefined,
     ...(variant === 'xs' ? [] : voiceStyleLines(style)),
+    ...(variant === 'xs' ? [] : craftContractLines(style?.craftContract)),
   ];
 }
 
@@ -57,6 +64,7 @@ export const PersonaDialoguePrompt = {
     previousContext?: string,
     variant: PromptVariantId = 'generic',
     style?: StyleDirective,
+    grounding?: SceneGrounding,
   ): PromptArtifact {
     const povInteriorityLine =
       style?.pov === 'first' || style?.pov === 'third-limited'
@@ -73,7 +81,10 @@ export const PersonaDialoguePrompt = {
       persona,
     ]);
 
+    const groundingBlock = sceneGroundingLines(grounding);
+
     const user = [
+      groundingBlock.length > 0 ? `${groundingBlock.join('\n')}\n` : undefined,
       personaLines.length > 0 ? '등장 캐릭터 페르소나:' : undefined,
       ...personaLines,
       previousContext ? `\n이전 장면:\n${previousContext}` : undefined,
