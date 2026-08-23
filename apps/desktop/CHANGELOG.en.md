@@ -10,6 +10,13 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-08-23
+
+### Changed
+
+- The Studio panel now opens on a "current stage" card. Instead of a target chip showing only a file name, one card gathers the scene title, the draft's length, version, last update, and review status, plus the linked character and background cards; before any conversation the panel lists three recommended next steps with the reason for each. The card is re-read after every command, so it follows edits to the files. Conversation, approval, and slash-command flows are unchanged.
+- The settings Tasks tab is now an override inbox. Rather than listing all 24 tasks, it shows only the tasks that override the default and adds others on demand through a search picker. Three summary cards at the top report the default AI, connection status, and override count, and clicking one jumps to the matching tab.
+
 ## [0.6.2] - 2026-08-23
 
 ### Added
