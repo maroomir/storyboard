@@ -13,6 +13,14 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '../../infrastructure/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
+import type { SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-format';
+
+// 승인 UI는 presentation이 구현한다. undefined를 돌려주면 생성을 취소한다.
+export type ConfirmSceneGrounding = (input: {
+  readonly sceneStem: string;
+  readonly grounding: SceneGrounding;
+  readonly proposedFields: readonly SceneGroundingFieldKey[];
+}) => Promise<SceneGrounding | undefined>;
 
 export interface GenerateDraftUseCaseDependencies {
   readonly aiGateway: AiGateway;
@@ -36,6 +44,7 @@ export interface GenerateDraftRequest {
   ) => void;
   readonly onSaving?: () => void;
   readonly shouldCancel?: () => boolean;
+  readonly confirmSceneGrounding?: ConfirmSceneGrounding;
   readonly suppressLoggerPanel?: boolean;
   readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void;
 }

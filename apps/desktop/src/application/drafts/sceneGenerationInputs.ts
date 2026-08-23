@@ -19,6 +19,7 @@ import { computeSceneInputHash } from '../../domain/files/sceneCache';
 import { sceneCacheFilePath } from '../../infrastructure/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import { resolveSceneGrounding } from './resolveSceneGrounding';
 
 export interface SceneGenerationInputs {
   readonly workspaceFolder: vscode.WorkspaceFolder;
@@ -167,7 +168,15 @@ export async function loadSceneGenerationInputs(
     return loaded;
   }
 
-  const { scene, project } = loaded;
+  const { project } = loaded;
+
+  // NOTE: 사실 시트를 먼저 확정해야 inputHash와 생성 프롬프트가 같은 사실 위에서 돈다.
+  const grounded = await resolveSceneGrounding(sceneUri, loaded.scene, options);
+  if (grounded.kind === 'cancelled') {
+    return { ok: false, result: { ok: false, kind: 'cancelled' } };
+  }
+
+  const scene = grounded.scene;
 
   const contextResult = await loadSceneContextBundle(paths, scene, project, options);
   if (!contextResult.ok) {
@@ -236,6 +245,7 @@ async function loadSceneContextBundle(
     format: project.format,
     bibleFacts: narrativeContext.bibleFacts,
     sceneBreakJoiner,
+    grounding: scene.frontmatter.grounding,
   });
 
   return {

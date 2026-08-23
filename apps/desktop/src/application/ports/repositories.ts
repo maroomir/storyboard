@@ -1,4 +1,4 @@
-import type { Draft, SceneFile, StoryboardProject } from '@storyboard/story-format';
+import type { Draft, SceneFile, SceneGrounding, StoryboardProject } from '@storyboard/story-format';
 import type { SceneCacheRecord } from '../../domain/files/sceneCache';
 export interface IProjectRepository {
   read(uri: unknown): Promise<StoryboardProject>;
@@ -6,6 +6,7 @@ export interface IProjectRepository {
 
 export interface ISceneRepository {
   read(uri: unknown, fileName: string): Promise<SceneFile>;
+  writeGrounding(uri: unknown, grounding: SceneGrounding): Promise<void>;
 }
 
 export interface IDraftRepository {

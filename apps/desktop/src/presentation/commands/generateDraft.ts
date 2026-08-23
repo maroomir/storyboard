@@ -6,6 +6,7 @@ import {
 } from '../../application/drafts/generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
+import { confirmSceneGrounding } from './confirmSceneGrounding';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';
@@ -63,6 +64,7 @@ async function runGenerateDraftForWorkspaceScene(
 
       const result = await dependencies.generateDraftUseCase.execute(sceneUri, {
         force,
+        confirmSceneGrounding,
         onTraitsUpdateComplete: (summary) => {
           if (summary.updatedCardCount > 0) {
             void vscode.window.showInformationMessage(

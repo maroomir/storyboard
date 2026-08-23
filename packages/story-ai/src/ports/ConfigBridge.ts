@@ -255,6 +255,10 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get('draft.verifyCardCandidates', true);
   }
 
+  public isSceneGroundingAutoApproveEnabled(): boolean {
+    return this.dependencies.getConfiguration().get('grounding.autoApprove', false);
+  }
+
   public isKeepDraftHistoryEnabled(): boolean {
     return this.dependencies.getConfiguration().get('draft.keepHistory', false);
   }

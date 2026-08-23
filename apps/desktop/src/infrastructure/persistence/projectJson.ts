@@ -10,6 +10,13 @@ const projectEditorSchema = z.object({
   trackDraft: z.boolean().optional(),
 });
 
+const craftContractOverrideSchema = z.object({
+  banTelling: z.boolean().optional(),
+  motifRepeatLimit: z.number().int().positive().optional(),
+  stockGestureBlacklist: z.array(z.string()).optional(),
+  requireCharacterInterior: z.boolean().optional(),
+});
+
 const projectSettingSchema = z.object({
   genre: z.string().trim().min(1).optional(),
   country: z.string().trim().min(1).optional(),
@@ -22,6 +29,7 @@ const projectSettingSchema = z.object({
   prohibitions: z.array(z.string()).default([]),
   styleConstraints: z.array(z.string()).default([]),
   qualityCriteria: z.array(z.string()).default([]),
+  craftContract: craftContractOverrideSchema.optional(),
 });
 
 const storyboardProjectSchema = z.object({

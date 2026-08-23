@@ -378,6 +378,11 @@
           "default": true,
           "description": "When 'Update cards after generate' is on, re-check each extracted relation/arc/attribute candidate against the draft body and keep only the ones explicitly stated, reducing hallucinated candidates before they reach 'Promote Card Candidates'. Adds one verification model call per detected character; turn off to skip it."
         },
+        "storyboard.grounding.autoApprove": {
+          "type": "boolean",
+          "default": false,
+          "description": "Before generating a draft, Storyboard fills any missing scene grounding facts (incident, place, relation, time) and stores them in the scene frontmatter. Off by default, so the proposal is shown for review first; turn on to accept proposals automatically and keep generation one-click."
+        },
         "storyboard.draft.keepHistory": {
           "type": "boolean",
           "default": false,

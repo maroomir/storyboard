@@ -51,10 +51,13 @@ function createOptions(
   return {
     force: false,
     aiGateway: {
-      createService: () => undefined,
+      createService: () => ({ proposeSceneGrounding: async () => ({}) }),
       getTaskProvider: () => "mock"
     } as never,
-    configBridge: { isAiContextCondenseEnabled: () => false } as never,
+    configBridge: {
+      isAiContextCondenseEnabled: () => false,
+      isSceneGroundingAutoApproveEnabled: () => true
+    } as never,
     draftRepository: {} as never,
     fileSystem: {} as never,
     logger: logger as never,
@@ -63,7 +66,8 @@ function createOptions(
     } as never,
     sceneCacheRepository: {} as never,
     sceneRepository: {
-      read: (...args: unknown[]): unknown => readSceneFileMock(...args)
+      read: (...args: unknown[]): unknown => readSceneFileMock(...args),
+      writeGrounding: async (): Promise<void> => undefined
     } as never,
     suppressLoggerPanel: false,
     ...overrides

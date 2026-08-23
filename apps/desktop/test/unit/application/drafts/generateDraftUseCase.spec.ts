@@ -81,7 +81,10 @@ const sceneBackgroundCard = {
   locationKind: "place"
 }
 
-const aiServiceStub = { marker: "ai-service" }
+const aiServiceStub = {
+  marker: "ai-service",
+  proposeSceneGrounding: vi.fn(async () => ({ incident: "제안된 사건" }))
+}
 
 const pipelineSuccessResult = {
   draftBody: "생성된 초안 본문",
@@ -114,6 +117,7 @@ function createLogger(): LoggerSpy {
 
 interface ConfigBridgeStub {
   readonly getDraftSceneBreakSeparator: () => string | undefined
+  readonly isSceneGroundingAutoApproveEnabled: () => boolean
   readonly isAiContextCondenseEnabled: () => boolean
   readonly isKeepDraftHistoryEnabled: () => boolean
   readonly isUpdateCardsAfterGenerateEnabled: () => boolean
@@ -123,6 +127,7 @@ interface ConfigBridgeStub {
 function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBridgeStub {
   return {
     getDraftSceneBreakSeparator: () => undefined,
+    isSceneGroundingAutoApproveEnabled: () => true,
     isAiContextCondenseEnabled: () => false,
     isKeepDraftHistoryEnabled: () => false,
     isUpdateCardsAfterGenerateEnabled: () => false,
@@ -180,6 +185,7 @@ interface DependencyOverrides {
   readonly logger?: LoggerSpy
   readonly postGenerationUpdates?: PostGenerationUpdatesStub
   readonly sceneCacheRepository?: SceneCacheRepositoryStub
+  readonly writeGrounding?: ReturnType<typeof vi.fn>
 }
 
 function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftUseCaseDependencies {
@@ -197,7 +203,10 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
     postGenerationUpdates: overrides.postGenerationUpdates,
     projectRepository: { read: vi.fn(async () => fakeProject) },
     sceneCacheRepository: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
-    sceneRepository: { read: vi.fn(async () => fakeScene) }
+    sceneRepository: {
+      read: vi.fn(async () => fakeScene),
+      writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined)
+    }
   } as never
 }
 
@@ -222,6 +231,7 @@ describe("GenerateDraftUseCase", () => {
     uriExistsMock.mockReset().mockResolvedValue(true)
     archiveExistingDraftMock.mockReset().mockResolvedValue(undefined)
     pipelineRunMock.mockReset().mockResolvedValue(pipelineSuccessResult)
+    aiServiceStub.proposeSceneGrounding.mockClear()
   })
 
   describe("cache hit and force", () => {
@@ -232,7 +242,8 @@ describe("GenerateDraftUseCase", () => {
         background: sceneBackgroundCard as never,
         format: fakeProject.format as never,
         bibleFacts: [],
-        sceneBreakJoiner: undefined
+        sceneBreakJoiner: undefined,
+        grounding: { incident: "제안된 사건" }
       })
       const sceneCacheRepository = createSceneCacheRepository({
         read: vi.fn(async () => ({ inputHash: matchingHash }))
@@ -486,6 +497,88 @@ describe("GenerateDraftUseCase", () => {
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result.kind).toBe("generated")
+    })
+  })
+
+  describe("scene grounding", () => {
+    it("proposes only the missing fields, writes them to the scene, and feeds them to the pipeline", async () => {
+      const writeGrounding = vi.fn(async () => undefined)
+      const dependencies = createDependencies({ writeGrounding })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(aiServiceStub.proposeSceneGrounding).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sceneBody: fakeScene.body,
+          missingFields: ["incident", "place", "relation", "time"]
+        }),
+        expect.anything()
+      )
+      expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "제안된 사건" })
+      expect(buildSceneContextMock.mock.calls[0]?.[1]).toMatchObject({
+        frontmatter: { grounding: { incident: "제안된 사건" } }
+      })
+    })
+
+    it("keeps user-authored grounding and skips the proposal when every field is filled", async () => {
+      const grounded = {
+        ...fakeScene,
+        frontmatter: {
+          grounding: {
+            incident: "면접 탈락",
+            place: "옥탑방",
+            relation: "아랫집 이웃",
+            time: "11월 말"
+          }
+        }
+      }
+      buildSceneContextMock.mockReset().mockResolvedValue(sceneContext({ scene: grounded }))
+      const writeGrounding = vi.fn(async () => undefined)
+      const dependencies = createDependencies({ writeGrounding })
+      dependencies.sceneRepository.read = vi.fn(async () => grounded) as never
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(aiServiceStub.proposeSceneGrounding).not.toHaveBeenCalled()
+      expect(writeGrounding).not.toHaveBeenCalled()
+    })
+
+    it("cancels generation when the approval callback rejects the proposal", async () => {
+      const writeGrounding = vi.fn(async () => undefined)
+      const dependencies = createDependencies({
+        configBridge: createConfigBridge({ isSceneGroundingAutoApproveEnabled: () => false }),
+        writeGrounding
+      })
+
+      const result = await execute(
+        dependencies,
+        createRequest({ force: true, confirmSceneGrounding: async () => undefined })
+      )
+
+      expect(result).toEqual({ ok: false, kind: "cancelled" })
+      expect(writeGrounding).not.toHaveBeenCalled()
+      expect(pipelineRunMock).not.toHaveBeenCalled()
+    })
+
+    it("writes the edited grounding when the approval callback returns a revision", async () => {
+      const writeGrounding = vi.fn(async () => undefined)
+      const dependencies = createDependencies({
+        configBridge: createConfigBridge({ isSceneGroundingAutoApproveEnabled: () => false }),
+        writeGrounding
+      })
+
+      const result = await execute(
+        dependencies,
+        createRequest({
+          force: true,
+          confirmSceneGrounding: async () => ({ incident: "사용자가 고친 사건" })
+        })
+      )
+
+      expect(result.kind).toBe("generated")
+      expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "사용자가 고친 사건" })
     })
   })
 })

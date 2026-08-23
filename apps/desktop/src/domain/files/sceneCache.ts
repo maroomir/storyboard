@@ -7,6 +7,7 @@ import type {
   BibleFact,
   CharacterCard,
   ProjectFormat,
+  SceneGrounding,
 } from '@storyboard/story-format';
 import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
@@ -47,6 +48,7 @@ export interface SceneInputHashInput {
   readonly format: ProjectFormat;
   readonly bibleFacts?: readonly BibleFact[];
   readonly sceneBreakJoiner?: string;
+  readonly grounding?: SceneGrounding;
 }
 
 const sceneCacheSituationSchema = z.object({
@@ -153,6 +155,9 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
       ? { bibleFacts: digestBibleFacts(input.bibleFacts) }
       : {}),
     ...(input.sceneBreakJoiner ? { sceneBreakJoiner: input.sceneBreakJoiner } : {}),
+    ...(input.grounding && Object.keys(input.grounding).length > 0
+      ? { grounding: input.grounding }
+      : {}),
   };
   const hash = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
 

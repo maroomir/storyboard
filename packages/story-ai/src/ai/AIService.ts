@@ -1,5 +1,6 @@
 import type { Background } from '@storyboard/story-format';
 import type { Character } from '@storyboard/story-format';
+import type { SceneGrounding } from '@storyboard/story-format';
 import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-format';
 import type {
   ChapterPlan,
@@ -86,6 +87,13 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {},
   ): Promise<SituationWithCharacters[]> {
     return this.sceneAiService.extractSituations(input, options);
+  }
+
+  public async proposeSceneGrounding(
+    input: Parameters<SceneAiService['proposeSceneGrounding']>[0],
+    options: GenerateTextOptions = {},
+  ): Promise<SceneGrounding> {
+    return this.sceneAiService.proposeSceneGrounding(input, options);
   }
 
   public async createCharacterPersona(

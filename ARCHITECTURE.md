@@ -143,6 +143,18 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 
 작품 단위 자동 생성 입력은 `setting`에 둔다. genre/country/concept/tags/description에 더해, **Phase A(생성 계약)**로 독자층(`audience`), 목표 분량(`targetWordCount`), 시점(`pov`: `first` | `third-limited` | `third-omniscient`), 금지 조건(`prohibitions`), 문체 제약(`styleConstraints`), 품질 기준(`qualityCriteria`)을 추가했다. 이 계약 필드는 `Storyboard: Open Settings`의 **작품 계약** 탭에서 편집하며, 원클릭 생성 전 누락·위험 조합을 검증한다. chapter/scene 단위 목표 분량은 `chapters.yaml`의 `targetWordCount`로 둔다.
 
+`setting.craftContract`는 생성 프롬프트에 항상 주입되는 작법 규칙이다. 설정하지 않아도 기본 계약이
+걸리고, 넣은 항목만 덮어쓴다.
+
+```jsonc
+"craftContract": {
+  "banTelling": true,            // 대사로 드러난 의미를 뒤이은 서술로 다시 설명하지 않기
+  "motifRepeatLimit": 3,         // 같은 심상(예: "흐릿한 길") 반복 상한
+  "stockGestureBlacklist": ["어깨가 떨렸다", "눈물이 뺨을 타고 흘렀다"],
+  "requireCharacterInterior": true  // 조언·위로하는 인물도 자기 목적이나 결점을 드러내기
+}
+```
+
 ```jsonc
 "setting": {
   "genre": "성장 판타지",
@@ -271,6 +283,31 @@ relationStage: 첫 만남, 어색한 거리
 ---
 주인공이 학교에 도착했다...
 ```
+
+#### 사실 시트 (`grounding`)
+
+씬이 가사·분위기 스케치처럼 추상적이면 생성물도 은유만 남는다. 이를 막기 위해 생성 직전에 씬을 구체적
+사건으로 못박는 4개 사실을 확정하고, 그 결과를 씬 frontmatter에 남긴다.
+
+```yaml
+---
+title: 수고했어, 오늘도
+characters: [seoha, doyoon]
+grounding:
+  incident: 3년 준비한 임용시험 최종 면접에서 떨어졌다
+  place: 서하의 옥탑방 현관문 앞
+  relation: 반년째 계단에서 인사만 하던 아랫집 이웃
+  time: 11월 말 자정 무렵
+---
+```
+
+- 비어 있는 필드만 AI가 제안하고, **사용자가 적어 둔 값은 절대 덮어쓰지 않는다.**
+- 4개가 모두 차 있으면 제안 호출 자체를 건너뛴다(추가 비용 없음).
+- 기본값은 제안을 보여 주고 승인·수정을 받는 것이다. `storyboard.grounding.autoApprove`를 켜면
+  제안을 자동 수락해 원클릭 생성을 유지한다.
+- 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
+  무효화되어 다음 생성에 그대로 반영된다.
+- grounding 블록만 잘라 끼워 넣기 때문에 나머지 frontmatter 키의 표기는 바이트 그대로 보존된다.
 
 #### 파일명 규칙 (강제)
 
