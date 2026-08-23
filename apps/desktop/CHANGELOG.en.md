@@ -10,6 +10,21 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-08-23
+
+### Added
+
+- Added the scene grounding fact sheet. Right before a draft is generated, Storyboard settles four facts — incident, place, relation, and time — stores them in the scene frontmatter, and feeds them into the dialogue prompt, so an abstract scene seed no longer runs on metaphor alone. Only empty fields get an AI proposal and hand-written values are always kept; once all four are filled, generation skips the AI call entirely. Review-then-approve is the default, and `storyboard.grounding.autoApprove` accepts proposals automatically to keep generation one-click. The settled facts are part of the scene input hash, so editing them invalidates the draft cache.
+- Added the craft contract. Bans on narration asides, a cap on repeated motifs and refrains, a cliché blacklist, an interiority requirement, and a default length budget are now rendered into the generation and formatting prompts on every run. A built-in contract applies with no configuration, and `setting.craftContract` in `.storyboard/project.json` overrides it per project.
+- Drafts now carry provenance in their frontmatter. Generate, revise, and format apply stamp the tool (`storyboard@<version>`) along with the resolved provider and model as `generator`, `providerId`, and `model`, so you can tell later which configuration produced a manuscript. The augment and condense diff-preview paths preserve existing provenance keys.
+- The Telegram bot (storygram) follows the same flow. It writes drafts through the shared frontmatter codec, stamping `storygram@<version>` plus the provider and model, and fills grounding before generating. A queued job cannot ask Telegram for approval, so `draft.autoGrounding` (on by default) fills and commits; turning it off leaves grounding untouched. Saves are based on the hash read at the start, so a desktop edit to the same scene mid-job makes the bot skip its save.
+
+### Fixed
+
+- Fixed drafts growing without bound for scenes that set no target length. The budget is now derived from the scene seed length × `sceneLengthMultiplier` (default 12), clamped to 2,000–20,000 characters, and `sceneLengthMultiplier: 0` disables it. Generate and revise share the same budget.
+- Fixed repeated identical lines and refrains slipping through. The repetition limit previously applied to imagery only and now covers identical lines and refrains as well.
+- Fixed grounding proposals exposing card IDs (slugs) instead of resolved character names.
+
 ## [0.6.1] - 2026-08-21
 
 ### Removed
