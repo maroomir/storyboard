@@ -48,6 +48,28 @@ jobs:
         working-directory: apps/desktop/dist
         run: shasum -a 256 *.vsix > SHA256SUMS
 
+      - name: Build release notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          section() {
+            awk -v ver="$version" '
+              $0 == "## [" ver "]" || index($0, "## [" ver "] ") == 1 { inside = 1; next }
+              inside && /^## \[/ { exit }
+              inside { print }
+            ' "$1"
+          }
+          korean="$(section apps/desktop/CHANGELOG.md)"
+          english="$(section apps/desktop/CHANGELOG.en.md)"
+          if [ -z "$(printf '%s' "$korean" | tr -d '[:space:]')" ]; then
+            echo "No [$version] section in apps/desktop/CHANGELOG.md" >&2
+            exit 1
+          fi
+          {
+            printf '%s\n' "$korean"
+            printf '<details>\n<summary>English</summary>\n\n%s\n</details>\n' "$english"
+          } > release-notes.md
+          cat release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -57,4 +79,4 @@ jobs:
             apps/desktop/dist/*.vsix \
             apps/desktop/dist/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
-            --notes-file apps/desktop/CHANGELOG.md
+            --notes-file release-notes.md

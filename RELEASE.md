@@ -73,7 +73,10 @@ The workflow:
 3. Runs lint and tests from the repository root.
 4. Packages `apps/desktop/dist/storyboard-<version>.vsix`.
 5. Creates `SHA256SUMS`.
-6. Creates a GitHub Release with the VSIX and checksum attached.
+6. Builds the release notes from the `## [<version>]` section of `apps/desktop/CHANGELOG.md`
+   (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
+   the release body, never the whole changelog; the job fails if the section is missing.
+7. Creates a GitHub Release with the VSIX and checksum attached.
 
 If the workflow fails, delete the failed tag only after deciding whether the release commit itself should change.
 
