@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the cramped native modal for scene-fact confirmation with a QuickPick list. Incident, place, relation, and time each get a full-width row, so long sentences are no longer wrapped into an unreadable column, and AI-proposed facts are marked with ✨. Editing now targets a single fact — pick the row (or its pencil button) — instead of walking through all four input boxes in order.
+
 ## [0.6.3] - 2026-08-23
 
 ### Changed
