@@ -40,6 +40,8 @@ import {
   cardsWriteRawResponsePayloadSchema,
   cardsWriteRequestPayloadSchema,
   cardsWriteResponsePayloadSchema,
+  cardsStructureSceneRequestPayloadSchema,
+  cardsStructureSceneResponsePayloadSchema,
 } from './cards';
 import {
   projectReadContractRequestPayloadSchema,
@@ -99,6 +101,7 @@ export const storyboardRequestPayloadSchemas = {
   'cards.applyCollect': cardsApplyCollectRequestPayloadSchema,
   'cards.previewCollect': cardsPreviewCollectRequestPayloadSchema,
   'cards.open': cardsOpenRequestPayloadSchema,
+  'cards.structureScene': cardsStructureSceneRequestPayloadSchema,
   'cards.delete': cardsDeleteRequestPayloadSchema,
   'scenes.list': scenesListRequestPayloadSchema,
   'scenes.openScene': scenesOpenSceneRequestPayloadSchema,
@@ -141,6 +144,7 @@ export const storyboardResponsePayloadSchemas = {
   'cards.applyCollect': cardsApplyCollectResponsePayloadSchema,
   'cards.previewCollect': cardsPreviewCollectResponsePayloadSchema,
   'cards.open': cardsOpenResponsePayloadSchema,
+  'cards.structureScene': cardsStructureSceneResponsePayloadSchema,
   'cards.delete': cardsDeleteResponsePayloadSchema,
   'scenes.list': scenesListResponsePayloadSchema,
   'scenes.openScene': scenesOpenSceneResponsePayloadSchema,

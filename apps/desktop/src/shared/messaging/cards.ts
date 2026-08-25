@@ -56,6 +56,10 @@ export const cardsOpenRequestPayloadSchema = z.object({
   uri: uriStringSchema,
 });
 
+export const cardsStructureSceneRequestPayloadSchema = z.object({
+  uri: uriStringSchema,
+});
+
 export const cardsDeleteRequestPayloadSchema = z.object({
   uri: uriStringSchema,
 });
@@ -112,6 +116,19 @@ export const cardsApplyCollectResponsePayloadSchema = z.object({
 });
 
 export const cardsPreviewCollectResponsePayloadSchema = z.object({});
+
+export const sceneStructureProposalSchema = z.object({
+  purpose: z.string().optional(),
+  conflict: z.string().optional(),
+  twist: z.string().optional(),
+  emotionalShift: z.string().optional(),
+  foreshadowing: z.array(z.string()).optional(),
+  neededCanon: z.array(z.string()).optional(),
+});
+
+export const cardsStructureSceneResponsePayloadSchema = z.object({
+  proposal: sceneStructureProposalSchema,
+});
 
 export const cardsOpenResponsePayloadSchema = z.object({});
 export const cardsDeleteResponsePayloadSchema = z.object({});

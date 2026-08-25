@@ -24,6 +24,7 @@ export class CardModule implements IApplicationModule {
 
   public initialize(context: vscode.ExtensionContext): void {
     const {
+      aiGateway,
       aiProviderRegistry,
       buildStoryCardsUseCase,
       collectCardProposalsUseCase,
@@ -53,6 +54,7 @@ export class CardModule implements IApplicationModule {
       registerCanonDiffCommand({ logger }),
       registerCardDiagnosticsProvider({ logger }),
       registerCardCustomEditorProvider(context, {
+        aiGateway,
         aiProviderRegistry,
         collectCardProposalsUseCase,
         usageRecorder,

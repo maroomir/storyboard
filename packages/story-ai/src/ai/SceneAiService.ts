@@ -13,6 +13,10 @@ import { GenreFormattingPrompt } from './prompts/genreFormatting';
 import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
+import {
+  SceneStructurePrompt,
+  type SceneStructureFieldKey,
+} from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { parseJsonArray, parseJsonObject } from '../contracts/aiResponseParser';
 import {
@@ -72,6 +76,38 @@ export class SceneAiService {
     });
 
     return toSceneGrounding(parseJsonObject(response.text), input.missingFields);
+  }
+
+  // summary(자유 산문)에서 비어 있는 구조 필드만 제안받는다. 이미 작성된 필드는 모순 방지용
+  // 컨텍스트로만 넘긴다.
+  public async proposeSceneStructure(
+    input: {
+      readonly sceneSummary: string;
+      readonly missingFields: readonly SceneStructureFieldKey[];
+      readonly knownFields: readonly string[];
+    },
+    options: GenerateTextOptions = {},
+  ): Promise<SceneStructureProposal> {
+    if (input.missingFields.length === 0 || input.sceneSummary.trim().length === 0) {
+      return {};
+    }
+
+    const variant = this.gateway.resolvePromptVariant('sceneStructure', options);
+    const prompt = SceneStructurePrompt.build(
+      {
+        sceneSummary: input.sceneSummary,
+        missingFields: input.missingFields,
+        knownFields: input.knownFields,
+      },
+      variant,
+    );
+    const response = await this.gateway.generate('sceneStructure', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneStructurePrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneStructurePrompt.config.maxTokens,
+    });
+
+    return toSceneStructureProposal(parseJsonObject(response.text), input.missingFields);
   }
 
   public async createCharacterPersona(
@@ -156,6 +192,55 @@ function describeKnownGrounding(grounding: SceneGrounding | undefined): string[]
     const value = grounding[key]?.trim();
     return value ? [`- ${sceneGroundingFieldLabels[key]}: ${value}`] : [];
   });
+}
+
+export interface SceneStructureProposal {
+  readonly purpose?: string;
+  readonly conflict?: string;
+  readonly twist?: string;
+  readonly emotionalShift?: string;
+  readonly foreshadowing?: string[];
+  readonly neededCanon?: string[];
+}
+
+const sceneStructureListKeys: readonly SceneStructureFieldKey[] = [
+  'foreshadowing',
+  'neededCanon',
+];
+
+function toSceneStructureProposal(
+  parsed: Record<string, unknown> | null,
+  requestedFields: readonly SceneStructureFieldKey[],
+): SceneStructureProposal {
+  if (!parsed) {
+    return {};
+  }
+
+  const proposal: Record<string, string | string[]> = {};
+
+  for (const key of requestedFields) {
+    const value = parsed[key];
+
+    if (sceneStructureListKeys.includes(key)) {
+      if (Array.isArray(value)) {
+        const items = value
+          .filter((item): item is string => typeof item === 'string')
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0);
+
+        if (items.length > 0) {
+          proposal[key] = items;
+        }
+      }
+      continue;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      proposal[key] = value.trim();
+    }
+  }
+
+  return proposal;
 }
 
 function toSceneGrounding(

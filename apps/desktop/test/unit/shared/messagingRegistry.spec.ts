@@ -23,6 +23,7 @@ const expectedMethods = [
   "cards.previewCollect",
   "cards.read",
   "cards.resolveImageUri",
+  "cards.structureScene",
   "cards.write",
   "cards.writeRaw",
   "project.readContract",
