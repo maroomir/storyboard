@@ -2,6 +2,8 @@ import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
 import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '../card';
+import { sceneCardSchema, type SceneCard } from '../scene';
+import { serializeSceneCard } from './scene';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 
@@ -60,6 +62,49 @@ export function serializeCard(card: StoryboardCard): string {
     noRefs: true,
     sortKeys: false,
   });
+}
+
+// `.card` 캐리어를 쓰는 모든 카드: entity 카드(character/background)와 scene 카드. 카드 에디터처럼
+// 파일 하나를 종류와 무관하게 다뤄야 하는 곳만 이 유니언을 쓴다.
+export type WorkspaceCard = StoryboardCard | SceneCard;
+
+export function parseWorkspaceCard(rawCard: string): WorkspaceCard {
+  let parsedYaml: unknown;
+
+  try {
+    parsedYaml = yaml.load(rawCard);
+  } catch (error) {
+    throw new CardParseError('invalid-yaml', 'Card YAML을 파싱할 수 없습니다.', error);
+  }
+
+  const isSceneCard =
+    typeof parsedYaml === 'object' &&
+    parsedYaml !== null &&
+    (parsedYaml as { type?: unknown }).type === 'scene';
+
+  try {
+    return isSceneCard ? sceneCardSchema.parse(parsedYaml) : cardSchema.parse(parsedYaml);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const details = error.issues
+        .map((issue) => {
+          const path = issue.path.join('.');
+          return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
+        })
+        .join('; ');
+      throw new CardParseError(
+        'invalid-card-schema',
+        `Card 스키마가 올바르지 않습니다. (${details})`,
+        error,
+      );
+    }
+
+    throw error;
+  }
+}
+
+export function serializeWorkspaceCard(card: WorkspaceCard): string {
+  return card.type === 'scene' ? serializeSceneCard(card) : serializeCard(card);
 }
 
 // Serialization is canonical (fixed key order, block sequences), but a hand-authored card may use

@@ -1,8 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
-import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import {
+  CardParseError,
+  parseCard,
+  parseWorkspaceCard,
+  serializeCard,
+  serializeWorkspaceCard,
+} from '@storyboard/story-format';
+import type { WorkspaceCard } from '@storyboard/story-format';
 import { applyCardCollectProposals } from '../../domain/cardCollect';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
@@ -37,7 +43,7 @@ function collectPreviewUri(documentUri: vscode.Uri): vscode.Uri {
 interface CardEditorInitialData {
   readonly documentUri: string;
   readonly rawText: string;
-  readonly card?: StoryboardCard;
+  readonly card?: WorkspaceCard;
   readonly imageUri?: string;
   readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>;
   readonly error?: string;
@@ -146,18 +152,18 @@ function createCardEditorHandlers(
   previewProvider: VirtualDocumentStore,
 ): StoryboardRpcHandlers {
   return {
-    'cards.read': async (): Promise<{ readonly card: StoryboardCard }> => ({
-      card: parseCard(document.getText()),
+    'cards.read': async (): Promise<{ readonly card: WorkspaceCard }> => ({
+      card: parseWorkspaceCard(document.getText()),
     }),
-    'cards.write': async (payload): Promise<{ readonly card: StoryboardCard }> => {
-      await replaceDocumentText(document, serializeCard(payload.card));
+    'cards.write': async (payload): Promise<{ readonly card: WorkspaceCard }> => {
+      await replaceDocumentText(document, serializeWorkspaceCard(payload.card));
       return { card: payload.card };
     },
     'cards.writeRaw': async (
       payload,
-    ): Promise<{ readonly card: StoryboardCard; readonly rawText: string }> => {
-      const card = parseCard(payload.rawText);
-      const rawText = serializeCard(card);
+    ): Promise<{ readonly card: WorkspaceCard; readonly rawText: string }> => {
+      const card = parseWorkspaceCard(payload.rawText);
+      const rawText = serializeWorkspaceCard(card);
       await replaceDocumentText(document, rawText);
       return { card, rawText };
     },
@@ -209,7 +215,7 @@ async function createInitialData(
   const workspaceRoot = getDocumentWorkspaceRoot(document);
 
   try {
-    const card = parseCard(rawText);
+    const card = parseWorkspaceCard(rawText);
     const characterRoster =
       card.type === 'character' ? await loadCharacterRoster(workspaceRoot) : undefined;
 
@@ -231,7 +237,7 @@ async function createInitialData(
 
 function resolveCardImageUri(
   document: vscode.TextDocument,
-  card: StoryboardCard,
+  card: WorkspaceCard,
   webview: vscode.Webview,
 ): string | undefined {
   const relativeImagePath = card.type === 'character' ? card.profile : undefined;

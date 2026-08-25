@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { cardSchema, cardTypes, characterRoles } from '@storyboard/story-format';
+import { cardSchema, cardTypes, characterRoles, sceneCardSchema } from '@storyboard/story-format';
 import { cardCollectProposalSchema } from '../cardCollect';
 import { uriStringSchema } from './atoms';
 
@@ -12,9 +12,13 @@ export const cardsReadRequestPayloadSchema = z.object({
   uri: uriStringSchema,
 });
 
+// NOTE: 카드 에디터는 scene/*.card도 열므로 편집 RPC만 scene 카드를 함께 받는다. 목록·생성
+// 계약은 entity 카드 전용으로 남는다.
+const workspaceCardSchema = z.union([cardSchema, sceneCardSchema]);
+
 export const cardsWriteRequestPayloadSchema = z.object({
   uri: uriStringSchema,
-  card: cardSchema,
+  card: workspaceCardSchema,
   rawText: z.string().optional(),
 });
 
@@ -78,15 +82,15 @@ export const cardsListResponsePayloadSchema = z.object({
 });
 
 export const cardsReadResponsePayloadSchema = z.object({
-  card: cardSchema,
+  card: workspaceCardSchema,
 });
 
 export const cardsWriteResponsePayloadSchema = z.object({
-  card: cardSchema,
+  card: workspaceCardSchema,
 });
 
 export const cardsWriteRawResponsePayloadSchema = z.object({
-  card: cardSchema,
+  card: workspaceCardSchema,
   rawText: z.string(),
 });
 

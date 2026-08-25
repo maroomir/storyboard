@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
 
 import { createRequestId, parseCardEditorInitialData } from "@webview/lib/messaging"
-import type { CardEditorInitialData, StoryboardCard, StoryboardEventMessage } from "@webview/lib/types"
+import type { CardEditorInitialData, EditorCard, StoryboardEventMessage } from "@webview/lib/types"
 import { Button } from "../ui/Button"
 import { CollectPanel } from "./CollectPanel"
 import { PreviewPanel } from "./PreviewPanel"
@@ -15,6 +15,8 @@ import { CharacterRelationPreview } from "../character/CharacterRelationPreview"
 import { BackgroundFields } from "./fields/BackgroundFields"
 import { CharacterFields } from "./fields/CharacterFields"
 import { ListField } from "./fields/ListField"
+import { SceneFields } from "./fields/SceneFields"
+import { ScenePreviewPanel } from "./ScenePreviewPanel"
 
 const overviewBoxClass =
   "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
@@ -22,7 +24,7 @@ const overviewBoxClass =
 export function CardEditor({ initialData }: { readonly initialData: CardEditorInitialData }): React.ReactElement {
   const vscodeApi = useMemo(() => window.acquireVsCodeApi?.(), [])
   const [documentState, setDocumentState] = useState(initialData)
-  const [card, setCard] = useState<StoryboardCard | undefined>(initialData.card)
+  const [card, setCard] = useState<EditorCard | undefined>(initialData.card)
   const [status, setStatus] = useState("문서에서 카드 정보를 불러왔습니다.")
   const [isDirty, setIsDirty] = useState(false)
   const [isEditingYaml, setIsEditingYaml] = useState(false)
@@ -73,7 +75,7 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
   )
 
   const updateCard = useCallback(
-    (nextCard: StoryboardCard): void => {
+    (nextCard: EditorCard): void => {
       setCard(nextCard)
       setIsDirty(true)
       setStatus("변경 사항을 문서에 반영하는 중입니다…")
@@ -109,6 +111,26 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
   const tabItems = useMemo(() => {
     if (!card) {
       return []
+    }
+
+    if (card.type === "scene") {
+      return [
+        {
+          id: "overview",
+          label: "편집",
+          panel: (
+            <div className={overviewBoxClass}>
+              <SectionHeader title="씬 정보" eyebrow="Scene" />
+              <label className="flex flex-col gap-[0.35rem]">
+                <span className="text-sm text-sb-fg-muted">ID</span>
+                <input className={sbInputClass} value={card.id} readOnly />
+              </label>
+              <SceneFields card={card} updateCard={updateCard} />
+            </div>
+          )
+        },
+        { id: "yaml", label: "YAML", panel: yamlPanel }
+      ]
     }
 
     const overview = (
@@ -236,12 +258,16 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
         ) : null}
       </AnimatePresence>
 
-      <PreviewPanel card={card} imageUri={documentState.imageUri} />
+      {card.type === "scene" ? (
+        <ScenePreviewPanel card={card} />
+      ) : (
+        <PreviewPanel card={card} imageUri={documentState.imageUri} />
+      )}
 
       <section className={`${panelClass} min-h-0`} aria-label="카드 편집 폼">
         <SectionHeader
-          eyebrow={card.type === "character" ? "Character" : "Background"}
-          title={card.name}
+          eyebrow={card.type === "scene" ? "Scene" : card.type === "character" ? "Character" : "Background"}
+          title={card.type === "scene" ? (card.title ?? card.id) : card.name}
           description="탭으로 섹션을 전환해 편집할 수 있습니다."
         />
 
