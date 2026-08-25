@@ -98,6 +98,34 @@ export interface StoryboardCard {
   readonly recentDialogues?: readonly string[]
 }
 
+export interface SceneGrounding {
+  readonly incident?: string
+  readonly place?: string
+  readonly relation?: string
+  readonly time?: string
+}
+
+export interface SceneCard {
+  readonly type: "scene"
+  readonly id: string
+  readonly title?: string
+  readonly characters?: readonly string[]
+  readonly location?: string
+  readonly mood?: string
+  readonly relationStage?: string
+  readonly targetWordCount?: number
+  readonly grounding?: SceneGrounding
+  readonly purpose?: string
+  readonly conflict?: string
+  readonly twist?: string
+  readonly emotionalShift?: string
+  readonly foreshadowing?: readonly string[]
+  readonly neededCanon?: readonly string[]
+  readonly summary?: string
+}
+
+export type EditorCard = StoryboardCard | SceneCard
+
 export interface CharacterRosterEntry {
   readonly id: string
   readonly name: string
@@ -107,7 +135,7 @@ export interface CharacterRosterEntry {
 export interface CardEditorInitialData {
   readonly documentUri: string
   readonly rawText: string
-  readonly card?: StoryboardCard
+  readonly card?: EditorCard
   readonly imageUri?: string
   readonly characterRoster?: readonly CharacterRosterEntry[]
   readonly error?: string
