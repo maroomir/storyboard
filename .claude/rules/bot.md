@@ -66,13 +66,22 @@ acceptable to the bot's strict `configSchema`.
 Generation resolves the scene's four grounding facts (incident/place/relation/time) before the
 dialogue prompt runs, exactly as the extension does. Two consequences are specific to the bot:
 `scene/` is **tracked**, so filling grounding is a commit of its own
-(`storygram: ground scene/<stem>.txt`) written through `ContentService.writeTracked` with the
+(`storygram: ground scene/<stem>.card`) written through `ContentService.writeTracked` with the
 read-time hash as baseline — a Desktop edit landing mid-job makes it stale and the job skips the
 save rather than clobbering it. And a queued job cannot stop to ask Telegram for approval, so
 `draft.autoGrounding` (default true) means *fill and commit*; off means leave grounding alone.
 Never re-implement the merge or the frontmatter write: `mergeSceneGrounding` and
 `applySceneGrounding` in `packages/story-format/src/files/sceneGrounding.ts` are shared with the
 extension.
+
+## Scene cards
+
+Scenes are `.card` files too (`type: scene`), so a scene write is a canonical re-serialization like
+any card write. Legacy `scene/*.txt` is no longer read: `/doctor` reports how many remain and
+`/doctor migrate` converts them in one commit through `ContentService.migrateLegacyScenes`. That
+plan carries deletions, and a deletion is baseline-hash guarded exactly like a write — a Desktop
+edit landing mid-migration refuses instead of destroying the file. `/scene edit`/`append` operate on
+the card's `summary` field only; structured fields belong to the card editor.
 
 ## Card formatting
 

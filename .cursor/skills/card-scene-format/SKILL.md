@@ -24,10 +24,14 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 - **Codec**: keep `parseCard` / `serializeCard` in [`packages/story-format/src/files/card.ts`](packages/story-format/src/files/card.ts) testable with round-trip tests.
 - **List-form text fields**: character `voice`/`description`/`desire` and background `description`/`senses` are `string[]` (one bullet per item), not prose. Background `time`/`weather` are scalar strings. Edit them via the `편집` tab's list inputs; they serialize to YAML sequences. Use `joinCardText` (in `packages/story-format/src/card.ts`) wherever a field is fed to prompts/hashes. Legacy prose cards are converted by the `storyboard.cards.migrateTextToList` command (`apps/desktop/src/domain/cardTextMigration.ts`).
 
-## Scenes (`scene/*.txt`)
+## Scenes (`scene/*.card`)
 
-- Filename: `NN-<slug>.txt` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`packages/story-format/src/scene.ts`](packages/story-format/src/scene.ts).
-- Optional YAML frontmatter for title, characters, location, mood; body is the scene seed text.
+- Filename: `NN-<slug>.card` where `NN` is zero-padded order and `<slug>` is lowercase letters, digits, hyphens—see `sceneFileNamePattern` in [`packages/story-format/src/scene.ts`](packages/story-format/src/scene.ts). The card's `id` must equal that stem.
+- YAML with `type: scene`. Metadata (`title`/`characters`/`location`/`mood`/`relationStage`/`targetWordCount`/`grounding`), structured seed fields (`purpose`/`conflict`/`twist`/`emotionalShift`/`foreshadowing`/`neededCanon`), and a free-prose `summary`.
+- **Codec**: `parseScene`/`parseSceneCard`/`serializeSceneCard` in [`packages/story-format/src/files/scene.ts`](packages/story-format/src/files/scene.ts). Serialization is canonical like entity cards, so `canonicalizeSceneCardText` exists for deliberate normalization.
+- **Prompt contract**: `SceneFile.body` is rendered from the card (`renderSceneCardBody`) as the same `[목적]`/`[갈등]` labeled blocks the old seed format used—prompts did not change with the format.
+- **Legacy `.txt`**: no longer read. Convert with `storyboard.scene.migrate` (Desktop) or `/doctor migrate` (bot); both call `convertLegacySceneText` in [`packages/story-format/src/files/sceneMigration.ts`](packages/story-format/src/files/sceneMigration.ts), which is deterministic—labeled blocks become fields, free prose becomes `summary`.
+- **Editor**: scene cards open in the same `storyboard.card` custom editor; the scene form adds an AI **Summary에서 구조화** action (`cards.structureScene`) that proposes only the empty structure fields for review.
 - **Background attachment**: a scene attaches a background via frontmatter `location: <id>`, or—when absent—by auto-detecting a background whose `name`/`aliases` appear in the body (most-specific/longest match wins). Mirrors character name/alias detection; see `resolveSceneBackground`/`detectSceneBackground` in [`packages/story-format/src/sceneContext.ts`](packages/story-format/src/sceneContext.ts). Backgrounds support an optional `aliases: string[]` for body surface forms.
 
 ## Drafts and cache
@@ -38,5 +42,5 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 
 ## When changing formats
 
-- Update zod schemas, file helpers, and **fixtures** under `apps/desktop/test/fixtures/` together.
+- Update zod schemas, file helpers, and **fixtures** under `packages/story-format/test/fixtures/` together.
 - Run: `npm run test` and any card/scene-specific specs you touched.

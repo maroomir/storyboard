@@ -13,7 +13,7 @@ English README: [`README.en.md`](README.en.md)
 - `.storyboard/outline/synopsis.md`, `chapters.yaml`, `revision-plan.yaml` 기반 장편 구조 계획
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
-- outline에서 `scene/*.txt` 씬 시드를 만들고 `draft/*.md` 초안을 생성
+- outline에서 `scene/*.card` 씬 시드를 만들고 `draft/*.md` 초안을 생성
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 현재 Draft/Scene에 대해 대화로 작업을 지시 → 제안 확인 → 승인으로 실행(생성·재생성·검사·편집)
 - 재생성 없이 카드 기반 보충: Studio 패널에서 **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역)을 요청해 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `storyboard.grounding.autoApprove`를 켜면 자동 수락
@@ -24,9 +24,9 @@ English README: [`README.en.md`](README.en.md)
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격
 - 카드 에디터의 **수집** 탭: 카드가 등장하는 draft에서 LLM으로 항목을 추출해 git diff처럼 보여주고, 선택 수락 시 캐릭터/배경 카드에 추가(기존 값 보존)
-- Characters / Backgrounds 사이드바의 **추천** 버튼: `scene/*.txt`·`draft/*.md` 전체를 LLM으로 훑어 본문에 등장하지만 카드가 없는 인물·배경을 찾아 QuickPick으로 제안하고, 선택분을 신규 카드로 생성
-- **이야기 완결**: `scene/*.txt`만 이어서 읽고 기존 씬을 건드리지 않은 채 끝번호 뒤에 완결 씬을 제안합니다. 연속된 앞부분만 선택해 VS Code diff와 최종 확인 뒤 추가합니다.
-- **씬 기반 카드 구성**: `scene/*.txt`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
+- Characters / Backgrounds 사이드바의 **추천** 버튼: `scene/*.card`·`draft/*.md` 전체를 LLM으로 훑어 본문에 등장하지만 카드가 없는 인물·배경을 찾아 QuickPick으로 제안하고, 선택분을 신규 카드로 생성
+- **이야기 완결**: `scene/*.card`만 이어서 읽고 기존 씬을 건드리지 않은 채 끝번호 뒤에 완결 씬을 제안합니다. 연속된 앞부분만 선택해 VS Code diff와 최종 확인 뒤 추가합니다.
+- **씬 기반 카드 구성**: `scene/*.card`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
 - 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`SUMMARY.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
@@ -40,7 +40,7 @@ English README: [`README.en.md`](README.en.md)
 - `Storyboard: 텔레그램 봇 설정 파일 열기`(JSON 스키마 검증 포함) · `Storyboard: 텔레그램 봇 재시작`(launchd) — 설정을 나중에 고치고 즉시 반영
 - `Storyboard: 텔레그램 봇 설정…` 온보딩 마법사 — 토큰 검증(getMe)·허용 chat id·워크스페이스 경로·프로바이더를 받아 `~/.storygram/config.json`(0600) 생성, 테스트 메시지 발송, macOS에서는 launchd 자동 시작 설치까지 안내
 
-현재 구현은 수동 `scene/*.txt → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
+현재 구현은 수동 `scene/*.card → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
 
 이야기 완결과 씬 기반 카드 구성은 수동 작업이며 자동 장편 파이프라인에 포함되지 않습니다. 두 기능 모두 검토 중 입력 씬·카드·디렉터리가 달라지면 적용을 중단하고 다시 제안해야 합니다. 선택 결과는 하나의 VS Code `WorkspaceEdit`로 적용하지만, 프로세스 크래시까지 보장하는 트랜잭션은 아닙니다.
 
@@ -52,7 +52,7 @@ English README: [`README.en.md`](README.en.md)
 .storyboard/outline/   # 시놉시스·챕터/씬 계획·재작성 계획
 character/*.card
 background/*.card
-scene/*.txt
+scene/*.card
 draft/*.md
 manuscript/*.md
 ```
@@ -61,7 +61,7 @@ manuscript/*.md
 - 프로젝트 설정은 자동 장편 생성의 입력 계약입니다. `Storyboard: Open Settings`의 **작품 계약** 탭에서 독자층·목표 분량·시점·금지 조건을 입력하고 생성 준비 상태를 확인합니다.
 - `Storyboard: Generate Novel Outline`은 `synopsis.md`와 `chapters.yaml`을 만들고, `Storyboard: Generate Scene Seeds`는 이 계획에서 씬 시드를 파생합니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
-- `scene/*.txt` 파일 하나가 씬 하나이며, 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다.
+- `scene/*.card` 파일 하나가 씬 하나이며(`type: scene`), 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다. 구형 `scene/*.txt` 워크스페이스는 **Storyboard: Migrate Scenes to Cards** 명령으로 변환합니다.
 - `draft/*.md` 파일은 AI가 생성하고 검사·재작성하는 원고입니다.
 - `manuscript/`는 장별 조립 원고, 전체 원고(`manuscript.md`), 최종 검사·요약·복선 보고서를 담는 재생성 가능한 산출물입니다.
 

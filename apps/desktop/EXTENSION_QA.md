@@ -87,7 +87,7 @@ npm run build
 | --- | --- |
 | **Storyboard · Characters** → 뷰 제목 줄 **+** | **`Storyboard: Create Character`** — `character/<이름>.card` 생성 |
 | **Storyboard · Backgrounds** → 뷰 제목 줄 **+** | **`Storyboard: Create Background`** — `background/<이름>.card` 생성 |
-| **Storyboard · Scenes** → 뷰 제목 줄 **+** | **`Storyboard: New Scene`** — `scene/*.txt` 생성 흐름 |
+| **Storyboard · Scenes** → 뷰 제목 줄 **+** | **`Storyboard: New Scene`** — `scene/*.card` 생성 흐름 |
 | **Storyboard · Scenes** → 완결 아이콘 | **`Storyboard: Complete Story Scenes`** — 기존 씬을 수정하지 않고 새 완결 씬 제안 |
 | **Storyboard · Characters / Backgrounds** → 반짝임 아이콘 | **`Storyboard: Build Cards from Scenes`** — 씬 근거 신규/보강 카드 제안 |
 | 각 뷰 제목 줄 **톱니바퀴** | **`Storyboard: Open Settings`** — 세 뷰 모두 **동일한** Storyboard 설정 패널(웹뷰)이 열림 |
@@ -99,7 +99,7 @@ npm run build
 
 ### 3b. 이야기 완결과 씬 기반 카드 구성
 
-1. 유효한 `scene/*.txt`를 둘 이상 만들고 Studio를 연다. 다른 파일이 활성화되어도 **다음으로 추천**에 **이야기 완결**·**씬 기반 카드 구성**이 보이는지 확인한다.
+1. 유효한 `scene/*.card`를 둘 이상 만들고 Studio를 연다. 다른 파일이 활성화되어도 **다음으로 추천**에 **이야기 완결**·**씬 기반 카드 구성**이 보이는지 확인한다.
 2. **이야기 완결**을 승인한다. 연속 prefix 선택, 빈 문서와의 diff, 최종 확인을 거쳐 새 씬만 추가되는지 확인한다. 기존 씬의 내용과 파일명은 바뀌면 안 된다.
 3. **씬 기반 카드 구성**을 승인한다. 필드별 QuickPick에서 일부만 고르고 카드 YAML diff를 확인한 뒤 적용한다. 신규 한국어 이름 카드에는 고유 ID 입력 상자가 뜨고 profile PNG가 생기지 않아야 한다.
 4. diff를 연 뒤 씬 또는 카드 하나를 수정하고 적용한다. 변경이 중단되고 다시 제안하라는 메시지가 보여야 한다.
@@ -123,18 +123,26 @@ npm run build
 
 **방법 1 — 샘플 씬 편집**
 
-- `scene/01-prologue.txt` 등을 연 뒤 본문을 조금 수정해 저장한다.
+- `scene/01-prologue.card` 등을 연 뒤 씬 폼에서 목적·summary를 조금 수정해 저장한다.
 
 **방법 2 — 새 씬**
 
 - 명령 팔레트: **`Storyboard: New Scene`** (또는 Scenes 뷰 제목의 **New Scene**)
 - 안내에 따라 파일명이 생성되는지 확인한다.
 
-**성공 기준**: `scene/*.txt`가 저장되고, 내용이 유지된다.
+**성공 기준**: `scene/*.card`가 저장되고, 내용이 유지된다.
+
+**방법 3 — 구형 씬 마이그레이션**
+
+- `scene/*.txt`가 남아 있는 워크스페이스에서 **`Storyboard: Migrate Scenes to Cards`**를 실행한다.
+- 확인 모달을 수락하면 각 `.txt`가 같은 stem의 `.card`로 바뀌고 원본이 사라지는지 확인한다.
+- 변환된 카드를 열어 `[목적]` 등 라벨 블록이 구조 필드로, 나머지 산문이 `summary`로 옮겨졌는지 확인한다.
+
+**성공 기준**: 씬 개수가 유지되고, Scenes 사이드바에 변환된 씬이 그대로 보인다.
 
 ### 6. 드래프트 생성 (씬 파일 + Studio 패널)
 
-1. `scene/` 아래의 `.txt` 씬 파일을 연다.
+1. `scene/` 아래의 `.card` 씬 파일을 연다.
 2. **Storyboard · Studio** 패널(액티비티바)을 연다. **지금 무대** 카드에 씬 제목과 초안 상태(분량·버전·마지막 갱신·검수)가 표시되고, 씬 시드에 연결한 인물·배경 카드가 칩으로 보이는지 확인한다.
    - 드래프트가 없으면 무대 카드에 **`초안 없음`**, **다음으로 추천** 첫 항목에 **`초안 생성`**
    - 이미 있으면 **다음으로 추천**에 **`재생성`**·**`형식 적용`**
@@ -212,7 +220,7 @@ npm run build
 1. **`Storyboard: Open Settings`** → **작품 계약** 탭에서 장르, 독자층, 시점, 목표 분량을 채운다.
 2. **`Storyboard: Generate Novel Outline`** 실행 → `.storyboard/outline/synopsis.md`와 `chapters.yaml`가 생성되고 `synopsis.md`가 열리는지 확인한다.
 3. `chapters.yaml`에 chapter/scene `targetWordCount`, scene `conflict`, `twist`, `neededCanon`이 포함될 수 있는지 확인한다.
-4. **`Storyboard: Generate Scene Seeds`** 실행 → `scene/NN-slug.txt` 파일이 생성되고 첫 씬이 열리는지 확인한다.
+4. **`Storyboard: Generate Scene Seeds`** 실행 → `scene/NN-slug.card` 파일이 생성되고 첫 씬이 열리는지 확인한다.
 
 **성공 기준**: 필수 계약 필드가 비어 있을 때는 설정 열기 안내가 나오며, 채운 뒤에는 outline과 씬 시드가 재현 가능한 파일로 저장된다.
 

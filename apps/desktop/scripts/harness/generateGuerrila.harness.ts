@@ -62,7 +62,7 @@ const harnessReasoningEffort = process.env.SCENE_EFFORT ?? process.env.GUERRILA_
 // the guerrila draft can be regenerated outside the VSCode extension host. Faithful to the product
 // flow: background only attaches via scene frontmatter.location (the source has none, so none here).
 const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
-const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "01-first-meeting.txt"
+const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "01-first-meeting.card"
 
 // NOTE: run the G-3 revise loop after generation unless SCENE_REVISE=0; iterations bound CLI cost.
 const harnessRunRevise = (process.env.SCENE_REVISE ?? process.env.GUERRILA_REVISE) !== "0"

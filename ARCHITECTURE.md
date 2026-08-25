@@ -23,7 +23,7 @@
 6. 장거리 연속성, 캐릭터 음성, 문체, 장면 목적, 중복, 설정 모순을 검사한다.
 7. 문제 구간을 재작성하고 chapter/volume 단위 원고로 조립한다.
 
-따라서 현재 구현은 기존 `scene/*.txt → draft/*.md` 수동 흐름을 유지하면서, 작품 계약에서 outline, 씬 시드, 장별 초안·검수·재작성, 조립 원고, 최종 검사·요약까지 이어지는 초기 원클릭 파이프라인을 함께 제공한다. 아직 카드/바이블 자동 생성, 긴 원고의 고급 export, 더 정교한 배치 검수는 후속 확장 대상이다.
+따라서 현재 구현은 기존 `scene/*.card → draft/*.md` 수동 흐름을 유지하면서, 작품 계약에서 outline, 씬 시드, 장별 초안·검수·재작성, 조립 원고, 최종 검사·요약까지 이어지는 초기 원클릭 파이프라인을 함께 제공한다. 아직 카드/바이블 자동 생성, 긴 원고의 고급 export, 더 정교한 배치 검수는 후속 확장 대상이다.
 
 ## 2. 멘탈 모델
 
@@ -34,7 +34,7 @@
   - 장르, 국가, 컨셉, 태그, 설명, 독자층, 금지 조건, 목표 분량은 자동 생성 파이프라인의 입력 계약이다.
   - Storyboard는 계약을 바탕으로 outline, cards, bible, scene seed, draft를 차례로 만든다.
 - **씬 = 파일**.
-  - `scene/01-prologue.txt` 한 파일이 한 씬.
+  - `scene/01-prologue.card` 한 파일이 한 씬.
   - 인라인 마커, 가상의 ID 시스템 없음. 파일명이 정렬과 식별을 동시에 책임진다.
   - 사용자가 직접 쓸 수도 있고, 장편 자동 생성 파이프라인이 outline에서 파생해 만들 수도 있다.
 - **카드 = 자료**.
@@ -82,9 +82,9 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   └── home.card
 │
 ├── scene/                        # 사용자가 직접 적는 raw 시드
-│   ├── 01-prologue.txt
-│   ├── 02-chapter-01.txt
-│   └── 03-chapter-02.txt
+│   ├── 01-prologue.card
+│   ├── 02-chapter-01.card
+│   └── 03-chapter-02.card
 │
 ├── draft/                        # AI 생성 최종 원고 (.gitignore)
 │   ├── 01-prologue.md
@@ -271,43 +271,70 @@ description:
 - 캐릭터 프로필: `character/profile/<id>.png`
 - 카드의 `profile` 필드가 상대 경로로 참조 (캐릭터 카드 한정)
 
-### 4.4 `.txt` (씬 시드)
+### 4.4 `.card` (씬 카드, `scene/`)
 
-씬은 raw 텍스트 파일이다. 옵셔널 frontmatter 사용 가능.
+씬도 카드다. 캐릭터·배경과 같은 `.card` 캐리어를 쓰지만 스키마는 `type: scene`으로 구분되며,
+파일명이 순서를 인코딩한다는 점만 다르다.
 
 최소 형태:
-```
-주인공이 학교에 도착했다. 정문 앞에서 깊게 숨을 들이쉬고,
-친구 지훈을 발견한다.
+```yaml
+type: scene
+id: 01-arrival
+summary: |-
+  주인공이 학교에 도착했다. 정문 앞에서 깊게 숨을 들이쉬고,
+  친구 지훈을 발견한다.
 ```
 
-명시적 메타가 필요한 경우:
-```
----
+전체 형태:
+```yaml
+type: scene
+id: 01-arrival
 title: 학교에 도착하다
-characters: [elia, jihoon]
+characters:
+  - elia
+  - jihoon
 location: school
 mood: 설렘
 relationStage: 첫 만남, 어색한 거리
----
-주인공이 학교에 도착했다...
+targetWordCount: 3000
+grounding:
+  incident: ...
+purpose: 주인공을 소개하고 지훈과의 첫 접촉을 만든다
+conflict: 지훈은 아는 척하지 않으려 한다
+twist: 지훈이 먼저 이름을 부른다
+emotionalShift: 긴장 → 안도
+foreshadowing:
+  - 전학 이유
+neededCanon:
+  - 학교는 3월에 학기를 시작한다
+summary: 자유 메모. 구조 필드로 못 담는 내용을 그대로 적는다.
 ```
+
+- **직렬화는 canonical**이다(고정 키 순서, block sequence). 카드와 같은 규칙이라 손으로 쓴 씬은
+  첫 프로그램적 저장에서 정규화된다.
+- 구조 필드는 프롬프트에 넣을 때 기존 씬 시드와 같은 `[목적]`/`[갈등]` 라벨 블록으로 렌더링되므로
+  (`renderSceneCardBody`), 생성 프롬프트 계약은 형식 전환과 무관하게 유지된다.
+- `summary`는 해석 없이 그대로 프롬프트에 붙는 자유 메모다. 비어 있는 구조 필드는 카드 에디터의
+  **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울 수 있고, 반영은 비어 있는 필드에만
+  적용된다(사용자가 적어 둔 값이 항상 이긴다).
 
 #### 사실 시트 (`grounding`)
 
 씬이 가사·분위기 스케치처럼 추상적이면 생성물도 은유만 남는다. 이를 막기 위해 생성 직전에 씬을 구체적
-사건으로 못박는 4개 사실을 확정하고, 그 결과를 씬 frontmatter에 남긴다.
+사건으로 못박는 4개 사실을 확정하고, 그 결과를 씬 카드에 남긴다.
 
 ```yaml
----
+type: scene
+id: 07-tonight
 title: 수고했어, 오늘도
-characters: [seoha, doyoon]
+characters:
+  - seoha
+  - doyoon
 grounding:
   incident: 3년 준비한 임용시험 최종 면접에서 떨어졌다
   place: 서하의 옥탑방 현관문 앞
   relation: 반년째 계단에서 인사만 하던 아랫집 이웃
   time: 11월 말 자정 무렵
----
 ```
 
 - 비어 있는 필드만 AI가 제안하고, **사용자가 적어 둔 값은 절대 덮어쓰지 않는다.**
@@ -316,19 +343,31 @@ grounding:
   제안을 자동 수락해 원클릭 생성을 유지한다.
 - 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
   무효화되어 다음 생성에 그대로 반영된다.
-- grounding 블록만 잘라 끼워 넣기 때문에 나머지 frontmatter 키의 표기는 바이트 그대로 보존된다.
+- 씬 카드 직렬화가 canonical이므로 grounding만 바뀌어도 카드 전체가 다시 직렬화된다.
 - 봇(storygram)도 같은 단계를 돌린다. 다만 큐에 올라간 작업이 승인을 기다릴 수 없으므로
   `draft.autoGrounding`(기본 켜짐)이 "채우고 커밋"을 뜻하고, 끄면 grounding을 건드리지 않는다.
-  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storygram: ground scene/<stem>.txt` 커밋으로
+  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storygram: ground scene/<stem>.card` 커밋으로
   남는다.
 
 #### 파일명 규칙 (강제)
 
-- 패턴: `NN-<slug>.txt`
+- 패턴: `NN-<slug>.card`
 - `NN`: zero-pad 2자리 정수 (예: `01`, `02`, ..., `99`)
 - `<slug>`: 영소문자, 숫자, 하이픈만 허용
+- 카드의 `id`는 파일명 stem(`NN-<slug>`)과 같아야 한다
 - 잘못된 형식의 파일은 사이드바에 ⚠️ 표시 + 경고 진단 표시
 - `Storyboard: New Scene` 명령은 항상 다음 사용 가능 번호로 자동 생성
+
+#### 구형 `.txt` 씬 마이그레이션
+
+v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다. 변환은 결정적이며(AI 없음),
+`[목적]` 라벨 블록은 구조 필드로, 그 밖의 산문은 `summary`로 무손실 매핑된다
+(`convertLegacySceneText` in `packages/story-format/src/files/sceneMigration.ts`).
+
+- 데스크톱: `Storyboard: Migrate Scenes to Cards` (`storyboard.scene.migrate`) — 확인 후 `.card`
+  생성·`.txt` 삭제.
+- 봇: `/doctor`가 구형 씬 개수를 보고하고 `/doctor migrate`가 단일 커밋으로 변환한다. 삭제도
+  baseline 해시 검증을 거치므로 Desktop이 도중에 손댄 씬은 변환을 거부한다.
 
 ### 4.5 `.md` (출력 원고, `draft/`)
 
@@ -419,7 +458,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 - `chapters.yaml`: act/chapter/scene 구조, chapter/scene 목표 분량, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. (`storyboard.outline.generate`가 생성)
 - `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
 
-이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.txt`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.txt` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
+이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.card`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.card` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
 
 ### 4.8a `.storyboard/cache/cards/<scene>.json` (카드 필드 후보)
 
@@ -451,12 +490,13 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.init` | `Storyboard: Initialize Project` | 빈 폴더에 디렉토리·`.storyboard/project.json`·.gitignore·README 생성 |
 | `storyboard.character.create` | `Storyboard: Create Character` | 새 `.card` + 빈 프로필 placeholder |
 | `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` (location 기본) 생성 후 열기 |
-| `storyboard.scene.create` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.txt` 생성 후 열기 |
+| `storyboard.scene.create` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.card` 생성 후 열기 |
+| `storyboard.scene.migrate` | `Storyboard: Migrate Scenes to Cards` | 구형 `scene/*.txt`를 `scene/*.card`로 변환 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
-| `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.txt` 생성 |
+| `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.card` 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
 | `storyboard.manuscript.review` | `Storyboard: Review Manuscript` | 조립한 전체 원고를 continuity·비평으로 검사해 `manuscript/REVIEW.md` 보고서 생성 |
 | `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성 |
@@ -596,7 +636,7 @@ ReviewIssue {
 
 ### Phase C: Scene Seed Factory (초기 구현)
 
-- outline을 chapter/scene 단위로 분해해 `scene/*.txt`를 자동 생성한다.
+- outline을 chapter/scene 단위로 분해해 `scene/*.card`를 자동 생성한다.
 - 씬마다 목적, 갈등(`conflict`), 반전(`twist`), 감정 변화, 회수할 복선, 필요한 설정 사실(`neededCanon`)을 `chapters.yaml`에 담고 시드 본문에 반영한다.
 - 기존 `Generate All Drafts`는 자동 생성된 씬 시드도 그대로 처리한다.
 
