@@ -24,7 +24,7 @@ export interface DoctorEnvironment {
 export function createDoctorHandler(environment: DoctorEnvironment): ICommandHandler {
   return {
     command: '/doctor',
-    description: '워크스페이스·git·프로바이더 점검 (/doctor init · /doctor format)',
+    description: '워크스페이스·git·프로바이더 점검 (/doctor init · format · migrate)',
     match: (update: IncomingUpdate) => isCommand(update, '/doctor'),
     execute: async (ctx) => {
       if (commandArgs(ctx.update) === 'init') {
@@ -34,6 +34,11 @@ export function createDoctorHandler(environment: DoctorEnvironment): ICommandHan
 
       if (commandArgs(ctx.update) === 'format') {
         await runFormat(ctx);
+        return;
+      }
+
+      if (commandArgs(ctx.update) === 'migrate') {
+        await runMigrate(ctx);
         return;
       }
 
@@ -91,6 +96,12 @@ async function buildReport(ctx: ChatContext, environment: DoctorEnvironment): Pr
   if (unformatted.length > 0) {
     lines.push(`⚠️ 표준 서식이 아닌 카드 ${unformatted.length}개: ${unformatted.join(', ')}`);
     lines.push('   → `/doctor format` 으로 한 커밋에 정리할 수 있습니다.');
+  }
+
+  const legacyScenes = await ctx.content.listLegacySceneTexts();
+  if (legacyScenes.length > 0) {
+    lines.push(`⚠️ 구형 씬(.txt) ${legacyScenes.length}개: ${legacyScenes.join(', ')}`);
+    lines.push('   → `/doctor migrate` 로 scene.card로 변환할 수 있습니다.');
   }
 
   return lines;
@@ -157,6 +168,34 @@ async function runFormat(ctx: ChatContext): Promise<void> {
         : '   (커밋 없이 저장했습니다.)',
     ].join('\n'),
   });
+}
+
+async function runMigrate(ctx: ChatContext): Promise<void> {
+  const result = await ctx.content.migrateLegacyScenes();
+
+  if (!result) {
+    await ctx.reply({ text: '✅ 변환할 구형 씬(.txt)이 없습니다.' });
+    return;
+  }
+
+  if (result.outcome.status !== 'committed' && result.outcome.status !== 'written') {
+    await ctx.reply({ text: describeOutcome(result.outcome) });
+    return;
+  }
+
+  const lines = [
+    `✅ 씬 ${result.stems.length}개를 scene.card로 변환했습니다.`,
+    `   ${result.stems.join(', ')}`,
+    result.outcome.status === 'committed'
+      ? '   커밋 1건으로 기록했습니다.'
+      : '   (커밋 없이 저장했습니다.)',
+  ];
+
+  if (result.failures.length > 0) {
+    lines.push(`⚠️ 변환 실패 ${result.failures.length}개: ${result.failures.join(', ')}`);
+  }
+
+  await ctx.reply({ text: lines.join('\n') });
 }
 
 async function runInit(ctx: ChatContext): Promise<void> {

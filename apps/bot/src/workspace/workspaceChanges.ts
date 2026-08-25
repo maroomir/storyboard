@@ -8,8 +8,16 @@ export interface WorkspaceWrite {
   readonly baselineHash: string | undefined;
 }
 
+// A deletion is always guarded: the file must still hash to the bytes the plan was derived from,
+// so a Desktop edit racing the migration refuses instead of destroying it.
+export interface WorkspaceDeletion {
+  readonly relativePath: string;
+  readonly baselineHash: string;
+}
+
 export interface WorkspaceChanges {
   readonly writes: readonly WorkspaceWrite[];
+  readonly deletions?: readonly WorkspaceDeletion[];
 }
 
 export interface WorkspacePlan {

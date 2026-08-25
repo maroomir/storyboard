@@ -3,6 +3,7 @@ import { readFile, readdir, stat } from 'node:fs/promises';
 import { isAbsolute, join } from 'node:path';
 
 import {
+  isLegacySceneFileName,
   STORYBOARD_RELATIVE_PATHS,
   backgroundCardRelativePath,
   characterCardRelativePath,
@@ -164,6 +165,12 @@ export class WorkspaceStore {
     }
 
     return scenes.sort((left, right) => left.order - right.order);
+  }
+
+  // 마이그레이션 전용 스캔: 구형 씬 텍스트(.txt)는 목록·생성 경로에서 제외되므로 여기서만 보인다.
+  public async listLegacySceneTextFileNames(): Promise<string[]> {
+    const names = await this.listDirectory(STORYBOARD_RELATIVE_PATHS.sceneDirectory);
+    return names.filter((name) => isLegacySceneFileName(name)).sort();
   }
 
   public async readScene(sceneStem: string): Promise<ReadFile<SceneFile>> {

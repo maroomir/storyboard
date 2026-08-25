@@ -1,12 +1,18 @@
 import {
   STORYBOARD_RELATIVE_PATHS,
   canonicalizeCardText,
+  convertLegacySceneText,
   draftRelativePath,
   type StoryboardCard,
 } from '@storyboard/story-format';
 
 import type { MutateGate } from '../workspace/mutateGate';
-import type { MutateOutcome, WorkspacePlan, WorkspaceWrite } from '../workspace/workspaceChanges';
+import type {
+  MutateOutcome,
+  WorkspaceDeletion,
+  WorkspacePlan,
+  WorkspaceWrite,
+} from '../workspace/workspaceChanges';
 import { hashContent } from '../workspace/workspaceStore';
 import type {
   CardSummary,
@@ -99,6 +105,64 @@ export class ContentService {
     }
 
     return { writes, ids };
+  }
+
+  public listLegacySceneTexts(): Promise<string[]> {
+    return this.store.listLegacySceneTextFileNames();
+  }
+
+  // Converts every legacy scene text into a scene card and removes the original, as one commit.
+  // Deterministic only — the freshness guard refuses when Desktop touched a scene mid-migration.
+  public async migrateLegacyScenes(): Promise<
+    | {
+        readonly outcome: MutateOutcome;
+        readonly stems: readonly string[];
+        readonly failures: readonly string[];
+      }
+    | undefined
+  > {
+    const legacyFileNames = await this.store.listLegacySceneTextFileNames();
+
+    if (legacyFileNames.length === 0) {
+      return undefined;
+    }
+
+    const writes: WorkspaceWrite[] = [];
+    const deletions: WorkspaceDeletion[] = [];
+    const stems: string[] = [];
+    const failures: string[] = [];
+
+    for (const legacyFileName of legacyFileNames) {
+      const relativePath = `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${legacyFileName}`;
+
+      try {
+        const raw = await this.store.readText(relativePath);
+        const conversion = convertLegacySceneText(raw, legacyFileName);
+
+        writes.push({
+          relativePath: `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${conversion.fileName}`,
+          content: conversion.text,
+          baselineHash: undefined,
+        });
+        deletions.push({ relativePath, baselineHash: hashContent(raw) });
+        stems.push(conversion.stem);
+      } catch {
+        failures.push(legacyFileName);
+      }
+    }
+
+    if (writes.length === 0) {
+      return { outcome: { status: 'no-op' }, stems, failures };
+    }
+
+    return {
+      outcome: await this.gate.apply(
+        { writes, deletions },
+        'storygram: migrate scenes to card format',
+      ),
+      stems,
+      failures,
+    };
   }
 
   // Generated drafts are gitignored, so a regenerate cannot be undone with git. The previous

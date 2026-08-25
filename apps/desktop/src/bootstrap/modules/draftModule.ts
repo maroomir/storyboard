@@ -6,6 +6,7 @@ import { registerExpandDraftCommand } from '../../presentation/commands/expandDr
 import { registerCondenseDraftCommand } from '../../presentation/commands/condenseDraft';
 import { registerGenerateAllDraftsCommand } from '../../presentation/commands/generateAllDrafts';
 import { registerGenerateDraftCommands } from '../../presentation/commands/generateDraft';
+import { registerMigrateScenesCommand } from '../../presentation/commands/migrateScenes';
 import { registerNewSceneCommands } from '../../presentation/commands/newScene';
 import { registerReviseDraftCommand } from '../../presentation/commands/reviseDraft';
 import { registerCharacterHoverProvider } from '../../presentation/providers/CharacterHoverProvider';
@@ -62,6 +63,7 @@ export class DraftModule implements IApplicationModule {
       registerCondenseDraftCommand({ condenseDraftUseCase, configBridge, logger }),
       registerAugmentDraftCommands({ augmentDraftUseCase, logger }),
       registerNewSceneCommands(),
+      registerMigrateScenesCommand({ logger }),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway }),
       registerGrammarDiagnosticsProvider({ aiGateway, logger }),

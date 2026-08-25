@@ -22,3 +22,4 @@ export * from './files/draft';
 export * from './files/outline';
 export * from './files/scene';
 export * from './files/sceneGrounding';
+export * from './files/sceneMigration';

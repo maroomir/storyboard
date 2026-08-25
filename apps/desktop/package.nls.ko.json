@@ -42,5 +42,6 @@
   "storyboard.bot.setup.title": "Storyboard: 텔레그램 봇 설정…",
   "storyboard.bot.openConfig.title": "Storyboard: 텔레그램 봇 설정 파일 열기",
   "storyboard.bot.restart.title": "Storyboard: 텔레그램 봇 재시작",
-  "storyboard.bot.openDashboard.title": "Storyboard: 텔레그램 봇 대시보드 열기"
+  "storyboard.bot.openDashboard.title": "Storyboard: 텔레그램 봇 대시보드 열기",
+  "storyboard.scene.migrate.title": "Storyboard: 씬을 카드로 마이그레이션"
 }
