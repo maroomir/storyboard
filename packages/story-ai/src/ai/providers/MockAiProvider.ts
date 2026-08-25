@@ -108,6 +108,15 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
         relation: '모의 관계',
         time: '모의 시점',
       });
+    case 'sceneStructure':
+      return JSON.stringify({
+        purpose: '모의 목적',
+        conflict: '모의 갈등',
+        twist: '모의 반전',
+        emotionalShift: '모의 감정 변화',
+        foreshadowing: ['모의 복선'],
+        neededCanon: ['모의 설정'],
+      });
     case 'inlineCompletion':
       return createMockInlineCompletion(promptSummary);
     case 'draftExpansion':

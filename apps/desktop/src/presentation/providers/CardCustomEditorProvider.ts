@@ -1,14 +1,18 @@
 import * as vscode from 'vscode';
 
+import type { AiGateway } from '../../application/ai/aiGateway';
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
 import {
   CardParseError,
   parseCard,
+  parseSceneFileName,
   parseWorkspaceCard,
+  sceneSeedSectionLabels,
   serializeCard,
   serializeWorkspaceCard,
 } from '@storyboard/story-format';
-import type { WorkspaceCard } from '@storyboard/story-format';
+import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
+import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '../../domain/cardCollect';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
@@ -22,6 +26,7 @@ import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 const cardEditorViewType = 'storyboard.card';
 
 export interface CardCustomEditorDependencies {
+  readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly usageRecorder: UsageRecorder;
@@ -167,6 +172,43 @@ function createCardEditorHandlers(
       await replaceDocumentText(document, rawText);
       return { card, rawText };
     },
+    'cards.structureScene': async (): Promise<
+      StoryboardResponsePayload<'cards.structureScene'>
+    > => {
+      const card = parseWorkspaceCard(document.getText());
+
+      if (card.type !== 'scene') {
+        throw new Error('씬 카드에서만 구조화를 제안할 수 있습니다.');
+      }
+
+      const summary = card.summary?.trim() ?? '';
+      if (summary.length === 0) {
+        throw new Error('summary가 비어 있어 구조화를 제안할 수 없습니다.');
+      }
+
+      const missingFields = collectMissingStructureFields(card);
+      if (missingFields.length === 0) {
+        return { proposal: {} };
+      }
+
+      const fileName = document.uri.path.split('/').pop() ?? '';
+      const sceneStem = parseSceneFileName(fileName)?.stem ?? card.id;
+      const proposal = await dependencies.aiGateway
+        .createService(document.uri)
+        .proposeSceneStructure(
+          {
+            sceneSummary: summary,
+            missingFields,
+            knownFields: describeKnownStructureFields(card),
+          },
+          {
+            providerId: dependencies.aiGateway.getTaskProvider('sceneStructure'),
+            attribution: { primary: { kind: 'scene', id: sceneStem } },
+          },
+        );
+
+      return { proposal };
+    },
     'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
       const card = parseCard(document.getText());
       const workspaceRoot = getDocumentWorkspaceRoot(document);
@@ -248,6 +290,31 @@ function resolveCardImageUri(
 
   const cardDirectory = vscode.Uri.joinPath(document.uri, '..');
   return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString();
+}
+
+const sceneStructureScalarKeys = ['purpose', 'conflict', 'twist', 'emotionalShift'] as const;
+const sceneStructureListKeys = ['foreshadowing', 'neededCanon'] as const;
+
+function collectMissingStructureFields(card: SceneCard): SceneStructureFieldKey[] {
+  const missingScalars = sceneStructureScalarKeys.filter(
+    (key) => (card[key]?.trim() ?? '').length === 0,
+  );
+  const missingLists = sceneStructureListKeys.filter((key) => (card[key] ?? []).length === 0);
+
+  return [...missingScalars, ...missingLists];
+}
+
+function describeKnownStructureFields(card: SceneCard): string[] {
+  const scalars = sceneStructureScalarKeys.flatMap((key) => {
+    const value = card[key]?.trim();
+    return value ? [`- ${sceneSeedSectionLabels[key]}: ${value}`] : [];
+  });
+  const lists = sceneStructureListKeys.flatMap((key) => {
+    const values = card[key] ?? [];
+    return values.length > 0 ? [`- ${sceneSeedSectionLabels[key]}: ${values.join(', ')}`] : [];
+  });
+
+  return [...scalars, ...lists];
 }
 
 function getDocumentWorkspaceRoot(document: vscode.TextDocument): vscode.Uri {

@@ -17,6 +17,7 @@ import { CharacterFields } from "./fields/CharacterFields"
 import { ListField } from "./fields/ListField"
 import { SceneFields } from "./fields/SceneFields"
 import { ScenePreviewPanel } from "./ScenePreviewPanel"
+import { SceneStructurePanel } from "./SceneStructurePanel"
 
 const overviewBoxClass =
   "flex flex-col gap-4 rounded-xl border border-sb-border bg-sb-bg-sidebar/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
@@ -125,6 +126,13 @@ export function CardEditor({ initialData }: { readonly initialData: CardEditorIn
                 <span className="text-sm text-sb-fg-muted">ID</span>
                 <input className={sbInputClass} value={card.id} readOnly />
               </label>
+              <SceneStructurePanel
+                card={card}
+                documentUri={documentState.documentUri}
+                vscodeApi={vscodeApi}
+                updateCard={updateCard}
+                onStatusChange={setStatus}
+              />
               <SceneFields card={card} updateCard={updateCard} />
             </div>
           )
