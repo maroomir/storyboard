@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { parseCard } from '@storyboard/story-format';
@@ -52,6 +52,82 @@ describe('ContentService', () => {
 
   afterEach(() => {
     fixture.cleanup();
+  });
+
+  it('migrates legacy scene texts into cards as a single commit', async () => {
+    fixture.write(
+      'scene/01-prologue.txt',
+      '---\ntitle: 프롤로그\ncharacters: [elia]\n---\n자유 메모.\n\n[목적]\n첫 만남을 보여준다.\n',
+    );
+    fixture.write('scene/02-turn.txt', '전환 씬의 자유 산문.\n');
+    execFileSync('git', ['-C', fixture.root, 'add', '--all'], { shell: false });
+    execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'seed scenes'], {
+      shell: false,
+    });
+
+    await expect(content.listLegacySceneTexts()).resolves.toEqual([
+      'scene/01-prologue.txt'.slice('scene/'.length),
+      'scene/02-turn.txt'.slice('scene/'.length),
+    ]);
+
+    const result = await content.migrateLegacyScenes();
+
+    expect(result?.outcome.status).toBe('committed');
+    expect(result?.stems).toEqual(['01-prologue', '02-turn']);
+    expect(result?.failures).toEqual([]);
+
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8')).toBe(
+      'type: scene\nid: 01-prologue\ntitle: 프롤로그\ncharacters:\n  - elia\npurpose: 첫 만남을 보여준다.\nsummary: 자유 메모.\n',
+    );
+    expect(readFileSync(join(fixture.root, 'scene', '02-turn.card'), 'utf8')).toBe(
+      'type: scene\nid: 02-turn\nsummary: 전환 씬의 자유 산문.\n',
+    );
+    expect(existsSync(join(fixture.root, 'scene', '01-prologue.txt'))).toBe(false);
+    expect(existsSync(join(fixture.root, 'scene', '02-turn.txt'))).toBe(false);
+
+    expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
+      'storygram: migrate scenes to card format',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+  });
+
+  it('refuses to delete a legacy scene that Desktop changed mid-plan', async () => {
+    fixture.write('scene/01-prologue.txt', '원본.\n');
+    execFileSync('git', ['-C', fixture.root, 'add', '--all'], { shell: false });
+    execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'seed scenes'], {
+      shell: false,
+    });
+
+    // The gate's test seam fires before the deletion's authoritative check; a Desktop save
+    // landing there must leave the changed .txt on disk.
+    const store = new WorkspaceStore(fixture.root);
+    const client = new GitClient(fixture.root);
+    const racingGate = new MutateGate(
+      store,
+      client,
+      new SyncService(client, {}, silentLogger),
+      silentLogger,
+      {
+        isTrackedPath: createGitTrackedPathPredicate(client),
+        onWillWrite: (relativePath) => {
+          if (relativePath.endsWith('.txt')) {
+            fixture.write('scene/01-prologue.txt', 'Desktop이 바꾼 내용.\n');
+          }
+        },
+      },
+    );
+    const racingContent = new ContentService(store, racingGate);
+
+    const result = await racingContent.migrateLegacyScenes();
+
+    expect(result?.outcome.status).toBe('stale');
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8')).toBe(
+      'Desktop이 바꾼 내용.\n',
+    );
+  });
+
+  it('returns undefined when there is nothing to migrate', async () => {
+    await expect(content.migrateLegacyScenes()).resolves.toBeUndefined();
   });
 
   it('renames a card and commits exactly that file', async () => {

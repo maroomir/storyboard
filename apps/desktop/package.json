@@ -109,6 +109,10 @@
         "title": "%storyboard.draft.applyFormat.title%"
       },
       {
+        "command": "storyboard.scene.migrate",
+        "title": "%storyboard.scene.migrate.title%"
+      },
+      {
         "command": "storyboard.scene.create",
         "title": "%storyboard.scene.create.title%",
         "icon": "$(add)"

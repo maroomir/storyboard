@@ -42,5 +42,6 @@
   "storyboard.bot.setup.title": "Storyboard: Set Up Telegram Bot…",
   "storyboard.bot.openConfig.title": "Storyboard: Open Telegram Bot Config File",
   "storyboard.bot.restart.title": "Storyboard: Restart Telegram Bot",
-  "storyboard.bot.openDashboard.title": "Storyboard: Open Telegram Bot Dashboard"
+  "storyboard.bot.openDashboard.title": "Storyboard: Open Telegram Bot Dashboard",
+  "storyboard.scene.migrate.title": "Storyboard: Migrate Scenes to Cards"
 }

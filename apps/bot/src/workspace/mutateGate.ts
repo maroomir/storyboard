@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, unlinkSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 
 import type { CommitHook, GitClient } from '@storyboard/story-git';
@@ -10,6 +10,7 @@ import type {
   MutateOutcome,
   StaleFile,
   WorkspaceChanges,
+  WorkspaceDeletion,
   WorkspaceWrite,
 } from './workspaceChanges';
 import { hashContent, type WorkspaceStore } from './workspaceStore';
@@ -38,7 +39,9 @@ export class MutateGate {
   ) {}
 
   public async apply(changes: WorkspaceChanges, commitMessage: string): Promise<MutateOutcome> {
-    if (changes.writes.length === 0) {
+    const deletions = changes.deletions ?? [];
+
+    if (changes.writes.length === 0 && deletions.length === 0) {
       return { status: 'no-op' };
     }
 
@@ -75,6 +78,22 @@ export class MutateGate {
         written.push(write.relativePath);
         this.logger.info(`wrote ${write.relativePath}`);
       }
+
+      for (const deletion of deletions) {
+        await this.options.onWillWrite?.(deletion.relativePath);
+
+        const verdict = this.checkAndDelete(deletion);
+        if (verdict !== 'deleted') {
+          return this.settleAfterPartialWrites(written, commitMessage, {
+            status: 'stale',
+            files: [{ relativePath: deletion.relativePath, reason: verdict }],
+          });
+        }
+
+        // Staging a deleted path records the removal, so the deletion rides the same commit.
+        written.push(deletion.relativePath);
+        this.logger.info(`deleted ${deletion.relativePath}`);
+      }
     } catch (error) {
       // A mid-plan write failure (ENOSPC, permissions) must not leave earlier tracked writes
       // uncommitted and unreported.
@@ -91,6 +110,21 @@ export class MutateGate {
     }
 
     return this.commitTracked(written, commitMessage) ?? { status: 'committed', paths: written };
+  }
+
+  private checkAndDelete(deletion: WorkspaceDeletion): 'deleted' | StaleFile['reason'] {
+    const absolutePath = this.store.absolutePath(deletion.relativePath);
+    const current = tryReadTextSync(absolutePath);
+
+    if (current === undefined) {
+      return 'deleted-on-disk';
+    }
+    if (hashContent(current) !== deletion.baselineHash) {
+      return 'changed-on-disk';
+    }
+
+    unlinkSync(absolutePath);
+    return 'deleted';
   }
 
   private checkAndWrite(write: WorkspaceWrite): 'written' | 'unchanged' | StaleFile['reason'] {
@@ -155,6 +189,16 @@ export class MutateGate {
 
   private async findStaleFiles(changes: WorkspaceChanges): Promise<StaleFile[]> {
     const stale: StaleFile[] = [];
+
+    for (const deletion of changes.deletions ?? []) {
+      const current = await this.tryReadText(deletion.relativePath);
+
+      if (current === undefined) {
+        stale.push({ relativePath: deletion.relativePath, reason: 'deleted-on-disk' });
+      } else if (hashContent(current) !== deletion.baselineHash) {
+        stale.push({ relativePath: deletion.relativePath, reason: 'changed-on-disk' });
+      }
+    }
 
     for (const write of changes.writes) {
       const current = await this.tryReadText(write.relativePath);
