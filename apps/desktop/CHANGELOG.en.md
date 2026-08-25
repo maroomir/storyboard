@@ -10,9 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.6.4] - 2026-08-25
+
 ### Changed
 
+- **Scene seeds are now cards (BREAKING).** `scene/NN-slug.txt` becomes `scene/NN-slug.card` (YAML, `type: scene`), carrying purpose, conflict, turn, emotional shift, foreshadowing, and required setup alongside the four grounding facts as structured fields. Legacy `scene/*.txt` is no longer read, so existing workspaces must run the migration command below first. The `[목적]` block the prompts rely on is still rendered from the card, unchanged.
 - Replaced the cramped native modal for scene-fact confirmation with a QuickPick list. Incident, place, relation, and time each get a full-width row, so long sentences are no longer wrapped into an unreadable column, and AI-proposed facts are marked with ✨. Editing now targets a single fact — pick the row (or its pencil button) — instead of walking through all four input boxes in order.
+- Scene cards open in the card custom editor too, with a scene form (grounding facts, structure fields, summary) and a scene preview. The collection and AI-history tabs stay entity-only.
+- Added `Storyboard: Migrate Scenes to Cards`. After a confirmation prompt it converts existing `scene/*.txt` files to `.card` and deletes the originals, reporting any failures. Labelled `[목적]` blocks map to structure fields and free prose maps to `summary`, losing nothing. In the Telegram bot, `/doctor` reports remaining legacy scenes and `/doctor migrate` converts them in a single commit.
+- Added a card-editor panel that asks the AI to fill only the empty structure fields from the scene's summary. Suggestions are reviewed before they are applied, and values you already wrote are never overwritten.
+
+### Fixed
+
+- GitHub Release bodies no longer contain the whole changelog; only the tagged version's section is used as the release notes.
 
 ## [0.6.3] - 2026-08-23
 
