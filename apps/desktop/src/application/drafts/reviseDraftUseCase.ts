@@ -90,7 +90,7 @@ async function prepareReviseDraftContext(
   draftUri: vscode.Uri,
   sceneStem: string,
 ): Promise<ReviseDraftContext> {
-  const sceneFileName = `${sceneStem}.txt`;
+  const sceneFileName = `${sceneStem}.card`;
   const scene = await readSceneFile(
     joinUri(paths.sceneDirectory, sceneFileName),
     vscodeFsAdapter,

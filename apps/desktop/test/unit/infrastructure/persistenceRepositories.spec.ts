@@ -72,11 +72,14 @@ describe('persistence repositories', () => {
     const fileSystem = new InMemoryFileSystem();
     const sceneUri = 'scene';
     const draftUri = 'draft';
-    await fileSystem.writeFile(sceneUri, new TextEncoder().encode('Scene body'));
+    await fileSystem.writeFile(
+      sceneUri,
+      new TextEncoder().encode('type: scene\nid: 01-opening\nsummary: Scene body\n'),
+    );
 
-    await expect(new SceneRepository(fileSystem).read(sceneUri, '01-opening.txt')).resolves.toMatchObject({
+    await expect(new SceneRepository(fileSystem).read(sceneUri, '01-opening.card')).resolves.toMatchObject({
       stem: '01-opening',
-      body: 'Scene body',
+      body: 'Scene body\n',
     });
 
     await new DraftRepository(fileSystem).write(

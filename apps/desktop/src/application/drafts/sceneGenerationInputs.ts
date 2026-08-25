@@ -10,7 +10,7 @@ import {
 import {
   draftPath,
   getStoryboardProjectPaths,
-  isDirectSceneTextFile,
+  isDirectSceneCardFile,
 } from '../../infrastructure/vscode/pathConventions';
 import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
@@ -81,16 +81,16 @@ async function resolveSceneGenerationTarget(
     );
   }
 
-  if (!isDirectSceneTextFile(sceneUri, workspaceFolder)) {
+  if (!isDirectSceneCardFile(sceneUri, workspaceFolder)) {
     return inputsFailure(
-      'Storyboard 씬 파일만 처리할 수 있습니다. `scene/NN-slug.txt` 형식의 파일을 선택하거나 해당 파일을 편집기에서 연 뒤 다시 시도해 주세요.',
+      'Storyboard 씬 파일만 처리할 수 있습니다. `scene/NN-slug.card` 형식의 파일을 선택하거나 해당 파일을 편집기에서 연 뒤 다시 시도해 주세요.',
     );
   }
 
   const fileName = sceneUri.path.split('/').pop() ?? '';
 
   if (!parseSceneFileName(fileName)) {
-    return inputsFailure('씬 파일명은 `NN-slug.txt` 형식이어야 합니다.');
+    return inputsFailure('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
   }
 
   return {

@@ -59,7 +59,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   backgroundDirectory: 'background',
   sampleBackgroundCard: 'background/.sample.card',
   sceneDirectory: 'scene',
-  sampleScene: 'scene/.sample.txt',
+  sampleScene: 'scene/.sample.card',
   draftDirectory: 'draft',
   draftHistoryDirectory: '.draft',
   manuscriptDirectory: 'manuscript',
@@ -81,11 +81,11 @@ export function backgroundCardRelativePath(id: string): string {
 }
 
 export function sceneRelativePath(sceneStem: string): string {
-  return `scene/${sceneStem}.txt`;
+  return `scene/${sceneStem}.card`;
 }
 
 export function sceneFileRelativePath(prefix: string, slug: string): string {
-  return `scene/${prefix}-${slug}.txt`;
+  return `scene/${prefix}-${slug}.card`;
 }
 
 export function draftRelativePath(sceneStem: string): string {
@@ -97,7 +97,7 @@ export function draftHistorySceneRelativeDirectory(sceneStem: string): string {
 }
 
 export function isHiddenSceneFileName(fileName: string): boolean {
-  return fileName.startsWith('.') && fileName.endsWith('.txt');
+  return fileName.startsWith('.') && fileName.endsWith('.card');
 }
 
 export function parseCardIdFromFileName(fileName: string): string | undefined {
@@ -130,6 +130,11 @@ export function isDraftMarkdownRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, 'draft', '.md');
 }
 
-export function isDirectSceneTextRelativePath(relativePath: string): boolean {
+export function isDirectSceneCardRelativePath(relativePath: string): boolean {
+  return isDirectChildWithExtension(relativePath, 'scene', '.card');
+}
+
+// 마이그레이션 전용: 구형 씬 텍스트(.txt)를 찾아 변환 대상으로 보고할 때만 쓴다.
+export function isLegacySceneTextRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, 'scene', '.txt');
 }

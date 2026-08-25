@@ -66,7 +66,7 @@ export class CardRecommendationRepository implements ICardRecommendationReposito
     const entries = await this.readDirectorySafely(sceneDirectory);
 
     for (const [name, fileType] of entries) {
-      if (fileType !== vscode.FileType.File || !name.endsWith('.txt') || name.startsWith('.')) {
+      if (fileType !== vscode.FileType.File || !name.endsWith('.card') || name.startsWith('.')) {
         continue;
       }
 

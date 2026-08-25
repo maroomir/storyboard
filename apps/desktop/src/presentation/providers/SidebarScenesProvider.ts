@@ -120,7 +120,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
   private registerWatchers(workspaceRoot: vscode.Uri): void {
     const sceneWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(workspaceRoot, 'scene/*.txt'),
+      new vscode.RelativePattern(workspaceRoot, 'scene/*.card'),
     );
     const draftWatcher = vscode.workspace.createFileSystemWatcher(
       new vscode.RelativePattern(workspaceRoot, 'draft/**/*.md'),

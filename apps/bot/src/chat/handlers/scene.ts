@@ -3,8 +3,10 @@ import {
   clampScenePrefixDigits,
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
+  parseSceneCard,
   sceneFileRelativePath,
   sceneRelativePath,
+  serializeSceneCard,
   validateSceneSlugInput,
 } from '@storyboard/story-format';
 
@@ -94,7 +96,7 @@ async function createScene(ctx: ChatContext, slug: string, body: string): Promis
   // baselineHash 없음 = 생성 전용: 같은 이름이 그 사이 생겼다면 게이트가 거부한다.
   const outcome = await ctx.content.writeTracked(
     relativePath,
-    `${body}\n`,
+    serializeSceneCard({ type: 'scene', id: `${prefix}-${slug}`, summary: body }),
     undefined,
     `storygram: create ${relativePath}`,
   );
@@ -132,8 +134,7 @@ async function updateScene(
 
   const relativePath = sceneRelativePath(sceneStem);
   const raw = await ctx.store.readText(relativePath);
-  const nextContent =
-    action === 'edit' ? replaceSceneBody(raw, body) : `${raw.replace(/\n+$/, '')}\n\n${body}\n`;
+  const nextContent = applySceneSummaryEdit(raw, action, body);
 
   const outcome = await ctx.content.writeTracked(
     relativePath,
@@ -155,18 +156,13 @@ async function updateScene(
   });
 }
 
-// Replaces only the body: an existing frontmatter block (--- fenced, same rules as parseScene)
-// is preserved byte-for-byte because the bot has no frontmatter serializer to round-trip it.
-function replaceSceneBody(raw: string, newBody: string): string {
-  const normalized = raw.replace(/\r\n/g, '\n');
+// NOTE: /scene edit·append는 자유 산문 채널이므로 카드의 summary 필드만 다룬다. 구조 필드
+// (purpose/conflict/…)는 카드 에디터가 담당한다.
+function applySceneSummaryEdit(raw: string, action: 'edit' | 'append', body: string): string {
+  const card = parseSceneCard(raw);
+  const existingSummary = card.summary?.trim() ?? '';
+  const summary =
+    action === 'edit' || existingSummary.length === 0 ? body : `${existingSummary}\n\n${body}`;
 
-  if (normalized.startsWith('---\n')) {
-    const closingFenceIndex = normalized.indexOf('\n---', '---\n'.length);
-    if (closingFenceIndex !== -1) {
-      const fenceEnd = closingFenceIndex + '\n---'.length;
-      return `${normalized.slice(0, fenceEnd)}\n${newBody}\n`;
-    }
-  }
-
-  return `${newBody}\n`;
+  return serializeSceneCard({ ...card, summary });
 }

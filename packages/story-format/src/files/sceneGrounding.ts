@@ -1,10 +1,9 @@
-import yaml from 'js-yaml';
-
 import {
   sceneGroundingFieldKeys,
   type SceneGrounding,
   type SceneGroundingFieldKey,
 } from '../scene';
+import { parseSceneCard, serializeSceneCard } from './scene';
 
 export function missingSceneGroundingFields(
   grounding: SceneGrounding | undefined,
@@ -38,66 +37,13 @@ export function mergeSceneGrounding(
   return merged;
 }
 
-// NOTE: 씬 파일은 사용자 저작물이라 frontmatter 전체를 다시 직렬화하지 않는다. grounding 블록만
-// 잘라 끼워 넣어 나머지 키의 표기(인라인 시퀀스, 주석, 키 순서)를 바이트 그대로 보존한다.
+// NOTE: Scene card 직렬화는 canonical이라 grounding만 바꿔도 전체를 다시 직렬화한다.
 export function applySceneGrounding(rawScene: string, grounding: SceneGrounding): string {
-  const normalizedScene = rawScene.replace(/\r\n/g, '\n');
-  const groundingBlock = serializeGroundingBlock(grounding);
-  const fence = locateFrontmatterFence(normalizedScene);
+  const card = parseSceneCard(rawScene);
 
-  if (!fence) {
-    return `---\n${groundingBlock}---\n${normalizedScene}`;
-  }
-
-  const frontmatter = normalizedScene.slice(fence.startIndex, fence.endIndex);
-  const rest = normalizedScene.slice(fence.endIndex);
-
-  return `---\n${replaceGroundingBlock(frontmatter, groundingBlock)}${rest}`;
-}
-
-function serializeGroundingBlock(grounding: SceneGrounding): string {
   if (Object.keys(grounding).length === 0) {
-    return '';
+    return serializeSceneCard(card);
   }
 
-  return yaml.dump({ grounding }, { lineWidth: -1, noRefs: true, sortKeys: false });
-}
-
-function locateFrontmatterFence(
-  scene: string,
-): { readonly startIndex: number; readonly endIndex: number } | undefined {
-  if (!scene.startsWith('---\n')) {
-    return undefined;
-  }
-
-  const closingFenceIndex = scene.indexOf('\n---', '---\n'.length);
-
-  if (closingFenceIndex === -1) {
-    return undefined;
-  }
-
-  return { startIndex: '---\n'.length, endIndex: closingFenceIndex + 1 };
-}
-
-function replaceGroundingBlock(frontmatter: string, groundingBlock: string): string {
-  const lines = frontmatter.split('\n');
-  const startLine = lines.findIndex((line) => /^grounding:/.test(line));
-
-  if (startLine === -1) {
-    return `${frontmatter}${groundingBlock}`;
-  }
-
-  let endLine = startLine + 1;
-  while (endLine < lines.length && isBlockContinuation(lines[endLine])) {
-    endLine += 1;
-  }
-
-  const before = lines.slice(0, startLine).join('\n');
-  const after = lines.slice(endLine).join('\n');
-
-  return `${before.length > 0 ? `${before}\n` : ''}${groundingBlock}${after}`;
-}
-
-function isBlockContinuation(line: string | undefined): boolean {
-  return line !== undefined && (line.length === 0 || /^[ \t]/.test(line));
+  return serializeSceneCard({ ...card, grounding });
 }

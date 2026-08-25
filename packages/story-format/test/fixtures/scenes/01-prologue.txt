@@ -1,7 +1,0 @@
----
-title: 프롤로그
-characters: [sample]
-location: sample
-mood: 시작
----
-샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다.

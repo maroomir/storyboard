@@ -1,9 +1,8 @@
-import yaml from 'js-yaml';
 import { z } from 'zod';
 
 import type { AiGateway } from '@/application/ai/aiGateway';
-import { sceneFileNamePattern } from '@storyboard/story-format';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
+import { sceneFileNamePattern, serializeSceneCard } from '@storyboard/story-format';
+import type { SceneCard, SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@storyboard/story-ai';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
@@ -129,21 +128,24 @@ export class CompleteStoryScenesUseCase {
         source.project.editor.scenePrefixDigits,
         '0',
       );
-      const fileName = `${prefix}-${candidate.slug}.txt`;
+      const fileName = `${prefix}-${candidate.slug}.card`;
       if (!sceneFileNamePattern.test(fileName)) {
         throw new StoryFeatureSourceError(`생성할 수 없는 씬 파일명: ${fileName}`);
       }
-      const frontmatter = {
+      const sceneCard: SceneCard = {
+        type: 'scene',
+        id: `${prefix}-${candidate.slug}`,
         title: candidate.title,
         ...(candidate.characterIds.length > 0 ? { characters: candidate.characterIds } : {}),
         ...(candidate.locationId ? { location: candidate.locationId } : {}),
         ...(candidate.mood ? { mood: candidate.mood } : {}),
         ...(candidate.relationStage ? { relationStage: candidate.relationStage } : {}),
+        summary: candidate.body.trim(),
       };
 
       return {
         fileName,
-        content: `---\n${yaml.dump(frontmatter, { lineWidth: -1, noRefs: true, sortKeys: false })}---\n${candidate.body.trim()}\n`,
+        content: serializeSceneCard(sceneCard),
         title: candidate.title,
         resolvedThreads: candidate.resolvedThreads,
         openThreads: candidate.openThreads,

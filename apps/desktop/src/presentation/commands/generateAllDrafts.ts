@@ -45,7 +45,7 @@ async function runGenerateAllDrafts(
         'Storyboard 프로젝트(.storyboard/project.json)가 있는 워크스페이스 폴더가 없습니다.',
       );
     } else {
-      await vscode.window.showInformationMessage('처리할 `scene/*.txt` 파일이 없습니다.');
+      await vscode.window.showInformationMessage('처리할 `scene/*.card` 파일이 없습니다.');
     }
     return;
   }

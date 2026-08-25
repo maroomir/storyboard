@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   getStoryboardProjectPaths,
-  isDirectSceneTextFile,
+  isDirectSceneCardFile,
   isDraftMarkdownFile,
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName
@@ -15,7 +15,7 @@ describe("pathConventions", () => {
 
     expect(paths.sampleCharacterCard.fsPath).toBe("/workspace/story/character/.sample.card")
     expect(paths.sampleBackgroundCard.fsPath).toBe("/workspace/story/background/.sample.card")
-    expect(paths.sampleScene.fsPath).toBe("/workspace/story/scene/.sample.txt")
+    expect(paths.sampleScene.fsPath).toBe("/workspace/story/scene/.sample.card")
   })
 
   it("identifies only the explicit ignored sample card file", () => {
@@ -25,8 +25,8 @@ describe("pathConventions", () => {
   })
 
   it("identifies hidden scene text files", () => {
-    expect(isHiddenSceneFileName(".sample.txt")).toBe(true)
-    expect(isHiddenSceneFileName("01-prologue.txt")).toBe(false)
+    expect(isHiddenSceneFileName(".sample.card")).toBe(true)
+    expect(isHiddenSceneFileName("01-prologue.card")).toBe(false)
     expect(isHiddenSceneFileName(".sample.md")).toBe(false)
   })
 })
@@ -66,24 +66,25 @@ describe("isDraftMarkdownFile contract", () => {
   })
 })
 
-describe("isDirectSceneTextFile contract", () => {
+describe("isDirectSceneCardFile contract", () => {
   const cases: PathContractCase[] = [
-    { label: "direct .txt in scene dir", filePath: "/workspace/story/scene/01.txt", expected: true },
+    { label: "direct .card in scene dir", filePath: "/workspace/story/scene/01.card", expected: true },
+    { label: "legacy extension .txt", filePath: "/workspace/story/scene/01.txt", expected: false },
     { label: "wrong extension .md", filePath: "/workspace/story/scene/01.md", expected: false },
-    { label: "nested under a subdirectory", filePath: "/workspace/story/scene/sub/01.txt", expected: false },
-    { label: "outside the scene dir", filePath: "/workspace/story/notes/01.txt", expected: false },
-    { label: "sibling sharing the scene prefix", filePath: "/workspace/story/scenexyz/01.txt", expected: false },
-    { label: "case-mismatched dir and file (codec is lowercase-only)", filePath: "/workspace/story/SCENE/01.TXT", expected: false }
+    { label: "nested under a subdirectory", filePath: "/workspace/story/scene/sub/01.card", expected: false },
+    { label: "outside the scene dir", filePath: "/workspace/story/notes/01.card", expected: false },
+    { label: "sibling sharing the scene prefix", filePath: "/workspace/story/scenexyz/01.card", expected: false },
+    { label: "case-mismatched dir and file (codec is lowercase-only)", filePath: "/workspace/story/SCENE/01.CARD", expected: false }
   ]
 
   it.each(cases)("$label → $expected", ({ filePath, expected }) => {
-    expect(isDirectSceneTextFile(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
+    expect(isDirectSceneCardFile(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
   })
 
   it("normalizes backslash paths to forward slashes", () => {
     const windowsWorkspace = workspaceFolderAt("C:\\workspace\\story")
-    const sceneFile = Uri.file("C:\\workspace\\story\\scene\\01.txt")
+    const sceneFile = Uri.file("C:\\workspace\\story\\scene\\01.card")
 
-    expect(isDirectSceneTextFile(sceneFile as never, windowsWorkspace)).toBe(true)
+    expect(isDirectSceneCardFile(sceneFile as never, windowsWorkspace)).toBe(true)
   })
 })

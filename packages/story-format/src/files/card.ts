@@ -94,7 +94,6 @@ function normalizeCardForSerialization(card: StoryboardCard): StoryboardCard {
   if (card.type === 'character') {
     return normalizeCharacterCard(card);
   }
-
   return normalizeBackgroundCard(card);
 }
 

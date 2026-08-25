@@ -232,7 +232,7 @@ describe("NovelPipeline", () => {
       const sceneUri = call[0] as vscode.Uri
       return sceneUri.fsPath.split("/").at(-1)
     })
-    expect(draftedStems).toEqual(["01-s1.txt", "02-s2.txt", "03-s3.txt"])
+    expect(draftedStems).toEqual(["01-s1.card", "02-s2.card", "03-s3.card"])
     expect(runReviseDraftWorkflowMock).toHaveBeenCalledTimes(3)
     expect(recordRevisionEntryMock).toHaveBeenCalledTimes(3)
   })

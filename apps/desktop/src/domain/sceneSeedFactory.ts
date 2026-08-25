@@ -1,7 +1,5 @@
-import yaml from 'js-yaml';
-
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan, FlatChapterScene, ScenePlan } from '@storyboard/story-format';
+import { flattenChapterPlan, serializeSceneCard } from '@storyboard/story-format';
+import type { ChapterPlan, FlatChapterScene, SceneCard, ScenePlan } from '@storyboard/story-format';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;
@@ -21,8 +19,8 @@ export function buildSceneSeeds(plan: ChapterPlan, digitCount: number): Generate
 
     return {
       stem,
-      fileName: `${stem}.txt`,
-      content: buildSceneSeedContent(flatScene),
+      fileName: `${stem}.card`,
+      content: serializeSceneCard(buildSceneSeedCard(stem, flatScene)),
     };
   });
 }
@@ -56,51 +54,24 @@ function reserveUniqueSlug(slug: string, usedSlugs: Set<string>): string {
   return uniqueSlug;
 }
 
-function buildSceneSeedContent(flatScene: FlatChapterScene): string {
-  return `---\n${buildFrontmatter(flatScene.scene)}---\n${buildBody(flatScene)}`;
-}
-
-function buildFrontmatter(scene: ScenePlan): string {
-  const frontmatter: Record<string, unknown> = { title: scene.title };
-
-  if (scene.characters.length > 0) {
-    frontmatter.characters = [...scene.characters];
-  }
-  if (scene.location !== undefined) {
-    frontmatter.location = scene.location;
-  }
-
-  return yaml.dump(frontmatter, { lineWidth: -1, noRefs: true, sortKeys: false });
-}
-
-function buildBody(flatScene: FlatChapterScene): string {
+function buildSceneSeedCard(stem: string, flatScene: FlatChapterScene): SceneCard {
   const { scene } = flatScene;
-  const blocks: string[] = [
-    `[목적]\n${scene.purpose.trim().length > 0 ? scene.purpose : '_미작성_'}`,
-  ];
 
-  if (scene.conflict !== undefined) {
-    blocks.push(`[갈등]\n${scene.conflict}`);
-  }
-  if (scene.twist !== undefined) {
-    blocks.push(`[반전]\n${scene.twist}`);
-  }
-  if (scene.emotionalShift !== undefined) {
-    blocks.push(`[감정 변화]\n${scene.emotionalShift}`);
-  }
-  if (scene.foreshadowing.length > 0) {
-    blocks.push(`[회수할 복선]\n${scene.foreshadowing.map((item) => `- ${item}`).join('\n')}`);
-  }
-  if (scene.neededCanon && scene.neededCanon.length > 0) {
-    blocks.push(`[필요 설정]\n${scene.neededCanon.map((item) => `- ${item}`).join('\n')}`);
-  }
-  if (scene.targetWordCount !== undefined) {
-    blocks.push(`[목표 분량]\n약 ${scene.targetWordCount.toLocaleString()}자`);
-  }
-
-  blocks.push(
-    `> ${flatScene.actTitle} · ${flatScene.chapterTitle} — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.`,
-  );
-
-  return `${blocks.join('\n\n')}\n`;
+  return {
+    type: 'scene',
+    id: stem,
+    title: scene.title,
+    ...(scene.characters.length > 0 ? { characters: [...scene.characters] } : {}),
+    ...(scene.location === undefined ? {} : { location: scene.location }),
+    ...(scene.targetWordCount === undefined ? {} : { targetWordCount: scene.targetWordCount }),
+    ...(scene.purpose.trim().length > 0 ? { purpose: scene.purpose } : {}),
+    ...(scene.conflict === undefined ? {} : { conflict: scene.conflict }),
+    ...(scene.twist === undefined ? {} : { twist: scene.twist }),
+    ...(scene.emotionalShift === undefined ? {} : { emotionalShift: scene.emotionalShift }),
+    ...(scene.foreshadowing.length > 0 ? { foreshadowing: [...scene.foreshadowing] } : {}),
+    ...(scene.neededCanon && scene.neededCanon.length > 0
+      ? { neededCanon: [...scene.neededCanon] }
+      : {}),
+    summary: `${flatScene.actTitle} · ${flatScene.chapterTitle} — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.`,
+  };
 }

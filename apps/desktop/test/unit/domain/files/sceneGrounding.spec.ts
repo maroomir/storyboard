@@ -45,43 +45,52 @@ describe("scene grounding fields", () => {
   })
 })
 
-describe("scene grounding frontmatter write", () => {
-  it("appends a grounding block while preserving other keys byte-for-byte", () => {
-    const scene = ["---", "title: 프롤로그", "characters: [elia, jihoon]", "---", "본문이다.", ""].join(
-      "\n"
-    )
+describe("scene grounding card write", () => {
+  it("adds a grounding block at its canonical position", () => {
+    const scene = [
+      "type: scene",
+      "id: 01-prologue",
+      "title: 프롤로그",
+      "characters:",
+      "  - elia",
+      "  - jihoon",
+      "summary: 본문이다.",
+      ""
+    ].join("\n")
 
     const written = applySceneGrounding(scene, { incident: "면접 탈락", place: "옥탑방" })
 
     expect(written).toBe(
       [
-        "---",
+        "type: scene",
+        "id: 01-prologue",
         "title: 프롤로그",
-        "characters: [elia, jihoon]",
+        "characters:",
+        "  - elia",
+        "  - jihoon",
         "grounding:",
         "  incident: 면접 탈락",
         "  place: 옥탑방",
-        "---",
-        "본문이다.",
+        "summary: 본문이다.",
         ""
       ].join("\n")
     )
-    expect(parseScene(written, "01-prologue.txt").frontmatter.grounding).toEqual({
+    expect(parseScene(written, "01-prologue.card").frontmatter.grounding).toEqual({
       incident: "면접 탈락",
       place: "옥탑방"
     })
   })
 
-  it("replaces an existing grounding block without touching later keys", () => {
+  it("replaces an existing grounding block without touching other keys", () => {
     const scene = [
-      "---",
+      "type: scene",
+      "id: 01-prologue",
       "title: 프롤로그",
+      "mood: 시작",
       "grounding:",
       "  incident: 낡은 사건",
       "  place: 낡은 장소",
-      "mood: 시작",
-      "---",
-      "본문이다.",
+      "summary: 본문이다.",
       ""
     ].join("\n")
 
@@ -89,23 +98,20 @@ describe("scene grounding frontmatter write", () => {
 
     expect(written).toBe(
       [
-        "---",
+        "type: scene",
+        "id: 01-prologue",
         "title: 프롤로그",
+        "mood: 시작",
         "grounding:",
         "  incident: 새 사건",
-        "mood: 시작",
-        "---",
-        "본문이다.",
+        "summary: 본문이다.",
         ""
       ].join("\n")
     )
   })
 
-  it("creates a frontmatter block when the scene has none", () => {
-    const written = applySceneGrounding("가사만 있는 본문\n", { incident: "면접 탈락" })
-
-    expect(written).toBe(["---", "grounding:", "  incident: 면접 탈락", "---", "가사만 있는 본문", ""].join("\n"))
-    expect(parseScene(written, "01-prologue.txt").body).toBe("가사만 있는 본문\n")
+  it("rejects a scene that is not a card", () => {
+    expect(() => applySceneGrounding("가사만 있는 본문\n", { incident: "면접 탈락" })).toThrow()
   })
 })
 

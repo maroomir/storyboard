@@ -4,59 +4,115 @@ import { join } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
-import { parseScene, parseSceneFileName, parseSceneStem, resolveSceneOrder, SceneParseError } from '@storyboard/story-format';
+import {
+  canonicalizeSceneCardText,
+  parseScene,
+  parseSceneFileName,
+  parseSceneStem,
+  resolveSceneOrder,
+  serializeSceneCard,
+  SceneParseError
+} from '@storyboard/story-format';
 const scenesFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-format/test/fixtures/scenes/", import.meta.url))
 
 describe("scene file codec", () => {
-  it("parses frontmatter and body from a scene seed", () => {
-    const scene = parseScene(readFixtureScene("01-prologue.txt"), "01-prologue.txt")
+  it("parses a scene card into frontmatter view and prompt body", () => {
+    const scene = parseScene(readFixtureScene("01-prologue.card"), "01-prologue.card")
 
     expect(scene).toMatchObject({
       stem: "01-prologue",
       order: 1,
       orderText: "01",
       slug: "prologue",
+      card: {
+        type: "scene",
+        id: "01-prologue",
+        summary: "샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다."
+      },
       frontmatter: {
         title: "프롤로그",
         characters: ["sample"],
         location: "sample",
         mood: "시작"
       },
-      body: "샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다."
+      body: "샘플 캐릭터가 샘플 배경 안에서 첫 장면을 시작한다.\n"
     })
   })
 
-  it("parses a numeric targetWordCount from frontmatter", () => {
-    const scene = parseScene("---\ntitle: 장면\ntargetWordCount: 5000\n---\n본문", "01-scene.txt")
+  it("parses a numeric targetWordCount", () => {
+    const scene = parseScene(
+      "type: scene\nid: 01-scene\ntitle: 장면\ntargetWordCount: 5000\nsummary: 본문\n",
+      "01-scene.card"
+    )
 
     expect(scene.frontmatter.targetWordCount).toBe(5000)
   })
 
-  it("rejects a non-integer targetWordCount in frontmatter", () => {
-    const rawScene = "---\ntitle: 장면\ntargetWordCount: many\n---\n본문"
+  it("rejects a non-integer targetWordCount", () => {
+    const rawScene = "type: scene\nid: 01-scene\ntitle: 장면\ntargetWordCount: many\nsummary: 본문\n"
 
-    expect(() => parseScene(rawScene, "01-scene.txt")).toThrow(SceneParseError)
+    expect(() => parseScene(rawScene, "01-scene.card")).toThrow(SceneParseError)
 
     try {
-      parseScene(rawScene, "01-scene.txt")
+      parseScene(rawScene, "01-scene.card")
     } catch (error) {
-      expect((error as SceneParseError).code).toBe("invalid-frontmatter-schema")
+      expect((error as SceneParseError).code).toBe("invalid-scene-card-schema")
     }
   })
 
-  it("keeps the full body when frontmatter is omitted", () => {
-    const rawScene = readFixtureScene("02-no-frontmatter.txt")
-    const scene = parseScene(rawScene, "02-no-frontmatter.txt")
+  it("renders structured seed fields as labeled prompt blocks", () => {
+    const scene = parseScene(
+      [
+        "type: scene",
+        "id: 03-turn",
+        "title: 전환",
+        "targetWordCount: 3000",
+        "purpose: 목적 문장",
+        "conflict: 갈등 문장",
+        "foreshadowing:",
+        "  - 복선 하나",
+        "summary: 자유 메모",
+        ""
+      ].join("\n"),
+      "03-turn.card"
+    )
+
+    expect(scene.body).toBe(
+      "[목적]\n목적 문장\n\n[갈등]\n갈등 문장\n\n[회수할 복선]\n- 복선 하나\n\n[목표 분량]\n약 3,000자\n\n자유 메모\n"
+    )
+  })
+
+  it("keeps a summary-only card round-trippable", () => {
+    const rawScene = readFixtureScene("02-no-frontmatter.card")
+    const scene = parseScene(rawScene, "02-no-frontmatter.card")
 
     expect(scene.frontmatter).toEqual({})
-    expect(scene.body).toBe(rawScene)
+    expect(scene.body).toBe(`${scene.card.summary}\n`)
+    expect(canonicalizeSceneCardText(rawScene)).toEqual({ text: rawScene, changed: false })
+  })
+
+  it("serializes scene cards canonically", () => {
+    const serialized = serializeSceneCard({
+      type: "scene",
+      id: "01-prologue",
+      summary: "본문",
+      title: "프롤로그"
+    })
+
+    expect(serialized).toBe("type: scene\nid: 01-prologue\ntitle: 프롤로그\nsummary: 본문\n")
+  })
+
+  it("rejects a card whose type is not scene", () => {
+    expect(() => parseScene("type: character\nid: sample\nname: 샘플\n", "01-scene.card")).toThrow(
+      SceneParseError
+    )
   })
 
   it("rejects invalid scene file names", () => {
-    expect(() => parseScene("본문", "prologue.txt")).toThrow(SceneParseError)
+    expect(() => parseScene("본문", "prologue.card")).toThrow(SceneParseError)
 
     try {
-      parseScene("본문", "prologue.txt")
+      parseScene("본문", "prologue.card")
     } catch (error) {
       expect(error).toBeInstanceOf(SceneParseError)
       expect((error as SceneParseError).code).toBe("invalid-scene-file-name")
@@ -64,7 +120,7 @@ describe("scene file codec", () => {
   })
 
   it("parses scene file names and stems consistently", () => {
-    expect(parseSceneFileName("12-chapter-10.txt")).toEqual({
+    expect(parseSceneFileName("12-chapter-10.card")).toEqual({
       stem: "12-chapter-10",
       order: 12,
       orderText: "12",

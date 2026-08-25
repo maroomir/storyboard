@@ -277,7 +277,11 @@ async function resolveGrounding(
     options.onStage?.('사실 시트 저장 건너뜀 (동시 편집 감지)', 0, 0);
   }
 
-  return { ...scene.value, frontmatter: { ...scene.value.frontmatter, grounding: merged } };
+  return {
+    ...scene.value,
+    card: { ...scene.value.card, grounding: merged },
+    frontmatter: { ...scene.value.frontmatter, grounding: merged },
+  };
 }
 
 interface AssembledSceneContext {

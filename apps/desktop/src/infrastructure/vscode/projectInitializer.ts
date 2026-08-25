@@ -11,7 +11,7 @@ draft/
 manuscript/
 character/.sample.card
 background/.sample.card
-scene/.sample.txt
+scene/.sample.card
 `;
 
 export async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {

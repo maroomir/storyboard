@@ -146,11 +146,11 @@ export class WorkspaceStore {
     const scenes: SceneSummary[] = [];
 
     for (const name of names) {
-      if (!name.endsWith('.txt') || name.startsWith('.')) {
+      if (!name.endsWith('.card') || name.startsWith('.')) {
         continue;
       }
 
-      const parts = parseSceneStem(name.slice(0, -'.txt'.length));
+      const parts = parseSceneStem(name.slice(0, -'.card'.length));
       if (!parts) {
         continue;
       }
@@ -171,7 +171,7 @@ export class WorkspaceStore {
     const raw = await this.readText(relativePath);
 
     return {
-      value: parseScene(raw, `${sceneStem}.txt`),
+      value: parseScene(raw, `${sceneStem}.card`),
       relativePath,
       contentHash: hashContent(raw),
     };
