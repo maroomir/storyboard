@@ -20,11 +20,11 @@ All harness and test commands below run from `apps/desktop` (the harness include
 ## Inputs
 
 - workspace path (a Storyboard project dir with `scene/`, `gt/`, `character/`, `background/`, `.storyboard/project.json`)
-- scene file name `NN-slug.txt`; its gt is `gt/NN-slug.md`
+- scene file name `NN-slug.card`; its gt is `gt/NN-slug.md`
 
 ## Invariants (non-negotiable)
 
-- **Source `scene/*.txt` is IMMUTABLE.** Never edit or augment it. Quality must come from the pipeline (`apps/desktop/src/`) + the workspace cards.
+- **Source `scene/*.card` is IMMUTABLE.** Never edit or augment it. Quality must come from the pipeline (`apps/desktop/src/`) + the workspace cards.
 - **gt is the evaluation ORACLE only.** It may inform character/background cards, but must NEVER be injected into generation prompts.
 - **Provider:** codex (gpt-5.5) default; the harness auto-falls-back to claude-code (sonnet-4.6) on a codex usage-limit mid-run. Force with `SCENE_PROVIDER=claude-code`.
 - **Every `apps/desktop/src/` change is tested** by the test-engineer; **commit per validated feature, never batch**. Branch first if on `main`.
@@ -40,10 +40,10 @@ All harness and test commands below run from `apps/desktop` (the harness include
 ## Loop
 
 1. **Generate** (writes `draft/NN-slug.md`):
-   `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.txt> npx vitest run --config vitest.harness.config.ts generateGuerrila`
+   `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts generateGuerrila`
    Back up each iteration to `<ws>/draft-history/` before regenerating.
 2. **Objective coverage:**
-   `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.txt> npx vitest run --config vitest.harness.config.ts coverageCheck`
+   `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts coverageCheck`
    Read `coveredRatio` + `missing` / `outOfOrder` beat indices (the `checkSceneCoverage` feature).
 3. **Qualitative eval:** hand the draft + gt + source to `scenario-analyst`; it scores with `./rubric.md` (gate A, 4 axes, 6-dim /30).
 4. **Diagnose** the single highest-leverage gap (gate-A failures first: truncation/order).
