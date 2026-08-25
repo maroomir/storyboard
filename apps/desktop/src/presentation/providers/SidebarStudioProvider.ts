@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import {
   draftPath,
-  isDirectSceneTextFile,
+  isDirectSceneCardFile,
   isDraftMarkdownFile,
 } from '../../infrastructure/vscode/pathConventions';
 import {
@@ -169,7 +169,7 @@ async function computeStudioTarget(editor: vscode.TextEditor | undefined): Promi
     };
   }
 
-  if (isDirectSceneTextFile(uri, workspaceFolder)) {
+  if (isDirectSceneCardFile(uri, workspaceFolder)) {
     const parts = parseSceneFileName(uri.path.split('/').pop() ?? '');
 
     if (!parts) {

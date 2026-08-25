@@ -66,7 +66,7 @@ async function readSceneOrUndefined(
     return await readSceneFile(
       scenePath(workspaceRoot, sceneStem),
       vscodeFsAdapter,
-      `${sceneStem}.txt`,
+      `${sceneStem}.card`,
     );
   } catch {
     return undefined;

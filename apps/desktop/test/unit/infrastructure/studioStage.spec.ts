@@ -8,12 +8,12 @@ const workspaceRoot = vscode.Uri.file("/workspace")
 
 const sceneTarget: StudioTarget = {
   kind: "scene",
-  label: "01-intro.txt",
-  sceneUri: "file:///workspace/scene/01-intro.txt",
+  label: "01-intro.card",
+  sceneUri: "file:///workspace/scene/01-intro.card",
   hasSelection: false
 }
 
-const sceneText = ["---", "title: 첫 등교", "---", "본문"].join("\n")
+const sceneText = ["type: scene", "id: 01-intro", "title: 첫 등교", "summary: 본문"].join("\n")
 const draftText = [
   "---",
   "sceneStem: 01-intro",
@@ -59,7 +59,7 @@ describe("readStudioStage", () => {
 
   it("reads the seed title and the draft facts", async () => {
     stubWorkspace({
-      "/workspace/scene/01-intro.txt": sceneText,
+      "/workspace/scene/01-intro.card": sceneText,
       "/workspace/draft/01-intro.md": draftText
     })
 
@@ -77,7 +77,7 @@ describe("readStudioStage", () => {
   })
 
   it("leaves the draft facts empty when no draft exists", async () => {
-    stubWorkspace({ "/workspace/scene/01-intro.txt": sceneText })
+    stubWorkspace({ "/workspace/scene/01-intro.card": sceneText })
 
     const stage = await readStudioStage(workspaceRoot, sceneTarget)
 
@@ -88,7 +88,7 @@ describe("readStudioStage", () => {
   it("counts the live draft as one past the highest archived revision", async () => {
     stubWorkspace(
       {
-        "/workspace/scene/01-intro.txt": sceneText,
+        "/workspace/scene/01-intro.card": sceneText,
         "/workspace/draft/01-intro.md": draftText
       },
       ["2026-08-05-10-00-rev-01.md", "2026-08-06-09-00-rev-02.md"]
@@ -101,7 +101,7 @@ describe("readStudioStage", () => {
 
   it("leaves the draft unversioned when no history is archived", async () => {
     stubWorkspace({
-      "/workspace/scene/01-intro.txt": sceneText,
+      "/workspace/scene/01-intro.card": sceneText,
       "/workspace/draft/01-intro.md": draftText
     })
 
@@ -123,14 +123,14 @@ describe("readStudioStage", () => {
       ].join("\n")
 
     stubWorkspace({
-      "/workspace/scene/01-intro.txt": sceneText,
+      "/workspace/scene/01-intro.card": sceneText,
       "/workspace/.storyboard/outline/revision-plan.yaml": plan(0)
     })
     expect((await readStudioStage(workspaceRoot, sceneTarget))?.review).toBe("clean")
 
     vi.restoreAllMocks()
     stubWorkspace({
-      "/workspace/scene/01-intro.txt": sceneText,
+      "/workspace/scene/01-intro.card": sceneText,
       "/workspace/.storyboard/outline/revision-plan.yaml": plan(2)
     })
     expect((await readStudioStage(workspaceRoot, sceneTarget))?.review).toBe("issues")

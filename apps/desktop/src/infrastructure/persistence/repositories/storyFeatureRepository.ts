@@ -20,7 +20,10 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
       readRequiredText(paths.projectJson, '.storyboard/project.json'),
-      readTextFiles(paths.sceneDirectory, (name) => name.endsWith('.txt') && !name.startsWith('.')),
+      readTextFiles(
+        paths.sceneDirectory,
+        (name) => name.endsWith('.card') && !name.startsWith('.'),
+      ),
       readCardFiles(paths.characterDirectory, paths.backgroundDirectory),
       readOptionalText(paths.bibleCanon),
     ]);

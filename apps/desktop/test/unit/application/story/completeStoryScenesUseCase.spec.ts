@@ -85,8 +85,8 @@ describe('CompleteStoryScenesUseCase', () => {
     }).execute(workspaceRoot);
 
     expect(proposal.scenes.map((scene) => scene.fileName)).toEqual([
-      '04-choice.txt',
-      '05-ending.txt',
+      '04-choice.card',
+      '05-ending.card',
     ]);
     expect(proposal.scenes[0]?.content).toContain('characters:');
     expect(proposal.centralQuestion).toBe('무엇을 남길 것인가?');

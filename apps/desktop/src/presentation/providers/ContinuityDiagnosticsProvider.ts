@@ -82,7 +82,7 @@ class ContinuityDiagnosticsController {
 
     const paths = getStoryboardProjectPaths(workspaceFolder.uri);
     const sceneStem = resolveSceneStem(document);
-    const sceneFileName = `${sceneStem}.txt`;
+    const sceneFileName = `${sceneStem}.card`;
 
     let factLines: string[];
     try {

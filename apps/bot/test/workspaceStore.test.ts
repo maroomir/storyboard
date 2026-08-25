@@ -63,15 +63,15 @@ describe('WorkspaceStore', () => {
   });
 
   it('lists scenes ordered by their numeric prefix', async () => {
-    fixture.write('scene/02-second.txt', 'second\n');
-    fixture.write('scene/01-first.txt', 'first\n');
-    fixture.write('scene/.sample.txt', 'ignored\n');
+    fixture.write('scene/02-second.card', 'type: scene\nid: 02-second\nsummary: second\n');
+    fixture.write('scene/01-first.card', 'type: scene\nid: 01-first\nsummary: first\n');
+    fixture.write('scene/.sample.card', 'ignored\n');
     fixture.write('scene/not-a-scene.md', 'ignored\n');
 
     const scenes = await store.listScenes();
 
     expect(scenes.map((scene) => scene.stem)).toEqual(['01-first', '02-second']);
-    expect(scenes[0]?.relativePath).toBe('scene/01-first.txt');
+    expect(scenes[0]?.relativePath).toBe('scene/01-first.card');
   });
 
   it('returns undefined for optional files that do not exist', async () => {

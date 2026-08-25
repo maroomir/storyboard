@@ -47,7 +47,7 @@ import {
 import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
 
 const workspaceRoot = vscode.Uri.file("/ws")
-const sceneUri = vscode.Uri.file("/ws/scene/01-intro.txt")
+const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
 const workspaceFolder: WorkspaceFolder = { uri: workspaceRoot as never, name: "ws", index: 0 }
 
 const fakeScene = {

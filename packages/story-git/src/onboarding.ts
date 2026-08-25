@@ -13,7 +13,7 @@ draft/
 manuscript/
 character/.sample.card
 background/.sample.card
-scene/.sample.txt
+scene/.sample.card
 `;
 
 const GITIGNORE_MARKER = '# Storyboard generated files';

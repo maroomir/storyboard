@@ -55,18 +55,18 @@ describe("buildSceneSeeds", () => {
     const seeds = buildSceneSeeds(plan, 2)
 
     expect(seeds.map((seed) => seed.fileName)).toEqual([
-      "01-arrival.txt",
-      "02-first-class.txt",
-      "03-rumor.txt"
+      "01-arrival.card",
+      "02-first-class.card",
+      "03-rumor.card"
     ])
   })
 
   it("respects the configured prefix digit count", () => {
     const seeds = buildSceneSeeds(plan, 3)
-    expect(seeds[0]?.fileName).toBe("001-arrival.txt")
+    expect(seeds[0]?.fileName).toBe("001-arrival.card")
   })
 
-  it("produces valid scene files with frontmatter and seed body", () => {
+  it("produces valid scene cards with frontmatter view and seed body", () => {
     const [first] = buildSceneSeeds(plan, 2)
     const scene = parseScene(first.content, first.fileName)
 
@@ -153,6 +153,6 @@ describe("buildSceneSeeds", () => {
     }
 
     const seeds = buildSceneSeeds(koreanPlan, 2)
-    expect(seeds.map((seed) => seed.fileName)).toEqual(["01-scene-1.txt", "02-scene-2.txt"])
+    expect(seeds.map((seed) => seed.fileName)).toEqual(["01-scene-1.card", "02-scene-2.card"])
   })
 })

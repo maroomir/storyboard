@@ -11,7 +11,7 @@ import {
   uriExists,
 } from '../../infrastructure/vscode/workspace';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneFileName, serializeSceneCard } from '@storyboard/story-format';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
@@ -36,7 +36,7 @@ async function openDraftForScene(invokedUri?: vscode.Uri): Promise<void> {
 
   if (!sceneUri || sceneUri.scheme !== 'file') {
     await vscode.window.showErrorMessage(
-      '씬 파일을 선택하거나 `scene` 폴더의 `.txt` 파일을 연 뒤 다시 시도해 주세요.',
+      '씬 파일을 선택하거나 `scene` 폴더의 `.card` 파일을 연 뒤 다시 시도해 주세요.',
     );
     return;
   }
@@ -52,7 +52,7 @@ async function openDraftForScene(invokedUri?: vscode.Uri): Promise<void> {
   const parts = parseSceneFileName(fileName);
 
   if (!parts) {
-    await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.txt` 형식이어야 합니다.');
+    await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
     return;
   }
 
@@ -110,7 +110,7 @@ async function createNewScene(): Promise<void> {
 
   const slug = await vscode.window.showInputBox({
     title: '새 씬 슬러그',
-    prompt: `파일명: ${prefix}-<slug>.txt`,
+    prompt: `파일명: ${prefix}-<slug>.card`,
     ignoreFocusOut: true,
     validateInput: validateSceneSlugInput,
   });
@@ -127,8 +127,11 @@ async function createNewScene(): Promise<void> {
     return;
   }
 
-  const emptySceneBody = '---\n---\n\n';
-  await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(emptySceneBody));
+  const emptySceneCard = serializeSceneCard({
+    type: 'scene',
+    id: `${prefix}-${normalizedSlug}`,
+  });
+  await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(emptySceneCard));
 
   const document = await vscode.workspace.openTextDocument(sceneUri);
   await vscode.window.showTextDocument(document);

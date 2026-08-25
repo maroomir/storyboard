@@ -135,7 +135,7 @@ async function runCommand(
 
   if (!sceneUri) {
     await vscode.window.showErrorMessage(
-      '씬 파일 URI가 없습니다. `scene` 폴더의 `.txt` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
+      '씬 파일 URI가 없습니다. `scene` 폴더의 `.card` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
     );
     return;
   }

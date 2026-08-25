@@ -5,7 +5,7 @@ import type {
   ApplyDraftFormatUseCase,
 } from '../../application/drafts/applyDraftFormatUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { isDirectSceneTextFile } from '../../infrastructure/vscode/pathConventions';
+import { isDirectSceneCardFile } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
 
@@ -79,9 +79,9 @@ async function runApplyDraftFormatForScene(
     return;
   }
 
-  if (!isDirectSceneTextFile(sceneUri, workspaceFolder)) {
+  if (!isDirectSceneCardFile(sceneUri, workspaceFolder)) {
     await vscode.window.showErrorMessage(
-      'Storyboard 씬 파일만 처리할 수 있습니다. `scene/NN-slug.txt` 형식의 파일을 사용해 주세요.',
+      'Storyboard 씬 파일만 처리할 수 있습니다. `scene/NN-slug.card` 형식의 파일을 사용해 주세요.',
     );
     return;
   }
@@ -90,7 +90,7 @@ async function runApplyDraftFormatForScene(
   const nameParts = parseSceneFileName(fileName);
 
   if (!nameParts) {
-    await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.txt` 형식이어야 합니다.');
+    await vscode.window.showErrorMessage('씬 파일명은 `NN-slug.card` 형식이어야 합니다.');
     return;
   }
 
@@ -138,7 +138,7 @@ async function runCommand(
 
   if (!sceneUri) {
     await vscode.window.showErrorMessage(
-      '씬 파일 URI가 없습니다. `scene` 폴더의 `.txt` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
+      '씬 파일 URI가 없습니다. `scene` 폴더의 `.card` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
     );
     return;
   }

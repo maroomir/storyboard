@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.txt$/;
+export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
+export const legacySceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.txt$/;
 export const sceneStemPattern = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
 
 // 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
@@ -37,6 +38,29 @@ export const sceneFrontmatterSchema = z
   })
   .passthrough();
 
+export const sceneCardSchema = z.object({
+  type: z.literal('scene'),
+  id: z.string().regex(sceneStemPattern, {
+    message: "Scene card id는 'NN-slug' 형식이어야 합니다.",
+  }),
+  title: z.string().trim().min(1).optional(),
+  characters: z.array(z.string().trim().min(1)).optional(),
+  location: z.string().trim().min(1).optional(),
+  mood: z.string().trim().min(1).optional(),
+  relationStage: z.string().trim().min(1).optional(),
+  targetWordCount: z.number().int().positive().optional(),
+  grounding: sceneGroundingSchema.optional(),
+  purpose: z.string().trim().min(1).optional(),
+  conflict: z.string().trim().min(1).optional(),
+  twist: z.string().trim().min(1).optional(),
+  emotionalShift: z.string().trim().min(1).optional(),
+  foreshadowing: z.array(z.string().trim().min(1)).optional(),
+  neededCanon: z.array(z.string().trim().min(1)).optional(),
+  summary: z.string().optional(),
+});
+
+export type SceneCard = z.infer<typeof sceneCardSchema>;
+
 export interface SceneFileNameParts {
   readonly stem: string;
   readonly order: number;
@@ -51,8 +75,72 @@ export interface SceneFile {
   readonly order: number;
   readonly orderText: string;
   readonly slug: string;
+  readonly card: SceneCard;
   readonly frontmatter: SceneFrontmatter;
   readonly body: string;
+}
+
+export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
+  return {
+    ...(card.title === undefined ? {} : { title: card.title }),
+    ...(card.characters === undefined ? {} : { characters: card.characters }),
+    ...(card.location === undefined ? {} : { location: card.location }),
+    ...(card.mood === undefined ? {} : { mood: card.mood }),
+    ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
+    ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
+    ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
+  };
+}
+
+export const sceneSeedSectionLabels = {
+  purpose: '목적',
+  conflict: '갈등',
+  twist: '반전',
+  emotionalShift: '감정 변화',
+  foreshadowing: '회수할 복선',
+  neededCanon: '필요 설정',
+  targetWordCount: '목표 분량',
+} as const;
+
+// NOTE: 프롬프트는 씬 의도를 하나의 텍스트로 받는다. 구조 필드를 기존 씬 시드와 같은
+// `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다.
+export function renderSceneCardBody(card: SceneCard): string {
+  const blocks: string[] = [];
+
+  if (card.purpose !== undefined) {
+    blocks.push(`[${sceneSeedSectionLabels.purpose}]\n${card.purpose}`);
+  }
+  if (card.conflict !== undefined) {
+    blocks.push(`[${sceneSeedSectionLabels.conflict}]\n${card.conflict}`);
+  }
+  if (card.twist !== undefined) {
+    blocks.push(`[${sceneSeedSectionLabels.twist}]\n${card.twist}`);
+  }
+  if (card.emotionalShift !== undefined) {
+    blocks.push(`[${sceneSeedSectionLabels.emotionalShift}]\n${card.emotionalShift}`);
+  }
+  if (card.foreshadowing !== undefined && card.foreshadowing.length > 0) {
+    blocks.push(
+      `[${sceneSeedSectionLabels.foreshadowing}]\n${card.foreshadowing.map((item) => `- ${item}`).join('\n')}`,
+    );
+  }
+  if (card.neededCanon !== undefined && card.neededCanon.length > 0) {
+    blocks.push(
+      `[${sceneSeedSectionLabels.neededCanon}]\n${card.neededCanon.map((item) => `- ${item}`).join('\n')}`,
+    );
+  }
+  if (card.targetWordCount !== undefined) {
+    blocks.push(
+      `[${sceneSeedSectionLabels.targetWordCount}]\n약 ${card.targetWordCount.toLocaleString('en-US')}자`,
+    );
+  }
+
+  const summary = card.summary?.trim();
+  if (summary !== undefined && summary.length > 0) {
+    blocks.push(summary);
+  }
+
+  return blocks.length > 0 ? `${blocks.join('\n\n')}\n` : '';
 }
 
 export function parseSceneFileName(fileName: string): SceneFileNameParts | undefined {

@@ -63,14 +63,15 @@ describe('generation jobs end to end', () => {
     copySharedFixture(fixture, 'cards', 'character.card', 'character/elia.card');
     copySharedFixture(fixture, 'cards', 'background.card', 'background/school.card');
     fixture.write(
-      'scene/01-prologue.txt',
+      'scene/01-prologue.card',
       [
-        '---',
+        'type: scene',
+        'id: 01-prologue',
         'title: 프롤로그',
-        'characters: [elia]',
+        'characters:',
+        '  - elia',
         'location: school',
-        '---',
-        '엘리아의 첫 장면.',
+        'summary: 엘리아의 첫 장면.',
         '',
       ].join('\n'),
     );
@@ -264,7 +265,7 @@ describe('generation jobs end to end', () => {
   });
 
   it('queues only draftless scenes for /draft all and reports the batch', async () => {
-    fixture.write('scene/02-turn.txt', 'turn seed\n');
+    fixture.write('scene/02-turn.card', 'type: scene\nid: 02-turn\nsummary: turn seed\n');
     fixture.write('draft/01-prologue.md', '이미 있는 초안\n');
 
     await router.handleUpdate(message('/draft all'));

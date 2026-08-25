@@ -27,7 +27,7 @@ export class SceneBatchRepository implements ISceneBatchRepository {
     const items = entries
       .filter(
         ([name, type]) =>
-          type === vscode.FileType.File && name.endsWith('.txt') && !isHiddenSceneFileName(name),
+          type === vscode.FileType.File && name.endsWith('.card') && !isHiddenSceneFileName(name),
       )
       .map(([name]) => ({ name, parts: parseSceneFileName(name) }))
       .filter(

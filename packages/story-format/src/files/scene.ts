@@ -3,15 +3,17 @@ import { ZodError } from 'zod';
 
 import {
   parseSceneFileName,
-  sceneFrontmatterSchema,
+  renderSceneCardBody,
+  sceneCardSchema,
+  toSceneFrontmatter,
+  type SceneCard,
   type SceneFile,
-  type SceneFrontmatter,
 } from '../scene';
 
 export type SceneParseErrorCode =
   | 'invalid-scene-file-name'
-  | 'invalid-frontmatter-yaml'
-  | 'invalid-frontmatter-schema';
+  | 'invalid-scene-card-yaml'
+  | 'invalid-scene-card-schema';
 
 export interface SceneFileSystem {
   readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
@@ -34,17 +36,52 @@ export function parseScene(rawScene: string, fileName: string): SceneFile {
   if (!fileNameParts) {
     throw new SceneParseError(
       'invalid-scene-file-name',
-      'Scene 파일명은 `NN-slug.txt` 형식이어야 합니다.',
+      'Scene 파일명은 `NN-slug.card` 형식이어야 합니다.',
     );
   }
 
-  const parsedContent = parseSceneContent(rawScene);
+  const card = parseSceneCard(rawScene);
 
   return {
     ...fileNameParts,
-    frontmatter: parsedContent.frontmatter,
-    body: parsedContent.body,
+    card,
+    frontmatter: toSceneFrontmatter(card),
+    body: renderSceneCardBody(card),
   };
+}
+
+export function parseSceneCard(rawScene: string): SceneCard {
+  let parsedYaml: unknown;
+
+  try {
+    parsedYaml = yaml.load(rawScene.replace(/\r\n/g, '\n')) ?? {};
+  } catch (error) {
+    throw new SceneParseError(
+      'invalid-scene-card-yaml',
+      'Scene card YAML을 파싱할 수 없습니다.',
+      error,
+    );
+  }
+
+  try {
+    return sceneCardSchema.parse(parsedYaml);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const details = error.issues
+        .map((issue) => {
+          const path = issue.path.join('.');
+          return path.length > 0 ? `${path}: ${issue.message}` : issue.message;
+        })
+        .join('; ');
+      throw new SceneParseError(
+        'invalid-scene-card-schema',
+        `Scene card 스키마가 올바르지 않습니다. (${details})`,
+        error,
+      );
+    }
+
+    throw error;
+  }
 }
 
 export async function readSceneFile(
@@ -56,63 +93,44 @@ export async function readSceneFile(
   return parseScene(new TextDecoder().decode(bytes), fileName);
 }
 
-function parseSceneContent(rawScene: string): {
-  readonly frontmatter: SceneFrontmatter;
-  readonly body: string;
+export function serializeSceneCard(card: SceneCard): string {
+  const parsedCard = sceneCardSchema.parse(card);
+
+  return yaml.dump(normalizeSceneCardForSerialization(parsedCard), {
+    lineWidth: -1,
+    noRefs: true,
+    sortKeys: false,
+  });
+}
+
+// NOTE: Entity 카드의 canonicalizeCardText와 같은 계약 — 정규화는 별도 명령(/doctor)이 의도적으로
+// 수행하고, 내용 편집 diff에는 섞지 않는다.
+export function canonicalizeSceneCardText(rawScene: string): {
+  readonly text: string;
+  readonly changed: boolean;
 } {
-  const normalizedScene = rawScene.replace(/\r\n/g, '\n');
+  const text = serializeSceneCard(parseSceneCard(rawScene));
 
-  if (!normalizedScene.startsWith('---\n')) {
-    return {
-      frontmatter: {},
-      body: normalizedScene,
-    };
-  }
+  return { text, changed: text !== rawScene };
+}
 
-  const closingFenceIndex = normalizedScene.indexOf('\n---', '---\n'.length);
-
-  if (closingFenceIndex === -1) {
-    return {
-      frontmatter: {},
-      body: normalizedScene,
-    };
-  }
-
-  const rawFrontmatter = normalizedScene.slice('---\n'.length, closingFenceIndex);
-  const bodyStartIndex = closingFenceIndex + '\n---'.length;
-  const body = normalizedScene.slice(bodyStartIndex).replace(/^\n/, '');
-
+function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
   return {
-    frontmatter: parseSceneFrontmatter(rawFrontmatter),
-    body,
+    type: card.type,
+    id: card.id,
+    ...(card.title === undefined ? {} : { title: card.title }),
+    ...(card.characters === undefined ? {} : { characters: card.characters }),
+    ...(card.location === undefined ? {} : { location: card.location }),
+    ...(card.mood === undefined ? {} : { mood: card.mood }),
+    ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
+    ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
+    ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
+    ...(card.purpose === undefined ? {} : { purpose: card.purpose }),
+    ...(card.conflict === undefined ? {} : { conflict: card.conflict }),
+    ...(card.twist === undefined ? {} : { twist: card.twist }),
+    ...(card.emotionalShift === undefined ? {} : { emotionalShift: card.emotionalShift }),
+    ...(card.foreshadowing === undefined ? {} : { foreshadowing: card.foreshadowing }),
+    ...(card.neededCanon === undefined ? {} : { neededCanon: card.neededCanon }),
+    ...(card.summary === undefined ? {} : { summary: card.summary }),
   };
 }
-
-function parseSceneFrontmatter(rawFrontmatter: string): SceneFrontmatter {
-  let parsedYaml: unknown;
-
-  try {
-    parsedYaml = yaml.load(rawFrontmatter) ?? {};
-  } catch (error) {
-    throw new SceneParseError(
-      'invalid-frontmatter-yaml',
-      'Scene frontmatter YAML을 파싱할 수 없습니다.',
-      error,
-    );
-  }
-
-  try {
-    return sceneFrontmatterSchema.parse(parsedYaml);
-  } catch (error) {
-    if (error instanceof ZodError) {
-      throw new SceneParseError(
-        'invalid-frontmatter-schema',
-        'Scene frontmatter 스키마가 올바르지 않습니다.',
-        error,
-      );
-    }
-
-    throw error;
-  }
-}
-

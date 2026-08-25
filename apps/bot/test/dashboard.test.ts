@@ -37,7 +37,7 @@ describe('dashboard server', () => {
     vi.clearAllMocks();
     fixture = createWorkspaceFixture();
     copySharedFixture(fixture, 'cards', 'character.card', 'character/elia.card');
-    fixture.write('scene/01-prologue.txt', 'scene\n');
+    fixture.write('scene/01-prologue.card', 'type: scene\nid: 01-prologue\nsummary: scene\n');
     fixture.write('draft/01-prologue.md', 'draft\n');
     execFileSync('git', ['-C', fixture.root, 'add', '--all'], { shell: false });
     execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'seed'], { shell: false });

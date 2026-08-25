@@ -9,12 +9,12 @@ import {
 describe("newScene helpers", () => {
   it("computes next order as 1 when there are no valid scene files", () => {
     expect(computeNextSceneOrderFromSceneFileNames([])).toBe(1)
-    expect(computeNextSceneOrderFromSceneFileNames(["readme.txt", "bad.txt"])).toBe(1)
+    expect(computeNextSceneOrderFromSceneFileNames(["readme.card", "01-legacy.txt"])).toBe(1)
   })
 
   it("computes next order from the maximum parsed scene order", () => {
-    expect(computeNextSceneOrderFromSceneFileNames(["01-prologue.txt", "02-turn.txt"])).toBe(3)
-    expect(computeNextSceneOrderFromSceneFileNames(["10-a.txt", "2-b.txt"])).toBe(11)
+    expect(computeNextSceneOrderFromSceneFileNames(["01-prologue.card", "02-turn.card"])).toBe(3)
+    expect(computeNextSceneOrderFromSceneFileNames(["10-a.card", "2-b.card"])).toBe(11)
   })
 
   it("zero-pads scene order prefix using project digit count", () => {

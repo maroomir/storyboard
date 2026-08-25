@@ -32,7 +32,7 @@ export function validateSceneSlugInput(slug: string): string | undefined {
     return '슬러그는 영문 소문자·숫자로 시작하고, 이후에는 소문자·숫자·하이픈만 사용할 수 있습니다.';
   }
 
-  const probeName = `01-${trimmed}.txt`;
+  const probeName = `01-${trimmed}.card`;
   if (!sceneFileNamePattern.test(probeName)) {
     return '씬 파일명 규칙에 맞지 않는 슬러그입니다.';
   }

@@ -72,15 +72,16 @@ describe('scene draft generation', () => {
     copySharedFixture(fixture, 'cards', 'background.card', 'background/school.card');
     // The shared fixture points at sample ids; wire it to the fixture cards this test copies in.
     fixture.write(
-      'scene/01-prologue.txt',
+      'scene/01-prologue.card',
       [
-        '---',
+        'type: scene',
+        'id: 01-prologue',
         'title: 프롤로그',
-        'characters: [elia]',
+        'characters:',
+        '  - elia',
         'location: school',
         'mood: 시작',
-        '---',
-        '엘리아가 학교에서 첫 장면을 시작한다.',
+        'summary: 엘리아가 학교에서 첫 장면을 시작한다.',
         '',
       ].join('\n'),
     );
@@ -154,19 +155,19 @@ describe('scene draft generation', () => {
 
     const scene = await store.readScene('01-prologue');
     expect(scene.value.frontmatter.grounding).toBeDefined();
-    // The surgical write keeps every other key, including the inline sequence, byte-for-byte.
-    const raw = readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8');
-    expect(raw).toContain('characters: [elia]');
+    // The grounding write re-serializes the card canonically but keeps every other field.
+    const raw = readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8');
+    expect(raw).toContain('characters:\n  - elia');
     expect(raw).toContain('grounding:');
     expect(raw).toContain('엘리아가 학교에서 첫 장면을 시작한다.');
 
     const log = fixture.git('log', '--format=%s').split('\n');
-    expect(log[0]).toBe('storygram: ground scene/01-prologue.txt');
+    expect(log[0]).toBe('storygram: ground scene/01-prologue.card');
   });
 
   it('leaves the scene untouched when auto grounding is off', async () => {
     const engine = createAiEngine({ providers: { default: 'mock' } });
-    const before = readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8');
+    const before = readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8');
     const logBefore = fixture.git('log', '--format=%s');
     const generator = new SceneDraftGenerator({
       store,
@@ -179,22 +180,23 @@ describe('scene draft generation', () => {
 
     await generator.generate('01-prologue', () => false);
 
-    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.txt'), 'utf8')).toBe(before);
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8')).toBe(before);
     expect(fixture.git('log', '--format=%s')).toBe(logBefore);
   });
 
   it('keeps user-authored grounding and only fills the empty fields', async () => {
     fixture.write(
-      'scene/01-prologue.txt',
+      'scene/01-prologue.card',
       [
-        '---',
+        'type: scene',
+        'id: 01-prologue',
         'title: 프롤로그',
-        'characters: [elia]',
+        'characters:',
+        '  - elia',
         'location: school',
         'grounding:',
         '  incident: 사용자가 적어 둔 사건',
-        '---',
-        '엘리아가 학교에서 첫 장면을 시작한다.',
+        'summary: 엘리아가 학교에서 첫 장면을 시작한다.',
         '',
       ].join('\n'),
     );

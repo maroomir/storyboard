@@ -127,9 +127,11 @@ description:
 }
 
 function createSampleScene(): string {
-  return `# 샘플 씬
-
-Storyboard 프로젝트를 시작하기 위한 샘플 텍스트입니다.
-실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
+  return `type: scene
+id: 00-sample
+title: 샘플 씬
+summary: |-
+  Storyboard 프로젝트를 시작하기 위한 샘플 씬 카드입니다.
+  실제 작업에 반영할 씬은 \`storyboard.scene.create\` 명령으로 생성해 주세요.
 `;
 }
