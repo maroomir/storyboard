@@ -41,7 +41,8 @@ import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
-  routeReviewIssues
+  routeReviewIssues,
+  validateDraftCandidate
 } from "@storyboard/story-pipeline"
 import { buildStyleDirective } from "@storyboard/story-ai"
 
@@ -74,6 +75,9 @@ const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "0
 // NOTE: run the G-3 revise loop after generation unless SCENE_REVISE=0; iterations bound CLI cost.
 const harnessRunRevise = (process.env.SCENE_REVISE ?? process.env.GUERRILA_REVISE) !== "0"
 const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process.env.GUERRILA_REVISE_ITERS ?? "2")
+
+// NOTE: 제품 기본값과 같은 압축 허용치. 수정본이 이보다 많이 줄이면 원본을 지킨다.
+const harnessMaxCompressionPercent = Number(process.env.SCENE_MAX_COMPRESSION ?? "20")
 
 // NOTE: mirror the extension's storyboard.draft.keepHistory — archive the prior draft under
 // .draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md before the headless run overwrites it. On unless
@@ -260,6 +264,7 @@ interface HarnessReviseInput {
   readonly format: ProjectFormat
   readonly initialBody: string
   readonly sceneStem: string
+  readonly targetLength: number | undefined
 }
 
 // NOTE: headless mirror of runReviseDraftWorkflow (which imports vscode). Exercises the G-3 routing
@@ -333,10 +338,26 @@ async function runHarnessReviseLoop(input: HarnessReviseInput): Promise<{
     console.log(`[revise ${revisionCount}] groups=${routing.groups.length} global=${routing.global.length}`)
 
     for (const instructions of revisionPasses) {
-      body = await input.aiService.reviseDraft(
+      const candidate = await input.aiService.reviseDraft(
         { body, format: input.format, instructions, intent: input.intent, facts: input.factLines },
         { providerId: input.providerId, attribution }
       )
+      // NOTE: 제품 경로(runReviseLoop)와 같은 압축 가드. 없으면 수정본이 원고를 목표 아래로
+      // 깎아도 그대로 채택되어, 하네스 결과가 제품보다 짧게 나온다.
+      const validation = validateDraftCandidate(body, candidate, {
+        maxCompressionPercent: harnessMaxCompressionPercent,
+        targetLength: input.targetLength
+      })
+
+      if (!validation.accepted) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[revise rejected] reason=${validation.reason} ${body.length}자 → ${validation.candidateLength}자 (원본 유지)`
+        )
+        break
+      }
+
+      body = candidate
     }
 
     revisionCount += 1
@@ -441,7 +462,8 @@ test("regenerate guerrila draft via codex pipeline", async () => {
         qualityCriteria: project.setting?.qualityCriteria ?? [],
         format: project.format,
         initialBody: body,
-        sceneStem: scene.stem
+        sceneStem: scene.stem,
+        targetLength: styleDirective?.targetWordCount
       })
 
       body = revision.body
