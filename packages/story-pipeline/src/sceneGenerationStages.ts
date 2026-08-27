@@ -211,9 +211,17 @@ export async function generateSceneDialogue(
 
     // NOTE: 앞 구간에서 실제로 생성된 대사의 압축 tail을 이어 넘겨 장면 간 연결성을 유지한다.
     // 직전 상황의 원문이 아니라 이미 쓰여진 대사를 봐야 인물 감정·맥락이 누적된다.
-    const prior: string | undefined =
+    // 씬 진입 컨텍스트(설정 메모·이전 씬 말미)는 tail로 대체하지 않고 모든 비트에 유지한다 —
+    // 첫 비트에만 주면 뒤 비트일수록 캐넌·직전 씬 사실에서 이탈한다.
+    const intraSceneTail: string | undefined =
       dialoguePieces.length > 0
         ? condensePreviousContext(dialoguePieces.join('\n\n'), true)
+        : undefined;
+    const prior: string | undefined =
+      intraSceneTail !== undefined
+        ? [condensedPreviousContext, intraSceneTail]
+            .filter((part): part is string => Boolean(part))
+            .join('\n\n')
         : condensedPreviousContext;
 
     const dialogueParticipants = dialogueParticipantsForSituation(
