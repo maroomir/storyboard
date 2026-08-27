@@ -14,6 +14,9 @@ export type StoryStateSection = keyof typeof storyStateSectionLabels;
 export interface StoryStateEntry {
   readonly section: StoryStateSection;
   readonly text: string;
+  // NOTE: 그 항목이 확립된 씬 번호. 앞 씬을 다시 생성할 때 뒤 씬의 상태를 읽지 않으려면
+  // 항목마다 시점이 있어야 한다. 번호가 없는 항목(구 버전 원장)은 항상 유효한 것으로 본다.
+  readonly throughScene?: number;
 }
 
 export interface StoryState {
@@ -55,14 +58,29 @@ export function parseStoryState(content: string): StoryState {
     }
 
     if (current && line.startsWith('- ')) {
-      const text = line.slice(2).trim();
-      if (text.length > 0) {
-        entries.push({ section: current, text });
+      const entry = parseEntryLine(current, line.slice(2).trim());
+      if (entry) {
+        entries.push(entry);
       }
     }
   }
 
   return { throughSceneOrder, entries };
+}
+
+const entrySceneTagPattern = /^\[(\d+)\]\s*(.+)$/;
+
+function parseEntryLine(section: StoryStateSection, text: string): StoryStateEntry | undefined {
+  if (text.length === 0) {
+    return undefined;
+  }
+
+  const tagged = entrySceneTagPattern.exec(text);
+  if (tagged?.[1] && tagged[2]) {
+    return { section, text: tagged[2], throughScene: Number.parseInt(tagged[1], 10) };
+  }
+
+  return { section, text };
 }
 
 export function serializeStoryState(state: StoryState): string {
@@ -77,7 +95,12 @@ export function serializeStoryState(state: StoryState): string {
       continue;
     }
 
-    blocks.push(`## ${label}`, ...items.map((item) => `- ${item.text}`));
+    blocks.push(
+      `## ${label}`,
+      ...items.map((item) =>
+        item.throughScene === undefined ? `- ${item.text}` : `- [${item.throughScene}] ${item.text}`,
+      ),
+    );
   }
 
   return `${blocks.join('\n')}\n`;
@@ -111,7 +134,11 @@ export function mergeStoryState(
   additions: readonly StoryStateEntry[],
   throughSceneOrder: number,
 ): StoryState {
-  const merged: StoryStateEntry[] = [...previous.entries];
+  // NOTE: 같은 씬을 다시 생성하면 그 씬이 앞서 남긴 항목은 낡은 판본이므로 걷어내고 새로 쌓는다.
+  // 그러지 않으면 폐기된 전개가 원장에 남아 뒤 씬으로 계속 전달된다.
+  const merged: StoryStateEntry[] = previous.entries.filter(
+    (entry) => entry.throughScene !== throughSceneOrder,
+  );
   const seen = new Set(merged.map((entry) => `${entry.section}:${entry.text}`));
 
   for (const addition of additions) {
@@ -126,7 +153,7 @@ export function mergeStoryState(
     }
 
     seen.add(key);
-    merged.push({ section: addition.section, text });
+    merged.push({ section: addition.section, text, throughScene: throughSceneOrder });
   }
 
   const bounded = sectionEntries.flatMap(([section]) =>
@@ -139,13 +166,25 @@ export function mergeStoryState(
   };
 }
 
-export function formatStoryStateForPrompt(state: StoryState): string | undefined {
-  if (state.entries.length === 0) {
+// NOTE: beforeSceneOrder를 주면 그 씬보다 앞에서 확립된 항목만 남긴다. 앞 씬을 다시 생성할 때
+// 뒤 씬의 상태가 프롬프트로 새는 것을 막는다.
+export function formatStoryStateForPrompt(
+  state: StoryState,
+  beforeSceneOrder?: number,
+): string | undefined {
+  const visible =
+    beforeSceneOrder === undefined
+      ? state.entries
+      : state.entries.filter(
+          (entry) => entry.throughScene === undefined || entry.throughScene < beforeSceneOrder,
+        );
+
+  if (visible.length === 0) {
     return undefined;
   }
 
   const blocks = sectionEntries.flatMap(([section, label]) => {
-    const items = state.entries.filter((entry) => entry.section === section);
+    const items = visible.filter((entry) => entry.section === section);
     return items.length > 0 ? [`${label}:`, ...items.map((item) => `- ${item.text}`)] : [];
   });
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 
+import { storyStateFactLines } from '@storyboard/story-format';
 import {
   createEmptyStoryState,
   formatStoryStateForPrompt,
@@ -90,7 +91,7 @@ describe("mergeStoryState", () => {
     const merged = mergeStoryState(sampleState, additions, 8)
 
     expect(merged.throughSceneOrder).toBe(8)
-    expect(merged.entries).toContainEqual(additions[0])
+    expect(merged.entries).toContainEqual({ ...additions[0], throughScene: 8 })
     expect(merged.entries).toContainEqual(sampleState.entries[0])
   })
 
@@ -201,5 +202,62 @@ describe("StoryStateUpdatePrompt", () => {
     expect(StoryStateUpdatePrompt.build(input, "xs").system.length).toBeLessThan(
       StoryStateUpdatePrompt.build(input, "generic").system.length
     )
+  })
+})
+
+describe("storyState scene tagging", () => {
+  const tagged: StoryState = {
+    throughSceneOrder: 3,
+    entries: [
+      { section: "facts", text: "1화 사실", throughScene: 1 },
+      { section: "facts", text: "3화 사실", throughScene: 3 },
+      { section: "facts", text: "시점 없는 구버전 항목" }
+    ]
+  }
+
+  it("round-trips the scene tag through serialize and parse", () => {
+    expect(parseStoryState(serializeStoryState(tagged))).toEqual(tagged)
+  })
+
+  it("hides entries established at or after the scene being generated", () => {
+    const prompt = formatStoryStateForPrompt(tagged, 3)
+
+    expect(prompt).toContain("1화 사실")
+    expect(prompt).toContain("시점 없는 구버전 항목")
+    expect(prompt).not.toContain("3화 사실")
+  })
+
+  it("shows everything when no scene order is given", () => {
+    expect(formatStoryStateForPrompt(tagged)).toContain("3화 사실")
+  })
+
+  it("returns undefined when every entry is from a later scene", () => {
+    const laterOnly: StoryState = {
+      throughSceneOrder: 5,
+      entries: [{ section: "facts", text: "5화 사실", throughScene: 5 }]
+    }
+
+    expect(formatStoryStateForPrompt(laterOnly, 2)).toBeUndefined()
+  })
+
+  it("stamps merged additions with the scene order", () => {
+    const merged = mergeStoryState(createEmptyStoryState(), [{ section: "facts", text: "새 사실" }], 7)
+
+    expect(merged.entries[0]?.throughScene).toBe(7)
+  })
+
+  it("replaces the same scene's earlier entries when it is regenerated", () => {
+    const merged = mergeStoryState(tagged, [{ section: "facts", text: "다시 만든 3화 사실" }], 3)
+
+    expect(merged.entries.map((entry) => entry.text)).toEqual([
+      "1화 사실",
+      "시점 없는 구버전 항목",
+      "다시 만든 3화 사실"
+    ])
+  })
+
+  it("filters continuity fact lines by scene order too", () => {
+    expect(storyStateFactLines(tagged, 3).join("\n")).not.toContain("3화 사실")
+    expect(storyStateFactLines(tagged, 3).join("\n")).toContain("1화 사실")
   })
 })

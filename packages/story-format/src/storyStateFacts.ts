@@ -5,9 +5,16 @@ import { storyStateSectionLabels, type StoryState, type StoryStateSection } from
 // 아니라 권고라 제외한다.
 const checkableSections: readonly StoryStateSection[] = ['facts', 'relations', 'revealed'];
 
-export function storyStateFactLines(state: StoryState): string[] {
+export function storyStateFactLines(state: StoryState, beforeSceneOrder?: number): string[] {
+  const visible =
+    beforeSceneOrder === undefined
+      ? state.entries
+      : state.entries.filter(
+          (entry) => entry.throughScene === undefined || entry.throughScene < beforeSceneOrder,
+        );
+
   return checkableSections.flatMap((section) =>
-    state.entries
+    visible
       .filter((entry) => entry.section === section)
       .map((entry) => `${storyStateSectionLabels[section]} — ${entry.text}`),
   );
