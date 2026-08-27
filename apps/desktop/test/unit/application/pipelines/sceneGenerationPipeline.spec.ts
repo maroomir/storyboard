@@ -158,7 +158,7 @@ describe("runSceneGenerationPipeline", () => {
       "두 번째 상황",
       expect.any(Map),
       expect.anything(),
-      "[첫 번째 상황|prev=이전 씬 말미]",
+      "이전 씬 말미\n\n[첫 번째 상황|prev=이전 씬 말미]",
       expect.objectContaining({
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
@@ -167,7 +167,8 @@ describe("runSceneGenerationPipeline", () => {
       })
     )
 
-    const joined = "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=[첫 번째 상황|prev=이전 씬 말미]]"
+    const joined =
+      "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=이전 씬 말미\n\n[첫 번째 상황|prev=이전 씬 말미]]"
     expect(ai.applyGenreFormat).toHaveBeenCalledWith(
       joined,
       "screenplay",
@@ -304,6 +305,30 @@ describe("runSceneGenerationPipeline", () => {
     expect(thirdPriorContext as string).toContain("상황2에서 만든 대사")
     expect(thirdPriorContext).not.toBe("상황2")
     expect(thirdPriorContext as string).not.toContain("상황3")
+  })
+
+  it("keeps the scene-entry previousContext in every later beat", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "상황1" },
+      { characters: ["엘리아"], situation: "상황2" },
+      { characters: ["엘리아"], situation: "상황3" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockImplementation(async (situation) => `엘리아: ${situation}의 대사`)
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      previousContext: "[설정 메모]\n- 엘리아 — 비밀: 왕족"
+    })
+
+    for (const call of ai.generatePersonaDialogue.mock.calls) {
+      expect(call[3] as string).toContain("[설정 메모]")
+    }
   })
 
   it("condenses previousContext when context condense is enabled", async () => {
