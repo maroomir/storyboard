@@ -175,7 +175,7 @@ async function readSceneStoryState(
   }
 
   const state = await readStoryState(paths.storyState, fileSystem);
-  return formatStoryStateForPrompt(state);
+  return formatStoryStateForPrompt(state, currentSceneOrder);
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {
