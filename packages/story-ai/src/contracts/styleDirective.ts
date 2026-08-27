@@ -17,6 +17,7 @@ export interface StyleDirective {
   readonly pov?: PointOfView;
   readonly genre?: string;
   readonly styleConstraints?: readonly string[];
+  readonly prohibitions?: readonly string[];
   readonly relationStage?: string;
   readonly targetWordCount?: number;
   readonly craftContract?: CraftContractOverride;
@@ -42,12 +43,15 @@ export function buildStyleDirective(
     setting?.styleConstraints && setting.styleConstraints.length > 0
       ? setting.styleConstraints
       : undefined;
+  const prohibitions =
+    setting?.prohibitions && setting.prohibitions.length > 0 ? setting.prohibitions : undefined;
   const trimmedRelationStage = relationStage?.trim();
   const directive: StyleDirective = {
     pov: setting?.pov,
     genre: setting?.genre,
     craftContract: setting?.craftContract,
     styleConstraints,
+    prohibitions,
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
     targetWordCount:
@@ -62,6 +66,7 @@ export function buildStyleDirective(
     directive.genre ||
     directive.craftContract ||
     directive.styleConstraints ||
+    directive.prohibitions ||
     directive.relationStage ||
     directive.targetWordCount
     ? directive
@@ -129,6 +134,12 @@ function styleConstraintLine(directive: StyleDirective): string | undefined {
     : undefined;
 }
 
+function prohibitionLine(directive: StyleDirective): string | undefined {
+  return directive.prohibitions && directive.prohibitions.length > 0
+    ? `작품 금지 규칙 — 어떤 장면에서도 위반하지 마라: ${directive.prohibitions.join(' / ')}`
+    : undefined;
+}
+
 function relationLine(directive: StyleDirective): string | undefined {
   return directive.relationStage
     ? `이 장면의 인물 관계 단계: ${directive.relationStage} — 이 단계에 맞는 태도와 거리감으로 표현하라.`
@@ -151,6 +162,7 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     povLine(directive),
     genreLine(directive),
     styleConstraintLine(directive),
+    prohibitionLine(directive),
     relationLine(directive),
     lengthLine(directive),
   ].filter((line): line is string => Boolean(line));
@@ -162,7 +174,10 @@ export function voiceStyleLines(directive: StyleDirective | undefined): string[]
     return [];
   }
 
-  return [genreLine(directive), styleConstraintLine(directive), relationLine(directive)].filter(
-    (line): line is string => Boolean(line),
-  );
+  return [
+    genreLine(directive),
+    styleConstraintLine(directive),
+    prohibitionLine(directive),
+    relationLine(directive),
+  ].filter((line): line is string => Boolean(line));
 }

@@ -54,6 +54,22 @@ describe("buildStyleDirective", () => {
     expect(directive?.pov).toBeUndefined()
   })
 
+  it("maps non-empty prohibitions and drops empty ones to undefined", () => {
+    const withProhibitions = buildStyleDirective(
+      settingOf({ genre: "게임 판타지", prohibitions: ["전지적 정보 금지"] })
+    )
+    expect(withProhibitions?.prohibitions).toEqual(["전지적 정보 금지"])
+
+    const withoutProhibitions = buildStyleDirective(settingOf({ genre: "게임 판타지" }))
+    expect(withoutProhibitions?.prohibitions).toBeUndefined()
+  })
+
+  it("returns a directive from prohibitions alone", () => {
+    expect(buildStyleDirective(settingOf({ prohibitions: ["무근거 부활 금지"] }))?.prohibitions).toEqual([
+      "무근거 부활 금지"
+    ])
+  })
+
   it("includes relationStage from scene metadata", () => {
     expect(buildStyleDirective(settingOf({ genre: "로맨스" }), "적대적 첫 만남")?.relationStage).toBe("적대적 첫 만남")
   })
@@ -82,24 +98,27 @@ describe("style lines", () => {
     pov: "first",
     genre: "로맨스",
     styleConstraints: ["간결체"],
+    prohibitions: ["무근거 부활 금지"],
     relationStage: "적대적 첫 만남",
     targetWordCount: 3000
   }
 
-  it("narrativeStyleLines includes pov, genre, style constraints, relation stage, and length", () => {
+  it("narrativeStyleLines includes pov, genre, style constraints, prohibitions, relation stage, and length", () => {
     const lines = narrativeStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(true)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
+    expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량") && line.includes("3,000자"))).toBe(true)
   })
 
-  it("voiceStyleLines omits pov and length but keeps genre, style, and relation stage", () => {
+  it("voiceStyleLines omits pov and length but keeps genre, style, prohibitions, and relation stage", () => {
     const lines = voiceStyleLines(directive)
     expect(lines.some((line) => line.startsWith("서술 시점:"))).toBe(false)
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
+    expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량"))).toBe(false)
   })
