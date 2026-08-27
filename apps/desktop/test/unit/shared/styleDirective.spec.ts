@@ -64,6 +64,14 @@ describe("buildStyleDirective", () => {
     expect(withoutProhibitions?.prohibitions).toBeUndefined()
   })
 
+  it("maps povCharacter from the scene card", () => {
+    expect(buildStyleDirective(settingOf({ genre: "게임 판타지" }), undefined, undefined, undefined, "한이준")?.povCharacter).toBe("한이준")
+  })
+
+  it("drops a blank povCharacter", () => {
+    expect(buildStyleDirective(undefined, undefined, undefined, undefined, "  ")).toBeUndefined()
+  })
+
   it("returns a directive from prohibitions alone", () => {
     expect(buildStyleDirective(settingOf({ prohibitions: ["무근거 부활 금지"] }))?.prohibitions).toEqual([
       "무근거 부활 금지"
@@ -99,6 +107,7 @@ describe("style lines", () => {
     genre: "로맨스",
     styleConstraints: ["간결체"],
     prohibitions: ["무근거 부활 금지"],
+    povCharacter: "한이준",
     relationStage: "적대적 첫 만남",
     targetWordCount: 3000
   }
@@ -109,6 +118,7 @@ describe("style lines", () => {
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
+    expect(lines.some((line) => line.includes("시점 인물") && line.includes("한이준"))).toBe(true)
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량") && line.includes("3,000자"))).toBe(true)
   })
@@ -119,6 +129,7 @@ describe("style lines", () => {
     expect(lines).toContain("장르·톤: 로맨스")
     expect(lines).toContain("문체 제약: 간결체")
     expect(lines.some((line) => line.includes("금지 규칙") && line.includes("무근거 부활 금지"))).toBe(true)
+    expect(lines.some((line) => line.includes("시점 인물") && line.includes("한이준"))).toBe(true)
     expect(lines.some((line) => line.includes("관계 단계"))).toBe(true)
     expect(lines.some((line) => line.includes("목표 분량"))).toBe(false)
   })
