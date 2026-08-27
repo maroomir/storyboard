@@ -119,6 +119,7 @@ export interface SceneCard {
   readonly conflict?: string
   readonly twist?: string
   readonly emotionalShift?: string
+  readonly endState?: string
   readonly foreshadowing?: readonly string[]
   readonly neededCanon?: readonly string[]
   readonly summary?: string

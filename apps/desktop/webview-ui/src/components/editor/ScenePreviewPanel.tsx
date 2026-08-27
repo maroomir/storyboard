@@ -14,11 +14,12 @@ const GROUNDING_LABELS: readonly { key: "incident" | "place" | "relation" | "tim
   { key: "time", label: "시점" }
 ]
 
-const STRUCTURE_LABELS: readonly { key: "purpose" | "conflict" | "twist" | "emotionalShift"; label: string }[] = [
+const STRUCTURE_LABELS: readonly { key: "purpose" | "conflict" | "twist" | "emotionalShift" | "endState"; label: string }[] = [
   { key: "purpose", label: "목적" },
   { key: "conflict", label: "갈등" },
   { key: "twist", label: "반전" },
-  { key: "emotionalShift", label: "감정 변화" }
+  { key: "emotionalShift", label: "감정 변화" },
+  { key: "endState", label: "종료 지점" }
 ]
 
 export function ScenePreviewPanel({

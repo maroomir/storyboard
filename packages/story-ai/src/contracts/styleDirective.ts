@@ -19,6 +19,7 @@ export interface StyleDirective {
   readonly styleConstraints?: readonly string[];
   readonly prohibitions?: readonly string[];
   readonly relationStage?: string;
+  readonly povCharacter?: string;
   readonly targetWordCount?: number;
   readonly craftContract?: CraftContractOverride;
 }
@@ -30,6 +31,7 @@ export function buildStyleDirective(
   relationStage?: string,
   targetWordCount?: number,
   sceneBody?: string,
+  povCharacter?: string,
 ): StyleDirective | undefined {
   const resolvedTargetWordCount =
     sceneBody === undefined
@@ -46,6 +48,7 @@ export function buildStyleDirective(
   const prohibitions =
     setting?.prohibitions && setting.prohibitions.length > 0 ? setting.prohibitions : undefined;
   const trimmedRelationStage = relationStage?.trim();
+  const trimmedPovCharacter = povCharacter?.trim();
   const directive: StyleDirective = {
     pov: setting?.pov,
     genre: setting?.genre,
@@ -54,6 +57,8 @@ export function buildStyleDirective(
     prohibitions,
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
+    povCharacter:
+      trimmedPovCharacter && trimmedPovCharacter.length > 0 ? trimmedPovCharacter : undefined,
     targetWordCount:
       typeof resolvedTargetWordCount === 'number' &&
       Number.isInteger(resolvedTargetWordCount) &&
@@ -68,6 +73,7 @@ export function buildStyleDirective(
     directive.styleConstraints ||
     directive.prohibitions ||
     directive.relationStage ||
+    directive.povCharacter ||
     directive.targetWordCount
     ? directive
     : undefined;
@@ -140,6 +146,12 @@ function prohibitionLine(directive: StyleDirective): string | undefined {
     : undefined;
 }
 
+function povCharacterLine(directive: StyleDirective): string | undefined {
+  return directive.povCharacter
+    ? `이 장면의 시점 인물: ${directive.povCharacter} — 이 인물의 지각과 내면만 서술하고, 다른 인물의 속마음은 겉으로 드러난 행동·표정으로만 전하라.`
+    : undefined;
+}
+
 function relationLine(directive: StyleDirective): string | undefined {
   return directive.relationStage
     ? `이 장면의 인물 관계 단계: ${directive.relationStage} — 이 단계에 맞는 태도와 거리감으로 표현하라.`
@@ -163,6 +175,7 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     genreLine(directive),
     styleConstraintLine(directive),
     prohibitionLine(directive),
+    povCharacterLine(directive),
     relationLine(directive),
     lengthLine(directive),
   ].filter((line): line is string => Boolean(line));
@@ -178,6 +191,7 @@ export function voiceStyleLines(directive: StyleDirective | undefined): string[]
     genreLine(directive),
     styleConstraintLine(directive),
     prohibitionLine(directive),
+    povCharacterLine(directive),
     relationLine(directive),
   ].filter((line): line is string => Boolean(line));
 }

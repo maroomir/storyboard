@@ -17,10 +17,11 @@ const STRUCTURE_FIELDS: readonly { key: SceneStructureKey; label: string }[] = [
   { key: "purpose", label: "목적" },
   { key: "conflict", label: "갈등" },
   { key: "twist", label: "반전" },
-  { key: "emotionalShift", label: "감정 변화" }
+  { key: "emotionalShift", label: "감정 변화" },
+  { key: "endState", label: "종료 지점" }
 ]
 
-type SceneStructureKey = "purpose" | "conflict" | "twist" | "emotionalShift"
+type SceneStructureKey = "purpose" | "conflict" | "twist" | "emotionalShift" | "endState"
 
 export function SceneFields({
   card,

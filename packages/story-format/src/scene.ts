@@ -33,6 +33,7 @@ export const sceneFrontmatterSchema = z
     location: z.string().trim().min(1).optional(),
     mood: z.string().trim().min(1).optional(),
     relationStage: z.string().trim().min(1).optional(),
+    povCharacter: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
     grounding: sceneGroundingSchema.optional(),
   })
@@ -48,12 +49,14 @@ export const sceneCardSchema = z.object({
   location: z.string().trim().min(1).optional(),
   mood: z.string().trim().min(1).optional(),
   relationStage: z.string().trim().min(1).optional(),
+  povCharacter: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
   grounding: sceneGroundingSchema.optional(),
   purpose: z.string().trim().min(1).optional(),
   conflict: z.string().trim().min(1).optional(),
   twist: z.string().trim().min(1).optional(),
   emotionalShift: z.string().trim().min(1).optional(),
+  endState: z.string().trim().min(1).optional(),
   foreshadowing: z.array(z.string().trim().min(1)).optional(),
   neededCanon: z.array(z.string().trim().min(1)).optional(),
   summary: z.string().optional(),
@@ -87,6 +90,7 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
     ...(card.location === undefined ? {} : { location: card.location }),
     ...(card.mood === undefined ? {} : { mood: card.mood }),
     ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
+    ...(card.povCharacter === undefined ? {} : { povCharacter: card.povCharacter }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
     ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
   };
@@ -97,6 +101,7 @@ export const sceneSeedSectionLabels = {
   conflict: '갈등',
   twist: '반전',
   emotionalShift: '감정 변화',
+  endState: '이 장면의 종료 지점',
   foreshadowing: '회수할 복선',
   neededCanon: '필요 설정',
   targetWordCount: '목표 분량',
@@ -118,6 +123,11 @@ export function renderSceneCardBody(card: SceneCard): string {
   }
   if (card.emotionalShift !== undefined) {
     blocks.push(`[${sceneSeedSectionLabels.emotionalShift}]\n${card.emotionalShift}`);
+  }
+  if (card.endState !== undefined) {
+    blocks.push(
+      `[${sceneSeedSectionLabels.endState}]\n${card.endState}\n이 지점에서 장면을 끝내고, 그 뒤의 사건은 다음 장면의 몫이므로 쓰지 마라.`,
+    );
   }
   if (card.foreshadowing !== undefined && card.foreshadowing.length > 0) {
     blocks.push(

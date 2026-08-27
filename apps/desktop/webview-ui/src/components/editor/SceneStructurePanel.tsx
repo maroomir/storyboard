@@ -11,6 +11,7 @@ export interface SceneStructureProposal {
   readonly conflict?: string
   readonly twist?: string
   readonly emotionalShift?: string
+  readonly endState?: string
   readonly foreshadowing?: readonly string[]
   readonly neededCanon?: readonly string[]
 }
@@ -48,11 +49,12 @@ function callRpc<T>(vscodeApi: VscodeApi, method: string, payload: Record<string
   })
 }
 
-const SCALAR_LABELS: readonly { key: "purpose" | "conflict" | "twist" | "emotionalShift"; label: string }[] = [
+const SCALAR_LABELS: readonly { key: "purpose" | "conflict" | "twist" | "emotionalShift" | "endState"; label: string }[] = [
   { key: "purpose", label: "목적" },
   { key: "conflict", label: "갈등" },
   { key: "twist", label: "반전" },
-  { key: "emotionalShift", label: "감정 변화" }
+  { key: "emotionalShift", label: "감정 변화" },
+  { key: "endState", label: "종료 지점" }
 ]
 
 const LIST_LABELS: readonly { key: "foreshadowing" | "neededCanon"; label: string }[] = [

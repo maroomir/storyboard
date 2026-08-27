@@ -121,6 +121,7 @@ async function prepareReviseDraftContext(
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
+        scene.frontmatter.povCharacter,
       ),
       characters: context.characters,
       targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),

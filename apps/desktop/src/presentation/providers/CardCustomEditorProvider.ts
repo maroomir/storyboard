@@ -292,7 +292,13 @@ function resolveCardImageUri(
   return webview.asWebviewUri(vscode.Uri.joinPath(cardDirectory, relativeImagePath)).toString();
 }
 
-const sceneStructureScalarKeys = ['purpose', 'conflict', 'twist', 'emotionalShift'] as const;
+const sceneStructureScalarKeys = [
+  'purpose',
+  'conflict',
+  'twist',
+  'emotionalShift',
+  'endState',
+] as const;
 const sceneStructureListKeys = ['foreshadowing', 'neededCanon'] as const;
 
 function collectMissingStructureFields(card: SceneCard): SceneStructureFieldKey[] {

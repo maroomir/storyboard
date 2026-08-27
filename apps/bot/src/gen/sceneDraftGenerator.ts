@@ -192,6 +192,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
         groundedScene.frontmatter.relationStage,
         groundedScene.frontmatter.targetWordCount,
         groundedScene.body,
+        groundedScene.frontmatter.povCharacter,
       ),
     };
   }

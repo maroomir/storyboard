@@ -190,6 +190,7 @@ async function runAndPersistDraft(
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
+        scene.frontmatter.povCharacter,
       ),
       previousContext,
       providers: pipelineProviders,
