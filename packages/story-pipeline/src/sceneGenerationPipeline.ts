@@ -11,6 +11,7 @@ import {
   buildGenerateOptions,
   buildScenePersonas,
   describeBackgroundForScene,
+  expandDraftToTargetLength,
   formatSceneDraft,
   generateSceneDialogue,
   withAttribution,
@@ -45,6 +46,7 @@ interface ResolvedExecutionContext {
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
+  readonly canonFactLines: readonly string[];
 }
 
 function resolveExecutionContext(input: RunSceneGenerationPipelineInput): ResolvedExecutionContext {
@@ -91,6 +93,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
+    canonFactLines: input.canonFactLines ?? [],
   };
 }
 
@@ -109,6 +112,7 @@ async function executeSceneGenerationPipeline(
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
+    canonFactLines,
   } = resolveExecutionContext(input);
 
   const situationsRaw = await aiService.extractSituations(
@@ -163,7 +167,7 @@ async function executeSceneGenerationPipeline(
     shouldCancel,
   );
 
-  const draftBody = await formatSceneDraft(
+  const formattedDraft = await formatSceneDraft(
     dialoguePieces,
     format,
     providers,
@@ -173,6 +177,18 @@ async function executeSceneGenerationPipeline(
     sceneRef,
     onProgress,
     shouldCancel,
+  );
+  assertNotCancelled(shouldCancel);
+
+  const draftBody = await expandDraftToTargetLength(
+    formattedDraft,
+    format,
+    styleDirective,
+    canonFactLines,
+    body,
+    aiService,
+    sceneRef,
+    onProgress,
   );
 
   return {

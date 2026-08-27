@@ -4,6 +4,7 @@ import type { IProjectRepository, ISceneRepository } from '../ports/repositories
 import {
   buildNarrativeContext,
   buildSceneContext,
+  formatBibleFactLines,
   parseSceneFileName,
   SceneParseError,
 } from '@storyboard/story-format';
@@ -28,6 +29,7 @@ export interface SceneGenerationInputs {
   readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
   readonly previousContext: string | undefined;
+  readonly canonFactLines: readonly string[];
   readonly sceneBreakJoiner: string | undefined;
   readonly inputHash: string;
   readonly draftUri: vscode.Uri;
@@ -192,6 +194,7 @@ export async function loadSceneGenerationInputs(
       project,
       context,
       previousContext,
+      canonFactLines: contextResult.canonFactLines,
       sceneBreakJoiner,
       inputHash,
       draftUri: draftPath(workspaceFolder.uri, scene.stem),
@@ -207,6 +210,7 @@ type SceneContextBundleResult =
       scene: Awaited<ReturnType<ISceneRepository['read']>>;
       context: Awaited<ReturnType<typeof buildSceneContext>>;
       previousContext: string | undefined;
+      canonFactLines: readonly string[];
       sceneBreakJoiner: string | undefined;
       inputHash: string;
     };
@@ -269,6 +273,7 @@ async function loadSceneContextBundle(
     scene,
     context,
     previousContext: narrativeContext.prompt,
+    canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
     sceneBreakJoiner,
     inputHash,
   };

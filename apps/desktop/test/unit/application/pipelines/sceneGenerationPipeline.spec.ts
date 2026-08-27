@@ -811,12 +811,65 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly describeBackground: ReturnType<typeof vi.fn>
   readonly generatePersonaDialogue: ReturnType<typeof vi.fn>
   readonly applyGenreFormat: ReturnType<typeof vi.fn>
+  readonly augmentDraft: ReturnType<typeof vi.fn>
 } {
   return {
     extractSituations: vi.fn(async () => []),
     createCharacterPersona: vi.fn(async () => ""),
     describeBackground: vi.fn(async () => ""),
     generatePersonaDialogue: vi.fn(async () => ""),
-    applyGenreFormat: vi.fn(async () => "")
+    applyGenreFormat: vi.fn(async () => ""),
+    augmentDraft: vi.fn(async () => "")
   }
 }
+
+describe("expandDraftToTargetLength stage", () => {
+  async function runWithTarget(
+    formatted: string,
+    targetWordCount: number | undefined,
+    augmented: string
+  ): Promise<{ ai: ReturnType<typeof createRecordingAiService>; draftBody: string }> {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "상황" }])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("d")
+    ai.applyGenreFormat.mockResolvedValueOnce(formatted)
+    ai.augmentDraft.mockResolvedValueOnce(augmented)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      ...(targetWordCount === undefined ? {} : { styleDirective: { targetWordCount } })
+    })
+
+    return { ai, draftBody: result.draftBody }
+  }
+
+  it("expands a draft that falls short of the target", async () => {
+    const { ai, draftBody } = await runWithTarget("짧은 원고".repeat(10), 1000, "긴 원고".repeat(200))
+
+    expect(ai.augmentDraft).toHaveBeenCalledTimes(1)
+    expect(draftBody).toBe("긴 원고".repeat(200))
+  })
+
+  it("leaves a draft that already meets the threshold alone", async () => {
+    const { ai, draftBody } = await runWithTarget("가".repeat(800), 1000, "확장본")
+
+    expect(ai.augmentDraft).not.toHaveBeenCalled()
+    expect(draftBody).toBe("가".repeat(800))
+  })
+
+  it("does nothing when the scene has no target length", async () => {
+    const { ai } = await runWithTarget("짧다", undefined, "확장본")
+
+    expect(ai.augmentDraft).not.toHaveBeenCalled()
+  })
+
+  it("keeps the original when the expansion comes back shorter", async () => {
+    const { draftBody } = await runWithTarget("가".repeat(100), 1000, "짧아짐")
+
+    expect(draftBody).toBe("가".repeat(100))
+  })
+})

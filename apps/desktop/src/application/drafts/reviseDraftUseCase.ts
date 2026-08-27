@@ -7,6 +7,8 @@ import {
   buildSceneContext,
   createDraft,
   formatBibleFactLines,
+  readStoryState,
+  storyStateFactLines,
   parseDraft,
   readDraftFile,
   readSceneFile,
@@ -99,7 +101,10 @@ async function prepareReviseDraftContext(
   const ctxPaths = sceneContextPaths(paths);
   const context = await buildSceneContext(ctxPaths, scene, sceneContextFileSystem);
   const narrative = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem);
-  const factLines = formatBibleFactLines(context, narrative.bibleFacts);
+  const canonFactLines = formatBibleFactLines(context, narrative.bibleFacts);
+  // NOTE: 앞 씬이 확립한 사실·이미 공개된 정보와의 모순도 캐넌과 같은 기준으로 검사한다.
+  const priorState = await readStoryState(paths.storyState, vscodeFsAdapter);
+  const factLines = [...canonFactLines, ...storyStateFactLines(priorState)];
   const { styleConstraints, qualityCriteria, setting } = await readContractGuidance(
     paths.projectJson,
   );

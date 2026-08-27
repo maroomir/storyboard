@@ -193,6 +193,7 @@ async function runAndPersistDraft(
         scene.frontmatter.povCharacter,
       ),
       previousContext,
+      canonFactLines: inputs.canonFactLines,
       providers: pipelineProviders,
       onProgress: (stage, current, total): void => {
         if (options.shouldCancel?.()) {

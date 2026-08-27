@@ -13,13 +13,15 @@ export type SceneGenerationPipelineAiService = Pick<
   | 'describeBackground'
   | 'generatePersonaDialogue'
   | 'applyGenreFormat'
+  | 'augmentDraft'
 >;
 
 export type SceneGenerationPipelineStage =
   | 'extractSituations'
   | 'buildPersonas'
   | 'generateDialogue'
-  | 'applyFormat';
+  | 'applyFormat'
+  | 'expandToTarget';
 
 export interface SceneGenerationPipelineTaskProviders {
   readonly situationExtraction?: AiProviderId;
@@ -53,6 +55,7 @@ export interface RunSceneGenerationPipelineInput {
   readonly shouldCancel?: () => boolean;
   readonly sceneStem?: string;
   readonly backgroundId?: string;
+  readonly canonFactLines?: readonly string[];
   readonly useContextCondense?: boolean;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
