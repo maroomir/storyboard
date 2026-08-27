@@ -52,6 +52,7 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     draftDirectory: paths.draftDirectory,
     bibleCanon: paths.bibleCanon,
     manuscriptSummary: vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
+    storyState: paths.storyState,
     joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
       vscode.Uri.joinPath(base as vscode.Uri, ...segments),
   };

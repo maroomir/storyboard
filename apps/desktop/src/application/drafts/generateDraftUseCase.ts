@@ -29,6 +29,7 @@ import {
   type SceneGenerationInputs,
 } from './sceneGenerationInputs';
 import { schedulePostGenerationUpdates } from './postGenerationScheduling';
+import { updateStoryStateAfterGeneration } from './updateStoryState';
 
 export type {
   GenerateDraftRequest,
@@ -150,6 +151,8 @@ async function persistGeneratedDraft(
 
   await options.draftRepository.write(draftUri, draft);
   await options.sceneCacheRepository.write(cacheUri, cacheRecord);
+
+  await updateStoryStateAfterGeneration(inputs, options, aiService, result.draftBody);
 
   if (options.configBridge.isUpdateCardsAfterGenerateEnabled()) {
     schedulePostGenerationUpdates(inputs, options, aiService, result);

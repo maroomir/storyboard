@@ -15,6 +15,7 @@ export * from './scene';
 export * from './sceneNaming';
 export * from './sceneContext';
 export * from './sceneLength';
+export * from './storyState';
 export * from './files/bible';
 export * from './files/card';
 export * from './files/cardMemory';

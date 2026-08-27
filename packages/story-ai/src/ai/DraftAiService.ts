@@ -16,10 +16,12 @@ import { DraftRevisionPrompt, type DraftRevisionInput } from './prompts/draftRev
 import { GrammarCheckPrompt } from './prompts/grammarCheck';
 import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
+import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
 import type { AiGenerateResponse, WiredAiTaskName } from '../contracts/aiTypes';
 import { coerceCritiqueIssues, type DraftCritiqueIssue } from '../contracts/draftReview';
 import { coerceSceneCoverage, type SceneCoverageIssue } from '../contracts/sceneCoverage';
+import { coerceStoryStateUpdate, type StoryStateUpdateItem } from '../contracts/storyStateUpdate';
 import { parseJsonArray } from '../contracts/aiResponseParser';
 
 export type InlineCompletionContext = {
@@ -90,6 +92,22 @@ export class DraftAiService {
     );
 
     return coerceSceneCoverage(response.text, beats.length);
+  }
+
+  public async updateStoryState(
+    input: StoryStateUpdateInput,
+    options: GenerateTextOptions = {},
+  ): Promise<StoryStateUpdateItem[]> {
+    const variant = this.gateway.resolvePromptVariant('storyStateUpdate', options);
+    const prompt = StoryStateUpdatePrompt.build(input, variant);
+    const response = await this.generateWithDefaults(
+      'storyStateUpdate',
+      prompt,
+      StoryStateUpdatePrompt.config,
+      options,
+    );
+
+    return coerceStoryStateUpdate(response.text);
   }
 
   public async completeInline(

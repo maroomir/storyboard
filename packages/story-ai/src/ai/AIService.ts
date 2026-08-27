@@ -39,6 +39,8 @@ import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseJsonObject } from '../contracts/aiResponseParser';
 import type { DraftCritiqueIssue } from '../contracts/draftReview';
 import type { SceneCoverageIssue } from '../contracts/sceneCoverage';
+import type { StoryStateUpdateItem } from '../contracts/storyStateUpdate';
+import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
   toPromptMessages,
   type ContinuityIssue,
@@ -217,6 +219,13 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {},
   ): Promise<SceneCoverageIssue[]> {
     return this.draftAiService.checkSceneCoverage(beats, draft, options);
+  }
+
+  public async updateStoryState(
+    input: StoryStateUpdateInput,
+    options: GenerateTextOptions = {},
+  ): Promise<StoryStateUpdateItem[]> {
+    return this.draftAiService.updateStoryState(input, options);
   }
 
   public async completeInline(

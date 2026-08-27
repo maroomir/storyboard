@@ -647,6 +647,43 @@ describe("buildNarrativeContext", () => {
     expect(result.prompt).not.toContain("왕족")
   })
 
+  it("injects the story state ledger ahead of the setting memo", async () => {
+    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(biblePath, serializeBible(bible))
+    fileSystem.setFile(
+      statePath,
+      "# 이야기 상태\n<!-- through-scene: 1 -->\n## 살아 있는 모티프\n- \"오늘도… 손님이 오실 줄 알았습니다\"\n"
+    )
+
+    const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
+    const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
+
+    const result = await buildNarrativeContext(
+      { ...basePaths, bibleCanon: biblePath, storyState: statePath },
+      secondContext,
+      fileSystem
+    )
+
+    expect(result.prompt).toContain("[이야기 상태]")
+    expect(result.prompt).toContain("손님이 오실 줄 알았습니다")
+    expect(result.prompt?.indexOf("[이야기 상태]")).toBeLessThan(result.prompt?.indexOf("[설정 메모]") ?? -1)
+  })
+
+  it("skips the story state ledger for the first scene", async () => {
+    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(statePath, "# 이야기 상태\n## 확정 사실\n- 나중 씬의 상태\n")
+
+    const result = await buildNarrativeContext(
+      { ...basePaths, storyState: statePath },
+      context,
+      fileSystem
+    )
+
+    expect(result.prompt ?? "").not.toContain("[이야기 상태]")
+  })
+
   it("returns no facts or prompt when bible and previous context are absent", async () => {
     const fileSystem = new MockFileSystem()
 
