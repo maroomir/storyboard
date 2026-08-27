@@ -142,6 +142,19 @@ export function splitCardTextToList(value: string): string[] {
     .filter((line) => line.length > 0);
 }
 
+// NOTE: 게임 아이디(attributes.gamename)는 본문에서 실명만큼 자주 쓰이는 호칭이라, 별칭과 함께
+// 인물 매칭 토큰에 포함해야 아이디로만 등장하는 비트에서 인물(과 페르소나)이 누락되지 않는다.
+export function characterMatchTokens(card: CharacterCard): string[] {
+  const gamename = card.attributes?.['gamename'];
+  const tokens = [
+    card.name,
+    ...(card.aliases ?? []),
+    ...(typeof gamename === 'string' && gamename.trim().length > 0 ? [gamename.trim()] : []),
+  ];
+
+  return [...new Set(tokens.filter((token) => token.length > 0))];
+}
+
 export function formatCardAttributes(attributes: CharacterCard['attributes']): string {
   if (!attributes) {
     return '';

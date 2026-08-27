@@ -6,6 +6,7 @@ import type {
   StyleDirective,
 } from '@storyboard/story-ai';
 import type { Background } from '@storyboard/story-format';
+import { characterMatchTokens } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
 import {
   chunkDialoguePiecesByBudget,
@@ -40,11 +41,15 @@ function situationCharacterRefs(
   situation: SituationWithCharacters,
   characters: readonly CharacterCard[],
 ): EntityRef[] {
-  const byName = new Map(characters.map((character) => [character.name, character] as const));
+  const byToken = new Map(
+    characters.flatMap((character) =>
+      characterMatchTokens(character).map((token) => [token, character] as const),
+    ),
+  );
   const refs: EntityRef[] = [];
 
   for (const name of situation.characters) {
-    const card = byName.get(name);
+    const card = byToken.get(name);
 
     if (card) {
       refs.push({ kind: 'character', id: card.id });
@@ -99,13 +104,12 @@ function selectSituationPersonas(
     return personasUsed;
   }
 
-  // NOTE: 상황 추출이 원문 표기(별칭일 수 있음)로 인물을 돌려주므로 카드 name뿐 아니라 alias로도
-  // 대조해야 스코핑이 실제로 걸린다. 이름만 비교하면 별칭 상황은 전부 전체 폴백으로 새 버린다.
+  // NOTE: 상황 추출이 원문 표기(별칭·게임 아이디일 수 있음)로 인물을 돌려주므로 카드 name뿐 아니라
+  // alias·gamename으로도 대조해야 스코핑이 실제로 걸린다. 이름만 비교하면 전부 전체 폴백으로 새 버린다.
   const tokens = new Set(situation.characters);
   const subset = new Map<string, string>();
   for (const card of characters) {
-    const matches =
-      tokens.has(card.name) || (card.aliases ?? []).some((alias) => tokens.has(alias));
+    const matches = characterMatchTokens(card).some((token) => tokens.has(token));
     if (!matches) {
       continue;
     }
