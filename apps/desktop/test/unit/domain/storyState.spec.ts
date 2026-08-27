@@ -171,6 +171,14 @@ describe("coerceStoryStateUpdate", () => {
     expect(items).toHaveLength(5)
   })
 
+  it("drops an entry contaminated with another writing system", () => {
+    const items = coerceStoryStateUpdate(
+      JSON.stringify({ facts: ["브로크가 기억한다", "이준은 чуж чуж?", "채린이 전화했다"] })
+    )
+
+    expect(items.map((item) => item.text)).toEqual(["브로크가 기억한다", "채린이 전화했다"])
+  })
+
   it("returns nothing for unparsable text", () => {
     expect(coerceStoryStateUpdate("죄송합니다, 요약할 수 없습니다.")).toEqual([])
   })
