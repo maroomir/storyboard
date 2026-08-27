@@ -209,7 +209,13 @@ function composeNarrativePrompt(
   const sections: string[] = [];
 
   if (factLines.length > 0) {
-    sections.push(`[설정 메모]\n${factLines.map((line) => `- ${line}`).join('\n')}`);
+    sections.push(
+      [
+        '[설정 메모]',
+        ...factLines.map((line) => `- ${line}`),
+        '(위 설정은 작가 참고용 배경지식이다. 인물이 아직 모르거나 겪지 않은 사실을 대사·사건으로 드러내지 마라.)',
+      ].join('\n'),
+    );
   }
 
   const trimmedPrevious = previousContext?.trim();

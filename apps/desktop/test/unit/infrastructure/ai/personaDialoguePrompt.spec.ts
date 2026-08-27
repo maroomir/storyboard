@@ -14,6 +14,10 @@ const SCENE_CRAFT_LINES = [
   "인물의 성격·사연·감정은 한꺼번에 설명하지 말고 행동과 대사로 조금씩 드러내며 장면이 진행될수록 긴장을 쌓아라."
 ]
 const COMPLETENESS_LINE = "모든 사건을 등장 순서대로 빠짐없이 담되, 한 문장·한 동작 단위로 과도하게 쪼개지 말고 의미 있는 장면 단위로 묶어라."
+const KNOWLEDGE_BOUNDARY_LINE =
+  "각 인물은 자신이 직접 겪었거나 이전 장면에서 알게 된 정보만 안다. 다른 인물의 페르소나에만 적힌 사실(직업·과거·비밀 등)을 당사자가 밝히기 전에 알거나 언급하게 하지 마라."
+const META_BLOCK_GUARD_LINE =
+  "[필요 설정]·[회수할 복선] 블록은 장면의 배경 전제와 작가 메모다. 그 내용을 사건으로 추출하지 말고, 본문이 서술하는 실제 사건만 담아라."
 
 const background: Background = {
   type: "location",
@@ -107,5 +111,28 @@ describe("SituationExtractionPrompt completeness line", () => {
 
   it("omits the completeness line in the xs variant", () => {
     expect(SituationExtractionPrompt.build("엘리아가 교실로 들어온다.", "xs").system).not.toContain(COMPLETENESS_LINE)
+  })
+})
+
+describe("PersonaDialoguePrompt knowledge-boundary line", () => {
+  it("includes the knowledge-boundary line for generic and rich variants", () => {
+    expect(buildDialogue("generic").system).toContain(KNOWLEDGE_BOUNDARY_LINE)
+    expect(buildDialogue("rich").system).toContain(KNOWLEDGE_BOUNDARY_LINE)
+  })
+
+  it("omits the knowledge-boundary line for the xs variant", () => {
+    expect(buildDialogue("xs").system).not.toContain(KNOWLEDGE_BOUNDARY_LINE)
+  })
+})
+
+describe("SituationExtractionPrompt meta-block guard line", () => {
+  it("includes the meta-block guard line in the generic variant", () => {
+    expect(SituationExtractionPrompt.build("[필요 설정]\n- 규칙\n\n엘리아가 들어온다.", "generic").system).toContain(
+      META_BLOCK_GUARD_LINE
+    )
+  })
+
+  it("omits the meta-block guard line in the xs variant", () => {
+    expect(SituationExtractionPrompt.build("엘리아가 교실로 들어온다.", "xs").system).not.toContain(META_BLOCK_GUARD_LINE)
   })
 })

@@ -622,6 +622,7 @@ describe("buildNarrativeContext", () => {
     expect(result.bibleFacts.map((fact) => fact.id)).toEqual(["f1"])
     expect(result.prompt).toContain("[설정 메모]")
     expect(result.prompt).toContain("엘리아 — 눈동자 색: 녹색")
+    expect(result.prompt).toContain("작가 참고용 배경지식")
     expect(result.prompt).not.toContain("왕족")
   })
 
