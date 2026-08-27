@@ -16,6 +16,7 @@ import {
 } from './bible';
 import { isIgnoredSampleCardFileName } from './sampleCard';
 import { detectCharactersInText } from './characterDetector';
+import { formatStoryStateForPrompt, readStoryState } from './storyState';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown;
@@ -23,6 +24,7 @@ export interface SceneContextWorkspacePaths {
   readonly draftDirectory: unknown;
   readonly bibleCanon?: unknown;
   readonly manuscriptSummary?: unknown;
+  readonly storyState?: unknown;
   readonly joinPath: (base: unknown, ...pathSegments: string[]) => unknown;
 }
 
@@ -151,9 +153,29 @@ export async function buildNarrativeContext(
     context.scene.body,
     context.scene.order,
   );
-  const prompt = composeNarrativePrompt(formatBibleFactLines(context, bibleFacts), previousContext);
+  const storyState = await readSceneStoryState(paths, context.scene.order, fileSystem);
+  const prompt = composeNarrativePrompt(
+    formatBibleFactLines(context, bibleFacts),
+    storyState,
+    previousContext,
+  );
 
   return { bibleFacts, prompt };
+}
+
+// NOTE: 원장은 직전 씬까지의 상태다. 씬을 다시 생성할 때 자기 자신이 남긴 상태를 되먹지 않도록
+// 현재 씬보다 앞선 분량만 주입한다.
+async function readSceneStoryState(
+  paths: SceneContextWorkspacePaths,
+  currentSceneOrder: number,
+  fileSystem: SceneContextWorkspaceFileSystem,
+): Promise<string | undefined> {
+  if (!paths.storyState || currentSceneOrder <= 1) {
+    return undefined;
+  }
+
+  const state = await readStoryState(paths.storyState, fileSystem);
+  return formatStoryStateForPrompt(state);
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {
@@ -209,9 +231,14 @@ function sceneEntityNames(context: SceneContext): ReadonlyMap<string, string> {
 
 function composeNarrativePrompt(
   factLines: readonly string[],
+  storyState: string | undefined,
   previousContext: string | undefined,
 ): string | undefined {
   const sections: string[] = [];
+
+  if (storyState) {
+    sections.push(storyState);
+  }
 
   if (factLines.length > 0) {
     sections.push(
