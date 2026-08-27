@@ -126,6 +126,27 @@ describe("sceneContext", () => {
     expect(context.characters).toEqual([manjaeCard])
   })
 
+  it("detects a character by gamename attribute when name and aliases are absent", async () => {
+    const fileSystem = new MockFileSystem()
+    const doyunCard: CharacterCard = {
+      type: "character",
+      id: "doyun",
+      name: "강도윤",
+      role: "supporting",
+      attributes: { gamename: "발키리" }
+    }
+
+    fileSystem.setDirectory("/mock/workspace/character", [["doyun.card", { type: "file" }]])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/doyun.card", serializeCard(doyunCard))
+
+    const gamenameScene: SceneFile = { ...mockScene, body: "발키리 일행이 경매홀에 들어섰다." }
+
+    const context = await buildSceneContext(mockPaths, gamenameScene, fileSystem)
+
+    expect(context.characters).toEqual([doyunCard])
+  })
+
   it("excludes a character whose name and aliases are both absent from the body", async () => {
     const fileSystem = new MockFileSystem()
     const manjaeCard: CharacterCard = {

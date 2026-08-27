@@ -245,6 +245,37 @@ describe("runSceneGenerationPipeline", () => {
     expect(personas.has("지훈")).toBe(false)
   })
 
+  it("scopes personas by gamename attribute and resolves the attribution ref", async () => {
+    const doyunCard: CharacterCard = {
+      type: "character",
+      id: "doyun",
+      name: "강도윤",
+      role: "supporting",
+      attributes: { gamename: "발키리" }
+    }
+
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["발키리"], situation: "발키리 입장" }])
+    ai.createCharacterPersona.mockImplementation(async (character) => `페르소나:${character.name}`)
+    ai.generatePersonaDialogue.mockResolvedValueOnce("d")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([doyunCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const personas = ai.generatePersonaDialogue.mock.calls[0]?.[1] as Map<string, string>
+    expect(Array.from(personas.keys())).toEqual(["강도윤"])
+
+    const options = ai.generatePersonaDialogue.mock.calls[0]?.[4] as {
+      attribution?: { participants?: readonly { kind: string; id: string }[] }
+    }
+    expect(options.attribution?.participants).toContainEqual({ kind: "character", id: "doyun" })
+  })
+
   it("passes the full personas map when a situation lists no characters", async () => {
     const ai = createRecordingAiService()
     ai.extractSituations.mockResolvedValueOnce([{ characters: [], situation: "무명" }])

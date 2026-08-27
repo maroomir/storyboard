@@ -1,4 +1,9 @@
-import { isBackgroundCard, type BackgroundCard, type CharacterCard } from './card';
+import {
+  characterMatchTokens,
+  isBackgroundCard,
+  type BackgroundCard,
+  type CharacterCard,
+} from './card';
 import type { SceneFile } from './scene';
 import { readCardFile } from './files/card';
 import { readBibleFile } from './files/bible';
@@ -295,13 +300,11 @@ function resolveSceneCharacters(
     return allCharacters.filter((char) => targetIds.has(char.id));
   }
 
-  const detectableTokens = allCharacters.flatMap((char) => [char.name, ...(char.aliases ?? [])]);
+  const detectableTokens = allCharacters.flatMap((char) => characterMatchTokens(char));
   const detectedTokens = new Set(detectCharactersInText(scene.body, detectableTokens));
 
-  return allCharacters.filter(
-    (char) =>
-      detectedTokens.has(char.name) ||
-      (char.aliases ?? []).some((alias) => detectedTokens.has(alias)),
+  return allCharacters.filter((char) =>
+    characterMatchTokens(char).some((token) => detectedTokens.has(token)),
   );
 }
 
