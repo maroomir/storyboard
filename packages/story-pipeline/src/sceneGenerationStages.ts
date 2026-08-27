@@ -255,6 +255,44 @@ export async function generateSceneDialogue(
   return dialoguePieces;
 }
 
+// NOTE: 목표 분량의 이 비율에 못 미치면 한 번만 보충한다. 생성 프롬프트의 분량 지시만으로는
+// 비트 수에 비례한 길이밖에 나오지 않아, 목표를 크게 밑도는 원고가 그대로 출고된다.
+const LENGTH_SHORTFALL_RATIO = 0.7;
+
+export async function expandDraftToTargetLength(
+  draftBody: string,
+  format: ProjectFormat,
+  styleDirective: StyleDirective | undefined,
+  facts: readonly string[],
+  intent: string,
+  aiService: Pick<SceneGenerationPipelineAiService, 'augmentDraft'>,
+  sceneRef: EntityRef,
+  onProgress: RunSceneGenerationPipelineInput['onProgress'],
+): Promise<string> {
+  const target = styleDirective?.targetWordCount;
+  if (target === undefined || draftBody.length >= target * LENGTH_SHORTFALL_RATIO) {
+    return draftBody;
+  }
+
+  onProgress?.('expandToTarget', 1, 1);
+
+  const expanded = await aiService.augmentDraft(
+    {
+      target: draftBody,
+      scope: 'draft',
+      format,
+      cards: [],
+      facts,
+      intent,
+      instruction: `현재 분량이 목표에 못 미친다. 사건 순서와 대사를 그대로 두고 감각 묘사·내면·호흡만 늘려 약 ${target.toLocaleString()}자에 가깝게 확장하라. 새로운 사건·설정·인물을 추가하지 마라.`,
+    },
+    withAttribution({ styleDirective }, { primary: sceneRef }),
+  );
+
+  // 보충이 오히려 짧아지면 원본을 지킨다.
+  return expanded.trim().length > draftBody.length ? expanded : draftBody;
+}
+
 export async function formatSceneDraft(
   dialoguePieces: readonly string[],
   format: ProjectFormat,
