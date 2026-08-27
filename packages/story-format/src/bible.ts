@@ -27,12 +27,15 @@ export const bibleFactSchema = z
     sourceScene: z.string().trim().min(1).optional(),
     validFrom: sceneReferenceSchema.optional(),
     validUntil: sceneReferenceSchema.optional(),
+    // NOTE: validFrom은 사실이 '참'이 되는 시점이고, revealFrom은 독자·인물에게 '밝혀지는' 시점이다.
+    // 결말의 반전은 1화부터 참이지만 회수 씬 전에는 프롬프트에 넣으면 안 되므로 둘을 분리한다.
+    revealFrom: sceneReferenceSchema.optional(),
     keywords: z.array(z.string().trim().min(1)).optional(),
   })
   // NOTE: Reject a string range bound only when it cannot resolve to a scene order; numeric
   // bounds are file-agnostic and an inverted range is left to the resolver (treated as empty).
   .superRefine((fact, ctx) => {
-    for (const field of ['validFrom', 'validUntil'] as const) {
+    for (const field of ['validFrom', 'validUntil', 'revealFrom'] as const) {
       const bound = fact[field];
       if (typeof bound === 'string' && resolveSceneOrder(bound) === undefined) {
         ctx.addIssue({
@@ -238,16 +241,23 @@ export function selectInjectedFacts(
   sceneOrder: number,
   options?: InjectionOptions,
 ): BibleFact[] {
+  const isRevealed = (fact: BibleFact): boolean => {
+    const revealOrder = fact.revealFrom === undefined ? undefined : resolveSceneOrder(fact.revealFrom);
+    return revealOrder === undefined || sceneOrder >= revealOrder;
+  };
+
   const wanted = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
-  const entityWinners = resolveValidWinners(bible, sceneOrder, (fact) =>
-    wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
+  const entityWinners = resolveValidWinners(
+    bible,
+    sceneOrder,
+    (fact) => isRevealed(fact) && wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
   );
 
   const sceneTextLower = sceneText.toLowerCase();
   const keywordWinners = resolveValidWinners(
     bible,
     sceneOrder,
-    (fact) => countKeywordHits(fact.keywords, sceneTextLower) > 0,
+    (fact) => isRevealed(fact) && countKeywordHits(fact.keywords, sceneTextLower) > 0,
   );
 
   const entityIds = new Set(entityWinners.map((version) => version.fact.id));

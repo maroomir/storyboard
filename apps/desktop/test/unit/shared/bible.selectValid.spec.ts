@@ -20,11 +20,12 @@ interface FactSpec {
   readonly status?: BibleFactStatus
   readonly validFrom?: BibleFact["validFrom"]
   readonly validUntil?: BibleFact["validUntil"]
+  readonly revealFrom?: BibleFact["revealFrom"]
   readonly keywords?: string[]
 }
 
 function factOf(spec: FactSpec): BibleFact {
-  const { id, subject = elia, key = id, value = id, status = "canon", validFrom, validUntil, keywords } = spec
+  const { id, subject = elia, key = id, value = id, status = "canon", validFrom, validUntil, revealFrom, keywords } = spec
   return {
     id,
     subject,
@@ -33,6 +34,7 @@ function factOf(spec: FactSpec): BibleFact {
     status,
     ...(validFrom !== undefined ? { validFrom } : {}),
     ...(validUntil !== undefined ? { validUntil } : {}),
+    ...(revealFrom !== undefined ? { revealFrom } : {}),
     ...(keywords !== undefined ? { keywords } : {})
   }
 }
@@ -439,5 +441,46 @@ describe("selectInjectedFacts", () => {
 
     expect(result).toHaveLength(50)
     expect(elapsed).toBeLessThan(200)
+  })
+})
+
+describe("selectInjectedFacts — revealFrom spoiler gate", () => {
+  const spoiler = factOf({ id: "twist", key: "정체", value: "관리자 키 봉인", revealFrom: 26 })
+  const plain = factOf({ id: "eye", key: "눈", value: "녹색" })
+
+  it("withholds a fact before its reveal scene", () => {
+    expect(injectedIds(bibleOf([spoiler, plain]), "본문", 1, [elia])).toEqual(["eye"])
+  })
+
+  it("injects the fact from its reveal scene onward", () => {
+    const bible = bibleOf([spoiler, plain])
+
+    expect(injectedIds(bible, "본문", 26, [elia])).toContain("twist")
+    expect(injectedIds(bible, "본문", 32, [elia])).toContain("twist")
+  })
+
+  it("withholds a keyword-activated fact too, even when the keyword appears", () => {
+    const keywordSpoiler = factOf({
+      id: "ks",
+      subject: crimsonEmpire,
+      keywords: ["Crimson Empire"],
+      revealFrom: 10
+    })
+    const bible = bibleOf([keywordSpoiler])
+    const sceneText = "the Crimson Empire rose"
+
+    expect(injectedIds(bible, sceneText, 9, [elia])).not.toContain("ks")
+    expect(injectedIds(bible, sceneText, 10, [elia])).toContain("ks")
+  })
+
+  it("accepts an NN-slug reveal reference like the other bounds", () => {
+    const bible = bibleOf([factOf({ id: "twist", key: "정체", value: "봉인", revealFrom: "26-scene-7-2" })])
+
+    expect(injectedIds(bible, "본문", 25, [elia])).toEqual([])
+    expect(injectedIds(bible, "본문", 26, [elia])).toEqual(["twist"])
+  })
+
+  it("leaves a fact without revealFrom always injectable", () => {
+    expect(injectedIds(bibleOf([plain]), "본문", 1, [elia])).toEqual(["eye"])
   })
 })
