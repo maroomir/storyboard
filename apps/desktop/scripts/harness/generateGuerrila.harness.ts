@@ -10,6 +10,13 @@ import {
 } from "@storyboard/story-pipeline"
 import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@storyboard/story-format"
 import {
+  formatStoryStateForPrompt,
+  mergeStoryState,
+  readStoryState,
+  storyStateFactLines,
+  writeStoryState
+} from "@storyboard/story-format"
+import {
   computeBackgroundCardHash,
   computePersonaCardHash,
   readBackgroundMemoryFile,
@@ -113,6 +120,7 @@ const paths = {
   draftDirectory: path.join(workspace, "draft"),
   bibleCanon: path.join(workspace, ".storyboard", "bible", "canon.yaml"),
   manuscriptSummary: undefined,
+  storyState: path.join(workspace, ".storyboard", "cache", "storyState.md"),
   joinPath: (base: unknown, ...segments: string[]): string => path.join(base as string, ...segments)
 }
 
@@ -361,8 +369,12 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   const styleDirective = buildStyleDirective(
     project.setting,
     scene.frontmatter.relationStage,
-    scene.frontmatter.targetWordCount
+    scene.frontmatter.targetWordCount,
+    scene.body,
+    scene.frontmatter.povCharacter
   )
+  const canonFactLines = formatBibleFactLines(context, narrative.bibleFacts)
+  const priorStoryState = await readStoryState(paths.storyState, fileSystem)
   const usage = createUsageSummary()
   const aiService = new StoryboardAIService(createRegistry(), { onUsage: usage.onUsage })
 
@@ -374,6 +386,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       format: project.format,
       styleDirective,
       previousContext: narrative.prompt,
+      canonFactLines,
       providers: {
         situationExtraction: harnessProviderId,
         personaGeneration: harnessProviderId,
@@ -422,7 +435,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
         providerId: harnessProviderId,
         context,
         intent: scene.body,
-        factLines: formatBibleFactLines(context, narrative.bibleFacts),
+        factLines: [...canonFactLines, ...storyStateFactLines(priorStoryState)],
         styleDirective,
         styleConstraints: project.setting?.styleConstraints ?? [],
         qualityCriteria: project.setting?.qualityCriteria ?? [],
@@ -442,6 +455,27 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       console.log(
         `[revise done] passed=${revision.passed} revisions=${revision.revisionCount} remainingBlocking=${revision.remainingBlocking}`
       )
+    }
+
+    // NOTE: 다음 씬 생성이 이 원장을 읽는다. 확장 호스트의 저장 경로와 같은 순서로 갱신한다.
+    const stateItems = await aiService.updateStoryState(
+      {
+        sceneTitle: scene.stem,
+        draftBody: body,
+        previousState: formatStoryStateForPrompt(priorStoryState)
+      },
+      { providerId: harnessProviderId, attribution: { primary: { kind: "scene", id: scene.stem } } }
+    )
+
+    if (stateItems.length > 0) {
+      await nodeFs.mkdir(path.dirname(paths.storyState), { recursive: true })
+      await writeStoryState(
+        paths.storyState,
+        mergeStoryState(priorStoryState, stateItems, scene.order),
+        fileSystem
+      )
+      // eslint-disable-next-line no-console
+      console.log(`[story state] +${stateItems.length} entries through scene ${scene.order}`)
     }
   } finally {
     usage.print()
