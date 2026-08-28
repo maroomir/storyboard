@@ -119,7 +119,11 @@ export function renderSceneCardBody(card: SceneCard): string {
     blocks.push(`[${sceneSeedSectionLabels.conflict}]\n${card.conflict}`);
   }
   if (card.twist !== undefined) {
-    blocks.push(`[${sceneSeedSectionLabels.twist}]\n${card.twist}`);
+    // NOTE: 반전을 사건으로만 적어 두면 평범한 반응과 구별되지 않아 독자가 이상을 알아채지 못한다.
+    // 무엇이 평소와 다른지 대비로 보이고, 알아채는 사람이 정해져 있으면 그 유일성까지 쓰게 한다.
+    blocks.push(
+      `[${sceneSeedSectionLabels.twist}]\n${card.twist}\n이 반전은 독자가 이상을 분명히 알아볼 수 있게 써라. 평소에는 어땠는지를 먼저 보이고 무엇이 달라졌는지 대비하라. 특정 인물만 알아채는 반전이면, 그 자리의 다른 사람들은 알아채지 못한다는 것까지 함께 보여라.`,
+    );
   }
   if (card.emotionalShift !== undefined) {
     blocks.push(`[${sceneSeedSectionLabels.emotionalShift}]\n${card.emotionalShift}`);
