@@ -93,17 +93,18 @@ describe("craft contract lines", () => {
   it("renders the action-clarity and density-modulation rules by default", () => {
     const lines = craftContractLines(undefined)
 
-    expect(lines.some((line) => line.includes("한 문장에 한 동작"))).toBe(true)
+    expect(lines.some((line) => line.includes("한 동작과 그 결과를 붙여 쓰고"))).toBe(true)
+    expect(lines.some((line) => line.includes("건조한 중계로 만들지 마라"))).toBe(true)
     expect(lines.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(true)
   })
 
   it("drops each new rule independently when a project turns it off", () => {
     const withoutAction = craftContractLines({ actionClarity: false })
-    expect(withoutAction.some((line) => line.includes("한 문장에 한 동작"))).toBe(false)
+    expect(withoutAction.some((line) => line.includes("건조한 중계로 만들지 마라"))).toBe(false)
     expect(withoutAction.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(true)
 
     const withoutDensity = craftContractLines({ modulateDensity: false })
-    expect(withoutDensity.some((line) => line.includes("한 문장에 한 동작"))).toBe(true)
+    expect(withoutDensity.some((line) => line.includes("건조한 중계로 만들지 마라"))).toBe(true)
     expect(withoutDensity.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(false)
   })
 
