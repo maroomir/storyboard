@@ -41,6 +41,7 @@ import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
+  resolveSceneBreakJoiner,
   routeReviewIssues,
   validateDraftCandidate
 } from "@storyboard/story-pipeline"
@@ -78,6 +79,11 @@ const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process
 
 // NOTE: 제품 기본값과 같은 압축 허용치. 수정본이 이보다 많이 줄이면 원본을 지킨다.
 const harnessMaxCompressionPercent = Number(process.env.SCENE_MAX_COMPRESSION ?? "20")
+
+// NOTE: 비트 경계 표식. 데스크톱은 설정에서 읽지만 하네스에는 경로가 없어 원고에 경계가 전혀
+// 남지 않았다. 켜면 포맷이 비트 단위로 돌아 경계가 보존되는 대신 포맷 호출이 비트 수만큼 는다.
+// "0"이나 빈 값이면 종전처럼 꺼진다.
+const harnessSceneBreakJoiner = resolveSceneBreakJoiner(process.env.SCENE_BREAK ?? "3")
 
 // NOTE: mirror the extension's storyboard.draft.keepHistory — archive the prior draft under
 // .draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md before the headless run overwrites it. On unless
@@ -408,6 +414,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       styleDirective,
       previousContext: narrative.prompt,
       canonFactLines,
+      sceneBreakJoiner: harnessSceneBreakJoiner,
       providers: {
         situationExtraction: harnessProviderId,
         personaGeneration: harnessProviderId,
