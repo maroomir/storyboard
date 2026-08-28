@@ -197,7 +197,7 @@ export class DraftAiService {
     options: GenerateTextOptions = {},
   ): Promise<string> {
     const variant = this.gateway.resolvePromptVariant('draftAugment', options);
-    const prompt = DraftAugmentPrompt.build(input, variant);
+    const prompt = DraftAugmentPrompt.build(input, variant, options.styleDirective);
     const response = await this.generateWithDefaults(
       'draftAugment',
       prompt,
