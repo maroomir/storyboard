@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   canonicalizeSceneCardText,
+  extractSceneNarrativeSource,
   parseScene,
   parseSceneFileName,
   parseSceneStem,
@@ -230,5 +231,32 @@ describe("scene card twist directive", () => {
     const scene = parseScene("type: scene\nid: 01-a\nsummary: 본문\n", "01-a.card")
 
     expect(scene.body).not.toContain("독자가 이상을 분명히 알아볼 수 있게")
+  })
+})
+
+describe("extractSceneNarrativeSource", () => {
+  it("drops craft blocks so only the event summary reaches situation extraction", () => {
+    const cardText = [
+      "type: scene",
+      "id: 01-square",
+      "conflict: 발키리가 레벨 0을 조롱하며 시비를 건다",
+      "endState: 광장을 벗어나는 데까지 쓰고 브로크와의 대면은 다음 장면에 넘긴다",
+      "summary: 이준이 좌판을 정리한다. 하늘에 공지가 뜬다.",
+      ""
+    ].join("\n")
+    const scene = parseScene(cardText, "01-square.card")
+
+    const narrative = extractSceneNarrativeSource(scene.body)
+
+    expect(narrative).toBe("이준이 좌판을 정리한다. 하늘에 공지가 뜬다.")
+    expect(narrative).not.toContain("[갈등]")
+    expect(narrative).not.toContain("시비를 건다")
+    expect(narrative).not.toContain("브로크와의 대면")
+  })
+
+  it("falls back to the whole body when it holds no plain narrative", () => {
+    const scene = parseScene("type: scene\nid: 01-a\nconflict: 다툰다\n", "01-a.card")
+
+    expect(extractSceneNarrativeSource(scene.body)).toContain("[갈등]")
   })
 })

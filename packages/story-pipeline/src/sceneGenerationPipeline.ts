@@ -1,6 +1,6 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
-import { createEmptyBackground } from '@storyboard/story-format';
+import { createEmptyBackground, extractSceneNarrativeSource } from '@storyboard/story-format';
 import {
   condensePreviousContext,
   dedupeSituations,
@@ -43,6 +43,7 @@ interface ResolvedExecutionContext {
   readonly onProgress?: RunSceneGenerationPipelineInput['onProgress'];
   readonly shouldCancel?: () => boolean;
   readonly body: string;
+  readonly narrativeSource: string;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
@@ -67,6 +68,8 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   const sceneStem = input.sceneStem ?? input.context.scene.stem;
   const sceneRef: EntityRef = { kind: 'scene', id: sceneStem };
   const body = context.scene.body.trim();
+  // NOTE: 사건 추출에는 작법 블록을 뺀 서술만 넘긴다. 블록이 섞이면 같은 등장이 두 번 추출된다.
+  const narrativeSource = extractSceneNarrativeSource(body);
 
   if (body.length === 0) {
     throw new Error(
@@ -90,6 +93,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     onProgress,
     shouldCancel,
     body,
+    narrativeSource,
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
@@ -109,6 +113,7 @@ async function executeSceneGenerationPipeline(
     onProgress,
     shouldCancel,
     body,
+    narrativeSource,
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
@@ -116,13 +121,13 @@ async function executeSceneGenerationPipeline(
   } = resolveExecutionContext(input);
 
   const situationsRaw = await aiService.extractSituations(
-    body,
+    narrativeSource,
     withAttribution(buildGenerateOptions(providers, 'situationExtraction'), { primary: sceneRef }),
   );
   onProgress?.('extractSituations', 1, 1);
   assertNotCancelled(shouldCancel);
 
-  const situations = mergeSituationsToSourceBlockLimit(dedupeSituations(situationsRaw), body);
+  const situations = mergeSituationsToSourceBlockLimit(dedupeSituations(situationsRaw), narrativeSource);
   if (situations.length === 0) {
     throw new Error('상황을 추출할 수 없습니다.');
   }
