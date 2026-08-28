@@ -12,11 +12,6 @@ import type {
 import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
 
-interface SceneCacheSituation {
-  readonly summary: string;
-  readonly characters: readonly string[];
-}
-
 interface SceneCacheBackgroundSnapshot {
   readonly id: string;
   readonly name: string;
@@ -29,7 +24,8 @@ export interface SceneCacheRecord {
   readonly inputHash: string;
   readonly input: string;
   readonly detectedCharacters: readonly string[];
-  readonly extractedSituations: readonly SceneCacheSituation[];
+  // 1단계 뼈대. 사건·등장·종료 지점이 여기서 확정되므로 재생성 결과를 견주는 기준이 된다.
+  readonly skeleton?: string;
   readonly personasUsed: Readonly<Record<string, string>>;
   readonly backgroundSnapshot?: SceneCacheBackgroundSnapshot;
   readonly previousContext?: string;
@@ -51,11 +47,6 @@ export interface SceneInputHashInput {
   readonly grounding?: SceneGrounding;
 }
 
-const sceneCacheSituationSchema = z.object({
-  summary: z.string(),
-  characters: z.array(z.string()),
-});
-
 const sceneCacheBackgroundSnapshotSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -75,7 +66,7 @@ const sceneCacheRecordSchema = z.object({
   inputHash: z.string().regex(/^sha256:[a-f0-9]{64}$/),
   input: z.string(),
   detectedCharacters: z.array(z.string()),
-  extractedSituations: z.array(sceneCacheSituationSchema),
+  skeleton: z.string().optional(),
   personasUsed: z.record(z.string(), z.string()),
   backgroundSnapshot: sceneCacheBackgroundSnapshotSchema.optional(),
   previousContext: z.string().optional(),

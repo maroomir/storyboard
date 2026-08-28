@@ -86,10 +86,7 @@ function buildSceneCacheRecord(
     inputHash,
     input: context.scene.body,
     detectedCharacters: result.detectedCharacters,
-    extractedSituations: result.situations.map((item) => ({
-      summary: item.situation,
-      characters: [...item.characters],
-    })),
+    skeleton: result.skeleton,
     personasUsed: Object.fromEntries(result.personasUsed),
     backgroundSnapshot: toBackgroundSnapshot(context.background),
     previousContext,
@@ -136,6 +133,7 @@ async function persistGeneratedDraft(
     sceneStem: scene.stem,
     format: project.format,
     body: result.draftBody,
+    warnings: result.warnings,
     generator: options.generator,
     providerId: sceneDraftConfig.providerId,
     model: sceneDraftConfig.model,
@@ -169,10 +167,9 @@ async function runAndPersistDraft(
 
   const aiService = options.aiGateway.createService(workspaceFolder.uri);
   const pipelineProviders = {
-    situationExtraction: options.aiGateway.getTaskProvider('situationExtraction'),
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
-    personaDialogue: options.aiGateway.getTaskProvider('personaDialogue'),
-    sceneDraft: options.aiGateway.getTaskProvider('sceneDraft'),
+    sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
+    sceneSectionExpansion: options.aiGateway.getTaskProvider('sceneSectionExpansion'),
   };
   const cacheProviders = {
     ...pipelineProviders,
@@ -206,7 +203,6 @@ async function runAndPersistDraft(
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
       personaStore: createPersonaMemoryStore(paths, scene.stem),
       backgroundStore: createBackgroundMemoryStore(paths, scene.stem),
-      sceneBreakJoiner: inputs.sceneBreakJoiner,
     }).run();
 
     return await persistGeneratedDraft(inputs, options, aiService, result, cacheProviders);

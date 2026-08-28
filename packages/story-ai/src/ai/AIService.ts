@@ -135,6 +135,20 @@ export class StoryboardAIService {
     );
   }
 
+  public async draftSceneSkeleton(
+    input: Parameters<SceneAiService['draftSceneSkeleton']>[0],
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    return this.sceneAiService.draftSceneSkeleton(input, options);
+  }
+
+  public async expandSceneSection(
+    input: Parameters<SceneAiService['expandSceneSection']>[0],
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    return this.sceneAiService.expandSceneSection(input, options);
+  }
+
   public async applyGenreFormat(
     dialogue: string,
     format: ProjectFormat,

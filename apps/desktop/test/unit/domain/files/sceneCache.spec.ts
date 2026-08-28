@@ -43,7 +43,7 @@ describe("scene cache codec", () => {
       inputHash,
       input: "샘플 캐릭터가 등장한다.",
       detectedCharacters: ["sample"],
-      extractedSituations: [{ summary: "샘플 캐릭터가 등장한다.", characters: ["sample"] }],
+      skeleton: "샘플 캐릭터가 등장한다.",
       personasUsed: { sample: "나는 샘플 캐릭터다." },
       backgroundSnapshot: {
         id: "sample",

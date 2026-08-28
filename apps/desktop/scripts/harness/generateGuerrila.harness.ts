@@ -42,7 +42,6 @@ import {
   adaptContinuityIssues,
   adaptCritiqueIssues,
   buildScopedInstructions,
-  resolveSceneBreakJoiner,
   routeReviewIssues,
   validateDraftCandidate
 } from "@storyboard/story-pipeline"
@@ -80,11 +79,6 @@ const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process
 
 // NOTE: 제품 기본값과 같은 압축 허용치. 수정본이 이보다 많이 줄이면 원본을 지킨다.
 const harnessMaxCompressionPercent = Number(process.env.SCENE_MAX_COMPRESSION ?? "20")
-
-// NOTE: 비트 경계 표식. 기본은 꺼 둔다 — 켜면 포맷이 비트 하나씩 돌아 모델이 비트 사이를 볼 수
-// 없고, 그러면 시간·장소가 바뀌는 지점에 --- 를 넣는 판단 자체가 불가능해진다(실측 0개). 경계
-// 보존이 전환 표시보다 중요한 작업에서만 SCENE_BREAK로 켠다.
-const harnessSceneBreakJoiner = resolveSceneBreakJoiner(process.env.SCENE_BREAK ?? "0")
 
 // NOTE: mirror the extension's storyboard.draft.keepHistory — archive the prior draft under
 // .draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md before the headless run overwrites it. On unless
@@ -415,12 +409,10 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       styleDirective,
       previousContext: narrative.prompt,
       canonFactLines,
-      sceneBreakJoiner: harnessSceneBreakJoiner,
       providers: {
-        situationExtraction: harnessProviderId,
         personaGeneration: harnessProviderId,
-        personaDialogue: harnessProviderId,
-        sceneDraft: harnessProviderId
+        sceneSkeleton: harnessProviderId,
+        sceneSectionExpansion: harnessProviderId
       },
       personaStore: createHarnessPersonaStore(scene.stem),
       backgroundStore: createHarnessBackgroundStore(scene.stem),
@@ -432,7 +424,11 @@ test("regenerate guerrila draft via codex pipeline", async () => {
     })
 
     // eslint-disable-next-line no-console
-    console.log(`situations=${result.situations.length} characters=${result.detectedCharacters.join(", ")}`)
+    console.log(`skeleton=${result.skeleton.length}자 characters=${result.detectedCharacters.join(", ")}`)
+    if (result.warnings.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(`[warnings] ${result.warnings.join(" / ")}`)
+    }
 
     const draftPath = path.join(workspace, "draft", `${scene.stem}.md`)
 
@@ -454,7 +450,9 @@ test("regenerate guerrila draft via codex pipeline", async () => {
     let body = result.draftBody
     await nodeFs.writeFile(
       draftPath,
-      serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
+      serializeDraft(
+        createDraft({ sceneStem: scene.stem, format: project.format, body, warnings: result.warnings })
+      ),
       "utf8"
     )
 
@@ -477,7 +475,9 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       body = revision.body
       await nodeFs.writeFile(
         draftPath,
-        serializeDraft(createDraft({ sceneStem: scene.stem, format: project.format, body })),
+        serializeDraft(
+        createDraft({ sceneStem: scene.stem, format: project.format, body, warnings: result.warnings })
+      ),
         "utf8"
       )
 

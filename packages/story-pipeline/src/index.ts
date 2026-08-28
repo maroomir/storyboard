@@ -6,3 +6,4 @@ export * from './sceneGenerationPipeline';
 export * from './sceneGenerationPolicies';
 export * from './sceneGenerationStages';
 export * from './sceneGenerationTypes';
+export * from './sceneSectionPlan';

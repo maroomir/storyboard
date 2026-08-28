@@ -32,6 +32,7 @@ interface DraftFrontmatter {
   readonly generator?: string;
   readonly providerId?: string;
   readonly model?: string;
+  readonly warnings?: readonly string[];
 }
 
 const draftFrontmatterSchema = z.object({
@@ -41,9 +42,11 @@ const draftFrontmatterSchema = z.object({
   generator: z.string().min(1).optional(),
   providerId: z.string().min(1).optional(),
   model: z.string().min(1).optional(),
+  warnings: z.array(z.string().min(1)).optional(),
 });
 
 export function createDraft(input: {
+  readonly warnings?: readonly string[];
   readonly sceneStem: string;
   readonly format: ProjectFormat;
   readonly body: string;
@@ -59,6 +62,7 @@ export function createDraft(input: {
     ...(input.generator !== undefined && { generator: input.generator }),
     ...(input.providerId !== undefined && { providerId: input.providerId }),
     ...(input.model !== undefined && { model: input.model }),
+    ...(input.warnings !== undefined && input.warnings.length > 0 && { warnings: input.warnings }),
     body: input.body,
   };
 }
@@ -71,6 +75,7 @@ export function serializeDraft(draft: Draft): string {
     ...(draft.generator !== undefined && { generator: draft.generator }),
     ...(draft.providerId !== undefined && { providerId: draft.providerId }),
     ...(draft.model !== undefined && { model: draft.model }),
+    ...(draft.warnings !== undefined && draft.warnings.length > 0 && { warnings: draft.warnings }),
   };
   const serializedFrontmatter = yaml.dump(frontmatter, {
     lineWidth: -1,
