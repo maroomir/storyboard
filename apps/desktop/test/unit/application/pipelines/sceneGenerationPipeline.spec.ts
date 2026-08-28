@@ -120,6 +120,21 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     expect(input.narrativeSource).not.toContain("[갈등]")
   })
 
+  it("gives the skeleton a third of the scene target so expansion is not a 15x job", async () => {
+    const ai = createRecordingAiService()
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 15000 }
+    })
+
+    const input = ai.draftSceneSkeleton.mock.calls[0]?.[0] as { targetLength?: number }
+    expect(input.targetLength).toBe(5000)
+  })
+
   it("passes the card end state so the skeleton knows where to stop", async () => {
     const ai = createRecordingAiService()
 

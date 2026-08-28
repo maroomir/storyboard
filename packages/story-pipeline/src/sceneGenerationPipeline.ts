@@ -96,6 +96,15 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   };
 }
 
+// NOTE: 뼈대가 얇으면 살붙임이 감당 못 할 배율(15배)을 요구받아 분량이 미달한다. 최종 목표의
+// 1/3을 뼈대에 배분해 확장이 3배 남짓이 되게 한다.
+const SKELETON_LENGTH_RATIO = 1 / 3;
+
+function skeletonTargetLength(styleDirective: StyleDirective | undefined): number | undefined {
+  const target = styleDirective?.targetWordCount;
+  return target === undefined ? undefined : Math.round(target * SKELETON_LENGTH_RATIO);
+}
+
 function sectionTargetLength(
   styleDirective: StyleDirective | undefined,
   sectionCount: number,
@@ -206,6 +215,7 @@ async function executeSceneGenerationPipeline(
       previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),
       endState: context.scene.card?.endState,
       grounding: context.scene.frontmatter.grounding,
+      targetLength: skeletonTargetLength(styleDirective),
     },
     withAttribution(
       { ...buildGenerateOptions(providers, 'sceneSkeleton'), styleDirective },
