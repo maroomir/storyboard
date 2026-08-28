@@ -932,3 +932,50 @@ describe("intra-scene continuity (2화 반복 회귀 방지)", () => {
     expect(thirdPrior).toContain("도착·입장·인사를 되풀이하지 말고")
   })
 })
+
+describe("format chunk length budget", () => {
+  it("splits the scene target across chunks so length does not multiply", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "상황1" },
+      { characters: ["엘리아"], situation: "상황2" },
+      { characters: ["엘리아"], situation: "상황3" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("엘리아: 대사")
+    ai.applyGenreFormat.mockResolvedValue("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 15000 },
+      sceneBreakJoiner: "\n\n\n"
+    })
+
+    expect(ai.applyGenreFormat).toHaveBeenCalledTimes(3)
+    for (const call of ai.applyGenreFormat.mock.calls) {
+      expect((call[2] as { styleDirective?: { targetWordCount?: number } }).styleDirective?.targetWordCount).toBe(5000)
+    }
+  })
+
+  it("leaves the target alone when everything formats in one chunk", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "상황1" }])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("엘리아: 대사")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 15000 }
+    })
+
+    const options = ai.applyGenreFormat.mock.calls[0]?.[2] as { styleDirective?: { targetWordCount?: number } }
+    expect(options.styleDirective?.targetWordCount).toBe(15000)
+  })
+})
