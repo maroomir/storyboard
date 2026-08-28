@@ -35,3 +35,10 @@ export function findForeignScriptSpans(text: string): ForeignScriptSpan[] {
 export function hasForeignScript(text: string): boolean {
   return foreignScriptPattern.test(text);
 }
+
+// NOTE: 오염된 원고의 꼬리가 다음 씬 프롬프트로 실려 같은 낱말이 되풀이 생성되는 경로가 확인됐다
+// (1화 말미의 아랍어가 2화에 그대로 재생산). 원고 자체는 건드리지 않고, 맥락으로 넘길 때만 걷어낸다.
+export function stripForeignScript(text: string): string {
+  const runPattern = new RegExp(`[${foreignScriptRanges}]+`, 'g');
+  return text.replace(runPattern, '').replace(/[ \t]{2,}/g, ' ');
+}

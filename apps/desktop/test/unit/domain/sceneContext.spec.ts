@@ -684,6 +684,24 @@ describe("buildNarrativeContext", () => {
     expect(result.prompt ?? "").not.toContain("[이야기 상태]")
   })
 
+  it("strips foreign-script contamination from the previous-scene tail", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setDirectory("/mock/workspace/draft", [["01-prev.md", { type: "file" }]])
+    fileSystem.setFile("/mock/workspace/draft/01-prev.md", "지금은 다음 ضرب을 정하지 못한 채 멈춰 있었다.")
+
+    const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
+    const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
+
+    const result = await buildNarrativeContext(
+      { ...basePaths, manuscriptSummary: undefined },
+      secondContext,
+      fileSystem
+    )
+
+    expect(result.prompt).toContain("정하지 못한 채")
+    expect(result.prompt).not.toContain("ضرب")
+  })
+
   it("returns no facts or prompt when bible and previous context are absent", async () => {
     const fileSystem = new MockFileSystem()
 
