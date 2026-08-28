@@ -97,7 +97,8 @@ describe("AI prompts", () => {
       "시간·장소가 바뀌는 지점에서 장면을 명확히 구분하고, 각 장면의 도입(등장 경위·공간)과 장면 사이의 전환을 자연스럽게 이어라. 대사 없이 행동만 있는 대목도 장면으로 살려 두어라."
     const noMetaLeakLine =
       "오직 완성된 소설 본문만 출력하라. 분량·토큰·작업 방식에 대한 안내, 연재형/압축형 같은 선택지 제시, 사용자에게 묻는 말 등 어떤 메타 설명도 출력하지 마라."
-    const noDividerLine = "장면 구분은 빈 줄로만 하고 ---, *** 같은 기호 구분선은 쓰지 마라."
+    const sceneBreakMarkerLine =
+      "시간이나 장소가 바뀌어 장면이 전환되는 지점에만 단독 줄에 --- 를 넣어 표시하라. 같은 시간·장소 안의 문단 바꿈에는 쓰지 말고, *** 같은 다른 기호도 쓰지 마라."
     const noRepetitionLine = "같은 표현이나 상투구를 반복하지 말고 변주하라."
 
     const rich = GenreFormattingPrompt.build("조만재: 안녕", "novel", "rich", { genre: "허세 코미디" })
@@ -105,7 +106,8 @@ describe("AI prompts", () => {
     expect(rich.system).toContain(rawConfrontationLine)
     expect(rich.system).toContain(sceneDelineationLine)
     expect(rich.system).toContain(noMetaLeakLine)
-    expect(rich.system).toContain(noDividerLine)
+    expect(rich.system).toContain(sceneBreakMarkerLine)
+    expect(rich.system).not.toContain("기호 구분선은 쓰지 마라")
     expect(rich.system).toContain(noRepetitionLine)
 
     const xs = GenreFormattingPrompt.build("조만재: 안녕", "novel", "xs")
@@ -113,7 +115,7 @@ describe("AI prompts", () => {
     expect(xs.system).not.toContain(rawConfrontationLine)
     expect(xs.system).not.toContain(sceneDelineationLine)
     expect(xs.system).not.toContain(noMetaLeakLine)
-    expect(xs.system).not.toContain(noDividerLine)
+    expect(xs.system).not.toContain(sceneBreakMarkerLine)
     expect(xs.system).not.toContain(noRepetitionLine)
   })
 
