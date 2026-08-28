@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { findForeignScriptSpans, hasForeignScript, storyStateFactLines } from '@storyboard/story-format';
+import {
+  findForeignScriptSpans,
+  hasForeignScript,
+  stripForeignScript,
+  storyStateFactLines
+} from '@storyboard/story-format';
 import {
   createEmptyStoryState,
   formatStoryStateForPrompt,
@@ -290,5 +295,17 @@ describe("foreign script detection", () => {
     const spans = findForeignScriptSpans("첫 чуж 그리고 두 번째 সত্য 끝")
 
     expect(spans.map((span) => span.text)).toEqual(["чуж", "সত্য"])
+  })
+})
+
+describe("stripForeignScript", () => {
+  it("removes a contaminated run so it cannot seed the next scene", () => {
+    expect(stripForeignScript("다음 ضربم을 정하지 못했다.")).toBe("다음 을 정하지 못했다.")
+  })
+
+  it("leaves clean Korean, Latin and Han text untouched", () => {
+    const clean = "이준은 BROK-07 각인과 漢字를 보았다."
+
+    expect(stripForeignScript(clean)).toBe(clean)
   })
 })

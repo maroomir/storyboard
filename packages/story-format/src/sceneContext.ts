@@ -17,6 +17,7 @@ import {
 import { isIgnoredSampleCardFileName } from './sampleCard';
 import { detectCharactersInText } from './characterDetector';
 import { formatStoryStateForPrompt, readStoryState } from './storyState';
+import { stripForeignScript } from './foreignScript';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: unknown;
@@ -145,7 +146,9 @@ export async function buildNarrativeContext(
   context: SceneContext,
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<NarrativeContext> {
-  const previousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem);
+  const rawPreviousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem);
+  const previousContext =
+    rawPreviousContext === undefined ? undefined : stripForeignScript(rawPreviousContext);
   const bible = await readSceneBible(paths, fileSystem);
   const bibleFacts = selectInjectedFacts(
     bible,
