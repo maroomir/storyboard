@@ -157,6 +157,20 @@ export function renderSceneCardBody(card: SceneCard): string {
   return blocks.length > 0 ? `${blocks.join('\n\n')}\n` : '';
 }
 
+// NOTE: 상황 추출은 '일어난 일'만 받아야 한다. 씬 본문에는 요약 앞에 [갈등]·[반전]·[종료 지점]
+// 같은 작법 블록이 놓이는데, 추출기가 이것들을 사건으로 읽으면 같은 등장이 두 번 뽑히거나
+// (「발키리가 시비를 건다」가 [갈등]과 요약에서 각각) 금지문이 소재로 둔갑한다(「브로크와의 대면은
+// 다음 장면에」→ 대장간 도착을 씀). 그래서 사건 목록만 따로 떼어 넘긴다.
+export function extractSceneNarrativeSource(body: string): string {
+  const blocks = body
+    .split(/\n\s*\n+/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0);
+  const narrative = blocks.filter((block) => !block.startsWith('['));
+
+  return narrative.length > 0 ? narrative.join('\n\n') : body.trim();
+}
+
 export function parseSceneFileName(fileName: string): SceneFileNameParts | undefined {
   const match = sceneFileNamePattern.exec(fileName);
 
