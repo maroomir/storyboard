@@ -206,3 +206,29 @@ describe("scene card endState and povCharacter", () => {
     expect(scene.frontmatter.povCharacter).toBeUndefined()
   })
 })
+
+describe("scene card twist directive", () => {
+  const cardText = [
+    "type: scene",
+    "id: 01-square",
+    "twist: 공지가 뜬 순간 광장의 모든 NPC가 반 박자 멈췄고, 그걸 본 사람은 이준뿐이다",
+    "summary: 광장에 공지가 뜬다.",
+    ""
+  ].join("\n")
+
+  it("asks for the anomaly to be legible and its witness unique", () => {
+    const scene = parseScene(cardText, "01-square.card")
+
+    expect(scene.body).toContain("[반전]")
+    expect(scene.body).toContain("그걸 본 사람은 이준뿐이다")
+    expect(scene.body).toContain("독자가 이상을 분명히 알아볼 수 있게")
+    expect(scene.body).toContain("평소에는 어땠는지를 먼저 보이고")
+    expect(scene.body).toContain("다른 사람들은 알아채지 못한다는 것까지")
+  })
+
+  it("omits the directive when the card has no twist", () => {
+    const scene = parseScene("type: scene\nid: 01-a\nsummary: 본문\n", "01-a.card")
+
+    expect(scene.body).not.toContain("독자가 이상을 분명히 알아볼 수 있게")
+  })
+})
