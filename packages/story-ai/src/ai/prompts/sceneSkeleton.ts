@@ -17,6 +17,7 @@ export interface SceneSkeletonInput {
   readonly endState?: string;
   readonly grounding?: SceneGrounding;
   readonly style?: StyleDirective;
+  readonly targetLength?: number;
 }
 
 // NOTE: 씬의 뼈대를 한 번에 쓴다. 사건 순서·등장·종료 지점 같은 연속성 결정이 전부 이 한 문맥에서
@@ -38,7 +39,10 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
     system: [
       '주어진 사건 목록을 한 편의 장면으로 옮기되, 아직 살은 붙이지 마라. 이 단계의 결과물은 뒤에서 묘사를 더할 뼈대다.',
       '사건을 순서대로 빠짐없이 담고, 인물이 언제 등장하고 언제 자리를 뜨는지, 장면이 어디서 끝나는지를 분명히 하라.',
-      '대사는 실제로 쓸 문장을 따옴표로 적어라. 행동과 이동은 짧은 서술로 적되, 감각 묘사·회상·긴 내면 독백은 넣지 마라.',
+      '대사는 실제로 쓸 문장을 따옴표로 빠짐없이 적어라. 사건마다 인물이 무엇을 하고 어떤 말을 주고받는지 구체적으로 담되, 감각 묘사·회상·긴 내면 독백은 넣지 마라. 그것은 다음 단계의 몫이다.',
+      input.targetLength
+        ? `뼈대의 목표 분량: 약 ${input.targetLength.toLocaleString()}자. 사건을 뭉뚱그리지 말고 이 분량이 나올 만큼 대사와 행동을 촘촘히 적어라.`
+        : undefined,
       '한 인물이 이미 그 자리에 있으면 다시 등장시키지 말고, 이미 벌어진 일은 다시 일으키지 마라.',
       '입력에 없는 새로운 사건·설정·인물을 지어내지 마라.',
       '시간이나 장소가 바뀌는 지점에는 단독 줄에 --- 를 넣어 장면 전환을 표시하라.',
