@@ -191,6 +191,28 @@ export async function buildScenePersonas(
   return personasUsed;
 }
 
+// NOTE: 압축 tail은 예산에 밀려 초반 비트가 잘려 나가므로, 이 장면에서 이미 쓴 대목을 목록으로
+// 따로 넘긴다. situations는 이미 손에 있어 추가 AI 호출이 없다. 이것이 없으면 뒤 비트가 앞에서
+// 끝낸 도입(입장·인사·첫 질문)을 다시 쓴다.
+function coveredBeatsBlock(
+  situations: readonly SituationWithCharacters[],
+  currentIndex: number,
+): string | undefined {
+  if (currentIndex === 0) {
+    return undefined;
+  }
+
+  const lines = situations
+    .slice(0, currentIndex)
+    .map((item, index) => `${index + 1}. ${item.situation.replace(/\s+/g, ' ').trim()}`);
+
+  return [
+    '[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]',
+    ...lines,
+    '위 대목은 끝났다. 인물은 이미 그 자리에 있으니 도착·입장·인사를 되풀이하지 말고 이어서 써라.',
+  ].join('\n');
+}
+
 export async function generateSceneDialogue(
   situations: readonly SituationWithCharacters[],
   characters: readonly CharacterCard[],
@@ -223,7 +245,7 @@ export async function generateSceneDialogue(
         : undefined;
     const prior: string | undefined =
       intraSceneTail !== undefined
-        ? [condensedPreviousContext, intraSceneTail]
+        ? [condensedPreviousContext, coveredBeatsBlock(situations, i), intraSceneTail]
             .filter((part): part is string => Boolean(part))
             .join('\n\n')
         : condensedPreviousContext;

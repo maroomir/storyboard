@@ -14,6 +14,8 @@ const SCENE_CRAFT_LINES = [
   "인물의 성격·사연·감정은 한꺼번에 설명하지 말고 행동과 대사로 조금씩 드러내며 장면이 진행될수록 긴장을 쌓아라."
 ]
 const COMPLETENESS_LINE = "모든 사건을 등장 순서대로 빠짐없이 담되, 한 문장·한 동작 단위로 과도하게 쪼개지 말고 의미 있는 장면 단위로 묶어라."
+const NO_RESTAGING_LINE =
+  "앞 대목에서 이미 그 자리에 있는 인물을 다시 도착시키거나 다시 맞이하게 하지 마라. 이미 나눈 인사·질문·확인을 되풀이하지 말고, 끝난 지점의 다음부터 써라."
 const KNOWLEDGE_BOUNDARY_LINE =
   "각 인물은 자신이 직접 겪었거나 이전 장면에서 알게 된 정보만 안다. 다른 인물의 페르소나에만 적힌 사실(직업·과거·비밀 등)을 당사자가 밝히기 전에 알거나 언급하게 하지 마라."
 const META_BLOCK_GUARD_LINE =
@@ -134,5 +136,16 @@ describe("SituationExtractionPrompt meta-block guard line", () => {
 
   it("omits the meta-block guard line in the xs variant", () => {
     expect(SituationExtractionPrompt.build("엘리아가 교실로 들어온다.", "xs").system).not.toContain(META_BLOCK_GUARD_LINE)
+  })
+})
+
+describe("PersonaDialoguePrompt no-restaging line", () => {
+  it("includes the no-restaging line for generic and rich variants", () => {
+    expect(buildDialogue("generic").system).toContain(NO_RESTAGING_LINE)
+    expect(buildDialogue("rich").system).toContain(NO_RESTAGING_LINE)
+  })
+
+  it("omits the no-restaging line for the xs variant", () => {
+    expect(buildDialogue("xs").system).not.toContain(NO_RESTAGING_LINE)
   })
 })
