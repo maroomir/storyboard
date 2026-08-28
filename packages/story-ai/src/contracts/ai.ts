@@ -18,6 +18,8 @@ export const aiTaskCatalog = [
   { name: 'personaDialogue', label: '페르소나 대화', status: 'wired' },
   { name: 'backgroundDescription', label: '배경 묘사', status: 'wired' },
   { name: 'sceneDraft', label: '씬 드래프트', status: 'wired' },
+  { name: 'sceneSkeleton', label: '씬 뼈대', status: 'wired' },
+  { name: 'sceneSectionExpansion', label: '구간 살붙임', status: 'wired' },
   { name: 'traitsExtraction', label: '특성 추출', status: 'wired' },
   { name: 'factExtraction', label: '설정 사실 추출', status: 'wired' },
   { name: 'cardFactExtraction', label: '카드 후보 추출', status: 'wired' },

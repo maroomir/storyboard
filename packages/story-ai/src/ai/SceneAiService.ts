@@ -13,6 +13,11 @@ import { GenreFormattingPrompt } from './prompts/genreFormatting';
 import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
+import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
+import {
+  SceneSectionExpansionPrompt,
+  type SceneSectionExpansionInput,
+} from './prompts/sceneSectionExpansion';
 import {
   SceneStructurePrompt,
   type SceneStructureFieldKey,
@@ -165,6 +170,43 @@ export class SceneAiService {
       'personaDialogue',
       toPromptMessages(prompt),
       options,
+    );
+
+    return response.text.trim();
+  }
+
+  public async draftSceneSkeleton(
+    input: SceneSkeletonInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    const variant = this.gateway.resolvePromptVariant('sceneSkeleton', options);
+    const prompt = SceneSkeletonPrompt.build({ ...input, style: options.styleDirective }, variant);
+    const response = await this.gateway.generate('sceneSkeleton', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneSkeletonPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneSkeletonPrompt.config.maxTokens,
+    });
+
+    return response.text.trim();
+  }
+
+  public async expandSceneSection(
+    input: SceneSectionExpansionInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    const variant = this.gateway.resolvePromptVariant('sceneSectionExpansion', options);
+    const prompt = SceneSectionExpansionPrompt.build(
+      { ...input, style: options.styleDirective },
+      variant,
+    );
+    const response = await this.gateway.generate(
+      'sceneSectionExpansion',
+      toPromptMessages(prompt),
+      {
+        ...options,
+        temperature: options.temperature ?? SceneSectionExpansionPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? SceneSectionExpansionPrompt.config.maxTokens,
+      },
     );
 
     return response.text.trim();

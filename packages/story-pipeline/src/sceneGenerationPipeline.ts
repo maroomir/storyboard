@@ -1,21 +1,21 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
 import { createEmptyBackground, extractSceneNarrativeSource } from '@storyboard/story-format';
-import {
-  condensePreviousContext,
-  dedupeSituations,
-  mergeSituationsToSourceBlockLimit,
-} from './sceneGenerationPolicies';
+import { condensePreviousContext } from './sceneGenerationPolicies';
 import {
   assertNotCancelled,
   buildGenerateOptions,
   buildScenePersonas,
   describeBackgroundForScene,
-  expandDraftToTargetLength,
-  formatSceneDraft,
-  generateSceneDialogue,
   withAttribution,
 } from './sceneGenerationStages';
+import {
+  planSectionCount,
+  splitSkeletonIntoSections,
+  validateExpandedSection,
+  SECTION_OUTPUT_LIMIT,
+  type SectionViolation,
+} from './sceneSectionPlan';
 import {
   type RunSceneGenerationPipelineInput,
   type RunSceneGenerationPipelineResult,
@@ -34,6 +34,8 @@ export type {
 } from './sceneGenerationTypes';
 export { SceneGenerationPipelineCancelledError } from './sceneGenerationTypes';
 
+const SECTION_RETRY_LIMIT = 2;
+
 interface ResolvedExecutionContext {
   readonly context: SceneContext;
   readonly aiService: SceneGenerationPipelineAiService;
@@ -42,12 +44,10 @@ interface ResolvedExecutionContext {
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>;
   readonly onProgress?: RunSceneGenerationPipelineInput['onProgress'];
   readonly shouldCancel?: () => boolean;
-  readonly body: string;
   readonly narrativeSource: string;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
-  readonly canonFactLines: readonly string[];
 }
 
 function resolveExecutionContext(input: RunSceneGenerationPipelineInput): ResolvedExecutionContext {
@@ -61,15 +61,8 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     onProgress,
     shouldCancel,
   } = input;
-  const condensedPreviousContext = condensePreviousContext(
-    previousContext,
-    input.useContextCondense === true,
-  );
   const sceneStem = input.sceneStem ?? input.context.scene.stem;
-  const sceneRef: EntityRef = { kind: 'scene', id: sceneStem };
   const body = context.scene.body.trim();
-  // NOTE: 사건 추출에는 작법 블록을 뺀 서술만 넘긴다. 블록이 섞이면 같은 등장이 두 번 추출된다.
-  const narrativeSource = extractSceneNarrativeSource(body);
 
   if (body.length === 0) {
     throw new Error(
@@ -92,13 +85,84 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     providers,
     onProgress,
     shouldCancel,
-    body,
-    narrativeSource,
-    condensedPreviousContext,
-    sceneRef,
+    // 작법 블록을 제외한 서술만 사건 재료로 쓴다. 블록이 섞이면 같은 등장이 두 번 뽑힌다.
+    narrativeSource: extractSceneNarrativeSource(body),
+    condensedPreviousContext: condensePreviousContext(
+      previousContext,
+      input.useContextCondense === true,
+    ),
+    sceneRef: { kind: 'scene', id: sceneStem },
     detectedCharacters,
-    canonFactLines: input.canonFactLines ?? [],
   };
+}
+
+function sectionTargetLength(
+  styleDirective: StyleDirective | undefined,
+  sectionCount: number,
+): number {
+  const target = styleDirective?.targetWordCount ?? SECTION_OUTPUT_LIMIT * sectionCount;
+  return Math.max(1, Math.round(target / sectionCount));
+}
+
+// NOTE: 씬 간 연속성 재료(캐넌·이전 씬)는 사건을 정하는 뼈대 단계에만 넣는다. 살붙임은 뼈대만 보고
+// 문장을 다듬으므로, 여기서 설정을 다시 보여 주면 묘사가 새 설정을 끌어들일 여지만 생긴다.
+function buildSkeletonContext(
+  previousContext: string | undefined,
+  canonFactLines: readonly string[] | undefined,
+): string | undefined {
+  const sections = [
+    canonFactLines && canonFactLines.length > 0
+      ? `[설정 메모]\n${canonFactLines.map((line) => `- ${line}`).join('\n')}\n(작가 참고용 배경지식이다. 인물이 아직 모르는 사실을 대사·사건으로 드러내지 마라.)`
+      : undefined,
+    previousContext,
+  ].filter((section): section is string => Boolean(section));
+
+  return sections.length > 0 ? sections.join('\n\n') : undefined;
+}
+
+async function expandSectionWithRetries(input: {
+  readonly aiService: Pick<SceneGenerationPipelineAiService, 'expandSceneSection'>;
+  readonly section: string;
+  readonly skeleton: string;
+  readonly previousSection: string | undefined;
+  readonly targetLength: number;
+  readonly characters: SceneContext['characters'];
+  readonly options: GenerateTextOptions;
+}): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
+  let reasons: string[] = [];
+  let lastText = input.section;
+  let lastViolations: readonly SectionViolation[] = [];
+
+  for (let attempt = 0; attempt <= SECTION_RETRY_LIMIT; attempt += 1) {
+    const expanded = await input.aiService.expandSceneSection(
+      {
+        skeleton: input.skeleton,
+        section: input.section,
+        previousSection: input.previousSection,
+        targetLength: input.targetLength,
+        retryReasons: reasons,
+      },
+      input.options,
+    );
+
+    const violations = validateExpandedSection({
+      section: input.section,
+      expanded,
+      characters: input.characters,
+      targetLength: input.targetLength,
+    });
+
+    if (violations.length === 0) {
+      return { text: expanded, violations: [] };
+    }
+
+    lastText = expanded;
+    lastViolations = violations;
+    reasons = violations.map((violation) => violation.detail);
+  }
+
+  // 재시도로도 못 고치면 결과를 채택하되, 위반 내역은 원고 헤더로 올려 읽는 사람이 바로 보게 한다.
+  return { text: lastText, violations: lastViolations };
 }
 
 async function executeSceneGenerationPipeline(
@@ -107,38 +171,19 @@ async function executeSceneGenerationPipeline(
   const {
     context,
     aiService,
-    format,
     styleDirective,
     providers,
     onProgress,
     shouldCancel,
-    body,
     narrativeSource,
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
-    canonFactLines,
   } = resolveExecutionContext(input);
 
-  const situationsRaw = await aiService.extractSituations(
-    narrativeSource,
-    withAttribution(buildGenerateOptions(providers, 'situationExtraction'), { primary: sceneRef }),
-  );
-  onProgress?.('extractSituations', 1, 1);
-  assertNotCancelled(shouldCancel);
-
-  const situations = mergeSituationsToSourceBlockLimit(dedupeSituations(situationsRaw), narrativeSource);
-  if (situations.length === 0) {
-    throw new Error('상황을 추출할 수 없습니다.');
-  }
-
-  const personaOptions: GenerateTextOptions = {
-    ...buildGenerateOptions(providers, 'personaGeneration'),
-    styleDirective,
-  };
   const personasUsed = await buildScenePersonas(
     context.characters,
-    personaOptions,
+    { ...buildGenerateOptions(providers, 'personaGeneration'), styleDirective },
     aiService,
     input.personaStore,
     sceneRef,
@@ -146,61 +191,64 @@ async function executeSceneGenerationPipeline(
     shouldCancel,
   );
 
-  const backgroundCard = context.background ?? createEmptyBackground('scene-default', '미정');
   const background = context.background
     ? await describeBackgroundForScene(context.background, aiService, input.backgroundStore)
-    : backgroundCard;
-  const dialogueOptions: GenerateTextOptions = {
-    ...buildGenerateOptions(providers, 'personaDialogue'),
-    styleDirective,
-    sceneGrounding: context.scene.frontmatter.grounding,
-  };
-  const backgroundParticipantId = context.background?.id ?? input.backgroundId;
+    : createEmptyBackground('scene-default', '미정');
   assertNotCancelled(shouldCancel);
 
-  const dialoguePieces = await generateSceneDialogue(
-    situations,
-    context.characters,
-    personasUsed,
-    background,
-    backgroundParticipantId,
-    dialogueOptions,
-    condensedPreviousContext,
-    aiService,
-    sceneRef,
-    onProgress,
-    shouldCancel,
-    context.scene.card?.endState,
-  );
-
-  const formattedDraft = await formatSceneDraft(
-    dialoguePieces,
-    format,
-    providers,
-    input.sceneBreakJoiner,
-    styleDirective,
-    aiService,
-    sceneRef,
-    onProgress,
-    shouldCancel,
+  // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
+  onProgress?.('draftSkeleton', 1, 1);
+  const skeleton = await aiService.draftSceneSkeleton(
+    {
+      narrativeSource,
+      personas: personasUsed,
+      background,
+      previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),
+      endState: context.scene.card?.endState,
+      grounding: context.scene.frontmatter.grounding,
+    },
+    withAttribution(
+      { ...buildGenerateOptions(providers, 'sceneSkeleton'), styleDirective },
+      { primary: sceneRef },
+    ),
   );
   assertNotCancelled(shouldCancel);
 
-  const draftBody = await expandDraftToTargetLength(
-    formattedDraft,
-    format,
-    styleDirective,
-    canonFactLines,
-    body,
-    aiService,
-    sceneRef,
-    onProgress,
+  // 2단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
+  const sections = splitSkeletonIntoSections(
+    skeleton,
+    planSectionCount(styleDirective?.targetWordCount ?? 0),
   );
+  const targetLength = sectionTargetLength(styleDirective, sections.length);
+  const expandedSections: string[] = [];
+  const warnings: string[] = [];
+
+  for (let index = 0; index < sections.length; index += 1) {
+    onProgress?.('expandSection', index + 1, sections.length);
+
+    const outcome = await expandSectionWithRetries({
+      aiService,
+      section: sections[index] as string,
+      skeleton,
+      previousSection: expandedSections.at(-1),
+      targetLength,
+      characters: context.characters,
+      options: withAttribution(
+        { ...buildGenerateOptions(providers, 'sceneSectionExpansion'), styleDirective },
+        { primary: sceneRef },
+      ),
+    });
+
+    expandedSections.push(outcome.text);
+    warnings.push(...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`));
+    assertNotCancelled(shouldCancel);
+  }
 
   return {
-    draftBody,
+    draftBody: expandedSections.join('\n\n'),
+    skeleton,
+    warnings,
     detectedCharacters,
-    situations,
     personasUsed,
     providers,
   };

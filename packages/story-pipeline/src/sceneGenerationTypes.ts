@@ -1,33 +1,17 @@
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 import type { IBackgroundMemoryStore, IPersonaMemoryStore } from './memoryStore';
-import type {
-  AiProviderId,
-  SituationWithCharacters,
-  StoryboardAIService,
-  StyleDirective,
-} from '@storyboard/story-ai';
+import type { AiProviderId, StoryboardAIService, StyleDirective } from '@storyboard/story-ai';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
-  | 'extractSituations'
-  | 'createCharacterPersona'
-  | 'describeBackground'
-  | 'generatePersonaDialogue'
-  | 'applyGenreFormat'
-  | 'augmentDraft'
+  'createCharacterPersona' | 'describeBackground' | 'draftSceneSkeleton' | 'expandSceneSection'
 >;
 
-export type SceneGenerationPipelineStage =
-  | 'extractSituations'
-  | 'buildPersonas'
-  | 'generateDialogue'
-  | 'applyFormat'
-  | 'expandToTarget';
+export type SceneGenerationPipelineStage = 'buildPersonas' | 'draftSkeleton' | 'expandSection';
 
 export interface SceneGenerationPipelineTaskProviders {
-  readonly situationExtraction?: AiProviderId;
   readonly personaGeneration?: AiProviderId;
-  readonly personaDialogue?: AiProviderId;
-  readonly sceneDraft?: AiProviderId;
+  readonly sceneSkeleton?: AiProviderId;
+  readonly sceneSectionExpansion?: AiProviderId;
 }
 
 export type PersonaMemoryStore = IPersonaMemoryStore;
@@ -59,13 +43,15 @@ export interface RunSceneGenerationPipelineInput {
   readonly useContextCondense?: boolean;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
-  readonly sceneBreakJoiner?: string;
 }
 
 export interface RunSceneGenerationPipelineResult {
   readonly draftBody: string;
+  // 1단계 산출물. 사건·등장·종료 지점이 여기서 확정되므로 캐시와 디버깅의 기준이 된다.
+  readonly skeleton: string;
+  // 재시도로도 못 고친 검증 위반. 원고 헤더에 실려 읽는 사람에게 보인다.
+  readonly warnings: readonly string[];
   readonly detectedCharacters: readonly string[];
-  readonly situations: readonly SituationWithCharacters[];
   readonly personasUsed: ReadonlyMap<string, string>;
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>;
 }

@@ -79,3 +79,35 @@ describe("draft file codec", () => {
     expect(extractDraftBody("frontmatter 없는 초안\n")).toBe("frontmatter 없는 초안\n")
   })
 })
+
+describe("draft warnings", () => {
+  it("round-trips warnings through the header", () => {
+    const draft = createDraft({
+      sceneStem: "01-a",
+      format: "novel",
+      body: "본문",
+      warnings: ["2구간: 뼈대에 없는 인물이 등장합니다 (박민서)"]
+    })
+
+    const serialized = serializeDraft(draft)
+    expect(serialized).toContain("warnings:")
+    expect(serialized).toContain("박민서")
+
+    expect(parseDraft(serialized).warnings).toEqual([
+      "2구간: 뼈대에 없는 인물이 등장합니다 (박민서)"
+    ])
+  })
+
+  it("omits the field when there is nothing to warn about", () => {
+    const clean = serializeDraft(createDraft({ sceneStem: "01-a", format: "novel", body: "본문" }))
+
+    expect(clean).not.toContain("warnings")
+    expect(parseDraft(clean).warnings).toBeUndefined()
+  })
+
+  it("drops an empty warning list rather than writing an empty field", () => {
+    const draft = createDraft({ sceneStem: "01-a", format: "novel", body: "본문", warnings: [] })
+
+    expect(serializeDraft(draft)).not.toContain("warnings")
+  })
+})

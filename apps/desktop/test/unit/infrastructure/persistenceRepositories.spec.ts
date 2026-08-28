@@ -104,7 +104,6 @@ describe('persistence repositories', () => {
       inputHash: `sha256:${'0'.repeat(64)}`,
       input: 'Scene body',
       detectedCharacters: [],
-      extractedSituations: [],
       personasUsed: {},
       providers: {},
     });
