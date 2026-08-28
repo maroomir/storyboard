@@ -197,17 +197,30 @@ export async function buildScenePersonas(
 function coveredBeatsBlock(
   situations: readonly SituationWithCharacters[],
   currentIndex: number,
+  endState: string | undefined,
 ): string | undefined {
-  // NOTE: 마지막 대목에는 여기서 장면이 닫힌다는 것을 알린다. 카드의 종료 지점만으로는 모델이
-  // 여세를 몰아 다음 장면 영역까지 써 버린다(1화가 대장간 안까지 들어간 사례).
+  // NOTE: 마지막 대목에는 여기서 장면이 닫힌다는 것을 알린다. 카드의 종료 지점은 이제 사건 추출
+  // 입력에서 빠졌으므로, 멈출 자리를 아는 유일한 경로가 이 지시다.
   const isLastBeat = currentIndex === situations.length - 1;
   const closingLine = isLastBeat
-    ? '이 대목이 이 장면의 마지막이다. 여기서 장면을 닫고, 그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.'
+    ? [
+        '이 대목이 이 장면의 마지막이다.',
+        endState ? `장면은 여기서 닫힌다: ${endState}` : undefined,
+        '그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.',
+      ]
+        .filter((part): part is string => Boolean(part))
+        .join(' ')
     : undefined;
 
   if (currentIndex === 0) {
     return closingLine;
   }
+
+  // NOTE: 앞 대목에 이미 나온 인물을 다시 소개하며 등장시키는 일을 막는다. 비트 자기 텍스트가
+  // 「발키리 일행이 나타나」처럼 등장을 명시하면 금지문만으로는 눌리지 않는다.
+  const introduced = [
+    ...new Set(situations.slice(0, currentIndex).flatMap((item) => item.characters)),
+  ];
 
   const lines = situations
     .slice(0, currentIndex)
@@ -219,6 +232,11 @@ function coveredBeatsBlock(
     `위 ${currentIndex}개 대목은 끝났고, 지금 쓸 것은 ${currentIndex + 1}번째 대목이다.`,
     '거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.',
     '그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.',
+    ...(introduced.length > 0
+      ? [
+          `이미 등장한 인물: ${introduced.join(', ')}. 이들은 처음 만나는 사이가 아니며 다시 소개하거나 새로 등장시키지 마라.`,
+        ]
+      : []),
     ...(closingLine ? [closingLine] : []),
   ].join('\n');
 }
@@ -235,6 +253,7 @@ export async function generateSceneDialogue(
   sceneRef: EntityRef,
   onProgress: RunSceneGenerationPipelineInput['onProgress'],
   shouldCancel: (() => boolean) | undefined,
+  endState: string | undefined,
 ): Promise<string[]> {
   const dialoguePieces: string[] = [];
 
@@ -255,7 +274,7 @@ export async function generateSceneDialogue(
         : undefined;
     const priorParts = [
       condensedPreviousContext,
-      coveredBeatsBlock(situations, i),
+      coveredBeatsBlock(situations, i, endState),
       intraSceneTail,
     ].filter((part): part is string => Boolean(part));
     const prior: string | undefined = priorParts.length > 0 ? priorParts.join('\n\n') : undefined;

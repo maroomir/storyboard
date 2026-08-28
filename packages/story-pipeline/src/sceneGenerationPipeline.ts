@@ -170,6 +170,7 @@ async function executeSceneGenerationPipeline(
     sceneRef,
     onProgress,
     shouldCancel,
+    context.scene.card?.endState,
   );
 
   const formattedDraft = await formatSceneDraft(
