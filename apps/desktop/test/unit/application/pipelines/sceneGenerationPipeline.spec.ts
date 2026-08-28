@@ -161,7 +161,7 @@ describe("runSceneGenerationPipeline", () => {
       expect.anything(),
       [
         "이전 씬 말미",
-        "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 대목은 끝났다. 인물은 이미 그 자리에 있으니 도착·입장·인사를 되풀이하지 말고 이어서 써라.",
+        "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.",
         "[첫 번째 상황|prev=이전 씬 말미]"
       ].join("\n\n"),
       expect.objectContaining({
@@ -174,7 +174,7 @@ describe("runSceneGenerationPipeline", () => {
 
     const secondPrior = [
       "이전 씬 말미",
-      "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 대목은 끝났다. 인물은 이미 그 자리에 있으니 도착·입장·인사를 되풀이하지 말고 이어서 써라.",
+      "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.",
       "[첫 번째 상황|prev=이전 씬 말미]"
     ].join("\n\n")
     const joined = `[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=${secondPrior}]`
@@ -929,7 +929,9 @@ describe("intra-scene continuity (2화 반복 회귀 방지)", () => {
     expect(thirdPrior).toContain("1. 엘리아가 문을 열고 들어선다")
     expect(thirdPrior).toContain("2. 엘리아가 자리에 앉는다")
     expect(thirdPrior).not.toContain("3. 엘리아가 편지를 꺼낸다")
-    expect(thirdPrior).toContain("도착·입장·인사를 되풀이하지 말고")
+    expect(thirdPrior).toContain("지금 쓸 것은 3번째 대목이다")
+    expect(thirdPrior).toContain("이미 뜬 공지가 다시 뜨거나")
+    expect(thirdPrior).toContain("다시 무대를 세우지 마라")
   })
 })
 
