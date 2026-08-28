@@ -10,6 +10,7 @@ import {
 } from "@storyboard/story-pipeline"
 import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@storyboard/story-format"
 import {
+  findForeignScriptSpans,
   formatStoryStateForPrompt,
   mergeStoryState,
   readStoryState,
@@ -484,6 +485,13 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       console.log(
         `[revise done] passed=${revision.passed} revisions=${revision.revisionCount} remainingBlocking=${revision.remainingBlocking}`
       )
+    }
+
+    // NOTE: 다른 문자 체계가 원고에 섞이는 사례가 반복돼(벵골·키릴·아랍) 저장 뒤 바로 알린다.
+    const foreign = findForeignScriptSpans(body)
+    if (foreign.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(`[foreign script] 원고에 다른 문자 체계 ${foreign.length}곳: ` + foreign.map((s) => `"${s.text}" (…${s.excerpt}…)`).join(" / "))
     }
 
     // NOTE: 다음 씬 생성이 이 원장을 읽는다. 확장 호스트의 저장 경로와 같은 순서로 갱신한다.

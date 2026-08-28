@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { storyStateFactLines } from '@storyboard/story-format';
+import { findForeignScriptSpans, hasForeignScript, storyStateFactLines } from '@storyboard/story-format';
 import {
   createEmptyStoryState,
   formatStoryStateForPrompt,
@@ -267,5 +267,28 @@ describe("storyState scene tagging", () => {
   it("filters continuity fact lines by scene order too", () => {
     expect(storyStateFactLines(tagged, 3).join("\n")).not.toContain("3화 사실")
     expect(storyStateFactLines(tagged, 3).join("\n")).toContain("1화 사실")
+  })
+})
+
+describe("foreign script detection", () => {
+  it("locates a contaminated run with its surrounding excerpt", () => {
+    const spans = findForeignScriptSpans("지금은 다음 ضرب을 정하지 못한 채 멈춰 있었다.")
+
+    expect(spans).toHaveLength(1)
+    expect(spans[0]?.text).toBe("ضرب")
+    expect(spans[0]?.excerpt).toContain("정하지 못한 채")
+  })
+
+  it("finds nothing in clean Korean prose with Latin and Han characters", () => {
+    const clean = "이준은 BROK-07 각인을 보았다. 漢字도 섞여 있었다."
+
+    expect(findForeignScriptSpans(clean)).toEqual([])
+    expect(hasForeignScript(clean)).toBe(false)
+  })
+
+  it("reports every contaminated run in order", () => {
+    const spans = findForeignScriptSpans("첫 чуж 그리고 두 번째 সত্য 끝")
+
+    expect(spans.map((span) => span.text)).toEqual(["чуж", "সত্য"])
   })
 })
