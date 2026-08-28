@@ -161,7 +161,7 @@ describe("runSceneGenerationPipeline", () => {
       expect.anything(),
       [
         "이전 씬 말미",
-        "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.",
+        "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.\n이 대목이 이 장면의 마지막이다. 여기서 장면을 닫고, 그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.",
         "[첫 번째 상황|prev=이전 씬 말미]"
       ].join("\n\n"),
       expect.objectContaining({
@@ -174,7 +174,7 @@ describe("runSceneGenerationPipeline", () => {
 
     const secondPrior = [
       "이전 씬 말미",
-      "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.",
+      "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 1개 대목은 끝났고, 지금 쓸 것은 2번째 대목이다.\n거기서 이미 벌어진 사건은 다시 일어나지 않는다. 이미 뜬 공지가 다시 뜨거나, 이미 온 인물이 다시 도착하거나, 이미 나눈 인사·질문을 되풀이하게 하지 마라.\n그 사건들이 끝난 직후의 상태에서 곧바로 이어 써라. 앞 대목을 요약하거나 다시 무대를 세우지 마라.\n이 대목이 이 장면의 마지막이다. 여기서 장면을 닫고, 그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.",
       "[첫 번째 상황|prev=이전 씬 말미]"
     ].join("\n\n")
     const joined = `[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=${secondPrior}]`
@@ -391,7 +391,8 @@ describe("runSceneGenerationPipeline", () => {
 
     const previous = ai.generatePersonaDialogue.mock.calls[0]?.[3]
     expect(typeof previous).toBe("string")
-    expect((previous as string).length).toBeLessThanOrEqual(1200)
+    const contextPart = (previous as string).split("\n\n이 대목이 이 장면의 마지막이다")[0] as string
+    expect(contextPart.length).toBeLessThanOrEqual(1200)
   })
 
   it("passes provider override for extraction and persona steps", async () => {
@@ -435,7 +436,7 @@ describe("runSceneGenerationPipeline", () => {
       "단일",
       expect.any(Map),
       expect.anything(),
-      undefined,
+      expect.any(String),
       expect.objectContaining({
         providerId: "openai",
         attribution: {
@@ -473,7 +474,7 @@ describe("runSceneGenerationPipeline", () => {
       "무명 상황",
       expect.any(Map),
       expect.anything(),
-      undefined,
+      expect.any(String),
       expect.objectContaining({
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
@@ -514,7 +515,7 @@ describe("runSceneGenerationPipeline", () => {
       "복도",
       expect.any(Map),
       expect.anything(),
-      undefined,
+      expect.any(String),
       expect.objectContaining({
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
@@ -922,7 +923,7 @@ describe("intra-scene continuity (2화 반복 회귀 방지)", () => {
     })
 
     const firstPrior = ai.generatePersonaDialogue.mock.calls[0]?.[3]
-    expect(firstPrior).toBeUndefined()
+    expect(firstPrior ?? "").not.toContain("이 장면에서 이미 쓴 대목")
 
     const thirdPrior = ai.generatePersonaDialogue.mock.calls[2]?.[3] as string
     expect(thirdPrior).toContain("[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]")
@@ -932,6 +933,7 @@ describe("intra-scene continuity (2화 반복 회귀 방지)", () => {
     expect(thirdPrior).toContain("지금 쓸 것은 3번째 대목이다")
     expect(thirdPrior).toContain("이미 뜬 공지가 다시 뜨거나")
     expect(thirdPrior).toContain("다시 무대를 세우지 마라")
+    expect(thirdPrior).toContain("이 대목이 이 장면의 마지막이다")
   })
 })
 
@@ -979,5 +981,48 @@ describe("format chunk length budget", () => {
 
     const options = ai.applyGenreFormat.mock.calls[0]?.[2] as { styleDirective?: { targetWordCount?: number } }
     expect(options.styleDirective?.targetWordCount).toBe(15000)
+  })
+})
+
+describe("closing beat directive", () => {
+  it("tells only the final beat that the scene ends there", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "상황1" },
+      { characters: ["엘리아"], situation: "상황2" },
+      { characters: ["엘리아"], situation: "상황3" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("엘리아: 대사")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const priors = ai.generatePersonaDialogue.mock.calls.map((call) => (call[3] as string) ?? "")
+    expect(priors[0]).not.toContain("이 장면의 마지막이다")
+    expect(priors[1]).not.toContain("이 장면의 마지막이다")
+    expect(priors[2]).toContain("이 대목이 이 장면의 마지막이다")
+  })
+
+  it("still marks the closing beat when the scene has a single beat", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([{ characters: ["엘리아"], situation: "유일한 상황" }])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("엘리아: 대사")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.generatePersonaDialogue.mock.calls[0]?.[3] as string).toContain("이 대목이 이 장면의 마지막이다")
   })
 })
