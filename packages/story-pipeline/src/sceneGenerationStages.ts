@@ -306,7 +306,7 @@ export async function expandDraftToTargetLength(
       cards: [],
       facts,
       intent,
-      instruction: `현재 분량이 목표에 못 미친다. 사건 순서와 대사를 그대로 두고 감각 묘사·내면·호흡만 늘려 약 ${target.toLocaleString()}자에 가깝게 확장하라. 새로운 사건·설정·인물을 추가하지 마라.`,
+      instruction: `현재 분량이 목표에 못 미친다. 사건 순서와 대사를 그대로 두고 약 ${target.toLocaleString()}자에 가깝게 보강하라. 인물이 머무르거나 정서가 쌓이는 대목의 묘사·내면만 늘리고, 동작·전투처럼 몸이 움직이는 대목은 늘리지 마라. 새로운 사건·설정·인물을 추가하지 마라.`,
     },
     withAttribution({ styleDirective }, { primary: sceneRef }),
   );

@@ -143,3 +143,34 @@ describe("formatAugmentCards", () => {
     expect(blocks[1]).toContain("감각: 분필 냄새")
   })
 })
+
+describe("DraftAugmentPrompt craft contract injection", () => {
+  const input = {
+    target: "본문",
+    scope: "draft" as const,
+    format: "novel" as const,
+    cards: [],
+    facts: [],
+    instruction: "분량을 보강하라"
+  }
+
+  it("carries the craft contract into the expansion prompt", () => {
+    const withStyle = DraftAugmentPrompt.build(input, "generic", { genre: "게임 판타지" })
+
+    expect(withStyle.system).toContain("한 문장에 한 동작")
+    expect(withStyle.system).toContain("밀도를 일정하게 유지하지 마라")
+  })
+
+  it("still applies the default contract when no style is given", () => {
+    expect(DraftAugmentPrompt.build(input, "generic").system).toContain("한 문장에 한 동작")
+  })
+
+  it("honours a project that turns the rules off", () => {
+    const relaxed = DraftAugmentPrompt.build(input, "generic", {
+      craftContract: { actionClarity: false, modulateDensity: false }
+    })
+
+    expect(relaxed.system).not.toContain("한 문장에 한 동작")
+    expect(relaxed.system).not.toContain("밀도를 일정하게 유지하지 마라")
+  })
+})

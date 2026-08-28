@@ -1,5 +1,6 @@
 import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
+import { craftContractLines, type StyleDirective } from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export type DraftAugmentScope = 'draft' | 'selection';
@@ -19,12 +20,16 @@ export const DraftAugmentPrompt = {
     temperature: 0.7,
     maxTokens: 4000,
   },
-  build(input: DraftAugmentInput, variant: PromptVariantId = 'generic'): PromptArtifact {
-    return variant === 'xs' ? buildXs(input) : buildGeneric(input);
+  build(
+    input: DraftAugmentInput,
+    variant: PromptVariantId = 'generic',
+    style?: StyleDirective,
+  ): PromptArtifact {
+    return variant === 'xs' ? buildXs(input) : buildGeneric(input, style);
   },
 } as const;
 
-function buildGeneric(input: DraftAugmentInput): PromptArtifact {
+function buildGeneric(input: DraftAugmentInput, style?: StyleDirective): PromptArtifact {
   const isInstructed = Boolean(input.instruction?.trim());
 
   const systemLines = isInstructed
@@ -47,7 +52,9 @@ function buildGeneric(input: DraftAugmentInput): PromptArtifact {
       ];
 
   return {
-    system: systemLines.filter((line): line is string => Boolean(line)).join('\n'),
+    system: [...systemLines, ...craftContractLines(style?.craftContract)]
+      .filter((line): line is string => Boolean(line))
+      .join('\n'),
     user: buildUserBlock(input),
   };
 }

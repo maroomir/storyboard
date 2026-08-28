@@ -107,6 +107,19 @@ export function craftContractLines(override: CraftContractOverride | undefined):
     );
   }
 
+  // NOTE: 밀도 지시가 장면 유형과 무관하게 걸려 전투 대목까지 장식으로 덮이던 문제를 막는다.
+  if (contract.actionClarity) {
+    lines.push(
+      '동작·전투·추격처럼 몸이 움직이는 대목은 한 문장에 한 동작을 담고 원인과 결과를 잇달아 써서 인과가 한 번에 읽히게 하라. 그 사이에 회상·비유·긴 감각 묘사를 끼워 넣지 말고, 승패를 가른 한 수는 무엇이 무엇을 어떻게 했는지 물리적으로 분명히 밝혀라.',
+    );
+  }
+
+  if (contract.modulateDensity) {
+    lines.push(
+      '장면 전체의 밀도를 일정하게 유지하지 마라. 사건이 빠르게 움직이는 대목은 문장을 짧고 곧게 쓰고, 인물이 머무르거나 정서가 쌓이는 대목에서만 묘사를 두텁게 하라.',
+    );
+  }
+
   return lines;
 }
 

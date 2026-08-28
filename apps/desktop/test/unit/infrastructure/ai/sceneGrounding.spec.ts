@@ -80,12 +80,31 @@ describe("craft contract lines", () => {
       motifRepeatLimit: 5,
       stockGestureBlacklist: [],
       requireCharacterInterior: false,
+      actionClarity: false,
+      modulateDensity: false,
       sceneLengthMultiplier: 0
     })
 
     expect(lines).toEqual([
       "같은 심상·소재(예: 흐릿한 길, 문틈)는 물론 같은 대사·후렴구·문장도 장면 전체에서 5회를 넘겨 반복하지 마라."
     ])
+  })
+
+  it("renders the action-clarity and density-modulation rules by default", () => {
+    const lines = craftContractLines(undefined)
+
+    expect(lines.some((line) => line.includes("한 문장에 한 동작"))).toBe(true)
+    expect(lines.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(true)
+  })
+
+  it("drops each new rule independently when a project turns it off", () => {
+    const withoutAction = craftContractLines({ actionClarity: false })
+    expect(withoutAction.some((line) => line.includes("한 문장에 한 동작"))).toBe(false)
+    expect(withoutAction.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(true)
+
+    const withoutDensity = craftContractLines({ modulateDensity: false })
+    expect(withoutDensity.some((line) => line.includes("한 문장에 한 동작"))).toBe(true)
+    expect(withoutDensity.some((line) => line.includes("밀도를 일정하게 유지하지 마라"))).toBe(false)
   })
 
   it("reaches the generation prompt even without a style directive", () => {
