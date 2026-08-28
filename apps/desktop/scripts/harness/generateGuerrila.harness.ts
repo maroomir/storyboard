@@ -80,10 +80,10 @@ const harnessReviseIterations = Number(process.env.SCENE_REVISE_ITERS ?? process
 // NOTE: 제품 기본값과 같은 압축 허용치. 수정본이 이보다 많이 줄이면 원본을 지킨다.
 const harnessMaxCompressionPercent = Number(process.env.SCENE_MAX_COMPRESSION ?? "20")
 
-// NOTE: 비트 경계 표식. 데스크톱은 설정에서 읽지만 하네스에는 경로가 없어 원고에 경계가 전혀
-// 남지 않았다. 켜면 포맷이 비트 단위로 돌아 경계가 보존되는 대신 포맷 호출이 비트 수만큼 는다.
-// "0"이나 빈 값이면 종전처럼 꺼진다.
-const harnessSceneBreakJoiner = resolveSceneBreakJoiner(process.env.SCENE_BREAK ?? "3")
+// NOTE: 비트 경계 표식. 기본은 꺼 둔다 — 켜면 포맷이 비트 하나씩 돌아 모델이 비트 사이를 볼 수
+// 없고, 그러면 시간·장소가 바뀌는 지점에 --- 를 넣는 판단 자체가 불가능해진다(실측 0개). 경계
+// 보존이 전환 표시보다 중요한 작업에서만 SCENE_BREAK로 켠다.
+const harnessSceneBreakJoiner = resolveSceneBreakJoiner(process.env.SCENE_BREAK ?? "0")
 
 // NOTE: mirror the extension's storyboard.draft.keepHistory — archive the prior draft under
 // .draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md before the headless run overwrites it. On unless

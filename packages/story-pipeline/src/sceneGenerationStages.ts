@@ -315,6 +315,18 @@ export async function expandDraftToTargetLength(
   return expanded.trim().length > draftBody.length ? expanded : draftBody;
 }
 
+function scaleDirectiveToChunk(
+  styleDirective: StyleDirective | undefined,
+  chunkCount: number,
+): StyleDirective | undefined {
+  const target = styleDirective?.targetWordCount;
+  if (!styleDirective || target === undefined || chunkCount <= 1) {
+    return styleDirective;
+  }
+
+  return { ...styleDirective, targetWordCount: Math.max(1, Math.round(target / chunkCount)) };
+}
+
 export async function formatSceneDraft(
   dialoguePieces: readonly string[],
   format: ProjectFormat,
@@ -330,6 +342,9 @@ export async function formatSceneDraft(
   const formatChunks = sceneBreakJoiner
     ? dialoguePieces.map((piece) => [piece])
     : chunkDialoguePiecesByBudget(dialoguePieces, FORMAT_CHUNK_CHAR_BUDGET);
+  // NOTE: 목표 분량은 씬 전체의 값이다. 청크마다 그대로 넘기면 각 청크가 씬 하나만큼 쓰려 해
+  // 청크 수만큼 분량이 불어난다(비트 단위 포맷에서 9배까지 관측). 청크 몫으로 나눠 넘긴다.
+  const chunkStyleDirective = scaleDirectiveToChunk(styleDirective, formatChunks.length);
   const formattedParts: string[] = [];
 
   for (let i = 0; i < formatChunks.length; i++) {
@@ -343,7 +358,7 @@ export async function formatSceneDraft(
       chunkInput,
       format,
       withAttribution(
-        { ...buildGenerateOptions(providers, 'sceneDraft'), styleDirective },
+        { ...buildGenerateOptions(providers, 'sceneDraft'), styleDirective: chunkStyleDirective },
         { primary: sceneRef },
       ),
     );
