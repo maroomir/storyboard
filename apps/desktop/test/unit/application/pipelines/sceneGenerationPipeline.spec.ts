@@ -8,6 +8,7 @@ import {
 } from '@storyboard/story-pipeline'
 import {
   chunkDialoguePiecesByBudget,
+  condensePreviousContext,
   dedupeSituations,
   looksLikeFormatMetaLeak,
   resolveSceneBreakJoiner
@@ -158,7 +159,11 @@ describe("runSceneGenerationPipeline", () => {
       "두 번째 상황",
       expect.any(Map),
       expect.anything(),
-      "이전 씬 말미\n\n[첫 번째 상황|prev=이전 씬 말미]",
+      [
+        "이전 씬 말미",
+        "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 대목은 끝났다. 인물은 이미 그 자리에 있으니 도착·입장·인사를 되풀이하지 말고 이어서 써라.",
+        "[첫 번째 상황|prev=이전 씬 말미]"
+      ].join("\n\n"),
       expect.objectContaining({
         attribution: {
           primary: { kind: "scene", id: "01-opening" },
@@ -167,8 +172,12 @@ describe("runSceneGenerationPipeline", () => {
       })
     )
 
-    const joined =
-      "[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=이전 씬 말미\n\n[첫 번째 상황|prev=이전 씬 말미]]"
+    const secondPrior = [
+      "이전 씬 말미",
+      "[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]\n1. 첫 번째 상황\n위 대목은 끝났다. 인물은 이미 그 자리에 있으니 도착·입장·인사를 되풀이하지 말고 이어서 써라.",
+      "[첫 번째 상황|prev=이전 씬 말미]"
+    ].join("\n\n")
+    const joined = `[첫 번째 상황|prev=이전 씬 말미]\n\n[두 번째 상황|prev=${secondPrior}]`
     expect(ai.applyGenreFormat).toHaveBeenCalledWith(
       joined,
       "screenplay",
@@ -871,5 +880,55 @@ describe("expandDraftToTargetLength stage", () => {
     const { draftBody } = await runWithTarget("가".repeat(100), 1000, "짧아짐")
 
     expect(draftBody).toBe("가".repeat(100))
+  })
+})
+
+describe("intra-scene continuity (2화 반복 회귀 방지)", () => {
+  it("keeps narration lines in the condensed tail, not just dialogue", () => {
+    const beat = [
+      "이준은 문을 밀고 대장간 안으로 들어섰다.",
+      "화로의 열기가 얼굴을 훑었다.",
+      "브로크: 들어와, 손님.",
+      "이준: 망치질이 평소와 달랐습니다."
+    ].join("\n")
+
+    const condensed = condensePreviousContext(beat.repeat(60), true) as string
+
+    expect(condensed).toContain("문을 밀고 대장간 안으로 들어섰다")
+    expect(condensed).toContain("화로의 열기가 얼굴을 훑었다")
+    expect(condensed.length).toBeLessThanOrEqual(1200)
+  })
+
+  it("returns the context untouched when it already fits the budget", () => {
+    expect(condensePreviousContext("이준이 들어섰다.", true)).toBe("이준이 들어섰다.")
+  })
+
+  it("tells each later beat which beats are already written", async () => {
+    const ai = createRecordingAiService()
+    ai.extractSituations.mockResolvedValueOnce([
+      { characters: ["엘리아"], situation: "엘리아가 문을 열고 들어선다" },
+      { characters: ["엘리아"], situation: "엘리아가 자리에 앉는다" },
+      { characters: ["엘리아"], situation: "엘리아가 편지를 꺼낸다" }
+    ])
+    ai.createCharacterPersona.mockResolvedValue("p")
+    ai.generatePersonaDialogue.mockResolvedValue("엘리아: 대사")
+    ai.applyGenreFormat.mockResolvedValueOnce("out")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const firstPrior = ai.generatePersonaDialogue.mock.calls[0]?.[3]
+    expect(firstPrior).toBeUndefined()
+
+    const thirdPrior = ai.generatePersonaDialogue.mock.calls[2]?.[3] as string
+    expect(thirdPrior).toContain("[이 장면에서 이미 쓴 대목 — 다시 쓰지 마라]")
+    expect(thirdPrior).toContain("1. 엘리아가 문을 열고 들어선다")
+    expect(thirdPrior).toContain("2. 엘리아가 자리에 앉는다")
+    expect(thirdPrior).not.toContain("3. 엘리아가 편지를 꺼낸다")
+    expect(thirdPrior).toContain("도착·입장·인사를 되풀이하지 말고")
   })
 })

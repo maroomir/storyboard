@@ -121,10 +121,9 @@ export function looksLikeFormatMetaLeak(text: string): boolean {
 
 const MAX_CONDENSED_CONTEXT_CHARS = 1200;
 
-function isContextBearingLine(line: string): boolean {
-  return line.includes(':') || /행동|표정|감정|생각|묘사/.test(line);
-}
-
+// NOTE: 앞서 이 압축은 콜론이 있는 줄(= '캐릭터명: 대사')만 남겨 지문을 통째로 버렸다. 그래서 뒤
+// 비트가 "인물이 이미 그 자리에 들어와 있다"는 사실을 알 수 없어 매번 무대를 다시 세우고 같은
+// 질문을 되풀이했다. 맥락은 대사만이 아니므로 지문도 남기고, 빈 줄만 걷어낸 뒤 예산으로 자른다.
 export function condensePreviousContext(
   previousContext: string | undefined,
   enabled: boolean,
@@ -141,17 +140,12 @@ export function condensePreviousContext(
     return previousContext;
   }
 
-  const lines = previousContext
+  const condensed = previousContext
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
-    .filter(isContextBearingLine);
+    .join('\n');
 
-  if (lines.length === 0) {
-    return previousContext.slice(-MAX_CONDENSED_CONTEXT_CHARS);
-  }
-
-  const condensed = lines.join('\n');
   return condensed.length <= MAX_CONDENSED_CONTEXT_CHARS
     ? condensed
     : condensed.slice(-MAX_CONDENSED_CONTEXT_CHARS);
