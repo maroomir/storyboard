@@ -157,12 +157,12 @@ describe("DraftAugmentPrompt craft contract injection", () => {
   it("carries the craft contract into the expansion prompt", () => {
     const withStyle = DraftAugmentPrompt.build(input, "generic", { genre: "게임 판타지" })
 
-    expect(withStyle.system).toContain("한 문장에 한 동작")
+    expect(withStyle.system).toContain("건조한 중계로 만들지 마라")
     expect(withStyle.system).toContain("밀도를 일정하게 유지하지 마라")
   })
 
   it("still applies the default contract when no style is given", () => {
-    expect(DraftAugmentPrompt.build(input, "generic").system).toContain("한 문장에 한 동작")
+    expect(DraftAugmentPrompt.build(input, "generic").system).toContain("건조한 중계로 만들지 마라")
   })
 
   it("honours a project that turns the rules off", () => {
@@ -170,7 +170,7 @@ describe("DraftAugmentPrompt craft contract injection", () => {
       craftContract: { actionClarity: false, modulateDensity: false }
     })
 
-    expect(relaxed.system).not.toContain("한 문장에 한 동작")
+    expect(relaxed.system).not.toContain("건조한 중계로 만들지 마라")
     expect(relaxed.system).not.toContain("밀도를 일정하게 유지하지 마라")
   })
 })
