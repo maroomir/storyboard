@@ -14,6 +14,11 @@ Korean README: [`README.md`](README.md)
 - Manage character and background cards with `character/*.card` and `background/*.card`.
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.
 - Generate `scene/*.txt` seeds from the outline, then generate `draft/*.md` drafts.
+- Generate each scene in four stages — skeleton → dialogue polish → section expansion → machine validation. The skeleton fixes the whole scene's event order, cast, and end state in a single context, so later stages only thicken the prose.
+- Validate generated scenes deterministically (no AI): cast not present in the skeleton, foreign scripts, lost dialogue, and length shortfalls are retried with reasons, and anything left is surfaced in the draft's `warnings` frontmatter.
+- Carry a story state ledger across scenes (`.storyboard/cache/storyState.md`): established facts, character relations and speech, revealed information, and live motifs accumulate with their scene order and feed the next scene's prompt and continuity check.
+- Gate canon facts by reveal time (`revealFrom`), separate from when a fact becomes true (`validFrom`), so a third-act twist is not leaked into early scenes.
+- Bound a scene with `endState` and `povCharacter` on the scene card, so one scene does not run into the next scene's territory or cross several characters' interiority.
 - Drive draft/scene actions by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe a task, review the proposed action, and approve to run it (generate, regenerate, check, edit).
 - Keep previous-draft history (`storyboard.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
 - Insert scene-break separators (`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
