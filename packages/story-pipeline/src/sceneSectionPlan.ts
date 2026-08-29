@@ -102,7 +102,9 @@ export interface SectionViolation {
 }
 
 const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
-const minimumLengthRatio = 0.5;
+// NOTE: 하한이 목표의 절반이면 그 사이 분량이 그대로 채택돼 원고가 목표에 상시 미달한다. 재시도가
+// 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.
+const minimumLengthRatio = 0.85;
 
 // NOTE: 뼈대가 정답지라서 위반을 AI 없이 결정론적으로 가려낼 수 있다. 살붙임은 문장만 두껍게 하는
 // 작업이므로, 뼈대에 없던 인물이나 사라진 대사는 그 자체로 규칙 위반이다.

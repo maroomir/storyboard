@@ -372,6 +372,16 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
+  it("flags an expansion that stopped well short of its section target", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "엘리아가 걷는다.",
+      expanded: "묘사".repeat(35)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("too-short")
+  })
+
   it("flags an expansion that came back far too short", () => {
     const violations = validateExpandedSection({
       ...base,
