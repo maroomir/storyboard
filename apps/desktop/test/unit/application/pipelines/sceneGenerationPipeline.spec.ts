@@ -369,3 +369,22 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("too-short")
   })
 })
+
+describe("splitSkeletonIntoSections — 장면 전환 우선 절단", () => {
+  const paragraph = (n: number): string => `문단${n} ${"가".repeat(200)}`
+
+  it("cuts at a scene break rather than mid-paragraph", () => {
+    const skeleton = [paragraph(1), paragraph(2), "---", paragraph(3), paragraph(4), paragraph(5), "---", paragraph(6), paragraph(7), paragraph(8)].join("\n\n")
+
+    const sections = splitSkeletonIntoSections(skeleton, 3)
+
+    expect(sections).toHaveLength(3)
+    expect(sections[0]?.endsWith("---")).toBe(true)
+  })
+
+  it("falls back to paragraph boundaries when the skeleton has no scene break", () => {
+    const skeleton = Array.from({ length: 9 }, (_, i) => paragraph(i + 1)).join("\n\n")
+
+    expect(splitSkeletonIntoSections(skeleton, 3)).toHaveLength(3)
+  })
+})
