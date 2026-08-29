@@ -24,7 +24,8 @@ function buildGeneric(input: StoryStateUpdateInput): PromptArtifact {
       '- facts: 이 장면에서 확정된 사건·상태. 다음 장면이 이것과 모순되면 안 되는 것만.',
       '- relations: 인물 쌍의 관계 단계와 서로를 부르는 호칭·말투(존댓말/반말)의 변화.',
       '- revealed: 누가 무엇을 알게 되었는지. "인물 — 알게 된 내용" 형식으로 쓰고, 이미 밝혀진 사실이 다음 장면에서 다시 처음 공개되는 일을 막는 것이 목적이다.',
-      '- motifs: 반복해서 살려야 할 단골 대사·소품·행동. 대사는 따옴표로 원문을 그대로 옮겨라.',
+      '- motifs: 반복해서 살려야 할 소품·행동·버릇. 무엇이 반복되는지 서술로 적어라.',
+      '어느 항목에서도 본문의 대사를 따옴표로 옮기지 마라. 무슨 말이 오갔는지는 사실로 풀어 써라. 원문을 남기면 다음 장면이 같은 대사를 그대로 다시 쓴다.',
       '본문에 실제로 쓰인 것만 담고 추측하지 마라. 이전 상태에 이미 있는 항목은 다시 쓰지 마라.',
       '각 항목은 한 문장으로 짧게 쓰고, 항목 수는 종류당 최대 5개로 제한하라.',
       '설명 없이 JSON 객체만 출력하라.',
@@ -37,7 +38,7 @@ function buildGeneric(input: StoryStateUpdateInput): PromptArtifact {
 function buildXs(input: StoryStateUpdateInput): PromptArtifact {
   return {
     system:
-      '장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[],"relations":[],"revealed":[],"motifs":[]}. 본문 근거만, 한국어.',
+      '장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[],"relations":[],"revealed":[],"motifs":[]}. 본문 근거만, 한국어. 대사 원문 인용 금지.',
     user: buildUserBlock(input),
   };
 }
