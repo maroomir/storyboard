@@ -13,6 +13,7 @@ import {
   planSectionCount,
   splitSkeletonIntoSections,
   validateExpandedSection,
+  validatePolishedSkeleton,
   SECTION_OUTPUT_LIMIT,
   type SectionViolation,
 } from './sceneSectionPlan';
@@ -174,6 +175,47 @@ async function expandSectionWithRetries(input: {
   return { text: lastText, violations: lastViolations };
 }
 
+// NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
+// 대사 개성은 덜해도 사건은 안전하고, 되돌린 사실은 헤더 경고로 알린다.
+const POLISH_LENGTH_LIMIT_RATIO = 2;
+
+async function polishDialogueOrKeepSkeleton(input: {
+  readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
+  readonly skeleton: string;
+  readonly personas: ReadonlyMap<string, string>;
+  readonly characters: SceneContext['characters'];
+  readonly options: GenerateTextOptions;
+}): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
+  let lastViolations: readonly SectionViolation[] = [];
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const polished = await input.aiService.polishSceneDialogue(
+      { skeleton: input.skeleton, personas: input.personas },
+      input.options,
+    );
+
+    const violations = validatePolishedSkeleton({
+      skeleton: input.skeleton,
+      polished,
+      characters: input.characters,
+      lengthLimit: input.skeleton.length * POLISH_LENGTH_LIMIT_RATIO,
+    });
+
+    if (violations.length === 0) {
+      return { text: polished, warnings: [] };
+    }
+
+    lastViolations = violations;
+  }
+
+  return {
+    text: input.skeleton,
+    warnings: lastViolations.map(
+      (violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`,
+    ),
+  };
+}
+
 async function executeSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput,
 ): Promise<RunSceneGenerationPipelineResult> {
@@ -224,14 +266,28 @@ async function executeSceneGenerationPipeline(
   );
   assertNotCancelled(shouldCancel);
 
-  // 2단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
-  const sections = splitSkeletonIntoSections(
+  // 2단계. 대사만 손본다. 살붙임은 대사를 더하지 못하므로 여기서 늘려야 대화 밀도가 유지된다.
+  onProgress?.('polishDialogue', 1, 1);
+  const polished = await polishDialogueOrKeepSkeleton({
+    aiService,
     skeleton,
+    personas: personasUsed,
+    characters: context.characters,
+    options: withAttribution(
+      { ...buildGenerateOptions(providers, 'sceneDialoguePolish'), styleDirective },
+      { primary: sceneRef },
+    ),
+  });
+  assertNotCancelled(shouldCancel);
+
+  // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
+  const sections = splitSkeletonIntoSections(
+    polished.text,
     planSectionCount(styleDirective?.targetWordCount ?? 0),
   );
   const targetLength = sectionTargetLength(styleDirective, sections.length);
   const expandedSections: string[] = [];
-  const warnings: string[] = [];
+  const warnings: string[] = [...polished.warnings];
 
   for (let index = 0; index < sections.length; index += 1) {
     onProgress?.('expandSection', index + 1, sections.length);
@@ -239,7 +295,7 @@ async function executeSceneGenerationPipeline(
     const outcome = await expandSectionWithRetries({
       aiService,
       section: sections[index] as string,
-      skeleton,
+      skeleton: polished.text,
       previousSection: expandedSections.at(-1),
       targetLength,
       characters: context.characters,
@@ -256,7 +312,7 @@ async function executeSceneGenerationPipeline(
 
   return {
     draftBody: expandedSections.join('\n\n'),
-    skeleton,
+    skeleton: polished.text,
     warnings,
     detectedCharacters,
     personasUsed,

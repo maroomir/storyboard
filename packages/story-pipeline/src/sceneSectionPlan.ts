@@ -83,7 +83,7 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
 }
 
 export interface SectionViolation {
-  readonly kind: 'cast' | 'foreign-script' | 'lost-dialogue' | 'too-short';
+  readonly kind: 'cast' | 'foreign-script' | 'lost-dialogue' | 'too-short' | 'too-long';
   readonly detail: string;
 }
 
@@ -136,6 +136,44 @@ export function validateExpandedSection(input: {
     violations.push({
       kind: 'too-short',
       detail: `목표 ${input.targetLength.toLocaleString()}자의 절반에 못 미칩니다 (${input.expanded.length.toLocaleString()}자)`,
+    });
+  }
+
+  return violations;
+}
+
+// NOTE: 다듬기는 대사를 바꾸는 작업이라 대사 보존은 검사할 수 없다. 사건이 늘어난 흔적(새 인물,
+// 과도한 분량)과 문자 오염만 본다. 대사 자체가 늘어나는 것은 이 단계의 목적이므로 막지 않는다.
+export function validatePolishedSkeleton(input: {
+  readonly skeleton: string;
+  readonly polished: string;
+  readonly characters: readonly CharacterCard[];
+  readonly lengthLimit: number;
+}): SectionViolation[] {
+  const violations: SectionViolation[] = [];
+
+  const tokens = input.characters.flatMap((card) => characterMatchTokens(card));
+  const before = new Set(detectCharactersInText(input.skeleton, tokens));
+  const added = [...new Set(detectCharactersInText(input.polished, tokens))].filter(
+    (name) => !before.has(name),
+  );
+
+  if (added.length > 0) {
+    violations.push({ kind: 'cast', detail: `뼈대에 없는 인물이 등장합니다 (${added.join(', ')})` });
+  }
+
+  const foreign = findForeignScriptSpans(input.polished);
+  if (foreign.length > 0) {
+    violations.push({
+      kind: 'foreign-script',
+      detail: `외국 문자가 섞였습니다 (${foreign.map((span) => `"${span.text}"`).join(', ')})`,
+    });
+  }
+
+  if (input.polished.length > input.lengthLimit) {
+    violations.push({
+      kind: 'too-long',
+      detail: `뼈대의 두 배를 넘겼습니다 (${input.polished.length.toLocaleString()}자)`,
     });
   }
 

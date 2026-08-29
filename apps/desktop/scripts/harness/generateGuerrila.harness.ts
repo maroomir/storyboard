@@ -412,6 +412,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       providers: {
         personaGeneration: harnessProviderId,
         sceneSkeleton: harnessProviderId,
+        sceneDialoguePolish: harnessProviderId,
         sceneSectionExpansion: harnessProviderId
       },
       personaStore: createHarnessPersonaStore(scene.stem),

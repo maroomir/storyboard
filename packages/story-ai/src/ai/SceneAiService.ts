@@ -15,6 +15,10 @@ import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
 import {
+  SceneDialoguePolishPrompt,
+  type SceneDialoguePolishInput,
+} from './prompts/sceneDialoguePolish';
+import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from './prompts/sceneSectionExpansion';
@@ -185,6 +189,24 @@ export class SceneAiService {
       ...options,
       temperature: options.temperature ?? SceneSkeletonPrompt.config.temperature,
       maxTokens: options.maxTokens ?? SceneSkeletonPrompt.config.maxTokens,
+    });
+
+    return response.text.trim();
+  }
+
+  public async polishSceneDialogue(
+    input: SceneDialoguePolishInput,
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    const variant = this.gateway.resolvePromptVariant('sceneDialoguePolish', options);
+    const prompt = SceneDialoguePolishPrompt.build(
+      { ...input, style: options.styleDirective },
+      variant,
+    );
+    const response = await this.gateway.generate('sceneDialoguePolish', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneDialoguePolishPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneDialoguePolishPrompt.config.maxTokens,
     });
 
     return response.text.trim();

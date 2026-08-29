@@ -169,6 +169,7 @@ async function runAndPersistDraft(
   const pipelineProviders = {
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
     sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
+    sceneDialoguePolish: options.aiGateway.getTaskProvider('sceneDialoguePolish'),
     sceneSectionExpansion: options.aiGateway.getTaskProvider('sceneSectionExpansion'),
   };
   const cacheProviders = {

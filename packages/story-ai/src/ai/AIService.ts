@@ -142,6 +142,13 @@ export class StoryboardAIService {
     return this.sceneAiService.draftSceneSkeleton(input, options);
   }
 
+  public async polishSceneDialogue(
+    input: Parameters<SceneAiService['polishSceneDialogue']>[0],
+    options: GenerateTextOptions = {},
+  ): Promise<string> {
+    return this.sceneAiService.polishSceneDialogue(input, options);
+  }
+
   public async expandSceneSection(
     input: Parameters<SceneAiService['expandSceneSection']>[0],
     options: GenerateTextOptions = {},
