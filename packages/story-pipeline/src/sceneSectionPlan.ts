@@ -1,4 +1,4 @@
-import { characterMatchTokens, detectCharactersInText } from '@storyboard/story-format';
+import { characterMatchTokens } from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
 import { findForeignScriptSpans } from '@storyboard/story-format';
 
@@ -82,6 +82,20 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
   return sections;
 }
 
+// NOTE: detectCharactersInText는 매칭된 토큰을 그대로 돌려주므로, 별칭이나 게임명으로 부른 인물이
+// 본명으로 부른 같은 인물과 다른 사람으로 잡힌다. 카드 이름으로 되돌려 세야 오탐이 없다.
+function detectCanonicalCast(text: string, characters: readonly CharacterCard[]): Set<string> {
+  const canonical = new Set<string>();
+
+  for (const card of characters) {
+    if (characterMatchTokens(card).some((token) => text.includes(token))) {
+      canonical.add(card.name);
+    }
+  }
+
+  return canonical;
+}
+
 export interface SectionViolation {
   readonly kind: 'cast' | 'foreign-script' | 'lost-dialogue' | 'too-short' | 'too-long';
   readonly detail: string;
@@ -100,9 +114,8 @@ export function validateExpandedSection(input: {
 }): SectionViolation[] {
   const violations: SectionViolation[] = [];
 
-  const tokens = input.characters.flatMap((card) => characterMatchTokens(card));
-  const inSkeleton = new Set(detectCharactersInText(input.section, tokens));
-  const added = [...new Set(detectCharactersInText(input.expanded, tokens))].filter(
+  const inSkeleton = detectCanonicalCast(input.section, input.characters);
+  const added = [...detectCanonicalCast(input.expanded, input.characters)].filter(
     (name) => !inSkeleton.has(name),
   );
 
@@ -152,9 +165,8 @@ export function validatePolishedSkeleton(input: {
 }): SectionViolation[] {
   const violations: SectionViolation[] = [];
 
-  const tokens = input.characters.flatMap((card) => characterMatchTokens(card));
-  const before = new Set(detectCharactersInText(input.skeleton, tokens));
-  const added = [...new Set(detectCharactersInText(input.polished, tokens))].filter(
+  const before = detectCanonicalCast(input.skeleton, input.characters);
+  const added = [...detectCanonicalCast(input.polished, input.characters)].filter(
     (name) => !before.has(name),
   );
 

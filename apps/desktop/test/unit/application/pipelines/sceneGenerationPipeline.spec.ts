@@ -492,3 +492,35 @@ describe("splitSkeletonIntoSections — 장면 전환 우선 절단", () => {
     expect(splitSkeletonIntoSections(skeleton, 3)).toHaveLength(3)
   })
 })
+
+describe("별칭·게임명 오탐 방지", () => {
+  const zeroCard: CharacterCard = {
+    type: "character",
+    id: "ijun",
+    name: "이준",
+    role: "main",
+    attributes: { gamename: "제로" }
+  }
+
+  it("does not flag a game name as a new character in expansion", () => {
+    const violations = validateExpandedSection({
+      section: "이준은 스크린샷을 보았다.",
+      expanded: longProse("사진 속에는 제로라는 이름이 남아 있었다. 이준은 그것을 오래 보았다."),
+      characters: [zeroCard],
+      targetLength: 10
+    })
+
+    expect(violations).toEqual([])
+  })
+
+  it("does not flag a game name as a new character in polishing", () => {
+    const violations = validatePolishedSkeleton({
+      skeleton: "이준은 스크린샷을 보았다.",
+      polished: '이준은 스크린샷을 보았다. "제로, 저 자리 기억나?"',
+      characters: [zeroCard],
+      lengthLimit: 1000
+    })
+
+    expect(violations).toEqual([])
+  })
+})
