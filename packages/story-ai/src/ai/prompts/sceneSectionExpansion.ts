@@ -1,5 +1,6 @@
 import {
   craftContractLines,
+  proseConventionLines,
   narrativeStyleLines,
   type StyleDirective,
 } from '../../contracts/styleDirective';
@@ -37,6 +38,7 @@ function buildGeneric(input: SceneSectionExpansionInput): PromptArtifact {
       '뼈대에 단독 줄로 --- 가 있으면 장면 전환 표시이므로 위치와 형태를 그대로 유지하라.',
       `이번 구간의 목표 분량: 약 ${input.targetLength.toLocaleString()}자 (공백 포함).`,
       '설명이나 머리말 없이 완성된 본문만 한국어로 출력하라.',
+      ...proseConventionLines,
       ...narrativeStyleLines(stripLength(input.style)),
       ...craftContractLines(input.style?.craftContract),
       ...(input.retryReasons && input.retryReasons.length > 0

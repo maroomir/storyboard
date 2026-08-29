@@ -197,6 +197,13 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
 }
 
 // 페르소나·대사처럼 시점이 중립인 단계용: 톤·문체·관계 단계를 반영한다.
+// NOTE: 시제와 따옴표는 어느 프롬프트에서도 지정하지 않아 장면마다 달라졌다. 액션 씬이 현재형으로
+// 흐르고 한 편만 직선 따옴표로 나온 것이 그 결과다. 한 작품 안에서 갈리면 안 되는 규약이라 고정한다.
+export const proseConventionLines: readonly string[] = [
+  '서술은 과거형으로 쓰고 한 장면 안에서 시제를 섞지 마라. 대사 안의 시제는 인물의 말이므로 예외다.',
+  '대사는 곡선 큰따옴표(\u201c \u201d)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.',
+];
+
 export function voiceStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
     return [];
