@@ -396,9 +396,10 @@ describe("validateExpandedSection", () => {
 describe("대사 다듬기 단계", () => {
   it("polishes the skeleton before splitting, and expands the polished text", async () => {
     const ai = createRecordingAiService()
-    const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. ${"복도는 조용했다. ".repeat(20)}`
+    const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금." ${"복도는 조용했다. ".repeat(20)}`
+    const polished = skeleton.replace('"가자, 지금."', '"가자, 지금 당장."')
     ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
-    ai.polishSceneDialogue.mockResolvedValueOnce(`${skeleton}\n\n"가자, 지금."`)
+    ai.polishSceneDialogue.mockResolvedValueOnce(polished)
     ai.expandSceneSection.mockImplementation(async (input) =>
       longProse((input as { section: string }).section)
     )
@@ -411,10 +412,10 @@ describe("대사 다듬기 단계", () => {
     })
 
     expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
-    expect(result.skeleton).toBe(`${skeleton}\n\n"가자, 지금."`)
+    expect(result.skeleton).toBe(polished)
 
     const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { skeleton: string }
-    expect(expansionInput.skeleton).toBe(`${skeleton}\n\n"가자, 지금."`)
+    expect(expansionInput.skeleton).toBe(polished)
     expect(result.warnings).toEqual([])
   })
 
@@ -456,21 +457,31 @@ describe("대사 다듬기 단계", () => {
 describe("validatePolishedSkeleton", () => {
   const base = { characters: [eliaCard, jihoonCard], lengthLimit: 1000 }
 
-  it("allows added dialogue, which is the whole point of the pass", () => {
+  it("allows a line rewritten in the character's own voice", () => {
     const violations = validatePolishedSkeleton({
       ...base,
-      skeleton: '엘리아가 말했다. "가자."',
-      polished: '엘리아가 말했다. "가자. 더 늦으면 문이 닫혀." 그리고 다시 말했다. "지금."'
+      skeleton: '엘리아가 말했다. "가자, 지금."',
+      polished: '엘리아가 말했다. "가자, 지금. 더 늦으면 문이 닫혀."'
     })
 
     expect(violations).toEqual([])
   })
 
+  it("rejects a turn the skeleton never had", () => {
+    const violations = validatePolishedSkeleton({
+      ...base,
+      skeleton: '엘리아가 말했다. "가자, 지금."',
+      polished: '엘리아가 말했다. "가자, 지금." 그리고 다시 말했다. "지금 가자는 뜻입니까."'
+    })
+
+    expect(violations.map((violation) => violation.kind)).toEqual(["added-dialogue"])
+  })
+
   it("rejects a character the skeleton never had", () => {
     const violations = validatePolishedSkeleton({
       ...base,
-      skeleton: "엘리아가 걷는다.",
-      polished: '엘리아가 걷는다. 지훈이 "같이 가" 하고 따라붙었다.'
+      skeleton: '엘리아가 걷는다. "혼자 가."',
+      polished: '엘리아가 걷는다. "혼자 갈게." 지훈이 뒤따랐다.'
     })
 
     expect(violations.map((violation) => violation.kind)).toEqual(["cast"])
@@ -530,7 +541,7 @@ describe("별칭·게임명 오탐 방지", () => {
 
   it("does not flag a game name as a new character in polishing", () => {
     const violations = validatePolishedSkeleton({
-      skeleton: "이준은 스크린샷을 보았다.",
+      skeleton: '이준은 스크린샷을 보았다. "저 자리 기억나?"',
       polished: '이준은 스크린샷을 보았다. "제로, 저 자리 기억나?"',
       characters: [zeroCard],
       lengthLimit: 1000

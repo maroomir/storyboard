@@ -97,11 +97,18 @@ function detectCanonicalCast(text: string, characters: readonly CharacterCard[])
 }
 
 export interface SectionViolation {
-  readonly kind: 'cast' | 'foreign-script' | 'lost-dialogue' | 'too-short' | 'too-long';
+  readonly kind:
+    | 'cast'
+    | 'foreign-script'
+    | 'lost-dialogue'
+    | 'too-short'
+    | 'too-long'
+    | 'added-dialogue';
   readonly detail: string;
 }
 
 const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
+
 // NOTE: 하한이 목표의 절반이면 그 사이 분량이 그대로 채택돼 원고가 목표에 상시 미달한다. 재시도가
 // 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.
 const minimumLengthRatio = 0.85;
@@ -152,15 +159,20 @@ export function validateExpandedSection(input: {
   if (input.expanded.length < input.targetLength * minimumLengthRatio) {
     violations.push({
       kind: 'too-short',
-      detail: `목표 ${input.targetLength.toLocaleString()}자의 절반에 못 미칩니다 (${input.expanded.length.toLocaleString()}자)`,
+      detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자)`,
     });
   }
 
   return violations;
 }
 
-// NOTE: 다듬기는 대사를 바꾸는 작업이라 대사 보존은 검사할 수 없다. 사건이 늘어난 흔적(새 인물,
-// 과도한 분량)과 문자 오염만 본다. 대사 자체가 늘어나는 것은 이 단계의 목적이므로 막지 않는다.
+function countDialogueTurns(text: string): number {
+  return [...text.matchAll(quotedDialoguePattern)].length;
+}
+
+// NOTE: 다듬기는 대사 문장을 바꾸는 작업이라 대사 보존은 검사할 수 없다. 대신 턴 수를 센다. 턴이
+// 늘었다는 것은 뼈대에 없던 말을 만들었다는 뜻이고, 새 정보를 담을 수 없으니 그 말은 앞 대사를
+// 되풀이하는 빈 되묻기가 된다.
 export function validatePolishedSkeleton(input: {
   readonly skeleton: string;
   readonly polished: string;
@@ -183,6 +195,14 @@ export function validatePolishedSkeleton(input: {
     violations.push({
       kind: 'foreign-script',
       detail: `외국 문자가 섞였습니다 (${foreign.map((span) => `"${span.text}"`).join(', ')})`,
+    });
+  }
+
+  const addedTurns = countDialogueTurns(input.polished) - countDialogueTurns(input.skeleton);
+  if (addedTurns > 0) {
+    violations.push({
+      kind: 'added-dialogue',
+      detail: `뼈대에 없던 대사가 ${addedTurns}개 늘었습니다`,
     });
   }
 

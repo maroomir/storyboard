@@ -267,7 +267,7 @@ async function executeSceneGenerationPipeline(
   );
   assertNotCancelled(shouldCancel);
 
-  // 2단계. 대사만 손본다. 살붙임은 대사를 더하지 못하므로 여기서 늘려야 대화 밀도가 유지된다.
+  // 2단계. 대사의 말투만 손본다. 턴을 늘리지는 않는다. 대화 밀도는 뼈대가 정한 대로 간다.
   onProgress?.('polishDialogue', 1, 1);
   const polished = await polishDialogueOrKeepSkeleton({
     aiService,
