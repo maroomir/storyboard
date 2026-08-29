@@ -156,6 +156,7 @@ async function expandSectionWithRetries(input: {
     );
 
     const violations = validateExpandedSection({
+      skeleton: input.skeleton,
       section: input.section,
       expanded,
       characters: input.characters,
