@@ -3,6 +3,7 @@ import { joinCardText } from '@storyboard/story-format';
 import type { SceneGrounding } from '@storyboard/story-format';
 import {
   craftContractLines,
+  proseConventionLines,
   sceneGroundingLines,
   voiceStyleLines,
   type StyleDirective,
@@ -50,6 +51,7 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
         ? `장면은 여기서 닫힌다: ${input.endState} 그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.`
         : undefined,
       '설명이나 머리말 없이 뼈대 본문만 한국어로 출력하라.',
+      ...proseConventionLines,
       ...(style ? voiceStyleLines(style) : []),
       ...craftContractLines(style?.craftContract),
     ]
@@ -62,7 +64,7 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
 function buildXs(input: SceneSkeletonInput): PromptArtifact {
   return {
     system:
-      '사건 목록을 장면의 뼈대로 옮겨라. 대사는 따옴표로, 행동은 짧게. 묘사·회상은 넣지 마라. 한국어 본문만 출력.',
+      '사건 목록을 장면의 뼈대로 옮겨라. 서술은 과거형, 대사는 곡선 큰따옴표로, 행동은 짧게. 묘사·회상은 넣지 마라. 한국어 본문만 출력.',
     user: buildUserBlock(input),
   };
 }

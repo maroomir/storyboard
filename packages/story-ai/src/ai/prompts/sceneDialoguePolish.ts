@@ -1,4 +1,8 @@
-import { voiceStyleLines, type StyleDirective } from '../../contracts/styleDirective';
+import {
+  proseConventionLines,
+  voiceStyleLines,
+  type StyleDirective,
+} from '../../contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface SceneDialoguePolishInput {
@@ -30,6 +34,7 @@ function buildGeneric(input: SceneDialoguePolishInput): PromptArtifact {
       '뼈대에 없는 인물을 등장시키거나 말하게 하지 마라.',
       '행동·이동을 적은 서술 문장과 단독 줄의 --- 표시는 위치와 내용을 그대로 두어라.',
       '설명이나 머리말 없이 손본 뼈대 전문만 한국어로 출력하라.',
+      ...proseConventionLines,
       ...voiceStyleLines(input.style),
     ].join('\n'),
     user: buildUserBlock(input),
@@ -39,7 +44,7 @@ function buildGeneric(input: SceneDialoguePolishInput): PromptArtifact {
 function buildXs(input: SceneDialoguePolishInput): PromptArtifact {
   return {
     system:
-      '뼈대의 대사만 인물의 말투에 맞게 고치고 주고받는 말을 늘려라. 사건·행동은 그대로. 새 정보나 인물 금지. 전문만 출력.',
+      '뼈대의 대사만 인물의 말투에 맞게 고치고 주고받는 말을 늘려라. 사건·행동은 그대로. 대사는 곡선 큰따옴표로. 새 정보나 인물 금지. 전문만 출력.',
     user: buildUserBlock(input),
   };
 }
