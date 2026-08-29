@@ -107,6 +107,7 @@ const minimumLengthRatio = 0.5;
 // NOTE: 뼈대가 정답지라서 위반을 AI 없이 결정론적으로 가려낼 수 있다. 살붙임은 문장만 두껍게 하는
 // 작업이므로, 뼈대에 없던 인물이나 사라진 대사는 그 자체로 규칙 위반이다.
 export function validateExpandedSection(input: {
+  readonly skeleton: string;
   readonly section: string;
   readonly expanded: string;
   readonly characters: readonly CharacterCard[];
@@ -114,7 +115,8 @@ export function validateExpandedSection(input: {
 }): SectionViolation[] {
   const violations: SectionViolation[] = [];
 
-  const inSkeleton = detectCanonicalCast(input.section, input.characters);
+  // 출연진은 씬 전체가 정한다. 구간만 보면 대명사로 가리킨 인물을 살붙임이 이름으로 부를 때마다 오탐이 난다.
+  const inSkeleton = detectCanonicalCast(input.skeleton, input.characters);
   const added = [...detectCanonicalCast(input.expanded, input.characters)].filter(
     (name) => !inSkeleton.has(name),
   );

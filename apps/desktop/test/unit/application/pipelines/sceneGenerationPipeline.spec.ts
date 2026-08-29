@@ -323,7 +323,11 @@ describe("splitSkeletonIntoSections", () => {
 })
 
 describe("validateExpandedSection", () => {
-  const base = { characters: [eliaCard, jihoonCard], targetLength: 100 }
+  const base = {
+    characters: [eliaCard, jihoonCard],
+    targetLength: 100,
+    skeleton: "엘리아가 걷는다."
+  }
 
   it("passes an expansion that only thickens the prose", () => {
     const violations = validateExpandedSection({
@@ -504,6 +508,7 @@ describe("별칭·게임명 오탐 방지", () => {
 
   it("does not flag a game name as a new character in expansion", () => {
     const violations = validateExpandedSection({
+      skeleton: "이준은 스크린샷을 보았다.",
       section: "이준은 스크린샷을 보았다.",
       expanded: longProse("사진 속에는 제로라는 이름이 남아 있었다. 이준은 그것을 오래 보았다."),
       characters: [zeroCard],
@@ -522,5 +527,31 @@ describe("별칭·게임명 오탐 방지", () => {
     })
 
     expect(violations).toEqual([])
+  })
+})
+
+describe("출연진은 씬 전체 기준으로 판정한다", () => {
+  it("does not flag a character the section referred to only by pronoun", () => {
+    const violations = validateExpandedSection({
+      skeleton: "엘리아와 지훈이 골목을 지난다. 지훈이 앞장섰다.",
+      section: "그는 골목 끝에서 걸음을 멈췄다.",
+      expanded: longProse("지훈은 골목 끝에서 걸음을 멈췄다. 엘리아가 그 옆에 섰다."),
+      characters: [eliaCard, jihoonCard],
+      targetLength: 10
+    })
+
+    expect(violations).toEqual([])
+  })
+
+  it("still flags a character absent from the whole skeleton", () => {
+    const violations = validateExpandedSection({
+      skeleton: "엘리아가 골목을 지난다.",
+      section: "엘리아가 골목을 지난다.",
+      expanded: longProse("엘리아가 골목을 지난다. 지훈이 뒤따라 나타났다."),
+      characters: [eliaCard, jihoonCard],
+      targetLength: 10
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("cast")
   })
 })
