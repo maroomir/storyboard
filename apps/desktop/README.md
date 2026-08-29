@@ -14,10 +14,16 @@ English README: [`README.en.md`](README.en.md)
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바
 - outline에서 `scene/*.card` 씬 시드를 만들고 `draft/*.md` 초안을 생성
+- 씬 생성은 **뼈대 → 대사 다듬기 → 구간 살붙임 → 기계 검증** 4단으로 진행. 씬 전체의 사건 순서·등장·종료 지점을 뼈대에서 한 번에 확정한 뒤 문장만 두껍게 하므로, 같은 인물이 두 번 처음 등장하거나 도입이 반복되는 결함이 구조적으로 나오지 않음
+- 생성 검증은 AI 없이 결정론적으로 동작: 뼈대에 없던 인물·다른 문자 체계·사라진 대사·분량 미달을 잡아 재시도하고, 남은 위반은 초안 frontmatter의 `warnings`로 올려 어느 구간을 먼저 볼지 알림
+- 씬 간 이야기 상태 원장(`.storyboard/cache/storyState.md`): 확정 사실·인물 관계와 말투·공개된 정보·살아 있는 모티프를 씬 순서와 함께 누적해 다음 씬 프롬프트와 연속성 검사에 주입. 앞 씬을 재생성해도 뒤 씬 상태가 새어 들어가지 않음
+- 캐넌 공개 시점(`revealFrom`): 사실이 **참이 되는 시점**(`validFrom`)과 **밝혀지는 시점**을 분리해, 1화부터 참인 결말 반전이 초반 본문에 누설되지 않게 함
+- 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 현재 Draft/Scene에 대해 대화로 작업을 지시 → 제안 확인 → 승인으로 실행(생성·재생성·검사·편집)
 - 재생성 없이 카드 기반 보충: Studio 패널에서 **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역)을 요청해 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
 - 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `storyboard.grounding.autoApprove`를 켜면 자동 수락
-- 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
+- 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
+- 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
 - 이전 초안 히스토리 보관(`storyboard.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
 - 장면 전환 구분자 삽입(`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
