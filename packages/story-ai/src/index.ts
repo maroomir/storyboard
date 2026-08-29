@@ -28,6 +28,7 @@ export * from './ai/prompts/personaDialogue';
 export * from './ai/prompts/personaGeneration';
 export * from './ai/prompts/sceneCoverage';
 export * from './ai/prompts/sceneGrounding';
+export * from './ai/prompts/sceneDialoguePolish';
 export * from './ai/prompts/sceneSectionExpansion';
 export * from './ai/prompts/sceneSkeleton';
 export * from './ai/prompts/sceneStructure';

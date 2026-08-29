@@ -3,14 +3,23 @@ import type { IBackgroundMemoryStore, IPersonaMemoryStore } from './memoryStore'
 import type { AiProviderId, StoryboardAIService, StyleDirective } from '@storyboard/story-ai';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
-  'createCharacterPersona' | 'describeBackground' | 'draftSceneSkeleton' | 'expandSceneSection'
+  | 'createCharacterPersona'
+  | 'describeBackground'
+  | 'draftSceneSkeleton'
+  | 'polishSceneDialogue'
+  | 'expandSceneSection'
 >;
 
-export type SceneGenerationPipelineStage = 'buildPersonas' | 'draftSkeleton' | 'expandSection';
+export type SceneGenerationPipelineStage =
+  | 'buildPersonas'
+  | 'draftSkeleton'
+  | 'polishDialogue'
+  | 'expandSection';
 
 export interface SceneGenerationPipelineTaskProviders {
   readonly personaGeneration?: AiProviderId;
   readonly sceneSkeleton?: AiProviderId;
+  readonly sceneDialoguePolish?: AiProviderId;
   readonly sceneSectionExpansion?: AiProviderId;
 }
 

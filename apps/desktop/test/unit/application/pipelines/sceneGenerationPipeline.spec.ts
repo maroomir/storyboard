@@ -6,6 +6,7 @@ import {
   planSectionCount,
   splitSkeletonIntoSections,
   validateExpandedSection,
+  validatePolishedSkeleton,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
 } from '@storyboard/story-pipeline'
@@ -43,12 +44,14 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly createCharacterPersona: ReturnType<typeof vi.fn>
   readonly describeBackground: ReturnType<typeof vi.fn>
   readonly draftSceneSkeleton: ReturnType<typeof vi.fn>
+  readonly polishSceneDialogue: ReturnType<typeof vi.fn>
   readonly expandSceneSection: ReturnType<typeof vi.fn>
 } {
   return {
     createCharacterPersona: vi.fn(async () => "p"),
     describeBackground: vi.fn(async () => ""),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
+    polishSceneDialogue: vi.fn(async (input) => (input as { skeleton: string }).skeleton),
     expandSceneSection: vi.fn(async () => longProse("살붙인 본문"))
   }
 }
@@ -96,7 +99,13 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
       onProgress: (stage) => progress.push(stage)
     })
 
-    expect(progress).toEqual(["buildPersonas", "buildPersonas", "draftSkeleton", "expandSection"])
+    expect(progress).toEqual([
+      "buildPersonas",
+      "buildPersonas",
+      "draftSkeleton",
+      "polishDialogue",
+      "expandSection"
+    ])
     expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(1)
     expect(result.skeleton).toBe("뼈대 본문")
     expect(result.draftBody).toContain("살붙인 본문")
@@ -367,6 +376,101 @@ describe("validateExpandedSection", () => {
     })
 
     expect(violations.map((violation) => violation.kind)).toContain("too-short")
+  })
+})
+
+describe("대사 다듬기 단계", () => {
+  it("polishes the skeleton before splitting, and expands the polished text", async () => {
+    const ai = createRecordingAiService()
+    const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. ${"복도는 조용했다. ".repeat(20)}`
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
+    ai.polishSceneDialogue.mockResolvedValueOnce(`${skeleton}\n\n"가자, 지금."`)
+    ai.expandSceneSection.mockImplementation(async (input) =>
+      longProse((input as { section: string }).section)
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
+    expect(result.skeleton).toBe(`${skeleton}\n\n"가자, 지금."`)
+
+    const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { skeleton: string }
+    expect(expansionInput.skeleton).toBe(`${skeleton}\n\n"가자, 지금."`)
+    expect(result.warnings).toEqual([])
+  })
+
+  it("hands the personas to the polish call so voices stay distinct", async () => {
+    const ai = createRecordingAiService()
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const input = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
+      personas: ReadonlyMap<string, string>
+    }
+    expect(Array.from(input.personas.keys())).toEqual(["엘리아", "지훈"])
+  })
+
+  it("falls back to the original skeleton and warns when polishing adds a character", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
+    ai.polishSceneDialogue.mockResolvedValue("엘리아가 문을 연다. 지훈이 들어왔다.")
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(2)
+    expect(result.skeleton).toBe("엘리아가 문을 연다.")
+    expect(result.warnings[0]).toContain("대사 다듬기를 되돌렸습니다")
+    expect(result.warnings[0]).toContain("지훈")
+  })
+})
+
+describe("validatePolishedSkeleton", () => {
+  const base = { characters: [eliaCard, jihoonCard], lengthLimit: 1000 }
+
+  it("allows added dialogue, which is the whole point of the pass", () => {
+    const violations = validatePolishedSkeleton({
+      ...base,
+      skeleton: '엘리아가 말했다. "가자."',
+      polished: '엘리아가 말했다. "가자. 더 늦으면 문이 닫혀." 그리고 다시 말했다. "지금."'
+    })
+
+    expect(violations).toEqual([])
+  })
+
+  it("rejects a character the skeleton never had", () => {
+    const violations = validatePolishedSkeleton({
+      ...base,
+      skeleton: "엘리아가 걷는다.",
+      polished: '엘리아가 걷는다. 지훈이 "같이 가" 하고 따라붙었다.'
+    })
+
+    expect(violations.map((violation) => violation.kind)).toEqual(["cast"])
+  })
+
+  it("rejects a polish that more than doubled the skeleton", () => {
+    const violations = validatePolishedSkeleton({
+      ...base,
+      skeleton: "엘리아가 걷는다.",
+      polished: "엘리아가 걷는다. " + "말".repeat(2000),
+      lengthLimit: 100
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("too-long")
   })
 })
 
