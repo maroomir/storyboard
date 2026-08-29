@@ -15,6 +15,23 @@ export function planSectionCount(targetLength: number, outputLimit = SECTION_OUT
   return Math.max(1, Math.ceil(targetLength / outputLimit));
 }
 
+// NOTE: 절단은 뜻이 끊기는 자리에서 해야 한다. 뼈대가 남긴 --- 장면 전환이 예산 근처에 있으면
+// 그 자리를 우선 쓰고, 없을 때만 문단 경계로 내려간다. 결투 한복판에서 구간이 갈리는 일을 막는다.
+const SCENE_BREAK_LINE = '---';
+
+interface SkeletonUnit {
+  readonly text: string;
+  readonly endsScene: boolean;
+}
+
+function splitIntoUnits(skeleton: string): SkeletonUnit[] {
+  return skeleton
+    .split(/\n\s*\n+/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0)
+    .map((block) => ({ text: block, endsScene: block === SCENE_BREAK_LINE }));
+}
+
 export function splitSkeletonIntoSections(skeleton: string, sectionCount: number): string[] {
   const trimmed = skeleton.trim();
 
@@ -22,34 +39,39 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
     return [trimmed];
   }
 
-  const paragraphs = trimmed
-    .split(/\n\s*\n+/)
-    .map((paragraph) => paragraph.trim())
-    .filter((paragraph) => paragraph.length > 0);
+  const units = splitIntoUnits(trimmed);
+  const splittable = units.filter((unit) => !unit.endsScene);
 
-  if (paragraphs.length <= 1) {
+  if (splittable.length <= 1) {
     return [trimmed];
   }
 
-  // 문단을 순서대로 담되, 남은 문단이 남은 구간 수와 같아지면 곧바로 닫아 빈 구간이 생기지 않게 한다.
   const budget = trimmed.length / sectionCount;
   const sections: string[] = [];
   let current: string[] = [];
   let currentLength = 0;
+  let closedSections = 0;
 
-  paragraphs.forEach((paragraph, index) => {
-    current.push(paragraph);
-    currentLength += paragraph.length;
+  units.forEach((unit, index) => {
+    current.push(unit.text);
+    currentLength += unit.text.length;
 
-    const remainingParagraphs = paragraphs.length - index - 1;
-    const remainingSections = sectionCount - sections.length - 1;
-    const filled = currentLength >= budget && remainingSections > 0;
-    const mustClose = remainingParagraphs > 0 && remainingParagraphs === remainingSections;
+    const remainingUnits = units.slice(index + 1).filter((rest) => !rest.endsScene).length;
+    const remainingSections = sectionCount - closedSections - 1;
+    if (remainingSections <= 0 || remainingUnits === 0) {
+      return;
+    }
 
-    if (filled || mustClose) {
+    // 장면 전환 자리는 예산의 절반만 채워도 자른다. 그 자리가 가장 자연스러운 절단점이기 때문이다.
+    const atSceneBreak = unit.endsScene && currentLength >= budget / 2;
+    const filled = currentLength >= budget;
+    const mustClose = remainingUnits === remainingSections;
+
+    if (atSceneBreak || filled || mustClose) {
       sections.push(current.join('\n\n'));
       current = [];
       currentLength = 0;
+      closedSections += 1;
     }
   });
 
