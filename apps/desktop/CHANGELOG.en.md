@@ -10,6 +10,32 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-30
+
+### Changed
+
+- **Scene generation is now skeleton-first.** Instead of writing a scene beat by beat, Storyboard drafts the whole scene skeleton at once, polishes the dialogue voices, then fleshes it out section by section. Events, entrances, and the closing point are settled in one context, so a character no longer arrives twice or re-stages something that already happened. The same scene card now produces a noticeably different draft than before.
+- Expanded sections are validated deterministically, without an AI pass: a character the skeleton never had, foreign-script contamination, dropped dialogue, and length shortfalls trigger a retry, and anything left is reported in the draft's `warnings` header.
+- The dialogue polish pass only adjusts voice. Turn count and order stay as the skeleton wrote them, so it can no longer pad the scene with lines that merely restate the previous one as a question.
+- Persona example lines are no longer copied verbatim into the draft.
+
+### Added
+
+- **A story state ledger.** Each generated scene appends confirmed facts, relationship shifts, revealed information, and recurring motifs to `.storyboard/cache/storyState.md`, which the next scene reads. A fact revealed in an earlier scene is no longer revealed again as if it were new.
+- **Reveal gating for canon facts.** Set `revealFrom` to a scene number and the fact stays out of prompts until that scene, so an ending twist cannot leak into early scenes.
+- **Scene end state (`endState`) and point-of-view character (`povCharacter`) on scene cards.** The end state is editable in the scene form and leaves everything past that point to the next scene.
+- Drafts now surface non-Korean script contamination.
+- Scene transitions inside a scene are marked in the draft, and section splits prefer those transition points.
+
+### Fixed
+
+- The review loop discarded every revision of a draft that fell short of its target length — even revisions that made it longer were rejected as too short, so fixes were never adopted.
+- The expansion length floor moved from half the target to 85%, so a short section actually triggers a retry.
+- A skeleton line the expansion only reworded was reported as dropped dialogue; preservation is now judged by similarity.
+- When every retry fails, the least severe attempt is kept instead of the last one, and ties go to whichever landed closest to the target length.
+- Manual condensation could never succeed on a draft already under its scene target.
+- Characters are recognized by the names they are called in the story, not only by their card name.
+
 ## [0.6.4] - 2026-08-25
 
 ### Changed

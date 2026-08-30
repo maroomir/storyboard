@@ -2,7 +2,7 @@
   "name": "storyboard",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "publisher": "maroomir",
   "license": "Apache-2.0",
   "repository": {
@@ -318,7 +318,7 @@
               },
               "model": {
                 "type": "string",
-                "description": "Catalog model id for this task. When omitted, the provider\u2019s global model setting is used."
+                "description": "Catalog model id for this task. When omitted, the provider’s global model setting is used."
               }
             },
             "additionalProperties": false
@@ -363,7 +363,7 @@
           "default": 0,
           "minimum": 0,
           "maximum": 100,
-          "description": "Optional critique-score quality bar (0\u2013100) that lets the Review & Revise loop pass early once the deterministic rubric score reaches it. 0 disables this and keeps the loop's stop behavior and AI-call count identical to before. High-severity continuity issues still block regardless."
+          "description": "Optional critique-score quality bar (0–100) that lets the Review & Revise loop pass early once the deterministic rubric score reaches it. 0 disables this and keeps the loop's stop behavior and AI-call count identical to before. High-severity continuity issues still block regardless."
         },
         "storyboard.draft.maxCompressionPercent": {
           "type": "integer",
@@ -420,22 +420,22 @@
       "activitybar": [
         {
           "id": "storyboard-characters",
-          "title": "Storyboard \u00b7 Characters",
+          "title": "Storyboard · Characters",
           "icon": "assets/activity-characters.svg"
         },
         {
           "id": "storyboard-backgrounds",
-          "title": "Storyboard \u00b7 Backgrounds",
+          "title": "Storyboard · Backgrounds",
           "icon": "assets/activity-backgrounds.svg"
         },
         {
           "id": "storyboard-scenes",
-          "title": "Storyboard \u00b7 Scenes",
+          "title": "Storyboard · Scenes",
           "icon": "assets/activity-scenes.svg"
         },
         {
           "id": "storyboard-studio",
-          "title": "Storyboard \u00b7 Studio",
+          "title": "Storyboard · Studio",
           "icon": "assets/activity-studio.svg"
         }
       ]
