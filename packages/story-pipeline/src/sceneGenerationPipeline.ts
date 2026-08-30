@@ -140,8 +140,11 @@ async function expandSectionWithRetries(input: {
   readonly options: GenerateTextOptions;
 }): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
-  let lastText = input.section;
-  let lastViolations: readonly SectionViolation[] = [];
+  let best: { text: string; violations: readonly SectionViolation[]; weight: number } = {
+    text: input.section,
+    violations: [],
+    weight: Number.POSITIVE_INFINITY,
+  };
 
   for (let attempt = 0; attempt <= SECTION_RETRY_LIMIT; attempt += 1) {
     const expanded = await input.aiService.expandSceneSection(
@@ -167,13 +170,31 @@ async function expandSectionWithRetries(input: {
       return { text: expanded, violations: [] };
     }
 
-    lastText = expanded;
-    lastViolations = violations;
+    const weight = weighViolations(violations);
+    if (weight < best.weight) {
+      best = { text: expanded, violations, weight };
+    }
+
     reasons = violations.map((violation) => violation.detail);
   }
 
-  // 재시도로도 못 고치면 결과를 채택하되, 위반 내역은 원고 헤더로 올려 읽는 사람이 바로 보게 한다.
-  return { text: lastText, violations: lastViolations };
+  // 재시도로도 못 고치면 가장 가벼운 판을 채택하되, 위반 내역은 원고 헤더로 올려 바로 보게 한다.
+  return { text: best.text, violations: best.violations };
+}
+
+// NOTE: 마지막 판이 가장 나은 판이라는 보장이 없다. 새 인물이나 문자 오염은 원고를 못 쓰게 만들고
+// 분량 미달은 읽는 데 지장이 없으므로, 같은 개수라도 가벼운 쪽을 남긴다.
+const violationWeights: Readonly<Record<SectionViolation['kind'], number>> = {
+  cast: 3,
+  'foreign-script': 3,
+  'added-dialogue': 2,
+  'lost-dialogue': 2,
+  'too-long': 1,
+  'too-short': 1,
+};
+
+function weighViolations(violations: readonly SectionViolation[]): number {
+  return violations.reduce((total, violation) => total + violationWeights[violation.kind], 0);
 }
 
 // NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
