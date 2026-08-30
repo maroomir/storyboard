@@ -4,7 +4,6 @@ import type {
   CondenseDraftResult,
   CondenseDraftUseCase,
 } from '../../application/drafts/condenseDraftUseCase';
-import { resolveSceneTargetLength } from '@storyboard/story-pipeline';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -54,7 +53,6 @@ interface CondenseContext {
   readonly intent?: string;
   readonly facts?: readonly string[];
   readonly characterCards?: readonly string[];
-  readonly targetLength?: number;
 }
 
 function previewUri(draftUri: vscode.Uri, version: 'before' | 'after'): vscode.Uri {
@@ -127,7 +125,6 @@ async function loadCondenseContext(target: CondenseTarget): Promise<CondenseCont
       intent: scene.body,
       facts: formatBibleFactLines(context, narrative.bibleFacts),
       characterCards: formatAugmentCards(context.characters, undefined),
-      targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
     };
   } catch {
     return {};

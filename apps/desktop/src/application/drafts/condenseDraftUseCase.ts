@@ -15,7 +15,6 @@ export interface CondenseDraftRequest {
   readonly format: ProjectFormat;
   readonly body: string;
   readonly maxCompressionPercent: number;
-  readonly targetLength?: number;
   readonly intent?: string;
   readonly facts?: readonly string[];
   readonly characterCards?: readonly string[];
@@ -46,10 +45,10 @@ export class CondenseDraftUseCase {
   ) {}
 
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
-    const minimumLength = resolveMinimumDraftLength(request.body.length, {
-      maxCompressionPercent: request.maxCompressionPercent,
-      targetLength: request.targetLength,
-    });
+    // NOTE: 압축은 원고를 원본보다 짧게 만드는 작업이라 씬 목표를 하한으로 쓰면 안 된다. 목표에
+    // 미달한 원고에서는 하한이 원본 길이와 같아져 어떤 압축 결과도 통과하지 못한다.
+    const lengthPolicy = { maxCompressionPercent: request.maxCompressionPercent };
+    const minimumLength = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
     try {
       const text = await this.aiGateway.createService(request.workspaceRoot).condenseDraft(
@@ -66,15 +65,9 @@ export class CondenseDraftUseCase {
           attribution: { primary: { kind: 'scene', id: request.sceneStem } },
         },
       );
-      const validation = validateDraftCandidate(
-        request.body,
-        text,
-        {
-          maxCompressionPercent: request.maxCompressionPercent,
-          targetLength: request.targetLength,
-        },
-        { requireShorter: true },
-      );
+      const validation = validateDraftCandidate(request.body, text, lengthPolicy, {
+        requireShorter: true,
+      });
 
       if (!validation.accepted) {
         if (validation.reason === 'too-short') {
