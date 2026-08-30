@@ -291,6 +291,26 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
     expect(result.warnings[0]).toContain("지훈")
   })
 
+  it("prefers the attempt closest to target when severity ties", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
+    ai.expandSceneSection
+      .mockResolvedValueOnce("짧".repeat(2100))
+      .mockResolvedValueOnce("중".repeat(2450))
+      .mockResolvedValueOnce("긴".repeat(2500))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 6000 }
+    })
+
+    expect(result.draftBody).toContain("긴")
+    expect(result.draftBody).not.toContain("짧")
+  })
+
   it("keeps the least severe attempt rather than whichever came last", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
@@ -515,7 +535,18 @@ describe("validatePolishedSkeleton", () => {
       polished: '엘리아가 말했다. "가자, 지금." 그리고 다시 말했다. "지금 가자는 뜻입니까."'
     })
 
-    expect(violations.map((violation) => violation.kind)).toEqual(["added-dialogue"])
+    expect(violations.map((violation) => violation.kind)).toEqual(["dialogue-count"])
+  })
+
+  it("rejects a turn the polish quietly dropped", () => {
+    const violations = validatePolishedSkeleton({
+      ...base,
+      skeleton: '엘리아가 말했다. "가자, 지금." 그리고 덧붙였다. "문이 닫히기 전에."',
+      polished: '엘리아가 말했다. "가자, 지금." 그리고 문 쪽을 보았다.'
+    })
+
+    expect(violations.map((violation) => violation.kind)).toEqual(["dialogue-count"])
+    expect(violations[0]?.detail).toContain("사라졌습니다")
   })
 
   it("rejects a character the skeleton never had", () => {

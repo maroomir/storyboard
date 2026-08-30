@@ -103,7 +103,7 @@ export interface SectionViolation {
     | 'lost-dialogue'
     | 'too-short'
     | 'too-long'
-    | 'added-dialogue';
+    | 'dialogue-count';
   readonly detail: string;
 }
 
@@ -208,9 +208,9 @@ function countDialogueTurns(text: string): number {
   return [...text.matchAll(quotedDialoguePattern)].length;
 }
 
-// NOTE: 다듬기는 대사 문장을 바꾸는 작업이라 대사 보존은 검사할 수 없다. 대신 턴 수를 센다. 턴이
-// 늘었다는 것은 뼈대에 없던 말을 만들었다는 뜻이고, 새 정보를 담을 수 없으니 그 말은 앞 대사를
-// 되풀이하는 빈 되묻기가 된다.
+// NOTE: 다듬기는 대사 문장을 바꾸는 작업이라 대사 보존은 검사할 수 없다. 대신 턴 수를 센다. 개수와
+// 순서를 뼈대 그대로 두는 것이 이 단계의 규칙이므로 양쪽 모두 위반이다. 늘어난 턴은 새 정보를 담을
+// 수 없어 앞 대사를 되풀이하는 빈 되묻기가 되고, 줄어든 턴은 대사가 조용히 사라진 것이다.
 export function validatePolishedSkeleton(input: {
   readonly skeleton: string;
   readonly polished: string;
@@ -236,11 +236,14 @@ export function validatePolishedSkeleton(input: {
     });
   }
 
-  const addedTurns = countDialogueTurns(input.polished) - countDialogueTurns(input.skeleton);
-  if (addedTurns > 0) {
+  const turnDelta = countDialogueTurns(input.polished) - countDialogueTurns(input.skeleton);
+  if (turnDelta !== 0) {
     violations.push({
-      kind: 'added-dialogue',
-      detail: `뼈대에 없던 대사가 ${addedTurns}개 늘었습니다`,
+      kind: 'dialogue-count',
+      detail:
+        turnDelta > 0
+          ? `뼈대에 없던 대사가 ${turnDelta}개 늘었습니다`
+          : `뼈대의 대사 ${-turnDelta}개가 사라졌습니다`,
     });
   }
 
