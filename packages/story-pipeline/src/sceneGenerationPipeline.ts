@@ -140,10 +140,16 @@ async function expandSectionWithRetries(input: {
   readonly options: GenerateTextOptions;
 }): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
-  let best: { text: string; violations: readonly SectionViolation[]; weight: number } = {
+  let best: {
+    text: string;
+    violations: readonly SectionViolation[];
+    weight: number;
+    distance: number;
+  } = {
     text: input.section,
     violations: [],
     weight: Number.POSITIVE_INFINITY,
+    distance: Number.POSITIVE_INFINITY,
   };
 
   for (let attempt = 0; attempt <= SECTION_RETRY_LIMIT; attempt += 1) {
@@ -170,9 +176,12 @@ async function expandSectionWithRetries(input: {
       return { text: expanded, violations: [] };
     }
 
+    // 같은 무게라면 목표 분량에 가까운 판이 낫다. 재시도는 대개 분량을 더 쓰라는 지시를 받고 도는데,
+    // 무조건 첫 판을 남기면 그 개선분을 버리게 된다.
     const weight = weighViolations(violations);
-    if (weight < best.weight) {
-      best = { text: expanded, violations, weight };
+    const distance = Math.abs(expanded.length - input.targetLength);
+    if (weight < best.weight || (weight === best.weight && distance < best.distance)) {
+      best = { text: expanded, violations, weight, distance };
     }
 
     reasons = violations.map((violation) => violation.detail);
@@ -187,7 +196,7 @@ async function expandSectionWithRetries(input: {
 const violationWeights: Readonly<Record<SectionViolation['kind'], number>> = {
   cast: 3,
   'foreign-script': 3,
-  'added-dialogue': 2,
+  'dialogue-count': 2,
   'lost-dialogue': 2,
   'too-long': 1,
   'too-short': 1,
