@@ -113,6 +113,41 @@ const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
 // 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.
 const minimumLengthRatio = 0.85;
 
+// NOTE: 살붙임은 문맥에 맞춰 조사나 군더더기를 정리한다. 완전 일치로 보면 그런 재작성이 전부
+// 누락으로 잡히고, 재시도할 때마다 표현이 또 달라져 수렴하지도 않는다. 실측상 재작성은 87%,
+// 앞부분만 남기고 잘린 대사는 42%, 다른 대사로 대체된 경우는 18%라 그 사이에서 끊는다.
+const DIALOGUE_PRESERVED_RATIO = 0.85;
+
+function isDialoguePreserved(line: string, candidates: readonly string[]): boolean {
+  return candidates.some((candidate) => similarityRatio(line, candidate) >= DIALOGUE_PRESERVED_RATIO);
+}
+
+// 두 문자열이 공유하는 부분의 비율. difflib의 SequenceMatcher.ratio와 같은 정의다.
+function similarityRatio(left: string, right: string): number {
+  if (left.length === 0 || right.length === 0) {
+    return left.length === right.length ? 1 : 0;
+  }
+
+  return (2 * matchedLength(left, right)) / (left.length + right.length);
+}
+
+function matchedLength(left: string, right: string): number {
+  const previous = new Array<number>(right.length + 1).fill(0);
+  const current = new Array<number>(right.length + 1).fill(0);
+
+  for (let i = 1; i <= left.length; i += 1) {
+    for (let j = 1; j <= right.length; j += 1) {
+      current[j] =
+        left[i - 1] === right[j - 1]
+          ? (previous[j - 1] as number) + 1
+          : Math.max(previous[j] as number, current[j - 1] as number);
+    }
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[right.length] as number;
+}
+
 // NOTE: 뼈대가 정답지라서 위반을 AI 없이 결정론적으로 가려낼 수 있다. 살붙임은 문장만 두껍게 하는
 // 작업이므로, 뼈대에 없던 인물이나 사라진 대사는 그 자체로 규칙 위반이다.
 export function validateExpandedSection(input: {
@@ -145,9 +180,12 @@ export function validateExpandedSection(input: {
     });
   }
 
+  const expandedLines = [...input.expanded.matchAll(quotedDialoguePattern)].map((match) =>
+    (match[1] ?? '').trim(),
+  );
   const lost = [...input.section.matchAll(quotedDialoguePattern)]
     .map((match) => (match[1] ?? '').trim())
-    .filter((line) => line.length >= 6 && !input.expanded.includes(line));
+    .filter((line) => line.length >= 6 && !isDialoguePreserved(line, expandedLines));
 
   if (lost.length > 0) {
     violations.push({

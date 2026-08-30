@@ -272,7 +272,7 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
     expect(result.draftBody).toContain("엘리아가 천천히 문을 연다.")
   })
 
-  it("accepts the last attempt and records a warning when retries keep failing", async () => {
+  it("accepts a still-failing attempt and records a warning when retries keep failing", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
     ai.expandSceneSection.mockResolvedValue(longProse("엘리아와 지훈이 문을 연다."))
@@ -289,6 +289,27 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
     expect(result.warnings).toHaveLength(1)
     expect(result.warnings[0]).toContain("1구간")
     expect(result.warnings[0]).toContain("지훈")
+  })
+
+  it("keeps the least severe attempt rather than whichever came last", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
+    ai.expandSceneSection
+      .mockResolvedValueOnce("엘리아가 문을 천천히 열었다.")
+      .mockResolvedValueOnce(longProse("엘리아와 지훈이 문을 연다."))
+      .mockResolvedValueOnce(longProse("엘리아와 지훈이 ضرب 문을 연다."))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 6000 }
+    })
+
+    expect(ai.expandSceneSection).toHaveBeenCalledTimes(3)
+    expect(result.draftBody).toContain("엘리아가 문을 천천히 열었다.")
+    expect(result.warnings[0]).toContain("크게 못 미칩니다")
   })
 })
 
@@ -360,6 +381,26 @@ describe("validateExpandedSection", () => {
     })
 
     expect(violations.map((violation) => violation.kind)).toContain("foreign-script")
+  })
+
+  it("accepts a skeleton line the expansion only reworded", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '서하가 물었다. "세 번째입니다. 07-19 보관함의 병이 제 것입니까."',
+      expanded: '서하가 물었다. "세 번째입니다. 07-19 병은 제 것입니까." ' + "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("lost-dialogue")
+  })
+
+  it("still flags a skeleton line the expansion truncated", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '서하가 물었다. "세 번째입니다. 07-19 보관함의 병이 제 것입니까."',
+      expanded: '서하가 물었다. "세 번째입니다." ' + "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
   it("flags a skeleton line that the expansion dropped", () => {
