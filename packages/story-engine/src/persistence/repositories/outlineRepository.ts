@@ -8,14 +8,7 @@ import {
   writeChapterPlanFile,
   writeSynopsisFile,
 } from '@storyboard/story-format';
-import type {
-  CardFileSystem,
-  ChapterPlan,
-  OutlineCharacterBrief,
-  OutlineFileSystem,
-  OutlineSynopsis,
-  StoryboardProject,
-} from '@storyboard/story-format';
+import type { ChapterPlan, OutlineCharacterBrief, OutlineSynopsis, StoryboardProject } from '@storyboard/story-format';
 import { readProjectJson } from '../projectJson';
 export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

@@ -8,7 +8,6 @@ import {
 } from '../../paths/projectPaths';
 import { isOutlineStale } from '../../domain/sceneStatus';
 import { parseSceneFileName, readSceneFile } from '@storyboard/story-format';
-import type { SceneFileSystem } from '@storyboard/story-format';
 import type { SceneListItem } from '../../shared/messaging/scenes';
 export class SceneSidebarRepository implements ISceneSidebarRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

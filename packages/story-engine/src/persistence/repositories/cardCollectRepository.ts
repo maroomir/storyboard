@@ -4,7 +4,6 @@ import type { ICardCollectRepository } from '../../application/cards/collectCard
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { loadCharacterRoster } from '../relationGraphData';
 import { parseDraft, readDraftFile } from '@storyboard/story-format';
-import type { DraftFileSystem } from '@storyboard/story-format';
 import type { CollectDraft, CollectRosterEntry } from '../../ai/cardCollectBuilder';
 
 export class CardCollectRepository implements ICardCollectRepository {
