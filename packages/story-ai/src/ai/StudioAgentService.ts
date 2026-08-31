@@ -1,6 +1,10 @@
 import type { AiTextGateway } from './AiTextGateway';
 import { toPromptMessages } from './aiResponseCoercion';
-import { StudioAgentPrompt, type StudioAgentPromptInput } from './prompts/studioAgent';
+import {
+  StudioAgentPrompt,
+  type StudioAgentPatchShape,
+  type StudioAgentPromptInput,
+} from './prompts/studioAgent';
 import { StudioValidationPrompt } from './prompts/studioValidation';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
@@ -24,6 +28,7 @@ export type StudioLookupResolver = (
 
 export interface StudioAgentRunInput {
   readonly entityKind: StudioAgentPromptInput['entityKind'];
+  readonly patchShape: StudioAgentPatchShape;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly context: string;
@@ -104,6 +109,7 @@ export class StudioAgentService {
   ): Promise<StudioAgentAction> {
     const prompt = StudioAgentPrompt.build({
       entityKind: input.entityKind,
+      patchShape: input.patchShape,
       entityLabel: input.entityLabel,
       targetFile: input.targetFile,
       context: joinContext(input.context, lookedUp),

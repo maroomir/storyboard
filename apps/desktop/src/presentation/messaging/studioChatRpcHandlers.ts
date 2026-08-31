@@ -4,6 +4,7 @@ import type { StudioChatStage, StudioChatUseCase } from '@/application/studio/st
 import {
   readStudioEntityContext,
   resolveStudioLookups,
+  type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type {
@@ -37,13 +38,17 @@ export function createStudioChatRpcHandlers(
         return { turns: [sayTurn('Storyboard 프로젝트를 먼저 열어 주세요.')] };
       }
 
-      const entityContext = await readStudioEntityContext(root, payload.entity);
+      const target = await deps.getTarget();
+      const entityContext = await readStudioEntityContext(
+        root,
+        payload.entity,
+        sceneFocusOf(target),
+      );
 
       if (!entityContext) {
         return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
       }
 
-      const target = await deps.getTarget();
       const startedGeneration = generation;
 
       try {
@@ -71,6 +76,12 @@ export function createStudioChatRpcHandlers(
       return {};
     },
   };
+}
+
+// NOTE: a scene entity spans the seed card and its draft; whichever the author is looking at is
+// the one a proposal may rewrite.
+function sceneFocusOf(target: StudioTarget): StudioSceneFocus {
+  return target.kind === 'scene' ? 'card' : 'draft';
 }
 
 function isValidationEnabled(): boolean {

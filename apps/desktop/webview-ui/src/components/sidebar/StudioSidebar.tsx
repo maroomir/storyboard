@@ -1,4 +1,14 @@
-import { FileText, History, Loader2, MapPin, Send, SquarePen, User, X } from 'lucide-react';
+import {
+  FilePen,
+  FileText,
+  History,
+  Loader2,
+  MapPin,
+  Send,
+  SquarePen,
+  User,
+  X,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -11,7 +21,7 @@ import {
   parseStagePayload,
   parseStudioTarget,
 } from '@webview/lib/messaging';
-import { stageFacts, stageTitle } from '@webview/lib/studioStage';
+import { editTargetFile, stageFacts, stageTitle } from '@webview/lib/studioStage';
 import type {
   StoryboardEventMessage,
   StudioChatStage,
@@ -388,6 +398,7 @@ function StageCard({
   readonly stage?: StudioStage;
 }): React.ReactElement {
   const facts = stageFacts(stage);
+  const editTarget = editTargetFile(target);
 
   return (
     <section
@@ -398,6 +409,12 @@ function StageCard({
       <p className="m-0 text-sm font-semibold text-sb-fg">{stageTitle(target, stage)}</p>
       {facts.length > 0 ? (
         <p className="m-0 text-xs text-sb-fg-muted">{facts.join(' · ')}</p>
+      ) : null}
+      {editTarget ? (
+        <p className="m-0 flex items-center gap-1 text-xs text-sb-fg-muted">
+          <FilePen className="h-3 w-3 shrink-0" aria-hidden />
+          지금 고칠 대상: <code className="text-sb-fg">{editTarget}</code>
+        </p>
       ) : null}
       <StagePills stage={stage} />
     </section>
@@ -528,7 +545,11 @@ function composerPlaceholder(target: StudioTarget, stage: StudioChatStage): stri
     return '카드나 씬 파일을 먼저 열어 주세요.';
   }
 
-  return target.entity.kind === 'scene'
-    ? '예: 도입부를 더 긴장감 있게 고쳐줘'
-    : '예: 화재 트라우마를 과거사에 더해줘';
+  if (target.entity.kind !== 'scene') {
+    return '예: 화재 트라우마를 과거사에 더해줘';
+  }
+
+  return target.kind === 'scene'
+    ? '예: 이 씬의 갈등을 더 선명하게 정리해줘'
+    : '예: 도입부를 더 긴장감 있게 고쳐줘';
 }

@@ -141,6 +141,9 @@ const studioProposalTurnSchema = z.object({
   kind: z.literal('proposal'),
   summary: z.string().min(1),
   message: z.string().optional(),
+  // NOTE: the proposal names the file it was built against, so approving it later cannot land on
+  // whatever the author happens to have open by then.
+  targetFile: z.string().min(1),
   patch: studioPatchSchema,
   // NOTE: the file bytes the patch was derived from; applying against anything else is refused.
   baselineHash: z.string().min(1),
