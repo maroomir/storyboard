@@ -74,6 +74,13 @@ const followUpCalls: {
   dismissed: string[]
 } = { added: [], resolvedFor: [], dismissed: [] }
 
+const archivedDrafts: string[] = []
+
+const configBridge = { isKeepDraftHistoryEnabled: (): boolean => keepDraftHistory }
+const harnessLogger = { warn: (): void => undefined }
+
+let keepDraftHistory = false
+
 const followUpRepository = {
   list: async (): Promise<never[]> => [],
   add: async (_root: unknown, added: unknown[]): Promise<void> => {
@@ -94,6 +101,8 @@ function bridgeWith(): FakeWebview {
     createStudioProposalRpcHandlers({
       reviewService,
       followUpRepository,
+      configBridge,
+      logger: harnessLogger,
       getProjectRoot: async () => workspaceRoot,
       createFollowUpId: () => "follow-1"
     })
@@ -118,6 +127,8 @@ async function send(
 }
 
 beforeEach((): void => {
+  keepDraftHistory = false
+  archivedDrafts.length = 0
   shownDiffs.length = 0
   followUpCalls.added.length = 0
   followUpCalls.resolvedFor.length = 0
@@ -141,6 +152,7 @@ beforeEach((): void => {
   })
 
   vi.spyOn(vscode.workspace.fs, "readDirectory").mockImplementation(async () => [])
+  vi.spyOn(vscode.workspace.fs, "createDirectory").mockImplementation(async () => undefined)
 })
 
 afterEach((): void => {
@@ -360,5 +372,44 @@ describe("studio proposal path safety", () => {
     expect(response.payload?.shown).toBe(false)
     expect(String(response.payload?.message)).toContain("파일이 바뀌어서")
     expect(shownDiffs).toHaveLength(0)
+  })
+})
+
+describe("studio proposal draft history", () => {
+  const draftTurn = (): StudioChatTurn =>
+    proposalTurn({
+      targetFile: "draft/01-intro.md",
+      patch: {
+        target: "draft",
+        replacements: [{ startOffset: 0, endOffset: 2, oldText: "01", newText: "XY" }]
+      },
+      baselineHash: hashBaseline(draftText)
+    })
+
+  it("archives the previous draft when keepHistory is on", async () => {
+    keepDraftHistory = true
+
+    await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
+
+    const archived = [...files.keys()].filter((path) => path.includes("/.draft/"))
+    expect(archived).toHaveLength(1)
+    expect(files.get(archived[0] as string)).toBe(draftText)
+  })
+
+  it("writes no archive when keepHistory is off", async () => {
+    await send(bridgeWith(), "studio.proposal.apply", { entity: sceneEntity, turn: draftTurn() })
+
+    expect([...files.keys()].filter((path) => path.includes("/.draft/"))).toEqual([])
+  })
+
+  it("never archives for a card apply", async () => {
+    keepDraftHistory = true
+
+    await send(bridgeWith(), "studio.proposal.apply", {
+      entity: characterEntity,
+      turn: proposalTurn()
+    })
+
+    expect([...files.keys()].filter((path) => path.includes("/.draft/"))).toEqual([])
   })
 })

@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 
 import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-format';
 
+import type { ConfigBridge } from '@storyboard/story-ai';
+
 import { hashBaseline } from '@/application/studio/studioChatUseCase';
+import { archiveExistingDraft } from '@/domain/files/draftHistory';
 import { applyStudioPatch } from '@/domain/studio/studioPatch';
 import {
   readStudioEntityContext,
@@ -10,6 +13,9 @@ import {
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
+import { draftHistorySceneDirectory, joinUri } from '@/infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
+import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
   StoryboardResponsePayload,
@@ -21,6 +27,8 @@ import type {
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
   readonly followUpRepository: IStudioFollowUpRepository;
+  readonly configBridge: Pick<ConfigBridge, 'isKeepDraftHistoryEnabled'>;
+  readonly logger: Pick<StoryboardLogger, 'warn'>;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly createFollowUpId: () => string;
 }
@@ -62,6 +70,8 @@ export function createStudioProposalRpcHandlers(
       if (!prepared.ok) {
         return { status: 'failed', message: prepared.message };
       }
+
+      await archiveDraftBeforeApply(deps, payload.entity, prepared);
 
       try {
         await vscode.workspace.fs.writeFile(
@@ -144,6 +154,41 @@ async function prepareApply(
     changedFields: result.changedFields,
     lengthDelta: result.text.trim().length - patchBaseline.trim().length,
   };
+}
+
+// NOTE: every other writer archives the previous draft before overwriting it, and draft/ has no
+// commit safety net, so a chat apply has to honour the same contract.
+async function archiveDraftBeforeApply(
+  deps: StudioProposalRpcHandlersDependencies,
+  entity: StudioEntity,
+  prepared: Extract<PreparedApply, { readonly ok: true }>,
+): Promise<void> {
+  if (entity.kind !== 'scene' || !prepared.targetFile.startsWith('draft/')) {
+    return;
+  }
+
+  if (!deps.configBridge.isKeepDraftHistoryEnabled()) {
+    return;
+  }
+
+  const root = await deps.getProjectRoot();
+
+  if (!root) {
+    return;
+  }
+
+  try {
+    const historyDirectory = draftHistorySceneDirectory(root, entity.key);
+
+    await archiveExistingDraft({
+      draftUri: prepared.targetUri,
+      historyDirectory,
+      resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
+      fileSystem: draftHistoryFileSystem,
+    });
+  } catch (error) {
+    deps.logger.warn(`이전 초안을 .draft 히스토리에 보관하지 못했습니다: ${String(error)}`);
+  }
 }
 
 // NOTE: an applied edit both raises the ripples it declares and answers whatever ripple was

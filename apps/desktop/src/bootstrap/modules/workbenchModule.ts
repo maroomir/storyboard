@@ -19,6 +19,7 @@ export class WorkbenchModule implements IApplicationModule {
     const {
       aiProviderRegistry,
       configBridge,
+      logger,
       proposalReviewService,
       secretStore,
       studioChatUseCase,
@@ -31,7 +32,13 @@ export class WorkbenchModule implements IApplicationModule {
     });
 
     this.disposables.add(
-      registerSidebarStudioProvider(context, studioChatUseCase, proposalReviewService),
+      registerSidebarStudioProvider(
+        context,
+        studioChatUseCase,
+        proposalReviewService,
+        configBridge,
+        logger,
+      ),
       registerOpenRelationGraphCommand(context, relationGraphPanel),
       registerOpenSettingsCommand(context, settingsPanel),
       relationGraphPanel,

@@ -1,5 +1,9 @@
 import * as vscode from 'vscode';
 
+import type { ConfigBridge } from '@storyboard/story-ai';
+
+import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import {
   StudioSessionRepository,
@@ -47,6 +51,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly chatUseCase: StudioChatUseCase,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
+    private readonly configBridge: ConfigBridge,
+    private readonly logger: StoryboardLogger,
   ) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -121,6 +127,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       ...createStudioProposalRpcHandlers({
         reviewService: this.reviewService,
         followUpRepository: this.followUpRepository,
+        configBridge: this.configBridge,
+        logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         createFollowUpId: () => crypto.randomUUID(),
       }),
@@ -165,6 +173,8 @@ export function registerSidebarStudioProvider(
   context: vscode.ExtensionContext,
   chatUseCase: StudioChatUseCase,
   reviewService: ProposalReviewService,
+  configBridge: ConfigBridge,
+  logger: StoryboardLogger,
 ): vscode.Disposable {
   const provider = new SidebarStudioProvider(
     context.extensionUri,
@@ -172,6 +182,8 @@ export function registerSidebarStudioProvider(
     chatUseCase,
     reviewService,
     new StudioFollowUpRepository(),
+    configBridge,
+    logger,
   );
 
   return vscode.Disposable.from(
