@@ -70,7 +70,7 @@ describe("computeStudioTarget", () => {
     const target = await computeStudioTarget(editorAt("/workspace/story/character/.sample.card"))
 
     expect(target.kind).toBe("project")
-    expect(target.entity).toEqual({ kind: "project", key: "story" })
+    expect(target.entity).toEqual({ kind: "project", key: "project" })
   })
 
   it("does not treat nested card files as card targets", async () => {

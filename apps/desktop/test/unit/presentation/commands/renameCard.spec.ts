@@ -54,4 +54,32 @@ describe("renameCard command", () => {
     expect(renames[0]?.oldUri.fsPath).toBe(cardUri.fsPath)
     expect(renames[0]?.newUri.fsPath).toBe("/ws/project/character/protagonist.card")
   })
+
+  it("carries the card's studio sessions to the new id", async () => {
+    const sessionRoot = "/ws/project/.storyboard/cache/studio-sessions/character"
+
+    workspace.fs.stat = async (uri): Promise<{ type: FileType }> => {
+      if (uri.fsPath === projectJsonPath || uri.fsPath === `${sessionRoot}/hero`) {
+        return { type: FileType.File }
+      }
+      throw new Error("not found")
+    }
+
+    registerRenameCardCommands()
+    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card"))
+
+    expect(workspace.fs.rename).toHaveBeenCalledOnce()
+
+    const [source, destination] = vi.mocked(workspace.fs.rename).mock.calls[0] ?? []
+
+    expect((source as { fsPath: string }).fsPath).toBe(`${sessionRoot}/hero`)
+    expect((destination as { fsPath: string }).fsPath).toBe(`${sessionRoot}/protagonist`)
+  })
+
+  it("leaves fs.rename alone when the card has no studio sessions", async () => {
+    registerRenameCardCommands()
+    await characterRenameHandler!(vscode.Uri.file("/ws/project/character/hero.card"))
+
+    expect(workspace.fs.rename).not.toHaveBeenCalled()
+  })
 })

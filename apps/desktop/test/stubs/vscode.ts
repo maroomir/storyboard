@@ -143,8 +143,11 @@ export const workspace: {
   getWorkspaceFolder: (uri: UriLike) => WorkspaceFolder | undefined
   fs: {
     readFile: (uri: UriLike) => Promise<Uint8Array>
+    writeFile: (uri: UriLike, content: Uint8Array) => Promise<void>
     stat: (uri: UriLike) => Promise<{ type: FileType; mtime?: number }>
     readDirectory: (uri: UriLike) => Promise<Array<[string, FileType]>>
+    createDirectory: (uri: UriLike) => Promise<void>
+    delete: (uri: UriLike, options?: { recursive?: boolean }) => Promise<void>
     rename: (source: UriLike, target: UriLike, options?: { overwrite?: boolean }) => Promise<void>
   }
   findFiles: (
@@ -159,8 +162,11 @@ export const workspace: {
   getWorkspaceFolder: () => undefined,
   fs: {
     readFile: async () => new Uint8Array(),
+    writeFile: async () => undefined,
     stat: async () => ({ type: FileType.File }),
     readDirectory: async () => [],
+    createDirectory: async () => undefined,
+    delete: async () => undefined,
     rename: async () => undefined
   },
   findFiles: async () => [],

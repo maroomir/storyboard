@@ -357,7 +357,9 @@ describe("storyboard messaging protocol", () => {
       method: "studio.session.save",
       payload: {
         id: "11111111-1111-1111-1111-111111111111",
+        entity: { kind: "scene", key: "01-intro" },
         createdAt: "2026-07-19T00:00:00.000Z",
+        hasAppliedChanges: false,
         turns: [{ id: "u1", role: "user", text: "맞춤법 봐줘" }]
       }
     })
@@ -371,7 +373,9 @@ describe("storyboard messaging protocol", () => {
         method: "studio.session.save",
         payload: {
           id: "11111111-1111-1111-1111-111111111111",
+          entity: { kind: "scene", key: "01-intro" },
           createdAt: "2026-07-19T00:00:00.000Z",
+          hasAppliedChanges: false,
           turns: []
         }
       })
@@ -386,7 +390,9 @@ describe("storyboard messaging protocol", () => {
       method: "studio.session.save",
       payload: {
         id: "11111111-1111-1111-1111-111111111111",
+        entity: { kind: "scene", key: "01-intro" },
         createdAt: "2026-07-19T00:00:00.000Z",
+        hasAppliedChanges: false,
         turns: [
           {
             id: "a1",
@@ -412,7 +418,7 @@ describe("storyboard messaging protocol", () => {
       type: "request",
       id: "studio-list-1",
       method: "studio.session.list",
-      payload: {}
+      payload: { entity: { kind: "character", key: "seorin" } }
     })
     expect(listRequest.method).toBe("studio.session.list")
 
@@ -421,10 +427,16 @@ describe("storyboard messaging protocol", () => {
       type: "request",
       id: "studio-load-1",
       method: "studio.session.load",
-      payload: { id: "11111111-1111-1111-1111-111111111111" }
+      payload: {
+        entity: { kind: "character", key: "seorin" },
+        id: "11111111-1111-1111-1111-111111111111"
+      }
     })
     expect(loadRequest.method).toBe("studio.session.load")
-    expect(loadRequest.payload).toEqual({ id: "11111111-1111-1111-1111-111111111111" })
+    expect(loadRequest.payload).toEqual({
+      entity: { kind: "character", key: "seorin" },
+      id: "11111111-1111-1111-1111-111111111111"
+    })
   })
 
   it("creates validated success and error responses", () => {

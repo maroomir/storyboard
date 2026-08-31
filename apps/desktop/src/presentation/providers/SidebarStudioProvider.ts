@@ -58,7 +58,10 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     this.lastTargetKey = JSON.stringify(target);
 
     const root = await resolveStoryboardWorkspaceRoot();
-    const session = root ? await this.sessionRepository.loadLatest(root) : undefined;
+    const session =
+      root && target.entity
+        ? await this.sessionRepository.loadLatest(root, target.entity)
+        : undefined;
 
     const initialData: SidebarStudioInitialData = { title: 'Studio', target, session };
 

@@ -23,7 +23,9 @@ export function createStudioSessionRpcHandlers(
       if (root) {
         await repository.save(root, {
           id: payload.id,
+          entity: payload.entity,
           createdAt: payload.createdAt,
+          hasAppliedChanges: payload.hasAppliedChanges,
           turns: payload.turns,
         });
       }
@@ -31,9 +33,11 @@ export function createStudioSessionRpcHandlers(
       return {};
     },
 
-    'studio.session.list': async (): Promise<StoryboardResponsePayload<'studio.session.list'>> => {
+    'studio.session.list': async (
+      payload,
+    ): Promise<StoryboardResponsePayload<'studio.session.list'>> => {
       const root = await getProjectRoot();
-      const sessions = root ? await repository.list(root) : [];
+      const sessions = root ? await repository.list(root, payload.entity) : [];
       return { sessions: [...sessions] };
     },
 
@@ -41,7 +45,7 @@ export function createStudioSessionRpcHandlers(
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.load'>> => {
       const root = await getProjectRoot();
-      const session = root ? await repository.load(root, payload.id) : undefined;
+      const session = root ? await repository.load(root, payload.entity, payload.id) : undefined;
       return { session };
     },
   };
