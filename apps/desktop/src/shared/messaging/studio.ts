@@ -291,6 +291,14 @@ export const studioSessionListResponsePayloadSchema = z.object({
   sessions: z.array(studioSessionSummarySchema),
 });
 
+export const studioSessionLatestRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+});
+
+export const studioSessionLatestResponsePayloadSchema = z.object({
+  session: studioSessionSnapshotSchema.optional(),
+});
+
 export const studioSessionLoadRequestPayloadSchema = z.object({
   entity: studioEntitySchema,
   id: z.string().min(1),

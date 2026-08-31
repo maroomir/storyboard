@@ -41,6 +41,14 @@ export function createStudioSessionRpcHandlers(
       return { sessions: [...sessions] };
     },
 
+    'studio.session.latest': async (
+      payload,
+    ): Promise<StoryboardResponsePayload<'studio.session.latest'>> => {
+      const root = await getProjectRoot();
+      const session = root ? await repository.loadLatest(root, payload.entity) : undefined;
+      return { session };
+    },
+
     'studio.session.load': async (
       payload,
     ): Promise<StoryboardResponsePayload<'studio.session.load'>> => {

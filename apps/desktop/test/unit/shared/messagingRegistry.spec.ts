@@ -48,6 +48,7 @@ const expectedMethods = [
   "studio.followUp.open",
   "studio.proposal.apply",
   "studio.proposal.preview",
+  "studio.session.latest",
   "studio.session.list",
   "studio.session.load",
   "studio.session.save",
