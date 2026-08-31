@@ -324,7 +324,7 @@ export type StudioChatTurn =
       readonly message: string
     }
 
-export type StudioChatStage = "thinking" | "looking-up" | "validating" | "idle"
+export type StudioChatStage = "thinking" | "looking-up" | "invoking" | "validating" | "idle"
 
 export interface StudioSessionSummary {
   readonly id: string

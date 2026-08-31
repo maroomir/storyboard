@@ -12,6 +12,7 @@ export interface StudioAgentPromptInput {
   readonly instruction: string;
   readonly canAsk: boolean;
   readonly canLookup: boolean;
+  readonly canInvoke: boolean;
   readonly hasSelection: boolean;
 }
 
@@ -37,12 +38,16 @@ function buildSystem(input: StudioAgentPromptInput): string {
     '{"kind":"say","message":"..."}',
     '{"kind":"ask","question":"...","options":["...","..."]}',
     '{"kind":"lookup","requests":[{"kind":"character|background|scene|draft","key":"..."}],"reason":"..."}',
+    ...invokeShape(input),
     proposeShape(input.patchShape),
     '',
     '[행동 선택]',
     '- say: 질문에 답하거나 상황을 설명할 뿐 파일을 고치지 않을 때.',
     '- ask: 지시가 모호해 그대로 고치면 작가 의도를 벗어날 때만. 확신이 서면 묻지 말고 propose하라.',
     '- lookup: 정합성을 판단하려면 다른 카드나 씬의 내용이 필요할 때.',
+    ...(input.canInvoke
+      ? ['- invoke: 검사나 초벌 변환 도구가 필요할 때. 결과가 자료로 주입된 뒤 다시 판단한다.']
+      : []),
     '- propose: 무엇을 어떻게 고칠지 정해졌을 때. summary는 한 줄로 무엇이 바뀌는지 적어라.',
     '',
     '[제약]',
@@ -54,8 +59,39 @@ function buildSystem(input: StudioAgentPromptInput): string {
     '- 작가가 요청하지 않은 내용을 새로 지어내지 마라.',
     ...askPolicy(input),
     ...lookupPolicy(input),
+    ...toolPolicy(input),
     ...targetPolicy(input),
   ].join('\n');
+}
+
+function invokeShape(input: StudioAgentPromptInput): string[] {
+  return input.canInvoke
+    ? [
+        '{"kind":"invoke","tool":"continuityCheck|grammarCheck|expand|condense|augment","span":{"startOffset":0,"endOffset":0,"oldText":"구간 원문 그대로"},"instruction":"...","reason":"..."}',
+      ]
+    : [];
+}
+
+function toolPolicy(input: StudioAgentPromptInput): string[] {
+  if (!input.canInvoke) {
+    return input.patchShape === 'draft'
+      ? ['- 도구 호출 기회를 모두 썼다. 더 invoke하지 말고 주어진 자료로 판단하라.']
+      : [];
+  }
+
+  return [
+    '',
+    '[도구]',
+    '- continuityCheck: 초안 전체를 설정 자료와 대조해 불일치 목록을 받는다. span 없이 부른다.',
+    '- grammarCheck: 초안 전체의 맞춤법·문법 문제 목록을 받는다. span 없이 부른다.',
+    '- expand: span 구간을 더 길게 풀어 쓴 초벌 텍스트를 받는다.',
+    '- condense: span 구간을 압축한 초벌 텍스트를 받는다.',
+    '- augment: span 구간에 카드·설정 내용을 보충한 초벌 텍스트를 받는다. instruction에 무엇을 보충할지 적어라.',
+    '- span의 oldText에는 그 구간 원문을 한 글자도 바꾸지 말고 그대로 옮겨 적어라. 오프셋과 어긋나면 도구는 실행되지 않는다.',
+    '- 변환 도구의 결과는 초벌이다. 그대로 쓰지 말고 대화 맥락과 문체에 맞게 다듬어 propose의 newText로 써라.',
+    '- 검사 결과를 받으면 핵심을 작가에게 전하고, 고칠 구간이 분명하면 propose로 이어가라.',
+    '- 같은 도구를 같은 구간에 반복해서 부르지 마라.',
+  ];
 }
 
 function proposeShape(patchShape: StudioAgentPatchShape): string {

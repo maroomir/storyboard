@@ -7,6 +7,37 @@ export interface StudioAgentLookupRequest {
   readonly key: string;
 }
 
+export type StudioAgentToolName =
+  | 'continuityCheck'
+  | 'grammarCheck'
+  | 'expand'
+  | 'condense'
+  | 'augment';
+
+export interface StudioAgentToolSpan {
+  readonly startOffset: number;
+  readonly endOffset: number;
+  // NOTE: same anchor rule as a draft replacement — the tool refuses to run on a span whose
+  // offsets drifted off the text the model thinks it selected.
+  readonly oldText: string;
+}
+
+export interface StudioAgentInvokeRequest {
+  readonly tool: StudioAgentToolName;
+  readonly span?: StudioAgentToolSpan;
+  readonly instruction?: string;
+}
+
+const spanRequiredTools: ReadonlySet<StudioAgentToolName> = new Set([
+  'expand',
+  'condense',
+  'augment',
+]);
+
+export function isSpanRequiredTool(tool: StudioAgentToolName): boolean {
+  return spanRequiredTools.has(tool);
+}
+
 // NOTE: arc is a list of {stage, summary, sceneRef} objects, so a card patch has to carry more than
 // text; the card schema validates the shape before anything is written.
 export type StudioCardFieldValue =
@@ -56,6 +87,11 @@ export type StudioAgentAction =
       readonly reason?: string;
     }
   | {
+      readonly kind: 'invoke';
+      readonly request: StudioAgentInvokeRequest;
+      readonly reason?: string;
+    }
+  | {
       readonly kind: 'propose';
       readonly summary: string;
       readonly message?: string;
@@ -81,6 +117,8 @@ export function coerceStudioAgentAction(response: string): StudioAgentAction | u
       return coerceAsk(parsed);
     case 'lookup':
       return coerceLookup(parsed);
+    case 'invoke':
+      return coerceInvoke(parsed);
     case 'propose':
       return coercePropose(parsed);
     default:
@@ -182,6 +220,71 @@ function toLookupRequest(value: unknown): StudioAgentLookupRequest | undefined {
 
 function isLookupKind(value: unknown): value is StudioAgentLookupRequest['kind'] {
   return value === 'character' || value === 'background' || value === 'scene' || value === 'draft';
+}
+
+function coerceInvoke(parsed: Record<string, unknown>): StudioAgentAction | undefined {
+  const tool = parsed['tool'];
+
+  if (!isToolName(tool)) {
+    return undefined;
+  }
+
+  const span = toToolSpan(parsed['span']);
+
+  if (isSpanRequiredTool(tool) && !span) {
+    return undefined;
+  }
+
+  const instruction = trimmedString(parsed['instruction']);
+  const reason = trimmedString(parsed['reason']);
+
+  return {
+    kind: 'invoke',
+    request: {
+      tool,
+      ...(span === undefined ? {} : { span }),
+      ...(instruction === undefined ? {} : { instruction }),
+    },
+    ...(reason === undefined ? {} : { reason }),
+  };
+}
+
+function isToolName(value: unknown): value is StudioAgentToolName {
+  return (
+    value === 'continuityCheck' ||
+    value === 'grammarCheck' ||
+    value === 'expand' ||
+    value === 'condense' ||
+    value === 'augment'
+  );
+}
+
+function toToolSpan(value: unknown): StudioAgentToolSpan | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const candidate = value as {
+    readonly startOffset?: unknown;
+    readonly endOffset?: unknown;
+    readonly oldText?: unknown;
+  };
+
+  if (
+    !isNonNegativeInteger(candidate.startOffset) ||
+    !isNonNegativeInteger(candidate.endOffset) ||
+    typeof candidate.oldText !== 'string' ||
+    candidate.oldText.length === 0 ||
+    candidate.endOffset <= candidate.startOffset
+  ) {
+    return undefined;
+  }
+
+  return {
+    startOffset: candidate.startOffset,
+    endOffset: candidate.endOffset,
+    oldText: candidate.oldText,
+  };
 }
 
 function coercePropose(parsed: Record<string, unknown>): StudioAgentAction | undefined {
