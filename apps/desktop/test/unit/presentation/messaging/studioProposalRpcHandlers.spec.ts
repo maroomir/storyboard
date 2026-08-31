@@ -151,6 +151,13 @@ beforeEach((): void => {
     files.set(String((uri as { fsPath: string }).fsPath), new TextDecoder().decode(content))
   })
 
+  vi.spyOn(vscode.workspace.fs, "stat").mockImplementation(async (uri) => {
+    if (!files.has(String((uri as { fsPath: string }).fsPath))) {
+      throw new Error("missing")
+    }
+    return { type: 1, mtime: 0 } as never
+  })
+
   vi.spyOn(vscode.workspace.fs, "readDirectory").mockImplementation(async () => [])
   vi.spyOn(vscode.workspace.fs, "createDirectory").mockImplementation(async () => undefined)
 })
@@ -256,12 +263,13 @@ describe("studio proposal rpc handlers", () => {
 })
 
 describe("studio proposal rpc handlers for scene cards", () => {
-  const sceneCardTurn = (): StudioChatTurn =>
+  const sceneCardTurn = (overrides: Partial<Record<string, unknown>> = {}): StudioChatTurn =>
     proposalTurn({
       summary: "갈등 정리",
       targetFile: "scene/01-intro.card",
       patch: { target: "card", changes: [{ field: "purpose", value: "인물 소개와 갈등 암시" }] },
-      baselineHash: hashBaseline(sceneText)
+      baselineHash: hashBaseline(sceneText),
+      ...overrides
     })
 
   it("writes the patched scene card and leaves the draft alone", async () => {
@@ -273,6 +281,50 @@ describe("studio proposal rpc handlers for scene cards", () => {
     expect(response.payload?.status).toBe("applied")
     expect(files.get("/workspace/scene/01-intro.card")).toContain("purpose: 인물 소개와 갈등 암시")
     expect(files.get("/workspace/draft/01-intro.md")).toBe(draftText)
+  })
+
+  it("fills the cast and location with ids that resolve to real cards", async () => {
+    files.set("/workspace/background/subway.card", "type: location\nid: subway\nname: 지하철")
+
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: sceneEntity,
+      turn: sceneCardTurn({
+        patch: {
+          target: "card",
+          changes: [
+            { field: "characters", value: ["seorin"] },
+            { field: "location", value: "subway" }
+          ]
+        }
+      })
+    })
+
+    expect(response.payload?.status).toBe("applied")
+    expect(files.get("/workspace/scene/01-intro.card")).toContain("location: subway")
+  })
+
+  it("refuses a cast id with no card behind it", async () => {
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: sceneEntity,
+      turn: sceneCardTurn({
+        patch: { target: "card", changes: [{ field: "characters", value: ["seorin", "ghost"] }] }
+      })
+    })
+
+    expect(response.payload?.status).toBe("failed")
+    expect(String(response.payload?.message)).toContain("character/ghost.card")
+  })
+
+  it("refuses a location id with no card behind it", async () => {
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: sceneEntity,
+      turn: sceneCardTurn({
+        patch: { target: "card", changes: [{ field: "location", value: "nowhere" }] }
+      })
+    })
+
+    expect(response.payload?.status).toBe("failed")
+    expect(String(response.payload?.message)).toContain("background/nowhere.card")
   })
 
   it("refuses a scene card proposal once the card changed", async () => {

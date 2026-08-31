@@ -193,19 +193,23 @@ describe("applyStudioPatch for scene cards", () => {
     expect(result.ok ? result.text : "").toContain("닫히는 문")
   })
 
-  it("refuses to touch the cast list", () => {
+  it("rewrites the cast list and the location", () => {
     const result = applyStudioPatch(
       sceneCard,
-      cardPatch([{ field: "characters", value: ["seorin", "jiho"] }]),
+      cardPatch([
+        { field: "characters", value: ["seorin", "jiho"] },
+        { field: "location", value: "sugildang" }
+      ]),
       "sceneCard"
     )
 
-    expect(result.ok).toBe(false)
-    expect(result.ok ? "" : result.message).toContain("characters")
+    expect(result.ok).toBe(true)
+    expect(result.ok ? result.text : "").toContain("jiho")
+    expect(result.ok ? result.text : "").toContain("location: sugildang")
   })
 
-  it("refuses to touch grounding, location and the id", () => {
-    for (const field of ["grounding", "location", "id", "targetWordCount", "povCharacter"]) {
+  it("refuses to touch grounding and the pipeline contract fields", () => {
+    for (const field of ["grounding", "id", "targetWordCount", "povCharacter", "neededCanon"]) {
       const result = applyStudioPatch(sceneCard, cardPatch([{ field, value: "x" }]), "sceneCard")
       expect(result.ok).toBe(false)
     }
