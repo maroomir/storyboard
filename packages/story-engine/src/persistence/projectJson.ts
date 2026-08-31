@@ -1,6 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { type StoryUri } from '../paths/storyUri';
 import type { IFileSystem } from '../ports/fileSystem';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { pointOfViews, projectFormats, storyboardProjectVersion } from '@storyboard/story-format';
@@ -57,7 +57,7 @@ export interface CreateProjectJsonInput {
 export function createDefaultProjectJson(input: CreateProjectJsonInput): StoryboardProject {
   return {
     version: storyboardProjectVersion,
-    id: uuidv4(),
+    id: randomUUID(),
     name: input.name.trim(),
     format: input.format ?? 'novel',
     language: input.language ?? 'ko',

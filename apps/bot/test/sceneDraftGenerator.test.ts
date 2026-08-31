@@ -8,8 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiEngine } from '../src/ai/aiGateway';
 import { ContentService } from '../src/content/contentService';
-import { createBackgroundMemoryStore, createPersonaMemoryStore } from '../src/gen/cardMemoryStores';
-import { DraftPipeline } from '../src/gen/draftPipeline';
+import {
+  NodeUri,
+  createBackgroundMemoryStore,
+  createPersonaMemoryStore,
+  getStoryboardProjectPaths,
+} from '@storyboard/story-engine';
+import { BotFileSystem } from '../src/gen/engineAdapters';
+import { DraftPipeline, type DraftGenerator } from '../src/gen/draftPipeline';
 import { SceneDraftGenerator } from '../src/gen/sceneDraftGenerator';
 import type { GenJob } from '../src/gen/types';
 import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
@@ -106,20 +112,25 @@ describe('scene draft generation', () => {
 
   // The bot runs the extension's staged pipeline, not a bot-specific shortcut.
   it('generates a draft through the shared pipeline and writes it without committing', async () => {
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = {
+      reviseAfterGenerate: false,
+      reviseMaxIterations: 2,
+      autoGrounding: false,
+    };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
     const result = await pipeline.run(job('01-prologue'), context());
 
-    expect(result.success).toBe(true);
+    expect(result).toMatchObject({ success: true });
     expect(result.resultRef).toBe('draft/01-prologue.md');
 
     const draftText = readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8');
@@ -137,17 +148,17 @@ describe('scene draft generation', () => {
     expect(log.split('\n')).toHaveLength(2);
   });
 
-
   // Ported from the extension: the four grounding facts are settled before the dialogue prompt
   // runs, and `scene/` is tracked so filling them is a commit of its own.
   it('fills missing scene grounding and commits it to the scene frontmatter', async () => {
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -166,15 +177,20 @@ describe('scene draft generation', () => {
   });
 
   it('leaves the scene untouched when auto grounding is off', async () => {
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = {
+      reviseAfterGenerate: false,
+      reviseMaxIterations: 2,
+      autoGrounding: false,
+    };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const before = readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8');
     const logBefore = fixture.git('log', '--format=%s');
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -203,13 +219,14 @@ describe('scene draft generation', () => {
     fixture.git('add', '--all');
     fixture.git('commit', '--quiet', '-m', 'author grounding');
 
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -220,13 +237,18 @@ describe('scene draft generation', () => {
   });
 
   it('fails cleanly when the scene disappeared while the job was queued', async () => {
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = {
+      reviseAfterGenerate: false,
+      reviseMaxIterations: 2,
+      autoGrounding: false,
+    };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
@@ -241,34 +263,42 @@ describe('scene draft generation', () => {
   // it off in config.
   it('runs the shared revise loop after generation when the gate is on', async () => {
     const stages: string[] = [];
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = { reviseAfterGenerate: true, reviseMaxIterations: 2, autoGrounding: false };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2, autoGrounding: false },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
       },
     });
 
-    const body = await generator.generate('01-prologue', () => false);
+    const generated = await generator.generate('01-prologue', () => false);
 
-    expect(body.length).toBeGreaterThan(0);
+    // eslint-disable-next-line no-console
+    console.log('GENERATED', JSON.stringify(generated));
+    expect(generated).toMatchObject({ status: 'written' });
     expect(stages.some((stage) => stage.startsWith('검사 중'))).toBe(true);
   });
 
   it('skips the revise loop when the gate is off', async () => {
     const stages: string[] = [];
-    const engine = createAiEngine({ providers: { default: 'mock' } });
+    const draftConfig = {
+      reviseAfterGenerate: false,
+      reviseMaxIterations: 2,
+      autoGrounding: false,
+    };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
     const generator = new SceneDraftGenerator({
       store,
       content,
-      aiService: engine.service,
       registry: engine.registry,
-      draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
       generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
@@ -280,18 +310,22 @@ describe('scene draft generation', () => {
     expect(stages.some((stage) => stage.startsWith('검사 중'))).toBe(false);
   });
 
-  // The memory caches must serialize to the extension's exact record format, treat an edited card
-  // as a miss, and never produce a commit (.storyboard/cache/ is gitignored).
+  // Generation now uses the engine's own memory stores, so the round trip is asserted against those
+  // — the extension's exact record format, an edited card treated as a miss, and no commit
+  // (.storyboard/cache/ is gitignored).
   it('round-trips persona and background memory through the shared codec', async () => {
     const character = (await store.readCard('character', 'elia')).value as CharacterCard;
     const background = (await store.readCard('background', 'school')).value as BackgroundCard;
     const commitsBefore = fixture.git('log', '--format=%s').split('\n').length;
 
-    const personaStore = createPersonaMemoryStore(store, content, '01-prologue');
+    const paths = getStoryboardProjectPaths(NodeUri.file(fixture.root));
+    const fileSystem = new BotFileSystem(content);
+
+    const personaStore = createPersonaMemoryStore(fileSystem, paths, '01-prologue');
     await personaStore.save(character, '조용하지만 단단한 화자.');
     expect(await personaStore.load(character)).toBe('조용하지만 단단한 화자.');
 
-    const backgroundStore = createBackgroundMemoryStore(store, content, '01-prologue');
+    const backgroundStore = createBackgroundMemoryStore(fileSystem, paths, '01-prologue');
     await backgroundStore.save(background, '봄비 냄새가 남은 복도.');
     expect(await backgroundStore.load(background)).toBe('봄비 냄새가 남은 복도.');
 
@@ -302,8 +336,8 @@ describe('scene draft generation', () => {
   });
 
   it('reports cancellation instead of writing', async () => {
-    const generator = {
-      generate: async (): Promise<string> => '생성된 본문',
+    const generator: DraftGenerator = {
+      generate: async () => ({ status: 'cancelled' }),
     };
     const pipeline = new DraftPipeline({ store, content, generator });
 

@@ -34,6 +34,7 @@ import {
   SummarizeChaptersUseCase,
   DraftRepository,
   ProjectRepository,
+  NodeUri,
   type StoryUri,
   type StoryWorkspaceFolder,
   type UsageSink,
@@ -44,7 +45,6 @@ import { ConsoleLogger } from './adapters/consoleLogger';
 import { createFileConfiguration } from './adapters/fileConfiguration';
 import { createFileSecretStorage } from './adapters/fileSecretStorage';
 import { NodeFileSystem } from './adapters/nodeFileSystem';
-import { NodeUri } from './adapters/nodeUri';
 import { NodeWorkspaceLocator } from './adapters/nodeWorkspaceLocator';
 import { resolveCliPaths } from './adapters/paths';
 

@@ -118,8 +118,13 @@ export class StoryboardBotApplication {
 
     mkdirSync(dirname(options.stateDbPath), { recursive: true });
     this.db = openDatabase(options.stateDbPath);
-    const { service: aiService, registry } = createAiEngine({
+    const {
+      service: aiService,
+      registry,
+      configBridge,
+    } = createAiEngine({
       providers: config.providers,
+      draft: config.draft,
       cliRunner: createJobAwareCliRunner(),
       // Every AI call made while a job runs lands in that job's ledger row; `this.genJobs` is
       // assigned below, but usage callbacks only fire once jobs execute.
@@ -141,9 +146,9 @@ export class StoryboardBotApplication {
     const sceneDraftGenerator = new SceneDraftGenerator({
       store: this.store,
       content: this.content,
-      aiService,
       registry,
-      draftConfig: config.draft,
+      configBridge,
+      autoGrounding: config.draft.autoGrounding !== false,
       generator: `storyboard-bot@${packageJson.version}`,
     });
     this.genJobs = createGenJobs({

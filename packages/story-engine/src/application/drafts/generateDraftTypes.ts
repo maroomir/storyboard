@@ -46,6 +46,9 @@ export interface GenerateDraftRequest {
   readonly onSaving?: () => void;
   readonly shouldCancel?: () => boolean;
   readonly confirmSceneGrounding?: ConfirmSceneGrounding;
+  // Leave the scene's grounding exactly as authored: propose nothing, write nothing, generate with
+  // what is already there. Distinct from a declined approval, which cancels the run.
+  readonly skipSceneGrounding?: boolean;
   readonly suppressLoggerPanel?: boolean;
   readonly onTraitsUpdateComplete?: (summary: TraitsUpdateSummary) => void;
 }

@@ -78,7 +78,9 @@ export async function runSetup(): Promise<number> {
 
   try {
     if (existsSync(paths.configFile)) {
-      const overwrite = (await prompter.ask('설정 파일이 이미 있습니다. 덮어쓸까요? [y/N] ')).trim();
+      const overwrite = (
+        await prompter.ask('설정 파일이 이미 있습니다. 덮어쓸까요? [y/N] ')
+      ).trim();
       if (overwrite.toLowerCase() !== 'y') {
         process.stdout.write('취소했습니다.\n');
         return 0;

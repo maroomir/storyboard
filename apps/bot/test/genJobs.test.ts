@@ -109,11 +109,14 @@ describe('generation jobs end to end', () => {
       content,
       aiService,
       draftGenerator: {
-        generate: async (sceneStem) => `# ${sceneStem}\n\n생성된 본문입니다.\n`,
+        generate: async (sceneStem) => {
+          await content.writeDraft(sceneStem, `# ${sceneStem}\n\n생성된 본문입니다.\n`);
+          return { status: 'written' as const, outcome: undefined };
+        },
       },
       draftReviser: {
-        revise: async (_sceneStem, draftBody) => ({
-          body: `${draftBody}수정된 문장.\n`,
+        revise: async (sceneStem, draftBody) => ({
+          outcome: await content.writeDraft(sceneStem, `${draftBody}수정된 문장.\n`),
           passed: true,
           revisionCount: 1,
           remainingBlocking: 0,
