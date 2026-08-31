@@ -5,6 +5,7 @@ import {
   parseStudioSession,
   selectSessionsToPrune,
   serializeStudioSession,
+  type PrunableStudioSession,
   type StudioSession
 } from "@/domain/files/studioSession"
 import type { StudioChatTurn } from "@/shared/messaging"
@@ -15,11 +16,13 @@ const turns: StudioChatTurn[] = [
 ]
 
 const session: StudioSession = {
-  version: "1.0.0",
+  version: "2.0.0",
   id: "11111111-1111-1111-1111-111111111111",
+  entity: { kind: "scene", key: "01-intro" },
   createdAt: "2026-07-19T00:00:00.000Z",
   updatedAt: "2026-07-19T00:05:00.000Z",
   title: "맞춤법 봐줘",
+  hasAppliedChanges: false,
   turns
 }
 
@@ -30,6 +33,10 @@ describe("studio session serialization", () => {
 
   it("rejects an unsupported version", () => {
     expect(() => parseStudioSession(JSON.stringify({ ...session, version: "9.9.9" }))).toThrow()
+  })
+
+  it("rejects a session without an entity", () => {
+    expect(() => parseStudioSession(JSON.stringify({ ...session, entity: undefined }))).toThrow()
   })
 
   it("rejects an invalid turn", () => {
@@ -55,16 +62,45 @@ describe("deriveStudioSessionTitle", () => {
 })
 
 describe("selectSessionsToPrune", () => {
-  it("keeps the newest 20 by updatedAt", () => {
-    const summaries = Array.from({ length: 25 }, (_, index) => ({
+  function unappliedSessions(count: number): PrunableStudioSession[] {
+    return Array.from({ length: count }, (_, index) => ({
       id: `s-${index}`,
-      updatedAt: `2026-07-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`
+      updatedAt: `2026-07-${String(index + 1).padStart(2, "0")}T00:00:00.000Z`,
+      hasAppliedChanges: false
     }))
+  }
 
-    const pruned = selectSessionsToPrune(summaries)
+  it("keeps the newest 10 unapplied sessions by updatedAt", () => {
+    const pruned = selectSessionsToPrune(unappliedSessions(14))
 
-    expect(pruned).toHaveLength(5)
+    expect(pruned).toHaveLength(4)
     expect(pruned).toContain("s-0")
-    expect(pruned).not.toContain("s-24")
+    expect(pruned).not.toContain("s-13")
+  })
+
+  it("never prunes a session whose proposal was applied", () => {
+    const sessions: PrunableStudioSession[] = [
+      ...unappliedSessions(12),
+      {
+        id: "applied",
+        updatedAt: "2020-01-01T00:00:00.000Z",
+        hasAppliedChanges: true
+      }
+    ]
+
+    expect(selectSessionsToPrune(sessions)).not.toContain("applied")
+  })
+
+  it("does not count applied sessions against the keep budget", () => {
+    const sessions: PrunableStudioSession[] = [
+      ...unappliedSessions(10),
+      ...Array.from({ length: 5 }, (_, index) => ({
+        id: `applied-${index}`,
+        updatedAt: `2026-08-0${index + 1}T00:00:00.000Z`,
+        hasAppliedChanges: true
+      }))
+    ]
+
+    expect(selectSessionsToPrune(sessions)).toEqual([])
   })
 })

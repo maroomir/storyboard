@@ -20,6 +20,10 @@ import type { StudioTarget } from '../../shared/messaging';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
+// NOTE: the sessions live inside one workspace root already, so a constant key keeps the project
+// entity's directory name safe regardless of what the folder is called.
+const projectEntityKey = 'project';
+
 export async function computeStudioTarget(
   editor: vscode.TextEditor | undefined,
 ): Promise<StudioTarget> {
@@ -99,7 +103,7 @@ function projectTarget(workspaceFolder: vscode.WorkspaceFolder): StudioTarget {
   return {
     kind: 'project',
     label: workspaceFolder.name,
-    entity: { kind: 'project', key: workspaceFolder.name },
+    entity: { kind: 'project', key: projectEntityKey },
     hasSelection: false,
   };
 }

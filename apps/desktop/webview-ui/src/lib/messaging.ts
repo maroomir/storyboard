@@ -144,10 +144,12 @@ function parseStudioSessionSnapshot(value: unknown): StudioSessionSnapshot | und
   }
 
   const candidate = value as Partial<StudioSessionSnapshot>
+  const entity = parseStudioEntity(candidate.entity)
 
   if (
     typeof candidate.id !== "string" ||
     typeof candidate.createdAt !== "string" ||
+    !entity ||
     !Array.isArray(candidate.turns)
   ) {
     return undefined
@@ -155,9 +157,11 @@ function parseStudioSessionSnapshot(value: unknown): StudioSessionSnapshot | und
 
   return {
     id: candidate.id,
+    entity,
     createdAt: candidate.createdAt,
     updatedAt: typeof candidate.updatedAt === "string" ? candidate.updatedAt : candidate.createdAt,
     title: typeof candidate.title === "string" ? candidate.title : "",
+    hasAppliedChanges: candidate.hasAppliedChanges === true,
     turns: candidate.turns as readonly StudioChatTurn[]
   }
 }
@@ -278,7 +282,8 @@ function isStudioSessionSummary(value: unknown): value is StudioSessionSummary {
     typeof candidate.id === "string" &&
     typeof candidate.title === "string" &&
     typeof candidate.updatedAt === "string" &&
-    typeof candidate.turnCount === "number"
+    typeof candidate.turnCount === "number" &&
+    typeof candidate.hasAppliedChanges === "boolean"
   )
 }
 

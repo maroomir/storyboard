@@ -15,6 +15,8 @@ import {
 } from '@storyboard/story-format';
 import * as vscode from 'vscode';
 
+import type { StudioEntity } from '../../shared/messaging';
+
 export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
 
 export interface StoryboardProjectPaths {
@@ -121,6 +123,25 @@ export function isDirectSceneCardFile(
   workspaceFolder: vscode.WorkspaceFolder,
 ): boolean {
   return isDirectSceneCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
+}
+
+// SECURITY: entity keys reach here from webview payloads and become directory names; anything
+// outside the card/scene id shape would let a session escape the studio-sessions directory.
+const safeEntityKeyPattern = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
+
+export function studioSessionEntityDirectory(
+  workspaceRoot: vscode.Uri,
+  entity: StudioEntity,
+): vscode.Uri | undefined {
+  if (!safeEntityKeyPattern.test(entity.key)) {
+    return undefined;
+  }
+
+  return vscode.Uri.joinPath(
+    getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory,
+    entity.kind,
+    entity.key,
+  );
 }
 
 export function isDirectCharacterCardFile(

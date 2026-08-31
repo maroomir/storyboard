@@ -10,22 +10,32 @@ import {
 } from '../../../domain/files/studioSession';
 import type {
   StudioChatTurn,
+  StudioEntity,
   StudioSessionSnapshot,
   StudioSessionSummary,
 } from '../../../shared/messaging';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { studioSessionEntityDirectory } from '../../vscode/pathConventions';
 
 export interface StudioSessionSaveInput {
   readonly id: string;
+  readonly entity: StudioEntity;
   readonly createdAt: string;
+  readonly hasAppliedChanges: boolean;
   readonly turns: readonly StudioChatTurn[];
 }
 
 export interface IStudioSessionRepository {
   save(workspaceRoot: vscode.Uri, input: StudioSessionSaveInput): Promise<void>;
-  list(workspaceRoot: vscode.Uri): Promise<readonly StudioSessionSummary[]>;
-  load(workspaceRoot: vscode.Uri, id: string): Promise<StudioSessionSnapshot | undefined>;
-  loadLatest(workspaceRoot: vscode.Uri): Promise<StudioSessionSnapshot | undefined>;
+  list(workspaceRoot: vscode.Uri, entity: StudioEntity): Promise<readonly StudioSessionSummary[]>;
+  load(
+    workspaceRoot: vscode.Uri,
+    entity: StudioEntity,
+    id: string,
+  ): Promise<StudioSessionSnapshot | undefined>;
+  loadLatest(
+    workspaceRoot: vscode.Uri,
+    entity: StudioEntity,
+  ): Promise<StudioSessionSnapshot | undefined>;
 }
 
 // SECURITY: session ids arrive from the webview and are used as file names; reject anything
@@ -34,19 +44,22 @@ const safeSessionIdPattern = /^[A-Za-z0-9-]+$/;
 
 export class StudioSessionRepository implements IStudioSessionRepository {
   public async save(workspaceRoot: vscode.Uri, input: StudioSessionSaveInput): Promise<void> {
-    if (!safeSessionIdPattern.test(input.id)) {
+    const directory = studioSessionEntityDirectory(workspaceRoot, input.entity);
+
+    if (!directory || !safeSessionIdPattern.test(input.id)) {
       return;
     }
 
-    const directory = getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory;
     await vscode.workspace.fs.createDirectory(directory);
 
     const session: StudioSession = {
       version: studioSessionVersion,
       id: input.id,
+      entity: input.entity,
       createdAt: input.createdAt,
       updatedAt: new Date().toISOString(),
       title: deriveStudioSessionTitle(input.turns),
+      hasAppliedChanges: input.hasAppliedChanges,
       turns: [...input.turns],
     };
 
@@ -58,37 +71,38 @@ export class StudioSessionRepository implements IStudioSessionRepository {
     await this.prune(directory);
   }
 
-  public async list(workspaceRoot: vscode.Uri): Promise<readonly StudioSessionSummary[]> {
-    const directory = getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory;
-    const sessions = await this.readAll(directory);
+  public async list(
+    workspaceRoot: vscode.Uri,
+    entity: StudioEntity,
+  ): Promise<readonly StudioSessionSummary[]> {
+    const sessions = await this.readAll(studioSessionEntityDirectory(workspaceRoot, entity));
 
     return sessions
-      .map((session) => ({
-        id: session.id,
-        title: session.title,
-        updatedAt: session.updatedAt,
-        turnCount: session.turns.length,
-      }))
+      .map(toSummary)
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   public async load(
     workspaceRoot: vscode.Uri,
+    entity: StudioEntity,
     id: string,
   ): Promise<StudioSessionSnapshot | undefined> {
-    if (!safeSessionIdPattern.test(id)) {
+    const directory = studioSessionEntityDirectory(workspaceRoot, entity);
+
+    if (!directory || !safeSessionIdPattern.test(id)) {
       return undefined;
     }
 
-    const directory = getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory;
     const session = await this.readSession(sessionFileUri(directory, id));
 
     return session ? toSnapshot(session) : undefined;
   }
 
-  public async loadLatest(workspaceRoot: vscode.Uri): Promise<StudioSessionSnapshot | undefined> {
-    const directory = getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory;
-    const sessions = [...(await this.readAll(directory))];
+  public async loadLatest(
+    workspaceRoot: vscode.Uri,
+    entity: StudioEntity,
+  ): Promise<StudioSessionSnapshot | undefined> {
+    const sessions = [...(await this.readAll(studioSessionEntityDirectory(workspaceRoot, entity)))];
 
     const latest = sessions.sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
 
@@ -108,7 +122,11 @@ export class StudioSessionRepository implements IStudioSessionRepository {
     );
   }
 
-  private async readAll(directory: vscode.Uri): Promise<readonly StudioSession[]> {
+  private async readAll(directory: vscode.Uri | undefined): Promise<readonly StudioSession[]> {
+    if (!directory) {
+      return [];
+    }
+
     let entries: [string, vscode.FileType][];
 
     try {
@@ -140,12 +158,24 @@ function sessionFileUri(directory: vscode.Uri, id: string): vscode.Uri {
   return vscode.Uri.joinPath(directory, `${id}.json`);
 }
 
+function toSummary(session: StudioSession): StudioSessionSummary {
+  return {
+    id: session.id,
+    title: session.title,
+    updatedAt: session.updatedAt,
+    turnCount: session.turns.length,
+    hasAppliedChanges: session.hasAppliedChanges,
+  };
+}
+
 function toSnapshot(session: StudioSession): StudioSessionSnapshot {
   return {
     id: session.id,
+    entity: session.entity,
     createdAt: session.createdAt,
     updatedAt: session.updatedAt,
     title: session.title,
+    hasAppliedChanges: session.hasAppliedChanges,
     turns: [...session.turns],
   };
 }

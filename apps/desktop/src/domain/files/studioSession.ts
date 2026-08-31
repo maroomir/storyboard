@@ -2,11 +2,13 @@ import { z } from 'zod';
 
 import {
   studioChatTurnSchema,
+  studioEntitySchema,
   type StudioChatTurn,
+  type StudioEntity,
   type StudioSessionSummary,
 } from '../../shared/messaging/studio';
 
-export const studioSessionVersion = '1.0.0';
+export const studioSessionVersion = '2.0.0';
 
 const studioSessionTitleFallback = '새 대화';
 const studioSessionTitleMaxLength = 40;
@@ -14,18 +16,22 @@ const studioSessionTitleMaxLength = 40;
 export interface StudioSession {
   readonly version: typeof studioSessionVersion;
   readonly id: string;
+  readonly entity: StudioEntity;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly title: string;
+  readonly hasAppliedChanges: boolean;
   readonly turns: readonly StudioChatTurn[];
 }
 
 const studioSessionSchema = z.object({
   version: z.literal(studioSessionVersion),
   id: z.string().min(1),
+  entity: studioEntitySchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   title: z.string(),
+  hasAppliedChanges: z.boolean(),
   turns: z.array(studioChatTurnSchema),
 });
 
@@ -50,12 +56,18 @@ export function deriveStudioSessionTitle(turns: readonly StudioChatTurn[]): stri
     : text;
 }
 
+export type PrunableStudioSession = Pick<StudioSessionSummary, 'id' | 'updatedAt'> &
+  Pick<StudioSession, 'hasAppliedChanges'>;
+
+// NOTE: a session whose proposal was applied is a record of what changed in the workspace, so it
+// is kept for good; only sessions that never touched a file age out.
 export function selectSessionsToPrune(
-  summaries: readonly Pick<StudioSessionSummary, 'id' | 'updatedAt'>[],
-  keep = 20,
+  sessions: readonly PrunableStudioSession[],
+  keep = 10,
 ): readonly string[] {
-  return [...summaries]
+  return sessions
+    .filter((session) => !session.hasAppliedChanges)
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     .slice(keep)
-    .map((summary) => summary.id);
+    .map((session) => session.id);
 }

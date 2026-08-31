@@ -7,6 +7,7 @@ import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
   parseCardIdFromPath,
+  studioSessionEntityDirectory,
 } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 
@@ -77,6 +78,33 @@ async function renameCard(
 
   if (!applied) {
     await vscode.window.showErrorMessage('카드 rename에 실패했습니다.');
+    return;
+  }
+
+  await moveStudioSessions(workspaceFolder.uri, kind, oldId, newId);
+}
+
+// NOTE: Studio keys its chat sessions by card id, so a rename must carry the directory along or
+// the card's history is orphaned under the old name.
+async function moveStudioSessions(
+  workspaceRoot: vscode.Uri,
+  kind: 'character' | 'background',
+  oldId: string,
+  newId: string,
+): Promise<void> {
+  const source = studioSessionEntityDirectory(workspaceRoot, { kind, key: oldId });
+  const destination = studioSessionEntityDirectory(workspaceRoot, { kind, key: newId });
+
+  if (!source || !destination || !(await uriExists(source))) {
+    return;
+  }
+
+  try {
+    await vscode.workspace.fs.rename(source, destination, { overwrite: false });
+  } catch {
+    await vscode.window.showWarningMessage(
+      `카드는 rename되었지만 Studio 대화 기록을 옮기지 못했습니다: ${oldId}`,
+    );
   }
 }
 

@@ -283,13 +283,16 @@ export interface StudioSessionSummary {
   readonly title: string
   readonly updatedAt: string
   readonly turnCount: number
+  readonly hasAppliedChanges: boolean
 }
 
 export interface StudioSessionSnapshot {
   readonly id: string
+  readonly entity: StudioEntity
   readonly createdAt: string
   readonly updatedAt: string
   readonly title: string
+  readonly hasAppliedChanges: boolean
   readonly turns: readonly StudioChatTurn[]
 }
 

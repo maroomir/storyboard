@@ -156,7 +156,7 @@ export function StudioSidebar({
   }, [turns]);
 
   useEffect(() => {
-    if (turns.length === 0) {
+    if (turns.length === 0 || !target.entity) {
       return;
     }
 
@@ -165,7 +165,15 @@ export function StudioSidebar({
       type: 'request',
       id: createRequestId(),
       method: 'studio.session.save',
-      payload: { id: sessionId, createdAt, turns },
+      payload: {
+        id: sessionId,
+        entity: target.entity,
+        createdAt,
+        hasAppliedChanges: turns.some(
+          (turn) => turn.role === 'assistant' && turn.kind === 'proposal' && turn.status === 'done',
+        ),
+        turns,
+      },
     });
   }, [turns]);
 
@@ -177,6 +185,10 @@ export function StudioSidebar({
   };
 
   const openHistory = (): void => {
+    if (!target.entity) {
+      return;
+    }
+
     const requestId = createRequestId();
     listRequestIdRef.current = requestId;
     vscodeApi?.postMessage({
@@ -184,12 +196,16 @@ export function StudioSidebar({
       type: 'request',
       id: requestId,
       method: 'studio.session.list',
-      payload: {},
+      payload: { entity: target.entity },
     });
     setView('history');
   };
 
   const openSession = (id: string): void => {
+    if (!target.entity) {
+      return;
+    }
+
     const requestId = createRequestId();
     loadRequestIdRef.current = requestId;
     vscodeApi?.postMessage({
@@ -197,7 +213,7 @@ export function StudioSidebar({
       type: 'request',
       id: requestId,
       method: 'studio.session.load',
-      payload: { id },
+      payload: { entity: target.entity, id },
     });
   };
 

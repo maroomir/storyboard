@@ -142,9 +142,11 @@ export type StudioChatTurn = z.infer<typeof studioChatTurnSchema>;
 
 const studioSessionSnapshotSchema = z.object({
   id: z.string().min(1),
+  entity: studioEntitySchema,
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   title: z.string(),
+  hasAppliedChanges: z.boolean(),
   turns: z.array(studioChatTurnSchema),
 });
 
@@ -155,25 +157,31 @@ const studioSessionSummarySchema = z.object({
   title: z.string(),
   updatedAt: z.string().datetime(),
   turnCount: z.number().int().nonnegative(),
+  hasAppliedChanges: z.boolean(),
 });
 
 export type StudioSessionSummary = z.infer<typeof studioSessionSummarySchema>;
 
 export const studioSessionSaveRequestPayloadSchema = z.object({
   id: z.string().min(1),
+  entity: studioEntitySchema,
   createdAt: z.string().datetime(),
+  hasAppliedChanges: z.boolean(),
   turns: z.array(studioChatTurnSchema).min(1),
 });
 
 export const studioSessionSaveResponsePayloadSchema = z.object({});
 
-export const studioSessionListRequestPayloadSchema = z.object({});
+export const studioSessionListRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+});
 
 export const studioSessionListResponsePayloadSchema = z.object({
   sessions: z.array(studioSessionSummarySchema),
 });
 
 export const studioSessionLoadRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
   id: z.string().min(1),
 });
 
