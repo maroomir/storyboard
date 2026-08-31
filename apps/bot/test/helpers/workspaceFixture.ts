@@ -35,7 +35,7 @@ const DEFAULT_PROJECT = {
 // Creates a throwaway Storyboard workspace backed by a real git repository. Tests that exercise
 // commits need real git behaviour (index locking, rename detection, rebase), so this never stubs it.
 export function createWorkspaceFixture(options?: { readonly initGit?: boolean }): WorkspaceFixture {
-  const root = mkdtempSync(join(tmpdir(), 'storygram-ws-'));
+  const root = mkdtempSync(join(tmpdir(), 'storyboard-bot-ws-'));
 
   const write = (relativePath: string, content: string): void => {
     const absolute = join(root, ...relativePath.split('/'));

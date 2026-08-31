@@ -269,7 +269,7 @@ async function resolveGrounding(
     scene.relativePath,
     applySceneGrounding(raw, merged),
     scene.contentHash,
-    `storygram: ground ${scene.relativePath}`,
+    `storyboard-bot: ground ${scene.relativePath}`,
   );
 
   // A stale or blocked write means Desktop touched the scene mid-job. The facts still steer this

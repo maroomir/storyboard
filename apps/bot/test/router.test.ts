@@ -163,7 +163,7 @@ describe('UpdateRouter', () => {
 
     expect(sent[0]).toContain('저장하고 커밋했습니다');
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
     const saved = parseCard(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8'));
     expect(saved.name).toBe('엘리아나');
@@ -302,7 +302,7 @@ describe('/doctor', () => {
     build(fixture.root);
 
     const configuredGlobal = process.env.GIT_CONFIG_GLOBAL;
-    const emptyConfig = join(mkdtempSync(join(tmpdir(), 'storygram-no-identity-')), 'global');
+    const emptyConfig = join(mkdtempSync(join(tmpdir(), 'storyboard-bot-no-identity-')), 'global');
     writeFileSync(emptyConfig, '', 'utf8');
     process.env.GIT_CONFIG_GLOBAL = emptyConfig;
 
@@ -346,7 +346,7 @@ describe('/doctor', () => {
       'character/seoha.card',
     );
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: normalize card formatting',
+      'storyboard-bot: normalize card formatting',
     );
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
 
@@ -610,7 +610,7 @@ describe('/scene', () => {
       'type: scene\nid: 02-first-kiss\nsummary: |-\n  골목에서 우연히 마주친다.\n  비가 온다.\n',
     );
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: create scene/02-first-kiss.card',
+      'storyboard-bot: create scene/02-first-kiss.card',
     );
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });

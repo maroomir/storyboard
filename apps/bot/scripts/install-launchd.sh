@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Installs storygram as a per-user launchd agent so it starts at login and restarts on crash.
+# Installs storyboard-bot as a per-user launchd agent so it starts at login and restarts on crash.
 # Usage:  ./scripts/install-launchd.sh            (install / reinstall)
 #         ./scripts/install-launchd.sh --uninstall
 set -euo pipefail
 
-LABEL="com.maroomir.storygram"
+LABEL="com.maroomir.storyboard.bot"
 PACKAGE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PLIST="$HOME/Library/LaunchAgents/${LABEL}.plist"
-LOG_DIR="$HOME/Library/Logs/storygram"
+LOG_DIR="$HOME/Library/Logs/storyboard"
 
 if [[ "${1:-}" == "--uninstall" ]]; then
   launchctl bootout "gui/$(id -u)/${LABEL}" 2>/dev/null || true
@@ -58,8 +58,8 @@ cat > "$PLIST" <<PLIST_EOF
   <key>KeepAlive</key>
   <dict><key>SuccessfulExit</key><false/></dict>
   <key>ThrottleInterval</key><integer>30</integer>
-  <key>StandardOutPath</key><string>${LOG_DIR_XML}/storygram.log</string>
-  <key>StandardErrorPath</key><string>${LOG_DIR_XML}/storygram.err.log</string>
+  <key>StandardOutPath</key><string>${LOG_DIR_XML}/storyboard-bot.log</string>
+  <key>StandardErrorPath</key><string>${LOG_DIR_XML}/storyboard-bot.err.log</string>
   <key>WorkingDirectory</key><string>${PACKAGE_ROOT_XML}</string>
 </dict>
 </plist>
@@ -70,5 +70,5 @@ launchctl bootstrap "gui/$(id -u)" "$PLIST"
 
 echo "installed ${LABEL}"
 echo "  plist: ${PLIST}"
-echo "  logs:  ${LOG_DIR}/storygram.log"
+echo "  logs:  ${LOG_DIR}/storyboard-bot.log"
 echo "  stop:  launchctl bootout gui/$(id -u)/${LABEL}"

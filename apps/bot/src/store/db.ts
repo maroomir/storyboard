@@ -1,17 +1,17 @@
 import Database from 'better-sqlite3';
 
-export type StorygramDatabase = Database.Database;
+export type BotDatabase = Database.Database;
 
 // Opens the embedded SQLite state store in WAL mode (AD §4.4.3). Single-process access means no
 // lock contention. Pass ":memory:" for tests. Schema is created idempotently on open.
-export function openDatabase(path: string): StorygramDatabase {
+export function openDatabase(path: string): BotDatabase {
   const db = new Database(path);
   db.pragma('journal_mode = WAL');
   migrate(db);
   return db;
 }
 
-function migrate(db: StorygramDatabase): void {
+function migrate(db: BotDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS gen_jobs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

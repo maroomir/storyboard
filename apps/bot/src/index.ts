@@ -1,4 +1,4 @@
-import { StorygramApplication } from './app/storygramApplication';
+import { StoryboardBotApplication } from './app/storyboardBotApplication';
 import { ConfigError, loadConfig } from './config/config';
 import { resolvePaths } from './config/paths';
 import { createLogger, type Logger } from './util/logger';
@@ -25,7 +25,7 @@ async function main(): Promise<number> {
     logger.warn(warning);
   }
 
-  const application = new StorygramApplication({
+  const application = new StoryboardBotApplication({
     config: loaded.config,
     logger,
     stateDbPath: paths.stateDb,
@@ -49,7 +49,7 @@ async function main(): Promise<number> {
 // A shutdown must be forceable and must not lie about its outcome: a second signal exits
 // immediately, a hung stop() is bounded by a timeout, and any failure exits non-zero so launchd
 // sees the truth.
-function installShutdownHandlers(application: StorygramApplication, logger: Logger): void {
+function installShutdownHandlers(application: StoryboardBotApplication, logger: Logger): void {
   let stopping = false;
 
   const shutdown = (signal: string): void => {

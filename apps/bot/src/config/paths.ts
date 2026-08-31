@@ -1,7 +1,7 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-export interface StorygramPaths {
+export interface BotPaths {
   readonly home: string;
   readonly configFile: string;
   readonly stateDb: string;
@@ -20,16 +20,17 @@ export function expandHome(path: string): string {
   return path;
 }
 
-// Resolves the storygram home directory and the files inside it. STORYGRAM_HOME overrides the
-// default (~/.storygram) so tests and alternate installs can point elsewhere. Story content does
-// NOT live here — it lives in the Storyboard workspace named by `workspace.path`.
-export function resolvePaths(env: NodeJS.ProcessEnv = process.env): StorygramPaths {
-  const override = env.STORYGRAM_HOME?.trim();
-  const home = override ? expandHome(override) : join(homedir(), '.storygram');
+// Resolves the storyboard-bot home directory and the files inside it. STORYBOARD_HOME overrides the
+// default (~/.storyboard) so tests and alternate installs can point elsewhere. Story content does
+// NOT live here — it lives in the Storyboard workspace named by `workspace.path`. The home is
+// shared with the other Storyboard apps, so every file this app owns carries a `bot` prefix.
+export function resolvePaths(env: NodeJS.ProcessEnv = process.env): BotPaths {
+  const override = env.STORYBOARD_HOME?.trim();
+  const home = override ? expandHome(override) : join(homedir(), '.storyboard');
 
   return {
     home,
-    configFile: join(home, 'config.json'),
-    stateDb: join(home, 'state.db'),
+    configFile: join(home, 'bot.json'),
+    stateDb: join(home, 'bot-state.db'),
   };
 }

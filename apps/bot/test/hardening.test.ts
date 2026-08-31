@@ -15,7 +15,7 @@ import { SqliteJobStore } from '../src/gen/jobStore';
 import { JobWorker } from '../src/gen/jobWorker';
 import { PipelineRunner, type IPipeline } from '../src/gen/pipelineRunner';
 import { getActiveJobId } from '../src/provider/jobSignalContext';
-import { openDatabase, type StorygramDatabase } from '../src/store/db';
+import { openDatabase, type BotDatabase } from '../src/store/db';
 import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';
 import { createWorkspaceFixture, type WorkspaceFixture } from './helpers/workspaceFixture';
@@ -83,7 +83,7 @@ describe('MutateGate freshness guard under race', () => {
           },
         ],
       },
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     expect(outcome).toEqual({
@@ -130,13 +130,13 @@ describe('MutateGate freshness guard under race', () => {
           },
         ],
       },
-      'storygram: update two cards',
+      'storyboard-bot: update two cards',
     );
 
     expect(outcome.status).toBe('stale');
     // File A must not be left as silent uncommitted bot output.
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: update two cards (partial)',
+      'storyboard-bot: update two cards (partial)',
     );
     expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe('character/a.card');
     // File B keeps the Desktop content.
@@ -146,11 +146,11 @@ describe('MutateGate freshness guard under race', () => {
 
 describe('job worker resilience', () => {
   let dbDir: string;
-  let db: StorygramDatabase;
+  let db: BotDatabase;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    dbDir = mkdtempSync(join(tmpdir(), 'storygram-worker-'));
+    dbDir = mkdtempSync(join(tmpdir(), 'storyboard-bot-worker-'));
     db = openDatabase(join(dbDir, 'state.db'));
   });
 

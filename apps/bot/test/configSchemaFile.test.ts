@@ -14,7 +14,7 @@ const SCHEMA_FILE = fileURLToPath(new URL('../assets/config.schema.json', import
 function buildSchema(): unknown {
   return {
     $schema: 'http://json-schema.org/draft-07/schema#',
-    title: 'storygram config',
+    title: 'storyboard-bot config',
     ...z.toJSONSchema(configSchema, { io: 'input', unrepresentable: 'any', target: 'draft-7' }),
   };
 }
@@ -23,8 +23,8 @@ function serialize(schema: unknown): string {
   return `${JSON.stringify(schema, null, 2)}\n`;
 }
 
-describe('storygram config JSON Schema', () => {
-  it('matches the schema file the extension ships', () => {
+describe('storyboard-bot config JSON Schema', () => {
+  it('matches the schema file this app ships', () => {
     const generated = serialize(buildSchema());
 
     if (process.env.UPDATE_CONFIG_SCHEMA === '1') {

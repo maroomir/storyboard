@@ -1,10 +1,10 @@
 ---
-description: Telegram bot (apps/bot, storygram) invariants — freshness guard, commit scoping, layering, security
+description: Telegram bot (apps/bot, storyboard-bot) invariants — freshness guard, commit scoping, layering, security
 globs: apps/bot/**/*
 alwaysApply: false
 ---
 
-# Telegram Bot (`apps/bot`, product name `storygram`)
+# Telegram Bot (`apps/bot`, product name `storyboard-bot`)
 
 The bot is a second front end onto the **same** Storyboard workspace the VSCode extension opens.
 It runs on the user's own machine, reaches Telegram by long polling, and stores nothing of its own
@@ -31,7 +31,7 @@ except operational state.
 - Allowlist is checked before any handler runs; unauthorized updates are dropped silently.
 - Long polling only — there is no inbound listener and no public port.
 - The dashboard binds loopback only.
-- The bot token lives in `~/.storygram/config.json` (mode 0600) and is never logged or serialized.
+- The bot token lives in `~/.storyboard/bot.json` (mode 0600) and is never logged or serialized.
 - Git is invoked with `execFileSync` and an argument array, never a shell.
 
 ## Layering
@@ -42,7 +42,7 @@ enforces the direction and rejects cycles.
 
 ## Config
 
-`~/.storygram/config.json`, overridable with `STORYGRAM_HOME`. `workspace.path` must be an absolute
+`~/.storyboard/bot.json`, overridable with `STORYBOARD_HOME`. `workspace.path` must be an absolute
 path to a real Storyboard workspace (`.storyboard/project.json` must exist). `workspace.remote` is
 optional: with no remote the bot still commits every save and `/sync` settles as `no-remote` without
 touching the network. `draft.reviseAfterGenerate` (default true) runs the shared review→revise loop
@@ -69,7 +69,7 @@ Do not reintroduce a code path in either app that names the other.
 Generation resolves the scene's four grounding facts (incident/place/relation/time) before the
 dialogue prompt runs, exactly as the extension does. Two consequences are specific to the bot:
 `scene/` is **tracked**, so filling grounding is a commit of its own
-(`storygram: ground scene/<stem>.card`) written through `ContentService.writeTracked` with the
+(`storyboard-bot: ground scene/<stem>.card`) written through `ContentService.writeTracked` with the
 read-time hash as baseline — a Desktop edit landing mid-job makes it stale and the job skips the
 save rather than clobbering it. And a queued job cannot stop to ask Telegram for approval, so
 `draft.autoGrounding` (default true) means *fill and commit*; off means leave grounding alone.
@@ -97,7 +97,7 @@ commit — so it never rides along inside a content edit's diff. `canonicalizeCa
 ## Verification
 
 Run from the repo root: `npm test` (drives both workspaces) and `npm run lint`.
-Bot-only: `npm run test --workspace storygram`, `npm run lint --workspace storygram`,
+Bot-only: `npm run test --workspace @storyboard/bot`, `npm run lint --workspace @storyboard/bot`,
 `npm run bot:build`.
 
 Sync and mutate tests use **real** git repositories in a temp directory — do not replace them with

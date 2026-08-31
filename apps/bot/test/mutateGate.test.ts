@@ -43,13 +43,13 @@ describe('MutateGate', () => {
           { relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined },
         ],
       },
-      'storygram: create character/elia.card',
+      'storyboard-bot: create character/elia.card',
     );
 
     expect(outcome).toEqual({ status: 'committed', paths: ['character/elia.card'] });
     expect(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8')).toBe('id: elia\n');
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: create character/elia.card',
+      'storyboard-bot: create character/elia.card',
     );
     expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
       'character/elia.card',
@@ -72,7 +72,7 @@ describe('MutateGate', () => {
           },
         ],
       },
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     expect(before).toBeUndefined();
@@ -101,7 +101,7 @@ describe('MutateGate', () => {
           },
         ],
       },
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     expect(outcome).toEqual({
@@ -124,7 +124,7 @@ describe('MutateGate', () => {
           { relativePath: 'character/elia.card', content: 'id: other\n', baselineHash: undefined },
         ],
       },
-      'storygram: create character/elia.card',
+      'storyboard-bot: create character/elia.card',
     );
 
     expect(outcome).toEqual({
@@ -144,7 +144,7 @@ describe('MutateGate', () => {
           },
         ],
       },
-      'storygram: update character/gone.card',
+      'storyboard-bot: update character/gone.card',
     );
 
     expect(outcome).toEqual({
@@ -167,7 +167,7 @@ describe('MutateGate', () => {
           },
         ],
       },
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     expect(outcome).toEqual({ status: 'no-op' });
@@ -181,7 +181,7 @@ describe('MutateGate', () => {
           { relativePath: 'draft/01-first.md', content: '# draft\n', baselineHash: undefined },
         ],
       },
-      'storygram: generate draft/01-first.md',
+      'storyboard-bot: generate draft/01-first.md',
     );
 
     expect(outcome).toEqual({ status: 'written', paths: ['draft/01-first.md'] });
@@ -199,7 +199,7 @@ describe('MutateGate', () => {
           { relativePath: 'character/elia.card', content: 'id: elia\n', baselineHash: undefined },
         ],
       },
-      'storygram: create character/elia.card',
+      'storyboard-bot: create character/elia.card',
     );
 
     expect(outcome.status).toBe('blocked');
@@ -215,7 +215,7 @@ describe('MutateGate', () => {
           { relativePath: 'character/b.card', content: 'id: b\n', baselineHash: undefined },
         ],
       },
-      'storygram: create two cards',
+      'storyboard-bot: create two cards',
     );
 
     expect(outcome.status).toBe('committed');

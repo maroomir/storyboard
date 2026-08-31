@@ -5,7 +5,7 @@ export interface Logger {
 }
 
 // SECURITY: callers must never pass secrets (bot token, API keys) into log messages.
-export function createLogger(prefix = 'storygram'): Logger {
+export function createLogger(prefix = 'storyboard-bot'): Logger {
   const line = (level: string, message: string) =>
     `[${new Date().toISOString()}] [${prefix}] ${level}${message}`;
 

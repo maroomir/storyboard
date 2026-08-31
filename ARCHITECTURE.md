@@ -375,9 +375,9 @@ grounding:
 - 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
   무효화되어 다음 생성에 그대로 반영된다.
 - 씬 카드 직렬화가 canonical이므로 grounding만 바뀌어도 카드 전체가 다시 직렬화된다.
-- 봇(storygram)도 같은 단계를 돌린다. 다만 큐에 올라간 작업이 승인을 기다릴 수 없으므로
+- 봇(storyboard-bot)도 같은 단계를 돌린다. 다만 큐에 올라간 작업이 승인을 기다릴 수 없으므로
   `draft.autoGrounding`(기본 켜짐)이 "채우고 커밋"을 뜻하고, 끄면 grounding을 건드리지 않는다.
-  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storygram: ground scene/<stem>.card` 커밋으로
+  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storyboard-bot: ground scene/<stem>.card` 커밋으로
   남는다.
 
 #### 파일명 규칙 (강제)
@@ -411,7 +411,7 @@ v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다
 sceneStem: 01-prologue
 format: novel
 generatedAt: '2026-08-22T12:00:00.000Z'
-generator: storyboard@0.6.1   # 확장은 storyboard@<버전>, 봇은 storygram@<버전>
+generator: storyboard@0.6.1   # 확장은 storyboard@<버전>, 봇은 storyboard-bot@<버전>
 providerId: claude-code
 model: claude-sonnet-5
 warnings:                     # 생성 검증이 잡았으나 재시도로 못 고친 항목 (선택)

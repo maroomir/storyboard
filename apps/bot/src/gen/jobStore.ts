@@ -12,7 +12,7 @@ import type {
 } from './types';
 import { buildTargetKey, EMPTY_JOB_USAGE } from './types';
 import type { IAccessJobStore, StateTransition, UsageLedgerEntry } from './jobStorePort';
-import type { StorygramDatabase } from '../store/db';
+import type { BotDatabase } from '../store/db';
 
 interface GenJobRow {
   readonly id: number;
@@ -40,7 +40,7 @@ interface UsageTotalsRow {
 }
 
 export class SqliteJobStore implements IAccessJobStore {
-  public constructor(private readonly db: StorygramDatabase) {}
+  public constructor(private readonly db: BotDatabase) {}
 
   public insert(spec: JobSpec, now: number): GenJob {
     const targetKey = buildTargetKey(spec.target);

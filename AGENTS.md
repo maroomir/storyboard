@@ -88,7 +88,7 @@ The webview must not import `vscode` directly. Use message passing through `acqu
 
 ## Current Architecture
 
-The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard` workspace at `apps/desktop/`; the Telegram bot `storygram` lives at `apps/bot/`, and the shared packages are `packages/story-format` (schemas/codecs/paths/fixtures), `packages/story-ai` (AI engine and ports), `packages/story-pipeline` (scene generation orchestration), and `packages/story-git` (commit/sync layer). Packages expose TypeScript source; `apps/desktop/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app module, and `apps/bot/scripts/check-architecture.mjs` enforces the bot's layer direction. Bot invariants live in `.claude/rules/bot.md`.
+The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard` workspace at `apps/desktop/`; the Telegram bot `@storyboard/bot` lives at `apps/bot/`, and the shared packages are `packages/story-format` (schemas/codecs/paths/fixtures), `packages/story-ai` (AI engine and ports), `packages/story-pipeline` (scene generation orchestration), and `packages/story-git` (commit/sync layer). Packages expose TypeScript source; `apps/desktop/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app module, and `apps/bot/scripts/check-architecture.mjs` enforces the bot's layer direction. Bot invariants live in `.claude/rules/bot.md`.
 
 The extension host currently uses this transition shape:
 
