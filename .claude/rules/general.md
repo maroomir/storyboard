@@ -16,14 +16,14 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 
 ## Project Assumptions
 
-- `storyboard` is a VSCode extension.
+- `storyboard` is three apps over one engine: a VSCode extension, a Telegram bot, and a CLI. The CLI is the reference implementation.
 - Cline is a reference project, not a dependency contract.
 - The repository is currently minimal, so distinguish existing implementation from intended architecture.
 - Prefer incremental scaffolding over copying Cline's full structure prematurely.
 
 ## Development Guidelines
 
-- Before running verification commands, inspect `package.json` for available scripts. The repo-root manifest delegates `build`, `compile`, `lint`, `test`, and `package:vsix` to the extension workspace, so those run from the repo root.
+- Before running verification commands, inspect `package.json` for available scripts. From the repo root, `build`, `lint`, and `test` fan out to **all three apps**; `compile` and `package:vsix` are extension-only; `version:sync` keeps every app on the root version.
 - Run any other extension script (`check:architecture`, `format:check:src`, `watch`, `build:webview`, `format`) from `apps/desktop`, or as `npm run <script> --workspace storyboard-vscode`.
 - Use `npm run compile` if the project defines it; do not assume `npm run build` exists.
 - Keep extension host code separate from webview UI code.
