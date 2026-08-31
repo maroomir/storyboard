@@ -45,6 +45,7 @@ import {
   type GenerateDraftUseCaseDependencies
 } from "@/application/drafts/generateDraftUseCase"
 import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
+import { computeDraftBodyHash, createDraft, parseDraft, serializeDraft } from '@storyboard/story-format'
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
@@ -210,6 +211,20 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
   } as never
 }
 
+// 디스크에 이미 있는 '우리가 쓴' 초안을 흉내 낸다. 본문 해시가 씬 캐시 기록과 맞으면 덮어써도
+// 잃을 것이 없다는 판정이 된다.
+const ourDraftBody = pipelineSuccessResult.draftBody
+const ourDraftBodyHash = computeDraftBodyHash(
+  parseDraft(serializeDraft(createDraft({ sceneStem: fakeScene.stem, format: "novel", body: ourDraftBody }))).body
+)
+
+function ourDraftFileSystem(): { readFile: () => Promise<Uint8Array> } {
+  const serialized = serializeDraft(
+    createDraft({ sceneStem: fakeScene.stem, format: "novel", body: ourDraftBody })
+  )
+  return { readFile: async (): Promise<Uint8Array> => new TextEncoder().encode(serialized) }
+}
+
 function createRequest(overrides: Partial<GenerateDraftRequest> = {}): GenerateDraftRequest {
   return { force: false, ...overrides }
 }
@@ -263,18 +278,16 @@ describe("GenerateDraftUseCase", () => {
       expect(sceneCacheRepository.write).not.toHaveBeenCalled()
     })
 
-    it("bypasses the cache and regenerates when force is true, without reading the cache record", async () => {
-      const cacheRead = vi.fn(async () => {
-        throw new Error("sceneCacheRepository.read must not be called when force is true")
-      })
-      const sceneCacheRepository = createSceneCacheRepository({ read: cacheRead })
+    // force는 캐시 적중 판정을 건너뛴다. 덮어쓰기 전 출처 판정은 그와 별개로 여전히 수행하므로
+    // 여기서 캐시 기록을 읽는 것 자체는 정상이다 — 읽지 않으면 봇 초안을 보관 없이 지운다.
+    it("bypasses the cache hit shortcut and regenerates when force is true", async () => {
+      const sceneCacheRepository = createSceneCacheRepository()
       const draftRepository = createDraftRepository()
       const dependencies = createDependencies({ sceneCacheRepository, draftRepository })
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result).toMatchObject({ ok: true, kind: "generated" })
-      expect(cacheRead).not.toHaveBeenCalled()
       expect(pipelineRunMock).toHaveBeenCalledTimes(1)
       expect(draftRepository.write).toHaveBeenCalledTimes(1)
       expect(draftRepository.write).toHaveBeenCalledWith(
@@ -384,15 +397,64 @@ describe("GenerateDraftUseCase", () => {
       expect(typeof archiveArgs.resolveArchiveUri).toBe("function")
     })
 
-    it("does not archive the previous draft when keep-draft-history is disabled", async () => {
-      const dependencies = createDependencies({
-        configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false })
-      })
+    it("does not archive the previous draft when keep-draft-history is disabled and the draft is our own", async () => {
+      const dependencies = {
+        ...createDependencies({
+          configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
+          sceneCacheRepository: createSceneCacheRepository({
+            read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: ourDraftBodyHash }))
+          })
+        }),
+        fileSystem: ourDraftFileSystem()
+      } as never as GenerateDraftUseCaseDependencies
 
       const result = await execute(dependencies, createRequest({ force: true }))
 
       expect(result.kind).toBe("generated")
       expect(archiveExistingDraftMock).not.toHaveBeenCalled()
+    })
+
+    // 봇이 쓴 초안은 씬 캐시 기록이 없어 판정이 불가능하다. draft/는 기본 gitignore이고
+    // keepHistory 기본값이 꺼짐이라, 보관하지 않으면 되돌릴 곳이 없다.
+    it("archives a draft it did not write even when keep-draft-history is disabled", async () => {
+      const logger = createLogger()
+      const dependencies = createDependencies({
+        configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
+        logger
+      })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(archiveExistingDraftMock).toHaveBeenCalledTimes(1)
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("덮어쓰기 전에"))
+    })
+
+    it("archives a draft whose body no longer matches the recorded hash", async () => {
+      const dependencies = {
+        ...createDependencies({
+          configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => false }),
+          sceneCacheRepository: createSceneCacheRepository({
+            read: vi.fn(async () => ({ inputHash: "sha256:0", bodyHash: computeDraftBodyHash("다른 본문") }))
+          })
+        }),
+        fileSystem: ourDraftFileSystem()
+      } as never as GenerateDraftUseCaseDependencies
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(archiveExistingDraftMock).toHaveBeenCalledTimes(1)
+    })
+
+    it("records the written body hash in the scene cache so the next run can recognize it", async () => {
+      const sceneCacheRepository = createSceneCacheRepository()
+      const dependencies = createDependencies({ sceneCacheRepository })
+
+      await execute(dependencies, createRequest({ force: true }))
+
+      const record = sceneCacheRepository.write.mock.calls[0]?.[1] as { bodyHash?: string }
+      expect(record.bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     })
 
     it("logs a warning and still persists the draft when archiving the previous draft fails", async () => {
