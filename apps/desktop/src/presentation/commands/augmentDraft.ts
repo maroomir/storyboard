@@ -4,7 +4,7 @@ import type {
   AugmentDraftRequest,
   AugmentDraftResult,
   AugmentDraftUseCase,
-} from '../../application/drafts/augmentDraftUseCase';
+} from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';

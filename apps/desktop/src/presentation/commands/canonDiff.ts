@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
@@ -11,7 +12,7 @@ import {
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
 } from '@storyboard/story-engine';
-import { readProjectJson } from '../../infrastructure/persistence/projectJson';
+import { readProjectJson } from '@storyboard/story-engine';
 const canonDiffCommand = 'storyboard.bible.canonDiff';
 
 const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {
@@ -44,7 +45,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
   const paths = getStoryboardProjectPaths(workspaceRoot);
 
   try {
-    const project = await readProjectJson(paths.projectJson);
+    const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
     const canon = (await uriExists(paths.bibleCanon))
       ? await readBibleFile(paths.bibleCanon, fileSystem)
       : createEmptyBible();

@@ -1,7 +1,8 @@
+import { stubFileSystem as engineFileSystem } from "../../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { StudioSessionRepository } from "@/infrastructure/persistence/repositories/studioSessionRepository"
+import { StudioSessionRepository } from "@storyboard/story-engine"
 import type { StudioChatTurn, StudioEntity } from "@storyboard/story-engine"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
@@ -54,7 +55,7 @@ afterEach((): void => {
 
 describe("StudioSessionRepository", () => {
   it("stores a session under its entity directory", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "s1",
@@ -68,7 +69,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("keeps each entity's sessions apart", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "s1",
@@ -90,7 +91,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("refuses an entity key that could escape the sessions directory", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "s1",
@@ -104,7 +105,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("refuses a session id that could escape the entity directory", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "../escape",
@@ -118,7 +119,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("loads the newest session for an entity", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "old",
@@ -140,14 +141,14 @@ describe("StudioSessionRepository", () => {
   })
 
   it("reports nothing for an entity with no sessions", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     expect(await repository.loadLatest(workspaceRoot, sceneEntity)).toBeUndefined()
     expect(await repository.list(workspaceRoot, sceneEntity)).toEqual([])
   })
 
   it("prunes the oldest unapplied sessions past the keep budget", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     for (let index = 0; index < 12; index += 1) {
       await repository.save(workspaceRoot, {
@@ -167,7 +168,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("never prunes a session whose proposal was applied", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
 
     await repository.save(workspaceRoot, {
       id: "applied",
@@ -195,7 +196,7 @@ describe("StudioSessionRepository", () => {
   })
 
   it("skips a session file that does not parse", async () => {
-    const repository = new StudioSessionRepository()
+    const repository = new StudioSessionRepository(engineFileSystem)
     files.set(`${sessionRoot}/character/seorin/broken.json`, "{ not json")
 
     expect(await repository.list(workspaceRoot, characterEntity)).toEqual([])

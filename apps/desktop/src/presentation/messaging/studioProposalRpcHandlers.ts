@@ -1,18 +1,16 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-format';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import { hashBaseline } from '@/application/studio/studioChatUseCase';
+import { hashBaseline } from '@storyboard/story-engine';
 import { archiveExistingDraft } from '@storyboard/story-engine';
 import { applyStudioPatch } from '@storyboard/story-engine';
-import {
-  readStudioEntityContext,
-  type StudioSceneFocus,
-} from '@/infrastructure/persistence/studioEntityContext';
+import { readStudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
+import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -124,6 +122,7 @@ async function prepareApply(
   }
 
   const entityContext = await readStudioEntityContext(
+    vscodeFileSystem,
     root,
     entity,
     sceneFocusOf(proposal.targetFile),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { updateCardCandidatesFromDraft } from "@/infrastructure/ai/cardCandidateUpdater"
+import { updateCardCandidatesFromDraft } from "@storyboard/story-engine"
 import type { CardCandidateExtraction, StoryboardAIService } from '@storyboard/story-ai';
 import type { CardCandidateFileSystem } from "@storyboard/story-engine"
 import type { CharacterCard } from '@storyboard/story-format';

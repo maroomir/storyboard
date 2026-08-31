@@ -4,7 +4,7 @@ import type {
   GenerateAllDraftsProgress,
   GenerateAllDraftsSummary,
   GenerateAllDraftsUseCase,
-} from '../../application/drafts/generateAllDraftsUseCase';
+} from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { stageProgressLabel } from './generateDraft';
 

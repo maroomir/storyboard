@@ -62,7 +62,7 @@ import {
   type ReviseDraftRequest,
   type ReviseDraftUseCaseDependencies,
   type ReviseDraftWorkflowResult
-} from "@/application/drafts/reviseDraftUseCase"
+} from "@storyboard/story-engine"
 
 const blockingContinuity: ContinuityIssueLike = { original: "설정", reason: "모순", severity: "high" }
 const lowContinuity: ContinuityIssueLike = { original: "설정", reason: "사소함", severity: "low" }

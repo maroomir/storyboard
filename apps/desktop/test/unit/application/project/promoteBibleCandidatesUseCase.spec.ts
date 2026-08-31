@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   PromoteBibleCandidatesUseCase,
   type IBibleCandidateRepository
-} from "@/application/project/promoteBibleCandidatesUseCase"
+} from "@storyboard/story-engine"
 
 describe("PromoteBibleCandidatesUseCase", () => {
   it("returns no candidates without loading the canon", async () => {

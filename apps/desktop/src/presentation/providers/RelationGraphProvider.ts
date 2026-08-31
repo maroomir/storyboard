@@ -1,6 +1,7 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { loadRelationListCharacters } from '../../infrastructure/persistence/relationGraphData';
+import { loadRelationListCharacters } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers } from '../messaging/aiRpcHandlers';
@@ -135,7 +136,9 @@ async function createRelationGraphInitialData(): Promise<RelationGraphInitialDat
 
   return {
     title: 'Character Relations',
-    characters: storyboardRoot ? await loadRelationListCharacters(storyboardRoot) : [],
+    characters: storyboardRoot
+      ? await loadRelationListCharacters(vscodeFileSystem, storyboardRoot)
+      : [],
     isStoryboardProject: storyboardRoot !== undefined,
   };
 }
@@ -147,5 +150,5 @@ async function loadRelationListCharactersForRpc(): Promise<RelationListCharacter
     return [];
   }
 
-  return loadRelationListCharacters(storyboardRoot);
+  return loadRelationListCharacters(vscodeFileSystem, storyboardRoot);
 }

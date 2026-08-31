@@ -37,4 +37,16 @@ export class VscodeFileSystem implements IFileSystem {
       { type: type === vscode.FileType.Directory ? ('directory' as const) : ('file' as const) },
     ]);
   }
+
+  public async delete(uri: unknown): Promise<void> {
+    await vscode.workspace.fs.delete(uri as vscode.Uri);
+  }
+
+  public async modifiedTime(uri: unknown): Promise<number> {
+    return (await vscode.workspace.fs.stat(uri as vscode.Uri)).mtime;
+  }
 }
+
+// The extension has exactly one file system, the same way it has exactly one `vscode.workspace.fs`.
+// Presentation code reaches for this instance; the engine never does — it is always injected.
+export const vscodeFileSystem = new VscodeFileSystem();

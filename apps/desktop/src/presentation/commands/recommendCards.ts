@@ -1,16 +1,13 @@
 import * as vscode from 'vscode';
 
-import {
-  type RecommendCardsUseCase,
-  type RecommendCardsResult,
-} from '../../application/cards/recommendCardsUseCase';
+import { type RecommendCardsUseCase, type RecommendCardsResult } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
-import type { RecommendedCard } from '../../infrastructure/ai/cardRecommendationBuilder';
+import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
-import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';
+import type { CreateCardUseCase } from '@storyboard/story-engine';
 
 const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';

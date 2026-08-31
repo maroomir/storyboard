@@ -5,7 +5,7 @@ import {
   sceneGroundingFieldLabels,
   type SceneGroundingFieldKey,
 } from '@storyboard/story-format';
-import type { ConfirmSceneGrounding } from '../../application/drafts/generateDraftTypes';
+import type { ConfirmSceneGrounding } from '@storyboard/story-engine';
 
 type GroundingChoice =
   | { readonly kind: 'approve' }

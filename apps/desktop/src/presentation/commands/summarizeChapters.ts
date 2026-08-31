@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
+import type { SummarizeChaptersUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 

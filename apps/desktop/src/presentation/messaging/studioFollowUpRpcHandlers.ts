@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
+import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { isSafeStudioEntityKey } from '@storyboard/story-engine';
 import type { StoryboardResponsePayload, StudioEntity } from '@storyboard/story-engine';

@@ -3,8 +3,8 @@ import { describe, expect, it, vi } from "vitest"
 import {
   GenerateOutlineUseCase,
   type IOutlineRepository
-} from "@/application/novel/generateOutlineUseCase"
-import { parseProjectJson } from "@/infrastructure/persistence/projectJson"
+} from "@storyboard/story-engine"
+import { parseProjectJson } from "@storyboard/story-engine"
 
 function project(): ReturnType<typeof parseProjectJson> {
   return parseProjectJson(

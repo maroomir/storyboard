@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import type {
-  GenerateOutlineResult,
-  GenerateOutlineUseCase,
-} from '../../application/novel/generateOutlineUseCase';
+import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import type { ContractFieldKey } from '@storyboard/story-format';

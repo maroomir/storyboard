@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { ExpandDraftUseCase } from "@/application/drafts/expandDraftUseCase"
+import { ExpandDraftUseCase } from "@storyboard/story-engine"
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }

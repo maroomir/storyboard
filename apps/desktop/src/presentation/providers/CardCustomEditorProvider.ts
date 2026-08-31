@@ -1,7 +1,8 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '../../application/ai/aiGateway';
-import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import {
   CardParseError,
   parseCard,
@@ -15,7 +16,7 @@ import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
-import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
+import { loadCharacterRoster } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
@@ -259,7 +260,9 @@ async function createInitialData(
   try {
     const card = parseWorkspaceCard(rawText);
     const characterRoster =
-      card.type === 'character' ? await loadCharacterRoster(workspaceRoot) : undefined;
+      card.type === 'character'
+        ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
+        : undefined;
 
     return {
       documentUri: document.uri.toString(),

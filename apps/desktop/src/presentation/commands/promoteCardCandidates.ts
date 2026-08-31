@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteCardCandidatesUseCase } from '../../application/cards/promoteCardCandidatesUseCase';
+import type { PromoteCardCandidatesUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { CardCandidateItem } from '@storyboard/story-engine';
 import {

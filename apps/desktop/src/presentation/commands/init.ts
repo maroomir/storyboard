@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { StoryboardLogger } from '@storyboard/story-engine';
@@ -8,10 +9,7 @@ import {
   getTargetWorkspaceFolder,
   uriExists,
 } from '../../infrastructure/vscode/workspace';
-import {
-  createDefaultProjectJson,
-  writeProjectJson,
-} from '../../infrastructure/persistence/projectJson';
+import { createDefaultProjectJson, writeProjectJson } from '@storyboard/story-engine';
 import {
   createWorkspaceReadme,
   createStoryboardDirectories,
@@ -51,7 +49,7 @@ async function initializeStoryboardProject(
     const project = createDefaultProjectJson({ name: workspaceFolder.name });
 
     await createStoryboardDirectories(paths);
-    await writeProjectJson(paths.projectJson, project);
+    await writeProjectJson(vscodeFileSystem, paths.projectJson, project);
     await writeFileIfMissing(paths.sampleCharacterCard, createSampleCharacterCard());
     await writeFileIfMissing(paths.sampleBackgroundCard, createSampleBackgroundCard());
     await writeFileIfMissing(paths.sampleScene, createSampleScene());

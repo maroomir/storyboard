@@ -4,7 +4,7 @@ import {
   createDefaultProjectJson,
   parseProjectJson,
   serializeProjectJson
-} from "@/infrastructure/persistence/projectJson"
+} from "@storyboard/story-engine"
 import type { StoryboardProject } from '@storyboard/story-format';
 
 function baseProject(): StoryboardProject {

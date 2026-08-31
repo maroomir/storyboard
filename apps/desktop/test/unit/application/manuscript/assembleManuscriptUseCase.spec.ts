@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   AssembleManuscriptUseCase,
   type IManuscriptAssemblyRepository
-} from "@/application/manuscript/assembleManuscriptUseCase"
+} from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {

@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
@@ -9,7 +10,7 @@ import {
   readChapterPlanFile,
 } from '@storyboard/story-format';
 import type { OutlineFileSystem } from '@storyboard/story-format';
-import { readProjectJson } from '../../infrastructure/persistence/projectJson';
+import { readProjectJson } from '@storyboard/story-engine';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';
@@ -44,7 +45,7 @@ async function runGenerateSceneSeeds(): Promise<void> {
     return;
   }
 
-  const project = await readProjectJson(paths.projectJson);
+  const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
   const inspected = vscode.workspace
     .getConfiguration('storyboard')
     .inspect<number>('scene.prefixDigits');

@@ -6,7 +6,7 @@ import { storyboardMessageProtocolVersion } from "@storyboard/story-engine"
 import type {
   IStudioSessionRepository,
   StudioSessionSaveInput
-} from "@/infrastructure/persistence/repositories/studioSessionRepository"
+} from "@storyboard/story-engine"
 import type { StudioEntity, StudioSessionSnapshot, StudioSessionSummary } from "@storyboard/story-engine"
 
 const fakeRoot = { toString: () => "file:///workspace" } as never

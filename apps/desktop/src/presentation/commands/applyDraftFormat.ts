@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import type {
-  ApplyDraftFormatResult,
-  ApplyDraftFormatUseCase,
-} from '../../application/drafts/applyDraftFormatUseCase';
+import type { ApplyDraftFormatResult, ApplyDraftFormatUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';

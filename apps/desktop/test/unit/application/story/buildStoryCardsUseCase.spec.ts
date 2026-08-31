@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   BuildStoryCardsUseCase,
   applyStoryCardChanges,
-} from '@/application/story/buildStoryCardsUseCase';
+} from '@storyboard/story-engine';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
-} from '@/application/story/storyFeatureTypes';
+} from '@storyboard/story-engine';
 
 const workspaceRoot = {} as never;
 

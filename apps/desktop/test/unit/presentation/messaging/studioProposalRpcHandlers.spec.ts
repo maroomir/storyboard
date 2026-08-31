@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { hashBaseline } from "@/application/studio/studioChatUseCase"
+import { hashBaseline } from "@storyboard/story-engine"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { createStudioProposalRpcHandlers } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"

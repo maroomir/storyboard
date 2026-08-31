@@ -111,10 +111,7 @@ function workspaceRelativePath(uri: StoryUri, workspaceFolder: StoryWorkspaceFol
   return filePath.slice(rootPath.length + 1);
 }
 
-export function isDraftMarkdownFile(
-  uri: StoryUri,
-  workspaceFolder: StoryWorkspaceFolder,
-): boolean {
+export function isDraftMarkdownFile(uri: StoryUri, workspaceFolder: StoryWorkspaceFolder): boolean {
   return isDraftMarkdownRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
@@ -193,10 +190,7 @@ export function joinUri(base: StoryUri, ...segments: string[]): StoryUri {
   return joinStoryPath(base, ...segments);
 }
 
-export function draftHistorySceneDirectory(
-  workspaceRoot: StoryUri,
-  sceneStem: string,
-): StoryUri {
+export function draftHistorySceneDirectory(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, draftHistorySceneRelativeDirectory(sceneStem));
 }
 

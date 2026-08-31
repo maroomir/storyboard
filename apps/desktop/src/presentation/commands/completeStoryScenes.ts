@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { CompleteStoryScenesUseCase } from '@/application/story/completeStoryScenesUseCase';
+import type { CompleteStoryScenesUseCase } from '@storyboard/story-engine';
 import { parseScene } from '@storyboard/story-format';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 

@@ -1,3 +1,4 @@
+import { stubFileSystem } from "../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -26,7 +27,7 @@ import {
   type GenerateDraftResult,
   type GenerateDraftRequest,
   type GenerateDraftUseCaseDependencies
-} from "@/application/drafts/generateDraftUseCase"
+} from "@storyboard/story-engine"
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")
@@ -59,7 +60,7 @@ function createOptions(
       isSceneGroundingAutoApproveEnabled: () => true
     } as never,
     draftRepository: {} as never,
-    fileSystem: {} as never,
+    fileSystem: stubFileSystem,
     logger: logger as never,
     projectRepository: {
       read: (...args: unknown[]): unknown => readProjectJsonMock(...args)
@@ -68,6 +69,10 @@ function createOptions(
     sceneRepository: {
       read: (...args: unknown[]): unknown => readSceneFileMock(...args),
       writeGrounding: async (): Promise<void> => undefined
+    } as never,
+    workspaceLocator: {
+      folders: () => workspace.workspaceFolders ?? [],
+      folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
     } as never,
     suppressLoggerPanel: false,
     ...overrides

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
+import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
