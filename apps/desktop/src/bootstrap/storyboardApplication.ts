@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import type { IApplicationModule } from './lifecycle/applicationModule';
-import { BotModule } from './modules/botModule';
 import { CardModule } from './modules/cardModule';
 import { DraftModule } from './modules/draftModule';
 import { NovelModule } from './modules/novelModule';
@@ -35,7 +34,6 @@ export class StoryboardApplication implements vscode.Disposable {
         new DraftModule(platform),
         new NovelModule(platform),
         new WorkbenchModule(platform),
-        new BotModule(),
       );
 
       for (const module of modules.slice(1)) {

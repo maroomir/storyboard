@@ -39,9 +39,5 @@
   "storyboard.draft.augmentSelection.title": "Storyboard: 선택 영역 카드 반영 보충",
   "storyboard.draft.editSelection.title": "Storyboard: 선택 영역 지시문 편집...",
   "storyboard.draft.export.title": "Storyboard: 초안 내보내기…",
-  "storyboard.bot.setup.title": "Storyboard: 텔레그램 봇 설정…",
-  "storyboard.bot.openConfig.title": "Storyboard: 텔레그램 봇 설정 파일 열기",
-  "storyboard.bot.restart.title": "Storyboard: 텔레그램 봇 재시작",
-  "storyboard.bot.openDashboard.title": "Storyboard: 텔레그램 봇 대시보드 열기",
   "storyboard.scene.migrate.title": "Storyboard: 씬을 카드로 마이그레이션"
 }

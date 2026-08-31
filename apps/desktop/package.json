@@ -185,22 +185,6 @@
       {
         "command": "storyboard.draft.export",
         "title": "%storyboard.draft.export.title%"
-      },
-      {
-        "command": "storyboard.bot.setup",
-        "title": "%storyboard.bot.setup.title%"
-      },
-      {
-        "command": "storyboard.bot.openConfig",
-        "title": "%storyboard.bot.openConfig.title%"
-      },
-      {
-        "command": "storyboard.bot.restart",
-        "title": "%storyboard.bot.restart.title%"
-      },
-      {
-        "command": "storyboard.bot.openDashboard",
-        "title": "%storyboard.bot.openDashboard.title%"
       }
     ],
     "configuration": {

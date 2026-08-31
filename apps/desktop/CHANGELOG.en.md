@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Removed
+
+- **Every Telegram bot feature is gone from the extension.** The status bar watcher, the settings panel's «Telegram bot» tab, and the four commands `Storyboard: Set Up Telegram Bot…`, `Open Telegram Bot Config File`, `Restart Telegram Bot`, and `Open Telegram Bot Dashboard` no longer exist. The bot is now a fully independent app that owns its own configuration and process lifecycle, and the extension does not know it exists. If you use the bot, configure it from the bot's own documentation.
+
 ## [0.7.3] - 2026-08-31
 
 ### Added
