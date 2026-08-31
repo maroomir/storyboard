@@ -16,7 +16,7 @@ export type StudioPatchResult =
 
 interface StudioCardFieldChange {
   readonly field: string;
-  readonly value: string | readonly string[];
+  readonly value: string | readonly string[] | readonly Readonly<Record<string, string>>[];
 }
 
 // NOTE: id and type key the file name and the codec branch, so renaming or retyping a card belongs

@@ -95,7 +95,9 @@ export type StudioValidation = z.infer<typeof studioValidationSchema>;
 
 export const studioCardFieldChangeSchema = z.object({
   field: z.string().min(1),
-  value: z.union([z.string(), z.array(z.string())]),
+  // NOTE: the object arm carries structured fields such as a character's arc; the card schema is
+  // what actually validates the shape when the patch is applied.
+  value: z.union([z.string(), z.array(z.string()), z.array(z.record(z.string(), z.string()))]),
 });
 
 export const studioDraftReplacementSchema = z.object({

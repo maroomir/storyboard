@@ -74,6 +74,14 @@ const scenarios: readonly Scenario[] = [
     expectation: "propose(card) + followUps 로 영향받는 인물·씬을 지목해야 한다"
   },
   {
+    name: "arc",
+    entity: { kind: "character", key: "seoha" },
+    sceneFocus: "draft",
+    instruction:
+      "서하가 이야기를 거치며 어떻게 변하는지 인물 카드에 단계별로 정리해줘. 상태 필드는 건드리지 말고.",
+    expectation: "propose(card) — arc 필드에 객체 배열로 써야 한다"
+  },
+  {
     name: "scene-card",
     entity: { kind: "scene", key: "01-selling-the-first-memory" },
     sceneFocus: "card",
@@ -201,7 +209,9 @@ function describePatch(turn: Extract<StudioChatTurn, { kind: "proposal" }>): str
       .map(
         (change) =>
           `  field ${change.field} = ${
-            Array.isArray(change.value) ? `[${change.value.join(" / ")}]` : String(change.value)
+            Array.isArray(change.value)
+              ? `[${change.value.map(describeCardEntry).join(" / ")}]`
+              : String(change.value)
           }`
       )
       .join("\n")
@@ -215,6 +225,14 @@ function describePatch(turn: Extract<StudioChatTurn, { kind: "proposal" }>): str
         }`
     )
     .join("\n")
+}
+
+function describeCardEntry(entry: string | Readonly<Record<string, string>>): string {
+  return typeof entry === "string"
+    ? entry
+    : Object.entries(entry)
+        .map(([key, value]) => `${key}=${value}`)
+        .join(", ")
 }
 
 function describeFollowUps(
