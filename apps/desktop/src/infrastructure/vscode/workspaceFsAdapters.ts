@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { summaryFileName } from '../../domain/chapterSummaries';
+import { writeFileAtomically } from './atomicWrite';
 import { type StoryboardProjectPaths } from './pathConventions';
 import type {
   SceneContextWorkspaceFileSystem,
@@ -11,7 +12,7 @@ export const vscodeFsAdapter = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
   writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
-    vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
+    writeFileAtomically(uri, content),
 };
 
 export const draftHistoryFileSystem = {
