@@ -10,7 +10,11 @@ import {
   type StudioEntityContext,
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
+import type { AiGateway } from '@/application/ai/aiGateway';
+import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
+import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import type {
   StoryboardResponsePayload,
   StudioChatTurn,
@@ -20,6 +24,9 @@ import type {
 
 export interface StudioChatRpcHandlersDependencies {
   readonly useCase: StudioChatUseCase;
+  readonly aiGateway: AiGateway;
+  readonly logger: StoryboardLogger;
+  readonly toolDiagnostics: StudioToolDiagnostics;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly getTarget: () => Promise<StudioTarget>;
   readonly postProgress: (stage: StudioChatStage | 'idle') => void;
@@ -71,6 +78,7 @@ export function createStudioChatRpcHandlers(
           hasSelection: selection !== undefined,
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(root, requests),
+          ...draftToolResolver(deps, root, payload.entity, entityContext),
           resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
           createTurnId: () => crypto.randomUUID(),
           onStage: deps.postProgress,
@@ -87,6 +95,39 @@ export function createStudioChatRpcHandlers(
       deps.postProgress('idle');
       return {};
     },
+  };
+}
+
+// NOTE: tools only exist for a draft conversation; card chats get no resolver and the prompt
+// never advertises invoke to them.
+function draftToolResolver(
+  deps: StudioChatRpcHandlersDependencies,
+  root: vscode.Uri,
+  entity: StudioEntity,
+  entityContext: StudioEntityContext,
+): Pick<Parameters<StudioChatUseCase['send']>[0], 'resolveInvoke'> {
+  if (
+    entityContext.patchTarget !== 'draft' ||
+    entityContext.baseline === undefined ||
+    entityContext.targetUri === undefined
+  ) {
+    return {};
+  }
+
+  return {
+    resolveInvoke: createStudioInvokeResolver(
+      {
+        aiGateway: deps.aiGateway,
+        logger: deps.logger,
+        diagnostics: deps.toolDiagnostics,
+      },
+      {
+        workspaceRoot: root,
+        sceneStem: entity.key,
+        draftUri: entityContext.targetUri,
+        baseline: entityContext.baseline,
+      },
+    ),
   };
 }
 

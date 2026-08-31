@@ -384,7 +384,8 @@ function toStringRecord(value: unknown): Record<string, string> | undefined {
   }
 
   const entries = Object.entries(value as Record<string, unknown>).filter(
-    (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0,
+    (entry): entry is [string, string] =>
+      typeof entry[1] === 'string' && entry[1].trim().length > 0,
   );
 
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;

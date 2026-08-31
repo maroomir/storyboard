@@ -4,6 +4,7 @@ import type * as vscode from 'vscode';
 import type {
   StudioAgentAction,
   StudioAgentFollowUp,
+  StudioAgentInvokeRequest,
   StudioAgentLookupRequest,
   StudioAgentMessage,
 } from '@storyboard/story-ai';
@@ -35,6 +36,7 @@ export interface StudioChatRequest {
   readonly hasSelection: boolean;
   readonly isValidationEnabled: boolean;
   readonly resolveLookup: (requests: readonly StudioAgentLookupRequest[]) => Promise<string>;
+  readonly resolveInvoke?: (request: StudioAgentInvokeRequest) => Promise<string>;
   // NOTE: the model names follow-up targets from memory, so each one is confirmed against the
   // workspace before it becomes a button the author can press.
   readonly resolveFollowUps: (
@@ -69,6 +71,7 @@ export class StudioChatUseCase {
         hasSelection: request.hasSelection,
         remainingQuestions: remainingQuestions(request.history),
         resolveLookup: request.resolveLookup,
+        ...(request.resolveInvoke === undefined ? {} : { resolveInvoke: request.resolveInvoke }),
       },
       { onStage: (stage) => request.onStage?.(stage) },
     );

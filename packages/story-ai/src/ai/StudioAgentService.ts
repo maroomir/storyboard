@@ -61,8 +61,7 @@ export interface StudioAgentRunOptions extends GenerateTextOptions {
 const maxLookupRounds = 3;
 const maxInvokeRounds = 2;
 
-const unreadableResponseMessage =
-  '응답을 이해하지 못했어요. 조금 더 구체적으로 말씀해 주시겠어요?';
+const unreadableResponseMessage = '응답을 이해하지 못했어요. 조금 더 구체적으로 말씀해 주시겠어요?';
 
 export class StudioAgentService {
   public constructor(private readonly gateway: AiTextGateway) {}
