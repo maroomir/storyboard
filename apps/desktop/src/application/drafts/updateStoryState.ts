@@ -29,7 +29,7 @@ export async function updateStoryStateAfterGeneration(
       {
         sceneTitle: scene.stem,
         draftBody,
-        previousState: formatStoryStateForPrompt(previous, scene.order),
+        previousState: formatStoryStateForPrompt(previous, scene.order, draftBody),
       },
       {
         providerId: options.aiGateway.getTaskProvider('storyStateUpdate'),

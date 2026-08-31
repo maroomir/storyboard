@@ -156,7 +156,12 @@ export async function buildNarrativeContext(
     context.scene.body,
     context.scene.order,
   );
-  const storyState = await readSceneStoryState(paths, context.scene.order, fileSystem);
+  const storyState = await readSceneStoryState(
+    paths,
+    context.scene.order,
+    fileSystem,
+    context.scene.body,
+  );
   const prompt = composeNarrativePrompt(
     formatBibleFactLines(context, bibleFacts),
     storyState,
@@ -172,13 +177,14 @@ async function readSceneStoryState(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
   fileSystem: SceneContextWorkspaceFileSystem,
+  sceneText: string,
 ): Promise<string | undefined> {
   if (!paths.storyState || currentSceneOrder <= 1) {
     return undefined;
   }
 
   const state = await readStoryState(paths.storyState, fileSystem);
-  return formatStoryStateForPrompt(state, currentSceneOrder);
+  return formatStoryStateForPrompt(state, currentSceneOrder, sceneText);
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {

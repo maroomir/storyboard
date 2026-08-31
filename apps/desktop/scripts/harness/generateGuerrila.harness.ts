@@ -603,7 +603,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
         providerId: harnessProviderId,
         context,
         intent: scene.body,
-        factLines: [...canonFactLines, ...storyStateFactLines(priorStoryState, scene.order)],
+        factLines: [...canonFactLines, ...storyStateFactLines(priorStoryState, scene.order, scene.body)],
         styleDirective,
         styleConstraints: project.setting?.styleConstraints ?? [],
         qualityCriteria: project.setting?.qualityCriteria ?? [],
@@ -640,7 +640,7 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       {
         sceneTitle: scene.stem,
         draftBody: body,
-        previousState: formatStoryStateForPrompt(priorStoryState, scene.order)
+        previousState: formatStoryStateForPrompt(priorStoryState, scene.order, scene.body)
       },
       { providerId: harnessProviderId, attribution: { primary: { kind: "scene", id: scene.stem } } }
     )

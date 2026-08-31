@@ -113,7 +113,8 @@ describe("mergeStoryState", () => {
     expect(mergeStoryState(sampleState, [], 1).throughSceneOrder).toBe(2)
   })
 
-  it("caps each section to its most recent entries", () => {
+  // 원장은 작품의 기억이므로 버리지 않는다. 프롬프트 예산은 주입 시점에 맞춘다.
+  it("keeps every entry instead of evicting the oldest", () => {
     const additions: StoryStateEntry[] = Array.from({ length: 40 }, (_, index) => ({
       section: "facts" as const,
       text: `사실 ${index}`
@@ -121,8 +122,55 @@ describe("mergeStoryState", () => {
 
     const merged = mergeStoryState(createEmptyStoryState(), additions, 5)
 
-    expect(merged.entries).toHaveLength(24)
+    expect(merged.entries).toHaveLength(40)
+    expect(merged.entries[0]?.text).toBe("사실 0")
     expect(merged.entries.at(-1)?.text).toBe("사실 39")
+  })
+})
+
+describe("story state injection budget", () => {
+  // 실제 원장처럼 항목마다 다른 고유명사를 담는다. 낱말이 전부 같으면 관련도가 평평해져
+  // 최근 항목만 남는다.
+  const subjects = Array.from({ length: 40 }, (_, index) => `대상${index}호`)
+
+  function fortyFacts(): StoryState {
+    return mergeStoryState(
+      createEmptyStoryState(),
+      subjects.map((subject) => ({
+        section: "facts" as const,
+        text: `${subject}가 봉인되었다`
+      })),
+      5
+    )
+  }
+
+  it("caps the injected entries per section", () => {
+    const lines = formatStoryStateForPrompt(fortyFacts())?.split("\n") ?? []
+
+    expect(lines.filter((line) => line.startsWith("- "))).toHaveLength(24)
+  })
+
+  it("falls back to the most recent entries when there is no scene text", () => {
+    const prompt = formatStoryStateForPrompt(fortyFacts())
+
+    expect(prompt).toContain("대상39호가 봉인되었다")
+    expect(prompt).not.toContain("대상0호가 봉인되었다")
+  })
+
+  // 1막에서 심은 사실이 3막 씬에 그 이름이 나오면 되살아나야 복선을 회수할 수 있다.
+  it("revives an old entry that the scene text mentions", () => {
+    const prompt = formatStoryStateForPrompt(fortyFacts(), undefined, "대상0호를 다시 꺼낸다")
+
+    expect(prompt).toContain("대상0호가 봉인되었다")
+  })
+
+  it("keeps the injected entries in the order they were established", () => {
+    const prompt = formatStoryStateForPrompt(fortyFacts(), undefined, "대상0호와 대상39호")
+    const lines = (prompt ?? "").split("\n").filter((line) => line.startsWith("- "))
+
+    expect(lines.indexOf("- 대상0호가 봉인되었다")).toBeLessThan(
+      lines.indexOf("- 대상39호가 봉인되었다")
+    )
   })
 })
 
