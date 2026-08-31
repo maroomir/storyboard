@@ -203,12 +203,6 @@
         "title": "%storyboard.bot.openDashboard.title%"
       }
     ],
-    "jsonValidation": [
-      {
-        "fileMatch": "**/.storygram/config.json",
-        "url": "./assets/storygram-config.schema.json"
-      }
-    ],
     "configuration": {
       "title": "Storyboard",
       "properties": {
