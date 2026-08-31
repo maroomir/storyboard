@@ -131,7 +131,7 @@ describe('draft writes in a trackDraft workspace', () => {
 
     expect(outcome).toEqual({ status: 'committed', paths: ['draft/01-prologue.md'] });
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: generate draft/01-prologue.md',
+      'storyboard-bot: generate draft/01-prologue.md',
     );
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });

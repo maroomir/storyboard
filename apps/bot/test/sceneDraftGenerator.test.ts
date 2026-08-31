@@ -113,7 +113,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -125,7 +125,7 @@ describe('scene draft generation', () => {
     const draftText = readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8');
     const draft = parseDraft(draftText);
     expect(draft.body.length).toBeGreaterThan(0);
-    expect(draft.generator).toBe('storygram@0.0.0-test');
+    expect(draft.generator).toBe('storyboard-bot@0.0.0-test');
     expect(draft.providerId).toBe('mock');
     expect(draft.model).toBeDefined();
 
@@ -148,7 +148,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
     });
 
     await generator.generate('01-prologue', () => false);
@@ -162,7 +162,7 @@ describe('scene draft generation', () => {
     expect(raw).toContain('엘리아가 학교에서 첫 장면을 시작한다.');
 
     const log = fixture.git('log', '--format=%s').split('\n');
-    expect(log[0]).toBe('storygram: ground scene/01-prologue.card');
+    expect(log[0]).toBe('storyboard-bot: ground scene/01-prologue.card');
   });
 
   it('leaves the scene untouched when auto grounding is off', async () => {
@@ -175,7 +175,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
     });
 
     await generator.generate('01-prologue', () => false);
@@ -210,7 +210,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
     });
 
     await generator.generate('01-prologue', () => false);
@@ -227,7 +227,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
 
@@ -248,7 +248,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: true, reviseMaxIterations: 2, autoGrounding: false },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
       },
@@ -269,7 +269,7 @@ describe('scene draft generation', () => {
       aiService: engine.service,
       registry: engine.registry,
       draftConfig: { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: false },
-      generator: 'storygram@0.0.0-test',
+      generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
       },

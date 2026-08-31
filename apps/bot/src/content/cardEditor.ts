@@ -67,6 +67,6 @@ function planFrom(current: ReadFile<StoryboardCard>, updated: StoryboardCard): W
     changes: {
       writes: [{ relativePath: current.relativePath, content, baselineHash: current.contentHash }],
     },
-    commitMessage: `storygram: update ${current.relativePath}`,
+    commitMessage: `storyboard-bot: update ${current.relativePath}`,
   };
 }

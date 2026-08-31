@@ -22,7 +22,7 @@ import { CommandRegistry } from '../src/chat/registry';
 import { UpdateRouter } from '../src/chat/router';
 import { ContentService } from '../src/content/contentService';
 import { createGenJobs, type GenJobs } from '../src/app/createGenJobs';
-import { openDatabase, type StorygramDatabase } from '../src/store/db';
+import { openDatabase, type BotDatabase } from '../src/store/db';
 import { MutateGate, createGitTrackedPathPredicate } from '../src/workspace/mutateGate';
 import { WorkspaceStore, hashContent } from '../src/workspace/workspaceStore';
 import {
@@ -50,7 +50,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 15_000): Promise<vo
 describe('generation jobs end to end', () => {
   let fixture: WorkspaceFixture;
   let dbDir: string;
-  let db: StorygramDatabase;
+  let db: BotDatabase;
   let genJobs: GenJobs;
   let router: UpdateRouter;
   let sent: string[];
@@ -100,7 +100,7 @@ describe('generation jobs end to end', () => {
       sendDocument: async (): Promise<SentMessageRef> => ({ chatId: 1, messageId: 0 }),
     };
 
-    dbDir = mkdtempSync(join(tmpdir(), 'storygram-db-'));
+    dbDir = mkdtempSync(join(tmpdir(), 'storyboard-bot-db-'));
     db = openDatabase(join(dbDir, 'state.db'));
 
     genJobs = createGenJobs({
@@ -182,7 +182,7 @@ describe('generation jobs end to end', () => {
       encoding: 'utf8',
       shell: false,
     }).trim();
-    expect(log).toBe('storygram: generate .storyboard/outline/synopsis.md');
+    expect(log).toBe('storyboard-bot: generate .storyboard/outline/synopsis.md');
   });
 
   // Decision #14: a Desktop edit landing while the job runs must win over the generated output.

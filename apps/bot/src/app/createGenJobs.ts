@@ -2,7 +2,7 @@ import type { StoryboardAIService } from '@storyboard/story-ai';
 
 import type { ContentService } from '../content/contentService';
 import type { ISendMessage } from '../chat/ports';
-import type { StorygramDatabase } from '../store/db';
+import type { BotDatabase } from '../store/db';
 import { TelegramProgressReporter } from '../telegram/jobProgressReporter';
 import type { Logger } from '../util/logger';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
@@ -26,7 +26,7 @@ import {
 } from '../gen/workspacePipelines';
 
 export interface CreateGenJobsOptions {
-  readonly db: StorygramDatabase;
+  readonly db: BotDatabase;
   readonly store: WorkspaceStore;
   readonly content: ContentService;
   readonly aiService: StoryboardAIService;

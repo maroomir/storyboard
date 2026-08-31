@@ -11,7 +11,7 @@ The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/
 | Workspace | Name | Role |
 |---|---|---|
 | `apps/desktop` | `storyboard` | The VSCode extension. Holds the released version and the only `v*` tag. |
-| `apps/bot` | `storygram` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
+| `apps/bot` | `@storyboard/bot` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
 | `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-git` | `@storyboard/story-git` | Commit/sync layer: `GitClient`, `SyncService`, push scheduling, and workspace git onboarding. |

@@ -45,20 +45,20 @@ import {
 import type { IncomingUpdate } from '../chat/ports';
 import { CommandRegistry } from '../chat/registry';
 import { UpdateRouter } from '../chat/router';
-import type { StorygramConfig } from '../config/config';
+import type { BotConfig } from '../config/config';
 import { ContentService } from '../content/contentService';
 import { startDashboardServer, type DashboardHandle } from '../dashboard/server';
 import { createGenJobs, type GenJobs } from './createGenJobs';
 import { SceneDraftGenerator } from '../gen/sceneDraftGenerator';
-import { openDatabase, type StorygramDatabase } from '../store/db';
+import { openDatabase, type BotDatabase } from '../store/db';
 import { TelegramGateway } from '../telegram/gateway';
 import { createAllowlist } from '../telegram/allowlist';
 import type { Logger } from '../util/logger';
 import { MutateGate, createGitTrackedPathPredicate } from '../workspace/mutateGate';
 import { WorkspaceStore } from '../workspace/workspaceStore';
 
-export interface StorygramApplicationOptions {
-  readonly config: StorygramConfig;
+export interface StoryboardBotApplicationOptions {
+  readonly config: BotConfig;
   readonly logger: Logger;
   readonly stateDbPath: string;
   readonly configFilePath: string;
@@ -66,7 +66,7 @@ export interface StorygramApplicationOptions {
 
 // Composition root: builds the object graph once and owns the process lifecycle. Nothing else in
 // the bot constructs its collaborators.
-export class StorygramApplication {
+export class StoryboardBotApplication {
   private readonly logger: Logger;
   private readonly store: WorkspaceStore;
   private readonly git: GitClient;
@@ -76,11 +76,11 @@ export class StorygramApplication {
   private readonly gateway: TelegramGateway;
   private readonly registry = new CommandRegistry();
   private readonly router: UpdateRouter;
-  private readonly db: StorygramDatabase;
+  private readonly db: BotDatabase;
   private readonly genJobs: GenJobs;
   private dashboard: DashboardHandle | undefined;
 
-  public constructor(private readonly options: StorygramApplicationOptions) {
+  public constructor(private readonly options: StoryboardBotApplicationOptions) {
     const { config, logger } = options;
     this.logger = logger;
 
@@ -144,7 +144,7 @@ export class StorygramApplication {
       aiService,
       registry,
       draftConfig: config.draft,
-      generator: `storygram@${packageJson.version}`,
+      generator: `storyboard-bot@${packageJson.version}`,
     });
     this.genJobs = createGenJobs({
       db: this.db,
@@ -266,7 +266,7 @@ export class StorygramApplication {
     }
 
     await this.gateway.start(this.router);
-    this.logger.info('storygram이 폴링을 시작했습니다.');
+    this.logger.info('storyboard-bot이 폴링을 시작했습니다.');
   }
 
   public async stop(): Promise<void> {

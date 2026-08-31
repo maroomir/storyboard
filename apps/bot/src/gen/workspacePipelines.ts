@@ -76,7 +76,7 @@ export class OutlinePipeline implements IPipeline {
       relativePath,
       serializeSynopsisMarkdown(synopsis),
       enqueueBaseline(job),
-      `storygram: generate ${relativePath}`,
+      `storyboard-bot: generate ${relativePath}`,
     );
 
     return writeFailure(outcome) ?? { success: true, resultRef: relativePath };
@@ -114,7 +114,7 @@ export class PlanPipeline implements IPipeline {
       relativePath,
       serializeChapterPlan(plan),
       enqueueBaseline(job),
-      `storygram: generate ${relativePath}`,
+      `storyboard-bot: generate ${relativePath}`,
     );
 
     return writeFailure(outcome) ?? { success: true, resultRef: relativePath };

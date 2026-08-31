@@ -24,7 +24,7 @@ describe('strict bot provider config', () => {
   let dir: string;
 
   beforeEach(() => {
-    dir = mkdtempSync(join(tmpdir(), 'storygram-cfg-'));
+    dir = mkdtempSync(join(tmpdir(), 'storyboard-bot-cfg-'));
   });
 
   afterEach(() => {

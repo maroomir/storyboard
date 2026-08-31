@@ -101,7 +101,7 @@ export const configSchema = z.object({
 export type ProvidersConfig = z.infer<typeof providersConfigSchema>;
 export type DraftConfig = z.infer<typeof draftConfigSchema>;
 export type JobsConfig = z.infer<typeof jobsConfigSchema>;
-export type StorygramConfig = z.infer<typeof configSchema>;
+export type BotConfig = z.infer<typeof configSchema>;
 
 export type ConfigErrorCode = 'not-found' | 'invalid-json' | 'invalid-schema';
 
@@ -117,7 +117,7 @@ export class ConfigError extends Error {
 }
 
 export interface ConfigLoadResult {
-  readonly config: StorygramConfig;
+  readonly config: BotConfig;
   readonly warnings: readonly string[];
 }
 
@@ -182,7 +182,7 @@ function parseConfigJson(raw: string): unknown {
   }
 }
 
-function validateConfig(parsed: unknown): StorygramConfig {
+function validateConfig(parsed: unknown): BotConfig {
   const result = configSchema.safeParse(parsed);
 
   if (!result.success) {

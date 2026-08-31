@@ -1,6 +1,6 @@
-# storygram
+# storyboard-bot
 
-Storyboard 워크스페이스를 텔레그램에서 조회·편집·생성하는 동반 봇입니다. VSCode 확장이 여는 **바로 그 git 워크스페이스**를 편집합니다 — 복제본도, 별도 저장소도 없습니다. 사용자 머신에서 long polling으로만 동작하며 인바운드 포트를 열지 않습니다.
+Storyboard 워크스페이스를 텔레그램에서 조회·편집·생성하는 독립 앱입니다. 워크스페이스 디렉터리를 **직접** 편집합니다 — 복제본도, 별도 저장소도 없습니다. 같은 워크스페이스를 VSCode 확장이나 CLI로 동시에 열어도 안전합니다. 사용자 머신에서 long polling으로만 동작하며 인바운드 포트를 열지 않습니다.
 
 ## 동작 원칙
 
@@ -17,12 +17,10 @@ npm install
 npm run bot:build          # apps/bot/dist/ 번들 생성
 
 # 설정 (최초 1회)
-mkdir -p ~/.storygram
-cp apps/bot/config.example.json ~/.storygram/config.json
-chmod 600 ~/.storygram/config.json
+mkdir -p ~/.storyboard
+cp apps/bot/config.example.json ~/.storyboard/bot.json
+chmod 600 ~/.storyboard/bot.json
 # botToken·allowedChatIds·workspace.path를 실제 값으로 수정
-# — 또는 VSCode 확장의 `Storyboard: 텔레그램 봇 설정…` 명령이 이 단계를 대신합니다
-#   (토큰 getMe 검증, 워크스페이스 자동 기입, 0600 저장, macOS launchd 설치 안내 포함)
 
 # 실행
 node apps/bot/dist/index.js
@@ -32,17 +30,17 @@ node apps/bot/dist/index.js
 ./apps/bot/scripts/install-launchd.sh --uninstall
 ```
 
-`STORYGRAM_HOME` 환경변수로 `~/.storygram` 위치를 바꿀 수 있습니다.
+`STORYBOARD_HOME` 환경변수로 `~/.storyboard` 위치를 바꿀 수 있습니다.
 
-설정을 나중에 고칠 때는 확장의 `Storyboard: 텔레그램 봇 설정 파일 열기`가 편합니다 — 확장이 이 설정의
-JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을 받습니다. 봇은 설정을 **부팅 때만** 읽으므로
-편집 후 `Storyboard: 텔레그램 봇 재시작`(launchd)으로 반영합니다. 스키마 파일
-(`apps/desktop/assets/storygram-config.schema.json`)은 이 봇의 zod 스키마에서 생성되며
-`npm run schema:emit --workspace storygram`으로 갱신하고, 어긋나면 봇 테스트가 실패합니다.
+봇은 설정을 **부팅 때만** 읽으므로, 고친 뒤에는 다시 띄워야 반영됩니다(launchd로 설치했다면
+`launchctl kickstart -k gui/$UID/com.maroomir.storyboard.bot`). 설정 파일의 JSON 스키마
+(`apps/bot/assets/config.schema.json`)를 에디터에 물리면 자동완성과 오타 검증을 받을 수 있습니다.
+스키마는 이 봇의 zod 스키마에서 생성되며 `npm run schema:emit --workspace @storyboard/bot`으로
+갱신하고, 어긋나면 봇 테스트가 실패합니다.
 
 ## 설정
 
-`~/.storygram/config.json` (권장 mode 0600). 전체 예시는 [`config.example.json`](./config.example.json).
+`~/.storyboard/bot.json` (권장 mode 0600). 전체 예시는 [`config.example.json`](./config.example.json).
 
 | 섹션 | 키 | 기본값 | 설명 |
 |---|---|---|---|
@@ -89,8 +87,8 @@ JSON 스키마를 기여하므로 에디터에서 자동완성·오타 검증을
 ## 검증
 
 ```bash
-npm test --workspace storygram
-npm run lint --workspace storygram
+npm test --workspace storyboard-bot
+npm run lint --workspace storyboard-bot
 npm run bot:build
 ```
 

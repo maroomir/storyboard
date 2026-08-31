@@ -98,7 +98,7 @@ async function createScene(ctx: ChatContext, slug: string, body: string): Promis
     relativePath,
     serializeSceneCard({ type: 'scene', id: `${prefix}-${slug}`, summary: body }),
     undefined,
-    `storygram: create ${relativePath}`,
+    `storyboard-bot: create ${relativePath}`,
   );
 
   if (outcome.status !== 'committed' && outcome.status !== 'written') {
@@ -140,7 +140,7 @@ async function updateScene(
     relativePath,
     nextContent,
     hashContent(raw),
-    `storygram: update ${relativePath}`,
+    `storyboard-bot: update ${relativePath}`,
   );
 
   if (outcome.status !== 'committed' && outcome.status !== 'written') {

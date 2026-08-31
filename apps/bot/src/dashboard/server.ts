@@ -130,7 +130,7 @@ const PANEL_HTML = `<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<title>storygram</title>
+<title>storyboard-bot</title>
 <style>
   body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 2rem auto; max-width: 46rem; color: #1a1a1a; }
   h1 { font-size: 1.2rem; }
@@ -144,7 +144,7 @@ const PANEL_HTML = `<!doctype html>
 </style>
 </head>
 <body>
-<h1>storygram 운영 패널</h1>
+<h1>storyboard-bot 운영 패널</h1>
 <dl id="workspace"></dl>
 <table>
   <thead><tr><th>#</th><th>종류</th><th>대상</th><th>상태</th><th>결과</th></tr></thead>

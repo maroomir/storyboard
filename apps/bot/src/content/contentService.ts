@@ -76,7 +76,7 @@ export class ContentService {
     }
 
     return {
-      outcome: await this.gate.apply({ writes }, 'storygram: normalize card formatting'),
+      outcome: await this.gate.apply({ writes }, 'storyboard-bot: normalize card formatting'),
       ids,
     };
   }
@@ -158,7 +158,7 @@ export class ContentService {
     return {
       outcome: await this.gate.apply(
         { writes, deletions },
-        'storygram: migrate scenes to card format',
+        'storyboard-bot: migrate scenes to card format',
       ),
       stems,
       failures,
@@ -181,7 +181,7 @@ export class ContentService {
       });
     }
 
-    return this.gate.apply({ writes }, `storygram: generate ${relativePath}`);
+    return this.gate.apply({ writes }, `storyboard-bot: generate ${relativePath}`);
   }
 
   // Tracked generated outputs (synopsis.md, chapters.yaml) commit with the enqueue-time baseline,
@@ -204,7 +204,7 @@ export class ContentService {
     const current = await this.tryReadText(relativePath);
     return this.gate.apply(
       { writes: [{ relativePath, content: body, baselineHash: current }] },
-      `storygram: generate ${relativePath}`,
+      `storyboard-bot: generate ${relativePath}`,
     );
   }
 

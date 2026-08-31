@@ -110,7 +110,7 @@ describe('dashboard server', () => {
     const response = await fetch(`http://127.0.0.1:${handle.port}/`);
 
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain('storygram 운영 패널');
+    expect(await response.text()).toContain('storyboard-bot 운영 패널');
   });
 
   // SECURITY: DNS rebinding sends a foreign Host header over a loopback connection. fetch() drops

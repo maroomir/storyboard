@@ -46,7 +46,7 @@ describe('GitClient', () => {
 
     const committed = client.commit(
       ['character/elia.card'],
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     expect(committed).toBe(true);
@@ -59,9 +59,9 @@ describe('GitClient', () => {
   it('reports no-op when the content did not change', () => {
     const client = new GitClient(fixture.root);
     fixture.write('character/elia.card', 'id: elia\n');
-    client.commit(['character/elia.card'], 'storygram: create character/elia.card');
+    client.commit(['character/elia.card'], 'storyboard-bot: create character/elia.card');
 
-    expect(client.commit(['character/elia.card'], 'storygram: no change')).toBe(false);
+    expect(client.commit(['character/elia.card'], 'storyboard-bot: no change')).toBe(false);
   });
 
   it('detects a locked index as a blocker', () => {
@@ -173,15 +173,15 @@ describe('SyncService', () => {
     const service = new SyncService(new GitClient(fixture.root), {}, silentLogger);
     fixture.write('character/elia.card', 'id: elia\n');
 
-    service.commitOnWrite(['character/elia.card'], 'storygram: create character/elia.card');
+    service.commitOnWrite(['character/elia.card'], 'storyboard-bot: create character/elia.card');
 
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: create character/elia.card',
+      'storyboard-bot: create character/elia.card',
     );
   });
 
   it('pushes ahead commits to a real bare origin', async () => {
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
     });
@@ -194,7 +194,7 @@ describe('SyncService', () => {
       silentLogger,
     );
     fixture.write('character/elia.card', 'id: elia\n');
-    service.commitOnWrite(['character/elia.card'], 'storygram: create character/elia.card');
+    service.commitOnWrite(['character/elia.card'], 'storyboard-bot: create character/elia.card');
 
     const report = await service.syncNow();
 
@@ -205,7 +205,7 @@ describe('SyncService', () => {
   });
 
   it('aborts a conflicting rebase, preserves the local commit, and reports conflict', async () => {
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
     });
@@ -213,7 +213,7 @@ describe('SyncService', () => {
     git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
 
     // Another clone lands a conflicting change on the same file.
-    const other = mkdtempSync(join(tmpdir(), 'storygram-other-'));
+    const other = mkdtempSync(join(tmpdir(), 'storyboard-bot-other-'));
     execFileSync('git', ['clone', '--quiet', origin, other], { shell: false });
     git(other, 'config', 'user.name', 'Other');
     git(other, 'config', 'user.email', 'other@example.com');
@@ -225,7 +225,7 @@ describe('SyncService', () => {
 
     fixture.write('character/elia.card', 'id: elia\nname: FromBot\n');
     const client = new GitClient(fixture.root);
-    client.commit(['character/elia.card'], 'storygram: update character/elia.card');
+    client.commit(['character/elia.card'], 'storyboard-bot: update character/elia.card');
     const localHead = git(fixture.root, 'rev-parse', 'HEAD');
 
     const notify = vi.fn();
@@ -244,7 +244,7 @@ describe('SyncService', () => {
   });
 
   it('reports offline when the remote is unreachable', async () => {
-    git(fixture.root, 'remote', 'add', 'origin', join(tmpdir(), 'storygram-missing-origin.git'));
+    git(fixture.root, 'remote', 'add', 'origin', join(tmpdir(), 'storyboard-bot-missing-origin.git'));
 
     const service = new SyncService(
       new GitClient(fixture.root),
@@ -258,14 +258,14 @@ describe('SyncService', () => {
   });
 
   it('invalidates edit baselines when a rebase applies remote commits', async () => {
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
     });
     git(fixture.root, 'remote', 'add', 'origin', origin);
     git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
 
-    const other = mkdtempSync(join(tmpdir(), 'storygram-other-'));
+    const other = mkdtempSync(join(tmpdir(), 'storyboard-bot-other-'));
     execFileSync('git', ['clone', '--quiet', origin, other], { shell: false });
     git(other, 'config', 'user.name', 'Other');
     git(other, 'config', 'user.email', 'other@example.com');
@@ -307,7 +307,7 @@ describe('SyncService hardened failure paths', () => {
 
   // B1: a brand-new remote has no branch; the first sync must create it, not report fake clean.
   it('pushes the initial branch to an empty remote instead of reporting clean', async () => {
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-empty-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-empty-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
     });
@@ -333,11 +333,11 @@ describe('SyncService hardened failure paths', () => {
 
   // B2: an unborn branch must settle as an error report, never throw out of the periodic timer.
   it('reports error for an unborn branch instead of throwing', async () => {
-    const unborn = mkdtempSync(join(tmpdir(), 'storygram-unborn-'));
+    const unborn = mkdtempSync(join(tmpdir(), 'storyboard-bot-unborn-'));
     execFileSync('git', ['-C', unborn, 'init', '--quiet', '--initial-branch=main'], {
       shell: false,
     });
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', origin], { shell: false });
     execFileSync('git', ['-C', unborn, 'remote', 'add', 'origin', origin], { shell: false });
 
@@ -353,14 +353,14 @@ describe('SyncService hardened failure paths', () => {
 
   // B3: uncommitted tracked changes are the normal Desktop-editing state, not a conflict.
   it('reports dirty when local uncommitted changes block a rebase', async () => {
-    const origin = mkdtempSync(join(tmpdir(), 'storygram-origin-'));
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
     execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
       shell: false,
     });
     git(fixture.root, 'remote', 'add', 'origin', origin);
     git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
 
-    const other = mkdtempSync(join(tmpdir(), 'storygram-other-'));
+    const other = mkdtempSync(join(tmpdir(), 'storyboard-bot-other-'));
     execFileSync('git', ['clone', '--quiet', origin, other], { shell: false });
     git(other, 'config', 'user.name', 'O');
     git(other, 'config', 'user.email', 'o@example.com');
@@ -399,7 +399,7 @@ describe('SyncService hardened failure paths', () => {
     const service = new SyncService(new GitClient(fixture.root), {}, silentLogger);
     fixture.write('character/elia.card', 'id: elia\n');
 
-    const committed = service.commitOnWrite(['character/elia.card'], 'storygram: create');
+    const committed = service.commitOnWrite(['character/elia.card'], 'storyboard-bot: create');
 
     expect(committed).toBe(false);
     expect(silentLogger.error).toHaveBeenCalled();

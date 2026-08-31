@@ -12,10 +12,10 @@
   "scripts": {
     "build": "npm run build --workspace storyboard",
     "compile": "npm run compile --workspace storyboard",
-    "lint": "npm run lint --workspace storyboard && npm run lint --workspace storygram",
-    "test": "npm run test --workspace storyboard && npm run test --workspace storygram",
+    "lint": "npm run lint --workspace storyboard && npm run lint --workspace @storyboard/bot",
+    "test": "npm run test --workspace storyboard && npm run test --workspace @storyboard/bot",
     "package:vsix": "npm run package:vsix --workspace storyboard",
-    "bot:build": "npm run build --workspace storygram",
-    "bot:start": "npm run start --workspace storygram"
+    "bot:build": "npm run build --workspace @storyboard/bot",
+    "bot:start": "npm run start --workspace @storyboard/bot"
   }
 }

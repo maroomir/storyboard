@@ -1,15 +1,15 @@
 {
-  "name": "storygram",
+  "name": "@storyboard/bot",
   "version": "0.1.0",
   "private": true,
-  "description": "Telegram companion for the Storyboard fiction IDE: edits the same git workspace as the VSCode extension",
+  "description": "Telegram front end for Storyboard: edits a Storyboard workspace over chat, committing every save",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=20"
   },
   "main": "dist/index.js",
   "bin": {
-    "storygram": "dist/index.js"
+    "storyboard-bot": "dist/index.js"
   },
   "scripts": {
     "build": "rm -rf dist && node esbuild.config.mjs",

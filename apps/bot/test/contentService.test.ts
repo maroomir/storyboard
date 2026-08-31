@@ -86,7 +86,7 @@ describe('ContentService', () => {
     expect(existsSync(join(fixture.root, 'scene', '02-turn.txt'))).toBe(false);
 
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: migrate scenes to card format',
+      'storyboard-bot: migrate scenes to card format',
     );
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });
@@ -135,7 +135,7 @@ describe('ContentService', () => {
 
     expect(outcome).toEqual({ status: 'committed', paths: ['character/elia.card'] });
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
-      'storygram: update character/elia.card',
+      'storyboard-bot: update character/elia.card',
     );
 
     const saved = parseCard(readFileSync(join(fixture.root, 'character', 'elia.card'), 'utf8'));
