@@ -11,8 +11,8 @@ import {
   serializeDraft,
 } from '@storyboard/story-format';
 import type { BackgroundCard } from '@storyboard/story-format';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
-import { type SceneCacheRecord } from '../../domain/files/sceneCache';
+import { archiveExistingDraft } from '@storyboard/story-engine';
+import { type SceneCacheRecord } from '@storyboard/story-engine';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,

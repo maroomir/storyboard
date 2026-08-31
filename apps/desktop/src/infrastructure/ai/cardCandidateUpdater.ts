@@ -4,11 +4,8 @@ import type {
   CardAttributeCandidate,
   CardCandidateCharacter,
   CardRelationCandidate,
-} from '@/shared/cardCandidates';
-import {
-  writeCardCandidateFile,
-  type CardCandidateFileSystem,
-} from '@/domain/files/cardCandidates';
+} from '@storyboard/story-engine';
+import { writeCardCandidateFile, type CardCandidateFileSystem } from '@storyboard/story-engine';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;

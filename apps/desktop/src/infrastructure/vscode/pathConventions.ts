@@ -15,7 +15,7 @@ import {
 } from '@storyboard/story-format';
 import * as vscode from 'vscode';
 
-import type { StudioEntity } from '../../shared/messaging';
+import type { StudioEntity } from '@storyboard/story-engine';
 
 export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
 

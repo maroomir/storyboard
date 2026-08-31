@@ -2,13 +2,13 @@ import * as vscode from 'vscode';
 
 import type { ISceneSidebarRepository } from '../../application/cards/sceneSidebarRepository';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '../../domain/files/usageLedger';
+import { emptyUsageSummary } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../messaging/aiRpcHandlers';
 import type { AiProviderRegistry, UsageSummaryByEntity } from '@storyboard/story-ai';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
-import type { StoryboardResponsePayload } from '../../shared/messaging';
-import type { SceneListItem } from '../../shared/messaging/scenes';
+import type { StoryboardResponsePayload } from '@storyboard/story-engine';
+import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const generateDraftCommand = 'storyboard.draft.generate';

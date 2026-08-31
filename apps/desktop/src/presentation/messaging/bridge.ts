@@ -8,7 +8,7 @@ import {
   type StoryboardRequestMessage,
   type StoryboardRequestMethod,
   type StoryboardResponsePayload,
-} from '../../shared/messaging';
+} from '@storyboard/story-engine';
 
 export interface StoryboardWebviewLike {
   readonly postMessage: (message: unknown) => PromiseLike<boolean>;

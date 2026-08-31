@@ -7,14 +7,11 @@ import {
   applyCardCandidateItems,
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
-} from '../../../domain/cardCandidatePromotion';
+} from '@storyboard/story-engine';
 import { readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
-import {
-  readCardCandidateFile,
-  writeCardCandidateFile,
-} from '../../../domain/files/cardCandidates';
-import type { CardCandidateRecord } from '../../../shared/cardCandidates';
+import { readCardCandidateFile, writeCardCandidateFile } from '@storyboard/story-engine';
+import type { CardCandidateRecord } from '@storyboard/story-engine';
 
 const VSCODE_FILE_SYSTEM = {
   readFile: (uri: unknown): Thenable<Uint8Array> => vscode.workspace.fs.readFile(uri as vscode.Uri),

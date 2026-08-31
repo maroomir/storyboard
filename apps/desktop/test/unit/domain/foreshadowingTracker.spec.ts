@@ -4,7 +4,7 @@ import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing
-} from "@/domain/foreshadowingTracker"
+} from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {

@@ -8,8 +8,8 @@ import {
   selectFollowUpsFor,
   serializeStudioFollowUps,
   type StudioFollowUp,
-} from '../../../domain/files/studioFollowUp';
-import type { StudioEntity } from '../../../shared/messaging';
+} from '@storyboard/story-engine';
+import type { StudioEntity } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
 
 export interface IStudioFollowUpRepository {

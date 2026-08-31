@@ -2,8 +2,8 @@ import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
-import type { NovelRunState, NovelStageName } from "@/domain/files/novelRunState"
-import { parseNovelRunState, serializeNovelRunState } from "@/domain/files/novelRunState"
+import type { NovelRunState, NovelStageName } from "@storyboard/story-engine"
+import { parseNovelRunState, serializeNovelRunState } from "@storyboard/story-engine"
 
 const generateDraftMock = vi.fn(async () => ({ ok: true, kind: "generated" }) as const)
 const runReviseDraftWorkflowMock = vi.fn(async () => ({
@@ -24,7 +24,10 @@ vi.mock("@storyboard/story-format", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
 }))
-vi.mock("@/domain/manuscriptReview", () => ({ buildManuscriptReviewMarkdown: (): string => "" }))
+vi.mock("@storyboard/story-engine", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-engine")>()),
+  buildManuscriptReviewMarkdown: (): string => ""
+}))
 vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),

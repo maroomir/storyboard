@@ -1,7 +1,7 @@
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '@/domain/files/usageLedger';
+import { emptyUsageSummary } from '@storyboard/story-engine';
 import { type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import { type StoryboardResponsePayload } from '@/shared/messaging';
+import { type StoryboardResponsePayload } from '@storyboard/story-engine';
 import { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 

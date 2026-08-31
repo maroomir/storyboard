@@ -13,7 +13,7 @@ import type {
   ManuscriptReviewSource,
 } from '../../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
-import { summaryFileName } from '../../../domain/chapterSummaries';
+import { summaryFileName } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '../../vscode/logger';
 import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '../manuscriptDrafts';

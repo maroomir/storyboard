@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { migrateCardTextFieldsToList } from '../../domain/cardTextMigration';
+import { migrateCardTextFieldsToList } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   getStoryboardProjectPaths,

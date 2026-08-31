@@ -7,7 +7,7 @@ import type {
 import { isIgnoredSampleCardFileName } from '../../vscode/pathConventions';
 import { isCharacterRole, joinCardText, parseCard } from '@storyboard/story-format';
 import type { CardType } from '@storyboard/story-format';
-import type { SidebarCardSummary } from '../../../shared/messaging';
+import type { SidebarCardSummary } from '@storyboard/story-engine';
 
 export class CardSidebarRepository implements ICardSidebarRepository {
   public async list(

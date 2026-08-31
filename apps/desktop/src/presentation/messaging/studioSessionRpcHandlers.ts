@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@/shared/messaging';
+import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { IStudioSessionRepository } from '../../infrastructure/persistence/repositories/studioSessionRepository';
 
 export interface StudioSessionRpcHandlersDependencies {

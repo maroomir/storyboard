@@ -9,7 +9,7 @@ import {
 } from '@storyboard/story-format';
 import type { StudioAgentFollowUp, StudioAgentLookupRequest } from '@storyboard/story-ai';
 
-import type { StudioEntity, StudioFollowUpTarget } from '../../shared/messaging';
+import type { StudioEntity, StudioFollowUpTarget } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -21,7 +21,7 @@ import {
 } from '../vscode/pathConventions';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
 
-import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
+import type { StudioPatchTarget } from '@storyboard/story-engine';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';

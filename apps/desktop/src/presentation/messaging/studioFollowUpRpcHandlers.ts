@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { isSafeStudioEntityKey } from '@/infrastructure/vscode/pathConventions';
-import type { StoryboardResponsePayload, StudioEntity } from '@/shared/messaging';
+import type { StoryboardResponsePayload, StudioEntity } from '@storyboard/story-engine';
 
 export interface StudioFollowUpRpcHandlersDependencies {
   readonly repository: IStudioFollowUpRepository;

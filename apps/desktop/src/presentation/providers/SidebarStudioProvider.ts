@@ -20,7 +20,7 @@ import type {
   StoryboardResponsePayload,
   StudioSessionSnapshot,
   StudioTarget,
-} from '../../shared/messaging';
+} from '@storyboard/story-engine';
 import type {
   StudioChatStage,
   StudioChatUseCase,

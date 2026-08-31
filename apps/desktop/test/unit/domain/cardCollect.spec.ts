@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyCardCollectProposals, shouldProposeCardCollect } from '@/domain/cardCollect';
+import { applyCardCollectProposals, shouldProposeCardCollect } from '@storyboard/story-engine';
 import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
   type CardCollectProposalDraft,
-} from '@/shared/cardCollect';
+} from '@storyboard/story-engine';
 
 function proposal(
   draft: CardCollectProposalDraft,

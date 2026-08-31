@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
-import { validateGenerationContract } from '../../domain/generationContract';
+import { validateGenerationContract } from '@storyboard/story-engine';
 import { toOutlineBrief } from '@storyboard/story-format';
 import type {
   ChapterPlan,

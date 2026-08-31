@@ -5,8 +5,8 @@ import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-
 import type { ConfigBridge } from '@storyboard/story-ai';
 
 import { hashBaseline } from '@/application/studio/studioChatUseCase';
-import { archiveExistingDraft } from '@/domain/files/draftHistory';
-import { applyStudioPatch } from '@/domain/studio/studioPatch';
+import { archiveExistingDraft } from '@storyboard/story-engine';
+import { applyStudioPatch } from '@storyboard/story-engine';
 import {
   readStudioEntityContext,
   type StudioSceneFocus,
@@ -28,7 +28,7 @@ import type {
   StudioChatTurn,
   StudioEntity,
   StudioProposalTurn,
-} from '@/shared/messaging';
+} from '@storyboard/story-engine';
 
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;

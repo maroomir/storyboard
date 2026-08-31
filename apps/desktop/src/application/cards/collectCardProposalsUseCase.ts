@@ -7,7 +7,7 @@ import {
   type CollectRosterEntry,
 } from '../../infrastructure/ai/cardCollectBuilder';
 import type { StoryboardCard } from '@storyboard/story-format';
-import type { CardCollectProposal } from '../../shared/cardCollect';
+import type { CardCollectProposal } from '@storyboard/story-engine';
 
 export interface ICardCollectRepository {
   loadCharacterRoster(workspaceRoot: vscode.Uri): Promise<readonly CollectRosterEntry[]>;

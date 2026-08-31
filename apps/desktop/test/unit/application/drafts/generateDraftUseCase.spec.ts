@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { draftHistorySceneDirectory, draftPath } from "@/infrastructure/vscode/pathConventions"
-import { computeSceneInputHash } from "@/domain/files/sceneCache"
+import { computeSceneInputHash } from "@storyboard/story-engine"
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const buildSceneContextMock = vi.fn()
@@ -20,7 +20,8 @@ vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,
   uriExists: (...args: unknown[]): unknown => uriExistsMock(...args)
 }))
-vi.mock("@/domain/files/draftHistory", () => ({
+vi.mock("@storyboard/story-engine", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-engine")>()),
   archiveExistingDraft: (...args: unknown[]): unknown => archiveExistingDraftMock(...args)
 }))
 vi.mock('@storyboard/story-pipeline', async () => {

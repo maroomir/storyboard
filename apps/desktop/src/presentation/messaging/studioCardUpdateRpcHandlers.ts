@@ -7,7 +7,7 @@ import type { AiGateway } from '@/application/ai/aiGateway';
 import type { CreateCardUseCase } from '@/application/cards/createCardUseCase';
 import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@/shared/messaging';
+import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 
 export interface StudioCardUpdateRpcHandlersDependencies {
   readonly aiGateway: AiGateway;

@@ -5,12 +5,12 @@ import type {
   SidebarCardCategory,
 } from '../../application/cards/cardSidebarRepository';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '../../domain/files/usageLedger';
+import { emptyUsageSummary } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../messaging/aiRpcHandlers';
 import type { AiProviderRegistry, UsageSummaryByEntity } from '@storyboard/story-ai';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
-import type { SidebarCardSummary, StoryboardResponsePayload } from '../../shared/messaging';
+import type { SidebarCardSummary, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const cardEditorViewType = 'storyboard.card';

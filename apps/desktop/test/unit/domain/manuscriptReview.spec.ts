@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { buildManuscriptReviewMarkdown } from "@/domain/manuscriptReview"
+import { buildManuscriptReviewMarkdown } from "@storyboard/story-engine"
 
 const baseInput = {
   projectName: "MagicBoy",

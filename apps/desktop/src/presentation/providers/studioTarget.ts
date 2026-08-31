@@ -16,7 +16,7 @@ import {
   isDraftMarkdownFile,
 } from '../../infrastructure/vscode/pathConventions';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
-import type { StudioTarget } from '../../shared/messaging';
+import type { StudioTarget } from '@storyboard/story-engine';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 

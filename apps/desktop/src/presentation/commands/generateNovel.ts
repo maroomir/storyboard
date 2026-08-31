@@ -6,12 +6,12 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
 } from '../../application/novel/novelPipeline';
-import { validateGenerationContract } from '../../domain/generationContract';
-import { isResumable } from '../../domain/novelRunPlan';
+import { validateGenerationContract } from '@storyboard/story-engine';
+import { isResumable } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { type NovelRunMode, type NovelRunState } from '../../domain/files/novelRunState';
+import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine';
 import type { ContractFieldKey } from '@storyboard/story-format';
 
 const generateNovelCommand = 'storyboard.novel.generate';

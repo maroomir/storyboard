@@ -1,7 +1,7 @@
 import yaml from "js-yaml"
 import { describe, expect, it } from "vitest"
 
-import { migrateCardTextFieldsToList } from "@/domain/cardTextMigration"
+import { migrateCardTextFieldsToList } from "@storyboard/story-engine"
 
 describe("migrateCardTextFieldsToList", () => {
   it("converts string voice and description into lists", () => {

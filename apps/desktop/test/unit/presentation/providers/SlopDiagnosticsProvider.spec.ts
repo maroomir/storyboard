@@ -6,7 +6,7 @@ import {
   mapSlopFindingsToDiagnostics,
   toSlopRange
 } from "@/presentation/providers/SlopDiagnosticsProvider"
-import { analyzeSlop, type SlopFinding } from "@/shared/slop"
+import { analyzeSlop, type SlopFinding } from "@storyboard/story-engine"
 
 function createDocument(text: string): vscode.TextDocument {
   return {

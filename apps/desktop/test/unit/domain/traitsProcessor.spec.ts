@@ -9,7 +9,7 @@ import {
   removeDuplicateTraits,
   removeExistingTraits,
   validateTraits
-} from "@/domain/traitsProcessor"
+} from "@storyboard/story-engine"
 
 describe("traitsProcessor", () => {
   it("calculates simple word-overlap similarity", () => {

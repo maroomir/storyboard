@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
 import { getStoryboardProjectPaths } from "@/infrastructure/vscode/pathConventions"
-import { parseUsageLedgerBytes, type UsageLedgerFileSystem } from "@/domain/files/usageLedger"
+import { parseUsageLedgerBytes, type UsageLedgerFileSystem } from "@storyboard/story-engine"
 import { UsageRecorder } from "@/infrastructure/ai/UsageRecorder"
 
 function createMemoryFs(): UsageLedgerFileSystem & { readonly bytesByPath: Map<string, Uint8Array> } {

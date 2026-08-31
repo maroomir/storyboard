@@ -5,9 +5,9 @@ import {
   collectCardCandidateItems,
   selectNewCardCandidateItems,
   type CardCandidateItem,
-} from '../../domain/cardCandidatePromotion';
+} from '@storyboard/story-engine';
 import type { CharacterCard } from '@storyboard/story-format';
-import type { CardCandidateRecord } from '../../shared/cardCandidates';
+import type { CardCandidateRecord } from '@storyboard/story-engine';
 
 export interface ICardCandidateRepository {
   apply(workspaceRoot: vscode.Uri, items: readonly CardCandidateItem[]): Promise<number>;

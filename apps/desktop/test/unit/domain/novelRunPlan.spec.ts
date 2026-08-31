@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { isResumable, planRemainingStages } from "@/domain/novelRunPlan"
-import type { NovelRunState } from "@/domain/files/novelRunState"
+import { isResumable, planRemainingStages } from "@storyboard/story-engine"
+import type { NovelRunState } from "@storyboard/story-engine"
 
 const baseState: NovelRunState = {
   version: "1.0.0",

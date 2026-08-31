@@ -6,7 +6,7 @@ import {
   settingsUpdateProviderModelRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion
-} from "@/shared/messaging"
+} from "@storyboard/story-engine"
 import { aiProviderIds, aiTaskNames, ConfigBridge, createAiProviderRegistry, SecretStore, storyboardModelCatalog } from '@storyboard/story-ai';
 import type { AiProviderRegistry, ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"

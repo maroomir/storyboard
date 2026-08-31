@@ -2,7 +2,7 @@ import { readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
 import { parseBulletList } from '@storyboard/story-ai';
 import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
-import { reconcileCharacterTraits } from '@/domain/traitsProcessor';
+import { reconcileCharacterTraits } from '@storyboard/story-engine';
 interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }
