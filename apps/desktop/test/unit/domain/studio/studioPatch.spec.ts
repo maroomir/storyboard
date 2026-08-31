@@ -13,7 +13,10 @@ const characterCard = [
 ].join("\n")
 
 function cardPatch(
-  changes: readonly { field: string; value: string | string[] }[]
+  changes: readonly {
+    field: string
+    value: string | string[] | Record<string, string>[]
+  }[]
 ): StudioPatchPayload {
   return { target: "card", changes }
 }
@@ -244,5 +247,49 @@ describe("applyStudioPatch shape guards", () => {
       ok: false,
       message: "초안에는 본문 구간 수정만 적용할 수 있습니다."
     })
+  })
+})
+
+describe("applyStudioPatch for a character arc", () => {
+  it("writes a structured arc list", () => {
+    const result = applyStudioPatch(
+      characterCard,
+      cardPatch([
+        {
+          field: "arc",
+          value: [
+            { stage: "의심", summary: "익숙한 빛깔을 느낀다", sceneRef: "02-the-name" },
+            { stage: "결단", summary: "관계를 책임지는 쪽으로 돌아선다" }
+          ]
+        }
+      ]),
+      "entityCard"
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.ok ? result.text : "").toContain("stage: 의심")
+    expect(result.ok ? result.text : "").toContain("sceneRef: 02-the-name")
+    expect(result.ok ? result.text : "").toContain("stage: 결단")
+  })
+
+  it("rejects an arc entry that is missing its summary", () => {
+    const result = applyStudioPatch(
+      characterCard,
+      cardPatch([{ field: "arc", value: [{ stage: "의심" }] }]),
+      "entityCard"
+    )
+
+    expect(result.ok).toBe(false)
+  })
+
+  it("clears a list field with an empty list", () => {
+    const result = applyStudioPatch(
+      characterCard,
+      cardPatch([{ field: "traits", value: [] }]),
+      "entityCard"
+    )
+
+    expect(result.ok).toBe(true)
+    expect(result.ok ? result.text : "").not.toContain("냉소적")
   })
 })

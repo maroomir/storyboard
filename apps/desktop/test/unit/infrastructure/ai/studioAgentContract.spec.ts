@@ -98,6 +98,60 @@ describe("coerceStudioAgentAction", () => {
   })
 })
 
+describe("coerceStudioAgentAction structured card fields", () => {
+  const propose = (changes: string): string =>
+    `{"kind":"propose","summary":"x","patch":{"target":"card","changes":${changes}}}`
+
+  function changesOf(action: ReturnType<typeof coerceStudioAgentAction>): unknown {
+    return action?.kind === "propose" && action.patch.target === "card"
+      ? action.patch.changes
+      : undefined
+  }
+
+  it("keeps an arc list of objects", () => {
+    const action = coerceStudioAgentAction(
+      propose(
+        '[{"field":"arc","value":[{"stage":"의심","summary":"익숙함을 느낀다","sceneRef":"02-a"}]}]'
+      )
+    )
+
+    expect(changesOf(action)).toEqual([
+      {
+        field: "arc",
+        value: [{ stage: "의심", summary: "익숙함을 느낀다", sceneRef: "02-a" }]
+      }
+    ])
+  })
+
+  it("still reads a plain string list", () => {
+    const action = coerceStudioAgentAction(propose('[{"field":"traits","value":["냉소적"]}]'))
+
+    expect(changesOf(action)).toEqual([{ field: "traits", value: ["냉소적"] }])
+  })
+
+  it("keeps an empty list so a field can be cleared", () => {
+    const action = coerceStudioAgentAction(propose('[{"field":"traits","value":[]}]'))
+
+    expect(changesOf(action)).toEqual([{ field: "traits", value: [] }])
+  })
+
+  it("falls back to a string list when the objects are mixed with text", () => {
+    const action = coerceStudioAgentAction(
+      propose('[{"field":"traits","value":["냉소적",{"stage":"x"}]}]')
+    )
+
+    expect(changesOf(action)).toEqual([{ field: "traits", value: ["냉소적"] }])
+  })
+
+  it("drops object entries whose values are not text", () => {
+    const action = coerceStudioAgentAction(
+      propose('[{"field":"arc","value":[{"stage":"의심","summary":3}]}]')
+    )
+
+    expect(changesOf(action)).toEqual([{ field: "arc", value: [{ stage: "의심" }] }])
+  })
+})
+
 describe("coerceStudioAgentAction follow-ups", () => {
   const followUp =
     '{"kind":"character","key":"jiho","reason":"관계가 어긋남","instruction":"맞춰줘"}'

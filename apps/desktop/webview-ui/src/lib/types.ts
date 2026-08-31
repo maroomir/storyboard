@@ -256,7 +256,7 @@ export interface StudioValidation {
 
 export interface StudioCardFieldChange {
   readonly field: string
-  readonly value: string | readonly string[]
+  readonly value: string | readonly string[] | readonly Readonly<Record<string, string>>[]
 }
 
 export interface StudioDraftReplacement {

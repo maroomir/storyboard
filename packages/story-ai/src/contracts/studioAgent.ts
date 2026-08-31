@@ -7,9 +7,16 @@ export interface StudioAgentLookupRequest {
   readonly key: string;
 }
 
+// NOTE: arc is a list of {stage, summary, sceneRef} objects, so a card patch has to carry more than
+// text; the card schema validates the shape before anything is written.
+export type StudioCardFieldValue =
+  | string
+  | readonly string[]
+  | readonly Readonly<Record<string, string>>[];
+
 export interface StudioCardFieldChange {
   readonly field: string;
-  readonly value: string | readonly string[];
+  readonly value: StudioCardFieldValue;
 }
 
 export interface StudioDraftReplacement {
@@ -240,9 +247,41 @@ function toCardFieldChange(value: unknown): StudioCardFieldChange | undefined {
     return { field, value: candidate.value };
   }
 
-  return Array.isArray(candidate.value)
-    ? { field, value: stringList(candidate.value) }
+  if (!Array.isArray(candidate.value)) {
+    return undefined;
+  }
+
+  const objects = stringRecordList(candidate.value);
+
+  // NOTE: an empty list is a deliberate "clear this field", so it stays a string list rather than
+  // being dropped as unreadable.
+  return objects ? { field, value: objects } : { field, value: stringList(candidate.value) };
+}
+
+function stringRecordList(
+  value: readonly unknown[],
+): Readonly<Record<string, string>>[] | undefined {
+  if (value.length === 0) {
+    return undefined;
+  }
+
+  const records = value.map(toStringRecord);
+
+  return records.every((record): record is Record<string, string> => record !== undefined)
+    ? records
     : undefined;
+}
+
+function toStringRecord(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0,
+  );
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined {

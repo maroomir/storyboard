@@ -175,6 +175,14 @@ function toAgentHistory(history: readonly StudioChatTurn[]): StudioAgentMessage[
     .filter((message): message is StudioAgentMessage => message !== undefined);
 }
 
+function describeEntry(entry: string | Readonly<Record<string, string>>): string {
+  return typeof entry === 'string'
+    ? entry
+    : Object.entries(entry)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+}
+
 function followUpsOf(action: StudioAgentAction): readonly StudioAgentFollowUp[] {
   return action.kind === 'say' || action.kind === 'propose' ? (action.followUps ?? []) : [];
 }
@@ -208,7 +216,7 @@ export function describePatch(patch: StudioPatchPayload): string {
     return patch.changes
       .map((change) =>
         Array.isArray(change.value)
-          ? `${change.field}:\n${change.value.map((entry) => `  - ${entry}`).join('\n')}`
+          ? `${change.field}:\n${change.value.map((entry) => `  - ${describeEntry(entry)}`).join('\n')}`
           : `${change.field}: ${String(change.value)}`,
       )
       .join('\n');
