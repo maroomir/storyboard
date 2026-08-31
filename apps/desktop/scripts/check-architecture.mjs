@@ -10,9 +10,7 @@ import ts from 'typescript';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
 const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
-const SHARED_ROOT = path.join(SOURCE_ROOT, 'shared');
 const APPLICATION_ROOT = path.join(SOURCE_ROOT, 'application');
-const DOMAIN_ROOT = path.join(SOURCE_ROOT, 'domain');
 const PRESENTATION_ROOT = path.join(SOURCE_ROOT, 'presentation');
 const INFRASTRUCTURE_ROOT = path.join(SOURCE_ROOT, 'infrastructure');
 const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
@@ -25,6 +23,9 @@ const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIServic
 const STORY_FORMAT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-format', 'src');
 const STORY_AI_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-ai', 'src');
 const STORY_PIPELINE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-pipeline', 'src');
+const STORY_GIT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-git', 'src');
+const STORY_ENGINE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-engine', 'src');
+const ENGINE_SHARED_ROOT = path.join(STORY_ENGINE_ROOT, 'shared');
 
 // Compat boundary is now closed: no application file may import vscode at runtime.
 const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([]);
@@ -48,14 +49,11 @@ for (const filePath of sourceFiles) {
       continue;
     }
 
-    validateDomainVscodeBoundary(filePath, importPath);
     validateApplicationVscodeBoundary(filePath, statement, importPath);
 
     const target = resolveImport(filePath, importPath);
     if (target) {
       graph.get(filePath)?.add(target);
-      validateSharedBoundary(filePath, target);
-      validateDomainBoundary(filePath, target);
       validateApplicationBoundary(filePath, target);
       validatePresentationAiBoundary(filePath, statement, target);
     }
@@ -70,6 +68,9 @@ validateExtensionEntry();
 const storyFormatFiles = validatePackagePurity(STORY_FORMAT_ROOT, 'story-format');
 const storyAiFiles = validatePackagePurity(STORY_AI_ROOT, 'story-ai');
 const storyPipelineFiles = validatePackagePurity(STORY_PIPELINE_ROOT, 'story-pipeline');
+const storyGitFiles = validatePackagePurity(STORY_GIT_ROOT, 'story-git');
+const storyEngineFiles = validatePackagePurity(STORY_ENGINE_ROOT, 'story-engine');
+validateEngineSharedBoundary();
 
 if (failures.length > 0) {
   for (const failure of failures) {
@@ -79,8 +80,9 @@ if (failures.length > 0) {
 } else {
   console.log(
     `Architecture check passed: ${sourceFiles.length} extension files, ` +
-      `${storyFormatFiles} story-format, ${storyAiFiles} story-ai, ` +
-      `${storyPipelineFiles} story-pipeline files, no import cycles.`,
+      `${storyEngineFiles} story-engine, ${storyFormatFiles} story-format, ` +
+      `${storyAiFiles} story-ai, ${storyPipelineFiles} story-pipeline, ` +
+      `${storyGitFiles} story-git files, no import cycles.`,
   );
 }
 
@@ -225,30 +227,30 @@ function validatePackagePurity(packageRoot, packageName) {
   return packageFiles.length;
 }
 
-function validateSharedBoundary(filePath, target) {
-  if (isWithinDirectory(filePath, SHARED_ROOT) && !isWithinDirectory(target, SHARED_ROOT)) {
-    failures.push(
-      `Shared layer imports outside itself: ${relativePath(filePath)} -> ${relativePath(target)}`,
+// Inside the engine, `shared` is the contract floor: it may import itself and nothing else, so a
+// contract type can never drag domain logic into a webview or a CLI that only speaks the protocol.
+function validateEngineSharedBoundary() {
+  for (const filePath of collectSourceFiles(ENGINE_SHARED_ROOT)) {
+    const sourceFile = ts.createSourceFile(
+      filePath,
+      fs.readFileSync(filePath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
     );
-  }
-}
 
-function validateDomainBoundary(filePath, target) {
-  if (!isWithinDirectory(filePath, DOMAIN_ROOT)) {
-    return;
-  }
+    for (const statement of sourceFile.statements) {
+      const importPath = getImportPath(statement);
+      if (!importPath || !importPath.startsWith('.')) {
+        continue;
+      }
 
-  const forbiddenRoots = [APPLICATION_ROOT, INFRASTRUCTURE_ROOT, PRESENTATION_ROOT, BOOTSTRAP_ROOT];
-  if (forbiddenRoots.some((root) => isWithinDirectory(target, root))) {
-    failures.push(
-      `Domain layer imports outer layer: ${relativePath(filePath)} -> ${relativePath(target)}`,
-    );
-  }
-}
-
-function validateDomainVscodeBoundary(filePath, importPath) {
-  if (isWithinDirectory(filePath, DOMAIN_ROOT) && importPath === 'vscode') {
-    failures.push(`Domain layer imports vscode: ${relativePath(filePath)}`);
+      const target = resolveImport(filePath, importPath);
+      if (target && !isWithinDirectory(target, ENGINE_SHARED_ROOT)) {
+        failures.push(
+          `story-engine shared imports outside itself: ${relativePath(filePath)} -> ${relativePath(target)}`,
+        );
+      }
+    }
   }
 }
 

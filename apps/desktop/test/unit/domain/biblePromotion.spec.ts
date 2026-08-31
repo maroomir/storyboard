@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@/domain/biblePromotion"
+import { aggregateCandidateFacts, mergeCanonFacts, seedPromotedFact, selectNewCandidates } from "@storyboard/story-engine"
 import { buildCandidateFact } from '@storyboard/story-format';
 import type { StoryBible } from '@storyboard/story-format';
-import type { BibleCandidateRecord } from "@/domain/files/bibleCandidates"
+import type { BibleCandidateRecord } from "@storyboard/story-engine"
 
 function candidateRecord(sceneStem: string, facts: BibleCandidateRecord["facts"]): BibleCandidateRecord {
   return { sceneStem, generatedAt: "2026-06-14T09:00:00.000Z", facts }

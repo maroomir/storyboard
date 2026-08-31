@@ -6,7 +6,7 @@ import { ProjectRepository } from '@/infrastructure/persistence/repositories/pro
 import { SceneCacheRepository } from '@/infrastructure/persistence/repositories/sceneCacheRepository';
 import { SceneRepository } from '@/infrastructure/persistence/repositories/sceneRepository';
 import { createDraft, parseDraft } from '@storyboard/story-format';
-import { parseSceneCache } from '@/domain/files/sceneCache';
+import { parseSceneCache } from '@storyboard/story-engine';
 
 class InMemoryFileSystem implements IFileSystem {
   public readonly directories: unknown[] = [];

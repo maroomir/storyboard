@@ -7,8 +7,8 @@ import {
   serializeStudioSession,
   type PrunableStudioSession,
   type StudioSession
-} from "@/domain/files/studioSession"
-import type { StudioChatTurn } from "@/shared/messaging"
+} from "@storyboard/story-engine"
+import type { StudioChatTurn } from "@storyboard/story-engine"
 
 const turns: StudioChatTurn[] = [
   { id: "u1", role: "user", text: "맞춤법 봐줘" },

@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { analyzeSlop, type SlopFinding } from "@/shared/slop"
-import { slopPhrases } from "@/shared/slopPhrases"
+import { analyzeSlop, type SlopFinding } from "@storyboard/story-engine"
+import { slopPhrases } from "@storyboard/story-engine"
 
 function findingsByKind(findings: SlopFinding[], kind: SlopFinding["kind"]): SlopFinding[] {
   return findings.filter((finding) => finding.kind === kind)
@@ -117,7 +117,7 @@ describe("analyzeSlop", () => {
   })
 
   it("QAS-C4-19: analyzer source has no vscode, AI service, or network imports", () => {
-    const sourcePath = fileURLToPath(new URL("../../../src/shared/slop.ts", import.meta.url))
+    const sourcePath = fileURLToPath(new URL("../../../../../packages/story-engine/src/shared/slop.ts", import.meta.url))
     const source = readFileSync(sourcePath, "utf8")
 
     expect(source.length).toBeGreaterThan(0)

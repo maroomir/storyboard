@@ -22,6 +22,9 @@
       "node"
     ],
     "paths": {
+      "@storyboard/story-engine": [
+        "../../packages/story-engine/src/index.ts"
+      ],
       "@storyboard/story-format": [
         "../../packages/story-format/src/index.ts"
       ],

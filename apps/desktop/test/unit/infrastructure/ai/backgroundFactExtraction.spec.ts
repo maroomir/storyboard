@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { BackgroundFactExtractionPrompt, coerceBackgroundFactExtraction } from '@storyboard/story-ai';
-import { cardCollectProposalSchema } from "@/shared/cardCollect"
+import { cardCollectProposalSchema } from "@storyboard/story-engine"
 
 describe("coerceBackgroundFactExtraction", () => {
   it("trims string lists and drops empty scalars", () => {

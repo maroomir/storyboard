@@ -3,15 +3,15 @@ import type * as vscode from 'vscode';
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import { assembleManuscript } from '@storyboard/story-format';
-import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
+import { buildManuscriptReviewMarkdown } from '@storyboard/story-engine';
 import {
   draftPath,
   scenePath,
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
-import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
-import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
+import { buildSceneSeeds } from '@storyboard/story-engine';
+import type { NovelRunState, NovelStageName } from '@storyboard/story-engine';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { PromoteCardCandidatesUseCase } from '../../application/cards/promoteCardCandidatesUseCase';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { CardCandidateItem } from '../../domain/cardCandidatePromotion';
+import type { CardCandidateItem } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,

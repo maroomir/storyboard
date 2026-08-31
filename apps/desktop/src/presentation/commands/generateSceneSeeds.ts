@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
-import { buildSceneSeeds, type GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
+import { buildSceneSeeds, type GeneratedSceneSeed } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import {
   ChapterPlanParseError,

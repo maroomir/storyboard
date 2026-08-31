@@ -11,7 +11,7 @@ import {
   type UsageLedgerEntry,
   type UsageLedgerFileSystem,
   writeUsageLedgerToUri,
-} from '@/domain/files/usageLedger';
+} from '@storyboard/story-engine';
 import type { UsageRecord, UsageSummaryByEntity } from '@storyboard/story-ai';
 
 interface WorkspaceUsageCache {

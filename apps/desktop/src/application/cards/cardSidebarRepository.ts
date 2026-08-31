@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import type { SidebarCardSummary } from '../../shared/messaging';
+import type { SidebarCardSummary } from '@storyboard/story-engine';
 
 export type SidebarCardCategory = 'background' | 'character';
 

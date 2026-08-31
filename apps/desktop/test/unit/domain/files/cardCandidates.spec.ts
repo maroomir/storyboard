@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCardCandidates, serializeCardCandidates } from "@/domain/files/cardCandidates"
-import type { CardCandidateRecord } from "@/shared/cardCandidates"
+import { parseCardCandidates, serializeCardCandidates } from "@storyboard/story-engine"
+import type { CardCandidateRecord } from "@storyboard/story-engine"
 
 describe("card candidate codec", () => {
   it("round-trips a candidate record through serialize and parse", () => {

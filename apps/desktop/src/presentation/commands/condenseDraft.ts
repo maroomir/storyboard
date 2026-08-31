@@ -13,7 +13,7 @@ import {
   readSceneFile,
   serializeDraft,
 } from '@storyboard/story-format';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
+import { archiveExistingDraft } from '@storyboard/story-engine';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';

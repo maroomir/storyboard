@@ -6,8 +6,8 @@ import type { StoryboardCard } from '@storyboard/story-format';
 
 import type { AiGateway } from '../../application/ai/aiGateway';
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
-import type { CardCollectProposal } from '../../shared/cardCollect';
-import type { StudioEntity } from '../../shared/messaging';
+import type { CardCollectProposal } from '@storyboard/story-engine';
+import type { StudioEntity } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   backgroundCardPath,

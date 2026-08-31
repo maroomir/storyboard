@@ -30,7 +30,7 @@ import {
   writeSceneDialogueFile
 } from "@storyboard/story-format"
 import { createDraft, serializeDraft } from "@storyboard/story-format"
-import { archiveExistingDraft } from "@/domain/files/draftHistory"
+import { archiveExistingDraft } from "@storyboard/story-engine"
 import { parseDraft, parseSceneFileName, readSceneFile } from "@storyboard/story-format"
 import { StoryboardAIService } from "@storyboard/story-ai"
 import type { AiProviderRegistry } from "@storyboard/story-ai"

@@ -22,7 +22,7 @@ import type {
   StudioChatTurn,
   StudioEntity,
   StudioTarget,
-} from '@/shared/messaging';
+} from '@storyboard/story-engine';
 
 export interface StudioChatRpcHandlersDependencies {
   readonly useCase: StudioChatUseCase;

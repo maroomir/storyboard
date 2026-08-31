@@ -8,6 +8,10 @@ const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   resolve: {
     alias: {
+      '@storyboard/story-engine': path.join(
+        packageRoot,
+        '../../packages/story-engine/src/index.ts',
+      ),
       '@storyboard/story-format': path.join(
         packageRoot,
         '../../packages/story-format/src/index.ts',

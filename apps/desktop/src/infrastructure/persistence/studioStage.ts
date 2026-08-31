@@ -13,15 +13,15 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-format';
 
-import { nextDraftHistoryRevision } from '../../domain/files/draftHistory';
-import { readRevisionPlanFile } from '../../domain/files/revisionPlan';
+import { nextDraftHistoryRevision } from '@storyboard/story-engine';
+import { readRevisionPlanFile } from '@storyboard/story-engine';
 import type {
   StudioCardStage,
   StudioSceneStage,
   StudioStage,
   StudioStageCard,
   StudioTarget,
-} from '../../shared/messaging';
+} from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,

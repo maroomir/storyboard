@@ -1,7 +1,7 @@
 import type * as vscode from 'vscode';
 
 import type { AiGateway } from '../ai/aiGateway';
-import { buildChapterSummariesMarkdown, type ChapterSummary } from '../../domain/chapterSummaries';
+import { buildChapterSummariesMarkdown, type ChapterSummary } from '@storyboard/story-engine';
 import { assembleManuscript } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 

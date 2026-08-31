@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { summaryFileName } from '../../domain/chapterSummaries';
+import { summaryFileName } from '@storyboard/story-engine';
 import { writeFileAtomically } from './atomicWrite';
 import { type StoryboardProjectPaths } from './pathConventions';
 import type {

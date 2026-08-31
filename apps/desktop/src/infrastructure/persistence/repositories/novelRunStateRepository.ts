@@ -8,7 +8,7 @@ import {
   writeNovelRunState,
   type NovelRunState,
   type NovelRunStateFileSystem,
-} from '../../../domain/files/novelRunState';
+} from '@storyboard/story-engine';
 import { readProjectJson } from '../projectJson';
 import type { StoryboardProject } from '@storyboard/story-format';
 

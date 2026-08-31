@@ -7,7 +7,7 @@ import {
   parseUsageLedgerBytes,
   serializeUsageLedger,
   type UsageLedgerEntry
-} from "@/domain/files/usageLedger"
+} from "@storyboard/story-engine"
 
 function entry(partial: Omit<UsageLedgerEntry, "id" | "recordedAt"> & { readonly id?: string; readonly recordedAt?: string }): UsageLedgerEntry {
   return {

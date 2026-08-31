@@ -5,8 +5,8 @@ import {
   mergeCanonFacts,
   seedPromotedFact,
   selectNewCandidates,
-} from '../../domain/biblePromotion';
-import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
+} from '@storyboard/story-engine';
+import type { BibleCandidateRecord } from '@storyboard/story-engine';
 import type { BibleFact, StoryBible } from '@storyboard/story-format';
 
 export interface IBibleCandidateRepository {

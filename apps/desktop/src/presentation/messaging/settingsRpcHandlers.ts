@@ -1,5 +1,5 @@
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@/shared/messaging';
+import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import {
   aiProviderIds,
   aiTaskCatalog,

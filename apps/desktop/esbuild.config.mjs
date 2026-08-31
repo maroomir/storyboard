@@ -19,6 +19,7 @@ const extensionConfig = {
   sourcemap: true,
   target: "node18",
   alias: {
+    "@storyboard/story-engine": path.join(packageRoot, "../../packages/story-engine/src/index.ts"),
     "@storyboard/story-format": path.join(packageRoot, "../../packages/story-format/src/index.ts"),
     "@storyboard/story-ai": path.join(packageRoot, "../../packages/story-ai/src/index.ts"),
     "@storyboard/story-pipeline": path.join(packageRoot, "../../packages/story-pipeline/src/index.ts"),

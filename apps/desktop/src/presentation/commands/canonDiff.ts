@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '../../domain/canonDiff';
+import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import {
   getStoryboardProjectPaths,
@@ -13,7 +13,7 @@ import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
-} from '../../domain/files/bibleCandidates';
+} from '@storyboard/story-engine';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 const canonDiffCommand = 'storyboard.bible.canonDiff';
 

@@ -11,14 +11,14 @@ import type {
 } from '@storyboard/story-ai';
 
 import type { AiGateway } from '../ai/aiGateway';
-import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
+import type { StudioPatchTarget } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type {
   StudioChatTurn,
   StudioFollowUpTarget,
   StudioPatchPayload,
   StudioValidation,
-} from '../../shared/messaging';
+} from '@storyboard/story-engine';
 
 export interface StudioChatContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { validateGenerationContract } from "@/domain/generationContract"
+import { validateGenerationContract } from "@storyboard/story-engine"
 import type { ProjectSetting } from '@storyboard/story-format';
 
 function buildSetting(overrides: Partial<ProjectSetting> = {}): ProjectSetting {

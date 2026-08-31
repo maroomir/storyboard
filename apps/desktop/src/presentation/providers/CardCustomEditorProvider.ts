@@ -13,11 +13,11 @@ import {
 } from '@storyboard/story-format';
 import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
-import { applyCardCollectProposals } from '../../domain/cardCollect';
+import { applyCardCollectProposals } from '@storyboard/story-engine';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
 import { VirtualDocumentStore } from './virtualDocumentStore';
-import type { StoryboardResponsePayload } from '../../shared/messaging';
+import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';

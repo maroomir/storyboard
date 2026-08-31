@@ -7,7 +7,7 @@ import {
 } from "@/application/studio/studioChatUseCase"
 import type { AiGateway } from "@/application/ai/aiGateway"
 import type { StoryboardLogger } from "@/infrastructure/vscode/logger"
-import type { StudioChatTurn } from "@/shared/messaging"
+import type { StudioChatTurn } from "@storyboard/story-engine"
 
 interface FakeServiceOptions {
   readonly action: unknown

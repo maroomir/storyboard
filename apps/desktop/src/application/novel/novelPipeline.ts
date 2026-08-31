@@ -3,7 +3,7 @@ import {
   type StoryboardProjectPaths,
 } from '../../infrastructure/vscode/pathConventions';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
-import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
+import type { NovelRunState, NovelStageName } from '@storyboard/story-engine';
 import {
   cancel,
   groupChapterStems,

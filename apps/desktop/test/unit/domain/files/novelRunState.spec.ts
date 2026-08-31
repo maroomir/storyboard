@@ -4,7 +4,7 @@ import {
   parseNovelRunState,
   serializeNovelRunState,
   type NovelRunState
-} from "@/domain/files/novelRunState"
+} from "@storyboard/story-engine"
 
 const state: NovelRunState = {
   version: "1.0.0",

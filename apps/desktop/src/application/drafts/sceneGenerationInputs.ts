@@ -16,7 +16,7 @@ import {
 import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
-import { computeSceneInputHash } from '../../domain/files/sceneCache';
+import { computeSceneInputHash } from '@storyboard/story-engine';
 import { sceneCacheFilePath } from '../../infrastructure/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';

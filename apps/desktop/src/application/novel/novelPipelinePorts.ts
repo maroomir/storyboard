@@ -1,8 +1,8 @@
 import type * as vscode from 'vscode';
 
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
-import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
-import type { NovelRunState } from '../../domain/files/novelRunState';
+import type { GeneratedSceneSeed } from '@storyboard/story-engine';
+import type { NovelRunState } from '@storyboard/story-engine';
 import type {
   ChapterPlan,
   OutlineCharacterBrief,

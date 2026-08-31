@@ -1,5 +1,5 @@
 import type { Draft, SceneFile, SceneGrounding, StoryboardProject } from '@storyboard/story-format';
-import type { SceneCacheRecord } from '../../domain/files/sceneCache';
+import type { SceneCacheRecord } from '@storyboard/story-engine';
 export interface IProjectRepository {
   read(uri: unknown): Promise<StoryboardProject>;
 }

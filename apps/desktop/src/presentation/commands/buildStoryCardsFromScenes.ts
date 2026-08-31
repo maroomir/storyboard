@@ -9,7 +9,7 @@ import { parseCard, serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 import { backgroundCardPath, characterCardPath } from '@/infrastructure/vscode/pathConventions';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
-import type { CardCollectProposal } from '@/shared/cardCollect';
+import type { CardCollectProposal } from '@storyboard/story-engine';
 const buildStoryCardsCommand = 'storyboard.cards.buildFromScenes';
 
 interface SelectedChange {

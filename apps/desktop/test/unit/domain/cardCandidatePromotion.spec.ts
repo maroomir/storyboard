@@ -6,8 +6,8 @@ import {
   collectCardCandidateItems,
   pruneRecordByPromotedKeys,
   selectNewCardCandidateItems
-} from "@/domain/cardCandidatePromotion"
-import type { CardCandidateRecord } from "@/shared/cardCandidates"
+} from "@storyboard/story-engine"
+import type { CardCandidateRecord } from "@storyboard/story-engine"
 import type { CharacterCard } from '@storyboard/story-format';
 
 function record(sceneStem: string, characters: CardCandidateRecord["characters"]): CardCandidateRecord {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ISceneSeedRepository } from '../../../application/novel/novelPipeline';
 import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
-import type { GeneratedSceneSeed } from '../../../domain/sceneSeedFactory';
+import type { GeneratedSceneSeed } from '@storyboard/story-engine';
 
 export class SceneSeedRepository implements ISceneSeedRepository {
   public async saveSeeds(

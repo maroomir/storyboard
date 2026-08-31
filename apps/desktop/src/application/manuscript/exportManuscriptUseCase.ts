@@ -1,6 +1,6 @@
 import type * as vscode from 'vscode';
 
-import { renderManuscriptExport, type ManuscriptExportFormat } from '../../domain/manuscriptExport';
+import { renderManuscriptExport, type ManuscriptExportFormat } from '@storyboard/story-engine';
 
 export type ManuscriptExportSource = {
   readonly markdown: string;

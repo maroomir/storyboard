@@ -3,7 +3,7 @@ import type * as vscode from 'vscode';
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import { assembleManuscript } from '@storyboard/story-format';
-import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
+import { buildManuscriptReviewMarkdown } from '@storyboard/story-engine';
 import { flattenChapterPlan } from '@storyboard/story-format';
 import type { ChapterPlan } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';

@@ -23,7 +23,7 @@ import {
   sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
+import { archiveExistingDraft } from '@storyboard/story-engine';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 type AugmentContextResult =
   | {

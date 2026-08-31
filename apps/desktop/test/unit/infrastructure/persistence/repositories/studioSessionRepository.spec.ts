@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { StudioSessionRepository } from "@/infrastructure/persistence/repositories/studioSessionRepository"
-import type { StudioChatTurn, StudioEntity } from "@/shared/messaging"
+import type { StudioChatTurn, StudioEntity } from "@storyboard/story-engine"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
 const sessionRoot = "/workspace/.storyboard/cache/studio-sessions"

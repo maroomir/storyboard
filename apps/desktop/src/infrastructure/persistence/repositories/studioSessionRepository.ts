@@ -7,13 +7,13 @@ import {
   serializeStudioSession,
   studioSessionVersion,
   type StudioSession,
-} from '../../../domain/files/studioSession';
+} from '@storyboard/story-engine';
 import type {
   StudioChatTurn,
   StudioEntity,
   StudioSessionSnapshot,
   StudioSessionSummary,
-} from '../../../shared/messaging';
+} from '@storyboard/story-engine';
 import { studioSessionEntityDirectory } from '../../vscode/pathConventions';
 
 export interface StudioSessionSaveInput {
