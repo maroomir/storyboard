@@ -6,13 +6,10 @@ import { describe, expect, it } from 'vitest';
 
 import { configSchema } from '../src/config/config';
 
-// The extension contributes this file as a JSON Schema so an operator editing
-// ~/.storygram/config.json gets completion and validation in the editor. The bot's zod schema is
-// the single source of truth, but the file has to live inside apps/desktop because only that
-// directory is packaged into the VSIX. Regenerate with `npm run schema:emit --workspace storygram`.
-const SCHEMA_FILE = fileURLToPath(
-  new URL('../../desktop/assets/storygram-config.schema.json', import.meta.url),
-);
+// Shipped as a JSON Schema so an operator editing the config file gets completion and validation
+// in their editor. The bot's zod schema is the single source of truth; regenerate the file with
+// `npm run schema:emit` from this workspace.
+const SCHEMA_FILE = fileURLToPath(new URL('../assets/config.schema.json', import.meta.url));
 
 function buildSchema(): unknown {
   return {
