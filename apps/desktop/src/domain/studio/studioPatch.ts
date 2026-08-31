@@ -23,8 +23,10 @@ interface StudioCardFieldChange {
 // to the rename command, not to a chat patch that only rewrites the file in place.
 const protectedEntityCardFields = new Set(['id', 'type']);
 
-// NOTE: a scene card doubles as the generation contract — characters, location and grounding wire
-// it to other files and to the pipeline, so chat may only touch what the scene *narrates*.
+// NOTE: a scene card doubles as the generation contract. Narrative fields are free to edit;
+// characters and location are editable too but the apply path refuses ids that do not resolve to
+// real cards, so a chat fill cannot leave the pipeline pointing at nothing. grounding and the
+// numeric contract fields stay closed — the pipeline computes those.
 const editableSceneCardFields = new Set([
   'title',
   'summary',
@@ -36,6 +38,8 @@ const editableSceneCardFields = new Set([
   'foreshadowing',
   'mood',
   'relationStage',
+  'characters',
+  'location',
 ]);
 
 export function applyStudioPatch(

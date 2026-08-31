@@ -6,7 +6,7 @@
 
 - 위치: 액티비티바의 **Storyboard · Studio** 컨테이너. 항상 보이는 패널이라 본문을 끝까지 스크롤해도 입력창이 사라지지 않습니다. 편집기 우측에 두고 싶으면 뷰 헤더를 **Secondary Side Bar**(우측 패널)로 드래그하세요.
 - 대상: 현재 활성 편집기를 자동으로 인식합니다. 대화할 수 있는 대상은 **인물 카드**(`character/*.card`), **배경 카드**(`background/*.card`), **씬**(`scene/*.card`와 그 초안 `draft/*.md`) 세 가지입니다. 씬 카드와 초안은 한 대상으로 묶여 **같은 대화를 공유**하되, **고칠 파일은 지금 열어 둔 쪽**입니다 — 씬 카드를 보고 있으면 씬 시드를, 초안을 보고 있으면 본문을 고칩니다. 무대 카드의 "지금 고칠 대상" 줄에 어느 파일인지 표시되고, 열지 않은 쪽은 자료로만 참고됩니다.
-- 씬 카드에서 고칠 수 있는 필드는 서술 항목뿐입니다: `title` `summary` `purpose` `conflict` `twist` `emotionalShift` `endState` `foreshadowing` `mood` `relationStage`. `characters`·`location`·`grounding`·`targetWordCount`·`povCharacter`·`neededCanon`처럼 씬을 다른 파일이나 생성 파이프라인과 잇는 값은 대화로 바꿀 수 없습니다(카드 에디터나 전용 명령을 쓰세요).
+- 씬 카드에서 고칠 수 있는 필드: 서술 항목(`title` `summary` `purpose` `conflict` `twist` `emotionalShift` `endState` `foreshadowing` `mood` `relationStage`)과 참조 항목(`characters` `location`)입니다. 긴 설명문을 붙여넣으면 에이전트가 필드로 구조화해 한 번에 채워 줍니다. 단 `characters`·`location`에는 **실제로 존재하는 카드 id만** 들어갑니다 — 없는 카드를 가리키는 제안은 적용 단계에서 거부되고, 에이전트는 그 인물 카드를 먼저 만들라고 알려 줍니다. `grounding`·`targetWordCount`·`povCharacter`·`neededCanon`은 파이프라인이 계산하는 값이라 대화로 바꿀 수 없습니다.
 - 지금 무대: 상단 카드에 대상 요약이 나옵니다. 씬이면 제목·초안 분량·버전·마지막 갱신·검수 상태와 연결된 인물·배경 카드를, 카드면 역할·등장 씬 수·관계 수와 관계 목록을 보여 줍니다(초안 버전은 `storyboard.draft.keepHistory`로 이력을 남길 때만 표시).
 - 사용법: 하단 입력창에 고치고 싶은 내용을 자연어로 적어 보냅니다(예: "과거사에 화재 사건을 더해줘", "도입부를 더 긴장감 있게"). 에이전트가 대상 파일과 관련 자료를 읽고 판단해,
   - 지시가 모호하면 **되묻고**(선택지를 누르면 바로 답이 됩니다),

@@ -155,10 +155,12 @@ function targetPolicy(input: StudioAgentPromptInput): string[] {
     return [
       '',
       '[씬 카드 수정]',
-      `- 고칠 수 있는 필드는 ${editableSceneCardFields.join(', ')} 뿐이다.`,
-      '- id, characters, location, grounding, targetWordCount, povCharacter, neededCanon은 씬을 다른 파일·파이프라인과 잇는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.',
-      '- foreshadowing은 문자열 배열, 나머지는 문자열이다.',
+      `- 고칠 수 있는 필드는 ${editableSceneCardFields.join(', ')} 다.`,
+      '- id, grounding, targetWordCount, povCharacter, neededCanon은 파이프라인이 계산하는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.',
+      '- characters에는 인물 카드 id 배열을, location에는 배경 카드 id 하나를 준다. 자료나 lookup으로 실재를 확인한 카드 id만 넣어라 — 없는 id는 적용 단계에서 거부된다. 설명문에 나온 인물의 카드가 없으면 채우지 말고 say나 followUps로 알려라.',
+      '- foreshadowing과 characters는 문자열 배열, 나머지는 문자열이다.',
       '- 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.',
+      '- 작가가 긴 설명문을 주면 그 내용을 위 필드들로 구조화해 한 번의 propose로 채워라.',
       '- 이 씬의 초안은 자료로만 주어졌다. 초안을 고치려면 작가가 초안 파일을 열어야 한다고 say로 알려라.',
     ];
   }
@@ -189,6 +191,8 @@ const editableSceneCardFields = [
   'foreshadowing',
   'mood',
   'relationStage',
+  'characters',
+  'location',
 ];
 
 function buildUser(input: StudioAgentPromptInput): string {

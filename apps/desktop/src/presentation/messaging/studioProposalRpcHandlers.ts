@@ -13,7 +13,13 @@ import {
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
-import { draftHistorySceneDirectory, joinUri } from '@/infrastructure/vscode/pathConventions';
+import {
+  backgroundCardPath,
+  characterCardPath,
+  draftHistorySceneDirectory,
+  isSafeStudioEntityKey,
+  joinUri,
+} from '@/infrastructure/vscode/pathConventions';
 import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
 import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
@@ -146,6 +152,14 @@ async function prepareApply(
     return { ok: false, message: result.message };
   }
 
+  if (entityContext.patchTarget === 'sceneCard') {
+    const brokenReference = await findBrokenSceneReference(root, proposal.patch);
+
+    if (brokenReference !== undefined) {
+      return { ok: false, message: brokenReference };
+    }
+  }
+
   return {
     ok: true,
     targetUri: entityContext.targetUri,
@@ -154,6 +168,53 @@ async function prepareApply(
     changedFields: result.changedFields,
     lengthDelta: result.text.trim().length - patchBaseline.trim().length,
   };
+}
+
+// SECURITY: characters/location values arrive from model output and become card lookups, so ids
+// are shape-checked before touching the filesystem; a fill may only point the scene at cards that
+// actually exist, keeping the generation pipeline free of dangling references.
+async function findBrokenSceneReference(
+  root: vscode.Uri,
+  patch: StudioProposalTurn['patch'],
+): Promise<string | undefined> {
+  if (patch.target !== 'card') {
+    return undefined;
+  }
+
+  for (const change of patch.changes) {
+    if (change.field === 'characters' && Array.isArray(change.value)) {
+      for (const id of change.value) {
+        if (typeof id !== 'string' || !(await cardExists(characterCardPath, root, id))) {
+          return `character/${String(id)}.card 가 없어 적용하지 않았어요. 카드를 먼저 만들어 주세요.`;
+        }
+      }
+    }
+
+    if (change.field === 'location' && typeof change.value === 'string') {
+      if (!(await cardExists(backgroundCardPath, root, change.value))) {
+        return `background/${change.value}.card 가 없어 적용하지 않았어요. 카드를 먼저 만들어 주세요.`;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+async function cardExists(
+  pathOf: (root: vscode.Uri, id: string) => vscode.Uri,
+  root: vscode.Uri,
+  id: string,
+): Promise<boolean> {
+  if (!isSafeStudioEntityKey(id)) {
+    return false;
+  }
+
+  try {
+    await vscode.workspace.fs.stat(pathOf(root, id));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // NOTE: every other writer archives the previous draft before overwriting it, and draft/ has no
