@@ -5,9 +5,9 @@ import type {
   AugmentDraftResult,
   AugmentDraftUseCase,
 } from '../../application/drafts/augmentDraftUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
-import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
+import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { createDraft, parseDraft, serializeDraft } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';

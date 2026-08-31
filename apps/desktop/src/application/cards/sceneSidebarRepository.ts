@@ -1,7 +1,5 @@
-import type * as vscode from 'vscode';
-
-import type { SceneListItem } from '@storyboard/story-engine';
+import type { SceneListItem, StoryUri } from '@storyboard/story-engine';
 
 export interface ISceneSidebarRepository {
-  list(workspaceRoot: vscode.Uri): Promise<SceneListItem[]>;
+  list(workspaceRoot: StoryUri): Promise<SceneListItem[]>;
 }

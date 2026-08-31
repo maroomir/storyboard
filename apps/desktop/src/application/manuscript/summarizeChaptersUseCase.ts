@@ -1,14 +1,13 @@
-import type * as vscode from 'vscode';
-
+import type { StoryUri } from '@storyboard/story-engine';
 import type { AiGateway } from '../ai/aiGateway';
 import { buildChapterSummariesMarkdown, type ChapterSummary } from '@storyboard/story-engine';
 import { assembleManuscript } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {
-  hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean>;
-  loadAssemblySource(workspaceRoot: vscode.Uri): Promise<ManuscriptAssemblySource>;
-  saveChapterSummaries(workspaceRoot: vscode.Uri, markdown: string): Promise<vscode.Uri>;
+  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
+  loadAssemblySource(workspaceRoot: StoryUri): Promise<ManuscriptAssemblySource>;
+  saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
 }
 
 export type SummarizeChaptersOptions = {
@@ -25,7 +24,7 @@ export type SummarizeChaptersResult =
       readonly kind: 'summarized';
       readonly ok: true;
       readonly summaryCount: number;
-      readonly summaryUri: vscode.Uri;
+      readonly summaryUri: StoryUri;
     };
 
 export class SummarizeChaptersUseCase {
@@ -35,7 +34,7 @@ export class SummarizeChaptersUseCase {
   ) {}
 
   public async execute(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     options: SummarizeChaptersOptions = {},
   ): Promise<SummarizeChaptersResult> {
     try {

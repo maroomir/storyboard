@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from '@/infrastructure/vscode/workspace';
 import {
   appendLedgerEntryIfNew,

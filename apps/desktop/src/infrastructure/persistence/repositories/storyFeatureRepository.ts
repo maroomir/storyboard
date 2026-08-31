@@ -11,10 +11,7 @@ import type {
 } from '@/application/story/storyFeatureTypes';
 import { StoryFeatureSourceError } from '@/application/story/storyFeatureTypes';
 import { parseProjectJson } from '@/infrastructure/persistence/projectJson';
-import {
-  getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
-} from '@/infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public async load(workspaceRoot: vscode.Uri): Promise<StoryFeatureSource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);

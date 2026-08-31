@@ -1,7 +1,5 @@
-import type * as vscode from 'vscode';
-
-import type { ISceneCacheRepository } from '../ports/repositories';
-import { draftHistorySceneDirectory, joinUri } from '../../infrastructure/vscode/pathConventions';
+import type { ISceneCacheRepository, StoryUri } from '@storyboard/story-engine';
+import { draftHistorySceneDirectory, joinUri } from '@storyboard/story-engine';
 import { uriExists } from '../../infrastructure/vscode/workspace';
 import {
   computeDraftBodyHash,
@@ -60,8 +58,8 @@ function toBackgroundSnapshot(
 }
 
 async function isCacheHit(
-  cacheUri: vscode.Uri,
-  draftUri: vscode.Uri,
+  cacheUri: StoryUri,
+  draftUri: StoryUri,
   inputHash: string,
   sceneCacheRepository: ISceneCacheRepository,
 ): Promise<boolean> {
@@ -77,7 +75,7 @@ async function isCacheHit(
   }
 }
 
-async function openCachedDraft(draftUri: vscode.Uri): Promise<GenerateDraftResult> {
+async function openCachedDraft(draftUri: StoryUri): Promise<GenerateDraftResult> {
   return { ok: true, kind: 'cache_hit', draftUri };
 }
 
@@ -285,7 +283,7 @@ async function runAndPersistDraft(
 }
 
 async function generateDraftForWorkspaceSceneWorkflow(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   options: GenerateDraftWorkflowOptions,
 ): Promise<GenerateDraftResult> {
   const loaded = await loadSceneGenerationInputs(sceneUri, options);
@@ -314,7 +312,7 @@ export class GenerateDraftUseCase {
   public constructor(private readonly dependencies: GenerateDraftUseCaseDependencies) {}
 
   public async execute(
-    sceneUri: vscode.Uri,
+    sceneUri: StoryUri,
     request: GenerateDraftRequest,
   ): Promise<GenerateDraftResult> {
     return await generateDraftForWorkspaceSceneWorkflow(sceneUri, {

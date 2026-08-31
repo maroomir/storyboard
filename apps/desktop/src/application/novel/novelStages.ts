@@ -1,17 +1,11 @@
-import type * as vscode from 'vscode';
-
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
 import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '@storyboard/story-engine';
-import {
-  draftPath,
-  scenePath,
-  type StoryboardProjectPaths,
-} from '../../infrastructure/vscode/pathConventions';
+import { draftPath, scenePath, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '@storyboard/story-engine';
-import type { NovelRunState, NovelStageName } from '@storyboard/story-engine';
+import type { NovelRunState, NovelStageName, StoryUri } from '@storyboard/story-engine';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
@@ -59,7 +53,7 @@ export async function pauseForApproval(
 }
 
 export async function runOutlineStage(
-  workspaceUri: vscode.Uri,
+  workspaceUri: StoryUri,
   project: StoryboardProject,
   aiService: NovelAiService,
   outlineRepository: INovelOutlineRepository,
@@ -73,7 +67,7 @@ export async function runOutlineStage(
 }
 
 export async function runSeedsStage(
-  workspaceUri: vscode.Uri,
+  workspaceUri: StoryUri,
   plan: ChapterPlan,
   digitCount: number,
   sceneSeedRepository: ISceneSeedRepository,
@@ -182,7 +176,7 @@ export async function runChapterStages(
 }
 
 export async function runAssembleStage(
-  workspaceUri: vscode.Uri,
+  workspaceUri: StoryUri,
   assembleManuscriptUseCase: AssembleManuscriptUseCase,
 ): Promise<void> {
   const result = await assembleManuscriptUseCase.execute(workspaceUri);
@@ -194,7 +188,7 @@ export async function runAssembleStage(
 }
 
 export async function runReviewStage(
-  workspaceUri: vscode.Uri,
+  workspaceUri: StoryUri,
   project: StoryboardProject,
   plan: ChapterPlan,
   aiService: NovelAiService,
@@ -234,7 +228,7 @@ export async function runReviewStage(
 }
 
 export async function runSummariesStage(
-  workspaceUri: vscode.Uri,
+  workspaceUri: StoryUri,
   summarizeChaptersUseCase: SummarizeChaptersUseCase,
 ): Promise<void> {
   const result = await summarizeChaptersUseCase.execute(workspaceUri);

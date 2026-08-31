@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '../../application/ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';

@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 
-export class StoryboardLogger implements vscode.Disposable {
+import type { StoryboardLogger } from '@storyboard/story-engine';
+
+export class OutputChannelLogger implements StoryboardLogger, vscode.Disposable {
   private readonly outputChannel = vscode.window.createOutputChannel('Storyboard');
 
   info(message: string): void {

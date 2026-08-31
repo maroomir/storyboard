@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../application/ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
 import { writeFileAtomically } from './atomicWrite';
 
 export class VscodeFileSystem implements IFileSystem {

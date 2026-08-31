@@ -1,5 +1,3 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
 import {
   buildCardCollectProposals,
@@ -7,11 +5,11 @@ import {
   type CollectRosterEntry,
 } from '../../infrastructure/ai/cardCollectBuilder';
 import type { StoryboardCard } from '@storyboard/story-format';
-import type { CardCollectProposal } from '@storyboard/story-engine';
+import type { CardCollectProposal, StoryUri } from '@storyboard/story-engine';
 
 export interface ICardCollectRepository {
-  loadCharacterRoster(workspaceRoot: vscode.Uri): Promise<readonly CollectRosterEntry[]>;
-  loadDrafts(workspaceRoot: vscode.Uri): Promise<readonly CollectDraft[]>;
+  loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CollectRosterEntry[]>;
+  loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]>;
 }
 
 export class CollectCardProposalsUseCase {
@@ -21,7 +19,7 @@ export class CollectCardProposalsUseCase {
   ) {}
 
   public async execute(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     card: StoryboardCard,
   ): Promise<CardCollectProposal[]> {
     const [drafts, characterRoster] = await Promise.all([

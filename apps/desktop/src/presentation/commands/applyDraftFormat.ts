@@ -4,8 +4,8 @@ import type {
   ApplyDraftFormatResult,
   ApplyDraftFormatUseCase,
 } from '../../application/drafts/applyDraftFormatUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { isDirectSceneCardFile } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
 

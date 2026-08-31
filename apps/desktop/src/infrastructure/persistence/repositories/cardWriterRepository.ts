@@ -5,7 +5,7 @@ import {
   backgroundCardPath,
   characterCardPath,
   characterProfilePath,
-} from '../../vscode/pathConventions';
+} from '@storyboard/story-engine';
 import { uriExists } from '../../vscode/workspace';
 import { serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';

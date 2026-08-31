@@ -17,12 +17,12 @@ import {
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 
 import type { AiGateway } from '../../application/ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { sceneContextPaths } from '@storyboard/story-engine';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
-import { getStoryboardProjectPaths, scenePath } from '../../infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
 import {
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import type { StudioToolDiagnostics } from '../providers/studioToolDiagnostics';

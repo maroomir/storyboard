@@ -1,5 +1,5 @@
-import type { IFileSystem } from '../../../application/ports/fileSystem';
-import type { ISceneCacheRepository } from '../../../application/ports/repositories';
+import type { IFileSystem } from '@storyboard/story-engine';
+import type { ISceneCacheRepository } from '@storyboard/story-engine';
 import {
   readSceneCacheFile,
   writeSceneCacheFile,

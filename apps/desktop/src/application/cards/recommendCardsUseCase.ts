@@ -1,6 +1,4 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import {
   buildCardRecommendations,
   type CardRecommendationAiService,
@@ -10,14 +8,11 @@ import {
 import type { RecommendationCategory } from '@storyboard/story-ai';
 
 export interface ICardRecommendationRepository {
-  load(
-    workspaceRoot: vscode.Uri,
-    category: RecommendationCategory,
-  ): Promise<CardRecommendationInput>;
+  load(workspaceRoot: StoryUri, category: RecommendationCategory): Promise<CardRecommendationInput>;
 }
 
 export interface ICardRecommendationAiGateway {
-  createService(workspaceRoot: vscode.Uri): CardRecommendationAiService;
+  createService(workspaceRoot: StoryUri): CardRecommendationAiService;
 }
 
 export type CardRecommendationInput = {
@@ -28,7 +23,7 @@ export type CardRecommendationInput = {
 export type RecommendCardsRequest = {
   readonly category: RecommendationCategory;
   readonly shouldCancel?: () => boolean;
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
 };
 
 export type RecommendCardsResult =

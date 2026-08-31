@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from './pathConventions';
+import type { StoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from './workspace';
 
 const STORYBOARD_GITIGNORE_BLOCK = `

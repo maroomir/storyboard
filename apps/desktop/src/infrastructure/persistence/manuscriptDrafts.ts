@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '../vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
-import type { StoryboardProjectPaths } from '../vscode/pathConventions';
+import type { StoryboardProjectPaths } from '@storyboard/story-engine';
 import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-format';
 import type { DraftFileSystem } from '@storyboard/story-format';
 export async function collectDraftsByOrder(

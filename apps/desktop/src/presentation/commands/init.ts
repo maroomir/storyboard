@@ -1,11 +1,8 @@
 import * as vscode from 'vscode';
 
-import { type StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { refreshStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
-import {
-  getStoryboardProjectPaths,
-  type StoryboardProjectPaths,
-} from '../../infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   ensureUriDoesNotExist,
   getTargetWorkspaceFolder,

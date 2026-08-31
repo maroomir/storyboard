@@ -13,7 +13,7 @@ import {
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
   parseCardIdFromPath,
-} from './pathConventions';
+} from '@storyboard/story-engine';
 import { uriExists } from './workspace';
 
 export interface CardRenameCandidate {

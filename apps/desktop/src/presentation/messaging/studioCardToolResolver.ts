@@ -8,12 +8,12 @@ import type { AiGateway } from '../../application/ai/aiGateway';
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
 import type { CardCollectProposal } from '@storyboard/story-engine';
 import type { StudioEntity } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
   isSafeStudioEntityKey,
-} from '../../infrastructure/vscode/pathConventions';
+} from '@storyboard/story-engine';
 
 export interface StudioCardToolResolverDependencies {
   readonly aiGateway: AiGateway;

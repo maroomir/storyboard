@@ -13,7 +13,7 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-format';
 
-import { nextDraftHistoryRevision } from '@storyboard/story-engine';
+import { nextDraftHistoryRevision, sceneContextPaths } from '@storyboard/story-engine';
 import { readRevisionPlanFile } from '@storyboard/story-engine';
 import type {
   StudioCardStage,
@@ -30,11 +30,10 @@ import {
   getStoryboardProjectPaths,
   scenePath,
   type StoryboardProjectPaths,
-} from '../vscode/pathConventions';
+} from '@storyboard/story-engine';
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../vscode/workspaceFsAdapters';
 

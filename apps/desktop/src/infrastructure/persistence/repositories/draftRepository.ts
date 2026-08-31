@@ -1,5 +1,5 @@
-import type { IDraftRepository } from '../../../application/ports/repositories';
-import type { IFileSystem } from '../../../application/ports/fileSystem';
+import type { IDraftRepository } from '@storyboard/story-engine';
+import type { IFileSystem } from '@storyboard/story-engine';
 import { writeDraftFile } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';
 export class DraftRepository implements IDraftRepository {

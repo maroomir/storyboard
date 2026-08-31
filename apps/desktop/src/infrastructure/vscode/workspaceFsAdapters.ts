@@ -1,12 +1,7 @@
 import * as vscode from 'vscode';
 
-import { summaryFileName } from '@storyboard/story-engine';
 import { writeFileAtomically } from './atomicWrite';
-import { type StoryboardProjectPaths } from './pathConventions';
-import type {
-  SceneContextWorkspaceFileSystem,
-  SceneContextWorkspacePaths,
-} from '@storyboard/story-format';
+import type { SceneContextWorkspaceFileSystem } from '@storyboard/story-format';
 
 export const vscodeFsAdapter = {
   readFile: (uri: unknown): PromiseLike<Uint8Array> =>
@@ -45,16 +40,3 @@ export const sceneContextFileSystem: SceneContextWorkspaceFileSystem = {
     ]);
   },
 };
-
-export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWorkspacePaths {
-  return {
-    characterDirectory: paths.characterDirectory,
-    backgroundDirectory: paths.backgroundDirectory,
-    draftDirectory: paths.draftDirectory,
-    bibleCanon: paths.bibleCanon,
-    manuscriptSummary: vscode.Uri.joinPath(paths.manuscriptDirectory, summaryFileName),
-    storyState: paths.storyState,
-    joinPath: (base: unknown, ...segments: string[]): vscode.Uri =>
-      vscode.Uri.joinPath(base as vscode.Uri, ...segments),
-  };
-}

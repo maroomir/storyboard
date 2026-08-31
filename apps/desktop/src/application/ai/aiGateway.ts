@@ -1,6 +1,4 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import { StoryboardAIService } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
 import { recordUsageSafely } from '../../infrastructure/ai/recordUsageSafely';
@@ -12,7 +10,7 @@ export class AiGateway {
     private readonly logger: StoryboardLogger,
   ) {}
 
-  public createService(workspaceUri: vscode.Uri): StoryboardAIService {
+  public createService(workspaceUri: StoryUri): StoryboardAIService {
     return new StoryboardAIService(this.providerRegistry, {
       onUsage: (record): void =>
         recordUsageSafely(this.usageRecorder, workspaceUri, record, this.logger),

@@ -14,7 +14,7 @@ import {
 import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '@storyboard/story-engine';
-import { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { loadCharacterRoster } from '../../infrastructure/persistence/relationGraphData';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';

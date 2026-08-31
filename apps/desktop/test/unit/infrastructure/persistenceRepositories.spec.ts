@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { IFileSystem } from '@/application/ports/fileSystem';
+import type { IFileSystem } from '@storyboard/story-engine';
 import { DraftRepository } from '@/infrastructure/persistence/repositories/draftRepository';
 import { ProjectRepository } from '@/infrastructure/persistence/repositories/projectRepository';
 import { SceneCacheRepository } from '@/infrastructure/persistence/repositories/sceneCacheRepository';

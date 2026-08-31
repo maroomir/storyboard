@@ -1,7 +1,5 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
+import { draftPath, getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { recordRevisionEntry } from '../../infrastructure/persistence/revisionPlanRecorder';
 import { uriExists } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
@@ -26,7 +24,7 @@ export class ReviseAfterGenerateGate {
   ) {}
 
   public async maybeRunAfterGenerate(
-    sceneUri: vscode.Uri,
+    sceneUri: StoryUri,
     hooks: ReviseAfterGenerateHooks = {},
   ): Promise<ReviseDraftWorkflowResult | undefined> {
     if (!this.configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
@@ -45,7 +43,7 @@ export class ReviseAfterGenerateGate {
   }
 
   public async runForScene(
-    workspaceUri: vscode.Uri,
+    workspaceUri: StoryUri,
     sceneStem: string,
     hooks: ReviseGateHooks = {},
   ): Promise<ReviseDraftWorkflowResult | undefined> {

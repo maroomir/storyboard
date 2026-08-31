@@ -1,6 +1,4 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import {
   assembleManuscript,
   type AssembledManuscript,
@@ -20,16 +18,16 @@ export type ManuscriptAssemblySource = {
 };
 
 export interface IManuscriptAssemblyRepository {
-  hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean>;
+  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadAssemblySource(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     logger: Pick<StoryboardLogger, 'warn'>,
   ): Promise<ManuscriptAssemblySource>;
   saveAssembly(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     manuscript: AssembledManuscript,
     foreshadowingMarkdown: string,
-  ): Promise<vscode.Uri>;
+  ): Promise<StoryUri>;
 }
 
 export type AssembleManuscriptResult =
@@ -45,7 +43,7 @@ export type AssembleManuscriptResult =
         readonly foreshadowingCount: number;
         readonly includedCount: number;
         readonly missingCount: number;
-        readonly volumeUri: vscode.Uri;
+        readonly volumeUri: StoryUri;
       };
     };
 
@@ -55,7 +53,7 @@ export class AssembleManuscriptUseCase {
     private readonly repository: IManuscriptAssemblyRepository,
   ) {}
 
-  public async execute(workspaceRoot: vscode.Uri): Promise<AssembleManuscriptResult> {
+  public async execute(workspaceRoot: StoryUri): Promise<AssembleManuscriptResult> {
     try {
       if (!(await this.repository.hasChapterPlan(workspaceRoot))) {
         return { kind: 'missing_outline', ok: false };

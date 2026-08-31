@@ -14,7 +14,7 @@ import {
   isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
-} from '../../infrastructure/vscode/pathConventions';
+} from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 import type { StudioTarget } from '@storyboard/story-engine';
 

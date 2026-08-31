@@ -8,7 +8,7 @@ import {
   isDraftMarkdownFile,
   isHiddenSceneFileName,
   isIgnoredSampleCardFileName
-} from "@/infrastructure/vscode/pathConventions"
+} from "@storyboard/story-engine"
 import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("pathConventions", () => {

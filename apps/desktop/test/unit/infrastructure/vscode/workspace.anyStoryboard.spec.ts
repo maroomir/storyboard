@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { describe, expect, it } from "vitest"
 
-import { anyStoryboardProjectInWorkspaceFolders } from "@/infrastructure/vscode/workspace"
+import { anyStoryboardProjectInWorkspaceFolders } from "@storyboard/story-engine"
 
 describe("anyStoryboardProjectInWorkspaceFolders", () => {
   it("returns false when there are no folders", async () => {

@@ -13,21 +13,20 @@ import {
   readSceneFile,
   serializeDraft,
 } from '@storyboard/story-format';
-import { archiveExistingDraft } from '@storyboard/story-engine';
+import { archiveExistingDraft, sceneContextPaths } from '@storyboard/story-engine';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
   joinUri,
-} from '../../infrastructure/vscode/pathConventions';
+} from '@storyboard/story-engine';
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';

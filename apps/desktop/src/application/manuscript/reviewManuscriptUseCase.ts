@@ -1,7 +1,5 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '@storyboard/story-engine';
 import { flattenChapterPlan } from '@storyboard/story-format';
@@ -16,12 +14,12 @@ export type ManuscriptReviewSource = {
 };
 
 export interface IManuscriptReviewRepository {
-  hasChapterPlan(workspaceRoot: vscode.Uri): Promise<boolean>;
+  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadReviewSource(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     logger: Pick<StoryboardLogger, 'warn'>,
   ): Promise<ManuscriptReviewSource>;
-  saveReview(workspaceRoot: vscode.Uri, markdown: string): Promise<vscode.Uri>;
+  saveReview(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
 }
 
 export type ReviewManuscriptResult =
@@ -33,7 +31,7 @@ export type ReviewManuscriptResult =
       readonly ok: true;
       readonly continuityCount: number;
       readonly critiqueCount: number;
-      readonly reportUri: vscode.Uri;
+      readonly reportUri: StoryUri;
     };
 
 export class ReviewManuscriptUseCase {
@@ -43,7 +41,7 @@ export class ReviewManuscriptUseCase {
     private readonly logger: StoryboardLogger,
   ) {}
 
-  public async execute(workspaceRoot: vscode.Uri): Promise<ReviewManuscriptResult> {
+  public async execute(workspaceRoot: StoryUri): Promise<ReviewManuscriptResult> {
     try {
       if (!(await this.repository.hasChapterPlan(workspaceRoot))) {
         return { kind: 'missing_outline', ok: false };

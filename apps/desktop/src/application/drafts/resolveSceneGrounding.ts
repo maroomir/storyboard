@@ -1,5 +1,4 @@
-import type * as vscode from 'vscode';
-
+import type { StoryUri } from '@storyboard/story-engine';
 import {
   mergeSceneGrounding,
   missingSceneGroundingFields,
@@ -15,7 +14,7 @@ export type SceneGroundingOutcome =
 // 씬을 구체적 사건으로 못박는 4개 사실을 생성 전에 확정한다. 사용자가 적어 둔 값은 그대로 두고
 // 비어 있는 필드만 AI 제안으로 채운 뒤 씬 frontmatter에 남겨, 다음 생성에서도 같은 사실을 쓴다.
 export async function resolveSceneGrounding(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   scene: SceneFile,
   characterNames: readonly string[],
   options: GenerateDraftWorkflowOptions,
@@ -51,7 +50,7 @@ export async function resolveSceneGrounding(
 }
 
 async function proposeGrounding(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   scene: SceneFile,
   characterNames: readonly string[],
   missingFields: ReturnType<typeof missingSceneGroundingFields>,

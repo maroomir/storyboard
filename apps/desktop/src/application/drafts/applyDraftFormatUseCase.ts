@@ -1,21 +1,19 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
+import { draftPath, getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
 
 export type ApplyDraftFormatRequest = {
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly onSaving?: () => void;
   readonly shouldCancel?: () => boolean;
 };
 
 export type ApplyDraftFormatResult =
-  | { readonly kind: 'formatted'; readonly ok: true; readonly draftUri: vscode.Uri }
+  | { readonly kind: 'formatted'; readonly ok: true; readonly draftUri: StoryUri }
   | { readonly kind: 'cancelled'; readonly ok: false }
   | { readonly kind: 'project_unreadable'; readonly ok: false }
   | { readonly kind: 'draft_missing'; readonly ok: false }

@@ -10,7 +10,7 @@ import {
   type StudioFollowUp,
 } from '@storyboard/story-engine';
 import type { StudioEntity } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 
 export interface IStudioFollowUpRepository {
   list(workspaceRoot: vscode.Uri, target: StudioEntity): Promise<readonly StudioFollowUp[]>;

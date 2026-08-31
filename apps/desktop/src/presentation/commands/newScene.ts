@@ -1,10 +1,6 @@
 import * as vscode from 'vscode';
 
-import {
-  draftPath,
-  getStoryboardProjectPaths,
-  sceneFilePath,
-} from '../../infrastructure/vscode/pathConventions';
+import { draftPath, getStoryboardProjectPaths, sceneFilePath } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,

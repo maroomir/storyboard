@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 
 import type { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
 import type { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { draftPath } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneStem } from '@storyboard/story-format';

@@ -1,6 +1,4 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
@@ -11,7 +9,7 @@ export interface ISceneBatchRepository {
 
 export type BatchSceneList = {
   readonly projectCount: number;
-  readonly scenes: readonly vscode.Uri[];
+  readonly scenes: readonly StoryUri[];
 };
 
 export type GenerateAllDraftsProgress = {

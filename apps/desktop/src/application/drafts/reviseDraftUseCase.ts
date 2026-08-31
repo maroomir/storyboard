@@ -1,7 +1,6 @@
-import type * as vscode from 'vscode';
-
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { joinUri, type StoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
+import { sceneContextPaths } from '@storyboard/story-engine';
+import { joinUri, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -17,7 +16,6 @@ import {
 import type { ProjectSetting } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { readProjectJson } from '../../infrastructure/persistence/projectJson';
@@ -32,7 +30,7 @@ import {
   type ReviseLoopContext,
 } from '@storyboard/story-pipeline';
 
-async function readContractGuidance(projectJsonUri: vscode.Uri): Promise<{
+async function readContractGuidance(projectJsonUri: StoryUri): Promise<{
   styleConstraints: readonly string[];
   qualityCriteria: readonly string[];
   setting?: ProjectSetting;
@@ -57,9 +55,9 @@ export interface ReviseDraftUseCaseDependencies {
 }
 
 export interface ReviseDraftRequest {
-  readonly workspaceUri: vscode.Uri;
+  readonly workspaceUri: StoryUri;
   readonly paths: StoryboardProjectPaths;
-  readonly draftUri: vscode.Uri;
+  readonly draftUri: StoryUri;
   readonly sceneStem: string;
   readonly maxIterations: number;
   readonly maxCompressionPercent: number;
@@ -89,7 +87,7 @@ interface ReviseDraftContext {
 
 async function prepareReviseDraftContext(
   paths: StoryboardProjectPaths,
-  draftUri: vscode.Uri,
+  draftUri: StoryUri,
   sceneStem: string,
 ): Promise<ReviseDraftContext> {
   const sceneFileName = `${sceneStem}.card`;

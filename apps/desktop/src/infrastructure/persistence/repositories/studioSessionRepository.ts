@@ -14,7 +14,7 @@ import type {
   StudioSessionSnapshot,
   StudioSessionSummary,
 } from '@storyboard/story-engine';
-import { studioSessionEntityDirectory } from '../../vscode/pathConventions';
+import { studioSessionEntityDirectory } from '@storyboard/story-engine';
 
 export interface StudioSessionSaveInput {
   readonly id: string;

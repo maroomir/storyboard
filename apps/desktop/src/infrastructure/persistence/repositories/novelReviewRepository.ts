@@ -5,7 +5,7 @@ import type {
   NovelReviewSource,
 } from '../../../application/novel/novelPipeline';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { readBibleFile } from '@storyboard/story-format';
 import type { BibleFileSystem, DraftFileSystem } from '@storyboard/story-format';
 const VSCODE_FILE_SYSTEM: DraftFileSystem & BibleFileSystem = {

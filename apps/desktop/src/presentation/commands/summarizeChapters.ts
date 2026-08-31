@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
 const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';

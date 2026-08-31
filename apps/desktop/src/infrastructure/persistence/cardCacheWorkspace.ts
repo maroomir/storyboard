@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardProjectPaths } from '../vscode/pathConventions';
+import type { StoryboardProjectPaths } from '@storyboard/story-engine';
 
 export async function ensureCardCacheDirectory(paths: StoryboardProjectPaths): Promise<void> {
   await vscode.workspace.fs.createDirectory(paths.cardCacheDirectory);

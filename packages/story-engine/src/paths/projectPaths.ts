@@ -13,54 +13,54 @@ import {
   sceneFileRelativePath,
   sceneRelativePath,
 } from '@storyboard/story-format';
-import * as vscode from 'vscode';
+import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
 
-import type { StudioEntity } from '@storyboard/story-engine';
+import type { StudioEntity } from '../shared/messaging';
 
 export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
 
 export interface StoryboardProjectPaths {
-  readonly workspaceRoot: vscode.Uri;
-  readonly metadataDirectory: vscode.Uri;
-  readonly projectJson: vscode.Uri;
-  readonly cacheDirectory: vscode.Uri;
-  readonly usageLedger: vscode.Uri;
-  readonly novelRunState: vscode.Uri;
-  readonly sceneCacheDirectory: vscode.Uri;
-  readonly storyState: vscode.Uri;
-  readonly sceneDialogueDirectory: vscode.Uri;
-  readonly personaMemoryDirectory: vscode.Uri;
-  readonly backgroundMemoryDirectory: vscode.Uri;
-  readonly bibleCacheDirectory: vscode.Uri;
-  readonly cardCacheDirectory: vscode.Uri;
-  readonly studioSessionDirectory: vscode.Uri;
-  readonly bibleDirectory: vscode.Uri;
-  readonly bibleCanon: vscode.Uri;
-  readonly outlineDirectory: vscode.Uri;
-  readonly outlineSynopsis: vscode.Uri;
-  readonly outlineChapters: vscode.Uri;
-  readonly outlineRevisionPlan: vscode.Uri;
-  readonly characterDirectory: vscode.Uri;
-  readonly characterProfileDirectory: vscode.Uri;
-  readonly sampleCharacterCard: vscode.Uri;
-  readonly backgroundDirectory: vscode.Uri;
-  readonly sampleBackgroundCard: vscode.Uri;
-  readonly sceneDirectory: vscode.Uri;
-  readonly sampleScene: vscode.Uri;
-  readonly draftDirectory: vscode.Uri;
-  readonly draftHistoryDirectory: vscode.Uri;
-  readonly manuscriptDirectory: vscode.Uri;
-  readonly manuscriptVolume: vscode.Uri;
-  readonly gitignore: vscode.Uri;
-  readonly readme: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
+  readonly metadataDirectory: StoryUri;
+  readonly projectJson: StoryUri;
+  readonly cacheDirectory: StoryUri;
+  readonly usageLedger: StoryUri;
+  readonly novelRunState: StoryUri;
+  readonly sceneCacheDirectory: StoryUri;
+  readonly storyState: StoryUri;
+  readonly sceneDialogueDirectory: StoryUri;
+  readonly personaMemoryDirectory: StoryUri;
+  readonly backgroundMemoryDirectory: StoryUri;
+  readonly bibleCacheDirectory: StoryUri;
+  readonly cardCacheDirectory: StoryUri;
+  readonly studioSessionDirectory: StoryUri;
+  readonly bibleDirectory: StoryUri;
+  readonly bibleCanon: StoryUri;
+  readonly outlineDirectory: StoryUri;
+  readonly outlineSynopsis: StoryUri;
+  readonly outlineChapters: StoryUri;
+  readonly outlineRevisionPlan: StoryUri;
+  readonly characterDirectory: StoryUri;
+  readonly characterProfileDirectory: StoryUri;
+  readonly sampleCharacterCard: StoryUri;
+  readonly backgroundDirectory: StoryUri;
+  readonly sampleBackgroundCard: StoryUri;
+  readonly sceneDirectory: StoryUri;
+  readonly sampleScene: StoryUri;
+  readonly draftDirectory: StoryUri;
+  readonly draftHistoryDirectory: StoryUri;
+  readonly manuscriptDirectory: StoryUri;
+  readonly manuscriptVolume: StoryUri;
+  readonly gitignore: StoryUri;
+  readonly readme: StoryUri;
 }
 
-function resolveWorkspacePath(workspaceRoot: vscode.Uri, relativePath: string): vscode.Uri {
-  return vscode.Uri.joinPath(workspaceRoot, ...relativePath.split('/'));
+function resolveWorkspacePath(workspaceRoot: StoryUri, relativePath: string): StoryUri {
+  return joinStoryPath(workspaceRoot, ...relativePath.split('/'));
 }
 
-export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): StoryboardProjectPaths {
-  const resolve = (relativePath: string): vscode.Uri =>
+export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardProjectPaths {
+  const resolve = (relativePath: string): StoryUri =>
     resolveWorkspacePath(workspaceRoot, relativePath);
 
   return {
@@ -100,7 +100,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
   };
 }
 
-function workspaceRelativePath(uri: vscode.Uri, workspaceFolder: vscode.WorkspaceFolder): string {
+function workspaceRelativePath(uri: StoryUri, workspaceFolder: StoryWorkspaceFolder): string {
   const rootPath = workspaceFolder.uri.fsPath.replace(/\\/g, '/');
   const filePath = uri.fsPath.replace(/\\/g, '/');
 
@@ -112,15 +112,15 @@ function workspaceRelativePath(uri: vscode.Uri, workspaceFolder: vscode.Workspac
 }
 
 export function isDraftMarkdownFile(
-  uri: vscode.Uri,
-  workspaceFolder: vscode.WorkspaceFolder,
+  uri: StoryUri,
+  workspaceFolder: StoryWorkspaceFolder,
 ): boolean {
   return isDraftMarkdownRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
 export function isDirectSceneCardFile(
-  uri: vscode.Uri,
-  workspaceFolder: vscode.WorkspaceFolder,
+  uri: StoryUri,
+  workspaceFolder: StoryWorkspaceFolder,
 ): boolean {
   return isDirectSceneCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
@@ -137,14 +137,14 @@ export function isSafeStudioEntityKey(key: string): boolean {
 }
 
 export function studioSessionEntityDirectory(
-  workspaceRoot: vscode.Uri,
+  workspaceRoot: StoryUri,
   entity: StudioEntity,
-): vscode.Uri | undefined {
+): StoryUri | undefined {
   if (!isSafeStudioEntityKey(entity.key)) {
     return undefined;
   }
 
-  return vscode.Uri.joinPath(
+  return joinStoryPath(
     getStoryboardProjectPaths(workspaceRoot).studioSessionDirectory,
     entity.kind,
     entity.key,
@@ -152,55 +152,55 @@ export function studioSessionEntityDirectory(
 }
 
 export function isDirectCharacterCardFile(
-  uri: vscode.Uri,
-  workspaceFolder: vscode.WorkspaceFolder,
+  uri: StoryUri,
+  workspaceFolder: StoryWorkspaceFolder,
 ): boolean {
   return isDirectCharacterCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
 export function isDirectBackgroundCardFile(
-  uri: vscode.Uri,
-  workspaceFolder: vscode.WorkspaceFolder,
+  uri: StoryUri,
+  workspaceFolder: StoryWorkspaceFolder,
 ): boolean {
   return isDirectBackgroundCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
-export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+export function characterCardPath(workspaceRoot: StoryUri, id: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, characterCardRelativePath(id));
 }
 
-export function characterProfilePath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+export function characterProfilePath(workspaceRoot: StoryUri, id: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, characterProfileRelativePath(id));
 }
 
-export function backgroundCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {
+export function backgroundCardPath(workspaceRoot: StoryUri, id: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, backgroundCardRelativePath(id));
 }
 
-export function sceneFilePath(workspaceRoot: vscode.Uri, prefix: string, slug: string): vscode.Uri {
+export function sceneFilePath(workspaceRoot: StoryUri, prefix: string, slug: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, sceneFileRelativePath(prefix, slug));
 }
 
-export function scenePath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
+export function scenePath(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, sceneRelativePath(sceneStem));
 }
 
-export function draftPath(workspaceRoot: vscode.Uri, sceneStem: string): vscode.Uri {
+export function draftPath(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
   return resolveWorkspacePath(workspaceRoot, draftRelativePath(sceneStem));
 }
 
-export function joinUri(base: vscode.Uri, ...segments: string[]): vscode.Uri {
-  return vscode.Uri.joinPath(base, ...segments);
+export function joinUri(base: StoryUri, ...segments: string[]): StoryUri {
+  return joinStoryPath(base, ...segments);
 }
 
 export function draftHistorySceneDirectory(
-  workspaceRoot: vscode.Uri,
+  workspaceRoot: StoryUri,
   sceneStem: string,
-): vscode.Uri {
+): StoryUri {
   return resolveWorkspacePath(workspaceRoot, draftHistorySceneRelativeDirectory(sceneStem));
 }
 
-export function parseCardIdFromPath(uri: vscode.Uri): string | undefined {
+export function parseCardIdFromPath(uri: StoryUri): string | undefined {
   const fileName = uri.path.split('/').at(-1);
 
   return fileName === undefined ? undefined : parseCardIdFromFileName(fileName);

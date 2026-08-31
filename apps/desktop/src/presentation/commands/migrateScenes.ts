@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import { convertLegacySceneText, isLegacySceneFileName } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,

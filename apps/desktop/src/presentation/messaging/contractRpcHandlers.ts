@@ -3,7 +3,7 @@ import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@story
 import { contractFieldKeys } from '@storyboard/story-format';
 import type { ProjectSetting, StoryboardProject } from '@storyboard/story-format';
 import { validateGenerationContract } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths } from '@/infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { readProjectJson, writeProjectJson } from '@/infrastructure/persistence/projectJson';
 
