@@ -7,7 +7,6 @@ import type {
 } from '../../application/cards/recommendCardsUseCase';
 import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '../../paths/projectPaths';
 import { parseCard, parseDraft, readDraftFile, readSceneFile } from '@storyboard/story-format';
-import type { DraftFileSystem, SceneFileSystem } from '@storyboard/story-format';
 import type { RecommendationSource } from '../../ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 

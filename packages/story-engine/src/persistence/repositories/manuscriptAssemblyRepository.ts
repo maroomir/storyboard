@@ -19,7 +19,6 @@ import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
-import type { BibleFileSystem, DraftFileSystem, OutlineFileSystem } from '@storyboard/story-format';
 import { readProjectJson } from '../projectJson';
 
 export class ManuscriptAssemblyRepository

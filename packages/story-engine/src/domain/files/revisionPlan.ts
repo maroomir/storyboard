@@ -34,9 +34,11 @@ export class RevisionPlanParseError extends Error {
   public constructor(
     public readonly code: RevisionPlanParseErrorCode,
     message: string,
-    public readonly cause?: unknown,
+    cause?: unknown,
   ) {
-    super(message);
+    // NOTE: `cause` goes through Error's own options rather than a parameter property, which would
+    // shadow the base member.
+    super(message, { cause });
     this.name = 'RevisionPlanParseError';
   }
 }

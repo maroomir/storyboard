@@ -7,7 +7,6 @@ import type {
 import { collectDraftsByOrder } from '../manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { readBibleFile } from '@storyboard/story-format';
-import type { BibleFileSystem, DraftFileSystem } from '@storyboard/story-format';
 export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
