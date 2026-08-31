@@ -816,7 +816,17 @@ ReviewIssue {
 
 ### 12.0 모노레포 배치
 
-저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. VSCode 확장은 `apps/desktop/`에 있으며 확장 매니페스트(버전 포함)는 `apps/desktop/package.json`이다. 텔레그램 봇(`apps/bot/`)과 공유 패키지(`packages/*`)는 계획 단계다.
+저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. **버전도 루트 하나**이며 `npm run version:sync`가 세 앱에 복제한다.
+
+앱은 셋이고 서로를 모른다. 셋 다 `packages/story-engine`(도메인 정책·유즈케이스·저장 계층·공유 계약)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록.
+
+| 앱 | 워크스페이스 | 실행 이름 |
+|---|---|---|
+| VSCode 확장 | `apps/desktop` (`storyboard-vscode`) | 확장 ID `maroomir.storyboard-vscode` |
+| CLI | `apps/cli` (`@storyboard/cli`) | `storyboard` — 헤드라인 제품이자 레퍼런스 구현 |
+| 텔레그램 봇 | `apps/bot` (`@storyboard/bot`) | `storyboard-bot` |
+
+CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test.ts`가 확장의 `contributes.commands` 전 항목을 CLI 동사·에디터 전용·미구현 중 하나로 분류하도록 강제한다.
 
 아래 12.1의 경로는 모두 `apps/desktop/` 기준이며, import alias는 `@/*` → `apps/desktop/src/*`, `@webview/*` → `apps/desktop/webview-ui/src/*`이다.
 

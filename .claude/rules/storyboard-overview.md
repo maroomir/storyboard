@@ -4,14 +4,17 @@
 
 The current implementation is still smaller than that target. Treat `scene/*.card → draft/*.md`, cards, canon, and draft diagnostics as the first working slice of a larger autonomous fiction pipeline rather than the final product boundary.
 
-The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json`.
+The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json` and **one version for the whole repo**, held in the root manifest and mirrored into the apps by `npm run version:sync`.
+
+The three apps share `packages/story-engine` and know nothing about each other. Only the host adapters differ: file system, workspace locator, logger, secrets, configuration, usage sink.
 
 ## Monorepo Layout
 
 | Workspace | Name | Role |
 |---|---|---|
 | `apps/desktop` | `storyboard-vscode` | The VSCode extension. Holds the released version and the only `v*` tag. |
-| `apps/bot` | `@storyboard/bot` | Telegram companion. Edits the **same** git workspace the extension opens — no clone, no separate store. |
+| `apps/bot` | `@storyboard/bot` | Telegram front end (`storyboard-bot`). Edits the **same** git workspace — no clone, no separate store. |
+| `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
 | `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: domain policies, file records, and the RPC/contract types every app speaks. Holds what used to be `apps/desktop/src/{domain,shared}`. |
 | `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |

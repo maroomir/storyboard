@@ -1,0 +1,57 @@
+---
+description: CLI (apps/cli, storyboard) invariants — no orchestration, parity test, stdout contract, host adapters
+globs: apps/cli/**/*
+alwaysApply: false
+---
+
+# CLI (`apps/cli`, product name `storyboard`)
+
+The CLI is the **headline product and the reference implementation**. It runs the same engine the
+extension runs, in a terminal, so another AI agent can write a novel without an editor.
+
+## Non-negotiable invariants
+
+- **The CLI owns no orchestration.** Every verb calls an engine use case. Assembling pipeline
+  stages by hand here would be the fourth copy of the generation loop (after the extension, the bot
+  and the harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
+  `@storyboard/story-pipeline` directly.
+- **Parity is a test, not a promise.** `apps/cli/test/parity.test.ts` maps every
+  `contributes.commands` entry in `apps/desktop/package.json` to a CLI verb, an editor-only
+  exemption, or a tracked gap. Adding a command to the extension without a verb fails CI. The
+  pending list must only ever shrink.
+- **stdout carries the result; everything else goes to stderr.** `--json` output must stay pipeable.
+- **Exit codes are the contract.** 0 on success, non-zero on failure — an agent branches on it.
+- **The CLI does not commit.** It writes files and leaves git to the user, exactly like the
+  extension. "A save is a commit" is the bot's invariant, not this app's.
+- **The CLI knows nothing about the bot**, and the bot knows nothing about the CLI.
+
+## Layering
+
+`adapters → commands`. A layer may import itself and anything to its left;
+`apps/cli/scripts/check-architecture.mjs` enforces the direction and rejects cycles.
+
+## Host adapters
+
+Only five files differ from what the extension supplies, which is the whole point of the engine
+boundary: `NodeFileSystem` (temp-file-then-rename writes), `NodeUri` (posix `path`, OS `fsPath`),
+`NodeWorkspaceLocator` (one workspace, containment test), `ConsoleLogger` (stderr), and the
+file-backed `SecretStore`/`ConfigBridge`.
+
+## Config
+
+`~/.storyboard/cli.json`, overridden per workspace by `.storyboard/cli.json`, overridable wholesale
+with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
+reads like the extension's settings UI. Secrets live in `~/.storyboard/cli-secrets.json` at 0600.
+
+## Editor-only surface
+
+Inline completion, hover, the `.card` custom editor and the relation graph are editor chrome, not
+capabilities — they have no terminal form. What is portable is the *ability* behind a provider: the
+three diagnostics become `check` verbs, the card editor becomes card CRUD verbs. Do not add an
+entry to the parity test's editor-only list without that argument holding.
+
+## Verification
+
+From the repo root: `npm test` and `npm run lint` (both drive all three apps).
+CLI-only: `npm run test --workspace @storyboard/cli`, `npm run lint --workspace @storyboard/cli`,
+`npm run cli:build`.

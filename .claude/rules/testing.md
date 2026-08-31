@@ -4,7 +4,7 @@ Use project-defined scripts and keep verification appropriate to the current rep
 
 ## Before Running Commands
 
-- Inspect `package.json` first. The repo-root manifest defines only `build`, `compile`, `lint`, `test`, and `package:vsix` (each delegating to the extension workspace); every other script lives in `apps/desktop/package.json`.
+- Inspect `package.json` first. From the repo root, `build`/`lint`/`test` drive all three apps, `compile` and `package:vsix` are extension-only, and `cli:build`/`bot:build`/`bot:start`/`version:sync` are the remaining root scripts. Everything else lives in an app's own manifest.
 - Prefer existing scripts over ad-hoc commands.
 - Do not assume script names; VSCode extensions often use `compile` rather than `build`.
 

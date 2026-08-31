@@ -14,10 +14,16 @@ Workflow is minimal until packaging and marketplace steps are fully wired. Follo
 ## 1. Confirm version
 
 ```bash
-node -p "require('./apps/desktop/package.json').version"
+node -p "require('./package.json').version"
 ```
 
-The extension version lives only in `apps/desktop/package.json`; the root `package.json` has no `version` field. Agree the target version with the maintainer, edit `apps/desktop/package.json`, then run `npm install` from the repo root so the single root `package-lock.json` picks up the new `packages["apps/desktop"].version` (do not hand-edit the lockfile).
+The version lives in the **root** `package.json` and every app mirrors it. Agree the target version with the maintainer, edit the root `package.json`, then:
+
+```bash
+npm run version:sync   # writes it into the three apps and the CLI's printed version
+npm install            # refreshes the single root package-lock.json (never hand-edit it)
+node scripts/sync-version.mjs --check
+```
 
 ## 2. Update release notes
 
@@ -35,7 +41,7 @@ npm run lint
 npm test
 ```
 
-Full bundle (extension host + webview) before packaging:
+Full bundle (all three apps) before packaging:
 
 ```bash
 npm run build
@@ -43,8 +49,9 @@ npm run build
 
 ## 4. Package
 
-- From the repo root, `npm run package:vsix` delegates to the extension workspace (see [`apps/desktop/package.json`](apps/desktop/package.json)); the VSIX is written under `apps/desktop/`.
-- Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
+One tag ships three artifacts. Reproduce them locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode`, plus `storyboard-bot-<version>.tar.gz` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers all four.
+
+Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
 
 ## 5. Tag (after maintainer confirmation)
 
