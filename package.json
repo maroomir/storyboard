@@ -1,5 +1,6 @@
 {
   "name": "storyboard-monorepo",
+  "version": "0.7.3",
   "private": true,
   "license": "Apache-2.0",
   "workspaces": [
@@ -17,6 +18,7 @@
     "package:vsix": "npm run package:vsix --workspace storyboard-vscode",
     "cli:build": "npm run build --workspace @storyboard/cli",
     "bot:build": "npm run build --workspace @storyboard/bot",
-    "bot:start": "npm run start --workspace @storyboard/bot"
+    "bot:start": "npm run start --workspace @storyboard/bot",
+    "version:sync": "node scripts/sync-version.mjs"
   }
 }
