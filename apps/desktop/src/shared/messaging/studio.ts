@@ -114,6 +114,16 @@ export const studioPatchSchema = z.discriminatedUnion('target', [
 
 export type StudioPatchPayload = z.infer<typeof studioPatchSchema>;
 
+export const studioFollowUpTargetSchema = z.object({
+  kind: z.enum(['character', 'background', 'scene']),
+  key: z.string().min(1),
+  reason: z.string().min(1),
+  instruction: z.string().min(1),
+  targetFile: z.string().min(1),
+});
+
+export type StudioFollowUpTarget = z.infer<typeof studioFollowUpTargetSchema>;
+
 const studioUserTurnSchema = z.object({
   id: z.string().min(1),
   role: z.literal('user'),
@@ -125,6 +135,7 @@ const studioSayTurnSchema = z.object({
   role: z.literal('assistant'),
   kind: z.literal('say'),
   message: z.string(),
+  followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
 const studioAskTurnSchema = z.object({
@@ -150,6 +161,7 @@ const studioProposalTurnSchema = z.object({
   validation: studioValidationSchema,
   status: studioProposalStatusSchema,
   errorMessage: z.string().optional(),
+  followUps: z.array(studioFollowUpTargetSchema).optional(),
 });
 
 const studioResultTurnSchema = z.object({
@@ -199,6 +211,38 @@ export const studioProposalApplyRequestPayloadSchema = z.object({
 export const studioProposalApplyResponsePayloadSchema = z.object({
   status: studioProposalStatusSchema,
   message: z.string().min(1),
+});
+
+export const studioFollowUpListRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+});
+
+export const studioPendingFollowUpSchema = z.object({
+  id: z.string().min(1),
+  origin: studioEntitySchema,
+  reason: z.string().min(1),
+  instruction: z.string().min(1),
+});
+
+export type StudioPendingFollowUp = z.infer<typeof studioPendingFollowUpSchema>;
+
+export const studioFollowUpListResponsePayloadSchema = z.object({
+  followUps: z.array(studioPendingFollowUpSchema),
+});
+
+export const studioFollowUpDismissRequestPayloadSchema = z.object({
+  id: z.string().min(1),
+});
+
+export const studioFollowUpDismissResponsePayloadSchema = z.object({});
+
+export const studioFollowUpOpenRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+  targetFile: z.string().min(1),
+});
+
+export const studioFollowUpOpenResponsePayloadSchema = z.object({
+  opened: z.boolean(),
 });
 
 export const studioChatProgressEventPayloadSchema = z.object({

@@ -5,6 +5,10 @@ import {
   StudioSessionRepository,
   type IStudioSessionRepository,
 } from '../../infrastructure/persistence/repositories/studioSessionRepository';
+import {
+  StudioFollowUpRepository,
+  type IStudioFollowUpRepository,
+} from '../../infrastructure/persistence/repositories/studioFollowUpRepository';
 import { readStudioStage } from '../../infrastructure/persistence/studioStage';
 import type { ProposalReviewService } from './proposalReviewService';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
@@ -18,6 +22,7 @@ import type {
   StudioChatUseCase,
 } from '../../application/studio/studioChatUseCase';
 import { createStudioChatRpcHandlers } from '../messaging/studioChatRpcHandlers';
+import { createStudioFollowUpRpcHandlers } from '../messaging/studioFollowUpRpcHandlers';
 import { createStudioProposalRpcHandlers } from '../messaging/studioProposalRpcHandlers';
 import { createStudioSessionRpcHandlers } from '../messaging/studioSessionRpcHandlers';
 import { computeStudioTarget } from './studioTarget';
@@ -41,6 +46,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly sessionRepository: IStudioSessionRepository,
     private readonly chatUseCase: StudioChatUseCase,
     private readonly reviewService: ProposalReviewService,
+    private readonly followUpRepository: IStudioFollowUpRepository,
   ) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -114,6 +120,12 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       }),
       ...createStudioProposalRpcHandlers({
         reviewService: this.reviewService,
+        followUpRepository: this.followUpRepository,
+        getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+        createFollowUpId: () => crypto.randomUUID(),
+      }),
+      ...createStudioFollowUpRpcHandlers({
+        repository: this.followUpRepository,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
       }),
       ...createStudioSessionRpcHandlers({
@@ -159,6 +171,7 @@ export function registerSidebarStudioProvider(
     new StudioSessionRepository(),
     chatUseCase,
     reviewService,
+    new StudioFollowUpRepository(),
   );
 
   return vscode.Disposable.from(

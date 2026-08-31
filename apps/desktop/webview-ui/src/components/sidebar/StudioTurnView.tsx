@@ -1,8 +1,17 @@
-import { Check, CircleAlert, FileDiff, ShieldCheck, ShieldQuestion, Sparkles } from "lucide-react"
+import {
+  ArrowRight,
+  Check,
+  CircleAlert,
+  FileDiff,
+  ShieldCheck,
+  ShieldQuestion,
+  Sparkles
+} from "lucide-react"
 import React from "react"
 
 import type {
   StudioChatTurn,
+  StudioFollowUpTarget,
   StudioPatch,
   StudioProposalTurn,
   StudioValidation
@@ -15,16 +24,20 @@ export interface StudioProposalActions {
   readonly onReject: (turn: StudioProposalTurn) => void
 }
 
+export type StudioFollowUpHandler = (followUp: StudioFollowUpTarget) => void
+
 const bubbleClass =
   "flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2"
 
 export function StudioTurnView({
   turn,
   onAnswer,
+  onOpenFollowUp,
   proposalActions
 }: {
   readonly turn: StudioChatTurn
   readonly onAnswer: (text: string) => void
+  readonly onOpenFollowUp: StudioFollowUpHandler
   readonly proposalActions: StudioProposalActions
 }): React.ReactElement {
   if (turn.role === "user") {
@@ -39,6 +52,7 @@ export function StudioTurnView({
     return (
       <div className={bubbleClass}>
         <p className="m-0 whitespace-pre-wrap text-sm text-sb-fg">{turn.message}</p>
+        <FollowUpList followUps={turn.followUps} onOpen={onOpenFollowUp} />
       </div>
     )
   }
@@ -77,15 +91,51 @@ export function StudioTurnView({
     )
   }
 
-  return <ProposalCard turn={turn} actions={proposalActions} />
+  return <ProposalCard turn={turn} actions={proposalActions} onOpenFollowUp={onOpenFollowUp} />
+}
+
+function FollowUpList({
+  followUps,
+  onOpen
+}: {
+  readonly followUps?: readonly StudioFollowUpTarget[]
+  readonly onOpen: StudioFollowUpHandler
+}): React.ReactElement | null {
+  if (!followUps || followUps.length === 0) {
+    return null
+  }
+
+  return (
+    <section aria-label="이어서 고칠 대상" className="flex flex-col gap-1 border-t border-sb-border pt-2">
+      <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted">
+        이어서 고칠 대상
+      </p>
+      {followUps.map((followUp) => (
+        <button
+          key={followUp.targetFile}
+          type="button"
+          className="flex w-full cursor-pointer items-start gap-1.5 rounded border border-sb-border bg-sb-bg-widget px-2 py-1.5 text-left outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+          onClick={() => onOpen(followUp)}
+        >
+          <ArrowRight className="mt-0.5 h-3 w-3 shrink-0 text-sb-fg-muted" aria-hidden />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-xs font-medium text-sb-fg">{followUp.targetFile}</span>
+            <span className="text-xs text-sb-fg-muted">{followUp.reason}</span>
+          </span>
+        </button>
+      ))}
+    </section>
+  )
 }
 
 function ProposalCard({
   turn,
-  actions
+  actions,
+  onOpenFollowUp
 }: {
   readonly turn: StudioProposalTurn
   readonly actions: StudioProposalActions
+  readonly onOpenFollowUp: StudioFollowUpHandler
 }): React.ReactElement {
   return (
     <div className={bubbleClass}>
@@ -109,6 +159,9 @@ function ProposalCard({
       ) : (
         <ProposalStatusLine turn={turn} />
       )}
+      {turn.status === "applied" ? (
+        <FollowUpList followUps={turn.followUps} onOpen={onOpenFollowUp} />
+      ) : null}
     </div>
   )
 }

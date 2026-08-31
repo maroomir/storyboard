@@ -7,9 +7,9 @@ import {
   readSceneFile,
   serializeCard,
 } from '@storyboard/story-format';
-import type { StudioAgentLookupRequest } from '@storyboard/story-ai';
+import type { StudioAgentFollowUp, StudioAgentLookupRequest } from '@storyboard/story-ai';
 
-import type { StudioEntity } from '../../shared/messaging';
+import type { StudioEntity, StudioFollowUpTarget } from '../../shared/messaging';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -65,6 +65,45 @@ export async function resolveStudioLookups(
   );
 
   return sections.join('\n\n');
+}
+
+// NOTE: the model names follow-up targets from memory, so anything it invented is dropped here
+// rather than shown to the author as a button that leads nowhere.
+export async function resolveStudioFollowUps(
+  workspaceRoot: vscode.Uri,
+  followUps: readonly StudioAgentFollowUp[],
+): Promise<readonly StudioFollowUpTarget[]> {
+  const resolved = await Promise.all(
+    followUps.map(async (followUp) => {
+      const targetFile = followUpTargetFile(followUp);
+      const exists = await uriExists(followUpUri(workspaceRoot, followUp));
+
+      return exists ? { ...followUp, targetFile } : undefined;
+    }),
+  );
+
+  return resolved.filter((followUp): followUp is StudioFollowUpTarget => followUp !== undefined);
+}
+
+function followUpTargetFile(followUp: StudioAgentFollowUp): string {
+  return followUp.kind === 'scene'
+    ? `scene/${followUp.key}.card`
+    : relativeCardPath(followUp.kind, followUp.key);
+}
+
+function followUpUri(workspaceRoot: vscode.Uri, followUp: StudioAgentFollowUp): vscode.Uri {
+  return followUp.kind === 'scene'
+    ? scenePath(workspaceRoot, followUp.key)
+    : cardPathFor(workspaceRoot, followUp.kind, followUp.key);
+}
+
+async function uriExists(uri: vscode.Uri): Promise<boolean> {
+  try {
+    await vscode.workspace.fs.stat(uri);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function readCardContext(

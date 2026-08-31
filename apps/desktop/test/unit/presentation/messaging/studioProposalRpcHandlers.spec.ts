@@ -68,13 +68,34 @@ function proposalTurn(overrides: Partial<Record<string, unknown>> = {}): StudioC
   } as StudioChatTurn
 }
 
+const followUpCalls: {
+  added: unknown[][]
+  resolvedFor: unknown[]
+  dismissed: string[]
+} = { added: [], resolvedFor: [], dismissed: [] }
+
+const followUpRepository = {
+  list: async (): Promise<never[]> => [],
+  add: async (_root: unknown, added: unknown[]): Promise<void> => {
+    followUpCalls.added.push(added)
+  },
+  resolveFor: async (_root: unknown, target: unknown): Promise<void> => {
+    followUpCalls.resolvedFor.push(target)
+  },
+  dismiss: async (_root: unknown, id: string): Promise<void> => {
+    followUpCalls.dismissed.push(id)
+  }
+}
+
 function bridgeWith(): FakeWebview {
   const webview = new FakeWebview()
   createWebviewBridge(
     webview,
     createStudioProposalRpcHandlers({
       reviewService,
-      getProjectRoot: async () => workspaceRoot
+      followUpRepository,
+      getProjectRoot: async () => workspaceRoot,
+      createFollowUpId: () => "follow-1"
     })
   )
   return webview
@@ -98,6 +119,9 @@ async function send(
 
 beforeEach((): void => {
   shownDiffs.length = 0
+  followUpCalls.added.length = 0
+  followUpCalls.resolvedFor.length = 0
+  followUpCalls.dismissed.length = 0
   files = new Map([
     ["/workspace/character/seorin.card", cardText],
     ["/workspace/scene/01-intro.card", sceneText],
@@ -249,5 +273,66 @@ describe("studio proposal rpc handlers for scene cards", () => {
 
     expect(response.payload?.status).toBe("failed")
     expect(String(response.payload?.message)).toContain("파일이 바뀌어서")
+  })
+})
+
+describe("studio proposal follow-ups", () => {
+  it("records the ripples an applied proposal declared", async () => {
+    await send(bridgeWith(), "studio.proposal.apply", {
+      entity: characterEntity,
+      turn: proposalTurn({
+        followUps: [
+          {
+            kind: "scene",
+            key: "01-intro",
+            reason: "감정 서술이 어긋납니다",
+            instruction: "고쳐줘",
+            targetFile: "scene/01-intro.card"
+          }
+        ]
+      })
+    })
+
+    expect(followUpCalls.added[0]).toEqual([
+      {
+        id: "follow-1",
+        target: { kind: "scene", key: "01-intro" },
+        origin: characterEntity,
+        reason: "감정 서술이 어긋납니다",
+        instruction: "고쳐줘",
+        createdAt: expect.any(String)
+      }
+    ])
+  })
+
+  it("clears whatever ripple was waiting on the edited entity", async () => {
+    await send(bridgeWith(), "studio.proposal.apply", {
+      entity: characterEntity,
+      turn: proposalTurn()
+    })
+
+    expect(followUpCalls.resolvedFor).toEqual([characterEntity])
+    expect(followUpCalls.added[0]).toEqual([])
+  })
+
+  it("records nothing when the proposal was refused", async () => {
+    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+
+    await send(bridgeWith(), "studio.proposal.apply", {
+      entity: characterEntity,
+      turn: proposalTurn()
+    })
+
+    expect(followUpCalls.resolvedFor).toEqual([])
+    expect(followUpCalls.added).toEqual([])
+  })
+
+  it("records nothing on a preview", async () => {
+    await send(bridgeWith(), "studio.proposal.preview", {
+      entity: characterEntity,
+      turn: proposalTurn()
+    })
+
+    expect(followUpCalls.added).toEqual([])
   })
 })

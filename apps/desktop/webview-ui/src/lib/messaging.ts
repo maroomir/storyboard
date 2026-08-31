@@ -10,6 +10,7 @@ import type {
   StudioChatTurn,
   StudioEntity,
   StudioInitialData,
+  StudioPendingFollowUp,
   StudioReviewState,
   StudioSceneStage,
   StudioSessionSnapshot,
@@ -312,6 +313,35 @@ export function parseProposalApplyPayload(payload: unknown): {
   return candidate.status === "applied"
     ? { status: "applied", message }
     : { status: "failed", message }
+}
+
+export function parsePendingFollowUpsPayload(
+  payload: unknown
+): readonly StudioPendingFollowUp[] {
+  if (!payload || typeof payload !== "object") {
+    return []
+  }
+
+  const followUps = (payload as { followUps?: unknown }).followUps
+
+  return Array.isArray(followUps)
+    ? (followUps as readonly StudioPendingFollowUp[]).filter(isPendingFollowUp)
+    : []
+}
+
+function isPendingFollowUp(value: unknown): value is StudioPendingFollowUp {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<StudioPendingFollowUp>
+
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.reason === "string" &&
+    typeof candidate.instruction === "string" &&
+    parseStudioEntity(candidate.origin) !== undefined
+  )
 }
 
 export function parseProgressPayload(payload: unknown): StudioChatStage {

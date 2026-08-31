@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { StudioChatStage, StudioChatUseCase } from '@/application/studio/studioChatUseCase';
 import {
   readStudioEntityContext,
+  resolveStudioFollowUps,
   resolveStudioLookups,
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
@@ -60,6 +61,7 @@ export function createStudioChatRpcHandlers(
           hasSelection: target.hasSelection,
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(root, requests),
+          resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
           createTurnId: () => crypto.randomUUID(),
           onStage: deps.postProgress,
         });

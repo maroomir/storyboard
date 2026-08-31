@@ -269,6 +269,21 @@ export type StudioPatch =
   | { readonly target: "card"; readonly changes: readonly StudioCardFieldChange[] }
   | { readonly target: "draft"; readonly replacements: readonly StudioDraftReplacement[] }
 
+export interface StudioFollowUpTarget {
+  readonly kind: "character" | "background" | "scene"
+  readonly key: string
+  readonly reason: string
+  readonly instruction: string
+  readonly targetFile: string
+}
+
+export interface StudioPendingFollowUp {
+  readonly id: string
+  readonly origin: StudioEntity
+  readonly reason: string
+  readonly instruction: string
+}
+
 export interface StudioProposalTurn {
   readonly id: string
   readonly role: "assistant"
@@ -276,10 +291,12 @@ export interface StudioProposalTurn {
   readonly summary: string
   readonly message?: string
   readonly patch: StudioPatch
+  readonly targetFile: string
   readonly baselineHash: string
   readonly validation: StudioValidation
   readonly status: StudioProposalStatus
   readonly errorMessage?: string
+  readonly followUps?: readonly StudioFollowUpTarget[]
 }
 
 export type StudioChatTurn =
@@ -289,6 +306,7 @@ export type StudioChatTurn =
       readonly role: "assistant"
       readonly kind: "say"
       readonly message: string
+      readonly followUps?: readonly StudioFollowUpTarget[]
     }
   | {
       readonly id: string

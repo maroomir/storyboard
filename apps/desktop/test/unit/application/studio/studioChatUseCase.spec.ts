@@ -70,6 +70,14 @@ function requestWith(
     hasSelection: false,
     isValidationEnabled: true,
     resolveLookup: async () => "",
+    resolveFollowUps: async (followUps) =>
+      followUps.map((followUp) => ({
+        ...followUp,
+        targetFile:
+          followUp.kind === "scene"
+            ? `scene/${followUp.key}.card`
+            : `${followUp.kind}/${followUp.key}.card`
+      })),
     createTurnId: (): string => `turn-${(counter += 1)}`,
     ...overrides
   }
@@ -253,5 +261,66 @@ describe("StudioChatUseCase", () => {
       { role: "assistant", text: "어느 축?" },
       { role: "assistant", text: "제안(applied): 과거사 추가" }
     ])
+  })
+})
+
+describe("StudioChatUseCase follow-ups", () => {
+  const followUpAction = {
+    kind: "say",
+    message: "지호 카드도 손봐야 합니다.",
+    followUps: [
+      {
+        kind: "character",
+        key: "jiho",
+        reason: "관계 서술이 어긋납니다",
+        instruction: "서린과의 관계 서술을 맞춰줘"
+      }
+    ]
+  }
+
+  it("carries verified follow-ups onto a say turn", async () => {
+    const { gateway } = gatewayWith({ action: followUpAction })
+
+    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+
+    expect(turns[0]).toMatchObject({
+      kind: "say",
+      followUps: [
+        {
+          kind: "character",
+          key: "jiho",
+          reason: "관계 서술이 어긋납니다",
+          targetFile: "character/jiho.card"
+        }
+      ]
+    })
+  })
+
+  it("carries follow-ups onto a proposal turn", async () => {
+    const { gateway } = gatewayWith({
+      action: {
+        ...proposeAction,
+        followUps: [
+          { kind: "scene", key: "03-subway", reason: "묘사가 어긋납니다", instruction: "고쳐줘" }
+        ]
+      }
+    })
+
+    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+
+    expect(turns[0]).toMatchObject({
+      kind: "proposal",
+      followUps: [{ targetFile: "scene/03-subway.card" }]
+    })
+  })
+
+  it("leaves the turn without a follow-up list when the resolver drops them all", async () => {
+    const { gateway } = gatewayWith({ action: followUpAction })
+
+    const turns = await new StudioChatUseCase(gateway, logger).send(
+      requestWith(gateway, { resolveFollowUps: async () => [] })
+    )
+
+    expect(turns[0]).not.toHaveProperty("followUps")
   })
 })

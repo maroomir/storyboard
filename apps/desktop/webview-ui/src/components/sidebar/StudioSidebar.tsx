@@ -16,6 +16,7 @@ import {
   parseChatSendPayload,
   parseProgressPayload,
   parseProposalApplyPayload,
+  parsePendingFollowUpsPayload,
   parseSessionListPayload,
   parseSessionLoadPayload,
   parseStagePayload,
@@ -26,7 +27,9 @@ import type {
   StoryboardEventMessage,
   StudioChatStage,
   StudioChatTurn,
+  StudioFollowUpTarget,
   StudioInitialData,
+  StudioPendingFollowUp,
   StudioProposalTurn,
   StudioSessionSummary,
   StudioStage,
@@ -69,12 +72,14 @@ export function StudioSidebar({
   const [stage, setStage] = useState<StudioStage | undefined>(undefined);
   const [stageToken, setStageToken] = useState(0);
   const [chatStage, setChatStage] = useState<StudioChatStage>('idle');
+  const [pendingFollowUps, setPendingFollowUps] = useState<readonly StudioPendingFollowUp[]>([]);
   const [draft, setDraft] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
   const listRequestIdRef = useRef<string | undefined>(undefined);
   const loadRequestIdRef = useRef<string | undefined>(undefined);
   const stageRequestIdRef = useRef<string | undefined>(undefined);
   const sendRequestIdRef = useRef<string | undefined>(undefined);
+  const followUpRequestIdRef = useRef<string | undefined>(undefined);
   const applyRequestsRef = useRef<Map<string, string>>(new Map());
 
   const post = (method: string, payload: unknown, id = createRequestId()): string => {
@@ -105,6 +110,12 @@ export function StudioSidebar({
       if (data.id === stageRequestIdRef.current) {
         stageRequestIdRef.current = undefined;
         setStage(parseStagePayload(data.payload));
+        return;
+      }
+
+      if (data.id === followUpRequestIdRef.current) {
+        followUpRequestIdRef.current = undefined;
+        setPendingFollowUps(parsePendingFollowUpsPayload(data.payload));
         return;
       }
 
@@ -155,6 +166,7 @@ export function StudioSidebar({
     }
 
     stageRequestIdRef.current = post('studio.stage', {});
+    followUpRequestIdRef.current = post('studio.followUp.list', { entity: target.entity });
   }, [target.entity?.kind, target.entity?.key, stageToken]);
 
   useEffect(() => {
@@ -220,6 +232,22 @@ export function StudioSidebar({
     });
   };
 
+  const openFollowUp = (followUp: StudioFollowUpTarget): void => {
+    post('studio.followUp.open', {
+      entity: { kind: followUp.kind, key: followUp.key },
+      targetFile: followUp.targetFile,
+    });
+    // NOTE: the editor switch retargets the panel on its own; the instruction is only staged so the
+    // author reads it before any request goes out.
+    startNewSession();
+    setDraft(followUp.instruction);
+  };
+
+  const dismissFollowUp = (id: string): void => {
+    setPendingFollowUps((prev) => prev.filter((followUp) => followUp.id !== id));
+    post('studio.followUp.dismiss', { id });
+  };
+
   const cancelChat = (): void => {
     sendRequestIdRef.current = undefined;
     setChatStage('idle');
@@ -276,6 +304,11 @@ export function StudioSidebar({
         ) : (
           <>
             <StageCard target={target} stage={stage} />
+            <PendingFollowUpList
+              followUps={pendingFollowUps}
+              onPick={setDraft}
+              onDismiss={dismissFollowUp}
+            />
             {turns.length === 0 ? <StudioIntro /> : null}
             <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
               {turns.map((turn) => (
@@ -283,6 +316,7 @@ export function StudioSidebar({
                   <StudioTurnView
                     turn={turn}
                     onAnswer={sendInstruction}
+                    onOpenFollowUp={openFollowUp}
                     proposalActions={proposalActions}
                   />
                 </li>
@@ -340,6 +374,53 @@ function settleProposal(
         ]
       : settled;
   });
+}
+
+function PendingFollowUpList({
+  followUps,
+  onPick,
+  onDismiss,
+}: {
+  readonly followUps: readonly StudioPendingFollowUp[];
+  readonly onPick: (instruction: string) => void;
+  readonly onDismiss: (id: string) => void;
+}): React.ReactElement | null {
+  if (followUps.length === 0) {
+    return null;
+  }
+
+  return (
+    <section
+      aria-label="넘어온 작업"
+      className="flex flex-col gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2"
+    >
+      <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-500">
+        다른 곳에서 넘어온 작업 {followUps.length}건
+      </p>
+      {followUps.map((followUp) => (
+        <div key={followUp.id} className="flex items-start gap-1.5">
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 cursor-pointer flex-col gap-0.5 rounded border border-transparent px-1 py-0.5 text-left outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+            onClick={() => onPick(followUp.instruction)}
+          >
+            <span className="text-xs text-sb-fg">{followUp.reason}</span>
+            <span className="text-[10px] text-sb-fg-muted">
+              {followUp.origin.kind}/{followUp.origin.key} 에서
+            </span>
+          </button>
+          <button
+            type="button"
+            aria-label="넘어온 작업 닫기"
+            className="mt-0.5 inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded text-sb-fg-muted outline-none hover:text-sb-fg focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+            onClick={() => onDismiss(followUp.id)}
+          >
+            <X className="h-3 w-3" aria-hidden />
+          </button>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function HeaderButton({
