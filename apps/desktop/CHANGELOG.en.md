@@ -10,6 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-08-31
+
+### Added
+
+- **Studio conversations now use tools.** In a draft conversation the agent can decide to run a continuity check, grammar check, or a span expansion/condensation/card supplement on its own. Check results are summarised in the chat and also shown as editor squiggles; transform results are rough drafts the agent refines, and they always go through the proposal card (diff → approve). Tools run at most twice per turn.
+- **Pin a tool with `/`.** Typing `/` in the composer lists the tools for the open file; picking one pins it as a chip so the agent must use it, with an optional natural-language note appended.
+- **Card conversations get their own tools.** Character/background cards offer `/collect` (gather additions from the drafts the card appears in), `/audit` (check the card against the rest of the material), and `/relations` (find dangling references and one-way relations — no AI call). Scene cards offer `/audit` and `/relations`.
+- **`/update` builds or fills a card from a pasted description.** It detects character vs background, creates and opens the card when missing (or opens the existing one), and stages a "fill the card from this description" instruction in the composer. Works even with no file open.
+
+### Changed
+
+- **Scene-card conversations can now fill `characters` and `location`.** A long description is structured into fields in one proposal, and only ids that resolve to real cards are accepted — a proposal pointing at a missing card is refused at apply time.
+
 ## [0.7.2] - 2026-08-31
 
 ### Changed
