@@ -98,7 +98,7 @@ describe("StudioAgentService.run", () => {
 
   it("returns a draft replacement proposal", async () => {
     const { service } = serviceWith([
-      '{"kind":"propose","summary":"구간 수정","patch":{"target":"draft","replacements":[{"startOffset":10,"endOffset":20,"newText":"고친 문장"}]}}'
+      '{"kind":"propose","summary":"구간 수정","patch":{"target":"draft","replacements":[{"startOffset":10,"endOffset":20,"oldText":"원래 문장","newText":"고친 문장"}]}}'
     ])
 
     const action = await service.run({
@@ -113,7 +113,7 @@ describe("StudioAgentService.run", () => {
       summary: "구간 수정",
       patch: {
         target: "draft",
-        replacements: [{ startOffset: 10, endOffset: 20, newText: "고친 문장" }]
+        replacements: [{ startOffset: 10, endOffset: 20, oldText: "원래 문장", newText: "고친 문장" }]
       }
     })
   })

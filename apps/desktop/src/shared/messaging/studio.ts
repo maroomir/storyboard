@@ -103,6 +103,8 @@ export const studioCardFieldChangeSchema = z.object({
 export const studioDraftReplacementSchema = z.object({
   startOffset: z.number().int().nonnegative(),
   endOffset: z.number().int().nonnegative(),
+  // NOTE: the anchor the offsets must match; a drifted range is refused rather than applied.
+  oldText: z.string(),
   newText: z.string(),
 });
 
@@ -203,7 +205,10 @@ export const studioProposalPreviewRequestPayloadSchema = z.object({
   turn: studioChatTurnSchema,
 });
 
-export const studioProposalPreviewResponsePayloadSchema = z.object({});
+export const studioProposalPreviewResponsePayloadSchema = z.object({
+  shown: z.boolean(),
+  message: z.string().optional(),
+});
 
 export const studioProposalApplyRequestPayloadSchema = z.object({
   entity: studioEntitySchema,

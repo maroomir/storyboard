@@ -98,7 +98,7 @@ describe("applyStudioPatch for drafts", () => {
   it("replaces one range", () => {
     const result = applyStudioPatch(
       body,
-      { target: "draft", replacements: [{ startOffset: 2, endOffset: 5, newText: "XY" }] },
+      { target: "draft", replacements: [{ startOffset: 2, endOffset: 5, oldText: "234", newText: "XY" }] },
       "draft"
     )
 
@@ -111,8 +111,8 @@ describe("applyStudioPatch for drafts", () => {
       {
         target: "draft",
         replacements: [
-          { startOffset: 6, endOffset: 8, newText: "B" },
-          { startOffset: 1, endOffset: 3, newText: "AAAA" }
+          { startOffset: 6, endOffset: 8, oldText: "67", newText: "B" },
+          { startOffset: 1, endOffset: 3, oldText: "12", newText: "AAAA" }
         ]
       },
       "draft"
@@ -124,7 +124,7 @@ describe("applyStudioPatch for drafts", () => {
   it("inserts without deleting when the range is empty", () => {
     const result = applyStudioPatch(
       body,
-      { target: "draft", replacements: [{ startOffset: 5, endOffset: 5, newText: "-" }] },
+      { target: "draft", replacements: [{ startOffset: 5, endOffset: 5, oldText: "", newText: "-" }] },
       "draft"
     )
 
@@ -134,7 +134,7 @@ describe("applyStudioPatch for drafts", () => {
   it("refuses a range that runs past the body", () => {
     const result = applyStudioPatch(
       body,
-      { target: "draft", replacements: [{ startOffset: 8, endOffset: 40, newText: "X" }] },
+      { target: "draft", replacements: [{ startOffset: 8, endOffset: 40, oldText: "89", newText: "X" }] },
       "draft"
     )
 
@@ -147,8 +147,8 @@ describe("applyStudioPatch for drafts", () => {
       {
         target: "draft",
         replacements: [
-          { startOffset: 1, endOffset: 5, newText: "A" },
-          { startOffset: 3, endOffset: 7, newText: "B" }
+          { startOffset: 1, endOffset: 5, oldText: "1234", newText: "A" },
+          { startOffset: 3, endOffset: 7, oldText: "3456", newText: "B" }
         ]
       },
       "draft"
@@ -229,7 +229,7 @@ describe("applyStudioPatch shape guards", () => {
   it("refuses a draft-shaped patch against a card", () => {
     const result = applyStudioPatch(
       characterCard,
-      { target: "draft", replacements: [{ startOffset: 0, endOffset: 1, newText: "x" }] },
+      { target: "draft", replacements: [{ startOffset: 0, endOffset: 1, oldText: "t", newText: "x" }] },
       "entityCard"
     )
 
@@ -291,5 +291,38 @@ describe("applyStudioPatch for a character arc", () => {
 
     expect(result.ok).toBe(true)
     expect(result.ok ? result.text : "").not.toContain("냉소적")
+  })
+})
+
+describe("applyStudioPatch draft anchors", () => {
+  const body = "0123456789"
+
+  it("refuses a range whose anchor does not match the body", () => {
+    const result = applyStudioPatch(
+      body,
+      {
+        target: "draft",
+        replacements: [{ startOffset: 2, endOffset: 5, oldText: "999", newText: "XY" }]
+      },
+      "draft"
+    )
+
+    expect(result).toEqual({
+      ok: false,
+      message: "고칠 구간이 본문과 일치하지 않습니다. 다시 요청해 주세요."
+    })
+  })
+
+  it("refuses a range that drifted by one character", () => {
+    const result = applyStudioPatch(
+      body,
+      {
+        target: "draft",
+        replacements: [{ startOffset: 3, endOffset: 6, oldText: "234", newText: "XY" }]
+      },
+      "draft"
+    )
+
+    expect(result.ok).toBe(false)
   })
 })

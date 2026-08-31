@@ -186,7 +186,7 @@ describe("studio proposal rpc handlers", () => {
       entity: sceneEntity,
       turn: proposalTurn({
         targetFile: "draft/01-intro.md",
-        patch: { target: "draft", replacements: [{ startOffset: 0, endOffset: 2, newText: "XY" }] },
+        patch: { target: "draft", replacements: [{ startOffset: 0, endOffset: 2, oldText: "01", newText: "XY" }] },
         baselineHash: hashBaseline(draftText)
       })
     })
@@ -334,5 +334,31 @@ describe("studio proposal follow-ups", () => {
     })
 
     expect(followUpCalls.added).toEqual([])
+  })
+})
+
+describe("studio proposal path safety", () => {
+  it("refuses an entity key that escapes the workspace", async () => {
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: { kind: "character", key: "../../escape" },
+      turn: proposalTurn()
+    })
+
+    expect(response.payload?.status).toBe("failed")
+    expect(String(response.payload?.message)).toContain("찾을 수 없습니다")
+    expect(files.get("/workspace/character/seorin.card")).toBe(cardText)
+  })
+
+  it("reports why a preview could not be shown instead of doing nothing", async () => {
+    files.set("/workspace/character/seorin.card", `${cardText}\ntags:\n  - 추가됨`)
+
+    const response = await send(bridgeWith(), "studio.proposal.preview", {
+      entity: characterEntity,
+      turn: proposalTurn()
+    })
+
+    expect(response.payload?.shown).toBe(false)
+    expect(String(response.payload?.message)).toContain("파일이 바뀌어서")
+    expect(shownDiffs).toHaveLength(0)
   })
 })

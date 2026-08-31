@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 
 import type { StudioChatStage, StudioChatUseCase } from '@/application/studio/studioChatUseCase';
+import { extractDraftBody } from '@storyboard/story-format';
+
 import {
   readStudioEntityContext,
   resolveStudioFollowUps,
   resolveStudioLookups,
+  type StudioEntityContext,
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -50,15 +53,22 @@ export function createStudioChatRpcHandlers(
         return { turns: [sayTurn(missingEntityMessage(payload.entity))] };
       }
 
+      // NOTE: the prompt tells the model a selection was given, so the selected text has to travel
+      // with it; a bare hasSelection flag would leave the model guessing which passage to rewrite.
+      const selection = readSelectedDraftText(entityContext);
+      const contextWithSelection = selection
+        ? `${entityContext.context}\n\n[작가가 선택한 구간]\n${selection}`
+        : entityContext.context;
+
       const startedGeneration = generation;
 
       try {
         const turns = await deps.useCase.send({
           workspaceRoot: root,
-          entityContext,
+          entityContext: { ...entityContext, context: contextWithSelection },
           history: payload.history,
           instruction: payload.instruction,
-          hasSelection: target.hasSelection,
+          hasSelection: selection !== undefined,
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(root, requests),
           resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
@@ -78,6 +88,30 @@ export function createStudioChatRpcHandlers(
       return {};
     },
   };
+}
+
+// NOTE: only a draft edit can act on a selection, and the offsets the model must return are body
+// offsets, so the excerpt is reported the same way.
+function readSelectedDraftText(entityContext: StudioEntityContext): string | undefined {
+  if (entityContext.patchTarget !== 'draft' || entityContext.baseline === undefined) {
+    return undefined;
+  }
+
+  const editor = vscode.window.activeTextEditor;
+
+  if (!editor || editor.selection.isEmpty) {
+    return undefined;
+  }
+
+  const body = extractDraftBody(entityContext.baseline);
+  const selected = editor.document.getText(editor.selection);
+  const startOffset = body.indexOf(selected);
+
+  if (selected.trim().length === 0 || startOffset === -1) {
+    return undefined;
+  }
+
+  return `[${startOffset}-${startOffset + selected.length}]\n${selected}`;
 }
 
 // NOTE: a scene entity spans the seed card and its draft; whichever the author is looking at is

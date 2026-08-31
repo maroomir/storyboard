@@ -2,11 +2,28 @@ import * as vscode from 'vscode';
 
 import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@/shared/messaging';
+import { isSafeStudioEntityKey } from '@/infrastructure/vscode/pathConventions';
+import type { StoryboardResponsePayload, StudioEntity } from '@/shared/messaging';
 
 export interface StudioFollowUpRpcHandlersDependencies {
   readonly repository: IStudioFollowUpRepository;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
+}
+
+function entityTargetFile(entity: StudioEntity): string | undefined {
+  if (!isSafeStudioEntityKey(entity.key)) {
+    return undefined;
+  }
+
+  switch (entity.kind) {
+    case 'character':
+    case 'background':
+      return `${entity.kind}/${entity.key}.card`;
+    case 'scene':
+      return `scene/${entity.key}.card`;
+    case 'project':
+      return undefined;
+  }
 }
 
 export function createStudioFollowUpRpcHandlers(
@@ -55,8 +72,16 @@ export function createStudioFollowUpRpcHandlers(
         return { opened: false };
       }
 
+      // SECURITY: the path arrives from the webview, so it is rebuilt from the validated entity
+      // rather than trusted as given.
+      const targetFile = entityTargetFile(payload.entity);
+
+      if (!targetFile || targetFile !== payload.targetFile) {
+        return { opened: false };
+      }
+
       try {
-        const uri = vscode.Uri.joinPath(root, payload.targetFile);
+        const uri = vscode.Uri.joinPath(root, targetFile);
         // NOTE: opened as a preview tab so walking a chain of follow-ups does not bury the author
         // in editor tabs.
         await vscode.window.showTextDocument(uri, { preview: true });

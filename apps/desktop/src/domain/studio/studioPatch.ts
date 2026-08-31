@@ -145,6 +145,7 @@ function applyDraftPatch(
   replacements: readonly {
     readonly startOffset: number;
     readonly endOffset: number;
+    readonly oldText: string;
     readonly newText: string;
   }[],
 ): StudioPatchResult {
@@ -159,6 +160,15 @@ function applyDraftPatch(
 
     if (previous && replacement.startOffset < previous.endOffset) {
       return { ok: false, message: '수정 범위가 서로 겹칩니다.' };
+    }
+
+    // NOTE: the anchor is what makes a drifted offset visible; without it a miscount rewrites an
+    // unrelated passage that still passes every range check.
+    if (baseline.slice(replacement.startOffset, replacement.endOffset) !== replacement.oldText) {
+      return {
+        ok: false,
+        message: '고칠 구간이 본문과 일치하지 않습니다. 다시 요청해 주세요.',
+      };
     }
   }
 

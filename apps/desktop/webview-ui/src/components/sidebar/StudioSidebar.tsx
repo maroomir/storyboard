@@ -17,6 +17,7 @@ import {
   parseProgressPayload,
   parseProposalApplyPayload,
   parsePendingFollowUpsPayload,
+  parsePreviewFailure,
   parseSessionListPayload,
   parseSessionLoadPayload,
   parseStagePayload,
@@ -82,6 +83,7 @@ export function StudioSidebar({
   const sendRequestIdRef = useRef<string | undefined>(undefined);
   const followUpRequestIdRef = useRef<string | undefined>(undefined);
   const applyRequestsRef = useRef<Map<string, string>>(new Map());
+  const previewRequestIdRef = useRef<string | undefined>(undefined);
   const loadedEntityRef = useRef<StudioTarget['entity']>(initialData.target.entity);
   const startsFreshRef = useRef(false);
 
@@ -137,6 +139,18 @@ export function StudioSidebar({
         sendRequestIdRef.current = undefined;
         setChatStage('idle');
         setTurns((prev) => [...prev, ...parseChatSendPayload(data.payload)]);
+        return;
+      }
+
+      if (data.id === previewRequestIdRef.current) {
+        previewRequestIdRef.current = undefined;
+        const failure = parsePreviewFailure(data.payload);
+        if (failure) {
+          setTurns((prev) => [
+            ...prev,
+            { id: createRequestId(), role: 'assistant', kind: 'say', message: failure },
+          ]);
+        }
         return;
       }
 
@@ -298,7 +312,10 @@ export function StudioSidebar({
   const proposalActions: StudioProposalActions = {
     onPreview: (turn) => {
       if (target.entity) {
-        post('studio.proposal.preview', { entity: target.entity, turn });
+        previewRequestIdRef.current = post('studio.proposal.preview', {
+          entity: target.entity,
+          turn,
+        });
       }
     },
     onApply: (turn: StudioProposalTurn) => {
