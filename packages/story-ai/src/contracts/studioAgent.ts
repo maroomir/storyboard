@@ -7,12 +7,15 @@ export interface StudioAgentLookupRequest {
   readonly key: string;
 }
 
-export type StudioAgentToolName =
-  | 'continuityCheck'
-  | 'grammarCheck'
-  | 'expand'
-  | 'condense'
-  | 'augment';
+export const studioAgentToolNames = [
+  'continuityCheck',
+  'grammarCheck',
+  'expand',
+  'condense',
+  'augment',
+] as const;
+
+export type StudioAgentToolName = (typeof studioAgentToolNames)[number];
 
 export interface StudioAgentToolSpan {
   readonly startOffset: number;
@@ -250,13 +253,7 @@ function coerceInvoke(parsed: Record<string, unknown>): StudioAgentAction | unde
 }
 
 function isToolName(value: unknown): value is StudioAgentToolName {
-  return (
-    value === 'continuityCheck' ||
-    value === 'grammarCheck' ||
-    value === 'expand' ||
-    value === 'condense' ||
-    value === 'augment'
-  );
+  return studioAgentToolNames.some((name) => name === value);
 }
 
 function toToolSpan(value: unknown): StudioAgentToolSpan | undefined {

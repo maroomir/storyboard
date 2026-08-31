@@ -76,6 +76,7 @@ export function createStudioChatRpcHandlers(
           history: payload.history,
           instruction: payload.instruction,
           hasSelection: selection !== undefined,
+          ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(root, requests),
           ...draftToolResolver(deps, root, payload.entity, entityContext),

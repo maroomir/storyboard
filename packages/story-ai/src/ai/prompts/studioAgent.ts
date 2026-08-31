@@ -1,3 +1,4 @@
+import { isSpanRequiredTool, type StudioAgentToolName } from '../../contracts/studioAgent';
 import type { PromptArtifact } from './types';
 
 export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
@@ -13,6 +14,7 @@ export interface StudioAgentPromptInput {
   readonly canAsk: boolean;
   readonly canLookup: boolean;
   readonly canInvoke: boolean;
+  readonly pinnedTool?: StudioAgentToolName;
   readonly hasSelection: boolean;
 }
 
@@ -91,6 +93,27 @@ function toolPolicy(input: StudioAgentPromptInput): string[] {
     '- 변환 도구의 결과는 초벌이다. 그대로 쓰지 말고 대화 맥락과 문체에 맞게 다듬어 propose의 newText로 써라.',
     '- 검사 결과를 받으면 핵심을 작가에게 전하고, 고칠 구간이 분명하면 propose로 이어가라.',
     '- 같은 도구를 같은 구간에 반복해서 부르지 마라.',
+    ...pinnedToolPolicy(input),
+  ];
+}
+
+function pinnedToolPolicy(input: StudioAgentPromptInput): string[] {
+  if (input.pinnedTool === undefined) {
+    return [];
+  }
+
+  return [
+    '',
+    `[작가가 ${input.pinnedTool} 도구를 지정했다]`,
+    `- 이번 응답은 반드시 {"kind":"invoke","tool":"${input.pinnedTool}", ...} 여야 한다. 쓸지 말지 판단하지 마라.`,
+    '- 작가가 함께 적은 말은 그 도구를 어떻게 쓸지에 대한 주문이다. instruction에 옮겨 담아라.',
+    ...(isSpanRequiredTool(input.pinnedTool)
+      ? [
+          input.hasSelection
+            ? '- 자료의 [작가가 선택한 구간]을 span으로 삼아라.'
+            : '- 선택한 구간이 없다. 작가의 말과 본문을 보고 고칠 구간을 스스로 잡아 span으로 지정하라.',
+        ]
+      : ['- 이 도구는 초안 전체를 보므로 span 없이 불러라.']),
   ];
 }
 

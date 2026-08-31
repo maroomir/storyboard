@@ -7,6 +7,7 @@ import type {
   StudioAgentInvokeRequest,
   StudioAgentLookupRequest,
   StudioAgentMessage,
+  StudioAgentToolName,
 } from '@storyboard/story-ai';
 
 import type { AiGateway } from '../ai/aiGateway';
@@ -34,6 +35,7 @@ export interface StudioChatRequest {
   readonly history: readonly StudioChatTurn[];
   readonly instruction: string;
   readonly hasSelection: boolean;
+  readonly pinnedTool?: StudioAgentToolName;
   readonly isValidationEnabled: boolean;
   readonly resolveLookup: (requests: readonly StudioAgentLookupRequest[]) => Promise<string>;
   readonly resolveInvoke?: (request: StudioAgentInvokeRequest) => Promise<string>;
@@ -70,6 +72,7 @@ export class StudioChatUseCase {
         instruction: request.instruction,
         hasSelection: request.hasSelection,
         remainingQuestions: remainingQuestions(request.history),
+        ...(request.pinnedTool === undefined ? {} : { pinnedTool: request.pinnedTool }),
         resolveLookup: request.resolveLookup,
         ...(request.resolveInvoke === undefined ? {} : { resolveInvoke: request.resolveInvoke }),
       },
