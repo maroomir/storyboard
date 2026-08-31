@@ -10,6 +10,20 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-08-31
+
+### Added
+
+- **A character's earlier lines now guide how they speak.** Storyboard records who says each line in a draft and shows a few of that character's actual lines when polishing dialogue in later scenes, so a character's voice drifts less as scenes accumulate.
+- **A recurring location's description now grows.** When a place appears again, the draft of its previous appearance informs the new description, so objects and structures established there carry forward. Previously the first appearance's description stayed fixed until the card changed.
+
+### Fixed
+
+- **A draft written elsewhere is archived before it is overwritten.** Generating over a draft produced by the Telegram bot or edited by hand now keeps the previous version in `.draft` regardless of the history setting. It used to disappear with no way back.
+- **Long works no longer forget their early setup.** The story state ledger used to discard its oldest entries past a fixed count; it now keeps everything and selects what to include per prompt. A fact established in act one is consulted again when act three mentions it.
+- Interrupted writes no longer leave a truncated file behind.
+- Warnings from generation survive the review rewrite instead of being dropped from the draft header.
+
 ## [0.7.0] - 2026-08-30
 
 ### Changed
