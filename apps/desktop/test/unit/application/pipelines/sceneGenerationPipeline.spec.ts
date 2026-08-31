@@ -1,12 +1,20 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { BackgroundCard, CharacterCard, SceneContext, SceneFile } from '@storyboard/story-format';
+import type {
+  BackgroundCard,
+  CharacterCard,
+  SceneContext,
+  SceneDialogueRecord,
+  SceneFile
+} from '@storyboard/story-format';
+import { computeDraftBodyHash } from '@storyboard/story-format';
 import {
   runSceneGenerationPipeline,
   planSectionCount,
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
+  type SceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
 } from '@storyboard/story-pipeline'
@@ -45,6 +53,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   readonly describeBackground: ReturnType<typeof vi.fn>
   readonly draftSceneSkeleton: ReturnType<typeof vi.fn>
   readonly polishSceneDialogue: ReturnType<typeof vi.fn>
+  readonly attributeSceneDialogue: ReturnType<typeof vi.fn>
   readonly expandSceneSection: ReturnType<typeof vi.fn>
 } {
   return {
@@ -52,8 +61,18 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     describeBackground: vi.fn(async () => ""),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
     polishSceneDialogue: vi.fn(async (input) => (input as { skeleton: string }).skeleton),
+    attributeSceneDialogue: vi.fn(async (input) =>
+      (input as { lines: readonly string[] }).lines.map((_, offset) => ({
+        index: offset + 1,
+        speaker: "elia"
+      }))
+    ),
     expandSceneSection: vi.fn(async () => longProse("살붙인 본문"))
   }
+}
+
+function createRecordingCorpus(corpus: SceneDialogueRecord[] = []): SceneDialogueCorpus {
+  return { loadCorpus: async (): Promise<readonly SceneDialogueRecord[]> => corpus }
 }
 
 describe("runSceneGenerationPipeline — 입력 검증", () => {
@@ -512,6 +531,202 @@ describe("대사 다듬기 단계", () => {
     expect(result.skeleton).toBe("엘리아가 문을 연다.")
     expect(result.warnings[0]).toContain("대사 다듬기를 되돌렸습니다")
     expect(result.warnings[0]).toContain("지훈")
+  })
+})
+
+describe("대사 화자 귀속 단계", () => {
+  const skeletonWithDialogue = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금 당장." 지훈이 고개를 저었다. "아직은 아니야, 조금만 더." ${"복도는 조용했다. ".repeat(20)}`
+
+  // 살붙임이 뼈대에 없던 대사를 새로 만드는 상황. 귀속은 뼈대가 아니라 이 결과를 봐야 한다.
+  function expandWithExtraDialogue(section: string): string {
+    return `${section} "그럼 내가 먼저 간다." ${longProse("살붙인 본문")}`
+  }
+
+  it("attributes the finished draft body, not the skeleton", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeletonWithDialogue)
+    ai.expandSceneSection.mockImplementation(async (input) =>
+      expandWithExtraDialogue((input as { section: string }).section)
+    )
+
+    const stages: string[] = []
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      onProgress: (stage): void => {
+        stages.push(stage)
+      }
+    })
+
+    expect(stages.indexOf("attributeDialogue")).toBeGreaterThan(stages.lastIndexOf("expandSection"))
+
+    const attributionInput = ai.attributeSceneDialogue.mock.calls[0]?.[0] as {
+      skeleton: string
+      lines: readonly string[]
+      candidates: readonly { id: string }[]
+    }
+    expect(attributionInput.skeleton).toBe(result.draftBody)
+    expect(attributionInput.lines).toContain("그럼 내가 먼저 간다.")
+    expect(attributionInput.candidates.map((candidate) => candidate.id)).toEqual(["elia", "jihoon"])
+
+    // 원고에 실린 대사가 하나도 빠지지 않아야 한다.
+    const bodyLines = [...result.draftBody.matchAll(/[“"]([^”"\n]{4,})[”"]/g)].map((match) =>
+      (match[1] ?? "").trim()
+    )
+    expect(result.dialogueRecord?.turns.map((turn) => turn.text)).toEqual(bodyLines)
+    expect(result.dialogueRecord?.bodyHash).toBe(computeDraftBodyHash(result.draftBody))
+  })
+
+  it("returns the record instead of persisting it", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeletonWithDialogue)
+    ai.expandSceneSection.mockImplementation(async (input) =>
+      expandWithExtraDialogue((input as { section: string }).section)
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.dialogueRecord).toBeDefined()
+    expect(result.dialogueRecord?.sceneStem).toBe("01-opening")
+  })
+
+  it("records unknown speakers and keeps generating when attribution throws", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeletonWithDialogue)
+    ai.expandSceneSection.mockImplementation(async (input) =>
+      expandWithExtraDialogue((input as { section: string }).section)
+    )
+    ai.attributeSceneDialogue.mockRejectedValueOnce(new Error("provider down"))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(result.draftBody.length).toBeGreaterThan(0)
+    expect(result.warnings.join(" ")).not.toContain("귀속")
+    expect(new Set(result.dialogueRecord?.turns.map((turn) => turn.speaker))).toEqual(
+      new Set(["unknown"])
+    )
+  })
+
+  it("feeds the character's earlier lines into the polish call", async () => {
+    const ai = createRecordingAiService()
+    const corpus = createRecordingCorpus([
+      {
+        sceneStem: "01-opening",
+        bodyHash: computeDraftBodyHash("이전 씬"),
+        turns: [{ index: 1, speaker: "elia", text: "값보다 내력이 먼저입니다." }]
+      }
+    ])
+
+    await runSceneGenerationPipeline({
+      sceneStem: "02-next",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      dialogueCorpus: corpus
+    })
+
+    const polishInput = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
+      voiceSamples: ReadonlyMap<string, readonly string[]>
+    }
+    expect(polishInput.voiceSamples.get("엘리아")).toEqual(["값보다 내력이 먼저입니다."])
+  })
+
+  it("never samples a scene that comes after the one being generated", async () => {
+    const ai = createRecordingAiService()
+    const corpus = createRecordingCorpus([
+      {
+        sceneStem: "01-opening",
+        bodyHash: computeDraftBodyHash("앞 씬"),
+        turns: [{ index: 1, speaker: "elia", text: "앞 씬에서 한 말입니다." }]
+      },
+      {
+        sceneStem: "09-later",
+        bodyHash: computeDraftBodyHash("뒤 씬"),
+        turns: [{ index: 1, speaker: "elia", text: "뒤 씬에서 할 말입니다." }]
+      }
+    ])
+
+    await runSceneGenerationPipeline({
+      sceneStem: "02-next",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      dialogueCorpus: corpus
+    })
+
+    const polishInput = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
+      voiceSamples: ReadonlyMap<string, readonly string[]>
+    }
+    expect(polishInput.voiceSamples.get("엘리아")).toEqual(["앞 씬에서 한 말입니다."])
+  })
+})
+
+describe("배경 묘사 갱신", () => {
+  const marketCard: BackgroundCard = {
+    type: "location",
+    id: "grey-market",
+    name: "회색시장",
+    locationKind: "place",
+    characterIds: [],
+    description: ["안개가 낀 무허가 시장"]
+  } as BackgroundCard
+
+  function createBackgroundStore(cached: string | undefined): {
+    readonly load: ReturnType<typeof vi.fn>
+    readonly save: ReturnType<typeof vi.fn>
+  } {
+    return { load: vi.fn(async () => cached), save: vi.fn(async () => undefined) }
+  }
+
+  it("reuses the cached atmosphere when the location has not appeared before", async () => {
+    const ai = createRecordingAiService()
+    const store = createBackgroundStore("고여 있는 안개")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", marketCard),
+      aiService: ai,
+      format: "novel",
+      backgroundStore: store
+    })
+
+    expect(store.load).toHaveBeenCalledTimes(1)
+    expect(ai.describeBackground).not.toHaveBeenCalled()
+    expect(store.save).not.toHaveBeenCalled()
+  })
+
+  it("regenerates with the excerpt when the same location appears again", async () => {
+    const ai = createRecordingAiService()
+    const store = createBackgroundStore("고여 있는 안개")
+    ai.describeBackground.mockResolvedValueOnce("돌계단 옆에 천막 좌판이 늘었다.")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "05-return",
+      context: contextFor([eliaCard], "본문", marketCard),
+      aiService: ai,
+      format: "novel",
+      backgroundStore: store,
+      backgroundRecentExcerpt: "돌계단 아래 천막 좌판에서 부적을 살폈다."
+    })
+
+    expect(store.load).not.toHaveBeenCalled()
+    expect(ai.describeBackground).toHaveBeenCalledTimes(1)
+    expect(ai.describeBackground.mock.calls[0]?.[2]).toBe("돌계단 아래 천막 좌판에서 부적을 살폈다.")
+
+    // 이 씬 한정 값이라 카드 키 슬롯에 저장하지 않는다. 저장하면 마지막 실행 씬이 정본을 덮어쓴다.
+    expect(store.save).not.toHaveBeenCalled()
   })
 })
 

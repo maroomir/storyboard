@@ -27,6 +27,8 @@ export function stageProgressLabel(stage: SceneGenerationPipelineStage): string 
       return '장면 뼈대 잡기';
     case 'polishDialogue':
       return '대사 다듬기';
+    case 'attributeDialogue':
+      return '대사 화자 정리';
     case 'expandSection':
       return '구간 살붙임';
     default:

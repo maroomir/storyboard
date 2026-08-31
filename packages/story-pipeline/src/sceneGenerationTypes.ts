@@ -1,5 +1,14 @@
-import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
-import type { IBackgroundMemoryStore, IPersonaMemoryStore } from './memoryStore';
+import type {
+  ProjectFormat,
+  SceneContext,
+  SceneDialogueRecord,
+} from '@storyboard/story-format';
+import type {
+  IBackgroundMemoryStore,
+  IPersonaMemoryStore,
+  ISceneDialogueCorpus,
+  ISceneDialogueStore,
+} from './memoryStore';
 import type { AiProviderId, StoryboardAIService, StyleDirective } from '@storyboard/story-ai';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAIService,
@@ -7,6 +16,7 @@ export type SceneGenerationPipelineAiService = Pick<
   | 'describeBackground'
   | 'draftSceneSkeleton'
   | 'polishSceneDialogue'
+  | 'attributeSceneDialogue'
   | 'expandSceneSection'
 >;
 
@@ -14,17 +24,21 @@ export type SceneGenerationPipelineStage =
   | 'buildPersonas'
   | 'draftSkeleton'
   | 'polishDialogue'
+  | 'attributeDialogue'
   | 'expandSection';
 
 export interface SceneGenerationPipelineTaskProviders {
   readonly personaGeneration?: AiProviderId;
   readonly sceneSkeleton?: AiProviderId;
   readonly sceneDialoguePolish?: AiProviderId;
+  readonly sceneDialogueAttribution?: AiProviderId;
   readonly sceneSectionExpansion?: AiProviderId;
 }
 
 export type PersonaMemoryStore = IPersonaMemoryStore;
 export type BackgroundMemoryStore = IBackgroundMemoryStore;
+export type SceneDialogueStore = ISceneDialogueStore;
+export type SceneDialogueCorpus = ISceneDialogueCorpus;
 
 export class SceneGenerationPipelineCancelledError extends Error {
   public constructor() {
@@ -52,6 +66,9 @@ export interface RunSceneGenerationPipelineInput {
   readonly useContextCondense?: boolean;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
+  readonly dialogueCorpus?: SceneDialogueCorpus;
+  // 같은 장소가 다시 나올 때 직전 등장 씬에서 뽑은 발췌. 있으면 배경 묘사를 캐시 대신 갱신한다.
+  readonly backgroundRecentExcerpt?: string;
 }
 
 export interface RunSceneGenerationPipelineResult {
@@ -63,4 +80,6 @@ export interface RunSceneGenerationPipelineResult {
   readonly detectedCharacters: readonly string[];
   readonly personasUsed: ReadonlyMap<string, string>;
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>;
+  // 완성된 초안 본문의 대사 귀속. 호출자가 초안을 쓴 뒤 저장한다.
+  readonly dialogueRecord?: SceneDialogueRecord;
 }

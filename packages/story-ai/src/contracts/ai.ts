@@ -20,6 +20,7 @@ export const aiTaskCatalog = [
   { name: 'sceneDraft', label: '씬 드래프트', status: 'wired' },
   { name: 'sceneSkeleton', label: '씬 뼈대', status: 'wired' },
   { name: 'sceneDialoguePolish', label: '대사 다듬기', status: 'wired' },
+  { name: 'sceneDialogueAttribution', label: '대사 화자 귀속', status: 'wired' },
   { name: 'sceneSectionExpansion', label: '구간 살붙임', status: 'wired' },
   { name: 'traitsExtraction', label: '특성 추출', status: 'wired' },
   { name: 'factExtraction', label: '설정 사실 추출', status: 'wired' },

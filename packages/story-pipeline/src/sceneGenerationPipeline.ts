@@ -1,6 +1,16 @@
-import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
+import type {
+  CharacterCard,
+  ProjectFormat,
+  SceneContext,
+  SceneDialogueRecord,
+} from '@storyboard/story-format';
 import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
-import { createEmptyBackground, extractSceneNarrativeSource } from '@storyboard/story-format';
+import {
+  computeDraftBodyHash,
+  createEmptyBackground,
+  extractSceneNarrativeSource,
+  unknownDialogueSpeaker,
+} from '@storyboard/story-format';
 import { condensePreviousContext } from './sceneGenerationPolicies';
 import {
   assertNotCancelled,
@@ -11,12 +21,14 @@ import {
 } from './sceneGenerationStages';
 import {
   planSectionCount,
+  quotedDialoguePattern,
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
   SECTION_OUTPUT_LIMIT,
   type SectionViolation,
 } from './sceneSectionPlan';
+import { selectRepresentativeDialogue } from './dialogueCorpus';
 import {
   type RunSceneGenerationPipelineInput,
   type RunSceneGenerationPipelineResult,
@@ -214,6 +226,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
   readonly personas: ReadonlyMap<string, string>;
+  readonly voiceSamples: ReadonlyMap<string, readonly string[]>;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
@@ -221,7 +234,7 @@ async function polishDialogueOrKeepSkeleton(input: {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const polished = await input.aiService.polishSceneDialogue(
-      { skeleton: input.skeleton, personas: input.personas },
+      { skeleton: input.skeleton, personas: input.personas, voiceSamples: input.voiceSamples },
       input.options,
     );
 
@@ -241,9 +254,91 @@ async function polishDialogueOrKeepSkeleton(input: {
 
   return {
     text: input.skeleton,
-    warnings: lastViolations.map(
-      (violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`,
-    ),
+    warnings: lastViolations.map((violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`),
+  };
+}
+
+function extractDialogueLines(text: string): string[] {
+  return [...text.matchAll(quotedDialoguePattern)].map((match) => (match[1] ?? '').trim());
+}
+
+// NOTE: 페르소나 맵은 인물 이름으로 묶여 있고 사이드카는 카드 id로 묶여 있다. 다듬기 프롬프트가
+// 이름 블록을 쓰므로 여기서 이름 기준으로 옮겨 담는다.
+async function buildVoiceSamples(
+  characters: readonly CharacterCard[],
+  dialogueCorpus: RunSceneGenerationPipelineInput['dialogueCorpus'],
+  sceneStem: string | undefined,
+): Promise<Map<string, readonly string[]>> {
+  const voiceSamples = new Map<string, readonly string[]>();
+
+  if (!dialogueCorpus) {
+    return voiceSamples;
+  }
+
+  const corpus = await dialogueCorpus.loadCorpus();
+
+  for (const character of characters) {
+    const samples = selectRepresentativeDialogue(corpus, character.id, sceneStem ?? '');
+    if (samples.length > 0) {
+      voiceSamples.set(character.name, samples);
+    }
+  }
+
+  return voiceSamples;
+}
+
+// NOTE: 귀속은 말투 코퍼스를 위한 메타데이터라서 실패해도 생성을 멈추지 않는다. 화자를 못 정하면
+// unknown으로 남긴다. 대상은 뼈대가 아니라 디스크에 나가는 초안 본문이다 — 살붙임이 대사를 새로
+// 만들기도 하므로, 뼈대를 기준으로 삼으면 원고에 실린 대사의 일부가 기록에서 빠진다.
+// 저장하지 않고 결과로 돌려주기만 한다. 파생물이 원본보다 먼저 디스크에 닿으면, 살붙임이 실패한
+// 뒤에도 존재하지 않는 초안을 기술하는 기록이 남는다.
+async function buildDialogueRecord(input: {
+  readonly aiService: SceneGenerationPipelineAiService;
+  readonly draftBody: string;
+  readonly characters: readonly CharacterCard[];
+  readonly sceneStem: string | undefined;
+  readonly options: GenerateTextOptions;
+  readonly onProgress: RunSceneGenerationPipelineInput['onProgress'];
+}): Promise<SceneDialogueRecord | undefined> {
+  const { sceneStem } = input;
+
+  if (!sceneStem) {
+    return undefined;
+  }
+
+  const lines = extractDialogueLines(input.draftBody);
+  const candidates = input.characters.map((character) => ({
+    id: character.id,
+    name: character.name,
+  }));
+
+  if (lines.length === 0) {
+    return undefined;
+  }
+
+  input.onProgress?.('attributeDialogue', 1, 1);
+
+  let speakers: readonly { readonly index: number; readonly speaker: string }[] = [];
+  if (candidates.length > 0) {
+    try {
+      speakers = await input.aiService.attributeSceneDialogue(
+        { skeleton: input.draftBody, lines, candidates },
+        input.options,
+      );
+    } catch {
+      speakers = [];
+    }
+  }
+
+  const speakerByIndex = new Map(speakers.map((entry) => [entry.index, entry.speaker]));
+  return {
+    sceneStem,
+    bodyHash: computeDraftBodyHash(input.draftBody),
+    turns: lines.map((text, offset) => ({
+      index: offset + 1,
+      speaker: speakerByIndex.get(offset + 1) ?? unknownDialogueSpeaker,
+      text,
+    })),
   };
 }
 
@@ -274,9 +369,20 @@ async function executeSceneGenerationPipeline(
   );
 
   const background = context.background
-    ? await describeBackgroundForScene(context.background, aiService, input.backgroundStore)
+    ? await describeBackgroundForScene(
+        context.background,
+        aiService,
+        input.backgroundStore,
+        input.backgroundRecentExcerpt,
+      )
     : createEmptyBackground('scene-default', '미정');
   assertNotCancelled(shouldCancel);
+
+  const voiceSamples = await buildVoiceSamples(
+    context.characters,
+    input.dialogueCorpus,
+    input.sceneStem,
+  );
 
   // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
   onProgress?.('draftSkeleton', 1, 1);
@@ -303,6 +409,7 @@ async function executeSceneGenerationPipeline(
     aiService,
     skeleton,
     personas: personasUsed,
+    voiceSamples,
     characters: context.characters,
     options: withAttribution(
       { ...buildGenerateOptions(providers, 'sceneDialoguePolish'), styleDirective },
@@ -337,17 +444,35 @@ async function executeSceneGenerationPipeline(
     });
 
     expandedSections.push(outcome.text);
-    warnings.push(...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`));
+    warnings.push(
+      ...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+    );
     assertNotCancelled(shouldCancel);
   }
 
+  const draftBody = expandedSections.join('\n\n');
+
+  // 완성된 본문의 대사에 화자를 붙여 인물별 말투 코퍼스의 재료를 만든다. 저장은 호출자가 초안을
+  // 쓴 뒤에 한다.
+  const dialogueRecord = await buildDialogueRecord({
+    aiService,
+    draftBody,
+    characters: context.characters,
+    sceneStem: input.sceneStem,
+    options: withAttribution(buildGenerateOptions(providers, 'sceneDialogueAttribution'), {
+      primary: sceneRef,
+    }),
+    onProgress,
+  });
+
   return {
-    draftBody: expandedSections.join('\n\n'),
+    draftBody,
     skeleton: polished.text,
     warnings,
     detectedCharacters,
     personasUsed,
     providers,
+    ...(dialogueRecord === undefined ? {} : { dialogueRecord }),
   };
 }
 

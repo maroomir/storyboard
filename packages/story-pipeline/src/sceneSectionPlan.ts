@@ -107,7 +107,7 @@ export interface SectionViolation {
   readonly detail: string;
 }
 
-const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
+export const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
 
 // NOTE: 하한이 목표의 절반이면 그 사이 분량이 그대로 채택돼 원고가 목표에 상시 미달한다. 재시도가
 // 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.

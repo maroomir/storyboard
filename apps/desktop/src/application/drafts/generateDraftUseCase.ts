@@ -10,7 +10,9 @@ import { type SceneCacheRecord } from '../../domain/files/sceneCache';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
+  createSceneDialogueStore,
 } from '../../infrastructure/persistence/cardMemoryWorkspace';
+import { findRecentBackgroundExcerpt } from '../../infrastructure/persistence/backgroundExcerpt';
 import { buildStyleDirective } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName, StoryboardAIService } from '@storyboard/story-ai';
 import {
@@ -148,6 +150,13 @@ async function persistGeneratedDraft(
   await maybeArchiveExistingDraft(inputs, options);
 
   await options.draftRepository.write(draftUri, draft);
+
+  // 사이드카는 초안이 디스크에 자리잡은 뒤에 쓴다. 먼저 쓰면 살붙임이 실패한 뒤에도 존재하지 않는
+  // 초안을 기술하는 기록이 남는다.
+  if (result.dialogueRecord) {
+    await createSceneDialogueStore(paths).save(result.dialogueRecord);
+  }
+
   await options.sceneCacheRepository.write(cacheUri, cacheRecord);
 
   await updateStoryStateAfterGeneration(inputs, options, aiService, result.draftBody);
@@ -170,12 +179,18 @@ async function runAndPersistDraft(
     personaGeneration: options.aiGateway.getTaskProvider('personaGeneration'),
     sceneSkeleton: options.aiGateway.getTaskProvider('sceneSkeleton'),
     sceneDialoguePolish: options.aiGateway.getTaskProvider('sceneDialoguePolish'),
+    sceneDialogueAttribution: options.aiGateway.getTaskProvider('sceneDialogueAttribution'),
     sceneSectionExpansion: options.aiGateway.getTaskProvider('sceneSectionExpansion'),
   };
   const cacheProviders = {
     ...pipelineProviders,
     traitsExtraction: options.aiGateway.getTaskProvider('traitsExtraction'),
   } satisfies Partial<Record<AiTaskName, AiProviderId>>;
+
+  const backgroundId = context.background?.id;
+  const backgroundRecentExcerpt = backgroundId
+    ? await findRecentBackgroundExcerpt(paths, scene.stem, backgroundId)
+    : undefined;
 
   try {
     const result = await new SceneGenerationPipeline({
@@ -204,6 +219,8 @@ async function runAndPersistDraft(
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
       personaStore: createPersonaMemoryStore(paths, scene.stem),
       backgroundStore: createBackgroundMemoryStore(paths, scene.stem),
+      dialogueCorpus: createSceneDialogueStore(paths),
+      backgroundRecentExcerpt,
     }).run();
 
     return await persistGeneratedDraft(inputs, options, aiService, result, cacheProviders);

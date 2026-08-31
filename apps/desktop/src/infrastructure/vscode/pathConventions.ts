@@ -24,6 +24,7 @@ export interface StoryboardProjectPaths {
   readonly novelRunState: vscode.Uri;
   readonly sceneCacheDirectory: vscode.Uri;
   readonly storyState: vscode.Uri;
+  readonly sceneDialogueDirectory: vscode.Uri;
   readonly personaMemoryDirectory: vscode.Uri;
   readonly backgroundMemoryDirectory: vscode.Uri;
   readonly bibleCacheDirectory: vscode.Uri;
@@ -67,6 +68,7 @@ export function getStoryboardProjectPaths(workspaceRoot: vscode.Uri): Storyboard
     novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
+    sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
     personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
     bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),

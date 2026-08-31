@@ -6,7 +6,8 @@ import { test } from "vitest"
 import {
   runSceneGenerationPipeline,
   type BackgroundMemoryStore,
-  type PersonaMemoryStore
+  type PersonaMemoryStore,
+  type SceneDialogueStore
 } from "@storyboard/story-pipeline"
 import { buildNarrativeContext, buildSceneContext, formatBibleFactLines, type SceneContext } from "@storyboard/story-format"
 import {
@@ -19,15 +20,18 @@ import {
 } from "@storyboard/story-format"
 import {
   computeBackgroundCardHash,
+  computeDraftBodyHash,
   computePersonaCardHash,
   readBackgroundMemoryFile,
   readPersonaMemoryFile,
+  readSceneDialogueFile,
   writeBackgroundMemoryFile,
-  writePersonaMemoryFile
+  writePersonaMemoryFile,
+  writeSceneDialogueFile
 } from "@storyboard/story-format"
 import { createDraft, serializeDraft } from "@storyboard/story-format"
 import { archiveExistingDraft } from "@/domain/files/draftHistory"
-import { readSceneFile } from "@storyboard/story-format"
+import { parseDraft, parseSceneFileName, readSceneFile } from "@storyboard/story-format"
 import { StoryboardAIService } from "@storyboard/story-ai"
 import type { AiProviderRegistry } from "@storyboard/story-ai"
 import { ClaudeCodeProvider } from "@storyboard/story-ai"
@@ -35,7 +39,7 @@ import { CodexProvider } from "@storyboard/story-ai"
 import { createDefaultCliRunner, type CliRunResult } from "@storyboard/story-ai"
 import type { AiProviderId } from "@storyboard/story-ai"
 import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from "@storyboard/story-ai"
-import type { BackgroundCard, CharacterCard } from "@storyboard/story-format"
+import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from "@storyboard/story-format"
 import { buildRevisionInstructions, countBlockingIssues, scoreCritique, shouldPassRevise } from "@storyboard/story-ai"
 import type { ProjectFormat } from "@storyboard/story-format"
 import {
@@ -87,6 +91,7 @@ const harnessKeepHistory = (process.env.SCENE_KEEP_HISTORY ?? process.env.GUERRI
 
 const personaMemoryDirectory = path.join(workspace, ".storyboard", "cache", "personas")
 const backgroundMemoryDirectory = path.join(workspace, ".storyboard", "cache", "backgrounds")
+const sceneDialogueDirectory = path.join(workspace, ".storyboard", "cache", "dialogue")
 
 const fileSystem = {
   readFile: async (uri: unknown): Promise<Uint8Array> => new Uint8Array(await nodeFs.readFile(uri as string)),
@@ -229,6 +234,126 @@ function createHarnessPersonaStore(sceneStem: string): PersonaMemoryStore {
       })
     }
   }
+}
+
+// 제품 경로(reconcileWithDraft)와 같은 규칙. 초안에 남아 있는 대사만 말투 표본으로 쓴다.
+async function reconcileDialogueWithDraft(
+  record: SceneDialogueRecord
+): Promise<SceneDialogueRecord | undefined> {
+  let body: string
+  try {
+    body = parseDraft(await nodeFs.readFile(path.join(paths.draftDirectory, `${record.sceneStem}.md`), "utf8")).body
+  } catch {
+    return undefined
+  }
+
+  if (computeDraftBodyHash(body) === record.bodyHash) {
+    return record
+  }
+
+  const surviving = record.turns.filter((turn) => body.includes(turn.text))
+  return surviving.length > 0 ? { ...record, turns: surviving } : undefined
+}
+
+function createHarnessDialogueStore(): SceneDialogueStore {
+  return {
+    async save(record: SceneDialogueRecord): Promise<void> {
+      await nodeFs.mkdir(sceneDialogueDirectory, { recursive: true })
+      await writeSceneDialogueFile(path.join(sceneDialogueDirectory, `${record.sceneStem}.json`), fileSystem, record)
+    },
+    async loadCorpus(): Promise<readonly SceneDialogueRecord[]> {
+      let names: string[]
+      try {
+        names = (await nodeFs.readdir(sceneDialogueDirectory, { withFileTypes: true }))
+          .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+          .map((entry) => entry.name)
+      } catch {
+        return []
+      }
+
+      const records: SceneDialogueRecord[] = []
+      for (const name of names) {
+        try {
+          const reconciled = await reconcileDialogueWithDraft(
+            await readSceneDialogueFile(path.join(sceneDialogueDirectory, name), fileSystem)
+          )
+          if (reconciled) {
+            records.push(reconciled)
+          }
+        } catch {
+          continue
+        }
+      }
+
+      return records
+    }
+  }
+}
+
+// NOTE: 제품 경로(findRecentBackgroundExcerpt)와 같은 규칙. 같은 장소가 나온 직전 씬 초안의 앞부분을
+// 넘겨 배경 묘사를 갱신시킨다.
+async function findHarnessBackgroundExcerpt(
+  currentSceneStem: string,
+  backgroundId: string
+): Promise<string | undefined> {
+  const currentOrder = parseSceneFileName(`${currentSceneStem}.card`)?.order
+  if (currentOrder === undefined) {
+    return undefined
+  }
+
+  const earlier = (await nodeFs.readdir(path.join(workspace, "scene"), { withFileTypes: true }))
+    .filter((entry) => entry.isFile() && !entry.name.startsWith("."))
+    .flatMap((entry) => {
+      const parts = parseSceneFileName(entry.name)
+      return parts && parts.order < currentOrder ? [{ fileName: entry.name, stem: parts.stem, order: parts.order }] : []
+    })
+    .sort((left, right) => right.order - left.order)
+
+  for (const candidate of earlier) {
+    try {
+      const sceneFile = await readSceneFile(
+        path.join(workspace, "scene", candidate.fileName),
+        fileSystem,
+        candidate.fileName
+      )
+      if (sceneFile.frontmatter.location !== backgroundId) {
+        continue
+      }
+
+      const raw = await nodeFs.readFile(path.join(paths.draftDirectory, `${candidate.stem}.md`), "utf8")
+      const excerpt = takeLeadingParagraphs(parseDraft(raw).body)
+      if (excerpt) {
+        return excerpt
+      }
+    } catch {
+      continue
+    }
+  }
+
+  return undefined
+}
+
+function takeLeadingParagraphs(body: string): string | undefined {
+  const paragraphs = body
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter((paragraph) => paragraph.length > 0)
+
+  const excerpt: string[] = []
+  let length = 0
+
+  for (const paragraph of paragraphs) {
+    if (length + paragraph.length > 800 && excerpt.length > 0) {
+      break
+    }
+    excerpt.push(paragraph)
+    length += paragraph.length
+    if (length >= 800) {
+      break
+    }
+  }
+
+  return excerpt.length > 0 ? excerpt.join("\n\n").slice(0, 800) : undefined
 }
 
 function createHarnessBackgroundStore(sceneStem: string): BackgroundMemoryStore {
@@ -400,6 +525,14 @@ test("regenerate guerrila draft via codex pipeline", async () => {
   const usage = createUsageSummary()
   const aiService = new StoryboardAIService(createRegistry(), { onUsage: usage.onUsage })
 
+  const backgroundRecentExcerpt = context.background
+    ? await findHarnessBackgroundExcerpt(scene.stem, context.background.id)
+    : undefined
+  if (backgroundRecentExcerpt) {
+    // eslint-disable-next-line no-console
+    console.log(`background excerpt: ${backgroundRecentExcerpt.length}자 (직전 등장 씬 반영)`)
+  }
+
   try {
     const result = await runSceneGenerationPipeline({
       sceneStem: scene.stem,
@@ -413,10 +546,13 @@ test("regenerate guerrila draft via codex pipeline", async () => {
         personaGeneration: harnessProviderId,
         sceneSkeleton: harnessProviderId,
         sceneDialoguePolish: harnessProviderId,
+        sceneDialogueAttribution: harnessProviderId,
         sceneSectionExpansion: harnessProviderId
       },
       personaStore: createHarnessPersonaStore(scene.stem),
       backgroundStore: createHarnessBackgroundStore(scene.stem),
+      dialogueCorpus: createHarnessDialogueStore(),
+      backgroundRecentExcerpt,
       onProgress: (stage, current, total) => {
         // eslint-disable-next-line no-console
         console.log(`[${stage}] ${current}/${total}`)
@@ -456,6 +592,10 @@ test("regenerate guerrila draft via codex pipeline", async () => {
       ),
       "utf8"
     )
+
+    if (result.dialogueRecord) {
+      await createHarnessDialogueStore().save(result.dialogueRecord)
+    }
 
     if (harnessRunRevise) {
       const revision = await runHarnessReviseLoop({
