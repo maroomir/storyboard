@@ -32,8 +32,15 @@ function lookup(settings: Record<string, unknown>, section: string): unknown {
 export function createFileConfiguration(
   userConfigFile: string,
   workspaceConfigFile: string,
+  overrides: Readonly<Record<string, unknown>> = {},
 ): StoryboardConfigurationLike {
-  const merged = { ...readJsonObject(userConfigFile), ...readJsonObject(workspaceConfigFile) };
+  // Flags win over the workspace file, which wins over the user file — the same precedence order
+  // VSCode gives a workspace setting over a user setting, with the command line on top.
+  const merged = {
+    ...readJsonObject(userConfigFile),
+    ...readJsonObject(workspaceConfigFile),
+    ...overrides,
+  };
 
   return {
     get: <T>(section: string, defaultValue: T): T => {

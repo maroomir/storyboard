@@ -23,6 +23,9 @@ Commands
 
 Flags
   --workspace <path>           대상 워크스페이스 (기본: 현재 디렉터리)
+  --provider <id>              이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)
+  --model <name>               그 프로바이더의 모델
+  --revise-iterations <n>      검수-재작성 반복 상한
   --json                       결과를 JSON 으로 stdout 에 출력합니다
   --verbose                    진행 로그를 stderr 에 출력합니다
   --version, --help
@@ -59,10 +62,18 @@ async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
 
+  const reviseIterations = flagString(args.flags, 'revise-iterations');
   const container = createCliContainer({
     workspacePath,
     verbose: flagBoolean(args.flags, 'verbose'),
     version,
+    ...(flagString(args.flags, 'provider') === undefined
+      ? {}
+      : { provider: flagString(args.flags, 'provider') }),
+    ...(flagString(args.flags, 'model') === undefined
+      ? {}
+      : { model: flagString(args.flags, 'model') }),
+    ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
   });
 
   const outcome = await handler({ container, args });

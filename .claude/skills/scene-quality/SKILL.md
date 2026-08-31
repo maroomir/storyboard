@@ -42,14 +42,14 @@ If not given, ask for the workspace path and scene file before starting.
 ## Loop
 
 1. **Generate** (writes `draft/NN-slug.md`):
-   `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts generateGuerrila`
+   `npm run cli:build && node apps/cli/dist/index.js scene generate <NN-slug> --workspace <ws> --force --provider codex --model gpt-5.6-terra`
    Back up each iteration to `<ws>/draft-history/` before regenerating.
 2. **Objective coverage:**
    `cd apps/desktop && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts coverageCheck`
    Read `coveredRatio` + `missing` / `outOfOrder` beat indices (the `checkSceneCoverage` feature).
 3. **Qualitative eval:** hand the draft + gt + source to `scenario-analyst`; it scores with `./rubric.md` (gate A, 4 axes, 6-dim /30).
 4. **Diagnose** the single highest-leverage gap (gate-A failures first: truncation/order).
-5. **Fix** in `apps/desktop/src/` (pipeline/prompts) and/or workspace cards. Tester adds tests for any `apps/desktop/src/` change. For cards, only `voice`/`aliases`/`traits`/`description` (+`name`/`role`) actually affect generation — see `apps/desktop/docs/card-parameter-impact.md`.
+5. **Fix** in `packages/story-engine/` or `packages/story-ai/` (pipeline/prompts) and/or workspace cards. Tester adds tests for any engine change. For cards, only `voice`/`aliases`/`traits`/`description` (+`name`/`role`) actually affect generation — see `apps/desktop/docs/card-parameter-impact.md`.
 6. **Regenerate → re-score.** Loop until all four axes ≥4 and coveredRatio → 1.0. Then commit per feature.
 
 Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (skip the post-gen revise loop to save CLI cost), `SCENE_MODEL=<id>`. Legacy `GUERRILA_*` env names still work as a fallback.
@@ -64,7 +64,7 @@ Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (ski
 ## References
 
 - Rubric: `./rubric.md` (mirror of `apps/desktop/docs/scene-quality-rubric.md` — keep both in sync)
-- Harness + coverage probe: `apps/desktop/scripts/harness/generateGuerrila.harness.ts`, `apps/desktop/scripts/harness/coverageCheck.harness.ts`, `apps/desktop/vitest.harness.config.ts`
+- Generation: the CLI (`apps/cli`), which runs the same engine as the extension. Coverage probe: `apps/desktop/scripts/harness/coverageCheck.harness.ts`, `apps/desktop/vitest.harness.config.ts`
 - Coverage feature: `AIService.checkSceneCoverage`, `packages/story-ai/src/contracts/sceneCoverage.ts`, task `sceneCoverage`
 - Parameter impact: `apps/desktop/docs/card-parameter-impact.md`
 - Pipeline: `packages/story-pipeline/src/sceneGenerationPipeline.ts`, `packages/story-ai/src/ai/prompts/`
