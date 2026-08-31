@@ -1,4 +1,8 @@
-import { isSpanRequiredTool, type StudioAgentToolName } from '../../contracts/studioAgent';
+import {
+  isSpanRequiredTool,
+  studioToolNamesByShape,
+  type StudioAgentToolName,
+} from '../../contracts/studioAgent';
 import type { PromptArtifact } from './types';
 
 export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
@@ -67,33 +71,58 @@ function buildSystem(input: StudioAgentPromptInput): string {
 }
 
 function invokeShape(input: StudioAgentPromptInput): string[] {
-  return input.canInvoke
+  if (!input.canInvoke) {
+    return [];
+  }
+
+  const tools = studioToolNamesByShape[input.patchShape].join('|');
+
+  return input.patchShape === 'draft'
     ? [
-        '{"kind":"invoke","tool":"continuityCheck|grammarCheck|expand|condense|augment","span":{"startOffset":0,"endOffset":0,"oldText":"구간 원문 그대로"},"instruction":"...","reason":"..."}',
+        `{"kind":"invoke","tool":"${tools}","span":{"startOffset":0,"endOffset":0,"oldText":"구간 원문 그대로"},"instruction":"...","reason":"..."}`,
       ]
-    : [];
+    : [`{"kind":"invoke","tool":"${tools}","reason":"..."}`];
 }
 
 function toolPolicy(input: StudioAgentPromptInput): string[] {
   if (!input.canInvoke) {
-    return input.patchShape === 'draft'
-      ? ['- 도구 호출 기회를 모두 썼다. 더 invoke하지 말고 주어진 자료로 판단하라.']
-      : [];
+    return ['- 도구 호출 기회를 모두 썼다. 더 invoke하지 말고 주어진 자료로 판단하라.'];
   }
 
   return [
     '',
     '[도구]',
-    '- continuityCheck: 초안 전체를 설정 자료와 대조해 불일치 목록을 받는다. span 없이 부른다.',
-    '- grammarCheck: 초안 전체의 맞춤법·문법 문제 목록을 받는다. span 없이 부른다.',
-    '- expand: span 구간을 더 길게 풀어 쓴 초벌 텍스트를 받는다.',
-    '- condense: span 구간을 압축한 초벌 텍스트를 받는다.',
-    '- augment: span 구간에 카드·설정 내용을 보충한 초벌 텍스트를 받는다. instruction에 무엇을 보충할지 적어라.',
-    '- span의 oldText에는 그 구간 원문을 한 글자도 바꾸지 말고 그대로 옮겨 적어라. 오프셋과 어긋나면 도구는 실행되지 않는다.',
-    '- 변환 도구의 결과는 초벌이다. 그대로 쓰지 말고 대화 맥락과 문체에 맞게 다듬어 propose의 newText로 써라.',
-    '- 검사 결과를 받으면 핵심을 작가에게 전하고, 고칠 구간이 분명하면 propose로 이어가라.',
-    '- 같은 도구를 같은 구간에 반복해서 부르지 마라.',
+    ...toolCatalog(input.patchShape),
+    '- 검사 결과를 받으면 핵심을 작가에게 전하고, 고칠 내용이 분명하면 propose로 이어가라.',
+    '- 같은 도구를 같은 대상에 반복해서 부르지 마라.',
     ...pinnedToolPolicy(input),
+  ];
+}
+
+function toolCatalog(patchShape: StudioAgentPatchShape): string[] {
+  if (patchShape === 'draft') {
+    return [
+      '- continuityCheck: 초안 전체를 설정 자료와 대조해 불일치 목록을 받는다. span 없이 부른다.',
+      '- grammarCheck: 초안 전체의 맞춤법·문법 문제 목록을 받는다. span 없이 부른다.',
+      '- expand: span 구간을 더 길게 풀어 쓴 초벌 텍스트를 받는다.',
+      '- condense: span 구간을 압축한 초벌 텍스트를 받는다.',
+      '- augment: span 구간에 카드·설정 내용을 보충한 초벌 텍스트를 받는다. instruction에 무엇을 보충할지 적어라.',
+      '- span의 oldText에는 그 구간 원문을 한 글자도 바꾸지 말고 그대로 옮겨 적어라. 오프셋과 어긋나면 도구는 실행되지 않는다.',
+      '- 변환 도구의 결과는 초벌이다. 그대로 쓰지 말고 대화 맥락과 문체에 맞게 다듬어 propose의 newText로 써라.',
+    ];
+  }
+
+  if (patchShape === 'sceneCard') {
+    return [
+      '- cardAudit: 이 씬 카드가 자료와 어긋나는 점의 목록을 받는다.',
+      '- relationCheck: characters·location이 실제 카드를 가리키는지 확인한 결과를 받는다.',
+    ];
+  }
+
+  return [
+    '- collectFromDrafts: 이 카드가 등장하는 초안들에서 카드에 더할 정보를 추출한 목록을 받는다. 결과는 후보다 — 대화 맥락에 맞는 것만 골라 다듬어 propose하라.',
+    '- cardAudit: 이 카드가 자료와 어긋나는 점의 목록을 받는다.',
+    '- relationCheck: 관계·참조가 실제 카드를 가리키는지, 상대 카드에도 관계가 있는지 확인한 결과를 받는다.',
   ];
 }
 
@@ -113,7 +142,7 @@ function pinnedToolPolicy(input: StudioAgentPromptInput): string[] {
             ? '- 자료의 [작가가 선택한 구간]을 span으로 삼아라.'
             : '- 선택한 구간이 없다. 작가의 말과 본문을 보고 고칠 구간을 스스로 잡아 span으로 지정하라.',
         ]
-      : ['- 이 도구는 초안 전체를 보므로 span 없이 불러라.']),
+      : ['- 이 도구는 span 없이 부른다.']),
   ];
 }
 

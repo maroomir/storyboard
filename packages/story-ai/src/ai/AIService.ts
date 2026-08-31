@@ -28,6 +28,7 @@ import {
   type StudioAgentRunOptions,
   type StudioValidationInput,
 } from './StudioAgentService';
+import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../contracts/aiTypes';
@@ -108,6 +109,13 @@ export class StoryboardAIService {
     return this.studioAgentService.validate(input, options);
   }
 
+  public async auditStudioEntity(
+    input: StudioCardAuditPromptInput,
+    options: GenerateTextOptions = {},
+  ): Promise<StudioValidationVerdict> {
+    return this.studioAgentService.auditEntity(input, options);
+  }
+
   public async extractSituations(
     input: string,
     options: GenerateTextOptions = {},
@@ -125,7 +133,9 @@ export class StoryboardAIService {
   public async proposeSceneStructure(
     input: Parameters<SceneAiService['proposeSceneStructure']>[0],
     options: GenerateTextOptions = {},
-  ): Promise<ReturnType<SceneAiService['proposeSceneStructure']> extends Promise<infer T> ? T : never> {
+  ): Promise<
+    ReturnType<SceneAiService['proposeSceneStructure']> extends Promise<infer T> ? T : never
+  > {
     return this.sceneAiService.proposeSceneStructure(input, options);
   }
 

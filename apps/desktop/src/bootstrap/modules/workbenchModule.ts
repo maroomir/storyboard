@@ -19,6 +19,7 @@ export class WorkbenchModule implements IApplicationModule {
     const {
       aiGateway,
       aiProviderRegistry,
+      collectCardProposalsUseCase,
       configBridge,
       logger,
       proposalReviewService,
@@ -37,6 +38,7 @@ export class WorkbenchModule implements IApplicationModule {
         context,
         studioChatUseCase,
         aiGateway,
+        collectCardProposalsUseCase,
         proposalReviewService,
         configBridge,
         logger,

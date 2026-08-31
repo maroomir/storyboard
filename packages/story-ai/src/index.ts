@@ -37,6 +37,7 @@ export * from './ai/prompts/sceneStructure';
 export * from './ai/prompts/situationExtraction';
 export * from './ai/prompts/storyStateUpdate';
 export * from './ai/prompts/studioAgent';
+export * from './ai/prompts/studioCardAudit';
 export * from './ai/prompts/studioValidation';
 export * from './ai/prompts/traitsExtraction';
 export * from './ai/prompts/types';
