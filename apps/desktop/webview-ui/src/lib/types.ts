@@ -187,20 +187,6 @@ export interface SidebarScenesInitialData {
   readonly usage: UsageSummaryByEntity
 }
 
-export type StudioActionId =
-  | "regenerate"
-  | "generate"
-  | "applyFormat"
-  | "grammarCheck"
-  | "continuityCheck"
-  | "expand"
-  | "augment"
-  | "augmentSelection"
-  | "editSelection"
-  | "condense"
-  | "completeStory"
-  | "buildCardsFromScenes"
-
 export type StudioEntityKind = "character" | "background" | "scene" | "project"
 
 export interface StudioEntity {
@@ -254,29 +240,72 @@ export interface StudioCardStage {
 
 export type StudioStage = StudioSceneStage | StudioCardStage
 
-export type StudioProposalStatus = "pending" | "running" | "done" | "failed" | "cancelled"
+export type StudioProposalStatus = "pending" | "applied" | "rejected" | "failed"
 
-export type StudioClarifyReason = "no-target" | "needs-selection" | "needs-draft" | "ambiguous"
+export type StudioValidationState = "pass" | "warn" | "skipped"
+
+export interface StudioValidationWarning {
+  readonly message: string
+  readonly source?: string
+}
+
+export interface StudioValidation {
+  readonly state: StudioValidationState
+  readonly warnings: readonly StudioValidationWarning[]
+}
+
+export interface StudioCardFieldChange {
+  readonly field: string
+  readonly value: string | readonly string[]
+}
+
+export interface StudioDraftReplacement {
+  readonly startOffset: number
+  readonly endOffset: number
+  readonly newText: string
+}
+
+export type StudioPatch =
+  | { readonly target: "card"; readonly changes: readonly StudioCardFieldChange[] }
+  | { readonly target: "draft"; readonly replacements: readonly StudioDraftReplacement[] }
+
+export interface StudioProposalTurn {
+  readonly id: string
+  readonly role: "assistant"
+  readonly kind: "proposal"
+  readonly summary: string
+  readonly message?: string
+  readonly patch: StudioPatch
+  readonly baselineHash: string
+  readonly validation: StudioValidation
+  readonly status: StudioProposalStatus
+  readonly errorMessage?: string
+}
 
 export type StudioChatTurn =
   | { readonly id: string; readonly role: "user"; readonly text: string }
   | {
       readonly id: string
       readonly role: "assistant"
-      readonly kind: "proposal"
-      readonly action: StudioActionId
-      readonly instruction?: string
-      readonly status: StudioProposalStatus
-      readonly requestId?: string
-      readonly errorMessage?: string
+      readonly kind: "say"
+      readonly message: string
     }
   | {
       readonly id: string
       readonly role: "assistant"
-      readonly kind: "clarify"
-      readonly reason: StudioClarifyReason
-      readonly suggestions: readonly StudioActionId[]
+      readonly kind: "ask"
+      readonly question: string
+      readonly options: readonly string[]
     }
+  | StudioProposalTurn
+  | {
+      readonly id: string
+      readonly role: "assistant"
+      readonly kind: "result"
+      readonly message: string
+    }
+
+export type StudioChatStage = "thinking" | "looking-up" | "validating" | "idle"
 
 export interface StudioSessionSummary {
   readonly id: string
@@ -310,6 +339,7 @@ export interface StoryboardEventMessage {
     | "scenes.listChanged"
     | "relations.listChanged"
     | "studio.targetChanged"
+    | "studio.chat.progress"
     | "usage.changed"
     | "ai.generateStream.chunk"
   readonly payload: unknown

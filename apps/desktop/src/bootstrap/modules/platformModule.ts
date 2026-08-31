@@ -42,6 +42,7 @@ import { SceneSidebarRepository } from '../../infrastructure/persistence/reposit
 import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import { StudioChatUseCase } from '../../application/studio/studioChatUseCase';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
@@ -74,6 +75,7 @@ export interface IPlatformServices {
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly logger: StoryboardLogger;
+  readonly studioChatUseCase: StudioChatUseCase;
   readonly novelPipeline: NovelPipeline;
   readonly novelRunStateRepository: NovelRunStateRepository;
   readonly postGenerationUpdates: PostGenerationUpdateManager;
@@ -118,6 +120,7 @@ export class PlatformModule implements IApplicationModule {
     const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
     const expandDraftUseCase = new ExpandDraftUseCase(aiGateway, logger);
     const condenseDraftUseCase = new CondenseDraftUseCase(aiGateway, logger);
+    const studioChatUseCase = new StudioChatUseCase(aiGateway, logger);
     const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
     const cardRecommendationRepository = new CardRecommendationRepository();
@@ -245,6 +248,7 @@ export class PlatformModule implements IApplicationModule {
       recommendCardsUseCase,
       reviewManuscriptUseCase,
       reviseAfterGenerateGate,
+      studioChatUseCase,
       reviseDraftUseCase,
       sceneSidebarRepository,
       secretStore,

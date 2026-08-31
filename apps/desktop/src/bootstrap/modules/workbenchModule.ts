@@ -16,7 +16,13 @@ export class WorkbenchModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const { aiProviderRegistry, configBridge, secretStore } = this.platform;
+    const {
+      aiProviderRegistry,
+      configBridge,
+      proposalReviewService,
+      secretStore,
+      studioChatUseCase,
+    } = this.platform;
     const relationGraphPanel = new RelationGraphProvider({ aiProviderRegistry });
     const settingsPanel = new SettingsPanelProvider({
       aiProviderRegistry,
@@ -25,7 +31,7 @@ export class WorkbenchModule implements IApplicationModule {
     });
 
     this.disposables.add(
-      registerSidebarStudioProvider(context),
+      registerSidebarStudioProvider(context, studioChatUseCase, proposalReviewService),
       registerOpenRelationGraphCommand(context, relationGraphPanel),
       registerOpenSettingsCommand(context, settingsPanel),
       relationGraphPanel,

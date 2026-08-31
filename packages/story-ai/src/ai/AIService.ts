@@ -22,6 +22,12 @@ import {
   type InlineCompletionContext,
 } from './DraftAiService';
 import { SceneAiService } from './SceneAiService';
+import {
+  StudioAgentService,
+  type StudioAgentRunInput,
+  type StudioAgentRunOptions,
+  type StudioValidationInput,
+} from './StudioAgentService';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../contracts/aiTypes';
@@ -37,6 +43,8 @@ import { type BackgroundFactExtraction } from './prompts/backgroundFactExtractio
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseJsonObject } from '../contracts/aiResponseParser';
+import type { StudioAgentAction } from '../contracts/studioAgent';
+import type { StudioValidationVerdict } from '../contracts/studioValidation';
 import type { DraftCritiqueIssue } from '../contracts/draftReview';
 import type { SceneCoverageIssue } from '../contracts/sceneCoverage';
 import type { StoryStateUpdateItem } from '../contracts/storyStateUpdate';
@@ -73,6 +81,7 @@ export class StoryboardAIService {
   private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
   private readonly sceneAiService: SceneAiService;
+  private readonly studioAgentService: StudioAgentService;
 
   public constructor(
     registry: AiProviderRegistry,
@@ -82,6 +91,21 @@ export class StoryboardAIService {
     this.cardAiService = new CardAiService(this.gateway);
     this.draftAiService = new DraftAiService(this.gateway);
     this.sceneAiService = new SceneAiService(this.gateway);
+    this.studioAgentService = new StudioAgentService(this.gateway);
+  }
+
+  public async runStudioAgent(
+    input: StudioAgentRunInput,
+    options: StudioAgentRunOptions = {},
+  ): Promise<StudioAgentAction> {
+    return this.studioAgentService.run(input, options);
+  }
+
+  public async validateStudioProposal(
+    input: StudioValidationInput,
+    options: GenerateTextOptions = {},
+  ): Promise<StudioValidationVerdict> {
+    return this.studioAgentService.validate(input, options);
   }
 
   public async extractSituations(

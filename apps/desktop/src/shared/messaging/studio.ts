@@ -2,23 +2,6 @@ import { z } from 'zod';
 
 import { uriStringSchema } from './atoms';
 
-const studioActionSchema = z.enum([
-  'regenerate',
-  'generate',
-  'applyFormat',
-  'grammarCheck',
-  'continuityCheck',
-  'expand',
-  'augment',
-  'augmentSelection',
-  'editSelection',
-  'condense',
-  'completeStory',
-  'buildCardsFromScenes',
-]);
-
-export type StudioAction = z.infer<typeof studioActionSchema>;
-
 export const studioEntityKindSchema = z.enum(['character', 'background', 'scene', 'project']);
 
 export type StudioEntityKind = z.infer<typeof studioEntityKindSchema>;
@@ -92,21 +75,44 @@ export const studioStageResponsePayloadSchema = z.object({
   stage: studioStageSchema.optional(),
 });
 
-export const studioRunActionRequestPayloadSchema = z.object({
-  action: studioActionSchema,
-  instruction: z.string().optional(),
+export const studioProposalStatusSchema = z.enum(['pending', 'applied', 'rejected', 'failed']);
+
+export type StudioProposalStatus = z.infer<typeof studioProposalStatusSchema>;
+
+export const studioValidationStateSchema = z.enum(['pass', 'warn', 'skipped']);
+
+export const studioValidationWarningSchema = z.object({
+  message: z.string().min(1),
+  source: z.string().optional(),
 });
 
-export const studioRunActionResponsePayloadSchema = z.object({});
+export const studioValidationSchema = z.object({
+  state: studioValidationStateSchema,
+  warnings: z.array(studioValidationWarningSchema),
+});
 
-const studioTurnStatusSchema = z.enum(['pending', 'running', 'done', 'failed', 'cancelled']);
+export type StudioValidation = z.infer<typeof studioValidationSchema>;
 
-const studioClarifyReasonSchema = z.enum([
-  'no-target',
-  'needs-selection',
-  'needs-draft',
-  'ambiguous',
+export const studioCardFieldChangeSchema = z.object({
+  field: z.string().min(1),
+  value: z.union([z.string(), z.array(z.string())]),
+});
+
+export const studioDraftReplacementSchema = z.object({
+  startOffset: z.number().int().nonnegative(),
+  endOffset: z.number().int().nonnegative(),
+  newText: z.string(),
+});
+
+export const studioPatchSchema = z.discriminatedUnion('target', [
+  z.object({ target: z.literal('card'), changes: z.array(studioCardFieldChangeSchema).min(1) }),
+  z.object({
+    target: z.literal('draft'),
+    replacements: z.array(studioDraftReplacementSchema).min(1),
+  }),
 ]);
+
+export type StudioPatchPayload = z.infer<typeof studioPatchSchema>;
 
 const studioUserTurnSchema = z.object({
   id: z.string().min(1),
@@ -114,31 +120,87 @@ const studioUserTurnSchema = z.object({
   text: z.string(),
 });
 
+const studioSayTurnSchema = z.object({
+  id: z.string().min(1),
+  role: z.literal('assistant'),
+  kind: z.literal('say'),
+  message: z.string(),
+});
+
+const studioAskTurnSchema = z.object({
+  id: z.string().min(1),
+  role: z.literal('assistant'),
+  kind: z.literal('ask'),
+  question: z.string(),
+  options: z.array(z.string()),
+});
+
 const studioProposalTurnSchema = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
   kind: z.literal('proposal'),
-  action: studioActionSchema,
-  instruction: z.string().optional(),
-  status: studioTurnStatusSchema,
+  summary: z.string().min(1),
+  message: z.string().optional(),
+  patch: studioPatchSchema,
+  // NOTE: the file bytes the patch was derived from; applying against anything else is refused.
+  baselineHash: z.string().min(1),
+  validation: studioValidationSchema,
+  status: studioProposalStatusSchema,
   errorMessage: z.string().optional(),
 });
 
-const studioClarifyTurnSchema = z.object({
+const studioResultTurnSchema = z.object({
   id: z.string().min(1),
   role: z.literal('assistant'),
-  kind: z.literal('clarify'),
-  reason: studioClarifyReasonSchema,
-  suggestions: z.array(studioActionSchema),
+  kind: z.literal('result'),
+  message: z.string().min(1),
 });
 
 export const studioChatTurnSchema = z.union([
   studioUserTurnSchema,
+  studioSayTurnSchema,
+  studioAskTurnSchema,
   studioProposalTurnSchema,
-  studioClarifyTurnSchema,
+  studioResultTurnSchema,
 ]);
 
 export type StudioChatTurn = z.infer<typeof studioChatTurnSchema>;
+export type StudioProposalTurn = Extract<StudioChatTurn, { readonly kind: 'proposal' }>;
+
+export const studioChatSendRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+  instruction: z.string().min(1),
+  history: z.array(studioChatTurnSchema),
+});
+
+export const studioChatSendResponsePayloadSchema = z.object({
+  turns: z.array(studioChatTurnSchema),
+});
+
+export const studioChatCancelRequestPayloadSchema = z.object({});
+
+export const studioChatCancelResponsePayloadSchema = z.object({});
+
+export const studioProposalPreviewRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+  turn: studioChatTurnSchema,
+});
+
+export const studioProposalPreviewResponsePayloadSchema = z.object({});
+
+export const studioProposalApplyRequestPayloadSchema = z.object({
+  entity: studioEntitySchema,
+  turn: studioChatTurnSchema,
+});
+
+export const studioProposalApplyResponsePayloadSchema = z.object({
+  status: studioProposalStatusSchema,
+  message: z.string().min(1),
+});
+
+export const studioChatProgressEventPayloadSchema = z.object({
+  stage: z.enum(['thinking', 'looking-up', 'validating', 'idle']),
+});
 
 const studioSessionSnapshotSchema = z.object({
   id: z.string().min(1),

@@ -12,7 +12,7 @@ import type { StudioChatTurn } from "@/shared/messaging"
 
 const turns: StudioChatTurn[] = [
   { id: "u1", role: "user", text: "맞춤법 봐줘" },
-  { id: "a1", role: "assistant", kind: "proposal", action: "grammarCheck", status: "done" }
+  { id: "a1", role: "assistant", kind: "say", message: "네, 확인해 볼게요." }
 ]
 
 const session: StudioSession = {
