@@ -42,6 +42,8 @@ export const aiTaskCatalog = [
   { name: 'cardRecommendation', label: '카드 추천', status: 'wired' },
   { name: 'storyCompletion', label: '이야기 완결', status: 'wired' },
   { name: 'storyCardBuild', label: '씬 기반 카드 구성', status: 'wired' },
+  { name: 'studioAgent', label: 'Studio 대화', status: 'wired' },
+  { name: 'studioValidation', label: 'Studio 정합성 검사', status: 'wired' },
 ] as const;
 
 export type AiTaskCatalogEntry = (typeof aiTaskCatalog)[number];
