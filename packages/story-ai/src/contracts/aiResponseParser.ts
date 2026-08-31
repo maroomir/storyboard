@@ -15,19 +15,80 @@ export function parseJsonArray(response: string): unknown[] | null {
 
 export function parseJsonObject(response: string): Record<string, unknown> | null {
   const match = response.match(/\{[\s\S]*\}/);
+  const greedy = match ? toPlainObject(match[0]) : null;
 
-  if (!match) {
-    return null;
-  }
+  // NOTE: the greedy span runs to the last brace in the response, so a stray trailing brace or a
+  // closing remark would throw away an otherwise good object; fall back to the first span that
+  // actually balances.
+  return greedy ?? scanBalancedObject(response);
+}
 
-  try {
-    const parsed = JSON.parse(match[0]);
+function scanBalancedObject(response: string): Record<string, unknown> | null {
+  for (let start = response.indexOf('{'); start !== -1; start = response.indexOf('{', start + 1)) {
+    const end = findBalancedEnd(response, start);
 
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
+    if (end === -1) {
+      continue;
     }
 
-    return null;
+    const parsed = toPlainObject(response.slice(start, end + 1));
+
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function findBalancedEnd(text: string, start: number): number {
+  let depth = 0;
+  let isInString = false;
+  let isEscaped = false;
+
+  for (let index = start; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (isEscaped) {
+      isEscaped = false;
+      continue;
+    }
+
+    if (character === '\\' && isInString) {
+      isEscaped = true;
+      continue;
+    }
+
+    if (character === '"') {
+      isInString = !isInString;
+      continue;
+    }
+
+    if (isInString) {
+      continue;
+    }
+
+    if (character === '{') {
+      depth += 1;
+    } else if (character === '}') {
+      depth -= 1;
+
+      if (depth === 0) {
+        return index;
+      }
+    }
+  }
+
+  return -1;
+}
+
+function toPlainObject(candidate: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(candidate);
+
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : null;
   } catch {
     return null;
   }
