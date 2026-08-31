@@ -17,6 +17,7 @@ export class WorkbenchModule implements IApplicationModule {
 
   public initialize(context: vscode.ExtensionContext): void {
     const {
+      aiGateway,
       aiProviderRegistry,
       configBridge,
       logger,
@@ -35,6 +36,7 @@ export class WorkbenchModule implements IApplicationModule {
       registerSidebarStudioProvider(
         context,
         studioChatUseCase,
+        aiGateway,
         proposalReviewService,
         configBridge,
         logger,

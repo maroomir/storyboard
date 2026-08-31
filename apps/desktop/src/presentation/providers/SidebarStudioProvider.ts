@@ -25,6 +25,8 @@ import type {
   StudioChatStage,
   StudioChatUseCase,
 } from '../../application/studio/studioChatUseCase';
+import type { AiGateway } from '../../application/ai/aiGateway';
+import { StudioToolDiagnostics } from './studioToolDiagnostics';
 import { createStudioChatRpcHandlers } from '../messaging/studioChatRpcHandlers';
 import { createStudioFollowUpRpcHandlers } from '../messaging/studioFollowUpRpcHandlers';
 import { createStudioProposalRpcHandlers } from '../messaging/studioProposalRpcHandlers';
@@ -49,6 +51,8 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly extensionUri: vscode.Uri,
     private readonly sessionRepository: IStudioSessionRepository,
     private readonly chatUseCase: StudioChatUseCase,
+    private readonly aiGateway: AiGateway,
+    private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
     private readonly configBridge: ConfigBridge,
@@ -120,6 +124,9 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       },
       ...createStudioChatRpcHandlers({
         useCase: this.chatUseCase,
+        aiGateway: this.aiGateway,
+        logger: this.logger,
+        toolDiagnostics: this.toolDiagnostics,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         getTarget: () => computeStudioTarget(vscode.window.activeTextEditor),
         postProgress: (stage) => this.postChatProgress(stage),
@@ -172,14 +179,18 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
 export function registerSidebarStudioProvider(
   context: vscode.ExtensionContext,
   chatUseCase: StudioChatUseCase,
+  aiGateway: AiGateway,
   reviewService: ProposalReviewService,
   configBridge: ConfigBridge,
   logger: StoryboardLogger,
 ): vscode.Disposable {
+  const toolDiagnostics = new StudioToolDiagnostics();
   const provider = new SidebarStudioProvider(
     context.extensionUri,
     new StudioSessionRepository(),
     chatUseCase,
+    aiGateway,
+    toolDiagnostics,
     reviewService,
     new StudioFollowUpRepository(),
     configBridge,
@@ -189,5 +200,6 @@ export function registerSidebarStudioProvider(
   return vscode.Disposable.from(
     vscode.window.registerWebviewViewProvider(studioSidebarViewId, provider),
     provider,
+    toolDiagnostics,
   );
 }
