@@ -1,7 +1,8 @@
+import { stubFileSystem } from "../../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { StudioFollowUpRepository } from "@/infrastructure/persistence/repositories/studioFollowUpRepository"
+import { StudioFollowUpRepository } from "@storyboard/story-engine"
 import type { StudioFollowUp } from "@storyboard/story-engine"
 import type { StudioEntity } from "@storyboard/story-engine"
 
@@ -50,11 +51,11 @@ afterEach((): void => {
 
 describe("StudioFollowUpRepository", () => {
   it("reports nothing when no follow-up file exists", async () => {
-    expect(await new StudioFollowUpRepository().list(workspaceRoot, seorin)).toEqual([])
+    expect(await new StudioFollowUpRepository(stubFileSystem).list(workspaceRoot, seorin)).toEqual([])
   })
 
   it("stores follow-ups in the workspace cache", async () => {
-    const repository = new StudioFollowUpRepository()
+    const repository = new StudioFollowUpRepository(stubFileSystem)
 
     await repository.add(workspaceRoot, [followUp()])
 
@@ -63,7 +64,7 @@ describe("StudioFollowUpRepository", () => {
   })
 
   it("lists only the follow-ups aimed at the given entity", async () => {
-    const repository = new StudioFollowUpRepository()
+    const repository = new StudioFollowUpRepository(stubFileSystem)
 
     await repository.add(workspaceRoot, [
       followUp(),
@@ -75,13 +76,13 @@ describe("StudioFollowUpRepository", () => {
   })
 
   it("writes nothing for an empty batch", async () => {
-    await new StudioFollowUpRepository().add(workspaceRoot, [])
+    await new StudioFollowUpRepository(stubFileSystem).add(workspaceRoot, [])
 
     expect(files.size).toBe(0)
   })
 
   it("replaces an earlier follow-up from the same origin to the same target", async () => {
-    const repository = new StudioFollowUpRepository()
+    const repository = new StudioFollowUpRepository(stubFileSystem)
 
     await repository.add(workspaceRoot, [followUp()])
     await repository.add(workspaceRoot, [followUp({ id: "f2", reason: "새 이유" })])
@@ -93,7 +94,7 @@ describe("StudioFollowUpRepository", () => {
   })
 
   it("clears every follow-up aimed at an entity once it is edited", async () => {
-    const repository = new StudioFollowUpRepository()
+    const repository = new StudioFollowUpRepository(stubFileSystem)
 
     await repository.add(workspaceRoot, [
       followUp(),
@@ -108,7 +109,7 @@ describe("StudioFollowUpRepository", () => {
   })
 
   it("dismisses one follow-up by id", async () => {
-    const repository = new StudioFollowUpRepository()
+    const repository = new StudioFollowUpRepository(stubFileSystem)
 
     await repository.add(workspaceRoot, [followUp(), followUp({ id: "f2", origin: scene })])
     await repository.dismiss(workspaceRoot, "f1")
@@ -122,6 +123,6 @@ describe("StudioFollowUpRepository", () => {
   it("starts over when the stored file cannot be parsed", async () => {
     files.set(followUpPath, "{ not json")
 
-    expect(await new StudioFollowUpRepository().list(workspaceRoot, seorin)).toEqual([])
+    expect(await new StudioFollowUpRepository(stubFileSystem).list(workspaceRoot, seorin)).toEqual([])
   })
 })

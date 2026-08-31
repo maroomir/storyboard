@@ -1,6 +1,7 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import type { StudioChatStage, StudioChatUseCase } from '@/application/studio/studioChatUseCase';
+import type { StudioChatStage, StudioChatUseCase } from '@storyboard/story-engine';
 import { extractDraftBody } from '@storyboard/story-format';
 
 import {
@@ -9,9 +10,9 @@ import {
   resolveStudioLookups,
   type StudioEntityContext,
   type StudioSceneFocus,
-} from '@/infrastructure/persistence/studioEntityContext';
-import type { AiGateway } from '@/application/ai/aiGateway';
-import type { CollectCardProposalsUseCase } from '@/application/cards/collectCardProposalsUseCase';
+} from '@storyboard/story-engine';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
@@ -54,6 +55,7 @@ export function createStudioChatRpcHandlers(
 
       const target = await deps.getTarget();
       const entityContext = await readStudioEntityContext(
+        vscodeFileSystem,
         root,
         payload.entity,
         sceneFocusOf(target),
@@ -81,9 +83,10 @@ export function createStudioChatRpcHandlers(
           hasSelection: selection !== undefined,
           ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
           isValidationEnabled: isValidationEnabled(),
-          resolveLookup: (requests) => resolveStudioLookups(root, requests),
+          resolveLookup: (requests) => resolveStudioLookups(vscodeFileSystem, root, requests),
           ...toolResolverFor(deps, root, payload.entity, entityContext),
-          resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
+          resolveFollowUps: (followUps) =>
+            resolveStudioFollowUps(vscodeFileSystem, root, followUps),
           createTurnId: () => crypto.randomUUID(),
           onStage: deps.postProgress,
         });

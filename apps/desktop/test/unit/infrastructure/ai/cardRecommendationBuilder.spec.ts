@@ -4,7 +4,7 @@ import {
   buildCardRecommendations,
   normalizeRecommendationKey,
   type CardRecommendationAiService
-} from "@/infrastructure/ai/cardRecommendationBuilder"
+} from "@storyboard/story-engine"
 import type { RecommendedEntity } from '@storyboard/story-ai';
 
 function aiServiceFor(responses: Record<string, readonly RecommendedEntity[]>): CardRecommendationAiService {

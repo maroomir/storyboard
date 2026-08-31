@@ -4,7 +4,7 @@ import {
   applyStoryCardChanges,
   type BuildStoryCardsUseCase,
   type StoryCardTarget,
-} from '@/application/story/buildStoryCardsUseCase';
+} from '@storyboard/story-engine';
 import { parseCard, serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';

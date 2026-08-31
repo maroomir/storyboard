@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import type {
-  ExpandDraftResult,
-  ExpandDraftUseCase,
-} from '../../application/drafts/expandDraftUseCase';
+import type { ExpandDraftResult, ExpandDraftUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';

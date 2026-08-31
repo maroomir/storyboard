@@ -1,3 +1,4 @@
+import { stubFileSystem } from "../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -16,12 +17,12 @@ vi.mock("@storyboard/story-format", async (importOriginal) => ({
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
 }))
-vi.mock("@/infrastructure/vscode/workspace", () => ({
-  hasStoryboardProject: async (): Promise<boolean> => true,
-  uriExists: (...args: unknown[]): unknown => uriExistsMock(...args)
-}))
-vi.mock("@storyboard/story-engine", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-engine")>()),
+vi.mock("../../../../../../packages/story-engine/src/domain/files/draftHistory", async (
+  importOriginal
+) => ({
+  ...(await importOriginal<
+    typeof import("../../../../../../packages/story-engine/src/domain/files/draftHistory")
+  >()),
   archiveExistingDraft: (...args: unknown[]): unknown => archiveExistingDraftMock(...args)
 }))
 vi.mock('@storyboard/story-pipeline', async () => {
@@ -44,7 +45,7 @@ import {
   type GenerateDraftRequest,
   type GenerateDraftResult,
   type GenerateDraftUseCaseDependencies
-} from "@/application/drafts/generateDraftUseCase"
+} from "@storyboard/story-engine"
 import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
 import { computeDraftBodyHash, createDraft, parseDraft, serializeDraft } from '@storyboard/story-format'
 
@@ -199,12 +200,16 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
     },
     configBridge: overrides.configBridge ?? createConfigBridge(),
     draftRepository: overrides.draftRepository ?? createDraftRepository(),
-    fileSystem: {},
+    fileSystem: overrides.fileSystem ?? { ...stubFileSystem, exists: uriExistsMock },
     generator: "storyboard@0.0.0-test",
     logger: overrides.logger ?? createLogger(),
     postGenerationUpdates: overrides.postGenerationUpdates,
     projectRepository: { read: vi.fn(async () => fakeProject) },
     sceneCacheRepository: overrides.sceneCacheRepository ?? createSceneCacheRepository(),
+    workspaceLocator: {
+      folders: () => workspace.workspaceFolders ?? [],
+      folderFor: (uri: never) => workspace.getWorkspaceFolder(uri)
+    },
     sceneRepository: {
       read: vi.fn(async () => fakeScene),
       writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined)
@@ -219,11 +224,15 @@ const ourDraftBodyHash = computeDraftBodyHash(
   parseDraft(serializeDraft(createDraft({ sceneStem: fakeScene.stem, format: "novel", body: ourDraftBody }))).body
 )
 
-function ourDraftFileSystem(): { readFile: () => Promise<Uint8Array> } {
+function ourDraftFileSystem(): IFileSystem {
   const serialized = serializeDraft(
     createDraft({ sceneStem: fakeScene.stem, format: "novel", body: ourDraftBody })
   )
-  return { readFile: async (): Promise<Uint8Array> => new TextEncoder().encode(serialized) }
+  return {
+    ...stubFileSystem,
+    exists: uriExistsMock,
+    readFile: async (): Promise<Uint8Array> => new TextEncoder().encode(serialized)
+  }
 }
 
 function createRequest(overrides: Partial<GenerateDraftRequest> = {}): GenerateDraftRequest {
@@ -372,7 +381,7 @@ describe("GenerateDraftUseCase", () => {
   describe("draft history archiving", () => {
     it("archives the previous draft through archiveExistingDraft when keep-draft-history is enabled", async () => {
       archiveExistingDraftMock.mockResolvedValueOnce("2026-01-01-00-00-rev-01.md")
-      const fileSystem = { marker: "fs" }
+      const fileSystem = { ...stubFileSystem, exists: uriExistsMock, marker: "fs" }
       const dependencies = {
         ...createDependencies({
           configBridge: createConfigBridge({ isKeepDraftHistoryEnabled: () => true })

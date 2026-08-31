@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
@@ -5,15 +6,9 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import {
-  StudioSessionRepository,
-  type IStudioSessionRepository,
-} from '../../infrastructure/persistence/repositories/studioSessionRepository';
-import {
-  StudioFollowUpRepository,
-  type IStudioFollowUpRepository,
-} from '../../infrastructure/persistence/repositories/studioFollowUpRepository';
-import { readStudioStage } from '../../infrastructure/persistence/studioStage';
+import { StudioSessionRepository, type IStudioSessionRepository } from '@storyboard/story-engine';
+import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
+import { readStudioStage } from '@storyboard/story-engine';
 import type { ProposalReviewService } from './proposalReviewService';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import type {
@@ -21,13 +16,10 @@ import type {
   StudioSessionSnapshot,
   StudioTarget,
 } from '@storyboard/story-engine';
-import type {
-  StudioChatStage,
-  StudioChatUseCase,
-} from '../../application/studio/studioChatUseCase';
-import type { AiGateway } from '../../application/ai/aiGateway';
-import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
-import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';
+import type { StudioChatStage, StudioChatUseCase } from '@storyboard/story-engine';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
+import type { CreateCardUseCase } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from './studioToolDiagnostics';
 import { createStudioCardUpdateRpcHandlers } from '../messaging/studioCardUpdateRpcHandlers';
 import { createStudioChatRpcHandlers } from '../messaging/studioChatRpcHandlers';
@@ -125,7 +117,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         }
 
         const target = await computeStudioTarget(vscode.window.activeTextEditor);
-        return { stage: await readStudioStage(root, target) };
+        return { stage: await readStudioStage(vscodeFileSystem, root, target) };
       },
       ...createStudioChatRpcHandlers({
         useCase: this.chatUseCase,
@@ -201,14 +193,14 @@ export function registerSidebarStudioProvider(
   const toolDiagnostics = new StudioToolDiagnostics();
   const provider = new SidebarStudioProvider(
     context.extensionUri,
-    new StudioSessionRepository(),
+    new StudioSessionRepository(vscodeFileSystem),
     chatUseCase,
     aiGateway,
     collectUseCase,
     createCardUseCase,
     toolDiagnostics,
     reviewService,
-    new StudioFollowUpRepository(),
+    new StudioFollowUpRepository(vscodeFileSystem),
     configBridge,
     logger,
   );

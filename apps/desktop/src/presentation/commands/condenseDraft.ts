@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import type {
-  CondenseDraftResult,
-  CondenseDraftUseCase,
-} from '../../application/drafts/condenseDraftUseCase';
+import type { CondenseDraftResult, CondenseDraftUseCase } from '@storyboard/story-engine';
 import {
   buildNarrativeContext,
   buildSceneContext,

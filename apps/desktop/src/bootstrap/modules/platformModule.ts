@@ -1,52 +1,54 @@
 import * as vscode from 'vscode';
 
-import { AiGateway } from '../../application/ai/aiGateway';
-import { RecommendCardsUseCase } from '../../application/cards/recommendCardsUseCase';
-import { PromoteCardCandidatesUseCase } from '../../application/cards/promoteCardCandidatesUseCase';
-import { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
-import { CreateCardUseCase } from '../../application/cards/createCardUseCase';
-import { BuildStoryCardsUseCase } from '../../application/story/buildStoryCardsUseCase';
-import { CompleteStoryScenesUseCase } from '../../application/story/completeStoryScenesUseCase';
-import { PromoteBibleCandidatesUseCase } from '../../application/project/promoteBibleCandidatesUseCase';
-import { AssembleManuscriptUseCase } from '../../application/manuscript/assembleManuscriptUseCase';
-import { ExportManuscriptUseCase } from '../../application/manuscript/exportManuscriptUseCase';
-import { ReviewManuscriptUseCase } from '../../application/manuscript/reviewManuscriptUseCase';
-import { SummarizeChaptersUseCase } from '../../application/manuscript/summarizeChaptersUseCase';
-import { ApplyDraftFormatUseCase } from '../../application/drafts/applyDraftFormatUseCase';
-import { AugmentDraftUseCase } from '../../application/drafts/augmentDraftUseCase';
-import { ExpandDraftUseCase } from '../../application/drafts/expandDraftUseCase';
-import { CondenseDraftUseCase } from '../../application/drafts/condenseDraftUseCase';
-import { GenerateDraftUseCase } from '../../application/drafts/generateDraftUseCase';
-import { GenerateAllDraftsUseCase } from '../../application/drafts/generateAllDraftsUseCase';
-import { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
-import { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
-import { NovelPipeline } from '../../application/novel/novelPipeline';
-import { GenerateOutlineUseCase } from '../../application/novel/generateOutlineUseCase';
-import { DraftRepository } from '../../infrastructure/persistence/repositories/draftRepository';
-import { CardRecommendationRepository } from '../../infrastructure/persistence/repositories/cardRecommendationRepository';
-import { CardCandidateRepository } from '../../infrastructure/persistence/repositories/cardCandidateRepository';
-import { CardCollectRepository } from '../../infrastructure/persistence/repositories/cardCollectRepository';
-import { CardWriterRepository } from '../../infrastructure/persistence/repositories/cardWriterRepository';
-import { CardSidebarRepository } from '../../infrastructure/persistence/repositories/cardSidebarRepository';
-import { StoryFeatureRepository } from '../../infrastructure/persistence/repositories/storyFeatureRepository';
-import { BibleCandidateRepository } from '../../infrastructure/persistence/repositories/bibleCandidateRepository';
-import { ProjectRepository } from '../../infrastructure/persistence/repositories/projectRepository';
-import { OutlineRepository } from '../../infrastructure/persistence/repositories/outlineRepository';
-import { NovelRunStateRepository } from '../../infrastructure/persistence/repositories/novelRunStateRepository';
-import { NovelReviewRepository } from '../../infrastructure/persistence/repositories/novelReviewRepository';
-import { SceneSeedRepository } from '../../infrastructure/persistence/repositories/sceneSeedRepository';
-import { SceneCacheRepository } from '../../infrastructure/persistence/repositories/sceneCacheRepository';
-import { SceneRepository } from '../../infrastructure/persistence/repositories/sceneRepository';
-import { SceneBatchRepository } from '../../infrastructure/persistence/repositories/sceneBatchRepository';
-import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/sceneSidebarRepository';
-import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
+import { AiGateway } from '@storyboard/story-engine';
+import { RecommendCardsUseCase } from '@storyboard/story-engine';
+import { PromoteCardCandidatesUseCase } from '@storyboard/story-engine';
+import { CollectCardProposalsUseCase } from '@storyboard/story-engine';
+import { CreateCardUseCase } from '@storyboard/story-engine';
+import { BuildStoryCardsUseCase } from '@storyboard/story-engine';
+import { CompleteStoryScenesUseCase } from '@storyboard/story-engine';
+import { PromoteBibleCandidatesUseCase } from '@storyboard/story-engine';
+import { AssembleManuscriptUseCase } from '@storyboard/story-engine';
+import { ExportManuscriptUseCase } from '@storyboard/story-engine';
+import { ReviewManuscriptUseCase } from '@storyboard/story-engine';
+import { SummarizeChaptersUseCase } from '@storyboard/story-engine';
+import { ApplyDraftFormatUseCase } from '@storyboard/story-engine';
+import { AugmentDraftUseCase } from '@storyboard/story-engine';
+import { ExpandDraftUseCase } from '@storyboard/story-engine';
+import { CondenseDraftUseCase } from '@storyboard/story-engine';
+import { GenerateDraftUseCase } from '@storyboard/story-engine';
+import { GenerateAllDraftsUseCase } from '@storyboard/story-engine';
+import { ReviseDraftUseCase } from '@storyboard/story-engine';
+import { ReviseAfterGenerateGate } from '@storyboard/story-engine';
+import { NovelPipeline } from '@storyboard/story-engine';
+import { GenerateOutlineUseCase } from '@storyboard/story-engine';
+import { DraftRepository } from '@storyboard/story-engine';
+import { CardRecommendationRepository } from '@storyboard/story-engine';
+import { CardCandidateRepository } from '@storyboard/story-engine';
+import { CardCollectRepository } from '@storyboard/story-engine';
+import { CardWriterRepository } from '@storyboard/story-engine';
+import { CardSidebarRepository } from '@storyboard/story-engine';
+import { StoryFeatureRepository } from '@storyboard/story-engine';
+import { BibleCandidateRepository } from '@storyboard/story-engine';
+import { ProjectRepository } from '@storyboard/story-engine';
+import { OutlineRepository } from '@storyboard/story-engine';
+import { NovelRunStateRepository } from '@storyboard/story-engine';
+import { NovelReviewRepository } from '@storyboard/story-engine';
+import { SceneSeedRepository } from '@storyboard/story-engine';
+import { SceneCacheRepository } from '@storyboard/story-engine';
+import { SceneRepository } from '@storyboard/story-engine';
+import { SceneBatchRepository } from '@storyboard/story-engine';
+import { SceneSidebarRepository } from '@storyboard/story-engine';
+import { ManuscriptAssemblyRepository } from '@storyboard/story-engine';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { VscodeWorkspaceLocator } from '../../infrastructure/vscode/workspaceLocator';
+import { createUsageSink } from '../../infrastructure/ai/usageSink';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { OutputChannelLogger } from '../../infrastructure/vscode/logger';
-import { StudioChatUseCase } from '../../application/studio/studioChatUseCase';
+import { StudioChatUseCase } from '@storyboard/story-engine';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
+import { PostGenerationUpdateManager } from '@storyboard/story-engine';
 import {
   createVscodeUsageLedgerFileSystem,
   UsageRecorder,
@@ -111,37 +113,49 @@ export class PlatformModule implements IApplicationModule {
         vscode.workspace.onDidChangeConfiguration(listener),
     });
     const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
+    const fileSystem = new VscodeFileSystem();
+    const workspaceLocator = new VscodeWorkspaceLocator();
     const postGenerationUpdates = new PostGenerationUpdateManager();
     const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
       logger.warn(message),
     );
-    const aiGateway = new AiGateway(aiProviderRegistry, usageRecorder, logger);
+    const usageSink = createUsageSink(usageRecorder, logger);
+    const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
     const generator = `storyboard@${context.extension.packageJSON.version}`;
-    const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(aiGateway, logger, generator);
-    const augmentDraftUseCase = new AugmentDraftUseCase(aiGateway, logger, configBridge);
+    const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(
+      fileSystem,
+      aiGateway,
+      logger,
+      generator,
+    );
+    const augmentDraftUseCase = new AugmentDraftUseCase(
+      fileSystem,
+      aiGateway,
+      logger,
+      configBridge,
+    );
     const expandDraftUseCase = new ExpandDraftUseCase(aiGateway, logger);
     const condenseDraftUseCase = new CondenseDraftUseCase(aiGateway, logger);
     const studioChatUseCase = new StudioChatUseCase(aiGateway, logger);
-    const fileSystem = new VscodeFileSystem();
     const draftRepository = new DraftRepository(fileSystem);
-    const cardRecommendationRepository = new CardRecommendationRepository();
-    const cardCandidateRepository = new CardCandidateRepository(logger);
-    const cardCollectRepository = new CardCollectRepository();
-    const cardWriterRepository = new CardWriterRepository();
-    const cardSidebarRepository = new CardSidebarRepository();
-    const storyFeatureRepository = new StoryFeatureRepository();
+    const cardRecommendationRepository = new CardRecommendationRepository(fileSystem);
+    const cardCandidateRepository = new CardCandidateRepository(fileSystem, logger);
+    const cardCollectRepository = new CardCollectRepository(fileSystem);
+    const cardWriterRepository = new CardWriterRepository(fileSystem);
+    const cardSidebarRepository = new CardSidebarRepository(fileSystem);
+    const storyFeatureRepository = new StoryFeatureRepository(fileSystem);
     const proposalReviewService = new ProposalReviewService(context);
-    const bibleCandidateRepository = new BibleCandidateRepository();
+    const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
     const projectRepository = new ProjectRepository(fileSystem);
-    const outlineRepository = new OutlineRepository();
-    const novelRunStateRepository = new NovelRunStateRepository();
-    const novelReviewRepository = new NovelReviewRepository();
-    const sceneSeedRepository = new SceneSeedRepository();
+    const outlineRepository = new OutlineRepository(fileSystem);
+    const novelRunStateRepository = new NovelRunStateRepository(fileSystem);
+    const novelReviewRepository = new NovelReviewRepository(fileSystem);
+    const sceneSeedRepository = new SceneSeedRepository(fileSystem);
     const sceneCacheRepository = new SceneCacheRepository(fileSystem);
     const sceneRepository = new SceneRepository(fileSystem);
-    const sceneBatchRepository = new SceneBatchRepository();
-    const sceneSidebarRepository = new SceneSidebarRepository();
-    const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository();
+    const sceneBatchRepository = new SceneBatchRepository(fileSystem, workspaceLocator);
+    const sceneSidebarRepository = new SceneSidebarRepository(fileSystem);
+    const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository(fileSystem);
     const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
       logger,
       manuscriptAssemblyRepository,
@@ -167,15 +181,19 @@ export class PlatformModule implements IApplicationModule {
       projectRepository,
       sceneCacheRepository,
       sceneRepository,
+      workspaceLocator,
     });
     const generateOutlineUseCase = new GenerateOutlineUseCase(aiGateway, outlineRepository);
     const reviseDraftUseCase = new ReviseDraftUseCase({
       aiProviderRegistry,
-      usageRecorder,
+      usageSink,
+      fileSystem,
       logger,
       generator,
     });
     const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
+      fileSystem,
+      workspaceLocator,
       configBridge,
       logger,
       reviseDraftUseCase,
@@ -218,7 +236,8 @@ export class PlatformModule implements IApplicationModule {
       reviseDraftUseCase,
       sceneSeedRepository,
       summarizeChaptersUseCase,
-      usageRecorder,
+      usageSink,
+      fileSystem,
     });
 
     this.services = {

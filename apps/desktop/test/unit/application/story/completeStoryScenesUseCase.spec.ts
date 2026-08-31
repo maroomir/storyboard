@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { CompleteStoryScenesUseCase } from '@/application/story/completeStoryScenesUseCase';
+import { CompleteStoryScenesUseCase } from '@storyboard/story-engine';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
-} from '@/application/story/storyFeatureTypes';
+} from '@storyboard/story-engine';
 
 const workspaceRoot = {} as never;
 

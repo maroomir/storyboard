@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CondenseDraftUseCase } from '@/application/drafts/condenseDraftUseCase';
+import { CondenseDraftUseCase } from '@storyboard/story-engine';
 
 function createUseCase(result: string): {
   readonly condenseDraft: ReturnType<typeof vi.fn>;

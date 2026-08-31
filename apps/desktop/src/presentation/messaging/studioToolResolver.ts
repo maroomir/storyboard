@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
 import { formatAugmentCards } from '@storyboard/story-ai';
@@ -16,10 +17,10 @@ import {
 } from '@storyboard/story-format';
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 
-import type { AiGateway } from '../../application/ai/aiGateway';
+import type { AiGateway } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { sceneContextPaths } from '@storyboard/story-engine';
-import { readProjectJson } from '../../infrastructure/persistence/projectJson';
+import { readProjectJson } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
 import {
   sceneContextFileSystem,
@@ -230,7 +231,7 @@ async function loadSceneContext(
       sceneContext,
       sceneContextFileSystem,
     );
-    const project = await readProjectJson(paths.projectJson);
+    const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
 
     return { sceneContext, bibleFacts: narrative.bibleFacts, format: project.format };
   } catch {

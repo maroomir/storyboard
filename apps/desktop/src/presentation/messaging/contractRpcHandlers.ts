@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { contractFieldKeys } from '@storyboard/story-format';
@@ -5,7 +6,7 @@ import type { ProjectSetting, StoryboardProject } from '@storyboard/story-format
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { readProjectJson, writeProjectJson } from '@/infrastructure/persistence/projectJson';
+import { readProjectJson, writeProjectJson } from '@storyboard/story-engine';
 
 type ProjectContractSnapshot = StoryboardResponsePayload<'project.readContract'>;
 
@@ -26,7 +27,10 @@ async function readContractSnapshot(): Promise<ProjectContractSnapshot> {
     return notAProjectSnapshot();
   }
 
-  const project = await readProjectJson(getStoryboardProjectPaths(root).projectJson);
+  const project = await readProjectJson(
+    vscodeFileSystem,
+    getStoryboardProjectPaths(root).projectJson,
+  );
   return buildSnapshot(project);
 }
 
@@ -39,13 +43,13 @@ async function updateContract(
   }
 
   const projectJsonUri = getStoryboardProjectPaths(root).projectJson;
-  const project = await readProjectJson(projectJsonUri);
+  const project = await readProjectJson(vscodeFileSystem, projectJsonUri);
   const nextProject: StoryboardProject = {
     ...project,
     setting: mergeContractSetting(project.setting, payload),
   };
 
-  await writeProjectJson(projectJsonUri, nextProject);
+  await writeProjectJson(vscodeFileSystem, projectJsonUri, nextProject);
   return buildSnapshot(nextProject);
 }
 

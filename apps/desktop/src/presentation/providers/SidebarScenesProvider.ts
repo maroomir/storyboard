@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ISceneSidebarRepository } from '../../application/cards/sceneSidebarRepository';
+import type { ISceneSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';

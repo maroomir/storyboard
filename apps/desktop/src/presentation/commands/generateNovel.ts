@@ -5,7 +5,7 @@ import {
   type NovelApprovalKind,
   type NovelPipeline,
   type NovelPipelineResult,
-} from '../../application/novel/novelPipeline';
+} from '@storyboard/story-engine';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';

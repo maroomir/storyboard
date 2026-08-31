@@ -4,8 +4,8 @@ import type { StudioAgentInvokeRequest, StudioValidationVerdict } from '@storybo
 import { parseCard, parseSceneCard, isBackgroundCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 
-import type { AiGateway } from '../../application/ai/aiGateway';
-import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { CardCollectProposal } from '@storyboard/story-engine';
 import type { StudioEntity } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';

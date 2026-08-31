@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   PromoteCardCandidatesUseCase,
   type ICardCandidateRepository
-} from "@/application/cards/promoteCardCandidatesUseCase"
+} from "@storyboard/story-engine"
 
 const candidateRecord = {
   characters: [

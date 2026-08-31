@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
-import {
-  type GenerateDraftUseCase,
-  type GenerateDraftResult,
-} from '../../application/drafts/generateDraftUseCase';
-import type { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
+import { type GenerateDraftUseCase, type GenerateDraftResult } from '@storyboard/story-engine';
+import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { ReviseAfterGenerateGate } from '../../application/drafts/reviseAfterGenerateGate';
-import type { ReviseDraftUseCase } from '../../application/drafts/reviseDraftUseCase';
+import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
+import type { ReviseDraftUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';

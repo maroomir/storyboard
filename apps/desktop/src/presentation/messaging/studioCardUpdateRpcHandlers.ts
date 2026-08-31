@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import type { StudioCardSeed } from '@storyboard/story-ai';
 
-import type { AiGateway } from '@/application/ai/aiGateway';
-import type { CreateCardUseCase } from '@/application/cards/createCardUseCase';
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CreateCardUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';

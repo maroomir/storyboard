@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest"
 import {
   CreateCardUseCase,
   type ICardWriterRepository
-} from "@/application/cards/createCardUseCase"
+} from "@storyboard/story-engine"
 
 describe("CreateCardUseCase", () => {
   it("adds numeric suffixes until a card ID is available", async () => {

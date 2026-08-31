@@ -1,0 +1,34 @@
+import type { StoryUri } from '../../paths/storyUri';
+import type { StoryboardLogger } from '../../ports/logger';
+import { StoryboardAIService } from '@storyboard/story-ai';
+import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
+import type { UsageSink } from '../../ports/usageSink';
+export class AiGateway {
+  public constructor(
+    private readonly providerRegistry: AiProviderRegistry,
+    private readonly usageSink: UsageSink,
+    private readonly logger: StoryboardLogger,
+  ) {}
+
+  public createService(workspaceUri: StoryUri): StoryboardAIService {
+    return new StoryboardAIService(this.providerRegistry, {
+      // NOTE: usage accounting must never fail a generation the user already paid for.
+      onUsage: (record): void => {
+        void this.usageSink.record(workspaceUri, record).catch((error: unknown) => {
+          this.logger.error('사용량 기록에 실패했습니다.', error);
+        });
+      },
+    });
+  }
+
+  public getTaskProvider(taskName: AiTaskName): AiProviderId {
+    return this.providerRegistry.getTaskProvider(taskName);
+  }
+
+  public getTaskAiConfig(taskName: AiTaskName): {
+    readonly providerId: AiProviderId;
+    readonly model: string;
+  } {
+    return this.providerRegistry.getTaskAiConfig(taskName);
+  }
+}

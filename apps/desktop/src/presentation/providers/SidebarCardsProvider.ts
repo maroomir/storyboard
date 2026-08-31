@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import type {
-  ICardSidebarRepository,
-  SidebarCardCategory,
-} from '../../application/cards/cardSidebarRepository';
+import type { ICardSidebarRepository, SidebarCardCategory } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';

@@ -1,3 +1,4 @@
+import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { draftPath, getStoryboardProjectPaths, sceneFilePath } from '@storyboard/story-engine';
@@ -6,7 +7,7 @@ import {
   hasStoryboardProject,
   uriExists,
 } from '../../infrastructure/vscode/workspace';
-import { readProjectJson } from '../../infrastructure/persistence/projectJson';
+import { readProjectJson } from '@storyboard/story-engine';
 import { parseSceneFileName, serializeSceneCard } from '@storyboard/story-format';
 import {
   computeNextSceneOrderFromSceneFileNames,
@@ -90,7 +91,7 @@ async function createNewScene(): Promise<void> {
     return;
   }
 
-  const project = await readProjectJson(paths.projectJson);
+  const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
   const inspected = vscode.workspace
     .getConfiguration('storyboard')
     .inspect<number>('scene.prefixDigits');

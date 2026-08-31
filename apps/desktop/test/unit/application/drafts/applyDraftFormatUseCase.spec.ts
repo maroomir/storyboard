@@ -1,3 +1,4 @@
+import { stubFileSystem } from "../../../stubs/fileSystem"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
@@ -7,7 +8,7 @@ const parseDraftMock = vi.fn()
 const createDraftMock = vi.fn()
 const writeDraftFileMock = vi.fn()
 
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
+vi.mock("../../../../../../packages/story-engine/src/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
 vi.mock("@storyboard/story-format", async (importOriginal) => ({
@@ -18,7 +19,7 @@ vi.mock("@storyboard/story-format", async (importOriginal) => ({
   writeDraftFile: (...args: unknown[]): unknown => writeDraftFileMock(...args)
 }))
 
-import { ApplyDraftFormatUseCase } from "@/application/drafts/applyDraftFormatUseCase"
+import { ApplyDraftFormatUseCase } from "@storyboard/story-engine"
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }
@@ -35,7 +36,7 @@ function createUseCase(): {
   return {
     gateway,
     logger,
-    useCase: new ApplyDraftFormatUseCase(gateway as never, logger as never, "storyboard@0.0.0-test")
+    useCase: new ApplyDraftFormatUseCase(stubFileSystem, gateway as never, logger as never, "storyboard@0.0.0-test")
   }
 }
 

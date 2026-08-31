@@ -1,3 +1,4 @@
+import { stubFileSystem } from "../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -15,11 +16,11 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
 
-vi.mock("@/infrastructure/persistence/revisionPlanRecorder", () => ({
+vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
 }))
-vi.mock("@/infrastructure/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
-vi.mock("@/infrastructure/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
+vi.mock("../../../../../packages/story-engine/src/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
+vi.mock("../../../../../packages/story-engine/src/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
 vi.mock("@storyboard/story-format", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
@@ -28,7 +29,6 @@ vi.mock("@storyboard/story-engine", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-engine")>()),
   buildManuscriptReviewMarkdown: (): string => ""
 }))
-vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
   StoryboardAIService: class {
@@ -52,7 +52,7 @@ import {
   NovelPipeline,
   type NovelPipelineDependencies,
   type NovelPipelineRunOptions
-} from "@/application/novel/novelPipeline"
+} from "@storyboard/story-engine"
 
 const samplePlan: ChapterPlan = {
   version: "1.0.0",
@@ -158,7 +158,8 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     summarizeChaptersUseCase: {
       execute: async (): Promise<unknown> => ({ ok: true, kind: "summarized" })
     } as never,
-    usageRecorder: {} as never
+    usageSink: { record: async (): Promise<void> => undefined },
+    fileSystem: stubFileSystem
   }
 
   const options: NovelPipelineRunOptions = {

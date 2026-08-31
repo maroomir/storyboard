@@ -5,7 +5,7 @@ import {
   ReviewManuscriptUseCase,
   type IManuscriptReviewRepository,
   type ManuscriptReviewSource
-} from "@/application/manuscript/reviewManuscriptUseCase"
+} from "@storyboard/story-engine"
 import type { ChapterPlan } from '@storyboard/story-format';
 
 const plan: ChapterPlan = {

@@ -4,8 +4,8 @@ import {
   StudioChatUseCase,
   hashBaseline,
   type StudioChatRequest
-} from "@/application/studio/studioChatUseCase"
-import type { AiGateway } from "@/application/ai/aiGateway"
+} from "@storyboard/story-engine"
+import type { AiGateway } from "@storyboard/story-engine"
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn } from "@storyboard/story-engine"
 

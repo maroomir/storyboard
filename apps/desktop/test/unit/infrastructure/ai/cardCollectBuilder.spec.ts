@@ -5,7 +5,7 @@ import {
   filterDraftsForCard,
   type CardCollectAiService,
   type CollectDraft
-} from "@/infrastructure/ai/cardCollectBuilder"
+} from "@storyboard/story-engine"
 import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
 
 const roster = [

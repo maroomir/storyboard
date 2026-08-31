@@ -1,3 +1,4 @@
+import { stubFileSystem } from "../../../stubs/fileSystem"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
@@ -14,10 +15,10 @@ vi.mock("@storyboard/story-format", async (importOriginal) => ({
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   formatBibleFactLines: (): string[] => []
 }))
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
+vi.mock("../../../../../../packages/story-engine/src/persistence/projectJson", () => ({
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
-import { AugmentDraftUseCase } from "@/application/drafts/augmentDraftUseCase"
+import { AugmentDraftUseCase } from "@storyboard/story-engine"
 import { SceneParseError } from '@storyboard/story-format';
 
 function createUseCase(): {
@@ -31,7 +32,7 @@ function createUseCase(): {
 
   return {
     gateway,
-    useCase: new AugmentDraftUseCase(
+    useCase: new AugmentDraftUseCase(stubFileSystem, 
       gateway as never,
       { error: vi.fn(), warn: vi.fn() } as never,
       { isKeepDraftHistoryEnabled: () => false } as never

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteBibleCandidatesUseCase } from '../../application/project/promoteBibleCandidatesUseCase';
+import type { PromoteBibleCandidatesUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,

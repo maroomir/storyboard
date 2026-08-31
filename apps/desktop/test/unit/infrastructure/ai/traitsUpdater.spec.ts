@@ -5,7 +5,7 @@ import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
 import {
   applyTraitsFromExtractedBullets,
   extractQuotedUtterancesForCharacter
-} from "@/infrastructure/ai/traitsUpdater"
+} from "@storyboard/story-engine"
 
 describe("extractQuotedUtterancesForCharacter", () => {
   it("collects double-quoted and corner-bracket speech for a speaker line", () => {

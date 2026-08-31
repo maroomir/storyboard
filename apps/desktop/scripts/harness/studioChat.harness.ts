@@ -10,9 +10,9 @@ import { CodexProvider } from '@storyboard/story-ai';
 import { createDefaultCliRunner, type CliRunResult } from '@storyboard/story-ai';
 import type { AiGenerateResponse, AiProvider } from '@storyboard/story-ai';
 
-import { StudioChatUseCase, type StudioChatRequest } from '@/application/studio/studioChatUseCase';
-import type { AiGateway } from '@/application/ai/aiGateway';
-import { StudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
+import { StudioChatUseCase, type StudioChatRequest } from '@storyboard/story-engine';
+import type { AiGateway } from '@storyboard/story-engine';
+import { StudioFollowUpRepository } from '@storyboard/story-engine';
 import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
@@ -21,7 +21,7 @@ import {
   resolveStudioFollowUps,
   resolveStudioLookups,
   type StudioSceneFocus,
-} from '@/infrastructure/persistence/studioEntityContext';
+} from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn, StudioEntity } from '@storyboard/story-engine';
 
