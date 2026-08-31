@@ -26,18 +26,28 @@ export function withAttribution(
 }
 
 
+// NOTE: 발췌가 있으면 같은 장소가 다시 나온 것이므로 캐시를 건너뛰고 묘사를 갱신한다. 캐시를 그대로
+// 쓰면 첫 등장 씬에서 만든 한 단락이 작품 끝까지 고정돼 장소에 놓인 것들이 누적되지 않는다.
+// 그렇게 만든 묘사는 이 씬에서만 쓰고 저장하지 않는다. 씬 순서에 딸린 값을 카드 키 슬롯에 쓰면
+// 마지막에 실행된 씬이 그 장소의 정본을 덮어써, 앞 씬이 뒤 씬의 묘사를 물려받는다.
 export async function describeBackgroundForScene(
   card: BackgroundCard,
   aiService: Pick<StoryboardAIService, 'describeBackground'>,
   store: BackgroundMemoryStore | undefined,
+  recentExcerpt?: string,
 ): Promise<Background> {
-  const cached = await store?.load(card);
+  const cached = recentExcerpt === undefined ? await store?.load(card) : undefined;
   let atmosphere = cached;
   if (atmosphere === undefined) {
-    atmosphere = await aiService.describeBackground(card, {
-      attribution: { primary: { kind: 'background', id: card.id } },
-    });
-    await store?.save(card, atmosphere);
+    atmosphere = await aiService.describeBackground(
+      card,
+      { attribution: { primary: { kind: 'background', id: card.id } } },
+      recentExcerpt,
+    );
+
+    if (recentExcerpt === undefined) {
+      await store?.save(card, atmosphere);
+    }
   }
 
   if (atmosphere.length === 0) {

@@ -115,8 +115,9 @@ export class StoryboardAIService {
   public async describeBackground(
     background: Background,
     options: GenerateTextOptions = {},
+    recentExcerpt?: string,
   ): Promise<string> {
-    return this.sceneAiService.describeBackground(background, options);
+    return this.sceneAiService.describeBackground(background, options, recentExcerpt);
   }
 
   public async generatePersonaDialogue(
@@ -147,6 +148,13 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {},
   ): Promise<string> {
     return this.sceneAiService.polishSceneDialogue(input, options);
+  }
+
+  public async attributeSceneDialogue(
+    input: Parameters<SceneAiService['attributeSceneDialogue']>[0],
+    options: GenerateTextOptions = {},
+  ): ReturnType<SceneAiService['attributeSceneDialogue']> {
+    return this.sceneAiService.attributeSceneDialogue(input, options);
   }
 
   public async expandSceneSection(

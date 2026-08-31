@@ -8,6 +8,8 @@ import { type PromptArtifact, type PromptVariantId } from './types';
 export interface SceneDialoguePolishInput {
   readonly skeleton: string;
   readonly personas: ReadonlyMap<string, string>;
+  // 인물이 앞선 씬에서 실제로 한 말. 말투 기준점이며 프롬프트에 없으면 카드 예시 대사만 남는다.
+  readonly voiceSamples?: ReadonlyMap<string, readonly string[]>;
   readonly style?: StyleDirective;
 }
 
@@ -32,6 +34,7 @@ function buildGeneric(input: SceneDialoguePolishInput): PromptArtifact {
       '대사의 개수와 순서는 뼈대 그대로 두어라. 대사를 새로 만들거나 하나를 둘로 쪼개지 마라. 앞 대사를 의문형으로 되풀이하는 턴은 특히 금지한다.',
       '새로운 정보·결정·약속을 대사로 만들지 마라. 뼈대에 없던 사건을 말로 일으키는 것도 금지한다. 고치는 것은 이미 있는 대사의 말투·어휘·호흡뿐이다.',
       '페르소나에 따옴표로 적힌 예시 대사는 말투를 알려 주는 참고일 뿐이다. 그 문장을 대사로 옮겨 쓰지 마라.',
+      '[이전 대사] 목록은 그 인물이 앞선 장면에서 실제로 한 말이다. 어미·호칭·문장 길이를 여기에 맞춰라. 문장 자체를 옮겨 쓰는 것은 금지한다.',
       '뼈대에 없는 인물을 등장시키거나 말하게 하지 마라.',
       '행동·이동을 적은 서술 문장과 단독 줄의 --- 표시는 위치와 내용을 그대로 두어라.',
       '설명이나 머리말 없이 손본 뼈대 전문만 한국어로 출력하라.',
@@ -51,11 +54,13 @@ function buildXs(input: SceneDialoguePolishInput): PromptArtifact {
 }
 
 function buildUserBlock(input: SceneDialoguePolishInput): string {
-  const personaLines = Array.from(input.personas.entries()).flatMap(([name, persona]) => [
-    '',
-    `[${name}]`,
-    persona,
-  ]);
+  const personaLines = Array.from(input.personas.entries()).flatMap(([name, persona]) => {
+    const samples = input.voiceSamples?.get(name) ?? [];
+    const sampleLines =
+      samples.length > 0 ? ['[이전 대사]', ...samples.map((sample) => `- ${sample}`)] : [];
+
+    return ['', `[${name}]`, persona, ...sampleLines];
+  });
 
   return [
     personaLines.length > 0 ? '[등장 캐릭터 페르소나]' : undefined,

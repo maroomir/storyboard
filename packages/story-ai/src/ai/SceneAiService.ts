@@ -15,9 +15,17 @@ import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
 import {
+  SceneDialogueAttributionPrompt,
+  type SceneDialogueAttributionInput,
+} from './prompts/sceneDialogueAttribution';
+import {
   SceneDialoguePolishPrompt,
   type SceneDialoguePolishInput,
 } from './prompts/sceneDialoguePolish';
+import {
+  coerceDialogueAttribution,
+  type DialogueAttribution,
+} from '../contracts/sceneDialogueAttribution';
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
@@ -137,9 +145,10 @@ export class SceneAiService {
   public async describeBackground(
     background: Background,
     options: GenerateTextOptions = {},
+    recentExcerpt?: string,
   ): Promise<string> {
     const variant = this.gateway.resolvePromptVariant('backgroundDescription', options);
-    const prompt = BackgroundDescriptionPrompt.build(background, variant);
+    const prompt = BackgroundDescriptionPrompt.build(background, variant, recentExcerpt);
     const response = await this.gateway.generate(
       'backgroundDescription',
       toPromptMessages(prompt),
@@ -210,6 +219,29 @@ export class SceneAiService {
     });
 
     return response.text.trim();
+  }
+
+  public async attributeSceneDialogue(
+    input: SceneDialogueAttributionInput,
+    options: GenerateTextOptions = {},
+  ): Promise<DialogueAttribution[]> {
+    const variant = this.gateway.resolvePromptVariant('sceneDialogueAttribution', options);
+    const prompt = SceneDialogueAttributionPrompt.build(input, variant);
+    const response = await this.gateway.generate(
+      'sceneDialogueAttribution',
+      toPromptMessages(prompt),
+      {
+        ...options,
+        temperature: options.temperature ?? SceneDialogueAttributionPrompt.config.temperature,
+        maxTokens: options.maxTokens ?? SceneDialogueAttributionPrompt.config.maxTokens,
+      },
+    );
+
+    return coerceDialogueAttribution(
+      response.text,
+      input.lines.length,
+      input.candidates.map((candidate) => candidate.id),
+    );
   }
 
   public async expandSceneSection(
