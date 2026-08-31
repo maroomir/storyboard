@@ -230,7 +230,7 @@ describe("StudioAgentService.run", () => {
     })
 
     expect(gateway.calls[0]?.system).toContain("작가가 grammarCheck 도구를 지정했다")
-    expect(gateway.calls[0]?.system).toContain("span 없이 불러라")
+    expect(gateway.calls[0]?.system).toContain("이 도구는 span 없이 부른다")
   })
 
   it("tells the model to pick a span for a pinned transform tool", async () => {

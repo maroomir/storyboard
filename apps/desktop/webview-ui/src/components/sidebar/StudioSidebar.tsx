@@ -315,7 +315,7 @@ export function StudioSidebar({
     }
 
     const token = slashToken(draft);
-    return token === undefined ? [] : toolCandidates(token);
+    return token === undefined ? [] : toolCandidates(token, target);
   }, [draft, pinnedTool, target.kind]);
 
   const openFollowUp = (followUp: StudioFollowUpTarget): void => {

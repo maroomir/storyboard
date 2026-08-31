@@ -11,8 +11,10 @@ import {
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { AiGateway } from '@/application/ai/aiGateway';
+import type { CollectCardProposalsUseCase } from '@/application/cards/collectCardProposalsUseCase';
 import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
 import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
 import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 import type {
@@ -25,6 +27,7 @@ import type {
 export interface StudioChatRpcHandlersDependencies {
   readonly useCase: StudioChatUseCase;
   readonly aiGateway: AiGateway;
+  readonly collectUseCase: CollectCardProposalsUseCase;
   readonly logger: StoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
@@ -79,7 +82,7 @@ export function createStudioChatRpcHandlers(
           ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(root, requests),
-          ...draftToolResolver(deps, root, payload.entity, entityContext),
+          ...toolResolverFor(deps, root, payload.entity, entityContext),
           resolveFollowUps: (followUps) => resolveStudioFollowUps(root, followUps),
           createTurnId: () => crypto.randomUUID(),
           onStage: deps.postProgress,
@@ -99,33 +102,49 @@ export function createStudioChatRpcHandlers(
   };
 }
 
-// NOTE: tools only exist for a draft conversation; card chats get no resolver and the prompt
-// never advertises invoke to them.
-function draftToolResolver(
+// NOTE: which resolver a conversation gets follows the file being edited — draft chats run the
+// draft tools, card chats the card tools; a target with no baseline gets none at all, and the
+// prompt then never advertises invoke.
+function toolResolverFor(
   deps: StudioChatRpcHandlersDependencies,
   root: vscode.Uri,
   entity: StudioEntity,
   entityContext: StudioEntityContext,
 ): Pick<Parameters<StudioChatUseCase['send']>[0], 'resolveInvoke'> {
-  if (
-    entityContext.patchTarget !== 'draft' ||
-    entityContext.baseline === undefined ||
-    entityContext.targetUri === undefined
-  ) {
+  if (entityContext.baseline === undefined || entityContext.targetUri === undefined) {
     return {};
   }
 
+  if (entityContext.patchTarget === 'draft') {
+    return {
+      resolveInvoke: createStudioInvokeResolver(
+        {
+          aiGateway: deps.aiGateway,
+          logger: deps.logger,
+          diagnostics: deps.toolDiagnostics,
+        },
+        {
+          workspaceRoot: root,
+          sceneStem: entity.key,
+          draftUri: entityContext.targetUri,
+          baseline: entityContext.baseline,
+        },
+      ),
+    };
+  }
+
   return {
-    resolveInvoke: createStudioInvokeResolver(
+    resolveInvoke: createStudioCardInvokeResolver(
       {
         aiGateway: deps.aiGateway,
+        collectUseCase: deps.collectUseCase,
         logger: deps.logger,
-        diagnostics: deps.toolDiagnostics,
       },
       {
         workspaceRoot: root,
-        sceneStem: entity.key,
-        draftUri: entityContext.targetUri,
+        entity,
+        entityLabel: entityContext.entityLabel,
+        context: entityContext.context,
         baseline: entityContext.baseline,
       },
     ),

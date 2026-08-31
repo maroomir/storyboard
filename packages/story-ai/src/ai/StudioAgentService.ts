@@ -5,6 +5,7 @@ import {
   type StudioAgentPatchShape,
   type StudioAgentPromptInput,
 } from './prompts/studioAgent';
+import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import { StudioValidationPrompt } from './prompts/studioValidation';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
@@ -131,6 +132,21 @@ export class StudioAgentService {
     const prompt = StudioValidationPrompt.build(input);
     const response = await this.gateway.generate('studioValidation', toPromptMessages(prompt), {
       ...StudioValidationPrompt.config,
+      ...options,
+    });
+
+    return coerceStudioValidationVerdict(response.text);
+  }
+
+  // NOTE: rides the studioValidation task so the audit follows the same provider routing and
+  // budget the proposal check uses.
+  public async auditEntity(
+    input: StudioCardAuditPromptInput,
+    options: GenerateTextOptions = {},
+  ): Promise<StudioValidationVerdict> {
+    const prompt = StudioCardAuditPrompt.build(input);
+    const response = await this.gateway.generate('studioValidation', toPromptMessages(prompt), {
+      ...StudioCardAuditPrompt.config,
       ...options,
     });
 

@@ -13,9 +13,21 @@ export const studioAgentToolNames = [
   'expand',
   'condense',
   'augment',
+  'collectFromDrafts',
+  'cardAudit',
+  'relationCheck',
 ] as const;
 
 export type StudioAgentToolName = (typeof studioAgentToolNames)[number];
+
+// NOTE: which tools a conversation may call follows the file being edited, so a card chat never
+// sees a draft transform and vice versa; the prompt, the composer menu and the resolver all key
+// off this one table.
+export const studioToolNamesByShape = {
+  draft: ['continuityCheck', 'grammarCheck', 'expand', 'condense', 'augment'],
+  entityCard: ['collectFromDrafts', 'cardAudit', 'relationCheck'],
+  sceneCard: ['cardAudit', 'relationCheck'],
+} as const satisfies Record<string, readonly StudioAgentToolName[]>;
 
 export interface StudioAgentToolSpan {
   readonly startOffset: number;
