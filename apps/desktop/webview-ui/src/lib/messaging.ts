@@ -364,6 +364,7 @@ export function parseProgressPayload(payload: unknown): StudioChatStage {
 
   return stage.stage === "thinking" ||
     stage.stage === "looking-up" ||
+    stage.stage === "invoking" ||
     stage.stage === "validating"
     ? stage.stage
     : "idle"

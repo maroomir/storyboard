@@ -10,6 +10,7 @@ import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   coerceStudioAgentAction,
   type StudioAgentAction,
+  type StudioAgentInvokeRequest,
   type StudioAgentLookupRequest,
 } from '../contracts/studioAgent';
 import {
@@ -26,6 +27,8 @@ export type StudioLookupResolver = (
   requests: readonly StudioAgentLookupRequest[],
 ) => Promise<string>;
 
+export type StudioInvokeResolver = (request: StudioAgentInvokeRequest) => Promise<string>;
+
 export interface StudioAgentRunInput {
   readonly entityKind: StudioAgentPromptInput['entityKind'];
   readonly patchShape: StudioAgentPatchShape;
@@ -37,6 +40,7 @@ export interface StudioAgentRunInput {
   readonly hasSelection: boolean;
   readonly remainingQuestions: number;
   readonly resolveLookup?: StudioLookupResolver;
+  readonly resolveInvoke?: StudioInvokeResolver;
 }
 
 export interface StudioValidationInput {
@@ -46,15 +50,16 @@ export interface StudioValidationInput {
   readonly diff: string;
 }
 
-export type StudioAgentStage = 'thinking' | 'looking-up';
+export type StudioAgentStage = 'thinking' | 'looking-up' | 'invoking';
 
 export interface StudioAgentRunOptions extends GenerateTextOptions {
   readonly onStage?: (stage: StudioAgentStage) => void;
 }
 
-// NOTE: one turn may fan out into extra provider calls for lookups; the cap keeps a confused model
-// from spending the author's budget in a loop.
+// NOTE: one turn may fan out into extra provider calls for lookups and tools; the caps keep a
+// confused model from spending the author's budget in a loop.
 const maxLookupRounds = 3;
+const maxInvokeRounds = 2;
 
 const unreadableResponseMessage =
   '응답을 이해하지 못했어요. 조금 더 구체적으로 말씀해 주시겠어요?';
@@ -67,25 +72,46 @@ export class StudioAgentService {
     options: StudioAgentRunOptions = {},
   ): Promise<StudioAgentAction> {
     const { onStage, ...generateOptions } = options;
-    const lookedUp: string[] = [];
+    const gathered: string[] = [];
+    let lookupsUsed = 0;
+    let invokesUsed = 0;
 
-    for (let round = 0; round <= maxLookupRounds; round += 1) {
+    for (let round = 0; ; round += 1) {
       onStage?.(round === 0 ? 'thinking' : 'looking-up');
 
-      const action = await this.requestAction(input, lookedUp, round, generateOptions);
+      const action = await this.requestAction(
+        input,
+        gathered,
+        {
+          canLookup: Boolean(input.resolveLookup) && lookupsUsed < maxLookupRounds,
+          canInvoke: Boolean(input.resolveInvoke) && invokesUsed < maxInvokeRounds,
+        },
+        generateOptions,
+      );
 
-      if (action.kind !== 'lookup') {
-        return action;
+      if (action.kind === 'lookup') {
+        if (!input.resolveLookup || lookupsUsed >= maxLookupRounds) {
+          return { kind: 'say', message: unresolvedLookupMessage(action.requests) };
+        }
+
+        lookupsUsed += 1;
+        gathered.push(await input.resolveLookup(action.requests));
+        continue;
       }
 
-      if (!input.resolveLookup || round === maxLookupRounds) {
-        return { kind: 'say', message: unresolvedLookupMessage(action.requests) };
+      if (action.kind === 'invoke') {
+        if (!input.resolveInvoke || invokesUsed >= maxInvokeRounds) {
+          return { kind: 'say', message: unresolvedInvokeMessage };
+        }
+
+        invokesUsed += 1;
+        onStage?.('invoking');
+        gathered.push(await input.resolveInvoke(action.request));
+        continue;
       }
 
-      lookedUp.push(await input.resolveLookup(action.requests));
+      return action;
     }
-
-    return { kind: 'say', message: unreadableResponseMessage };
   }
 
   public async validate(
@@ -103,8 +129,8 @@ export class StudioAgentService {
 
   private async requestAction(
     input: StudioAgentRunInput,
-    lookedUp: readonly string[],
-    round: number,
+    gathered: readonly string[],
+    ability: { readonly canLookup: boolean; readonly canInvoke: boolean },
     options: GenerateTextOptions,
   ): Promise<StudioAgentAction> {
     const prompt = StudioAgentPrompt.build({
@@ -112,11 +138,12 @@ export class StudioAgentService {
       patchShape: input.patchShape,
       entityLabel: input.entityLabel,
       targetFile: input.targetFile,
-      context: joinContext(input.context, lookedUp),
+      context: joinContext(input.context, gathered),
       conversation: formatConversation(input.history),
       instruction: input.instruction,
       canAsk: input.remainingQuestions > 0,
-      canLookup: Boolean(input.resolveLookup) && round < maxLookupRounds,
+      canLookup: ability.canLookup,
+      canInvoke: ability.canInvoke,
       hasSelection: input.hasSelection,
     });
 
@@ -139,8 +166,8 @@ export class StudioAgentService {
   }
 }
 
-function joinContext(context: string, lookedUp: readonly string[]): string {
-  return lookedUp.length === 0 ? context : [context, ...lookedUp].join('\n\n');
+function joinContext(context: string, gathered: readonly string[]): string {
+  return gathered.length === 0 ? context : [context, ...gathered].join('\n\n');
 }
 
 function formatConversation(history: readonly StudioAgentMessage[]): string {
@@ -156,3 +183,6 @@ function unresolvedLookupMessage(requests: readonly StudioAgentLookupRequest[]):
 
   return `판단하려면 ${names} 내용을 확인해야 하는데 지금은 읽을 수 없어요. 필요한 내용을 알려주시겠어요?`;
 }
+
+const unresolvedInvokeMessage =
+  '이번 턴에 쓸 수 있는 도구 호출을 모두 썼어요. 필요한 작업을 다시 말씀해 주시겠어요?';

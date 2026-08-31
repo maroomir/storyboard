@@ -215,6 +215,73 @@ describe("coerceStudioAgentAction follow-ups", () => {
   })
 })
 
+describe("coerceStudioAgentAction invoke", () => {
+  it("reads a check tool call without a span", () => {
+    expect(
+      coerceStudioAgentAction('{"kind":"invoke","tool":"continuityCheck","reason":"설정 대조"}')
+    ).toEqual({
+      kind: "invoke",
+      request: { tool: "continuityCheck" },
+      reason: "설정 대조"
+    })
+  })
+
+  it("reads a transform tool call with its span", () => {
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"invoke","tool":"expand","span":{"startOffset":10,"endOffset":14,"oldText":"골목길"},"instruction":"묘사 강화"}'
+      )
+    ).toEqual({
+      kind: "invoke",
+      request: {
+        tool: "expand",
+        span: { startOffset: 10, endOffset: 14, oldText: "골목길" },
+        instruction: "묘사 강화"
+      }
+    })
+  })
+
+  it("rejects an unknown tool", () => {
+    expect(coerceStudioAgentAction('{"kind":"invoke","tool":"deleteScene"}')).toBeUndefined()
+  })
+
+  it("rejects a transform tool without a span", () => {
+    expect(coerceStudioAgentAction('{"kind":"invoke","tool":"condense"}')).toBeUndefined()
+  })
+
+  it("rejects a span whose range is empty or backwards", () => {
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"invoke","tool":"expand","span":{"startOffset":5,"endOffset":5,"oldText":"a"}}'
+      )
+    ).toBeUndefined()
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"invoke","tool":"expand","span":{"startOffset":9,"endOffset":4,"oldText":"a"}}'
+      )
+    ).toBeUndefined()
+  })
+
+  it("rejects a span with no anchor text", () => {
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"invoke","tool":"augment","span":{"startOffset":0,"endOffset":4,"oldText":""}}'
+      )
+    ).toBeUndefined()
+  })
+
+  it("keeps a span on a check tool for the resolver to ignore", () => {
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"invoke","tool":"grammarCheck","span":{"startOffset":0,"endOffset":4,"oldText":"본문"}}'
+      )
+    ).toEqual({
+      kind: "invoke",
+      request: { tool: "grammarCheck", span: { startOffset: 0, endOffset: 4, oldText: "본문" } }
+    })
+  })
+})
+
 describe("coerceStudioValidationVerdict", () => {
   it("accepts plain string warnings", () => {
     expect(coerceStudioValidationVerdict('{"warnings":["시간선이 어긋납니다"]}')).toEqual({

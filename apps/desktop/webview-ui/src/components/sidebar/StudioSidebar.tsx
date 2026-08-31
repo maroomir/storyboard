@@ -675,6 +675,8 @@ function chatStageLabel(stage: StudioChatStage): string {
       return '생각하는 중…';
     case 'looking-up':
       return '관련 자료를 찾는 중…';
+    case 'invoking':
+      return '도구를 실행하는 중…';
     case 'validating':
       return '정합성을 확인하는 중…';
     case 'idle':

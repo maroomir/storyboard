@@ -44,7 +44,7 @@ export interface StudioChatRequest {
   readonly onStage?: (stage: StudioChatStage) => void;
 }
 
-export type StudioChatStage = 'thinking' | 'looking-up' | 'validating';
+export type StudioChatStage = 'thinking' | 'looking-up' | 'invoking' | 'validating';
 
 export const maxStudioQuestions = 5;
 

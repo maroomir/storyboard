@@ -155,6 +155,67 @@ describe("StudioAgentService.run", () => {
     expect(gateway.calls).toHaveLength(4)
   })
 
+  it("resolves a tool call and feeds the result back into the next call", async () => {
+    const stages: string[] = []
+    const { service, gateway } = serviceWith([
+      '{"kind":"invoke","tool":"continuityCheck","reason":"설정 대조"}',
+      '{"kind":"say","message":"유리병 색이 씬1과 어긋납니다."}'
+    ])
+
+    const action = await service.run(
+      {
+        ...characterRun,
+        entityKind: "scene",
+        patchShape: "draft",
+        targetFile: "draft/01-intro.md",
+        resolveInvoke: async (request) => `[도구 결과: ${request.tool}] 불일치 1건`
+      },
+      { onStage: (stage) => stages.push(stage) }
+    )
+
+    expect(action.kind).toBe("say")
+    expect(gateway.calls).toHaveLength(2)
+    expect(gateway.calls[1]?.user).toContain("[도구 결과: continuityCheck] 불일치 1건")
+    expect(stages).toContain("invoking")
+  })
+
+  it("stops invoking after the tool budget", async () => {
+    const invoke =
+      '{"kind":"invoke","tool":"expand","span":{"startOffset":0,"endOffset":2,"oldText":"본문"}}'
+    const { service, gateway } = serviceWith([invoke, invoke, invoke, invoke])
+
+    const action = await service.run({
+      ...characterRun,
+      patchShape: "draft",
+      resolveInvoke: async () => "초벌 텍스트"
+    })
+
+    expect(action.kind).toBe("say")
+    expect(gateway.calls).toHaveLength(3)
+  })
+
+  it("falls back to a remark when no tool resolver is wired", async () => {
+    const { service } = serviceWith(['{"kind":"invoke","tool":"grammarCheck"}'])
+
+    const action = await service.run(characterRun)
+
+    expect(action.kind).toBe("say")
+  })
+
+  it("advertises tools only to a draft conversation with a resolver", async () => {
+    const withResolver = serviceWith(['{"kind":"say","message":"네"}'])
+    await withResolver.service.run({
+      ...characterRun,
+      patchShape: "draft",
+      resolveInvoke: async () => ""
+    })
+    expect(withResolver.gateway.calls[0]?.system).toContain("[도구]")
+
+    const cardOnly = serviceWith(['{"kind":"say","message":"네"}'])
+    await cardOnly.service.run(characterRun)
+    expect(cardOnly.gateway.calls[0]?.system).not.toContain("[도구]")
+  })
+
   it("degrades to a remark when the response is not readable", async () => {
     const { service } = serviceWith(["도와드릴게요!"])
 
