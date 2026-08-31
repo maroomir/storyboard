@@ -262,6 +262,7 @@ export interface StudioCardFieldChange {
 export interface StudioDraftReplacement {
   readonly startOffset: number
   readonly endOffset: number
+  readonly oldText: string
   readonly newText: string
 }
 

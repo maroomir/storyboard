@@ -344,6 +344,21 @@ function isPendingFollowUp(value: unknown): value is StudioPendingFollowUp {
   )
 }
 
+export function parsePreviewFailure(payload: unknown): string | undefined {
+  const candidate = (payload && typeof payload === "object" ? payload : {}) as {
+    shown?: unknown
+    message?: unknown
+  }
+
+  if (candidate.shown !== false) {
+    return undefined
+  }
+
+  return typeof candidate.message === "string" && candidate.message.length > 0
+    ? candidate.message
+    : "변경을 보여 드릴 수 없습니다."
+}
+
 export function parseProgressPayload(payload: unknown): StudioChatStage {
   const stage = (payload && typeof payload === "object" ? payload : {}) as { stage?: unknown }
 

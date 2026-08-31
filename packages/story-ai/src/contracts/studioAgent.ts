@@ -22,6 +22,9 @@ export interface StudioCardFieldChange {
 export interface StudioDraftReplacement {
   readonly startOffset: number;
   readonly endOffset: number;
+  // NOTE: the exact text the offsets are supposed to cover. A model that miscounts by a character
+  // would otherwise rewrite an unrelated passage that still passes the range checks.
+  readonly oldText: string;
   readonly newText: string;
 }
 
@@ -292,6 +295,7 @@ function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined 
   const candidate = value as {
     readonly startOffset?: unknown;
     readonly endOffset?: unknown;
+    readonly oldText?: unknown;
     readonly newText?: unknown;
   };
 
@@ -299,6 +303,7 @@ function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined 
     !isNonNegativeInteger(candidate.startOffset) ||
     !isNonNegativeInteger(candidate.endOffset) ||
     typeof candidate.newText !== 'string' ||
+    typeof candidate.oldText !== 'string' ||
     candidate.endOffset < candidate.startOffset
   ) {
     return undefined;
@@ -307,6 +312,7 @@ function toDraftReplacement(value: unknown): StudioDraftReplacement | undefined 
   return {
     startOffset: candidate.startOffset,
     endOffset: candidate.endOffset,
+    oldText: candidate.oldText,
     newText: candidate.newText,
   };
 }

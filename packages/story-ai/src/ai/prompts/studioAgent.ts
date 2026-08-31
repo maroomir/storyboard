@@ -60,7 +60,7 @@ function buildSystem(input: StudioAgentPromptInput): string {
 
 function proposeShape(patchShape: StudioAgentPatchShape): string {
   if (patchShape === 'draft') {
-    return '{"kind":"propose","summary":"...","message":"...","patch":{"target":"draft","replacements":[{"startOffset":0,"endOffset":0,"newText":"..."}]}}';
+    return '{"kind":"propose","summary":"...","message":"...","patch":{"target":"draft","replacements":[{"startOffset":0,"endOffset":0,"oldText":"고칠 원문 그대로","newText":"..."}]}}';
   }
 
   return '{"kind":"propose","summary":"...","message":"...","patch":{"target":"card","changes":[{"field":"...","value":"..." }]}}';
@@ -84,8 +84,9 @@ function targetPolicy(input: StudioAgentPromptInput): string[] {
       '',
       '[초안 수정]',
       '- startOffset/endOffset은 초안 본문의 UTF-16 0-based 오프셋이며 endOffset은 exclusive다.',
+      '- oldText에는 그 구간의 원문을 한 글자도 바꾸지 말고 그대로 옮겨 적어라. 오프셋과 oldText가 어긋나면 수정은 적용되지 않는다.',
       input.hasSelection
-        ? '- 작가가 선택한 구간이 주어졌다. 다른 말이 없으면 그 구간만 고쳐라.'
+        ? '- 자료에 [작가가 선택한 구간]이 주어졌다. 다른 말이 없으면 그 구간만 고쳐라.'
         : '- 선택한 구간이 없다. 고칠 범위를 스스로 좁혀 잡고 무엇을 골랐는지 summary에 적어라.',
       '- 본문 전체를 한 번에 갈아엎지 마라. 고칠 구간만 replacements로 짚어라.',
     ];

@@ -37,18 +37,21 @@ export function createStudioProposalRpcHandlers(
     ): Promise<StoryboardResponsePayload<'studio.proposal.preview'>> => {
       const prepared = await prepareApply(deps, payload.entity, payload.turn);
 
-      if (prepared.ok) {
-        await deps.reviewService.showDiffs([
-          {
-            original: prepared.targetUri,
-            proposedText: prepared.text,
-            label: `Studio 제안 · ${prepared.targetFile}`,
-            key: `studio:${payload.entity.kind}:${payload.entity.key}`,
-          },
-        ]);
+      if (!prepared.ok) {
+        // NOTE: a silent no-op here reads as a broken button, so the reason travels back to the chat.
+        return { shown: false, message: prepared.message };
       }
 
-      return {};
+      await deps.reviewService.showDiffs([
+        {
+          original: prepared.targetUri,
+          proposedText: prepared.text,
+          label: `Studio 제안 · ${prepared.targetFile}`,
+          key: `studio:${payload.entity.kind}:${payload.entity.key}`,
+        },
+      ]);
+
+      return { shown: true };
     },
 
     'studio.proposal.apply': async (

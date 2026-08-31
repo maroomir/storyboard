@@ -76,7 +76,7 @@ describe("coerceStudioAgentAction", () => {
   it("rejects a draft replacement whose range runs backwards", () => {
     expect(
       coerceStudioAgentAction(
-        '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":30,"endOffset":10,"newText":"y"}]}}'
+        '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":30,"endOffset":10,"oldText":"a","newText":"y"}]}}'
       )
     ).toBeUndefined()
   })
@@ -84,14 +84,22 @@ describe("coerceStudioAgentAction", () => {
   it("rejects a draft replacement with a fractional offset", () => {
     expect(
       coerceStudioAgentAction(
-        '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":1.5,"endOffset":10,"newText":"y"}]}}'
+        '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":1.5,"endOffset":10,"oldText":"a","newText":"y"}]}}'
+      )
+    ).toBeUndefined()
+  })
+
+  it("rejects a draft replacement with no anchor text", () => {
+    expect(
+      coerceStudioAgentAction(
+        '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":0,"endOffset":3,"newText":"y"}]}}'
       )
     ).toBeUndefined()
   })
 
   it("accepts a draft replacement that inserts without deleting", () => {
     const action = coerceStudioAgentAction(
-      '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":5,"endOffset":5,"newText":"덧붙임"}]}}'
+      '{"kind":"propose","summary":"x","patch":{"target":"draft","replacements":[{"startOffset":5,"endOffset":5,"oldText":"","newText":"덧붙임"}]}}'
     )
 
     expect(action?.kind).toBe("propose")

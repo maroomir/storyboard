@@ -16,6 +16,7 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   isIgnoredSampleCardFileName,
+  isSafeStudioEntityKey,
   scenePath,
 } from '../vscode/pathConventions';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
@@ -44,6 +45,11 @@ export async function readStudioEntityContext(
   entity: StudioEntity,
   sceneFocus: StudioSceneFocus = 'draft',
 ): Promise<StudioEntityContext | undefined> {
+  // SECURITY: the key reaches here straight off a webview payload and becomes a file path.
+  if (!isSafeStudioEntityKey(entity.key)) {
+    return undefined;
+  }
+
   if (entity.kind === 'character' || entity.kind === 'background') {
     return readCardContext(workspaceRoot, entity.kind, entity.key);
   }
@@ -57,8 +63,11 @@ export async function resolveStudioLookups(
   workspaceRoot: vscode.Uri,
   requests: readonly StudioAgentLookupRequest[],
 ): Promise<string> {
+  // SECURITY: lookup keys are model output, so an invented path is refused rather than read.
+  const safeRequests = requests.filter((request) => isSafeStudioEntityKey(request.key));
+
   const sections = await Promise.all(
-    requests.map(async (request) => {
+    safeRequests.map(async (request) => {
       const text = await readLookupText(workspaceRoot, request);
       return `[조회: ${request.kind}/${request.key}]\n${text ?? '찾을 수 없음'}`;
     }),
@@ -74,12 +83,14 @@ export async function resolveStudioFollowUps(
   followUps: readonly StudioAgentFollowUp[],
 ): Promise<readonly StudioFollowUpTarget[]> {
   const resolved = await Promise.all(
-    followUps.map(async (followUp) => {
-      const targetFile = followUpTargetFile(followUp);
-      const exists = await uriExists(followUpUri(workspaceRoot, followUp));
+    followUps
+      .filter((followUp) => isSafeStudioEntityKey(followUp.key))
+      .map(async (followUp) => {
+        const targetFile = followUpTargetFile(followUp);
+        const exists = await uriExists(followUpUri(workspaceRoot, followUp));
 
-      return exists ? { ...followUp, targetFile } : undefined;
-    }),
+        return exists ? { ...followUp, targetFile } : undefined;
+      }),
   );
 
   return resolved.filter((followUp): followUp is StudioFollowUpTarget => followUp !== undefined);

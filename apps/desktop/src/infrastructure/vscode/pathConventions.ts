@@ -129,11 +129,18 @@ export function isDirectSceneCardFile(
 // outside the card/scene id shape would let a session escape the studio-sessions directory.
 const safeEntityKeyPattern = /^[A-Za-z0-9][A-Za-z0-9-]*$/;
 
+// SECURITY: entity keys arrive from the webview and from model output, and they become path
+// segments for both the session cache and the card/scene files themselves; anything outside the
+// card id shape could read or overwrite a file outside the workspace.
+export function isSafeStudioEntityKey(key: string): boolean {
+  return safeEntityKeyPattern.test(key);
+}
+
 export function studioSessionEntityDirectory(
   workspaceRoot: vscode.Uri,
   entity: StudioEntity,
 ): vscode.Uri | undefined {
-  if (!safeEntityKeyPattern.test(entity.key)) {
+  if (!isSafeStudioEntityKey(entity.key)) {
     return undefined;
   }
 
