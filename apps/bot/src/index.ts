@@ -1,3 +1,4 @@
+import { runSetup } from './app/runSetup';
 import { StoryboardBotApplication } from './app/storyboardBotApplication';
 import { ConfigError, loadConfig } from './config/config';
 import { resolvePaths } from './config/paths';
@@ -7,6 +8,10 @@ import { WorkspaceError } from './workspace/workspaceStore';
 const SHUTDOWN_TIMEOUT_MS = 15_000;
 
 async function main(): Promise<number> {
+  if (process.argv[2] === 'setup') {
+    return runSetup();
+  }
+
   const logger = createLogger();
   const paths = resolvePaths();
 

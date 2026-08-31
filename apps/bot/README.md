@@ -16,11 +16,14 @@ Storyboard 워크스페이스를 텔레그램에서 조회·편집·생성하는
 npm install
 npm run bot:build          # apps/bot/dist/ 번들 생성
 
-# 설정 (최초 1회)
-mkdir -p ~/.storyboard
-cp apps/bot/config.example.json ~/.storyboard/bot.json
-chmod 600 ~/.storyboard/bot.json
-# botToken·allowedChatIds·workspace.path를 실제 값으로 수정
+# 설정 (최초 1회) — 대화형 마법사
+node apps/bot/dist/index.js setup
+#   토큰을 getMe 로 검증하고, 허용 chat id 와 워크스페이스 경로를 확인한 뒤
+#   ~/.storyboard/bot.json 을 0600 으로 쓰고 테스트 메시지를 보냅니다.
+#
+# 손으로 쓰려면:
+#   mkdir -p ~/.storyboard && cp apps/bot/config.example.json ~/.storyboard/bot.json
+#   chmod 600 ~/.storyboard/bot.json   # botToken·allowedChatIds·workspace.path 수정
 
 # 실행
 node apps/bot/dist/index.js
