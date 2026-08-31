@@ -78,9 +78,12 @@ export function StudioSidebar({
   const listRequestIdRef = useRef<string | undefined>(undefined);
   const loadRequestIdRef = useRef<string | undefined>(undefined);
   const stageRequestIdRef = useRef<string | undefined>(undefined);
+  const latestRequestIdRef = useRef<string | undefined>(undefined);
   const sendRequestIdRef = useRef<string | undefined>(undefined);
   const followUpRequestIdRef = useRef<string | undefined>(undefined);
   const applyRequestsRef = useRef<Map<string, string>>(new Map());
+  const loadedEntityRef = useRef<StudioTarget['entity']>(initialData.target.entity);
+  const startsFreshRef = useRef(false);
 
   const post = (method: string, payload: unknown, id = createRequestId()): string => {
     vscodeApi?.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
@@ -103,6 +106,17 @@ export function StudioSidebar({
           setCreatedAt(snapshot.createdAt);
           setTurns(snapshot.turns);
           setView('chat');
+        }
+        return;
+      }
+
+      if (data.id === latestRequestIdRef.current) {
+        latestRequestIdRef.current = undefined;
+        const snapshot = parseSessionLoadPayload(data.payload);
+        if (snapshot) {
+          setSessionId(snapshot.id);
+          setCreatedAt(snapshot.createdAt);
+          setTurns(snapshot.turns);
         }
         return;
       }
@@ -169,6 +183,32 @@ export function StudioSidebar({
     followUpRequestIdRef.current = post('studio.followUp.list', { entity: target.entity });
   }, [target.entity?.kind, target.entity?.key, stageToken]);
 
+  // NOTE: a conversation belongs to one entity, so switching the open file swaps the whole chat —
+  // otherwise the previous entity's turns would be replayed as context and then saved under the new
+  // entity's key. The composer draft survives so a follow-up handoff can stage its instruction.
+  useEffect(() => {
+    if (!isEntityChanged(loadedEntityRef.current, target.entity)) {
+      return;
+    }
+
+    loadedEntityRef.current = target.entity;
+    sendRequestIdRef.current = undefined;
+    latestRequestIdRef.current = undefined;
+    setChatStage('idle');
+    setTurns([]);
+    setSessionId(createRequestId());
+    setCreatedAt(new Date().toISOString());
+    setView('chat');
+
+    // NOTE: a follow-up handoff is deliberately a new conversation, so it opts out of restoring
+    // whatever was last discussed about that entity.
+    if (target.entity && !startsFreshRef.current) {
+      latestRequestIdRef.current = post('studio.session.latest', { entity: target.entity });
+    }
+
+    startsFreshRef.current = false;
+  }, [target.entity?.kind, target.entity?.key]);
+
   useEffect(() => {
     logEndRef.current?.scrollIntoView?.({ block: 'end' });
   }, [turns, chatStage]);
@@ -233,6 +273,7 @@ export function StudioSidebar({
   };
 
   const openFollowUp = (followUp: StudioFollowUpTarget): void => {
+    startsFreshRef.current = true;
     post('studio.followUp.open', {
       entity: { kind: followUp.kind, key: followUp.key },
       targetFile: followUp.targetFile,
@@ -344,6 +385,13 @@ export function StudioSidebar({
       )}
     </main>
   );
+}
+
+function isEntityChanged(
+  left: StudioTarget['entity'],
+  right: StudioTarget['entity'],
+): boolean {
+  return left?.kind !== right?.kind || left?.key !== right?.key;
 }
 
 function settleProposal(

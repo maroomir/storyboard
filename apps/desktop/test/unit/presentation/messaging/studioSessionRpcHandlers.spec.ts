@@ -45,7 +45,11 @@ class FakeStudioSessionRepository implements IStudioSessionRepository {
     return this.snapshot
   }
 
-  public async loadLatest(): Promise<StudioSessionSnapshot | undefined> {
+  public async loadLatest(
+    _root: unknown,
+    entity: StudioEntity
+  ): Promise<StudioSessionSnapshot | undefined> {
+    this.requestedEntities.push(entity)
     return this.snapshot
   }
 }
@@ -146,6 +150,29 @@ describe("studio session rpc handlers", () => {
 
     expect(repository.loadedIds).toEqual(["missing"])
     expect(lastResponse(webview).payload?.session).toBeUndefined()
+  })
+
+  it("returns the newest session for an entity", async () => {
+    const snapshot: StudioSessionSnapshot = {
+      id: "s9",
+      entity: sceneEntity,
+      createdAt: "2026-07-18T09:00:00.000Z",
+      updatedAt: "2026-07-18T09:05:00.000Z",
+      title: "지난 대화",
+      hasAppliedChanges: false,
+      turns: [{ id: "u1", role: "user", text: "지난 지시" }]
+    }
+    const repository = new FakeStudioSessionRepository([], snapshot)
+    const webview = new FakeWebview()
+    createWebviewBridge(
+      webview,
+      createStudioSessionRpcHandlers({ repository, getProjectRoot: async () => fakeRoot })
+    )
+
+    await webview.receive(request("studio.session.latest", { entity: sceneEntity }, "latest-1"))
+
+    expect(repository.requestedEntities).toEqual([sceneEntity])
+    expect(lastResponse(webview).payload?.session).toEqual(snapshot)
   })
 
   it("skips the repository when there is no storyboard project", async () => {

@@ -389,6 +389,93 @@ describe("StudioSidebar sessions", () => {
   })
 })
 
+function switchTargetTo(target: StudioTarget): void {
+  window.dispatchEvent(
+    new MessageEvent("message", {
+      data: { type: "event", method: "studio.targetChanged", payload: target }
+    })
+  )
+}
+
+describe("StudioSidebar target switching", () => {
+  const junoTarget: StudioTarget = {
+    kind: "character",
+    label: "juno.card",
+    entity: { kind: "character", key: "juno" },
+    cardUri: "file:///character/juno.card",
+    hasSelection: false
+  }
+
+  it("clears the previous entity's turns when the open file changes", async () => {
+    const postMessage = renderStudio(characterTarget)
+    typeAndSend("서하 이야기")
+    respondTo(postMessage, "studio.chat.send", {
+      turns: [{ id: "s1", role: "assistant", kind: "say", message: "서하 답변" }]
+    })
+    await waitFor(() => expect(screen.getByText("서하 답변")).toBeTruthy())
+
+    switchTargetTo(junoTarget)
+
+    await waitFor(() => expect(screen.queryByText("서하 답변")).toBeNull())
+    expect(screen.queryByText("서하 이야기")).toBeNull()
+  })
+
+  it("asks for the new entity's latest conversation and restores it", async () => {
+    const postMessage = renderStudio(characterTarget)
+
+    switchTargetTo(junoTarget)
+
+    await waitFor(() =>
+      expect(messagesByMethod(postMessage, "studio.session.latest")).not.toHaveLength(0)
+    )
+    const latest = messagesByMethod(postMessage, "studio.session.latest").at(-1) as {
+      payload: { entity: unknown }
+    }
+    expect(latest.payload.entity).toEqual({ kind: "character", key: "juno" })
+
+    respondTo(postMessage, "studio.session.latest", {
+      session: {
+        id: "juno-1",
+        entity: { kind: "character", key: "juno" },
+        createdAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+        title: "준오 대화",
+        hasAppliedChanges: false,
+        turns: [{ id: "u1", role: "user", text: "준오 지난 대화" }]
+      }
+    })
+
+    await waitFor(() => expect(screen.getByText("준오 지난 대화")).toBeTruthy())
+  })
+
+  it("never saves one entity's turns under another entity", async () => {
+    const postMessage = renderStudio(characterTarget)
+    typeAndSend("서하 이야기")
+    await waitFor(() =>
+      expect(messagesByMethod(postMessage, "studio.session.save")).not.toHaveLength(0)
+    )
+
+    switchTargetTo(junoTarget)
+    await waitFor(() => expect(screen.queryByText("서하 이야기")).toBeNull())
+
+    for (const saved of messagesByMethod(postMessage, "studio.session.save")) {
+      const payload = saved.payload as { entity: { key: string }; turns: { text?: string }[] }
+      const mentionsSeoha = payload.turns.some((turn) => turn.text === "서하 이야기")
+      expect(mentionsSeoha ? payload.entity.key : "seorin").toBe("seorin")
+    }
+  })
+
+  it("frees the composer when the target changes mid-request", async () => {
+    renderStudio(characterTarget)
+    typeAndSend("서하 이야기")
+    expect(screen.getByRole("textbox")).toHaveProperty("disabled", true)
+
+    switchTargetTo(junoTarget)
+
+    await waitFor(() => expect(screen.getByRole("textbox")).toHaveProperty("disabled", false))
+  })
+})
+
 describe("StudioSidebar follow-ups", () => {
   const followUpTurn: StudioChatTurn = {
     id: "s1",
@@ -437,6 +524,30 @@ describe("StudioSidebar follow-ups", () => {
     await waitFor(() =>
       expect(screen.getByRole("textbox")).toHaveProperty("value", "서린과의 관계 서술을 맞춰줘")
     )
+  })
+
+  it("starts a fresh conversation on a handoff instead of restoring the old one", async () => {
+    const postMessage = renderStudio(characterTarget)
+    typeAndSend("배경을 바꿔줘")
+    respondTo(postMessage, "studio.chat.send", { turns: [followUpTurn] })
+
+    await waitFor(() => expect(screen.getByText("character/jiho.card")).toBeTruthy())
+    fireEvent.click(screen.getByText("character/jiho.card"))
+
+    const before = messagesByMethod(postMessage, "studio.session.latest").length
+
+    switchTargetTo({
+      kind: "character",
+      label: "jiho.card",
+      entity: { kind: "character", key: "jiho" },
+      cardUri: "file:///character/jiho.card",
+      hasSelection: false
+    })
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox")).toHaveProperty("value", "서린과의 관계 서술을 맞춰줘")
+    )
+    expect(messagesByMethod(postMessage, "studio.session.latest")).toHaveLength(before)
   })
 
   it("asks the host for the ripples waiting on the open entity", () => {
