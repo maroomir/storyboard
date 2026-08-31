@@ -84,10 +84,7 @@ function parseEntryLine(section: StoryStateSection, text: string): StoryStateEnt
 }
 
 export function serializeStoryState(state: StoryState): string {
-  const blocks: string[] = [
-    '# 이야기 상태',
-    `<!-- through-scene: ${state.throughSceneOrder} -->`,
-  ];
+  const blocks: string[] = ['# 이야기 상태', `<!-- through-scene: ${state.throughSceneOrder} -->`];
 
   for (const [section, label] of sectionEntries) {
     const items = state.entries.filter((entry) => entry.section === section);
@@ -98,7 +95,9 @@ export function serializeStoryState(state: StoryState): string {
     blocks.push(
       `## ${label}`,
       ...items.map((item) =>
-        item.throughScene === undefined ? `- ${item.text}` : `- [${item.throughScene}] ${item.text}`,
+        item.throughScene === undefined
+          ? `- ${item.text}`
+          : `- [${item.throughScene}] ${item.text}`,
       ),
     );
   }
@@ -126,8 +125,9 @@ export async function writeStoryState(
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeStoryState(state)));
 }
 
-// 섹션별 상한. 오래된 항목부터 밀어내 원장이 프롬프트 예산을 잠식하지 않게 한다.
-const sectionEntryLimit = 24;
+// 섹션별 주입 예산. 원장에서 항목을 버리는 상한이 아니라, 한 번의 프롬프트에 실어 보낼 개수다.
+// 버리기로 예산을 맞추면 32씬짜리 작품도 6씬 만에 1막의 사실을 잃는다.
+const sectionInjectionBudget = 24;
 
 export function mergeStoryState(
   previous: StoryState,
@@ -156,14 +156,86 @@ export function mergeStoryState(
     merged.push({ section: addition.section, text, throughScene: throughSceneOrder });
   }
 
-  const bounded = sectionEntries.flatMap(([section]) =>
-    merged.filter((entry) => entry.section === section).slice(-sectionEntryLimit),
-  );
-
   return {
     throughSceneOrder: Math.max(previous.throughSceneOrder, throughSceneOrder),
-    entries: bounded,
+    entries: merged,
   };
+}
+
+// NOTE: 예산을 넘으면 최근 것만 남기는 대신 이번 씬과 겹치는 낱말이 많은 항목을 먼저 고른다.
+// 1막에서 심은 사실이 3막 씬에 그 이름이 등장할 때 되살아나야 복선 회수가 가능하다. 캐넌의
+// selectInjectedFacts가 같은 문제를 같은 방식으로 푼다.
+function selectWithinBudget(
+  entries: readonly StoryStateEntry[],
+  sceneText: string | undefined,
+  budget: number,
+): StoryStateEntry[] {
+  if (entries.length <= budget) {
+    return [...entries];
+  }
+
+  if (sceneText === undefined) {
+    return entries.slice(-budget);
+  }
+
+  const sceneTextCompact = compactForOverlap(sceneText);
+  const ranked = entries
+    .map((entry, position) => ({
+      entry,
+      position,
+      score: countTextOverlap(entry.text, sceneTextCompact),
+    }))
+    .sort((left, right) => right.score - left.score || right.position - left.position)
+    .slice(0, budget);
+
+  // 고른 뒤에는 쌓인 순서로 되돌린다. 읽는 쪽에는 시간 순서가 자연스럽다.
+  return ranked.sort((left, right) => left.position - right.position).map((item) => item.entry);
+}
+
+// NOTE: 한국어는 낱말에 조사가 붙어 "대상0호가"와 "대상0호를"이 다른 문자열이 된다. 낱말 단위로
+// 맞추면 같은 대상을 가리켜도 어긋나므로, 공백을 걷어낸 글자 3-gram이 얼마나 겹치는지로 센다.
+const overlapGramSize = 3;
+
+function countTextOverlap(text: string, sceneTextCompact: string): number {
+  const compact = compactForOverlap(text);
+  if (compact.length < overlapGramSize) {
+    return 0;
+  }
+
+  const grams = new Set<string>();
+  for (let offset = 0; offset + overlapGramSize <= compact.length; offset += 1) {
+    grams.add(compact.slice(offset, offset + overlapGramSize));
+  }
+
+  let hits = 0;
+  for (const gram of grams) {
+    if (sceneTextCompact.includes(gram)) {
+      hits += 1;
+    }
+  }
+
+  return hits;
+}
+
+function compactForOverlap(text: string): string {
+  return text.toLowerCase().replace(/[^0-9a-z가-힣]+/g, '');
+}
+
+export function selectStoryStateEntries(
+  state: StoryState,
+  section: StoryStateSection,
+  beforeSceneOrder: number | undefined,
+  sceneText?: string,
+): StoryStateEntry[] {
+  const visible = state.entries.filter(
+    (entry) =>
+      entry.section === section &&
+      (beforeSceneOrder === undefined ||
+        entry.throughScene === undefined ||
+        entry.throughScene < beforeSceneOrder),
+  );
+
+  return selectWithinBudget(visible, sceneText, sectionInjectionBudget);
 }
 
 // NOTE: beforeSceneOrder를 주면 그 씬보다 앞에서 확립된 항목만 남긴다. 앞 씬을 다시 생성할 때
@@ -171,22 +243,16 @@ export function mergeStoryState(
 export function formatStoryStateForPrompt(
   state: StoryState,
   beforeSceneOrder?: number,
+  sceneText?: string,
 ): string | undefined {
-  const visible =
-    beforeSceneOrder === undefined
-      ? state.entries
-      : state.entries.filter(
-          (entry) => entry.throughScene === undefined || entry.throughScene < beforeSceneOrder,
-        );
-
-  if (visible.length === 0) {
-    return undefined;
-  }
-
   const blocks = sectionEntries.flatMap(([section, label]) => {
-    const items = visible.filter((entry) => entry.section === section);
+    const items = selectStoryStateEntries(state, section, beforeSceneOrder, sceneText);
     return items.length > 0 ? [`${label}:`, ...items.map((item) => `- ${item.text}`)] : [];
   });
+
+  if (blocks.length === 0) {
+    return undefined;
+  }
 
   return ['[이야기 상태]', ...blocks].join('\n');
 }
