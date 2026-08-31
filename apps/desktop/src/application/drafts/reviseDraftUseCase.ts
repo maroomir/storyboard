@@ -170,6 +170,9 @@ async function runReviseDraftWorkflow(
         sceneStem,
         format: ctx.draft.format,
         body: result.body,
+        // 생성 단계가 못 고치고 남긴 위반(사라진 대사·분량 미달 등)은 수정 루프가 다루는 문제와
+        // 다르다. 여기서 빠뜨리면 헤더에서 사라져 읽는 사람이 영영 보지 못한다.
+        warnings: ctx.draft.warnings,
         generator: options.generator,
         providerId: revisionConfig.providerId,
         model: revisionConfig.model,
