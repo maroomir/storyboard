@@ -64,6 +64,22 @@ side — all of that was removed. The bot owns its own onboarding, config file, 
 lifecycle. The only thing the two share is the workspace on disk and the `@storyboard/*` packages.
 Do not reintroduce a code path in either app that names the other.
 
+## Generation runs the engine, not a copy
+
+`sceneDraftGenerator` calls `GenerateDraftUseCase` and `ReviseDraftUseCase` — the very use cases the
+extension and the CLI run. What is bot-specific lives in the injected adapters
+(`gen/engineAdapters.ts`) and nowhere else:
+
+- `BotFileSystem` routes a `draft/` write through `ContentService`, so the archive-then-write path
+  stays the bot's only way to touch a draft. Gitignored side artefacts go straight to disk.
+- `BotSceneRepository` holds the hash from the read the edit was derived from and uses it as the
+  mutate gate's baseline, which is what makes a Desktop edit landing mid-job refuse the write.
+- `draft.*` config names already match the extension's setting names, so `ConfigBridge` reads them
+  with no bot-specific branch.
+
+Do not reintroduce a second pipeline here. A bot-only generation shortcut is how the bot ended up
+missing canon facts and the story-state ledger in the first place.
+
 ## Scene grounding
 
 Generation resolves the scene's four grounding facts (incident/place/relation/time) before the
@@ -73,9 +89,8 @@ dialogue prompt runs, exactly as the extension does. Two consequences are specif
 read-time hash as baseline — a Desktop edit landing mid-job makes it stale and the job skips the
 save rather than clobbering it. And a queued job cannot stop to ask Telegram for approval, so
 `draft.autoGrounding` (default true) means *fill and commit*; off means leave grounding alone.
-Never re-implement the merge or the frontmatter write: `mergeSceneGrounding` and
-`applySceneGrounding` in `packages/story-format/src/files/sceneGrounding.ts` are shared with the
-extension.
+`draft.autoGrounding` off maps to the engine's `skipSceneGrounding`, which leaves the scene exactly
+as authored and generates anyway — distinct from a declined approval, which cancels the run.
 
 ## Scene cards
 
