@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   getStoryboardProjectPaths,
+  isDirectBackgroundCardFile,
+  isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
   isHiddenSceneFileName,
@@ -86,5 +88,29 @@ describe("isDirectSceneCardFile contract", () => {
     const sceneFile = Uri.file("C:\\workspace\\story\\scene\\01.card")
 
     expect(isDirectSceneCardFile(sceneFile as never, windowsWorkspace)).toBe(true)
+  })
+})
+describe("card file contracts", () => {
+  const characterCases: PathContractCase[] = [
+    { label: "direct .card in character dir", filePath: "/workspace/story/character/seorin.card", expected: true },
+    { label: "profile image beside the card", filePath: "/workspace/story/character/profile/seorin.png", expected: false },
+    { label: "nested under a subdirectory", filePath: "/workspace/story/character/sub/seorin.card", expected: false },
+    { label: "wrong extension .md", filePath: "/workspace/story/character/seorin.md", expected: false },
+    { label: "sibling sharing the character prefix", filePath: "/workspace/story/characters/seorin.card", expected: false },
+    { label: "background card is not a character card", filePath: "/workspace/story/background/subway.card", expected: false }
+  ]
+
+  it.each(characterCases)("character: $label → $expected", ({ filePath, expected }) => {
+    expect(isDirectCharacterCardFile(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
+  })
+
+  const backgroundCases: PathContractCase[] = [
+    { label: "direct .card in background dir", filePath: "/workspace/story/background/subway.card", expected: true },
+    { label: "nested under a subdirectory", filePath: "/workspace/story/background/sub/subway.card", expected: false },
+    { label: "character card is not a background card", filePath: "/workspace/story/character/seorin.card", expected: false }
+  ]
+
+  it.each(backgroundCases)("background: $label → $expected", ({ filePath, expected }) => {
+    expect(isDirectBackgroundCardFile(Uri.file(filePath) as never, workspaceFolder)).toBe(expected)
   })
 })

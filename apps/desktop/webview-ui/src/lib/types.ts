@@ -201,11 +201,20 @@ export type StudioActionId =
   | "completeStory"
   | "buildCardsFromScenes"
 
+export type StudioEntityKind = "character" | "background" | "scene" | "project"
+
+export interface StudioEntity {
+  readonly kind: StudioEntityKind
+  readonly key: string
+}
+
 export interface StudioTarget {
-  readonly kind: "draft" | "scene" | "project" | "none"
+  readonly kind: "draft" | "scene" | "character" | "background" | "project" | "none"
   readonly label?: string
+  readonly entity?: StudioEntity
   readonly sceneUri?: string
   readonly draftUri?: string
+  readonly cardUri?: string
   readonly hasSelection: boolean
   readonly draftExists?: boolean
 }
@@ -217,7 +226,8 @@ export interface StudioStageCard {
 
 export type StudioReviewState = "unreviewed" | "clean" | "issues"
 
-export interface StudioStage {
+export interface StudioSceneStage {
+  readonly kind: "scene"
   readonly sceneStem: string
   readonly title?: string
   readonly draftLength?: number
@@ -226,6 +236,23 @@ export interface StudioStage {
   readonly review: StudioReviewState
   readonly cards: readonly StudioStageCard[]
 }
+
+export interface StudioCardStageRelation {
+  readonly target: string
+  readonly type: string
+}
+
+export interface StudioCardStage {
+  readonly kind: "card"
+  readonly cardKind: "character" | "background"
+  readonly cardId: string
+  readonly name: string
+  readonly role?: string
+  readonly relations: readonly StudioCardStageRelation[]
+  readonly appearsInScenes: readonly string[]
+}
+
+export type StudioStage = StudioSceneStage | StudioCardStage
 
 export type StudioProposalStatus = "pending" | "running" | "done" | "failed" | "cancelled"
 

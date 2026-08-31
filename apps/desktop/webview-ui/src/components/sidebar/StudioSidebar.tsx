@@ -437,20 +437,43 @@ function StageCard({
       {facts.length > 0 ? (
         <p className="m-0 text-xs text-sb-fg-muted">{facts.join(' · ')}</p>
       ) : null}
-      {stage && stage.cards.length > 0 ? (
-        <div className="flex flex-wrap gap-1">
-          {stage.cards.map((card) => (
-            <Pill
-              key={`${card.kind}-${card.name}`}
-              tone={card.kind === 'character' ? 'character' : 'background'}
-              icon={card.kind === 'character' ? User : MapPin}
-            >
-              {card.name}
-            </Pill>
-          ))}
-        </div>
-      ) : null}
+      <StagePills stage={stage} />
     </section>
+  );
+}
+
+function StagePills({ stage }: { readonly stage?: StudioStage }): React.ReactElement | null {
+  if (!stage) {
+    return null;
+  }
+
+  const pills =
+    stage.kind === 'card'
+      ? stage.relations.map((relation) => ({
+          key: `relation-${relation.target}`,
+          tone: 'character' as const,
+          icon: User,
+          text: `${relation.target} · ${relation.type}`,
+        }))
+      : stage.cards.map((card) => ({
+          key: `${card.kind}-${card.name}`,
+          tone: card.kind === 'character' ? ('character' as const) : ('background' as const),
+          icon: card.kind === 'character' ? User : MapPin,
+          text: card.name,
+        }));
+
+  if (pills.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {pills.map((pill) => (
+        <Pill key={pill.key} tone={pill.tone} icon={pill.icon}>
+          {pill.text}
+        </Pill>
+      ))}
+    </div>
   );
 }
 

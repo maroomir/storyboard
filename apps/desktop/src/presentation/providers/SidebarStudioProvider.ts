@@ -1,23 +1,12 @@
 import * as vscode from 'vscode';
 
-import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
-import {
-  draftPath,
-  isDirectSceneCardFile,
-  isDraftMarkdownFile,
-} from '../../infrastructure/vscode/pathConventions';
-import {
-  hasStoryboardProject,
-  resolveStoryboardWorkspaceRoot,
-  uriExists,
-} from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import {
   StudioSessionRepository,
   type IStudioSessionRepository,
 } from '../../infrastructure/persistence/repositories/studioSessionRepository';
 import { readStudioStage } from '../../infrastructure/persistence/studioStage';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { parseSceneFileName } from '@storyboard/story-format';
 import type {
   StoryboardResponsePayload,
   StudioAction,
@@ -26,10 +15,10 @@ import type {
 } from '../../shared/messaging';
 import { createStudioSessionRpcHandlers } from '../messaging/studioSessionRpcHandlers';
 import { planStudioAction, type StudioArgSlot } from './studioActions';
+import { computeStudioTarget } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const studioSidebarViewId = 'storyboard.studioView';
-const noneTarget: StudioTarget = { kind: 'none', hasSelection: false };
 
 interface SidebarStudioInitialData {
   readonly title: string;
@@ -136,59 +125,6 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       payload: target,
     });
   }
-}
-
-async function computeStudioTarget(editor: vscode.TextEditor | undefined): Promise<StudioTarget> {
-  const workspaceFolder =
-    editor && editor.document.uri.scheme === 'file'
-      ? vscode.workspace.getWorkspaceFolder(editor.document.uri)
-      : vscode.workspace.workspaceFolders?.[0];
-
-  if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
-    return noneTarget;
-  }
-
-  if (!editor || editor.document.uri.scheme !== 'file') {
-    return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
-  }
-
-  const uri = editor.document.uri;
-
-  const hasSelection = !editor.selection.isEmpty;
-  const label = uri.path.split('/').pop();
-
-  if (isDraftMarkdownFile(uri, workspaceFolder)) {
-    const sceneUri = deriveSceneUri(workspaceFolder, editor.document.getText());
-
-    return {
-      kind: 'draft',
-      label,
-      draftUri: uri.toString(),
-      sceneUri: sceneUri?.toString(),
-      hasSelection,
-    };
-  }
-
-  if (isDirectSceneCardFile(uri, workspaceFolder)) {
-    const parts = parseSceneFileName(uri.path.split('/').pop() ?? '');
-
-    if (!parts) {
-      return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
-    }
-
-    const draftUri = draftPath(workspaceFolder.uri, parts.stem);
-
-    return {
-      kind: 'scene',
-      label,
-      sceneUri: uri.toString(),
-      draftUri: draftUri.toString(),
-      hasSelection,
-      draftExists: await uriExists(draftUri),
-    };
-  }
-
-  return { kind: 'project', label: workspaceFolder.name, hasSelection: false };
 }
 
 async function runStudioAction(action: StudioAction, instruction?: string): Promise<void> {

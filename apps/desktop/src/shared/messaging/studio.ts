@@ -19,11 +19,25 @@ const studioActionSchema = z.enum([
 
 export type StudioAction = z.infer<typeof studioActionSchema>;
 
+export const studioEntityKindSchema = z.enum(['character', 'background', 'scene', 'project']);
+
+export type StudioEntityKind = z.infer<typeof studioEntityKindSchema>;
+
+export const studioEntitySchema = z.object({
+  kind: studioEntityKindSchema,
+  key: z.string().min(1),
+});
+
+export type StudioEntity = z.infer<typeof studioEntitySchema>;
+
 export const studioTargetSchema = z.object({
-  kind: z.enum(['draft', 'scene', 'project', 'none']),
+  kind: z.enum(['draft', 'scene', 'character', 'background', 'project', 'none']),
   label: z.string().optional(),
+  // NOTE: draft and scene targets share one entity so their chat sessions live under the same key.
+  entity: studioEntitySchema.optional(),
   sceneUri: uriStringSchema.optional(),
   draftUri: uriStringSchema.optional(),
+  cardUri: uriStringSchema.optional(),
   hasSelection: z.boolean(),
   draftExists: z.boolean().optional(),
 });
@@ -35,7 +49,8 @@ export const studioStageCardSchema = z.object({
   name: z.string().min(1),
 });
 
-export const studioStageSchema = z.object({
+export const studioSceneStageSchema = z.object({
+  kind: z.literal('scene'),
   sceneStem: z.string().min(1),
   title: z.string().optional(),
   draftLength: z.number().int().nonnegative().optional(),
@@ -45,7 +60,30 @@ export const studioStageSchema = z.object({
   cards: z.array(studioStageCardSchema),
 });
 
+export const studioCardStageRelationSchema = z.object({
+  target: z.string().min(1),
+  type: z.string().min(1),
+});
+
+export const studioCardStageSchema = z.object({
+  kind: z.literal('card'),
+  cardKind: z.enum(['character', 'background']),
+  cardId: z.string().min(1),
+  name: z.string().min(1),
+  role: z.string().optional(),
+  relations: z.array(studioCardStageRelationSchema),
+  appearsInScenes: z.array(z.string().min(1)),
+});
+
+export const studioStageSchema = z.discriminatedUnion('kind', [
+  studioSceneStageSchema,
+  studioCardStageSchema,
+]);
+
 export type StudioStageCard = z.infer<typeof studioStageCardSchema>;
+export type StudioSceneStage = z.infer<typeof studioSceneStageSchema>;
+export type StudioCardStage = z.infer<typeof studioCardStageSchema>;
+export type StudioCardStageRelation = z.infer<typeof studioCardStageRelationSchema>;
 export type StudioStage = z.infer<typeof studioStageSchema>;
 
 export const studioStageRequestPayloadSchema = z.object({});

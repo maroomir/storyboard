@@ -1,10 +1,14 @@
-import type { StudioReviewState, StudioStage, StudioTarget } from "./types"
+import type { StudioCardStage, StudioReviewState, StudioStage, StudioTarget } from "./types"
 
 const millisecondsPerDay = 86_400_000
 
 export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
   if (!stage) {
     return targetTitle(target)
+  }
+
+  if (stage.kind === "card") {
+    return `${cardKindLabel(stage.cardKind)} · ${stage.name}`
   }
 
   const order = stage.sceneStem.split("-")[0]
@@ -14,6 +18,10 @@ export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
 export function stageFacts(stage?: StudioStage, now: Date = new Date()): readonly string[] {
   if (!stage) {
     return []
+  }
+
+  if (stage.kind === "card") {
+    return cardStageFacts(stage)
   }
 
   if (stage.draftUpdatedAt === undefined) {
@@ -54,6 +62,41 @@ export function formatRelativeDay(isoDate: string, now: Date = new Date()): stri
   return elapsedDays === 1 ? "어제" : `${elapsedDays}일 전`
 }
 
+function cardKindLabel(cardKind: StudioCardStage["cardKind"]): string {
+  return cardKind === "character" ? "인물" : "배경"
+}
+
+function cardStageFacts(stage: StudioCardStage): readonly string[] {
+  const facts: string[] = []
+
+  if (stage.role) {
+    facts.push(characterRoleLabel(stage.role))
+  }
+
+  facts.push(
+    stage.appearsInScenes.length === 0 ? "등장 씬 없음" : `등장 씬 ${stage.appearsInScenes.length}`
+  )
+
+  if (stage.relations.length > 0) {
+    facts.push(`관계 ${stage.relations.length}`)
+  }
+
+  return facts
+}
+
+function characterRoleLabel(role: string): string {
+  switch (role) {
+    case "main":
+      return "주연"
+    case "supporting":
+      return "조연"
+    case "extra":
+      return "단역"
+    default:
+      return role
+  }
+}
+
 function reviewLabel(review: StudioReviewState): string {
   switch (review) {
     case "clean":
@@ -71,6 +114,10 @@ function targetTitle(target: StudioTarget): string {
       return `초안 · ${target.label ?? ""}`
     case "scene":
       return `씬 · ${target.label ?? ""}`
+    case "character":
+      return `인물 · ${target.label ?? ""}`
+    case "background":
+      return `배경 · ${target.label ?? ""}`
     case "project":
       return `프로젝트 · ${target.label ?? ""}`
     case "none":
