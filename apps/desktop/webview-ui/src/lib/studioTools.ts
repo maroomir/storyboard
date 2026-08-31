@@ -10,10 +10,20 @@ export type StudioToolName =
   | 'cardAudit'
   | 'relationCheck';
 
-export type StudioToolTargetKind = 'draft' | 'scene' | 'character' | 'background';
+export type StudioToolTargetKind =
+  | 'draft'
+  | 'scene'
+  | 'character'
+  | 'background'
+  | 'project'
+  | 'none';
+
+// NOTE: the composer can pin either an agent tool or the create wizard; only the former rides the
+// chat request as `tool`.
+export type StudioComposerTool = StudioToolName | 'updateCard';
 
 export interface StudioToolEntry {
-  readonly tool: StudioToolName;
+  readonly tool: StudioComposerTool;
   readonly command: string;
   readonly label: string;
   readonly hint: string;
@@ -91,6 +101,15 @@ const studioTools: readonly StudioToolEntry[] = [
     defaultInstruction: '이 카드가 다른 카드·씬과 어긋나는 점이 있는지 검사해줘.',
   },
   {
+    tool: 'updateCard',
+    command: 'update',
+    targets: ['draft', 'scene', 'character', 'background', 'project', 'none'],
+    label: '카드 업데이트',
+    hint: '설명문으로 인물·배경 카드를 만들거나 채웁니다',
+    needsSelection: false,
+    defaultInstruction: '',
+  },
+  {
     tool: 'relationCheck',
     command: 'relations',
     targets: ['character', 'background', 'scene'],
@@ -101,14 +120,9 @@ const studioTools: readonly StudioToolEntry[] = [
   },
 ];
 
-// NOTE: the menu only offers what the host resolver for that file kind will actually run.
+// NOTE: every target kind offers at least the create wizard, so the slash menu is always live.
 export function isToolTarget(target: StudioTarget): boolean {
-  return (
-    target.kind === 'draft' ||
-    target.kind === 'scene' ||
-    target.kind === 'character' ||
-    target.kind === 'background'
-  );
+  return toolCandidates('', target).length > 0;
 }
 
 export function slashToken(value: string): string | undefined {
@@ -126,6 +140,6 @@ export function toolCandidates(token: string, target: StudioTarget): readonly St
   );
 }
 
-export function findTool(tool: StudioToolName): StudioToolEntry | undefined {
+export function findTool(tool: StudioComposerTool): StudioToolEntry | undefined {
   return studioTools.find((entry) => entry.tool === tool);
 }

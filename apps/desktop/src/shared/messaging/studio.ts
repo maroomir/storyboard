@@ -207,6 +207,17 @@ export const studioChatSendResponsePayloadSchema = z.object({
 
 export const studioChatCancelRequestPayloadSchema = z.object({});
 
+export const studioCardUpdateRequestPayloadSchema = z.object({
+  description: z.string().min(1),
+});
+
+export const studioCardUpdateResponsePayloadSchema = z.object({
+  ok: z.boolean(),
+  message: z.string().optional(),
+  // NOTE: the composer stages this as the first instruction of the new card's fill conversation.
+  instruction: z.string().optional(),
+});
+
 export const studioChatCancelResponsePayloadSchema = z.object({});
 
 export const studioProposalPreviewRequestPayloadSchema = z.object({

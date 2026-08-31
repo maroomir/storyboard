@@ -6,6 +6,7 @@ import {
   type StudioAgentPromptInput,
 } from './prompts/studioAgent';
 import { StudioCardAuditPrompt, type StudioCardAuditPromptInput } from './prompts/studioCardAudit';
+import { StudioCardSeedPrompt } from './prompts/studioCardSeed';
 import { StudioValidationPrompt } from './prompts/studioValidation';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
@@ -15,6 +16,7 @@ import {
   type StudioAgentLookupRequest,
   type StudioAgentToolName,
 } from '../contracts/studioAgent';
+import { coerceStudioCardSeed, type StudioCardSeed } from '../contracts/studioCardSeed';
 import {
   coerceStudioValidationVerdict,
   type StudioValidationVerdict,
@@ -151,6 +153,19 @@ export class StudioAgentService {
     });
 
     return coerceStudioValidationVerdict(response.text);
+  }
+
+  public async seedCard(
+    description: string,
+    options: GenerateTextOptions = {},
+  ): Promise<StudioCardSeed | undefined> {
+    const prompt = StudioCardSeedPrompt.build(description);
+    const response = await this.gateway.generate('studioAgent', toPromptMessages(prompt), {
+      ...StudioCardSeedPrompt.config,
+      ...options,
+    });
+
+    return coerceStudioCardSeed(response.text);
   }
 
   private async requestAction(

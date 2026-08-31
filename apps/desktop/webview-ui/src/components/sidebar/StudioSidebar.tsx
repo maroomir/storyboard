@@ -45,6 +45,7 @@ import {
   isToolTarget,
   slashToken,
   toolCandidates,
+  type StudioComposerTool,
   type StudioToolEntry,
   type StudioToolName,
 } from '@webview/lib/studioTools';
@@ -84,7 +85,7 @@ export function StudioSidebar({
   const [chatStage, setChatStage] = useState<StudioChatStage>('idle');
   const [pendingFollowUps, setPendingFollowUps] = useState<readonly StudioPendingFollowUp[]>([]);
   const [draft, setDraft] = useState('');
-  const [pinnedTool, setPinnedTool] = useState<StudioToolName | undefined>(undefined);
+  const [pinnedTool, setPinnedTool] = useState<StudioComposerTool | undefined>(undefined);
   const [menuIndex, setMenuIndex] = useState(0);
   const logEndRef = useRef<HTMLDivElement>(null);
   const listRequestIdRef = useRef<string | undefined>(undefined);
@@ -92,6 +93,7 @@ export function StudioSidebar({
   const stageRequestIdRef = useRef<string | undefined>(undefined);
   const latestRequestIdRef = useRef<string | undefined>(undefined);
   const sendRequestIdRef = useRef<string | undefined>(undefined);
+  const updateCardRequestIdRef = useRef<string | undefined>(undefined);
   const followUpRequestIdRef = useRef<string | undefined>(undefined);
   const applyRequestsRef = useRef<Map<string, string>>(new Map());
   const previewRequestIdRef = useRef<string | undefined>(undefined);
@@ -150,6 +152,19 @@ export function StudioSidebar({
         sendRequestIdRef.current = undefined;
         setChatStage('idle');
         setTurns((prev) => [...prev, ...parseChatSendPayload(data.payload)]);
+        return;
+      }
+
+      if (data.id === updateCardRequestIdRef.current) {
+        updateCardRequestIdRef.current = undefined;
+        setChatStage('idle');
+        const result = parseCardUpdatePayload(data.payload);
+        if (result.ok) {
+          // NOTE: the host opened the new card; the target switch starts its conversation and the
+          // staged instruction survives it, exactly like a follow-up handoff.
+          startsFreshRef.current = true;
+          setDraft(result.instruction ?? '');
+        }
         return;
       }
 
@@ -285,7 +300,18 @@ export function StudioSidebar({
   const sendInstruction = (text: string, tool = pinnedTool): void => {
     const instruction = text.trim();
 
-    if (instruction.length === 0 || !target.entity || chatStage !== 'idle') {
+    if (instruction.length === 0 || chatStage !== 'idle') {
+      return;
+    }
+
+    if (tool === 'updateCard') {
+      setChatStage('thinking');
+      setPinnedTool(undefined);
+      updateCardRequestIdRef.current = post('studio.card.update', { description: instruction });
+      return;
+    }
+
+    if (!target.entity) {
       return;
     }
 
@@ -423,7 +449,7 @@ export function StudioSidebar({
       {isHistoryView ? null : (
         <Composer
           value={draft}
-          isDisabled={!canChat || chatStage !== 'idle'}
+          isDisabled={chatStage !== 'idle'}
           placeholder={composerPlaceholder(target, chatStage, pinnedTool)}
           pinnedTool={pinnedTool}
           menu={menu}
@@ -684,7 +710,7 @@ function Composer({
   readonly value: string;
   readonly isDisabled: boolean;
   readonly placeholder: string;
-  readonly pinnedTool: StudioToolName | undefined;
+  readonly pinnedTool: StudioComposerTool | undefined;
   readonly menu: readonly StudioToolEntry[];
   readonly menuIndex: number;
   readonly hasSelection: boolean;
@@ -803,17 +829,36 @@ function chatStageLabel(stage: StudioChatStage): string {
   }
 }
 
-function pinnedInstruction(tool: StudioToolName | undefined): string {
+function parseCardUpdatePayload(payload: unknown): {
+  readonly ok: boolean;
+  readonly instruction?: string;
+} {
+  const data = (payload && typeof payload === 'object' ? payload : {}) as {
+    ok?: unknown;
+    instruction?: unknown;
+  };
+
+  return {
+    ok: data.ok === true,
+    ...(typeof data.instruction === 'string' ? { instruction: data.instruction } : {}),
+  };
+}
+
+function pinnedInstruction(tool: StudioComposerTool | undefined): string {
   return (tool === undefined ? undefined : findTool(tool)?.defaultInstruction) ?? '';
 }
 
 function composerPlaceholder(
   target: StudioTarget,
   stage: StudioChatStage,
-  pinnedTool: StudioToolName | undefined,
+  pinnedTool: StudioComposerTool | undefined,
 ): string {
   if (stage !== 'idle') {
     return '응답을 기다리는 중…';
+  }
+
+  if (pinnedTool === 'updateCard') {
+    return '카드를 설명해 주세요 (이름을 앞세워서)';
   }
 
   if (pinnedTool !== undefined) {
@@ -821,7 +866,7 @@ function composerPlaceholder(
   }
 
   if (!target.entity || target.entity.kind === 'project') {
-    return '카드나 씬 파일을 먼저 열어 주세요.';
+    return '카드나 씬 파일을 열거나, /update 로 카드를 만드세요.';
   }
 
   if (target.entity.kind !== 'scene') {
