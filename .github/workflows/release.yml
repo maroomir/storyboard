@@ -1,4 +1,4 @@
-name: Release VSIX
+name: Release
 
 on:
   push:
@@ -25,11 +25,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check tag matches package version
+      - name: Check tag matches the monorepo version
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
-          package_version="$(node -p "require('./apps/desktop/package.json').version")"
-          test "$tag_version" = "$package_version"
+          root_version="$(node -p "require('./package.json').version")"
+          test "$tag_version" = "$root_version"
+          node scripts/sync-version.mjs --check
 
       - name: Lint
         run: npm run lint
@@ -37,16 +38,20 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Package VSIX
-        working-directory: apps/desktop
+      - name: Package the three artifacts
         run: |
-          version="$(node -p "require('./package.json').version")"
-          mkdir -p dist
-          npm run package:vsix -- --out "dist/storyboard-${version}.vsix"
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p release
+          npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
+          npm run build --workspace @storyboard/bot
+          npm run build --workspace @storyboard/cli
+          tar -czf "release/storyboard-bot-${version}.tar.gz" -C apps/bot dist package.json README.md config.example.json assets
+          tar -czf "release/storyboard-cli-${version}.tar.gz" -C apps/cli dist package.json
+          cp scripts/install.sh release/install.sh
 
       - name: Create checksum
-        working-directory: apps/desktop/dist
-        run: shasum -a 256 *.vsix > SHA256SUMS
+        working-directory: release
+        run: shasum -a 256 storyboard-* install.sh > SHA256SUMS
 
       - name: Build release notes
         run: |
@@ -76,7 +81,10 @@ jobs:
         run: |
           gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
           gh release create "$GITHUB_REF_NAME" \
-            apps/desktop/dist/*.vsix \
-            apps/desktop/dist/SHA256SUMS \
+            release/storyboard-vscode-*.vsix \
+            release/storyboard-bot-*.tar.gz \
+            release/storyboard-cli-*.tar.gz \
+            release/install.sh \
+            release/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
             --notes-file release-notes.md
