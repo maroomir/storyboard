@@ -4,14 +4,14 @@ Follow these rules when implementing VSCode extension behavior in `storyboard`.
 
 ## Package Contributions
 
-- `apps/desktop/package.json` is the source of truth for extension contributions.
+- `apps/vscode/package.json` is the source of truth for extension contributions.
 - Use command IDs under the `storyboard.*` namespace.
 - Keep contributed commands, views, menus, configuration, and activation events aligned with runtime registration code.
-- If a command is contributed in `apps/desktop/package.json`, verify it is registered during activation or by the intended lazy activation path.
+- If a command is contributed in `apps/vscode/package.json`, verify it is registered during activation or by the intended lazy activation path.
 
 ## Activation and Lifecycle
 
-- Keep `apps/desktop/src/extension.ts` focused on activation/deactivation and high-level wiring.
+- Keep `apps/vscode/src/extension.ts` focused on activation/deactivation and high-level wiring.
 - Push disposables into `context.subscriptions`.
 - Dispose watchers, webview panels, event listeners, terminals, and long-running resources explicitly.
 - Avoid doing expensive work on activation unless required for the activation event.

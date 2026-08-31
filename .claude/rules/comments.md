@@ -1,6 +1,6 @@
 # Comments (TypeScript / TSX)
 
-Applies to `apps/desktop/src/`, `apps/desktop/webview-ui/src/`, and `apps/desktop/test/` unless a task says otherwise.
+Applies to `apps/vscode/src/`, `apps/vscode/webview-ui/src/`, and `apps/vscode/test/` unless a task says otherwise.
 
 ## Project preference: minimal comments
 
@@ -39,7 +39,7 @@ Example: `// NOTE: Payload shape matches settings.read response.`
 
 ## ESLint
 
-See the header comment in `apps/desktop/.eslintrc.cjs` for the same policy. `no-warning-comments` is configured to warn on ambiguous `xxx`-style markers.
+See the header comment in `apps/vscode/.eslintrc.cjs` for the same policy. `no-warning-comments` is configured to warn on ambiguous `xxx`-style markers.
 
 ## Webview and security
 

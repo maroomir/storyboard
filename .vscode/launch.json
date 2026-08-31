@@ -5,8 +5,8 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/desktop"],
-      "outFiles": ["${workspaceFolder}/apps/desktop/out/**/*.js"],
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"],
+      "outFiles": ["${workspaceFolder}/apps/vscode/out/**/*.js"],
       "preLaunchTask": "storybook: compile"
     }
   ]

@@ -214,7 +214,7 @@ async function applyRevisionPasses(
 }
 
 // NOTE: Both apps share this exact review→revise policy; changing pass/stop semantics here changes
-// the desktop revise command and the bot's post-generate gate together.
+// the extension's revise command and the bot's post-generate gate together.
 export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseLoopResult> {
   const { aiService, registry, attribution, ctx, maxIterations, reviseScoreThreshold } = options;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;

@@ -33,12 +33,12 @@ npm install
 npm run build
 ```
 
-- **성공 기준**: 에러 없이 끝나고, `apps/desktop/out/extension.js` 및 `apps/desktop/out/webview-ui/` 산출물이 생깁니다.
+- **성공 기준**: 에러 없이 끝나고, `apps/vscode/out/extension.js` 및 `apps/vscode/out/webview-ui/` 산출물이 생깁니다.
 
 **웹뷰(UI)만 수정하고 다시 확인할 때**
 
-- **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함). 이 스크립트는 루트에 없으므로 `cd apps/desktop` 후 실행하거나 `npm run build:webview --workspace storyboard-vscode`로 실행합니다.
-- 확장 호스트 코드(`apps/desktop/src/` 등)는 바뀌지 않았다면 `npm run compile`은 생략 가능합니다(루트에서 실행 가능).
+- **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함). 이 스크립트는 루트에 없으므로 `cd apps/vscode` 후 실행하거나 `npm run build:webview --workspace storyboard-vscode`로 실행합니다.
+- 확장 호스트 코드(`apps/vscode/src/` 등)는 바뀌지 않았다면 `npm run compile`은 생략 가능합니다(루트에서 실행 가능).
 - 이미 떠 있는 **Extension Development Host** 창에서는 빌드 후 **`Developer: Reload Window`**로 리로드해야 변경된 웹뷰가 보이는 경우가 많습니다.
 
 ### 1. Extension Development Host 열기
@@ -264,7 +264,7 @@ npm run build
 ### 11. API 키·기본 provider (`storyboard.defaultProvider`)
 
 Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`로 고릅니다.  
-가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`apps/desktop/package.json`의 `contributes.configuration`과 동일).
+가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`apps/vscode/package.json`의 `contributes.configuration`과 동일).
 
 #### A. 키 없이 스모크 (`mock`)
 
@@ -332,11 +332,11 @@ Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`
 
 ```bash
 npm run build
-cd apps/desktop
+cd apps/vscode
 npx @vscode/vsce package
 ```
 
-- **성공 기준**: `apps/desktop/storyboard-<version>.vsix`(또는 지정한 출력 이름)가 생성된다.
+- **성공 기준**: `apps/vscode/storyboard-<version>.vsix`(또는 지정한 출력 이름)가 생성된다.
 - **용량**: `.vsix`가 **50MB 미만**인지 확인한다 (`du -h *.vsix` 등).
 
 일반 VS Code 창에서:
@@ -395,7 +395,7 @@ npm test
 - [ ] `npm run build` 성공
 - [ ] `npm run lint` 성공
 - [ ] `npm test` 성공
-- [ ] `apps/desktop`에서 `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
+- [ ] `apps/vscode`에서 `npx @vscode/vsce package` 성공, `.vsix` **50MB 미만**
 - [ ] 위 A안 또는 B안의 수동 플로우를 최소 1회 통과
 - [ ] **3a** 절차로 Characters / Backgrounds / Scenes 세 뷰의 **+**·톱니바퀴·목록 분리와 Characters / Backgrounds 컴팩트 카드 열기·삭제를 확인
 - [ ] **8a~8c** 절차로 작품 계약, outline, 씬 시드, 장편 산출물 명령을 확인

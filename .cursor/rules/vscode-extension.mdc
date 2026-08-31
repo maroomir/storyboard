@@ -1,6 +1,6 @@
 ---
 description: package.json contributions, activation, lifecycle, VSCode API boundaries
-globs: apps/desktop/package.json,apps/desktop/src/**/*.ts,apps/desktop/test/**/*.ts
+globs: apps/vscode/package.json,apps/vscode/src/**/*.ts,apps/vscode/test/**/*.ts
 alwaysApply: false
 ---
 
@@ -8,13 +8,13 @@ alwaysApply: false
 
 ## Contributions
 
-- **`apps/desktop/package.json`** is the source of truth for commands, views, menus, config, activation events.
+- **`apps/vscode/package.json`** is the source of truth for commands, views, menus, config, activation events.
 - Command IDs: **`storyboard.*`** namespace.
 - Every contributed command must be **registered** on activation (or the intended lazy path)—keep contributions and runtime **aligned**.
 
 ## Activation and lifecycle
 
-- Keep **`apps/desktop/src/extension.ts`** focused on activate/deactivate and wiring.
+- Keep **`apps/vscode/src/extension.ts`** focused on activate/deactivate and wiring.
 - Push disposables into **`context.subscriptions`**; dispose panels, watchers, listeners, terminals explicitly.
 - Avoid heavy work at activation unless the activation event requires it.
 

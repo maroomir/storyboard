@@ -7,11 +7,11 @@ three apps: the VSCode extension, the Telegram bot and the CLI.
 
 - The release branch is ready to publish.
 - **The version lives in the root `package.json`.** Every app mirrors it; `npm run version:sync`
-  writes the root version into `apps/desktop`, `apps/bot`, `apps/cli` and the version string the
+  writes the root version into `apps/vscode`, `apps/bot`, `apps/cli` and the version string the
   CLI prints. Never hand-edit an app's version.
 - The single root `package-lock.json` is refreshed by `npm install` after the sync.
-- `apps/desktop/CHANGELOG.md` and `apps/desktop/CHANGELOG.en.md` carry the target version's section.
-  The changelogs remain desktop-owned because the release notes are built from them.
+- `apps/vscode/CHANGELOG.md` and `apps/vscode/CHANGELOG.en.md` carry the target version's section.
+  The changelogs stay in `apps/vscode` because the release notes are built from them.
 - The working tree contains only intentional release changes.
 
 ## Cutting a version
@@ -49,13 +49,13 @@ tar -czf "release/storyboard-cli-${version}.tar.gz" -C apps/cli dist package.jso
 The version commit should include at least:
 
 - `package.json` (the version) and `package-lock.json`
-- `apps/desktop/package.json`, `apps/bot/package.json`, `apps/cli/package.json`
+- `apps/vscode/package.json`, `apps/bot/package.json`, `apps/cli/package.json`
 - `apps/cli/src/index.ts` (the printed version)
-- `apps/desktop/CHANGELOG.md`, `apps/desktop/CHANGELOG.en.md`
+- `apps/vscode/CHANGELOG.md`, `apps/vscode/CHANGELOG.en.md`
 
 ```bash
 git add package.json package-lock.json apps/*/package.json apps/cli/src/index.ts \
-  apps/desktop/CHANGELOG.md apps/desktop/CHANGELOG.en.md
+  apps/vscode/CHANGELOG.md apps/vscode/CHANGELOG.en.md
 git commit -m "chore: release v0.8.0"
 ```
 
@@ -80,7 +80,7 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 4. Packages three artifacts: `storyboard-vscode-<version>.vsix`,
    `storyboard-bot-<version>.tar.gz`, `storyboard-cli-<version>.tar.gz`.
 5. Copies `scripts/install.sh` alongside them and creates `SHA256SUMS` over everything.
-6. Builds the release notes from the `## [<version>]` section of `apps/desktop/CHANGELOG.md`
+6. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
 7. Creates a GitHub Release with all four assets and the checksum attached.

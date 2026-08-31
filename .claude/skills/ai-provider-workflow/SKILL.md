@@ -21,7 +21,7 @@ Authoritative detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) (settings and command
 
 ## Implementation boundaries
 
-- Shared RPC/message schemas: [`apps/desktop/src/shared/messaging/`](apps/desktop/src/shared/messaging/) and related zod schemas—extend in one place, validate at the extension boundary.
+- Shared RPC/message schemas: [`apps/vscode/src/shared/messaging/`](apps/vscode/src/shared/messaging/) and related zod schemas—extend in one place, validate at the extension boundary.
 - Provider registry: [`packages/story-ai/src/ai/providerRegistry.ts`](packages/story-ai/src/ai/providerRegistry.ts) composes `SecretStore` + `ConfigBridge`.
 - New provider: implement the shared `AiProvider` surface, register in the registry, add tests with injected clients (no real network in unit tests by default).
 
@@ -32,4 +32,4 @@ npm run compile
 npm test
 ```
 
-Target tests under `apps/desktop/test/unit/infrastructure/ai/`, `apps/desktop/test/unit/infrastructure/secrets/`, and `apps/desktop/test/unit/infrastructure/settings/` when touching providers or config.
+Target tests under `apps/vscode/test/unit/infrastructure/ai/`, `apps/vscode/test/unit/infrastructure/secrets/`, and `apps/vscode/test/unit/infrastructure/settings/` when touching providers or config.
