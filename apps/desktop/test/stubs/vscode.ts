@@ -139,6 +139,7 @@ export interface WillRenameFilesEvent {
 const willRenameFilesEmitter = new EventEmitter<WillRenameFilesEvent>()
 
 export const workspace: {
+  workspaceFolders: readonly WorkspaceFolder[] | undefined
   getWorkspaceFolder: (uri: UriLike) => WorkspaceFolder | undefined
   fs: {
     readFile: (uri: UriLike) => Promise<Uint8Array>
@@ -154,6 +155,7 @@ export const workspace: {
   applyEdit: (edit: WorkspaceEdit) => Promise<boolean>
   onWillRenameFiles: (listener: (event: WillRenameFilesEvent) => void) => IDisposable
 } = {
+  workspaceFolders: undefined,
   getWorkspaceFolder: () => undefined,
   fs: {
     readFile: async () => new Uint8Array(),

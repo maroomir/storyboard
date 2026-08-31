@@ -5,6 +5,8 @@ import {
   characterProfileRelativePath,
   draftHistorySceneRelativeDirectory,
   draftRelativePath,
+  isDirectBackgroundCardRelativePath,
+  isDirectCharacterCardRelativePath,
   isDirectSceneCardRelativePath,
   isDraftMarkdownRelativePath,
   parseCardIdFromFileName,
@@ -119,6 +121,20 @@ export function isDirectSceneCardFile(
   workspaceFolder: vscode.WorkspaceFolder,
 ): boolean {
   return isDirectSceneCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
+}
+
+export function isDirectCharacterCardFile(
+  uri: vscode.Uri,
+  workspaceFolder: vscode.WorkspaceFolder,
+): boolean {
+  return isDirectCharacterCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
+}
+
+export function isDirectBackgroundCardFile(
+  uri: vscode.Uri,
+  workspaceFolder: vscode.WorkspaceFolder,
+): boolean {
+  return isDirectBackgroundCardRelativePath(workspaceRelativePath(uri, workspaceFolder));
 }
 
 export function characterCardPath(workspaceRoot: vscode.Uri, id: string): vscode.Uri {

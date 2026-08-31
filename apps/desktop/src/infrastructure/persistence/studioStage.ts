@@ -2,16 +2,29 @@ import * as vscode from 'vscode';
 
 import {
   buildSceneContext,
+  characterMatchTokens,
+  detectCharactersInText,
+  isIgnoredSampleCardFileName,
   parseDraft,
   parseSceneFileName,
+  readCardFile,
   readSceneFile,
   type SceneFile,
+  type StoryboardCard,
 } from '@storyboard/story-format';
 
 import { nextDraftHistoryRevision } from '../../domain/files/draftHistory';
 import { readRevisionPlanFile } from '../../domain/files/revisionPlan';
-import type { StudioStage, StudioStageCard, StudioTarget } from '../../shared/messaging';
+import type {
+  StudioCardStage,
+  StudioSceneStage,
+  StudioStage,
+  StudioStageCard,
+  StudioTarget,
+} from '../../shared/messaging';
 import {
+  backgroundCardPath,
+  characterCardPath,
   draftHistorySceneDirectory,
   draftPath,
   getStoryboardProjectPaths,
@@ -25,18 +38,27 @@ import {
   vscodeFsAdapter,
 } from '../vscode/workspaceFsAdapters';
 
-type DraftFacts = Pick<StudioStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
+type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
 
 export async function readStudioStage(
   workspaceRoot: vscode.Uri,
   target: StudioTarget,
 ): Promise<StudioStage | undefined> {
-  const sceneStem = resolveSceneStem(target);
+  const entity = target.entity;
 
-  if (!sceneStem) {
-    return undefined;
+  if (entity?.kind === 'character' || entity?.kind === 'background') {
+    return readCardStage(workspaceRoot, entity.kind, entity.key);
   }
 
+  const sceneStem = entity?.kind === 'scene' ? entity.key : resolveSceneStem(target);
+
+  return sceneStem ? readSceneStage(workspaceRoot, sceneStem) : undefined;
+}
+
+async function readSceneStage(
+  workspaceRoot: vscode.Uri,
+  sceneStem: string,
+): Promise<StudioSceneStage> {
   const paths = getStoryboardProjectPaths(workspaceRoot);
   const scene = await readSceneOrUndefined(workspaceRoot, sceneStem);
 
@@ -46,7 +68,95 @@ export async function readStudioStage(
     readReviewState(paths.outlineRevisionPlan, sceneStem),
   ]);
 
-  return { sceneStem, title: scene?.frontmatter.title, cards, review, ...draft };
+  return { kind: 'scene', sceneStem, title: scene?.frontmatter.title, cards, review, ...draft };
+}
+
+async function readCardStage(
+  workspaceRoot: vscode.Uri,
+  cardKind: 'character' | 'background',
+  cardId: string,
+): Promise<StudioCardStage | undefined> {
+  const paths = getStoryboardProjectPaths(workspaceRoot);
+  const cardUri =
+    cardKind === 'character'
+      ? characterCardPath(workspaceRoot, cardId)
+      : backgroundCardPath(workspaceRoot, cardId);
+
+  const card = await readCardOrUndefined(cardUri);
+
+  if (!card) {
+    return undefined;
+  }
+
+  return {
+    kind: 'card',
+    cardKind,
+    cardId,
+    name: card.name,
+    ...(card.type === 'character' && card.role ? { role: card.role } : {}),
+    relations: card.type === 'character' ? (card.relations ?? []).map(toStageRelation) : [],
+    appearsInScenes: await findScenesFeaturingCard(workspaceRoot, paths.sceneDirectory, card),
+  };
+}
+
+function toStageRelation(relation: {
+  readonly target: string;
+  readonly type: string;
+}): StudioCardStage['relations'][number] {
+  return { target: relation.target, type: relation.type };
+}
+
+async function readCardOrUndefined(uri: vscode.Uri): Promise<StoryboardCard | undefined> {
+  try {
+    return await readCardFile(uri, vscodeFsAdapter);
+  } catch {
+    return undefined;
+  }
+}
+
+async function findScenesFeaturingCard(
+  workspaceRoot: vscode.Uri,
+  sceneDirectory: vscode.Uri,
+  card: StoryboardCard,
+): Promise<string[]> {
+  let entries: [string, vscode.FileType][];
+
+  try {
+    entries = await vscode.workspace.fs.readDirectory(sceneDirectory);
+  } catch {
+    return [];
+  }
+
+  const stems = entries
+    .filter(([name]) => !isIgnoredSampleCardFileName(name))
+    .map(([name]) => parseSceneFileName(name)?.stem)
+    .filter((stem): stem is string => stem !== undefined)
+    .sort();
+
+  const matches = await Promise.all(
+    stems.map(async (stem) => {
+      const scene = await readSceneOrUndefined(workspaceRoot, stem);
+      return scene && sceneFeaturesCard(scene, card) ? stem : undefined;
+    }),
+  );
+
+  return matches.filter((stem): stem is string => stem !== undefined);
+}
+
+function sceneFeaturesCard(scene: SceneFile, card: StoryboardCard): boolean {
+  if (card.type === 'character') {
+    if (scene.frontmatter.characters?.includes(card.id)) {
+      return true;
+    }
+
+    return detectCharactersInText(scene.body, characterMatchTokens(card)).length > 0;
+  }
+
+  if (scene.frontmatter.location === card.id) {
+    return true;
+  }
+
+  return detectCharactersInText(scene.body, [card.name, ...(card.aliases ?? [])]).length > 0;
 }
 
 function resolveSceneStem(target: StudioTarget): string | undefined {
@@ -144,7 +254,7 @@ async function readDraftRevision(
 async function readReviewState(
   revisionPlanUri: vscode.Uri,
   sceneStem: string,
-): Promise<StudioStage['review']> {
+): Promise<StudioSceneStage['review']> {
   try {
     const plan = await readRevisionPlanFile(revisionPlanUri, vscodeFsAdapter);
     const entry = plan.entries.find((candidate) => candidate.sceneStem === sceneStem);

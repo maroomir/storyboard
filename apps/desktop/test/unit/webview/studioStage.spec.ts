@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { formatRelativeDay, stageFacts, stageTitle } from "@webview/lib/studioStage"
-import type { StudioStage, StudioTarget } from "@webview/lib/types"
+import type { StudioCardStage, StudioSceneStage, StudioTarget } from "@webview/lib/types"
 
 const sceneTarget: StudioTarget = {
   kind: "scene",
@@ -10,8 +10,9 @@ const sceneTarget: StudioTarget = {
   hasSelection: false
 }
 
-function buildStage(overrides: Partial<StudioStage> = {}): StudioStage {
+function buildStage(overrides: Partial<StudioSceneStage> = {}): StudioSceneStage {
   return {
+    kind: "scene",
     sceneStem: "03-first-day",
     title: "첫 등교",
     draftLength: 1240,
@@ -85,5 +86,56 @@ describe("formatRelativeDay", () => {
 
   it("returns an empty label for an unparsable date", () => {
     expect(formatRelativeDay("not-a-date", now)).toBe("")
+  })
+})
+
+function buildCardStage(overrides: Partial<StudioCardStage> = {}): StudioCardStage {
+  return {
+    kind: "card",
+    cardKind: "character",
+    cardId: "seorin",
+    name: "서린",
+    role: "main",
+    relations: [{ target: "jiho", type: "소꿉친구" }],
+    appearsInScenes: ["01-intro", "03-first-day"],
+    ...overrides
+  }
+}
+
+const characterTarget: StudioTarget = {
+  kind: "character",
+  label: "seorin.card",
+  entity: { kind: "character", key: "seorin" },
+  hasSelection: false
+}
+
+describe("card stages", () => {
+  it("names a character card by its kind and name", () => {
+    expect(stageTitle(characterTarget, buildCardStage())).toBe("인물 · 서린")
+  })
+
+  it("names a background card by its kind and name", () => {
+    expect(stageTitle(characterTarget, buildCardStage({ cardKind: "background", name: "지하철" }))).toBe(
+      "배경 · 지하철"
+    )
+  })
+
+  it("summarizes the role, scene appearances and relations", () => {
+    expect(stageFacts(buildCardStage())).toEqual(["주연", "등장 씬 2", "관계 1"])
+  })
+
+  it("says so when the card appears in no scene", () => {
+    expect(stageFacts(buildCardStage({ appearsInScenes: [], relations: [] }))).toEqual([
+      "주연",
+      "등장 씬 없음"
+    ])
+  })
+
+  it("keeps an unknown role label verbatim", () => {
+    expect(stageFacts(buildCardStage({ role: "narrator" }))[0]).toBe("narrator")
+  })
+
+  it("falls back to the target label with no stage", () => {
+    expect(stageTitle(characterTarget)).toBe("인물 · seorin.card")
   })
 })

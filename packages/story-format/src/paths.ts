@@ -138,6 +138,14 @@ export function isDirectSceneCardRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, 'scene', '.card');
 }
 
+export function isDirectCharacterCardRelativePath(relativePath: string): boolean {
+  return isDirectChildWithExtension(relativePath, 'character', '.card');
+}
+
+export function isDirectBackgroundCardRelativePath(relativePath: string): boolean {
+  return isDirectChildWithExtension(relativePath, 'background', '.card');
+}
+
 // 마이그레이션 전용: 구형 씬 텍스트(.txt)를 찾아 변환 대상으로 보고할 때만 쓴다.
 export function isLegacySceneTextRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, 'scene', '.txt');

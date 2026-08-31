@@ -4,9 +4,13 @@ import type {
   SidebarCardCategory,
   SidebarCardsInitialData,
   SidebarScenesInitialData,
+  StudioCardStage,
+  StudioCardStageRelation,
   StudioChatTurn,
+  StudioEntity,
   StudioInitialData,
   StudioReviewState,
+  StudioSceneStage,
   StudioSessionSnapshot,
   StudioSessionSummary,
   StudioStage,
@@ -74,23 +78,53 @@ export function parseStudioTarget(value: unknown): StudioTarget {
 
   const candidate = value as Partial<StudioTarget>
 
-  if (
-    candidate.kind !== "draft" &&
-    candidate.kind !== "scene" &&
-    candidate.kind !== "project" &&
-    candidate.kind !== "none"
-  ) {
+  if (!isStudioTargetKind(candidate.kind)) {
     return noneStudioTarget
   }
 
   return {
     kind: candidate.kind,
     label: typeof candidate.label === "string" ? candidate.label : undefined,
+    entity: parseStudioEntity(candidate.entity),
     sceneUri: typeof candidate.sceneUri === "string" ? candidate.sceneUri : undefined,
     draftUri: typeof candidate.draftUri === "string" ? candidate.draftUri : undefined,
+    cardUri: typeof candidate.cardUri === "string" ? candidate.cardUri : undefined,
     hasSelection: candidate.hasSelection === true,
     draftExists: typeof candidate.draftExists === "boolean" ? candidate.draftExists : undefined
   }
+}
+
+function isStudioTargetKind(value: unknown): value is StudioTarget["kind"] {
+  return (
+    value === "draft" ||
+    value === "scene" ||
+    value === "character" ||
+    value === "background" ||
+    value === "project" ||
+    value === "none"
+  )
+}
+
+function parseStudioEntity(value: unknown): StudioEntity | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined
+  }
+
+  const candidate = value as Partial<StudioEntity>
+  const kind = candidate.kind
+
+  if (
+    kind !== "character" &&
+    kind !== "background" &&
+    kind !== "scene" &&
+    kind !== "project"
+  ) {
+    return undefined
+  }
+
+  return typeof candidate.key === "string" && candidate.key.length > 0
+    ? { kind, key: candidate.key }
+    : undefined
 }
 
 export function parseStudioInitialData(value: unknown): StudioInitialData {
@@ -151,12 +185,19 @@ export function parseStagePayload(payload: unknown): StudioStage | undefined {
     return undefined
   }
 
-  const candidate = stage as Partial<StudioStage>
+  const kind = (stage as { kind?: unknown }).kind
+
+  if (kind === "card") {
+    return parseCardStage(stage as Partial<StudioCardStage>)
+  }
+
+  const candidate = stage as Partial<StudioSceneStage>
   if (typeof candidate.sceneStem !== "string" || candidate.sceneStem.length === 0) {
     return undefined
   }
 
   return {
+    kind: "scene",
     sceneStem: candidate.sceneStem,
     title: typeof candidate.title === "string" ? candidate.title : undefined,
     draftLength: typeof candidate.draftLength === "number" ? candidate.draftLength : undefined,
@@ -165,6 +206,41 @@ export function parseStagePayload(payload: unknown): StudioStage | undefined {
     review: isStudioReviewState(candidate.review) ? candidate.review : "unreviewed",
     cards: Array.isArray(candidate.cards) ? candidate.cards.filter(isStudioStageCard) : []
   }
+}
+
+function parseCardStage(candidate: Partial<StudioCardStage>): StudioCardStage | undefined {
+  const cardKind = candidate.cardKind
+
+  if (cardKind !== "character" && cardKind !== "background") {
+    return undefined
+  }
+
+  if (typeof candidate.cardId !== "string" || typeof candidate.name !== "string") {
+    return undefined
+  }
+
+  return {
+    kind: "card",
+    cardKind,
+    cardId: candidate.cardId,
+    name: candidate.name,
+    role: typeof candidate.role === "string" ? candidate.role : undefined,
+    relations: Array.isArray(candidate.relations)
+      ? candidate.relations.filter(isStudioCardStageRelation)
+      : [],
+    appearsInScenes: Array.isArray(candidate.appearsInScenes)
+      ? candidate.appearsInScenes.filter((stem): stem is string => typeof stem === "string")
+      : []
+  }
+}
+
+function isStudioCardStageRelation(value: unknown): value is StudioCardStageRelation {
+  if (!value || typeof value !== "object") {
+    return false
+  }
+
+  const candidate = value as Partial<StudioCardStageRelation>
+  return typeof candidate.target === "string" && typeof candidate.type === "string"
 }
 
 function isStudioReviewState(value: unknown): value is StudioReviewState {

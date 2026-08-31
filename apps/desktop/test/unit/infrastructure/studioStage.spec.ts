@@ -136,3 +136,132 @@ describe("readStudioStage", () => {
     expect((await readStudioStage(workspaceRoot, sceneTarget))?.review).toBe("issues")
   })
 })
+
+const characterCardText = [
+  "type: character",
+  "id: seorin",
+  "name: 서린",
+  "role: main",
+  "relations:",
+  "  - target: jiho",
+  "    type: 소꿉친구"
+].join("\n")
+
+const backgroundCardText = ["type: location", "id: subway", "name: 지하철"].join("\n")
+
+function stubCardWorkspace(files: Record<string, string>, sceneFileNames: string[]): void {
+  vi.spyOn(vscode.workspace.fs, "readFile").mockImplementation(async (uri) => {
+    const content = files[String(uri)]
+    if (content === undefined) {
+      throw new Error(`missing file: ${String(uri)}`)
+    }
+    return new TextEncoder().encode(content)
+  })
+
+  vi.spyOn(vscode.workspace.fs, "readDirectory").mockImplementation(async () =>
+    sceneFileNames.map((name): [string, number] => [name, 1])
+  )
+}
+
+describe("readStudioStage for card entities", () => {
+  it("summarizes a character card with its relations and scene appearances", async () => {
+    stubCardWorkspace(
+      {
+        "/workspace/character/seorin.card": characterCardText,
+        "/workspace/scene/01-intro.card": [
+          "type: scene",
+          "id: 01-intro",
+          "characters: [seorin]",
+          "summary: 본문"
+        ].join("\n"),
+        "/workspace/scene/02-departure.card": [
+          "type: scene",
+          "id: 02-departure",
+          "characters: [jiho]",
+          "summary: 본문"
+        ].join("\n")
+      },
+      ["01-intro.card", "02-departure.card", ".sample.card"]
+    )
+
+    const stage = await readStudioStage(workspaceRoot, {
+      kind: "character",
+      entity: { kind: "character", key: "seorin" },
+      hasSelection: false
+    })
+
+    expect(stage).toEqual({
+      kind: "card",
+      cardKind: "character",
+      cardId: "seorin",
+      name: "서린",
+      role: "main",
+      relations: [{ target: "jiho", type: "소꿉친구" }],
+      appearsInScenes: ["01-intro"]
+    })
+  })
+
+  it("detects an undeclared character through the scene body", async () => {
+    stubCardWorkspace(
+      {
+        "/workspace/character/seorin.card": characterCardText,
+        "/workspace/scene/01-intro.card": [
+          "type: scene",
+          "id: 01-intro",
+          "summary: 서린이 교문 앞에 서 있었다."
+        ].join("\n")
+      },
+      ["01-intro.card"]
+    )
+
+    const stage = await readStudioStage(workspaceRoot, {
+      kind: "character",
+      entity: { kind: "character", key: "seorin" },
+      hasSelection: false
+    })
+
+    expect(stage?.kind === "card" ? stage.appearsInScenes : []).toEqual(["01-intro"])
+  })
+
+  it("summarizes a background card with no relations", async () => {
+    stubCardWorkspace(
+      {
+        "/workspace/background/subway.card": backgroundCardText,
+        "/workspace/scene/01-intro.card": [
+          "type: scene",
+          "id: 01-intro",
+          "location: subway",
+          "summary: 본문"
+        ].join("\n")
+      },
+      ["01-intro.card"]
+    )
+
+    const stage = await readStudioStage(workspaceRoot, {
+      kind: "background",
+      entity: { kind: "background", key: "subway" },
+      hasSelection: false
+    })
+
+    expect(stage).toEqual({
+      kind: "card",
+      cardKind: "background",
+      cardId: "subway",
+      name: "지하철",
+      relations: [],
+      appearsInScenes: ["01-intro"]
+    })
+  })
+
+  it("returns nothing when the card file is missing", async () => {
+    stubCardWorkspace({}, [])
+
+    const stage = await readStudioStage(workspaceRoot, {
+      kind: "character",
+      entity: { kind: "character", key: "ghost" },
+      hasSelection: false
+    })
+
+    expect(stage).toBeUndefined()
+  })
+})
