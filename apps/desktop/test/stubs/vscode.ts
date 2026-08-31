@@ -204,6 +204,12 @@ export class Uri {
     return this.fsPath
   }
 
+  // 실제 vscode.Uri와 같이 일부 구성요소만 바꾼 사본을 만든다. 원자적 쓰기가 임시 경로를
+  // 만들 때 쓴다.
+  public with(change: { readonly path?: string }): Uri {
+    return new Uri(this.scheme, change.path ?? this.fsPath)
+  }
+
   static file(path: string): Uri {
     return new Uri("file", path)
   }

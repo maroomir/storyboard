@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '../../application/ports/fileSystem';
+import { writeFileAtomically } from './atomicWrite';
 
 export class VscodeFileSystem implements IFileSystem {
   public async readFile(uri: unknown): Promise<Uint8Array> {
@@ -8,7 +9,7 @@ export class VscodeFileSystem implements IFileSystem {
   }
 
   public async writeFile(uri: unknown, content: Uint8Array): Promise<void> {
-    await vscode.workspace.fs.writeFile(uri as vscode.Uri, content);
+    await writeFileAtomically(uri, content);
   }
 
   public async createDirectory(uri: unknown): Promise<void> {
