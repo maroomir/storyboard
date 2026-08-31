@@ -40,7 +40,16 @@ import { Button } from '../ui/Button';
 import { Pill } from '../ui/Pill';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbInputClass } from '../ui/formClasses';
+import {
+  findTool,
+  isToolTarget,
+  slashToken,
+  toolCandidates,
+  type StudioToolEntry,
+  type StudioToolName,
+} from '@webview/lib/studioTools';
 import { StudioSessionList } from './StudioSessionList';
+import { StudioToolMenu } from './StudioToolMenu';
 import { StudioTurnView, type StudioProposalActions } from './StudioTurnView';
 
 type StudioResponseMessage = {
@@ -75,6 +84,8 @@ export function StudioSidebar({
   const [chatStage, setChatStage] = useState<StudioChatStage>('idle');
   const [pendingFollowUps, setPendingFollowUps] = useState<readonly StudioPendingFollowUp[]>([]);
   const [draft, setDraft] = useState('');
+  const [pinnedTool, setPinnedTool] = useState<StudioToolName | undefined>(undefined);
+  const [menuIndex, setMenuIndex] = useState(0);
   const logEndRef = useRef<HTMLDivElement>(null);
   const listRequestIdRef = useRef<string | undefined>(undefined);
   const loadRequestIdRef = useRef<string | undefined>(undefined);
@@ -210,6 +221,7 @@ export function StudioSidebar({
     latestRequestIdRef.current = undefined;
     setChatStage('idle');
     setTurns([]);
+    setPinnedTool(undefined);
     setSessionId(createRequestId());
     setCreatedAt(new Date().toISOString());
     setView('chat');
@@ -237,7 +249,8 @@ export function StudioSidebar({
       entity: target.entity,
       createdAt,
       hasAppliedChanges: turns.some(
-        (turn) => turn.role === 'assistant' && turn.kind === 'proposal' && turn.status === 'applied',
+        (turn) =>
+          turn.role === 'assistant' && turn.kind === 'proposal' && turn.status === 'applied',
       ),
       turns,
     });
@@ -269,7 +282,7 @@ export function StudioSidebar({
     }
   };
 
-  const sendInstruction = (text: string): void => {
+  const sendInstruction = (text: string, tool = pinnedTool): void => {
     const instruction = text.trim();
 
     if (instruction.length === 0 || !target.entity || chatStage !== 'idle') {
@@ -279,12 +292,31 @@ export function StudioSidebar({
     const history = [...turns];
     setTurns([...history, { id: createRequestId(), role: 'user', text: instruction }]);
     setChatStage('thinking');
+    setPinnedTool(undefined);
     sendRequestIdRef.current = post('studio.chat.send', {
       entity: target.entity,
       instruction,
       history,
+      ...(tool === undefined ? {} : { tool }),
     });
   };
+
+  const pickTool = (entry: StudioToolEntry): void => {
+    setPinnedTool(entry.tool);
+    setDraft('');
+    setMenuIndex(0);
+  };
+
+  // NOTE: the menu opens only while the whole composer is a bare "/token", so a slash inside a
+  // sentence is just text.
+  const menu = useMemo(() => {
+    if (pinnedTool !== undefined || !isToolTarget(target)) {
+      return [];
+    }
+
+    const token = slashToken(draft);
+    return token === undefined ? [] : toolCandidates(token);
+  }, [draft, pinnedTool, target.kind]);
 
   const openFollowUp = (followUp: StudioFollowUpTarget): void => {
     startsFreshRef.current = true;
@@ -392,10 +424,22 @@ export function StudioSidebar({
         <Composer
           value={draft}
           isDisabled={!canChat || chatStage !== 'idle'}
-          placeholder={composerPlaceholder(target, chatStage)}
-          onChange={setDraft}
+          placeholder={composerPlaceholder(target, chatStage, pinnedTool)}
+          pinnedTool={pinnedTool}
+          menu={menu}
+          menuIndex={menuIndex}
+          hasSelection={target.hasSelection}
+          onChange={(value) => {
+            setDraft(value);
+            setMenuIndex(0);
+          }}
+          onMoveMenu={(delta) =>
+            setMenuIndex((index) => (index + delta + menu.length) % menu.length)
+          }
+          onPickTool={pickTool}
+          onUnpinTool={() => setPinnedTool(undefined)}
           onSubmit={() => {
-            sendInstruction(draft);
+            sendInstruction(draft.trim().length > 0 ? draft : pinnedInstruction(pinnedTool));
             setDraft('');
           }}
         />
@@ -404,10 +448,7 @@ export function StudioSidebar({
   );
 }
 
-function isEntityChanged(
-  left: StudioTarget['entity'],
-  right: StudioTarget['entity'],
-): boolean {
+function isEntityChanged(left: StudioTarget['entity'], right: StudioTarget['entity']): boolean {
   return left?.kind !== right?.kind || left?.key !== right?.key;
 }
 
@@ -630,41 +671,119 @@ function Composer({
   value,
   isDisabled,
   placeholder,
+  pinnedTool,
+  menu,
+  menuIndex,
+  hasSelection,
   onChange,
+  onMoveMenu,
+  onPickTool,
+  onUnpinTool,
   onSubmit,
 }: {
   readonly value: string;
   readonly isDisabled: boolean;
   readonly placeholder: string;
+  readonly pinnedTool: StudioToolName | undefined;
+  readonly menu: readonly StudioToolEntry[];
+  readonly menuIndex: number;
+  readonly hasSelection: boolean;
   readonly onChange: (value: string) => void;
+  readonly onMoveMenu: (delta: number) => void;
+  readonly onPickTool: (entry: StudioToolEntry) => void;
+  readonly onUnpinTool: () => void;
   readonly onSubmit: () => void;
 }): React.ReactElement {
+  const isMenuOpen = menu.length > 0;
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (isMenuOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      event.preventDefault();
+      onMoveMenu(event.key === 'ArrowDown' ? 1 : -1);
+      return;
+    }
+
+    if (isMenuOpen && (event.key === 'Enter' || event.key === 'Tab')) {
+      const picked = menu[menuIndex];
+      if (picked) {
+        event.preventDefault();
+        onPickTool(picked);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape' && isMenuOpen) {
+      event.preventDefault();
+      onChange('');
+      return;
+    }
+
+    // NOTE: backspace on an empty composer takes the pin off, the way a chip-style input behaves.
+    if (event.key === 'Backspace' && value.length === 0 && pinnedTool !== undefined) {
+      event.preventDefault();
+      onUnpinTool();
+      return;
+    }
+
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      onSubmit();
+      if (value.trim().length > 0 || pinnedTool !== undefined) {
+        onSubmit();
+      }
     }
   };
 
+  const pinned = pinnedTool === undefined ? undefined : findTool(pinnedTool);
+
   return (
-    <div className="flex items-end gap-2">
-      <textarea
-        className={`${sbInputClass} min-h-12 flex-1 resize-y`}
-        rows={2}
-        disabled={isDisabled}
-        role="textbox"
-        placeholder={placeholder}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        onKeyDown={handleKeyDown}
+    <div className="flex flex-col">
+      <StudioToolMenu
+        candidates={menu}
+        activeIndex={menuIndex}
+        hasSelection={hasSelection}
+        onPick={onPickTool}
       />
-      <Button
-        aria-label="보내기"
-        disabled={isDisabled || value.trim().length === 0}
-        onClick={onSubmit}
-      >
-        <Send className="h-4 w-4" aria-hidden />
-      </Button>
+      <div className="flex items-end gap-2">
+        <div className={`${sbInputClass} flex min-h-12 flex-1 flex-col gap-1 p-1`}>
+          {pinned ? (
+            <div className="flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 rounded bg-[var(--vscode-badge-background)] px-1.5 py-0.5 text-[11px] text-[var(--vscode-badge-foreground)]">
+                /{pinned.command}
+                <button
+                  type="button"
+                  aria-label={`${pinned.label} 지정 해제`}
+                  className="opacity-70"
+                  onClick={onUnpinTool}
+                >
+                  <X className="h-3 w-3" aria-hidden />
+                </button>
+              </span>
+              {pinned.needsSelection && !hasSelection ? (
+                <span className="text-[10px] text-sb-fg-muted">
+                  구간을 선택하지 않으면 조수가 알아서 잡습니다
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+          <textarea
+            className="min-h-8 flex-1 resize-y border-0 bg-transparent p-1 text-inherit outline-none"
+            rows={2}
+            disabled={isDisabled}
+            role="textbox"
+            placeholder={placeholder}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+        </div>
+        <Button
+          aria-label="보내기"
+          disabled={isDisabled || (value.trim().length === 0 && pinnedTool === undefined)}
+          onClick={onSubmit}
+        >
+          <Send className="h-4 w-4" aria-hidden />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -684,9 +803,21 @@ function chatStageLabel(stage: StudioChatStage): string {
   }
 }
 
-function composerPlaceholder(target: StudioTarget, stage: StudioChatStage): string {
+function pinnedInstruction(tool: StudioToolName | undefined): string {
+  return (tool === undefined ? undefined : findTool(tool)?.defaultInstruction) ?? '';
+}
+
+function composerPlaceholder(
+  target: StudioTarget,
+  stage: StudioChatStage,
+  pinnedTool: StudioToolName | undefined,
+): string {
   if (stage !== 'idle') {
     return '응답을 기다리는 중…';
+  }
+
+  if (pinnedTool !== undefined) {
+    return '어떻게 할지 덧붙여 적으세요 (그냥 보내도 됩니다)';
   }
 
   if (!target.entity || target.entity.kind === 'project') {

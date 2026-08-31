@@ -216,6 +216,61 @@ describe("StudioAgentService.run", () => {
     expect(cardOnly.gateway.calls[0]?.system).not.toContain("[도구]")
   })
 
+  it("orders the pinned tool instead of letting the model decide", async () => {
+    const { service, gateway } = serviceWith([
+      '{"kind":"invoke","tool":"grammarCheck"}',
+      '{"kind":"say","message":"문제 없습니다."}'
+    ])
+
+    await service.run({
+      ...characterRun,
+      patchShape: "draft",
+      pinnedTool: "grammarCheck",
+      resolveInvoke: async () => "[도구 결과] 없음"
+    })
+
+    expect(gateway.calls[0]?.system).toContain("작가가 grammarCheck 도구를 지정했다")
+    expect(gateway.calls[0]?.system).toContain("span 없이 불러라")
+  })
+
+  it("tells the model to pick a span for a pinned transform tool", async () => {
+    const { service, gateway } = serviceWith(['{"kind":"say","message":"네"}'])
+
+    await service.run({
+      ...characterRun,
+      patchShape: "draft",
+      pinnedTool: "expand",
+      hasSelection: true,
+      resolveInvoke: async () => ""
+    })
+
+    expect(gateway.calls[0]?.system).toContain("[작가가 선택한 구간]을 span으로 삼아라")
+  })
+
+  it("stops steering once the pinned tool has run", async () => {
+    const { service, gateway } = serviceWith([
+      '{"kind":"invoke","tool":"expand","span":{"startOffset":0,"endOffset":2,"oldText":"본문"}}',
+      '{"kind":"say","message":"다듬었습니다."}'
+    ])
+
+    await service.run({
+      ...characterRun,
+      patchShape: "draft",
+      pinnedTool: "expand",
+      resolveInvoke: async () => "초벌"
+    })
+
+    expect(gateway.calls[1]?.system).not.toContain("작가가 expand 도구를 지정했다")
+  })
+
+  it("ignores a pin when no tool resolver is wired", async () => {
+    const { service, gateway } = serviceWith(['{"kind":"say","message":"네"}'])
+
+    await service.run({ ...characterRun, pinnedTool: "grammarCheck" })
+
+    expect(gateway.calls[0]?.system).not.toContain("도구를 지정했다")
+  })
+
   it("degrades to a remark when the response is not readable", async () => {
     const { service } = serviceWith(["도와드릴게요!"])
 

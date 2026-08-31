@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { studioAgentToolNames } from '@storyboard/story-ai';
+
 import { uriStringSchema } from './atoms';
 
 export const studioEntityKindSchema = z.enum(['character', 'background', 'scene', 'project']);
@@ -186,10 +188,17 @@ export const studioChatTurnSchema = z.union([
 export type StudioChatTurn = z.infer<typeof studioChatTurnSchema>;
 export type StudioProposalTurn = Extract<StudioChatTurn, { readonly kind: 'proposal' }>;
 
+export const studioAgentToolNameSchema = z.enum(studioAgentToolNames);
+
+export type StudioAgentToolNameValue = z.infer<typeof studioAgentToolNameSchema>;
+
 export const studioChatSendRequestPayloadSchema = z.object({
   entity: studioEntitySchema,
   instruction: z.string().min(1),
   history: z.array(studioChatTurnSchema),
+  // NOTE: set when the author pinned a tool with the composer's slash menu; the agent must use
+  // that tool this turn instead of deciding for itself.
+  tool: studioAgentToolNameSchema.optional(),
 });
 
 export const studioChatSendResponsePayloadSchema = z.object({

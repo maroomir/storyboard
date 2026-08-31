@@ -12,6 +12,7 @@ import {
   type StudioAgentAction,
   type StudioAgentInvokeRequest,
   type StudioAgentLookupRequest,
+  type StudioAgentToolName,
 } from '../contracts/studioAgent';
 import {
   coerceStudioValidationVerdict,
@@ -39,6 +40,9 @@ export interface StudioAgentRunInput {
   readonly instruction: string;
   readonly hasSelection: boolean;
   readonly remainingQuestions: number;
+  // NOTE: the author pinned this tool in the composer, so the first round must call it rather
+  // than letting the model decide whether a tool is warranted.
+  readonly pinnedTool?: StudioAgentToolName;
   readonly resolveLookup?: StudioLookupResolver;
   readonly resolveInvoke?: StudioInvokeResolver;
 }
@@ -78,12 +82,19 @@ export class StudioAgentService {
     for (let round = 0; ; round += 1) {
       onStage?.(round === 0 ? 'thinking' : 'looking-up');
 
+      const canInvoke = Boolean(input.resolveInvoke) && invokesUsed < maxInvokeRounds;
+
       const action = await this.requestAction(
         input,
         gathered,
         {
           canLookup: Boolean(input.resolveLookup) && lookupsUsed < maxLookupRounds,
-          canInvoke: Boolean(input.resolveInvoke) && invokesUsed < maxInvokeRounds,
+          canInvoke,
+          // NOTE: the pin only steers the first round; once its tool has run the agent is free to
+          // look up, ask or propose as usual.
+          ...(canInvoke && invokesUsed === 0 && input.pinnedTool !== undefined
+            ? { pinnedTool: input.pinnedTool }
+            : {}),
         },
         generateOptions,
       );
@@ -129,7 +140,11 @@ export class StudioAgentService {
   private async requestAction(
     input: StudioAgentRunInput,
     gathered: readonly string[],
-    ability: { readonly canLookup: boolean; readonly canInvoke: boolean },
+    ability: {
+      readonly canLookup: boolean;
+      readonly canInvoke: boolean;
+      readonly pinnedTool?: StudioAgentToolName;
+    },
     options: GenerateTextOptions,
   ): Promise<StudioAgentAction> {
     const prompt = StudioAgentPrompt.build({
@@ -143,6 +158,7 @@ export class StudioAgentService {
       canAsk: input.remainingQuestions > 0,
       canLookup: ability.canLookup,
       canInvoke: ability.canInvoke,
+      ...(ability.pinnedTool === undefined ? {} : { pinnedTool: ability.pinnedTool }),
       hasSelection: input.hasSelection,
     });
 
