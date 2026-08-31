@@ -9,7 +9,7 @@ import {
   type StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
 
-import type { ProvidersConfig } from '../config/config';
+import type { DraftConfig, ProvidersConfig } from '../config/config';
 
 // The extension backs these ports with VSCode SecretStorage and workspace configuration. Headless,
 // they are backed by the bot's own config file, so both apps drive the identical AI engine.
@@ -39,11 +39,22 @@ class InMemorySecretStorage implements StoryboardSecretStorageLike {
 
 // Flattens the bot's `providers` block into the same `storyboard.*` setting keys the extension
 // exposes, so ConfigBridge needs no bot-specific branch.
-function createConfiguration(providers: ProvidersConfig | undefined): StoryboardConfigurationLike {
+function createConfiguration(
+  providers: ProvidersConfig | undefined,
+  draft: DraftConfig | undefined,
+): StoryboardConfigurationLike {
   const settings = new Map<string, unknown>();
 
   settings.set('defaultProvider', providers?.default ?? 'mock');
   settings.set('tasks', providers?.tasks ?? {});
+
+  // The bot's `draft` block uses the same names the extension's settings do, so the engine's
+  // revise gate reads them without a bot-specific branch.
+  if (draft !== undefined) {
+    settings.set('draft.reviseAfterGenerate', draft.reviseAfterGenerate);
+    settings.set('draft.reviseMaxIterations', draft.reviseMaxIterations);
+    settings.set('grounding.autoApprove', draft.autoGrounding);
+  }
 
   for (const [providerId, section] of Object.entries(providers?.models ?? {})) {
     if (section.model !== undefined) {
@@ -67,6 +78,7 @@ function createConfiguration(providers: ProvidersConfig | undefined): Storyboard
 
 export interface AiGatewayOptions {
   readonly providers: ProvidersConfig | undefined;
+  readonly draft?: DraftConfig;
   readonly apiKeys?: Readonly<Record<string, string>>;
   readonly cliRunner?: CliRunner;
   readonly onUsage?: OnUsageRecordCallback;
@@ -75,13 +87,15 @@ export interface AiGatewayOptions {
 export interface AiEngine {
   readonly service: StoryboardAIService;
   readonly registry: ReturnType<typeof createAiProviderRegistry>;
+  readonly configBridge: ConfigBridge;
 }
 
 export function createAiEngine(options: AiGatewayOptions): AiEngine {
-  const configuration = createConfiguration(options.providers);
+  const configuration = createConfiguration(options.providers, options.draft);
+  const configBridge = new ConfigBridge({ getConfiguration: () => configuration });
   const registry = createAiProviderRegistry({
     secretStore: new SecretStore(new InMemorySecretStorage(options.apiKeys)),
-    configBridge: new ConfigBridge({ getConfiguration: () => configuration }),
+    configBridge,
     ...(options.cliRunner ? { createCliRunner: (): CliRunner => options.cliRunner! } : {}),
   });
 
@@ -89,7 +103,7 @@ export function createAiEngine(options: AiGatewayOptions): AiEngine {
     ? new StoryboardAIService(registry, { onUsage: options.onUsage })
     : new StoryboardAIService(registry);
 
-  return { service, registry };
+  return { service, registry, configBridge };
 }
 
 export function createAiService(options: AiGatewayOptions): StoryboardAIService {

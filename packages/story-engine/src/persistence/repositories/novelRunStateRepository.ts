@@ -2,7 +2,11 @@ import { type StoryUri } from '../../paths/storyUri';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type { INovelRunStateRepository } from '../../application/novel/novelPipeline';
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
-import { readNovelRunState, type NovelRunState, writeNovelRunState } from '../../domain/files/novelRunState';
+import {
+  readNovelRunState,
+  type NovelRunState,
+  writeNovelRunState,
+} from '../../domain/files/novelRunState';
 import { readProjectJson } from '../projectJson';
 import type { StoryboardProject } from '@storyboard/story-format';
 

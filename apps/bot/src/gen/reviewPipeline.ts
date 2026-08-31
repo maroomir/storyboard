@@ -1,12 +1,13 @@
 import { draftRelativePath } from '@storyboard/story-format';
 
 import type { ContentService } from '../content/contentService';
+import type { MutateOutcome } from '../workspace/workspaceChanges';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 import type { IPipeline, PipelineContext } from './pipelineRunner';
 import type { GenJob, PipelineResult } from './types';
 
 export interface DraftRevisionReport {
-  readonly body: string;
+  readonly outcome: MutateOutcome | undefined;
   readonly passed: boolean;
   readonly revisionCount: number;
   readonly remainingBlocking: number;
@@ -14,8 +15,8 @@ export interface DraftRevisionReport {
 }
 
 export interface DraftReviser {
-  // Runs the shared review→revise loop over an existing draft body. Injected so the pipeline stays
-  // testable without a provider.
+  // Runs the shared review→revise loop over the draft on disk, writing it back through the content
+  // service when it changed. Injected so the pipeline stays testable without a provider.
   revise(
     sceneStem: string,
     draftBody: string,
@@ -61,7 +62,8 @@ export class ReviewPipeline implements IPipeline {
       return { success: false, failureReason: 'cancelled' };
     }
 
-    if (report.body === draft.value) {
+    // A clean pass rewrites nothing, so there is no outcome to inspect.
+    if (report.revisionCount === 0) {
       context.log(
         '검수',
         report.passed
@@ -71,9 +73,8 @@ export class ReviewPipeline implements IPipeline {
       return { success: true, resultRef: draftRelativePath(sceneStem) };
     }
 
-    await context.reportStage('저장');
-    const outcome = await this.options.content.writeDraft(sceneStem, report.body);
-    if (outcome.status === 'blocked' || outcome.status === 'stale') {
+    const outcome = report.outcome;
+    if (outcome !== undefined && (outcome.status === 'blocked' || outcome.status === 'stale')) {
       return {
         success: false,
         failureReason: 'provider_error',

@@ -11,7 +11,9 @@ const systemConfigPath = join(configRoot, 'system');
 
 writeFileSync(
   globalConfigPath,
-  ['[user]', '\tname = Storyboard bot Test', '\temail = storyboard-bot-test@example.com', ''].join('\n'),
+  ['[user]', '\tname = Storyboard bot Test', '\temail = storyboard-bot-test@example.com', ''].join(
+    '\n',
+  ),
   'utf8',
 );
 writeFileSync(systemConfigPath, '', 'utf8');

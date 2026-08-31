@@ -22,7 +22,9 @@ export async function resolveSceneGrounding(
   const existing = scene.frontmatter.grounding;
   const missingFields = missingSceneGroundingFields(existing);
 
-  if (missingFields.length === 0) {
+  // NOTE: 사실 시트를 건너뛰라는 것과 사용자가 승인을 거절한 것은 다르다. 앞은 있는 값으로 그대로
+  // 생성하고, 뒤만 생성을 취소한다. 물어볼 UI가 없는 호스트(봇의 draft.autoGrounding 끔)가 앞이다.
+  if (options.skipSceneGrounding || missingFields.length === 0) {
     return { kind: 'resolved', scene };
   }
 

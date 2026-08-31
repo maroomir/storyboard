@@ -9,7 +9,6 @@ import { parseSceneFileName } from '@storyboard/story-format';
 
 import type { CliContainer } from '../container';
 import { flagBoolean, flagString, type ParsedArguments } from '../cliArguments';
-import { NodeUri } from '../adapters/nodeUri';
 
 export interface CommandOutcome {
   readonly ok: boolean;
@@ -167,4 +166,3 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'manuscript summaries': summarizeChapters,
 };
 
-export { NodeUri };

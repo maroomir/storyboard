@@ -1,10 +1,10 @@
 import { isAbsolute, resolve, sep } from 'node:path';
 
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri } from './storyUri';
 
 const isWindows = sep === '\\';
 
-// A file URI for a host with no editor. `path` is always posix so the engine's path joining behaves
+// A file URI for a host with no editor — the CLI and the bot both use it. `path` is always posix so the engine's path joining behaves
 // identically everywhere; `fsPath` converts back to what Node's fs expects.
 export class NodeUri implements StoryUri {
   public readonly scheme = 'file';

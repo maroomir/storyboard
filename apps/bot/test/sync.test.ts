@@ -244,7 +244,13 @@ describe('SyncService', () => {
   });
 
   it('reports offline when the remote is unreachable', async () => {
-    git(fixture.root, 'remote', 'add', 'origin', join(tmpdir(), 'storyboard-bot-missing-origin.git'));
+    git(
+      fixture.root,
+      'remote',
+      'add',
+      'origin',
+      join(tmpdir(), 'storyboard-bot-missing-origin.git'),
+    );
 
     const service = new SyncService(
       new GitClient(fixture.root),

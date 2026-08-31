@@ -1,297 +1,184 @@
-import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
 import {
-  STORYBOARD_RELATIVE_PATHS,
-  applySceneGrounding,
-  buildNarrativeContext,
-  buildSceneContext,
-  createDraft,
-  extractDraftBody,
-  formatBibleFactLines,
-  mergeSceneGrounding,
-  missingSceneGroundingFields,
-  serializeDraft,
-  type SceneContextWorkspaceFileSystem,
-  type SceneContextWorkspacePaths,
-  type SceneFile,
-} from '@storyboard/story-format';
-import { buildStyleDirective, formatAugmentCards } from '@storyboard/story-ai';
-import type {
-  AiProviderRegistry,
-  StoryboardAIService,
-  UsageAttribution,
-} from '@storyboard/story-ai';
-import {
-  resolveSceneTargetLength,
-  runReviseLoop,
-  runSceneGenerationPipeline,
-} from '@storyboard/story-pipeline';
+  DraftRepository,
+  GenerateDraftUseCase,
+  ReviseDraftUseCase,
+  NodeUri,
+  PostGenerationUpdateManager,
+  draftPath,
+  getStoryboardProjectPaths,
+  sceneFilePath,
+  type StoryUri,
+  type StoryboardLogger,
+  type UsageSink,
+} from '@storyboard/story-engine';
+import { AiGateway } from '@storyboard/story-engine';
+import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 
-import type { DraftConfig } from '../config/config';
 import type { ContentService } from '../content/contentService';
+import type { MutateOutcome } from '../workspace/workspaceChanges';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
-import { createBackgroundMemoryStore, createPersonaMemoryStore } from './cardMemoryStores';
-import type { DraftGenerator } from './draftPipeline';
+import {
+  BotFileSystem,
+  BotProjectRepository,
+  BotSceneCacheRepository,
+  BotSceneRepository,
+  BotWorkspaceLocator,
+} from './engineAdapters';
+import type { DraftGenerationOutcome, DraftGenerator } from './draftPipeline';
 import type { DraftReviser, DraftRevisionReport } from './reviewPipeline';
-
-// The scene-context helpers take opaque `unknown` locations so the extension can pass vscode.Uri.
-// Headless, the location is simply an absolute path string.
-function createPaths(root: string): SceneContextWorkspacePaths {
-  const at = (relative: string): string => join(root, ...relative.split('/'));
-
-  return {
-    characterDirectory: at(STORYBOARD_RELATIVE_PATHS.characterDirectory),
-    backgroundDirectory: at(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
-    draftDirectory: at(STORYBOARD_RELATIVE_PATHS.draftDirectory),
-    bibleCanon: at(STORYBOARD_RELATIVE_PATHS.bibleCanon),
-    manuscriptSummary: join(at(STORYBOARD_RELATIVE_PATHS.manuscriptDirectory), 'SUMMARY.md'),
-    joinPath: (base, ...segments) => join(String(base), ...segments),
-  };
-}
-
-function createFileSystem(): SceneContextWorkspaceFileSystem {
-  return {
-    readFile: async (uri) => new Uint8Array(await readFile(String(uri))),
-    writeFile: () => {
-      // Context building is read-only; writes go through the mutate gate, never here.
-      throw new Error('scene context must not write');
-    },
-    readDirectory: async (uri) => {
-      const entries = await readdir(String(uri), { withFileTypes: true });
-      return entries.map((entry): [string, { type: 'file' | 'directory' }] => [
-        entry.name,
-        { type: entry.isDirectory() ? 'directory' : 'file' },
-      ]);
-    },
-  };
-}
 
 export interface SceneDraftGeneratorOptions {
   readonly store: WorkspaceStore;
   readonly content: ContentService;
-  readonly aiService: StoryboardAIService;
   readonly registry: AiProviderRegistry;
-  readonly draftConfig: DraftConfig;
+  readonly configBridge: ConfigBridge;
+  readonly autoGrounding: boolean;
   readonly generator: string;
   readonly onStage?: (stage: string, current: number, total: number) => void;
 }
 
-// Runs the very same staged pipeline the extension runs, assembled from the workspace on disk, and
-// finishes with the shared review→revise loop (decision #31) before the body is written.
+// Runs the extension's use cases, not a copy of them. Everything specific to the bot lives in the
+// adapters this class injects: drafts and cache go through ContentService, grounding rides the
+// mutate gate with the read-time hash as its baseline.
 export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
   public constructor(private readonly options: SceneDraftGeneratorOptions) {}
 
-  public async generate(sceneStem: string, isCancelled: () => boolean): Promise<string> {
-    const { store, content, aiService } = this.options;
-    const assembled = await this.assembleSceneContext(sceneStem);
-
-    const result = await runSceneGenerationPipeline({
-      context: assembled.context,
-      aiService,
-      format: assembled.format,
-      sceneStem,
-      styleDirective: assembled.styleDirective,
-      previousContext: assembled.narrative.prompt,
-      personaStore: createPersonaMemoryStore(store, content, sceneStem),
-      backgroundStore: createBackgroundMemoryStore(store, content, sceneStem),
+  public async generate(
+    sceneStem: string,
+    isCancelled: () => boolean,
+  ): Promise<DraftGenerationOutcome> {
+    const engine = this.createEngine();
+    const result = await engine.generateDraft.execute(engine.sceneUri(sceneStem), {
+      force: true,
       shouldCancel: isCancelled,
-      onProgress: (stage, current, total) => this.options.onStage?.(stage, current, total),
+      suppressLoggerPanel: true,
+      // Queued work cannot stop to ask Telegram, so `draft.autoGrounding` decides once: fill and
+      // commit, or leave the scene exactly as authored.
+      skipSceneGrounding: !this.options.autoGrounding,
+      onPipelineProgress: (stage, current, total) =>
+        this.options.onStage?.(String(stage), current, total),
     });
 
-    if (!this.options.draftConfig.reviseAfterGenerate || isCancelled()) {
-      return this.serializeWithProvenance(sceneStem, assembled, result.draftBody, 'sceneDraft');
+    if (!result.ok) {
+      return result.kind === 'cancelled'
+        ? { status: 'cancelled' }
+        : { status: 'failed', errorMessage: result.message };
     }
 
-    const revised = await this.runSharedReviseLoop(
-      sceneStem,
-      result.draftBody,
-      assembled,
-      isCancelled,
-    );
-    return this.serializeWithProvenance(
-      sceneStem,
-      assembled,
-      revised.body,
-      revised.revisionCount > 0 ? 'draftRevision' : 'sceneDraft',
-    );
+    if (isCancelled()) {
+      return { status: 'cancelled' };
+    }
+
+    if (this.options.configBridge.isReviseAfterGenerateEnabled()) {
+      await this.runRevise(engine, sceneStem, isCancelled);
+    }
+
+    return { status: 'written', outcome: engine.fileSystem.takeDraftOutcome() };
   }
 
-  // The /review command: runs the same review→revise loop over the draft that already exists,
-  // without regenerating it (UC-06).
+  // The /review command: the same loop over the draft that already exists, without regenerating it.
   public async revise(
     sceneStem: string,
-    draftText: string,
+    _draftText: string,
     isCancelled: () => boolean,
   ): Promise<DraftRevisionReport> {
-    const assembled = await this.assembleSceneContext(sceneStem);
-    const draftBody = extractDraftBody(draftText);
-    const revised = await this.runSharedReviseLoop(sceneStem, draftBody, assembled, isCancelled);
+    const engine = this.createEngine();
+    const result = await this.runRevise(engine, sceneStem, isCancelled);
 
     return {
-      // An unrevised draft returns the original text unchanged so the caller skips the write.
-      body:
-        revised.body === draftBody
-          ? draftText
-          : this.serializeWithProvenance(sceneStem, assembled, revised.body, 'draftRevision'),
-      passed: revised.passed,
-      revisionCount: revised.revisionCount,
-      remainingBlocking: revised.remainingBlocking,
-      cancelled: revised.cancelled,
+      passed: result?.passed ?? true,
+      revisionCount: result?.revisionCount ?? 0,
+      remainingBlocking: result?.remainingBlocking ?? 0,
+      cancelled: result?.cancelled ?? false,
+      outcome: engine.fileSystem.takeDraftOutcome(),
     };
   }
 
-  private serializeWithProvenance(
+  private async runRevise(
+    engine: BotEngine,
     sceneStem: string,
-    assembled: AssembledSceneContext,
-    body: string,
-    taskName: 'sceneDraft' | 'draftRevision',
-  ): string {
-    const { providerId, model } = this.options.registry.getTaskAiConfig(taskName);
-
-    return serializeDraft(
-      createDraft({
-        sceneStem,
-        format: assembled.format,
-        body,
-        generator: this.options.generator,
-        providerId,
-        model,
-      }),
-    );
-  }
-
-  private async assembleSceneContext(sceneStem: string): Promise<AssembledSceneContext> {
-    const { store } = this.options;
-    const scene = await store.readScene(sceneStem);
-    const project = await store.readProject();
-
-    const paths = createPaths(store.root);
-    const fileSystem = createFileSystem();
-    const builtContext = await buildSceneContext(paths, scene.value, fileSystem);
-
-    // The extension resolves grounding the same way and for the same reason: the facts must be
-    // settled before the dialogue prompt runs, and the proposal needs resolved card names.
-    const groundedScene = await resolveGrounding(
-      sceneStem,
-      scene,
-      builtContext.characters.map((character) => character.name),
-      this.options,
-    );
-    const context = { ...builtContext, scene: groundedScene };
-    const narrative = await buildNarrativeContext(paths, context, fileSystem);
-
-    return {
-      scene: groundedScene,
-      project: project.value,
-      context,
-      narrative,
-      format: project.value.format ?? 'novel',
-      styleDirective: buildStyleDirective(
-        project.value.setting,
-        groundedScene.frontmatter.relationStage,
-        groundedScene.frontmatter.targetWordCount,
-        groundedScene.body,
-        groundedScene.frontmatter.povCharacter,
-      ),
-    };
-  }
-
-  private runSharedReviseLoop(
-    sceneStem: string,
-    body: string,
-    assembled: AssembledSceneContext,
     isCancelled: () => boolean,
-  ): ReturnType<typeof runReviseLoop> {
-    const { aiService, registry } = this.options;
-    const attribution: UsageAttribution = { primary: { kind: 'scene', id: sceneStem } };
+  ): Promise<Awaited<ReturnType<ReviseDraftUseCase['execute']>> | undefined> {
+    const { configBridge } = this.options;
+    const workspaceUri = engine.workspaceRoot;
 
-    return runReviseLoop({
-      aiService,
-      registry,
-      attribution,
-      ctx: {
-        format: assembled.format,
-        intent: assembled.scene.body,
-        factLines: formatBibleFactLines(assembled.context, assembled.narrative.bibleFacts),
-        characterNames: assembled.context.characters.map((character) => character.name),
-        characterCards: formatAugmentCards(assembled.context.characters, undefined),
-        styleConstraints: assembled.project.setting?.styleConstraints ?? [],
-        qualityCriteria: assembled.project.setting?.qualityCriteria ?? [],
-        styleDirective: assembled.styleDirective,
-        characters: assembled.context.characters,
-        targetLength: resolveSceneTargetLength(
-          assembled.scene.frontmatter.targetWordCount,
-          assembled.scene.body,
-        ),
-      },
-      body,
-      maxIterations: this.options.draftConfig.reviseMaxIterations,
-      reviseScoreThreshold: 0,
-      maxCompressionPercent: 50,
+    return await engine.revise.execute({
+      workspaceUri,
+      paths: getStoryboardProjectPaths(workspaceUri),
+      draftUri: draftPath(workspaceUri, sceneStem) as StoryUri,
+      sceneStem,
+      maxIterations: configBridge.getReviseMaxIterations(),
+      maxCompressionPercent: configBridge.getMaxCompressionPercent(),
+      reviseScoreThreshold: configBridge.getReviseScoreThreshold(),
       shouldCancel: isCancelled,
       onProgress: (message) => this.options.onStage?.(message, 0, 0),
     });
   }
+
+  private createEngine(): BotEngine {
+    const { store, content, registry, configBridge, generator } = this.options;
+    const workspaceRoot = NodeUri.file(store.root);
+    const fileSystem = new BotFileSystem(content);
+    const logger = createStageLogger(this.options.onStage);
+    // The bot reports cost per job through its own usage ledger, so the engine's sink is a no-op.
+    const usageSink: UsageSink = { record: async (): Promise<void> => undefined };
+    const aiGateway = new AiGateway(registry, usageSink, logger);
+
+    return {
+      workspaceRoot,
+      fileSystem,
+      sceneUri: (sceneStem) => sceneFilePathFor(workspaceRoot, sceneStem),
+      generateDraft: new GenerateDraftUseCase({
+        aiGateway,
+        configBridge,
+        draftRepository: new DraftRepository(fileSystem),
+        fileSystem,
+        generator,
+        logger,
+        postGenerationUpdates: new PostGenerationUpdateManager(),
+        projectRepository: new BotProjectRepository(store),
+        sceneCacheRepository: new BotSceneCacheRepository(fileSystem),
+        sceneRepository: new BotSceneRepository(store, content, () =>
+          this.options.onStage?.('사실 시트 저장 건너뜀 (동시 편집 감지)', 0, 0),
+        ),
+        workspaceLocator: new BotWorkspaceLocator(store.root),
+      }),
+      revise: new ReviseDraftUseCase({
+        aiProviderRegistry: registry,
+        usageSink,
+        fileSystem,
+        logger,
+        generator,
+      }),
+    };
+  }
 }
 
-// Fills the empty grounding fields and commits them to the scene frontmatter. `scene/` is tracked,
-// so this write is a commit like every other authored change — never a silent edit.
-async function resolveGrounding(
-  sceneStem: string,
-  scene: Awaited<ReturnType<WorkspaceStore['readScene']>>,
-  characterNames: readonly string[],
-  options: SceneDraftGeneratorOptions,
-): Promise<SceneFile> {
-  const missingFields = missingSceneGroundingFields(scene.value.frontmatter.grounding);
+interface BotEngine {
+  readonly workspaceRoot: StoryUri;
+  readonly fileSystem: BotFileSystem;
+  readonly sceneUri: (sceneStem: string) => StoryUri;
+  readonly generateDraft: GenerateDraftUseCase;
+  readonly revise: ReviseDraftUseCase;
+}
 
-  if (!options.draftConfig.autoGrounding || missingFields.length === 0) {
-    return scene.value;
-  }
+function sceneFilePathFor(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
+  const separator = sceneStem.indexOf('-');
+  const prefix = separator === -1 ? sceneStem : sceneStem.slice(0, separator);
+  const slug = separator === -1 ? '' : sceneStem.slice(separator + 1);
+  return sceneFilePath(workspaceRoot, prefix, slug) as StoryUri;
+}
 
-  const proposed = await options.aiService.proposeSceneGrounding(
-    {
-      sceneBody: scene.value.body,
-      missingFields,
-      characterNames,
-      knownGrounding: scene.value.frontmatter.grounding,
-    },
-    { attribution: { primary: { kind: 'scene', id: sceneStem } } },
-  );
-  const merged = mergeSceneGrounding(scene.value.frontmatter.grounding, proposed);
-
-  if (Object.keys(merged).length === 0) {
-    return scene.value;
-  }
-
-  const raw = await options.store.readText(scene.relativePath);
-  const outcome = await options.content.writeTracked(
-    scene.relativePath,
-    applySceneGrounding(raw, merged),
-    scene.contentHash,
-    `storyboard-bot: ground ${scene.relativePath}`,
-  );
-
-  // A stale or blocked write means Desktop touched the scene mid-job. The facts still steer this
-  // generation; the next run re-proposes against whatever landed on disk.
-  if (outcome.status !== 'committed' && outcome.status !== 'written') {
-    options.onStage?.('사실 시트 저장 건너뜀 (동시 편집 감지)', 0, 0);
-  }
-
+// The engine logs progress; the bot turns it into a Telegram stage line.
+function createStageLogger(
+  onStage: ((stage: string, current: number, total: number) => void) | undefined,
+): StoryboardLogger {
   return {
-    ...scene.value,
-    card: { ...scene.value.card, grounding: merged },
-    frontmatter: { ...scene.value.frontmatter, grounding: merged },
+    info: (message) => onStage?.(message, 0, 0),
+    warn: (message) => onStage?.(message, 0, 0),
+    error: (message) => onStage?.(message, 0, 0),
+    show: () => undefined,
   };
 }
 
-interface AssembledSceneContext {
-  readonly scene: Awaited<ReturnType<WorkspaceStore['readScene']>>['value'];
-  readonly project: Awaited<ReturnType<WorkspaceStore['readProject']>>['value'];
-  readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
-  readonly narrative: Awaited<ReturnType<typeof buildNarrativeContext>>;
-  readonly format: NonNullable<
-    Awaited<ReturnType<WorkspaceStore['readProject']>>['value']['format']
-  >;
-  readonly styleDirective: ReturnType<typeof buildStyleDirective>;
-}
+export type { MutateOutcome };

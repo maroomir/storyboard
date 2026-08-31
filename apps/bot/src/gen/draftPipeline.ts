@@ -6,10 +6,15 @@ import type { WorkspaceStore } from '../workspace/workspaceStore';
 import type { IPipeline, PipelineContext } from './pipelineRunner';
 import type { GenJob, PipelineResult } from './types';
 
+export type DraftGenerationOutcome =
+  | { readonly status: 'written'; readonly outcome: MutateOutcome | undefined }
+  | { readonly status: 'cancelled' }
+  | { readonly status: 'failed'; readonly errorMessage: string };
+
 export interface DraftGenerator {
-  // Produces the full draft file content (frontmatter + body) for a scene. Injected so the
+  // Generates the scene's draft and writes it through the content service. Injected so the
   // pipeline stays testable without a provider.
-  generate(sceneStem: string, isCancelled: () => boolean): Promise<string>;
+  generate(sceneStem: string, isCancelled: () => boolean): Promise<DraftGenerationOutcome>;
 }
 
 export interface DraftPipelineOptions {
@@ -45,16 +50,23 @@ export class DraftPipeline implements IPipeline {
     }
 
     await context.reportStage('초안 생성');
-    const body = await this.options.generator.generate(sceneStem, context.isCancelled);
+    const generated = await this.options.generator.generate(sceneStem, context.isCancelled);
 
-    if (context.isCancelled()) {
+    if (generated.status === 'cancelled' || context.isCancelled()) {
       return { success: false, failureReason: 'cancelled' };
     }
 
-    await context.reportStage('저장');
-    const outcome = await this.options.content.writeDraft(sceneStem, body);
+    if (generated.status === 'failed') {
+      return {
+        success: false,
+        failureReason: 'provider_error',
+        errorMessage: generated.errorMessage,
+      };
+    }
 
-    if (outcome.status === 'blocked' || outcome.status === 'stale') {
+    const outcome = generated.outcome;
+
+    if (outcome !== undefined && (outcome.status === 'blocked' || outcome.status === 'stale')) {
       return {
         success: false,
         failureReason: 'provider_error',
