@@ -90,8 +90,8 @@ node apps/bot/dist/index.js
 ## 검증
 
 ```bash
-npm test --workspace storyboard-bot
-npm run lint --workspace storyboard-bot
+npm test --workspace @storyboard/bot
+npm run lint --workspace @storyboard/bot
 npm run bot:build
 ```
 

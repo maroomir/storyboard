@@ -88,12 +88,12 @@ The webview must not import `vscode` directly. Use message passing through `acqu
 
 ## Current Architecture
 
-The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard` workspace at `apps/desktop/`; the Telegram bot `@storyboard/bot` lives at `apps/bot/`, and the shared packages are `packages/story-format` (schemas/codecs/paths/fixtures), `packages/story-ai` (AI engine and ports), `packages/story-pipeline` (scene generation orchestration), and `packages/story-git` (commit/sync layer). Packages expose TypeScript source; `apps/desktop/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app module, and `apps/bot/scripts/check-architecture.mjs` enforces the bot's layer direction. Bot invariants live in `.claude/rules/bot.md`.
+The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard-vscode` workspace at `apps/desktop/`; the Telegram bot `@storyboard/bot` lives at `apps/bot/`, and the shared packages are `packages/story-format` (schemas/codecs/paths/fixtures), `packages/story-ai` (AI engine and ports), `packages/story-pipeline` (scene generation orchestration), and `packages/story-git` (commit/sync layer). Packages expose TypeScript source; `apps/desktop/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app module, and `apps/bot/scripts/check-architecture.mjs` enforces the bot's layer direction. Bot invariants live in `.claude/rules/bot.md`.
 
 The extension host currently uses this transition shape:
 
 ```text
-apps/desktop/                  # `storyboard` workspace: the VSCode extension
+apps/desktop/                  # `storyboard-vscode` workspace: the VSCode extension
   package.json                 # Extension manifest, scripts, and version
   src/
     extension.ts               # Thin VS Code entry point
@@ -108,7 +108,7 @@ apps/desktop/                  # `storyboard` workspace: the VSCode extension
   scripts/                     # Build and architecture-check scripts
 ```
 
-Dependency rules already enforced by `npm run check:architecture` (run from `apps/desktop`, or `npm run check:architecture --workspace storyboard` from the repo root):
+Dependency rules already enforced by `npm run check:architecture` (run from `apps/desktop`, or `npm run check:architecture --workspace storyboard-vscode` from the repo root):
 
 - `extension.ts` imports only `bootstrap` (besides `vscode`).
 - `shared` imports only itself.
@@ -202,7 +202,7 @@ npm run lint
 npm test
 ```
 
-These, plus `npm run build` and `npm run package:vsix`, run from the repo root and delegate to the `storyboard` workspace. Scripts that exist only in `apps/desktop/package.json` — `check:architecture`, `watch`, `build:webview`, `format`, `format:check:src` — must be run from `apps/desktop`, or as `npm run <script> --workspace storyboard` from the repo root.
+These, plus `npm run build` and `npm run package:vsix`, run from the repo root and delegate to the `storyboard-vscode` workspace. Scripts that exist only in `apps/desktop/package.json` — `check:architecture`, `watch`, `build:webview`, `format`, `format:check:src` — must be run from `apps/desktop`, or as `npm run <script> --workspace storyboard-vscode` from the repo root.
 
 If scripts do not exist yet, explain that verification is limited and inspect the files manually.
 
