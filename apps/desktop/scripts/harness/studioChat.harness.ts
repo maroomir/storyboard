@@ -309,6 +309,20 @@ test('studio chat against a real workspace', async () => {
 
   backVscodeFsWithDisk();
 
+  // NOTE: STUDIO_SEED runs only the card-seed extraction (kind/name/roman id) and exits — the
+  // cheapest way to watch the /create wizard's one AI call against a real provider.
+  if (process.env.STUDIO_SEED) {
+    const usage = createUsageSummary();
+    const seed = await (
+      createGateway(usage.onUsage).createService(vscode.Uri.file(workspace) as never) as never as {
+        extractStudioCardSeed: (description: string) => Promise<unknown>;
+      }
+    ).extractStudioCardSeed(process.env.STUDIO_SEED);
+    console.log(`seed: ${JSON.stringify(seed)}`);
+    usage.print();
+    return;
+  }
+
   const root = vscode.Uri.file(workspace) as never;
   const usage = createUsageSummary();
   const gateway = createGateway(usage.onUsage);
