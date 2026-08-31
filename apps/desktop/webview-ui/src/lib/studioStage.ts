@@ -15,6 +15,28 @@ export function stageTitle(target: StudioTarget, stage?: StudioStage): string {
   return `씬 ${order} · ${stage.title ?? stage.sceneStem}`
 }
 
+// NOTE: mirrors the host's rule — a scene entity spans the seed card and its draft, and whichever
+// file the author has open is the one a proposal may rewrite.
+export function editTargetFile(target: StudioTarget): string | undefined {
+  const entity = target.entity
+
+  if (!entity) {
+    return undefined
+  }
+
+  switch (entity.kind) {
+    case "character":
+    case "background":
+      return `${entity.kind}/${entity.key}.card`
+    case "scene":
+      return target.kind === "scene"
+        ? `scene/${entity.key}.card`
+        : `draft/${entity.key}.md`
+    case "project":
+      return undefined
+  }
+}
+
 export function stageFacts(stage?: StudioStage, now: Date = new Date()): readonly string[] {
   if (!stage) {
     return []

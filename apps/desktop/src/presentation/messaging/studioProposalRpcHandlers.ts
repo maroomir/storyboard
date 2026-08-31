@@ -4,7 +4,10 @@ import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-
 
 import { hashBaseline } from '@/application/studio/studioChatUseCase';
 import { applyStudioPatch } from '@/domain/studio/studioPatch';
-import { readStudioEntityContext } from '@/infrastructure/persistence/studioEntityContext';
+import {
+  readStudioEntityContext,
+  type StudioSceneFocus,
+} from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
@@ -96,10 +99,18 @@ async function prepareApply(
     return { ok: false, message: 'Storyboard 프로젝트를 먼저 열어 주세요.' };
   }
 
-  const entityContext = await readStudioEntityContext(root, entity);
+  const entityContext = await readStudioEntityContext(
+    root,
+    entity,
+    sceneFocusOf(proposal.targetFile),
+  );
 
   if (!entityContext?.targetUri || entityContext.baseline === undefined) {
     return { ok: false, message: '수정할 파일을 찾을 수 없습니다.' };
+  }
+
+  if (entityContext.targetFile !== proposal.targetFile) {
+    return { ok: false, message: `${proposal.targetFile} 를 더 이상 대상으로 삼을 수 없습니다.` };
   }
 
   // SECURITY: the bot and other editors share this workspace, so a patch derived from stale bytes
@@ -108,10 +119,10 @@ async function prepareApply(
     return { ok: false, message: staleBaselineMessage };
   }
 
-  const isDraft = proposal.patch.target === 'draft';
+  const isDraft = entityContext.patchTarget === 'draft';
   const patchBaseline = isDraft ? extractDraftBody(entityContext.baseline) : entityContext.baseline;
 
-  const result = applyStudioPatch(patchBaseline, proposal.patch);
+  const result = applyStudioPatch(patchBaseline, proposal.patch, entityContext.patchTarget);
 
   if (!result.ok) {
     return { ok: false, message: result.message };
@@ -125,6 +136,10 @@ async function prepareApply(
     changedFields: result.changedFields,
     lengthDelta: result.text.trim().length - patchBaseline.trim().length,
   };
+}
+
+function sceneFocusOf(targetFile: string): StudioSceneFocus {
+  return targetFile.startsWith('scene/') ? 'card' : 'draft';
 }
 
 // NOTE: patches address the body, so the frontmatter is re-serialized from the file rather than

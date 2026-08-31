@@ -59,6 +59,7 @@ function requestWith(
     workspaceRoot: { toString: () => "file:///workspace" } as never,
     entityContext: {
       agentEntityKind: "character",
+      patchTarget: "entityCard",
       entityLabel: "seorin",
       targetFile: "character/seorin.card",
       context: "카드 자료",
@@ -160,6 +161,7 @@ describe("StudioChatUseCase", () => {
       requestWith(gateway, {
         entityContext: {
           agentEntityKind: "scene",
+          patchTarget: "draft",
           entityLabel: "01-intro",
           targetFile: "draft/01-intro.md",
           context: "씬 자료",
@@ -205,6 +207,26 @@ describe("StudioChatUseCase", () => {
     expect((runInputs[0] as { remainingQuestions: number }).remainingQuestions).toBe(0)
   })
 
+  it("stamps the proposal with the file it was built against", async () => {
+    const { gateway, runInputs } = gatewayWith({ action: proposeAction })
+
+    const turns = await new StudioChatUseCase(gateway, logger).send(
+      requestWith(gateway, {
+        entityContext: {
+          agentEntityKind: "scene",
+          patchTarget: "sceneCard",
+          entityLabel: "01-intro",
+          targetFile: "scene/01-intro.card",
+          context: "씬 자료",
+          baseline: "type: scene"
+        }
+      })
+    )
+
+    expect(turns[0]).toMatchObject({ targetFile: "scene/01-intro.card" })
+    expect((runInputs[0] as { patchShape: string }).patchShape).toBe("sceneCard")
+  })
+
   it("replays the conversation to the agent as labelled messages", async () => {
     const { gateway, runInputs } = gatewayWith({ action: { kind: "say", message: "네" } })
 
@@ -216,6 +238,7 @@ describe("StudioChatUseCase", () => {
         role: "assistant",
         kind: "proposal",
         summary: "과거사 추가",
+        targetFile: "character/seorin.card",
         patch: { target: "card", changes: [{ field: "description", value: ["화재"] }] },
         baselineHash: "hash",
         validation: { state: "pass", warnings: [] },

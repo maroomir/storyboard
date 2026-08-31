@@ -20,14 +20,21 @@ import {
 } from '../vscode/pathConventions';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
 
+import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
+
 export interface StudioEntityContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly targetUri: vscode.Uri | undefined;
+  readonly patchTarget: StudioPatchTarget;
   readonly context: string;
   readonly baseline: string | undefined;
 }
+
+// NOTE: a scene entity spans two files, so the editor the author is looking at decides which one a
+// proposal may rewrite; the other one stays in the prompt as read-only material.
+export type StudioSceneFocus = 'card' | 'draft';
 
 const missingDraftNote =
   '이 씬에는 아직 초안이 없다. 초안을 만들기 전에는 고칠 대상이 없으니 propose하지 말고 say로 알려라.';
@@ -35,12 +42,15 @@ const missingDraftNote =
 export async function readStudioEntityContext(
   workspaceRoot: vscode.Uri,
   entity: StudioEntity,
+  sceneFocus: StudioSceneFocus = 'draft',
 ): Promise<StudioEntityContext | undefined> {
   if (entity.kind === 'character' || entity.kind === 'background') {
     return readCardContext(workspaceRoot, entity.kind, entity.key);
   }
 
-  return entity.kind === 'scene' ? readSceneContext(workspaceRoot, entity.key) : undefined;
+  return entity.kind === 'scene'
+    ? readSceneContext(workspaceRoot, entity.key, sceneFocus)
+    : undefined;
 }
 
 export async function resolveStudioLookups(
@@ -76,6 +86,7 @@ async function readCardContext(
     entityLabel: cardId,
     targetFile: relativeCardPath(cardKind, cardId),
     targetUri,
+    patchTarget: 'entityCard',
     baseline,
     context: [
       `[현재 카드: ${relativeCardPath(cardKind, cardId)}]`,
@@ -90,8 +101,10 @@ async function readCardContext(
 async function readSceneContext(
   workspaceRoot: vscode.Uri,
   sceneStem: string,
+  sceneFocus: StudioSceneFocus,
 ): Promise<StudioEntityContext | undefined> {
-  const sceneText = await readTextOrUndefined(scenePath(workspaceRoot, sceneStem));
+  const sceneUri = scenePath(workspaceRoot, sceneStem);
+  const sceneText = await readTextOrUndefined(sceneUri);
 
   if (sceneText === undefined) {
     return undefined;
@@ -101,19 +114,34 @@ async function readSceneContext(
   const draftText = await readTextOrUndefined(draftUri);
   const draftBody = draftText === undefined ? undefined : extractDraftBody(draftText);
 
+  const context = [
+    `[씬 시드: scene/${sceneStem}.card]`,
+    sceneText.trim(),
+    '',
+    '[초안 본문]',
+    draftBody === undefined ? missingDraftNote : draftBody,
+  ].join('\n');
+
+  if (sceneFocus === 'card') {
+    return {
+      agentEntityKind: 'scene',
+      entityLabel: sceneStem,
+      targetFile: `scene/${sceneStem}.card`,
+      targetUri: sceneUri,
+      patchTarget: 'sceneCard',
+      baseline: sceneText,
+      context,
+    };
+  }
+
   return {
     agentEntityKind: 'scene',
     entityLabel: sceneStem,
     targetFile: `draft/${sceneStem}.md`,
     targetUri: draftText === undefined ? undefined : draftUri,
+    patchTarget: 'draft',
     baseline: draftText,
-    context: [
-      `[씬 시드: scene/${sceneStem}.card]`,
-      sceneText.trim(),
-      '',
-      '[초안 본문]',
-      draftBody === undefined ? missingDraftNote : draftBody,
-    ].join('\n'),
+    context,
   };
 }
 

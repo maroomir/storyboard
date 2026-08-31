@@ -1,21 +1,76 @@
-import { cardSchema, parseCard, serializeCard } from '@storyboard/story-format';
+import {
+  cardSchema,
+  parseCard,
+  parseSceneCard,
+  serializeCard,
+  serializeSceneCard,
+} from '@storyboard/story-format';
 
 import type { StudioPatchPayload } from '../../shared/messaging';
+
+export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
 
 export type StudioPatchResult =
   | { readonly ok: true; readonly text: string; readonly changedFields: readonly string[] }
   | { readonly ok: false; readonly message: string };
 
-export function applyStudioPatch(baseline: string, patch: StudioPatchPayload): StudioPatchResult {
-  return patch.target === 'card'
-    ? applyCardPatch(baseline, patch.changes)
-    : applyDraftPatch(baseline, patch.replacements);
+interface StudioCardFieldChange {
+  readonly field: string;
+  readonly value: string | readonly string[];
 }
 
-function applyCardPatch(
+// NOTE: id and type key the file name and the codec branch, so renaming or retyping a card belongs
+// to the rename command, not to a chat patch that only rewrites the file in place.
+const protectedEntityCardFields = new Set(['id', 'type']);
+
+// NOTE: a scene card doubles as the generation contract — characters, location and grounding wire
+// it to other files and to the pipeline, so chat may only touch what the scene *narrates*.
+const editableSceneCardFields = new Set([
+  'title',
+  'summary',
+  'purpose',
+  'conflict',
+  'twist',
+  'emotionalShift',
+  'endState',
+  'foreshadowing',
+  'mood',
+  'relationStage',
+]);
+
+export function applyStudioPatch(
   baseline: string,
-  changes: readonly { readonly field: string; readonly value: string | readonly string[] }[],
+  patch: StudioPatchPayload,
+  target: StudioPatchTarget,
 ): StudioPatchResult {
+  if (target === 'draft') {
+    return patch.target === 'draft'
+      ? applyDraftPatch(baseline, patch.replacements)
+      : mismatch('초안에는 본문 구간 수정만 적용할 수 있습니다.');
+  }
+
+  if (patch.target !== 'card') {
+    return mismatch('카드에는 필드 수정만 적용할 수 있습니다.');
+  }
+
+  return target === 'sceneCard'
+    ? applySceneCardPatch(baseline, patch.changes)
+    : applyEntityCardPatch(baseline, patch.changes);
+}
+
+function applyEntityCardPatch(
+  baseline: string,
+  changes: readonly StudioCardFieldChange[],
+): StudioPatchResult {
+  const blocked = changes.filter((change) => protectedEntityCardFields.has(change.field));
+
+  if (blocked.length > 0) {
+    return {
+      ok: false,
+      message: `${fieldList(blocked)} 필드는 대화로 바꿀 수 없습니다.`,
+    };
+  }
+
   let card: Record<string, unknown>;
 
   try {
@@ -24,20 +79,7 @@ function applyCardPatch(
     return { ok: false, message: '카드를 읽을 수 없어 수정을 적용하지 못했습니다.' };
   }
 
-  const protectedFields = changes.filter((change) => isProtectedCardField(change.field));
-
-  if (protectedFields.length > 0) {
-    return {
-      ok: false,
-      message: `${protectedFields.map((change) => change.field).join(', ')} 필드는 대화로 바꿀 수 없습니다.`,
-    };
-  }
-
-  for (const change of changes) {
-    card[change.field] = Array.isArray(change.value) ? [...change.value] : change.value;
-  }
-
-  const parsed = cardSchema.safeParse(card);
+  const parsed = cardSchema.safeParse(mergeChanges(card, changes));
 
   if (!parsed.success) {
     return {
@@ -53,10 +95,49 @@ function applyCardPatch(
   };
 }
 
-// NOTE: id and type key the file name and the codec branch, so renaming or retyping a card belongs
-// to the rename command, not to a chat patch that only rewrites the file in place.
-function isProtectedCardField(field: string): boolean {
-  return field === 'id' || field === 'type';
+function applySceneCardPatch(
+  baseline: string,
+  changes: readonly StudioCardFieldChange[],
+): StudioPatchResult {
+  const blocked = changes.filter((change) => !editableSceneCardFields.has(change.field));
+
+  if (blocked.length > 0) {
+    return {
+      ok: false,
+      message: `${fieldList(blocked)} 필드는 대화로 바꿀 수 없습니다. 씬 카드는 서술 필드만 고칠 수 있습니다.`,
+    };
+  }
+
+  let card: Record<string, unknown>;
+
+  try {
+    card = { ...parseSceneCard(baseline) } as Record<string, unknown>;
+  } catch {
+    return { ok: false, message: '씬 카드를 읽을 수 없어 수정을 적용하지 못했습니다.' };
+  }
+
+  try {
+    return {
+      ok: true,
+      text: serializeSceneCard(mergeChanges(card, changes) as never),
+      changedFields: changes.map((change) => change.field),
+    };
+  } catch (error) {
+    return { ok: false, message: `수정한 씬 카드가 형식에 맞지 않습니다: ${String(error)}` };
+  }
+}
+
+function mergeChanges(
+  card: Record<string, unknown>,
+  changes: readonly StudioCardFieldChange[],
+): Record<string, unknown> {
+  const merged = { ...card };
+
+  for (const change of changes) {
+    merged[change.field] = Array.isArray(change.value) ? [...change.value] : change.value;
+  }
+
+  return merged;
 }
 
 function applyDraftPatch(
@@ -88,6 +169,14 @@ function applyDraftPatch(
   }
 
   return { ok: true, text, changedFields: [] };
+}
+
+function mismatch(message: string): StudioPatchResult {
+  return { ok: false, message };
+}
+
+function fieldList(changes: readonly StudioCardFieldChange[]): string {
+  return changes.map((change) => change.field).join(', ');
 }
 
 function firstIssue(error: { readonly issues: readonly { readonly message: string }[] }): string {

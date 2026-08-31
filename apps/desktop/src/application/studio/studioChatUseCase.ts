@@ -8,11 +8,13 @@ import type {
 } from '@storyboard/story-ai';
 
 import type { AiGateway } from '../ai/aiGateway';
+import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
 import type { StudioChatTurn, StudioPatchPayload, StudioValidation } from '../../shared/messaging';
 
 export interface StudioChatContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';
+  readonly patchTarget: StudioPatchTarget;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly context: string;
@@ -47,6 +49,7 @@ export class StudioChatUseCase {
     const action = await service.runStudioAgent(
       {
         entityKind: request.entityContext.agentEntityKind,
+        patchShape: request.entityContext.patchTarget,
         entityLabel: request.entityContext.entityLabel,
         targetFile: request.entityContext.targetFile,
         context: request.entityContext.context,
@@ -83,6 +86,7 @@ export class StudioChatUseCase {
         kind: 'proposal',
         summary: action.summary,
         ...(action.message === undefined ? {} : { message: action.message }),
+        targetFile: request.entityContext.targetFile,
         patch,
         baselineHash: hashBaseline(request.entityContext.baseline),
         validation: await this.validate(request, action, patch),

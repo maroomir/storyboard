@@ -1,7 +1,10 @@
 import type { PromptArtifact } from './types';
 
+export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
+
 export interface StudioAgentPromptInput {
   readonly entityKind: 'character' | 'background' | 'scene';
+  readonly patchShape: StudioAgentPatchShape;
   readonly entityLabel: string;
   readonly targetFile: string;
   readonly context: string;
@@ -34,7 +37,7 @@ function buildSystem(input: StudioAgentPromptInput): string {
     '{"kind":"say","message":"..."}',
     '{"kind":"ask","question":"...","options":["...","..."]}',
     '{"kind":"lookup","requests":[{"kind":"character|background|scene|draft","key":"..."}],"reason":"..."}',
-    proposeShape(input.entityKind),
+    proposeShape(input.patchShape),
     '',
     '[행동 선택]',
     '- say: 질문에 답하거나 상황을 설명할 뿐 파일을 고치지 않을 때.',
@@ -52,8 +55,8 @@ function buildSystem(input: StudioAgentPromptInput): string {
   ].join('\n');
 }
 
-function proposeShape(entityKind: StudioAgentPromptInput['entityKind']): string {
-  if (entityKind === 'scene') {
+function proposeShape(patchShape: StudioAgentPatchShape): string {
+  if (patchShape === 'draft') {
     return '{"kind":"propose","summary":"...","message":"...","patch":{"target":"draft","replacements":[{"startOffset":0,"endOffset":0,"newText":"..."}]}}';
   }
 
@@ -73,25 +76,50 @@ function lookupPolicy(input: StudioAgentPromptInput): string[] {
 }
 
 function targetPolicy(input: StudioAgentPromptInput): string[] {
-  if (input.entityKind !== 'scene') {
+  if (input.patchShape === 'draft') {
     return [
       '',
-      '[카드 수정]',
-      '- changes의 field는 카드에 이미 있는 필드명을 쓰라. 목록형 필드는 문자열 배열로, 단일 값 필드는 문자열로 준다.',
+      '[초안 수정]',
+      '- startOffset/endOffset은 초안 본문의 UTF-16 0-based 오프셋이며 endOffset은 exclusive다.',
+      input.hasSelection
+        ? '- 작가가 선택한 구간이 주어졌다. 다른 말이 없으면 그 구간만 고쳐라.'
+        : '- 선택한 구간이 없다. 고칠 범위를 스스로 좁혀 잡고 무엇을 골랐는지 summary에 적어라.',
+      '- 본문 전체를 한 번에 갈아엎지 마라. 고칠 구간만 replacements로 짚어라.',
+    ];
+  }
+
+  if (input.patchShape === 'sceneCard') {
+    return [
+      '',
+      '[씬 카드 수정]',
+      `- 고칠 수 있는 필드는 ${editableSceneCardFields.join(', ')} 뿐이다.`,
+      '- id, characters, location, grounding, targetWordCount, povCharacter, neededCanon은 씬을 다른 파일·파이프라인과 잇는 값이라 바꿀 수 없다. 그쪽을 손봐야 하면 say로 알려라.',
+      '- foreshadowing은 문자열 배열, 나머지는 문자열이다.',
       '- 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.',
+      '- 이 씬의 초안은 자료로만 주어졌다. 초안을 고치려면 작가가 초안 파일을 열어야 한다고 say로 알려라.',
     ];
   }
 
   return [
     '',
-    '[초안 수정]',
-    '- startOffset/endOffset은 초안 본문의 UTF-16 0-based 오프셋이며 endOffset은 exclusive다.',
-    input.hasSelection
-      ? '- 작가가 선택한 구간이 주어졌다. 다른 말이 없으면 그 구간만 고쳐라.'
-      : '- 선택한 구간이 없다. 고칠 범위를 스스로 좁혀 잡고 무엇을 골랐는지 summary에 적어라.',
-    '- 본문 전체를 한 번에 갈아엎지 마라. 고칠 구간만 replacements로 짚어라.',
+    '[카드 수정]',
+    '- changes의 field는 카드에 이미 있는 필드명을 쓰라. 목록형 필드는 문자열 배열로, 단일 값 필드는 문자열로 준다.',
+    '- 목록형 필드는 유지할 항목까지 포함한 전체 목록을 준다. 빠뜨린 항목은 삭제된다.',
   ];
 }
+
+const editableSceneCardFields = [
+  'title',
+  'summary',
+  'purpose',
+  'conflict',
+  'twist',
+  'emotionalShift',
+  'endState',
+  'foreshadowing',
+  'mood',
+  'relationStage',
+];
 
 function buildUser(input: StudioAgentPromptInput): string {
   const sections = [

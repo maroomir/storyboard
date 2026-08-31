@@ -59,6 +59,7 @@ function proposalTurn(overrides: Partial<Record<string, unknown>> = {}): StudioC
     role: "assistant",
     kind: "proposal",
     summary: "역할 변경",
+    targetFile: "character/seorin.card",
     patch: { target: "card", changes: [{ field: "role", value: "supporting" }] },
     baselineHash: hashBaseline(cardText),
     validation: { state: "pass", warnings: [] },
@@ -160,6 +161,7 @@ describe("studio proposal rpc handlers", () => {
     const response = await send(bridgeWith(), "studio.proposal.apply", {
       entity: sceneEntity,
       turn: proposalTurn({
+        targetFile: "draft/01-intro.md",
         patch: { target: "draft", replacements: [{ startOffset: 0, endOffset: 2, newText: "XY" }] },
         baselineHash: hashBaseline(draftText)
       })
@@ -214,5 +216,38 @@ describe("studio proposal rpc handlers", () => {
     })
 
     expect(shownDiffs).toHaveLength(0)
+  })
+})
+
+describe("studio proposal rpc handlers for scene cards", () => {
+  const sceneCardTurn = (): StudioChatTurn =>
+    proposalTurn({
+      summary: "갈등 정리",
+      targetFile: "scene/01-intro.card",
+      patch: { target: "card", changes: [{ field: "purpose", value: "인물 소개와 갈등 암시" }] },
+      baselineHash: hashBaseline(sceneText)
+    })
+
+  it("writes the patched scene card and leaves the draft alone", async () => {
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: sceneEntity,
+      turn: sceneCardTurn()
+    })
+
+    expect(response.payload?.status).toBe("applied")
+    expect(files.get("/workspace/scene/01-intro.card")).toContain("purpose: 인물 소개와 갈등 암시")
+    expect(files.get("/workspace/draft/01-intro.md")).toBe(draftText)
+  })
+
+  it("refuses a scene card proposal once the card changed", async () => {
+    files.set("/workspace/scene/01-intro.card", `${sceneText}\nmood: 서늘함`)
+
+    const response = await send(bridgeWith(), "studio.proposal.apply", {
+      entity: sceneEntity,
+      turn: sceneCardTurn()
+    })
+
+    expect(response.payload?.status).toBe("failed")
+    expect(String(response.payload?.message)).toContain("파일이 바뀌어서")
   })
 })

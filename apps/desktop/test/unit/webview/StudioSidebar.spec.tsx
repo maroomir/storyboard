@@ -29,11 +29,22 @@ const projectTarget: StudioTarget = {
   hasSelection: false
 }
 
+const sceneCardTarget: StudioTarget = {
+  kind: "scene",
+  label: "01-intro.card",
+  entity: { kind: "scene", key: "01-intro" },
+  sceneUri: "file:///scene/01-intro.card",
+  draftUri: "file:///draft/01-intro.md",
+  hasSelection: false,
+  draftExists: true
+}
+
 const proposalTurn: StudioChatTurn = {
   id: "p1",
   role: "assistant",
   kind: "proposal",
   summary: "과거사에 화재 사건 추가",
+  targetFile: "character/seorin.card",
   patch: { target: "card", changes: [{ field: "description", value: ["화재를 겪었다"] }] },
   baselineHash: "hash-1",
   validation: { state: "pass", warnings: [] },
@@ -260,10 +271,24 @@ describe("StudioSidebar chat", () => {
     expect(screen.getByPlaceholderText(/카드나 씬 파일을 먼저 열어/)).toBeTruthy()
   })
 
-  it("hints at the draft when a scene entity is open", () => {
+  it("names the draft as the edit target when the draft is open", () => {
     renderStudio(draftTarget)
 
+    expect(screen.getByText("draft/01-intro.md")).toBeTruthy()
     expect(screen.getByPlaceholderText(/도입부를 더 긴장감 있게/)).toBeTruthy()
+  })
+
+  it("names the scene card as the edit target when the card is open", () => {
+    renderStudio(sceneCardTarget)
+
+    expect(screen.getByText("scene/01-intro.card")).toBeTruthy()
+    expect(screen.getByPlaceholderText(/갈등을 더 선명하게/)).toBeTruthy()
+  })
+
+  it("names the card file as the edit target for a character", () => {
+    renderStudio(characterTarget)
+
+    expect(screen.getByText("character/seorin.card")).toBeTruthy()
   })
 })
 
