@@ -21,7 +21,7 @@ npm run lint
 npm test
 ```
 
-Those root scripts delegate to the `apps/desktop` workspace. Scripts the root does not define (`check:architecture`, `build:webview`, `watch`, `format`, `format:check:src`) must be run from `apps/desktop`, or with `--workspace storyboard`.
+Those root scripts delegate to the `apps/desktop` workspace. Scripts the root does not define (`check:architecture`, `build:webview`, `watch`, `format`, `format:check:src`) must be run from `apps/desktop`, or with `--workspace storyboard-vscode`.
 
 Use webview-specific scripts if the repo defines them.
 

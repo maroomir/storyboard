@@ -37,7 +37,7 @@ npm run build
 
 **웹뷰(UI)만 수정하고 다시 확인할 때**
 
-- **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함). 이 스크립트는 루트에 없으므로 `cd apps/desktop` 후 실행하거나 `npm run build:webview --workspace storyboard`로 실행합니다.
+- **`npm run build:webview`** 만 실행해도 됩니다(Vite가 `webview-ui/`를 `out/webview-ui/`로 번들함). 이 스크립트는 루트에 없으므로 `cd apps/desktop` 후 실행하거나 `npm run build:webview --workspace storyboard-vscode`로 실행합니다.
 - 확장 호스트 코드(`apps/desktop/src/` 등)는 바뀌지 않았다면 `npm run compile`은 생략 가능합니다(루트에서 실행 가능).
 - 이미 떠 있는 **Extension Development Host** 창에서는 빌드 후 **`Developer: Reload Window`**로 리로드해야 변경된 웹뷰가 보이는 경우가 많습니다.
 

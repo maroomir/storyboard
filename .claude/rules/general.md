@@ -24,7 +24,7 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 ## Development Guidelines
 
 - Before running verification commands, inspect `package.json` for available scripts. The repo-root manifest delegates `build`, `compile`, `lint`, `test`, and `package:vsix` to the extension workspace, so those run from the repo root.
-- Run any other extension script (`check:architecture`, `format:check:src`, `watch`, `build:webview`, `format`) from `apps/desktop`, or as `npm run <script> --workspace storyboard`.
+- Run any other extension script (`check:architecture`, `format:check:src`, `watch`, `build:webview`, `format`) from `apps/desktop`, or as `npm run <script> --workspace storyboard-vscode`.
 - Use `npm run compile` if the project defines it; do not assume `npm run build` exists.
 - Keep extension host code separate from webview UI code.
 - Keep shared message/state types in a shared module once source structure exists.
