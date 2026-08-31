@@ -9,7 +9,7 @@ description: >-
 
 # Prepare release (storyboard)
 
-Workflow is minimal until packaging and marketplace steps are fully wired. Follow the scripts in the root `package.json` and in `apps/desktop/package.json`; do not invent commands.
+Workflow is minimal until packaging and marketplace steps are fully wired. Follow the scripts in the root `package.json` and in `apps/vscode/package.json`; do not invent commands.
 
 ## 1. Confirm version
 
@@ -27,7 +27,7 @@ node scripts/sync-version.mjs --check
 
 ## 2. Update release notes
 
-- Update [`apps/desktop/CHANGELOG.md`](apps/desktop/CHANGELOG.md) and [`apps/desktop/CHANGELOG.en.md`](apps/desktop/CHANGELOG.en.md) under `[Unreleased]` (or add a dated section after release).
+- Update [`apps/vscode/CHANGELOG.md`](apps/vscode/CHANGELOG.md) and [`apps/vscode/CHANGELOG.en.md`](apps/vscode/CHANGELOG.en.md) under `[Unreleased]` (or add a dated section after release).
 - Keep entries user-facing and concise.
 - Follow [`RELEASE.md`](RELEASE.md) for version commit contents and tagging.
 

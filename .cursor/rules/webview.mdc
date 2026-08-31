@@ -1,6 +1,6 @@
 ---
 description: Webview UI, messaging, security, and UX for storyboard
-globs: apps/desktop/webview-ui/**/*,apps/desktop/src/shared/**/*,apps/desktop/src/presentation/messaging/**/*
+globs: apps/vscode/webview-ui/**/*,apps/vscode/src/shared/**/*,apps/vscode/src/presentation/messaging/**/*
 alwaysApply: false
 ---
 

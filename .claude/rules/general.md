@@ -24,19 +24,19 @@ Avoid adding generic programming advice that can be inferred from standard TypeS
 ## Development Guidelines
 
 - Before running verification commands, inspect `package.json` for available scripts. From the repo root, `build`, `lint`, and `test` fan out to **all three apps**; `compile` and `package:vsix` are extension-only; `version:sync` keeps every app on the root version.
-- Run any other extension script (`check:architecture`, `format:check:src`, `watch`, `build:webview`, `format`) from `apps/desktop`, or as `npm run <script> --workspace storyboard-vscode`.
+- Run any other extension script (`check:architecture`, `format:check:src`, `watch`, `build:webview`, `format`) from `apps/vscode`, or as `npm run <script> --workspace storyboard-vscode`.
 - Use `npm run compile` if the project defines it; do not assume `npm run build` exists.
 - Keep extension host code separate from webview UI code.
 - Keep shared message/state types in a shared module once source structure exists.
 - Use explicit command and message names prefixed with `storyboard`.
 - Apply the clean code standards in `.claude/rules/clean-code.md` when writing or reviewing code.
-- Use import aliases: `@/` → `apps/desktop/src/` (extension host), `@webview/` → `apps/desktop/webview-ui/src/` (webview). Prefer them over long `../../` chains; do not use `@/` from webview code.
+- Use import aliases: `@/` → `apps/vscode/src/` (extension host), `@webview/` → `apps/vscode/webview-ui/src/` (webview). Prefer them over long `../../` chains; do not use `@/` from webview code.
 - Do not commit generated build output unless the packaging workflow requires it.
 - Do not store API keys, tokens, or personal workspace paths in committed code.
 
 ## Documentation Sync
 
-- Update `apps/desktop/README.md` and related docs for new commands, settings, configuration, or user-facing behavior.
+- Update `apps/vscode/README.md` and related docs for new commands, settings, configuration, or user-facing behavior.
 - Update tracked architecture documents when product scope, file formats, or runtime boundaries change.
 - Rules live canonically in the repo-root `.claude/rules/` (Claude Code is the main tool). When agent policy changes, update `.claude/rules/` and mirror it to the repo-root `.cursor/rules/` (Cursor) and `AGENTS.md` (Codex).
 - Skills live canonically in the repo-root `.claude/skills/` and are mirrored to `.cursor/skills/`.

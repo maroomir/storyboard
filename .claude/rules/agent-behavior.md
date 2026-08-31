@@ -63,6 +63,6 @@ For multi-step tasks, state a brief plan in this shape:
 3. [Step] -> verify: [check]
 ```
 
-Prefer project-defined verification commands from `package.json` (the repo root for `compile`/`lint`/`test`, `apps/desktop` for extension-only scripts). If automated verification is unavailable, state the limitation and do a focused manual inspection.
+Prefer project-defined verification commands from `package.json` (the repo root for `compile`/`lint`/`test`, `apps/vscode` for extension-only scripts). If automated verification is unavailable, state the limitation and do a focused manual inspection.
 
 These rules are working when diffs stay focused, implementations stay small, and clarifying questions happen before mistaken implementation choices.

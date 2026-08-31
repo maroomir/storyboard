@@ -16,7 +16,7 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   and the harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
   `@storyboard/story-pipeline` directly.
 - **Parity is a test, not a promise.** `apps/cli/test/parity.test.ts` maps every
-  `contributes.commands` entry in `apps/desktop/package.json` to a CLI verb, an editor-only
+  `contributes.commands` entry in `apps/vscode/package.json` to a CLI verb, an editor-only
   exemption, or a tracked gap. Adding a command to the extension without a verb fails CI. The
   pending list must only ever shrink.
 - **stdout carries the result; everything else goes to stderr.** `--json` output must stay pipeable.

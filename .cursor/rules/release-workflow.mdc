@@ -16,11 +16,11 @@ Use when the user asks to prepare a release, bump the extension version, update 
 
 ## Files to keep in sync
 
-- Bump **`apps/desktop/package.json`** (the only place the extension `version` lives; the root `package.json` has no `version` field) and the single root **`package-lock.json`** (`packages["apps/desktop"].version`) to the same target version.
-- Add or finalize **`apps/desktop/CHANGELOG.md`** and **`apps/desktop/CHANGELOG.en.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting). Version update requests must update both changelog files in the same change.
+- Bump **`apps/vscode/package.json`** (the only place the extension `version` lives; the root `package.json` has no `version` field) and the single root **`package-lock.json`** (`packages["apps/vscode"].version`) to the same target version.
+- Add or finalize **`apps/vscode/CHANGELOG.md`** and **`apps/vscode/CHANGELOG.en.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting). Version update requests must update both changelog files in the same change.
 
 ## After verification
 
-Run the scripts from the root `package.json` listed in the skill (typically `compile`, `lint`, `test`, `build`, `package:vsix` when packaging); they delegate to the `apps/desktop` workspace.
+Run the scripts from the root `package.json` listed in the skill (typically `compile`, `lint`, `test`, `build`, `package:vsix` when packaging); `compile` and `package:vsix` are extension-only; `build`, `lint` and `test` fan out to all three apps.
 
-Create **`git tag v<version>`** and push only after the maintainer confirms; tag name must match `apps/desktop/package.json` with a leading `v`. Tags are desktop-only.
+Create **`git tag v<version>`** and push only after the maintainer confirms; the tag must match the **root** `package.json` version with a leading `v`, and every app must already be synced to it (`node scripts/sync-version.mjs --check`). One tag ships the VSIX, the bot tarball and the CLI tarball.

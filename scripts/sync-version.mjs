@@ -15,7 +15,7 @@ if (typeof version !== 'string' || version.length === 0) {
   process.exit(1);
 }
 
-const apps = ['apps/desktop', 'apps/bot', 'apps/cli'];
+const apps = ['apps/vscode', 'apps/bot', 'apps/cli'];
 const checkOnly = process.argv.includes('--check');
 let drifted = false;
 

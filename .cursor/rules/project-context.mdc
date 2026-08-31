@@ -13,7 +13,7 @@ alwaysApply: true
 ## Source of truth
 
 - **Priority**: latest user instruction, existing code/tests, `package.json`, tracked product docs, agent rules, then the `CLAUDE.md` import index.
-- **`apps/desktop/package.json`**: extension metadata, scripts, activation, commands, views, menus, configuration.
+- **`apps/vscode/package.json`**: extension metadata, scripts, activation, commands, views, menus, configuration.
 - **`.claude/rules/`** (canonical, Claude Code is the main tool), **`CLAUDE.md`**, **`AGENTS.md`**: agent working rules (this rule mirrors the essentials for Cursor).
 - **`.claude/rules/agent-behavior.md`** / **`.cursor/rules/agent-behavior.mdc`**: Karpathy-inspired agent behavior for explicit assumptions, simplicity, surgical edits, and verifiable goals.
 - **`.claude/rules/clean-code.md`** / **`.cursor/rules/clean-code.mdc`**: agent clean-code guidance.
@@ -33,8 +33,8 @@ alwaysApply: true
 
 ## Import aliases
 
-- **`@/`** → `apps/desktop/src/` (extension bundle).
-- **`@webview/`** → `apps/desktop/webview-ui/src/` (webview only). Do not use `@/` inside webview code.
+- **`@/`** → `apps/vscode/src/` (extension bundle).
+- **`@webview/`** → `apps/vscode/webview-ui/src/` (webview only). Do not use `@/` inside webview code.
 - Prefer aliases over deep `../../` imports; short `./` / single `../` sibling imports are OK.
 
 ## Domain boundaries
@@ -47,19 +47,19 @@ alwaysApply: true
 
 ## Current extension-host layout
 
-The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`); the VSCode extension is the `apps/desktop` workspace.
+The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`); the VSCode extension is the `apps/vscode` workspace.
 
 ```text
-apps/desktop/src/extension.ts       # Thin entry point
-apps/desktop/src/bootstrap/         # Application lifecycle and feature modules
-apps/desktop/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
-apps/desktop/src/application/       # Use cases, pipelines, ports
-apps/desktop/src/infrastructure/    # persistence, ai, vscode/settings/secrets adapters
-apps/desktop/src/domain/            # Runtime-agnostic policies, codecs, value types (no vscode)
-apps/desktop/src/shared/            # Contracts and value types (imports no other layer)
+apps/vscode/src/extension.ts       # Thin entry point
+apps/vscode/src/bootstrap/         # Application lifecycle and feature modules
+apps/vscode/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
+apps/vscode/src/application/       # Use cases, pipelines, ports
+apps/vscode/src/infrastructure/    # persistence, ai, vscode/settings/secrets adapters
+apps/vscode/src/domain/            # Runtime-agnostic policies, codecs, value types (no vscode)
+apps/vscode/src/shared/            # Contracts and value types (imports no other layer)
 ```
 
-Legacy dirs (`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`) are fully migrated into these layers. `apps/desktop/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `bootstrap`; `shared` imports only itself; `domain` imports no outer layer and no `vscode`; `application` does not import `presentation`/`bootstrap` and uses `vscode` type-only.
+Legacy dirs (`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`) are fully migrated into these layers. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `bootstrap`; `shared` imports only itself; `domain` imports no outer layer and no `vscode`; `application` does not import `presentation`/`bootstrap` and uses `vscode` type-only.
 
 ## Messaging and state
 

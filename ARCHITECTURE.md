@@ -270,15 +270,15 @@ description:
 
 #### 파라미터 입력 주체 (수기 vs AI 자동)
 
-카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `apps/desktop/docs/card-parameter-impact.md`.
+카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `apps/vscode/docs/card-parameter-impact.md`.
 
 - **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
 - **AI 자동 갱신(이야기 진행으로 누적되는 값)**: 캐릭터 `traits`·`recentDialogues`·`attributes`·`arc`·`relations`, 배경 `characterIds`. 스키마/YAML에는 유지되지만 `편집` 탭에 입력란을 두지 않는다.
-  - `traits`·`recentDialogues`는 `apps/desktop/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
-  - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/desktop/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
-  - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/desktop/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
+  - `traits`·`recentDialogues`는 `apps/vscode/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
+  - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
+  - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
   - 적재 전 자기검증: `storyboard.draft.verifyCardCandidates` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
-  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`apps/desktop/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
+  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`apps/vscode/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
   - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.3 `.png`
@@ -509,7 +509,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 ### 4.8a `.storyboard/cache/cards/<scene>.json` (카드 필드 후보)
 
 bible candidate와 같은 결을 가지는, **캐릭터 카드 필드용** 후보 캐시다. 초안 생성 시 등장 인물별로
-`relations`·`arc`·`attributes`를 AI가 추출(`cardFactExtraction`)해 여기에 적재한다(`apps/desktop/src/infrastructure/ai/cardCandidateUpdater.ts`).
+`relations`·`arc`·`attributes`를 AI가 추출(`cardFactExtraction`)해 여기에 적재한다(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`).
 `Storyboard: Promote Card Candidates` 명령으로 작가가 고른 항목만 해당 캐릭터 카드에 병합한다.
 relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고, attributes는 카드에 없는 key만 제안한다(기존 값 비파괴).
 배경 `characterIds`는 후보를 거치지 않고 배경 카드에 결정적으로 직접 기록된다.
@@ -604,7 +604,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 
 ## 6. 설정 키
 
-`apps/desktop/package.json#contributes.configuration`에 다음을 노출한다.
+`apps/vscode/package.json#contributes.configuration`에 다음을 노출한다.
 
 - `storyboard.defaultProvider`: `"openai" | "claude" | "google" | "ollama" | "claude-code" | "codex" | "mock"`
 - `storyboard.providers.openai.model`
@@ -822,17 +822,17 @@ ReviewIssue {
 
 | 앱 | 워크스페이스 | 실행 이름 |
 |---|---|---|
-| VSCode 확장 | `apps/desktop` (`storyboard-vscode`) | 확장 ID `maroomir.storyboard-vscode` |
+| VSCode 확장 | `apps/vscode` (`storyboard-vscode`) | 확장 ID `maroomir.storyboard-vscode` |
 | CLI | `apps/cli` (`@storyboard/cli`) | `storyboard` — 헤드라인 제품이자 레퍼런스 구현 |
 | 텔레그램 봇 | `apps/bot` (`@storyboard/bot`) | `storyboard-bot` |
 
 CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test.ts`가 확장의 `contributes.commands` 전 항목을 CLI 동사·에디터 전용·미구현 중 하나로 분류하도록 강제한다.
 
-아래 12.1의 경로는 모두 `apps/desktop/` 기준이며, import alias는 `@/*` → `apps/desktop/src/*`, `@webview/*` → `apps/desktop/webview-ui/src/*`이다.
+아래 12.1의 경로는 모두 `apps/vscode/` 기준이며, import alias는 `@/*` → `apps/vscode/src/*`, `@webview/*` → `apps/vscode/webview-ui/src/*`이다.
 
 ### 12.1 계층 구조
 
-`apps/desktop/src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로의 구조 전환을 완료했다. legacy 디렉토리(`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`)는 모두 목표 계층으로 이동했고, layer 방향은 `apps/desktop/scripts/check-architecture.mjs`가 CI에서 강제한다.
+`apps/vscode/src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로의 구조 전환을 완료했다. legacy 디렉토리(`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`)는 모두 목표 계층으로 이동했고, layer 방향은 `apps/vscode/scripts/check-architecture.mjs`가 CI에서 강제한다.
 
 ```text
 extension.ts

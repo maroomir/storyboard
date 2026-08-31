@@ -1,6 +1,6 @@
 # Scene quality rubric
 
-> Mirror of `apps/desktop/docs/scene-quality-rubric.md` — keep the two in sync.
+> Mirror of `apps/vscode/docs/scene-quality-rubric.md` — keep the two in sync.
 
 생성된 draft를 gt(ground truth) 대비 채점하는 고정 기준. 세션·평가자가 바뀌어도 같은 잣대를 쓰기 위한 것이다. 평가자(scenario-analyst)는 draft만 채점하고 생성·수정하지 않는다. gt는 평가 oracle로만 쓰고, 생성 프롬프트에 절대 주입하지 않는다.
 

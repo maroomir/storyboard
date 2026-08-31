@@ -9,7 +9,7 @@ import { commands } from '../src/commands/index';
 // feature other AI agents cannot reach. This test is the enforcement — add a command to the
 // extension without a CLI verb and the build fails.
 const manifest = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../../desktop/package.json', import.meta.url)), 'utf8'),
+  readFileSync(fileURLToPath(new URL('../../vscode/package.json', import.meta.url)), 'utf8'),
 ) as { contributes: { commands: { command: string }[] } };
 
 // Editor surface that has no terminal meaning. Adding a line here is a deliberate, reviewable act —

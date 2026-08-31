@@ -63,10 +63,10 @@ jobs:
               inside { print }
             ' "$1"
           }
-          korean="$(section apps/desktop/CHANGELOG.md)"
-          english="$(section apps/desktop/CHANGELOG.en.md)"
+          korean="$(section apps/vscode/CHANGELOG.md)"
+          english="$(section apps/vscode/CHANGELOG.en.md)"
           if [ -z "$(printf '%s' "$korean" | tr -d '[:space:]')" ]; then
-            echo "No [$version] section in apps/desktop/CHANGELOG.md" >&2
+            echo "No [$version] section in apps/vscode/CHANGELOG.md" >&2
             exit 1
           fi
           {

@@ -1,6 +1,6 @@
 ---
 description: Scripts-first verification and extension/webview testing expectations
-globs: apps/desktop/package.json,apps/desktop/src/**/*,apps/desktop/test/**/*,apps/desktop/webview-ui/**/*
+globs: apps/vscode/package.json,apps/vscode/src/**/*,apps/vscode/test/**/*,apps/vscode/webview-ui/**/*
 alwaysApply: false
 ---
 
@@ -21,7 +21,7 @@ npm run lint
 npm test
 ```
 
-Those root scripts delegate to the `apps/desktop` workspace. Scripts the root does not define (`check:architecture`, `build:webview`, `watch`, `format`, `format:check:src`) must be run from `apps/desktop`, or with `--workspace storyboard-vscode`.
+Those root scripts delegate to the `apps/vscode` workspace. Scripts the root does not define (`check:architecture`, `build:webview`, `watch`, `format`, `format:check:src`) must be run from `apps/vscode`, or with `--workspace storyboard-vscode`.
 
 Use webview-specific scripts if the repo defines them.
 
@@ -42,4 +42,4 @@ Mock external APIs, subprocesses, Git repositories, and network access in unit t
 
 ## Manual fallback
 
-If automation is missing, state limitations and check: imports/paths, **`apps/desktop/package.json`** contribution consistency, message contracts, TypeScript and obvious runtime issues.
+If automation is missing, state limitations and check: imports/paths, **`apps/vscode/package.json`** contribution consistency, message contracts, TypeScript and obvious runtime issues.

@@ -162,7 +162,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ### 구조
 
-- 저장소를 npm workspaces 모노레포로 재배치했습니다. 확장은 `apps/desktop`으로 이동했고, 워크스페이스 파일 포맷(`@storyboard/story-format`), AI 엔진(`@storyboard/story-ai`), 씬 생성 파이프라인(`@storyboard/story-pipeline`), git 동기화 계층(`@storyboard/story-git`)을 공유 패키지로 분리했습니다. 확장의 사용자 동작과 VSIX 내용물은 변하지 않았습니다.
+- 저장소를 npm workspaces 모노레포로 재배치했습니다. 확장은 `apps/vscode`으로 이동했고, 워크스페이스 파일 포맷(`@storyboard/story-format`), AI 엔진(`@storyboard/story-ai`), 씬 생성 파이프라인(`@storyboard/story-pipeline`), git 동기화 계층(`@storyboard/story-git`)을 공유 패키지로 분리했습니다. 확장의 사용자 동작과 VSIX 내용물은 변하지 않았습니다.
 - 봇은 `apps/bot`에 있으며 확장과 동일한 코덱·파이프라인을 소비합니다. 따라서 어느 쪽에서 저장해도 같은 바이트가 기록됩니다.
 
 ## [0.5.2] - 2026-07-24
