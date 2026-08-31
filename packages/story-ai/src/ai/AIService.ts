@@ -29,6 +29,7 @@ import {
   type StudioValidationInput,
 } from './StudioAgentService';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
+import type { StudioCardSeed } from '../contracts/studioCardSeed';
 import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../contracts/aiTypes';
@@ -107,6 +108,13 @@ export class StoryboardAIService {
     options: GenerateTextOptions = {},
   ): Promise<StudioValidationVerdict> {
     return this.studioAgentService.validate(input, options);
+  }
+
+  public async extractStudioCardSeed(
+    description: string,
+    options: GenerateTextOptions = {},
+  ): Promise<StudioCardSeed | undefined> {
+    return this.studioAgentService.seedCard(description, options);
   }
 
   public async auditStudioEntity(

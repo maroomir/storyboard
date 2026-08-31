@@ -27,7 +27,9 @@ import type {
 } from '../../application/studio/studioChatUseCase';
 import type { AiGateway } from '../../application/ai/aiGateway';
 import type { CollectCardProposalsUseCase } from '../../application/cards/collectCardProposalsUseCase';
+import type { CreateCardUseCase } from '../../application/cards/createCardUseCase';
 import { StudioToolDiagnostics } from './studioToolDiagnostics';
+import { createStudioCardUpdateRpcHandlers } from '../messaging/studioCardUpdateRpcHandlers';
 import { createStudioChatRpcHandlers } from '../messaging/studioChatRpcHandlers';
 import { createStudioFollowUpRpcHandlers } from '../messaging/studioFollowUpRpcHandlers';
 import { createStudioProposalRpcHandlers } from '../messaging/studioProposalRpcHandlers';
@@ -54,6 +56,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly chatUseCase: StudioChatUseCase,
     private readonly aiGateway: AiGateway,
     private readonly collectUseCase: CollectCardProposalsUseCase,
+    private readonly createCardUseCase: CreateCardUseCase,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
@@ -134,6 +137,12 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         getTarget: () => computeStudioTarget(vscode.window.activeTextEditor),
         postProgress: (stage) => this.postChatProgress(stage),
       }),
+      ...createStudioCardUpdateRpcHandlers({
+        aiGateway: this.aiGateway,
+        createCardUseCase: this.createCardUseCase,
+        logger: this.logger,
+        getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
+      }),
       ...createStudioProposalRpcHandlers({
         reviewService: this.reviewService,
         followUpRepository: this.followUpRepository,
@@ -184,6 +193,7 @@ export function registerSidebarStudioProvider(
   chatUseCase: StudioChatUseCase,
   aiGateway: AiGateway,
   collectUseCase: CollectCardProposalsUseCase,
+  createCardUseCase: CreateCardUseCase,
   reviewService: ProposalReviewService,
   configBridge: ConfigBridge,
   logger: StoryboardLogger,
@@ -195,6 +205,7 @@ export function registerSidebarStudioProvider(
     chatUseCase,
     aiGateway,
     collectUseCase,
+    createCardUseCase,
     toolDiagnostics,
     reviewService,
     new StudioFollowUpRepository(),

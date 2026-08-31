@@ -77,6 +77,8 @@ import {
   settingsUpdateTaskAiConfigRequestPayloadSchema,
 } from './settings';
 import {
+  studioCardUpdateRequestPayloadSchema,
+  studioCardUpdateResponsePayloadSchema,
   studioChatCancelRequestPayloadSchema,
   studioChatCancelResponsePayloadSchema,
   studioChatSendRequestPayloadSchema,
@@ -138,6 +140,7 @@ export const storyboardRequestPayloadSchemas = {
   'project.updateContract': projectUpdateContractRequestPayloadSchema,
   'studio.chat.send': studioChatSendRequestPayloadSchema,
   'studio.chat.cancel': studioChatCancelRequestPayloadSchema,
+  'studio.card.update': studioCardUpdateRequestPayloadSchema,
   'studio.proposal.preview': studioProposalPreviewRequestPayloadSchema,
   'studio.proposal.apply': studioProposalApplyRequestPayloadSchema,
   'studio.followUp.list': studioFollowUpListRequestPayloadSchema,
@@ -188,6 +191,7 @@ export const storyboardResponsePayloadSchemas = {
   'project.updateContract': projectUpdateContractResponsePayloadSchema,
   'studio.chat.send': studioChatSendResponsePayloadSchema,
   'studio.chat.cancel': studioChatCancelResponsePayloadSchema,
+  'studio.card.update': studioCardUpdateResponsePayloadSchema,
   'studio.proposal.preview': studioProposalPreviewResponsePayloadSchema,
   'studio.proposal.apply': studioProposalApplyResponsePayloadSchema,
   'studio.followUp.list': studioFollowUpListResponsePayloadSchema,

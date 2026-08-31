@@ -20,14 +20,15 @@ describe('slashToken', () => {
 });
 
 describe('toolCandidates', () => {
-  it('lists the draft tools while a draft is open', () => {
-    expect(toolCandidates('', target('draft'))).toHaveLength(5);
+  it('lists the draft tools and the wizard while a draft is open', () => {
+    expect(toolCandidates('', target('draft'))).toHaveLength(6);
   });
 
   it('lists the card tools while a card is open', () => {
     expect(toolCandidates('', target('character')).map((entry) => entry.tool)).toEqual([
       'collectFromDrafts',
       'cardAudit',
+      'updateCard',
       'relationCheck',
     ]);
   });
@@ -35,6 +36,7 @@ describe('toolCandidates', () => {
   it('keeps collect away from a scene card', () => {
     expect(toolCandidates('', target('scene')).map((entry) => entry.tool)).toEqual([
       'cardAudit',
+      'updateCard',
       'relationCheck',
     ]);
   });
@@ -58,21 +60,24 @@ describe('toolCandidates', () => {
 });
 
 describe('isToolTarget', () => {
-  it('offers tools on drafts and every card kind', () => {
+  it('keeps the slash menu live everywhere so the create wizard is reachable', () => {
     expect(isToolTarget(target('draft'))).toBe(true);
-    expect(isToolTarget(target('scene'))).toBe(true);
-    expect(isToolTarget(target('character'))).toBe(true);
-    expect(isToolTarget(target('background'))).toBe(true);
-    expect(isToolTarget(target('none'))).toBe(false);
+    expect(isToolTarget(target('none'))).toBe(true);
+  });
+
+  it('offers only the wizard when nothing is open', () => {
+    expect(toolCandidates('', target('none')).map((entry) => entry.tool)).toEqual(['updateCard']);
   });
 });
 
 describe('findTool', () => {
-  it('gives every tool a default instruction so a bare pin can be sent', () => {
-    for (const entry of [
+  it('gives every agent tool a default instruction so a bare pin can be sent', () => {
+    const entries = [
       ...toolCandidates('', target('draft')),
       ...toolCandidates('', target('character')),
-    ]) {
+    ].filter((entry) => entry.tool !== 'updateCard');
+
+    for (const entry of entries) {
       expect(findTool(entry.tool)?.defaultInstruction.trim().length).toBeGreaterThan(0);
     }
   });
