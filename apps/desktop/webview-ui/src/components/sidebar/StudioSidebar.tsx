@@ -1,47 +1,23 @@
-import {
-  Check,
-  ChevronRight,
-  CircleAlert,
-  FileText,
-  History,
-  MapPin,
-  MessagesSquare,
-  Send,
-  Sparkles,
-  SquarePen,
-  User,
-} from 'lucide-react';
+import { FileText, History, Loader2, MapPin, Send, SquarePen, User, X } from 'lucide-react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   createRequestId,
-  normalizeRestoredTurns,
+  parseChatSendPayload,
+  parseProgressPayload,
+  parseProposalApplyPayload,
   parseSessionListPayload,
   parseSessionLoadPayload,
   parseStagePayload,
   parseStudioTarget,
 } from '@webview/lib/messaging';
-import {
-  actionIcon,
-  actionLabel,
-  actionRationale,
-  parseSlashInput,
-  slashCandidates,
-  slashMenuState,
-} from '@webview/lib/studioCommands';
-import {
-  interpretStudioInstruction,
-  recommendedStudioActions,
-  type StudioClarifyReason,
-  type StudioIntent,
-} from '@webview/lib/studioIntent';
 import { stageFacts, stageTitle } from '@webview/lib/studioStage';
 import type {
   StoryboardEventMessage,
-  StudioActionId,
+  StudioChatStage,
   StudioChatTurn,
   StudioInitialData,
-  StudioProposalStatus,
+  StudioProposalTurn,
   StudioSessionSummary,
   StudioStage,
   StudioTarget,
@@ -50,8 +26,8 @@ import { Button } from '../ui/Button';
 import { Pill } from '../ui/Pill';
 import { SectionHeader } from '../ui/SectionHeader';
 import { sbInputClass } from '../ui/formClasses';
-import { SlashCommandMenu } from './SlashCommandMenu';
 import { StudioSessionList } from './StudioSessionList';
+import { StudioTurnView, type StudioProposalActions } from './StudioTurnView';
 
 type StudioResponseMessage = {
   readonly type: 'response';
@@ -60,6 +36,9 @@ type StudioResponseMessage = {
   readonly error?: { readonly message?: string };
   readonly payload?: unknown;
 };
+
+const stageLabelClass =
+  'm-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted';
 
 export function StudioSidebar({
   initialData,
@@ -72,61 +51,86 @@ export function StudioSidebar({
   const [createdAt, setCreatedAt] = useState(
     () => initialData.session?.createdAt ?? new Date().toISOString(),
   );
-  const [turns, setTurns] = useState<readonly StudioChatTurn[]>(() =>
-    initialData.session ? normalizeRestoredTurns(initialData.session.turns) : [],
+  const [turns, setTurns] = useState<readonly StudioChatTurn[]>(
+    () => initialData.session?.turns ?? [],
   );
   const [view, setView] = useState<'chat' | 'history'>('chat');
   const [sessions, setSessions] = useState<readonly StudioSessionSummary[]>([]);
   const [stage, setStage] = useState<StudioStage | undefined>(undefined);
   const [stageToken, setStageToken] = useState(0);
+  const [chatStage, setChatStage] = useState<StudioChatStage>('idle');
   const [draft, setDraft] = useState('');
   const logEndRef = useRef<HTMLDivElement>(null);
   const listRequestIdRef = useRef<string | undefined>(undefined);
   const loadRequestIdRef = useRef<string | undefined>(undefined);
   const stageRequestIdRef = useRef<string | undefined>(undefined);
-  const runningRequestIdsRef = useRef<Set<string>>(new Set());
+  const sendRequestIdRef = useRef<string | undefined>(undefined);
+  const applyRequestsRef = useRef<Map<string, string>>(new Map());
+
+  const post = (method: string, payload: unknown, id = createRequestId()): string => {
+    vscodeApi?.postMessage({ protocolVersion: '1.0.0', type: 'request', id, method, payload });
+    return id;
+  };
 
   useEffect(() => {
+    const handleResponse = (data: StudioResponseMessage): void => {
+      if (data.id === listRequestIdRef.current) {
+        listRequestIdRef.current = undefined;
+        setSessions(parseSessionListPayload(data.payload));
+        return;
+      }
+
+      if (data.id === loadRequestIdRef.current) {
+        loadRequestIdRef.current = undefined;
+        const snapshot = parseSessionLoadPayload(data.payload);
+        if (snapshot) {
+          setSessionId(snapshot.id);
+          setCreatedAt(snapshot.createdAt);
+          setTurns(snapshot.turns);
+          setView('chat');
+        }
+        return;
+      }
+
+      if (data.id === stageRequestIdRef.current) {
+        stageRequestIdRef.current = undefined;
+        setStage(parseStagePayload(data.payload));
+        return;
+      }
+
+      if (data.id === sendRequestIdRef.current) {
+        sendRequestIdRef.current = undefined;
+        setChatStage('idle');
+        setTurns((prev) => [...prev, ...parseChatSendPayload(data.payload)]);
+        return;
+      }
+
+      const settledTurnId = applyRequestsRef.current.get(data.id);
+
+      if (settledTurnId !== undefined) {
+        applyRequestsRef.current.delete(data.id);
+        settleProposal(setTurns, settledTurnId, parseProposalApplyPayload(data.payload));
+        setStageToken((token) => token + 1);
+      }
+    };
+
     const handleMessage = (
       event: MessageEvent<StoryboardEventMessage | StudioResponseMessage>,
     ): void => {
       const data = event.data;
 
       if (data.type === 'response' && 'id' in data) {
-        if (data.id === listRequestIdRef.current) {
-          listRequestIdRef.current = undefined;
-          setSessions(parseSessionListPayload(data.payload));
-          return;
-        }
-
-        if (data.id === loadRequestIdRef.current) {
-          loadRequestIdRef.current = undefined;
-          const snapshot = parseSessionLoadPayload(data.payload);
-          if (snapshot) {
-            setSessionId(snapshot.id);
-            setCreatedAt(snapshot.createdAt);
-            setTurns(normalizeRestoredTurns(snapshot.turns));
-            setView('chat');
-          }
-          return;
-        }
-
-        if (data.id === stageRequestIdRef.current) {
-          stageRequestIdRef.current = undefined;
-          setStage(parseStagePayload(data.payload));
-          return;
-        }
-
-        if (runningRequestIdsRef.current.delete(data.id)) {
-          settleProposal(setTurns, data);
-          setStageToken((token) => token + 1);
-        }
-
+        handleResponse(data);
         return;
       }
 
       if (data.type === 'event' && data.method === 'studio.targetChanged') {
         setTarget(parseStudioTarget(data.payload));
+        return;
+      }
+
+      if (data.type === 'event' && data.method === 'studio.chat.progress') {
+        setChatStage(parseProgressPayload(data.payload));
       }
     };
 
@@ -135,49 +139,39 @@ export function StudioSidebar({
   }, []);
 
   useEffect(() => {
-    if (target.kind === 'none' || !target.sceneUri) {
+    if (!target.entity) {
       setStage(undefined);
       return;
     }
 
-    const requestId = createRequestId();
-    stageRequestIdRef.current = requestId;
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: requestId,
-      method: 'studio.stage',
-      payload: {},
-    });
-  }, [target.kind, target.sceneUri, stageToken]);
+    stageRequestIdRef.current = post('studio.stage', {});
+  }, [target.entity?.kind, target.entity?.key, stageToken]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView?.({ block: 'end' });
-  }, [turns]);
+  }, [turns, chatStage]);
 
   useEffect(() => {
     if (turns.length === 0 || !target.entity) {
       return;
     }
 
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: createRequestId(),
-      method: 'studio.session.save',
-      payload: {
-        id: sessionId,
-        entity: target.entity,
-        createdAt,
-        hasAppliedChanges: turns.some(
-          (turn) => turn.role === 'assistant' && turn.kind === 'proposal' && turn.status === 'done',
-        ),
-        turns,
-      },
+    post('studio.session.save', {
+      id: sessionId,
+      entity: target.entity,
+      createdAt,
+      hasAppliedChanges: turns.some(
+        (turn) => turn.role === 'assistant' && turn.kind === 'proposal' && turn.status === 'applied',
+      ),
+      turns,
     });
   }, [turns]);
 
   const startNewSession = (): void => {
+    // NOTE: an in-flight reply belongs to the conversation being left behind, so its request is
+    // dropped here or the composer would stay locked on the new one.
+    sendRequestIdRef.current = undefined;
+    setChatStage('idle');
     setSessionId(createRequestId());
     setCreatedAt(new Date().toISOString());
     setTurns([]);
@@ -189,136 +183,65 @@ export function StudioSidebar({
       return;
     }
 
-    const requestId = createRequestId();
-    listRequestIdRef.current = requestId;
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: requestId,
-      method: 'studio.session.list',
-      payload: { entity: target.entity },
-    });
+    listRequestIdRef.current = post('studio.session.list', { entity: target.entity });
     setView('history');
   };
 
   const openSession = (id: string): void => {
-    if (!target.entity) {
+    if (target.entity) {
+      loadRequestIdRef.current = post('studio.session.load', { entity: target.entity, id });
+    }
+  };
+
+  const sendInstruction = (text: string): void => {
+    const instruction = text.trim();
+
+    if (instruction.length === 0 || !target.entity || chatStage !== 'idle') {
       return;
     }
 
-    const requestId = createRequestId();
-    loadRequestIdRef.current = requestId;
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: requestId,
-      method: 'studio.session.load',
-      payload: { entity: target.entity, id },
+    const history = [...turns];
+    setTurns([...history, { id: createRequestId(), role: 'user', text: instruction }]);
+    setChatStage('thinking');
+    sendRequestIdRef.current = post('studio.chat.send', {
+      entity: target.entity,
+      instruction,
+      history,
     });
   };
 
-  const postRunAction = (requestId: string, action: StudioActionId, instruction?: string): void => {
-    runningRequestIdsRef.current.add(requestId);
-    vscodeApi?.postMessage({
-      protocolVersion: '1.0.0',
-      type: 'request',
-      id: requestId,
-      method: 'studio.runAction',
-      payload: { action, instruction },
-    });
+  const cancelChat = (): void => {
+    sendRequestIdRef.current = undefined;
+    setChatStage('idle');
+    post('studio.chat.cancel', {});
   };
 
-  const appendTurnsForIntent = (text: string, intent: StudioIntent, autoRun: boolean): void => {
-    const userTurn: StudioChatTurn = { id: createRequestId(), role: 'user', text };
+  const proposalActions: StudioProposalActions = {
+    onPreview: (turn) => {
+      if (target.entity) {
+        post('studio.proposal.preview', { entity: target.entity, turn });
+      }
+    },
+    onApply: (turn: StudioProposalTurn) => {
+      if (!target.entity) {
+        return;
+      }
 
-    if (intent.kind === 'clarify') {
-      const clarifyTurn: StudioChatTurn = {
-        id: createRequestId(),
-        role: 'assistant',
-        kind: 'clarify',
-        reason: intent.reason,
-        suggestions: intent.suggestions,
-      };
-      setTurns((prev) => [...prev, userTurn, clarifyTurn]);
-      return;
-    }
-
-    if (!autoRun) {
-      const proposalTurn: StudioChatTurn = {
-        id: createRequestId(),
-        role: 'assistant',
-        kind: 'proposal',
-        action: intent.action,
-        instruction: intent.instruction,
-        status: 'pending',
-      };
-      setTurns((prev) => [...prev, userTurn, proposalTurn]);
-      return;
-    }
-
-    const requestId = createRequestId();
-    const proposalTurn: StudioChatTurn = {
-      id: createRequestId(),
-      role: 'assistant',
-      kind: 'proposal',
-      action: intent.action,
-      instruction: intent.instruction,
-      status: 'running',
-      requestId,
-    };
-    setTurns((prev) => [...prev, userTurn, proposalTurn]);
-    postRunAction(requestId, intent.action, intent.instruction);
-  };
-
-  const proposeAction = (action: StudioActionId): void => {
-    const userTurn: StudioChatTurn = { id: createRequestId(), role: 'user', text: actionLabel(action) };
-    const assistantTurn: StudioChatTurn = {
-      id: createRequestId(),
-      role: 'assistant',
-      kind: 'proposal',
-      action,
-      status: 'pending',
-    };
-    setTurns((prev) => [...prev, userTurn, assistantTurn]);
-  };
-
-  const submitDraft = (): void => {
-    const text = draft.trim();
-    if (text.length === 0 || target.kind === 'none') {
-      return;
-    }
-
-    const slashIntent = parseSlashInput(text, target);
-    const intent = slashIntent ?? interpretStudioInstruction(text, target);
-    appendTurnsForIntent(text, intent, slashIntent?.kind === 'action');
-    setDraft('');
-  };
-
-  const approveProposal = (turnId: string, action: StudioActionId, instruction?: string): void => {
-    const requestId = createRequestId();
-
-    setTurns((prev) =>
-      prev.map((turn) =>
-        turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
-          ? { ...turn, status: 'running', requestId }
-          : turn,
-      ),
-    );
-
-    postRunAction(requestId, action, instruction);
-  };
-
-  const cancelProposal = (turnId: string): void => {
-    setTurns((prev) =>
-      prev.map((turn) =>
-        turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
-          ? { ...turn, status: 'cancelled' }
-          : turn,
-      ),
-    );
+      const requestId = createRequestId();
+      applyRequestsRef.current.set(requestId, turn.id);
+      post('studio.proposal.apply', { entity: target.entity, turn }, requestId);
+    },
+    onReject: (turn) => {
+      setTurns((prev) =>
+        prev.map((candidate) =>
+          candidate.id === turn.id ? { ...turn, status: 'rejected' as const } : candidate,
+        ),
+      );
+    },
   };
 
   const isHistoryView = view === 'history';
+  const canChat = target.entity !== undefined && target.entity.kind !== 'project';
 
   return (
     <main className="flex min-h-screen flex-col gap-3 bg-sb-bg-sidebar p-3">
@@ -338,26 +261,25 @@ export function StudioSidebar({
       <div className="flex min-h-0 flex-1 flex-col gap-3">
         {isHistoryView ? (
           <StudioSessionList sessions={sessions} onOpen={openSession} />
-        ) : target.kind === 'none' ? (
-          <StudioWelcome />
+        ) : !canChat ? (
+          <StudioWelcome target={target} />
         ) : (
           <>
             <StageCard target={target} stage={stage} />
-            {turns.length === 0 ? (
-              <RecommendationList target={target} onPick={proposeAction} />
-            ) : (
-              <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
-                {turns.map((turn) => (
-                  <li key={turn.id}>
-                    <TurnView
-                      turn={turn}
-                      onApprove={approveProposal}
-                      onCancel={cancelProposal}
-                      onPick={proposeAction}
-                    />
-                  </li>
-                ))}
-              </ol>
+            {turns.length === 0 ? <StudioIntro /> : null}
+            <ol className="m-0 flex list-none flex-col gap-3 p-0" aria-label="Studio 대화">
+              {turns.map((turn) => (
+                <li key={turn.id}>
+                  <StudioTurnView
+                    turn={turn}
+                    onAnswer={sendInstruction}
+                    proposalActions={proposalActions}
+                  />
+                </li>
+              ))}
+            </ol>
+            {chatStage === 'idle' ? null : (
+              <ProgressIndicator stage={chatStage} onCancel={cancelChat} />
             )}
           </>
         )}
@@ -367,14 +289,47 @@ export function StudioSidebar({
       {isHistoryView ? null : (
         <Composer
           value={draft}
-          target={target}
-          stage={stage}
+          isDisabled={!canChat || chatStage !== 'idle'}
+          placeholder={composerPlaceholder(target, chatStage)}
           onChange={setDraft}
-          onSubmit={submitDraft}
+          onSubmit={() => {
+            sendInstruction(draft);
+            setDraft('');
+          }}
         />
       )}
     </main>
   );
+}
+
+function settleProposal(
+  setTurns: React.Dispatch<React.SetStateAction<readonly StudioChatTurn[]>>,
+  turnId: string,
+  result: { readonly status: 'applied' | 'failed'; readonly message: string },
+): void {
+  setTurns((prev) => {
+    const settled = prev.map((turn) =>
+      turn.id === turnId && turn.role === 'assistant' && turn.kind === 'proposal'
+        ? {
+            ...turn,
+            status: result.status,
+            ...(result.status === 'failed' ? { errorMessage: result.message } : {}),
+          }
+        : turn,
+    );
+
+    return result.status === 'applied'
+      ? [
+          ...settled,
+          {
+            id: createRequestId(),
+            role: 'assistant' as const,
+            kind: 'result' as const,
+            message: result.message,
+          },
+        ]
+      : settled;
+  });
 }
 
 function HeaderButton({
@@ -403,36 +358,27 @@ function HeaderButton({
   );
 }
 
-function settleProposal(
-  setTurns: React.Dispatch<React.SetStateAction<readonly StudioChatTurn[]>>,
-  response: StudioResponseMessage,
-): void {
-  setTurns((prev) =>
-    prev.map((turn) => {
-      if (turn.role !== 'assistant' || turn.kind !== 'proposal' || turn.requestId !== response.id) {
-        return turn;
-      }
-
-      return response.ok === false
-        ? { ...turn, status: 'failed', errorMessage: response.error?.message }
-        : { ...turn, status: 'done' };
-    }),
-  );
-}
-
-function StudioWelcome(): React.ReactElement {
+function StudioWelcome({ target }: { readonly target: StudioTarget }): React.ReactElement {
   return (
     <div className="flex flex-col items-start gap-3 rounded-lg border border-sb-border bg-sb-bg-sidebar/70 p-4">
       <FileText className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
       <p className="m-0 text-sm leading-normal text-sb-fg-muted">
-        Storyboard 프로젝트를 열면 이야기 완결과 씬 기반 카드 구성을 실행할 수 있습니다.
+        {target.kind === 'none'
+          ? 'Storyboard 프로젝트를 열면 카드와 씬을 대화로 다듬을 수 있습니다.'
+          : '인물·배경 카드나 씬·초안 파일을 열면 그 대상과 대화를 시작할 수 있습니다.'}
       </p>
     </div>
   );
 }
 
-const stageLabelClass =
-  'm-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted';
+function StudioIntro(): React.ReactElement {
+  return (
+    <p className="m-0 text-xs leading-relaxed text-sb-fg-muted">
+      고치고 싶은 내용을 말로 적어 주세요. 모호하면 되묻고, 정해지면 수정안을 제안합니다. 적용은
+      승인해야 이뤄집니다.
+    </p>
+  );
+}
 
 function StageCard({
   target,
@@ -493,242 +439,44 @@ function StagePills({ stage }: { readonly stage?: StudioStage }): React.ReactEle
   );
 }
 
-function RecommendationList({
-  target,
-  onPick,
-}: {
-  readonly target: StudioTarget;
-  readonly onPick: (action: StudioActionId) => void;
-}): React.ReactElement | null {
-  const actions = recommendedStudioActions(target);
-
-  if (actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <section aria-label="다음으로 추천" className="flex flex-col gap-1.5">
-      <p className={stageLabelClass}>다음으로 추천</p>
-      {actions.map((action) => {
-        const ActionIcon = actionIcon(action);
-        return (
-          <button
-            key={action}
-            type="button"
-            className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-sb-border bg-sb-bg-widget px-3 py-2 text-left outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
-            onClick={() => onPick(action)}
-          >
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-sb-fg">
-                <ActionIcon className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
-                {actionLabel(action)}
-              </span>
-              <span className="text-xs text-sb-fg-muted">{actionRationale(action)}</span>
-            </span>
-            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
-          </button>
-        );
-      })}
-    </section>
-  );
-}
-
-function TurnView({
-  turn,
-  onApprove,
-  onCancel,
-  onPick,
-}: {
-  readonly turn: StudioChatTurn;
-  readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void;
-  readonly onCancel: (turnId: string) => void;
-  readonly onPick: (action: StudioActionId) => void;
-}): React.ReactElement {
-  if (turn.role === 'user') {
-    return (
-      <div className="ml-auto max-w-[92%] rounded-lg rounded-br-sm border border-sb-border bg-sb-bg-list-hover px-3 py-2 text-sm text-sb-fg">
-        {turn.text}
-      </div>
-    );
-  }
-
-  if (turn.kind === 'clarify') {
-    return (
-      <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2">
-        <p className="m-0 flex items-center gap-1.5 text-sm text-sb-fg">
-          <Sparkles className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
-          {clarifyMessage(turn.reason)}
-        </p>
-        <SuggestionChips actions={turn.suggestions} onPick={onPick} />
-      </div>
-    );
-  }
-
-  return <ProposalCard turn={turn} onApprove={onApprove} onCancel={onCancel} />;
-}
-
-function ProposalCard({
-  turn,
-  onApprove,
+function ProgressIndicator({
+  stage,
   onCancel,
 }: {
-  readonly turn: Extract<StudioChatTurn, { readonly kind: 'proposal' }>;
-  readonly onApprove: (turnId: string, action: StudioActionId, instruction?: string) => void;
-  readonly onCancel: (turnId: string) => void;
+  readonly stage: StudioChatStage;
+  readonly onCancel: () => void;
 }): React.ReactElement {
-  const ActionIcon = actionIcon(turn.action);
-
   return (
-    <div className="flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2">
-      <div className="flex flex-col gap-1">
-        <p className="m-0 flex items-center gap-1.5 text-sm font-semibold text-sb-fg">
-          <ActionIcon className="h-3.5 w-3.5 shrink-0 text-sb-fg-muted" aria-hidden />
-          {actionLabel(turn.action)}
-        </p>
-        {turn.instruction ? (
-          <p className="m-0 text-sm text-sb-fg-muted">“{turn.instruction}”</p>
-        ) : null}
-        {showsDiff(turn.action) ? (
-          <p className="m-0 text-xs text-sb-fg-muted">적용 전 diff로 변경을 확인할 수 있어요.</p>
-        ) : null}
-      </div>
-
-      {turn.status === 'pending' ? (
-        <div className="flex flex-wrap gap-1.5">
-          <Button onClick={() => onApprove(turn.id, turn.action, turn.instruction)}>승인</Button>
-          <Button variant="secondary" onClick={() => onCancel(turn.id)}>
-            취소
-          </Button>
-        </div>
-      ) : (
-        <ProposalStatusLine status={turn.status} errorMessage={turn.errorMessage} />
-      )}
-    </div>
-  );
-}
-
-function ProposalStatusLine({
-  status,
-  errorMessage,
-}: {
-  readonly status: StudioProposalStatus;
-  readonly errorMessage?: string;
-}): React.ReactElement {
-  if (status === 'running') {
-    return <p className="m-0 text-sm text-sb-fg-muted">실행 중…</p>;
-  }
-
-  if (status === 'done') {
-    return (
-      <p className="m-0 flex items-center gap-1.5 text-sm text-emerald-500">
-        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        완료
-      </p>
-    );
-  }
-
-  if (status === 'failed') {
-    return (
-      <p className="m-0 flex items-center gap-1.5 text-sm text-sb-fg-error">
-        <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        실패{errorMessage ? ` · ${errorMessage}` : ''}
-      </p>
-    );
-  }
-
-  return <p className="m-0 text-sm text-sb-fg-muted">취소됨</p>;
-}
-
-function SuggestionChips({
-  actions,
-  onPick,
-}: {
-  readonly actions: readonly StudioActionId[];
-  readonly onPick: (action: StudioActionId) => void;
-}): React.ReactElement | null {
-  if (actions.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {actions.map((action) => {
-        const ActionIcon = actionIcon(action);
-        return (
-          <button
-            key={action}
-            type="button"
-            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-sb-border bg-sb-bg-widget px-2.5 py-1 text-xs text-sb-fg outline-none hover:border-sb-border-focus focus-visible:ring-1 focus-visible:ring-sb-border-focus"
-            onClick={() => onPick(action)}
-          >
-            <ActionIcon className="h-3 w-3 shrink-0 text-sb-fg-muted" aria-hidden />
-            {actionLabel(action)}
-          </button>
-        );
-      })}
+    <div className="flex items-center gap-2" role="status">
+      <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-sb-fg-muted" aria-hidden />
+      <span className="text-sm text-sb-fg-muted">{chatStageLabel(stage)}</span>
+      <button
+        type="button"
+        aria-label="중단"
+        className="inline-flex cursor-pointer items-center gap-1 rounded border border-sb-border px-1.5 py-0.5 text-xs text-sb-fg-muted outline-none hover:border-sb-border-focus hover:text-sb-fg focus-visible:ring-1 focus-visible:ring-sb-border-focus"
+        onClick={onCancel}
+      >
+        <X className="h-3 w-3" aria-hidden />
+        중단
+      </button>
     </div>
   );
 }
 
 function Composer({
   value,
-  target,
-  stage,
+  isDisabled,
+  placeholder,
   onChange,
   onSubmit,
 }: {
   readonly value: string;
-  readonly target: StudioTarget;
-  readonly stage?: StudioStage;
+  readonly isDisabled: boolean;
+  readonly placeholder: string;
   readonly onChange: (value: string) => void;
   readonly onSubmit: () => void;
 }): React.ReactElement {
-  const isDisabled = target.kind === 'none';
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isDismissed, setIsDismissed] = useState(false);
-
-  const menu = isDisabled ? undefined : slashMenuState(value);
-  const candidates = menu ? slashCandidates(menu.token, target) : [];
-  const isMenuOpen = !isDismissed && candidates.length > 0;
-
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [menu?.token, candidates.length]);
-
-  const changeValue = (next: string): void => {
-    setIsDismissed(false);
-    onChange(next);
-  };
-
-  const selectCandidate = (command: string): void => {
-    setIsDismissed(false);
-    onChange(`/${command} `);
-  };
-
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (isMenuOpen) {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        setActiveIndex((index) => (index + 1) % candidates.length);
-        return;
-      }
-      if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        setActiveIndex((index) => (index - 1 + candidates.length) % candidates.length);
-        return;
-      }
-      if (event.key === 'Enter' || event.key === 'Tab') {
-        event.preventDefault();
-        selectCandidate(candidates[activeIndex].command);
-        return;
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        setIsDismissed(true);
-        return;
-      }
-    }
-
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       onSubmit();
@@ -736,71 +484,51 @@ function Composer({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {isDisabled ? null : (
-        <p className="m-0 text-xs text-sb-fg-muted">
-          지시는 «{stageTitle(target, stage)}»를 대상으로 실행됩니다.
-        </p>
-      )}
-      <div className="flex items-end gap-2">
-        <div className="relative flex-1">
-          {isMenuOpen ? (
-            <SlashCommandMenu
-              items={candidates}
-              activeIndex={activeIndex}
-              onSelect={selectCandidate}
-              onHover={setActiveIndex}
-            />
-          ) : null}
-          <textarea
-            className={`${sbInputClass} min-h-12 w-full resize-y`}
-            rows={2}
-            disabled={isDisabled}
-            role="textbox"
-            aria-controls={isMenuOpen ? 'studio-slash-menu' : undefined}
-            aria-activedescendant={isMenuOpen ? `studio-slash-option-${activeIndex}` : undefined}
-            placeholder={
-              isDisabled
-                ? 'Storyboard 프로젝트를 먼저 열어 주세요.'
-                : '예: 완결해줘, 씬에서 카드 구성해줘, 다시 생성해줘 (/ 명령)'
-            }
-            value={value}
-            onChange={(event) => changeValue(event.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-        </div>
-        <Button
-          aria-label="보내기"
-          disabled={isDisabled || value.trim().length === 0}
-          onClick={onSubmit}
-        >
-          <Send className="h-4 w-4" aria-hidden />
-        </Button>
-      </div>
+    <div className="flex items-end gap-2">
+      <textarea
+        className={`${sbInputClass} min-h-12 flex-1 resize-y`}
+        rows={2}
+        disabled={isDisabled}
+        role="textbox"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onKeyDown={handleKeyDown}
+      />
+      <Button
+        aria-label="보내기"
+        disabled={isDisabled || value.trim().length === 0}
+        onClick={onSubmit}
+      >
+        <Send className="h-4 w-4" aria-hidden />
+      </Button>
     </div>
   );
 }
 
-function clarifyMessage(reason: StudioClarifyReason): string {
-  switch (reason) {
-    case 'no-target':
-      return '씬(scene/*.txt) 또는 초안(draft/*.md) 파일을 먼저 열어 주세요.';
-    case 'needs-selection':
-      return '본문에서 영역을 먼저 선택한 뒤 다시 시도해 주세요.';
-    case 'needs-draft':
-      return '먼저 초안을 생성한 뒤 다시 시도해 주세요.';
-    case 'ambiguous':
-      return '무엇을 할지 이해하지 못했어요. 아래에서 골라 주세요.';
+function chatStageLabel(stage: StudioChatStage): string {
+  switch (stage) {
+    case 'thinking':
+      return '생각하는 중…';
+    case 'looking-up':
+      return '관련 자료를 찾는 중…';
+    case 'validating':
+      return '정합성을 확인하는 중…';
+    case 'idle':
+      return '';
   }
 }
 
-function showsDiff(action: StudioActionId): boolean {
-  return (
-    action === 'augment' ||
-    action === 'augmentSelection' ||
-    action === 'editSelection' ||
-    action === 'condense' ||
-    action === 'completeStory' ||
-    action === 'buildCardsFromScenes'
-  );
+function composerPlaceholder(target: StudioTarget, stage: StudioChatStage): string {
+  if (stage !== 'idle') {
+    return '응답을 기다리는 중…';
+  }
+
+  if (!target.entity || target.entity.kind === 'project') {
+    return '카드나 씬 파일을 먼저 열어 주세요.';
+  }
+
+  return target.entity.kind === 'scene'
+    ? '예: 도입부를 더 긴장감 있게 고쳐줘'
+    : '예: 화재 트라우마를 과거사에 더해줘';
 }

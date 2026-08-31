@@ -387,6 +387,11 @@
           "default": false,
           "description": "Before generating a draft, Storyboard fills any missing scene grounding facts (incident, place, relation, time) and stores them in the scene frontmatter. Off by default, so the proposal is shown for review first; turn on to accept proposals automatically and keep generation one-click."
         },
+        "storyboard.studio.validation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Before showing a Studio chat proposal, run an extra AI pass that checks it against the related cards and scenes and flags conflicts. Turn off to skip that pass and save a request per proposal."
+        },
         "storyboard.draft.keepHistory": {
           "type": "boolean",
           "default": false,

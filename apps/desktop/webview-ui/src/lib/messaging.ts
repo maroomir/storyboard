@@ -6,6 +6,7 @@ import type {
   SidebarScenesInitialData,
   StudioCardStage,
   StudioCardStageRelation,
+  StudioChatStage,
   StudioChatTurn,
   StudioEntity,
   StudioInitialData,
@@ -287,24 +288,40 @@ function isStudioSessionSummary(value: unknown): value is StudioSessionSummary {
   )
 }
 
-export function normalizeRestoredTurns(
-  turns: readonly StudioChatTurn[]
-): readonly StudioChatTurn[] {
-  return turns.map((turn) => {
-    if (turn.role !== "assistant" || turn.kind !== "proposal") {
-      return turn
-    }
+export function parseChatSendPayload(payload: unknown): readonly StudioChatTurn[] {
+  if (!payload || typeof payload !== "object") {
+    return []
+  }
 
-    if (turn.status === "pending") {
-      return { ...turn, status: "cancelled", requestId: undefined }
-    }
+  const turns = (payload as { turns?: unknown }).turns
 
-    if (turn.status === "running") {
-      return { ...turn, status: "failed", requestId: undefined, errorMessage: "중단됨" }
-    }
+  return Array.isArray(turns) ? (turns as readonly StudioChatTurn[]) : []
+}
 
-    return turn
-  })
+export function parseProposalApplyPayload(payload: unknown): {
+  readonly status: "applied" | "failed"
+  readonly message: string
+} {
+  const candidate = (payload && typeof payload === "object" ? payload : {}) as {
+    status?: unknown
+    message?: unknown
+  }
+
+  const message = typeof candidate.message === "string" ? candidate.message : "적용하지 못했습니다"
+
+  return candidate.status === "applied"
+    ? { status: "applied", message }
+    : { status: "failed", message }
+}
+
+export function parseProgressPayload(payload: unknown): StudioChatStage {
+  const stage = (payload && typeof payload === "object" ? payload : {}) as { stage?: unknown }
+
+  return stage.stage === "thinking" ||
+    stage.stage === "looking-up" ||
+    stage.stage === "validating"
+    ? stage.stage
+    : "idle"
 }
 
 function isCardEditorInitialData(value: unknown): value is CardEditorInitialData {

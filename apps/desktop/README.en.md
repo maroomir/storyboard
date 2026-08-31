@@ -19,7 +19,7 @@ Korean README: [`README.md`](README.md)
 - Carry a story state ledger across scenes (`.storyboard/cache/storyState.md`): established facts, character relations and speech, revealed information, and live motifs accumulate with their scene order and feed the next scene's prompt and continuity check.
 - Gate canon facts by reveal time (`revealFrom`), separate from when a fact becomes true (`validFrom`), so a third-act twist is not leaked into early scenes.
 - Bound a scene with `endState` and `povCharacter` on the scene card, so one scene does not run into the next scene's territory or cross several characters' interiority.
-- Drive draft/scene actions by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe a task, review the proposed action, and approve to run it (generate, regenerate, check, edit).
+- Open a character/background card or a scene/draft and edit it by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe the change, answer a follow-up question when the agent needs one, review the proposed patch with its consistency verdict as a diff, and approve to apply it. Conversations are stored per entity so you can pick one up later.
 - Keep previous-draft history (`storyboard.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
 - Insert scene-break separators (`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.

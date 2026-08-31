@@ -382,7 +382,7 @@ describe("storyboard messaging protocol", () => {
     ).toThrow()
   })
 
-  it("strips the transient requestId from persisted proposal turns", () => {
+  it("keeps a proposal turn with its patch, baseline and verdict", () => {
     const request = parseStoryboardRequestMessage({
       protocolVersion: storyboardMessageProtocolVersion,
       type: "request",
@@ -390,17 +390,19 @@ describe("storyboard messaging protocol", () => {
       method: "studio.session.save",
       payload: {
         id: "11111111-1111-1111-1111-111111111111",
-        entity: { kind: "scene", key: "01-intro" },
+        entity: { kind: "character", key: "seorin" },
         createdAt: "2026-07-19T00:00:00.000Z",
-        hasAppliedChanges: false,
+        hasAppliedChanges: true,
         turns: [
           {
             id: "a1",
             role: "assistant",
             kind: "proposal",
-            action: "grammarCheck",
-            status: "running",
-            requestId: "should-be-stripped"
+            summary: "과거사 추가",
+            patch: { target: "card", changes: [{ field: "description", value: ["화재"] }] },
+            baselineHash: "hash-1",
+            validation: { state: "pass", warnings: [] },
+            status: "applied"
           }
         ]
       }
@@ -409,7 +411,36 @@ describe("storyboard messaging protocol", () => {
     if (request.method !== "studio.session.save") {
       throw new Error("Expected studio.session.save")
     }
-    expect(request.payload.turns[0]).not.toHaveProperty("requestId")
+    expect(request.payload.turns[0]).toMatchObject({ kind: "proposal", baselineHash: "hash-1" })
+  })
+
+  it("rejects a proposal turn with a backwards draft range", () => {
+    expect(() =>
+      parseStoryboardRequestMessage({
+        protocolVersion: storyboardMessageProtocolVersion,
+        type: "request",
+        id: "studio-save-4",
+        method: "studio.session.save",
+        payload: {
+          id: "11111111-1111-1111-1111-111111111111",
+          entity: { kind: "scene", key: "01-intro" },
+          createdAt: "2026-07-19T00:00:00.000Z",
+          hasAppliedChanges: false,
+          turns: [
+            {
+              id: "a1",
+              role: "assistant",
+              kind: "proposal",
+              summary: "구간 수정",
+              patch: { target: "draft", replacements: [] },
+              baselineHash: "hash-1",
+              validation: { state: "pass", warnings: [] },
+              status: "pending"
+            }
+          ]
+        }
+      })
+    ).toThrow()
   })
 
   it("parses studio.session.list and studio.session.load requests", () => {
