@@ -77,6 +77,29 @@ export interface CliContainerOptions {
   readonly workspacePath: string;
   readonly verbose: boolean;
   readonly version: string;
+  readonly provider?: string;
+  readonly model?: string;
+  readonly reviseMaxIterations?: number;
+}
+
+// `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
+// they are layered onto the config rather than threaded through every call.
+function configOverrides(options: CliContainerOptions): Record<string, unknown> {
+  const overrides: Record<string, unknown> = {};
+
+  if (options.provider !== undefined) {
+    overrides['defaultProvider'] = options.provider;
+
+    if (options.model !== undefined) {
+      overrides[`providers.${options.provider}.model`] = options.model;
+    }
+  }
+
+  if (options.reviseMaxIterations !== undefined) {
+    overrides['revise.maxIterations'] = options.reviseMaxIterations;
+  }
+
+  return overrides;
 }
 
 // The CLI's service graph. It mirrors the extension's platform module one-for-one: only the four
@@ -95,6 +118,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       createFileConfiguration(
         paths.configFile,
         `${workspaceRoot.fsPath}/.storyboard/cli.json`.replace('//', '/'),
+        configOverrides(options),
       ),
   });
   const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
