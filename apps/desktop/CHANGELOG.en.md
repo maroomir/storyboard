@@ -10,6 +10,25 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-31
+
+### Changed
+
+- **The Studio panel now works as a conversation with whatever you have open.** Open a character or background card, or a scene and its draft, and describe the change you want in plain language. Studio asks a follow-up question when the request is ambiguous and proposes an edit once it is clear. Every proposal shows what it changes and whether it conflicts with existing material, and nothing is written until you review the diff and approve it. The old slash commands and twelve action buttons are gone; pipeline work such as generating or regenerating drafts, grammar and continuity checks, story completion, and building cards from scenes still runs from the command palette and the view headers.
+- **Conversations are kept per target.** Opening a card or scene restores its last conversation, and the history icon lists earlier ones to resume. Switching files swaps the chat to that target. Conversations whose edits were applied are kept indefinitely; those that changed nothing age out after ten per target. Renaming a card carries its conversations along.
+
+### Added
+
+- **Character cards can record an arc.** You can ask Studio to lay out how a character changes across the story as stages with a summary and a scene reference in `arc`. State fields such as `description`, `traits`, `voice`, and `desire` stay limited to what is true throughout, so later plot no longer leaks into the generation of earlier scenes.
+- **Edits point at what else needs attention.** When a change to one file means another card or scene needs work, the proposal offers a button for that target; pressing it opens the file, starts a new conversation, and stages the suggested instruction in the composer. Approving the proposal records the work against that target, so it appears as a reminder the next time you open it.
+- **The consistency check can be turned off.** Disable `storyboard.studio.validation` to skip the extra AI pass that runs for each proposal.
+
+### Fixed
+
+- **A stray character at the end of a model response no longer discards the whole result.** This applies to every task that reads a JSON response.
+- **Files changed by another tool are no longer overwritten.** Approving a proposal is refused when the editor or the Telegram bot has changed the file in the meantime. Draft edits also verify the original text at the target range, so a drifted position is rejected rather than applied.
+- **Draft history is kept for chat edits too.** With `storyboard.draft.keepHistory` on, the previous draft is archived to `.draft` before a chat edit is applied.
+
 ## [0.7.1] - 2026-08-31
 
 ### Added
