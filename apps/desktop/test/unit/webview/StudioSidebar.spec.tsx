@@ -388,3 +388,110 @@ describe("StudioSidebar sessions", () => {
     })
   })
 })
+
+describe("StudioSidebar follow-ups", () => {
+  const followUpTurn: StudioChatTurn = {
+    id: "s1",
+    role: "assistant",
+    kind: "say",
+    message: "지호 카드도 손봐야 합니다.",
+    followUps: [
+      {
+        kind: "character",
+        key: "jiho",
+        reason: "관계 서술이 어긋납니다",
+        instruction: "서린과의 관계 서술을 맞춰줘",
+        targetFile: "character/jiho.card"
+      }
+    ]
+  }
+
+  it("offers a button for each follow-up the agent named", async () => {
+    const postMessage = renderStudio(characterTarget)
+    typeAndSend("배경을 바꿔줘")
+    respondTo(postMessage, "studio.chat.send", { turns: [followUpTurn] })
+
+    await waitFor(() => expect(screen.getByText("character/jiho.card")).toBeTruthy())
+    expect(screen.getByText("관계 서술이 어긋납니다")).toBeTruthy()
+  })
+
+  it("opens the follow-up file and stages its instruction without sending", async () => {
+    const postMessage = renderStudio(characterTarget)
+    typeAndSend("배경을 바꿔줘")
+    respondTo(postMessage, "studio.chat.send", { turns: [followUpTurn] })
+
+    await waitFor(() => expect(screen.getByText("character/jiho.card")).toBeTruthy())
+
+    const sentBefore = messagesByMethod(postMessage, "studio.chat.send").length
+    fireEvent.click(screen.getByText("character/jiho.card"))
+
+    const opened = messagesByMethod(postMessage, "studio.followUp.open").at(-1) as {
+      payload: { entity: unknown; targetFile: string }
+    }
+    expect(opened.payload).toEqual({
+      entity: { kind: "character", key: "jiho" },
+      targetFile: "character/jiho.card"
+    })
+
+    expect(messagesByMethod(postMessage, "studio.chat.send")).toHaveLength(sentBefore)
+    await waitFor(() =>
+      expect(screen.getByRole("textbox")).toHaveProperty("value", "서린과의 관계 서술을 맞춰줘")
+    )
+  })
+
+  it("asks the host for the ripples waiting on the open entity", () => {
+    const postMessage = renderStudio(characterTarget)
+
+    const listed = messagesByMethod(postMessage, "studio.followUp.list").at(-1) as {
+      payload: { entity: unknown }
+    }
+    expect(listed.payload.entity).toEqual({ kind: "character", key: "seorin" })
+  })
+
+  it("shows the waiting ripples and stages one when picked", async () => {
+    const postMessage = renderStudio(characterTarget)
+
+    respondTo(postMessage, "studio.followUp.list", {
+      followUps: [
+        {
+          id: "f1",
+          origin: { kind: "background", key: "subway" },
+          reason: "지하철 묘사가 바뀌었습니다",
+          instruction: "감정 서술을 맞춰줘"
+        }
+      ]
+    })
+
+    await waitFor(() => expect(screen.getByText("다른 곳에서 넘어온 작업 1건")).toBeTruthy())
+    expect(screen.getByText("background/subway 에서")).toBeTruthy()
+
+    fireEvent.click(screen.getByText("지하철 묘사가 바뀌었습니다"))
+
+    await waitFor(() =>
+      expect(screen.getByRole("textbox")).toHaveProperty("value", "감정 서술을 맞춰줘")
+    )
+  })
+
+  it("dismisses a waiting ripple", async () => {
+    const postMessage = renderStudio(characterTarget)
+
+    respondTo(postMessage, "studio.followUp.list", {
+      followUps: [
+        {
+          id: "f1",
+          origin: { kind: "background", key: "subway" },
+          reason: "지하철 묘사가 바뀌었습니다",
+          instruction: "감정 서술을 맞춰줘"
+        }
+      ]
+    })
+
+    await waitFor(() => expect(screen.getByLabelText("넘어온 작업 닫기")).toBeTruthy())
+    fireEvent.click(screen.getByLabelText("넘어온 작업 닫기"))
+
+    expect(messagesByMethod(postMessage, "studio.followUp.dismiss").at(-1)).toMatchObject({
+      payload: { id: "f1" }
+    })
+    await waitFor(() => expect(screen.queryByText("다른 곳에서 넘어온 작업 1건")).toBeNull())
+  })
+})

@@ -98,6 +98,61 @@ describe("coerceStudioAgentAction", () => {
   })
 })
 
+describe("coerceStudioAgentAction follow-ups", () => {
+  const followUp =
+    '{"kind":"character","key":"jiho","reason":"관계가 어긋남","instruction":"맞춰줘"}'
+
+  it("keeps follow-ups on a say", () => {
+    const action = coerceStudioAgentAction(
+      `{"kind":"say","message":"지호 카드도 손봐야 합니다","followUps":[${followUp}]}`
+    )
+
+    expect(action).toEqual({
+      kind: "say",
+      message: "지호 카드도 손봐야 합니다",
+      followUps: [
+        { kind: "character", key: "jiho", reason: "관계가 어긋남", instruction: "맞춰줘" }
+      ]
+    })
+  })
+
+  it("keeps follow-ups on a proposal", () => {
+    const action = coerceStudioAgentAction(
+      `{"kind":"propose","summary":"x","patch":{"target":"card","changes":[{"field":"role","value":"main"}]},"followUps":[${followUp}]}`
+    )
+
+    expect(action?.kind === "propose" ? action.followUps : undefined).toHaveLength(1)
+  })
+
+  it("omits the field entirely when no follow-up survives", () => {
+    const action = coerceStudioAgentAction(
+      '{"kind":"say","message":"네","followUps":[{"kind":"manuscript","key":"x","reason":"y","instruction":"z"}]}'
+    )
+
+    expect(action).toEqual({ kind: "say", message: "네" })
+  })
+
+  it("drops a follow-up missing its instruction", () => {
+    const action = coerceStudioAgentAction(
+      '{"kind":"say","message":"네","followUps":[{"kind":"scene","key":"01-intro","reason":"y"}]}'
+    )
+
+    expect(action).not.toHaveProperty("followUps")
+  })
+
+  it("caps follow-ups at five", () => {
+    const many = Array.from(
+      { length: 8 },
+      (_, index) =>
+        `{"kind":"scene","key":"0${index}-a","reason":"r","instruction":"i"}`
+    ).join(",")
+
+    const action = coerceStudioAgentAction(`{"kind":"say","message":"네","followUps":[${many}]}`)
+
+    expect(action?.kind === "say" ? action.followUps : []).toHaveLength(5)
+  })
+})
+
 describe("coerceStudioValidationVerdict", () => {
   it("accepts plain string warnings", () => {
     expect(coerceStudioValidationVerdict('{"warnings":["시간선이 어긋납니다"]}')).toEqual({

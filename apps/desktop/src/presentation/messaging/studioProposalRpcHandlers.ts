@@ -9,6 +9,7 @@ import {
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import type { IStudioFollowUpRepository } from '@/infrastructure/persistence/repositories/studioFollowUpRepository';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
   StoryboardResponsePayload,
@@ -19,7 +20,9 @@ import type {
 
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
+  readonly followUpRepository: IStudioFollowUpRepository;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
+  readonly createFollowUpId: () => string;
 }
 
 const staleBaselineMessage =
@@ -65,6 +68,8 @@ export function createStudioProposalRpcHandlers(
       } catch (error) {
         return { status: 'failed', message: `저장하지 못했습니다: ${String(error)}` };
       }
+
+      await recordFollowUps(deps, payload.entity, payload.turn);
 
       return { status: 'applied', message: appliedMessage(prepared) };
     },
@@ -136,6 +141,37 @@ async function prepareApply(
     changedFields: result.changedFields,
     lengthDelta: result.text.trim().length - patchBaseline.trim().length,
   };
+}
+
+// NOTE: an applied edit both raises the ripples it declares and answers whatever ripple was
+// waiting on this entity, so the reminder list never keeps a job the author already did.
+async function recordFollowUps(
+  deps: StudioProposalRpcHandlersDependencies,
+  origin: StudioEntity,
+  turn: StudioChatTurn,
+): Promise<void> {
+  const root = await deps.getProjectRoot();
+  const proposal = toProposalTurn(turn);
+
+  if (!root) {
+    return;
+  }
+
+  await deps.followUpRepository.resolveFor(root, origin);
+
+  const createdAt = new Date().toISOString();
+
+  await deps.followUpRepository.add(
+    root,
+    (proposal?.followUps ?? []).map((followUp) => ({
+      id: deps.createFollowUpId(),
+      target: { kind: followUp.kind, key: followUp.key },
+      origin,
+      reason: followUp.reason,
+      instruction: followUp.instruction,
+      createdAt,
+    })),
+  );
 }
 
 function sceneFocusOf(targetFile: string): StudioSceneFocus {

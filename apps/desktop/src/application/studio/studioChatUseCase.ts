@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import type * as vscode from 'vscode';
 import type {
   StudioAgentAction,
+  StudioAgentFollowUp,
   StudioAgentLookupRequest,
   StudioAgentMessage,
 } from '@storyboard/story-ai';
@@ -10,7 +11,12 @@ import type {
 import type { AiGateway } from '../ai/aiGateway';
 import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
 import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import type { StudioChatTurn, StudioPatchPayload, StudioValidation } from '../../shared/messaging';
+import type {
+  StudioChatTurn,
+  StudioFollowUpTarget,
+  StudioPatchPayload,
+  StudioValidation,
+} from '../../shared/messaging';
 
 export interface StudioChatContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';
@@ -29,6 +35,11 @@ export interface StudioChatRequest {
   readonly hasSelection: boolean;
   readonly isValidationEnabled: boolean;
   readonly resolveLookup: (requests: readonly StudioAgentLookupRequest[]) => Promise<string>;
+  // NOTE: the model names follow-up targets from memory, so each one is confirmed against the
+  // workspace before it becomes a button the author can press.
+  readonly resolveFollowUps: (
+    followUps: readonly StudioAgentFollowUp[],
+  ) => Promise<readonly StudioFollowUpTarget[]>;
   readonly createTurnId: () => string;
   readonly onStage?: (stage: StudioChatStage) => void;
 }
@@ -62,8 +73,10 @@ export class StudioChatUseCase {
       { onStage: (stage) => request.onStage?.(stage) },
     );
 
+    const followUps = await request.resolveFollowUps(followUpsOf(action));
+
     if (action.kind !== 'propose') {
-      return [toPlainTurn(action, request.createTurnId())];
+      return [toPlainTurn(action, request.createTurnId(), followUps)];
     }
 
     if (request.entityContext.baseline === undefined) {
@@ -91,6 +104,7 @@ export class StudioChatUseCase {
         baselineHash: hashBaseline(request.entityContext.baseline),
         validation: await this.validate(request, action, patch),
         status: 'pending',
+        ...(followUps.length > 0 ? { followUps: [...followUps] } : {}),
       },
     ];
   }
@@ -161,7 +175,15 @@ function toAgentHistory(history: readonly StudioChatTurn[]): StudioAgentMessage[
     .filter((message): message is StudioAgentMessage => message !== undefined);
 }
 
-function toPlainTurn(action: StudioAgentAction, id: string): StudioChatTurn {
+function followUpsOf(action: StudioAgentAction): readonly StudioAgentFollowUp[] {
+  return action.kind === 'say' || action.kind === 'propose' ? (action.followUps ?? []) : [];
+}
+
+function toPlainTurn(
+  action: StudioAgentAction,
+  id: string,
+  followUps: readonly StudioFollowUpTarget[],
+): StudioChatTurn {
   if (action.kind === 'ask') {
     return {
       id,
@@ -177,6 +199,7 @@ function toPlainTurn(action: StudioAgentAction, id: string): StudioChatTurn {
     role: 'assistant',
     kind: 'say',
     message: action.kind === 'say' ? action.message : '수정안을 만들지 못했어요.',
+    ...(followUps.length > 0 ? { followUps: [...followUps] } : {}),
   };
 }
 

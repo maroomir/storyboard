@@ -22,8 +22,19 @@ export type StudioPatch =
   | { readonly target: 'card'; readonly changes: readonly StudioCardFieldChange[] }
   | { readonly target: 'draft'; readonly replacements: readonly StudioDraftReplacement[] };
 
+export interface StudioAgentFollowUp {
+  readonly kind: StudioAgentEntityKind;
+  readonly key: string;
+  readonly reason: string;
+  readonly instruction: string;
+}
+
 export type StudioAgentAction =
-  | { readonly kind: 'say'; readonly message: string }
+  | {
+      readonly kind: 'say';
+      readonly message: string;
+      readonly followUps?: readonly StudioAgentFollowUp[];
+    }
   | {
       readonly kind: 'ask';
       readonly question: string;
@@ -39,10 +50,12 @@ export type StudioAgentAction =
       readonly summary: string;
       readonly message?: string;
       readonly patch: StudioPatch;
+      readonly followUps?: readonly StudioAgentFollowUp[];
     };
 
 const maxAskOptions = 4;
 const maxLookupRequests = 4;
+const maxFollowUps = 5;
 
 export function coerceStudioAgentAction(response: string): StudioAgentAction | undefined {
   const parsed = parseJsonObject(response);
@@ -68,7 +81,51 @@ export function coerceStudioAgentAction(response: string): StudioAgentAction | u
 function coerceSay(parsed: Record<string, unknown>): StudioAgentAction | undefined {
   const message = trimmedString(parsed['message']);
 
-  return message ? { kind: 'say', message } : undefined;
+  if (!message) {
+    return undefined;
+  }
+
+  const followUps = toFollowUps(parsed['followUps']);
+
+  return followUps.length > 0 ? { kind: 'say', message, followUps } : { kind: 'say', message };
+}
+
+function toFollowUps(value: unknown): StudioAgentFollowUp[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map(toFollowUp)
+    .filter((followUp): followUp is StudioAgentFollowUp => followUp !== undefined)
+    .slice(0, maxFollowUps);
+}
+
+function toFollowUp(value: unknown): StudioAgentFollowUp | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const candidate = value as {
+    readonly kind?: unknown;
+    readonly key?: unknown;
+    readonly reason?: unknown;
+    readonly instruction?: unknown;
+  };
+
+  const key = trimmedString(candidate.key);
+  const reason = trimmedString(candidate.reason);
+  const instruction = trimmedString(candidate.instruction);
+
+  if (!key || !reason || !instruction || !isFollowUpKind(candidate.kind)) {
+    return undefined;
+  }
+
+  return { kind: candidate.kind, key, reason, instruction };
+}
+
+function isFollowUpKind(value: unknown): value is StudioAgentEntityKind {
+  return value === 'character' || value === 'background' || value === 'scene';
 }
 
 function coerceAsk(parsed: Record<string, unknown>): StudioAgentAction | undefined {
@@ -126,10 +183,15 @@ function coercePropose(parsed: Record<string, unknown>): StudioAgentAction | und
   }
 
   const message = trimmedString(parsed['message']);
+  const followUps = toFollowUps(parsed['followUps']);
 
-  return message
-    ? { kind: 'propose', summary, message, patch }
-    : { kind: 'propose', summary, patch };
+  return {
+    kind: 'propose',
+    summary,
+    ...(message === undefined ? {} : { message }),
+    patch,
+    ...(followUps.length > 0 ? { followUps } : {}),
+  };
 }
 
 function toPatch(value: unknown): StudioPatch | undefined {
