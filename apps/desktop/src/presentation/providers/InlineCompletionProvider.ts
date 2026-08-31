@@ -5,12 +5,12 @@ import {
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
   sceneFilePath,
-} from '../../infrastructure/vscode/pathConventions';
+  sceneContextPaths,
+} from '@storyboard/story-engine';
 import { buildSceneContext, parseDraft, readSceneFile } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';

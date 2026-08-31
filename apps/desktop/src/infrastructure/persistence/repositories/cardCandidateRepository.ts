@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { ICardCandidateRepository } from '../../../application/cards/promoteCardCandidatesUseCase';
-import type { StoryboardLogger } from '../../vscode/logger';
-import { characterCardPath, getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { characterCardPath, getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   applyCardCandidateItems,
   pruneRecordByPromotedKeys,

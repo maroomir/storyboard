@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths } from '../../infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { buildSceneSeeds, type GeneratedSceneSeed } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import {

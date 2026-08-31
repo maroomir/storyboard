@@ -1,5 +1,3 @@
-import type * as vscode from 'vscode';
-
 import {
   cardCandidateItemKey,
   collectCardCandidateItems,
@@ -7,16 +5,16 @@ import {
   type CardCandidateItem,
 } from '@storyboard/story-engine';
 import type { CharacterCard } from '@storyboard/story-format';
-import type { CardCandidateRecord } from '@storyboard/story-engine';
+import type { CardCandidateRecord, StoryUri } from '@storyboard/story-engine';
 
 export interface ICardCandidateRepository {
-  apply(workspaceRoot: vscode.Uri, items: readonly CardCandidateItem[]): Promise<number>;
+  apply(workspaceRoot: StoryUri, items: readonly CardCandidateItem[]): Promise<number>;
   loadCards(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     cardIds: ReadonlySet<string>,
   ): Promise<ReadonlyMap<string, CharacterCard>>;
-  loadRecords(workspaceRoot: vscode.Uri): Promise<readonly CardCandidateRecord[]>;
-  prune(workspaceRoot: vscode.Uri, promotedKeys: ReadonlySet<string>): Promise<void>;
+  loadRecords(workspaceRoot: StoryUri): Promise<readonly CardCandidateRecord[]>;
+  prune(workspaceRoot: StoryUri, promotedKeys: ReadonlySet<string>): Promise<void>;
 }
 
 export type PrepareCardCandidatePromotionResult =
@@ -31,7 +29,7 @@ export type PromoteCardCandidatesResult =
 export class PromoteCardCandidatesUseCase {
   public constructor(private readonly repository: ICardCandidateRepository) {}
 
-  public async prepare(workspaceRoot: vscode.Uri): Promise<PrepareCardCandidatePromotionResult> {
+  public async prepare(workspaceRoot: StoryUri): Promise<PrepareCardCandidatePromotionResult> {
     const items = collectCardCandidateItems(await this.repository.loadRecords(workspaceRoot));
 
     if (items.length === 0) {
@@ -50,7 +48,7 @@ export class PromoteCardCandidatesUseCase {
   }
 
   public async promote(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     items: readonly CardCandidateItem[],
   ): Promise<PromoteCardCandidatesResult> {
     const updatedCardCount = await this.repository.apply(workspaceRoot, items);

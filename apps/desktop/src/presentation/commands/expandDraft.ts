@@ -4,8 +4,8 @@ import type {
   ExpandDraftResult,
   ExpandDraftUseCase,
 } from '../../application/drafts/expandDraftUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { isDraftMarkdownFile } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 

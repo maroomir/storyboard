@@ -1,5 +1,5 @@
-import type { IFileSystem } from '../../../application/ports/fileSystem';
-import type { IProjectRepository } from '../../../application/ports/repositories';
+import type { IFileSystem } from '@storyboard/story-engine';
+import type { IProjectRepository } from '@storyboard/story-engine';
 import { parseProjectJson } from '../projectJson';
 import type { StoryboardProject } from '@storyboard/story-format';
 

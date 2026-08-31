@@ -4,7 +4,7 @@ import type {
   GenerateOutlineResult,
   GenerateOutlineUseCase,
 } from '../../application/novel/generateOutlineUseCase';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import type { ContractFieldKey } from '@storyboard/story-format';
 

@@ -1,5 +1,4 @@
-import type * as vscode from 'vscode';
-
+import type { StoryUri } from '@storyboard/story-engine';
 import { renderManuscriptExport, type ManuscriptExportFormat } from '@storyboard/story-engine';
 
 export type ManuscriptExportSource = {
@@ -8,9 +7,9 @@ export type ManuscriptExportSource = {
 };
 
 export interface IManuscriptExportRepository {
-  hasManuscriptVolume(workspaceRoot: vscode.Uri): Promise<boolean>;
-  loadVolume(workspaceRoot: vscode.Uri): Promise<ManuscriptExportSource>;
-  saveExport(targetUri: vscode.Uri, content: string): Promise<void>;
+  hasManuscriptVolume(workspaceRoot: StoryUri): Promise<boolean>;
+  loadVolume(workspaceRoot: StoryUri): Promise<ManuscriptExportSource>;
+  saveExport(targetUri: StoryUri, content: string): Promise<void>;
 }
 
 export type LoadExportSourceResult =
@@ -25,12 +24,12 @@ export type LoadExportSourceResult =
 
 export type ExportManuscriptResult =
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false }
-  | { readonly kind: 'exported'; readonly ok: true; readonly targetUri: vscode.Uri };
+  | { readonly kind: 'exported'; readonly ok: true; readonly targetUri: StoryUri };
 
 export class ExportManuscriptUseCase {
   public constructor(private readonly repository: IManuscriptExportRepository) {}
 
-  public async loadSource(workspaceRoot: vscode.Uri): Promise<LoadExportSourceResult> {
+  public async loadSource(workspaceRoot: StoryUri): Promise<LoadExportSourceResult> {
     try {
       if (!(await this.repository.hasManuscriptVolume(workspaceRoot))) {
         return { kind: 'missing_volume', ok: false };
@@ -48,7 +47,7 @@ export class ExportManuscriptUseCase {
   }
 
   public async writeExport(
-    targetUri: vscode.Uri,
+    targetUri: StoryUri,
     markdown: string,
     format: ManuscriptExportFormat,
   ): Promise<ExportManuscriptResult> {

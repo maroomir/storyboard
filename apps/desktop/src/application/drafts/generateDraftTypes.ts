@@ -1,14 +1,12 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { IFileSystem } from '../ports/fileSystem';
+import type { IFileSystem, StoryUri } from '@storyboard/story-engine';
 import type {
   IDraftRepository,
   IProjectRepository,
   ISceneCacheRepository,
   ISceneRepository,
-} from '../ports/repositories';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+} from '@storyboard/story-engine';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '../../infrastructure/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../infrastructure/ai/PostGenerationUpdateManager';
@@ -50,8 +48,8 @@ export interface GenerateDraftRequest {
 }
 
 export type GenerateDraftResult =
-  | { ok: true; kind: 'generated'; draftUri: vscode.Uri }
-  | { ok: true; kind: 'cache_hit'; draftUri: vscode.Uri }
+  | { ok: true; kind: 'generated'; draftUri: StoryUri }
+  | { ok: true; kind: 'cache_hit'; draftUri: StoryUri }
   | { ok: false; kind: 'failed'; message: string }
   | { ok: false; kind: 'cancelled' };
 

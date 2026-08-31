@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { isIgnoredSampleCardFileName } from '../vscode/pathConventions';
+import { isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { isCharacterRole, parseCard } from '@storyboard/story-format';
 import type { CharacterRole } from '@storyboard/story-format';
 import type { RelationListCharacter } from '@storyboard/story-engine';

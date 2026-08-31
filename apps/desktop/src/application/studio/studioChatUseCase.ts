@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 
-import type * as vscode from 'vscode';
 import type {
   StudioAgentAction,
   StudioAgentFollowUp,
@@ -11,8 +10,8 @@ import type {
 } from '@storyboard/story-ai';
 
 import type { AiGateway } from '../ai/aiGateway';
-import type { StudioPatchTarget } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StudioPatchTarget } from '@storyboard/story-engine';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type {
   StudioChatTurn,
   StudioFollowUpTarget,
@@ -30,7 +29,7 @@ export interface StudioChatContext {
 }
 
 export interface StudioChatRequest {
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
   readonly entityContext: StudioChatContext;
   readonly history: readonly StudioChatTurn[];
   readonly instruction: string;

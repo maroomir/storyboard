@@ -41,7 +41,8 @@ import { SceneBatchRepository } from '../../infrastructure/persistence/repositor
 import { SceneSidebarRepository } from '../../infrastructure/persistence/repositories/sceneSidebarRepository';
 import { ManuscriptAssemblyRepository } from '../../infrastructure/persistence/repositories/manuscriptAssemblyRepository';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
-import { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { OutputChannelLogger } from '../../infrastructure/vscode/logger';
 import { StudioChatUseCase } from '../../application/studio/studioChatUseCase';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
@@ -101,7 +102,7 @@ export class PlatformModule implements IApplicationModule {
       throw new Error('PlatformModule is already initialized.');
     }
 
-    const logger = new StoryboardLogger();
+    const logger = new OutputChannelLogger();
     const secretStore = new SecretStore(context.secrets);
     const configBridge = new ConfigBridge({
       getConfiguration: (): vscode.WorkspaceConfiguration =>

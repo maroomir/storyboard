@@ -14,10 +14,10 @@ import type {
 } from '../../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '../../vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from '../../vscode/workspace';
 import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
 import type { BibleFileSystem, DraftFileSystem, OutlineFileSystem } from '@storyboard/story-format';

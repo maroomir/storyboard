@@ -18,7 +18,7 @@ import {
   isIgnoredSampleCardFileName,
   isSafeStudioEntityKey,
   scenePath,
-} from '../vscode/pathConventions';
+} from '@storyboard/story-engine';
 import { vscodeFsAdapter } from '../vscode/workspaceFsAdapters';
 
 import type { StudioPatchTarget } from '@storyboard/story-engine';

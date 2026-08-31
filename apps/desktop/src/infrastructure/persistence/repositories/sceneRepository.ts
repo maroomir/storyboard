@@ -1,5 +1,5 @@
-import type { IFileSystem } from '../../../application/ports/fileSystem';
-import type { ISceneRepository } from '../../../application/ports/repositories';
+import type { IFileSystem } from '@storyboard/story-engine';
+import type { ISceneRepository } from '@storyboard/story-engine';
 import { applySceneGrounding, readSceneFile } from '@storyboard/story-format';
 import type { SceneFile, SceneGrounding } from '@storyboard/story-format';
 export class SceneRepository implements ISceneRepository {

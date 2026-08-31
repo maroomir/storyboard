@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { type StoryboardProjectPaths } from '../vscode/pathConventions';
+import { type StoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from '../vscode/workspace';
 import {
   createEmptyRevisionPlan,

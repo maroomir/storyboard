@@ -1,6 +1,10 @@
-import type * as vscode from 'vscode';
-
-import type { IProjectRepository, ISceneRepository } from '../ports/repositories';
+import type {
+  IProjectRepository,
+  ISceneRepository,
+  StoryUri,
+  StoryWorkspaceFolder,
+} from '@storyboard/story-engine';
+import { sceneContextPaths } from '@storyboard/story-engine';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -12,8 +16,8 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneCardFile,
-} from '../../infrastructure/vscode/pathConventions';
-import { sceneContextPaths } from '../../infrastructure/vscode/workspaceFsAdapters';
+} from '@storyboard/story-engine';
+
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { resolveWorkspaceFolder } from '../../infrastructure/vscode/workspaceFolder';
 import { computeSceneInputHash } from '@storyboard/story-engine';
@@ -23,7 +27,7 @@ import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './genera
 import { resolveSceneGrounding } from './resolveSceneGrounding';
 
 export interface SceneGenerationInputs {
-  readonly workspaceFolder: vscode.WorkspaceFolder;
+  readonly workspaceFolder: StoryWorkspaceFolder;
   readonly paths: ReturnType<typeof getStoryboardProjectPaths>;
   readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
   readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
@@ -32,8 +36,8 @@ export interface SceneGenerationInputs {
   readonly canonFactLines: readonly string[];
   readonly sceneBreakJoiner: string | undefined;
   readonly inputHash: string;
-  readonly draftUri: vscode.Uri;
-  readonly cacheUri: vscode.Uri;
+  readonly draftUri: StoryUri;
+  readonly cacheUri: StoryUri;
 }
 
 export type SceneGenerationInputsResult =
@@ -44,7 +48,7 @@ type SceneGenerationTargetResult =
   | { ok: false; result: GenerateDraftResult }
   | {
       ok: true;
-      workspaceFolder: vscode.WorkspaceFolder;
+      workspaceFolder: StoryWorkspaceFolder;
       paths: ReturnType<typeof getStoryboardProjectPaths>;
       fileName: string;
     };
@@ -69,7 +73,7 @@ function inputsFailure(message: string): { ok: false; result: GenerateDraftResul
 }
 
 async function resolveSceneGenerationTarget(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
 ): Promise<SceneGenerationTargetResult> {
   const workspaceFolder = resolveWorkspaceFolder(sceneUri);
 
@@ -112,7 +116,7 @@ type SceneAndProjectResult =
     };
 
 async function loadSceneAndProject(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   fileName: string,
   paths: ReturnType<typeof getStoryboardProjectPaths>,
   options: GenerateDraftWorkflowOptions,
@@ -155,7 +159,7 @@ async function loadSceneAndProject(
 }
 
 export async function loadSceneGenerationInputs(
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   options: GenerateDraftWorkflowOptions,
 ): Promise<SceneGenerationInputsResult> {
   const target = await resolveSceneGenerationTarget(sceneUri);
@@ -217,7 +221,7 @@ type SceneContextBundleResult =
 
 async function loadSceneContextBundle(
   paths: ReturnType<typeof getStoryboardProjectPaths>,
-  sceneUri: vscode.Uri,
+  sceneUri: StoryUri,
   rawScene: Awaited<ReturnType<ISceneRepository['read']>>,
   project: Awaited<ReturnType<IProjectRepository['read']>>,
   options: GenerateDraftWorkflowOptions,

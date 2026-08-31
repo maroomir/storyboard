@@ -4,10 +4,7 @@ import type {
   CardRecommendationInput,
   ICardRecommendationRepository,
 } from '../../../application/cards/recommendCardsUseCase';
-import {
-  getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
-} from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { parseCard, parseDraft, readDraftFile, readSceneFile } from '@storyboard/story-format';
 import type { DraftFileSystem, SceneFileSystem } from '@storyboard/story-format';
 import type { RecommendationSource } from '../../../infrastructure/ai/cardRecommendationBuilder';

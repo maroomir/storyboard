@@ -19,8 +19,8 @@ import {
   draftHistorySceneDirectory,
   isSafeStudioEntityKey,
   joinUri,
-} from '@/infrastructure/vscode/pathConventions';
-import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
+} from '@storyboard/story-engine';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {

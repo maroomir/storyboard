@@ -1,17 +1,16 @@
-import type * as vscode from 'vscode';
-
+import type { StoryUri } from '@storyboard/story-engine';
 import type { StoryboardCard } from '@storyboard/story-format';
 
 export interface ICardWriterRepository {
-  exists(workspaceRoot: vscode.Uri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;
-  write(workspaceRoot: vscode.Uri, card: StoryboardCard): Promise<vscode.Uri>;
+  exists(workspaceRoot: StoryUri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;
+  write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri>;
 }
 
 export class CreateCardUseCase {
   public constructor(private readonly repository: ICardWriterRepository) {}
 
   public async deriveUniqueId(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     cardType: StoryboardCard['type'],
     suggestedId: string,
     fallbackId: string,
@@ -29,14 +28,14 @@ export class CreateCardUseCase {
   }
 
   public async exists(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     cardType: StoryboardCard['type'],
     id: string,
   ): Promise<boolean> {
     return await this.repository.exists(workspaceRoot, cardType, id);
   }
 
-  public async write(workspaceRoot: vscode.Uri, card: StoryboardCard): Promise<vscode.Uri> {
+  public async write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
     return await this.repository.write(workspaceRoot, card);
   }
 }

@@ -1,7 +1,5 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 import type { ProjectFormat } from '@storyboard/story-format';
 import {
   resolveMinimumDraftLength,
@@ -10,7 +8,7 @@ import {
 } from '@storyboard/story-pipeline';
 
 export interface CondenseDraftRequest {
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
   readonly sceneStem: string;
   readonly format: ProjectFormat;
   readonly body: string;

@@ -1,9 +1,6 @@
 import * as vscode from 'vscode';
 
-import {
-  getStoryboardProjectPaths,
-  isDraftMarkdownFile,
-} from '../../infrastructure/vscode/pathConventions';
+import { getStoryboardProjectPaths, isDraftMarkdownFile } from '@storyboard/story-engine';
 import { vscodeFsAdapter } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { detectCharactersInText, readCardFile } from '@storyboard/story-format';

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { INovelRunStateRepository } from '../../../application/novel/novelPipeline';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from '../../vscode/workspace';
 import {
   readNovelRunState,

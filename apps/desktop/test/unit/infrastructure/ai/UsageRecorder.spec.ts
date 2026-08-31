@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths } from "@/infrastructure/vscode/pathConventions"
+import { getStoryboardProjectPaths } from "@storyboard/story-engine"
 import { parseUsageLedgerBytes, type UsageLedgerFileSystem } from "@storyboard/story-engine"
 import { UsageRecorder } from "@/infrastructure/ai/UsageRecorder"
 

@@ -7,7 +7,7 @@ import {
 } from '@/application/story/buildStoryCardsUseCase';
 import { parseCard, serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
-import { backgroundCardPath, characterCardPath } from '@/infrastructure/vscode/pathConventions';
+import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type { CardCollectProposal } from '@storyboard/story-engine';
 const buildStoryCardsCommand = 'storyboard.cards.buildFromScenes';

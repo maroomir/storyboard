@@ -5,7 +5,7 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
-} from '../../vscode/pathConventions';
+} from '@storyboard/story-engine';
 import { isOutlineStale } from '@storyboard/story-engine';
 import { parseSceneFileName, readSceneFile } from '@storyboard/story-format';
 import type { SceneFileSystem } from '@storyboard/story-format';

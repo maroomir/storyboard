@@ -7,7 +7,7 @@ import {
   validateCardRenameId
 } from "@/infrastructure/vscode/cardRenameEdit"
 import { registerCardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
-import type { StoryboardLogger } from "@/infrastructure/vscode/logger"
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import {
   fireWillRenameFiles,
   FileType,

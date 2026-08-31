@@ -5,7 +5,7 @@ import {
   CardRenameValidationError,
   parseCardRenameCandidate,
 } from '../../infrastructure/vscode/cardRenameEdit';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 
 export function registerCardRenameParticipant({
   logger,

@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { draftHistorySceneDirectory, draftPath } from "@/infrastructure/vscode/pathConventions"
+import { draftHistorySceneDirectory, draftPath } from "@storyboard/story-engine"
 import { computeSceneInputHash } from "@storyboard/story-engine"
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 

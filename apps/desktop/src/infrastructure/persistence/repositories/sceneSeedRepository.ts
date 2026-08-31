@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { ISceneSeedRepository } from '../../../application/novel/novelPipeline';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import type { GeneratedSceneSeed } from '@storyboard/story-engine';
 
 export class SceneSeedRepository implements ISceneSeedRepository {

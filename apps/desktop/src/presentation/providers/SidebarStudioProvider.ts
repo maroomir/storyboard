@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import {

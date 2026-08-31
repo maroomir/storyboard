@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { IOutlineRepository } from '../../../application/novel/generateOutlineUseCase';
 import { listCharacterBriefs } from '../characterBriefs';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { uriExists } from '../../vscode/workspace';
 import {
   readChapterPlanFile,

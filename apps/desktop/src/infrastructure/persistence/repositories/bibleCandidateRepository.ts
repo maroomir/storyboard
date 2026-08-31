@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { IBibleCandidateRepository } from '../../../application/project/promoteBibleCandidatesUseCase';
-import { getStoryboardProjectPaths } from '../../vscode/pathConventions';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
 import type { StoryBible } from '@storyboard/story-format';
 import { readBibleCandidateFile, type BibleCandidateRecord } from '@storyboard/story-engine';

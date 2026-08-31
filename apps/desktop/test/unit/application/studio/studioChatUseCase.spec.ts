@@ -6,7 +6,7 @@ import {
   type StudioChatRequest
 } from "@/application/studio/studioChatUseCase"
 import type { AiGateway } from "@/application/ai/aiGateway"
-import type { StoryboardLogger } from "@/infrastructure/vscode/logger"
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn } from "@storyboard/story-engine"
 
 interface FakeServiceOptions {

@@ -1,14 +1,13 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
+import { sceneContextPaths } from '@storyboard/story-engine';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   joinUri,
-} from '../../infrastructure/vscode/pathConventions';
+} from '@storyboard/story-engine';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -20,7 +19,6 @@ import type { BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-f
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,
-  sceneContextPaths,
   vscodeFsAdapter,
 } from '../../infrastructure/vscode/workspaceFsAdapters';
 import { archiveExistingDraft } from '@storyboard/story-engine';
@@ -37,10 +35,10 @@ type AugmentContextResult =
 export type AugmentDraftRequest = {
   readonly draftSceneStem: string;
   readonly instruction?: string;
-  readonly sceneUri: vscode.Uri;
+  readonly sceneUri: StoryUri;
   readonly scope: DraftAugmentScope;
   readonly target: string;
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
 };
 
 export type AugmentDraftResult =
@@ -49,9 +47,9 @@ export type AugmentDraftResult =
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false };
 
 export type ApplyAugmentedDraftRequest = {
-  readonly draftUri: vscode.Uri;
+  readonly draftUri: StoryUri;
   readonly sceneStem: string;
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
 };
 
 export class AugmentDraftUseCase {
@@ -122,8 +120,8 @@ export class AugmentDraftUseCase {
   }
 
   private async loadContext(
-    sceneUri: vscode.Uri,
-    workspaceRoot: vscode.Uri,
+    sceneUri: StoryUri,
+    workspaceRoot: StoryUri,
   ): Promise<AugmentContextResult> {
     const fileName = sceneUri.path.split('/').pop() ?? '';
 

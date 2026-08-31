@@ -1,5 +1,4 @@
-import type * as vscode from 'vscode';
-
+import type { StoryUri } from '@storyboard/story-engine';
 import type { AiGateway } from '../ai/aiGateway';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { toOutlineBrief } from '@storyboard/story-format';
@@ -11,14 +10,14 @@ import type {
   StoryboardProject,
 } from '@storyboard/story-format';
 export interface IOutlineRepository {
-  hasExisting(workspaceRoot: vscode.Uri): Promise<boolean>;
-  loadCharacterBriefs(workspaceRoot: vscode.Uri): Promise<readonly OutlineCharacterBrief[]>;
-  loadProject(workspaceRoot: vscode.Uri): Promise<StoryboardProject>;
+  hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
+  loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
+  loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   save(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     synopsis: OutlineSynopsis,
     chapterPlan: ChapterPlan,
-  ): Promise<vscode.Uri>;
+  ): Promise<StoryUri>;
 }
 
 export type GenerateOutlineOptions = {
@@ -34,7 +33,7 @@ export type GenerateOutlineResult =
       readonly missing: readonly ContractFieldKey[];
       readonly ok: false;
     }
-  | { readonly kind: 'generated'; readonly ok: true; readonly synopsisUri: vscode.Uri };
+  | { readonly kind: 'generated'; readonly ok: true; readonly synopsisUri: StoryUri };
 
 export class GenerateOutlineUseCase {
   public constructor(
@@ -43,7 +42,7 @@ export class GenerateOutlineUseCase {
   ) {}
 
   public async execute(
-    workspaceRoot: vscode.Uri,
+    workspaceRoot: StoryUri,
     options: GenerateOutlineOptions,
   ): Promise<GenerateOutlineResult> {
     try {

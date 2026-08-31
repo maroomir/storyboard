@@ -1,4 +1,4 @@
-import { backgroundCardPath, characterCardPath } from '../../infrastructure/vscode/pathConventions';
+import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';
 import {
   bibleCandidateFilePath,
   ensureBibleCacheDirectory,

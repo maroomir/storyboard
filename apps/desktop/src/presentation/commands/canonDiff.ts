@@ -1,11 +1,8 @@
 import * as vscode from 'vscode';
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import {
-  getStoryboardProjectPaths,
-  type StoryboardProjectPaths,
-} from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
 import type { BibleFileSystem } from '@storyboard/story-format';

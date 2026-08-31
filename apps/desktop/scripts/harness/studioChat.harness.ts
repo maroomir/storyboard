@@ -22,7 +22,7 @@ import {
   resolveStudioLookups,
   type StudioSceneFocus,
 } from '@/infrastructure/persistence/studioEntityContext';
-import type { StoryboardLogger } from '@/infrastructure/vscode/logger';
+import type { StoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn, StudioEntity } from '@storyboard/story-engine';
 
 import { createUsageSummary } from './usageSummary';

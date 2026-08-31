@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
 import { CardParseError, parseCard } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
-import { isIgnoredSampleCardFileName } from '../../infrastructure/vscode/pathConventions';
+import type { StoryboardLogger } from '@storyboard/story-engine';
+import { isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { createDiagnostic } from './diagnosticsShared';
 

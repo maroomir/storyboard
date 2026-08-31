@@ -199,6 +199,10 @@ export const commands = {
 }
 
 export class Uri {
+  public readonly authority = ""
+  public readonly query = ""
+  public readonly fragment = ""
+
   public constructor(
     public readonly scheme: string,
     public readonly fsPath: string
@@ -210,6 +214,10 @@ export class Uri {
 
   toString(): string {
     return this.fsPath
+  }
+
+  toJSON(): unknown {
+    return { scheme: this.scheme, path: this.fsPath }
   }
 
   // 실제 vscode.Uri와 같이 일부 구성요소만 바꾼 사본을 만든다. 원자적 쓰기가 임시 경로를

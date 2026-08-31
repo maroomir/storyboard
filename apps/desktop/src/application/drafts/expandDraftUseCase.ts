@@ -1,10 +1,8 @@
-import type * as vscode from 'vscode';
-
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryboardLogger } from '../../infrastructure/vscode/logger';
+import type { StoryUri, StoryboardLogger } from '@storyboard/story-engine';
 
 export type ExpandDraftRequest = {
-  readonly workspaceRoot: vscode.Uri;
+  readonly workspaceRoot: StoryUri;
   readonly selectedText: string;
   readonly sceneStem: string;
 };
