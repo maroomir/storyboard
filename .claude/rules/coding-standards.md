@@ -1,0 +1,92 @@
+# Monorepo Coding Standards
+
+Cross-cutting standards for how the three apps and the shared packages are structured, named, and
+typed. The reference module is **`apps/bot`** — its rules are enforced end to end and it
+demonstrates every section below; on the package side, **`packages/story-format`** is the reference
+for schema-first types and the error-class template. Generic readability and verb rules live in
+`.claude/rules/clean-code.md`; this file covers only what is monorepo-specific.
+
+## Directory and File Structure
+
+- Apps are ordered one-way layer stacks enforced by each app's `scripts/check-architecture.mjs`.
+  The bot's single `LAYER_ORDER` line (`util → config → … → app`) is the model: every source file
+  lives in exactly one layer, and a layer imports only itself and layers to its left.
+- Each app has exactly one composition root that builds the object graph once:
+  `StoryboardBotApplication` (bot), `createCliContainer()` (cli), `PlatformModule.initialize()`
+  (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
+  or handler calls.
+- A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
+  contract. Inside a package, organize by role — `story-ai`'s `ai/` (services), `contracts/`
+  (DTOs), `ports/` (host adapters) split is the model.
+- Packages ship TypeScript source (no build); every app must resolve `@storyboard/*` identically in
+  tsconfig `paths`, esbuild `alias`, and vitest `alias` — keep all three in sync when adding a
+  package.
+- Tests belong to the apps (packages have no runners). Bot/cli use flat `test/*.test.ts`; vscode
+  uses `test/unit/**/*.spec.ts(x)` mirroring layers. A new app follows the bot's shape. Bot git
+  tests run against real repositories — never replace them with stubs.
+
+## Naming
+
+- **Files are camelCase, including class modules** (`jobManager.ts` → `class JobManager`). Never
+  kebab-case. Existing PascalCase files in `apps/vscode` and `packages/story-ai` stay as they are —
+  no batch renames — but new files are camelCase.
+- Acronyms in identifiers capitalize the first letter only: `Ai`, not `AI` (`AiProviderId`,
+  `OpenAiProvider`).
+- Interfaces split by kind: **substitutable ports/contracts take the `I` prefix**
+  (`ICommandHandler`, `IFileSystem`, `IDraftRepository`); **DTOs/records are unprefixed
+  `interface` with every field `readonly`**. A structural stand-in for a host type takes the
+  `...Like` suffix (`StoryboardConfigurationLike`) — the shape without the import.
+- Injection names: dependency bags are `XDependencies`, request/result pairs `XRequest`/`XResult`,
+  zod schemas camelCase `xSchema`. Handler factories are `createXHandler`; vscode command
+  registration is `registerXCommand`.
+- Command surfaces: vscode `storyboard.<noun>.<verb>`, CLI `<noun> <verb>`, RPC methods dotted
+  `noun.verb` (`cards.list`).
+
+## Interfaces and Data Definitions
+
+- **Schema-first at boundaries**: config files, RPC payloads, and workspace files (`.card` etc.)
+  are defined by zod schemas; types derive via `z.infer`, unions via `z.discriminatedUnion`.
+- `interface` = record shape (all fields `readonly`); `type` = union/alias. State machines are
+  string-literal unions (`SyncState = 'clean' | 'no-remote' | …`); events and outcomes are
+  discriminated unions on `kind`/`status`/`ok`.
+- **Ports are structural and host-ignorant**: never name a host type — use `uri: unknown`,
+  `PromiseLike`, or a hand-rolled `{ readonly dispose: () => void }`. Package code never imports
+  `vscode`, even type-only (`import('vscode').X` in a type position counts as a violation).
+- Dependency injection is constructor + a single `readonly` deps interface
+  (`GenerateDraftUseCaseDependencies` pattern). Declare a port next to its consumer (in the
+  use-case file or the package's `ports/`), but pick one convention per package.
+
+## Error Handling and State
+
+- **Two channels, never mixed ad hoc**:
+  1. Expected failures the caller acts on are **returned** as discriminated unions —
+     `{ ok: false, kind: 'failed' | 'cancelled', message }` (`GenerateDraftResult` pattern).
+  2. Programmer/config errors are **thrown** as custom errors following the story-format template:
+     `class XError extends Error` with a `code` string-literal union, optional `cause`, and
+     `this.name` set. Codes are English kebab-case; messages are Korean.
+- Catch-alls live only at the outermost isolation ring (the bot's `UpdateRouter.handleUpdate`:
+  log, always answer the user). A deliberately swallowed side-effect failure carries a comment
+  saying why (usageSink: accounting must never fail a paid generation). No silent mid-layer
+  catches — a corrupt config file must fail loudly as a typed `ConfigError`, never fall back to
+  `{}`.
+- Prefer explicit refusal over silent fallback: an unknown provider is rejected pre-flight, not
+  downgraded to `mock` (which would overwrite a real draft and still exit 0).
+- Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
+  warnings go to stderr.
+- State: story content lives in the git workspace only. App-operational state lives under
+  `~/.storyboard/<app>.json` honoring `STORYBOARD_HOME` (with tilde expansion), secrets at 0600.
+  The extension uses `context.secrets` plus workspace files — not `globalState` — as its stores.
+
+## Shared Package References
+
+- Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
+  ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
+  `format ← ai ← pipeline ← engine`; `story-git` stays dependency-free.
+- **Every imported workspace package must be declared in that consumer's `package.json`** — do not
+  rely on app-level aliases happening to resolve it.
+- App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`
+  directly; the bot must not import anything `seed`-related.
+- In vscode code, prefer `@/` and `@webview/` over `../../`-and-deeper relative chains; bot and cli
+  use plain relative imports (no aliases) — keep each app uniform.
+- When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
+  promote the existing one into a shared package instead of re-implementing it locally.
