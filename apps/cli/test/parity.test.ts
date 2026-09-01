@@ -22,14 +22,11 @@ const editorOnlyCommands = new Set([
 
 // Verbs still to be written. This list must only ever shrink.
 const pendingVerbs = new Set([
-  'storyboard.character.create',
-  'storyboard.background.create',
   'storyboard.character.rename',
   'storyboard.background.rename',
   'storyboard.cards.buildFromScenes',
   'storyboard.cards.migrateTextToList',
   'storyboard.bible.canonDiff',
-  'storyboard.scene.create',
   'storyboard.scene.generateAllSeeds',
   'storyboard.scene.completeStory',
   'storyboard.scene.migrate',
@@ -40,6 +37,9 @@ const pendingVerbs = new Set([
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.character.create': 'card create character',
+  'storyboard.background.create': 'card create background',
+  'storyboard.scene.create': 'scene create',
   'storyboard.draft.applyFormat': 'draft format',
   'storyboard.draft.augment': 'draft augment',
   'storyboard.draft.export': 'manuscript export',
@@ -48,8 +48,8 @@ const commandToVerb: Readonly<Record<string, string>> = {
   'storyboard.draft.continuityCheck': 'check continuity',
   'storyboard.draft.slopCheck': 'check slop',
   'storyboard.apiKey.set': 'apikey set',
-  'storyboard.character.recommend': 'card recommend',
-  'storyboard.background.recommend': 'card recommend',
+  'storyboard.character.recommend': 'card recommend character',
+  'storyboard.background.recommend': 'card recommend background',
   'storyboard.cards.promoteCandidates': 'card promote',
   'storyboard.bible.promoteCandidates': 'bible promote',
   'storyboard.draft.generate': 'scene generate',

@@ -4,6 +4,13 @@ export interface ParsedArguments {
   readonly positionals: readonly string[];
 }
 
+// Bare tokens before the verb is resolved. `card create character` and `check grammar 01-a` have
+// the same shape, so only the command table can say where the verb ends.
+export interface RawArguments {
+  readonly words: readonly string[];
+  readonly flags: Readonly<Record<string, string | boolean>>;
+}
+
 // Flags that never take a value. Without this list a boolean flag swallows the token after it —
 // `scene generate --json 01-a` would lose the scene and silently leave JSON mode off.
 const booleanFlags = new Set([
@@ -27,6 +34,8 @@ const valueFlags = new Set([
   'language',
   'out',
   'instruction',
+  'name',
+  'id',
 ]);
 
 export interface ParseFailure {
@@ -36,19 +45,15 @@ export interface ParseFailure {
 // `storyboard scene generate 01-a --provider codex --json` splits into a verb path, positionals and
 // flags. Flags may appear anywhere, including before the verb. Deliberately hand-rolled: the
 // surface is small, and a parser dependency would be the CLI's only one.
-export function parseArguments(argv: readonly string[]): ParsedArguments | ParseFailure {
-  const path: string[] = [];
-  const positionals: string[] = [];
+export function parseArguments(argv: readonly string[]): RawArguments | ParseFailure {
+  const words: string[] = [];
   const flags: Record<string, string | boolean> = {};
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index] ?? '';
 
     if (!token.startsWith('--')) {
-      // The verb is the first two bare words; anything after them is a target.
-      (path.length < 2 && !token.includes('/') && !token.includes('.') ? path : positionals).push(
-        token,
-      );
+      words.push(token);
       continue;
     }
 
@@ -81,10 +86,32 @@ export function parseArguments(argv: readonly string[]): ParsedArguments | Parse
     index += 1;
   }
 
-  return { path, flags, positionals };
+  return { words, flags };
 }
 
-export function isParseFailure(parsed: ParsedArguments | ParseFailure): parsed is ParseFailure {
+// Longest verb wins: `card create character` resolves to the three-word verb, while
+// `check grammar 01-a` stops at two and leaves the stem as a positional.
+export function resolveVerb(raw: RawArguments, verbs: readonly string[]): ParsedArguments {
+  for (let length = Math.min(3, raw.words.length); length > 0; length -= 1) {
+    const candidate = raw.words.slice(0, length).join(' ');
+
+    if (verbs.includes(candidate)) {
+      return {
+        path: raw.words.slice(0, length),
+        flags: raw.flags,
+        positionals: raw.words.slice(length),
+      };
+    }
+  }
+
+  return {
+    path: raw.words.slice(0, Math.min(2, raw.words.length)),
+    flags: raw.flags,
+    positionals: [],
+  };
+}
+
+export function isParseFailure(parsed: RawArguments | ParseFailure): parsed is ParseFailure {
   return 'message' in parsed;
 }
 
