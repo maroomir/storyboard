@@ -1,12 +1,26 @@
 import {
   draftPath,
+  analyzeSlop,
+  createDefaultProjectJson,
+  createStoryboardDirectories,
+  createWorkspaceReadme,
+  ensureWorkspaceGitignore,
   getStoryboardProjectPaths,
+  sceneContextPaths,
   scenePath,
   readProjectJson,
+  writeProjectJson,
   type StoryUri,
 } from '@storyboard/story-engine';
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
+import {
+  buildNarrativeContext,
+  buildSceneContext,
+  formatBibleFactLines,
+  parseDraft,
+  readSceneFile,
+} from '@storyboard/story-format';
 import { parseSceneFileName } from '@storyboard/story-format';
 
 import type { CliContainer } from '../container';
@@ -284,6 +298,138 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
       };
 };
 
+// An agent starting from an empty directory needs this first; without it the CLI can only work in
+// a workspace the extension already created.
+const initProject: CommandHandler = async ({ container, args }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+
+  if (await container.fileSystem.exists(paths.projectJson)) {
+    return { ok: false, message: '이미 Storyboard 워크스페이스입니다.' };
+  }
+
+  const name = flagString(args.flags, 'title') ?? args.positionals[0];
+
+  if (name === undefined || name.trim().length === 0) {
+    return { ok: false, message: '--title 로 작품 이름을 지정해 주세요.' };
+  }
+
+  const project = createDefaultProjectJson({
+    name,
+    ...(flagString(args.flags, 'language') === undefined
+      ? {}
+      : { language: flagString(args.flags, 'language') }),
+  });
+
+  await container.fileSystem.createDirectory(paths.metadataDirectory);
+  await createStoryboardDirectories(container.fileSystem, paths);
+  await writeProjectJson(container.fileSystem, paths.projectJson, project);
+  await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
+  await container.fileSystem.writeFile(
+    paths.readme,
+    new TextEncoder().encode(createWorkspaceReadme(project.name)),
+  );
+
+  return {
+    ok: true,
+    message: `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}`,
+    data: { id: project.id, name: project.name, format: project.format },
+  };
+};
+
+// Diagnostics the editor paints as squiggles have no terminal form, but the analysis behind them
+// does — and an agent that can check its own output is the whole point of the CLI. Findings go out
+// as data; the exit code says whether the draft is clean.
+type CheckKind = 'grammar' | 'continuity' | 'slop';
+
+async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
+  const uri = draftPath(container.workspaceRoot, stem) as StoryUri;
+
+  try {
+    return parseDraft(new TextDecoder().decode(await container.fileSystem.readFile(uri))).body;
+  } catch {
+    return undefined;
+  }
+}
+
+const checkDraft: CommandHandler = async ({ container, args }) => {
+  const kind = args.path[1] as CheckKind | undefined;
+  const stem = sceneStemFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  const body = await readDraftBody(container, stem);
+
+  if (body === undefined) {
+    return { ok: false, message: `초안이 없습니다: ${stem}` };
+  }
+
+  if (kind === 'slop') {
+    // Deterministic, no provider call — the cheapest of the three.
+    const findings = analyzeSlop(body);
+    return {
+      ok: findings.length === 0,
+      message: findings.length === 0 ? '상투 표현을 찾지 못했습니다.' : `${findings.length}건`,
+      data: findings,
+    };
+  }
+
+  const service = container.aiGateway.createService(container.workspaceRoot);
+  const attribution = { primary: { kind: 'scene' as const, id: stem } };
+
+  if (kind === 'grammar') {
+    const issues = await service.checkGrammar(body, {
+      providerId: container.aiGateway.getTaskProvider('grammarCheck'),
+      attribution,
+    });
+    return {
+      ok: issues.length === 0,
+      message: issues.length === 0 ? '문법 문제를 찾지 못했습니다.' : `${issues.length}건`,
+      data: issues,
+    };
+  }
+
+  const factLines = await loadCanonFactLines(container, stem);
+
+  if (factLines.length === 0) {
+    return { ok: true, message: '대조할 정전 사실이 없습니다.', data: [] };
+  }
+
+  const issues = await service.checkContinuity(body, factLines, {
+    providerId: container.aiGateway.getTaskProvider('continuityCheck'),
+    attribution,
+  });
+
+  return {
+    ok: issues.length === 0,
+    message: issues.length === 0 ? '연속성 문제를 찾지 못했습니다.' : `${issues.length}건`,
+    data: issues,
+  };
+};
+
+async function loadCanonFactLines(
+  container: CliContainer,
+  stem: string,
+): Promise<readonly string[]> {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const fileName = `${stem}.card`;
+
+  try {
+    const scene = await readSceneFile(
+      scenePath(container.workspaceRoot, stem),
+      container.fileSystem,
+      fileName,
+    );
+    const contextPaths = sceneContextPaths(paths);
+    const context = await buildSceneContext(contextPaths, scene, container.fileSystem);
+    const narrative = await buildNarrativeContext(contextPaths, context, container.fileSystem);
+    return formatBibleFactLines(context, narrative.bibleFacts);
+  } catch {
+    return [];
+  }
+}
+
 // SECURITY: the key is read from stdin, never from argv — an API key on a command line lands in
 // the shell history and in the process list for every user on the machine.
 const setApiKey: CommandHandler = async ({ container, args }) => {
@@ -338,4 +484,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card promote': promoteCards,
   'bible promote': promoteBible,
   'apikey set': setApiKey,
+  'check grammar': checkDraft,
+  'check continuity': checkDraft,
+  'check slop': checkDraft,
+  init: initProject,
 };

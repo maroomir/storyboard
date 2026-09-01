@@ -50,6 +50,7 @@ import { resolveCliPaths } from './adapters/paths';
 
 export interface CliContainer {
   readonly workspaceRoot: StoryUri;
+  readonly aiGateway: AiGateway;
   readonly logger: ConsoleLogger;
   readonly fileSystem: NodeFileSystem;
   readonly secretStore: SecretStore;
@@ -190,6 +191,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   return {
     workspaceRoot,
+    aiGateway,
     logger,
     fileSystem,
     secretStore,

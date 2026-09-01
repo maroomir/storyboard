@@ -22,7 +22,6 @@ const editorOnlyCommands = new Set([
 
 // Verbs still to be written. This list must only ever shrink.
 const pendingVerbs = new Set([
-  'storyboard.init',
   'storyboard.character.create',
   'storyboard.background.create',
   'storyboard.character.rename',
@@ -41,12 +40,13 @@ const pendingVerbs = new Set([
   'storyboard.draft.condense',
   'storyboard.draft.expand',
   'storyboard.draft.export',
-  'storyboard.draft.grammarCheck',
-  'storyboard.draft.continuityCheck',
-  'storyboard.draft.slopCheck',
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.init': 'init',
+  'storyboard.draft.grammarCheck': 'check grammar',
+  'storyboard.draft.continuityCheck': 'check continuity',
+  'storyboard.draft.slopCheck': 'check slop',
   'storyboard.apiKey.set': 'apikey set',
   'storyboard.character.recommend': 'card recommend',
   'storyboard.background.recommend': 'card recommend',

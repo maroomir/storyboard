@@ -18,7 +18,14 @@ const booleanFlags = new Set([
   'version',
 ]);
 
-const valueFlags = new Set(['workspace', 'provider', 'model', 'revise-iterations']);
+const valueFlags = new Set([
+  'workspace',
+  'provider',
+  'model',
+  'revise-iterations',
+  'title',
+  'language',
+]);
 
 export interface ParseFailure {
   readonly message: string;
