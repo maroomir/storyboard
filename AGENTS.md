@@ -26,6 +26,7 @@ Apply this priority when instructions conflict:
 - `.claude/rules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
 - `.claude/rules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
 - `.claude/rules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
+- `.claude/rules/coding-standards.md` (and `.cursor/rules/coding-standards.mdc`) define the monorepo-wide structure, naming, typing, and error-handling standards; the reference module is `apps/bot`, with `packages/story-format` as the package-side reference.
 - `.claude/rules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 
 If documents conflict in a way that could change behavior, investigate and ask before editing.

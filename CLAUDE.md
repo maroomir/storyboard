@@ -8,6 +8,7 @@
 @.claude/rules/webview.md
 @.claude/rules/testing.md
 @.claude/rules/clean-code.md
+@.claude/rules/coding-standards.md
 @.claude/rules/comments.md
 @.claude/rules/release.md
 @.claude/rules/agent-workflow.md
