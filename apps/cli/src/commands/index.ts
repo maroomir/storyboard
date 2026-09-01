@@ -32,8 +32,13 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
+  parseCard,
   parseDraft,
   readSceneFile,
+  rewriteCardIdReferences,
+  serializeCard,
+  serializeDraft,
+  setCardId,
 } from '@storyboard/story-format';
 import { parseSceneFileName } from '@storyboard/story-format';
 
@@ -310,6 +315,251 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
         message: `카드가 없는 ${category} ${result.recommendations.length}건`,
         data: result.recommendations,
       };
+};
+
+// Renaming a card is a workspace-wide edit: the file moves, its own id changes, and every card
+// that references it is rewritten. The editor does this in one WorkspaceEdit; here the writes are
+// sequential, so a crash mid-rename leaves references half-updated — run it on a clean tree.
+const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/;
+
+const renameCard: CommandHandler = async ({ container, args }) => {
+  const kind = args.path[2];
+  const oldId = args.positionals[0];
+  const newId = flagString(args.flags, 'to');
+
+  if (kind !== 'character' && kind !== 'background') {
+    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  }
+
+  if (oldId === undefined || newId === undefined) {
+    return { ok: false, message: '바꿀 id 와 --to <새 id> 를 지정해 주세요.' };
+  }
+
+  if (!cardIdPattern.test(newId)) {
+    return {
+      ok: false,
+      message: 'ID 는 영문 소문자, 숫자, 하이픈만 쓸 수 있고 숫자나 문자로 시작해야 합니다.',
+    };
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const directory = kind === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
+  const oldUri = joinStoryPath(directory, `${oldId}.card`);
+  const newUri = joinStoryPath(directory, `${newId}.card`);
+
+  if (!(await container.fileSystem.exists(oldUri))) {
+    return { ok: false, message: `카드가 없습니다: ${oldId}` };
+  }
+
+  if (await container.fileSystem.exists(newUri)) {
+    return { ok: false, message: `이미 있습니다: ${newId}` };
+  }
+
+  const renamed = setCardId(
+    parseCard(new TextDecoder().decode(await container.fileSystem.readFile(oldUri))),
+    newId,
+  );
+
+  await container.fileSystem.writeFile(newUri, new TextEncoder().encode(serializeCard(renamed)));
+  await container.fileSystem.delete(oldUri);
+
+  // Only a character id is referenced from other cards; a background id is not.
+  const rewritten =
+    kind === 'character'
+      ? await rewriteCharacterReferences(container, paths, oldId, newId, newUri)
+      : 0;
+
+  return {
+    ok: true,
+    message: `${oldId} → ${newId}${rewritten > 0 ? ` (참조 ${rewritten}건 갱신)` : ''}`,
+    data: { oldId, newId, rewritten },
+  };
+};
+
+async function rewriteCharacterReferences(
+  container: CliContainer,
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+  oldId: string,
+  newId: string,
+  renamedUri: StoryUri,
+): Promise<number> {
+  let rewritten = 0;
+
+  for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
+    rewritten += await eachCardFile(container, directory, async (uri) => {
+      if (uri.path === renamedUri.path) {
+        return false;
+      }
+
+      const raw = new TextDecoder().decode(await container.fileSystem.readFile(uri));
+      let next: string;
+
+      try {
+        next = serializeCard(rewriteCardIdReferences(parseCard(raw), oldId, newId));
+      } catch (error) {
+        // One unreadable card must not abort a rename that already moved the file. Report it and
+        // keep going; the operator fixes that card and re-runs.
+        container.logger.warn(`참조를 갱신하지 못했습니다: ${uri.fsPath} — ${String(error)}`);
+        return false;
+      }
+
+      if (next === raw) {
+        return false;
+      }
+
+      await container.fileSystem.writeFile(uri, new TextEncoder().encode(next));
+      return true;
+    });
+  }
+
+  return rewritten;
+}
+
+// The editor names a region by dragging; a terminal names it by line numbers. `--lines 40-60` is
+// the same input in the form this host has.
+interface LineRange {
+  readonly from: number;
+  readonly to: number;
+}
+
+function parseLineRange(raw: string | undefined): LineRange | undefined | 'invalid' {
+  if (raw === undefined) {
+    return undefined;
+  }
+
+  const match = /^(\d+)-(\d+)$/.exec(raw.trim());
+
+  if (!match) {
+    return 'invalid';
+  }
+
+  const from = Number(match[1]);
+  const to = Number(match[2]);
+  return from >= 1 && to >= from ? { from, to } : 'invalid';
+}
+
+function sliceLines(body: string, range: LineRange | undefined): string {
+  if (range === undefined) {
+    return body;
+  }
+
+  return body
+    .split('\n')
+    .slice(range.from - 1, range.to)
+    .join('\n');
+}
+
+function replaceLines(body: string, range: LineRange | undefined, replacement: string): string {
+  if (range === undefined) {
+    return replacement;
+  }
+
+  const lines = body.split('\n');
+  return [
+    ...lines.slice(0, range.from - 1),
+    ...replacement.split('\n'),
+    ...lines.slice(range.to),
+  ].join('\n');
+}
+
+// Rewrites the draft in place. `--lines` narrows it; without one the whole body is the target,
+// which is the shape a terminal caller usually wants.
+async function rewriteDraft(
+  container: CliContainer,
+  stem: string,
+  range: LineRange | undefined,
+  transform: (target: string) => Promise<{ ok: boolean; text?: string; message: string }>,
+): Promise<CommandOutcome> {
+  const body = await readDraftBody(container, stem);
+
+  if (body === undefined) {
+    return { ok: false, message: `초안이 없습니다: ${stem}` };
+  }
+
+  const target = sliceLines(body, range);
+
+  if (target.trim().length === 0) {
+    return { ok: false, message: '대상 구간이 비어 있습니다.' };
+  }
+
+  const result = await transform(target);
+
+  if (!result.ok || result.text === undefined) {
+    return { ok: false, message: result.message };
+  }
+
+  const draftUri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const existing = parseDraft(
+    new TextDecoder().decode(await container.fileSystem.readFile(draftUri)),
+  );
+
+  await container.fileSystem.writeFile(
+    draftUri,
+    new TextEncoder().encode(
+      serializeDraft({ ...existing, body: replaceLines(body, range, result.text) }),
+    ),
+  );
+
+  return { ok: true, message: result.message, data: { draft: draftUri.fsPath } };
+}
+
+function rangeFrom(args: ParsedArguments): LineRange | undefined | 'invalid' {
+  return parseLineRange(flagString(args.flags, 'lines'));
+}
+
+const condenseDraft: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+  const range = rangeFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  if (range === 'invalid') {
+    return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+
+  return rewriteDraft(container, stem, range, async (target) => {
+    const result = await container.condenseDraftUseCase.execute({
+      workspaceRoot: container.workspaceRoot,
+      sceneStem: stem,
+      format: project.format,
+      body: target,
+      maxCompressionPercent: container.configBridge.getMaxCompressionPercent(),
+    });
+
+    return result.ok
+      ? { ok: true, text: result.text, message: '초안을 압축했습니다.' }
+      : { ok: false, message: `압축하지 못했습니다 (${result.kind}).` };
+  });
+};
+
+const expandDraft: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+  const range = rangeFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  if (range === 'invalid') {
+    return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
+  }
+
+  return rewriteDraft(container, stem, range, async (target) => {
+    const result = await container.expandDraftUseCase.execute({
+      workspaceRoot: container.workspaceRoot,
+      sceneStem: stem,
+      selectedText: target,
+    });
+
+    return result.ok
+      ? { ok: true, text: result.text, message: '구간을 늘렸습니다.' }
+      : { ok: false, message: `늘리지 못했습니다 (${result.kind}).` };
+  });
 };
 
 // Both migrations rewrite files in place and are idempotent — a second run reports zero. They are
@@ -596,15 +846,20 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
+  const range = rangeFrom(args);
+
+  if (range === 'invalid') {
+    return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
+  }
+
+  const instruction = flagString(args.flags, 'instruction');
   const prepared = await container.augmentDraftUseCase.prepareAugmentedDraft({
     draftSceneStem: stem,
     sceneUri: scenePath(container.workspaceRoot, stem),
-    scope: 'draft',
-    target: body,
+    scope: range === undefined ? 'draft' : 'selection',
+    target: sliceLines(body, range),
     workspaceRoot: container.workspaceRoot,
-    ...(flagString(args.flags, 'instruction') === undefined
-      ? {}
-      : { instruction: flagString(args.flags, 'instruction') }),
+    ...(instruction === undefined ? {} : { instruction }),
   });
 
   if (!prepared.ok) {
@@ -622,6 +877,57 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
   });
 
   return { ok: true, message: '카드 기반 보충을 반영했습니다.', data: { draft: draftUri.fsPath } };
+};
+
+// The editor asks for the instruction in a prompt box; here it is a flag. Everything else is the
+// selection-scoped augmentation the editor runs.
+const editDraft: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+  const range = rangeFrom(args);
+  const instruction = flagString(args.flags, 'instruction');
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  if (range === 'invalid') {
+    return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
+  }
+
+  if (instruction === undefined || instruction.trim().length === 0) {
+    return { ok: false, message: '--instruction 으로 어떻게 고칠지 알려 주세요.' };
+  }
+
+  const body = await readDraftBody(container, stem);
+
+  if (body === undefined) {
+    return { ok: false, message: `초안이 없습니다: ${stem}` };
+  }
+
+  const prepared = await container.augmentDraftUseCase.prepareAugmentedDraft({
+    draftSceneStem: stem,
+    sceneUri: scenePath(container.workspaceRoot, stem),
+    scope: 'selection',
+    target: sliceLines(body, range),
+    workspaceRoot: container.workspaceRoot,
+    instruction,
+  });
+
+  if (!prepared.ok) {
+    return { ok: false, message: `고치지 못했습니다 (${prepared.kind}).`, data: prepared };
+  }
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: '수정안을 만들었습니다 (적용하지 않음).', data: prepared };
+  }
+
+  await container.augmentDraftUseCase.applyAugmentedDraft({
+    draftUri: draftPath(container.workspaceRoot, stem) as StoryUri,
+    sceneStem: stem,
+    workspaceRoot: container.workspaceRoot,
+  });
+
+  return { ok: true, message: '지시대로 고쳤습니다.', data: { stem } };
 };
 
 const exportManuscript: CommandHandler = async ({ container, args }) => {
@@ -841,8 +1147,13 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'scene complete': completeStory,
   'cards build': buildStoryCards,
   'canon diff': canonDiff,
+  'draft edit': editDraft,
+  'draft condense': condenseDraft,
+  'draft expand': expandDraft,
   'cards migrate': migrateCardText,
   'scene migrate': migrateScenes,
+  'card rename character': renameCard,
+  'card rename background': renameCard,
   'card create character': createCard,
   'card create background': createCard,
   'scene create': createScene,

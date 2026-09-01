@@ -21,16 +21,15 @@ const editorOnlyCommands = new Set([
 ]);
 
 // Verbs still to be written. This list must only ever shrink.
-const pendingVerbs = new Set([
-  'storyboard.character.rename',
-  'storyboard.background.rename',
-  'storyboard.draft.augmentSelection',
-  'storyboard.draft.editSelection',
-  'storyboard.draft.condense',
-  'storyboard.draft.expand',
-]);
+const pendingVerbs = new Set([]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.character.rename': 'card rename character',
+  'storyboard.background.rename': 'card rename background',
+  'storyboard.draft.condense': 'draft condense',
+  'storyboard.draft.expand': 'draft expand',
+  'storyboard.draft.augmentSelection': 'draft augment',
+  'storyboard.draft.editSelection': 'draft edit',
   'storyboard.cards.migrateTextToList': 'cards migrate',
   'storyboard.scene.migrate': 'scene migrate',
   'storyboard.scene.generateAllSeeds': 'scene seeds',

@@ -26,7 +26,10 @@ Commands
   scene draft <stem>           초안 파일 경로를 출력합니다
   init --title <name>          현재 디렉터리를 Storyboard 워크스페이스로 만듭니다
   draft format <stem>          초안을 프로젝트 형식으로 다시 씁니다
-  draft augment <stem>         갱신된 카드·정전을 기존 초안에 녹입니다 (--dry-run)
+  draft augment <stem>         갱신된 카드·정전을 기존 초안에 녹입니다 (--lines, --dry-run)
+  draft edit <stem>            --instruction 대로 고칩니다 (--lines 로 구간 지정)
+  draft condense <stem>        초안을 압축합니다 (--lines)
+  draft expand <stem>          초안을 늘립니다 (--lines)
   manuscript export            조립 원고를 stdout 또는 --out 파일로 냅니다
   check grammar <stem>         초안의 문법을 검사합니다
   check continuity <stem>      정전과 어긋나는 곳을 검사합니다
@@ -37,6 +40,7 @@ Commands
   canon diff                   정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)
   cards migrate                낡은 산문형 카드 필드를 목록 형식으로 옮깁니다
   scene migrate                구형 scene/*.txt 를 .card 로 옮깁니다
+  card rename <kind> <id> --to 카드 id 를 바꾸고 참조를 함께 고칩니다
   card create <kind> --name    빈 인물/배경 카드를 만듭니다
   scene create --name          다음 번호로 씬 카드를 만듭니다
   card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
@@ -56,9 +60,11 @@ Flags
   --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
   --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
   --out <path>                 manuscript export 의 출력 파일
-  --instruction <text>         draft augment 에 줄 추가 지시
+  --lines <a-b>                대상 줄 범위 (없으면 본문 전체)
+  --instruction <text>         draft augment/edit 에 줄 지시
   --name <text>                card/scene create 가 쓸 이름
   --id <slug>                  card create 의 파일명 (기본: 이름에서 유도)
+  --to <id>                    card rename 의 새 id
   --title <name>               init 이 만들 작품 이름
   --language <code>            init 의 언어 (기본 ko)
   --dry-run                    반영하지 않고 대상만 보고합니다
