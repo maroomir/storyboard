@@ -124,6 +124,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
@@ -159,6 +160,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -191,6 +193,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -227,6 +230,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
     });
 
@@ -249,6 +253,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
     });
     const pipeline = new DraftPipeline({ store, content, generator });
@@ -271,6 +276,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
@@ -279,8 +285,6 @@ describe('scene draft generation', () => {
 
     const generated = await generator.generate('01-prologue', () => false);
 
-    // eslint-disable-next-line no-console
-    console.log('GENERATED', JSON.stringify(generated));
     expect(generated).toMatchObject({ status: 'written' });
     expect(stages.some((stage) => stage.startsWith('검사 중'))).toBe(true);
   });
@@ -299,6 +303,7 @@ describe('scene draft generation', () => {
       registry: engine.registry,
       configBridge: engine.configBridge,
       autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
       generator: 'storyboard-bot@0.0.0-test',
       onStage: (stage) => {
         stages.push(stage);
@@ -333,6 +338,33 @@ describe('scene draft generation', () => {
     expect(await personaStore.load(editedCharacter)).toBeUndefined();
 
     expect(fixture.git('log', '--format=%s').split('\n')).toHaveLength(commitsBefore);
+  });
+
+  // The engine builds its own AI service per use case, so the job ledger only sees generation cost
+  // if the generator forwards it. A no-op here silently zeroes every /draft job's usage row.
+  it('forwards provider usage to the job ledger', async () => {
+    const usage: unknown[] = [];
+    const draftConfig = {
+      reviseAfterGenerate: false,
+      reviseMaxIterations: 2,
+      autoGrounding: false,
+    };
+    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      registry: engine.registry,
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
+      onUsage: (record) => {
+        usage.push(record);
+      },
+      generator: 'storyboard-bot@0.0.0-test',
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    expect(usage.length).toBeGreaterThan(0);
   });
 
   it('reports cancellation instead of writing', async () => {

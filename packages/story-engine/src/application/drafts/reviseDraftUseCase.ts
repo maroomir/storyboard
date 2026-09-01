@@ -2,6 +2,7 @@ import type { StoryUri } from '../../paths/storyUri';
 import type { StoryboardLogger } from '../../ports/logger';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import { joinUri, type StoryboardProjectPaths } from '../../paths/projectPaths';
+import { sceneCacheFilePath } from '../../persistence/sceneCacheWorkspace';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -9,13 +10,16 @@ import {
   formatBibleFactLines,
   readStoryState,
   storyStateFactLines,
+  computeDraftBodyHash,
   parseDraft,
+  serializeDraft,
   readDraftFile,
   readSceneFile,
   writeDraftFile,
 } from '@storyboard/story-format';
 import type { ProjectSetting } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
+import type { ISceneCacheRepository } from '../../ports/repositories';
 import { readProjectJson } from '../../persistence/projectJson';
 import { buildStyleDirective, formatAugmentCards, StoryboardAIService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
@@ -53,6 +57,10 @@ export interface ReviseDraftUseCaseDependencies {
   readonly fileSystem: IFileSystem;
   readonly logger: StoryboardLogger;
   readonly generator: string;
+  // Rewriting the draft invalidates the body hash the scene cache recorded at generation time.
+  // Without this the next generation reads the draft as somebody else's work and archives it with
+  // a false "hand-edited" warning on every single run.
+  readonly sceneCacheRepository?: ISceneCacheRepository;
 }
 
 export interface ReviseDraftRequest {
@@ -168,21 +176,20 @@ async function runReviseDraftWorkflow(
 
   if (result.revisionCount > 0 && !result.rejection && !result.cancelled) {
     const revisionConfig = options.aiProviderRegistry.getTaskAiConfig('draftRevision');
-    await writeDraftFile(
-      draftUri,
-      options.fileSystem,
-      createDraft({
-        sceneStem,
-        format: ctx.draft.format,
-        body: result.body,
-        // 생성 단계가 못 고치고 남긴 위반(사라진 대사·분량 미달 등)은 수정 루프가 다루는 문제와
-        // 다르다. 여기서 빠뜨리면 헤더에서 사라져 읽는 사람이 영영 보지 못한다.
-        warnings: ctx.draft.warnings,
-        generator: options.generator,
-        providerId: revisionConfig.providerId,
-        model: revisionConfig.model,
-      }),
-    );
+    const revised = createDraft({
+      sceneStem,
+      format: ctx.draft.format,
+      body: result.body,
+      // 생성 단계가 못 고치고 남긴 위반(사라진 대사·분량 미달 등)은 수정 루프가 다루는 문제와
+      // 다르다. 여기서 빠뜨리면 헤더에서 사라져 읽는 사람이 영영 보지 못한다.
+      warnings: ctx.draft.warnings,
+      generator: options.generator,
+      providerId: revisionConfig.providerId,
+      model: revisionConfig.model,
+    });
+
+    await writeDraftFile(draftUri, options.fileSystem, revised);
+    await refreshSceneCacheBodyHash(options, sceneStem, revised);
   }
 
   return {
@@ -194,6 +201,33 @@ async function runReviseDraftWorkflow(
     preservedOriginal: result.preservedOriginal,
     rejection: result.rejection,
   };
+}
+
+// The cache record is the generation's provenance, not the revision's, so only the body hash moves.
+// A workspace with no record yet (a draft written before caching, or a host that keeps none) simply
+// has nothing to refresh.
+async function refreshSceneCacheBodyHash(
+  options: ReviseDraftRequest & ReviseDraftUseCaseDependencies,
+  sceneStem: string,
+  revised: ReturnType<typeof createDraft>,
+): Promise<void> {
+  const repository = options.sceneCacheRepository;
+
+  if (!repository) {
+    return;
+  }
+
+  const cacheUri = sceneCacheFilePath(options.paths, sceneStem);
+
+  try {
+    const record = await repository.read(cacheUri);
+    await repository.write(cacheUri, {
+      ...record,
+      bodyHash: computeDraftBodyHash(parseDraft(serializeDraft(revised)).body),
+    });
+  } catch (error) {
+    options.logger.warn(`씬 캐시의 본문 해시를 갱신하지 못했습니다: ${String(error)}`);
+  }
 }
 
 export class ReviseDraftUseCase {

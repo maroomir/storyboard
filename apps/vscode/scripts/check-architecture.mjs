@@ -10,13 +10,9 @@ import ts from 'typescript';
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
 const EXTENSION_ENTRY = path.join(SOURCE_ROOT, 'extension.ts');
-const APPLICATION_ROOT = path.join(SOURCE_ROOT, 'application');
 const PRESENTATION_ROOT = path.join(SOURCE_ROOT, 'presentation');
 const INFRASTRUCTURE_ROOT = path.join(SOURCE_ROOT, 'infrastructure');
 const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
-const COMMANDS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'commands');
-const PROVIDERS_ROOT = path.join(SOURCE_ROOT, 'presentation', 'providers');
-const AI_SERVICE_PATH = path.join(SOURCE_ROOT, 'infrastructure', 'ai', 'AIService.ts');
 
 // Shared workspace package: every app consumes it, so it must stay runtime-agnostic and must never
 // import back into an app.
@@ -27,8 +23,6 @@ const STORY_GIT_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story
 const STORY_ENGINE_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages', 'story-engine', 'src');
 const ENGINE_SHARED_ROOT = path.join(STORY_ENGINE_ROOT, 'shared');
 
-// Compat boundary is now closed: no application file may import vscode at runtime.
-const APPLICATION_RUNTIME_VSCODE_ALLOWLIST = new Set([]);
 
 const sourceFiles = collectSourceFiles(SOURCE_ROOT);
 const sourceFileSet = new Set(sourceFiles);
@@ -49,13 +43,11 @@ for (const filePath of sourceFiles) {
       continue;
     }
 
-    validateApplicationVscodeBoundary(filePath, statement, importPath);
 
     const target = resolveImport(filePath, importPath);
     if (target) {
       graph.get(filePath)?.add(target);
-      validateApplicationBoundary(filePath, target);
-      validatePresentationAiBoundary(filePath, statement, target);
+      validateInfrastructureBoundary(filePath, target);
     }
   }
 }
@@ -170,6 +162,23 @@ function findCycles(dependencyGraph) {
   return cycles;
 }
 
+// What is left in the extension after the engine took the inner layers: infrastructure adapts
+// VSCode for the engine, presentation drives it, bootstrap wires them. An adapter that reaches into
+// presentation would make the extension's own host layer depend on its UI.
+function validateInfrastructureBoundary(filePath, target) {
+  if (!isWithinDirectory(filePath, INFRASTRUCTURE_ROOT)) {
+    return;
+  }
+
+  const forbiddenRoots = [PRESENTATION_ROOT, BOOTSTRAP_ROOT];
+
+  if (forbiddenRoots.some((root) => isWithinDirectory(target, root))) {
+    failures.push(
+      `Infrastructure imports outer layer: ${relativePath(filePath)} -> ${relativePath(target)}`,
+    );
+  }
+}
+
 function validateExtensionEntry() {
   const sourceFile = ts.createSourceFile(
     EXTENSION_ENTRY,
@@ -252,45 +261,6 @@ function validateEngineSharedBoundary() {
       }
     }
   }
-}
-
-function validateApplicationBoundary(filePath, target) {
-  if (!isWithinDirectory(filePath, APPLICATION_ROOT)) {
-    return;
-  }
-
-  if (isWithinDirectory(target, PRESENTATION_ROOT) || isWithinDirectory(target, BOOTSTRAP_ROOT)) {
-    failures.push(
-      `Application layer imports outer layer: ${relativePath(filePath)} -> ${relativePath(target)}`,
-    );
-  }
-}
-
-function validateApplicationVscodeBoundary(filePath, statement, importPath) {
-  if (
-    !isWithinDirectory(filePath, APPLICATION_ROOT) ||
-    importPath !== 'vscode' ||
-    isTypeOnlyImport(statement) ||
-    APPLICATION_RUNTIME_VSCODE_ALLOWLIST.has(filePath)
-  ) {
-    return;
-  }
-
-  failures.push(`Application layer imports vscode at runtime: ${relativePath(filePath)}`);
-}
-
-function validatePresentationAiBoundary(filePath, statement, target) {
-  if (
-    target !== AI_SERVICE_PATH ||
-    !(isWithinDirectory(filePath, COMMANDS_ROOT) || isWithinDirectory(filePath, PROVIDERS_ROOT)) ||
-    isTypeOnlyImport(statement)
-  ) {
-    return;
-  }
-
-  failures.push(
-    `Presentation imports AIService at runtime: ${relativePath(filePath)} -> ${relativePath(target)}`,
-  );
 }
 
 function isTypeOnlyImport(statement) {

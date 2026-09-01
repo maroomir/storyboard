@@ -4,43 +4,78 @@ export interface ParsedArguments {
   readonly positionals: readonly string[];
 }
 
+// Flags that never take a value. Without this list a boolean flag swallows the token after it —
+// `scene generate --json 01-a` would lose the scene and silently leave JSON mode off.
+const booleanFlags = new Set([
+  'all',
+  'force',
+  'help',
+  'json',
+  'no-revise',
+  'resume',
+  'verbose',
+  'version',
+]);
+
+const valueFlags = new Set(['workspace', 'provider', 'model', 'revise-iterations']);
+
+export interface ParseFailure {
+  readonly message: string;
+}
+
 // `storyboard scene generate 01-a --provider codex --json` splits into a verb path, positionals and
-// flags. Deliberately hand-rolled: the surface is small, and a dependency here would be the only
-// one the CLI has.
-export function parseArguments(argv: readonly string[]): ParsedArguments {
+// flags. Flags may appear anywhere, including before the verb. Deliberately hand-rolled: the
+// surface is small, and a parser dependency would be the CLI's only one.
+export function parseArguments(argv: readonly string[]): ParsedArguments | ParseFailure {
   const path: string[] = [];
   const positionals: string[] = [];
   const flags: Record<string, string | boolean> = {};
-  let seenFlag = false;
 
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index] ?? '';
 
-    if (token.startsWith('--')) {
-      seenFlag = true;
-      const [name, inlineValue] = splitFlag(token.slice(2));
-      const next = argv[index + 1];
+    if (!token.startsWith('--')) {
+      // The verb is the first two bare words; anything after them is a target.
+      (path.length < 2 && !token.includes('/') && !token.includes('.') ? path : positionals).push(
+        token,
+      );
+      continue;
+    }
 
-      if (inlineValue !== undefined) {
-        flags[name] = inlineValue;
-      } else if (next !== undefined && !next.startsWith('-')) {
-        flags[name] = next;
-        index += 1;
-      } else {
-        flags[name] = true;
+    const [name, inlineValue] = splitFlag(token.slice(2));
+
+    if (!booleanFlags.has(name) && !valueFlags.has(name)) {
+      return { message: `알 수 없는 옵션: --${name}` };
+    }
+
+    if (booleanFlags.has(name)) {
+      if (inlineValue !== undefined && inlineValue !== 'true' && inlineValue !== 'false') {
+        return { message: `--${name} 은 값을 받지 않습니다.` };
       }
+      flags[name] = inlineValue !== 'false';
       continue;
     }
 
-    if (seenFlag || path.length >= 2 || token.includes('.') || token.includes('/')) {
-      positionals.push(token);
+    if (inlineValue !== undefined) {
+      flags[name] = inlineValue;
       continue;
     }
 
-    path.push(token);
+    const next = argv[index + 1];
+
+    if (next === undefined || next.startsWith('--')) {
+      return { message: `--${name} 에 값이 필요합니다.` };
+    }
+
+    flags[name] = next;
+    index += 1;
   }
 
   return { path, flags, positionals };
+}
+
+export function isParseFailure(parsed: ParsedArguments | ParseFailure): parsed is ParseFailure {
+  return 'message' in parsed;
 }
 
 function splitFlag(token: string): [string, string | undefined] {

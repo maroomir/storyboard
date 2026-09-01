@@ -1,7 +1,9 @@
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { flagBoolean, flagString, parseArguments } from './cliArguments';
+import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
+
+import { flagBoolean, flagString, isParseFailure, parseArguments } from './cliArguments';
 import { commands, type CommandOutcome } from './commands/index';
 import { createCliContainer } from './container';
 
@@ -12,7 +14,8 @@ const usage = `storyboard ${version} — Storyboard workspaces from the command 
   storyboard <noun> <verb> [target] [flags]
 
 Commands
-  scene generate <stem>        씬 초안을 생성합니다 (--all 로 전체, --force 로 재생성)
+  scene generate <stem>        씬 초안을 생성합니다 (--force 로 재생성)
+  scene generate --all         초안이 없거나 입력이 바뀐 씬만 생성합니다 (--force 미지원)
   scene revise <stem>          기존 초안을 검수하고 재작성합니다
   scene draft <stem>           초안 파일 경로를 출력합니다
   outline generate             시놉시스와 챕터 계획을 만듭니다 (--force 로 덮어쓰기)
@@ -25,23 +28,36 @@ Flags
   --workspace <path>           대상 워크스페이스 (기본: 현재 디렉터리)
   --provider <id>              이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)
   --model <name>               그 프로바이더의 모델
-  --revise-iterations <n>      검수-재작성 반복 상한
+  --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
+  --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
   --json                       결과를 JSON 으로 stdout 에 출력합니다
   --verbose                    진행 로그를 stderr 에 출력합니다
   --version, --help
 `;
 
 async function main(argv: readonly string[]): Promise<number> {
-  const args = parseArguments(argv);
+  const parsed = parseArguments(argv);
+
+  if (isParseFailure(parsed)) {
+    process.stderr.write(`${parsed.message}\n\n${usage}`);
+    return 1;
+  }
+
+  const args = parsed;
 
   if (flagBoolean(args.flags, 'version')) {
     process.stdout.write(`${version}\n`);
     return 0;
   }
 
-  if (args.path.length === 0 || flagBoolean(args.flags, 'help')) {
+  if (flagBoolean(args.flags, 'help')) {
     process.stdout.write(usage);
-    return args.path.length === 0 ? 1 : 0;
+    return 0;
+  }
+
+  if (args.path.length === 0) {
+    process.stderr.write(usage);
+    return 1;
   }
 
   const verb = args.path.join(' ');
@@ -49,6 +65,16 @@ async function main(argv: readonly string[]): Promise<number> {
 
   if (!handler) {
     process.stderr.write(`알 수 없는 명령: ${verb}\n\n${usage}`);
+    return 1;
+  }
+
+  const providerFailure = validateProvider(
+    flagString(args.flags, 'provider'),
+    flagString(args.flags, 'model'),
+  );
+
+  if (providerFailure !== undefined) {
+    process.stderr.write(`${providerFailure}\n`);
     return 1;
   }
 
@@ -79,6 +105,35 @@ async function main(argv: readonly string[]): Promise<number> {
   const outcome = await handler({ container, args });
   report(outcome, flagBoolean(args.flags, 'json'));
   return outcome.ok ? 0 : 1;
+}
+
+// SECURITY-adjacent: an unknown provider used to fall back to `mock`, which always succeeds — a
+// typo would overwrite a real draft with synthetic text and still exit 0. Refuse instead: an
+// unattended run has nobody to notice.
+function validateProvider(
+  provider: string | undefined,
+  model: string | undefined,
+): string | undefined {
+  if (provider === undefined) {
+    return model === undefined
+      ? undefined
+      : '--model 은 --provider 와 함께 써야 합니다. 어느 프로바이더의 모델인지 알 수 없습니다.';
+  }
+
+  if (!aiProviderIds.includes(provider as AiProviderId)) {
+    return `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+  }
+
+  const catalog = storyboardModelCatalog[provider as AiProviderId];
+
+  if (model !== undefined && !catalog.some((entry) => entry.id === model)) {
+    return (
+      `${provider} 에 없는 모델: ${model}\n` +
+      `쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`
+    );
+  }
+
+  return undefined;
 }
 
 // NOTE: stdout carries the result and nothing else, so an agent can pipe `--json` straight into a
