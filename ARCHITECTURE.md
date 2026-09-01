@@ -862,6 +862,9 @@ apps/vscode/src/extension.ts
   공유 패키지의 `vscode`·앱 import 금지, 엔진 `shared`의 자기 참조 한정.
 - `apps/bot`·`apps/cli`: 각자의 순서형 레이어 방향과 순환 금지. CLI는 `@storyboard/story-pipeline`
   직접 import도 거부한다(생성 루프의 두 번째 사본 방지).
-- 아직 아무도 강제하지 않는 것: 엔진 내부의 `domain ← application ← persistence` 방향.
+- `packages/story-engine`: 자체 레이어 방향 — `shared` 는 자기만, `domain` 은 `domain`/`shared` 만,
+  `paths`·`ai` 는 그보다 안쪽만, `ports` 는 `ports`/`paths`/`domain` 만 import 한다. 순환도 막는다.
+  `persistence` 와 `application` 은 설계상 상호 의존이라(application 이 리포지터리 포트를 선언하고
+  persistence 가 구현한다) 둘 사이에는 순서를 두지 않는다.
 
 - 350 LOC 초과 예외(근거 있는 유지): `packages/story-ai/src/ports/ConfigBridge.ts`·`packages/story-ai/src/ai/providers/CodexProvider.ts`(cohesive 어댑터, 함수 복잡도 낮음 — 길이만으로 분해하지 않음).

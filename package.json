@@ -13,7 +13,7 @@
   "scripts": {
     "build": "npm run build --workspace storyboard-vscode && npm run build --workspace @storyboard/bot && npm run build --workspace @storyboard/cli",
     "compile": "npm run compile --workspace storyboard-vscode",
-    "lint": "npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/bot && npm run lint --workspace @storyboard/cli",
+    "lint": "npm run lint --workspace @storyboard/story-engine && npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/bot && npm run lint --workspace @storyboard/cli",
     "test": "npm run test --workspace storyboard-vscode && npm run test --workspace @storyboard/bot && npm run test --workspace @storyboard/cli",
     "package:vsix": "npm run package:vsix --workspace storyboard-vscode",
     "cli:build": "npm run build --workspace @storyboard/cli",

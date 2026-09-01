@@ -70,7 +70,11 @@ What each check actually enforces, so a green run is not read as more than it is
   CLI additionally fails if it imports `@storyboard/story-pipeline` directly, which would be a
   second copy of the generation loop.
 
-Not yet enforced anywhere: the engine's own `domain ← application ← persistence` direction.
+- `packages/story-engine` — its own layer direction: `shared` may import only itself, `domain` only
+  `domain`/`shared`, `paths` and `ai` only what is inward of them, `ports` only `ports`/`paths`/
+  `domain`; plus no cycles. `persistence` and `application` are a mutually dependent pair by design
+  (application declares the repository ports, persistence implements them), so no order is imposed
+  between those two.
 
 ## Domain Boundaries
 
