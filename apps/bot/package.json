@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@storyboard/story-ai": "*",
+    "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",
     "@storyboard/story-git": "*",
     "@storyboard/story-pipeline": "*",
