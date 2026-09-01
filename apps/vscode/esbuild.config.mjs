@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url"
 
 import * as esbuild from "esbuild"
 
+import { aliasesFromTsconfig } from "../../scripts/aliases.mjs"
+
 const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 const isWatchMode = process.argv.includes("--watch")
 
@@ -18,13 +20,7 @@ const extensionConfig = {
   platform: "node",
   sourcemap: true,
   target: "node18",
-  alias: {
-    "@storyboard/story-engine": path.join(packageRoot, "../../packages/story-engine/src/index.ts"),
-    "@storyboard/story-format": path.join(packageRoot, "../../packages/story-format/src/index.ts"),
-    "@storyboard/story-ai": path.join(packageRoot, "../../packages/story-ai/src/index.ts"),
-    "@storyboard/story-pipeline": path.join(packageRoot, "../../packages/story-pipeline/src/index.ts"),
-    "@": path.join(packageRoot, "src")
-  }
+  alias: aliasesFromTsconfig(path.join(packageRoot, "tsconfig.json"))
 }
 
 if (isWatchMode) {
