@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { serializeChapterPlan } from '@storyboard/story-format';
 import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -215,6 +216,70 @@ describe('generation jobs end to end', () => {
     expect(readFileSync(join(fixture.root, '.storyboard/outline/synopsis.md'), 'utf8')).toContain(
       'Desktop이 고친 내용',
     );
+  });
+
+  // Desktop and the CLI write per-chapter files and FORESHADOWING.md beside the volume; the bot
+  // used to write the volume alone, so the same command produced a poorer manuscript in Telegram.
+  const countCommits = (root: string): number =>
+    execFileSync('git', ['-C', root, 'log', '--format=%s'], { encoding: 'utf8', shell: false })
+      .trim()
+      .split('\n').length;
+
+  it('runs /manuscript and writes the same artefacts Desktop does', async () => {
+    fixture.write(
+      '.storyboard/outline/chapters.yaml',
+      serializeChapterPlan({
+        version: '1.0.0',
+        acts: [
+          {
+            id: 'act-1',
+            title: '1막',
+            chapters: [
+              {
+                id: 'ch-1',
+                title: '서장',
+                scenes: [
+                  {
+                    id: '01-prologue',
+                    title: '프롤로그',
+                    purpose: '시작',
+                    characters: [],
+                    foreshadowing: ['붉은 편지'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    fixture.write(
+      'draft/01-prologue.md',
+      [
+        '---',
+        'sceneStem: 01-prologue',
+        'format: novel',
+        "generatedAt: '2026-01-01T00:00:00.000Z'",
+        '---',
+        '',
+        '초안 본문입니다.',
+        '',
+      ].join('\n'),
+    );
+
+    const commitsBefore = countCommits(fixture.root);
+
+    await router.handleUpdate(message('/manuscript'));
+    await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
+
+    const manuscript = join(fixture.root, 'manuscript');
+    expect(existsSync(join(manuscript, 'manuscript.md'))).toBe(true);
+    expect(existsSync(join(manuscript, 'FORESHADOWING.md'))).toBe(true);
+    expect(readFileSync(join(manuscript, 'FORESHADOWING.md'), 'utf8')).toContain('붉은 편지');
+    expect(readdirSync(manuscript)).toContain('01-chapter-1.md');
+
+    // manuscript/ is gitignored, so assembly must not add a commit.
+    expect(countCommits(fixture.root)).toBe(commitsBefore);
   });
 
   it('fails /manuscript cleanly when no chapter plan exists', async () => {

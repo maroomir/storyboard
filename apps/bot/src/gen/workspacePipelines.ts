@@ -1,18 +1,23 @@
 import type { StoryboardAIService } from '@storyboard/story-ai';
-import { validateGenerationContract } from '@storyboard/story-engine';
+import {
+  AssembleManuscriptUseCase,
+  ManuscriptAssemblyRepository,
+  NodeUri,
+  validateGenerationContract,
+  type StoryboardLogger,
+} from '@storyboard/story-engine';
 import {
   STORYBOARD_RELATIVE_PATHS,
   contractFieldLabels,
-  assembleManuscript,
-  extractDraftBody,
   parseSynopsisMarkdown,
   serializeChapterPlan,
   serializeSynopsisMarkdown,
   toOutlineBrief,
-  type ManuscriptDraftEntry,
   type OutlineCharacterBrief,
   type StoryboardProject,
 } from '@storyboard/story-format';
+
+import { BotFileSystem } from './engineAdapters';
 
 import type { ContentService } from '../content/contentService';
 import type { MutateOutcome } from '../workspace/workspaceChanges';
@@ -172,50 +177,49 @@ export class ManuscriptPipeline implements IPipeline {
   public constructor(private readonly options: WorkspacePipelineOptions) {}
 
   public async run(_job: GenJob, context: PipelineContext): Promise<PipelineResult> {
-    await context.reportStage('챕터 계획 읽기');
-    const planFile = await this.options.store.readChapterPlan();
-    if (planFile === undefined) {
-      return {
-        success: false,
-        failureReason: 'provider_error',
-        errorMessage: '챕터 계획이 없습니다. 먼저 /plan 을 실행해주세요.',
-      };
-    }
-
-    await context.reportStage('초안 수집');
-    const project = await this.options.store.readProject();
-    const scenes = await this.options.store.listScenes();
-    const draftsByOrder = new Map<number, ManuscriptDraftEntry>();
-
-    for (const scene of scenes) {
-      const draft = await this.options.store.readDraft(scene.stem);
-      if (draft !== undefined) {
-        draftsByOrder.set(scene.order, { stem: scene.stem, body: extractDraftBody(draft.value) });
-      }
-    }
-
     await context.reportStage('원고 조립');
-    const assembled = assembleManuscript({
-      plan: planFile.value,
-      projectName: project.value.name,
-      draftsByOrder,
-    });
-
-    const relativePath = STORYBOARD_RELATIVE_PATHS.manuscriptVolume;
-    const outcome = await this.options.content.writeArtifact(
-      relativePath,
-      assembled.volumeMarkdown,
+    const workspaceRoot = NodeUri.file(this.options.store.root);
+    // `manuscript/` is gitignored, so the engine's plain writes land as artefacts and commit
+    // nothing — the same outcome the pipeline used to get from ContentService.writeArtifact.
+    const fileSystem = new BotFileSystem(this.options.content, workspaceRoot);
+    const useCase = new AssembleManuscriptUseCase(
+      createJobLogger(context),
+      new ManuscriptAssemblyRepository(fileSystem),
     );
-    const failure = writeFailure(outcome);
-    if (failure !== undefined) {
-      return failure;
+
+    const result = await useCase.execute(workspaceRoot);
+
+    if (!result.ok) {
+      return { success: false, failureReason: 'provider_error', errorMessage: describe(result) };
     }
 
     context.log(
       '조립',
-      `씬 ${assembled.includedCount}개 포함, ${assembled.missingCount}개 미생성, 계획 외 ${assembled.extraCount}개`,
+      `씬 ${result.result.includedCount}개 포함, ${result.result.missingCount}개 미생성, 계획 외 ${result.result.extraCount}개, 복선 ${result.result.foreshadowingCount}건`,
     );
-    return { success: true, resultRef: relativePath };
+    return { success: true, resultRef: STORYBOARD_RELATIVE_PATHS.manuscriptVolume };
+  }
+}
+
+// The engine's warnings (an unreadable draft, a scene missing from the plan) belong in the job log
+// where /joblog can show them, not on the operator's console.
+function createJobLogger(context: PipelineContext): StoryboardLogger {
+  return {
+    info: (message) => context.log('조립', message),
+    warn: (message) => context.log('조립', message),
+    error: (message) => context.log('조립', message, 'error'),
+    show: () => undefined,
+  };
+}
+
+function describe(result: { readonly kind: string; readonly message?: string }): string {
+  switch (result.kind) {
+    case 'missing_outline':
+      return '챕터 계획이 없습니다. 먼저 /plan 을 실행해주세요.';
+    case 'missing_drafts':
+      return '조립할 초안이 없습니다. 먼저 /draft 로 씬을 생성해주세요.';
+    default:
+      return result.message ?? '원고를 조립하지 못했습니다.';
   }
 }
 
