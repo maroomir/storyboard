@@ -3,10 +3,9 @@ import {
   GenerateDraftUseCase,
   ReviseDraftUseCase,
   NodeUri,
-  PostGenerationUpdateManager,
   draftPath,
   getStoryboardProjectPaths,
-  sceneFilePath,
+  scenePath,
   type StoryUri,
   type StoryboardLogger,
   type UsageSink,
@@ -91,6 +90,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
 
     return {
       passed: result?.passed ?? true,
+      preservedOriginal: result?.preservedOriginal === true,
       revisionCount: result?.revisionCount ?? 0,
       remainingBlocking: result?.remainingBlocking ?? 0,
       cancelled: result?.cancelled ?? false,
@@ -134,7 +134,10 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     return {
       workspaceRoot,
       fileSystem,
-      sceneUri: (sceneStem) => sceneFilePathFor(workspaceRoot, sceneStem),
+      sceneUri: (sceneStem) => scenePath(workspaceRoot, sceneStem) as StoryUri,
+      // NOTE: no `postGenerationUpdates`. Those updaters write tracked `character/`/`background/`
+      // cards through the file system port, which would bypass the mutate gate — no commit, no
+      // freshness guard. The bot must not carry that capability until a tracked-write port exists.
       generateDraft: new GenerateDraftUseCase({
         aiGateway,
         configBridge,
@@ -142,7 +145,6 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
         fileSystem,
         generator,
         logger,
-        postGenerationUpdates: new PostGenerationUpdateManager(),
         projectRepository: new BotProjectRepository(store),
         sceneCacheRepository: new BotSceneCacheRepository(fileSystem),
         sceneRepository: new BotSceneRepository(store, content, () =>
@@ -168,13 +170,6 @@ interface BotEngine {
   readonly sceneUri: (sceneStem: string) => StoryUri;
   readonly generateDraft: GenerateDraftUseCase;
   readonly revise: ReviseDraftUseCase;
-}
-
-function sceneFilePathFor(workspaceRoot: StoryUri, sceneStem: string): StoryUri {
-  const separator = sceneStem.indexOf('-');
-  const prefix = separator === -1 ? sceneStem : sceneStem.slice(0, separator);
-  const slug = separator === -1 ? '' : sceneStem.slice(separator + 1);
-  return sceneFilePath(workspaceRoot, prefix, slug) as StoryUri;
 }
 
 // The engine logs progress; the bot turns it into a Telegram stage line.

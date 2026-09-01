@@ -18,7 +18,6 @@ const editorOnlyCommands = new Set([
   'storyboard.relationGraph.open',
   'storyboard.settings.open',
   'storyboard.scene.openDraft',
-  'storyboard.card.open',
 ]);
 
 // Verbs still to be written. This list must only ever shrink.
@@ -87,7 +86,7 @@ describe('extension/CLI parity', () => {
   it('keeps the exemption lists free of commands the extension no longer contributes', () => {
     const contributed = new Set(manifest.contributes.commands.map(({ command }) => command));
     const stale = [...editorOnlyCommands, ...pendingVerbs].filter(
-      (command) => !contributed.has(command) && command !== 'storyboard.card.open',
+      (command) => !contributed.has(command),
     );
 
     expect(stale).toEqual([]);

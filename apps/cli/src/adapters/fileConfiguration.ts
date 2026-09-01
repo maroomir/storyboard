@@ -29,6 +29,27 @@ function lookup(settings: Record<string, unknown>, section: string): unknown {
   return current;
 }
 
+// A shallow spread would let a workspace file that names one provider hide every provider the user
+// file configured. Merge section by section so a workspace override replaces only the keys it names.
+function mergeDeep(
+  base: Record<string, unknown>,
+  overlay: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...base };
+
+  for (const [key, value] of Object.entries(overlay)) {
+    const existing = merged[key];
+    merged[key] =
+      isPlainObject(existing) && isPlainObject(value) ? mergeDeep(existing, value) : value;
+  }
+
+  return merged;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function createFileConfiguration(
   userConfigFile: string,
   workspaceConfigFile: string,
@@ -36,9 +57,10 @@ export function createFileConfiguration(
 ): StoryboardConfigurationLike {
   // Flags win over the workspace file, which wins over the user file — the same precedence order
   // VSCode gives a workspace setting over a user setting, with the command line on top.
+  // Flag overrides are leaves, never sections to merge into: `--provider` clearing task routing
+  // must replace `tasks` outright, not deep-merge an empty object into what the file said.
   const merged = {
-    ...readJsonObject(userConfigFile),
-    ...readJsonObject(workspaceConfigFile),
+    ...mergeDeep(readJsonObject(userConfigFile), readJsonObject(workspaceConfigFile)),
     ...overrides,
   };
 

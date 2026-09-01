@@ -89,6 +89,10 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 
   if (options.provider !== undefined) {
     overrides['defaultProvider'] = options.provider;
+    // Task-level routing in the config file beats `defaultProvider`, so a `--provider` that only
+    // set the default would silently lose to a `tasks.sceneDraft.provider` the user configured.
+    // Naming a provider on the command line means "this run, everything".
+    overrides['tasks'] = {};
 
     if (options.model !== undefined) {
       overrides[`providers.${options.provider}.model`] = options.model;
@@ -96,7 +100,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   }
 
   if (options.reviseMaxIterations !== undefined) {
-    overrides['revise.maxIterations'] = options.reviseMaxIterations;
+    overrides['draft.reviseMaxIterations'] = options.reviseMaxIterations;
   }
 
   return overrides;
