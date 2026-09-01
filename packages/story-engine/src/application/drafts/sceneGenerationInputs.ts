@@ -36,16 +36,16 @@ export interface SceneGenerationInputs {
 }
 
 export type SceneGenerationInputsResult =
-  | { ok: false; result: GenerateDraftResult }
-  | { ok: true; inputs: SceneGenerationInputs };
+  | { readonly ok: false; readonly result: GenerateDraftResult }
+  | { readonly ok: true; readonly inputs: SceneGenerationInputs };
 
 type SceneGenerationTargetResult =
-  | { ok: false; result: GenerateDraftResult }
+  | { readonly ok: false; readonly result: GenerateDraftResult }
   | {
-      ok: true;
-      workspaceFolder: StoryWorkspaceFolder;
-      paths: ReturnType<typeof getStoryboardProjectPaths>;
-      fileName: string;
+      readonly ok: true;
+      readonly workspaceFolder: StoryWorkspaceFolder;
+      readonly paths: ReturnType<typeof getStoryboardProjectPaths>;
+      readonly fileName: string;
     };
 
 export function reportWorkflowFailure(
@@ -106,11 +106,11 @@ async function resolveSceneGenerationTarget(
 }
 
 type SceneAndProjectResult =
-  | { ok: false; result: GenerateDraftResult }
+  | { readonly ok: false; readonly result: GenerateDraftResult }
   | {
-      ok: true;
-      scene: Awaited<ReturnType<ISceneRepository['read']>>;
-      project: Awaited<ReturnType<IProjectRepository['read']>>;
+      readonly ok: true;
+      readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
+      readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
     };
 
 async function loadSceneAndProject(
@@ -206,15 +206,15 @@ export async function loadSceneGenerationInputs(
 }
 
 type SceneContextBundleResult =
-  | { ok: false; result: GenerateDraftResult }
+  | { readonly ok: false; readonly result: GenerateDraftResult }
   | {
-      ok: true;
-      scene: Awaited<ReturnType<ISceneRepository['read']>>;
-      context: Awaited<ReturnType<typeof buildSceneContext>>;
-      previousContext: string | undefined;
-      canonFactLines: readonly string[];
-      sceneBreakJoiner: string | undefined;
-      inputHash: string;
+      readonly ok: true;
+      readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
+      readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
+      readonly previousContext: string | undefined;
+      readonly canonFactLines: readonly string[];
+      readonly sceneBreakJoiner: string | undefined;
+      readonly inputHash: string;
     };
 
 async function loadSceneContextBundle(

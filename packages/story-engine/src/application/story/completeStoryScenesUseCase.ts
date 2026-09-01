@@ -58,7 +58,7 @@ export class CompleteStoryScenesUseCase {
     const source = await this.repository.load(workspaceRoot);
 
     if (source.scenes.length === 0) {
-      throw new StoryFeatureSourceError('완결할 유효한 씬이 없습니다.');
+      throw new StoryFeatureSourceError('no-valid-scenes', '완결할 유효한 씬이 없습니다.');
     }
 
     const sceneContext = await this.buildSceneContext(workspaceRoot, source.scenes);
@@ -113,16 +113,16 @@ export class CompleteStoryScenesUseCase {
 
     const scenes = parsed.scenes.map((candidate, index): CompletedStoryScene => {
       if (existingSlugs.has(candidate.slug) || proposedSlugs.has(candidate.slug)) {
-        throw new StoryFeatureSourceError(`중복된 씬 slug: ${candidate.slug}`);
+        throw new StoryFeatureSourceError('duplicate-scene-slug', `중복된 씬 slug: ${candidate.slug}`);
       }
       proposedSlugs.add(candidate.slug);
       for (const id of candidate.characterIds) {
         if (!existingCharacterIds.has(id)) {
-          throw new StoryFeatureSourceError(`존재하지 않는 캐릭터 ID: ${id}`);
+          throw new StoryFeatureSourceError('unknown-card-reference', `존재하지 않는 캐릭터 ID: ${id}`);
         }
       }
       if (candidate.locationId && !existingBackgroundIds.has(candidate.locationId)) {
-        throw new StoryFeatureSourceError(`존재하지 않는 배경 ID: ${candidate.locationId}`);
+        throw new StoryFeatureSourceError('unknown-card-reference', `존재하지 않는 배경 ID: ${candidate.locationId}`);
       }
 
       const prefix = String(maximumOrder + index + 1).padStart(
@@ -131,7 +131,7 @@ export class CompleteStoryScenesUseCase {
       );
       const fileName = `${prefix}-${candidate.slug}.card`;
       if (!sceneFileNamePattern.test(fileName)) {
-        throw new StoryFeatureSourceError(`생성할 수 없는 씬 파일명: ${fileName}`);
+        throw new StoryFeatureSourceError('invalid-scene-filename', `생성할 수 없는 씬 파일명: ${fileName}`);
       }
       const sceneCard: SceneCard = {
         type: 'scene',
