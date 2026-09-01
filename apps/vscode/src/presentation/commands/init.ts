@@ -3,17 +3,17 @@ import {
   createStoryboardDirectories,
   ensureWorkspaceGitignore,
 } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { refreshStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
+import { refreshStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   ensureUriDoesNotExist,
   getTargetWorkspaceFolder,
   uriExists,
-} from '../../infrastructure/vscode/workspace';
+} from '@/infrastructure/vscode/workspace';
 import { createDefaultProjectJson, writeProjectJson } from '@storyboard/story-engine';
 
 const initCommand = 'storyboard.init';

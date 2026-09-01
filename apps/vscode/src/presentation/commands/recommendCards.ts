@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { type RecommendCardsUseCase, type RecommendCardsResult } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';

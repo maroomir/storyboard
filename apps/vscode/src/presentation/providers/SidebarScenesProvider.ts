@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
 import type { ISceneSidebarRepository } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import { createAiRpcHandlers, createUsageRpcHandlers } from '../messaging/aiRpcHandlers';
 import type { AiProviderRegistry, UsageSummaryByEntity } from '@storyboard/story-ai';
-import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
+import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

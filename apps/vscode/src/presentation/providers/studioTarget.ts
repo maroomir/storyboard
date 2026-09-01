@@ -7,7 +7,7 @@ import {
   sceneStemPattern,
 } from '@storyboard/story-format';
 
-import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
+import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import {
   draftPath,
   isDirectBackgroundCardFile,
@@ -15,7 +15,7 @@ import {
   isDirectSceneCardFile,
   isDraftMarkdownFile,
 } from '@storyboard/story-engine';
-import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { StudioTarget } from '@storyboard/story-engine';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };

@@ -1,11 +1,11 @@
 import type { StoryUri } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
 import type { BibleFileSystem } from '@storyboard/story-format';
 import {

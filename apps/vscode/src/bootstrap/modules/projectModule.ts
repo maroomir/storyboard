@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
-import { registerInitCommand } from '../../presentation/commands/init';
-import { registerSetApiKeyCommand } from '../../presentation/commands/setApiKey';
-import { registerStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
+import { registerInitCommand } from '@/presentation/commands/init';
+import { registerSetApiKeyCommand } from '@/presentation/commands/setApiKey';
+import { registerStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

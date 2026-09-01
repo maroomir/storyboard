@@ -14,9 +14,9 @@ import {
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,
-} from '../../infrastructure/vscode/workspaceFsAdapters';
+} from '@/infrastructure/vscode/workspaceFsAdapters';
 import { createDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
 
 const continuityCheckCommand = 'storyboard.draft.continuityCheck';

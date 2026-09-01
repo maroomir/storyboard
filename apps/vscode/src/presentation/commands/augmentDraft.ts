@@ -6,12 +6,12 @@ import type {
   AugmentDraftUseCase,
 } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
+import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { createDraft, parseDraft, serializeDraft } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';
-import { VirtualDocumentStore } from '../../presentation/providers/virtualDocumentStore';
+import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
 import { resolveExpandRange } from './expandDraft';
 

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
 import { analyzeSlop, type SlopFinding } from '@storyboard/story-engine';

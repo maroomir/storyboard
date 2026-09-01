@@ -1,17 +1,17 @@
 import * as vscode from 'vscode';
 
-import { registerCanonDiffCommand } from '../../presentation/commands/canonDiff';
-import { registerBuildStoryCardsFromScenesCommand } from '../../presentation/commands/buildStoryCardsFromScenes';
-import { registerCreateCardCommands } from '../../presentation/commands/createCard';
-import { registerMigrateCardTextCommand } from '../../presentation/commands/migrateCardTextToList';
-import { registerPromoteBibleCandidatesCommand } from '../../presentation/commands/promoteBibleCandidates';
-import { registerPromoteCardCandidatesCommand } from '../../presentation/commands/promoteCardCandidates';
-import { registerRecommendCardCommands } from '../../presentation/commands/recommendCards';
-import { registerRenameCardCommands } from '../../presentation/commands/renameCard';
-import { registerCardCustomEditorProvider } from '../../presentation/providers/CardCustomEditorProvider';
-import { registerCardDiagnosticsProvider } from '../../presentation/providers/CardDiagnosticsProvider';
-import { registerCardRenameParticipant } from '../../presentation/providers/CardRenameParticipant';
-import { registerSidebarCardsProviders } from '../../presentation/providers/SidebarCardsProvider';
+import { registerCanonDiffCommand } from '@/presentation/commands/canonDiff';
+import { registerBuildStoryCardsFromScenesCommand } from '@/presentation/commands/buildStoryCardsFromScenes';
+import { registerCreateCardCommands } from '@/presentation/commands/createCard';
+import { registerMigrateCardTextCommand } from '@/presentation/commands/migrateCardTextToList';
+import { registerPromoteBibleCandidatesCommand } from '@/presentation/commands/promoteBibleCandidates';
+import { registerPromoteCardCandidatesCommand } from '@/presentation/commands/promoteCardCandidates';
+import { registerRecommendCardCommands } from '@/presentation/commands/recommendCards';
+import { registerRenameCardCommands } from '@/presentation/commands/renameCard';
+import { registerCardCustomEditorProvider } from '@/presentation/providers/CardCustomEditorProvider';
+import { registerCardDiagnosticsProvider } from '@/presentation/providers/CardDiagnosticsProvider';
+import { registerCardRenameParticipant } from '@/presentation/providers/CardRenameParticipant';
+import { registerSidebarCardsProviders } from '@/presentation/providers/SidebarCardsProvider';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

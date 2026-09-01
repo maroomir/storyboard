@@ -1,4 +1,4 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
@@ -21,7 +21,7 @@ import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { UsageRecorder } from '../../infrastructure/ai/UsageRecorder';
+import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const cardEditorViewType = 'storyboard.card';

@@ -1,4 +1,4 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { StudioChatStage, StudioChatUseCase } from '@storyboard/story-engine';

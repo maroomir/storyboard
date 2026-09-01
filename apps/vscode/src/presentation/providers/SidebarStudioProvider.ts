@@ -1,11 +1,11 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { StudioSessionRepository, type IStudioSessionRepository } from '@storyboard/story-engine';
 import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
 import { readStudioStage } from '@storyboard/story-engine';

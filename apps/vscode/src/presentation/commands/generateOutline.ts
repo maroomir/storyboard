@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-format';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';

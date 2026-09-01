@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 
 const reviewManuscriptCommand = 'storyboard.manuscript.review';
 

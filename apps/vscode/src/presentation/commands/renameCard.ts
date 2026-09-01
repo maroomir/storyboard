@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { validateCardRenameId } from '../../infrastructure/vscode/cardRenameEdit';
+import { validateCardRenameId } from '@/infrastructure/vscode/cardRenameEdit';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -9,7 +9,7 @@ import {
   parseCardIdFromPath,
   studioSessionEntityDirectory,
 } from '@storyboard/story-engine';
-import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
 const renameCharacterCommand = 'storyboard.character.rename';
 const renameBackgroundCommand = 'storyboard.background.rename';

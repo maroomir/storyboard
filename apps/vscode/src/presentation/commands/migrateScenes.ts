@@ -7,7 +7,7 @@ import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,
   uriExists,
-} from '../../infrastructure/vscode/workspace';
+} from '@/infrastructure/vscode/workspace';
 
 const migrateScenesCommand = 'storyboard.scene.migrate';
 

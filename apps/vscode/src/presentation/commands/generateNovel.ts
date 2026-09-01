@@ -9,7 +9,7 @@ import {
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine';
 import type { ContractFieldKey } from '@storyboard/story-format';
