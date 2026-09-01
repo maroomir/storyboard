@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -71,6 +71,122 @@ describe('card create', () => {
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('영소문자');
+  });
+});
+
+describe('cards build', () => {
+  // 익스텐션은 제안을 골라 파일까지 쓰는데 CLI 는 JSON 만 뱉고 끝이었다. 파리티 테스트는
+  // verb 존재만 보므로 이 반쪽 상태를 잡지 못했다.
+  function containerWith(targets: unknown[]) {
+    const real = createCliContainer({ workspacePath: workspace });
+    return {
+      ...real,
+      buildStoryCardsUseCase: { execute: async () => ({ targets, snapshots: [] }) },
+    } as unknown as Parameters<(typeof commands)['cards build']>[0]['container'];
+  }
+
+  it('writes the proposed cards instead of only printing them', async () => {
+    const container = containerWith([
+      {
+        card: { type: 'character', id: 'seo-jina', name: '서진아', tags: [], traits: [] },
+        uriId: 'seo-jina',
+        isNew: true,
+        requiresIdConfirmation: false,
+        changes: [],
+        sourceScenes: ['01-first'],
+      },
+    ]);
+
+    const outcome = await commands['cards build']({ container, args: args(['cards', 'build']) });
+
+    expect(outcome.ok).toBe(true);
+    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain('name: 서진아');
+  });
+
+  it('leaves the tree alone under --dry-run', async () => {
+    const container = containerWith([
+      {
+        card: { type: 'character', id: 'seo-jina', name: '서진아', tags: [], traits: [] },
+        uriId: 'seo-jina',
+        isNew: true,
+        requiresIdConfirmation: false,
+        changes: [],
+        sourceScenes: ['01-first'],
+      },
+    ]);
+
+    await commands['cards build']({ container, args: args(['cards', 'build'], { 'dry-run': true }) });
+
+    expect(existsSync(join(workspace, 'character', 'seo-jina.card'))).toBe(false);
+  });
+
+  it('reports a new card whose name yields no id rather than inventing one', async () => {
+    const container = containerWith([
+      {
+        card: { type: 'location', id: 'new-card-2', name: '방송실', tags: [] },
+        uriId: 'new-card-2',
+        isNew: true,
+        requiresIdConfirmation: true,
+        changes: [],
+        sourceScenes: ['01-first'],
+      },
+    ]);
+
+    const outcome = await commands['cards build']({ container, args: args(['cards', 'build']) });
+
+    expect(outcome.message).toContain('방송실');
+    expect(existsSync(join(workspace, 'background', 'new-card-2.card'))).toBe(false);
+  });
+});
+
+describe('scene complete', () => {
+  async function seedOneScene() {
+    await run('scene create', args(['scene', 'create'], { name: 'first' }));
+  }
+
+  function containerProposing(fileName: string) {
+    const real = createCliContainer({ workspacePath: workspace });
+    return {
+      ...real,
+      completeStoryScenesUseCase: {
+        execute: async () => ({
+          scenes: [{ fileName, content: 'type: scene\nid: proposed\n', title: '제안', resolvedThreads: [], openThreads: [] }],
+          snapshots: [],
+        }),
+      },
+    } as unknown as Parameters<(typeof commands)['scene complete']>[0]['container'];
+  }
+
+  it('writes the proposed ending scenes instead of only printing them', async () => {
+    await seedOneScene();
+
+    const outcome = await run('scene complete', args(['scene', 'complete']));
+
+    expect(outcome.ok).toBe(true);
+    const written = (outcome.data as { written: string[] }).written;
+    expect(written.length).toBeGreaterThan(0);
+    expect(existsSync(join(workspace, 'scene', written[0] as string))).toBe(true);
+  });
+
+  // 완결 씬은 뒤에 덧붙이는 제안이므로, 같은 이름의 씬이 이미 있으면 쓰던 내용을 덮지 않는다.
+  it('skips a file that already exists', async () => {
+    await seedOneScene();
+    const container = containerProposing('01-first.card');
+    const before = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
+
+    const outcome = await commands['scene complete']({ container, args: args(['scene', 'complete']) });
+
+    expect((outcome.data as { skipped: string[] }).skipped).toContain('01-first.card');
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toBe(before);
+  });
+
+  it('leaves the tree alone under --dry-run', async () => {
+    await seedOneScene();
+    const before = readdirSync(join(workspace, 'scene')).length;
+
+    await run('scene complete', args(['scene', 'complete'], { 'dry-run': true }));
+
+    expect(readdirSync(join(workspace, 'scene')).length).toBe(before);
   });
 });
 
