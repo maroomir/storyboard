@@ -10,7 +10,7 @@ import {
   type CardCandidateFileSystem,
   writeCardCandidateFile,
 } from '../domain/files/cardCandidates';
-import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;
   readonly name: string;
@@ -31,7 +31,7 @@ export interface UpdateCardCandidatesFromDraftInput {
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly characterRoster: readonly CardCandidateRosterEntry[];
   readonly aiService: Pick<
-    StoryboardAIService,
+    StoryboardAiService,
     'extractCardCandidatesByCharacter' | 'verifyCardCandidatesByCharacter'
   >;
   readonly verify?: boolean;
@@ -152,7 +152,7 @@ export async function updateCardCandidatesFromDraft(
     return { characterCount: 0, candidateCount: 0 };
   }
 
-  let extracted: Awaited<ReturnType<StoryboardAIService['extractCardCandidatesByCharacter']>>;
+  let extracted: Awaited<ReturnType<StoryboardAiService['extractCardCandidatesByCharacter']>>;
 
   try {
     const characterIdByName = new Map(detectedCharacterCards.map((card) => [card.name, card.id]));

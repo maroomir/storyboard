@@ -63,6 +63,6 @@ Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (ski
 
 - Rubric: `./rubric.md` (mirror of `apps/vscode/docs/scene-quality-rubric.md`)
 - Generation: the CLI (`apps/cli`), which runs the same engine as the extension. Coverage probe: `apps/vscode/scripts/harness/coverageCheck.harness.ts`, `apps/vscode/vitest.harness.config.ts`
-- Coverage feature: `AIService.checkSceneCoverage`, `packages/story-ai/src/contracts/sceneCoverage.ts`, task `sceneCoverage`
+- Coverage feature: `AiService.checkSceneCoverage`, `packages/story-ai/src/contracts/sceneCoverage.ts`, task `sceneCoverage`
 - Parameter impact: `apps/vscode/docs/card-parameter-impact.md`
 - Pipeline: `packages/story-pipeline/src/sceneGenerationPipeline.ts`, `packages/story-ai/src/ai/prompts/`

@@ -19,7 +19,7 @@ import {
 } from '../../persistence/cardMemoryWorkspace';
 import { findRecentBackgroundExcerpt } from '../../persistence/backgroundExcerpt';
 import { buildStyleDirective } from '@storyboard/story-ai';
-import type { AiProviderId, AiTaskName, StoryboardAIService } from '@storyboard/story-ai';
+import type { AiProviderId, AiTaskName, StoryboardAiService } from '@storyboard/story-ai';
 import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,
@@ -160,7 +160,7 @@ async function maybeArchiveExistingDraft(
 async function persistGeneratedDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
-  aiService: StoryboardAIService,
+  aiService: StoryboardAiService,
   result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
   cacheProviders: SceneCacheRecord['providers'],
 ): Promise<GenerateDraftResult> {

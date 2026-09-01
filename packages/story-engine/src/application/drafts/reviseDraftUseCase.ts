@@ -21,7 +21,7 @@ import type { ProjectSetting } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type { ISceneCacheRepository } from '../../ports/repositories';
 import { readProjectJson } from '../../persistence/projectJson';
-import { buildStyleDirective, formatAugmentCards, StoryboardAIService } from '@storyboard/story-ai';
+import { buildStyleDirective, formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
 import type { IUsageSink } from '../../ports/usageSink';
 import {
@@ -151,7 +151,7 @@ async function runReviseDraftWorkflow(
   const { paths, draftUri, sceneStem, maxIterations, reviseScoreThreshold, maxCompressionPercent } =
     options;
 
-  const aiService = new StoryboardAIService(options.aiProviderRegistry, {
+  const aiService = new StoryboardAiService(options.aiProviderRegistry, {
     onUsage: (record): void => {
       void options.usageSink
         .record(options.workspaceUri, record)

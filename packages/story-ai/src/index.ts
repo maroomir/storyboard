@@ -1,4 +1,4 @@
-export * from './ai/AIService';
+export * from './ai/AiService';
 export * from './ai/AiTextGateway';
 export * from './ai/CardAiService';
 export * from './ai/DraftAiService';

@@ -16,7 +16,7 @@ const writeDraftFileMock = vi.fn(async () => undefined)
 
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
-  StoryboardAIService: class {
+  StoryboardAiService: class {
     checkContinuity = (): Promise<ContinuityIssueLike[]> => checkContinuityMock()
     critiqueDraft = (input: unknown): Promise<DraftCritiqueIssue[]> => critiqueDraftMock(input)
     reviseDraft = (input: unknown): Promise<string> => reviseDraftMock(input)

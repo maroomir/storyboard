@@ -5,7 +5,7 @@ import {
   formatStoryStateForPrompt,
   type StoryStateEntry,
 } from '@storyboard/story-format';
-import type { StoryboardAIService, StoryStateUpdateItem } from '@storyboard/story-ai';
+import type { StoryboardAiService, StoryStateUpdateItem } from '@storyboard/story-ai';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
@@ -18,7 +18,7 @@ function toStoryStateEntries(items: readonly StoryStateUpdateItem[]): StoryState
 export async function updateStoryStateAfterGeneration(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
-  aiService: StoryboardAIService,
+  aiService: StoryboardAiService,
   draftBody: string,
 ): Promise<void> {
   const { paths, scene } = inputs;

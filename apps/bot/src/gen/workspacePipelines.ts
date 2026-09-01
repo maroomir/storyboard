@@ -1,4 +1,4 @@
-import type { StoryboardAIService } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import {
   AssembleManuscriptUseCase,
   ManuscriptAssemblyRepository,
@@ -80,7 +80,7 @@ function contractFailure(project: StoryboardProject): PipelineResult | undefined
 export interface WorkspacePipelineOptions {
   readonly store: WorkspaceStore;
   readonly content: ContentService;
-  readonly aiService: StoryboardAIService;
+  readonly aiService: StoryboardAiService;
 }
 
 export class OutlinePipeline implements IPipeline {

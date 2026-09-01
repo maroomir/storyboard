@@ -1,7 +1,7 @@
 import type {
   RecommendationCategory,
   RecommendedEntity,
-  StoryboardAIService,
+  StoryboardAiService,
   UsageAttribution,
 } from '@storyboard/story-ai';
 export interface RecommendationSource {
@@ -9,7 +9,7 @@ export interface RecommendationSource {
   readonly text: string;
 }
 
-export type CardRecommendationAiService = Pick<StoryboardAIService, 'extractCardRecommendations'>;
+export type CardRecommendationAiService = Pick<StoryboardAiService, 'extractCardRecommendations'>;
 
 export interface RecommendedCard {
   readonly name: string;

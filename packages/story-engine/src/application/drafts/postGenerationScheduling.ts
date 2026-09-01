@@ -7,7 +7,7 @@ import {
   cardCandidateFilePath,
   ensureCardCacheDirectory,
 } from '../../persistence/cardCacheWorkspace';
-import type { StoryboardAIService } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '@storyboard/story-pipeline';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
@@ -15,7 +15,7 @@ import type { SceneGenerationInputs } from './sceneGenerationInputs';
 export function schedulePostGenerationUpdates(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
-  aiService: StoryboardAIService,
+  aiService: StoryboardAiService,
   result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
 ): void {
   const { workspaceFolder, paths, scene, context } = inputs;

@@ -5,7 +5,7 @@ import {
   type BibleCandidateFileSystem,
   writeBibleCandidateFile,
 } from '../domain/files/bibleCandidates';
-import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 interface BibleCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }
@@ -18,7 +18,7 @@ export interface UpdateBibleCandidatesFromDraftInput {
   readonly sceneStem: string;
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
-  readonly aiService: Pick<StoryboardAIService, 'extractFactsByCharacter'>;
+  readonly aiService: Pick<StoryboardAiService, 'extractFactsByCharacter'>;
   readonly fileSystem: BibleCandidateFileSystem;
   readonly resolveCandidateUri: (sceneStem: string) => StoryUri;
   readonly ensureDirectory?: () => Promise<void>;

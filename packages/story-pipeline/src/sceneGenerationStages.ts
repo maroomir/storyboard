@@ -1,4 +1,4 @@
-import type { EntityRef, GenerateTextOptions, StoryboardAIService } from '@storyboard/story-ai';
+import type { EntityRef, GenerateTextOptions, StoryboardAiService } from '@storyboard/story-ai';
 import type { Background } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
@@ -32,7 +32,7 @@ export function withAttribution(
 // 마지막에 실행된 씬이 그 장소의 정본을 덮어써, 앞 씬이 뒤 씬의 묘사를 물려받는다.
 export async function describeBackgroundForScene(
   card: BackgroundCard,
-  aiService: Pick<StoryboardAIService, 'describeBackground'>,
+  aiService: Pick<StoryboardAiService, 'describeBackground'>,
   store: BackgroundMemoryStore | undefined,
   recentExcerpt?: string,
 ): Promise<Background> {

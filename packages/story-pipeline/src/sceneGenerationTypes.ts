@@ -9,9 +9,9 @@ import type {
   ISceneDialogueCorpus,
   ISceneDialogueStore,
 } from './memoryStore';
-import type { AiProviderId, StoryboardAIService, StyleDirective } from '@storyboard/story-ai';
+import type { AiProviderId, StoryboardAiService, StyleDirective } from '@storyboard/story-ai';
 export type SceneGenerationPipelineAiService = Pick<
-  StoryboardAIService,
+  StoryboardAiService,
   | 'createCharacterPersona'
   | 'describeBackground'
   | 'draftSceneSkeleton'

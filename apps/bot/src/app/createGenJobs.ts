@@ -1,4 +1,4 @@
-import type { StoryboardAIService } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 
 import type { ContentService } from '../content/contentService';
 import type { ISendMessage } from '../chat/ports';
@@ -29,7 +29,7 @@ export interface CreateGenJobsOptions {
   readonly db: BotDatabase;
   readonly store: WorkspaceStore;
   readonly content: ContentService;
-  readonly aiService: StoryboardAIService;
+  readonly aiService: StoryboardAiService;
   readonly draftGenerator: DraftGenerator;
   readonly draftReviser: DraftReviser;
   readonly sender: ISendMessage;

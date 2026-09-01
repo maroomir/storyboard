@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 
-import { ConfigBridge, createAiProviderRegistry, SecretStore, StoryboardAIService } from '@storyboard/story-ai';
+import { ConfigBridge, createAiProviderRegistry, SecretStore, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiMessage, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
-describe("StoryboardAIService", () => {
+describe("StoryboardAiService", () => {
   it("extracts situations from JSON-shaped model output", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '[{"characters":["엘리아","지훈"],"situation":"엘리아와 지훈이 교실에서 대화한다."}]'
     })
@@ -18,7 +18,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("builds persona and genre-format requests through the registry", async () => {
-    const service = createAIService({ completionText: "나는 엘리아다." })
+    const service = createAiService({ completionText: "나는 엘리아다." })
 
     await expect(
       service.createCharacterPersona({
@@ -36,7 +36,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("returns trimmed background atmosphere through the registry", async () => {
-    const service = createAIService({ completionText: "  분필 냄새가 떠도는 오후의 정적.  " })
+    const service = createAiService({ completionText: "  분필 냄새가 떠도는 오후의 정적.  " })
 
     await expect(
       service.describeBackground({
@@ -52,7 +52,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("parses traits bullets per character from model output", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText: `- 활발하게 교실 앞으로 걸어 나섬
 - 친구를 안심시키며 또렷하게 말함`
     })
@@ -63,7 +63,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("parses grammar issues from JSON array output", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '[{"start":2,"end":6,"original":"정말루","suggestion":"정말로","reason":"표준어 표현으로 교정"}]'
     })
@@ -80,7 +80,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("parses setting facts per character from JSON array output", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText: '[{"key":"눈동자 색","value":"녹색"},{"key":"나이","value":"17"}]'
     })
 
@@ -93,7 +93,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("parses card candidate fields per character from JSON object output", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '{"attributes":[{"key":"나이","value":"17"}],"relations":[{"target":"지훈","type":"친구"}],"arc":{"summary":"학교에 도착해 친구를 만남"}}'
     })
@@ -111,7 +111,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("parses approved candidate indices from JSON array output", async () => {
-    const service = createAIService({ completionText: "[0, 2]" })
+    const service = createAiService({ completionText: "[0, 2]" })
 
     await expect(
       service.verifyCardCandidatesByCharacter("엘리아가 지훈을 만났다.", "엘리아", [
@@ -123,7 +123,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("returns null when verification output is not a JSON array", async () => {
-    const service = createAIService({ completionText: "확인 불가" })
+    const service = createAiService({ completionText: "확인 불가" })
 
     await expect(
       service.verifyCardCandidatesByCharacter("본문", "엘리아", ["속성 나이: 17"])
@@ -131,7 +131,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("Q8: parses continuity issues and defaults missing severity to high", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '[{"start":0,"end":5,"original":"파란 눈","reason":"설정상 엘리아의 눈동자 색은 녹색"}]'
     })
@@ -150,7 +150,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("Q9: defaults invalid severity values to high", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '[{"start":0,"end":5,"original":"파란 눈","reason":"색 모순","severity":"critical"},{"start":6,"end":9,"original":"엘리아","reason":"이름 모순","severity":123}]'
     })
@@ -163,7 +163,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("Q10: preserves an explicit low severity", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText:
         '[{"start":0,"end":5,"original":"파란 눈","reason":"색 모순","severity":"low"}]'
     })
@@ -183,14 +183,14 @@ describe("StoryboardAIService", () => {
 
   it("skips the model call and returns nothing when no facts are provided", async () => {
     const capture: MessageCapture = {}
-    const service = createAIService({ completionText: "[]", capture })
+    const service = createAiService({ completionText: "[]", capture })
 
     await expect(service.checkContinuity("아무 본문", [])).resolves.toEqual([])
     expect(capture.lastMessages).toBeUndefined()
   })
 
   it("returns trimmed text for inline completion and draft expansion", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText: "  그는 잠시 웃으며 고개를 끄덕였다.  "
     })
 
@@ -210,7 +210,7 @@ describe("StoryboardAIService", () => {
   })
 
   it("returns trimmed text for draft augment", async () => {
-    const service = createAIService({
+    const service = createAiService({
       completionText: "  그는 잠시 웃으며 고개를 끄덕였다.  "
     })
 
@@ -227,7 +227,7 @@ describe("StoryboardAIService", () => {
 
   it("sends prompt as separated system/user messages", async () => {
     const capture: MessageCapture = {}
-    const service = createAIService({ completionText: "[]", capture })
+    const service = createAiService({ completionText: "[]", capture })
 
     await service.checkGrammar("이건 정말루 중요해.")
 
@@ -240,7 +240,7 @@ describe("StoryboardAIService", () => {
 
   it("skips the model call and returns nothing when no beats are provided for coverage", async () => {
     const capture: MessageCapture = {}
-    const service = createAIService({ completionText: "[]", capture })
+    const service = createAiService({ completionText: "[]", capture })
 
     await expect(service.checkSceneCoverage([], "엘리아가 복도를 걸었다.")).resolves.toEqual([])
     expect(capture.lastMessages).toBeUndefined()
@@ -248,7 +248,7 @@ describe("StoryboardAIService", () => {
 
   it("calls the registry once and coerces the scene-coverage response", async () => {
     const capture: MessageCapture = {}
-    const service = createAIService({
+    const service = createAiService({
       completionText: '[{"index":2,"status":"missing","note":"잠긴 문 장면이 빠짐"},{"index":5,"status":"missing"}]',
       capture
     })
@@ -265,7 +265,7 @@ describe("StoryboardAIService", () => {
 
   it("uses xs prompt variant when provider is ollama", async () => {
     const capture: MessageCapture = {}
-    const service = createAIService({ completionText: "[]", capture, defaultProvider: "ollama" })
+    const service = createAiService({ completionText: "[]", capture, defaultProvider: "ollama" })
 
     await service.checkGrammar("이건 정말루 중요해.")
 
@@ -281,11 +281,11 @@ interface MessageCapture {
   lastProviderId?: string
 }
 
-function createAIService(options: {
+function createAiService(options: {
   readonly completionText: string
   readonly defaultProvider?: "openai" | "ollama"
   readonly capture?: MessageCapture
-}): StoryboardAIService {
+}): StoryboardAiService {
   const secretStore = new SecretStore(new FakeSecretStorage(new Map([["storyboard.apiKey.openai", "sk-test"]])))
   const configBridge = new ConfigBridge({
     getConfiguration: (): StoryboardConfigurationLike =>
@@ -299,7 +299,7 @@ function createAIService(options: {
       )
   })
 
-  return new StoryboardAIService(
+  return new StoryboardAiService(
     createAiProviderRegistry({
       secretStore,
       configBridge,

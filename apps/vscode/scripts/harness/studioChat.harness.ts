@@ -3,7 +3,7 @@ import nodeFs from 'node:fs/promises';
 import * as vscode from 'vscode';
 import { test } from 'vitest';
 
-import { StoryboardAIService } from '@storyboard/story-ai';
+import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { ClaudeCodeProvider } from '@storyboard/story-ai';
 import { CodexProvider } from '@storyboard/story-ai';
@@ -182,7 +182,7 @@ const harnessLogger = {
 } as unknown as IStoryboardLogger;
 
 function createGateway(onUsage: ReturnType<typeof createUsageSummary>['onUsage']): AiGateway {
-  const service = new StoryboardAIService(createRegistry(), { onUsage });
+  const service = new StoryboardAiService(createRegistry(), { onUsage });
 
   return {
     createService: () => service,

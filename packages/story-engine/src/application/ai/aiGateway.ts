@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '../../ports/logger';
-import { StoryboardAIService } from '@storyboard/story-ai';
+import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
 import type { IUsageSink } from '../../ports/usageSink';
 export class AiGateway {
@@ -10,8 +10,8 @@ export class AiGateway {
     private readonly logger: IStoryboardLogger,
   ) {}
 
-  public createService(workspaceUri: StoryUri): StoryboardAIService {
-    return new StoryboardAIService(this.providerRegistry, {
+  public createService(workspaceUri: StoryUri): StoryboardAiService {
+    return new StoryboardAiService(this.providerRegistry, {
       // NOTE: usage accounting must never fail a generation the user already paid for.
       onUsage: (record): void => {
         void this.usageSink.record(workspaceUri, record).catch((error: unknown) => {

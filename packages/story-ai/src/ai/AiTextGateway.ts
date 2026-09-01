@@ -9,12 +9,12 @@ import type {
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/variant';
 import type { PromptVariantId } from './prompts/types';
-import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
+import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 
 export class AiTextGateway {
   public constructor(
     private readonly registry: AiProviderRegistry,
-    private readonly options: StoryboardAIServiceOptions,
+    private readonly options: StoryboardAiServiceOptions,
   ) {}
 
   public async generate(

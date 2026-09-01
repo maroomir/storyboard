@@ -5,7 +5,7 @@ import {
   type CardCollectProposal,
   type CardCollectProposalDraft,
 } from '../shared/cardCollect';
-import type { EntityRef, StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import type { EntityRef, StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
 export interface CollectDraft {
   readonly sceneStem: string;
@@ -18,7 +18,7 @@ export interface CollectRosterEntry {
 }
 
 export type CardCollectAiService = Pick<
-  StoryboardAIService,
+  StoryboardAiService,
   | 'extractCardCandidatesByCharacter'
   | 'extractTraitsByCharacter'
   | 'extractBackgroundFactsFromDraft'

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { updateBibleCandidatesFromDraft } from "@storyboard/story-engine"
-import type { StoryboardAIService } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { BibleCandidateFileSystem } from "@storyboard/story-engine"
 import type { CharacterCard } from '@storyboard/story-format';
 
@@ -25,7 +25,7 @@ class CaptureFileSystem implements BibleCandidateFileSystem {
 
 function createFactService(
   factsByName: Readonly<Record<string, { key: string; value: string }[]>>
-): Pick<StoryboardAIService, "extractFactsByCharacter"> {
+): Pick<StoryboardAiService, "extractFactsByCharacter"> {
   return {
     extractFactsByCharacter: async (_draftBody, characterNames) =>
       Object.fromEntries(characterNames.map((name) => [name, factsByName[name] ?? []]))
