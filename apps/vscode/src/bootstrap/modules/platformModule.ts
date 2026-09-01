@@ -1,59 +1,61 @@
 import * as vscode from 'vscode';
 
-import { AiGateway } from '@storyboard/story-engine';
-import { RecommendCardsUseCase } from '@storyboard/story-engine';
-import { PromoteCardCandidatesUseCase } from '@storyboard/story-engine';
-import { CollectCardProposalsUseCase } from '@storyboard/story-engine';
-import { CreateCardUseCase } from '@storyboard/story-engine';
-import { BuildStoryCardsUseCase } from '@storyboard/story-engine';
-import { CompleteStoryScenesUseCase } from '@storyboard/story-engine';
-import { PromoteBibleCandidatesUseCase } from '@storyboard/story-engine';
-import { AssembleManuscriptUseCase } from '@storyboard/story-engine';
-import { ExportManuscriptUseCase } from '@storyboard/story-engine';
-import { ReviewManuscriptUseCase } from '@storyboard/story-engine';
-import { SummarizeChaptersUseCase } from '@storyboard/story-engine';
-import { ApplyDraftFormatUseCase } from '@storyboard/story-engine';
-import { AugmentDraftUseCase } from '@storyboard/story-engine';
-import { ExpandDraftUseCase } from '@storyboard/story-engine';
-import { CondenseDraftUseCase } from '@storyboard/story-engine';
-import { GenerateDraftUseCase } from '@storyboard/story-engine';
-import { GenerateAllDraftsUseCase } from '@storyboard/story-engine';
-import { ReviseDraftUseCase } from '@storyboard/story-engine';
-import { ReviseAfterGenerateGate } from '@storyboard/story-engine';
-import { NovelPipeline } from '@storyboard/story-engine';
-import { GenerateOutlineUseCase } from '@storyboard/story-engine';
-import { DraftRepository } from '@storyboard/story-engine';
-import { CardRecommendationRepository } from '@storyboard/story-engine';
-import { CardCandidateRepository } from '@storyboard/story-engine';
-import { CardCollectRepository } from '@storyboard/story-engine';
-import { CardWriterRepository } from '@storyboard/story-engine';
-import { CardSidebarRepository } from '@storyboard/story-engine';
-import { StoryFeatureRepository } from '@storyboard/story-engine';
-import { BibleCandidateRepository } from '@storyboard/story-engine';
-import { ProjectRepository } from '@storyboard/story-engine';
-import { OutlineRepository } from '@storyboard/story-engine';
-import { NovelRunStateRepository } from '@storyboard/story-engine';
-import { NovelReviewRepository } from '@storyboard/story-engine';
-import { SceneSeedRepository } from '@storyboard/story-engine';
-import { SceneCacheRepository } from '@storyboard/story-engine';
-import { SceneRepository } from '@storyboard/story-engine';
-import { SceneBatchRepository } from '@storyboard/story-engine';
-import { SceneSidebarRepository } from '@storyboard/story-engine';
-import { ManuscriptAssemblyRepository } from '@storyboard/story-engine';
-import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
-import { VscodeWorkspaceLocator } from '../../infrastructure/vscode/workspaceLocator';
-import { createUsageSink } from '../../infrastructure/ai/usageSink';
+import {
+  AiGateway,
+  ApplyDraftFormatUseCase,
+  AssembleManuscriptUseCase,
+  AugmentDraftUseCase,
+  BibleCandidateRepository,
+  BuildStoryCardsUseCase,
+  CardCandidateRepository,
+  CardCollectRepository,
+  CardRecommendationRepository,
+  CardSidebarRepository,
+  CardWriterRepository,
+  CollectCardProposalsUseCase,
+  CompleteStoryScenesUseCase,
+  CondenseDraftUseCase,
+  CreateCardUseCase,
+  DraftRepository,
+  ExpandDraftUseCase,
+  ExportManuscriptUseCase,
+  GenerateAllDraftsUseCase,
+  GenerateDraftUseCase,
+  GenerateOutlineUseCase,
+  ManuscriptAssemblyRepository,
+  NovelPipeline,
+  NovelReviewRepository,
+  NovelRunStateRepository,
+  OutlineRepository,
+  PostGenerationUpdateManager,
+  ProjectRepository,
+  PromoteBibleCandidatesUseCase,
+  PromoteCardCandidatesUseCase,
+  RecommendCardsUseCase,
+  ReviewManuscriptUseCase,
+  ReviseAfterGenerateGate,
+  ReviseDraftUseCase,
+  SceneBatchRepository,
+  SceneCacheRepository,
+  SceneRepository,
+  SceneSeedRepository,
+  SceneSidebarRepository,
+  StoryFeatureRepository,
+  StudioChatUseCase,
+  SummarizeChaptersUseCase,
+} from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { OutputChannelLogger } from '../../infrastructure/vscode/logger';
-import { StudioChatUseCase } from '@storyboard/story-engine';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import { PostGenerationUpdateManager } from '@storyboard/story-engine';
+import { createUsageSink } from '@/infrastructure/ai/usageSink';
 import {
   createVscodeUsageLedgerFileSystem,
   UsageRecorder,
-} from '../../infrastructure/ai/UsageRecorder';
-import { ProposalReviewService } from '../../presentation/providers/proposalReviewService';
+} from '@/infrastructure/ai/UsageRecorder';
+import { OutputChannelLogger } from '@/infrastructure/vscode/logger';
+import { VscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import { VscodeWorkspaceLocator } from '@/infrastructure/vscode/workspaceLocator';
+import { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

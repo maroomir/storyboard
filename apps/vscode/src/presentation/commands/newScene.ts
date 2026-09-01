@@ -1,4 +1,4 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { draftPath, getStoryboardProjectPaths, sceneFilePath } from '@storyboard/story-engine';
@@ -6,7 +6,7 @@ import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,
   uriExists,
-} from '../../infrastructure/vscode/workspace';
+} from '@/infrastructure/vscode/workspace';
 import { readProjectJson } from '@storyboard/story-engine';
 import { parseSceneFileName, serializeSceneCard } from '@storyboard/story-format';
 import {

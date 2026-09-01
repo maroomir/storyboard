@@ -1,10 +1,10 @@
 import type { StoryUri } from '@storyboard/story-engine';
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { buildSceneSeeds, type GeneratedSceneSeed } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import {
   ChapterPlanParseError,
   parseSceneFileName,

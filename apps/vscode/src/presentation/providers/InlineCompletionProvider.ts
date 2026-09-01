@@ -12,11 +12,11 @@ import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,
-} from '../../infrastructure/vscode/workspaceFsAdapters';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { isCliProvider } from '@storyboard/story-ai';
 import type { AiProviderId, InlineCompletionContext } from '@storyboard/story-ai';
-import { parseDraftSceneParts } from '../../infrastructure/vscode/draftSceneLink';
+import { parseDraftSceneParts } from '@/infrastructure/vscode/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;
 const inlineCompletionPrefixChars = 1200;

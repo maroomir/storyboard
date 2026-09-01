@@ -1,20 +1,20 @@
 import * as vscode from 'vscode';
 
-import { registerApplyDraftFormatCommand } from '../../presentation/commands/applyDraftFormat';
-import { registerAugmentDraftCommands } from '../../presentation/commands/augmentDraft';
-import { registerExpandDraftCommand } from '../../presentation/commands/expandDraft';
-import { registerCondenseDraftCommand } from '../../presentation/commands/condenseDraft';
-import { registerGenerateAllDraftsCommand } from '../../presentation/commands/generateAllDrafts';
-import { registerGenerateDraftCommands } from '../../presentation/commands/generateDraft';
-import { registerMigrateScenesCommand } from '../../presentation/commands/migrateScenes';
-import { registerNewSceneCommands } from '../../presentation/commands/newScene';
-import { registerReviseDraftCommand } from '../../presentation/commands/reviseDraft';
-import { registerCharacterHoverProvider } from '../../presentation/providers/CharacterHoverProvider';
-import { registerContinuityDiagnosticsProvider } from '../../presentation/providers/ContinuityDiagnosticsProvider';
-import { registerGrammarDiagnosticsProvider } from '../../presentation/providers/GrammarDiagnosticsProvider';
-import { registerInlineCompletionProvider } from '../../presentation/providers/InlineCompletionProvider';
-import { registerSidebarScenesProvider } from '../../presentation/providers/SidebarScenesProvider';
-import { registerSlopDiagnosticsProvider } from '../../presentation/providers/SlopDiagnosticsProvider';
+import { registerApplyDraftFormatCommand } from '@/presentation/commands/applyDraftFormat';
+import { registerAugmentDraftCommands } from '@/presentation/commands/augmentDraft';
+import { registerExpandDraftCommand } from '@/presentation/commands/expandDraft';
+import { registerCondenseDraftCommand } from '@/presentation/commands/condenseDraft';
+import { registerGenerateAllDraftsCommand } from '@/presentation/commands/generateAllDrafts';
+import { registerGenerateDraftCommands } from '@/presentation/commands/generateDraft';
+import { registerMigrateScenesCommand } from '@/presentation/commands/migrateScenes';
+import { registerNewSceneCommands } from '@/presentation/commands/newScene';
+import { registerReviseDraftCommand } from '@/presentation/commands/reviseDraft';
+import { registerCharacterHoverProvider } from '@/presentation/providers/CharacterHoverProvider';
+import { registerContinuityDiagnosticsProvider } from '@/presentation/providers/ContinuityDiagnosticsProvider';
+import { registerGrammarDiagnosticsProvider } from '@/presentation/providers/GrammarDiagnosticsProvider';
+import { registerInlineCompletionProvider } from '@/presentation/providers/InlineCompletionProvider';
+import { registerSidebarScenesProvider } from '@/presentation/providers/SidebarScenesProvider';
+import { registerSlopDiagnosticsProvider } from '@/presentation/providers/SlopDiagnosticsProvider';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

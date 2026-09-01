@@ -1,4 +1,4 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
 import { formatAugmentCards } from '@storyboard/story-ai';
@@ -25,7 +25,7 @@ import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,
-} from '../../infrastructure/vscode/workspaceFsAdapters';
+} from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { StudioToolDiagnostics } from '../providers/studioToolDiagnostics';
 
 export interface StudioInvokeResolverDependencies {

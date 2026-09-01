@@ -4,7 +4,7 @@ import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
 import type { GrammarIssue } from '@storyboard/story-ai';

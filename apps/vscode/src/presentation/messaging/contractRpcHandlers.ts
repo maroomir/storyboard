@@ -1,4 +1,4 @@
-import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
+import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { contractFieldKeys } from '@storyboard/story-format';

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ExpandDraftResult, ExpandDraftUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 
 const expandDraftCommand = 'storyboard.draft.expand';

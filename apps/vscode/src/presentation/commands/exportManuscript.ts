@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ExportManuscriptUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ManuscriptExportFormat } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 
 const exportManuscriptCommand = 'storyboard.draft.export';
 

@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
-import { registerAssembleManuscriptCommand } from '../../presentation/commands/assembleManuscript';
-import { registerCompleteStoryScenesCommand } from '../../presentation/commands/completeStoryScenes';
-import { registerExportManuscriptCommand } from '../../presentation/commands/exportManuscript';
-import { registerGenerateNovelCommand } from '../../presentation/commands/generateNovel';
-import { registerGenerateOutlineCommand } from '../../presentation/commands/generateOutline';
-import { registerGenerateSceneSeedsCommand } from '../../presentation/commands/generateSceneSeeds';
-import { registerReviewManuscriptCommand } from '../../presentation/commands/reviewManuscript';
-import { registerSummarizeChaptersCommand } from '../../presentation/commands/summarizeChapters';
+import { registerAssembleManuscriptCommand } from '@/presentation/commands/assembleManuscript';
+import { registerCompleteStoryScenesCommand } from '@/presentation/commands/completeStoryScenes';
+import { registerExportManuscriptCommand } from '@/presentation/commands/exportManuscript';
+import { registerGenerateNovelCommand } from '@/presentation/commands/generateNovel';
+import { registerGenerateOutlineCommand } from '@/presentation/commands/generateOutline';
+import { registerGenerateSceneSeedsCommand } from '@/presentation/commands/generateSceneSeeds';
+import { registerReviewManuscriptCommand } from '@/presentation/commands/reviewManuscript';
+import { registerSummarizeChaptersCommand } from '@/presentation/commands/summarizeChapters';
 
 import { DisposableStore } from '../lifecycle/disposableStore';
 import type { IApplicationModule } from '../lifecycle/applicationModule';

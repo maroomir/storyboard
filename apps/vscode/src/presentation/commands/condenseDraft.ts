@@ -14,7 +14,7 @@ import { archiveExistingDraft, sceneContextPaths } from '@storyboard/story-engin
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
+import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
@@ -25,8 +25,8 @@ import {
   draftHistoryFileSystem,
   sceneContextFileSystem,
   vscodeFsAdapter,
-} from '../../infrastructure/vscode/workspaceFsAdapters';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '../providers/virtualDocumentStore';
 
 const CONDENSE_DRAFT_COMMAND = 'storyboard.draft.condense';

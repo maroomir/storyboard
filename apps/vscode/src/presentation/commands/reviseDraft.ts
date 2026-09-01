@@ -4,7 +4,7 @@ import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { ReviseDraftUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftPath } from '@storyboard/story-engine';
-import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneStem } from '@storyboard/story-format';
 

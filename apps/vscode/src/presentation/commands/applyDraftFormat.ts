@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import type { ApplyDraftFormatResult, ApplyDraftFormatUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
-import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
