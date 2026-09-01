@@ -39,6 +39,15 @@ const valueFlags = new Set([
   'lines',
   'to',
   'fallback',
+  'from',
+  'genre',
+  'audience',
+  'pov',
+  'target-words',
+  'chapters',
+  'scenes-per-chapter',
+  'concept',
+  'description',
 ]);
 
 export interface ParseFailure {

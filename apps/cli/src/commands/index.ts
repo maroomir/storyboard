@@ -1,3 +1,5 @@
+import { resolve } from 'node:path';
+
 import {
   applyStoryCardChanges,
   backgroundCardPath,
@@ -24,6 +26,7 @@ import {
 } from '@storyboard/story-engine';
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
+import { pointOfViews, type PointOfView, type ProjectSetting } from '@storyboard/story-format';
 import {
   convertLegacySceneText,
   createEmptyBackground,
@@ -1064,12 +1067,20 @@ const initProject: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--title 로 작품 이름을 지정해 주세요.' };
   }
 
-  const project = createDefaultProjectJson({
+  const contract = await readContractInput(container, args);
+
+  if ('message' in contract) {
+    return { ok: false, message: contract.message };
+  }
+
+  const base = createDefaultProjectJson({
     name,
     ...(flagString(args.flags, 'language') === undefined
       ? {}
       : { language: flagString(args.flags, 'language') }),
   });
+  const setting = mergeSetting(undefined, contract.setting);
+  const project = setting === undefined ? base : { ...base, setting };
 
   await container.fileSystem.createDirectory(paths.metadataDirectory);
   await createStoryboardDirectories(container.fileSystem, paths);
@@ -1083,9 +1094,129 @@ const initProject: CommandHandler = async ({ container, args }) => {
   return {
     ok: true,
     message: `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}`,
-    data: { id: project.id, name: project.name, format: project.format },
+    data: { id: project.id, name: project.name, format: project.format, setting: project.setting },
   };
 };
+
+// 계약은 outline generate 의 입구다. 이걸 채우는 길이 없으면 워크스페이스를 만들고도 CLI 만으로는
+// 한 걸음도 못 나간다. init 이 처음 채우고, project set 이 나중에 고친다 — 둘 다 같은 입력을 읽는다.
+const setProjectContract: CommandHandler = async ({ container, args }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const contract = await readContractInput(container, args);
+
+  if ('message' in contract) {
+    return { ok: false, message: contract.message };
+  }
+
+  if (contract.setting === undefined) {
+    return {
+      ok: false,
+      message:
+        '바꿀 값을 지정해 주세요. --genre --audience --pov --target-words --chapters --scenes-per-chapter --concept --description 또는 --from <json>.',
+    };
+  }
+
+  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const setting = mergeSetting(project.setting, contract.setting);
+
+  await writeProjectJson(container.fileSystem, paths.projectJson, { ...project, setting });
+
+  return { ok: true, message: '작품 계약을 갱신했습니다.', data: setting };
+};
+
+type ContractInput = { readonly setting: Partial<ProjectSetting> | undefined } | { readonly message: string };
+
+async function readContractInput(
+  container: CliContainer,
+  args: ParsedArguments,
+): Promise<ContractInput> {
+  const fromPath = flagString(args.flags, 'from');
+  let fromFile: Partial<ProjectSetting> | undefined;
+
+  if (fromPath !== undefined) {
+    try {
+      const bytes = await container.fileSystem.readFile(NodeUri.file(resolve(fromPath)));
+      const parsed: unknown = JSON.parse(new TextDecoder().decode(bytes));
+
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        return { message: `${fromPath} 의 최상위는 객체여야 합니다.` };
+      }
+
+      // setting 을 감싼 project.json 을 그대로 줘도 받는다.
+      const record = parsed as Record<string, unknown>;
+      fromFile = (record.setting ?? record) as Partial<ProjectSetting>;
+    } catch (error) {
+      return { message: `${fromPath} 를 읽지 못했습니다: ${error instanceof Error ? error.message : String(error)}` };
+    }
+  }
+
+  const pov = flagString(args.flags, 'pov');
+
+  if (pov !== undefined && !pointOfViews.includes(pov as PointOfView)) {
+    return { message: `--pov 는 ${pointOfViews.join(', ')} 중 하나여야 합니다.` };
+  }
+
+  const numbers: Array<[keyof ProjectSetting, string]> = [
+    ['targetWordCount', 'target-words'],
+    ['chapterCount', 'chapters'],
+    ['scenesPerChapter', 'scenes-per-chapter'],
+  ];
+  const parsedNumbers: Record<string, number> = {};
+
+  for (const [key, flag] of numbers) {
+    const raw = flagString(args.flags, flag);
+
+    if (raw === undefined) {
+      continue;
+    }
+
+    const value = Number(raw);
+
+    if (!Number.isInteger(value) || value <= 0) {
+      return { message: `--${flag} 는 양의 정수여야 합니다: ${raw}` };
+    }
+
+    parsedNumbers[key] = value;
+  }
+
+  const fromFlags: Partial<ProjectSetting> = {
+    ...(flagString(args.flags, 'genre') === undefined ? {} : { genre: flagString(args.flags, 'genre') }),
+    ...(flagString(args.flags, 'audience') === undefined
+      ? {}
+      : { audience: flagString(args.flags, 'audience') }),
+    ...(pov === undefined ? {} : { pov: pov as PointOfView }),
+    ...(flagString(args.flags, 'concept') === undefined
+      ? {}
+      : { concept: flagString(args.flags, 'concept') }),
+    ...(flagString(args.flags, 'description') === undefined
+      ? {}
+      : { description: flagString(args.flags, 'description') }),
+    ...parsedNumbers,
+  };
+
+  const merged = { ...(fromFile ?? {}), ...fromFlags };
+
+  return { setting: Object.keys(merged).length === 0 ? undefined : merged };
+}
+
+// 계약은 한 번에 다 채워지지 않는다. 주지 않은 키는 그대로 두고 준 키만 덮어쓴다.
+function mergeSetting(
+  current: ProjectSetting | undefined,
+  patch: Partial<ProjectSetting> | undefined,
+): ProjectSetting | undefined {
+  if (patch === undefined) {
+    return current;
+  }
+
+  return {
+    tags: [],
+    prohibitions: [],
+    styleConstraints: [],
+    qualityCriteria: [],
+    ...(current ?? {}),
+    ...patch,
+  };
+}
 
 // Diagnostics the editor paints as squiggles have no terminal form, but the analysis behind them
 // does — and an agent that can check its own output is the whole point of the CLI. Findings go out
@@ -1240,6 +1371,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'check continuity': checkDraft,
   'check slop': checkDraft,
   init: initProject,
+  'project set': setProjectContract,
   'scene seeds': generateSceneSeeds,
   'scene complete': completeStory,
   'cards build': buildStoryCards,

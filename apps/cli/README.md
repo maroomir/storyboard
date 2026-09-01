@@ -22,6 +22,8 @@ npm install && npm run cli:build && node apps/cli/dist/index.js --help
 ## Use
 
 ```bash
+storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10~20대" \
+  --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
 storyboard outline generate
 storyboard scene generate 01-scene-1-1 --force
 storyboard scene generate --all
@@ -29,6 +31,20 @@ storyboard scene revise 01-scene-1-1
 storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
+
+`outline generate` refuses until the contract names a genre, an audience, a point of view and a
+target word count, so `init` takes them as flags. `--from <json>` reads the same fields from a file
+(a whole `project.json` works too), and flags win over the file. To change the contract later, use
+the same inputs on `project set` — keys you leave out keep their current value:
+
+```bash
+storyboard project set --target-words 320000 --from contract.json
+```
+
+`cards build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
+without touching the tree. A new card whose name yields no ascii id is reported rather than filed
+under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
+and run `cards build` again.
 
 `--fallback <id>` keeps a long unattended run alive: when a CLI provider answers "usage limit", the
 remaining calls go to that provider instead of the run aborting halfway. The switch is one-way.
