@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardProjectPaths } from '../paths/projectPaths';
-import type { IFileSystem } from '../ports/fileSystem';
+import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 
 const STORYBOARD_GITIGNORE_BLOCK = `
 # Storyboard generated files

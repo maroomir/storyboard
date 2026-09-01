@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import {
   buildSceneContext,
   characterMatchTokens,
@@ -13,16 +13,16 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-format';
 
-import { nextDraftHistoryRevision } from '../domain/files/draftHistory';
-import { sceneContextPaths } from '../paths/sceneContextPaths';
-import { readRevisionPlanFile } from '../domain/files/revisionPlan';
+import { nextDraftHistoryRevision } from '#engine/domain/files/draftHistory';
+import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
+import { readRevisionPlanFile } from '#engine/domain/files/revisionPlan';
 import type {
   StudioCardStage,
   StudioSceneStage,
   StudioStage,
   StudioStageCard,
   StudioTarget,
-} from '../shared/messaging/studio';
+} from '#engine/shared/messaging/studio';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -31,7 +31,7 @@ import {
   getStoryboardProjectPaths,
   scenePath,
   type StoryboardProjectPaths,
-} from '../paths/projectPaths';
+} from '#engine/paths/projectPaths';
 
 type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
 

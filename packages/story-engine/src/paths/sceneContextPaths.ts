@@ -1,4 +1,4 @@
-import { summaryFileName } from '../domain/chapterSummaries';
+import { summaryFileName } from '#engine/domain/chapterSummaries';
 import { joinStoryPath, type StoryUri } from './storyUri';
 import type { StoryboardProjectPaths } from './projectPaths';
 import type { SceneContextWorkspacePaths } from '@storyboard/story-format';

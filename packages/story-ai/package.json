@@ -5,9 +5,16 @@
   "description": "Storyboard AI engine: provider registry, prompt catalog, and response contracts shared by every app",
   "license": "Apache-2.0",
   "main": "src/index.ts",
+  "imports": {
+    "#ai/*": "./src/*.ts"
+  },
   "types": "src/index.ts",
-  "exports": { ".": "./src/index.ts" },
-  "files": ["src"],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0",
     "@google/generative-ai": "^0.24.1",
@@ -16,5 +23,8 @@
     "openai": "^6.35.0",
     "zod": "^4.4.2"
   },
-  "devDependencies": { "@types/node": "^20.12.12", "typescript": "^5.6.3" }
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.6.3"
+  }
 }

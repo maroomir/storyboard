@@ -6,7 +6,7 @@ import {
   serializeSceneCard,
 } from '@storyboard/story-format';
 
-import type { StudioPatchPayload } from '../../shared/messaging';
+import type { StudioPatchPayload } from '#engine/shared/messaging/index';
 
 export type StudioPatchTarget = 'entityCard' | 'sceneCard' | 'draft';
 

@@ -1,5 +1,5 @@
 import { pointOfViewLabels } from '@storyboard/story-format';
-import type { StyleDirective } from '../../contracts/styleDirective';
+import type { StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface DraftCritiqueInput {

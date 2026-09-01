@@ -1,4 +1,4 @@
-import type { StoryUri } from '../storyUri';
+import type { StoryUri } from '#format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -9,7 +9,7 @@ import {
   toSceneFrontmatter,
   type SceneCard,
   type SceneFile,
-} from '../scene';
+} from '#format/scene';
 
 export type SceneParseErrorCode =
   | 'invalid-scene-file-name'

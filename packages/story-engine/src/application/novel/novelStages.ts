@@ -1,11 +1,11 @@
-import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
-import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
+import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
+import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import { assembleManuscript } from '@storyboard/story-format';
-import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
-import { draftPath, scenePath, type StoryboardProjectPaths } from '../../paths/projectPaths';
-import { recordRevisionEntry } from '../../persistence/revisionPlanRecorder';
-import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
-import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
+import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
+import { draftPath, scenePath, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
+import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import type { StoryUri } from '@storyboard/story-format';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';

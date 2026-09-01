@@ -1,14 +1,14 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-import { aiGenerateResponseWithUsage } from '../cost';
-import { AiProviderError } from '../../contracts/aiProviderError';
+import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 
 interface GoogleGenerativeModelLike {
   readonly generateContent: (prompt: string) => Promise<GoogleGenerateContentResultLike>;

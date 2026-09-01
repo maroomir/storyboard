@@ -1,11 +1,11 @@
-import { getStoryboardProjectPaths } from '../paths/projectPaths';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { listCardFileUris } from './cardFiles';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../ports/fileSystem';
-import { isIgnoredSampleCardFileName } from '../paths/projectPaths';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
 import { isCharacterRole, parseCard } from '@storyboard/story-format';
 import type { CharacterRole } from '@storyboard/story-format';
-import type { RelationListCharacter } from '../shared/messaging/relations';
+import type { RelationListCharacter } from '#engine/shared/messaging/relations';
 
 export interface CharacterRosterEntry {
   readonly id: string;

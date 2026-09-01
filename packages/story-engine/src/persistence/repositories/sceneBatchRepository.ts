@@ -1,12 +1,12 @@
-import { hasStoryboardProjectAt } from '../../paths/projectDetection';
-import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
+import { hasStoryboardProjectAt } from '#engine/paths/projectDetection';
+import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   BatchSceneList,
   ISceneBatchRepository,
-} from '../../application/drafts/generateAllDraftsUseCase';
-import { getStoryboardProjectPaths, isHiddenSceneFileName } from '../../paths/projectPaths';
+} from '#engine/application/drafts/generateAllDraftsUseCase';
+import { getStoryboardProjectPaths, isHiddenSceneFileName } from '#engine/paths/projectPaths';
 import { parseSceneFileName } from '@storyboard/story-format';
 
 export class SceneBatchRepository implements ISceneBatchRepository {

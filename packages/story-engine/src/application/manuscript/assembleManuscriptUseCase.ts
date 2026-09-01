@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
   type AssembledManuscript,
@@ -9,7 +9,7 @@ import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
-} from '../../domain/foreshadowingTracker';
+} from '#engine/domain/foreshadowingTracker';
 import type { ChapterPlan } from '@storyboard/story-format';
 
 export type ManuscriptAssemblySource = {

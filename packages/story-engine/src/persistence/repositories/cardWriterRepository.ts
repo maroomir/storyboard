@@ -1,11 +1,11 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { ICardWriterRepository } from '../../application/cards/createCardUseCase';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import {
   backgroundCardPath,
   characterCardPath,
   characterProfilePath,
-} from '../../paths/projectPaths';
+} from '#engine/paths/projectPaths';
 import { serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 const TRANSPARENT_PNG_BYTES = Uint8Array.from([

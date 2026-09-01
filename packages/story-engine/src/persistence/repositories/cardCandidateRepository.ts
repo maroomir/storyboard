@@ -1,17 +1,17 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
-import type { ICardCandidateRepository } from '../../application/cards/promoteCardCandidatesUseCase';
-import type { IStoryboardLogger } from '../../ports/logger';
-import { characterCardPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { ICardCandidateRepository } from '#engine/application/cards/promoteCardCandidatesUseCase';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { characterCardPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import {
   applyCardCandidateItems,
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
-} from '../../domain/cardCandidatePromotion';
+} from '#engine/domain/cardCandidatePromotion';
 import { readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
-import { readCardCandidateFile, writeCardCandidateFile } from '../../domain/files/cardCandidates';
-import type { CardCandidateRecord } from '../../shared/cardCandidates';
+import { readCardCandidateFile, writeCardCandidateFile } from '#engine/domain/files/cardCandidates';
+import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export class CardCandidateRepository implements ICardCandidateRepository {
   public constructor(

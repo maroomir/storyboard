@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IDraftRepository } from '../../ports/repositories';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IDraftRepository } from '#engine/ports/repositories';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import { writeDraftFile } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';
 export class DraftRepository implements IDraftRepository {

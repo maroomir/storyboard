@@ -1,6 +1,6 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
-import type { StoryboardProjectPaths } from '../paths/projectPaths';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from '@storyboard/story-format';
 import type {
   IBackgroundMemoryStore,

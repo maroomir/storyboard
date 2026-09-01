@@ -1,13 +1,13 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
-import type { IBibleCandidateRepository } from '../../application/project/promoteBibleCandidatesUseCase';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IBibleCandidateRepository } from '#engine/application/project/promoteBibleCandidatesUseCase';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
 import type { StoryBible } from '@storyboard/story-format';
 import {
   readBibleCandidateFile,
   type BibleCandidateRecord,
-} from '../../domain/files/bibleCandidates';
+} from '#engine/domain/files/bibleCandidates';
 export class BibleCandidateRepository implements IBibleCandidateRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

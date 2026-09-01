@@ -1,7 +1,7 @@
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryUri } from '@storyboard/story-format';
-import type { ISceneCacheRepository } from '../../ports/repositories';
-import { draftHistorySceneDirectory, joinUri } from '../../paths/projectPaths';
+import type { ISceneCacheRepository } from '#engine/ports/repositories';
+import { draftHistorySceneDirectory, joinUri } from '#engine/paths/projectPaths';
 import {
   computeDraftBodyHash,
   createDraft,
@@ -10,14 +10,14 @@ import {
   serializeDraft,
 } from '@storyboard/story-format';
 import type { BackgroundCard } from '@storyboard/story-format';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
-import { type SceneCacheRecord } from '../../domain/files/sceneCache';
+import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
+import { type SceneCacheRecord } from '#engine/domain/files/sceneCache';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
   createSceneDialogueStore,
-} from '../../persistence/cardMemoryWorkspace';
-import { findRecentBackgroundExcerpt } from '../../persistence/backgroundExcerpt';
+} from '#engine/persistence/cardMemoryWorkspace';
+import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
 import { buildStyleDirective } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName, StoryboardAiService } from '@storyboard/story-ai';
 import {

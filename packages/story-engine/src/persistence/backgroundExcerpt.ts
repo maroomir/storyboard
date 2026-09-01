@@ -1,7 +1,7 @@
-import { joinStoryPath } from '../paths/storyUri';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
-import type { StoryboardProjectPaths } from '../paths/projectPaths';
-import { isHiddenSceneFileName } from '../paths/projectPaths';
+import { joinStoryPath } from '#engine/paths/storyUri';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { isHiddenSceneFileName } from '#engine/paths/projectPaths';
 import {
   parseDraft,
   parseSceneFileName,

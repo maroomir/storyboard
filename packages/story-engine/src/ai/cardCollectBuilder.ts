@@ -1,10 +1,10 @@
-import { shouldProposeCardCollect } from '../domain/cardCollect';
+import { shouldProposeCardCollect } from '#engine/domain/cardCollect';
 import type { BackgroundCard, CharacterCard, StoryboardCard } from '@storyboard/story-format';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
   type CardCollectProposalDraft,
-} from '../shared/cardCollect';
+} from '#engine/shared/cardCollect';
 import type { EntityRef, StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 import { extractQuotedUtterancesForCharacter } from './traitsUpdater';
 export interface CollectDraft {

@@ -1,5 +1,5 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import {
   addFollowUps,
   parseStudioFollowUps,
@@ -8,9 +8,9 @@ import {
   selectFollowUpsFor,
   serializeStudioFollowUps,
   type StudioFollowUp,
-} from '../../domain/files/studioFollowUp';
-import type { StudioEntity } from '../../shared/messaging/studio';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+} from '#engine/domain/files/studioFollowUp';
+import type { StudioEntity } from '#engine/shared/messaging/studio';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 
 export interface IStudioFollowUpRepository {
   list(workspaceRoot: StoryUri, target: StudioEntity): Promise<readonly StudioFollowUp[]>;

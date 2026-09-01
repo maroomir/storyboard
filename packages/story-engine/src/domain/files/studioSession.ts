@@ -6,7 +6,7 @@ import {
   type StudioChatTurn,
   type StudioEntity,
   type StudioSessionSummary,
-} from '../../shared/messaging/studio';
+} from '#engine/shared/messaging/studio';
 
 export const studioSessionVersion = '2.0.0';
 

@@ -1,8 +1,8 @@
-import type { AiGateway } from '../ai/aiGateway';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import { assembleManuscript } from '@storyboard/story-format';
-import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
+import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
 import { flattenChapterPlan } from '@storyboard/story-format';
 import type { ChapterPlan } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';

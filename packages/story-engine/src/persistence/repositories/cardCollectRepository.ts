@@ -1,10 +1,10 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
-import type { ICardCollectRepository } from '../../application/cards/collectCardProposalsUseCase';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
-import { loadCharacterRoster } from '../relationGraphData';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { ICardCollectRepository } from '#engine/application/cards/collectCardProposalsUseCase';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { loadCharacterRoster } from '#engine/persistence/relationGraphData';
 import { parseDraft, readDraftFile } from '@storyboard/story-format';
-import type { CollectDraft, CollectRosterEntry } from '../../ai/cardCollectBuilder';
+import type { CollectDraft, CollectRosterEntry } from '#engine/ai/cardCollectBuilder';
 
 export class CardCollectRepository implements ICardCollectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

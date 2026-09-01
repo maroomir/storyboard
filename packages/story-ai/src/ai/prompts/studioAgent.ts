@@ -2,7 +2,7 @@ import {
   isSpanRequiredTool,
   studioToolNamesByShape,
   type StudioAgentToolName,
-} from '../../contracts/studioAgent';
+} from '#ai/contracts/studioAgent';
 import type { PromptArtifact } from './types';
 
 export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';

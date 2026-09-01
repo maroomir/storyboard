@@ -1,8 +1,8 @@
-import type { StoryUri } from '../storyUri';
+import type { StoryUri } from '#format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
-import { storyBibleSchema, type StoryBible } from '../bible';
+import { storyBibleSchema, type StoryBible } from '#format/bible';
 
 export type BibleParseErrorCode = 'invalid-yaml' | 'invalid-bible-schema';
 

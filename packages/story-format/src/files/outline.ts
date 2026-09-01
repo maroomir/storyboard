@@ -1,4 +1,4 @@
-import type { StoryUri } from '../storyUri';
+import type { StoryUri } from '#format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -7,8 +7,8 @@ import {
   pointOfViewLabels,
   type ChapterPlan,
   type OutlineSynopsis,
-} from '../outline';
-import type { PointOfView } from '../project';
+} from '#format/outline';
+import type { PointOfView } from '#format/project';
 
 export type ChapterPlanParseErrorCode = 'invalid-yaml' | 'invalid-chapter-plan-schema';
 

@@ -1,8 +1,8 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
-import type { IUsageSink } from '../../ports/usageSink';
+import type { IUsageSink } from '#engine/ports/usageSink';
 export class AiGateway {
   public constructor(
     private readonly providerRegistry: AiProviderRegistry,

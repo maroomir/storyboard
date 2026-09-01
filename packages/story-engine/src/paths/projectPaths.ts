@@ -15,7 +15,7 @@ import {
 } from '@storyboard/story-format';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
 
-import type { StudioEntity } from '../shared/messaging';
+import type { StudioEntity } from '#engine/shared/messaging/index';
 
 export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
 

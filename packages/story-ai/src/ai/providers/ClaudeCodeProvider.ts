@@ -1,13 +1,13 @@
 import os from 'node:os';
 
-import { AiProviderError } from '../../contracts/aiProviderError';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 import {
   type CliRunner,
   createDefaultCliRunner,

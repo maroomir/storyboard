@@ -1,9 +1,9 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
-import { recordRevisionEntry } from '../../persistence/revisionPlanRecorder';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { draftPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneFileName } from '@storyboard/story-format';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';

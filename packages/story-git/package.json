@@ -5,6 +5,9 @@
   "description": "Git commit/sync layer for Storyboard workspaces: every save is a commit, conflicts always abort",
   "license": "Apache-2.0",
   "main": "src/index.ts",
+  "imports": {
+    "#git/*": "./src/*.ts"
+  },
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"

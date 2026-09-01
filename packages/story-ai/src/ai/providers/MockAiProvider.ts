@@ -1,4 +1,4 @@
-import { aiGenerateResponseWithUsage } from '../cost';
+import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -6,7 +6,7 @@ import {
   type AiProviderId,
   type AiTaskName,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 
 const mockCatalogModelId = 'mock-default';
 

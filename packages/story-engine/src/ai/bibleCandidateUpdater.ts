@@ -4,7 +4,7 @@ import type { BibleFact, CharacterCard } from '@storyboard/story-format';
 import {
   type BibleCandidateFileSystem,
   writeBibleCandidateFile,
-} from '../domain/files/bibleCandidates';
+} from '#engine/domain/files/bibleCandidates';
 import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 interface BibleCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
