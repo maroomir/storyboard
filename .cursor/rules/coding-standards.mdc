@@ -91,7 +91,25 @@ for schema-first types and the error-class template. Generic readability and ver
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`
   directly; the bot must not import anything `seed`-related.
-- In vscode code, prefer `@/` and `@webview/` over `../../`-and-deeper relative chains; bot and cli
-  use plain relative imports (no aliases) — keep each app uniform.
 - When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
   promote the existing one into a shared package instead of re-implementing it locally.
+
+## Module Aliases
+
+Two kinds of reference, two mechanisms. The architecture checks enforce both.
+
+- **Inside an app**: `@/` maps to that app's `src/`. Every reference that climbs out of its own
+  folder uses it — a bare `./sibling` is fine, `../` is a build failure. The webview keeps its own
+  `@webview/` so the host and the browser bundle never share one prefix.
+- **Inside a package**: a Node subpath import declared in the package's own `package.json`
+  (`#engine/`, `#format/`, `#ai/`, `#git/`, `#pipeline/`). It is **not** a bundler alias, and that is
+  the point: apps bundle package source, and a bundler's alias table is global, so a package using
+  `@/` would silently resolve to the *app's* `src/` — a wrong file, no error, in a green build. A
+  package must never use another package's prefix.
+- **Across packages**: the package name (`@storyboard/story-format`), never a path.
+- **One source of truth**: a project's own `tsconfig.json` holds its `paths`; `scripts/aliases.mjs`
+  reads it and hands the same table to esbuild, Vite and Vitest. Never restate a path in a bundler
+  config. Note that TypeScript replaces `paths` wholesale when a child config declares it, so a
+  project that needs `@storyboard/*` repeats `@/*` in its own block rather than inheriting it.
+- **`tsconfig.base.json`** at the repo root holds the shared compiler options; every workspace
+  extends it and adds only its own `types`, browser `lib`, and `paths`.
