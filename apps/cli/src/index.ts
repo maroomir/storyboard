@@ -18,6 +18,10 @@ Commands
   scene generate --all         초안이 없거나 입력이 바뀐 씬만 생성합니다 (--force 미지원)
   scene revise <stem>          기존 초안을 검수하고 재작성합니다
   scene draft <stem>           초안 파일 경로를 출력합니다
+  init --title <name>          현재 디렉터리를 Storyboard 워크스페이스로 만듭니다
+  check grammar <stem>         초안의 문법을 검사합니다
+  check continuity <stem>      정전과 어긋나는 곳을 검사합니다
+  check slop <stem>            상투 표현을 검사합니다 (AI 호출 없음)
   card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
   card promote                 초안에서 추출한 카드 후보를 반영합니다 (--dry-run)
   bible promote                초안에서 추출한 설정 후보를 정전에 반영합니다 (--dry-run)
@@ -34,6 +38,8 @@ Flags
   --model <name>               그 프로바이더의 모델
   --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
   --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
+  --title <name>               init 이 만들 작품 이름
+  --language <code>            init 의 언어 (기본 ko)
   --dry-run                    반영하지 않고 대상만 보고합니다
   --json                       결과를 JSON 으로 stdout 에 출력합니다
   --verbose                    진행 로그를 stderr 에 출력합니다
@@ -85,9 +91,9 @@ async function main(argv: readonly string[]): Promise<number> {
 
   const workspacePath = resolve(flagString(args.flags, 'workspace') ?? process.cwd());
 
-  // Storing a key is machine-wide, not workspace work — requiring a project here would make an
-  // agent cd into a novel just to authenticate.
-  const needsWorkspace = verb !== 'apikey set';
+  // `init` creates the workspace and `apikey set` is machine-wide, so neither can require one to
+  // already exist — demanding it would make the CLI unusable from an empty directory.
+  const needsWorkspace = verb !== 'apikey set' && verb !== 'init';
 
   if (needsWorkspace && !existsSync(join(workspacePath, '.storyboard', 'project.json'))) {
     process.stderr.write(

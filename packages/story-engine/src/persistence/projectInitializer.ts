@@ -1,7 +1,6 @@
-import * as vscode from 'vscode';
-
-import type { StoryboardProjectPaths } from '@storyboard/story-engine';
-import { uriExists } from './workspace';
+import type { StoryUri } from '../paths/storyUri';
+import type { StoryboardProjectPaths } from '../paths/projectPaths';
+import type { IFileSystem } from '../ports/fileSystem';
 
 const STORYBOARD_GITIGNORE_BLOCK = `
 # Storyboard generated files
@@ -14,32 +13,38 @@ background/.sample.card
 scene/.sample.card
 `;
 
-export async function createStoryboardDirectories(paths: StoryboardProjectPaths): Promise<void> {
+export async function createStoryboardDirectories(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+): Promise<void> {
   await Promise.all([
-    vscode.workspace.fs.createDirectory(paths.sceneCacheDirectory),
-    vscode.workspace.fs.createDirectory(paths.characterProfileDirectory),
-    vscode.workspace.fs.createDirectory(paths.backgroundDirectory),
-    vscode.workspace.fs.createDirectory(paths.sceneDirectory),
-    vscode.workspace.fs.createDirectory(paths.draftDirectory),
+    fs.createDirectory(paths.sceneCacheDirectory),
+    fs.createDirectory(paths.characterProfileDirectory),
+    fs.createDirectory(paths.backgroundDirectory),
+    fs.createDirectory(paths.sceneDirectory),
+    fs.createDirectory(paths.draftDirectory),
   ]);
 }
 
-export async function ensureWorkspaceGitignore(gitignoreUri: vscode.Uri): Promise<void> {
-  if (!(await uriExists(gitignoreUri))) {
-    await vscode.workspace.fs.writeFile(
+export async function ensureWorkspaceGitignore(
+  fs: IFileSystem,
+  gitignoreUri: StoryUri,
+): Promise<void> {
+  if (!(await fs.exists(gitignoreUri))) {
+    await fs.writeFile(
       gitignoreUri,
       new TextEncoder().encode(STORYBOARD_GITIGNORE_BLOCK.trimStart()),
     );
     return;
   }
 
-  const current = new TextDecoder().decode(await vscode.workspace.fs.readFile(gitignoreUri));
+  const current = new TextDecoder().decode(await fs.readFile(gitignoreUri));
   if (current.includes('# Storyboard generated files')) {
     return;
   }
 
   const separator = current.endsWith('\n') ? '' : '\n';
-  await vscode.workspace.fs.writeFile(
+  await fs.writeFile(
     gitignoreUri,
     new TextEncoder().encode(`${current}${separator}${STORYBOARD_GITIGNORE_BLOCK}`),
   );

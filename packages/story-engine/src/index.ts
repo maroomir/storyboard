@@ -77,6 +77,7 @@ export * from './persistence/cardFiles';
 export * from './persistence/cardMemoryWorkspace';
 export * from './persistence/characterBriefs';
 export * from './persistence/manuscriptDrafts';
+export * from './persistence/projectInitializer';
 export * from './persistence/projectJson';
 export * from './persistence/relationGraphData';
 export * from './persistence/repositories/bibleCandidateRepository';
