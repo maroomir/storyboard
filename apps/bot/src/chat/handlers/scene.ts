@@ -10,10 +10,10 @@ import {
   validateSceneSlugInput,
 } from '@storyboard/story-format';
 
-import { hashContent } from '../../workspace/workspaceStore';
-import type { ChatContext } from '../context';
-import type { IncomingUpdate } from '../ports';
-import { commandArgs, isCommand, type ICommandHandler } from '../registry';
+import { hashContent } from '@/workspace/workspaceStore';
+import type { ChatContext } from '@/chat/context';
+import type { IncomingUpdate } from '@/chat/ports';
+import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 import { describeOutcome } from './edit';
 
 const USAGE = [

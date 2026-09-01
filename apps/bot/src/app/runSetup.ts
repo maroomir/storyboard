@@ -11,8 +11,8 @@ import {
   setupProviderIds,
   writeBotConfigFile,
   type SetupProviderId,
-} from '../config/setup';
-import { expandHome, resolvePaths } from '../config/paths';
+} from '@/config/setup';
+import { expandHome, resolvePaths } from '@/config/paths';
 
 interface Prompter {
   ask(question: string): Promise<string>;

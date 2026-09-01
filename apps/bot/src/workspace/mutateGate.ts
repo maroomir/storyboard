@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises';
 import type { CommitHook, GitClient } from '@storyboard/story-git';
 import { describeBlocker } from '@storyboard/story-git';
 
-import { atomicWriteFile } from '../util/atomicWrite';
-import type { Logger } from '../util/logger';
+import { atomicWriteFile } from '@/util/atomicWrite';
+import type { Logger } from '@/util/logger';
 import type {
   MutateOutcome,
   StaleFile,

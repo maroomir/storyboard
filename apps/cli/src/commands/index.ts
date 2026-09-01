@@ -42,8 +42,8 @@ import {
 } from '@storyboard/story-format';
 import { parseSceneFileName } from '@storyboard/story-format';
 
-import type { CliContainer } from '../container';
-import { flagBoolean, flagString, type ParsedArguments } from '../cliArguments';
+import type { CliContainer } from '@/container';
+import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 export interface CommandOutcome {
   readonly ok: boolean;

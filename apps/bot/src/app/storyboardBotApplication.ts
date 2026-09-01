@@ -12,13 +12,13 @@ import {
 
 import { aiTaskCatalog } from '@storyboard/story-ai';
 
-import { createAiEngine } from '../ai/aiGateway';
+import { createAiEngine } from '@/ai/aiGateway';
 import type { UsageRecord } from '@storyboard/story-ai';
-import { createJobAwareCliRunner } from '../provider/abortableCliRunner';
-import { getActiveJobId } from '../provider/jobSignalContext';
-import { createWorkerRemoteSyncExecutor } from '../sync/workerExecutor';
+import { createJobAwareCliRunner } from '@/provider/abortableCliRunner';
+import { getActiveJobId } from '@/provider/jobSignalContext';
+import { createWorkerRemoteSyncExecutor } from '@/sync/workerExecutor';
 
-import { ChatContext } from '../chat/context';
+import { ChatContext } from '@/chat/context';
 import {
   createBibleHandler,
   createCardsHandler,
@@ -28,10 +28,10 @@ import {
   createStartHandler,
   createStatusHandler,
   createSyncHandler,
-} from '../chat/handlers/read';
-import { createDoctorHandler } from '../chat/handlers/doctor';
-import { createRenameHandler, createSetHandler } from '../chat/handlers/edit';
-import { createSceneCommandHandler } from '../chat/handlers/scene';
+} from '@/chat/handlers/read';
+import { createDoctorHandler } from '@/chat/handlers/doctor';
+import { createRenameHandler, createSetHandler } from '@/chat/handlers/edit';
+import { createSceneCommandHandler } from '@/chat/handlers/scene';
 import {
   createDraftCommandHandler,
   createJobLogHandler,
@@ -42,21 +42,21 @@ import {
   createReviewCommandHandler,
   createStopHandler,
   createUsageHandler,
-} from '../chat/handlers/generate';
-import type { IncomingUpdate } from '../chat/ports';
-import { CommandRegistry } from '../chat/registry';
-import { UpdateRouter } from '../chat/router';
-import type { BotConfig } from '../config/config';
-import { ContentService } from '../content/contentService';
-import { startDashboardServer, type DashboardHandle } from '../dashboard/server';
+} from '@/chat/handlers/generate';
+import type { IncomingUpdate } from '@/chat/ports';
+import { CommandRegistry } from '@/chat/registry';
+import { UpdateRouter } from '@/chat/router';
+import type { BotConfig } from '@/config/config';
+import { ContentService } from '@/content/contentService';
+import { startDashboardServer, type DashboardHandle } from '@/dashboard/server';
 import { createGenJobs, type GenJobs } from './createGenJobs';
-import { SceneDraftGenerator } from '../gen/sceneDraftGenerator';
-import { openDatabase, type BotDatabase } from '../store/db';
-import { TelegramGateway } from '../telegram/gateway';
-import { createAllowlist } from '../telegram/allowlist';
-import type { Logger } from '../util/logger';
-import { MutateGate, createGitTrackedPathPredicate } from '../workspace/mutateGate';
-import { WorkspaceStore } from '../workspace/workspaceStore';
+import { SceneDraftGenerator } from '@/gen/sceneDraftGenerator';
+import { openDatabase, type BotDatabase } from '@/store/db';
+import { TelegramGateway } from '@/telegram/gateway';
+import { createAllowlist } from '@/telegram/allowlist';
+import type { Logger } from '@/util/logger';
+import { MutateGate, createGitTrackedPathPredicate } from '@/workspace/mutateGate';
+import { WorkspaceStore } from '@/workspace/workspaceStore';
 
 export interface StoryboardBotApplicationOptions {
   readonly config: BotConfig;

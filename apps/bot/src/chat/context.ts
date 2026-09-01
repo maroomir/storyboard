@@ -1,8 +1,8 @@
 import type { SyncService } from '@storyboard/story-git';
 
-import type { ContentService } from '../content/contentService';
-import type { IEnqueueJob } from '../gen/jobManager';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { IEnqueueJob } from '@/gen/jobManager';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 import type {
   ISendMessage,
   IncomingUpdate,

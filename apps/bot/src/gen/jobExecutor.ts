@@ -1,5 +1,5 @@
-import { runWithJobContext } from '../provider/jobSignalContext';
-import type { Logger } from '../util/logger';
+import { runWithJobContext } from '@/provider/jobSignalContext';
+import type { Logger } from '@/util/logger';
 import type { IAccessJobStore } from './jobStorePort';
 import type { JobManager } from './jobManager';
 import type { JobRunControl } from './jobRunControl';

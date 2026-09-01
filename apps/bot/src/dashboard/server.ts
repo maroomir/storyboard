@@ -2,10 +2,10 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 
 import { GitClient, type SyncService } from '@storyboard/story-git';
 
-import type { ContentService } from '../content/contentService';
-import type { IEnqueueJob } from '../gen/jobManager';
-import type { Logger } from '../util/logger';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { IEnqueueJob } from '@/gen/jobManager';
+import type { Logger } from '@/util/logger';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 import { rejectIfNotLoopback } from './guard';
 
 export interface DashboardDeps {

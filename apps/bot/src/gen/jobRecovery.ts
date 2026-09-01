@@ -1,5 +1,5 @@
 import type { IAccessJobStore } from './jobStorePort';
-import type { Logger } from '../util/logger';
+import type { Logger } from '@/util/logger';
 import { JobStateMachine } from './jobStateMachine';
 import type { GenJob } from './types';
 

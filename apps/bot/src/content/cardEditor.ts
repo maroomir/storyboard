@@ -1,7 +1,7 @@
 import { parseCard, serializeCard, type StoryboardCard } from '@storyboard/story-format';
 
-import type { WorkspacePlan } from '../workspace/workspaceChanges';
-import type { ReadFile } from '../workspace/workspaceStore';
+import type { WorkspacePlan } from '@/workspace/workspaceChanges';
+import type { ReadFile } from '@/workspace/workspaceStore';
 
 // List-valued fields the schema defines for every card, and the ones only characters carry.
 const SHARED_LIST_FIELDS = ['aliases', 'tags', 'description'] as const;

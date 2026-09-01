@@ -13,9 +13,9 @@ import {
 import { AiGateway } from '@storyboard/story-engine';
 import type { AiProviderRegistry, ConfigBridge, OnUsageRecordCallback } from '@storyboard/story-ai';
 
-import type { ContentService } from '../content/contentService';
-import type { MutateOutcome } from '../workspace/workspaceChanges';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { MutateOutcome } from '@/workspace/workspaceChanges';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 import {
   BotFileSystem,
   BotProjectRepository,

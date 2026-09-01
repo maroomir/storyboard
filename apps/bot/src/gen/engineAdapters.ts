@@ -24,9 +24,9 @@ import {
   type StoryboardProject,
 } from '@storyboard/story-format';
 
-import type { ContentService } from '../content/contentService';
-import type { MutateOutcome } from '../workspace/workspaceChanges';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { MutateOutcome } from '@/workspace/workspaceChanges';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 
 function pathOf(uri: StoryUri): string {
   return uri.fsPath;
