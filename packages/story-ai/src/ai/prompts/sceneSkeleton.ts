@@ -7,7 +7,7 @@ import {
   sceneGroundingLines,
   voiceStyleLines,
   type StyleDirective,
-} from '../../contracts/styleDirective';
+} from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface SceneSkeletonInput {

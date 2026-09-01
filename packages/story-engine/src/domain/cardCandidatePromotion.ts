@@ -1,5 +1,5 @@
 import type { CharacterCard } from '@storyboard/story-format';
-import type { CardCandidateRecord } from '../shared/cardCandidates';
+import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export type CardCandidateItem =
   | {

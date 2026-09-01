@@ -1,11 +1,11 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { ISceneCacheRepository } from '../../ports/repositories';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ISceneCacheRepository } from '#engine/ports/repositories';
 import {
   readSceneCacheFile,
   type SceneCacheRecord,
   writeSceneCacheFile,
-} from '../../domain/files/sceneCache';
+} from '#engine/domain/files/sceneCache';
 
 export class SceneCacheRepository implements ISceneCacheRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

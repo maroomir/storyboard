@@ -1,25 +1,25 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   IManuscriptAssemblyRepository,
   ManuscriptAssemblySource,
-} from '../../application/manuscript/assembleManuscriptUseCase';
+} from '#engine/application/manuscript/assembleManuscriptUseCase';
 import type {
   IManuscriptExportRepository,
   ManuscriptExportSource,
-} from '../../application/manuscript/exportManuscriptUseCase';
+} from '#engine/application/manuscript/exportManuscriptUseCase';
 import type {
   IManuscriptReviewRepository,
   ManuscriptReviewSource,
-} from '../../application/manuscript/reviewManuscriptUseCase';
-import type { IChapterSummaryRepository } from '../../application/manuscript/summarizeChaptersUseCase';
-import { summaryFileName } from '../../domain/chapterSummaries';
-import type { IStoryboardLogger } from '../../ports/logger';
+} from '#engine/application/manuscript/reviewManuscriptUseCase';
+import type { IChapterSummaryRepository } from '#engine/application/manuscript/summarizeChaptersUseCase';
+import { summaryFileName } from '#engine/domain/chapterSummaries';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { AssembledManuscript } from '@storyboard/story-format';
-import { collectDraftsByOrder } from '../manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
-import { readProjectJson } from '../projectJson';
+import { readProjectJson } from '#engine/persistence/projectJson';
 
 export class ManuscriptAssemblyRepository
   implements

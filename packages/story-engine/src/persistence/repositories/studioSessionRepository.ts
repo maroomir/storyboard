@@ -1,5 +1,5 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import {
   deriveStudioSessionTitle,
   parseStudioSession,
@@ -7,14 +7,14 @@ import {
   serializeStudioSession,
   studioSessionVersion,
   type StudioSession,
-} from '../../domain/files/studioSession';
+} from '#engine/domain/files/studioSession';
 import type {
   StudioChatTurn,
   StudioEntity,
   StudioSessionSnapshot,
   StudioSessionSummary,
-} from '../../shared/messaging/studio';
-import { studioSessionEntityDirectory } from '../../paths/projectPaths';
+} from '#engine/shared/messaging/studio';
+import { studioSessionEntityDirectory } from '#engine/paths/projectPaths';
 
 export interface StudioSessionSaveInput {
   readonly id: string;

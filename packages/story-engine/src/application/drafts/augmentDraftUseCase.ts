@@ -1,14 +1,14 @@
-import type { AiGateway } from '../ai/aiGateway';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
-import { sceneContextPaths } from '../../paths/sceneContextPaths';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
 import {
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   joinUri,
-} from '../../paths/projectPaths';
+} from '#engine/paths/projectPaths';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -17,9 +17,9 @@ import {
   SceneParseError,
 } from '@storyboard/story-format';
 import type { BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import { archiveExistingDraft } from '../../domain/files/draftHistory';
-import { readProjectJson } from '../../persistence/projectJson';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
+import { readProjectJson } from '#engine/persistence/projectJson';
 type AugmentContextResult =
   | {
       readonly bibleFacts: readonly BibleFact[];

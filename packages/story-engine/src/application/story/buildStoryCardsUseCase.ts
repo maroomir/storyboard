@@ -1,15 +1,15 @@
 import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
-import type { AiGateway } from '../ai/aiGateway';
-import { applyCardCollectProposals, shouldProposeCardCollect } from '../../domain/cardCollect';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
+import { applyCardCollectProposals, shouldProposeCardCollect } from '#engine/domain/cardCollect';
 import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@storyboard/story-ai';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
   type CardCollectProposalDraft,
-} from '../../shared/cardCollect';
+} from '#engine/shared/cardCollect';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 

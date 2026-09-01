@@ -5,6 +5,9 @@
   "description": "Storyboard workspace file format: schemas, codecs, and pure narrative helpers shared by every app",
   "license": "Apache-2.0",
   "main": "src/index.ts",
+  "imports": {
+    "#format/*": "./src/*.ts"
+  },
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts"

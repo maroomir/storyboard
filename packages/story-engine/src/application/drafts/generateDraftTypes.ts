@@ -1,17 +1,17 @@
-import type { AiGateway } from '../ai/aiGateway';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   IDraftRepository,
   IProjectRepository,
   ISceneCacheRepository,
   ISceneRepository,
-} from '../../ports/repositories';
-import type { IStoryboardLogger } from '../../ports/logger';
+} from '#engine/ports/repositories';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { TraitsUpdateSummary } from '../../ai/traitsUpdater';
-import type { PostGenerationUpdateManager } from '../../ai/PostGenerationUpdateManager';
+import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
+import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-format';
 

@@ -4,7 +4,7 @@ import type {
   CharacterRelation,
   StoryboardCard,
 } from '@storyboard/story-format';
-import type { CardCollectProposal } from '../shared/cardCollect';
+import type { CardCollectProposal } from '#engine/shared/cardCollect';
 
 function addUnique(list: readonly string[], value: string): string[] {
   return list.includes(value) ? [...list] : [...list, value];

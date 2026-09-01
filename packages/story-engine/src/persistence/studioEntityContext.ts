@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import {
   extractDraftBody,
   parseSceneFileName,
@@ -9,7 +9,7 @@ import {
 } from '@storyboard/story-format';
 import type { StudioAgentFollowUp, StudioAgentLookupRequest } from '@storyboard/story-ai';
 
-import type { StudioEntity, StudioFollowUpTarget } from '../shared/messaging/studio';
+import type { StudioEntity, StudioFollowUpTarget } from '#engine/shared/messaging/studio';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -18,9 +18,9 @@ import {
   isIgnoredSampleCardFileName,
   isSafeStudioEntityKey,
   scenePath,
-} from '../paths/projectPaths';
+} from '#engine/paths/projectPaths';
 
-import type { StudioPatchTarget } from '../domain/studio/studioPatch';
+import type { StudioPatchTarget } from '#engine/domain/studio/studioPatch';
 
 export interface StudioEntityContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';

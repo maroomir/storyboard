@@ -1,12 +1,12 @@
-import { backgroundCardPath, characterCardPath } from '../../paths/projectPaths';
+import { backgroundCardPath, characterCardPath } from '#engine/paths/projectPaths';
 import {
   bibleCandidateFilePath,
   ensureBibleCacheDirectory,
-} from '../../persistence/bibleCacheWorkspace';
+} from '#engine/persistence/bibleCacheWorkspace';
 import {
   cardCandidateFilePath,
   ensureCardCacheDirectory,
-} from '../../persistence/cardCacheWorkspace';
+} from '#engine/persistence/cardCacheWorkspace';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '@storyboard/story-pipeline';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';

@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import { renderManuscriptExport, type ManuscriptExportFormat } from '../../domain/manuscriptExport';
+import { renderManuscriptExport, type ManuscriptExportFormat } from '#engine/domain/manuscriptExport';
 
 export type ManuscriptExportSource = {
   readonly markdown: string;

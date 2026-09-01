@@ -1,5 +1,5 @@
-import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from '../../contracts/aiTypes';
-import type { AiProviderId } from '../../contracts/ai';
+import type { AiGenerateRequest, AiGenerateResponse, AiProvider } from '#ai/contracts/aiTypes';
+import type { AiProviderId } from '#ai/contracts/ai';
 
 // A subscription CLI answers "usage limit" rather than a retryable error, so a long unattended run
 // dies partway with half a manuscript written. These are the phrasings the CLI providers use.

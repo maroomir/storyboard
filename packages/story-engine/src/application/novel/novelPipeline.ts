@@ -1,6 +1,6 @@
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '../../paths/projectPaths';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
-import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
+import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import {
   cancel,
   groupChapterStems,

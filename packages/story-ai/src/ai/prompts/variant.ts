@@ -1,4 +1,4 @@
-import { type AiProviderId, type AiTaskName } from '../../contracts/aiTypes';
+import { type AiProviderId, type AiTaskName } from '#ai/contracts/aiTypes';
 
 import { type PromptVariantId } from './types';
 

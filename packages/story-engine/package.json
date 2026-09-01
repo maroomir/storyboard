@@ -5,6 +5,9 @@
   "description": "Storyboard's runtime-agnostic core: domain policies, file records, and the shared contracts every app speaks",
   "license": "Apache-2.0",
   "main": "src/index.ts",
+  "imports": {
+    "#engine/*": "./src/*.ts"
+  },
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",

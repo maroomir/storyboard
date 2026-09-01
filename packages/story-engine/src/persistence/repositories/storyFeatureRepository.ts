@@ -1,5 +1,5 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { createHash } from 'node:crypto';
 
 import { parseCard, parseScene } from '@storyboard/story-format';
@@ -8,10 +8,10 @@ import type {
   IStoryFeatureRepository,
   StoryFeatureSource,
   StoryFileSnapshot,
-} from '../../application/story/storyFeatureTypes';
-import { StoryFeatureSourceError } from '../../application/story/storyFeatureTypes';
-import { parseProjectJson } from '../projectJson';
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '../../paths/projectPaths';
+} from '#engine/application/story/storyFeatureTypes';
+import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureTypes';
+import { parseProjectJson } from '#engine/persistence/projectJson';
+import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

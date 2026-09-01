@@ -1,5 +1,5 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
+import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { readCardFile } from '@storyboard/story-format';
 import type { OutlineCharacterBrief } from '@storyboard/story-format';
 export async function listCharacterBriefs(

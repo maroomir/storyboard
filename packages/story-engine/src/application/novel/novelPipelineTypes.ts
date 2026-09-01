@@ -1,14 +1,14 @@
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { AiGateway } from '../ai/aiGateway';
-import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
-import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
-import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
-import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDraftUseCase';
+import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
+import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
+import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
-import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import type { NovelRunMode, NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
-import type { IUsageSink } from '../../ports/usageSink';
+import type { IUsageSink } from '#engine/ports/usageSink';
 import type { StoryboardProject } from '@storyboard/story-format';
 import type {
   INovelOutlineRepository,

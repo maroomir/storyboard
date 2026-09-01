@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import { cardCandidateRecordSchema, type CardCandidateRecord } from '../../shared/cardCandidates';
+import { cardCandidateRecordSchema, type CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export interface CardCandidateFileSystem {
   readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;

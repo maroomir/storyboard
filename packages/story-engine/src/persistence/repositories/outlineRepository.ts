@@ -1,8 +1,8 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { IOutlineRepository } from '../../application/novel/generateOutlineUseCase';
-import { listCharacterBriefs } from '../characterBriefs';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { IOutlineRepository } from '#engine/application/novel/generateOutlineUseCase';
+import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import {
   readChapterPlanFile,
   writeChapterPlanFile,
@@ -14,7 +14,7 @@ import type {
   OutlineSynopsis,
   StoryboardProject,
 } from '@storyboard/story-format';
-import { readProjectJson } from '../projectJson';
+import { readProjectJson } from '#engine/persistence/projectJson';
 export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

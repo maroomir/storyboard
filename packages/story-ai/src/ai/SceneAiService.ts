@@ -25,14 +25,14 @@ import {
 import {
   coerceDialogueAttribution,
   type DialogueAttribution,
-} from '../contracts/sceneDialogueAttribution';
+} from '#ai/contracts/sceneDialogueAttribution';
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from './prompts/sceneSectionExpansion';
 import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
-import { parseJsonArray, parseJsonObject } from '../contracts/aiResponseParser';
+import { parseJsonArray, parseJsonObject } from '#ai/contracts/aiResponseParser';
 import {
   sceneGroundingFieldKeys,
   sceneGroundingFieldLabels,

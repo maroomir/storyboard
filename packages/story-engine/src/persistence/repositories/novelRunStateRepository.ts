@@ -1,13 +1,13 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { INovelRunStateRepository } from '../../application/novel/novelPipeline';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { INovelRunStateRepository } from '#engine/application/novel/novelPipeline';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import {
   readNovelRunState,
   type NovelRunState,
   writeNovelRunState,
-} from '../../domain/files/novelRunState';
-import { readProjectJson } from '../projectJson';
+} from '#engine/domain/files/novelRunState';
+import { readProjectJson } from '#engine/persistence/projectJson';
 import type { StoryboardProject } from '@storyboard/story-format';
 
 export class NovelRunStateRepository implements INovelRunStateRepository {

@@ -1,10 +1,10 @@
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { AiGateway } from '../ai/aiGateway';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
-import { draftPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { draftPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';
-import { readProjectJson } from '../../persistence/projectJson';
+import { readProjectJson } from '#engine/persistence/projectJson';
 
 export type ApplyDraftFormatRequest = {
   readonly workspaceRoot: StoryUri;

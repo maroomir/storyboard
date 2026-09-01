@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import { z } from 'zod';
 
 import { pointOfViews, projectFormats, storyboardProjectVersion } from '@storyboard/story-format';

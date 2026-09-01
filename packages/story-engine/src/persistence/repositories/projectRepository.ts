@@ -1,7 +1,7 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { IProjectRepository } from '../../ports/repositories';
-import { parseProjectJson } from '../projectJson';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { IProjectRepository } from '#engine/ports/repositories';
+import { parseProjectJson } from '#engine/persistence/projectJson';
 import type { StoryboardProject } from '@storyboard/story-format';
 
 export class ProjectRepository implements IProjectRepository {

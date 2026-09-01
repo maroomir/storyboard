@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { AiGateway } from '../ai/aiGateway';
-import { buildChapterSummariesMarkdown, type ChapterSummary } from '../../domain/chapterSummaries';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
+import { buildChapterSummariesMarkdown, type ChapterSummary } from '#engine/domain/chapterSummaries';
 import { assembleManuscript } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 

@@ -1,6 +1,6 @@
 import type { Character } from '@storyboard/story-format';
 import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
-import { voiceStyleLines, type StyleDirective } from '../../contracts/styleDirective';
+import { voiceStyleLines, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export const PersonaGenerationPrompt = {

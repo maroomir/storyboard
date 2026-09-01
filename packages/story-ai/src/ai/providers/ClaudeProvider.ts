@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { type MessageParam, type TextBlockParam } from '@anthropic-ai/sdk/resources/messages';
 
-import { aiGenerateResponseWithUsage } from '../cost';
-import { AiProviderError } from '../../contracts/aiProviderError';
+import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -11,7 +11,7 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 

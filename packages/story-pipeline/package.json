@@ -5,12 +5,22 @@
   "description": "Scene generation orchestration: the staged draft pipeline both apps run, independent of any editor",
   "license": "Apache-2.0",
   "main": "src/index.ts",
+  "imports": {
+    "#pipeline/*": "./src/*.ts"
+  },
   "types": "src/index.ts",
-  "exports": { ".": "./src/index.ts" },
-  "files": ["src"],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
   "dependencies": {
     "@storyboard/story-ai": "*",
     "@storyboard/story-format": "*"
   },
-  "devDependencies": { "@types/node": "^20.12.12", "typescript": "^5.6.3" }
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.6.3"
+  }
 }

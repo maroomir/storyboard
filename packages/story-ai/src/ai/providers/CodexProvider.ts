@@ -1,14 +1,14 @@
 import os from 'node:os';
 
-import { AiProviderError } from '../../contracts/aiProviderError';
-import { aiGenerateResponseWithUsage } from '../cost';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
+import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 import {
   type CliRunner,
   type CliRunResult,

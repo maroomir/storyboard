@@ -1,6 +1,6 @@
-import type { AiGateway } from '../ai/aiGateway';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ProjectFormat } from '@storyboard/story-format';
 import {
   resolveMinimumDraftLength,

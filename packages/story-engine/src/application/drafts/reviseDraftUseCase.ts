@@ -1,8 +1,8 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
-import { sceneContextPaths } from '../../paths/sceneContextPaths';
-import { joinUri, type StoryboardProjectPaths } from '../../paths/projectPaths';
-import { sceneCacheFilePath } from '../../persistence/sceneCacheWorkspace';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
+import { joinUri, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -18,12 +18,12 @@ import {
   writeDraftFile,
 } from '@storyboard/story-format';
 import type { ProjectSetting } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { ISceneCacheRepository } from '../../ports/repositories';
-import { readProjectJson } from '../../persistence/projectJson';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ISceneCacheRepository } from '#engine/ports/repositories';
+import { readProjectJson } from '#engine/persistence/projectJson';
 import { buildStyleDirective, formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
-import type { IUsageSink } from '../../ports/usageSink';
+import type { IUsageSink } from '#engine/ports/usageSink';
 import {
   type DraftCandidateRejectionReason,
   resolveSceneTargetLength,

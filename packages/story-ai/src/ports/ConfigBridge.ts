@@ -4,9 +4,9 @@ import {
   aiTaskNames,
   type AiProviderId,
   type AiTaskName,
-} from '../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
-import { storyboardModelCatalog } from '../contracts/models';
+import { storyboardModelCatalog } from '#ai/contracts/models';
 
 const storyboardWorkspaceConfigurationTarget = 2;
 

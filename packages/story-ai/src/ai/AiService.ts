@@ -29,10 +29,10 @@ import {
   type StudioValidationInput,
 } from './StudioAgentService';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
-import type { StudioCardSeed } from '../contracts/studioCardSeed';
+import type { StudioCardSeed } from '#ai/contracts/studioCardSeed';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
-import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../contracts/aiTypes';
+import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '#ai/contracts/aiTypes';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';
@@ -44,12 +44,12 @@ import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction'
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
-import { parseJsonObject } from '../contracts/aiResponseParser';
-import type { StudioAgentAction } from '../contracts/studioAgent';
-import type { StudioValidationVerdict } from '../contracts/studioValidation';
-import type { DraftCritiqueIssue } from '../contracts/draftReview';
-import type { SceneCoverageIssue } from '../contracts/sceneCoverage';
-import type { StoryStateUpdateItem } from '../contracts/storyStateUpdate';
+import { parseJsonObject } from '#ai/contracts/aiResponseParser';
+import type { StudioAgentAction } from '#ai/contracts/studioAgent';
+import type { StudioValidationVerdict } from '#ai/contracts/studioValidation';
+import type { DraftCritiqueIssue } from '#ai/contracts/draftReview';
+import type { SceneCoverageIssue } from '#ai/contracts/sceneCoverage';
+import type { StoryStateUpdateItem } from '#ai/contracts/storyStateUpdate';
 import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
   toPromptMessages,

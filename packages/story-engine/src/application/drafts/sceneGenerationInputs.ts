@@ -1,7 +1,7 @@
-import { hasStoryboardProjectAt } from '../../paths/projectDetection';
+import { hasStoryboardProjectAt } from '#engine/paths/projectDetection';
 import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-format';
-import type { IProjectRepository, ISceneRepository } from '../../ports/repositories';
-import { sceneContextPaths } from '../../paths/sceneContextPaths';
+import type { IProjectRepository, ISceneRepository } from '#engine/ports/repositories';
+import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -13,10 +13,10 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneCardFile,
-} from '../../paths/projectPaths';
+} from '#engine/paths/projectPaths';
 
-import { computeSceneInputHash } from '../../domain/files/sceneCache';
-import { sceneCacheFilePath } from '../../persistence/sceneCacheWorkspace';
+import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
+import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { resolveSceneGrounding } from './resolveSceneGrounding';

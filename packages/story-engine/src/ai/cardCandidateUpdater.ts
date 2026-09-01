@@ -5,11 +5,11 @@ import type {
   CardAttributeCandidate,
   CardCandidateCharacter,
   CardRelationCandidate,
-} from '../shared/cardCandidates';
+} from '#engine/shared/cardCandidates';
 import {
   type CardCandidateFileSystem,
   writeCardCandidateFile,
-} from '../domain/files/cardCandidates';
+} from '#engine/domain/files/cardCandidates';
 import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;

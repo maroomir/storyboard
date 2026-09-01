@@ -1,4 +1,4 @@
-import { AiProviderError } from '../contracts/aiProviderError';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
 import { type CliRunner } from './providers/cliRunner';
 import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
@@ -19,9 +19,9 @@ import {
   type AiProviderStatus,
   type AiTaskName,
   isCliProvider,
-} from '../contracts/aiTypes';
-import { SecretStore } from '../ports/SecretStore';
-import { ConfigBridge } from '../ports/ConfigBridge';
+} from '#ai/contracts/aiTypes';
+import { SecretStore } from '#ai/ports/SecretStore';
+import { ConfigBridge } from '#ai/ports/ConfigBridge';
 
 export interface AiProviderRegistryOptions {
   readonly secretStore: SecretStore;

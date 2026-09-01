@@ -1,7 +1,7 @@
 import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
-import type { AiGateway } from '../ai/aiGateway';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { sceneFileNamePattern, serializeSceneCard } from '@storyboard/story-format';
 import type { SceneCard, SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@storyboard/story-ai';

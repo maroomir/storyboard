@@ -1,9 +1,9 @@
-import type { StoryUri } from '../storyUri';
+import type { StoryUri } from '#format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError, z } from 'zod';
 
-import type { Draft } from '../Draft';
-import { projectFormats, type ProjectFormat } from '../project';
+import type { Draft } from '#format/Draft';
+import { projectFormats, type ProjectFormat } from '#format/project';
 
 export type DraftParseErrorCode =
   | 'missing-frontmatter'

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { studioEntitySchema, type StudioEntity } from '../../shared/messaging/studio';
+import { studioEntitySchema, type StudioEntity } from '#engine/shared/messaging/studio';
 
 export const studioFollowUpVersion = '1.0.0';
 

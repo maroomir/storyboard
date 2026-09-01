@@ -1,14 +1,14 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
-import type { ISceneSidebarRepository } from '../../application/cards/sceneSidebarRepository';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ISceneSidebarRepository } from '#engine/application/cards/sceneSidebarRepository';
 import {
   draftPath,
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
-} from '../../paths/projectPaths';
-import { isOutlineStale } from '../../domain/sceneStatus';
+} from '#engine/paths/projectPaths';
+import { isOutlineStale } from '#engine/domain/sceneStatus';
 import { parseSceneFileName, readSceneFile } from '@storyboard/story-format';
-import type { SceneListItem } from '../../shared/messaging/scenes';
+import type { SceneListItem } from '#engine/shared/messaging/scenes';
 export class SceneSidebarRepository implements ISceneSidebarRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

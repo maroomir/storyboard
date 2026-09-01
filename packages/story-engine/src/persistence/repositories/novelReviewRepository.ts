@@ -1,11 +1,11 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '../../ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   INovelReviewRepository,
   NovelReviewSource,
-} from '../../application/novel/novelPipeline';
-import { collectDraftsByOrder } from '../manuscriptDrafts';
-import { getStoryboardProjectPaths } from '../../paths/projectPaths';
+} from '#engine/application/novel/novelPipeline';
+import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
+import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { readBibleFile } from '@storyboard/story-format';
 export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

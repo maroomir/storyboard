@@ -3,8 +3,8 @@ import {
   mergeCanonFacts,
   seedPromotedFact,
   selectNewCandidates,
-} from '../../domain/biblePromotion';
-import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
+} from '#engine/domain/biblePromotion';
+import type { BibleCandidateRecord } from '#engine/domain/files/bibleCandidates';
 import type { StoryUri } from '@storyboard/story-format';
 import type { BibleFact, StoryBible } from '@storyboard/story-format';
 

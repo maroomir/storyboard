@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { AiGateway } from '../ai/aiGateway';
-import { validateGenerationContract } from '../../domain/generationContract';
+import type { AiGateway } from '#engine/application/ai/aiGateway';
+import { validateGenerationContract } from '#engine/domain/generationContract';
 import { toOutlineBrief } from '@storyboard/story-format';
 import type {
   ChapterPlan,

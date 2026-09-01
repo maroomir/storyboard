@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
-import { aiGenerateResponseWithUsage } from '../cost';
-import { AiProviderError } from '../../contracts/aiProviderError';
+import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
+import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
   type AiGenerateRequest,
   type AiGenerateResponse,
@@ -9,7 +9,7 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '../../contracts/aiTypes';
+} from '#ai/contracts/aiTypes';
 
 interface OpenAiModelsLike {
   readonly list: () => Promise<unknown>;

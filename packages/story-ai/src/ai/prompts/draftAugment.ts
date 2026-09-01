@@ -1,6 +1,6 @@
 import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
-import { craftContractLines, type StyleDirective } from '../../contracts/styleDirective';
+import { craftContractLines, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export type DraftAugmentScope = 'draft' | 'selection';

@@ -3,10 +3,10 @@ import {
   collectCardCandidateItems,
   selectNewCardCandidateItems,
   type CardCandidateItem,
-} from '../../domain/cardCandidatePromotion';
+} from '#engine/domain/cardCandidatePromotion';
 import type { CharacterCard } from '@storyboard/story-format';
 import type { StoryUri } from '@storyboard/story-format';
-import type { CardCandidateRecord } from '../../shared/cardCandidates';
+import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export interface ICardCandidateRepository {
   apply(workspaceRoot: StoryUri, items: readonly CardCandidateItem[]): Promise<number>;

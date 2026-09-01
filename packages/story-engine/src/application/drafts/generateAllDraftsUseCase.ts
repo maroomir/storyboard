@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';

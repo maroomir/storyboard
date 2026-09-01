@@ -1,11 +1,11 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IStoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   buildCardRecommendations,
   type CardRecommendationAiService,
   type RecommendationSource,
   type RecommendedCard,
-} from '../../ai/cardRecommendationBuilder';
+} from '#engine/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 
 export interface ICardRecommendationRepository {

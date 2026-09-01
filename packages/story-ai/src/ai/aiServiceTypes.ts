@@ -1,6 +1,6 @@
 import type { SceneGrounding } from '@storyboard/story-format';
-import type { StyleDirective } from '../contracts/styleDirective';
-import type { AiProviderId, UsageAttribution, UsageRecord } from '../contracts/aiTypes';
+import type { StyleDirective } from '#ai/contracts/styleDirective';
+import type { AiProviderId, UsageAttribution, UsageRecord } from '#ai/contracts/aiTypes';
 
 export interface GenerateTextOptions {
   readonly providerId?: AiProviderId;

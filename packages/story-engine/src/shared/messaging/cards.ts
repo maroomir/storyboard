@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { cardSchema, cardTypes, characterRoles, sceneCardSchema } from '@storyboard/story-format';
-import { cardCollectProposalSchema } from '../cardCollect';
+import { cardCollectProposalSchema } from '#engine/shared/cardCollect';
 import { uriStringSchema } from './atoms';
 
 export const cardsListRequestPayloadSchema = z.object({
