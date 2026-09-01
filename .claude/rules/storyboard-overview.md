@@ -21,46 +21,56 @@ The three apps share `packages/story-engine` and know nothing about each other. 
 | `packages/story-git` | `@storyboard/story-git` | Commit/sync layer: `GitClient`, `SyncService`, push scheduling, and workspace git onboarding. |
 
 Packages expose TypeScript **source** (no build step); each app resolves them through its own
-tsconfig `paths`, esbuild `alias`, and vitest `alias`. `apps/vscode/scripts/check-architecture.mjs`
-enforces that no package imports `vscode` or an app module.
+tsconfig `paths`, esbuild `alias`, and vitest `alias` — three places, all of which must agree.
+`apps/vscode/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app
+module.
 
-Both apps write through the same codecs, so a card edited in Telegram and a card edited in VSCode
-serialize to identical bytes — the shared fixtures in `packages/story-format/test/fixtures/` are the
-round-trip guard for that claim.
+All three apps write through the same codecs, so a card edited in Telegram, in the editor, or from
+the terminal serializes to identical bytes — the shared fixtures in
+`packages/story-format/test/fixtures/` are the round-trip guard for that claim.
 
-## Current Extension-Host Architecture
+## Current Architecture
 
 ```mermaid
 graph TB
-    subgraph VSCode[VSCode Extension Host]
-        ExtensionEntry[apps/vscode/src/extension.ts]
-        Bootstrap[apps/vscode/src/bootstrap/StoryboardApplication]
-        Presentation[apps/vscode/src/presentation commands, providers, messaging]
-        Application[apps/vscode/src/application use cases and pipelines]
-        Infrastructure[apps/vscode/src/infrastructure adapters]
-        Domain[apps/vscode/src/domain policies and codecs]
-        Shared[apps/vscode/src/shared contracts]
-        State[VSCode globalState/workspaceState/secrets]
+    subgraph Engine[packages/story-engine]
+        Application[application: use cases and the novel pipeline]
+        Persistence[persistence: repositories over IFileSystem]
+        Domain[domain: policies, file records]
+        SharedContracts[shared: RPC and card contracts]
+        Ports[ports: IFileSystem, WorkspaceLocator, UsageSink, Logger]
     end
 
-    subgraph Webview[Webview UI]
-        App[apps/vscode/webview-ui]
-        MessageClient[Typed message client]
+    subgraph Apps[Host apps]
+        VscodeApp[apps/vscode: presentation, webview, VSCode adapters]
+        CliApp[apps/cli: verbs, Node adapters]
+        BotApp[apps/bot: telegram handlers, ContentService adapters]
     end
 
-    ExtensionEntry --> Bootstrap
-    Bootstrap --> Presentation
-    Bootstrap --> Infrastructure
-    Presentation --> Application
-    Infrastructure --> Application
+    VscodeApp --> Application
+    CliApp --> Application
+    BotApp --> Application
+    VscodeApp -.implements.-> Ports
+    CliApp -.implements.-> Ports
+    BotApp -.implements.-> Ports
+    Application --> Persistence
     Application --> Domain
-    Domain --> Shared
-    Infrastructure --> State
-    Presentation <--> MessageClient
-    MessageClient --> App
+    Persistence --> Ports
+    Domain --> SharedContracts
 ```
 
-The legacy `core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants` directories have been fully migrated into the target layers; `apps/vscode/scripts/check-architecture.mjs` now enforces layer direction (no reverse imports, no cycles, no `vscode` import outside the allowed layers).
+What each check actually enforces, so a green run is not read as more than it is:
+
+- `apps/vscode/scripts/check-architecture.mjs` — the extension entry may import only `vscode` and
+  `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles;
+  and every shared package stays free of `vscode` and of app imports. The inner layers left for the
+  engine, so nothing here validates them any more.
+- `packages/story-engine`'s `shared` may import only itself (checked from the extension script).
+- `apps/bot` and `apps/cli` each enforce their own ordered layer direction and reject cycles; the
+  CLI additionally fails if it imports `@storyboard/story-pipeline` directly, which would be a
+  second copy of the generation loop.
+
+Not yet enforced anywhere: the engine's own `domain ← application ← persistence` direction.
 
 ## Domain Boundaries
 

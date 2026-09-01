@@ -45,21 +45,28 @@ alwaysApply: true
 | Shared         | Message contracts, DTOs, settings interfaces, validation; **no** `vscode` or browser-only APIs                                    |
 | Webview        | Rendering, local UI state, typed client to extension host—**no** direct `vscode` import; use `acquireVsCodeApi()` (or equivalent) |
 
-## Current extension-host layout
+## Current layout
 
-The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`); the VSCode extension is the `apps/vscode` workspace.
+The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with three apps over one engine. The inner layers live in `packages/story-engine`; each app supplies host adapters and nothing else.
 
 ```text
+packages/story-engine/src/
+  application/    # Use cases and the novel pipeline
+  persistence/    # Repositories over the IFileSystem port
+  domain/         # Runtime-agnostic policies, codecs, value types (no vscode)
+  shared/         # RPC and card contracts (imports only itself)
+  ports/          # IFileSystem, WorkspaceLocator, UsageSink, StoryboardLogger
+  paths/          # StoryUri, NodeUri, project path conventions
+
 apps/vscode/src/extension.ts       # Thin entry point
-apps/vscode/src/bootstrap/         # Application lifecycle and feature modules
+apps/vscode/src/bootstrap/         # Lifecycle and feature modules; the DI graph
 apps/vscode/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
-apps/vscode/src/application/       # Use cases, pipelines, ports
-apps/vscode/src/infrastructure/    # persistence, ai, vscode/settings/secrets adapters
-apps/vscode/src/domain/            # Runtime-agnostic policies, codecs, value types (no vscode)
-apps/vscode/src/shared/            # Contracts and value types (imports no other layer)
+apps/vscode/src/infrastructure/    # VSCode adapters: fs, settings, secrets, usage
+apps/cli/src/                      # adapters/ then commands/ (verb definitions)
+apps/bot/src/                      # util → config → … → app (ordered layers)
 ```
 
-Legacy dirs (`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`) are fully migrated into these layers. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `bootstrap`; `shared` imports only itself; `domain` imports no outer layer and no `vscode`; `application` does not import `presentation`/`bootstrap` and uses `vscode` type-only.
+`apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles; every shared package stays free of `vscode` and app imports; and the engine's `shared` imports only itself. The engine's own `domain ← application ← persistence` direction is **not** enforced yet.
 
 ## Messaging and state
 
