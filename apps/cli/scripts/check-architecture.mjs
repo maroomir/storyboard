@@ -1,185 +1,23 @@
-import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import ts from 'typescript';
+import { orderedLayerRule, runArchitectureCheck } from '../../../scripts/architecture/runner.mjs';
 
-// NOTE: Anchored to this file, not the cwd, so the check is identical whether npm runs it from the
-// monorepo root or from this package.
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
 
-// Layer order: a layer may import itself and anything to its left, never to its right.
 // A CLI verb may use an adapter; an adapter may not reach back into a verb.
 const LAYER_ORDER = ['adapters', 'commands'];
 
-const sourceFiles = collectSourceFiles(SOURCE_ROOT);
-const sourceFileSet = new Set(sourceFiles);
-const graph = new Map(sourceFiles.map((filePath) => [filePath, new Set()]));
-const failures = [];
-
-for (const filePath of sourceFiles) {
-  const sourceFile = ts.createSourceFile(
-    filePath,
-    fs.readFileSync(filePath, 'utf8'),
-    ts.ScriptTarget.Latest,
-    true,
-  );
-
-  for (const statement of sourceFile.statements) {
-    const importPath = getImportPath(statement);
-    if (!importPath) {
-      continue;
-    }
-
-    validateNoEngineBypass(filePath, importPath);
-
-    const target = resolveImport(filePath, importPath);
-    if (target) {
-      graph.get(filePath)?.add(target);
-      validateLayerDirection(filePath, target);
-    }
-  }
-}
-
-for (const cycle of findCycles(graph)) {
-  failures.push(`Import cycle: ${cycle.map(relativePath).join(' -> ')}`);
-}
-
-if (failures.length > 0) {
-  for (const failure of failures) {
-    console.error(`Architecture check failed: ${failure}`);
-  }
-  process.exitCode = 1;
-} else {
-  console.log(`Architecture check passed: ${sourceFiles.length} source files, no import cycles.`);
-}
-
-
-function layerOf(filePath) {
-  const relative = path.relative(SOURCE_ROOT, filePath);
-  const segment = relative.split(path.sep)[0];
-  return segment.endsWith('.ts') ? undefined : segment;
-}
-
-function validateLayerDirection(filePath, target) {
-  const from = layerOf(filePath);
-  const to = layerOf(target);
-
-  if (from === undefined || to === undefined || from === to) {
-    return;
-  }
-
-  const fromIndex = LAYER_ORDER.indexOf(from);
-  const toIndex = LAYER_ORDER.indexOf(to);
-
-  if (fromIndex === -1 || toIndex === -1) {
-    failures.push(`Unknown layer in import: ${relativePath(filePath)} -> ${relativePath(target)}`);
-    return;
-  }
-
-  if (toIndex > fromIndex) {
-    failures.push(
-      `Layer '${from}' imports outer layer '${to}': ${relativePath(filePath)} -> ${relativePath(target)}`,
-    );
-  }
-}
-
-function collectSourceFiles(directoryPath) {
-  const files = [];
-
-  if (!fs.existsSync(directoryPath)) {
-    return files;
-  }
-
-  for (const entry of fs.readdirSync(directoryPath, { withFileTypes: true })) {
-    const entryPath = path.join(directoryPath, entry.name);
-
-    if (entry.isDirectory()) {
-      files.push(...collectSourceFiles(entryPath));
-    } else if (entry.isFile() && entry.name.endsWith('.ts')) {
-      files.push(entryPath);
-    }
-  }
-
-  return files;
-}
-
-function getImportPath(statement) {
-  if (
-    !(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) ||
-    !statement.moduleSpecifier ||
-    !ts.isStringLiteral(statement.moduleSpecifier)
-  ) {
-    return undefined;
-  }
-
-  return statement.moduleSpecifier.text;
-}
-
-function resolveImport(filePath, importPath) {
-  if (!importPath.startsWith('.')) {
-    return undefined;
-  }
-
-  const candidate = path.resolve(path.dirname(filePath), importPath);
-
-  for (const target of [candidate, `${candidate}.ts`, path.join(candidate, 'index.ts')]) {
-    if (sourceFileSet.has(target)) {
-      return target;
-    }
-  }
-
-  return undefined;
-}
-
-function findCycles(dependencyGraph) {
-  const visited = new Set();
-  const visiting = new Set();
-  const stack = [];
-  const cycles = [];
-
-  function visit(filePath) {
-    if (visiting.has(filePath)) {
-      const cycleStart = stack.indexOf(filePath);
-      cycles.push([...stack.slice(cycleStart), filePath]);
-      return;
-    }
-
-    if (visited.has(filePath)) {
-      return;
-    }
-
-    visiting.add(filePath);
-    stack.push(filePath);
-
-    for (const dependency of dependencyGraph.get(filePath) ?? []) {
-      visit(dependency);
-    }
-
-    stack.pop();
-    visiting.delete(filePath);
-    visited.add(filePath);
-  }
-
-  for (const filePath of dependencyGraph.keys()) {
-    visit(filePath);
-  }
-
-  return cycles;
-}
-
-function relativePath(filePath) {
-  return path.relative(PACKAGE_ROOT, filePath).replaceAll(path.sep, '/');
-}
-
 // The CLI must never grow its own copy of the generation pipeline: orchestration belongs to the
 // engine, and a verb that assembles pipeline stages by hand would be the fourth such mirror.
-function validateNoEngineBypass(filePath, importPath) {
+function refuseDirectPipelineImport(filePath, importPath, _statement, report) {
   if (importPath === '@storyboard/story-pipeline') {
-    failures.push(
-      `CLI imports the pipeline directly instead of an engine use case: ${relativePath(filePath)}`,
-    );
+    report('CLI imports the pipeline directly instead of an engine use case', filePath);
   }
 }
+
+runArchitectureCheck('CLI', SOURCE_ROOT, {
+  rules: [orderedLayerRule(LAYER_ORDER, SOURCE_ROOT)],
+  importRules: [refuseDirectPipelineImport],
+});
