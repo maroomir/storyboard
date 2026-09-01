@@ -3,7 +3,13 @@ import { join, resolve } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
 
-import { flagBoolean, flagString, isParseFailure, parseArguments } from './cliArguments';
+import {
+  flagBoolean,
+  flagString,
+  isParseFailure,
+  parseArguments,
+  resolveVerb,
+} from './cliArguments';
 import { commands, type CommandOutcome } from './commands/index';
 import { createCliContainer } from './container';
 
@@ -25,6 +31,8 @@ Commands
   check grammar <stem>         초안의 문법을 검사합니다
   check continuity <stem>      정전과 어긋나는 곳을 검사합니다
   check slop <stem>            상투 표현을 검사합니다 (AI 호출 없음)
+  card create <kind> --name    빈 인물/배경 카드를 만듭니다
+  scene create --name          다음 번호로 씬 카드를 만듭니다
   card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
   card promote                 초안에서 추출한 카드 후보를 반영합니다 (--dry-run)
   bible promote                초안에서 추출한 설정 후보를 정전에 반영합니다 (--dry-run)
@@ -43,6 +51,8 @@ Flags
   --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
   --out <path>                 manuscript export 의 출력 파일
   --instruction <text>         draft augment 에 줄 추가 지시
+  --name <text>                card/scene create 가 쓸 이름
+  --id <slug>                  card create 의 파일명 (기본: 이름에서 유도)
   --title <name>               init 이 만들 작품 이름
   --language <code>            init 의 언어 (기본 ko)
   --dry-run                    반영하지 않고 대상만 보고합니다
@@ -59,7 +69,7 @@ async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
 
-  const args = parsed;
+  const args = resolveVerb(parsed, Object.keys(commands));
 
   if (flagBoolean(args.flags, 'version')) {
     process.stdout.write(`${version}\n`);

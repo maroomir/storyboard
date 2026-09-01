@@ -7,6 +7,7 @@ import {
   ensureWorkspaceGitignore,
   getStoryboardProjectPaths,
   NodeUri,
+  sceneFilePath,
   sceneContextPaths,
   scenePath,
   readProjectJson,
@@ -16,6 +17,10 @@ import {
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
 import {
+  createEmptyBackground,
+  createEmptyCharacter,
+  resolveScenePrefixDigitCount,
+  serializeSceneCard,
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
@@ -271,7 +276,7 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
 
 // Read-only: an agent uses this to decide whether a card is worth creating, so it never writes.
 const recommendCards: CommandHandler = async ({ container, args }) => {
-  const category = args.positionals[0];
+  const category = args.path[2] ?? args.positionals[0];
 
   if (category !== 'character' && category !== 'background') {
     return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
@@ -298,6 +303,95 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
         data: result.recommendations,
       };
 };
+
+// Cards start empty and get filled by the studio or by hand; creating one is a file write, not a
+// generation, so no provider is involved.
+const createCard: CommandHandler = async ({ container, args }) => {
+  const kind = args.path[2];
+  const name = flagString(args.flags, 'name') ?? args.positionals[0];
+
+  if (kind !== 'character' && kind !== 'background') {
+    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  }
+
+  if (name === undefined || name.trim().length === 0) {
+    return { ok: false, message: '--name 으로 이름을 지정해 주세요.' };
+  }
+
+  const cardType = kind === 'character' ? 'character' : 'location';
+  const suggested = flagString(args.flags, 'id') ?? slugify(name);
+  // `deriveUniqueId` treats 'new-card' as "no usable suggestion" and falls back to the second
+  // argument, then numbers it — the same path the extension takes for a name with no ascii in it.
+  const id = await container.createCardUseCase.deriveUniqueId(
+    container.workspaceRoot,
+    cardType,
+    suggested,
+    'new-card',
+  );
+  const card =
+    kind === 'character'
+      ? createEmptyCharacter(id, name.trim())
+      : createEmptyBackground(id, name.trim());
+  const uri = await container.createCardUseCase.write(container.workspaceRoot, card);
+
+  return {
+    ok: true,
+    message: `${id} 카드를 만들었습니다.`,
+    data: { id, path: (uri as StoryUri).fsPath },
+  };
+};
+
+// The prefix is the workspace's own numbering, so a new scene lands after the highest one rather
+// than at a number the author has to pick.
+const createScene: CommandHandler = async ({ container, args }) => {
+  const name = flagString(args.flags, 'name') ?? args.positionals[0];
+
+  if (name === undefined || name.trim().length === 0) {
+    return { ok: false, message: '--name 으로 씬 이름을 지정해 주세요.' };
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const existing = await container.fileSystem
+    .listFileNames(paths.sceneDirectory)
+    .catch(() => [] as readonly string[]);
+
+  const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined);
+  const highest = existing
+    .map((fileName) => parseSceneFileName(fileName)?.order)
+    .filter((order): order is number => order !== undefined)
+    .reduce((max, order) => Math.max(max, order), 0);
+  const prefix = String(highest + 1).padStart(digitCount, '0');
+  const slug = slugify(name);
+  const uri = sceneFilePath(container.workspaceRoot, prefix, slug) as StoryUri;
+
+  if (await container.fileSystem.exists(uri)) {
+    return { ok: false, message: `이미 있습니다: ${prefix}-${slug}.card` };
+  }
+
+  await container.fileSystem.writeFile(
+    uri,
+    new TextEncoder().encode(serializeSceneCard({ type: 'scene', id: `${prefix}-${slug}` })),
+  );
+
+  return {
+    ok: true,
+    message: `${prefix}-${slug}.card 를 만들었습니다.`,
+    data: { stem: `${prefix}-${slug}`, path: uri.fsPath },
+  };
+};
+
+// Card ids are file names, so they stay ascii-safe and lowercase; a Korean title falls back to the
+// card kind plus a number, which `deriveUniqueId` then makes unique.
+function slugify(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return slug.length > 0 ? slug : 'new-card';
+}
 
 const applyDraftFormat: CommandHandler = async ({ container, args }) => {
   const stem = sceneStemFrom(args);
@@ -568,7 +662,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'manuscript assemble': assembleManuscript,
   'manuscript review': reviewManuscript,
   'manuscript summaries': summarizeChapters,
-  'card recommend': recommendCards,
+  'card recommend character': recommendCards,
+  'card recommend background': recommendCards,
   'card promote': promoteCards,
   'bible promote': promoteBible,
   'apikey set': setApiKey,
@@ -576,6 +671,9 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'check continuity': checkDraft,
   'check slop': checkDraft,
   init: initProject,
+  'card create character': createCard,
+  'card create background': createCard,
+  'scene create': createScene,
   'draft format': applyDraftFormat,
   'draft augment': augmentDraft,
   'manuscript export': exportManuscript,
