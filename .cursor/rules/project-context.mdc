@@ -66,7 +66,7 @@ apps/cli/src/                      # adapters/ then commands/ (verb definitions)
 apps/bot/src/                      # util → config → … → app (ordered layers)
 ```
 
-`apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles; every shared package stays free of `vscode` and app imports; and the engine's `shared` imports only itself. The engine's own `domain ← application ← persistence` direction is **not** enforced yet.
+`apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles; every shared package stays free of `vscode` and app imports; and the engine's `shared` imports only itself. `packages/story-engine` enforces its own layer direction too (`shared` imports only itself; `domain` only `domain`/`shared`; `ports` only `ports`/`paths`/`domain`), with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
 
 ## Messaging and state
 
