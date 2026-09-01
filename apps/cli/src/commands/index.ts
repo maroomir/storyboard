@@ -736,13 +736,29 @@ const createCard: CommandHandler = async ({ container, args }) => {
 
   const cardType = kind === 'character' ? 'character' : 'location';
   const suggested = flagString(args.flags, 'id') ?? slugify(name);
-  // `deriveUniqueId` treats 'new-card' as "no usable suggestion" and falls back to the second
-  // argument, then numbers it — the same path the extension takes for a name with no ascii in it.
+
+  // 한글 이름은 ascii 슬러그를 내지 못한다. 예전에는 이때 new-card, new-card-2 로 번호를 붙여
+  // 이름과 무관한 id 가 조용히 만들어졌고, 씬 카드가 그 id 로 인물을 참조했다. 짐작하는 대신
+  // 거부하고 --id 를 요구한다.
+  if (suggested === undefined) {
+    return {
+      ok: false,
+      message: `'${name.trim()}' 에서 id 를 만들 수 없습니다. --id 로 영소문자 id 를 지정해 주세요 (예: --id seo-jina).`,
+    };
+  }
+
+  if (!cardIdPattern.test(suggested)) {
+    return {
+      ok: false,
+      message: `id 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${suggested}`,
+    };
+  }
+
   const id = await container.createCardUseCase.deriveUniqueId(
     container.workspaceRoot,
     cardType,
     suggested,
-    'new-card',
+    suggested,
   );
   const card =
     kind === 'character'
@@ -777,8 +793,11 @@ const createScene: CommandHandler = async ({ container, args }) => {
     .map((fileName) => parseSceneFileName(fileName)?.order)
     .filter((order): order is number => order !== undefined)
     .reduce((max, order) => Math.max(max, order), 0);
-  const prefix = String(highest + 1).padStart(digitCount, '0');
-  const slug = slugify(name);
+  const order = highest + 1;
+  const prefix = String(order).padStart(digitCount, '0');
+  // 씬은 번호가 정체성을 지니므로 이름에서 슬러그를 못 만들어도 거부하지 않는다.
+  // sceneSeedFactory 의 폴백과 같은 모양을 쓴다.
+  const slug = slugify(name) ?? `scene-${order}`;
   const uri = sceneFilePath(container.workspaceRoot, prefix, slug);
 
   if (await container.fileSystem.exists(uri)) {
@@ -797,16 +816,16 @@ const createScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Card ids are file names, so they stay ascii-safe and lowercase; a Korean title falls back to the
-// card kind plus a number, which `deriveUniqueId` then makes unique.
-function slugify(name: string): string {
+// Card ids are file names, so they stay ascii-safe and lowercase. A name with no ascii yields
+// nothing usable; the caller refuses rather than inventing a name-shaped id.
+function slugify(name: string): string | undefined {
   const slug = name
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-  return slug.length > 0 ? slug : 'new-card';
+  return slug.length > 0 ? slug : undefined;
 }
 
 const applyDraftFormat: CommandHandler = async ({ container, args }) => {
