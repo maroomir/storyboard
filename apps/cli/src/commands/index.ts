@@ -4,7 +4,9 @@ import {
   buildSceneSeeds,
   createDefaultProjectJson,
   diffCandidatesAgainstCanon,
+  isIgnoredSampleCardFileName,
   joinStoryPath,
+  migrateCardTextFieldsToList,
   createStoryboardDirectories,
   createWorkspaceReadme,
   ensureWorkspaceGitignore,
@@ -20,8 +22,10 @@ import {
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
 import {
+  convertLegacySceneText,
   createEmptyBackground,
   createEmptyCharacter,
+  isLegacySceneFileName,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
   serializeSceneCard,
@@ -306,6 +310,88 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
         message: `카드가 없는 ${category} ${result.recommendations.length}건`,
         data: result.recommendations,
       };
+};
+
+// Both migrations rewrite files in place and are idempotent — a second run reports zero. They are
+// deterministic, so no provider is involved.
+async function eachCardFile(
+  container: CliContainer,
+  directory: StoryUri,
+  visit: (uri: StoryUri, fileName: string) => Promise<boolean>,
+): Promise<number> {
+  const names = await container.fileSystem
+    .listFileNames(directory)
+    .catch(() => [] as readonly string[]);
+  let changed = 0;
+
+  for (const fileName of names) {
+    if (!fileName.endsWith('.card') || isIgnoredSampleCardFileName(fileName)) {
+      continue;
+    }
+
+    if (await visit(joinStoryPath(directory, fileName), fileName)) {
+      changed += 1;
+    }
+  }
+
+  return changed;
+}
+
+const migrateCardText: CommandHandler = async ({ container }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  let migrated = 0;
+
+  for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
+    migrated += await eachCardFile(container, directory, async (uri) => {
+      const raw = new TextDecoder().decode(await container.fileSystem.readFile(uri));
+      const result = migrateCardTextFieldsToList(raw);
+
+      if (!result.changed) {
+        return false;
+      }
+
+      await container.fileSystem.writeFile(uri, new TextEncoder().encode(result.yaml));
+      return true;
+    });
+  }
+
+  return {
+    ok: true,
+    message:
+      migrated === 0 ? '바꿀 카드가 없습니다.' : `카드 ${migrated}개를 목록 형식으로 옮겼습니다.`,
+    data: { migrated },
+  };
+};
+
+const migrateScenes: CommandHandler = async ({ container }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const names = await container.fileSystem
+    .listFileNames(paths.sceneDirectory)
+    .catch(() => [] as readonly string[]);
+  const legacy = names.filter((name) => isLegacySceneFileName(name));
+  const converted: string[] = [];
+
+  for (const fileName of legacy) {
+    const legacyUri = joinStoryPath(paths.sceneDirectory, fileName);
+    const raw = new TextDecoder().decode(await container.fileSystem.readFile(legacyUri));
+    const conversion = convertLegacySceneText(raw, fileName);
+
+    await container.fileSystem.writeFile(
+      joinStoryPath(paths.sceneDirectory, conversion.fileName),
+      new TextEncoder().encode(conversion.text),
+    );
+    await container.fileSystem.delete(legacyUri);
+    converted.push(conversion.fileName);
+  }
+
+  return {
+    ok: true,
+    message:
+      converted.length === 0
+        ? '바꿀 씬이 없습니다.'
+        : `씬 ${converted.length}개를 카드로 옮겼습니다.`,
+    data: converted,
+  };
 };
 
 // Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
@@ -755,6 +841,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'scene complete': completeStory,
   'cards build': buildStoryCards,
   'canon diff': canonDiff,
+  'cards migrate': migrateCardText,
+  'scene migrate': migrateScenes,
   'card create character': createCard,
   'card create background': createCard,
   'scene create': createScene,
