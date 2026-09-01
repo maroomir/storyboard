@@ -44,7 +44,11 @@ export class VscodeFileSystem implements IFileSystem {
   }
 
   public async modifiedTime(uri: StoryUri): Promise<number> {
-    return (await vscode.workspace.fs.stat(uri as vscode.Uri)).mtime;
+    try {
+      return (await vscode.workspace.fs.stat(uri as vscode.Uri)).mtime;
+    } catch {
+      return 0;
+    }
   }
 }
 

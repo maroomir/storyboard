@@ -324,7 +324,7 @@ describe('scene draft generation', () => {
     const commitsBefore = fixture.git('log', '--format=%s').split('\n').length;
 
     const paths = getStoryboardProjectPaths(NodeUri.file(fixture.root));
-    const fileSystem = new BotFileSystem(content);
+    const fileSystem = new BotFileSystem(content, NodeUri.file(fixture.root));
 
     const personaStore = createPersonaMemoryStore(fileSystem, paths, '01-prologue');
     await personaStore.save(character, '조용하지만 단단한 화자.');

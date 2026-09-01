@@ -38,16 +38,17 @@ export class SceneSidebarRepository implements ISceneSidebarRepository {
     const sceneUri = joinStoryPath(paths.sceneDirectory, name);
     const draftUri = draftPath(root, parts.stem);
     const sceneMtime = await this.fileSystem.modifiedTime(sceneUri);
-    let draftMtime: number | undefined;
-    let draftUriString: string | undefined;
-    let status: SceneListItem['status'];
-    try {
-      draftMtime = await this.fileSystem.modifiedTime(draftUri);
-      draftUriString = draftUri.toString();
-      status = draftMtime >= sceneMtime ? 'ready' : 'stale';
-    } catch {
-      status = 'missing';
-    }
+    // A missing draft reports 0, which is what tells these apart — not an exception, which only
+    // the VSCode adapter used to raise.
+    const draftModifiedAt = await this.fileSystem.modifiedTime(draftUri);
+    const hasDraft = draftModifiedAt > 0;
+    const draftMtime = hasDraft ? draftModifiedAt : undefined;
+    const draftUriString = hasDraft ? draftUri.toString() : undefined;
+    const status: SceneListItem['status'] = !hasDraft
+      ? 'missing'
+      : draftModifiedAt >= sceneMtime
+        ? 'ready'
+        : 'stale';
     let title: string | undefined;
     try {
       const scene = await readSceneFile(sceneUri, this.fileSystem, name);

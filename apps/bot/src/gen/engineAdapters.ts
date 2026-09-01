@@ -1,4 +1,5 @@
 import { promises as nodeFs } from 'node:fs';
+import { dirname } from 'node:path';
 
 import {
   NodeUri,
@@ -17,6 +18,7 @@ import {
 import {
   applySceneGrounding,
   draftRelativePath,
+  joinStoryPath,
   type SceneFile,
   type SceneGrounding,
   type StoryboardProject,
@@ -37,7 +39,10 @@ function pathOf(uri: StoryUri): string {
 export class BotFileSystem implements IFileSystem {
   private lastDraftOutcome: MutateOutcome | undefined;
 
-  public constructor(private readonly content: ContentService) {}
+  public constructor(
+    private readonly content: ContentService,
+    private readonly workspaceRoot: StoryUri,
+  ) {}
 
   public async readFile(uri: StoryUri): Promise<Uint8Array> {
     return await nodeFs.readFile(pathOf(uri));
@@ -45,7 +50,7 @@ export class BotFileSystem implements IFileSystem {
 
   public async writeFile(uri: StoryUri, content: Uint8Array): Promise<void> {
     const target = pathOf(uri);
-    const draftStem = draftStemOf(target);
+    const draftStem = this.draftStemOf(uri);
 
     if (draftStem !== undefined) {
       this.lastDraftOutcome = await this.content.writeDraft(
@@ -58,7 +63,7 @@ export class BotFileSystem implements IFileSystem {
     const temporary = `${target}.tmp-${Date.now().toString(36)}`;
 
     try {
-      await nodeFs.mkdir(target.slice(0, target.lastIndexOf('/')), { recursive: true });
+      await nodeFs.mkdir(dirname(target), { recursive: true });
       await nodeFs.writeFile(temporary, content);
       await nodeFs.rename(temporary, target);
     } catch (error) {
@@ -69,6 +74,22 @@ export class BotFileSystem implements IFileSystem {
 
   public takeDraftOutcome(): MutateOutcome | undefined {
     return this.lastDraftOutcome;
+  }
+
+  // Anchored at the workspace root, and matched on the posix `path` rather than the OS-shaped
+  // `fsPath`: a suffix test would also catch `manuscript/draft/01.md`, and a `/` split would miss
+  // every draft on Windows.
+  private draftStemOf(uri: StoryUri): string | undefined {
+    const fileName = uri.path.split('/').pop();
+
+    if (fileName === undefined || !fileName.endsWith('.md')) {
+      return undefined;
+    }
+
+    const stem = fileName.slice(0, -'.md'.length);
+    const expected = joinStoryPath(this.workspaceRoot, ...draftRelativePath(stem).split('/'));
+
+    return uri.path === expected.path ? stem : undefined;
   }
 
   public async createDirectory(uri: StoryUri): Promise<void> {
@@ -204,16 +225,4 @@ export class BotSceneCacheRepository implements ISceneCacheRepository {
 
 function isSettled(outcome: MutateOutcome): boolean {
   return outcome.status === 'committed' || outcome.status === 'written';
-}
-
-// `draft/<stem>.md` and nothing else. A path that merely contains the word must not be captured.
-function draftStemOf(target: string): string | undefined {
-  const fileName = target.split('/').pop();
-
-  if (fileName === undefined || !fileName.endsWith('.md')) {
-    return undefined;
-  }
-
-  const stem = fileName.slice(0, -'.md'.length);
-  return target.endsWith(`/${draftRelativePath(stem)}`) ? stem : undefined;
 }

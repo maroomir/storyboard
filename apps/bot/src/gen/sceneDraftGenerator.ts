@@ -122,7 +122,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
   private createEngine(): BotEngine {
     const { store, content, registry, configBridge, generator } = this.options;
     const workspaceRoot = NodeUri.file(store.root);
-    const fileSystem = new BotFileSystem(content);
+    const fileSystem = new BotFileSystem(content, workspaceRoot);
     const logger = createStageLogger(this.options.onStage);
     const usageSink: UsageSink = {
       record: async (_workspaceRoot, usage): Promise<void> => {
