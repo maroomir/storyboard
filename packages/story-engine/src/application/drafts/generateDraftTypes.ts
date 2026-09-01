@@ -54,9 +54,9 @@ export interface GenerateDraftRequest {
 }
 
 export type GenerateDraftResult =
-  | { ok: true; kind: 'generated'; draftUri: StoryUri }
-  | { ok: true; kind: 'cache_hit'; draftUri: StoryUri }
-  | { ok: false; kind: 'failed'; message: string }
-  | { ok: false; kind: 'cancelled' };
+  | { readonly ok: true; readonly kind: 'generated'; readonly draftUri: StoryUri }
+  | { readonly ok: true; readonly kind: 'cache_hit'; readonly draftUri: StoryUri }
+  | { readonly ok: false; readonly kind: 'failed'; readonly message: string }
+  | { readonly ok: false; readonly kind: 'cancelled' };
 
 export type GenerateDraftWorkflowOptions = GenerateDraftUseCaseDependencies & GenerateDraftRequest;

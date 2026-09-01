@@ -80,7 +80,7 @@ export class BuildStoryCardsUseCase {
   public async execute(workspaceRoot: StoryUri): Promise<BuildStoryCardsProposal> {
     const source = await this.repository.load(workspaceRoot);
     if (source.scenes.length === 0) {
-      throw new StoryFeatureSourceError('카드를 구성할 유효한 씬이 없습니다.');
+      throw new StoryFeatureSourceError('no-valid-scenes', '카드를 구성할 유효한 씬이 없습니다.');
     }
 
     const sceneStems = new Set(source.scenes.map((scene) => scene.stem));
@@ -278,7 +278,7 @@ function buildNewCard(
   sequence: number,
 ): StoryboardCard {
   if (cardsByName.has(normalizeName(entity.name))) {
-    throw new StoryFeatureSourceError(`새 카드 이름이 기존 카드와 충돌합니다: ${entity.name}`);
+    throw new StoryFeatureSourceError('card-name-conflict', `새 카드 이름이 기존 카드와 충돌합니다: ${entity.name}`);
   }
   const suggested = entity.existingId?.trim() ?? slugify(entity.name) ?? `new-card-${sequence}`;
   const id = cardsById.has(suggested) ? `new-card-${sequence}` : suggested;
@@ -393,7 +393,7 @@ function mergeTarget(
 function validateSourceScenes(entity: StoryCardEntity, sceneStems: ReadonlySet<string>): void {
   for (const stem of entity.sourceScenes) {
     if (!sceneStems.has(stem)) {
-      throw new StoryFeatureSourceError(`카드 제안이 알 수 없는 근거 씬을 참조합니다: ${stem}`);
+      throw new StoryFeatureSourceError('unknown-scene-reference', `카드 제안이 알 수 없는 근거 씬을 참조합니다: ${stem}`);
     }
   }
 }

@@ -20,8 +20,23 @@ export interface IStoryFeatureRepository {
   hasCurrentSnapshots(snapshots: readonly StoryFileSnapshot[]): Promise<boolean>;
 }
 
+export type StoryFeatureSourceErrorCode =
+  | 'invalid-scene'
+  | 'invalid-card'
+  | 'source-read-failed'
+  | 'no-valid-scenes'
+  | 'card-name-conflict'
+  | 'unknown-scene-reference'
+  | 'unknown-card-reference'
+  | 'duplicate-scene-slug'
+  | 'invalid-scene-filename';
+
 export class StoryFeatureSourceError extends Error {
-  public constructor(message: string) {
+  public constructor(
+    public readonly code: StoryFeatureSourceErrorCode,
+    message: string,
+    public override readonly cause?: unknown,
+  ) {
     super(message);
     this.name = 'StoryFeatureSourceError';
   }

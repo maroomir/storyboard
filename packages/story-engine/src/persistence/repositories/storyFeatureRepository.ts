@@ -40,6 +40,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
 
     if (invalidScenes.length > 0) {
       throw new StoryFeatureSourceError(
+        'invalid-scene',
         `유효하지 않은 씬이 있습니다.\n${invalidScenes.join('\n')}`,
       );
     }
@@ -50,7 +51,9 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
         cards.push(parseCard(file.text));
       } catch (error) {
         throw new StoryFeatureSourceError(
+          'invalid-card',
           `유효하지 않은 카드: ${file.name}: ${formatParseError(error)}`,
+          error,
         );
       }
     }
@@ -108,7 +111,7 @@ async function readRequiredText(fs: IFileSystem, uri: StoryUri, label: string): 
   try {
     return await readTextFile(fs, uri);
   } catch {
-    throw new StoryFeatureSourceError(`${label}을 읽을 수 없습니다.`);
+    throw new StoryFeatureSourceError('source-read-failed', `${label}을 읽을 수 없습니다.`);
   }
 }
 
@@ -129,7 +132,7 @@ async function readTextFiles(
   try {
     entries = await fs.readDirectory(directory);
   } catch {
-    throw new StoryFeatureSourceError(`씬 디렉터리를 읽을 수 없습니다: ${directory.fsPath}`);
+    throw new StoryFeatureSourceError('source-read-failed', `씬 디렉터리를 읽을 수 없습니다: ${directory.fsPath}`);
   }
 
   return await Promise.all(
