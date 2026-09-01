@@ -33,16 +33,16 @@ const pendingVerbs = new Set([
   'storyboard.scene.generateAllSeeds',
   'storyboard.scene.completeStory',
   'storyboard.scene.migrate',
-  'storyboard.draft.applyFormat',
-  'storyboard.draft.augment',
   'storyboard.draft.augmentSelection',
   'storyboard.draft.editSelection',
   'storyboard.draft.condense',
   'storyboard.draft.expand',
-  'storyboard.draft.export',
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.draft.applyFormat': 'draft format',
+  'storyboard.draft.augment': 'draft augment',
+  'storyboard.draft.export': 'manuscript export',
   'storyboard.init': 'init',
   'storyboard.draft.grammarCheck': 'check grammar',
   'storyboard.draft.continuityCheck': 'check continuity',

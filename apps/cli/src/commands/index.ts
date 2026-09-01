@@ -6,6 +6,7 @@ import {
   createWorkspaceReadme,
   ensureWorkspaceGitignore,
   getStoryboardProjectPaths,
+  NodeUri,
   sceneContextPaths,
   scenePath,
   readProjectJson,
@@ -298,6 +299,93 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
       };
 };
 
+const applyDraftFormat: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  const result = await container.applyDraftFormatUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+    sceneStem: stem,
+  });
+
+  return {
+    ok: result.ok,
+    message: result.ok
+      ? '초안 형식을 다시 적용했습니다.'
+      : `형식을 적용하지 못했습니다 (${result.kind}).`,
+    data: result,
+  };
+};
+
+// Card-based augmentation rewrites the whole draft from updated cards and canon, without
+// regenerating it. The editor shows a diff first; unattended, the caller asked for it, so it lands.
+const augmentDraft: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  const draftUri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const body = await readDraftBody(container, stem);
+
+  if (body === undefined) {
+    return { ok: false, message: `초안이 없습니다: ${stem}` };
+  }
+
+  const prepared = await container.augmentDraftUseCase.prepareAugmentedDraft({
+    draftSceneStem: stem,
+    sceneUri: scenePath(container.workspaceRoot, stem),
+    scope: 'draft',
+    target: body,
+    workspaceRoot: container.workspaceRoot,
+    ...(flagString(args.flags, 'instruction') === undefined
+      ? {}
+      : { instruction: flagString(args.flags, 'instruction') }),
+  });
+
+  if (!prepared.ok) {
+    return { ok: false, message: `보충하지 못했습니다 (${prepared.kind}).`, data: prepared };
+  }
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: '보충안을 만들었습니다 (적용하지 않음).', data: prepared };
+  }
+
+  await container.augmentDraftUseCase.applyAugmentedDraft({
+    draftUri,
+    sceneStem: stem,
+    workspaceRoot: container.workspaceRoot,
+  });
+
+  return { ok: true, message: '카드 기반 보충을 반영했습니다.', data: { draft: draftUri.fsPath } };
+};
+
+const exportManuscript: CommandHandler = async ({ container, args }) => {
+  const source = await container.exportManuscriptUseCase.loadSource(container.workspaceRoot);
+
+  if (!source.ok) {
+    return { ok: false, message: `내보낼 원고가 없습니다 (${source.kind}).`, data: source };
+  }
+
+  const target = flagString(args.flags, 'out');
+
+  if (target === undefined) {
+    process.stdout.write(source.markdown);
+    return { ok: true, message: '', data: { projectName: source.projectName } };
+  }
+
+  await container.fileSystem.writeFile(
+    NodeUri.file(target),
+    new TextEncoder().encode(source.markdown),
+  );
+
+  return { ok: true, message: `${target} 로 내보냈습니다.`, data: { path: target } };
+};
+
 // An agent starting from an empty directory needs this first; without it the CLI can only work in
 // a workspace the extension already created.
 const initProject: CommandHandler = async ({ container, args }) => {
@@ -488,4 +576,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'check continuity': checkDraft,
   'check slop': checkDraft,
   init: initProject,
+  'draft format': applyDraftFormat,
+  'draft augment': augmentDraft,
+  'manuscript export': exportManuscript,
 };
