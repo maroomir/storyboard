@@ -36,6 +36,8 @@ const valueFlags = new Set([
   'instruction',
   'name',
   'id',
+  'lines',
+  'to',
 ]);
 
 export interface ParseFailure {

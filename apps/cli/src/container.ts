@@ -10,8 +10,10 @@ import {
   CardRecommendationRepository,
   CardWriterRepository,
   CollectCardProposalsUseCase,
+  CondenseDraftUseCase,
   CompleteStoryScenesUseCase,
   CreateCardUseCase,
+  ExpandDraftUseCase,
   ExportManuscriptUseCase,
   GenerateAllDraftsUseCase,
   GenerateDraftUseCase,
@@ -64,6 +66,8 @@ export interface CliContainer {
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
+  readonly condenseDraftUseCase: CondenseDraftUseCase;
+  readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
@@ -213,6 +217,8 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     reviseAfterGenerateGate,
     applyDraftFormatUseCase: new ApplyDraftFormatUseCase(fileSystem, aiGateway, logger, generator),
     augmentDraftUseCase: new AugmentDraftUseCase(fileSystem, aiGateway, logger, configBridge),
+    condenseDraftUseCase: new CondenseDraftUseCase(aiGateway, logger),
+    expandDraftUseCase: new ExpandDraftUseCase(aiGateway, logger),
     assembleManuscriptUseCase,
     exportManuscriptUseCase: new ExportManuscriptUseCase(manuscriptAssemblyRepository),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(
