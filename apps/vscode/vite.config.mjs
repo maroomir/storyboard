@@ -10,7 +10,12 @@ export default defineConfig({
   root: "webview-ui",
   resolve: {
     alias: {
-      "@webview": path.join(packageRoot, "webview-ui", "src")
+      "@webview": path.join(packageRoot, "webview-ui", "src"),
+      // Contracts only — the engine barrel would drag node-only modules into the browser bundle.
+      "@storyboard/story-engine/contracts": path.join(
+        packageRoot,
+        "../../packages/story-engine/src/shared/index.ts"
+      )
     }
   },
   plugins: [react()],

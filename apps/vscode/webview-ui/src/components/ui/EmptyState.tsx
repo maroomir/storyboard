@@ -1,14 +1,19 @@
-import type { LucideIcon } from "lucide-react"
-import type React from "react"
+import type { LucideIcon } from 'lucide-react';
+import type React from 'react';
 
 export type EmptyStateProps = {
-  readonly icon: LucideIcon
-  readonly title: string
-  readonly description: React.ReactNode
-  readonly action?: React.ReactNode
-}
+  readonly icon: LucideIcon;
+  readonly title: string;
+  readonly description: React.ReactNode;
+  readonly action?: React.ReactNode;
+};
 
-export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps): React.ReactElement {
+export function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+}: EmptyStateProps): React.ReactElement {
   return (
     <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-sb-border bg-sb-parchment/50 p-4">
       <Icon className="h-8 w-8 shrink-0 text-sb-fg-muted" aria-hidden />
@@ -18,5 +23,5 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       </div>
       {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
     </div>
-  )
+  );
 }

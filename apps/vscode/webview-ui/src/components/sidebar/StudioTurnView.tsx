@@ -5,59 +5,59 @@ import {
   FileDiff,
   ShieldCheck,
   ShieldQuestion,
-  Sparkles
-} from "lucide-react"
-import React from "react"
+  Sparkles,
+} from 'lucide-react';
+import React from 'react';
 
 import type {
   StudioChatTurn,
   StudioFollowUpTarget,
   StudioPatch,
   StudioProposalTurn,
-  StudioValidation
-} from "@webview/lib/types"
-import { Button } from "../ui/Button"
+  StudioValidation,
+} from '@webview/lib/types';
+import { Button } from '../ui/Button';
 
 export interface StudioProposalActions {
-  readonly onPreview: (turn: StudioProposalTurn) => void
-  readonly onApply: (turn: StudioProposalTurn) => void
-  readonly onReject: (turn: StudioProposalTurn) => void
+  readonly onPreview: (turn: StudioProposalTurn) => void;
+  readonly onApply: (turn: StudioProposalTurn) => void;
+  readonly onReject: (turn: StudioProposalTurn) => void;
 }
 
-export type StudioFollowUpHandler = (followUp: StudioFollowUpTarget) => void
+export type StudioFollowUpHandler = (followUp: StudioFollowUpTarget) => void;
 
 const bubbleClass =
-  "flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2"
+  'flex max-w-[92%] flex-col gap-2 rounded-lg rounded-bl-sm border border-sb-border bg-sb-bg-widget px-3 py-2';
 
 export function StudioTurnView({
   turn,
   onAnswer,
   onOpenFollowUp,
-  proposalActions
+  proposalActions,
 }: {
-  readonly turn: StudioChatTurn
-  readonly onAnswer: (text: string) => void
-  readonly onOpenFollowUp: StudioFollowUpHandler
-  readonly proposalActions: StudioProposalActions
+  readonly turn: StudioChatTurn;
+  readonly onAnswer: (text: string) => void;
+  readonly onOpenFollowUp: StudioFollowUpHandler;
+  readonly proposalActions: StudioProposalActions;
 }): React.ReactElement {
-  if (turn.role === "user") {
+  if (turn.role === 'user') {
     return (
       <div className="ml-auto max-w-[92%] whitespace-pre-wrap rounded-lg rounded-br-sm border border-sb-border bg-sb-bg-list-hover px-3 py-2 text-sm text-sb-fg">
         {turn.text}
       </div>
-    )
+    );
   }
 
-  if (turn.kind === "say") {
+  if (turn.kind === 'say') {
     return (
       <div className={bubbleClass}>
         <p className="m-0 whitespace-pre-wrap text-sm text-sb-fg">{turn.message}</p>
         <FollowUpList followUps={turn.followUps} onOpen={onOpenFollowUp} />
       </div>
-    )
+    );
   }
 
-  if (turn.kind === "ask") {
+  if (turn.kind === 'ask') {
     return (
       <div className={bubbleClass}>
         <p className="m-0 flex items-start gap-1.5 text-sm text-sb-fg">
@@ -79,34 +79,37 @@ export function StudioTurnView({
           </div>
         ) : null}
       </div>
-    )
+    );
   }
 
-  if (turn.kind === "result") {
+  if (turn.kind === 'result') {
     return (
       <p className="m-0 flex items-center gap-1.5 text-xs text-emerald-500">
         <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
         {turn.message}
       </p>
-    )
+    );
   }
 
-  return <ProposalCard turn={turn} actions={proposalActions} onOpenFollowUp={onOpenFollowUp} />
+  return <ProposalCard turn={turn} actions={proposalActions} onOpenFollowUp={onOpenFollowUp} />;
 }
 
 function FollowUpList({
   followUps,
-  onOpen
+  onOpen,
 }: {
-  readonly followUps?: readonly StudioFollowUpTarget[]
-  readonly onOpen: StudioFollowUpHandler
+  readonly followUps?: readonly StudioFollowUpTarget[];
+  readonly onOpen: StudioFollowUpHandler;
 }): React.ReactElement | null {
   if (!followUps || followUps.length === 0) {
-    return null
+    return null;
   }
 
   return (
-    <section aria-label="이어서 고칠 대상" className="flex flex-col gap-1 border-t border-sb-border pt-2">
+    <section
+      aria-label="이어서 고칠 대상"
+      className="flex flex-col gap-1 border-t border-sb-border pt-2"
+    >
       <p className="m-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-sb-fg-muted">
         이어서 고칠 대상
       </p>
@@ -125,17 +128,17 @@ function FollowUpList({
         </button>
       ))}
     </section>
-  )
+  );
 }
 
 function ProposalCard({
   turn,
   actions,
-  onOpenFollowUp
+  onOpenFollowUp,
 }: {
-  readonly turn: StudioProposalTurn
-  readonly actions: StudioProposalActions
-  readonly onOpenFollowUp: StudioFollowUpHandler
+  readonly turn: StudioProposalTurn;
+  readonly actions: StudioProposalActions;
+  readonly onOpenFollowUp: StudioFollowUpHandler;
 }): React.ReactElement {
   return (
     <div className={bubbleClass}>
@@ -145,7 +148,7 @@ function ProposalCard({
       ) : null}
       <p className="m-0 text-xs text-sb-fg-muted">{patchScopeLabel(turn.patch)}</p>
       <ValidationBadge validation={turn.validation} />
-      {turn.status === "pending" ? (
+      {turn.status === 'pending' ? (
         <div className="flex flex-wrap gap-1.5">
           <Button variant="secondary" onClick={() => actions.onPreview(turn)}>
             <FileDiff className="mr-1 inline h-3.5 w-3.5" aria-hidden />
@@ -159,19 +162,19 @@ function ProposalCard({
       ) : (
         <ProposalStatusLine turn={turn} />
       )}
-      {turn.status === "applied" ? (
+      {turn.status === 'applied' ? (
         <FollowUpList followUps={turn.followUps} onOpen={onOpenFollowUp} />
       ) : null}
     </div>
-  )
+  );
 }
 
 function ValidationBadge({
-  validation
+  validation,
 }: {
-  readonly validation: StudioValidation
+  readonly validation: StudioValidation;
 }): React.ReactElement {
-  if (validation.state === "warn") {
+  if (validation.state === 'warn') {
     return (
       <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
         <p className="m-0 flex items-center gap-1.5 text-xs font-medium text-amber-500">
@@ -182,21 +185,21 @@ function ValidationBadge({
           {validation.warnings.map((warning) => (
             <li key={warning.message} className="text-xs text-sb-fg-muted">
               {warning.message}
-              {warning.source ? ` (${warning.source})` : ""}
+              {warning.source ? ` (${warning.source})` : ''}
             </li>
           ))}
         </ul>
       </div>
-    )
+    );
   }
 
-  if (validation.state === "pass") {
+  if (validation.state === 'pass') {
     return (
       <p className="m-0 flex items-center gap-1.5 text-xs text-sb-fg-muted">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" aria-hidden />
         정합성 검사 통과
       </p>
-    )
+    );
   }
 
   return (
@@ -204,33 +207,33 @@ function ValidationBadge({
       <ShieldQuestion className="h-3.5 w-3.5 shrink-0" aria-hidden />
       정합성 검사 안 함
     </p>
-  )
+  );
 }
 
 function ProposalStatusLine({ turn }: { readonly turn: StudioProposalTurn }): React.ReactElement {
-  if (turn.status === "applied") {
+  if (turn.status === 'applied') {
     return (
       <p className="m-0 flex items-center gap-1.5 text-sm text-emerald-500">
         <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
         적용됨
       </p>
-    )
+    );
   }
 
-  if (turn.status === "failed") {
+  if (turn.status === 'failed') {
     return (
       <p className="m-0 flex items-center gap-1.5 text-sm text-sb-fg-error">
         <CircleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
-        {turn.errorMessage ?? "적용하지 못했습니다"}
+        {turn.errorMessage ?? '적용하지 못했습니다'}
       </p>
-    )
+    );
   }
 
-  return <p className="m-0 text-sm text-sb-fg-muted">거절함</p>
+  return <p className="m-0 text-sm text-sb-fg-muted">거절함</p>;
 }
 
 function patchScopeLabel(patch: StudioPatch): string {
-  return patch.target === "card"
+  return patch.target === 'card'
     ? `카드 필드 ${patch.changes.length}곳`
-    : `본문 ${patch.replacements.length}구간`
+    : `본문 ${patch.replacements.length}구간`;
 }
