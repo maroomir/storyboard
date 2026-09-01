@@ -117,6 +117,7 @@ describe('generation jobs end to end', () => {
       draftReviser: {
         revise: async (sceneStem, draftBody) => ({
           outcome: await content.writeDraft(sceneStem, `${draftBody}수정된 문장.\n`),
+          preservedOriginal: false,
           passed: true,
           revisionCount: 1,
           remainingBlocking: 0,

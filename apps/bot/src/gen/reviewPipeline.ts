@@ -8,6 +8,9 @@ import type { GenJob, PipelineResult } from './types';
 
 export interface DraftRevisionReport {
   readonly outcome: MutateOutcome | undefined;
+  // The loop revised, then refused its own candidate on safety grounds and kept the original. The
+  // file is untouched, so reporting the revision count alone would claim a change that never landed.
+  readonly preservedOriginal: boolean;
   readonly passed: boolean;
   readonly revisionCount: number;
   readonly remainingBlocking: number;
@@ -63,6 +66,11 @@ export class ReviewPipeline implements IPipeline {
     }
 
     // A clean pass rewrites nothing, so there is no outcome to inspect.
+    if (report.preservedOriginal) {
+      context.log('검수', '재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다.');
+      return { success: true, resultRef: draftRelativePath(sceneStem) };
+    }
+
     if (report.revisionCount === 0) {
       context.log(
         '검수',

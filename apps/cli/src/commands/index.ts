@@ -1,6 +1,7 @@
 import {
   draftPath,
   getStoryboardProjectPaths,
+  scenePath,
   readProjectJson,
   type StoryUri,
 } from '@storyboard/story-engine';
@@ -33,9 +34,7 @@ function sceneStemFrom(args: ParsedArguments): string | undefined {
 }
 
 function sceneUriFor(root: StoryUri, stem: string): StoryUri {
-  return getStoryboardProjectPaths(root).sceneDirectory.with({
-    path: `${getStoryboardProjectPaths(root).sceneDirectory.path}/${stem}.card`,
-  });
+  return scenePath(root, stem);
 }
 
 const generateScene: CommandHandler = async ({ container, args }) => {
