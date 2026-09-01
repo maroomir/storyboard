@@ -47,7 +47,6 @@ import {
   toolCandidates,
   type StudioComposerTool,
   type StudioToolEntry,
-  type StudioToolName,
 } from '@webview/lib/studioTools';
 import { StudioSessionList } from './StudioSessionList';
 import { StudioToolMenu } from './StudioToolMenu';

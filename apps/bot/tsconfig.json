@@ -1,44 +1,31 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "node16",
-    "moduleResolution": "node16",
-    "lib": [
-      "ES2022"
-    ],
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": false,
     "sourceMap": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": true,
     "types": [
       "node"
     ],
+    "baseUrl": ".",
     "paths": {
+      "@/*": [
+        "src/*"
+      ],
       "@storyboard/story-engine": [
         "../../packages/story-engine/src/index.ts"
       ],
       "@storyboard/story-format": [
         "../../packages/story-format/src/index.ts"
       ],
-      "@storyboard/story-git": [
-        "../../packages/story-git/src/index.ts"
-      ],
       "@storyboard/story-ai": [
         "../../packages/story-ai/src/index.ts"
       ],
       "@storyboard/story-pipeline": [
         "../../packages/story-pipeline/src/index.ts"
+      ],
+      "@storyboard/story-git": [
+        "../../packages/story-git/src/index.ts"
       ]
-    },
-    "noEmit": true
+    }
   },
   "include": [
     "src"

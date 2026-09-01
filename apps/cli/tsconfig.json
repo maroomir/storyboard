@@ -1,23 +1,14 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "lib": [
-      "ES2022"
-    ],
-    "strict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "skipLibCheck": true,
-    "noEmit": true,
     "types": [
       "node"
     ],
+    "baseUrl": ".",
     "paths": {
+      "@/*": [
+        "src/*"
+      ],
       "@storyboard/story-engine": [
         "../../packages/story-engine/src/index.ts"
       ],
