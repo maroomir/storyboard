@@ -1,4 +1,7 @@
 import {
+  applyStoryCardChanges,
+  backgroundCardPath,
+  characterCardPath,
   draftPath,
   analyzeSlop,
   buildSceneSeeds,
@@ -695,17 +698,92 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// Read-only proposals: both of these read the scene corpus and suggest, they never write. An agent
-// inspects the JSON and decides.
-const completeStory: CommandHandler = async ({ container }) => {
+// 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
+// 제안 전체를 적용하고, 미리 보려면 --dry-run 을 쓴다 — card promote 와 같은 관례다.
+const completeStory: CommandHandler = async ({ container, args }) => {
   const proposal = await container.completeStoryScenesUseCase.execute(container.workspaceRoot);
-  return { ok: true, message: `완결 씬 제안 ${proposal.scenes.length}건`, data: proposal };
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: `완결 씬 제안 ${proposal.scenes.length}건`, data: proposal };
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const written: string[] = [];
+  const skipped: string[] = [];
+
+  await container.fileSystem.createDirectory(paths.sceneDirectory);
+
+  for (const scene of proposal.scenes) {
+    const uri = joinStoryPath(paths.sceneDirectory, scene.fileName);
+
+    // 완결 씬은 뒤에 덧붙이는 제안이다. 이미 있는 파일을 덮으면 쓰던 씬이 사라진다.
+    if (await container.fileSystem.exists(uri)) {
+      skipped.push(scene.fileName);
+      continue;
+    }
+
+    await container.fileSystem.writeFile(uri, new TextEncoder().encode(scene.content));
+    written.push(scene.fileName);
+  }
+
+  return {
+    ok: true,
+    message:
+      skipped.length === 0
+        ? `완결 씬 ${written.length}개를 만들었습니다.`
+        : `완결 씬 ${written.length}개를 만들고 이미 있는 ${skipped.length}개는 건너뛰었습니다.`,
+    data: { written, skipped, centralQuestion: proposal.centralQuestion, climaxChoice: proposal.climaxChoice },
+  };
 };
 
-const buildStoryCards: CommandHandler = async ({ container }) => {
+const buildStoryCards: CommandHandler = async ({ container, args }) => {
   const proposal = await container.buildStoryCardsUseCase.execute(container.workspaceRoot);
-  return { ok: true, message: '씬에서 카드 구성안을 만들었습니다.', data: proposal };
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: `카드 구성안 ${proposal.targets.length}건`, data: proposal };
+  }
+
+  const written: string[] = [];
+  // 이름에서 id 를 못 만드는 새 카드는 익스텐션이 사람에게 물어보는 자리다. 여기서 짐작해
+  // new-card-2 같은 id 를 박아 넣는 대신, 이름을 돌려주고 card create --id 를 거치게 한다.
+  const needsId: string[] = [];
+
+  for (const target of proposal.targets) {
+    if (target.isNew && target.requiresIdConfirmation) {
+      needsId.push(target.card.name);
+      continue;
+    }
+
+    const card = applyStoryCardChanges(
+      target,
+      target.changes.map((change) => change.proposal),
+    );
+    const uri =
+      card.type === 'character'
+        ? characterCardPath(container.workspaceRoot, card.id)
+        : backgroundCardPath(container.workspaceRoot, card.id);
+
+    await container.fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
+    written.push(card.id);
+  }
+
+  return {
+    ok: true,
+    message: describeCardBuild(written.length, needsId),
+    data: { written, needsId },
+  };
 };
+
+function describeCardBuild(writtenCount: number, needsId: readonly string[]): string {
+  if (needsId.length === 0) {
+    return `카드 ${writtenCount}개를 갱신했습니다.`;
+  }
+
+  return (
+    `카드 ${writtenCount}개를 갱신했습니다. id 를 정할 수 없어 건너뛴 새 카드: ${needsId.join(', ')}. ` +
+    'card create 로 --id 를 지정해 만든 뒤 다시 실행해 주세요.'
+  );
+}
 
 const canonDiff: CommandHandler = async ({ container }) => {
   const canon = await container.bibleCandidateRepository.loadCanon(container.workspaceRoot);
