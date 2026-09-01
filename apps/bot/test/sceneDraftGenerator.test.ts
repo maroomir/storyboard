@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAiEngine } from '../src/ai/aiGateway';
 import { ContentService } from '../src/content/contentService';
 import {
+  joinStoryPath,
   NodeUri,
   createBackgroundMemoryStore,
   createPersonaMemoryStore,
@@ -342,6 +343,33 @@ describe('scene draft generation', () => {
 
   // The engine builds its own AI service per use case, so the job ledger only sees generation cost
   // if the generator forwards it. A no-op here silently zeroes every /draft job's usage row.
+  // The bot's invariant is "a successful save of a tracked file is a commit". An engine use case
+  // that reached for the file system to write one would break it silently, so the adapter refuses.
+  it('refuses a tracked write that would bypass the mutate gate', async () => {
+    const fileSystem = new BotFileSystem(content, NodeUri.file(fixture.root));
+    const cardUri = joinStoryPath(NodeUri.file(fixture.root), 'character', 'elia.card');
+
+    await expect(fileSystem.writeFile(cardUri, new TextEncoder().encode('x'))).rejects.toThrow(
+      /추적 파일/,
+    );
+  });
+
+  it('still writes gitignored side artefacts straight to disk', async () => {
+    const fileSystem = new BotFileSystem(content, NodeUri.file(fixture.root));
+    const cacheUri = joinStoryPath(
+      NodeUri.file(fixture.root),
+      '.storyboard',
+      'cache',
+      'probe.json',
+    );
+
+    await fileSystem.writeFile(cacheUri, new TextEncoder().encode('{}'));
+
+    expect(readFileSync(join(fixture.root, '.storyboard', 'cache', 'probe.json'), 'utf8')).toBe(
+      '{}',
+    );
+  });
+
   it('forwards provider usage to the job ledger', async () => {
     const usage: unknown[] = [];
     const draftConfig = {
