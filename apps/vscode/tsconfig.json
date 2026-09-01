@@ -1,19 +1,16 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
     "lib": [
       "ES2022",
       "DOM"
     ],
     "jsx": "react-jsx",
-    "strict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "skipLibCheck": true,
     "sourceMap": true,
+    "types": [
+      "node",
+      "vscode"
+    ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
@@ -34,12 +31,7 @@
       "@storyboard/story-pipeline": [
         "../../packages/story-pipeline/src/index.ts"
       ]
-    },
-    "noEmit": true,
-    "types": [
-      "node",
-      "vscode"
-    ]
+    }
   },
   "include": [
     "src/**/*.ts"

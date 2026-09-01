@@ -8,19 +8,22 @@ const PADDING_X = 28;
 const PADDING_Y = 36;
 
 function buildCurvePath(points: readonly { readonly x: number; readonly y: number }[]): string {
-  if (points.length === 0) {
+  const [start] = points;
+
+  if (!start) {
     return '';
   }
 
-  if (points.length === 1) {
-    return `M ${points[0].x} ${points[0].y}`;
-  }
-
-  let path = `M ${points[0].x} ${points[0].y}`;
+  let path = `M ${start.x} ${start.y}`;
 
   for (let index = 1; index < points.length; index += 1) {
     const previous = points[index - 1];
     const current = points[index];
+
+    if (!previous || !current) {
+      continue;
+    }
+
     const controlX = (previous.x + current.x) / 2;
 
     path += ` C ${controlX} ${previous.y}, ${controlX} ${current.y}, ${current.x} ${current.y}`;
