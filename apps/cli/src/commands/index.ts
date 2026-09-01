@@ -1,7 +1,10 @@
 import {
   draftPath,
   analyzeSlop,
+  buildSceneSeeds,
   createDefaultProjectJson,
+  diffCandidatesAgainstCanon,
+  joinStoryPath,
   createStoryboardDirectories,
   createWorkspaceReadme,
   ensureWorkspaceGitignore,
@@ -19,6 +22,7 @@ import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
 import {
   createEmptyBackground,
   createEmptyCharacter,
+  readChapterPlanFile,
   resolveScenePrefixDigitCount,
   serializeSceneCard,
   buildNarrativeContext,
@@ -302,6 +306,82 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
         message: `카드가 없는 ${category} ${result.recommendations.length}건`,
         data: result.recommendations,
       };
+};
+
+// Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
+// generation — `buildSceneSeeds` is deterministic.
+const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+
+  if (!(await container.fileSystem.exists(paths.outlineChapters))) {
+    return {
+      ok: false,
+      message: '아웃라인(chapters.yaml)이 없습니다. outline generate 를 먼저 실행해 주세요.',
+    };
+  }
+
+  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const plan = await readChapterPlanFile(paths.outlineChapters, container.fileSystem);
+  const seeds = buildSceneSeeds(
+    plan,
+    resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined),
+  );
+
+  if (seeds.length === 0) {
+    return { ok: true, message: '아웃라인에 생성할 씬이 없습니다.', data: [] };
+  }
+
+  const existing = await container.fileSystem
+    .listFileNames(paths.sceneDirectory)
+    .catch(() => [] as readonly string[]);
+
+  // Overwriting is what the editor asks about with a modal. Unattended, refuse unless told.
+  if (existing.length > 0 && !flagBoolean(args.flags, 'force')) {
+    return {
+      ok: false,
+      message: `씬 파일이 이미 ${existing.length}개 있습니다. 덮어쓰려면 --force 를 주세요.`,
+    };
+  }
+
+  await container.fileSystem.createDirectory(paths.sceneDirectory);
+
+  for (const seed of seeds) {
+    await container.fileSystem.writeFile(
+      joinStoryPath(paths.sceneDirectory, seed.fileName),
+      new TextEncoder().encode(seed.content),
+    );
+  }
+
+  return {
+    ok: true,
+    message: `씬 시드 ${seeds.length}개를 생성했습니다.`,
+    data: seeds.map((seed) => seed.fileName),
+  };
+};
+
+// Read-only proposals: both of these read the scene corpus and suggest, they never write. An agent
+// inspects the JSON and decides.
+const completeStory: CommandHandler = async ({ container }) => {
+  const proposal = await container.completeStoryScenesUseCase.execute(container.workspaceRoot);
+  return { ok: true, message: `완결 씬 제안 ${proposal.scenes.length}건`, data: proposal };
+};
+
+const buildStoryCards: CommandHandler = async ({ container }) => {
+  const proposal = await container.buildStoryCardsUseCase.execute(container.workspaceRoot);
+  return { ok: true, message: '씬에서 카드 구성안을 만들었습니다.', data: proposal };
+};
+
+const canonDiff: CommandHandler = async ({ container }) => {
+  const canon = await container.bibleCandidateRepository.loadCanon(container.workspaceRoot);
+  const candidates = await container.bibleCandidateRepository.loadRecords(container.workspaceRoot);
+  const { pending } = diffCandidatesAgainstCanon(canon, candidates);
+
+  return {
+    ok: true,
+    message:
+      pending.length === 0 ? '정전과 어긋나는 후보가 없습니다.' : `미승격 후보 ${pending.length}건`,
+    data: pending,
+  };
 };
 
 // Cards start empty and get filled by the studio or by hand; creating one is a file write, not a
@@ -671,6 +751,10 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'check continuity': checkDraft,
   'check slop': checkDraft,
   init: initProject,
+  'scene seeds': generateSceneSeeds,
+  'scene complete': completeStory,
+  'cards build': buildStoryCards,
+  'canon diff': canonDiff,
   'card create character': createCard,
   'card create background': createCard,
   'scene create': createScene,

@@ -73,6 +73,7 @@ export interface CliContainer {
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
+  readonly bibleCandidateRepository: BibleCandidateRepository;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly novelPipeline: NovelPipeline;
@@ -229,6 +230,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     collectCardProposalsUseCase: new CollectCardProposalsUseCase(aiGateway, cardCollectRepository),
     promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(cardCandidateRepository),
     promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(bibleCandidateRepository),
+    bibleCandidateRepository,
     buildStoryCardsUseCase: new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository),
     completeStoryScenesUseCase: new CompleteStoryScenesUseCase(aiGateway, storyFeatureRepository),
     novelPipeline: new NovelPipeline({
