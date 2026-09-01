@@ -113,6 +113,8 @@ export interface OutlineBrief {
   readonly audience?: string;
   readonly pov?: PointOfView;
   readonly targetWordCount?: number;
+  readonly chapterCount?: number;
+  readonly scenesPerChapter?: number;
   readonly concept?: string;
   readonly description?: string;
   readonly tags: readonly string[];
@@ -166,6 +168,8 @@ export function toOutlineBrief(project: StoryboardProject): OutlineBrief {
     audience: setting?.audience,
     pov: setting?.pov,
     targetWordCount: setting?.targetWordCount,
+    chapterCount: setting?.chapterCount,
+    scenesPerChapter: setting?.scenesPerChapter,
     concept: setting?.concept,
     description: setting?.description,
     tags: setting?.tags ?? [],

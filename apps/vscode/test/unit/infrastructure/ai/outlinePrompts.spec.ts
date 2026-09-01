@@ -33,6 +33,24 @@ const characters: readonly OutlineCharacterBrief[] = [
   { id: "jihoon", name: "지훈" }
 ]
 
+describe("chapter structure demand", () => {
+  it("orders the exact chapter and scene counts when the contract sets them", () => {
+    const structured: OutlineBrief = { ...brief, chapterCount: 8, scenesPerChapter: 4 }
+    const artifact = ChapterPlanPrompt.build(structured, synopsis, characters)
+
+    expect(artifact.system).toContain("장(chapter)은 정확히 8개")
+    expect(artifact.system).toContain("각 장의 씬(scene)은 정확히 4개")
+    expect(artifact.user).toContain("8장, 장당 4씬")
+  })
+
+  it("says nothing about counts when the contract leaves them out", () => {
+    const artifact = ChapterPlanPrompt.build(brief, synopsis, characters)
+
+    expect(artifact.system).not.toContain("정확히")
+    expect(artifact.user).not.toContain("구성:")
+  })
+})
+
 describe("OutlineSynopsisPrompt", () => {
   it("includes contract fields in the user block", () => {
     const artifact = OutlineSynopsisPrompt.build(brief, "generic")
