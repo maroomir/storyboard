@@ -24,8 +24,6 @@ const editorOnlyCommands = new Set([
 const pendingVerbs = new Set([
   'storyboard.character.rename',
   'storyboard.background.rename',
-  'storyboard.cards.migrateTextToList',
-  'storyboard.scene.migrate',
   'storyboard.draft.augmentSelection',
   'storyboard.draft.editSelection',
   'storyboard.draft.condense',
@@ -33,6 +31,8 @@ const pendingVerbs = new Set([
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.cards.migrateTextToList': 'cards migrate',
+  'storyboard.scene.migrate': 'scene migrate',
   'storyboard.scene.generateAllSeeds': 'scene seeds',
   'storyboard.scene.completeStory': 'scene complete',
   'storyboard.cards.buildFromScenes': 'cards build',
