@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import * as esbuild from 'esbuild';
 
+import { aliasesFromTsconfig } from '../../scripts/aliases.mjs';
+
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 
 // Bundling (rather than tsc emit) lets every consumer of @storyboard/story-format read the package
@@ -23,11 +25,5 @@ await esbuild.build({
   sourcemap: true,
   target: 'node20',
   banner: { js: '#!/usr/bin/env node' },
-  alias: {
-    '@storyboard/story-engine': path.join(packageRoot, '../../packages/story-engine/src/index.ts'),
-    '@storyboard/story-format': path.join(packageRoot, '../../packages/story-format/src/index.ts'),
-    '@storyboard/story-ai': path.join(packageRoot, '../../packages/story-ai/src/index.ts'),
-    '@storyboard/story-pipeline': path.join(packageRoot, '../../packages/story-pipeline/src/index.ts'),
-    '@storyboard/story-git': path.join(packageRoot, '../../packages/story-git/src/index.ts'),
-  },
+  alias: aliasesFromTsconfig(path.join(packageRoot, 'tsconfig.json')),
 });
