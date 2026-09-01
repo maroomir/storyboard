@@ -8,6 +8,7 @@ export interface ParsedArguments {
 // `scene generate --json 01-a` would lose the scene and silently leave JSON mode off.
 const booleanFlags = new Set([
   'all',
+  'dry-run',
   'force',
   'help',
   'json',

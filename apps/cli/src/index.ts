@@ -18,6 +18,10 @@ Commands
   scene generate --all         초안이 없거나 입력이 바뀐 씬만 생성합니다 (--force 미지원)
   scene revise <stem>          기존 초안을 검수하고 재작성합니다
   scene draft <stem>           초안 파일 경로를 출력합니다
+  card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
+  card promote                 초안에서 추출한 카드 후보를 반영합니다 (--dry-run)
+  bible promote                초안에서 추출한 설정 후보를 정전에 반영합니다 (--dry-run)
+  apikey set <provider>        API 키를 stdin 으로 받아 저장합니다 (빈 입력이면 삭제)
   outline generate             시놉시스와 챕터 계획을 만듭니다 (--force 로 덮어쓰기)
   novel generate               기획부터 원고 조립까지 한 번에 돌립니다
   manuscript assemble          draft/ 를 원고로 조립합니다
@@ -30,6 +34,7 @@ Flags
   --model <name>               그 프로바이더의 모델
   --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
   --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
+  --dry-run                    반영하지 않고 대상만 보고합니다
   --json                       결과를 JSON 으로 stdout 에 출력합니다
   --verbose                    진행 로그를 stderr 에 출력합니다
   --version, --help
@@ -80,7 +85,11 @@ async function main(argv: readonly string[]): Promise<number> {
 
   const workspacePath = resolve(flagString(args.flags, 'workspace') ?? process.cwd());
 
-  if (!existsSync(join(workspacePath, '.storyboard', 'project.json'))) {
+  // Storing a key is machine-wide, not workspace work — requiring a project here would make an
+  // agent cd into a novel just to authenticate.
+  const needsWorkspace = verb !== 'apikey set';
+
+  if (needsWorkspace && !existsSync(join(workspacePath, '.storyboard', 'project.json'))) {
     process.stderr.write(
       `Storyboard 워크스페이스가 아닙니다: ${workspacePath}\n` +
         '.storyboard/project.json 이 있는 디렉터리에서 실행하거나 --workspace 로 지정해 주세요.\n',

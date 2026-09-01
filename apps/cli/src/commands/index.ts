@@ -6,6 +6,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-engine';
 
+import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
 import { parseSceneFileName } from '@storyboard/story-format';
 
 import type { CliContainer } from '../container';
@@ -206,6 +207,124 @@ const showDraftPath: CommandHandler = async ({ container, args }) => {
   };
 };
 
+// An unattended run has nobody to pick from a list, so promotion applies everything the prepare
+// step judged new. `--dry-run` is how an agent inspects first.
+const promoteCards: CommandHandler = async ({ container, args }) => {
+  const prepared = await container.promoteCardCandidatesUseCase.prepare(container.workspaceRoot);
+
+  if (prepared.kind !== 'ready') {
+    return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
+  }
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: `승격 후보 ${prepared.items.length}건`, data: prepared.items };
+  }
+
+  const result = await container.promoteCardCandidatesUseCase.promote(
+    container.workspaceRoot,
+    prepared.items,
+  );
+
+  return {
+    ok: result.kind === 'promoted',
+    message:
+      result.kind === 'promoted'
+        ? `카드 ${result.updatedCardCount}개를 갱신했습니다.`
+        : '카드를 저장하지 못했습니다.',
+    data: result,
+  };
+};
+
+const promoteBible: CommandHandler = async ({ container, args }) => {
+  const prepared = await container.promoteBibleCandidatesUseCase.prepare(container.workspaceRoot);
+
+  if (prepared.kind !== 'ready') {
+    return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
+  }
+
+  if (flagBoolean(args.flags, 'dry-run')) {
+    return { ok: true, message: `승격 후보 ${prepared.facts.length}건`, data: prepared.facts };
+  }
+
+  await container.promoteBibleCandidatesUseCase.promote(container.workspaceRoot, prepared.facts);
+  return {
+    ok: true,
+    message: `정전에 ${prepared.facts.length}건을 반영했습니다.`,
+    data: prepared.facts,
+  };
+};
+
+// Read-only: an agent uses this to decide whether a card is worth creating, so it never writes.
+const recommendCards: CommandHandler = async ({ container, args }) => {
+  const category = args.positionals[0];
+
+  if (category !== 'character' && category !== 'background') {
+    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  }
+
+  const result = await container.recommendCardsUseCase.execute({
+    category,
+    workspaceRoot: container.workspaceRoot,
+  });
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: result.kind === 'cancelled' ? '취소했습니다.' : result.message,
+      data: result,
+    };
+  }
+
+  return result.kind === 'no_sources'
+    ? { ok: true, message: '훑을 씬이나 초안이 없습니다.', data: [] }
+    : {
+        ok: true,
+        message: `카드가 없는 ${category} ${result.recommendations.length}건`,
+        data: result.recommendations,
+      };
+};
+
+// SECURITY: the key is read from stdin, never from argv — an API key on a command line lands in
+// the shell history and in the process list for every user on the machine.
+const setApiKey: CommandHandler = async ({ container, args }) => {
+  const provider = args.positionals[0];
+
+  if (provider === undefined || !aiProviderIds.includes(provider as AiProviderId)) {
+    return {
+      ok: false,
+      message: `프로바이더를 지정해 주세요: ${aiProviderIds.join(', ')}`,
+    };
+  }
+
+  const key = (await readStdin()).trim();
+
+  if (key.length === 0) {
+    await container.secretStore.deleteApiKey(provider as AiProviderId);
+    return { ok: true, message: `${provider} API 키를 지웠습니다.` };
+  }
+
+  await container.secretStore.setApiKey(provider as AiProviderId, key);
+  return { ok: true, message: `${provider} API 키를 저장했습니다.` };
+};
+
+async function readStdin(): Promise<string> {
+  if (process.stdin.isTTY) {
+    process.stderr.write('키를 입력하고 Ctrl-D 를 누르세요: ');
+  }
+
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+function describeNothingToPromote(kind: 'no_candidates' | 'no_new_candidates'): string {
+  return kind === 'no_candidates' ? '승격할 후보가 없습니다.' : '후보가 모두 이미 반영돼 있습니다.';
+}
+
 export const commands: Readonly<Record<string, CommandHandler>> = {
   'scene generate': generateScene,
   'scene revise': reviseScene,
@@ -215,4 +334,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'manuscript assemble': assembleManuscript,
   'manuscript review': reviewManuscript,
   'manuscript summaries': summarizeChapters,
+  'card recommend': recommendCards,
+  'card promote': promoteCards,
+  'bible promote': promoteBible,
+  'apikey set': setApiKey,
 };
