@@ -1,46 +1,49 @@
-import { useMemo } from "react"
-import type React from "react"
+import { useMemo } from 'react';
+import type React from 'react';
 
 import {
   buildCharacterRosterLookup,
-  resolveCharacterDisplayName
-} from "@webview/lib/characterRosterLookup"
-import type { CharacterRelation, CharacterRole, CharacterRosterEntry } from "@webview/lib/types"
+  resolveCharacterDisplayName,
+} from '@webview/lib/characterRosterLookup';
+import type { CharacterRelation, CharacterRole, CharacterRosterEntry } from '@webview/lib/types';
 
-const VIEW_WIDTH = 420
-const VIEW_HEIGHT = 280
-const CENTER_X = VIEW_WIDTH / 2
-const CENTER_Y = VIEW_HEIGHT / 2
-const ORBIT_RADIUS = 96
+const VIEW_WIDTH = 420;
+const VIEW_HEIGHT = 280;
+const CENTER_X = VIEW_WIDTH / 2;
+const CENTER_Y = VIEW_HEIGHT / 2;
+const ORBIT_RADIUS = 96;
 
-const CENTER_NODE_W = 108
-const CENTER_NODE_H = 54
-const TARGET_NODE_W = 92
-const TARGET_NODE_H = 44
+const CENTER_NODE_W = 108;
+const CENTER_NODE_H = 54;
+const TARGET_NODE_W = 92;
+const TARGET_NODE_H = 44;
 
-const EDGE_GRADIENT_START = "#d97706"
-const EDGE_GRADIENT_END = "#0d9488"
+const EDGE_GRADIENT_START = '#d97706';
+const EDGE_GRADIENT_END = '#0d9488';
 
-const roleAccent: Record<CharacterRole, { readonly stroke: string; readonly fill: string; readonly glow: string }> = {
+const roleAccent: Record<
+  CharacterRole,
+  { readonly stroke: string; readonly fill: string; readonly glow: string }
+> = {
   main: {
-    stroke: "#f59e0b",
-    fill: "rgba(245, 158, 11, 0.18)",
-    glow: "rgba(251, 191, 36, 0.45)"
+    stroke: '#f59e0b',
+    fill: 'rgba(245, 158, 11, 0.18)',
+    glow: 'rgba(251, 191, 36, 0.45)',
   },
   supporting: {
-    stroke: "#94a3b8",
-    fill: "rgba(148, 163, 184, 0.16)",
-    glow: "rgba(148, 163, 184, 0.35)"
+    stroke: '#94a3b8',
+    fill: 'rgba(148, 163, 184, 0.16)',
+    glow: 'rgba(148, 163, 184, 0.35)',
   },
   extra: {
-    stroke: "#737373",
-    fill: "rgba(115, 115, 115, 0.14)",
-    glow: "rgba(163, 163, 163, 0.25)"
-  }
-}
+    stroke: '#737373',
+    fill: 'rgba(115, 115, 115, 0.14)',
+    glow: 'rgba(163, 163, 163, 0.25)',
+  },
+};
 
 function shortenLabel(value: string, maxLength: number): string {
-  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 }
 
 function shortenLineSegment(
@@ -49,40 +52,45 @@ function shortenLineSegment(
   x2: number,
   y2: number,
   insetStart: number,
-  insetEnd: number
-): { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number } | undefined {
-  const dx = x2 - x1
-  const dy = y2 - y1
-  const length = Math.hypot(dx, dy)
+  insetEnd: number,
+):
+  | { readonly x1: number; readonly y1: number; readonly x2: number; readonly y2: number }
+  | undefined {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const length = Math.hypot(dx, dy);
 
   if (length < insetStart + insetEnd + 4) {
-    return undefined
+    return undefined;
   }
 
-  const ux = dx / length
-  const uy = dy / length
+  const ux = dx / length;
+  const uy = dy / length;
 
   return {
     x1: x1 + ux * insetStart,
     y1: y1 + uy * insetStart,
     x2: x2 - ux * insetEnd,
-    y2: y2 - uy * insetEnd
-  }
+    y2: y2 - uy * insetEnd,
+  };
 }
 
-function relationNodeStyle(role: CharacterRole | undefined, isCenter: boolean): {
-  readonly stroke: string
-  readonly fill: string
-  readonly glow?: string
+function relationNodeStyle(
+  role: CharacterRole | undefined,
+  isCenter: boolean,
+): {
+  readonly stroke: string;
+  readonly fill: string;
+  readonly glow?: string;
 } {
   if (role) {
-    return roleAccent[role]
+    return roleAccent[role];
   }
 
   return {
-    stroke: isCenter ? "var(--vscode-focusBorder)" : "var(--vscode-panel-border)",
-    fill: isCenter ? "rgba(255, 255, 255, 0.06)" : "rgba(255, 255, 255, 0.04)"
-  }
+    stroke: isCenter ? 'var(--vscode-focusBorder)' : 'var(--vscode-panel-border)',
+    fill: isCenter ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.04)',
+  };
 }
 
 function RelationNode({
@@ -93,20 +101,20 @@ function RelationNode({
   name,
   subtitle,
   role,
-  isCenter
+  isCenter,
 }: {
-  readonly x: number
-  readonly y: number
-  readonly width: number
-  readonly height: number
-  readonly name: string
-  readonly subtitle?: string
-  readonly role?: CharacterRole
-  readonly isCenter: boolean
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly name: string;
+  readonly subtitle?: string;
+  readonly role?: CharacterRole;
+  readonly isCenter: boolean;
 }): React.ReactElement {
-  const halfW = width / 2
-  const halfH = height / 2
-  const style = relationNodeStyle(role, isCenter)
+  const halfW = width / 2;
+  const halfH = height / 2;
+  const style = relationNodeStyle(role, isCenter);
 
   return (
     <g transform={`translate(${x},${y})`}>
@@ -139,61 +147,79 @@ function RelationNode({
         rx={11}
         fill="rgba(255,255,255,0.05)"
       />
-      <text x={0} y={subtitle ? -4 : 1} textAnchor="middle" fill="var(--vscode-foreground)" fontSize={isCenter ? 13 : 12} fontWeight={700}>
+      <text
+        x={0}
+        y={subtitle ? -4 : 1}
+        textAnchor="middle"
+        fill="var(--vscode-foreground)"
+        fontSize={isCenter ? 13 : 12}
+        fontWeight={700}
+      >
         {shortenLabel(name, isCenter ? 12 : 10)}
       </text>
       {subtitle ? (
-        <text x={0} y={12} textAnchor="middle" fill="var(--vscode-descriptionForeground)" fontSize={9}>
+        <text
+          x={0}
+          y={12}
+          textAnchor="middle"
+          fill="var(--vscode-descriptionForeground)"
+          fontSize={9}
+        >
           {shortenLabel(subtitle, 14)}
         </text>
       ) : null}
     </g>
-  )
+  );
 }
 
 export function CharacterRelationPreview({
   characterName,
   characterRole,
   characterRoster = [],
-  relations
+  relations,
 }: {
-  readonly characterName: string
-  readonly characterRole?: CharacterRole
-  readonly characterRoster?: readonly CharacterRosterEntry[]
-  readonly relations: readonly CharacterRelation[]
+  readonly characterName: string;
+  readonly characterRole?: CharacterRole;
+  readonly characterRoster?: readonly CharacterRosterEntry[];
+  readonly relations: readonly CharacterRelation[];
 }): React.ReactElement {
-  const rosterLookup = useMemo(() => buildCharacterRosterLookup(characterRoster), [characterRoster])
+  const rosterLookup = useMemo(
+    () => buildCharacterRosterLookup(characterRoster),
+    [characterRoster],
+  );
 
   const linkedRelations = relations.filter(
-    (relation) => relation.target.trim().length > 0 && relation.type.trim().length > 0
-  )
+    (relation) => relation.target.trim().length > 0 && relation.type.trim().length > 0,
+  );
 
   if (linkedRelations.length === 0) {
     return (
       <p className="m-0 rounded-xl border border-dashed border-sb-border/80 bg-[var(--vscode-editor-background)]/40 px-3 py-4 text-center text-sm text-sb-fg-muted">
         관계가 없습니다. target과 type을 추가하면 미리보기가 표시됩니다.
       </p>
-    )
+    );
   }
 
   const targets = linkedRelations.map((relation, index) => {
-    const angle = (index / linkedRelations.length) * Math.PI * 2 - Math.PI / 2
-    const resolved = resolveCharacterDisplayName(relation.target, rosterLookup)
+    const angle = (index / linkedRelations.length) * Math.PI * 2 - Math.PI / 2;
+    const resolved = resolveCharacterDisplayName(relation.target, rosterLookup);
 
     return {
       relation,
       resolved,
       x: CENTER_X + Math.cos(angle) * ORBIT_RADIUS,
-      y: CENTER_Y + Math.sin(angle) * ORBIT_RADIUS
-    }
-  })
+      y: CENTER_Y + Math.sin(angle) * ORBIT_RADIUS,
+    };
+  });
 
-  const centerInset = Math.max(CENTER_NODE_W, CENTER_NODE_H) * 0.42
-  const targetInset = Math.max(TARGET_NODE_W, TARGET_NODE_H) * 0.42
+  const centerInset = Math.max(CENTER_NODE_W, CENTER_NODE_H) * 0.42;
+  const targetInset = Math.max(TARGET_NODE_W, TARGET_NODE_H) * 0.42;
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="m-0 text-xs font-medium uppercase tracking-wide text-sb-fg-muted">Relation preview</p>
+      <p className="m-0 text-xs font-medium uppercase tracking-wide text-sb-fg-muted">
+        Relation preview
+      </p>
       <svg
         viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
         className="h-auto w-full overflow-hidden rounded-xl border border-sb-border/90 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_32px_rgba(0,0,0,0.22)]"
@@ -206,13 +232,21 @@ export function CharacterRelationPreview({
             <stop offset="55%" stopColor="rgba(13, 148, 136, 0.08)" />
             <stop offset="100%" stopColor="rgba(0, 0, 0, 0.18)" />
           </radialGradient>
-          <marker id="relation-preview-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <marker
+            id="relation-preview-arrow"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="6"
+            markerHeight="6"
+            orient="auto"
+          >
             <path d="M 0 0 L 10 5 L 0 10 z" fill={EDGE_GRADIENT_END} opacity="0.9" />
           </marker>
           {targets.map(({ x, y }, index) => {
-            const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset)
+            const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset);
             if (segment == null) {
-              return null
+              return null;
             }
 
             return (
@@ -228,11 +262,17 @@ export function CharacterRelationPreview({
                 <stop offset="0%" stopColor={EDGE_GRADIENT_START} stopOpacity={0.95} />
                 <stop offset="100%" stopColor={EDGE_GRADIENT_END} stopOpacity={0.95} />
               </linearGradient>
-            )
+            );
           })}
         </defs>
 
-        <rect x={0} y={0} width={VIEW_WIDTH} height={VIEW_HEIGHT} fill="url(#relation-preview-bg)" />
+        <rect
+          x={0}
+          y={0}
+          width={VIEW_WIDTH}
+          height={VIEW_HEIGHT}
+          fill="url(#relation-preview-bg)"
+        />
         <rect
           x={8}
           y={8}
@@ -254,15 +294,15 @@ export function CharacterRelationPreview({
         />
 
         {targets.map(({ relation, resolved, x, y }, index) => {
-          const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset)
+          const segment = shortenLineSegment(CENTER_X, CENTER_Y, x, y, centerInset, targetInset);
           if (segment == null) {
-            return null
+            return null;
           }
 
-          const labelX = (segment.x1 + segment.x2) / 2
-          const labelY = (segment.y1 + segment.y2) / 2
-          const label = shortenLabel(relation.type, 10)
-          const labelWidth = Math.max(label.length * 7 + 14, 34)
+          const labelX = (segment.x1 + segment.x2) / 2;
+          const labelY = (segment.y1 + segment.y2) / 2;
+          const label = shortenLabel(relation.type, 10);
+          const labelWidth = Math.max(label.length * 7 + 14, 34);
 
           return (
             <g key={`relation-edge-${index}`}>
@@ -298,7 +338,7 @@ export function CharacterRelationPreview({
                 {label}
               </text>
             </g>
-          )
+          );
         })}
 
         <RelationNode
@@ -319,12 +359,12 @@ export function CharacterRelationPreview({
             width={TARGET_NODE_W}
             height={TARGET_NODE_H}
             name={resolved.displayName}
-            subtitle={resolved.isKnown ? undefined : "미등록"}
+            subtitle={resolved.isKnown ? undefined : '미등록'}
             role={resolved.role}
             isCenter={false}
           />
         ))}
       </svg>
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState } from 'react';
 
-import { Button } from "../ui/Button"
-import { IconButton } from "../ui/IconButton"
-import { SectionHeader } from "../ui/SectionHeader"
-import { StatusPill } from "./SettingsPrimitives"
+import { Button } from '../ui/Button';
+import { IconButton } from '../ui/IconButton';
+import { SectionHeader } from '../ui/SectionHeader';
+import { StatusPill } from './SettingsPrimitives';
 import {
   AI_PROVIDER_IDS,
   formatDefaultProviderSummary,
@@ -15,48 +15,62 @@ import {
   type AiProviderId,
   type AiTaskName,
   type SettingsReadSnapshot,
-  type TaskCatalogItem
-} from "./settingsSnapshot"
-import { sbInlineSelectClass, sbInputClass, sectionCardClass } from "./settingsStyles"
+  type TaskCatalogItem,
+} from './settingsSnapshot';
+import { sbInlineSelectClass, sbInputClass, sectionCardClass } from './settingsStyles';
 
 export function TaskAssignmentsSection({
   snapshot,
   callRpc,
-  onRpcError
+  onRpcError,
 }: {
-  readonly snapshot: SettingsReadSnapshot
-  readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>
-  readonly onRpcError: (message: string) => void
+  readonly snapshot: SettingsReadSnapshot;
+  readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
+  readonly onRpcError: (message: string) => void;
 }): React.ReactElement {
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
-  const [pickerQuery, setPickerQuery] = useState("")
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
 
-  const overrides = useMemo(() => listTaskOverrides(snapshot), [snapshot])
+  const overrides = useMemo(() => listTaskOverrides(snapshot), [snapshot]);
   const addableTasks = useMemo(
-    () => snapshot.taskCatalog.filter((task) => !hasTaskOverride(snapshot, task.name) && task.status === "wired"),
-    [snapshot]
-  )
-  const matchedTasks = useMemo(() => filterTasksByQuery(addableTasks, pickerQuery), [addableTasks, pickerQuery])
+    () =>
+      snapshot.taskCatalog.filter(
+        (task) => !hasTaskOverride(snapshot, task.name) && task.status === 'wired',
+      ),
+    [snapshot],
+  );
+  const matchedTasks = useMemo(
+    () => filterTasksByQuery(addableTasks, pickerQuery),
+    [addableTasks, pickerQuery],
+  );
 
-  const plannedCount = snapshot.taskCatalog.filter((task) => task.status === "planned").length
-  const defaultSummary = formatDefaultProviderSummary(snapshot)
+  const plannedCount = snapshot.taskCatalog.filter((task) => task.status === 'planned').length;
+  const defaultSummary = formatDefaultProviderSummary(snapshot);
 
-  const saveTaskAi = (taskName: AiTaskName, providerId: AiProviderId | null, model: string | null): void => {
-    void callRpc("settings.updateTaskAiConfig", { taskName, providerId, model }).catch((error: unknown) => {
-      onRpcError(error instanceof Error ? error.message : "태스크 오버라이드를 저장하지 못했습니다.")
-    })
-  }
+  const saveTaskAi = (
+    taskName: AiTaskName,
+    providerId: AiProviderId | null,
+    model: string | null,
+  ): void => {
+    void callRpc('settings.updateTaskAiConfig', { taskName, providerId, model }).catch(
+      (error: unknown) => {
+        onRpcError(
+          error instanceof Error ? error.message : '태스크 오버라이드를 저장하지 못했습니다.',
+        );
+      },
+    );
+  };
 
   const closePicker = (): void => {
-    setIsPickerOpen(false)
-    setPickerQuery("")
-  }
+    setIsPickerOpen(false);
+    setPickerQuery('');
+  };
 
   const addOverride = (taskName: AiTaskName): void => {
-    const providerId = snapshot.defaultProvider
-    saveTaskAi(taskName, providerId, pickModelForTaskProvider(snapshot, providerId, null))
-    closePicker()
-  }
+    const providerId = snapshot.defaultProvider;
+    saveTaskAi(taskName, providerId, pickModelForTaskProvider(snapshot, providerId, null));
+    closePicker();
+  };
 
   return (
     <section className={sectionCardClass} aria-label="태스크 오버라이드">
@@ -77,7 +91,12 @@ export function TaskAssignmentsSection({
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {overrides.map((override) => (
-            <OverrideRow key={override.task.name} override={override} snapshot={snapshot} onSave={saveTaskAi} />
+            <OverrideRow
+              key={override.task.name}
+              override={override}
+              snapshot={snapshot}
+              onSave={saveTaskAi}
+            />
           ))}
         </ul>
       )}
@@ -106,7 +125,9 @@ export function TaskAssignmentsSection({
                     onClick={() => addOverride(task.name)}
                   >
                     <span className="text-sm text-sb-fg">{task.label}</span>
-                    <span className="text-xs text-sb-fg-muted">현재 {formatResolvedTaskAi(snapshot, task.name)}</span>
+                    <span className="text-xs text-sb-fg-muted">
+                      현재 {formatResolvedTaskAi(snapshot, task.name)}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -123,24 +144,30 @@ export function TaskAssignmentsSection({
       )}
 
       {plannedCount > 0 ? (
-        <p className="m-0 text-xs text-sb-fg-muted">Phase 6 예정 {plannedCount}개는 아직 오버라이드할 수 없습니다.</p>
+        <p className="m-0 text-xs text-sb-fg-muted">
+          Phase 6 예정 {plannedCount}개는 아직 오버라이드할 수 없습니다.
+        </p>
       ) : null}
     </section>
-  )
+  );
 }
 
 function OverrideRow({
   override,
   snapshot,
-  onSave
+  onSave,
 }: {
-  readonly override: TaskOverride
-  readonly snapshot: SettingsReadSnapshot
-  readonly onSave: (taskName: AiTaskName, providerId: AiProviderId | null, model: string | null) => void
+  readonly override: TaskOverride;
+  readonly snapshot: SettingsReadSnapshot;
+  readonly onSave: (
+    taskName: AiTaskName,
+    providerId: AiProviderId | null,
+    model: string | null,
+  ) => void;
 }): React.ReactElement {
-  const { task, providerId, model } = override
-  const isPlanned = task.status === "planned"
-  const modelValue = pickModelForTaskProvider(snapshot, providerId, model)
+  const { task, providerId, model } = override;
+  const isPlanned = task.status === 'planned';
+  const modelValue = pickModelForTaskProvider(snapshot, providerId, model);
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-sb-border border-l-2 border-l-sb-accent-background bg-sb-bg-widget/60 px-3 py-2">
@@ -149,7 +176,9 @@ function OverrideRow({
           <span>{task.label}</span>
           {isPlanned ? <StatusPill tone="warning">Phase 6 예정</StatusPill> : null}
         </div>
-        <p className="m-0 text-xs text-sb-fg-muted">기본값: {formatDefaultProviderSummary(snapshot)}</p>
+        <p className="m-0 text-xs text-sb-fg-muted">
+          기본값: {formatDefaultProviderSummary(snapshot)}
+        </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <select
@@ -158,12 +187,16 @@ function OverrideRow({
           value={providerId}
           disabled={isPlanned}
           onChange={(event) => {
-            const nextProviderId = event.target.value
+            const nextProviderId = event.target.value;
             if (!isAiProviderId(nextProviderId)) {
-              return
+              return;
             }
 
-            onSave(task.name, nextProviderId, pickModelForTaskProvider(snapshot, nextProviderId, model))
+            onSave(
+              task.name,
+              nextProviderId,
+              pickModelForTaskProvider(snapshot, nextProviderId, model),
+            );
           }}
         >
           {AI_PROVIDER_IDS.map((id) => (
@@ -178,12 +211,12 @@ function OverrideRow({
           value={modelValue}
           disabled={isPlanned}
           onChange={(event) => {
-            const model = event.target.value
+            const model = event.target.value;
             if (model.length === 0) {
-              return
+              return;
             }
 
-            onSave(task.name, providerId, model)
+            onSave(task.name, providerId, model);
           }}
         >
           {snapshot.modelCatalog[providerId].map((option) => (
@@ -199,35 +232,39 @@ function OverrideRow({
         />
       </div>
     </li>
-  )
+  );
 }
 
 interface TaskOverride {
-  readonly task: TaskCatalogItem
-  readonly providerId: AiProviderId
-  readonly model: string | null
+  readonly task: TaskCatalogItem;
+  readonly providerId: AiProviderId;
+  readonly model: string | null;
 }
 
 function listTaskOverrides(snapshot: SettingsReadSnapshot): readonly TaskOverride[] {
-  const overrides: TaskOverride[] = []
+  const overrides: TaskOverride[] = [];
 
   for (const task of snapshot.taskCatalog) {
-    const assigned = snapshot.taskAssignments[task.name]
+    const assigned = snapshot.taskAssignments[task.name];
     if (assigned?.providerId != null) {
-      overrides.push({ task, providerId: assigned.providerId, model: assigned.model })
+      overrides.push({ task, providerId: assigned.providerId, model: assigned.model });
     }
   }
 
-  return overrides
+  return overrides;
 }
 
-function filterTasksByQuery(tasks: readonly TaskCatalogItem[], query: string): readonly TaskCatalogItem[] {
-  const normalized = query.trim().toLowerCase()
+function filterTasksByQuery(
+  tasks: readonly TaskCatalogItem[],
+  query: string,
+): readonly TaskCatalogItem[] {
+  const normalized = query.trim().toLowerCase();
   if (normalized.length === 0) {
-    return tasks
+    return tasks;
   }
 
   return tasks.filter(
-    (task) => task.label.toLowerCase().includes(normalized) || task.name.toLowerCase().includes(normalized)
-  )
+    (task) =>
+      task.label.toLowerCase().includes(normalized) || task.name.toLowerCase().includes(normalized),
+  );
 }

@@ -1,17 +1,17 @@
-import type React from "react"
+import type React from 'react';
 
-import { removeArrayItem, replaceArrayItem } from "@webview/lib/fieldUtils"
-import { IconButton } from "@webview/components/ui/IconButton"
-import { sbInputClass } from "@webview/components/ui/formClasses"
+import { removeArrayItem, replaceArrayItem } from '@webview/lib/fieldUtils';
+import { IconButton } from '@webview/components/ui/IconButton';
+import { sbInputClass } from '@webview/components/ui/formClasses';
 
 export function ListField({
   label,
   values,
-  onChange
+  onChange,
 }: {
-  readonly label: string
-  readonly values: readonly string[]
-  readonly onChange: (values: string[]) => void
+  readonly label: string;
+  readonly values: readonly string[];
+  readonly onChange: (values: string[]) => void;
 }): React.ReactElement {
   return (
     <fieldset className="m-0 flex min-w-0 flex-col gap-2 rounded-md border border-sb-border p-3">
@@ -23,10 +23,19 @@ export function ListField({
             value={value}
             onChange={(event) => onChange(replaceArrayItem(values, index, event.target.value))}
           />
-          <IconButton icon="remove" aria-label="삭제" onClick={() => onChange(removeArrayItem(values, index))} />
+          <IconButton
+            icon="remove"
+            aria-label="삭제"
+            onClick={() => onChange(removeArrayItem(values, index))}
+          />
         </div>
       ))}
-      <IconButton icon="add" aria-label="추가" className="self-start" onClick={() => onChange([...values, ""])} />
+      <IconButton
+        icon="add"
+        aria-label="추가"
+        className="self-start"
+        onClick={() => onChange([...values, ''])}
+      />
     </fieldset>
-  )
+  );
 }

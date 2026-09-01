@@ -1,16 +1,16 @@
-import { History, MessageSquare } from "lucide-react"
-import React from "react"
+import { History, MessageSquare } from 'lucide-react';
+import React from 'react';
 
-import type { StudioSessionSummary } from "@webview/lib/types"
-import { EmptyState } from "../ui/EmptyState"
-import { Pill } from "../ui/Pill"
+import type { StudioSessionSummary } from '@webview/lib/types';
+import { EmptyState } from '../ui/EmptyState';
+import { Pill } from '../ui/Pill';
 
 export function StudioSessionList({
   sessions,
-  onOpen
+  onOpen,
 }: {
-  readonly sessions: readonly StudioSessionSummary[]
-  readonly onOpen: (id: string) => void
+  readonly sessions: readonly StudioSessionSummary[];
+  readonly onOpen: (id: string) => void;
 }): React.ReactElement {
   if (sessions.length === 0) {
     return (
@@ -19,7 +19,7 @@ export function StudioSessionList({
         title="대화 기록"
         description="저장된 대화가 아직 없습니다. 작업을 실행하면 이곳에 기록됩니다."
       />
-    )
+    );
   }
 
   return (
@@ -40,19 +40,19 @@ export function StudioSessionList({
         </li>
       ))}
     </ol>
-  )
+  );
 }
 
 function formatSessionTimestamp(value: string): string {
-  const date = new Date(value)
+  const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return value
+    return value;
   }
 
-  const pad = (part: number): string => String(part).padStart(2, "0")
+  const pad = (part: number): string => String(part).padStart(2, '0');
 
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
-    date.getHours()
-  )}:${pad(date.getMinutes())}`
+    date.getHours(),
+  )}:${pad(date.getMinutes())}`;
 }

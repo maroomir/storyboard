@@ -1,34 +1,34 @@
-import React, { useState } from "react"
+import React, { useState } from 'react';
 
-import { SectionHeader } from "../ui/SectionHeader"
-import { StatusPill } from "./SettingsPrimitives"
+import { SectionHeader } from '../ui/SectionHeader';
+import { StatusPill } from './SettingsPrimitives';
 import {
   AI_PROVIDER_IDS,
   getProviderStatus,
   isAiProviderId,
   pickModelForTaskProvider,
-  type SettingsReadSnapshot
-} from "./settingsSnapshot"
-import { sbSelectClass, sectionCardClass } from "./settingsStyles"
+  type SettingsReadSnapshot,
+} from './settingsSnapshot';
+import { sbSelectClass, sectionCardClass } from './settingsStyles';
 
 export function DefaultProviderSection({
   snapshot,
   callRpc,
-  onRpcError
+  onRpcError,
 }: {
-  readonly snapshot: SettingsReadSnapshot
-  readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>
-  readonly onRpcError: (message: string) => void
+  readonly snapshot: SettingsReadSnapshot;
+  readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
+  readonly onRpcError: (message: string) => void;
 }): React.ReactElement {
-  const [pending, setPending] = useState(false)
-  const defaultProviderId = snapshot.defaultProvider
-  const selectedProvider = getProviderStatus(snapshot, defaultProviderId)
-  const defaultModelCatalog = snapshot.modelCatalog[defaultProviderId]
+  const [pending, setPending] = useState(false);
+  const defaultProviderId = snapshot.defaultProvider;
+  const selectedProvider = getProviderStatus(snapshot, defaultProviderId);
+  const defaultModelCatalog = snapshot.modelCatalog[defaultProviderId];
   const defaultModelSelectValue = pickModelForTaskProvider(
     snapshot,
     defaultProviderId,
-    snapshot.providerConfigs[defaultProviderId].model
-  )
+    snapshot.providerConfigs[defaultProviderId].model,
+  );
 
   return (
     <section className={sectionCardClass} aria-label="기본 AI 제공자와 모델">
@@ -47,19 +47,21 @@ export function DefaultProviderSection({
             value={defaultProviderId}
             disabled={pending}
             onChange={(event) => {
-              const providerId = event.target.value
+              const providerId = event.target.value;
               if (!isAiProviderId(providerId)) {
-                return
+                return;
               }
 
-              setPending(true)
-              void callRpc("settings.updateDefaultProvider", { providerId })
+              setPending(true);
+              void callRpc('settings.updateDefaultProvider', { providerId })
                 .catch((error: unknown) => {
-                  onRpcError(error instanceof Error ? error.message : "기본 제공자를 바꾸지 못했습니다.")
+                  onRpcError(
+                    error instanceof Error ? error.message : '기본 제공자를 바꾸지 못했습니다.',
+                  );
                 })
                 .finally(() => {
-                  setPending(false)
-                })
+                  setPending(false);
+                });
             }}
           >
             {AI_PROVIDER_IDS.map((id) => (
@@ -76,19 +78,21 @@ export function DefaultProviderSection({
             value={defaultModelSelectValue}
             disabled={pending}
             onChange={(event) => {
-              const model = event.target.value
+              const model = event.target.value;
               if (model.length === 0) {
-                return
+                return;
               }
 
-              setPending(true)
-              void callRpc("settings.updateProviderModel", { providerId: defaultProviderId, model })
+              setPending(true);
+              void callRpc('settings.updateProviderModel', { providerId: defaultProviderId, model })
                 .catch((error: unknown) => {
-                  onRpcError(error instanceof Error ? error.message : "기본 모델을 바꾸지 못했습니다.")
+                  onRpcError(
+                    error instanceof Error ? error.message : '기본 모델을 바꾸지 못했습니다.',
+                  );
                 })
                 .finally(() => {
-                  setPending(false)
-                })
+                  setPending(false);
+                });
             }}
           >
             {defaultModelCatalog.map((option) => (
@@ -100,5 +104,5 @@ export function DefaultProviderSection({
         </label>
       </div>
     </section>
-  )
+  );
 }
