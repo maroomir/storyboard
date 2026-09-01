@@ -13,8 +13,8 @@ import { registerCardDiagnosticsProvider } from '@/presentation/providers/CardDi
 import { registerCardRenameParticipant } from '@/presentation/providers/CardRenameParticipant';
 import { registerSidebarCardsProviders } from '@/presentation/providers/SidebarCardsProvider';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
 
 export class CardModule implements IApplicationModule {

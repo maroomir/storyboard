@@ -1,7 +1,11 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { orderedLayerRule, runArchitectureCheck } from '../../../scripts/architecture/runner.mjs';
+import {
+  orderedLayerRule,
+  requireAliasForEscapingImport,
+  runArchitectureCheck,
+} from '../../../scripts/architecture/runner.mjs';
 
 const PACKAGE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
@@ -19,5 +23,6 @@ function refuseDirectPipelineImport(filePath, importPath, _statement, report) {
 
 runArchitectureCheck('CLI', SOURCE_ROOT, {
   rules: [orderedLayerRule(LAYER_ORDER, SOURCE_ROOT)],
-  importRules: [refuseDirectPipelineImport],
+  importRules: [refuseDirectPipelineImport, requireAliasForEscapingImport(SOURCE_ROOT, '@/')],
+  aliases: { '@/': '@/' },
 });

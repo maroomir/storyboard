@@ -57,8 +57,8 @@ import { VscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import { VscodeWorkspaceLocator } from '@/infrastructure/vscode/workspaceLocator';
 import { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 
 export interface IPlatformServices {
   readonly aiGateway: AiGateway;

@@ -27,7 +27,7 @@ import {
   vscodeFsAdapter,
 } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { VirtualDocumentStore } from '../providers/virtualDocumentStore';
+import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 
 const CONDENSE_DRAFT_COMMAND = 'storyboard.draft.condense';
 const CONDENSE_PREVIEW_SCHEME = 'storyboard-condense';

@@ -26,7 +26,7 @@ import {
   sceneContextFileSystem,
   vscodeFsAdapter,
 } from '@/infrastructure/vscode/workspaceFsAdapters';
-import type { StudioToolDiagnostics } from '../providers/studioToolDiagnostics';
+import type { StudioToolDiagnostics } from '@/presentation/providers/studioToolDiagnostics';
 
 export interface StudioInvokeResolverDependencies {
   readonly aiGateway: AiGateway;

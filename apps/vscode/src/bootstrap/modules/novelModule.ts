@@ -9,8 +9,8 @@ import { registerGenerateSceneSeedsCommand } from '@/presentation/commands/gener
 import { registerReviewManuscriptCommand } from '@/presentation/commands/reviewManuscript';
 import { registerSummarizeChaptersCommand } from '@/presentation/commands/summarizeChapters';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
 
 export class NovelModule implements IApplicationModule {

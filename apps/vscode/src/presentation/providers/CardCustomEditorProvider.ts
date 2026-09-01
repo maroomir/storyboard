@@ -19,7 +19,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { loadCharacterRoster } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

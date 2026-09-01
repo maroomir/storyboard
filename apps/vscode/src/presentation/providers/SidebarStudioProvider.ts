@@ -10,7 +10,7 @@ import { StudioSessionRepository, type IStudioSessionRepository } from '@storybo
 import { StudioFollowUpRepository, type IStudioFollowUpRepository } from '@storyboard/story-engine';
 import { readStudioStage } from '@storyboard/story-engine';
 import type { ProposalReviewService } from './proposalReviewService';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type {
   StoryboardResponsePayload,
   StudioSessionSnapshot,
@@ -21,11 +21,11 @@ import type { AiGateway } from '@storyboard/story-engine';
 import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { CreateCardUseCase } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from './studioToolDiagnostics';
-import { createStudioCardUpdateRpcHandlers } from '../messaging/studioCardUpdateRpcHandlers';
-import { createStudioChatRpcHandlers } from '../messaging/studioChatRpcHandlers';
-import { createStudioFollowUpRpcHandlers } from '../messaging/studioFollowUpRpcHandlers';
-import { createStudioProposalRpcHandlers } from '../messaging/studioProposalRpcHandlers';
-import { createStudioSessionRpcHandlers } from '../messaging/studioSessionRpcHandlers';
+import { createStudioCardUpdateRpcHandlers } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
+import { createStudioChatRpcHandlers } from '@/presentation/messaging/studioChatRpcHandlers';
+import { createStudioFollowUpRpcHandlers } from '@/presentation/messaging/studioFollowUpRpcHandlers';
+import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
+import { createStudioSessionRpcHandlers } from '@/presentation/messaging/studioSessionRpcHandlers';
 import { computeStudioTarget } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 

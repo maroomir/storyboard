@@ -16,8 +16,8 @@ import { registerInlineCompletionProvider } from '@/presentation/providers/Inlin
 import { registerSidebarScenesProvider } from '@/presentation/providers/SidebarScenesProvider';
 import { registerSlopDiagnosticsProvider } from '@/presentation/providers/SlopDiagnosticsProvider';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
 
 export class DraftModule implements IApplicationModule {

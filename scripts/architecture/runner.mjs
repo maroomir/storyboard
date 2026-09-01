@@ -7,6 +7,30 @@ import ts from 'typescript';
 // Every app and the engine used to carry its own copy of this walk. The rules differ per package;
 // the walk does not, and four copies had already drifted (only one resolved the `@/` alias).
 
+export function isWithin(filePath, directory) {
+  const relative = path.relative(directory, filePath);
+  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
+}
+
+// An import that climbs out of its own folder must go through the project's alias. Relative chains
+// break the moment a file moves, and they are what the alias exists to replace. An escape that
+// lands outside the source root (a manifest, say) is none of this rule's business.
+export function requireAliasForEscapingImport(sourceRoot, alias) {
+  return (filePath, importPath, _statement, report) => {
+    if (!importPath.startsWith('../')) {
+      return;
+    }
+
+    const target = path.resolve(path.dirname(filePath), importPath);
+
+    if (!isWithin(target, sourceRoot)) {
+      return;
+    }
+
+    report(`Relative import escapes its folder; use ${alias}`, filePath, target);
+  };
+}
+
 export function collectSourceFiles(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
     return [];
