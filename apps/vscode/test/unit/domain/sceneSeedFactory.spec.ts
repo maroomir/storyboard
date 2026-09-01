@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSceneSeeds } from "@storyboard/story-engine"
-import { parseScene } from '@storyboard/story-format';
+import { extractSceneNarrativeSource, parseScene } from '@storyboard/story-format';
 import type { ChapterPlan } from '@storyboard/story-format';
 const plan: ChapterPlan = {
   version: "1.0.0",
@@ -129,6 +129,15 @@ describe("buildSceneSeeds", () => {
     expect(rumor.frontmatter.location).toBeUndefined()
     expect(rumor.body).not.toContain("[감정 변화]")
     expect(rumor.body).not.toContain("[회수할 복선]")
+  })
+
+  it("leaves summary empty so the plan sections survive as the narrative source", () => {
+    const [first] = buildSceneSeeds(plan, 2)
+    const scene = parseScene(first.content, first.fileName)
+
+    expect(scene.frontmatter.summary).toBeUndefined()
+    // 안내 문구를 채워 두면 이 함수가 그 한 줄만 골라 계획 블록을 전부 버린다.
+    expect(extractSceneNarrativeSource(scene.body)).toContain("주인공 소개")
   })
 
   it("derives fallback slugs and keeps them unique", () => {
