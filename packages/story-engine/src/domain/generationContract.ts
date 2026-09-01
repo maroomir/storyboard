@@ -70,11 +70,14 @@ function findWarnings(setting: ProjectSetting | undefined): string[] {
 }
 
 function findProhibitionConflicts(setting: ProjectSetting): string[] {
+  // project.json is hand-editable, so an omitted array reaches here as undefined despite the type.
   const allowedTerms = new Set(
-    [setting.genre, ...setting.tags].filter(isNonEmpty).map((term) => term.trim().toLowerCase()),
+    [setting.genre, ...(setting.tags ?? [])]
+      .filter(isNonEmpty)
+      .map((term) => term.trim().toLowerCase()),
   );
 
-  return setting.prohibitions
+  return (setting.prohibitions ?? [])
     .filter(isNonEmpty)
     .filter((prohibition) => allowedTerms.has(prohibition.trim().toLowerCase()));
 }

@@ -1,6 +1,8 @@
 import type { StoryboardAIService } from '@storyboard/story-ai';
+import { validateGenerationContract } from '@storyboard/story-engine';
 import {
   STORYBOARD_RELATIVE_PATHS,
+  contractFieldLabels,
   assembleManuscript,
   extractDraftBody,
   parseSynopsisMarkdown,
@@ -9,6 +11,7 @@ import {
   toOutlineBrief,
   type ManuscriptDraftEntry,
   type OutlineCharacterBrief,
+  type StoryboardProject,
 } from '@storyboard/story-format';
 
 import type { ContentService } from '../content/contentService';
@@ -50,6 +53,25 @@ function writeFailure(outcome: MutateOutcome): PipelineResult | undefined {
   return undefined;
 }
 
+// The outline is the one generation whose entire input is the project contract, so an unfilled
+// contract cannot be recovered from later — it produces a plausible synopsis about nothing. Desktop
+// and the CLI both refuse here; the bot must refuse identically or the three apps disagree about
+// what a valid project is.
+function contractFailure(project: StoryboardProject): PipelineResult | undefined {
+  const missing = validateGenerationContract(project.setting).missing;
+
+  if (missing.length === 0) {
+    return undefined;
+  }
+
+  const labels = missing.map((key) => contractFieldLabels[key]).join(', ');
+  return {
+    success: false,
+    failureReason: 'provider_error',
+    errorMessage: `작품 계약이 비어 있습니다: ${labels}. /set 으로 채운 뒤 다시 실행해주세요.`,
+  };
+}
+
 export interface WorkspacePipelineOptions {
   readonly store: WorkspaceStore;
   readonly content: ContentService;
@@ -62,6 +84,10 @@ export class OutlinePipeline implements IPipeline {
   public async run(job: GenJob, context: PipelineContext): Promise<PipelineResult> {
     await context.reportStage('프로젝트 읽기');
     const project = await this.options.store.readProject();
+    const contractFailed = contractFailure(project.value);
+    if (contractFailed !== undefined) {
+      return contractFailed;
+    }
     const brief = toOutlineBrief(project.value);
 
     await context.reportStage('시놉시스 생성');
@@ -98,6 +124,10 @@ export class PlanPipeline implements IPipeline {
     }
 
     const project = await this.options.store.readProject();
+    const contractFailed = contractFailure(project.value);
+    if (contractFailed !== undefined) {
+      return contractFailed;
+    }
     const brief = toOutlineBrief(project.value);
     const synopsis = parseSynopsisMarkdown(synopsisFile.value);
     const characters = await this.loadCharacterBriefs();
