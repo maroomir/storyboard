@@ -1,5 +1,7 @@
 import {
   AiGateway,
+  ApplyDraftFormatUseCase,
+  AugmentDraftUseCase,
   AssembleManuscriptUseCase,
   BibleCandidateRepository,
   BuildStoryCardsUseCase,
@@ -60,6 +62,8 @@ export interface CliContainer {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
+  readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
+  readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
@@ -206,6 +210,8 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     generateOutlineUseCase: new GenerateOutlineUseCase(aiGateway, outlineRepository),
     reviseDraftUseCase,
     reviseAfterGenerateGate,
+    applyDraftFormatUseCase: new ApplyDraftFormatUseCase(fileSystem, aiGateway, logger, generator),
+    augmentDraftUseCase: new AugmentDraftUseCase(fileSystem, aiGateway, logger, configBridge),
     assembleManuscriptUseCase,
     exportManuscriptUseCase: new ExportManuscriptUseCase(manuscriptAssemblyRepository),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase(

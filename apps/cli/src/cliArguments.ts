@@ -25,6 +25,8 @@ const valueFlags = new Set([
   'revise-iterations',
   'title',
   'language',
+  'out',
+  'instruction',
 ]);
 
 export interface ParseFailure {
