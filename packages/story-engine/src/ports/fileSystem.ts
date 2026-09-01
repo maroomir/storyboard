@@ -12,6 +12,7 @@ export interface IFileSystem {
   listFileNames(uri: StoryUri): Promise<readonly string[]>;
   readDirectory(uri: StoryUri): Promise<FileSystemDirectoryEntry[]>;
   delete(uri: StoryUri): Promise<void>;
-  // Epoch milliseconds of the last write, or 0 when the host cannot tell. Sidebars sort by it.
+  // Epoch milliseconds of the last write, or 0 when the file is missing or the host cannot tell.
+  // Never throws — a caller distinguishes "missing" by the 0, not by catching.
   modifiedTime(uri: StoryUri): Promise<number>;
 }
