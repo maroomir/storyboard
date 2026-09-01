@@ -1,29 +1,29 @@
 import type { StoryboardAiService } from '@storyboard/story-ai';
 
-import type { ContentService } from '../content/contentService';
-import type { ISendMessage } from '../chat/ports';
-import type { BotDatabase } from '../store/db';
-import { TelegramProgressReporter } from '../telegram/jobProgressReporter';
-import type { Logger } from '../util/logger';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
-import { DraftPipeline, type DraftGenerator } from '../gen/draftPipeline';
-import { ReviewPipeline, type DraftReviser } from '../gen/reviewPipeline';
-import { JobExecutor } from '../gen/jobExecutor';
-import { JobManager, type IEnqueueJob } from '../gen/jobManager';
-import { JobQueue } from '../gen/jobQueue';
-import { JobRecoveryService } from '../gen/jobRecovery';
-import { JobRunControl } from '../gen/jobRunControl';
-import { JobStateMachine } from '../gen/jobStateMachine';
-import { SqliteJobStore } from '../gen/jobStore';
-import { JobWorker } from '../gen/jobWorker';
-import { PipelineRunner } from '../gen/pipelineRunner';
-import type { GenJob, JobsConfig } from '../gen/types';
+import type { ContentService } from '@/content/contentService';
+import type { ISendMessage } from '@/chat/ports';
+import type { BotDatabase } from '@/store/db';
+import { TelegramProgressReporter } from '@/telegram/jobProgressReporter';
+import type { Logger } from '@/util/logger';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
+import { DraftPipeline, type DraftGenerator } from '@/gen/draftPipeline';
+import { ReviewPipeline, type DraftReviser } from '@/gen/reviewPipeline';
+import { JobExecutor } from '@/gen/jobExecutor';
+import { JobManager, type IEnqueueJob } from '@/gen/jobManager';
+import { JobQueue } from '@/gen/jobQueue';
+import { JobRecoveryService } from '@/gen/jobRecovery';
+import { JobRunControl } from '@/gen/jobRunControl';
+import { JobStateMachine } from '@/gen/jobStateMachine';
+import { SqliteJobStore } from '@/gen/jobStore';
+import { JobWorker } from '@/gen/jobWorker';
+import { PipelineRunner } from '@/gen/pipelineRunner';
+import type { GenJob, JobsConfig } from '@/gen/types';
 import {
   KindDispatchPipeline,
   ManuscriptPipeline,
   OutlinePipeline,
   PlanPipeline,
-} from '../gen/workspacePipelines';
+} from '@/gen/workspacePipelines';
 
 export interface CreateGenJobsOptions {
   readonly db: BotDatabase;

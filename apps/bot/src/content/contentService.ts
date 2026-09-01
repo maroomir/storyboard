@@ -6,20 +6,20 @@ import {
   type StoryboardCard,
 } from '@storyboard/story-format';
 
-import type { MutateGate } from '../workspace/mutateGate';
+import type { MutateGate } from '@/workspace/mutateGate';
 import type {
   MutateOutcome,
   WorkspaceDeletion,
   WorkspacePlan,
   WorkspaceWrite,
-} from '../workspace/workspaceChanges';
-import { hashContent } from '../workspace/workspaceStore';
+} from '@/workspace/workspaceChanges';
+import { hashContent } from '@/workspace/workspaceStore';
 import type {
   CardSummary,
   ReadFile,
   SceneSummary,
   WorkspaceStore,
-} from '../workspace/workspaceStore';
+} from '@/workspace/workspaceStore';
 import { planCardListUpdate, planCardRename, type CardListField } from './cardEditor';
 
 export type CardKind = 'character' | 'background';

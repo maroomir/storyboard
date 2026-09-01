@@ -1,7 +1,7 @@
-import type { InlineKeyboard, ISendMessage, SentMessageRef } from '../chat/ports';
-import type { IJobProgressListener } from '../gen/progress';
-import type { GenJob, PipelineResult } from '../gen/types';
-import type { Logger } from '../util/logger';
+import type { InlineKeyboard, ISendMessage, SentMessageRef } from '@/chat/ports';
+import type { IJobProgressListener } from '@/gen/progress';
+import type { GenJob, PipelineResult } from '@/gen/types';
+import type { Logger } from '@/util/logger';
 
 export interface TelegramProgressReporterOptions {
   readonly sender: ISendMessage;

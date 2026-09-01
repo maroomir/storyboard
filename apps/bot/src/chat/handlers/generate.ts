@@ -1,11 +1,11 @@
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
-import { DuplicateJobError, type IEnqueueJob } from '../../gen/jobManager';
-import { defaultJobClass, type JobKind, type JobSpec } from '../../gen/types';
-import { hashContent } from '../../workspace/workspaceStore';
-import type { ChatContext } from '../context';
-import type { IncomingUpdate } from '../ports';
-import { commandArgs, isCommand, type ICommandHandler } from '../registry';
+import { DuplicateJobError, type IEnqueueJob } from '@/gen/jobManager';
+import { defaultJobClass, type JobKind, type JobSpec } from '@/gen/types';
+import { hashContent } from '@/workspace/workspaceStore';
+import type { ChatContext } from '@/chat/context';
+import type { IncomingUpdate } from '@/chat/ports';
+import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 
 const KIND_LABELS: Record<JobKind, string> = {
   draft: '초안 생성',

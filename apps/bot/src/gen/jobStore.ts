@@ -12,7 +12,7 @@ import type {
 } from './types';
 import { buildTargetKey, EMPTY_JOB_USAGE } from './types';
 import type { IAccessJobStore, StateTransition, UsageLedgerEntry } from './jobStorePort';
-import type { BotDatabase } from '../store/db';
+import type { BotDatabase } from '@/store/db';
 
 interface GenJobRow {
   readonly id: number;

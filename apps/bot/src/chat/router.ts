@@ -1,4 +1,4 @@
-import type { Logger } from '../util/logger';
+import type { Logger } from '@/util/logger';
 import type { ChatContext } from './context';
 import type { IHandleUpdate, IncomingUpdate, ISendMessage } from './ports';
 import { handleJobCallback } from './handlers/generate';

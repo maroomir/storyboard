@@ -1,8 +1,8 @@
 import { extractDraftBody } from '@storyboard/story-format';
 
-import type { ChatContext } from '../context';
-import { commandArgs, isCommand, type ICommandHandler } from '../registry';
-import type { IncomingUpdate, InlineKeyboard } from '../ports';
+import type { ChatContext } from '@/chat/context';
+import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
+import type { IncomingUpdate, InlineKeyboard } from '@/chat/ports';
 import { enqueueDraftJob } from './generate';
 
 function handler(

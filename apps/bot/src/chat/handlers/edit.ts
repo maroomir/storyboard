@@ -1,9 +1,9 @@
-import { CardEditError, cardListFields, isCardListField } from '../../content/cardEditor';
-import type { MutateOutcome } from '../../workspace/workspaceChanges';
-import { describeStale } from '../../workspace/workspaceChanges';
-import type { ChatContext } from '../context';
-import type { IncomingUpdate } from '../ports';
-import { commandArgs, isCommand, type ICommandHandler } from '../registry';
+import { CardEditError, cardListFields, isCardListField } from '@/content/cardEditor';
+import type { MutateOutcome } from '@/workspace/workspaceChanges';
+import { describeStale } from '@/workspace/workspaceChanges';
+import type { ChatContext } from '@/chat/context';
+import type { IncomingUpdate } from '@/chat/ports';
+import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 
 const USAGE = [
   '사용법:',

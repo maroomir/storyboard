@@ -4,11 +4,11 @@ import {
   initializeWorkspaceRepository,
 } from '@storyboard/story-git';
 
-import { collectPermissionWarnings, type ProvidersConfig } from '../../config/config';
-import { collectCliProviderCommands, findExecutableOnPath } from '../../config/environment';
-import type { ChatContext } from '../context';
-import type { IncomingUpdate } from '../ports';
-import { commandArgs, isCommand, type ICommandHandler } from '../registry';
+import { collectPermissionWarnings, type ProvidersConfig } from '@/config/config';
+import { collectCliProviderCommands, findExecutableOnPath } from '@/config/environment';
+import type { ChatContext } from '@/chat/context';
+import type { IncomingUpdate } from '@/chat/ports';
+import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 import { describeOutcome } from './edit';
 
 // Everything the report needs that does not live in the workspace: the bot's own config file and

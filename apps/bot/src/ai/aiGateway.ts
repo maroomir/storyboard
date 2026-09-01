@@ -9,7 +9,7 @@ import {
   type StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
 
-import type { DraftConfig, ProvidersConfig } from '../config/config';
+import type { DraftConfig, ProvidersConfig } from '@/config/config';
 
 // The extension backs these ports with VSCode SecretStorage and workspace configuration. Headless,
 // they are backed by the bot's own config file, so both apps drive the identical AI engine.

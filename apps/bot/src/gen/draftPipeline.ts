@@ -1,8 +1,8 @@
 import { draftRelativePath } from '@storyboard/story-format';
 
-import type { ContentService } from '../content/contentService';
-import type { MutateOutcome } from '../workspace/workspaceChanges';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { MutateOutcome } from '@/workspace/workspaceChanges';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 import type { IPipeline, PipelineContext } from './pipelineRunner';
 import type { GenJob, PipelineResult } from './types';
 

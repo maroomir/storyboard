@@ -19,9 +19,9 @@ import {
 
 import { BotFileSystem } from './engineAdapters';
 
-import type { ContentService } from '../content/contentService';
-import type { MutateOutcome } from '../workspace/workspaceChanges';
-import type { WorkspaceStore } from '../workspace/workspaceStore';
+import type { ContentService } from '@/content/contentService';
+import type { MutateOutcome } from '@/workspace/workspaceChanges';
+import type { WorkspaceStore } from '@/workspace/workspaceStore';
 import type { IPipeline, PipelineContext } from './pipelineRunner';
 import type { GenJob, PipelineResult } from './types';
 

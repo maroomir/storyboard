@@ -1,5 +1,5 @@
 import type { IAccessJobStore } from './jobStorePort';
-import { JobAbortedError } from '../provider/abortableCliRunner';
+import { JobAbortedError } from '@/provider/abortableCliRunner';
 import type { IJobProgressListener } from './progress';
 import { NullProgressListener } from './progress';
 import type { GenJob, PipelineResult } from './types';

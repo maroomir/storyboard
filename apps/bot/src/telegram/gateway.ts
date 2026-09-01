@@ -1,6 +1,6 @@
 import { Bot, GrammyError, InputFile } from 'grammy';
 
-import { splitText, TELEGRAM_MAX_MESSAGE_LENGTH } from '../chat/messageSplit';
+import { splitText, TELEGRAM_MAX_MESSAGE_LENGTH } from '@/chat/messageSplit';
 import type {
   BotCommand,
   IHandleUpdate,
@@ -10,8 +10,8 @@ import type {
   MessageView,
   OutgoingDocument,
   SentMessageRef,
-} from '../chat/ports';
-import type { Logger } from '../util/logger';
+} from '@/chat/ports';
+import type { Logger } from '@/util/logger';
 import type { IAllowlist } from './allowlist';
 
 const MAX_RETRY_ATTEMPTS = 3;
