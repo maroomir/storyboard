@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { AiProviderRegistry, ConfigBridge, createAiProviderRegistry, DraftRevisionPrompt, GrammarCheckPrompt, InlineCompletionPrompt, OutlineSynopsisPrompt, SecretStore, StoryboardAIService } from '@storyboard/story-ai';
+import { AiProviderRegistry, ConfigBridge, createAiProviderRegistry, DraftRevisionPrompt, GrammarCheckPrompt, InlineCompletionPrompt, OutlineSynopsisPrompt, SecretStore, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiGenerateRequest, AiGenerateResponse, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 const stubResponse: AiGenerateResponse = { text: "[]", providerId: "openai" }
 
@@ -35,7 +35,7 @@ function createRegistry(): AiProviderRegistry {
 }
 
 interface ServiceHarness {
-  readonly service: StoryboardAIService
+  readonly service: StoryboardAiService
   readonly generateSpy: ReturnType<typeof vi.fn>
 }
 
@@ -44,7 +44,7 @@ function createHarness(): ServiceHarness {
   const generateSpy = vi.fn(async (): Promise<AiGenerateResponse> => stubResponse)
   vi.spyOn(registry, "generate").mockImplementation(generateSpy)
 
-  return { service: new StoryboardAIService(registry), generateSpy }
+  return { service: new StoryboardAiService(registry), generateSpy }
 }
 
 function lastRequest(generateSpy: ReturnType<typeof vi.fn>): AiGenerateRequest {
@@ -53,7 +53,7 @@ function lastRequest(generateSpy: ReturnType<typeof vi.fn>): AiGenerateRequest {
   return call![0] as AiGenerateRequest
 }
 
-describe("StoryboardAIService temperature/maxTokens contract", () => {
+describe("StoryboardAiService temperature/maxTokens contract", () => {
   let harness: ServiceHarness
 
   beforeEach(() => {

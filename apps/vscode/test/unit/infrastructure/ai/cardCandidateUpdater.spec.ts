@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { updateCardCandidatesFromDraft } from "@storyboard/story-engine"
-import type { CardCandidateExtraction, StoryboardAIService } from '@storyboard/story-ai';
+import type { CardCandidateExtraction, StoryboardAiService } from '@storyboard/story-ai';
 import type { CardCandidateFileSystem } from "@storyboard/story-engine"
 import type { CharacterCard } from '@storyboard/story-format';
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
@@ -25,7 +25,7 @@ class CaptureFileSystem implements CardCandidateFileSystem {
 function createService(
   byName: Readonly<Record<string, CardCandidateExtraction>>,
   verify?: (statements: readonly string[]) => number[] | null
-): Pick<StoryboardAIService, "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"> {
+): Pick<StoryboardAiService, "extractCardCandidatesByCharacter" | "verifyCardCandidatesByCharacter"> {
   return {
     extractCardCandidatesByCharacter: async (_draftBody, names) =>
       Object.fromEntries(names.map((name) => [name, byName[name] ?? { attributes: [], relations: [], description: [], voice: [], desire: [] }])),

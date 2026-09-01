@@ -13,6 +13,6 @@ export interface GenerateTextOptions {
 
 export type OnUsageRecordCallback = (record: UsageRecord) => void;
 
-export interface StoryboardAIServiceOptions {
+export interface StoryboardAiServiceOptions {
   readonly onUsage?: OnUsageRecordCallback;
 }

@@ -31,7 +31,7 @@ vi.mock("@storyboard/story-engine", async (importOriginal) => ({
 }))
 vi.mock("@storyboard/story-ai", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-ai")>()),
-  StoryboardAIService: class {
+  StoryboardAiService: class {
     generateOutlineSynopsis = async (): Promise<unknown> => ({
       logline: "",
       genrePromise: "",

@@ -2,7 +2,7 @@ import type { StoryUri } from '@storyboard/story-format';
 import { readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
 import { parseBulletList } from '@storyboard/story-ai';
-import type { StoryboardAIService, UsageAttribution } from '@storyboard/story-ai';
+import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 import { reconcileCharacterTraits } from '../domain/traitsProcessor';
 interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
@@ -17,7 +17,7 @@ export interface UpdateCharacterTraitsFromDraftInput {
   readonly sceneStem?: string;
   readonly draftBody: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
-  readonly aiService: Pick<StoryboardAIService, 'extractTraitsByCharacter'>;
+  readonly aiService: Pick<StoryboardAiService, 'extractTraitsByCharacter'>;
   readonly fileSystem: CardFileSystem;
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
   readonly recentDialogueLimit?: number;
@@ -233,7 +233,7 @@ export function applyTraitsFromExtractedBullets(input: {
   readonly resolveCharacterCardUri: (card: CharacterCard) => StoryUri;
   readonly recentDialogueLimit?: number;
 }): Promise<TraitsUpdateSummary> {
-  const fakeService: Pick<StoryboardAIService, 'extractTraitsByCharacter'> = {
+  const fakeService: Pick<StoryboardAiService, 'extractTraitsByCharacter'> = {
     extractTraitsByCharacter: async (_draft, names) => {
       const result: Record<string, string[]> = {};
 

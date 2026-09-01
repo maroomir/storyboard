@@ -1,7 +1,7 @@
 import {
   ConfigBridge,
   SecretStore,
-  StoryboardAIService,
+  StoryboardAiService,
   createAiProviderRegistry,
   type CliRunner,
   type OnUsageRecordCallback,
@@ -85,7 +85,7 @@ export interface AiGatewayOptions {
 }
 
 export interface AiEngine {
-  readonly service: StoryboardAIService;
+  readonly service: StoryboardAiService;
   readonly registry: ReturnType<typeof createAiProviderRegistry>;
   readonly configBridge: ConfigBridge;
 }
@@ -100,12 +100,12 @@ export function createAiEngine(options: AiGatewayOptions): AiEngine {
   });
 
   const service = options.onUsage
-    ? new StoryboardAIService(registry, { onUsage: options.onUsage })
-    : new StoryboardAIService(registry);
+    ? new StoryboardAiService(registry, { onUsage: options.onUsage })
+    : new StoryboardAiService(registry);
 
   return { service, registry, configBridge };
 }
 
-export function createAiService(options: AiGatewayOptions): StoryboardAIService {
+export function createAiService(options: AiGatewayOptions): StoryboardAiService {
   return createAiEngine(options).service;
 }

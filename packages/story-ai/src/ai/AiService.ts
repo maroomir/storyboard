@@ -30,7 +30,7 @@ import {
 } from './StudioAgentService';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import type { StudioCardSeed } from '../contracts/studioCardSeed';
-import type { GenerateTextOptions, StoryboardAIServiceOptions } from './aiServiceTypes';
+import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '../contracts/aiTypes';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
@@ -68,7 +68,7 @@ export type {
 export type {
   GenerateTextOptions,
   OnUsageRecordCallback,
-  StoryboardAIServiceOptions,
+  StoryboardAiServiceOptions,
 } from './aiServiceTypes';
 
 export type {
@@ -78,7 +78,7 @@ export type {
 } from './CardAiService';
 export type { DraftExpansionContext, InlineCompletionContext } from './DraftAiService';
 
-export class StoryboardAIService {
+export class StoryboardAiService {
   private readonly cardAiService: CardAiService;
   private readonly draftAiService: DraftAiService;
   private readonly gateway: AiTextGateway;
@@ -87,7 +87,7 @@ export class StoryboardAIService {
 
   public constructor(
     registry: AiProviderRegistry,
-    serviceOptions: StoryboardAIServiceOptions = {},
+    serviceOptions: StoryboardAiServiceOptions = {},
   ) {
     this.gateway = new AiTextGateway(registry, serviceOptions);
     this.cardAiService = new CardAiService(this.gateway);

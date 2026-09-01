@@ -14,7 +14,7 @@ export interface UsageSummary {
   readonly print: () => void
 }
 
-// NOTE: 헤드리스 하네스 전용 — StoryboardAIService의 onUsage 콜백을 받아 태스크별 토큰을 집계하고
+// NOTE: 헤드리스 하네스 전용 — StoryboardAiService의 onUsage 콜백을 받아 태스크별 토큰을 집계하고
 // 실행 종료 시 요약을 출력한다. codex는 가격표가 비어 있어 costUsd가 0이므로 토큰 중심으로 보여주고
 // 비용은 0보다 클 때만 덧붙인다.
 export function createUsageSummary(): UsageSummary {

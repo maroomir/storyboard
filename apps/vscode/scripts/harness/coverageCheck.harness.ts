@@ -4,7 +4,7 @@ import path from "node:path"
 import { test } from "vitest"
 
 import { buildSceneContext, readSceneFile } from "@storyboard/story-format"
-import { StoryboardAIService } from "@storyboard/story-ai"
+import { StoryboardAiService } from "@storyboard/story-ai"
 import type { AiProviderRegistry } from "@storyboard/story-ai"
 import { ClaudeCodeProvider } from "@storyboard/story-ai"
 import { CodexProvider } from "@storyboard/story-ai"
@@ -64,7 +64,7 @@ test("check scene coverage of current draft", async () => {
   const scene = await readSceneFile(path.join(workspace, "scene", sceneFileName), fileSystem, sceneFileName)
   const context = await buildSceneContext(paths, scene, fileSystem)
   const usage = createUsageSummary()
-  const aiService = new StoryboardAIService(createRegistry(), { onUsage: usage.onUsage })
+  const aiService = new StoryboardAiService(createRegistry(), { onUsage: usage.onUsage })
   const attribution = { primary: { kind: "scene" as const, id: scene.stem } }
 
   try {

@@ -7,7 +7,7 @@ import {
 import type {
   AiProviderRegistry,
   DraftRevisionInput,
-  StoryboardAIService,
+  StoryboardAiService,
   StyleDirective,
   UsageAttribution,
 } from '@storyboard/story-ai';
@@ -42,7 +42,7 @@ export interface ReviseLoopContext {
 }
 
 export interface ReviseLoopOptions {
-  readonly aiService: StoryboardAIService;
+  readonly aiService: StoryboardAiService;
   readonly registry: AiProviderRegistry;
   readonly attribution: UsageAttribution;
   readonly ctx: ReviseLoopContext;
@@ -70,8 +70,8 @@ export interface ReviseLoopResult {
 }
 
 function buildRevisionPasses(
-  continuityIssues: Awaited<ReturnType<StoryboardAIService['checkContinuity']>>,
-  critiqueIssues: Awaited<ReturnType<StoryboardAIService['critiqueDraft']>>,
+  continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>,
+  critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>,
   characters: readonly ReviseLoopCharacter[],
   globalInstructions: readonly string[],
 ): readonly (readonly string[])[] {
@@ -92,7 +92,7 @@ function buildRevisionPasses(
 }
 
 interface ReviseSession {
-  readonly aiService: StoryboardAIService;
+  readonly aiService: StoryboardAiService;
   readonly registry: AiProviderRegistry;
   readonly attribution: UsageAttribution;
   readonly ctx: ReviseLoopContext;
@@ -102,8 +102,8 @@ async function runReviewChecks(
   session: ReviseSession,
   body: string,
 ): Promise<{
-  continuityIssues: Awaited<ReturnType<StoryboardAIService['checkContinuity']>>;
-  critiqueIssues: Awaited<ReturnType<StoryboardAIService['critiqueDraft']>>;
+  continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>;
+  critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>;
 }> {
   const { aiService, registry, attribution, ctx } = session;
 
@@ -131,8 +131,8 @@ async function runReviewChecks(
 }
 
 function evaluateReviewResult(
-  continuityIssues: Awaited<ReturnType<StoryboardAIService['checkContinuity']>>,
-  critiqueIssues: Awaited<ReturnType<StoryboardAIService['critiqueDraft']>>,
+  continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>,
+  critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>,
   threshold: number,
 ): { blocking: number; instructions: string[]; passed: boolean } {
   const blocking = countBlockingIssues(continuityIssues, critiqueIssues);
