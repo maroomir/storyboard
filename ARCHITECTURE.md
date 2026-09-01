@@ -278,7 +278,7 @@ description:
   - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
   - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
   - 적재 전 자기검증: `storyboard.draft.verifyCardCandidates` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
-  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`apps/vscode/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
+  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-engine/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
   - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.3 `.png`
@@ -812,7 +812,7 @@ ReviewIssue {
 - 상세 마이그레이션 계획은 로컬 `.doc/plan/storyboard-plan.md`(비추적)에 있다.
 - 기존 Picktion 저장소 (`maroomir/picktion`)는 그대로 유지(archive 예정)되며, 본 컨셉/계획 문서는 새 `maroomir/storyboard` 저장소의 출발점이 된다.
 
-## 12. Extension Host Implementation Structure
+## 12. Implementation Structure
 
 ### 12.0 모노레포 배치
 
@@ -832,22 +832,36 @@ CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test
 
 ### 12.1 계층 구조
 
-`apps/vscode/src`는 기능을 유지한 채 클래스 중심 모듈러 모놀리스로의 구조 전환을 완료했다. legacy 디렉토리(`core`/`files`/`services`/`commands`/`providers`/`messaging`/`utils`/`constants`)는 모두 목표 계층으로 이동했고, layer 방향은 `apps/vscode/scripts/check-architecture.mjs`가 CI에서 강제한다.
+내부 계층은 `packages/story-engine`으로 옮겨 세 앱이 공유한다. 앱에 남은 것은 호스트 어댑터와 그
+호스트의 입출력뿐이다.
 
 ```text
-extension.ts
-  -> bootstrap/                 # StoryboardApplication, lifecycle, feature module composition
-       -> presentation/         # commands, providers, messaging(웹뷰 RPC) — VS Code 입출력 전용
-       -> application/          # use cases, pipelines, ports (GenerateDraftUseCase, NovelPipeline …)
-       -> infrastructure/       # persistence·ai·vscode·settings·secrets 어댑터/repository
-       -> domain/               # runtime-agnostic policies·codecs·value types (vscode 없음)
-       -> shared/               # 다른 내부 레이어를 import하지 않는 contracts/value types
+packages/story-engine/src/
+  application/    # use cases, NovelPipeline, ports 소비
+  persistence/    # repository 구현 (IFileSystem 위)
+  domain/         # runtime-agnostic policies·codecs·value types
+  shared/         # 다른 내부 레이어를 import하지 않는 contracts
+  ports/          # IFileSystem, WorkspaceLocator, UsageSink, StoryboardLogger
+  paths/          # StoryUri, NodeUri, 프로젝트 경로 규약
+
+apps/vscode/src/extension.ts
+  -> bootstrap/                 # StoryboardApplication, lifecycle, DI 그래프
+       -> presentation/         # commands, providers, messaging(웹뷰 RPC)
+       -> infrastructure/       # VSCode 어댑터: fs·settings·secrets·usage
 ```
 
-- 의존 방향: `bootstrap → {presentation, infrastructure} → application → domain → shared`. checker가 역방향 import·순환·허용 영역 밖 `vscode` import를 차단한다.
-- `extension.ts`는 `bootstrap` 외 내부 구현을 import하지 않는다(fan-out 1).
+- 앱 의존 방향: `bootstrap → {presentation, infrastructure} → @storyboard/story-engine`.
+- `extension.ts`는 `vscode`와 `bootstrap` 외에는 import하지 않는다(fan-out 1).
 - `StoryboardApplication`은 Platform·Project·Card·Draft·Novel·Workbench module의 초기화와 역순 종료를 소유한다.
 - 상태·I/O·수명주기를 가진 협력자는 생성자 주입으로 연결하고, `DisposableStore`가 feature module의 reverse dispose를 담당한다.
-- `shared`·`domain`은 상위 계층과 `vscode`를 import하지 않는다(강제됨). `application`은 `vscode`를 type-only로만 참조한다.
-- Draft 생성은 `GenerateDraftUseCase`와 Project/Scene/Draft/Scene Cache repository를 통해 실행한다. Novel은 `NovelPipeline`, AI 전송은 `AiGateway`와 `AiTextGateway`가 담당한다.
+- 엔진은 `vscode`를 import하지 않는다(패키지 순수성 검사로 강제). 호스트 차이는 포트 구현으로만 표현한다.
+
+**검사가 실제로 강제하는 것** — 초록불을 그 이상으로 읽지 않도록 적어 둔다.
+
+- `apps/vscode`: `extension.ts`의 fan-out, `infrastructure → presentation/bootstrap` 금지, 순환 금지,
+  공유 패키지의 `vscode`·앱 import 금지, 엔진 `shared`의 자기 참조 한정.
+- `apps/bot`·`apps/cli`: 각자의 순서형 레이어 방향과 순환 금지. CLI는 `@storyboard/story-pipeline`
+  직접 import도 거부한다(생성 루프의 두 번째 사본 방지).
+- 아직 아무도 강제하지 않는 것: 엔진 내부의 `domain ← application ← persistence` 방향.
+
 - 350 LOC 초과 예외(근거 있는 유지): `packages/story-ai/src/ports/ConfigBridge.ts`·`packages/story-ai/src/ai/providers/CodexProvider.ts`(cohesive 어댑터, 함수 복잡도 낮음 — 길이만으로 분해하지 않음).
