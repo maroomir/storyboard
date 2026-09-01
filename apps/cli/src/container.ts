@@ -6,10 +6,8 @@ import {
   BibleCandidateRepository,
   BuildStoryCardsUseCase,
   CardCandidateRepository,
-  CardCollectRepository,
   CardRecommendationRepository,
   CardWriterRepository,
-  CollectCardProposalsUseCase,
   CondenseDraftUseCase,
   CompleteStoryScenesUseCase,
   CreateCardUseCase,
@@ -67,7 +65,6 @@ export interface CliContainer {
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
@@ -79,7 +76,6 @@ export interface CliContainer {
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly createCardUseCase: CreateCardUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
-  readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly bibleCandidateRepository: BibleCandidateRepository;
@@ -172,7 +168,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const novelReviewRepository = new NovelReviewRepository(fileSystem);
   const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository(fileSystem);
   const cardWriterRepository = new CardWriterRepository(fileSystem);
-  const cardCollectRepository = new CardCollectRepository(fileSystem);
   const cardCandidateRepository = new CardCandidateRepository(fileSystem, logger);
   const cardRecommendationRepository = new CardRecommendationRepository(fileSystem);
   const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
@@ -231,7 +226,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       sceneBatchRepository,
     ),
     generateOutlineUseCase: new GenerateOutlineUseCase(aiGateway, outlineRepository),
-    reviseDraftUseCase,
     reviseAfterGenerateGate,
     applyDraftFormatUseCase: new ApplyDraftFormatUseCase(fileSystem, aiGateway, logger, generator),
     augmentDraftUseCase: new AugmentDraftUseCase(fileSystem, aiGateway, logger, configBridge),
@@ -251,7 +245,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       logger,
       cardRecommendationRepository,
     ),
-    collectCardProposalsUseCase: new CollectCardProposalsUseCase(aiGateway, cardCollectRepository),
     promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(cardCandidateRepository),
     promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(bibleCandidateRepository),
     bibleCandidateRepository,
