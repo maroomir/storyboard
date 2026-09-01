@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { PromoteCardCandidatesUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { CardCandidateItem } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
@@ -26,7 +26,7 @@ function describeItem(item: CardCandidateItem): string {
 }
 
 async function runPromote(
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
   useCase: PromoteCardCandidatesUseCase,
 ): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
@@ -90,7 +90,7 @@ async function runPromote(
 }
 
 export function registerPromoteCardCandidatesCommand(dependencies: {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(promoteCommand, () =>

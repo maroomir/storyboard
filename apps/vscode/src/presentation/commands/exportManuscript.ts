@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { ExportManuscriptUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ManuscriptExportFormat } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
@@ -19,7 +19,7 @@ const exportFormatItems: ExportFormatItem[] = [
 
 export interface RegisterExportManuscriptCommandDependencies {
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function registerExportManuscriptCommand(
@@ -85,7 +85,7 @@ async function runExportManuscript(
   await vscode.window.showInformationMessage(`원고를 내보냈습니다: ${result.targetUri.fsPath}`);
 }
 
-async function reportFailure(message: string, logger: StoryboardLogger): Promise<void> {
+async function reportFailure(message: string, logger: IStoryboardLogger): Promise<void> {
   logger.error('Manuscript export failed', new Error(message));
   logger.show();
   await vscode.window.showErrorMessage(`원고 내보내기에 실패했습니다: ${message}`);

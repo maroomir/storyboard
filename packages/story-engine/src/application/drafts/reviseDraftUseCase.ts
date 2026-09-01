@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import { joinUri, type StoryboardProjectPaths } from '../../paths/projectPaths';
 import { sceneCacheFilePath } from '../../persistence/sceneCacheWorkspace';
@@ -23,7 +23,7 @@ import type { ISceneCacheRepository } from '../../ports/repositories';
 import { readProjectJson } from '../../persistence/projectJson';
 import { buildStyleDirective, formatAugmentCards, StoryboardAIService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
-import type { UsageSink } from '../../ports/usageSink';
+import type { IUsageSink } from '../../ports/usageSink';
 import {
   type DraftCandidateRejectionReason,
   resolveSceneTargetLength,
@@ -53,9 +53,9 @@ async function readContractGuidance(
 
 export interface ReviseDraftUseCaseDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
-  readonly usageSink: UsageSink;
+  readonly usageSink: IUsageSink;
   readonly fileSystem: IFileSystem;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly generator: string;
   // Rewriting the draft invalidates the body hash the scene cache recorded at generation time.
   // Without this the next generation reads the draft as somebody else's work and archives it with

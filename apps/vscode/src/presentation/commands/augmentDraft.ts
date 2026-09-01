@@ -5,7 +5,7 @@ import type {
   AugmentDraftResult,
   AugmentDraftUseCase,
 } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
@@ -22,7 +22,7 @@ const augmentPreviewScheme = 'storyboard-augment';
 
 export interface RegisterAugmentDraftCommandDependencies {
   readonly augmentDraftUseCase: AugmentDraftUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 function augmentBeforeUri(draftUri: vscode.Uri): vscode.Uri {

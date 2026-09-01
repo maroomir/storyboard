@@ -13,7 +13,7 @@ import {
 import { archiveExistingDraft, sceneContextPaths } from '@storyboard/story-engine';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '../../infrastructure/vscode/draftSceneLink';
 import {
   draftHistorySceneDirectory,
@@ -35,7 +35,7 @@ const CONDENSE_PREVIEW_SCHEME = 'storyboard-condense';
 export interface RegisterCondenseDraftCommandDependencies {
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly configBridge: ConfigBridge;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 interface CondenseTarget {
@@ -170,7 +170,7 @@ export function buildCondenseReviewLabels(
 async function archiveDraftBeforeApply(
   target: CondenseTarget,
   configBridge: ConfigBridge,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (!configBridge.isKeepDraftHistoryEnabled()) {
     return;

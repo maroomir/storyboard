@@ -43,7 +43,7 @@ import { ManuscriptAssemblyRepository } from '@storyboard/story-engine';
 import { VscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import { VscodeWorkspaceLocator } from '../../infrastructure/vscode/workspaceLocator';
 import { createUsageSink } from '../../infrastructure/ai/usageSink';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { OutputChannelLogger } from '../../infrastructure/vscode/logger';
 import { StudioChatUseCase } from '@storyboard/story-engine';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
@@ -77,7 +77,7 @@ export interface IPlatformServices {
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly studioChatUseCase: StudioChatUseCase;
   readonly novelPipeline: NovelPipeline;
   readonly novelRunStateRepository: NovelRunStateRepository;

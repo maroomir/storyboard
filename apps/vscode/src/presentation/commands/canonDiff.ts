@@ -3,7 +3,7 @@ import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
 import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '../../infrastructure/vscode/workspace';
 import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
@@ -24,7 +24,7 @@ const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {
 };
 
 export interface RegisterCanonDiffCommandDependencies {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function registerCanonDiffCommand(
@@ -77,7 +77,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
 
 async function readCandidateRecords(
   paths: StoryboardProjectPaths,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<BibleCandidateRecord[]> {
   let entries: [string, vscode.FileType][];
   try {

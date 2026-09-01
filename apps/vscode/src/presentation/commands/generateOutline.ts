@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-format';
 
@@ -9,7 +9,7 @@ const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
 
 export type RegisterGenerateOutlineCommandDependencies = {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 };
 
 export function registerGenerateOutlineCommand(
@@ -72,7 +72,7 @@ async function runWithProgress(
 
 async function reportResult(
   result: GenerateOutlineResult,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.ok) {
     const document = await vscode.workspace.openTextDocument(result.synopsisUri);

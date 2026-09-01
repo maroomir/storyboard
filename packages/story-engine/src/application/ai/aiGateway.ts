@@ -1,13 +1,13 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { StoryboardAIService } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
-import type { UsageSink } from '../../ports/usageSink';
+import type { IUsageSink } from '../../ports/usageSink';
 export class AiGateway {
   public constructor(
     private readonly providerRegistry: AiProviderRegistry,
-    private readonly usageSink: UsageSink,
-    private readonly logger: StoryboardLogger,
+    private readonly usageSink: IUsageSink,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public createService(workspaceUri: StoryUri): StoryboardAIService {

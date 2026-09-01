@@ -5,14 +5,14 @@ import type { StudioCardSeed } from '@storyboard/story-ai';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CreateCardUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 
 export interface StudioCardUpdateRpcHandlersDependencies {
   readonly aiGateway: AiGateway;
   readonly createCardUseCase: CreateCardUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
 }
 

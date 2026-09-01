@@ -7,7 +7,7 @@ import {
   validateCardRenameId
 } from "@/infrastructure/vscode/cardRenameEdit"
 import { registerCardRenameParticipant } from "@/presentation/providers/CardRenameParticipant"
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
   fireWillRenameFiles,
   FileType,
@@ -141,7 +141,7 @@ describe("registerCardRenameParticipant", () => {
       throw new Error(`unexpected read: ${uri.fsPath}`)
     }
 
-    registerCardRenameParticipant({ logger: logger as unknown as StoryboardLogger })
+    registerCardRenameParticipant({ logger: logger as unknown as IStoryboardLogger })
 
     let waitUntilPromise: Promise<StubWorkspaceEdit | undefined> | undefined
 

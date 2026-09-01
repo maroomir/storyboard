@@ -5,14 +5,14 @@ import type {
   GenerateAllDraftsSummary,
   GenerateAllDraftsUseCase,
 } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { stageProgressLabel } from './generateDraft';
 
 const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
 
 export type RegisterGenerateAllDraftsCommandDependencies = {
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 };
 
 export function registerGenerateAllDraftsCommand(
@@ -66,7 +66,7 @@ function formatProgress(event: GenerateAllDraftsProgress): string {
 
 async function reportSummary(
   summary: GenerateAllDraftsSummary,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   const parts = [
     `총 ${summary.sceneCount}개 씬 중 생성 ${summary.generated}건, 캐시 재사용 ${summary.cacheHits}건`,

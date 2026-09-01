@@ -15,7 +15,7 @@ import {
 import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { loadCharacterRoster } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
@@ -31,7 +31,7 @@ export interface CardCustomEditorDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly usageRecorder: UsageRecorder;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 const collectPreviewScheme = 'storyboard-collect';

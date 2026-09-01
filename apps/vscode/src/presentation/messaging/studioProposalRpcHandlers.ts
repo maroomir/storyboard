@@ -18,7 +18,7 @@ import {
   isSafeStudioEntityKey,
   joinUri,
 } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type {
@@ -32,7 +32,7 @@ export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;
   readonly followUpRepository: IStudioFollowUpRepository;
   readonly configBridge: Pick<ConfigBridge, 'isKeepDraftHistoryEnabled'>;
-  readonly logger: Pick<StoryboardLogger, 'warn'>;
+  readonly logger: Pick<IStoryboardLogger, 'warn'>;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly createFollowUpId: () => string;
 }

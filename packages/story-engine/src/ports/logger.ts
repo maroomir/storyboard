@@ -1,6 +1,6 @@
 // What the engine needs from a host's log sink. The extension backs it with a VSCode output
 // channel, the bot and the CLI with stderr; none of that is the engine's business.
-export interface StoryboardLogger {
+export interface IStoryboardLogger {
   info(message: string): void;
   warn(message: string): void;
   error(message: string, error?: unknown): void;

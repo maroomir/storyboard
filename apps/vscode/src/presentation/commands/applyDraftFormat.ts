@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { ApplyDraftFormatResult, ApplyDraftFormatUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
@@ -24,12 +24,12 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
 
 export interface RegisterApplyDraftFormatCommandDependencies {
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 async function reportApplyFormatFailure(
   result: Extract<ApplyDraftFormatResult, { ok: false }>,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   switch (result.kind) {
     case 'cancelled':

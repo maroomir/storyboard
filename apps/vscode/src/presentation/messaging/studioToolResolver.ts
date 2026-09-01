@@ -18,7 +18,7 @@ import {
 import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { sceneContextPaths } from '@storyboard/story-engine';
 import { readProjectJson } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
@@ -30,7 +30,7 @@ import type { StudioToolDiagnostics } from '../providers/studioToolDiagnostics';
 
 export interface StudioInvokeResolverDependencies {
   readonly aiGateway: AiGateway;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly diagnostics: StudioToolDiagnostics;
 }
 

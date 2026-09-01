@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import {
   assembleManuscript,
   type AssembledManuscript,
@@ -22,7 +22,7 @@ export interface IManuscriptAssemblyRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadAssemblySource(
     workspaceRoot: StoryUri,
-    logger: Pick<StoryboardLogger, 'warn'>,
+    logger: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptAssemblySource>;
   saveAssembly(
     workspaceRoot: StoryUri,
@@ -50,7 +50,7 @@ export type AssembleManuscriptResult =
 
 export class AssembleManuscriptUseCase {
   public constructor(
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly repository: IManuscriptAssemblyRepository,
   ) {}
 

@@ -6,7 +6,7 @@ import {
 import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { refreshStoryboardWorkspaceContext } from '../../infrastructure/vscode/storyboardWorkspaceContext';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import {
@@ -19,7 +19,7 @@ import { createDefaultProjectJson, writeProjectJson } from '@storyboard/story-en
 const initCommand = 'storyboard.init';
 
 export interface RegisterInitCommandDependencies {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function registerInitCommand(

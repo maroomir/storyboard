@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
 import { CardParseError, parseCard } from '@storyboard/story-format';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { createDiagnostic } from './diagnosticsShared';
@@ -18,7 +18,7 @@ export interface CardDiagnosticSpan {
 }
 
 export interface RegisterCardDiagnosticsProviderDependencies {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 // NOTE: 무효 카드는 씬 생성에서 조용히 탈락하므로(sceneContext), Problems 패널이 사용자에게 유일한
@@ -104,7 +104,7 @@ function createRange(span: CardDiagnosticSpan): vscode.Range {
 class CardDiagnosticsController {
   private readonly collection = vscode.languages.createDiagnosticCollection(cardSource);
 
-  public constructor(private readonly logger: StoryboardLogger) {}
+  public constructor(private readonly logger: IStoryboardLogger) {}
 
   public async validateUri(uri: vscode.Uri): Promise<void> {
     if (isIgnoredSampleCardFileName(cardFileName(uri))) {

@@ -1,6 +1,6 @@
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { WorkspaceLocator } from '../../ports/workspaceLocator';
+import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type {
   IDraftRepository,
@@ -8,7 +8,7 @@ import type {
   ISceneCacheRepository,
   ISceneRepository,
 } from '../../ports/repositories';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '../../ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '../../ai/PostGenerationUpdateManager';
@@ -28,12 +28,12 @@ export interface GenerateDraftUseCaseDependencies {
   readonly draftRepository: IDraftRepository;
   readonly fileSystem: IFileSystem;
   readonly generator: string;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly projectRepository: IProjectRepository;
   readonly sceneCacheRepository: ISceneCacheRepository;
   readonly sceneRepository: ISceneRepository;
-  readonly workspaceLocator: WorkspaceLocator;
+  readonly workspaceLocator: IWorkspaceLocator;
 }
 
 export interface GenerateDraftRequest {

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { ReviseDraftUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '../../infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
@@ -12,7 +12,7 @@ const reviseDraftCommand = 'storyboard.draft.reviseLoop';
 
 export interface RegisterReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
 }

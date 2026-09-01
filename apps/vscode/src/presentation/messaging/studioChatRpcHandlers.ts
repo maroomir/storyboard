@@ -13,7 +13,7 @@ import {
 } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
 import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
@@ -29,7 +29,7 @@ export interface StudioChatRpcHandlersDependencies {
   readonly useCase: StudioChatUseCase;
   readonly aiGateway: AiGateway;
   readonly collectUseCase: CollectCardProposalsUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly getTarget: () => Promise<StudioTarget>;

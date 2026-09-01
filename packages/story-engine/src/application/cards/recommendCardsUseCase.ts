@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import {
   buildCardRecommendations,
   type CardRecommendationAiService,
@@ -40,7 +40,7 @@ export type RecommendCardsResult =
 export class RecommendCardsUseCase {
   public constructor(
     private readonly aiGateway: ICardRecommendationAiGateway,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly repository: ICardRecommendationRepository,
   ) {}
 

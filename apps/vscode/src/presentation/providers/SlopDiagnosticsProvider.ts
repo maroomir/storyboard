@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
@@ -13,7 +13,7 @@ const slopSource = 'storyboard-slop';
 const slopDebounceMs = 700;
 
 export interface RegisterSlopDiagnosticsProviderDependencies {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function computeBodyOffset(documentText: string, body: string): number {

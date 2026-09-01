@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
 import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
 const reviewManuscriptCommand = 'storyboard.manuscript.review';
 
 export interface RegisterReviewManuscriptCommandDependencies {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
 }
 
@@ -60,7 +60,7 @@ async function runReviewManuscript(
 
 async function reportFailure(
   result: Exclude<Awaited<ReturnType<ReviewManuscriptUseCase['execute']>>, { readonly ok: true }>,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'missing_outline') {
     await vscode.window.showWarningMessage(

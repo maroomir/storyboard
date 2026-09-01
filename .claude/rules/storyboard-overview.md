@@ -38,7 +38,7 @@ graph TB
         Persistence[persistence: repositories over IFileSystem]
         Domain[domain: policies, file records]
         SharedContracts[shared: RPC and card contracts]
-        Ports[ports: IFileSystem, WorkspaceLocator, UsageSink, Logger]
+        Ports[ports: IFileSystem, IWorkspaceLocator, IUsageSink, IStoryboardLogger]
     end
 
     subgraph Apps[Host apps]

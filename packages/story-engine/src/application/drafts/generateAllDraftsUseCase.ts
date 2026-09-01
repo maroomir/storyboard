@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
@@ -44,7 +44,7 @@ export type GenerateAllDraftsOptions = {
 export class GenerateAllDraftsUseCase {
   public constructor(
     private readonly generateDraftUseCase: GenerateDraftUseCase,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly reviseAfterGenerateGate: ReviseAfterGenerateGate,
     private readonly sceneRepository: ISceneBatchRepository,
   ) {}

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 import { StudioSessionRepository, type IStudioSessionRepository } from '@storyboard/story-engine';
@@ -53,7 +53,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
     private readonly configBridge: ConfigBridge,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public resolveWebviewView(webviewView: vscode.WebviewView): void {
@@ -188,7 +188,7 @@ export function registerSidebarStudioProvider(
   createCardUseCase: CreateCardUseCase,
   reviewService: ProposalReviewService,
   configBridge: ConfigBridge,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): vscode.Disposable {
   const toolDiagnostics = new StudioToolDiagnostics();
   const provider = new SidebarStudioProvider(

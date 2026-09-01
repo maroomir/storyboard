@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { ExpandDraftResult, ExpandDraftUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
@@ -10,7 +10,7 @@ const expandDraftCommand = 'storyboard.draft.expand';
 
 export interface RegisterExpandDraftCommandDependencies {
   readonly expandDraftUseCase: ExpandDraftUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function resolveExpandRange(
@@ -103,7 +103,7 @@ async function resolveExpandTarget(
 
 async function reportExpandFailure(
   result: Extract<ExpandDraftResult, { ok: false }>,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'empty') {
     await vscode.window.showWarningMessage('확장 결과가 비어 있어 적용하지 않았습니다.');

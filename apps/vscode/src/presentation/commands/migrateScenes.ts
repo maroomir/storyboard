@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { convertLegacySceneText, isLegacySceneFileName } from '@storyboard/story-format';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
@@ -12,14 +12,14 @@ import {
 const migrateScenesCommand = 'storyboard.scene.migrate';
 
 export function registerMigrateScenesCommand(dependencies: {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(migrateScenesCommand, () =>
     runMigrate(dependencies.logger),
   );
 }
 
-async function runMigrate(logger: StoryboardLogger): Promise<void> {
+async function runMigrate(logger: IStoryboardLogger): Promise<void> {
   const workspaceFolder = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
@@ -93,7 +93,7 @@ async function listLegacySceneFileNames(sceneDirectory: vscode.Uri): Promise<str
 async function migrateOneScene(
   sceneDirectory: vscode.Uri,
   legacyFileName: string,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<string | undefined> {
   const legacyUri = vscode.Uri.joinPath(sceneDirectory, legacyFileName);
 
