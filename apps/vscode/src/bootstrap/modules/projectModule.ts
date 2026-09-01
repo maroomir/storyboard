@@ -4,8 +4,8 @@ import { registerInitCommand } from '@/presentation/commands/init';
 import { registerSetApiKeyCommand } from '@/presentation/commands/setApiKey';
 import { registerStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
 
 export class ProjectModule implements IApplicationModule {

@@ -3,8 +3,8 @@ import * as vscode from 'vscode';
 
 import { loadRelationListCharacters } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { createWebviewBridge, type StoryboardRpcHandlers } from '../messaging/bridge';
-import { createAiRpcHandlers } from '../messaging/aiRpcHandlers';
+import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';

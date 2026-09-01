@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import {
   collectSourceFiles,
   getImportPath,
+  isWithin,
   parseSourceFile,
+  requireAliasForEscapingImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
 
@@ -18,6 +20,16 @@ const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
 
 const PACKAGES_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages');
 const SHARED_PACKAGES = ['story-engine', 'story-format', 'story-ai', 'story-pipeline', 'story-git'];
+// Each package addresses its own files through a Node subpath import declared in its package.json.
+// The prefix is private to the package: reaching for another one's would bind two packages through
+// a path instead of through the entry point that is their actual contract.
+const PACKAGE_INTERNAL_PREFIXES = {
+  'story-engine': '#engine/',
+  'story-format': '#format/',
+  'story-ai': '#ai/',
+  'story-pipeline': '#pipeline/',
+  'story-git': '#git/',
+};
 const ENGINE_SHARED_ROOT = path.join(PACKAGES_ROOT, 'story-engine', 'src', 'shared');
 
 // What is left in the extension after the engine took the inner layers: infrastructure adapts
@@ -81,6 +93,12 @@ function checkSharedPackages(report, failures) {
         if (importPath.startsWith('@/') || importPath.startsWith('@webview/')) {
           failures.push(`${name} imports an app module: ${relative} -> ${importPath}`);
         }
+
+        if (importPath.startsWith('#') && !importPath.startsWith(PACKAGE_INTERNAL_PREFIXES[name])) {
+          failures.push(
+            `${name} reaches into another package's internals: ${relative} -> ${importPath}`,
+          );
+        }
       }
     }
   }
@@ -108,14 +126,9 @@ function checkEngineSharedFloor(_report, failures) {
   }
 }
 
-function isWithin(filePath, directory) {
-  const relative = path.relative(directory, filePath);
-  return relative !== '' && !relative.startsWith('..') && !path.isAbsolute(relative);
-}
-
 runArchitectureCheck('Extension', SOURCE_ROOT, {
   rules: [refuseInfrastructureReachingOutward],
-  importRules: [refuseWideExtensionEntry],
+  importRules: [refuseWideExtensionEntry, requireAliasForEscapingImport(SOURCE_ROOT, '@/')],
   aliases: { '@/': '@/' },
   extraChecks: [checkSharedPackages, checkEngineSharedFloor],
   extraSummary: () => (summary.length > 0 ? `, ${summary.join(', ')}` : ''),

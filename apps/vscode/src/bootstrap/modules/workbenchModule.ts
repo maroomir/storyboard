@@ -6,8 +6,8 @@ import { RelationGraphProvider } from '@/presentation/providers/RelationGraphPro
 import { SettingsPanelProvider } from '@/presentation/providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
 
-import { DisposableStore } from '../lifecycle/disposableStore';
-import type { IApplicationModule } from '../lifecycle/applicationModule';
+import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
+import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 import type { IPlatformServices } from './platformModule';
 
 export class WorkbenchModule implements IApplicationModule {
