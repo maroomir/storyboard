@@ -21,7 +21,8 @@ const fieldGuides: Readonly<Record<SceneStructureFieldKey, string>> = {
   conflict: '장면 안에서 맞부딪히는 욕구나 입장을 한 문장으로.',
   twist: '장면 끝에서 드러나는 전환이나 새 정보. 없으면 비워 두라.',
   emotionalShift: '장면을 지나며 인물의 상태가 어떻게 달라지는지.',
-  endState: '이 장면이 멈추는 지점. 요약의 마지막 사건을 기준으로, 다음 장면이 이어받을 자리를 한 문장으로.',
+  endState:
+    '이 장면이 멈추는 지점. 요약의 마지막 사건을 기준으로, 다음 장면이 이어받을 자리를 한 문장으로.',
   foreshadowing: '뒤에서 회수할 복선을 짧은 구 목록으로.',
   neededCanon: '이 장면이 전제하는 설정 사실을 짧은 문장 목록으로.',
 };

@@ -38,6 +38,7 @@ const valueFlags = new Set([
   'id',
   'lines',
   'to',
+  'fallback',
 ]);
 
 export interface ParseFailure {

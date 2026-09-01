@@ -17,8 +17,10 @@ const sectionListSchema = z.array(z.unknown()).optional();
 const maxItemsPerSection = 5;
 const maxItemLength = 200;
 
-
-function coerceSectionItems(raw: unknown, section: StoryStateUpdateSection): StoryStateUpdateItem[] {
+function coerceSectionItems(
+  raw: unknown,
+  section: StoryStateUpdateSection,
+): StoryStateUpdateItem[] {
   const parsed = sectionListSchema.safeParse(raw);
   if (!parsed.success || !parsed.data) {
     return [];

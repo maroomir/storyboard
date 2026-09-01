@@ -43,7 +43,12 @@ import {
   type StoryWorkspaceFolder,
   type UsageSink,
 } from '@storyboard/story-engine';
-import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
+import {
+  ConfigBridge,
+  createAiProviderRegistry,
+  SecretStore,
+  type AiProviderId,
+} from '@storyboard/story-ai';
 
 import { ConsoleLogger } from './adapters/consoleLogger';
 import { createFileConfiguration } from './adapters/fileConfiguration';
@@ -90,6 +95,7 @@ export interface CliContainerOptions {
   readonly provider?: string;
   readonly model?: string;
   readonly reviseMaxIterations?: number;
+  readonly fallbackProvider?: string;
 }
 
 // `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
@@ -135,7 +141,19 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
         configOverrides(options),
       ),
   });
-  const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
+  const aiProviderRegistry = createAiProviderRegistry({
+    secretStore,
+    configBridge,
+    // A long unattended run should finish on the second provider rather than abort halfway.
+    ...(options.fallbackProvider === undefined
+      ? {}
+      : {
+          cliUsageLimitFallback: {
+            providerId: options.fallbackProvider as AiProviderId,
+            onFallback: (message: string) => logger.warn(message),
+          },
+        }),
+  });
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.

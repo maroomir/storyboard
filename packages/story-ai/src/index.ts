@@ -45,6 +45,7 @@ export * from './ai/prompts/types';
 export * from './ai/prompts/variant';
 export * from './ai/providerRegistry';
 export * from './ai/providers/ClaudeCodeProvider';
+export * from './ai/providers/FallbackProvider';
 export * from './ai/providers/ClaudeProvider';
 export * from './ai/providers/CodexProvider';
 export * from './ai/providers/GoogleProvider';

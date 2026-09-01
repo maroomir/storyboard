@@ -30,10 +30,7 @@ import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from './prompts/sceneSectionExpansion';
-import {
-  SceneStructurePrompt,
-  type SceneStructureFieldKey,
-} from './prompts/sceneStructure';
+import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { parseJsonArray, parseJsonObject } from '../contracts/aiResponseParser';
 import {
@@ -299,10 +296,7 @@ export interface SceneStructureProposal {
   readonly neededCanon?: string[];
 }
 
-const sceneStructureListKeys: readonly SceneStructureFieldKey[] = [
-  'foreshadowing',
-  'neededCanon',
-];
+const sceneStructureListKeys: readonly SceneStructureFieldKey[] = ['foreshadowing', 'neededCanon'];
 
 function toSceneStructureProposal(
   parsed: Record<string, unknown> | null,

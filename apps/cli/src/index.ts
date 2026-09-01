@@ -57,6 +57,7 @@ Flags
   --workspace <path>           대상 워크스페이스 (기본: 현재 디렉터리)
   --provider <id>              이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)
   --model <name>               그 프로바이더의 모델
+  --fallback <id>              CLI 프로바이더가 사용 한도에 걸리면 넘어갈 프로바이더
   --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
   --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
   --out <path>                 manuscript export 의 출력 파일
@@ -106,10 +107,9 @@ async function main(argv: readonly string[]): Promise<number> {
     return 1;
   }
 
-  const providerFailure = validateProvider(
-    flagString(args.flags, 'provider'),
-    flagString(args.flags, 'model'),
-  );
+  const providerFailure =
+    validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model')) ??
+    validateFallback(flagString(args.flags, 'fallback'));
 
   if (providerFailure !== undefined) {
     process.stderr.write(`${providerFailure}\n`);
@@ -142,6 +142,9 @@ async function main(argv: readonly string[]): Promise<number> {
       ? {}
       : { model: flagString(args.flags, 'model') }),
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
+    ...(flagString(args.flags, 'fallback') === undefined
+      ? {}
+      : { fallbackProvider: flagString(args.flags, 'fallback') }),
   });
 
   const outcome = await handler({ container, args });
@@ -176,6 +179,16 @@ function validateProvider(
   }
 
   return undefined;
+}
+
+function validateFallback(provider: string | undefined): string | undefined {
+  if (provider === undefined) {
+    return undefined;
+  }
+
+  return aiProviderIds.includes(provider as AiProviderId)
+    ? undefined
+    : `알 수 없는 폴백 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
 }
 
 // NOTE: stdout carries the result and nothing else, so an agent can pipe `--json` straight into a
