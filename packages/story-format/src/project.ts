@@ -12,6 +12,13 @@ export const contractFieldKeys = ['genre', 'audience', 'pov', 'targetWordCount']
 
 export type ContractFieldKey = (typeof contractFieldKeys)[number];
 
+export const contractFieldLabels: Record<ContractFieldKey, string> = {
+  genre: '장르',
+  audience: '독자층',
+  pov: '시점',
+  targetWordCount: '목표 분량',
+};
+
 export interface ProjectEditor {
   readonly scenePrefixDigits: number;
   readonly trackDraft?: boolean;

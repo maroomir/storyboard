@@ -27,6 +27,7 @@ const DEFAULT_PROJECT = {
     genre: '판타지',
     audience: '성인',
     pov: 'third-limited',
+    targetWordCount: 120000,
     styleConstraints: [],
     qualityCriteria: [],
   },

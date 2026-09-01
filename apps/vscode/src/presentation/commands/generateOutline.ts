@@ -3,16 +3,9 @@ import * as vscode from 'vscode';
 import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/story-engine';
 import type { StoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
-import type { ContractFieldKey } from '@storyboard/story-format';
+import { contractFieldLabels } from '@storyboard/story-format';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
-
-const CONTRACT_FIELD_LABELS: Record<ContractFieldKey, string> = {
-  genre: '장르',
-  audience: '독자층',
-  pov: '시점',
-  targetWordCount: '목표 분량',
-};
 
 export type RegisterGenerateOutlineCommandDependencies = {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
@@ -92,7 +85,7 @@ async function reportResult(
 
   if (result.kind === 'missing_contract') {
     const openSettings = '설정 열기';
-    const labels = result.missing.map((key) => CONTRACT_FIELD_LABELS[key]).join(', ');
+    const labels = result.missing.map((key) => contractFieldLabels[key]).join(', ');
     const choice = await vscode.window.showWarningMessage(
       `생성 계약에 필요한 항목이 비어 있습니다: ${labels}. 설정에서 채운 뒤 다시 시도해 주세요.`,
       openSettings,
