@@ -1,3 +1,4 @@
+import type { StoryUri } from '../../paths/storyUri';
 import { z } from 'zod';
 
 import type { AiGateway } from '../ai/aiGateway';
@@ -76,7 +77,7 @@ export class BuildStoryCardsUseCase {
     private readonly repository: IStoryFeatureRepository,
   ) {}
 
-  public async execute(workspaceRoot: import('vscode').Uri): Promise<BuildStoryCardsProposal> {
+  public async execute(workspaceRoot: StoryUri): Promise<BuildStoryCardsProposal> {
     const source = await this.repository.load(workspaceRoot);
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('카드를 구성할 유효한 씬이 없습니다.');

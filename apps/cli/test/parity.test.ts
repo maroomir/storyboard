@@ -23,17 +23,12 @@ const editorOnlyCommands = new Set([
 // Verbs still to be written. This list must only ever shrink.
 const pendingVerbs = new Set([
   'storyboard.init',
-  'storyboard.apiKey.set',
   'storyboard.character.create',
   'storyboard.background.create',
-  'storyboard.character.recommend',
-  'storyboard.background.recommend',
   'storyboard.character.rename',
   'storyboard.background.rename',
   'storyboard.cards.buildFromScenes',
-  'storyboard.cards.promoteCandidates',
   'storyboard.cards.migrateTextToList',
-  'storyboard.bible.promoteCandidates',
   'storyboard.bible.canonDiff',
   'storyboard.scene.create',
   'storyboard.scene.generateAllSeeds',
@@ -52,6 +47,11 @@ const pendingVerbs = new Set([
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.apiKey.set': 'apikey set',
+  'storyboard.character.recommend': 'card recommend',
+  'storyboard.background.recommend': 'card recommend',
+  'storyboard.cards.promoteCandidates': 'card promote',
+  'storyboard.bible.promoteCandidates': 'bible promote',
   'storyboard.draft.generate': 'scene generate',
   'storyboard.draft.regenerate': 'scene generate',
   'storyboard.draft.generateAll': 'scene generate',

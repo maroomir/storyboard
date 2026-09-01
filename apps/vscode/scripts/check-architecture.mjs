@@ -215,13 +215,19 @@ function validatePackagePurity(packageRoot, packageName) {
       true,
     );
 
+    const relative = path.relative(packageRoot, filePath).replaceAll(path.sep, '/');
+
+    // An inline `import('vscode').Uri` is not an import statement, so the loop below never sees it.
+    // It still makes the package need the editor's types, which is the thing this check exists for.
+    if (/\bimport\(\s*['"]vscode['"]\s*\)/.test(fs.readFileSync(filePath, 'utf8'))) {
+      failures.push(`${packageName} references vscode types inline: ${relative}`);
+    }
+
     for (const statement of sourceFile.statements) {
       const importPath = getImportPath(statement);
       if (!importPath) {
         continue;
       }
-
-      const relative = path.relative(packageRoot, filePath).replaceAll(path.sep, '/');
 
       if (importPath === 'vscode') {
         failures.push(`${packageName} imports vscode: ${relative}`);

@@ -1,3 +1,4 @@
+import type { StoryUri } from '../../paths/storyUri';
 import { z } from 'zod';
 
 import type { AiGateway } from '../ai/aiGateway';
@@ -53,7 +54,7 @@ export class CompleteStoryScenesUseCase {
     private readonly repository: IStoryFeatureRepository,
   ) {}
 
-  public async execute(workspaceRoot: import('vscode').Uri): Promise<CompleteStoryScenesProposal> {
+  public async execute(workspaceRoot: StoryUri): Promise<CompleteStoryScenesProposal> {
     const source = await this.repository.load(workspaceRoot);
 
     if (source.scenes.length === 0) {
@@ -165,7 +166,7 @@ export class CompleteStoryScenesUseCase {
   }
 
   private async buildSceneContext(
-    workspaceRoot: import('vscode').Uri,
+    workspaceRoot: StoryUri,
     scenes: readonly SceneFile[],
   ): Promise<unknown> {
     const fullScenes = scenes.map(sceneSummary);
