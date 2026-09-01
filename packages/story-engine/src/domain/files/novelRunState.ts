@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
 const novelRunStateVersion = '1.0.0';
@@ -31,8 +32,8 @@ export interface NovelRunState {
 }
 
 export interface NovelRunStateFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const novelRunStateSchema = z.object({
@@ -56,7 +57,7 @@ export function serializeNovelRunState(state: NovelRunState): string {
 }
 
 export async function readNovelRunState(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: NovelRunStateFileSystem,
 ): Promise<NovelRunState> {
   const bytes = await fileSystem.readFile(uri);
@@ -64,7 +65,7 @@ export async function readNovelRunState(
 }
 
 export async function writeNovelRunState(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: NovelRunStateFileSystem,
   state: NovelRunState,
 ): Promise<void> {

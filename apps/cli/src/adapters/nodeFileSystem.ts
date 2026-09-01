@@ -20,19 +20,19 @@ async function writeAtomically(target: string, content: Uint8Array): Promise<voi
 }
 
 export class NodeFileSystem implements IFileSystem {
-  public async readFile(uri: unknown): Promise<Uint8Array> {
+  public async readFile(uri: StoryUri): Promise<Uint8Array> {
     return await fs.readFile(pathOf(uri));
   }
 
-  public async writeFile(uri: unknown, content: Uint8Array): Promise<void> {
+  public async writeFile(uri: StoryUri, content: Uint8Array): Promise<void> {
     await writeAtomically(pathOf(uri), content);
   }
 
-  public async createDirectory(uri: unknown): Promise<void> {
+  public async createDirectory(uri: StoryUri): Promise<void> {
     await fs.mkdir(pathOf(uri), { recursive: true });
   }
 
-  public async exists(uri: unknown): Promise<boolean> {
+  public async exists(uri: StoryUri): Promise<boolean> {
     try {
       await fs.stat(pathOf(uri));
       return true;
@@ -41,12 +41,12 @@ export class NodeFileSystem implements IFileSystem {
     }
   }
 
-  public async listFileNames(uri: unknown): Promise<readonly string[]> {
+  public async listFileNames(uri: StoryUri): Promise<readonly string[]> {
     const entries = await fs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
   }
 
-  public async readDirectory(uri: unknown): Promise<FileSystemDirectoryEntry[]> {
+  public async readDirectory(uri: StoryUri): Promise<FileSystemDirectoryEntry[]> {
     const entries = await fs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.map((entry) => [
       entry.name,
@@ -54,11 +54,11 @@ export class NodeFileSystem implements IFileSystem {
     ]);
   }
 
-  public async delete(uri: unknown): Promise<void> {
+  public async delete(uri: StoryUri): Promise<void> {
     await fs.rm(pathOf(uri), { recursive: true, force: true });
   }
 
-  public async modifiedTime(uri: unknown): Promise<number> {
+  public async modifiedTime(uri: StoryUri): Promise<number> {
     try {
       return (await fs.stat(pathOf(uri))).mtimeMs;
     } catch {
@@ -67,8 +67,8 @@ export class NodeFileSystem implements IFileSystem {
   }
 }
 
-function pathOf(uri: unknown): string {
-  return (uri as StoryUri).fsPath;
+function pathOf(uri: StoryUri): string {
+  return uri.fsPath;
 }
 
 export { join };

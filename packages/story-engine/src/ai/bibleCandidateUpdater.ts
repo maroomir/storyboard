@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { buildCandidateFact } from '@storyboard/story-format';
 import type { BibleFact, CharacterCard } from '@storyboard/story-format';
 import {
@@ -19,7 +20,7 @@ export interface UpdateBibleCandidatesFromDraftInput {
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly aiService: Pick<StoryboardAIService, 'extractFactsByCharacter'>;
   readonly fileSystem: BibleCandidateFileSystem;
-  readonly resolveCandidateUri: (sceneStem: string) => unknown;
+  readonly resolveCandidateUri: (sceneStem: string) => StoryUri;
   readonly ensureDirectory?: () => Promise<void>;
   readonly logger?: BibleCandidateUpdateLogger;
 }

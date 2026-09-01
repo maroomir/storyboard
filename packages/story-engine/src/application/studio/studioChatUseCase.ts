@@ -11,7 +11,7 @@ import type {
 
 import type { AiGateway } from '../ai/aiGateway';
 import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../ports/logger';
 import type {
   StudioChatTurn,

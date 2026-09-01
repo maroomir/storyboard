@@ -26,8 +26,8 @@ import type { ContentService } from '../content/contentService';
 import type { MutateOutcome } from '../workspace/workspaceChanges';
 import type { WorkspaceStore } from '../workspace/workspaceStore';
 
-function pathOf(uri: unknown): string {
-  return (uri as StoryUri).fsPath;
+function pathOf(uri: StoryUri): string {
+  return uri.fsPath;
 }
 
 // The bot's write policy expressed as a file system: a draft goes through ContentService so the
@@ -39,11 +39,11 @@ export class BotFileSystem implements IFileSystem {
 
   public constructor(private readonly content: ContentService) {}
 
-  public async readFile(uri: unknown): Promise<Uint8Array> {
+  public async readFile(uri: StoryUri): Promise<Uint8Array> {
     return await nodeFs.readFile(pathOf(uri));
   }
 
-  public async writeFile(uri: unknown, content: Uint8Array): Promise<void> {
+  public async writeFile(uri: StoryUri, content: Uint8Array): Promise<void> {
     const target = pathOf(uri);
     const draftStem = draftStemOf(target);
 
@@ -71,11 +71,11 @@ export class BotFileSystem implements IFileSystem {
     return this.lastDraftOutcome;
   }
 
-  public async createDirectory(uri: unknown): Promise<void> {
+  public async createDirectory(uri: StoryUri): Promise<void> {
     await nodeFs.mkdir(pathOf(uri), { recursive: true });
   }
 
-  public async exists(uri: unknown): Promise<boolean> {
+  public async exists(uri: StoryUri): Promise<boolean> {
     try {
       await nodeFs.stat(pathOf(uri));
       return true;
@@ -84,12 +84,12 @@ export class BotFileSystem implements IFileSystem {
     }
   }
 
-  public async listFileNames(uri: unknown): Promise<readonly string[]> {
+  public async listFileNames(uri: StoryUri): Promise<readonly string[]> {
     const entries = await nodeFs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
   }
 
-  public async readDirectory(uri: unknown): Promise<FileSystemDirectoryEntry[]> {
+  public async readDirectory(uri: StoryUri): Promise<FileSystemDirectoryEntry[]> {
     const entries = await nodeFs.readdir(pathOf(uri), { withFileTypes: true });
     return entries.map((entry) => [
       entry.name,
@@ -97,11 +97,11 @@ export class BotFileSystem implements IFileSystem {
     ]);
   }
 
-  public async delete(uri: unknown): Promise<void> {
+  public async delete(uri: StoryUri): Promise<void> {
     await nodeFs.rm(pathOf(uri), { recursive: true, force: true });
   }
 
-  public async modifiedTime(uri: unknown): Promise<number> {
+  public async modifiedTime(uri: StoryUri): Promise<number> {
     try {
       return (await nodeFs.stat(pathOf(uri))).mtimeMs;
     } catch {
@@ -150,7 +150,7 @@ export class BotSceneRepository implements ISceneRepository {
     private readonly onStaleGrounding?: () => void,
   ) {}
 
-  public async read(_uri: unknown, fileName: string): Promise<SceneFile> {
+  public async read(_uri: StoryUri, fileName: string): Promise<SceneFile> {
     const stem = fileName.replace(/\.card$/, '');
     const scene = await this.store.readScene(stem);
     this.baselineByPath.set(stem, {
@@ -161,7 +161,7 @@ export class BotSceneRepository implements ISceneRepository {
     return scene.value;
   }
 
-  public async writeGrounding(uri: unknown, grounding: SceneGrounding): Promise<void> {
+  public async writeGrounding(uri: StoryUri, grounding: SceneGrounding): Promise<void> {
     const stem =
       pathOf(uri)
         .split('/')
@@ -189,15 +189,15 @@ export class BotSceneRepository implements ISceneRepository {
 export class BotSceneCacheRepository implements ISceneCacheRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
-  public async read(uri: unknown): Promise<SceneCacheRecord> {
+  public async read(uri: StoryUri): Promise<SceneCacheRecord> {
     return parseSceneCache(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
   }
 
-  public async write(uri: unknown, record: SceneCacheRecord): Promise<void> {
+  public async write(uri: StoryUri, record: SceneCacheRecord): Promise<void> {
     await this.fileSystem.writeFile(uri, new TextEncoder().encode(serializeSceneCache(record)));
   }
 
-  public async ensureDirectory(uri: unknown): Promise<void> {
+  public async ensureDirectory(uri: StoryUri): Promise<void> {
     await this.fileSystem.createDirectory(uri);
   }
 }

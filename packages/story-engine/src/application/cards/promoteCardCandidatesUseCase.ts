@@ -5,7 +5,7 @@ import {
   type CardCandidateItem,
 } from '../../domain/cardCandidatePromotion';
 import type { CharacterCard } from '@storyboard/story-format';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { CardCandidateRecord } from '../../shared/cardCandidates';
 
 export interface ICardCandidateRepository {

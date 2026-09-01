@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { z } from 'zod';
@@ -24,8 +25,8 @@ export interface RevisionPlan {
 }
 
 export interface RevisionPlanFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export type RevisionPlanParseErrorCode = 'invalid-yaml' | 'invalid-revision-plan-schema';
@@ -112,7 +113,7 @@ export function parseRevisionPlan(rawPlan: string): RevisionPlan {
 }
 
 export async function readRevisionPlanFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: RevisionPlanFileSystem,
 ): Promise<RevisionPlan> {
   const bytes = await fileSystem.readFile(uri);
@@ -120,7 +121,7 @@ export async function readRevisionPlanFile(
 }
 
 export async function writeRevisionPlanFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: RevisionPlanFileSystem,
   plan: RevisionPlan,
 ): Promise<void> {

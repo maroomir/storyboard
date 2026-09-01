@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-engine';
 import { randomUUID } from 'node:crypto';
 
 import * as vscode from 'vscode';
@@ -116,10 +117,10 @@ function stripRecordId(record: UsageRecord): Omit<UsageRecord, 'recordId'> {
 
 export function createVscodeUsageLedgerFileSystem(): UsageLedgerFileSystem {
   return {
-    readFile: (uri: unknown) => Promise.resolve(vscode.workspace.fs.readFile(uri as vscode.Uri)),
-    writeFile: (uri: unknown, content: Uint8Array) =>
+    readFile: (uri: StoryUri) => Promise.resolve(vscode.workspace.fs.readFile(uri as vscode.Uri)),
+    writeFile: (uri: StoryUri, content: Uint8Array) =>
       Promise.resolve(vscode.workspace.fs.writeFile(uri as vscode.Uri, content)),
-    createDirectory: (uri: unknown) =>
+    createDirectory: (uri: StoryUri) =>
       Promise.resolve(vscode.workspace.fs.createDirectory(uri as vscode.Uri)),
   };
 }

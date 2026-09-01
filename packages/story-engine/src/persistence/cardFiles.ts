@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '../paths/storyUri';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../ports/fileSystem';
 
 // The `character/*.card` glob the extension used to hand to VSCode's file search. Cards are always

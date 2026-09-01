@@ -1,5 +1,5 @@
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../ports/logger';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import { formatAugmentCards } from '@storyboard/story-ai';

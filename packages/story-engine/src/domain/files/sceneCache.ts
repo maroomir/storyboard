@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
@@ -35,8 +36,8 @@ export interface SceneCacheRecord {
 }
 
 export interface SceneCacheFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export interface SceneInputHashInput {
@@ -88,7 +89,7 @@ export function parseSceneCache(rawCache: string): SceneCacheRecord {
 }
 
 export async function readSceneCacheFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: SceneCacheFileSystem,
 ): Promise<SceneCacheRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -96,7 +97,7 @@ export async function readSceneCacheFile(
 }
 
 export async function writeSceneCacheFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: SceneCacheFileSystem,
   record: SceneCacheRecord,
 ): Promise<void> {

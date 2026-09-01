@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -8,8 +9,8 @@ import { serializeSceneCard } from './scene';
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';
 
 export interface CardFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export class CardParseError extends Error {
@@ -120,7 +121,7 @@ export function canonicalizeCardText(rawCard: string): {
 }
 
 export async function readCardFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardFileSystem,
 ): Promise<StoryboardCard> {
   const bytes = await fileSystem.readFile(uri);
@@ -128,7 +129,7 @@ export async function readCardFile(
 }
 
 export async function writeCardFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardFileSystem,
   card: StoryboardCard,
 ): Promise<void> {

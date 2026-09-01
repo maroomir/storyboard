@@ -65,7 +65,6 @@ export * from './domain/sceneSeedFactory';
 export * from './domain/sceneStatus';
 export * from './domain/studio/studioPatch';
 export * from './domain/traitsProcessor';
-export * from './paths/nodeUri';
 export * from './paths/projectDetection';
 export * from './paths/projectPaths';
 export * from './paths/sceneContextPaths';

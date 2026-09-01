@@ -1,6 +1,6 @@
 import type { IFileSystem } from '../../ports/fileSystem';
 import type { AiGateway } from '../ai/aiGateway';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../ports/logger';
 import { draftPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';

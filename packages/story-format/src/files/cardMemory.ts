@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
@@ -18,8 +19,8 @@ export interface BackgroundMemoryRecord {
 }
 
 export interface CardMemoryFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const cardHashSchema = z.string().regex(/^sha256:[a-f0-9]{64}$/);
@@ -88,7 +89,7 @@ function digestCard(digestSource: unknown): string {
 }
 
 export async function readPersonaMemoryFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
 ): Promise<PersonaMemoryRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -96,7 +97,7 @@ export async function readPersonaMemoryFile(
 }
 
 export async function writePersonaMemoryFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
   record: PersonaMemoryRecord,
 ): Promise<void> {
@@ -104,7 +105,7 @@ export async function writePersonaMemoryFile(
 }
 
 export async function readBackgroundMemoryFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
 ): Promise<BackgroundMemoryRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -112,7 +113,7 @@ export async function readBackgroundMemoryFile(
 }
 
 export async function writeBackgroundMemoryFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardMemoryFileSystem,
   record: BackgroundMemoryRecord,
 ): Promise<void> {

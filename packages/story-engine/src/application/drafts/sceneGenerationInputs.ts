@@ -1,5 +1,5 @@
 import { hasStoryboardProjectAt } from '../../paths/projectDetection';
-import type { StoryUri, StoryWorkspaceFolder } from '../../paths/storyUri';
+import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-format';
 import type { IProjectRepository, ISceneRepository } from '../../ports/repositories';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import {

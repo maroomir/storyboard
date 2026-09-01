@@ -1,4 +1,4 @@
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../ports/logger';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import { joinUri, type StoryboardProjectPaths } from '../../paths/projectPaths';

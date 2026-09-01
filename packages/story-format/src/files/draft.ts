@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import yaml from 'js-yaml';
 import { ZodError, z } from 'zod';
 
@@ -10,8 +11,8 @@ export type DraftParseErrorCode =
   | 'invalid-frontmatter-schema';
 
 export interface DraftFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export class DraftParseError extends Error {
@@ -124,14 +125,14 @@ export function extractDraftBody(rawDraft: string): string {
 }
 
 export async function writeDraftFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: DraftFileSystem,
   draft: Draft,
 ): Promise<void> {
   await fileSystem.writeFile(uri, new TextEncoder().encode(serializeDraft(draft)));
 }
 
-export async function readDraftFile(uri: unknown, fileSystem: DraftFileSystem): Promise<string> {
+export async function readDraftFile(uri: StoryUri, fileSystem: DraftFileSystem): Promise<string> {
   const bytes = await fileSystem.readFile(uri);
   return new TextDecoder().decode(bytes);
 }

@@ -24,10 +24,7 @@ export function isLegacySceneFileName(fileName: string): boolean {
 
 // 결정적 변환기: 시드 방언(`[목적]` 라벨 블록)은 구조 필드로 매핑하고, 자유 산문은 해석 없이
 // summary로 옮긴다. AI 구조화는 카드 에디터의 온디맨드 기능이 담당한다.
-export function convertLegacySceneText(
-  rawScene: string,
-  fileName: string,
-): LegacySceneConversion {
+export function convertLegacySceneText(rawScene: string, fileName: string): LegacySceneConversion {
   const match = legacySceneFileNamePattern.exec(fileName);
 
   if (!match) {
@@ -200,9 +197,7 @@ function parseSeedSections(body: string): ParsedSeedSections {
 
 const wordCountPattern = /(?:약\s*)?([\d,]+)\s*자/;
 
-function parseTargetWordCount(
-  text: string | undefined,
-): { targetWordCount: number } | undefined {
+function parseTargetWordCount(text: string | undefined): { targetWordCount: number } | undefined {
   if (text === undefined) {
     return undefined;
   }

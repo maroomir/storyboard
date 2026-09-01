@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
 import { aiProviderIds, aiTaskNames } from '@storyboard/story-ai';
@@ -53,9 +54,9 @@ const usageLedgerFileSchema = z.object({
 });
 
 export interface UsageLedgerFileSystem {
-  readonly readFile: (uri: unknown) => Promise<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => Promise<void>;
-  readonly createDirectory: (uri: unknown) => Promise<void>;
+  readonly readFile: (uri: StoryUri) => Promise<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => Promise<void>;
+  readonly createDirectory: (uri: StoryUri) => Promise<void>;
 }
 
 export function emptyUsageSummary(): UsageSummaryByEntity {
@@ -177,7 +178,7 @@ export function serializeUsageLedger(entries: readonly UsageLedgerEntry[]): Uint
 
 export async function readUsageLedgerFromUri(
   fs: UsageLedgerFileSystem,
-  ledgerUri: unknown,
+  ledgerUri: StoryUri,
   warn?: (message: string) => void,
 ): Promise<UsageLedgerEntry[]> {
   try {
@@ -190,7 +191,7 @@ export async function readUsageLedgerFromUri(
 
 export async function writeUsageLedgerToUri(
   fs: UsageLedgerFileSystem,
-  ledgerUri: unknown,
+  ledgerUri: StoryUri,
   entries: readonly UsageLedgerEntry[],
 ): Promise<void> {
   await fs.writeFile(ledgerUri, serializeUsageLedger(entries));

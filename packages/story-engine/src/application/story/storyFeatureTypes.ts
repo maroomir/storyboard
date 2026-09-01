@@ -1,4 +1,4 @@
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { SceneFile, StoryboardCard, StoryboardProject } from '@storyboard/story-format';
 export interface StoryFileSnapshot {
   readonly uri: StoryUri;

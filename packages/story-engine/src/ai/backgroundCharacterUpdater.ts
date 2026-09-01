@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-format';
 import type { BackgroundCard, CardFileSystem, CharacterCard } from '@storyboard/story-format';
 interface BackgroundCharacterUpdateLogger {
@@ -12,7 +13,7 @@ export interface UpdateBackgroundCharactersFromSceneInput {
   readonly backgroundId: string;
   readonly detectedCharacterCards: readonly CharacterCard[];
   readonly fileSystem: CardFileSystem;
-  readonly resolveBackgroundCardUri: (backgroundId: string) => unknown;
+  readonly resolveBackgroundCardUri: (backgroundId: string) => StoryUri;
   readonly logger?: BackgroundCharacterUpdateLogger;
 }
 

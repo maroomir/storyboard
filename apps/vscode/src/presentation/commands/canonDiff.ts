@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-engine';
 import { vscodeFileSystem } from '../../infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -16,9 +17,9 @@ import { readProjectJson } from '@storyboard/story-engine';
 const canonDiffCommand = 'storyboard.bible.canonDiff';
 
 const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {
-  readFile: (uri: unknown): PromiseLike<Uint8Array> =>
+  readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>
     vscode.workspace.fs.readFile(uri as vscode.Uri),
-  writeFile: (uri: unknown, content: Uint8Array): PromiseLike<void> =>
+  writeFile: (uri: StoryUri, content: Uint8Array): PromiseLike<void> =>
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
 };
 

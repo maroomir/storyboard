@@ -5,7 +5,7 @@ import {
   selectNewCandidates,
 } from '../../domain/biblePromotion';
 import type { BibleCandidateRecord } from '../../domain/files/bibleCandidates';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { BibleFact, StoryBible } from '@storyboard/story-format';
 
 export interface IBibleCandidateRepository {
