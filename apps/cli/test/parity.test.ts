@@ -24,11 +24,7 @@ const editorOnlyCommands = new Set([
 const pendingVerbs = new Set([
   'storyboard.character.rename',
   'storyboard.background.rename',
-  'storyboard.cards.buildFromScenes',
   'storyboard.cards.migrateTextToList',
-  'storyboard.bible.canonDiff',
-  'storyboard.scene.generateAllSeeds',
-  'storyboard.scene.completeStory',
   'storyboard.scene.migrate',
   'storyboard.draft.augmentSelection',
   'storyboard.draft.editSelection',
@@ -37,6 +33,10 @@ const pendingVerbs = new Set([
 ]);
 
 const commandToVerb: Readonly<Record<string, string>> = {
+  'storyboard.scene.generateAllSeeds': 'scene seeds',
+  'storyboard.scene.completeStory': 'scene complete',
+  'storyboard.cards.buildFromScenes': 'cards build',
+  'storyboard.bible.canonDiff': 'canon diff',
   'storyboard.character.create': 'card create character',
   'storyboard.background.create': 'card create background',
   'storyboard.scene.create': 'scene create',

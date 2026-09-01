@@ -31,6 +31,10 @@ Commands
   check grammar <stem>         초안의 문법을 검사합니다
   check continuity <stem>      정전과 어긋나는 곳을 검사합니다
   check slop <stem>            상투 표현을 검사합니다 (AI 호출 없음)
+  scene seeds                  아웃라인에서 씬 시드를 만듭니다 (--force 로 덮어쓰기)
+  scene complete               끝번호 뒤에 붙일 완결 씬을 제안합니다 (읽기 전용)
+  cards build                  씬만 읽어 카드 구성안을 만듭니다 (읽기 전용)
+  canon diff                   정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)
   card create <kind> --name    빈 인물/배경 카드를 만듭니다
   scene create --name          다음 번호로 씬 카드를 만듭니다
   card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
