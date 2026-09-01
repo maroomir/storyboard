@@ -83,6 +83,9 @@ export interface ProjectSetting {
   readonly audience?: string;
   readonly targetWordCount?: number;
   readonly pov?: PointOfView;
+  // 아웃라인이 만들 장·씬 개수. 작품마다 한 번 정하는 값이라 계약에 둔다.
+  readonly chapterCount?: number;
+  readonly scenesPerChapter?: number;
   readonly prohibitions: string[];
   readonly styleConstraints: string[];
   readonly qualityCriteria: string[];

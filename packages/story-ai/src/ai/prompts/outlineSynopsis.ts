@@ -44,6 +44,18 @@ export function briefToUserBlock(brief: OutlineBrief): string {
   appendField(lines, '독자층', brief.audience);
   appendField(lines, '시점', brief.pov ? pointOfViewLabels[brief.pov] : undefined);
   appendField(lines, '목표 분량', brief.targetWordCount ? `${brief.targetWordCount}자` : undefined);
+  appendField(
+    lines,
+    '구성',
+    brief.chapterCount === undefined && brief.scenesPerChapter === undefined
+      ? undefined
+      : [
+          brief.chapterCount === undefined ? undefined : `${brief.chapterCount}장`,
+          brief.scenesPerChapter === undefined ? undefined : `장당 ${brief.scenesPerChapter}씬`,
+        ]
+          .filter((part): part is string => part !== undefined)
+          .join(', '),
+  );
   appendField(lines, '컨셉', brief.concept);
   appendField(lines, '설명', brief.description);
   appendField(lines, '태그', brief.tags.length > 0 ? brief.tags.join(', ') : undefined);
