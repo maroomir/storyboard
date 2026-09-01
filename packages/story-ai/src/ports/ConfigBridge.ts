@@ -425,4 +425,3 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
 function getDefaultCommand(providerId: 'claude-code' | 'codex'): string {
   return providerId === 'claude-code' ? 'claude' : 'codex';
 }
-

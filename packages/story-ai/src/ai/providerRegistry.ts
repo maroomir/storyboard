@@ -4,6 +4,7 @@ import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
 import { CodexProvider } from './providers/CodexProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
+import { FallbackProvider } from './providers/FallbackProvider';
 import { MockAiProvider } from './providers/MockAiProvider';
 import { OllamaProvider, type OllamaClientLike } from './providers/OllamaProvider';
 import { OpenAiProvider, type OpenAiClientLike } from './providers/OpenAiProvider';
@@ -30,6 +31,12 @@ export interface AiProviderRegistryOptions {
   readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike;
   readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike;
   readonly createCliRunner?: () => CliRunner;
+  // When a CLI provider answers "usage limit", send the remaining calls here instead of aborting.
+  // A long unattended run otherwise dies partway with half a manuscript written.
+  readonly cliUsageLimitFallback?: {
+    readonly providerId: AiProviderId;
+    readonly onFallback?: (message: string) => void;
+  };
 }
 
 export class AiProviderRegistry {
@@ -100,6 +107,24 @@ export class AiProviderRegistry {
     yield { type: 'done', response };
   }
 
+  private async createCliProviderWithFallback(
+    providerId: 'claude-code' | 'codex',
+    modelOverride?: string,
+  ): Promise<AiProvider> {
+    const primary = this.createCliProvider(providerId, modelOverride);
+    const fallback = this.options.cliUsageLimitFallback;
+
+    if (!fallback || fallback.providerId === providerId) {
+      return primary;
+    }
+
+    return new FallbackProvider(
+      primary,
+      await this.createProvider(fallback.providerId),
+      fallback.onFallback,
+    );
+  }
+
   private async createProvider(
     providerId: AiProviderId,
     modelOverride?: string,
@@ -115,7 +140,7 @@ export class AiProviderRegistry {
         return this.createOllamaProvider(modelOverride);
       case 'claude-code':
       case 'codex':
-        return this.createCliProvider(providerId, modelOverride);
+        return this.createCliProviderWithFallback(providerId, modelOverride);
       default:
         throw new AiProviderError(
           'provider-not-registered',

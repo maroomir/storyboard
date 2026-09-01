@@ -30,6 +30,9 @@ storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
 
+`--fallback <id>` keeps a long unattended run alive: when a CLI provider answers "usage limit", the
+remaining calls go to that provider instead of the run aborting halfway. The switch is one-way.
+
 `--workspace <path>` picks the workspace (default: the current directory). `--json` puts a single
 JSON object on stdout; progress and warnings always go to stderr, so the output stays pipeable.
 Exit code is 0 on success and non-zero on failure.
