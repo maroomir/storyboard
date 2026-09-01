@@ -190,6 +190,7 @@ export class PlatformModule implements IApplicationModule {
       fileSystem,
       logger,
       generator,
+      sceneCacheRepository,
     });
     const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
       fileSystem,

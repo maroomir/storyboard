@@ -43,7 +43,22 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     const result = await container.generateAllDraftsUseCase.execute({
       onProgress: (progress) => container.logger.info(JSON.stringify(progress)),
     });
-    return { ok: true, message: '모든 씬의 초안 생성을 마쳤습니다.', data: result };
+
+    if (!result.ok) {
+      return { ok: false, message: describeBatchFailure(result.kind), data: result };
+    }
+
+    // A batch where scenes failed is not a success, however many others went through.
+    const { cacheHits, failureLabels, failures, generated } = result.summary;
+
+    return {
+      ok: failures === 0,
+      message:
+        failures === 0
+          ? `초안 ${generated}건 생성, ${cacheHits}건은 입력이 같아 그대로 둡니다.`
+          : `${failures}건 실패 (생성 ${generated}건, 캐시 ${cacheHits}건): ${failureLabels.join(', ')}`,
+      data: result.summary,
+    };
   }
 
   const stem = sceneStemFrom(args);
@@ -63,8 +78,25 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: result.kind === 'failed' ? result.message : '취소했습니다.' };
   }
 
-  if (result.kind === 'generated' && !flagBoolean(args.flags, 'no-revise')) {
-    await container.reviseAfterGenerateGate.runForScene(container.workspaceRoot, stem);
+  // `--no-revise` overrides the setting; without it the workspace's `draft.reviseAfterGenerate`
+  // decides, exactly as it does in the extension and the bot.
+  const reviseRequested =
+    !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
+
+  if (result.kind === 'generated' && reviseRequested) {
+    const revised = await container.reviseAfterGenerateGate.runForScene(
+      container.workspaceRoot,
+      stem,
+    );
+
+    // A rejected candidate means the original was kept. Saying nothing would let an unattended run
+    // record a revision that never happened.
+    if (revised?.preservedOriginal === true && revised.rejection !== undefined) {
+      container.logger.warn(
+        `검수 재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다 ` +
+          `(${revised.rejection.candidateLength}자 / 원본 ${revised.rejection.originalLength}자).`,
+      );
+    }
   }
 
   return {
@@ -92,8 +124,28 @@ const generateOutline: CommandHandler = async ({ container, args }) => {
     overwrite: flagBoolean(args.flags, 'force'),
     onProgress: (message: string) => container.logger.info(message),
   });
-  return { ok: true, message: '아웃라인을 생성했습니다.', data: result };
+
+  return { ok: result.ok, message: describeOutlineResult(result.kind), data: result };
 };
+
+function describeBatchFailure(kind: 'no_projects' | 'no_scenes'): string {
+  return kind === 'no_projects'
+    ? 'Storyboard 프로젝트를 찾을 수 없습니다.'
+    : '생성할 씬이 없습니다. scene/*.card 를 먼저 만들어 주세요.';
+}
+
+function describeOutlineResult(kind: string): string {
+  switch (kind) {
+    case 'generated':
+      return '아웃라인을 생성했습니다.';
+    case 'existing':
+      return '아웃라인이 이미 있습니다. 덮어쓰려면 --force 를 주세요.';
+    case 'missing_contract':
+      return '작품 계약이 비어 아웃라인을 만들 수 없습니다. .storyboard/project.json 의 setting 을 채워 주세요.';
+    default:
+      return `아웃라인을 생성하지 못했습니다 (${kind}).`;
+  }
+}
 
 const assembleManuscript: CommandHandler = async ({ container }) => {
   const result = await container.assembleManuscriptUseCase.execute(container.workspaceRoot);
@@ -165,4 +217,3 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'manuscript review': reviewManuscript,
   'manuscript summaries': summarizeChapters,
 };
-

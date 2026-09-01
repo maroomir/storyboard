@@ -12,7 +12,7 @@ import {
   type UsageSink,
 } from '@storyboard/story-engine';
 import { AiGateway } from '@storyboard/story-engine';
-import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
+import type { AiProviderRegistry, ConfigBridge, OnUsageRecordCallback } from '@storyboard/story-ai';
 
 import type { ContentService } from '../content/contentService';
 import type { MutateOutcome } from '../workspace/workspaceChanges';
@@ -34,6 +34,10 @@ export interface SceneDraftGeneratorOptions {
   readonly configBridge: ConfigBridge;
   readonly autoGrounding: boolean;
   readonly generator: string;
+  // Every provider call this generator makes must land in the running job's ledger. The engine
+  // builds its own AI service per use case, so the callback has to reach it through this port —
+  // the app's shared service is not the one doing the work here.
+  readonly onUsage: OnUsageRecordCallback;
   readonly onStage?: (stage: string, current: number, total: number) => void;
 }
 
@@ -120,8 +124,11 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     const workspaceRoot = NodeUri.file(store.root);
     const fileSystem = new BotFileSystem(content);
     const logger = createStageLogger(this.options.onStage);
-    // The bot reports cost per job through its own usage ledger, so the engine's sink is a no-op.
-    const usageSink: UsageSink = { record: async (): Promise<void> => undefined };
+    const usageSink: UsageSink = {
+      record: async (_workspaceRoot, usage): Promise<void> => {
+        this.options.onUsage(usage);
+      },
+    };
     const aiGateway = new AiGateway(registry, usageSink, logger);
 
     return {
@@ -149,6 +156,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
         fileSystem,
         logger,
         generator,
+        sceneCacheRepository: new BotSceneCacheRepository(fileSystem),
       }),
     };
   }

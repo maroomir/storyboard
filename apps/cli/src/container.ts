@@ -174,6 +174,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     fileSystem,
     logger,
     generator,
+    sceneCacheRepository,
   });
   const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
     fileSystem,
