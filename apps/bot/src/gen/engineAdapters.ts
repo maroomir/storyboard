@@ -32,10 +32,18 @@ function pathOf(uri: StoryUri): string {
   return uri.fsPath;
 }
 
+// Directories the workspace scaffold gitignores. Everything else is tracked, which for this app
+// means a write there has to be a commit.
+const untrackedPrefixes = ['draft/', '.draft/', 'manuscript/', '.storyboard/cache/'];
+
 // The bot's write policy expressed as a file system: a draft goes through ContentService so the
 // archive-then-write path and the outcome reporting stay the bot's only way to touch `draft/`,
-// while gitignored side artefacts (`.storyboard/cache/`, `.draft/`) go straight to disk. Nothing
-// here writes a tracked file — that is `BotSceneRepository`'s job, and it still rides the gate.
+// while gitignored side artefacts (`.storyboard/cache/`, `.draft/`) go straight to disk.
+//
+// A tracked path is refused outright. The bot's invariant is "a successful save of a tracked file
+// is a commit", and an engine use case that reaches for the file system to write one would break
+// that silently — no commit, no freshness guard. Failing loudly is what keeps the invariant true
+// as the engine grows: the fix is to give that use case a repository port, not to relax this.
 export class BotFileSystem implements IFileSystem {
   private lastDraftOutcome: MutateOutcome | undefined;
 
@@ -51,6 +59,10 @@ export class BotFileSystem implements IFileSystem {
   public async writeFile(uri: StoryUri, content: Uint8Array): Promise<void> {
     const target = pathOf(uri);
     const draftStem = this.draftStemOf(uri);
+
+    if (draftStem === undefined) {
+      this.refuseTrackedWrite(uri);
+    }
 
     if (draftStem !== undefined) {
       this.lastDraftOutcome = await this.content.writeDraft(
@@ -74,6 +86,23 @@ export class BotFileSystem implements IFileSystem {
 
   public takeDraftOutcome(): MutateOutcome | undefined {
     return this.lastDraftOutcome;
+  }
+
+  private refuseTrackedWrite(uri: StoryUri): void {
+    const rootPath = this.workspaceRoot.path.replace(/\/$/, '');
+
+    if (!uri.path.startsWith(`${rootPath}/`)) {
+      return;
+    }
+
+    const relativePath = uri.path.slice(rootPath.length + 1);
+
+    if (!untrackedPrefixes.some((prefix) => relativePath.startsWith(prefix))) {
+      throw new Error(
+        `추적 파일을 게이트 밖에서 쓰려 했습니다: ${relativePath}. ` +
+          '이 경로는 커밋되어야 하므로 ContentService 를 지나는 저장소 포트로 써야 합니다.',
+      );
+    }
   }
 
   // Anchored at the workspace root, and matched on the posix `path` rather than the OS-shaped
