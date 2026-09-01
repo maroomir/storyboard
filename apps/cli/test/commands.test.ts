@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -40,6 +40,74 @@ afterEach(() => {
   }
   rmSync(home, { recursive: true, force: true });
   rmSync(workspace, { recursive: true, force: true });
+});
+
+describe('project contract', () => {
+  function settingOf(): Record<string, unknown> {
+    const project = JSON.parse(
+      readFileSync(join(workspace, '.storyboard', 'project.json'), 'utf8'),
+    ) as { setting?: Record<string, unknown> };
+    return project.setting ?? {};
+  }
+
+  // 계약이 비면 outline generate 가 거절한다. 채우는 길이 없으면 CLI 만으로는 시작할 수 없었다.
+  it('fills the contract from init flags', async () => {
+    rmSync(workspace, { recursive: true, force: true });
+    workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
+
+    const outcome = await run(
+      'init',
+      args(['init'], {
+        title: '시그널',
+        genre: '하이틴 로맨스',
+        audience: '10~20대',
+        pov: 'third-limited',
+        'target-words': '480000',
+        chapters: '8',
+        'scenes-per-chapter': '4',
+      }),
+    );
+
+    expect(outcome.ok).toBe(true);
+    expect(settingOf()).toMatchObject({
+      genre: '하이틴 로맨스',
+      pov: 'third-limited',
+      targetWordCount: 480000,
+      chapterCount: 8,
+      scenesPerChapter: 4,
+    });
+  });
+
+  it('reads a contract file and lets flags win over it', async () => {
+    const file = join(home, 'contract.json');
+    writeFileSync(file, JSON.stringify({ genre: '무협', audience: '성인', styleConstraints: ['단문'] }));
+
+    const outcome = await run('project set', args(['project', 'set'], { from: file, genre: '하이틴 로맨스' }));
+
+    expect(outcome.ok).toBe(true);
+    expect(settingOf()).toMatchObject({ genre: '하이틴 로맨스', audience: '성인', styleConstraints: ['단문'] });
+  });
+
+  it('keeps the keys it was not given', async () => {
+    await run('project set', args(['project', 'set'], { genre: '하이틴 로맨스', audience: '10~20대' }));
+    await run('project set', args(['project', 'set'], { 'target-words': '480000' }));
+
+    expect(settingOf()).toMatchObject({ genre: '하이틴 로맨스', audience: '10~20대', targetWordCount: 480000 });
+  });
+
+  it('refuses a point of view the format does not define', async () => {
+    const outcome = await run('project set', args(['project', 'set'], { pov: 'second' }));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('third-limited');
+  });
+
+  it('refuses a non-integer word count instead of writing NaN', async () => {
+    const outcome = await run('project set', args(['project', 'set'], { 'target-words': '사만' }));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('양의 정수');
+  });
 });
 
 describe('card create', () => {
