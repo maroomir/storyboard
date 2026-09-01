@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -12,8 +13,8 @@ import type { PointOfView } from '../project';
 export type ChapterPlanParseErrorCode = 'invalid-yaml' | 'invalid-chapter-plan-schema';
 
 export interface OutlineFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export class ChapterPlanParseError extends Error {
@@ -62,7 +63,7 @@ export function parseChapterPlan(rawChapterPlan: string): ChapterPlan {
 }
 
 export async function readChapterPlanFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: OutlineFileSystem,
 ): Promise<ChapterPlan> {
   const bytes = await fileSystem.readFile(uri);
@@ -70,7 +71,7 @@ export async function readChapterPlanFile(
 }
 
 export async function writeChapterPlanFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: OutlineFileSystem,
   plan: ChapterPlan,
 ): Promise<void> {
@@ -93,7 +94,7 @@ export function serializeSynopsisMarkdown(synopsis: OutlineSynopsis): string {
 }
 
 export async function writeSynopsisFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: OutlineFileSystem,
   synopsis: OutlineSynopsis,
 ): Promise<void> {

@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '../../paths/storyUri';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
 import type { ICardCandidateRepository } from '../../application/cards/promoteCardCandidatesUseCase';
 import type { StoryboardLogger } from '../../ports/logger';

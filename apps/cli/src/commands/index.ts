@@ -232,7 +232,7 @@ const showDraftPath: CommandHandler = async ({ container, args }) => {
   if (stem === undefined) {
     return { ok: false, message: '씬 stem을 지정해 주세요.' };
   }
-  const uri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const uri = draftPath(container.workspaceRoot, stem);
   return {
     ok: await container.fileSystem.exists(uri),
     message: uri.fsPath,
@@ -488,7 +488,7 @@ async function rewriteDraft(
     return { ok: false, message: result.message };
   }
 
-  const draftUri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const draftUri = draftPath(container.workspaceRoot, stem);
   const existing = parseDraft(
     new TextDecoder().decode(await container.fileSystem.readFile(draftUri)),
   );
@@ -779,7 +779,7 @@ const createScene: CommandHandler = async ({ container, args }) => {
     .reduce((max, order) => Math.max(max, order), 0);
   const prefix = String(highest + 1).padStart(digitCount, '0');
   const slug = slugify(name);
-  const uri = sceneFilePath(container.workspaceRoot, prefix, slug) as StoryUri;
+  const uri = sceneFilePath(container.workspaceRoot, prefix, slug);
 
   if (await container.fileSystem.exists(uri)) {
     return { ok: false, message: `이미 있습니다: ${prefix}-${slug}.card` };
@@ -839,7 +839,7 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const draftUri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const draftUri = draftPath(container.workspaceRoot, stem);
   const body = await readDraftBody(container, stem);
 
   if (body === undefined) {
@@ -922,7 +922,7 @@ const editDraft: CommandHandler = async ({ container, args }) => {
   }
 
   await container.augmentDraftUseCase.applyAugmentedDraft({
-    draftUri: draftPath(container.workspaceRoot, stem) as StoryUri,
+    draftUri: draftPath(container.workspaceRoot, stem),
     sceneStem: stem,
     workspaceRoot: container.workspaceRoot,
   });
@@ -996,7 +996,7 @@ const initProject: CommandHandler = async ({ container, args }) => {
 type CheckKind = 'grammar' | 'continuity' | 'slop';
 
 async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
-  const uri = draftPath(container.workspaceRoot, stem) as StoryUri;
+  const uri = draftPath(container.workspaceRoot, stem);
 
   try {
     return parseDraft(new TextDecoder().decode(await container.fileSystem.readFile(uri))).body;

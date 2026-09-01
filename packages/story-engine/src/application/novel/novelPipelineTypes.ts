@@ -4,7 +4,7 @@ import type { GenerateDraftUseCase } from '../drafts/generateDraftUseCase';
 import type { ReviseDraftUseCase } from '../drafts/reviseDraftUseCase';
 import type { AssembleManuscriptUseCase } from '../manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '../manuscript/summarizeChaptersUseCase';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { StoryboardLogger } from '../../ports/logger';
 import type { NovelRunMode, NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';

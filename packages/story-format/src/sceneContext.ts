@@ -1,3 +1,4 @@
+import type { StoryUri } from './storyUri';
 import {
   characterMatchTokens,
   isBackgroundCard,
@@ -20,19 +21,21 @@ import { formatStoryStateForPrompt, readStoryState } from './storyState';
 import { stripForeignScript } from './foreignScript';
 
 export interface SceneContextWorkspacePaths {
-  readonly characterDirectory: unknown;
-  readonly backgroundDirectory: unknown;
-  readonly draftDirectory: unknown;
-  readonly bibleCanon?: unknown;
-  readonly manuscriptSummary?: unknown;
-  readonly storyState?: unknown;
-  readonly joinPath: (base: unknown, ...pathSegments: string[]) => unknown;
+  readonly characterDirectory: StoryUri;
+  readonly backgroundDirectory: StoryUri;
+  readonly draftDirectory: StoryUri;
+  readonly bibleCanon?: StoryUri;
+  readonly manuscriptSummary?: StoryUri;
+  readonly storyState?: StoryUri;
+  readonly joinPath: (base: StoryUri, ...pathSegments: string[]) => StoryUri;
 }
 
 export interface SceneContextWorkspaceFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
-  readonly readDirectory: (uri: unknown) => PromiseLike<[string, { type: 'file' | 'directory' }][]>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
+  readonly readDirectory: (
+    uri: StoryUri,
+  ) => PromiseLike<[string, { type: 'file' | 'directory' }][]>;
 }
 
 export interface SceneContext {

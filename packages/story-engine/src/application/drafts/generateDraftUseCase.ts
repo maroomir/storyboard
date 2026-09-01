@@ -1,5 +1,5 @@
 import type { IFileSystem } from '../../ports/fileSystem';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { ISceneCacheRepository } from '../../ports/repositories';
 import { draftHistorySceneDirectory, joinUri } from '../../paths/projectPaths';
 import {

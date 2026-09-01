@@ -242,7 +242,8 @@ export function selectInjectedFacts(
   options?: InjectionOptions,
 ): BibleFact[] {
   const isRevealed = (fact: BibleFact): boolean => {
-    const revealOrder = fact.revealFrom === undefined ? undefined : resolveSceneOrder(fact.revealFrom);
+    const revealOrder =
+      fact.revealFrom === undefined ? undefined : resolveSceneOrder(fact.revealFrom);
     return revealOrder === undefined || sceneOrder >= revealOrder;
   };
 

@@ -1,3 +1,5 @@
+import type { StoryUri } from '@storyboard/story-format';
+
 const draftHistoryArchivePattern = /^(\d{4}-\d{2}-\d{2}-\d{2}-\d{2})-rev-(\d{2,})\.md$/;
 
 function padTwo(value: number): string {
@@ -35,17 +37,17 @@ export function draftHistoryArchiveFileName(timestamp: string, revision: number)
 }
 
 export interface DraftHistoryFileSystem {
-  readonly exists: (uri: unknown) => PromiseLike<boolean>;
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
-  readonly createDirectory: (uri: unknown) => PromiseLike<void>;
-  readonly listFileNames: (uri: unknown) => PromiseLike<readonly string[]>;
+  readonly exists: (uri: StoryUri) => PromiseLike<boolean>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
+  readonly createDirectory: (uri: StoryUri) => PromiseLike<void>;
+  readonly listFileNames: (uri: StoryUri) => PromiseLike<readonly string[]>;
 }
 
 export interface ArchiveExistingDraftParams {
-  readonly draftUri: unknown;
-  readonly historyDirectory: unknown;
-  readonly resolveArchiveUri: (fileName: string) => unknown;
+  readonly draftUri: StoryUri;
+  readonly historyDirectory: StoryUri;
+  readonly resolveArchiveUri: (fileName: string) => StoryUri;
   readonly fileSystem: DraftHistoryFileSystem;
   readonly now?: Date;
 }

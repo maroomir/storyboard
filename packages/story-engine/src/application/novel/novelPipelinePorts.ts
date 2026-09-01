@@ -1,6 +1,6 @@
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
 import type { GeneratedSceneSeed } from '../../domain/sceneSeedFactory';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { NovelRunState } from '../../domain/files/novelRunState';
 import type {
   ChapterPlan,

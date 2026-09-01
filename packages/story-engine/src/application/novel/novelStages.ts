@@ -6,7 +6,7 @@ import { draftPath, scenePath, type StoryboardProjectPaths } from '../../paths/p
 import { recordRevisionEntry } from '../../persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '../../domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '../../domain/files/novelRunState';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';

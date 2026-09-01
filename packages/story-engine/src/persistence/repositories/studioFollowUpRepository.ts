@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '../../paths/storyUri';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
 import {
   addFollowUps,

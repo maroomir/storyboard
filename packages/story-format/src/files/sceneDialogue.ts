@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
@@ -17,8 +18,8 @@ export interface SceneDialogueRecord {
 }
 
 export interface SceneDialogueFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const sceneDialogueTurnSchema = z.object({
@@ -46,7 +47,7 @@ export function computeDraftBodyHash(body: string): string {
 }
 
 export async function readSceneDialogueFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: SceneDialogueFileSystem,
 ): Promise<SceneDialogueRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -54,7 +55,7 @@ export async function readSceneDialogueFile(
 }
 
 export async function writeSceneDialogueFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: SceneDialogueFileSystem,
   record: SceneDialogueRecord,
 ): Promise<void> {

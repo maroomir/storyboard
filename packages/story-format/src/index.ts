@@ -1,3 +1,5 @@
+export * from './storyUri';
+export * from './nodeUri';
 export * from './scenePrefixDigits';
 export * from './Character';
 export * from './Background';

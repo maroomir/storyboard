@@ -1,3 +1,4 @@
+import type { StoryUri } from '../storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
@@ -16,7 +17,7 @@ export type SceneParseErrorCode =
   | 'invalid-scene-card-schema';
 
 export interface SceneFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
 }
 
 export class SceneParseError extends Error {
@@ -85,7 +86,7 @@ export function parseSceneCard(rawScene: string): SceneCard {
 }
 
 export async function readSceneFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: SceneFileSystem,
   fileName: string,
 ): Promise<SceneFile> {

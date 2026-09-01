@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
 import { bibleFactSchema } from '@storyboard/story-format';
@@ -10,8 +11,8 @@ export interface BibleCandidateRecord {
 }
 
 export interface BibleCandidateFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const bibleCandidateRecordSchema = z.object({
@@ -29,7 +30,7 @@ export function parseBibleCandidates(rawCandidates: string): BibleCandidateRecor
 }
 
 export async function readBibleCandidateFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: BibleCandidateFileSystem,
 ): Promise<BibleCandidateRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -37,7 +38,7 @@ export async function readBibleCandidateFile(
 }
 
 export async function writeBibleCandidateFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: BibleCandidateFileSystem,
   record: BibleCandidateRecord,
 ): Promise<void> {

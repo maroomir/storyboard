@@ -1,6 +1,6 @@
 import { hasStoryboardProjectAt } from '../../paths/projectDetection';
 import type { WorkspaceLocator } from '../../ports/workspaceLocator';
-import { joinStoryPath, type StoryUri } from '../../paths/storyUri';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type {
   BatchSceneList,

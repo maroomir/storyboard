@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '../paths/storyUri';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
 import { readCardFile } from '@storyboard/story-format';
 import type { OutlineCharacterBrief } from '@storyboard/story-format';

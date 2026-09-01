@@ -1,3 +1,4 @@
+import type { StoryUri } from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
 import type {
   CardArcCandidate,
@@ -35,7 +36,7 @@ export interface UpdateCardCandidatesFromDraftInput {
   >;
   readonly verify?: boolean;
   readonly fileSystem: CardCandidateFileSystem;
-  readonly resolveCandidateUri: (sceneStem: string) => unknown;
+  readonly resolveCandidateUri: (sceneStem: string) => StoryUri;
   readonly ensureDirectory?: () => Promise<void>;
   readonly logger?: CardCandidateUpdateLogger;
 }

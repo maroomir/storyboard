@@ -5,7 +5,7 @@ import {
   type CollectRosterEntry,
 } from '../../ai/cardCollectBuilder';
 import type { StoryboardCard } from '@storyboard/story-format';
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { CardCollectProposal } from '../../shared/cardCollect';
 
 export interface ICardCollectRepository {

@@ -1,4 +1,4 @@
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { AiGateway } from '../ai/aiGateway';
 import { validateGenerationContract } from '../../domain/generationContract';
 import { toOutlineBrief } from '@storyboard/story-format';

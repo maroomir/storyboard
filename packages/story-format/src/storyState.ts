@@ -1,3 +1,4 @@
+import type { StoryUri } from './storyUri';
 // NOTE: 씬 사이의 기억. 직전 드래프트 꼬리만으로는 앞 화가 확립한 사실·관계·공개된 정보가 다음 씬에
 // 전달되지 않아 씬 경계마다 상태가 리셋된다. 씬 생성 직후 이 원장을 갱신하고, 다음 씬 프롬프트에
 // [이야기 상태]로 주입해 장거리 연속성을 유지한다.
@@ -25,8 +26,8 @@ export interface StoryState {
 }
 
 export interface StoryStateFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 const throughLinePattern = /^<!--\s*through-scene:\s*(\d+)\s*-->$/;
@@ -106,7 +107,7 @@ export function serializeStoryState(state: StoryState): string {
 }
 
 export async function readStoryState(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: Pick<StoryStateFileSystem, 'readFile'>,
 ): Promise<StoryState> {
   try {
@@ -118,7 +119,7 @@ export async function readStoryState(
 }
 
 export async function writeStoryState(
-  uri: unknown,
+  uri: StoryUri,
   state: StoryState,
   fileSystem: Pick<StoryStateFileSystem, 'writeFile'>,
 ): Promise<void> {

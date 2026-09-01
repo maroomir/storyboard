@@ -1,6 +1,6 @@
 import { getStoryboardProjectPaths } from '../paths/projectPaths';
 import { listCardFileUris } from './cardFiles';
-import { type StoryUri } from '../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../ports/fileSystem';
 import { isIgnoredSampleCardFileName } from '../paths/projectPaths';
 import { isCharacterRole, parseCard } from '@storyboard/story-format';

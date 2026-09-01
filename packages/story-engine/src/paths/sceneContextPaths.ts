@@ -11,7 +11,6 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     bibleCanon: paths.bibleCanon,
     manuscriptSummary: joinStoryPath(paths.manuscriptDirectory, summaryFileName),
     storyState: paths.storyState,
-    joinPath: (base: unknown, ...segments: string[]): StoryUri =>
-      joinStoryPath(base as StoryUri, ...segments),
+    joinPath: (base: StoryUri, ...segments: string[]): StoryUri => joinStoryPath(base, ...segments),
   };
 }

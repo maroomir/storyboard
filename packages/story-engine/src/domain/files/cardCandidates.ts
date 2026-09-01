@@ -1,8 +1,9 @@
+import type { StoryUri } from '@storyboard/story-format';
 import { cardCandidateRecordSchema, type CardCandidateRecord } from '../../shared/cardCandidates';
 
 export interface CardCandidateFileSystem {
-  readonly readFile: (uri: unknown) => PromiseLike<Uint8Array>;
-  readonly writeFile: (uri: unknown, content: Uint8Array) => PromiseLike<void>;
+  readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
+  readonly writeFile: (uri: StoryUri, content: Uint8Array) => PromiseLike<void>;
 }
 
 export function serializeCardCandidates(record: CardCandidateRecord): string {
@@ -14,7 +15,7 @@ export function parseCardCandidates(rawCandidates: string): CardCandidateRecord 
 }
 
 export async function readCardCandidateFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardCandidateFileSystem,
 ): Promise<CardCandidateRecord> {
   const bytes = await fileSystem.readFile(uri);
@@ -22,7 +23,7 @@ export async function readCardCandidateFile(
 }
 
 export async function writeCardCandidateFile(
-  uri: unknown,
+  uri: StoryUri,
   fileSystem: CardCandidateFileSystem,
   record: CardCandidateRecord,
 ): Promise<void> {

@@ -109,7 +109,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     return await engine.revise.execute({
       workspaceUri,
       paths: getStoryboardProjectPaths(workspaceUri),
-      draftUri: draftPath(workspaceUri, sceneStem) as StoryUri,
+      draftUri: draftPath(workspaceUri, sceneStem),
       sceneStem,
       maxIterations: configBridge.getReviseMaxIterations(),
       maxCompressionPercent: configBridge.getMaxCompressionPercent(),
@@ -134,7 +134,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     return {
       workspaceRoot,
       fileSystem,
-      sceneUri: (sceneStem) => scenePath(workspaceRoot, sceneStem) as StoryUri,
+      sceneUri: (sceneStem) => scenePath(workspaceRoot, sceneStem),
       // NOTE: no `postGenerationUpdates`. Those updaters write tracked `character/`/`background/`
       // cards through the file system port, which would bypass the mutate gate — no commit, no
       // freshness guard. The bot must not carry that capability until a tracked-write port exists.

@@ -1,4 +1,4 @@
-import type { StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import {
   mergeSceneGrounding,
   missingSceneGroundingFields,

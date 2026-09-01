@@ -1,6 +1,6 @@
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { listCardFileUris } from '../cardFiles';
-import { type StoryUri } from '../../paths/storyUri';
+import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type {
   ICardSidebarRepository,
