@@ -1,7 +1,7 @@
 import type { IFileSystem } from '../../ports/fileSystem';
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { draftPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';
 import { readProjectJson } from '../../persistence/projectJson';
@@ -25,7 +25,7 @@ export class ApplyDraftFormatUseCase {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly aiGateway: AiGateway,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly generator: string,
   ) {}
 

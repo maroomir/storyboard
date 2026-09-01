@@ -6,7 +6,7 @@ import {
   type StudioChatRequest
 } from "@storyboard/story-engine"
 import type { AiGateway } from "@storyboard/story-engine"
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn } from "@storyboard/story-engine"
 
 interface FakeServiceOptions {
@@ -44,7 +44,7 @@ function gatewayWith(options: FakeServiceOptions): {
   }
 }
 
-const logger = { warn: vi.fn(), info: vi.fn() } as unknown as StoryboardLogger
+const logger = { warn: vi.fn(), info: vi.fn() } as unknown as IStoryboardLogger
 
 const cardBaseline = "type: character\nid: seorin\nname: 서린"
 

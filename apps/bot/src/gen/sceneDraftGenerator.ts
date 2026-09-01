@@ -7,8 +7,8 @@ import {
   getStoryboardProjectPaths,
   scenePath,
   type StoryUri,
-  type StoryboardLogger,
-  type UsageSink,
+  type IStoryboardLogger,
+  type IUsageSink,
 } from '@storyboard/story-engine';
 import { AiGateway } from '@storyboard/story-engine';
 import type { AiProviderRegistry, ConfigBridge, OnUsageRecordCallback } from '@storyboard/story-ai';
@@ -124,7 +124,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     const workspaceRoot = NodeUri.file(store.root);
     const fileSystem = new BotFileSystem(content, workspaceRoot);
     const logger = createStageLogger(this.options.onStage);
-    const usageSink: UsageSink = {
+    const usageSink: IUsageSink = {
       record: async (_workspaceRoot, usage): Promise<void> => {
         this.options.onUsage(usage);
       },
@@ -175,7 +175,7 @@ interface BotEngine {
 // The engine logs progress; the bot turns it into a Telegram stage line.
 function createStageLogger(
   onStage: ((stage: string, current: number, total: number) => void) | undefined,
-): StoryboardLogger {
+): IStoryboardLogger {
   return {
     info: (message) => onStage?.(message, 0, 0),
     warn: (message) => onStage?.(message, 0, 0),

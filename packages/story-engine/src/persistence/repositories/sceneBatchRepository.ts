@@ -1,5 +1,5 @@
 import { hasStoryboardProjectAt } from '../../paths/projectDetection';
-import type { WorkspaceLocator } from '../../ports/workspaceLocator';
+import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '../../ports/fileSystem';
 import type {
@@ -12,7 +12,7 @@ import { parseSceneFileName } from '@storyboard/story-format';
 export class SceneBatchRepository implements ISceneBatchRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
-    private readonly workspaceLocator: WorkspaceLocator,
+    private readonly workspaceLocator: IWorkspaceLocator,
   ) {}
 
   public async listStoryboardScenes(): Promise<BatchSceneList> {

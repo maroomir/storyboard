@@ -5,12 +5,12 @@ import {
   CardRenameValidationError,
   parseCardRenameCandidate,
 } from '../../infrastructure/vscode/cardRenameEdit';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 export function registerCardRenameParticipant({
   logger,
 }: {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }): vscode.Disposable {
   return vscode.workspace.onWillRenameFiles((event) => {
     const cardRenames = event.files.filter(
@@ -33,7 +33,7 @@ export function registerCardRenameParticipant({
 
 async function applyCardRenames(
   files: readonly { readonly oldUri: vscode.Uri; readonly newUri: vscode.Uri }[],
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<vscode.WorkspaceEdit | undefined> {
   const combinedEdit = new vscode.WorkspaceEdit();
 

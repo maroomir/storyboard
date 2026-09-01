@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 
 import type { AssembleManuscriptUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
 const ASSEMBLE_MANUSCRIPT_COMMAND = 'storyboard.manuscript.assemble';
 
 export type RegisterAssembleManuscriptCommandDependencies = {
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 };
 
 export function registerAssembleManuscriptCommand(
@@ -45,7 +45,7 @@ async function runAssembleManuscript(
 
 async function reportFailure(
   result: Exclude<Awaited<ReturnType<AssembleManuscriptUseCase['execute']>>, { readonly ok: true }>,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'missing_outline') {
     await vscode.window.showWarningMessage(

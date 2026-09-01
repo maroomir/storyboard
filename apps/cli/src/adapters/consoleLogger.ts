@@ -1,7 +1,7 @@
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 // Everything goes to stderr so `--json` output on stdout stays machine-readable.
-export class ConsoleLogger implements StoryboardLogger {
+export class ConsoleLogger implements IStoryboardLogger {
   public constructor(private readonly verbose: boolean) {}
 
   public info(message: string): void {

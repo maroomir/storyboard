@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { migrateCardTextFieldsToList } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
@@ -11,12 +11,12 @@ import {
 const migrateCommand = 'storyboard.cards.migrateTextToList';
 
 export function registerMigrateCardTextCommand(dependencies: {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(migrateCommand, () => runMigrate(dependencies.logger));
 }
 
-async function runMigrate(logger: StoryboardLogger): Promise<void> {
+async function runMigrate(logger: IStoryboardLogger): Promise<void> {
   const workspaceFolder = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
@@ -45,7 +45,7 @@ async function runMigrate(logger: StoryboardLogger): Promise<void> {
 
 async function migrateCardsInDirectory(
   directory: vscode.Uri,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<number> {
   let entries: [string, vscode.FileType][];
 

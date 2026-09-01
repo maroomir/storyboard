@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { PromoteBibleCandidatesUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,
@@ -14,7 +14,7 @@ interface CandidateQuickPickItem extends vscode.QuickPickItem {
   readonly fact: BibleFact;
 }
 async function runPromote(
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
   useCase: PromoteBibleCandidatesUseCase,
 ): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
@@ -79,7 +79,7 @@ async function runPromote(
 }
 
 export function registerPromoteBibleCandidatesCommand(dependencies: {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(promoteCommand, () =>

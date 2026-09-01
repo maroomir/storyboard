@@ -1,6 +1,6 @@
 import { joinStoryPath } from '../paths/storyUri';
 import type { FileSystemDirectoryEntry, IFileSystem } from '../ports/fileSystem';
-import type { StoryboardLogger } from '../ports/logger';
+import type { IStoryboardLogger } from '../ports/logger';
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
 import type { StoryboardProjectPaths } from '../paths/projectPaths';
 import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-format';
@@ -9,7 +9,7 @@ export async function collectDraftsByOrder(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
   fileSystem: DraftFileSystem,
-  logger: Pick<StoryboardLogger, 'warn'>,
+  logger: Pick<IStoryboardLogger, 'warn'>,
 ): Promise<Map<number, ManuscriptDraftEntry>> {
   const draftsByOrder = new Map<number, ManuscriptDraftEntry>();
 

@@ -41,7 +41,7 @@ import {
   NodeUri,
   type StoryUri,
   type StoryWorkspaceFolder,
-  type UsageSink,
+  type IUsageSink,
 } from '@storyboard/story-engine';
 import {
   ConfigBridge,
@@ -157,7 +157,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.
-  const usageSink: UsageSink = { record: async (): Promise<void> => undefined };
+  const usageSink: IUsageSink = { record: async (): Promise<void> => undefined };
   const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
   const generator = `storyboard@${options.version}`;
 

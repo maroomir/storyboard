@@ -1,9 +1,9 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { draftPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
 import { recordRevisionEntry } from '../../persistence/revisionPlanRecorder';
 import type { IFileSystem } from '../../ports/fileSystem';
-import type { WorkspaceLocator } from '../../ports/workspaceLocator';
+import type { IWorkspaceLocator } from '../../ports/workspaceLocator';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneFileName } from '@storyboard/story-format';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
@@ -20,9 +20,9 @@ export type ReviseAfterGenerateHooks = ReviseGateHooks & {
 export class ReviseAfterGenerateGate {
   public constructor(
     private readonly fileSystem: IFileSystem,
-    private readonly workspaceLocator: WorkspaceLocator,
+    private readonly workspaceLocator: IWorkspaceLocator,
     private readonly configBridge: ConfigBridge,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly reviseDraftUseCase: ReviseDraftUseCase,
   ) {}
 

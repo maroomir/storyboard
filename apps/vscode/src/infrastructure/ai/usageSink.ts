@@ -1,11 +1,11 @@
-import type { StoryUri, StoryboardLogger, UsageSink } from '@storyboard/story-engine';
+import type { StoryUri, IStoryboardLogger, IUsageSink } from '@storyboard/story-engine';
 import type { UsageRecord } from '@storyboard/story-ai';
 
 import type { UsageRecorder } from './UsageRecorder';
 
 // NOTE: accounting must never fail a generation the author already paid for, so a ledger write that
 // throws is logged and swallowed here rather than surfacing to the pipeline.
-export function createUsageSink(recorder: UsageRecorder, logger: StoryboardLogger): UsageSink {
+export function createUsageSink(recorder: UsageRecorder, logger: IStoryboardLogger): IUsageSink {
   return {
     record: async (workspaceRoot: StoryUri, usage: UsageRecord): Promise<void> => {
       try {

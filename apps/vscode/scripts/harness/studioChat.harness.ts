@@ -22,7 +22,7 @@ import {
   resolveStudioLookups,
   type StudioSceneFocus,
 } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn, StudioEntity } from '@storyboard/story-engine';
 
 import { createUsageSummary } from './usageSummary';
@@ -179,7 +179,7 @@ function createRegistry(): AiProviderRegistry {
 const harnessLogger = {
   warn: (message: string): void => console.log(`[warn] ${message}`),
   info: (): void => undefined,
-} as unknown as StoryboardLogger;
+} as unknown as IStoryboardLogger;
 
 function createGateway(onUsage: ReturnType<typeof createUsageSummary>['onUsage']): AiGateway {
   const service = new StoryboardAIService(createRegistry(), { onUsage });

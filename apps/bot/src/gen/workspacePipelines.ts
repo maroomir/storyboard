@@ -4,7 +4,7 @@ import {
   ManuscriptAssemblyRepository,
   NodeUri,
   validateGenerationContract,
-  type StoryboardLogger,
+  type IStoryboardLogger,
 } from '@storyboard/story-engine';
 import {
   STORYBOARD_RELATIVE_PATHS,
@@ -203,7 +203,7 @@ export class ManuscriptPipeline implements IPipeline {
 
 // The engine's warnings (an unreadable draft, a scene missing from the plan) belong in the job log
 // where /joblog can show them, not on the operator's console.
-function createJobLogger(context: PipelineContext): StoryboardLogger {
+function createJobLogger(context: PipelineContext): IStoryboardLogger {
   return {
     info: (message) => context.log('조립', message),
     warn: (message) => context.log('조립', message),

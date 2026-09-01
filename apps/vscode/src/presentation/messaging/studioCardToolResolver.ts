@@ -8,7 +8,7 @@ import type { AiGateway } from '@storyboard/story-engine';
 import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { CardCollectProposal } from '@storyboard/story-engine';
 import type { StudioEntity } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
   backgroundCardPath,
   characterCardPath,
@@ -18,7 +18,7 @@ import {
 export interface StudioCardToolResolverDependencies {
   readonly aiGateway: AiGateway;
   readonly collectUseCase: CollectCardProposalsUseCase;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export interface StudioCardToolResolverInput {

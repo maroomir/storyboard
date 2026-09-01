@@ -1,6 +1,6 @@
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '../../domain/manuscriptReview';
 import { flattenChapterPlan } from '@storyboard/story-format';
@@ -18,7 +18,7 @@ export interface IManuscriptReviewRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadReviewSource(
     workspaceRoot: StoryUri,
-    logger: Pick<StoryboardLogger, 'warn'>,
+    logger: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptReviewSource>;
   saveReview(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
 }
@@ -39,7 +39,7 @@ export class ReviewManuscriptUseCase {
   public constructor(
     private readonly aiGateway: AiGateway,
     private readonly repository: IManuscriptReviewRepository,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public async execute(workspaceRoot: StoryUri): Promise<ReviewManuscriptResult> {

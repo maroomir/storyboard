@@ -841,7 +841,7 @@ packages/story-engine/src/
   persistence/    # repository 구현 (IFileSystem 위)
   domain/         # runtime-agnostic policies·codecs·value types
   shared/         # 다른 내부 레이어를 import하지 않는 contracts
-  ports/          # IFileSystem, WorkspaceLocator, UsageSink, StoryboardLogger
+  ports/          # IFileSystem, IWorkspaceLocator, IUsageSink, IStoryboardLogger
   paths/          # StoryUri, NodeUri, 프로젝트 경로 규약
 
 apps/vscode/src/extension.ts

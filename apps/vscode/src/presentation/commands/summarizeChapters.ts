@@ -1,13 +1,13 @@
 import * as vscode from 'vscode';
 
 import type { SummarizeChaptersUseCase } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '../../infrastructure/vscode/workspace';
 
 const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';
 
 export type RegisterSummarizeChaptersCommandDependencies = {
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
 };
 
@@ -56,7 +56,7 @@ async function runSummarizeChapters(
 
 async function reportFailure(
   result: Exclude<Awaited<ReturnType<SummarizeChaptersUseCase['execute']>>, { readonly ok: true }>,
-  logger: StoryboardLogger,
+  logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'cancelled') return;
   if (result.kind === 'missing_outline') {

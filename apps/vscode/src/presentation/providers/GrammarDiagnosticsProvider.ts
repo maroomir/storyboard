@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import type { StoryboardLogger } from '@storyboard/story-engine';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '../../infrastructure/vscode/workspace';
@@ -17,7 +17,7 @@ const quickFixKind = (vscode.CodeActionKind?.QuickFix ?? 'quickfix') as vscode.C
 
 export interface RegisterGrammarDiagnosticsProviderDependencies {
   readonly aiGateway: AiGateway;
-  readonly logger: StoryboardLogger;
+  readonly logger: IStoryboardLogger;
 }
 
 export function toGrammarRange(

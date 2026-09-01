@@ -1,6 +1,6 @@
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import type { ProjectFormat } from '@storyboard/story-format';
 import {
   resolveMinimumDraftLength,
@@ -40,7 +40,7 @@ export type CondenseDraftResult =
 export class CondenseDraftUseCase {
   public constructor(
     private readonly aiGateway: AiGateway,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {

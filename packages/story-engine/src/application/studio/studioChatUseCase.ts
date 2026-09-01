@@ -12,7 +12,7 @@ import type {
 import type { AiGateway } from '../ai/aiGateway';
 import type { StudioPatchTarget } from '../../domain/studio/studioPatch';
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import type {
   StudioChatTurn,
   StudioFollowUpTarget,
@@ -55,7 +55,7 @@ export const maxStudioQuestions = 5;
 export class StudioChatUseCase {
   public constructor(
     private readonly aiGateway: AiGateway,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public async send(request: StudioChatRequest): Promise<readonly StudioChatTurn[]> {

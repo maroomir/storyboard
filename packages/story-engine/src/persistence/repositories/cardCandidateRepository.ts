@@ -1,7 +1,7 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '../../ports/fileSystem';
 import type { ICardCandidateRepository } from '../../application/cards/promoteCardCandidatesUseCase';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { characterCardPath, getStoryboardProjectPaths } from '../../paths/projectPaths';
 import {
   applyCardCandidateItems,
@@ -16,7 +16,7 @@ import type { CardCandidateRecord } from '../../shared/cardCandidates';
 export class CardCandidateRepository implements ICardCandidateRepository {
   public constructor(
     private readonly fileSystem: IFileSystem,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
   ) {}
 
   public async loadRecords(workspaceRoot: StoryUri): Promise<readonly CardCandidateRecord[]> {

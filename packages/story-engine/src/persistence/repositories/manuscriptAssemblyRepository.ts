@@ -14,7 +14,7 @@ import type {
 } from '../../application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '../../application/manuscript/summarizeChaptersUseCase';
 import { summaryFileName } from '../../domain/chapterSummaries';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '../manuscriptDrafts';
 import { getStoryboardProjectPaths } from '../../paths/projectPaths';
@@ -54,7 +54,7 @@ export class ManuscriptAssemblyRepository
 
   public async loadAssemblySource(
     workspaceRoot: StoryUri,
-    logger?: Pick<StoryboardLogger, 'warn'>,
+    logger?: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptAssemblySource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder] = await Promise.all([
@@ -73,7 +73,7 @@ export class ManuscriptAssemblyRepository
 
   public async loadReviewSource(
     workspaceRoot: StoryUri,
-    logger: Pick<StoryboardLogger, 'warn'>,
+    logger: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptReviewSource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     const [project, plan, draftsByOrder, canonFactLines] = await Promise.all([

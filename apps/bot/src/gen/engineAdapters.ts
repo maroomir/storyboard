@@ -11,7 +11,7 @@ import {
   type SceneCacheRecord,
   type StoryUri,
   type StoryWorkspaceFolder,
-  type WorkspaceLocator,
+  type IWorkspaceLocator,
   parseSceneCache,
   serializeSceneCache,
 } from '@storyboard/story-engine';
@@ -160,7 +160,7 @@ export class BotFileSystem implements IFileSystem {
   }
 }
 
-export class BotWorkspaceLocator implements WorkspaceLocator {
+export class BotWorkspaceLocator implements IWorkspaceLocator {
   private readonly folder: StoryWorkspaceFolder;
 
   public constructor(root: string) {

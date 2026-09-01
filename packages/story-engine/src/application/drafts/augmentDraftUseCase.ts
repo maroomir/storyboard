@@ -1,6 +1,6 @@
 import type { AiGateway } from '../ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardLogger } from '../../ports/logger';
+import type { IStoryboardLogger } from '../../ports/logger';
 import { sceneContextPaths } from '../../paths/sceneContextPaths';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
@@ -53,7 +53,7 @@ export class AugmentDraftUseCase {
   public constructor(
     private readonly fileSystem: IFileSystem,
     private readonly aiGateway: AiGateway,
-    private readonly logger: StoryboardLogger,
+    private readonly logger: IStoryboardLogger,
     private readonly configBridge: ConfigBridge,
   ) {}
 
