@@ -19,9 +19,16 @@ export interface WorkspaceFixture {
   readonly git: (...args: string[]) => string;
 }
 
+// A real workspace is scaffolded by `storyboard init`, so this mirrors createDefaultProjectJson:
+// the engine validates project.json strictly and the bot must be handed the same shape Desktop is.
 const DEFAULT_PROJECT = {
   version: '1.0.0',
+  id: 'fixture-project',
   name: 'fixture-novel',
+  format: 'novel',
+  language: 'ko',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  editor: { scenePrefixDigits: 2 },
   setting: {
     format: 'novel',
     genre: '판타지',
