@@ -21,8 +21,10 @@ except operational state.
   snapshot of workspace content; read through.
 - **Commits name explicit paths.** `git add .` is forbidden — a bot commit must never sweep in the
   user's unrelated uncommitted work.
-- **Generated artifacts are written but not committed.** `draft/`, `.draft/`, `manuscript/`, and
-  `.storyboard/cache/` are gitignored exactly as the extension scaffolds them.
+- **Drafts are committed; the rest of the generated tree is not.** `draft/` is the readable result,
+  so a draft save is a commit like any tracked write. `.draft/`, `manuscript/`, and
+  `.storyboard/cache/` are rebuildable from it and stay gitignored, exactly as the extension
+  scaffolds them.
 - **No seedcoat.** The `.seed` archive is gone from the whole repository — story content lives in the
   git workspace only. `apps/bot/scripts/check-architecture.mjs` fails the build if a `seed` import reappears.
 
