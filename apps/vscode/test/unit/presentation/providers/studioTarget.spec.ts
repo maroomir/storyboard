@@ -1,8 +1,8 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import { computeStudioTarget } from "@/presentation/providers/studioTarget"
-import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
+import { computeStudioTarget, resolveActiveStudioFocus } from "@/presentation/providers/studioTarget"
+import { TabInputCustom, TabInputText, Uri, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const workspaceFolder: WorkspaceFolder = {
   uri: Uri.file("/workspace/story") as never,
@@ -14,11 +14,9 @@ const draftBody = ["---", "sceneStem: 01-intro", "format: novel", "---", "본문
 
 function editorAt(filePath: string, options: { text?: string; hasSelection?: boolean } = {}): never {
   return {
-    document: {
-      uri: Uri.file(filePath),
-      getText: () => options.text ?? ""
-    },
-    selection: { isEmpty: options.hasSelection !== true }
+    uri: Uri.file(filePath),
+    hasSelection: options.hasSelection === true,
+    documentText: options.text
   } as never
 }
 
@@ -40,6 +38,48 @@ beforeEach((): void => {
 afterEach((): void => {
   vi.restoreAllMocks()
   vscode.workspace.getWorkspaceFolder = (): undefined => undefined
+  vscode.window.activeTextEditor = undefined
+  vscode.window.tabGroups.activeTabGroup.activeTab = undefined
+})
+
+describe("resolveActiveStudioFocus", () => {
+  it("prefers the active text editor and carries its selection and body", () => {
+    vscode.window.activeTextEditor = {
+      document: { uri: Uri.file("/workspace/story/draft/01-intro.md"), getText: () => draftBody },
+      selection: { isEmpty: false }
+    } as never
+
+    expect(resolveActiveStudioFocus()).toEqual({
+      uri: Uri.file("/workspace/story/draft/01-intro.md"),
+      hasSelection: true,
+      documentText: draftBody
+    })
+  })
+
+  it("falls back to the active custom editor tab when no text editor is active", () => {
+    vscode.window.tabGroups.activeTabGroup.activeTab = {
+      input: new TabInputCustom(Uri.file("/workspace/story/character/seorin.card"), "storyboard.card")
+    }
+
+    expect(resolveActiveStudioFocus()).toEqual({
+      uri: Uri.file("/workspace/story/character/seorin.card"),
+      hasSelection: false
+    })
+  })
+
+  it("accepts a text tab as focus too", () => {
+    vscode.window.tabGroups.activeTabGroup.activeTab = {
+      input: new TabInputText(Uri.file("/workspace/story/scene/01-intro.card"))
+    }
+
+    expect(resolveActiveStudioFocus()?.uri.fsPath).toBe("/workspace/story/scene/01-intro.card")
+  })
+
+  it("reports no focus when the active tab is not a document", () => {
+    vscode.window.tabGroups.activeTabGroup.activeTab = { input: { viewType: "settings" } }
+
+    expect(resolveActiveStudioFocus()).toBeUndefined()
+  })
 })
 
 describe("computeStudioTarget", () => {

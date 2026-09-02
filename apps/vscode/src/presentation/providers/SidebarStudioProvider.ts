@@ -26,7 +26,7 @@ import { createStudioChatRpcHandlers } from '@/presentation/messaging/studioChat
 import { createStudioFollowUpRpcHandlers } from '@/presentation/messaging/studioFollowUpRpcHandlers';
 import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studioProposalRpcHandlers';
 import { createStudioSessionRpcHandlers } from '@/presentation/messaging/studioSessionRpcHandlers';
-import { computeStudioTarget } from './studioTarget';
+import { computeStudioTarget, resolveActiveStudioFocus } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const studioSidebarViewId = 'storyboard.studioView';
@@ -74,7 +74,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async bootstrapWebview(webviewView: vscode.WebviewView): Promise<void> {
-    const target = await computeStudioTarget(vscode.window.activeTextEditor);
+    const target = await computeStudioTarget(resolveActiveStudioFocus());
     this.lastTargetKey = JSON.stringify(target);
 
     const root = await resolveStoryboardWorkspaceRoot();
@@ -104,6 +104,12 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
           void this.postTargetChanged();
         }
       }),
+      vscode.window.tabGroups.onDidChangeTabs(() => {
+        void this.postTargetChanged();
+      }),
+      vscode.window.tabGroups.onDidChangeTabGroups(() => {
+        void this.postTargetChanged();
+      }),
     );
   }
 
@@ -116,7 +122,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
           return {};
         }
 
-        const target = await computeStudioTarget(vscode.window.activeTextEditor);
+        const target = await computeStudioTarget(resolveActiveStudioFocus());
         return { stage: await readStudioStage(vscodeFileSystem, root, target) };
       },
       ...createStudioChatRpcHandlers({
@@ -126,7 +132,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         logger: this.logger,
         toolDiagnostics: this.toolDiagnostics,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
-        getTarget: () => computeStudioTarget(vscode.window.activeTextEditor),
+        getTarget: () => computeStudioTarget(resolveActiveStudioFocus()),
         postProgress: (stage) => this.postChatProgress(stage),
       }),
       ...createStudioCardUpdateRpcHandlers({
@@ -163,7 +169,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   }
 
   private async postTargetChanged(): Promise<void> {
-    const target = await computeStudioTarget(vscode.window.activeTextEditor);
+    const target = await computeStudioTarget(resolveActiveStudioFocus());
     const key = JSON.stringify(target);
 
     if (key === this.lastTargetKey) {
