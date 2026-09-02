@@ -37,6 +37,7 @@ const expectedMethods = [
   'settings.updateProviderBaseUrl',
   'settings.updateProviderCommand',
   'settings.updateProviderModel',
+  'settings.updateSettingValue',
   'settings.updateTaskAiConfig',
   'studio.card.update',
   'studio.chat.cancel',

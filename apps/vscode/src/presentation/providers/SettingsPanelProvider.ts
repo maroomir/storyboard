@@ -8,6 +8,7 @@ import { createContractRpcHandlers } from '@/presentation/messaging/contractRpcH
 import {
   createSettingsRpcHandlers,
   getSettingsReadSnapshot,
+  type SettingsConfigFiles,
 } from '@/presentation/messaging/settingsRpcHandlers';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
@@ -18,6 +19,7 @@ export interface SettingsPanelDependencies {
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
+  readonly configFiles: () => SettingsConfigFiles;
 }
 
 export interface ISettingsPanel extends vscode.Disposable {
@@ -50,6 +52,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
     const initialSnapshot = await getSettingsReadSnapshot({
       configBridge: this.dependencies.configBridge,
       registry: this.dependencies.aiProviderRegistry,
+      configFiles: this.dependencies.configFiles,
     });
 
     const panel = vscode.window.createWebviewPanel(
@@ -98,6 +101,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
     const payload: StoryboardResponsePayload<'settings.read'> = await getSettingsReadSnapshot({
       configBridge: this.dependencies.configBridge,
       registry: this.dependencies.aiProviderRegistry,
+      configFiles: this.dependencies.configFiles,
     });
 
     await this.panel.webview.postMessage({
@@ -114,6 +118,7 @@ export class SettingsPanelProvider implements ISettingsPanel {
         configBridge: this.dependencies.configBridge,
         secretStore: this.dependencies.secretStore,
         registry: this.dependencies.aiProviderRegistry,
+        configFiles: this.dependencies.configFiles,
       }),
       ...createContractRpcHandlers(),
     };

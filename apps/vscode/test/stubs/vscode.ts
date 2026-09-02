@@ -189,18 +189,55 @@ export class TabInputCustom {
   ) {}
 }
 
+export enum StatusBarAlignment {
+  Left = 1,
+  Right = 2
+}
+
+export interface StatusBarItemLike {
+  text: string
+  tooltip: string | undefined
+  command: string | undefined
+  isVisible: boolean
+  show(): void
+  hide(): void
+  dispose(): void
+}
+
+export const createdStatusBarItems: StatusBarItemLike[] = []
+
 export const window: {
   showInputBox: (options?: unknown) => Promise<string | undefined>
   showWarningMessage: (message: string) => Promise<void>
   showErrorMessage: (message: string) => Promise<void>
   activeTextEditor: unknown
   tabGroups: { activeTabGroup: { activeTab: { input: unknown } | undefined } }
+  createStatusBarItem: (alignment?: StatusBarAlignment, priority?: number) => StatusBarItemLike
 } = {
   showInputBox: async () => undefined,
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
   activeTextEditor: undefined,
-  tabGroups: { activeTabGroup: { activeTab: undefined } }
+  tabGroups: { activeTabGroup: { activeTab: undefined } },
+  createStatusBarItem: (): StatusBarItemLike => {
+    const item: StatusBarItemLike = {
+      text: "",
+      tooltip: undefined,
+      command: undefined,
+      isVisible: false,
+      show(): void {
+        item.isVisible = true
+      },
+      hide(): void {
+        item.isVisible = false
+      },
+      dispose(): void {
+        item.isVisible = false
+      }
+    }
+    createdStatusBarItems.push(item)
+    return item
+  }
 }
 
 export const commands = {

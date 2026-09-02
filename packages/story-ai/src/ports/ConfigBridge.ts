@@ -7,6 +7,7 @@ import {
 } from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
 import { storyboardModelCatalog } from '#ai/contracts/models';
+import { findStoryboardSetting, isValidStoryboardSettingValue } from '#ai/contracts/settingCatalog';
 
 // The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
 // too: a write lands in the workspace file only when that layer already holds the key, so the value
@@ -208,6 +209,30 @@ export class ConfigBridge {
     const merged = this.readTasksPersistMap(configuration);
     delete merged[taskName];
     await configuration.update('tasks', merged, this.resolveUpdateTarget('tasks'));
+  }
+
+  public getSettingValue(key: string): boolean | number | string {
+    const definition = findStoryboardSetting(key);
+
+    if (!definition) {
+      throw new Error(`알 수 없는 설정입니다: ${key}`);
+    }
+
+    const value = this.dependencies.getConfiguration().get<unknown>(key, definition.defaultValue);
+
+    return isValidStoryboardSettingValue(definition, value)
+      ? (value as boolean | number | string)
+      : definition.defaultValue;
+  }
+
+  public async setSettingValue(key: string, value: boolean | number | string): Promise<void> {
+    const definition = findStoryboardSetting(key);
+
+    if (!definition || !isValidStoryboardSettingValue(definition, value)) {
+      throw new Error(`설정 값이 올바르지 않습니다: ${key}`);
+    }
+
+    await this.configurationUpdate(key, value);
   }
 
   public getValueOrigin(section: string): ConfigValueOrigin {
