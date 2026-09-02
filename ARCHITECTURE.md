@@ -87,7 +87,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── 02-chapter-01.card
 │   └── 03-chapter-02.card
 │
-├── draft/                        # AI 생성 최종 원고 (.gitignore)
+├── draft/                        # AI 생성 최종 원고 (추적)
 │   ├── 01-prologue.md
 │   ├── 02-chapter-01.md
 │   └── 03-chapter-02.md
@@ -100,7 +100,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── 01-prologue.md
 │   └── manuscript.md
 │
-├── .gitignore                    # .storyboard/cache/, draft/, .draft/, manuscript/
+├── .gitignore                    # .storyboard/cache/, .draft/, manuscript/
 └── README.md                     # 프로젝트 자유 노트
 ```
 
@@ -430,7 +430,7 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 
 #### 이전 초안 히스토리 (`.draft/`)
 
-`storyboard.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 재생성 가능한 산출물이라 `draft/`처럼 `.gitignore`로 제외한다. 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
+`storyboard.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 초고에서 다시 만들 수 있는 산출물이라 `.gitignore`로 제외한다(`draft/` 자체는 읽는 결과물이라 추적한다). 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
 
 ### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
 

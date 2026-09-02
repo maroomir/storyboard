@@ -109,6 +109,8 @@ describe('workspace onboarding', () => {
   it('initializes, ignores generated files, and makes a baseline commit', () => {
     const bare = createWorkspaceFixture({ initGit: false });
     bare.write('draft/01-first.md', 'generated draft\n');
+    bare.write('.draft/01-first/rev-01.md', 'older revision\n');
+    bare.write('manuscript/manuscript.md', 'assembled\n');
     bare.write('character/elia.card', 'id: elia\n');
     // Simulate a workspace whose .gitignore predates Storyboard.
     writeFileSync(join(bare.root, '.gitignore'), 'node_modules/\n');
@@ -128,8 +130,11 @@ describe('workspace onboarding', () => {
 
     const tracked = git(bare.root, 'ls-files');
     expect(tracked).toContain('character/elia.card');
-    // The whole point of ignoring first: generated drafts must never enter history.
-    expect(tracked).not.toContain('draft/01-first.md');
+    // 초고는 사람이 읽는 결과물이므로 이력에 남긴다.
+    expect(tracked).toContain('draft/01-first.md');
+    // 되돌리기용 리비전과 조립 산출물은 초고에서 다시 만들 수 있으므로 남기지 않는다.
+    expect(tracked).not.toContain('.draft/01-first/rev-01.md');
+    expect(tracked).not.toContain('manuscript/manuscript.md');
     expect(inspectWorkspaceRepository(bare.root).status).toBe('ready');
 
     bare.cleanup();

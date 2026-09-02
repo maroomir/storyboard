@@ -5,7 +5,6 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 const STORYBOARD_GITIGNORE_BLOCK = `
 # Storyboard generated files
 .storyboard/cache/
-draft/
 .draft/
 manuscript/
 character/.sample.card
