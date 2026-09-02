@@ -19,12 +19,25 @@ From a checkout:
 npm install && npm run cli:build && node apps/cli/dist/index.js --help
 ```
 
+## First run
+
+```bash
+storyboard init --title "밤의 항해"   # an empty directory becomes a workspace
+storyboard setup                      # pick the AI provider (and key) — shared with the extension and the bot
+storyboard doctor                     # what is still missing, with the command that fixes it
+```
+
+`storyboard` with no arguments prints the grouped command list with these steps at the top;
+`storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
+verb suggests the closest real ones. `-v` prints the version.
+
 ## Use
 
 ```bash
 storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10~20대" \
   --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
 storyboard outline generate
+storyboard scene seeds
 storyboard scene generate 01-scene-1-1 --force
 storyboard scene generate --all
 storyboard scene revise 01-scene-1-1
@@ -46,12 +59,17 @@ without touching the tree. A new card whose name yields no ascii id is reported 
 under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
 and run `cards build` again.
 
+Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
+forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
+→ `storyboard setup`, no key → `storyboard apikey set <provider>`.
+
 `--fallback <id>` keeps a long unattended run alive: when a CLI provider answers "usage limit", the
 remaining calls go to that provider instead of the run aborting halfway. The switch is one-way.
 
 `--workspace <path>` picks the workspace (default: the current directory). `--json` puts a single
-JSON object on stdout; progress and warnings always go to stderr, so the output stays pipeable.
-Exit code is 0 on success and non-zero on failure.
+JSON object on stdout — for failures too (`{"ok":false,"message":…}`), so an agent never has to
+parse loose text; progress and warnings always go to stderr. Exit code is 0 on success and non-zero
+on failure.
 
 ```bash
 storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
@@ -60,7 +78,9 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 ## Config
 
 `~/.storyboard/config.json`, shared with the extension and the bot, overridden per workspace by
-`.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix:
+`.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix.
+`storyboard config show` prints the effective values with their origin (공통 / 이 작품 / 기본값) and
+`storyboard config set <key> <value>` edits them with the same validation the settings panel uses:
 
 ```json
 { "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "codex", "model": "gpt-5.6-terra" } } }

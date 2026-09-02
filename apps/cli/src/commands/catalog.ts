@@ -1,0 +1,419 @@
+export type CommandGroup =
+  | '시작하기'
+  | '기획'
+  | '씬과 초안'
+  | '카드와 정전'
+  | '검사'
+  | '원고'
+  | '유지보수';
+
+export const commandGroups: readonly CommandGroup[] = [
+  '시작하기',
+  '기획',
+  '씬과 초안',
+  '카드와 정전',
+  '검사',
+  '원고',
+  '유지보수',
+];
+
+export interface CommandSpec {
+  readonly verb: string;
+  readonly group: CommandGroup;
+  readonly usage: string;
+  readonly summary: string;
+  readonly flags?: readonly string[];
+  readonly examples?: readonly string[];
+  // `init` creates the workspace and the setup verbs are machine-wide, so they cannot demand one.
+  readonly needsWorkspace?: false;
+}
+
+export interface FlagSpec {
+  readonly name: string;
+  readonly valueLabel?: string;
+  readonly summary: string;
+}
+
+// One table drives the parser (which flags take a value), `--help`, per-verb help and the README.
+export const flagCatalog: readonly FlagSpec[] = [
+  { name: 'workspace', valueLabel: '<path>', summary: '대상 워크스페이스 (기본: 현재 디렉터리)' },
+  {
+    name: 'provider',
+    valueLabel: '<id>',
+    summary: '이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)',
+  },
+  { name: 'model', valueLabel: '<name>', summary: '그 프로바이더의 모델' },
+  {
+    name: 'fallback',
+    valueLabel: '<id>',
+    summary: 'CLI 프로바이더가 사용 한도에 걸리면 넘어갈 프로바이더',
+  },
+  { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
+  { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
+  { name: 'all', summary: 'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 생성합니다' },
+  {
+    name: 'force',
+    summary: '이미 있는 결과를 덮어씁니다 (scene generate, scene seeds, outline generate)',
+  },
+  { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
+  { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
+  { name: 'instruction', valueLabel: '<text>', summary: 'draft augment/edit 에 줄 지시' },
+  { name: 'name', valueLabel: '<text>', summary: 'card/scene create 가 쓸 이름' },
+  { name: 'id', valueLabel: '<slug>', summary: 'card create 의 파일명 (기본: 이름에서 유도)' },
+  { name: 'to', valueLabel: '<id>', summary: 'card rename 의 새 id' },
+  { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
+  { name: 'language', valueLabel: '<code>', summary: 'init 의 언어 (기본 ko)' },
+  {
+    name: 'from',
+    valueLabel: '<path>',
+    summary: '작품 계약을 읽어올 JSON (project.json 도 그대로 받습니다)',
+  },
+  { name: 'genre', valueLabel: '<text>', summary: '작품 계약: 장르' },
+  { name: 'audience', valueLabel: '<text>', summary: '작품 계약: 독자층' },
+  {
+    name: 'pov',
+    valueLabel: '<value>',
+    summary: '작품 계약: 시점 (first, third-limited, third-omniscient)',
+  },
+  { name: 'target-words', valueLabel: '<n>', summary: '작품 계약: 목표 분량(자)' },
+  { name: 'chapters', valueLabel: '<n>', summary: '작품 계약: 장 수' },
+  { name: 'scenes-per-chapter', valueLabel: '<n>', summary: '작품 계약: 장당 씬 수' },
+  { name: 'concept', valueLabel: '<text>', summary: '작품 계약: 한 줄 콘셉트' },
+  { name: 'description', valueLabel: '<text>', summary: '작품 계약: 설명' },
+  { name: 'key', valueLabel: '<key>', summary: 'config set 이 바꿀 설정 키' },
+  { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
+  { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
+  { name: 'json', summary: '결과를 JSON 으로 stdout 에 출력합니다 (실패도 JSON)' },
+  { name: 'quiet', summary: '진행 로그를 숨깁니다 (기본: 터미널이면 stderr 에 표시)' },
+  { name: 'verbose', summary: '터미널이 아니어도 진행 로그를 stderr 에 출력합니다' },
+  { name: 'version', summary: '버전을 출력합니다 (-v)' },
+  { name: 'help', summary: '이 도움말 또는 <명령> --help (-h)' },
+];
+
+export const booleanFlagNames: ReadonlySet<string> = new Set(
+  flagCatalog.filter((flag) => flag.valueLabel === undefined).map((flag) => flag.name),
+);
+
+export const valueFlagNames: ReadonlySet<string> = new Set(
+  flagCatalog.filter((flag) => flag.valueLabel !== undefined).map((flag) => flag.name),
+);
+
+export const commandCatalog: readonly CommandSpec[] = [
+  {
+    verb: 'init',
+    group: '시작하기',
+    usage: 'init --title <name>',
+    summary: '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다)',
+    flags: [
+      'title',
+      'language',
+      'from',
+      'genre',
+      'audience',
+      'pov',
+      'target-words',
+      'chapters',
+      'scenes-per-chapter',
+      'concept',
+      'description',
+    ],
+    examples: [
+      'storyboard init --title "밤의 항해"',
+      'storyboard init --title "밤의 항해" --genre 미스터리 --audience 성인 --pov third-limited --target-words 300000',
+    ],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'setup',
+    group: '시작하기',
+    usage: 'setup [--provider <id>]',
+    summary: '기본 AI 프로바이더와 API 키를 정합니다 (터미널이면 질문, 아니면 --provider)',
+    flags: ['provider', 'model'],
+    examples: ['storyboard setup', 'storyboard setup --provider codex'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'apikey set',
+    group: '시작하기',
+    usage: 'apikey set <provider>',
+    summary: 'API 키를 stdin 으로 받아 저장합니다 (빈 입력이면 삭제)',
+    examples: ['echo "$OPENAI_API_KEY" | storyboard apikey set openai'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'doctor',
+    group: '시작하기',
+    usage: 'doctor',
+    summary: '설정 파일·프로바이더·API 키·CLI 실행 파일·워크스페이스 상태를 점검합니다',
+    examples: ['storyboard doctor', 'storyboard doctor --json'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'config show',
+    group: '시작하기',
+    usage: 'config show',
+    summary: '적용 중인 설정과 출처(공통/이 작품/기본값)를 보여 줍니다',
+    needsWorkspace: false,
+  },
+  {
+    verb: 'config set',
+    group: '시작하기',
+    usage: 'config set <key> <value>',
+    summary: '~/.storyboard/config.json 의 값을 바꿉니다 (--workspace 안이면 그 작품 파일)',
+    examples: [
+      'storyboard config set defaultProvider claude-code',
+      'storyboard config set draft.reviseMaxIterations 3',
+    ],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'help',
+    group: '시작하기',
+    usage: 'help [command]',
+    summary: '전체 또는 한 명령의 도움말',
+    needsWorkspace: false,
+  },
+  {
+    verb: 'project set',
+    group: '기획',
+    usage: 'project set [--genre …]',
+    summary: '작품 계약을 고칩니다 (적지 않은 항목은 그대로 둡니다)',
+    flags: [
+      'from',
+      'genre',
+      'audience',
+      'pov',
+      'target-words',
+      'chapters',
+      'scenes-per-chapter',
+      'concept',
+      'description',
+    ],
+    examples: [
+      'storyboard project set --target-words 320000',
+      'storyboard project set --from contract.json',
+    ],
+  },
+  {
+    verb: 'outline generate',
+    group: '기획',
+    usage: 'outline generate',
+    summary: '작품 계약에서 시놉시스와 챕터 계획을 만듭니다',
+    flags: ['force'],
+  },
+  {
+    verb: 'scene seeds',
+    group: '기획',
+    usage: 'scene seeds',
+    summary: '아웃라인에서 씬 시드를 만듭니다',
+    flags: ['force'],
+  },
+  {
+    verb: 'scene complete',
+    group: '기획',
+    usage: 'scene complete',
+    summary: '끝번호 뒤에 붙일 완결 씬을 만듭니다 (--dry-run 은 제안만)',
+    flags: ['dry-run'],
+  },
+  {
+    verb: 'novel generate',
+    group: '기획',
+    usage: 'novel generate',
+    summary: '기획부터 원고 조립까지 한 번에 돌립니다 (모든 승인 자동)',
+    flags: ['revise-iterations', 'fallback'],
+    examples: ['storyboard novel generate --fallback codex'],
+  },
+  {
+    verb: 'scene create',
+    group: '씬과 초안',
+    usage: 'scene create --name <text>',
+    summary: '다음 번호로 씬 카드를 만듭니다',
+    flags: ['name'],
+  },
+  {
+    verb: 'scene generate',
+    group: '씬과 초안',
+    usage: 'scene generate <stem> | --all',
+    summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
+    flags: ['all', 'force', 'no-revise', 'revise-iterations'],
+    examples: ['storyboard scene generate 01-scene-1-1', 'storyboard scene generate --all'],
+  },
+  {
+    verb: 'scene revise',
+    group: '씬과 초안',
+    usage: 'scene revise <stem>',
+    summary: '기존 초안을 검수하고 재작성합니다',
+    flags: ['revise-iterations'],
+  },
+  {
+    verb: 'scene draft',
+    group: '씬과 초안',
+    usage: 'scene draft <stem>',
+    summary: '초안 파일 경로를 출력합니다',
+    examples: ['storyboard scene draft 01-scene-1-1 --json | jq -r .data.path'],
+  },
+  {
+    verb: 'draft edit',
+    group: '씬과 초안',
+    usage: 'draft edit <stem> --instruction <text>',
+    summary: '지시대로 고칩니다 (--lines 로 구간 지정)',
+    flags: ['instruction', 'lines'],
+  },
+  {
+    verb: 'draft augment',
+    group: '씬과 초안',
+    usage: 'draft augment <stem>',
+    summary: '갱신된 카드·정전을 기존 초안에 녹입니다',
+    flags: ['lines', 'instruction', 'dry-run'],
+  },
+  {
+    verb: 'draft condense',
+    group: '씬과 초안',
+    usage: 'draft condense <stem>',
+    summary: '초안을 압축합니다',
+    flags: ['lines'],
+  },
+  {
+    verb: 'draft expand',
+    group: '씬과 초안',
+    usage: 'draft expand <stem>',
+    summary: '초안을 늘립니다',
+    flags: ['lines'],
+  },
+  {
+    verb: 'draft format',
+    group: '씬과 초안',
+    usage: 'draft format <stem>',
+    summary: '초안을 프로젝트 형식으로 다시 씁니다',
+  },
+  {
+    verb: 'card create character',
+    group: '카드와 정전',
+    usage: 'card create character --name <text>',
+    summary: '빈 인물 카드를 만듭니다',
+    flags: ['name', 'id'],
+  },
+  {
+    verb: 'card create background',
+    group: '카드와 정전',
+    usage: 'card create background --name <text>',
+    summary: '빈 배경 카드를 만듭니다',
+    flags: ['name', 'id'],
+  },
+  {
+    verb: 'card rename character',
+    group: '카드와 정전',
+    usage: 'card rename character <id> --to <id>',
+    summary: '인물 카드 id 를 바꾸고 참조를 함께 고칩니다',
+    flags: ['to'],
+  },
+  {
+    verb: 'card rename background',
+    group: '카드와 정전',
+    usage: 'card rename background <id> --to <id>',
+    summary: '배경 카드 id 를 바꾸고 참조를 함께 고칩니다',
+    flags: ['to'],
+  },
+  {
+    verb: 'card recommend character',
+    group: '카드와 정전',
+    usage: 'card recommend character',
+    summary: '카드가 없는 인물을 찾습니다 (읽기 전용)',
+  },
+  {
+    verb: 'card recommend background',
+    group: '카드와 정전',
+    usage: 'card recommend background',
+    summary: '카드가 없는 배경을 찾습니다 (읽기 전용)',
+  },
+  {
+    verb: 'cards build',
+    group: '카드와 정전',
+    usage: 'cards build',
+    summary: '씬만 읽어 카드를 만듭니다 (--dry-run 은 제안만)',
+    flags: ['dry-run'],
+  },
+  {
+    verb: 'card promote',
+    group: '카드와 정전',
+    usage: 'card promote',
+    summary: '초안에서 추출한 카드 후보를 반영합니다',
+    flags: ['dry-run'],
+  },
+  {
+    verb: 'bible promote',
+    group: '카드와 정전',
+    usage: 'bible promote',
+    summary: '초안에서 추출한 설정 후보를 정전에 반영합니다',
+    flags: ['dry-run'],
+  },
+  {
+    verb: 'canon diff',
+    group: '카드와 정전',
+    usage: 'canon diff',
+    summary: '정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)',
+  },
+  {
+    verb: 'check grammar',
+    group: '검사',
+    usage: 'check grammar <stem>',
+    summary: '초안의 문법을 검사합니다',
+  },
+  {
+    verb: 'check continuity',
+    group: '검사',
+    usage: 'check continuity <stem>',
+    summary: '정전과 어긋나는 곳을 검사합니다',
+  },
+  {
+    verb: 'check slop',
+    group: '검사',
+    usage: 'check slop <stem>',
+    summary: '상투 표현을 검사합니다 (AI 호출 없음)',
+  },
+  {
+    verb: 'manuscript assemble',
+    group: '원고',
+    usage: 'manuscript assemble',
+    summary: 'draft/ 를 원고로 조립합니다',
+  },
+  {
+    verb: 'manuscript review',
+    group: '원고',
+    usage: 'manuscript review',
+    summary: '조립 원고를 검사합니다',
+  },
+  {
+    verb: 'manuscript summaries',
+    group: '원고',
+    usage: 'manuscript summaries',
+    summary: '장별 요약을 만듭니다',
+  },
+  {
+    verb: 'manuscript export',
+    group: '원고',
+    usage: 'manuscript export [--out <path>]',
+    summary: '조립 원고를 stdout 또는 --out 파일로 냅니다',
+    flags: ['out'],
+  },
+  {
+    verb: 'cards migrate',
+    group: '유지보수',
+    usage: 'cards migrate',
+    summary: '낡은 산문형 카드 필드를 목록 형식으로 옮깁니다',
+  },
+  {
+    verb: 'scene migrate',
+    group: '유지보수',
+    usage: 'scene migrate',
+    summary: '구형 scene/*.txt 를 .card 로 옮깁니다',
+  },
+];
+
+export function findCommandSpec(verb: string): CommandSpec | undefined {
+  return commandCatalog.find((spec) => spec.verb === verb);
+}
+
+export function findFlagSpec(name: string): FlagSpec | undefined {
+  return flagCatalog.find((flag) => flag.name === name);
+}

@@ -2,11 +2,11 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 // Everything goes to stderr so `--json` output on stdout stays machine-readable.
 export class ConsoleLogger implements IStoryboardLogger {
-  public constructor(private readonly verbose: boolean) {}
+  public constructor(private readonly showProgress: boolean) {}
 
   public info(message: string): void {
-    if (this.verbose) {
-      process.stderr.write(`[info] ${message}\n`);
+    if (this.showProgress) {
+      process.stderr.write(`· ${message}\n`);
     }
   }
 
