@@ -19,7 +19,17 @@ function args(
 }
 
 function container(): ReturnType<typeof createCliContainer> {
-  return createCliContainer({ workspacePath: workspace, showProgress: false, version: '0.0.0' });
+  return createCliContainer({
+    workspacePath: workspace,
+    logger: {
+      info: () => undefined,
+      warn: () => undefined,
+      error: () => undefined,
+      show: () => undefined,
+    },
+    canPrompt: false,
+    version: '0.0.0',
+  });
 }
 
 beforeEach(() => {

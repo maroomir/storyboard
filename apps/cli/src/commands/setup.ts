@@ -119,10 +119,6 @@ async function chooseProviderInteractively(
   return isProviderId(answer) ? answer : undefined;
 }
 
-function isInteractive(): boolean {
-  return process.stdin.isTTY === true && process.stderr.isTTY === true;
-}
-
 // `storyboard setup` — the terminal's version of the extension's provider picker. Interactive
 // when there is a person at the keyboard; an agent passes `--provider` instead.
 export async function runSetup({ container, args }: CommandContext): Promise<CommandOutcome> {
@@ -136,7 +132,7 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
 
   if (flagProvider !== undefined) {
     providerId = flagProvider as AiProviderId;
-  } else if (isInteractive()) {
+  } else if (container.canPrompt) {
     providerId = await chooseProviderInteractively(current);
   } else {
     return {
@@ -161,7 +157,7 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
   let keyStored = false;
 
   if (requiresApiKey(providerId) && !(await secretStore.hasApiKey(providerId))) {
-    if (isInteractive()) {
+    if (container.canPrompt) {
       const key = await askSecret(`${providerId} API 키 (비워 두면 나중에 apikey set 으로): `);
 
       if (key.trim().length > 0) {

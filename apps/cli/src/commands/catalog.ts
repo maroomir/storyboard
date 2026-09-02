@@ -167,6 +167,13 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'tui',
+    group: '시작하기',
+    usage: 'tui',
+    summary: '대화형 화면을 엽니다 (터미널에서 인자 없이 실행해도 같음)',
+    needsWorkspace: false,
+  },
+  {
     verb: 'help',
     group: '시작하기',
     usage: 'help [command]',

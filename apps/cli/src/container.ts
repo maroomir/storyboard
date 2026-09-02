@@ -48,7 +48,8 @@ import {
   type AiProviderId,
 } from '@storyboard/story-ai';
 
-import { ConsoleLogger } from './adapters/consoleLogger';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+
 import { NodeFileSystem } from './adapters/nodeFileSystem';
 import { NodeWorkspaceLocator } from './adapters/nodeWorkspaceLocator';
 import { resolveCliPaths } from './adapters/paths';
@@ -65,7 +66,9 @@ export interface CliContainer {
   readonly homePaths: StoryboardHomePaths;
   readonly workspaceConfigFile: string | undefined;
   readonly aiGateway: AiGateway;
-  readonly logger: ConsoleLogger;
+  readonly logger: IStoryboardLogger;
+  // False inside the TUI, where stdin belongs to the screen and a readline prompt would fight it.
+  readonly canPrompt: boolean;
   readonly fileSystem: NodeFileSystem;
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
@@ -93,8 +96,8 @@ export interface CliContainer {
 
 export interface CliContainerOptions {
   readonly workspacePath: string;
-  // Progress lines on stderr: on for a person at a terminal, off for `--json`/`--quiet` pipes.
-  readonly showProgress: boolean;
+  readonly logger: IStoryboardLogger;
+  readonly canPrompt: boolean;
   readonly version: string;
   readonly provider?: string;
   readonly model?: string;
@@ -135,7 +138,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
-  const logger = new ConsoleLogger(options.showProgress);
+  const logger = options.logger;
   const fileSystem = new NodeFileSystem();
   const workspaceLocator = new NodeWorkspaceLocator(folder);
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
@@ -223,6 +226,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   return {
     workspaceRoot,
+    canPrompt: options.canPrompt,
     homePaths: resolveStoryboardHomePaths(),
     workspaceConfigFile,
     aiGateway,
