@@ -11,6 +11,7 @@ import { computeDraftBodyHash } from '@storyboard/story-format';
 import {
   runSceneGenerationPipeline,
   planSectionCount,
+  planSectionTargetLengths,
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
@@ -227,11 +228,18 @@ describe("runSceneGenerationPipeline — 살붙임 단계", () => {
     })
 
     expect(ai.expandSceneSection).toHaveBeenCalledTimes(3)
-    for (const call of ai.expandSceneSection.mock.calls) {
-      const input = call[0] as { skeleton: string; targetLength: number }
+    const inputs = ai.expandSceneSection.mock.calls.map(
+      (call) => call[0] as { skeleton: string; section: string; targetLength: number }
+    )
+    const budgets = planSectionTargetLengths(
+      inputs.map((input) => input.section),
+      15000
+    )
+    for (const [index, input] of inputs.entries()) {
       expect(input.skeleton).toBe(longSkeleton)
-      expect(input.targetLength).toBe(5000)
+      expect(input.targetLength).toBe(budgets[index])
     }
+    expect(inputs.at(-1)?.targetLength).toBeLessThan(inputs[0]?.targetLength as number)
   })
 
   it("hands the previous finished section to the next call, and none to the first", async () => {
@@ -367,6 +375,30 @@ describe("planSectionCount", () => {
 
   it("falls back to a single section without a target", () => {
     expect(planSectionCount(0)).toBe(1)
+  })
+})
+
+describe("planSectionTargetLengths", () => {
+  it("splits the budget in proportion to each skeleton slice", () => {
+    const sections = ["가".repeat(600), "나".repeat(300), "다".repeat(100)]
+
+    expect(planSectionTargetLengths(sections, 10000)).toEqual([6000, 3000, 1000])
+  })
+
+  it("caps a fat slice at the output limit", () => {
+    const sections = ["가".repeat(900), "나".repeat(100)]
+
+    expect(planSectionTargetLengths(sections, 15000)).toEqual([7000, 1500])
+  })
+
+  it("ignores whitespace when weighing slices", () => {
+    const sections = ["가".repeat(500) + " \n".repeat(500), "나".repeat(500)]
+
+    expect(planSectionTargetLengths(sections, 6000)).toEqual([3000, 3000])
+  })
+
+  it("falls back to an even split when the slices are empty", () => {
+    expect(planSectionTargetLengths(["", ""], 6000)).toEqual([3000, 3000])
   })
 })
 

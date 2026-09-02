@@ -21,6 +21,7 @@ import {
 } from './sceneGenerationStages';
 import {
   planSectionCount,
+  planSectionTargetLengths,
   quotedDialoguePattern,
   splitSkeletonIntoSections,
   validateExpandedSection,
@@ -120,12 +121,12 @@ function skeletonTargetLength(styleDirective: StyleDirective | undefined): numbe
   return target === undefined ? undefined : Math.round(target * SKELETON_LENGTH_RATIO);
 }
 
-function sectionTargetLength(
+function sectionTargetLengths(
   styleDirective: StyleDirective | undefined,
-  sectionCount: number,
-): number {
-  const target = styleDirective?.targetWordCount ?? SECTION_OUTPUT_LIMIT * sectionCount;
-  return Math.max(1, Math.round(target / sectionCount));
+  sections: readonly string[],
+): number[] {
+  const target = styleDirective?.targetWordCount ?? SECTION_OUTPUT_LIMIT * sections.length;
+  return planSectionTargetLengths(sections, target);
 }
 
 // NOTE: 씬 간 연속성 재료(캐넌·이전 씬)는 사건을 정하는 뼈대 단계에만 넣는다. 살붙임은 뼈대만 보고
@@ -461,7 +462,7 @@ async function executeSceneGenerationPipeline(
     polished.text,
     planSectionCount(styleDirective?.targetWordCount ?? 0),
   );
-  const targetLength = sectionTargetLength(styleDirective, sections.length);
+  const targetLengths = sectionTargetLengths(styleDirective, sections);
   const expandedSections: string[] = [];
   const warnings: string[] = [...polished.warnings];
 
@@ -473,7 +474,7 @@ async function executeSceneGenerationPipeline(
       section: sections[index] as string,
       skeleton: polished.text,
       previousSection: expandedSections.at(-1),
-      targetLength,
+      targetLength: targetLengths[index] as number,
       characters: context.characters,
       options: withAttribution(
         { ...buildGenerateOptions(providers, 'sceneSectionExpansion'), styleDirective },
