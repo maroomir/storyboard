@@ -43,13 +43,11 @@ describe('buildBotConfig', () => {
       botToken: '123:token',
       allowedChatIds: [1, 2],
       workspacePath: '/novels/my-novel',
-      defaultProvider: 'claude-code',
     });
 
     expect(config).toEqual({
       telegram: { botToken: '123:token', allowedChatIds: [1, 2] },
       workspace: { path: '/novels/my-novel' },
-      providers: { default: 'claude-code' },
     });
   });
 });

@@ -154,11 +154,6 @@
       "additionalProperties": false
     },
     "draft": {
-      "default": {
-        "reviseAfterGenerate": true,
-        "reviseMaxIterations": 2,
-        "autoGrounding": true
-      },
       "type": "object",
       "properties": {
         "reviseAfterGenerate": {

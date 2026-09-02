@@ -9,10 +9,8 @@ import {
   type StoryboardSecretStorageLike,
 } from '@storyboard/story-ai';
 
-import type { DraftConfig, ProvidersConfig } from '@/config/config';
-
-// The extension backs these ports with VSCode SecretStorage and workspace configuration. Headless,
-// they are backed by the bot's own config file, so both apps drive the identical AI engine.
+// The extension backs these ports with the shared ~/.storyboard files too; headless, the secret
+// store stays in memory because the bot runs CLI providers that hold their own login.
 class InMemorySecretStorage implements StoryboardSecretStorageLike {
   private readonly values = new Map<string, string>();
 
@@ -37,51 +35,14 @@ class InMemorySecretStorage implements StoryboardSecretStorageLike {
   }
 }
 
-// Flattens the bot's `providers` block into the same `storyboard.*` setting keys the extension
-// exposes, so ConfigBridge needs no bot-specific branch.
-function createConfiguration(
-  providers: ProvidersConfig | undefined,
-  draft: DraftConfig | undefined,
-): StoryboardConfigurationLike {
-  const settings = new Map<string, unknown>();
-
-  settings.set('defaultProvider', providers?.default ?? 'mock');
-  settings.set('tasks', providers?.tasks ?? {});
-
-  // The bot's `draft` block uses the same names the extension's settings do, so the engine's
-  // revise gate reads them without a bot-specific branch.
-  if (draft !== undefined) {
-    settings.set('draft.reviseAfterGenerate', draft.reviseAfterGenerate);
-    settings.set('draft.reviseMaxIterations', draft.reviseMaxIterations);
-    settings.set('grounding.autoApprove', draft.autoGrounding);
-  }
-
-  for (const [providerId, section] of Object.entries(providers?.models ?? {})) {
-    if (section.model !== undefined) {
-      settings.set(`providers.${providerId}.model`, section.model);
-    }
-    if (section.command !== undefined) {
-      settings.set(`providers.${providerId}.command`, section.command);
-    }
-    if (section.timeoutMs !== undefined) {
-      settings.set(`providers.${providerId}.timeoutMs`, section.timeoutMs);
-    }
-    if (section.reasoningEffort !== undefined) {
-      settings.set(`providers.${providerId}.reasoningEffort`, section.reasoningEffort);
-    }
-  }
-
-  return {
-    get: <T>(section: string, defaultValue: T): T => (settings.get(section) as T) ?? defaultValue,
-  };
-}
-
 export interface AiGatewayOptions {
-  readonly providers: ProvidersConfig | undefined;
-  readonly draft?: DraftConfig;
+  // The shared config layers (see config/sharedConfig.ts); tests hand in a plain map.
+  readonly configuration: StoryboardConfigurationLike;
   readonly apiKeys?: Readonly<Record<string, string>>;
   readonly cliRunner?: CliRunner;
   readonly onUsage?: OnUsageRecordCallback;
+  // A queued job has nobody to pick a provider for it, so an unconfigured one is refused.
+  readonly requireConfiguredProvider?: boolean;
 }
 
 export interface AiEngine {
@@ -91,11 +52,11 @@ export interface AiEngine {
 }
 
 export function createAiEngine(options: AiGatewayOptions): AiEngine {
-  const configuration = createConfiguration(options.providers, options.draft);
-  const configBridge = new ConfigBridge({ getConfiguration: () => configuration });
+  const configBridge = new ConfigBridge({ getConfiguration: () => options.configuration });
   const registry = createAiProviderRegistry({
     secretStore: new SecretStore(new InMemorySecretStorage(options.apiKeys)),
     configBridge,
+    requireConfiguredProvider: options.requireConfiguredProvider ?? true,
     ...(options.cliRunner ? { createCliRunner: (): CliRunner => options.cliRunner! } : {}),
   });
 

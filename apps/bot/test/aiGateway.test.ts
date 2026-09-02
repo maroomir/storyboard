@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
+import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
+
 import { createAiService } from '../src/ai/aiGateway';
+
+function configuration(values: Record<string, unknown>): StoryboardConfigurationLike {
+  return {
+    get: <T>(section: string, defaultValue: T): T =>
+      (section in values ? values[section] : defaultValue) as T,
+  };
+}
 
 // The point of packages/story-ai is that the bot drives the extension's AI engine unmodified. If
 // the engine ever regains an editor dependency, or the ports stop being satisfiable from a plain
-// config file, this fails.
+// config, this fails.
 describe('bot AI gateway', () => {
   it('builds the shared AI service headlessly and generates through the mock provider', async () => {
-    const service = createAiService({ providers: { default: 'mock' } });
+    const service = createAiService({ configuration: configuration({ defaultProvider: 'mock' }) });
 
     const response = await service.generateText('sceneDraft', [
       { role: 'system', content: '너는 소설 초안을 쓴다.' },
@@ -18,11 +27,13 @@ describe('bot AI gateway', () => {
     expect(response.text.length).toBeGreaterThan(0);
   });
 
-  it('defaults to the mock provider when no providers block is configured', async () => {
-    const service = createAiService({ providers: undefined });
+  // A queued job has nobody to pick a provider for it, so an empty config is refused instead of
+  // quietly producing mock text.
+  it('refuses to generate when no provider is configured anywhere', async () => {
+    const service = createAiService({ configuration: configuration({}) });
 
-    const response = await service.generateText('sceneDraft', [{ role: 'user', content: '안녕' }]);
-
-    expect(response.text.length).toBeGreaterThan(0);
+    await expect(
+      service.generateText('sceneDraft', [{ role: 'user', content: '안녕' }]),
+    ).rejects.toMatchObject({ code: 'missing-provider' });
   });
 });

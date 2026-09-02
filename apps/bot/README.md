@@ -52,15 +52,28 @@ node apps/bot/dist/index.js
 | `workspace` | `path` | 필수 | Storyboard 워크스페이스 절대 경로(`~` 확장 지원, `.storyboard/project.json` 필요) |
 | | `remote` | 없음 | 없으면 로컬 커밋만 하고 `/sync`는 `no-remote`로 정착 |
 | | `pushDebounceSec` / `syncIntervalSec` | 30 / 300 | 푸시 디바운스·주기 동기화 |
-| `providers` | `default` | `mock` | CLI 전용: `mock` · `claude-code` · `codex` |
-| | `tasks` | `{}` | 태스크별 프로바이더(문자열 또는 `{provider, model}`) |
-| | `models.<id>` | — | `model` · `command` · `timeoutMs` · `reasoningEffort`(codex) |
-| `draft` | `reviseAfterGenerate` | `true` | 생성 직후 공유 검토→수정 루프 실행 여부 |
-| `draft` | `autoGrounding` | `true` | 생성 전 씬 사실 시트(사건·장소·관계·시점)의 빈 항목을 채워 씬 frontmatter에 커밋. 끄면 grounding을 건드리지 않는다 |
-| | `reviseMaxIterations` | `2` | 수정 반복 상한(1~5) |
 | `privacy` | `minimizeChatBody` | `false` | 켜면 `/read`가 초안 본문을 채팅에 싣지 않고 파일 첨부로만 전달 |
 | `jobs` | `heavyConcurrency` / `lightConcurrency` | 1 / 1 | 잡 클래스별 동시 실행 수 |
 | `dashboard` | `enabled` / `port` | `true` / 8787 | 루프백 전용 읽기 패널 `http://127.0.0.1:<port>/` |
+
+### AI 설정은 공통 파일에서
+
+프로바이더·모델·태스크 라우팅·검수 옵션은 `bot.json`이 아니라 **`~/.storyboard/config.json`**(익스텐션·CLI와
+공유)과 워크스페이스의 `.storyboard/config.json`에서 읽습니다. `storyboard-bot setup`이 고른 기본 프로바이더도
+그 파일에 저장됩니다. 키 이름은 익스텐션 설정과 같습니다.
+
+```json
+{ "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "claude-code" } },
+  "providers": { "codex": { "reasoningEffort": "medium" } }, "draft": { "reviseMaxIterations": 2 } }
+```
+
+봇은 CLI 프로바이더(`mock` · `claude-code` · `codex`)만 씁니다. 공통 설정이 API 키 프로바이더를 가리키면 부팅 시
+거부하고, 프로바이더가 아예 없으면 생성 작업이 `missing-provider`로 거부됩니다(`/doctor`가 알려 줍니다). 씬
+사실 시트 자동 승인(`grounding.autoApprove`)은 공통 설정에 값이 없을 때 봇에서는 켜진 것으로 봅니다 — 대기열
+작업은 승인을 물을 수 없기 때문입니다.
+
+예전 `bot.json`의 `providers`/`draft` 블록은 아직 읽히며 공통 설정보다 우선하지만, 부팅 로그에 옮기라는 경고가
+납니다.
 
 설정 오류는 조용히 무시되지 않습니다: 오타 난 프로바이더·미지원 필드·범위 밖 값은 부팅 시 명확한 메시지로 거부됩니다.
 

@@ -88,11 +88,7 @@ export const configSchema = z.object({
   telegram: telegramConfigSchema,
   workspace: workspaceConfigSchema,
   providers: providersConfigSchema.optional(),
-  draft: draftConfigSchema.default({
-    reviseAfterGenerate: true,
-    reviseMaxIterations: 2,
-    autoGrounding: true,
-  }),
+  draft: draftConfigSchema.optional(),
   privacy: privacyConfigSchema.default({ minimizeChatBody: false }),
   jobs: jobsConfigSchema.default({ heavyConcurrency: 1, lightConcurrency: 1 }),
   dashboard: dashboardConfigSchema.default({ enabled: true, port: 8787 }),
@@ -140,6 +136,15 @@ function collectLegacyWarnings(parsed: unknown): string[] {
   }
 
   const warnings: string[] = [];
+  // AI selection and draft switches now live in the shared ~/.storyboard/config.json, where the
+  // extension and the CLI read them too. The old blocks still apply, as overrides, until moved.
+  for (const block of ['providers', 'draft'] as const) {
+    if (block in parsed) {
+      warnings.push(
+        `\`${block}\` 블록은 이제 ~/.storyboard/config.json (또는 워크스페이스의 .storyboard/config.json) 에서 읽습니다. bot.json 의 값이 아직 우선하지만, 옮기면 익스텐션·CLI와 같은 설정을 씁니다.`,
+      );
+    }
+  }
   if ('seed' in parsed) {
     warnings.push(
       '`seed.*` 설정은 더 이상 사용되지 않습니다. 스토리는 이제 `workspace.path`가 가리키는 Storyboard 워크스페이스에 보관됩니다.',

@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatContext } from '../src/chat/context';
 import { createDoctorHandler, type DoctorEnvironment } from '../src/chat/handlers/doctor';
+import { legacyConfigBridge } from './configurationStub';
 import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit';
 import { createSceneCommandHandler } from '../src/chat/handlers/scene';
 import {
@@ -244,7 +245,7 @@ describe('/doctor', () => {
     registry.register(
       createDoctorHandler({
         configFile: join(root, 'absent-config.json'),
-        providers: undefined,
+        configBridge: legacyConfigBridge(undefined),
         remote: undefined,
         ...environment,
       }),
@@ -368,7 +369,10 @@ describe('/doctor', () => {
   it('reports a missing provider CLI as the reason generation would fail', async () => {
     fixture = createWorkspaceFixture();
     build(fixture.root, {
-      providers: { default: 'claude-code', models: { 'claude-code': { command: '/nope/claude' } } },
+      configBridge: legacyConfigBridge({
+        default: 'claude-code',
+        models: { 'claude-code': { command: '/nope/claude' } },
+      }),
     });
 
     await router.handleUpdate(message('/doctor'));
@@ -380,10 +384,10 @@ describe('/doctor', () => {
   it('reports a resolvable provider CLI with the path it found', async () => {
     fixture = createWorkspaceFixture();
     build(fixture.root, {
-      providers: {
+      configBridge: legacyConfigBridge({
         default: 'claude-code',
         models: { 'claude-code': { command: process.execPath } },
-      },
+      }),
     });
 
     await router.handleUpdate(message('/doctor'));
@@ -393,11 +397,11 @@ describe('/doctor', () => {
 
   it('stays quiet about CLI providers when only mock is configured', async () => {
     fixture = createWorkspaceFixture();
-    build(fixture.root, { providers: { default: 'mock' } });
+    build(fixture.root, { configBridge: legacyConfigBridge({ default: 'mock' }) });
 
     await router.handleUpdate(message('/doctor'));
 
-    expect(sent[0]).toContain('ℹ️ 프로바이더: CLI 미사용 (mock)');
+    expect(sent[0]).toContain('ℹ️ 프로바이더: mock (CLI 미사용)');
   });
 
   it('reports a configured remote that the repository does not have', async () => {
