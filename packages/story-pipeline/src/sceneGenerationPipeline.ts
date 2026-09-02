@@ -25,6 +25,8 @@ import {
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
+  validateSceneSkeleton,
+  findRepeatedDialogueRun,
   SECTION_OUTPUT_LIMIT,
   type SectionViolation,
 } from './sceneSectionPlan';
@@ -140,6 +142,38 @@ function buildSkeletonContext(
   ].filter((section): section is string => Boolean(section));
 
   return sections.length > 0 ? sections.join('\n\n') : undefined;
+}
+
+// 뼈대는 씬에서 가장 비싼 호출이라 한 번만 다시 부른다. 두 판 다 되풀이하면 덜 되풀이한 쪽을
+// 남긴다 — 사건이 빠진 판보다는 겹친 판이 고치기 쉽다.
+const SKELETON_RETRY_LIMIT = 1;
+
+async function draftSkeletonWithRetries(
+  aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton'>,
+  input: Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0],
+  options: GenerateTextOptions,
+): Promise<string> {
+  let best: { text: string; run: number } | undefined;
+
+  for (let attempt = 0; attempt <= SKELETON_RETRY_LIMIT; attempt += 1) {
+    const reasons = best === undefined ? [] : validateSceneSkeleton(best.text).map((v) => v.detail);
+    const skeleton = await aiService.draftSceneSkeleton(
+      { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
+      options,
+    );
+    const violations = validateSceneSkeleton(skeleton);
+
+    if (violations.length === 0) {
+      return skeleton;
+    }
+
+    const run = findRepeatedDialogueRun(skeleton);
+    if (best === undefined || run < best.run) {
+      best = { text: skeleton, run };
+    }
+  }
+
+  return best?.text ?? '';
 }
 
 async function expandSectionWithRetries(input: {
@@ -389,7 +423,8 @@ async function executeSceneGenerationPipeline(
 
   // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
   onProgress?.('draftSkeleton', 1, 1);
-  const skeleton = await aiService.draftSceneSkeleton(
+  const skeleton = await draftSkeletonWithRetries(
+    aiService,
     {
       narrativeSource,
       personas: personasUsed,

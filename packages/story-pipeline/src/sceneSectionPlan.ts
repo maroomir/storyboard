@@ -179,6 +179,50 @@ function repeatedFromPrevious(previousSection: string | undefined, expanded: str
   return repeated;
 }
 
+// NOTE: 뼈대가 같은 대사 묶음을 두 번 적으면 그 두 자리가 각각 다른 문장으로 살이 붙어, 원고
+// 후반이 전반을 되풀이한다. 살붙임 결과만 비교하면 주변 서술이 달라 눈치챌 수 없다 — 뼈대에서
+// 잡아야 한다. 인물이 한 마디를 되뇌는 것과 구분하려고 "연속된 여러 대사가 순서까지 같게"
+// 다시 나오는 경우만 센다.
+const repeatedDialogueRunLimit = 3;
+
+export function findRepeatedDialogueRun(text: string): number {
+  const lines = [...text.matchAll(quotedDialoguePattern)]
+    .map((match) => (match[1] ?? '').replace(/\s/g, ''))
+    .filter((line) => line.length >= 6);
+  let longest = 0;
+
+  for (let first = 0; first < lines.length; first += 1) {
+    for (let second = first + 1; second < lines.length; second += 1) {
+      let run = 0;
+
+      while (
+        second + run < lines.length &&
+        lines[first + run] !== undefined &&
+        lines[first + run] === lines[second + run]
+      ) {
+        run += 1;
+      }
+
+      longest = Math.max(longest, run);
+    }
+  }
+
+  return longest;
+}
+
+export function validateSceneSkeleton(skeleton: string): SectionViolation[] {
+  const run = findRepeatedDialogueRun(skeleton);
+
+  return run >= repeatedDialogueRunLimit
+    ? [
+        {
+          kind: 'repeats-previous',
+          detail: `같은 대사 ${run}개가 순서까지 같게 두 번 나옵니다. 각 사건은 한 번만 쓰세요`,
+        },
+      ]
+    : [];
+}
+
 export function validateExpandedSection(input: {
   readonly skeleton: string;
   readonly section: string;

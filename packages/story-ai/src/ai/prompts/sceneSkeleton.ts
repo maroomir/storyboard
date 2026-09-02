@@ -19,6 +19,7 @@ export interface SceneSkeletonInput {
   readonly grounding?: SceneGrounding;
   readonly style?: StyleDirective;
   readonly targetLength?: number;
+  readonly retryReasons?: readonly string[];
 }
 
 // NOTE: 씬의 뼈대를 한 번에 쓴다. 사건 순서·등장·종료 지점 같은 연속성 결정이 전부 이 한 문맥에서
@@ -52,6 +53,9 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
         ? `장면은 여기서 닫힌다: ${input.endState} 그 뒤에 이어질 일은 다음 장면의 몫이므로 쓰지 마라.`
         : undefined,
       '설명이나 머리말 없이 뼈대 본문만 한국어로 출력하라.',
+      ...(input.retryReasons && input.retryReasons.length > 0
+        ? [`앞서 쓴 결과가 다음 이유로 반려됐다. 이번에는 어기지 마라: ${input.retryReasons.join(' / ')}`]
+        : []),
       ...proseConventionLines,
       ...(style ? voiceStyleLines(style) : []),
       ...craftContractLines(style?.craftContract),

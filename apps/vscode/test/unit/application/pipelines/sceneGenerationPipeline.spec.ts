@@ -14,6 +14,8 @@ import {
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
+  validateSceneSkeleton,
+  findRepeatedDialogueRun,
   type SceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineStage
@@ -382,6 +384,43 @@ describe("splitSkeletonIntoSections", () => {
 
   it("keeps a single-paragraph skeleton whole", () => {
     expect(splitSkeletonIntoSections("한 문단뿐", 3)).toEqual(["한 문단뿐"])
+  })
+})
+
+describe("findRepeatedDialogueRun", () => {
+  // 뼈대가 같은 대사 묶음을 두 번 적으면 그 두 자리에 각각 다른 문장으로 살이 붙어, 살붙임
+  // 결과만 비교해서는 잡을 수 없다.
+  it("finds a run of dialogue repeated in the same order", () => {
+    const skeleton = [
+      '진아가 말했다. "회수부터 하죠."',
+      '도현이 답했다. "계정 접근도 막아야 해."',
+      '유정이 끄덕였다. "공지는 제가 올릴게요."',
+      "셋은 편집실을 나섰다.",
+      '진아가 말했다. "회수부터 하죠."',
+      '도현이 답했다. "계정 접근도 막아야 해."',
+      '유정이 끄덕였다. "공지는 제가 올릴게요."'
+    ].join("\n\n")
+
+    expect(findRepeatedDialogueRun(skeleton)).toBeGreaterThanOrEqual(3)
+  })
+
+  it("does not count a character echoing one line", () => {
+    const skeleton = ['진아가 말했다. "가자."', "둘은 걸었다.", '도현이 되뇌었다. "가자."'].join(
+      "\n\n"
+    )
+
+    expect(findRepeatedDialogueRun(skeleton)).toBeLessThan(3)
+  })
+
+  it("rejects a skeleton that repeats itself", () => {
+    const repeated = [
+      '"회수부터 하죠."',
+      '"계정 접근도 막아야 해."',
+      '"공지는 제가 올릴게요."'
+    ].join("\n\n")
+
+    expect(validateSceneSkeleton(`${repeated}\n\n걸었다.\n\n${repeated}`)).not.toEqual([])
+    expect(validateSceneSkeleton(repeated)).toEqual([])
   })
 })
 
