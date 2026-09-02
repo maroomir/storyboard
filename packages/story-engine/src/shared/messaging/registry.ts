@@ -99,6 +99,10 @@ import {
   studioStageResponsePayloadSchema,
 } from './studio';
 import { usageReadRequestPayloadSchema, usageReadResponsePayloadSchema } from './usage';
+import {
+  workspaceRunCommandRequestPayloadSchema,
+  workspaceRunCommandResponsePayloadSchema,
+} from './commands';
 
 export const storyboardRequestPayloadSchemas = {
   'cards.list': cardsListRequestPayloadSchema,
@@ -147,6 +151,7 @@ export const storyboardRequestPayloadSchemas = {
   'studio.session.latest': studioSessionLatestRequestPayloadSchema,
   'studio.session.load': studioSessionLoadRequestPayloadSchema,
   'usage.read': usageReadRequestPayloadSchema,
+  'workspace.runCommand': workspaceRunCommandRequestPayloadSchema,
 } as const;
 
 export const storyboardResponsePayloadSchemas = {
@@ -196,6 +201,7 @@ export const storyboardResponsePayloadSchemas = {
   'studio.session.latest': studioSessionLatestResponsePayloadSchema,
   'studio.session.load': studioSessionLoadResponsePayloadSchema,
   'usage.read': usageReadResponsePayloadSchema,
+  'workspace.runCommand': workspaceRunCommandResponsePayloadSchema,
 } as const;
 
 export type StoryboardRequestMethod = keyof typeof storyboardRequestPayloadSchemas;

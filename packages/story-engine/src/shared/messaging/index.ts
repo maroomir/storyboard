@@ -4,6 +4,7 @@ export * from './scenes';
 export * from './relations';
 export * from './ai';
 export * from './settings';
+export * from './commands';
 export * from './secrets';
 export * from './project';
 export * from './studio';

@@ -1,4 +1,11 @@
-import { AlertTriangle, CheckCircle2, CircleDashed, type LucideIcon } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleDashed,
+  Clapperboard,
+  FolderPlus,
+  type LucideIcon,
+} from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import {
@@ -13,11 +20,13 @@ import type {
   SceneListItem,
   SidebarScenesInitialData,
   StoryboardEventMessage,
+  SidebarRunnableCommand,
   StoryboardRequestMethod,
   UsageAmount,
 } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 import { CostBadge } from '../ui/CostBadge';
+import { EmptyState } from '../ui/EmptyState';
 
 function sceneStatusPresentation(status: SceneListItem['status']): {
   readonly Icon: LucideIcon;
@@ -110,6 +119,9 @@ export function ScenesSidebar({
   const sceneUsage = (scene: SceneListItem): UsageAmount =>
     usageAmountOf(sidebarState.usage.scenes, scene.stem);
 
+  const runCommand = (command: SidebarRunnableCommand): void =>
+    postSceneRequest('workspace.runCommand', { command });
+
   const postSceneRequest = (
     method: StoryboardRequestMethod,
     payload: Record<string, unknown>,
@@ -143,9 +155,16 @@ export function ScenesSidebar({
           </div>
           <CostBadge usage={emptyUsageAmount} className="shrink-0" />
         </div>
-        <p className="m-0 leading-normal text-sb-fg-muted">
-          Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.
-        </p>
+        <EmptyState
+          icon={FolderPlus}
+          title="아직 Storyboard 작품이 아닙니다"
+          description="이 폴더에 작품 구조(.storyboard, character, background, scene, draft)를 만들면 여기서 씬을 관리할 수 있습니다."
+          action={
+            <Button type="button" onClick={() => runCommand('storyboard.init')}>
+              작품 초기화
+            </Button>
+          }
+        />
       </main>
     );
   }
@@ -165,9 +184,25 @@ export function ScenesSidebar({
       </div>
 
       {sidebarState.scenes.length === 0 ? (
-        <p className="m-0 leading-normal text-sb-fg-muted">
-          아직 씬 파일이 없습니다. 상단 + 버튼으로 새 씬을 추가해 보세요.
-        </p>
+        <EmptyState
+          icon={Clapperboard}
+          title="아직 씬이 없습니다"
+          description="씬을 하나씩 직접 만들거나, 아웃라인(chapters.yaml)이 있다면 거기서 씬 시드를 한 번에 만들 수 있습니다."
+          action={
+            <>
+              <Button type="button" onClick={() => runCommand('storyboard.scene.create')}>
+                새 씬
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => runCommand('storyboard.scene.generateAllSeeds')}
+              >
+                아웃라인에서 시드 만들기
+              </Button>
+            </>
+          }
+        />
       ) : (
         <ul className="m-0 flex list-none flex-col gap-2.5 p-0" aria-label="Scene list">
           {sidebarState.scenes.map((scene) => {

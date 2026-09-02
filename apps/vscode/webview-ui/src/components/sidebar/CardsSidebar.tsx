@@ -16,6 +16,7 @@ import type {
   SidebarCardSummary,
   SidebarCardsInitialData,
   StoryboardEventMessage,
+  SidebarRunnableCommand,
   StoryboardRequestMethod,
   UsageAmount,
 } from '@webview/lib/types';
@@ -132,6 +133,9 @@ export function CardsSidebar({
     });
   };
 
+  const runCommand = (command: SidebarRunnableCommand): void =>
+    postCardRequest('workspace.runCommand', { command });
+
   const openCard = (card: SidebarCardSummary): void =>
     postCardRequest('cards.open', { uri: card.uri });
   const deleteCard = (card: SidebarCardSummary): void =>
@@ -172,8 +176,13 @@ export function CardsSidebar({
         <h1 className="font-display m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
         <EmptyState
           icon={Sparkles}
-          title="Storyboard 프로젝트가 필요합니다"
-          description="워크스페이스에 Storyboard를 초기화한 뒤 캐릭터와 배경 카드를 이 목록에서 볼 수 있습니다. 명령 팔레트에서 Storyboard: Initialize Project를 실행하세요."
+          title="아직 Storyboard 작품이 아닙니다"
+          description="이 폴더에 작품 구조를 만들면 캐릭터와 배경 카드를 이 목록에서 관리할 수 있습니다."
+          action={
+            <Button type="button" onClick={() => runCommand('storyboard.init')}>
+              작품 초기화
+            </Button>
+          }
         />
       </main>
     );
@@ -195,7 +204,21 @@ export function CardsSidebar({
         <EmptyState
           icon={Sparkles}
           title={`${kindLabel} 카드가 없습니다`}
-          description={`아직 등록된 ${kindLabel} 카드가 없습니다. 뷰 제목 표시줄의 + 버튼으로 새 카드를 만들 수 있습니다.`}
+          description={`빈 ${kindLabel} 카드를 만들어 채우거나, 씬을 먼저 쓰고 Studio의 /update 로 설명만 붙여 넣어도 카드가 생깁니다.`}
+          action={
+            <Button
+              type="button"
+              onClick={() =>
+                runCommand(
+                  sidebarState.type === 'character'
+                    ? 'storyboard.character.create'
+                    : 'storyboard.background.create',
+                )
+              }
+            >
+              새 {kindLabel} 카드
+            </Button>
+          }
         />
       ) : sidebarState.type === 'character' ? (
         <div className="flex flex-col gap-3" aria-label={`${sidebarState.title} card list`}>

@@ -93,12 +93,21 @@ async function runGenerateSceneSeeds(configBridge: ConfigBridge): Promise<void> 
     }
   }
 
-  await vscode.workspace.fs.createDirectory(paths.sceneDirectory);
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '씬 시드 생성' },
+    async (progress) => {
+      await vscode.workspace.fs.createDirectory(paths.sceneDirectory);
 
-  for (const seed of seeds) {
-    const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, seed.fileName);
-    await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(seed.content));
-  }
+      for (const [index, seed] of seeds.entries()) {
+        progress.report({
+          message: `${index + 1}/${seeds.length} ${seed.fileName}`,
+          increment: 100 / seeds.length,
+        });
+        const sceneUri = vscode.Uri.joinPath(paths.sceneDirectory, seed.fileName);
+        await vscode.workspace.fs.writeFile(sceneUri, new TextEncoder().encode(seed.content));
+      }
+    },
+  );
 
   const firstSceneUri = vscode.Uri.joinPath(paths.sceneDirectory, firstSeed.fileName);
   const document = await vscode.workspace.openTextDocument(firstSceneUri);

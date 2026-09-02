@@ -53,15 +53,24 @@ async function runMigrate(logger: IStoryboardLogger): Promise<void> {
   const failures: string[] = [];
   let convertedCount = 0;
 
-  for (const legacyFileName of legacyFileNames) {
-    const failure = await migrateOneScene(paths.sceneDirectory, legacyFileName, logger);
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '구형 씬 변환' },
+    async (progress) => {
+      for (const [index, legacyFileName] of legacyFileNames.entries()) {
+        progress.report({
+          message: `${index + 1}/${legacyFileNames.length} ${legacyFileName}`,
+          increment: 100 / legacyFileNames.length,
+        });
+        const failure = await migrateOneScene(paths.sceneDirectory, legacyFileName, logger);
 
-    if (failure === undefined) {
-      convertedCount += 1;
-    } else {
-      failures.push(failure);
-    }
-  }
+        if (failure === undefined) {
+          convertedCount += 1;
+        } else {
+          failures.push(failure);
+        }
+      }
+    },
+  );
 
   if (failures.length === 0) {
     await vscode.window.showInformationMessage(

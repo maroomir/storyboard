@@ -28,9 +28,14 @@ async function runMigrate(logger: IStoryboardLogger): Promise<void> {
   const paths = getStoryboardProjectPaths(workspaceFolder.uri);
   let migratedCount = 0;
 
-  for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
-    migratedCount += await migrateCardsInDirectory(directory, logger);
-  }
+  await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '카드 목록형 변환 중…' },
+    async () => {
+      for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
+        migratedCount += await migrateCardsInDirectory(directory, logger);
+      }
+    },
+  );
 
   if (migratedCount === 0) {
     await vscode.window.showInformationMessage('목록형으로 변환할 카드가 없습니다.');

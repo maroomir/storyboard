@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { AssembleManuscriptUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const ASSEMBLE_MANUSCRIPT_COMMAND = 'storyboard.manuscript.assemble';
 
@@ -30,7 +31,10 @@ async function runAssembleManuscript(
     return;
   }
 
-  const result = await dependencies.assembleManuscriptUseCase.execute(workspaceRoot);
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
+    () => dependencies.assembleManuscriptUseCase.execute(workspaceRoot),
+  );
   if (!result.ok) {
     await reportFailure(result, dependencies.logger);
     return;
@@ -62,5 +66,5 @@ async function reportFailure(
 
   logger.error('Manuscript assembly failed', new Error(result.message));
   logger.show();
-  await vscode.window.showErrorMessage(`원고 조립에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`원고 조립에 실패했습니다: ${result.message}`);
 }

@@ -28,6 +28,7 @@ import {
 } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const CONDENSE_DRAFT_COMMAND = 'storyboard.draft.condense';
 const CONDENSE_PREVIEW_SCHEME = 'storyboard-condense';
@@ -206,7 +207,7 @@ async function reportFailure(
     return;
   }
 
-  await vscode.window.showErrorMessage(`원본 축소에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`원본 축소에 실패했습니다: ${result.message}`);
 }
 
 async function runCondenseDraft(

@@ -70,9 +70,13 @@ async function runPromote(
     return;
   }
 
-  const result = await useCase.promote(
-    folder.uri,
-    picked.map((entry) => entry.item),
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
+    () =>
+      useCase.promote(
+        folder.uri,
+        picked.map((entry) => entry.item),
+      ),
   );
 
   if (result.kind === 'save_failed') {

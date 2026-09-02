@@ -5,6 +5,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const expandDraftCommand = 'storyboard.draft.expand';
 
@@ -111,7 +112,7 @@ async function reportExpandFailure(
   }
 
   logger.show();
-  await vscode.window.showErrorMessage(`선택 영역 확장에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${result.message}`);
 }
 
 async function runExpandDraftCommand(
@@ -153,7 +154,7 @@ async function runExpandDraftCommand(
     dependencies.logger.error('Expand draft failed', error);
     dependencies.logger.show();
     const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(`선택 영역 확장에 실패했습니다: ${message}`);
+    await showStoryboardFailure(`선택 영역 확장에 실패했습니다: ${message}`);
   }
 }
 

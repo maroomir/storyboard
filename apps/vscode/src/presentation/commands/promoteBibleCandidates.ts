@@ -59,9 +59,13 @@ async function runPromote(
   }
 
   try {
-    await useCase.promote(
-      folder.uri,
-      picked.map((item) => item.fact),
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'canon 승격 중…' },
+      () =>
+        useCase.promote(
+          folder.uri,
+          picked.map((item) => item.fact),
+        ),
     );
   } catch (error) {
     logger.error('Failed to write bible canon', error);

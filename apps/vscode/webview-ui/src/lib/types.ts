@@ -134,6 +134,15 @@ export interface CardEditorInitialData {
   readonly error?: string;
 }
 
+export type SidebarRunnableCommand =
+  | 'storyboard.init'
+  | 'storyboard.settings.open'
+  | 'storyboard.outline.generate'
+  | 'storyboard.scene.create'
+  | 'storyboard.scene.generateAllSeeds'
+  | 'storyboard.character.create'
+  | 'storyboard.background.create';
+
 export interface UsageAmount {
   readonly costUsd: number;
   readonly tokens: number;
