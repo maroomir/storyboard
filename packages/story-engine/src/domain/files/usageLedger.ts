@@ -7,6 +7,7 @@ import type {
   AiTaskName,
   AiUsage,
   EntityKind,
+  UsageAmount,
   UsageAttribution,
   UsageRecord,
   UsageSummaryByEntity,
@@ -44,7 +45,7 @@ const usageLedgerEntrySchema = z.object({
   providerId: z.enum(aiProviderIds),
   model: z.string().optional(),
   usage: aiUsageSchema.optional(),
-  costUsd: z.number(),
+  costUsd: z.number().optional(),
   attribution: usageAttributionSchema,
 });
 
@@ -59,35 +60,71 @@ export interface UsageLedgerFileSystem {
   readonly createDirectory: (uri: StoryUri) => Promise<void>;
 }
 
+export function emptyUsageAmount(): UsageAmount {
+  return { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
+}
+
 export function emptyUsageSummary(): UsageSummaryByEntity {
   return {
     scenes: {},
     characters: {},
     backgrounds: {},
-    totalUsd: 0,
+    total: emptyUsageAmount(),
   };
+}
+
+export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
+  return {
+    costUsd: base.costUsd + delta.costUsd,
+    tokens: base.tokens + delta.tokens,
+    hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
+  };
+}
+
+// NOTE: an entry with no price is still spend the author made, so its tokens count and the
+// summary flags it instead of pretending the call was free.
+export function usageAmountOfEntry(
+  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage'>,
+): UsageAmount {
+  const tokens = entry.usage ? entry.usage.inputTokens + entry.usage.outputTokens : 0;
+
+  return {
+    costUsd: entry.costUsd ?? 0,
+    tokens,
+    hasUnpricedUsage: entry.costUsd === undefined && tokens > 0,
+  };
+}
+
+function scaleUsageAmount(amount: UsageAmount, factor: number): UsageAmount {
+  return { ...amount, costUsd: amount.costUsd * factor, tokens: amount.tokens * factor };
 }
 
 export function mergeUsageLedgerEntryIntoSummary(
   summary: UsageSummaryByEntity,
-  entry: Pick<UsageLedgerEntry, 'costUsd' | 'attribution'>,
+  entry: Pick<UsageLedgerEntry, 'costUsd' | 'usage' | 'attribution'>,
 ): UsageSummaryByEntity {
   const nextScenes = { ...summary.scenes };
   const nextCharacters = { ...summary.characters };
   const nextBackgrounds = { ...summary.backgrounds };
 
-  const add = (kind: EntityKind, entityId: string, delta: number): void => {
+  const add = (kind: EntityKind, entityId: string, delta: UsageAmount): void => {
     switch (kind) {
       case 'scene': {
-        nextScenes[entityId] = (nextScenes[entityId] ?? 0) + delta;
+        nextScenes[entityId] = addUsageAmount(nextScenes[entityId] ?? emptyUsageAmount(), delta);
         return;
       }
       case 'character': {
-        nextCharacters[entityId] = (nextCharacters[entityId] ?? 0) + delta;
+        nextCharacters[entityId] = addUsageAmount(
+          nextCharacters[entityId] ?? emptyUsageAmount(),
+          delta,
+        );
         return;
       }
       case 'background': {
-        nextBackgrounds[entityId] = (nextBackgrounds[entityId] ?? 0) + delta;
+        nextBackgrounds[entityId] = addUsageAmount(
+          nextBackgrounds[entityId] ?? emptyUsageAmount(),
+          delta,
+        );
         return;
       }
       default: {
@@ -97,16 +134,17 @@ export function mergeUsageLedgerEntryIntoSummary(
     }
   };
 
-  const totalUsd = summary.totalUsd + entry.costUsd;
+  const amount = usageAmountOfEntry(entry);
+  const total = addUsageAmount(summary.total, amount);
 
   const { primary, participants = [] } = entry.attribution;
 
   if (primary) {
-    add(primary.kind, primary.id, entry.costUsd);
+    add(primary.kind, primary.id, amount);
   }
 
   if (participants.length > 0) {
-    const share = entry.costUsd / participants.length;
+    const share = scaleUsageAmount(amount, 1 / participants.length);
 
     for (const participant of participants) {
       add(participant.kind, participant.id, share);
@@ -117,7 +155,7 @@ export function mergeUsageLedgerEntryIntoSummary(
     scenes: nextScenes,
     characters: nextCharacters,
     backgrounds: nextBackgrounds,
-    totalUsd,
+    total,
   };
 }
 
@@ -228,7 +266,7 @@ interface SerializedLedgerEntry {
   readonly providerId: AiProviderId;
   readonly model?: string;
   readonly usage?: AiUsage;
-  readonly costUsd: number;
+  readonly costUsd?: number;
   readonly attribution: UsageAttribution;
 }
 

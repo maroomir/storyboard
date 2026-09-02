@@ -156,7 +156,7 @@ describe("CodexProvider", () => {
     expect(response.usage?.outputTokens).toBe(72)
   })
 
-  it("records usage with zero subscription cost when usage is present", async () => {
+  it("records usage without a price because the subscription is not metered", async () => {
     const stdout = [
       JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: "ok" } }),
       JSON.stringify({ type: "turn.completed", usage: { input_tokens: 1_000_000, output_tokens: 1_000_000 } })
@@ -170,7 +170,7 @@ describe("CodexProvider", () => {
     const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
 
     expect(response.usage).toBeDefined()
-    expect(response.costUsd).toBe(0)
+    expect(response.costUsd).toBeUndefined()
   })
 
   it("falls back to plain stdout when json is not emitted", async () => {

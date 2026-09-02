@@ -18,6 +18,7 @@ import type {
   StudioStage,
   StudioStageCard,
   StudioTarget,
+  UsageAmount,
   UsageSummaryByEntity,
 } from './types';
 
@@ -37,11 +38,13 @@ export function parseCardEditorInitialData(value: unknown): CardEditorInitialDat
   };
 }
 
+export const emptyUsageAmount: UsageAmount = { costUsd: 0, tokens: 0, hasUnpricedUsage: false };
+
 const emptyUsageSummary: UsageSummaryByEntity = {
   scenes: {},
   characters: {},
   backgrounds: {},
-  totalUsd: 0,
+  total: emptyUsageAmount,
 };
 
 export function parseSidebarCardsInitialData(value: unknown): SidebarCardsInitialData {
@@ -378,14 +381,59 @@ export function parseUsageChangedPayload(payload: unknown): UsageSummaryByEntity
   return normalizeUsageSummary(payload);
 }
 
-export function sumUsageMap(map: Readonly<Record<string, number>>): number {
-  let total = 0;
-  for (const value of Object.values(map)) {
-    if (Number.isFinite(value)) {
-      total += value;
+export function addUsageAmount(base: UsageAmount, delta: UsageAmount): UsageAmount {
+  return {
+    costUsd: base.costUsd + delta.costUsd,
+    tokens: base.tokens + delta.tokens,
+    hasUnpricedUsage: base.hasUnpricedUsage || delta.hasUnpricedUsage,
+  };
+}
+
+export function sumUsageMap(map: Readonly<Record<string, UsageAmount>>): UsageAmount {
+  return Object.values(map).reduce(addUsageAmount, emptyUsageAmount);
+}
+
+export function usageAmountOf(
+  map: Readonly<Record<string, UsageAmount>>,
+  key: string,
+): UsageAmount {
+  return map[key] ?? emptyUsageAmount;
+}
+
+function normalizeUsageAmount(value: unknown): UsageAmount | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const amount = value as Partial<UsageAmount>;
+
+  if (!Number.isFinite(amount.costUsd) || !Number.isFinite(amount.tokens)) {
+    return undefined;
+  }
+
+  return {
+    costUsd: amount.costUsd as number,
+    tokens: amount.tokens as number,
+    hasUnpricedUsage: amount.hasUnpricedUsage === true,
+  };
+}
+
+function normalizeUsageMap(value: unknown): Readonly<Record<string, UsageAmount>> {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+
+  const normalized: Record<string, UsageAmount> = {};
+
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const amount = normalizeUsageAmount(raw);
+
+    if (amount) {
+      normalized[key] = amount;
     }
   }
-  return total;
+
+  return normalized;
 }
 
 function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
@@ -393,13 +441,13 @@ function normalizeUsageSummary(value: unknown): UsageSummaryByEntity {
     return emptyUsageSummary;
   }
 
-  const u = value as Partial<UsageSummaryByEntity & { readonly total?: number }>;
-  const totalUsdRaw = u.totalUsd ?? u.total;
+  const summary = value as Partial<UsageSummaryByEntity>;
+
   return {
-    scenes: typeof u.scenes === 'object' && u.scenes !== null ? u.scenes : {},
-    characters: typeof u.characters === 'object' && u.characters !== null ? u.characters : {},
-    backgrounds: typeof u.backgrounds === 'object' && u.backgrounds !== null ? u.backgrounds : {},
-    totalUsd: typeof totalUsdRaw === 'number' && Number.isFinite(totalUsdRaw) ? totalUsdRaw : 0,
+    scenes: normalizeUsageMap(summary.scenes),
+    characters: normalizeUsageMap(summary.characters),
+    backgrounds: normalizeUsageMap(summary.backgrounds),
+    total: normalizeUsageAmount(summary.total) ?? emptyUsageAmount,
   };
 }
 

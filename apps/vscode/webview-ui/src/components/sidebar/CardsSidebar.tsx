@@ -9,6 +9,7 @@ import {
   parseSidebarCardsInitialData,
   parseUsageChangedPayload,
   sumUsageMap,
+  usageAmountOf,
 } from '@webview/lib/messaging';
 import { groupCharacterCardsByRole } from '@webview/lib/characterSidebarGroups';
 import type {
@@ -16,16 +17,17 @@ import type {
   SidebarCardsInitialData,
   StoryboardEventMessage,
   StoryboardRequestMethod,
+  UsageAmount,
 } from '@webview/lib/types';
 
 function SidebarCardRow({
   card,
-  cardCostUsd,
+  cardUsage,
   onOpen,
   onDelete,
 }: {
   readonly card: SidebarCardSummary;
-  readonly cardCostUsd: (card: SidebarCardSummary) => number;
+  readonly cardUsage: (card: SidebarCardSummary) => UsageAmount;
   readonly onOpen: (card: SidebarCardSummary) => void;
   readonly onDelete: (card: SidebarCardSummary) => void;
 }): React.ReactElement {
@@ -55,7 +57,7 @@ function SidebarCardRow({
         </button>
 
         <div className="flex shrink-0 items-center gap-1">
-          <CostBadge usd={cardCostUsd(card)} />
+          <CostBadge usage={cardUsage(card)} />
           <Button
             type="button"
             variant="ghost"
@@ -141,13 +143,12 @@ export function CardsSidebar({
       ? sumUsageMap(sidebarState.usage.characters)
       : sumUsageMap(sidebarState.usage.backgrounds);
 
-  const cardCostUsd = (card: SidebarCardSummary): number => {
+  const cardUsage = (card: SidebarCardSummary): UsageAmount => {
     const map =
       sidebarState.type === 'character'
         ? sidebarState.usage.characters
         : sidebarState.usage.backgrounds;
-    const raw = map[card.id];
-    return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
+    return usageAmountOf(map, card.id);
   };
 
   const characterSections = useMemo(
@@ -187,7 +188,7 @@ export function CardsSidebar({
           </p>
           <h1 className="font-display m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
         </div>
-        <CostBadge usd={headerUsageTotal} className="shrink-0" />
+        <CostBadge usage={headerUsageTotal} className="shrink-0" />
       </div>
 
       {sidebarState.cards.length === 0 ? (
@@ -223,7 +224,7 @@ export function CardsSidebar({
                   <SidebarCardRow
                     key={card.uri}
                     card={card}
-                    cardCostUsd={cardCostUsd}
+                    cardUsage={cardUsage}
                     onOpen={openCard}
                     onDelete={deleteCard}
                   />
@@ -241,7 +242,7 @@ export function CardsSidebar({
             <SidebarCardRow
               key={card.uri}
               card={card}
-              cardCostUsd={cardCostUsd}
+              cardUsage={cardUsage}
               onOpen={openCard}
               onDelete={deleteCard}
             />

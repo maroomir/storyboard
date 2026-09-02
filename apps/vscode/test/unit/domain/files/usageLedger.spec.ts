@@ -30,7 +30,7 @@ describe("usageLedger", () => {
           scenes: {},
           characters: {},
           backgrounds: {},
-          totalUsd: 0
+          total: { costUsd: 0, tokens: 0, hasUnpricedUsage: false }
         },
         entry({
           taskName: "personaDialogue",
@@ -57,10 +57,59 @@ describe("usageLedger", () => {
       })
     )
 
-    expect(summary.totalUsd).toBe(18)
-    expect(summary.scenes["s1"]).toBeCloseTo(18)
-    expect(summary.characters["c1"]).toBeCloseTo(12)
-    expect(summary.characters["c2"]).toBeCloseTo(6)
+    expect(summary.total.costUsd).toBe(18)
+    expect(summary.scenes["s1"]?.costUsd).toBeCloseTo(18)
+    expect(summary.characters["c1"]?.costUsd).toBeCloseTo(12)
+    expect(summary.characters["c2"]?.costUsd).toBeCloseTo(6)
+  })
+
+  it("keeps unpriced spend as tokens instead of collapsing it to zero dollars", () => {
+    const summary = computeUsageSummaryFromEntries([
+      entry({
+        taskName: "sceneDraft",
+        providerId: "codex",
+        model: "gpt-5.5",
+        usage: { inputTokens: 1_000, outputTokens: 500 },
+        attribution: { primary: { kind: "scene", id: "s1" } }
+      }),
+      entry({
+        id: "id-2",
+        taskName: "sceneDraft",
+        providerId: "openai",
+        model: "gpt-5-mini",
+        usage: { inputTokens: 100, outputTokens: 100 },
+        costUsd: 0.25,
+        attribution: { primary: { kind: "scene", id: "s1" } }
+      })
+    ])
+
+    expect(summary.total).toEqual({ costUsd: 0.25, tokens: 1_700, hasUnpricedUsage: true })
+    expect(summary.scenes["s1"]).toEqual({ costUsd: 0.25, tokens: 1_700, hasUnpricedUsage: true })
+  })
+
+  it("parses legacy ledger entries that still carry costUsd 0 as priced", () => {
+    const bytes = new TextEncoder().encode(
+      JSON.stringify({
+        version: 1,
+        entries: [
+          {
+            id: "legacy",
+            recordedAt: "2026-01-01T00:00:00.000Z",
+            taskName: "sceneDraft",
+            providerId: "codex",
+            usage: { inputTokens: 10, outputTokens: 10 },
+            costUsd: 0,
+            attribution: {}
+          }
+        ]
+      })
+    )
+
+    expect(computeUsageSummaryFromEntries(parseUsageLedgerBytes(bytes)).total).toEqual({
+      costUsd: 0,
+      tokens: 20,
+      hasUnpricedUsage: false
+    })
   })
 
   it("roundtrips ledger JSON and recomputes summary", () => {

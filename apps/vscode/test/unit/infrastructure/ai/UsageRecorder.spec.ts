@@ -49,8 +49,8 @@ describe("UsageRecorder", () => {
     expect(entries[0]?.costUsd).toBe(0.5)
 
     const summary = await recorder.getSummary(root)
-    expect(summary.scenes["01-opening"]).toBe(0.5)
-    expect(summary.totalUsd).toBe(0.5)
+    expect(summary.scenes["01-opening"]?.costUsd).toBe(0.5)
+    expect(summary.total.costUsd).toBe(0.5)
 
     recorder.dispose()
   })

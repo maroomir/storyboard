@@ -102,7 +102,7 @@ export class AiTextGateway {
       providerId: response.providerId,
       model: response.model,
       usage: response.usage,
-      costUsd: response.costUsd ?? 0,
+      ...(response.costUsd === undefined ? {} : { costUsd: response.costUsd }),
       attribution,
     });
   }

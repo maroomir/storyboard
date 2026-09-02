@@ -30,7 +30,7 @@ export function createUsageSummary(): UsageSummary {
     totals.calls += 1
     totals.inputTokens += record.usage?.inputTokens ?? 0
     totals.outputTokens += record.usage?.outputTokens ?? 0
-    totals.costUsd += record.costUsd
+    totals.costUsd += record.costUsd ?? 0
     byTask.set(record.taskName, totals)
   }
 

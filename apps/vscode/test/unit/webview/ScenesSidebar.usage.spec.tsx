@@ -23,16 +23,16 @@ describe("ScenesSidebar usage.changed", () => {
       ],
       isStoryboardProject: true,
       usage: {
-        scenes: { "001_intro": 0.02 },
+        scenes: { "001_intro": { costUsd: 0.02, tokens: 0, hasUnpricedUsage: false } },
         characters: {},
         backgrounds: {},
-        totalUsd: 0.02
+        total: { costUsd: 0.02, tokens: 0, hasUnpricedUsage: false }
       }
     }
 
     render(<ScenesSidebar initialData={initial} />)
 
-    expect(document.querySelectorAll('[aria-label="예상 비용 $0.02"]')).toHaveLength(2)
+    expect(document.querySelectorAll('[aria-label="AI 사용량 $0.02"]')).toHaveLength(2)
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -40,17 +40,17 @@ describe("ScenesSidebar usage.changed", () => {
           type: "event",
           method: "usage.changed",
           payload: {
-            scenes: { "001_intro": 0.07 },
+            scenes: { "001_intro": { costUsd: 0.07, tokens: 0, hasUnpricedUsage: false } },
             characters: {},
             backgrounds: {},
-            totalUsd: 0.07
+            total: { costUsd: 0.07, tokens: 0, hasUnpricedUsage: false }
           }
         }
       })
     )
 
     await waitFor(() => {
-      expect(document.querySelectorAll('[aria-label="예상 비용 $0.07"]')).toHaveLength(2)
+      expect(document.querySelectorAll('[aria-label="AI 사용량 $0.07"]')).toHaveLength(2)
     })
 
     vi.unstubAllGlobals()
