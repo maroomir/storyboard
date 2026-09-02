@@ -24,29 +24,55 @@ export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: fals
 // entity's directory name safe regardless of what the folder is called.
 const projectEntityKey = 'project';
 
-export async function computeStudioTarget(
-  editor: vscode.TextEditor | undefined,
-): Promise<StudioTarget> {
+export interface StudioFocus {
+  readonly uri: vscode.Uri;
+  readonly hasSelection: boolean;
+  readonly documentText?: string;
+}
+
+// NOTE: `.card` files open in the custom editor, which is never a TextEditor, so the active tab is
+// the only signal that a card has focus. The text editor still wins when present because it is the
+// only source of the selection and the document body.
+export function resolveActiveStudioFocus(): StudioFocus | undefined {
+  const editor = vscode.window.activeTextEditor;
+
+  if (editor) {
+    return {
+      uri: editor.document.uri,
+      hasSelection: !editor.selection.isEmpty,
+      documentText: editor.document.getText(),
+    };
+  }
+
+  const input = vscode.window.tabGroups.activeTabGroup.activeTab?.input;
+
+  if (input instanceof vscode.TabInputCustom || input instanceof vscode.TabInputText) {
+    return { uri: input.uri, hasSelection: false };
+  }
+
+  return undefined;
+}
+
+export async function computeStudioTarget(focus: StudioFocus | undefined): Promise<StudioTarget> {
   const workspaceFolder =
-    editor && editor.document.uri.scheme === 'file'
-      ? vscode.workspace.getWorkspaceFolder(editor.document.uri)
+    focus && focus.uri.scheme === 'file'
+      ? vscode.workspace.getWorkspaceFolder(focus.uri)
       : vscode.workspace.workspaceFolders?.[0];
 
   if (!workspaceFolder || !(await hasStoryboardProject(workspaceFolder))) {
     return noneStudioTarget;
   }
 
-  if (!editor || editor.document.uri.scheme !== 'file') {
+  if (!focus || focus.uri.scheme !== 'file') {
     return projectTarget(workspaceFolder);
   }
 
-  const uri = editor.document.uri;
-  const hasSelection = !editor.selection.isEmpty;
+  const { uri, hasSelection } = focus;
   const label = uri.path.split('/').pop();
 
   if (isDraftMarkdownFile(uri, workspaceFolder)) {
     const sceneStem = resolveDraftSceneStem(uri);
-    const sceneUri = deriveSceneUri(workspaceFolder, editor.document.getText());
+    const sceneUri = deriveSceneUri(workspaceFolder, focus.documentText ?? '');
 
     return {
       kind: 'draft',

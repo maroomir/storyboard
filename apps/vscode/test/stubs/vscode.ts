@@ -178,16 +178,29 @@ export function fireWillRenameFiles(event: WillRenameFilesEvent): void {
   willRenameFilesEmitter.fire(event)
 }
 
+export class TabInputText {
+  public constructor(public readonly uri: Uri) {}
+}
+
+export class TabInputCustom {
+  public constructor(
+    public readonly uri: Uri,
+    public readonly viewType: string
+  ) {}
+}
+
 export const window: {
   showInputBox: (options?: unknown) => Promise<string | undefined>
   showWarningMessage: (message: string) => Promise<void>
   showErrorMessage: (message: string) => Promise<void>
-  activeTextEditor: { document: { uri: Uri } } | undefined
+  activeTextEditor: unknown
+  tabGroups: { activeTabGroup: { activeTab: { input: unknown } | undefined } }
 } = {
   showInputBox: async () => undefined,
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
-  activeTextEditor: undefined
+  activeTextEditor: undefined,
+  tabGroups: { activeTabGroup: { activeTab: undefined } }
 }
 
 export const commands = {
