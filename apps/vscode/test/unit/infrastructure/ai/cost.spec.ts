@@ -3,24 +3,24 @@ import { describe, expect, it } from "vitest"
 import { aiGenerateResponseWithUsage, computeCostUsd } from '@storyboard/story-ai';
 
 describe("computeCostUsd", () => {
-  it("returns 0 when model is missing from the catalog", () => {
+  it("returns undefined when model is missing from the catalog", () => {
     expect(
       computeCostUsd({
         providerId: "openai",
         model: "unknown-model",
         usage: { inputTokens: 1_000_000, outputTokens: 1_000_000 }
       })
-    ).toBe(0)
+    ).toBeUndefined()
   })
 
-  it("returns 0 when usage is undefined", () => {
+  it("returns undefined when usage is undefined", () => {
     expect(
       computeCostUsd({
         providerId: "openai",
         model: "gpt-5.4-mini",
         usage: undefined
       })
-    ).toBe(0)
+    ).toBeUndefined()
   })
 
   it("computes OpenAI tier costs from per-million prices", () => {

@@ -2,20 +2,21 @@ import clsx from 'clsx';
 import type React from 'react';
 
 import {
-  formatCostBadgeLabel,
-  formatCostBadgeTooltip,
-  isZeroCostDisplay,
+  formatUsageBadgeLabel,
+  formatUsageBadgeTooltip,
+  isEmptyUsageDisplay,
 } from '@webview/lib/costFormat';
+import type { UsageAmount } from '@webview/lib/types';
 
 export type CostBadgeProps = {
-  readonly usd: number;
+  readonly usage: UsageAmount;
   readonly className?: string;
 };
 
-export function CostBadge({ usd, className }: CostBadgeProps): React.ReactElement {
-  const label = formatCostBadgeLabel(usd);
-  const isPlaceholder = isZeroCostDisplay(usd);
-  const tooltip = formatCostBadgeTooltip(usd);
+export function CostBadge({ usage, className }: CostBadgeProps): React.ReactElement {
+  const label = formatUsageBadgeLabel(usage);
+  const isPlaceholder = isEmptyUsageDisplay(usage);
+  const tooltip = formatUsageBadgeTooltip(usage);
 
   return (
     <span
@@ -26,7 +27,7 @@ export function CostBadge({ usd, className }: CostBadgeProps): React.ReactElemen
         className,
       )}
       title={tooltip}
-      aria-label={`예상 비용 ${label}`}
+      aria-label={`AI 사용량 ${label}`}
     >
       <span className="min-w-0 truncate">{label}</span>
     </span>

@@ -4,14 +4,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   createRequestId,
   parseSidebarScenesInitialData,
+  emptyUsageAmount,
   parseUsageChangedPayload,
   sumUsageMap,
+  usageAmountOf,
 } from '@webview/lib/messaging';
 import type {
   SceneListItem,
   SidebarScenesInitialData,
   StoryboardEventMessage,
   StoryboardRequestMethod,
+  UsageAmount,
 } from '@webview/lib/types';
 import { Button } from '../ui/Button';
 import { CostBadge } from '../ui/CostBadge';
@@ -104,10 +107,8 @@ export function ScenesSidebar({
   }, []);
 
   const scenesUsageTotal = sumUsageMap(sidebarState.usage.scenes);
-  const sceneCostUsd = (scene: SceneListItem): number => {
-    const raw = sidebarState.usage.scenes[scene.stem];
-    return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0;
-  };
+  const sceneUsage = (scene: SceneListItem): UsageAmount =>
+    usageAmountOf(sidebarState.usage.scenes, scene.stem);
 
   const postSceneRequest = (
     method: StoryboardRequestMethod,
@@ -140,7 +141,7 @@ export function ScenesSidebar({
             </p>
             <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
           </div>
-          <CostBadge usd={0} className="shrink-0" />
+          <CostBadge usage={emptyUsageAmount} className="shrink-0" />
         </div>
         <p className="m-0 leading-normal text-sb-fg-muted">
           Storyboard 프로젝트가 아닙니다. 먼저 Initialize Project를 실행해 주세요.
@@ -160,7 +161,7 @@ export function ScenesSidebar({
           </p>
           <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
         </div>
-        <CostBadge usd={scenesUsageTotal} className="shrink-0" />
+        <CostBadge usage={scenesUsageTotal} className="shrink-0" />
       </div>
 
       {sidebarState.scenes.length === 0 ? (
@@ -205,7 +206,7 @@ export function ScenesSidebar({
                           outline
                         </span>
                       ) : null}
-                      <CostBadge usd={sceneCostUsd(scene)} className="shrink-0 self-start" />
+                      <CostBadge usage={sceneUsage(scene)} className="shrink-0 self-start" />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pl-7">
                       <Button

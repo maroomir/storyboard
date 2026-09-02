@@ -7,6 +7,7 @@ import type {
   StudioAgentLookupRequest,
   StudioAgentMessage,
   StudioAgentToolName,
+  UsageAttribution,
 } from '@storyboard/story-ai';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -36,6 +37,7 @@ export interface StudioChatRequest {
   readonly instruction: string;
   readonly hasSelection: boolean;
   readonly pinnedTool?: StudioAgentToolName;
+  readonly attribution?: UsageAttribution;
   readonly isValidationEnabled: boolean;
   readonly resolveLookup: (requests: readonly StudioAgentLookupRequest[]) => Promise<string>;
   readonly resolveInvoke?: (request: StudioAgentInvokeRequest) => Promise<string>;
@@ -76,7 +78,7 @@ export class StudioChatUseCase {
         resolveLookup: request.resolveLookup,
         ...(request.resolveInvoke === undefined ? {} : { resolveInvoke: request.resolveInvoke }),
       },
-      { onStage: (stage) => request.onStage?.(stage) },
+      { onStage: (stage) => request.onStage?.(stage), attribution: request.attribution },
     );
 
     const followUps = await request.resolveFollowUps(followUpsOf(action));
@@ -129,12 +131,15 @@ export class StudioChatUseCase {
     try {
       const verdict = await this.aiGateway
         .createService(request.workspaceRoot)
-        .validateStudioProposal({
-          entityLabel: request.entityContext.entityLabel,
-          context: request.entityContext.context,
-          summary: action.summary,
-          diff: describePatch(patch),
-        });
+        .validateStudioProposal(
+          {
+            entityLabel: request.entityContext.entityLabel,
+            context: request.entityContext.context,
+            summary: action.summary,
+            diff: describePatch(patch),
+          },
+          { attribution: request.attribution },
+        );
 
       return {
         state: verdict.state,

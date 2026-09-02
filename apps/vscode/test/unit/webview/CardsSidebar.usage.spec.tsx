@@ -22,15 +22,15 @@ describe("CardsSidebar usage.changed", () => {
       isStoryboardProject: true,
       usage: {
         scenes: {},
-        characters: { c1: 0.02 },
+        characters: { c1: { costUsd: 0.02, tokens: 0, hasUnpricedUsage: false } },
         backgrounds: {},
-        totalUsd: 0.02
+        total: { costUsd: 0.02, tokens: 0, hasUnpricedUsage: false }
       }
     }
 
     render(<CardsSidebar initialData={initial} />)
 
-    expect(document.querySelectorAll('[aria-label="예상 비용 $0.02"]')).toHaveLength(2)
+    expect(document.querySelectorAll('[aria-label="AI 사용량 $0.02"]')).toHaveLength(2)
 
     window.dispatchEvent(
       new MessageEvent("message", {
@@ -39,16 +39,16 @@ describe("CardsSidebar usage.changed", () => {
           method: "usage.changed",
           payload: {
             scenes: {},
-            characters: { c1: 0.05 },
+            characters: { c1: { costUsd: 0.05, tokens: 0, hasUnpricedUsage: false } },
             backgrounds: {},
-            totalUsd: 0.05
+            total: { costUsd: 0.05, tokens: 0, hasUnpricedUsage: false }
           }
         }
       })
     )
 
     await waitFor(() => {
-      expect(document.querySelectorAll('[aria-label="예상 비용 $0.05"]')).toHaveLength(2)
+      expect(document.querySelectorAll('[aria-label="AI 사용량 $0.05"]')).toHaveLength(2)
     })
 
   })
@@ -66,17 +66,17 @@ describe("CardsSidebar usage.changed", () => {
       isStoryboardProject: true,
       usage: {
         scenes: {},
-        characters: { c1: 0.01, c2: 0.02 },
+        characters: { c1: { costUsd: 0.01, tokens: 0, hasUnpricedUsage: false }, c2: { costUsd: 0.02, tokens: 0, hasUnpricedUsage: false } },
         backgrounds: {},
-        totalUsd: 0.03
+        total: { costUsd: 0.03, tokens: 0, hasUnpricedUsage: false }
       }
     }
 
     render(<CardsSidebar initialData={initial} />)
 
-    expect(document.querySelector('[aria-label="예상 비용 $0.03"]')).toBeTruthy()
-    expect(document.querySelector('[aria-label="예상 비용 $0.01"]')).toBeTruthy()
-    expect(document.querySelector('[aria-label="예상 비용 $0.02"]')).toBeTruthy()
+    expect(document.querySelector('[aria-label="AI 사용량 $0.03"]')).toBeTruthy()
+    expect(document.querySelector('[aria-label="AI 사용량 $0.01"]')).toBeTruthy()
+    expect(document.querySelector('[aria-label="AI 사용량 $0.02"]')).toBeTruthy()
   })
 })
 
@@ -93,7 +93,7 @@ describe("CardsSidebar character role grouping", () => {
         { type: "character", id: "sup1", name: "이서준", uri: "file:///sup.card", role: "supporting" }
       ],
       isStoryboardProject: true,
-      usage: { scenes: {}, characters: {}, backgrounds: {}, totalUsd: 0 }
+      usage: { scenes: {}, characters: {}, backgrounds: {}, total: { costUsd: 0, tokens: 0, hasUnpricedUsage: false } }
     }
 
     render(<CardsSidebar initialData={initial} />)
@@ -118,7 +118,7 @@ describe("CardsSidebar character role grouping", () => {
         { type: "character", id: "orphan", name: "미지정", uri: "file:///orphan.card" }
       ],
       isStoryboardProject: true,
-      usage: { scenes: {}, characters: {}, backgrounds: {}, totalUsd: 0 }
+      usage: { scenes: {}, characters: {}, backgrounds: {}, total: { costUsd: 0, tokens: 0, hasUnpricedUsage: false } }
     }
 
     render(<CardsSidebar initialData={initial} />)
@@ -138,7 +138,7 @@ describe("CardsSidebar character role grouping", () => {
         { type: "location", id: "loc2", name: "운동장", uri: "file:///yard.card" }
       ],
       isStoryboardProject: true,
-      usage: { scenes: {}, characters: {}, backgrounds: {}, totalUsd: 0 }
+      usage: { scenes: {}, characters: {}, backgrounds: {}, total: { costUsd: 0, tokens: 0, hasUnpricedUsage: false } }
     }
 
     render(<CardsSidebar initialData={initial} />)

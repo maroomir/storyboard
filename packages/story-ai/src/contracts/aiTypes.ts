@@ -13,6 +13,7 @@ export type {
   AiTaskCatalogEntry,
   AiTaskName,
   AiTaskStatus,
+  UsageAmount,
   UsageSummaryByEntity,
   WiredAiTaskName,
 } from './ai';
@@ -97,6 +98,6 @@ export interface UsageRecord {
   readonly providerId: AiProviderId;
   readonly model?: string;
   readonly usage?: AiUsage;
-  readonly costUsd: number;
+  readonly costUsd?: number;
   readonly attribution: UsageAttribution;
 }

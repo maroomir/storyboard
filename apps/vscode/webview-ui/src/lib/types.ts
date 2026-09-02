@@ -134,11 +134,17 @@ export interface CardEditorInitialData {
   readonly error?: string;
 }
 
+export interface UsageAmount {
+  readonly costUsd: number;
+  readonly tokens: number;
+  readonly hasUnpricedUsage: boolean;
+}
+
 export interface UsageSummaryByEntity {
-  readonly scenes: Readonly<Record<string, number>>;
-  readonly characters: Readonly<Record<string, number>>;
-  readonly backgrounds: Readonly<Record<string, number>>;
-  readonly totalUsd: number;
+  readonly scenes: Readonly<Record<string, UsageAmount>>;
+  readonly characters: Readonly<Record<string, UsageAmount>>;
+  readonly backgrounds: Readonly<Record<string, UsageAmount>>;
+  readonly total: UsageAmount;
 }
 
 export interface SidebarCardsInitialData {

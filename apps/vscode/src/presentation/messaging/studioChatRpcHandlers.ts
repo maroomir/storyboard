@@ -82,6 +82,7 @@ export function createStudioChatRpcHandlers(
           instruction: payload.instruction,
           hasSelection: selection !== undefined,
           ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
+          ...usageAttributionFor(payload.entity),
           isValidationEnabled: isValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(vscodeFileSystem, root, requests),
           ...toolResolverFor(deps, root, payload.entity, entityContext),
@@ -103,6 +104,18 @@ export function createStudioChatRpcHandlers(
       return {};
     },
   };
+}
+
+// NOTE: without this the Studio's spend never reached the ledger, so the sidebar badges read as
+// if chatting were free.
+function usageAttributionFor(
+  entity: StudioEntity,
+): Pick<Parameters<StudioChatUseCase['send']>[0], 'attribution'> {
+  if (entity.kind === 'project') {
+    return {};
+  }
+
+  return { attribution: { primary: { kind: entity.kind, id: entity.key } } };
 }
 
 // NOTE: which resolver a conversation gets follows the file being edited — draft chats run the

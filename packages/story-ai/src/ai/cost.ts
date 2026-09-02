@@ -13,22 +13,26 @@ export function aiGenerateResponseWithUsage(params: {
     return { providerId, model, text };
   }
 
+  const costUsd = computeCostUsd({ providerId, model, usage });
+
   return {
     providerId,
     model,
     text,
     usage,
-    costUsd: computeCostUsd({ providerId, model, usage }),
+    ...(costUsd === undefined ? {} : { costUsd }),
   };
 }
 
+// NOTE: `undefined` means "no price known" (subscription CLIs, unlisted models), which the ledger
+// must keep apart from a genuinely free call — collapsing it to 0 is how every run read as $0.
 export function computeCostUsd(params: {
   readonly providerId: AiProviderId;
   readonly model: string | undefined;
   readonly usage: AiUsage | undefined;
-}): number {
+}): number | undefined {
   if (!params.usage || !params.model) {
-    return 0;
+    return undefined;
   }
 
   const table = storyboardModelPricing[params.providerId] as Readonly<
@@ -36,7 +40,7 @@ export function computeCostUsd(params: {
   >;
   const row = table[params.model];
   if (!row) {
-    return 0;
+    return undefined;
   }
 
   const inputMillions = params.usage.inputTokens / 1_000_000;

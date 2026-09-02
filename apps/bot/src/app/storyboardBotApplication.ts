@@ -135,7 +135,7 @@ export class StoryboardBotApplication {
         providerId: record.providerId,
         inputTokens: record.usage?.inputTokens ?? 0,
         outputTokens: record.usage?.outputTokens ?? 0,
-        costUsd: record.costUsd,
+        costUsd: record.costUsd ?? 0,
       });
     };
 
