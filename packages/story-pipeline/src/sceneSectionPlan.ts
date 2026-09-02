@@ -82,6 +82,26 @@ export function splitSkeletonIntoSections(skeleton: string, sectionCount: number
   return sections;
 }
 
+// NOTE: 뼈대는 문단 경계에서 끊기므로 조각 길이가 고르지 않고, 마지막 조각이 가장 얇기 쉽다. 예산을
+// 균등하게 나누면 얇은 조각이 남는 재료 없이 큰 분량을 요구받아 앞 구간을 되풀이한다. 조각 길이에
+// 비례해 나누되 한 호출의 출력 한도는 넘기지 않는다.
+export function planSectionTargetLengths(
+  sections: readonly string[],
+  totalTarget: number,
+  outputLimit = SECTION_OUTPUT_LIMIT,
+): number[] {
+  const weights = sections.map((section) => section.replace(/\s/g, '').length);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  if (totalWeight === 0) {
+    return sections.map(() => Math.max(1, Math.round(totalTarget / sections.length)));
+  }
+
+  return weights.map((weight) =>
+    Math.min(outputLimit, Math.max(1, Math.round((totalTarget * weight) / totalWeight))),
+  );
+}
+
 // NOTE: detectCharactersInText는 매칭된 토큰을 그대로 돌려주므로, 별칭이나 게임명으로 부른 인물이
 // 본명으로 부른 같은 인물과 다른 사람으로 잡힌다. 카드 이름으로 되돌려 세야 오탐이 없다.
 function detectCanonicalCast(text: string, characters: readonly CharacterCard[]): Set<string> {
