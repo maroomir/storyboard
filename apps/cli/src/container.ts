@@ -55,11 +55,15 @@ import { resolveCliPaths } from './adapters/paths';
 import {
   createFileConfiguration,
   createFileSecretStorage,
+  resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
+  type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
 export interface CliContainer {
   readonly workspaceRoot: StoryUri;
+  readonly homePaths: StoryboardHomePaths;
+  readonly workspaceConfigFile: string | undefined;
   readonly aiGateway: AiGateway;
   readonly logger: ConsoleLogger;
   readonly fileSystem: NodeFileSystem;
@@ -89,7 +93,8 @@ export interface CliContainer {
 
 export interface CliContainerOptions {
   readonly workspacePath: string;
-  readonly verbose: boolean;
+  // Progress lines on stderr: on for a person at a terminal, off for `--json`/`--quiet` pipes.
+  readonly showProgress: boolean;
   readonly version: string;
   readonly provider?: string;
   readonly model?: string;
@@ -130,13 +135,14 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
-  const logger = new ConsoleLogger(options.verbose);
+  const logger = new ConsoleLogger(options.showProgress);
   const fileSystem = new NodeFileSystem();
   const workspaceLocator = new NodeWorkspaceLocator(folder);
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
+  const workspaceConfigFile = resolveWorkspaceConfigFile(workspaceRoot.fsPath);
   const configuration = createFileConfiguration({
     userConfigFile: paths.configFile,
-    workspaceConfigFile: resolveWorkspaceConfigFile(workspaceRoot.fsPath),
+    workspaceConfigFile,
     overrides: configOverrides(options),
   });
   const configBridge = new ConfigBridge({ getConfiguration: () => configuration });
@@ -217,6 +223,8 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   return {
     workspaceRoot,
+    homePaths: resolveStoryboardHomePaths(),
+    workspaceConfigFile,
     aiGateway,
     logger,
     fileSystem,

@@ -10,101 +10,81 @@ import {
   parseArguments,
   resolveVerb,
 } from './cliArguments';
+import { findCommandSpec } from './commands/catalog';
 import { commands, type CommandOutcome } from './commands/index';
 import { createCliContainer } from './container';
+import { renderCommandHelp, renderUnknownCommand, renderUsage } from './help';
 
 const version = '0.8.1';
 
-const usage = `storyboard ${version} — Storyboard workspaces from the command line
+interface OutputMode {
+  readonly json: boolean;
+}
 
-  storyboard <noun> <verb> [target] [flags]
+// stdout carries the result and nothing else, so an agent can pipe `--json` straight into a
+// parser while progress and warnings go to stderr. A failure is a result too: with `--json` it is
+// the same `{ok:false, message}` object on stdout, never loose text.
+function report(outcome: CommandOutcome, mode: OutputMode): void {
+  if (mode.json) {
+    process.stdout.write(
+      `${JSON.stringify({ ok: outcome.ok, message: outcome.message, data: outcome.data ?? null })}\n`,
+    );
+    return;
+  }
 
-Commands
-  scene generate <stem>        씬 초안을 생성합니다 (--force 로 재생성)
-  scene generate --all         초안이 없거나 입력이 바뀐 씬만 생성합니다 (--force 미지원)
-  scene revise <stem>          기존 초안을 검수하고 재작성합니다
-  scene draft <stem>           초안 파일 경로를 출력합니다
-  init --title <name>          현재 디렉터리를 Storyboard 워크스페이스로 만듭니다
-  draft format <stem>          초안을 프로젝트 형식으로 다시 씁니다
-  draft augment <stem>         갱신된 카드·정전을 기존 초안에 녹입니다 (--lines, --dry-run)
-  draft edit <stem>            --instruction 대로 고칩니다 (--lines 로 구간 지정)
-  draft condense <stem>        초안을 압축합니다 (--lines)
-  draft expand <stem>          초안을 늘립니다 (--lines)
-  manuscript export            조립 원고를 stdout 또는 --out 파일로 냅니다
-  check grammar <stem>         초안의 문법을 검사합니다
-  check continuity <stem>      정전과 어긋나는 곳을 검사합니다
-  check slop <stem>            상투 표현을 검사합니다 (AI 호출 없음)
-  scene seeds                  아웃라인에서 씬 시드를 만듭니다 (--force 로 덮어쓰기)
-  scene complete               끝번호 뒤에 붙일 완결 씬을 제안합니다 (읽기 전용)
-  cards build                  씬만 읽어 카드 구성안을 만듭니다 (읽기 전용)
-  canon diff                   정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)
-  cards migrate                낡은 산문형 카드 필드를 목록 형식으로 옮깁니다
-  scene migrate                구형 scene/*.txt 를 .card 로 옮깁니다
-  card rename <kind> <id> --to 카드 id 를 바꾸고 참조를 함께 고칩니다
-  card create <kind> --name    빈 인물/배경 카드를 만듭니다
-  scene create --name          다음 번호로 씬 카드를 만듭니다
-  card recommend <kind>        카드가 없는 인물/배경을 찾습니다 (읽기 전용)
-  card promote                 초안에서 추출한 카드 후보를 반영합니다 (--dry-run)
-  bible promote                초안에서 추출한 설정 후보를 정전에 반영합니다 (--dry-run)
-  apikey set <provider>        API 키를 stdin 으로 받아 저장합니다 (빈 입력이면 삭제)
-  outline generate             시놉시스와 챕터 계획을 만듭니다 (--force 로 덮어쓰기)
-  novel generate               기획부터 원고 조립까지 한 번에 돌립니다
-  manuscript assemble          draft/ 를 원고로 조립합니다
-  manuscript review            조립 원고를 검사합니다
-  manuscript summaries         장별 요약을 만듭니다
+  process.stdout.write(`${outcome.message}\n`);
+}
 
-Flags
-  --workspace <path>           대상 워크스페이스 (기본: 현재 디렉터리)
-  --provider <id>              이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)
-  --model <name>               그 프로바이더의 모델
-  --fallback <id>              CLI 프로바이더가 사용 한도에 걸리면 넘어갈 프로바이더
-  --revise-iterations <n>      검수-재작성 반복 상한 (1-5)
-  --no-revise                  생성 뒤 검수-재작성을 건너뜁니다
-  --out <path>                 manuscript export 의 출력 파일
-  --lines <a-b>                대상 줄 범위 (없으면 본문 전체)
-  --instruction <text>         draft augment/edit 에 줄 지시
-  --name <text>                card/scene create 가 쓸 이름
-  --id <slug>                  card create 의 파일명 (기본: 이름에서 유도)
-  --to <id>                    card rename 의 새 id
-  --title <name>               init 이 만들 작품 이름
-  --language <code>            init 의 언어 (기본 ko)
-  --dry-run                    반영하지 않고 대상만 보고합니다
-  --json                       결과를 JSON 으로 stdout 에 출력합니다
-  --verbose                    진행 로그를 stderr 에 출력합니다
-  --version, --help
-`;
+function fail(message: string, mode: OutputMode): number {
+  if (mode.json) {
+    report({ ok: false, message }, mode);
+  } else {
+    process.stderr.write(`${message}\n`);
+  }
+
+  return 1;
+}
 
 async function main(argv: readonly string[]): Promise<number> {
   const parsed = parseArguments(argv);
+  const mode: OutputMode = { json: argv.includes('--json') };
 
   if (isParseFailure(parsed)) {
-    process.stderr.write(`${parsed.message}\n\n${usage}`);
-    return 1;
+    return fail(`${parsed.message}\n전체 옵션: storyboard --help`, mode);
   }
 
-  const args = resolveVerb(parsed, Object.keys(commands));
+  // `help <verb>` is not a handler, but it must resolve as a verb so the topic lands in positionals.
+  const args = resolveVerb(parsed, [...Object.keys(commands), 'help']);
 
   if (flagBoolean(args.flags, 'version')) {
     process.stdout.write(`${version}\n`);
     return 0;
   }
 
-  if (flagBoolean(args.flags, 'help')) {
-    process.stdout.write(usage);
+  const verb = args.path.join(' ');
+
+  // Bare `storyboard` and `--help` are entry points, not mistakes: usage goes to stdout, exit 0.
+  if (args.path.length === 0 || verb === 'help') {
+    const topic = verb === 'help' ? args.positionals.join(' ') : '';
+    const commandHelp = topic.length > 0 ? renderCommandHelp(topic) : undefined;
+
+    if (topic.length > 0 && commandHelp === undefined) {
+      return fail(renderUnknownCommand(topic), mode);
+    }
+
+    process.stdout.write(commandHelp ?? renderUsage(version));
     return 0;
   }
 
-  if (args.path.length === 0) {
-    process.stderr.write(usage);
-    return 1;
-  }
-
-  const verb = args.path.join(' ');
   const handler = commands[verb];
 
   if (!handler) {
-    process.stderr.write(`알 수 없는 명령: ${verb}\n\n${usage}`);
-    return 1;
+    return fail(renderUnknownCommand(verb), mode);
+  }
+
+  if (flagBoolean(args.flags, 'help')) {
+    process.stdout.write(renderCommandHelp(verb) ?? renderUsage(version));
+    return 0;
   }
 
   const providerFailure =
@@ -112,28 +92,29 @@ async function main(argv: readonly string[]): Promise<number> {
     validateFallback(flagString(args.flags, 'fallback'));
 
   if (providerFailure !== undefined) {
-    process.stderr.write(`${providerFailure}\n`);
-    return 1;
+    return fail(providerFailure, mode);
   }
 
   const workspacePath = resolve(flagString(args.flags, 'workspace') ?? process.cwd());
-
-  // `init` creates the workspace and `apikey set` is machine-wide, so neither can require one to
-  // already exist — demanding it would make the CLI unusable from an empty directory.
-  const needsWorkspace = verb !== 'apikey set' && verb !== 'init';
+  const spec = findCommandSpec(verb);
+  const needsWorkspace = spec?.needsWorkspace !== false;
 
   if (needsWorkspace && !existsSync(join(workspacePath, '.storyboard', 'project.json'))) {
-    process.stderr.write(
+    return fail(
       `Storyboard 워크스페이스가 아닙니다: ${workspacePath}\n` +
-        '.storyboard/project.json 이 있는 디렉터리에서 실행하거나 --workspace 로 지정해 주세요.\n',
+        '  새로 만들려면   storyboard init --title "작품 이름"\n' +
+        '  다른 곳이라면   storyboard <명령> --workspace <경로>',
+      mode,
     );
-    return 1;
   }
 
   const reviseIterations = flagString(args.flags, 'revise-iterations');
+  const showProgress =
+    flagBoolean(args.flags, 'verbose') ||
+    (process.stderr.isTTY === true && !mode.json && !flagBoolean(args.flags, 'quiet'));
   const container = createCliContainer({
     workspacePath,
-    verbose: flagBoolean(args.flags, 'verbose'),
+    showProgress,
     version,
     ...(flagString(args.flags, 'provider') === undefined
       ? {}
@@ -148,7 +129,7 @@ async function main(argv: readonly string[]): Promise<number> {
   });
 
   const outcome = await handler({ container, args });
-  report(outcome, flagBoolean(args.flags, 'json'));
+  report(outcome, mode);
   return outcome.ok ? 0 : 1;
 }
 
@@ -191,24 +172,18 @@ function validateFallback(provider: string | undefined): string | undefined {
     : `알 수 없는 폴백 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
 }
 
-// NOTE: stdout carries the result and nothing else, so an agent can pipe `--json` straight into a
-// parser while progress and warnings go to stderr.
-function report(outcome: CommandOutcome, asJson: boolean): void {
-  if (asJson) {
-    process.stdout.write(
-      `${JSON.stringify({ ok: outcome.ok, message: outcome.message, data: outcome.data ?? null })}\n`,
-    );
-    return;
-  }
-
-  process.stdout.write(`${outcome.message}\n`);
-}
-
 void main(process.argv.slice(2))
   .then((code) => {
     process.exitCode = code;
   })
   .catch((error: unknown) => {
-    process.stderr.write(`[error] ${error instanceof Error ? error.message : String(error)}\n`);
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (process.argv.includes('--json')) {
+      process.stdout.write(`${JSON.stringify({ ok: false, message, data: null })}\n`);
+    } else {
+      process.stderr.write(`[error] ${message}\n`);
+    }
+
     process.exitCode = 1;
   });

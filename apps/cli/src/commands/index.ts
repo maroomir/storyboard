@@ -51,18 +51,10 @@ import { parseSceneFileName } from '@storyboard/story-format';
 import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
-export interface CommandOutcome {
-  readonly ok: boolean;
-  readonly message: string;
-  readonly data?: unknown;
-}
+import type { CommandHandler, CommandOutcome } from './outcome';
+import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
 
-export interface CommandContext {
-  readonly container: CliContainer;
-  readonly args: ParsedArguments;
-}
-
-type CommandHandler = (context: CommandContext) => Promise<CommandOutcome>;
+export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
 function sceneStemFrom(args: ParsedArguments): string | undefined {
   const raw = args.positionals[0];
@@ -80,7 +72,8 @@ function sceneUriFor(root: StoryUri, stem: string): StoryUri {
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
     const result = await container.generateAllDraftsUseCase.execute({
-      onProgress: (progress) => container.logger.info(JSON.stringify(progress)),
+      onProgress: (progress) =>
+        container.logger.info(`${progress.current}/${progress.total} ${progress.label}`),
     });
 
     if (!result.ok) {
@@ -1064,7 +1057,10 @@ const initProject: CommandHandler = async ({ container, args }) => {
   const name = flagString(args.flags, 'title') ?? args.positionals[0];
 
   if (name === undefined || name.trim().length === 0) {
-    return { ok: false, message: '--title 로 작품 이름을 지정해 주세요.' };
+    return {
+      ok: false,
+      message: '작품 이름이 필요합니다: storyboard init --title "작품 이름"',
+    };
   }
 
   const contract = await readContractInput(container, args);
@@ -1093,7 +1089,12 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
   return {
     ok: true,
-    message: `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}`,
+    message:
+      `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}\n` +
+      '다음: `storyboard project set` 으로 작품 계약을 채우고 `storyboard outline generate` 를 실행하세요.' +
+      (container.configBridge.isDefaultProviderConfigured()
+        ? ''
+        : '\nAI 프로바이더가 아직 없습니다: `storyboard setup`'),
     data: { id: project.id, name: project.name, format: project.format, setting: project.setting },
   };
 };
@@ -1354,6 +1355,10 @@ function describeNothingToPromote(kind: 'no_candidates' | 'no_new_candidates'): 
 }
 
 export const commands: Readonly<Record<string, CommandHandler>> = {
+  setup: runSetup,
+  doctor: runDoctor,
+  'config show': runConfigShow,
+  'config set': runConfigSet,
   'scene generate': generateScene,
   'scene revise': reviseScene,
   'scene draft': showDraftPath,

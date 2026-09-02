@@ -1,3 +1,5 @@
+import { booleanFlagNames, valueFlagNames } from './commands/catalog';
+
 export interface ParsedArguments {
   readonly path: readonly string[];
   readonly flags: Readonly<Record<string, string | boolean>>;
@@ -11,44 +13,14 @@ export interface RawArguments {
   readonly flags: Readonly<Record<string, string | boolean>>;
 }
 
-// Flags that never take a value. Without this list a boolean flag swallows the token after it —
-// `scene generate --json 01-a` would lose the scene and silently leave JSON mode off.
-const booleanFlags = new Set([
-  'all',
-  'dry-run',
-  'force',
-  'help',
-  'json',
-  'no-revise',
-  'resume',
-  'verbose',
-  'version',
-]);
+// Which flags take a value comes from the catalog, so `--help` and the parser can never disagree.
+// Without the boolean list a boolean flag would swallow the token after it — `scene generate
+// --json 01-a` would lose the scene and silently leave JSON mode off.
+const booleanFlags = booleanFlagNames;
+const valueFlags = valueFlagNames;
 
-const valueFlags = new Set([
-  'workspace',
-  'provider',
-  'model',
-  'revise-iterations',
-  'title',
-  'language',
-  'out',
-  'instruction',
-  'name',
-  'id',
-  'lines',
-  'to',
-  'fallback',
-  'from',
-  'genre',
-  'audience',
-  'pov',
-  'target-words',
-  'chapters',
-  'scenes-per-chapter',
-  'concept',
-  'description',
-]);
+// The two short forms every CLI is expected to honour.
+const shortFlags: Readonly<Record<string, string>> = { '-h': '--help', '-v': '--version' };
 
 export interface ParseFailure {
   readonly message: string;
@@ -62,7 +34,7 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
   const flags: Record<string, string | boolean> = {};
 
   for (let index = 0; index < argv.length; index += 1) {
-    const token = argv[index] ?? '';
+    const token = shortFlags[argv[index] ?? ''] ?? argv[index] ?? '';
 
     if (!token.startsWith('--')) {
       words.push(token);
