@@ -16,36 +16,53 @@ import { StoryFeatureSourceError } from './storyFeatureTypes';
 const SCENE_CHUNK_SIZE = 40_000;
 const MAX_PARALLEL_REQUESTS = 4;
 
+// 모델은 "모르는 값"을 빈 문자열로 적어 보낸다. 그걸 오류로 세면 32씬을 다 읽고 온 응답이
+// weather: "" 한 칸 때문에 통째로 버려진다. 빈 값은 안 적은 것으로 읽고, 목록에서는 걸러 낸다.
+const optionalText = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim().length === 0 ? undefined : value),
+  z.string().trim().min(1).optional(),
+);
+
+function textList() {
+  return z.preprocess(
+    (value) =>
+      Array.isArray(value)
+        ? value.filter((item) => typeof item !== 'string' || item.trim().length > 0)
+        : value,
+    z.array(z.string().trim().min(1)).default([]),
+  );
+}
+
 const entitySchema = z.object({
   type: z.enum(['character', 'background']),
   name: z.string().trim().min(1),
-  existingId: z.string().trim().min(1).optional(),
+  existingId: optionalText,
   role: z.enum(['main', 'supporting', 'extra']).optional(),
-  aliases: z.array(z.string().trim().min(1)).default([]),
-  tags: z.array(z.string().trim().min(1)).default([]),
+  aliases: textList(),
+  tags: textList(),
   attributes: z
     .array(z.object({ key: z.string().trim().min(1), value: z.string().trim().min(1) }))
     .default([]),
-  traits: z.array(z.string().trim().min(1)).default([]),
-  description: z.array(z.string().trim().min(1)).default([]),
-  voice: z.array(z.string().trim().min(1)).default([]),
-  desire: z.array(z.string().trim().min(1)).default([]),
+  traits: textList(),
+  description: textList(),
+  voice: textList(),
+  desire: textList(),
   relations: z
     .array(z.object({ target: z.string().trim().min(1), type: z.string().trim().min(1) }))
     .default([]),
   arc: z
     .array(
       z.object({
-        stage: z.string().trim().min(1).optional(),
+        stage: optionalText,
         summary: z.string().trim().min(1),
-        sceneRef: z.string().trim().min(1).optional(),
+        sceneRef: optionalText,
       }),
     )
     .default([]),
-  senses: z.array(z.string().trim().min(1)).default([]),
-  time: z.string().trim().min(1).optional(),
-  weather: z.string().trim().min(1).optional(),
-  characterIds: z.array(z.string().trim().min(1)).default([]),
+  senses: textList(),
+  time: optionalText,
+  weather: optionalText,
+  characterIds: textList(),
   sourceScenes: z.array(z.string().trim().min(1)).min(1),
 });
 
