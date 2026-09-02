@@ -15,13 +15,20 @@ import {
   validateSceneSlugInput,
 } from './newSceneHelpers';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import type { ConfigBridge } from '@storyboard/story-ai';
 
 const createSceneCommand = 'storyboard.scene.create';
 const openSceneDraftCommand = 'storyboard.scene.openDraft';
 
-export function registerNewSceneCommands(): vscode.Disposable {
+export interface RegisterNewSceneCommandsDependencies {
+  readonly configBridge: ConfigBridge;
+}
+
+export function registerNewSceneCommands({
+  configBridge,
+}: RegisterNewSceneCommandsDependencies): vscode.Disposable {
   return vscode.Disposable.from(
-    vscode.commands.registerCommand(createSceneCommand, () => createNewScene()),
+    vscode.commands.registerCommand(createSceneCommand, () => createNewScene(configBridge)),
     vscode.commands.registerCommand(openSceneDraftCommand, (uri?: vscode.Uri) =>
       openDraftForScene(uri),
     ),
@@ -75,7 +82,7 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
   return activeUri ?? undefined;
 }
 
-async function createNewScene(): Promise<void> {
+async function createNewScene(configBridge: ConfigBridge): Promise<void> {
   const workspaceFolder = await getTargetWorkspaceFolder();
 
   if (!workspaceFolder) {
@@ -92,10 +99,10 @@ async function createNewScene(): Promise<void> {
   }
 
   const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
-  const inspected = vscode.workspace
-    .getConfiguration('storyboard')
-    .inspect<number>('scene.prefixDigits');
-  const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, inspected);
+  const digitCount = resolveScenePrefixDigitCount(
+    project.editor.scenePrefixDigits,
+    configBridge.inspectScenePrefixDigits(),
+  );
 
   const directoryEntries = await vscode.workspace.fs.readDirectory(paths.sceneDirectory);
   const sceneFileNames = directoryEntries

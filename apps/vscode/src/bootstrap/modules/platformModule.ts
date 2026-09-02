@@ -46,8 +46,13 @@ import {
 } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
-import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type { AiProviderRegistry, StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { createUsageSink } from '@/infrastructure/ai/usageSink';
+import { migrateVscodeSettingsToHome } from '@/infrastructure/settings/migrateVscodeSettings';
+import {
+  createStoryboardHomeStores,
+  type StoryboardHomeStores,
+} from '@/infrastructure/settings/storyboardHome';
 import {
   createVscodeUsageLedgerFileSystem,
   UsageRecorder,
@@ -67,6 +72,7 @@ export interface IPlatformServices {
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
+  readonly homeStores: StoryboardHomeStores;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
@@ -107,13 +113,16 @@ export class PlatformModule implements IApplicationModule {
     }
 
     const logger = new OutputChannelLogger();
-    const secretStore = new SecretStore(context.secrets);
-    const configBridge = new ConfigBridge({
-      getConfiguration: (): vscode.WorkspaceConfiguration =>
-        vscode.workspace.getConfiguration('storyboard'),
-      onDidChangeConfiguration: (listener): vscode.Disposable =>
-        vscode.workspace.onDidChangeConfiguration(listener),
+    const homeStores = createStoryboardHomeStores({
+      workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+      onInvalidFile: (error): void => reportInvalidConfigFile(error.file, error.message, logger),
     });
+    const secretStore = new SecretStore(homeStores.secretStorage);
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => homeStores.configuration,
+      onDidChangeConfiguration: homeStores.onDidChangeConfiguration,
+    });
+    void migrateLegacySettings(context, homeStores, logger);
     const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
     const fileSystem = new VscodeFileSystem();
     const workspaceLocator = new VscodeWorkspaceLocator();
@@ -255,6 +264,7 @@ export class PlatformModule implements IApplicationModule {
       createCardUseCase,
       cardSidebarRepository,
       configBridge,
+      homeStores,
       condenseDraftUseCase,
       expandDraftUseCase,
       exportManuscriptUseCase,
@@ -281,6 +291,7 @@ export class PlatformModule implements IApplicationModule {
     };
     this.disposables.add(
       logger,
+      homeStores,
       postGenerationUpdates,
       usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
@@ -302,5 +313,60 @@ export class PlatformModule implements IApplicationModule {
     this.disposables.dispose();
 
     this.services = undefined;
+  }
+}
+
+// A settings file the author broke by hand must not take the whole extension down, but it must
+// not be silent either: every read falls back to defaults and the author is told which file.
+const reportedInvalidFiles = new Set<string>();
+
+function reportInvalidConfigFile(file: string, message: string, logger: IStoryboardLogger): void {
+  logger.warn(message);
+
+  if (reportedInvalidFiles.has(file)) {
+    return;
+  }
+
+  reportedInvalidFiles.add(file);
+  void vscode.window
+    .showWarningMessage(`${message} 고칠 때까지 기본값으로 동작합니다.`, '파일 열기')
+    .then((choice) => {
+      if (choice === '파일 열기') {
+        void vscode.window.showTextDocument(vscode.Uri.file(file));
+      }
+    });
+}
+
+async function migrateLegacySettings(
+  context: vscode.ExtensionContext,
+  homeStores: StoryboardHomeStores,
+  logger: IStoryboardLogger,
+): Promise<void> {
+  try {
+    const result = await migrateVscodeSettingsToHome({
+      vscodeConfiguration: vscode.workspace.getConfiguration('storyboard'),
+      vscodeSecrets: context.secrets,
+      homeConfiguration: homeStores.configuration,
+      homeSecrets: homeStores.secretStorage,
+      hasWorkspaceConfigFile: homeStores.workspaceConfigFile !== undefined,
+    });
+
+    if (result.movedSettings.length === 0 && result.movedApiKeys.length === 0) {
+      return;
+    }
+
+    logger.info(
+      `VSCode 설정 ${result.movedSettings.length}개와 API 키 ${result.movedApiKeys.length}개를 ${homeStores.paths.home} 으로 옮겼습니다.`,
+    );
+    const choice = await vscode.window.showInformationMessage(
+      `Storyboard 설정을 ${homeStores.paths.configFile} 로 옮겼습니다. 이제 세 앱이 같은 설정을 씁니다.`,
+      '파일 열기',
+    );
+
+    if (choice === '파일 열기') {
+      await vscode.window.showTextDocument(vscode.Uri.file(homeStores.paths.configFile));
+    }
+  } catch (error) {
+    logger.error('VSCode 설정을 ~/.storyboard 로 옮기지 못했습니다.', error);
   }
 }

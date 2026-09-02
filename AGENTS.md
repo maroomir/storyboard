@@ -136,9 +136,9 @@ Do not create a new abstraction solely to move a file. Use ports for genuine run
 - Keep extension-to-webview and webview-to-extension message types separate when it improves clarity.
 - Validate messages at extension boundaries when payloads include user input, file paths, or external data.
 - Treat the extension host as the source of truth for persisted state.
-- Use `context.globalState` for user-level settings shared across workspaces.
+- Settings live in `~/.storyboard/config.json` (overridden by `<workspace>/.storyboard/config.json`) through `ConfigBridge` over `@storyboard/story-config`; the extension contributes no VSCode `configuration`.
 - Use `context.workspaceState` for workspace-specific state.
-- Use `context.secrets` for credentials and sensitive tokens.
+- Credentials live in `~/.storyboard/secrets.json` (0600) through `SecretStore`, shared with the CLI and the bot.
 - Avoid duplicating persistent state in webview storage unless there is a deliberate synchronization strategy.
 
 ## Security and Privacy

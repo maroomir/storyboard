@@ -35,7 +35,7 @@ export class NovelModule implements IApplicationModule {
 
     this.disposables.add(
       registerGenerateOutlineCommand({ generateOutlineUseCase, logger }),
-      registerGenerateSceneSeedsCommand(),
+      registerGenerateSceneSeedsCommand({ configBridge }),
       registerCompleteStoryScenesCommand(
         context,
         completeStoryScenesUseCase,

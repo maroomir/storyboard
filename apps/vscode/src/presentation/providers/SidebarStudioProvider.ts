@@ -131,6 +131,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         collectUseCase: this.collectUseCase,
         logger: this.logger,
         toolDiagnostics: this.toolDiagnostics,
+        configBridge: this.configBridge,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
         getTarget: () => computeStudioTarget(resolveActiveStudioFocus()),
         postProgress: (stage) => this.postChatProgress(stage),

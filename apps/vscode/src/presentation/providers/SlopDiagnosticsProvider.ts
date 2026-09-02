@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
@@ -13,6 +14,7 @@ const slopSource = 'storyboard-slop';
 const slopDebounceMs = 700;
 
 export interface RegisterSlopDiagnosticsProviderDependencies {
+  readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
 
@@ -144,11 +146,7 @@ export function registerSlopDiagnosticsProvider(
     (uri?: vscode.Uri) => runSlopCheckCommand(controller, uri),
   );
   const saveListener = vscode.workspace.onDidSaveTextDocument((document) => {
-    const realtimeEnabled = vscode.workspace
-      .getConfiguration('storyboard')
-      .get<boolean>('slop.realtimeEnabled', false);
-
-    if (!realtimeEnabled) {
+    if (!dependencies.configBridge.isSlopRealtimeEnabled()) {
       return;
     }
 
