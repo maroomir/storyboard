@@ -59,15 +59,16 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 
 ## Config
 
-`~/.storyboard/cli.json`, overridden per workspace by `.storyboard/cli.json`. Keys are the
-extension's setting names without the `storyboard.` prefix:
+`~/.storyboard/config.json`, shared with the extension and the bot, overridden per workspace by
+`.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix:
 
 ```json
 { "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "codex", "model": "gpt-5.6-terra" } } }
 ```
 
-API keys live in `~/.storyboard/cli-secrets.json` at mode 0600. `STORYBOARD_HOME` moves the whole
-directory.
+API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by all three apps. `STORYBOARD_HOME`
+moves the whole directory. An older install that still has `cli.json` / `cli-secrets.json` keeps
+working from them until the shared files exist, and is warned once per run to rename.
 
 ## What this app does not do
 

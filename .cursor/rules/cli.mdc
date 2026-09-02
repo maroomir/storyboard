@@ -39,9 +39,12 @@ file-backed `SecretStore`/`ConfigBridge`.
 
 ## Config
 
-`~/.storyboard/cli.json`, overridden per workspace by `.storyboard/cli.json`, overridable wholesale
+`~/.storyboard/config.json` (shared with the extension and the bot), overridden per workspace by
+`.storyboard/config.json`, overridable wholesale
 with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
-reads like the extension's settings UI. Secrets live in `~/.storyboard/cli-secrets.json` at 0600.
+reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.json` at 0600. Both
+files come from `@storyboard/story-config`; legacy `cli.json`/`cli-secrets.json` are read with a
+warning until the shared files exist.
 
 ## Editor-only surface
 

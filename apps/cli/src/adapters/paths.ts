@@ -1,5 +1,7 @@
-import { homedir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { resolveStoryboardHomePaths } from '@storyboard/story-config';
 
 export interface CliPaths {
   readonly home: string;
@@ -7,15 +9,31 @@ export interface CliPaths {
   readonly secretsFile: string;
 }
 
-// The Storyboard home is shared with the other apps, so every file this one owns carries a `cli`
-// prefix. STORYBOARD_HOME moves the whole directory, which is what tests and alternate installs use.
-export function resolveCliPaths(env: NodeJS.ProcessEnv = process.env): CliPaths {
-  const override = env.STORYBOARD_HOME?.trim();
-  const home = override && override.length > 0 ? override : join(homedir(), '.storyboard');
+// The three apps share one config and one secrets file under the Storyboard home. An install that
+// still has the CLI-only `cli.json` / `cli-secrets.json` keeps working from them until the shared
+// file exists, and is told once per run to move.
+export function resolveCliPaths(
+  env: NodeJS.ProcessEnv = process.env,
+  warn: (message: string) => void = () => undefined,
+): CliPaths {
+  const shared = resolveStoryboardHomePaths(env);
 
   return {
-    home,
-    configFile: join(home, 'cli.json'),
-    secretsFile: join(home, 'cli-secrets.json'),
+    home: shared.home,
+    configFile: preferShared(shared.configFile, join(shared.home, 'cli.json'), warn),
+    secretsFile: preferShared(shared.secretsFile, join(shared.home, 'cli-secrets.json'), warn),
   };
+}
+
+function preferShared(
+  sharedFile: string,
+  legacyFile: string,
+  warn: (message: string) => void,
+): string {
+  if (existsSync(sharedFile) || !existsSync(legacyFile)) {
+    return sharedFile;
+  }
+
+  warn(`${legacyFile} 은 이제 ${sharedFile} 로 통합되었습니다. 파일 이름을 바꿔 주세요.`);
+  return legacyFile;
 }

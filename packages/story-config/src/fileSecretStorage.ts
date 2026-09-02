@@ -1,7 +1,12 @@
 import { promises as fs } from 'node:fs';
 import { dirname } from 'node:path';
 
-import type { StoryboardSecretStorageLike } from '@storyboard/story-ai';
+import type {
+  StoryboardSecretStorageChangeEvent,
+  StoryboardSecretStorageLike,
+} from '@storyboard/story-ai';
+
+import { watchFiles } from '#config/fileWatch';
 
 // SECURITY: API keys live in a 0600 file under the Storyboard home, and the directory is 0700. The
 // values are never logged, and the file is rewritten whole so a partial write cannot leak one key
@@ -54,6 +59,31 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
     return next;
   }
 
+  // The file does not say which key changed, so every listener is told about its own key and
+  // re-reads; the apps only ever ask "is there a key now", which that answers.
+  const listeners = new Set<(event: StoryboardSecretStorageChangeEvent) => void>();
+  let watcher: { readonly dispose: () => void } | undefined;
+  let knownKeys = new Set<string>();
+
+  async function notifyAll(): Promise<void> {
+    let current: Set<string>;
+
+    try {
+      current = new Set(Object.keys(await readAll()));
+    } catch {
+      return;
+    }
+
+    const changed = new Set([...knownKeys, ...current]);
+    knownKeys = current;
+
+    for (const key of changed) {
+      for (const listener of listeners) {
+        listener({ key });
+      }
+    }
+  }
+
   return {
     get: async (key) => (await readAll())[key],
     store: async (key, value) =>
@@ -66,5 +96,26 @@ export function createFileSecretStorage(secretsFile: string): StoryboardSecretSt
         delete secrets[key];
         await writeAll(secrets);
       }),
+    onDidChange: (listener) => {
+      listeners.add(listener);
+
+      if (!watcher) {
+        void readAll().then((secrets) => {
+          knownKeys = new Set(Object.keys(secrets));
+        });
+        watcher = watchFiles([secretsFile], () => void notifyAll());
+      }
+
+      return {
+        dispose: (): void => {
+          listeners.delete(listener);
+
+          if (listeners.size === 0) {
+            watcher?.dispose();
+            watcher = undefined;
+          }
+        },
+      };
+    },
   };
 }

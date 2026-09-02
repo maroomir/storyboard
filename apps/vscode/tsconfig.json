@@ -25,6 +25,9 @@
       "@storyboard/story-format": [
         "../../packages/story-format/src/index.ts"
       ],
+      "@storyboard/story-config": [
+        "../../packages/story-config/src/index.ts"
+      ],
       "@storyboard/story-ai": [
         "../../packages/story-ai/src/index.ts"
       ],
