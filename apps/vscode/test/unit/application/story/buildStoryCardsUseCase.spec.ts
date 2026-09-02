@@ -60,6 +60,30 @@ function useCase(response: object): BuildStoryCardsUseCase {
   return new BuildStoryCardsUseCase(gateway as never, repository);
 }
 
+describe('tolerating empty optional fields', () => {
+  // 모델은 모르는 값을 "" 로 적어 보낸다. 그걸 오류로 세면 씬 전편을 읽고 온 응답이
+  // weather 한 칸 때문에 통째로 버려지고, 카드가 하나도 만들어지지 않는다.
+  it('reads an empty optional string as absent instead of failing the batch', async () => {
+    const proposal = await useCase({
+      entities: [
+        {
+          type: 'background',
+          name: '방송실',
+          time: '',
+          weather: '',
+          tags: ['학교', ''],
+          description: ['', '점심마다 진아가 앉는 자리.'],
+          sourceScenes: ['01-opening'],
+        },
+      ],
+    }).execute(workspaceRoot);
+
+    expect(proposal.targets).toHaveLength(1);
+    const card = proposal.targets[0]?.card as { tags?: string[] };
+    expect(card.tags).not.toContain('');
+  });
+});
+
 describe('BuildStoryCardsUseCase', () => {
   it('proposes only additive selected fields and preserves an existing profile', async () => {
     const proposal = await useCase({
