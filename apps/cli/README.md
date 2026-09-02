@@ -16,7 +16,7 @@ script, so the machine needs **Node 20 or newer**.
 From a checkout:
 
 ```bash
-npm install && npm run cli:build && node apps/cli/dist/index.js --help
+npm install && npm run cli:build && node apps/cli/dist/index.mjs --help
 ```
 
 ## First run
@@ -30,6 +30,15 @@ storyboard doctor                     # what is still missing, with the command 
 `storyboard` with no arguments prints the grouped command list with these steps at the top;
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
 verb suggests the closest real ones. `-v` prints the version.
+
+## Interactive screen
+
+`storyboard` with no arguments at a terminal opens an Ink-based screen: a header with the
+workspace and the AI provider in effect, a log where results and progress lines land, and a prompt
+that accepts the same verbs as the one-shot CLI. Typing shows matching verbs (Tab completes, ↑/↓
+picks, Esc clears), `/help` lists everything, `/doctor` and `/setup <id>` run those verbs, `/quit`
+or Ctrl+C leaves. `storyboard tui` opens it explicitly; in a pipe it refuses and points back to the
+one-shot form, so agents never end up inside it.
 
 ## Use
 

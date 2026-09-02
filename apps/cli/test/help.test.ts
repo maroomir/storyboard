@@ -7,7 +7,7 @@ import { renderCommandHelp, renderUnknownCommand, renderUsage, suggestVerbs } fr
 describe('command catalog', () => {
   it('describes every verb the CLI implements, and nothing else', () => {
     const catalogVerbs = new Set(commandCatalog.map((spec) => spec.verb));
-    const implemented = new Set([...Object.keys(commands), 'help']);
+    const implemented = new Set([...Object.keys(commands), 'help', 'tui']);
 
     expect([...implemented].filter((verb) => !catalogVerbs.has(verb))).toEqual([]);
     expect([...catalogVerbs].filter((verb) => !implemented.has(verb))).toEqual([]);

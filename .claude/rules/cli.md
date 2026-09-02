@@ -50,6 +50,16 @@ capabilities — they have no terminal form. What is portable is the *ability* b
 three diagnostics become `check` verbs, the card editor becomes card CRUD verbs. Do not add an
 entry to the parity test's editor-only list without that argument holding.
 
+## Interactive screen (`apps/cli/src/tui`)
+
+`storyboard` at a terminal with no arguments, or `storyboard tui`, renders an Ink app. It is a
+third layer (`adapters → commands → tui`) that only calls `commands/dispatch.ts` — the same entry
+`index.ts` uses for one-shot runs — so a verb behaves identically typed at the prompt or on the
+shell line. Because Ink and yoga-layout use top-level await the bundle is ESM (`dist/index.mjs`);
+`esbuild.config.mjs` adds a `createRequire` banner for CJS dependencies and aliases
+`react-devtools-core` to a stub. Nothing outside `tui/` may import `ink` or `react`. The TUI refuses
+to start without a TTY so agents never end up inside it.
+
 ## Verification
 
 From the repo root: `npm test` and `npm run lint` (both drive all three apps).

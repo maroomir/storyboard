@@ -4,16 +4,20 @@
   "private": true,
   "description": "Storyboard on the command line: plan, draft, review and assemble a novel from a terminal or an AI agent",
   "license": "Apache-2.0",
-  "engines": { "node": ">=20" },
-  "main": "dist/index.js",
-  "bin": { "storyboard": "dist/index.js" },
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/index.mjs",
+  "bin": {
+    "storyboard": "dist/index.mjs"
+  },
   "scripts": {
     "build": "rm -rf dist && node esbuild.config.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.ts\" && npm run typecheck && npm run check:architecture",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" && npm run typecheck && npm run check:architecture",
     "check:architecture": "node scripts/check-architecture.mjs",
     "test": "vitest run",
-    "start": "node dist/index.js"
+    "start": "node dist/index.mjs"
   },
   "dependencies": {
     "@storyboard/story-ai": "*",
@@ -21,14 +25,18 @@
     "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",
     "@storyboard/story-pipeline": "*",
+    "ink": "^5.2.1",
+    "react": "^18.3.1",
     "zod": "^4.4.2"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
+    "@types/react": "^18.3.31",
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.1",
+    "ink-testing-library": "^3.0.0",
     "typescript": "^5.6.3",
     "vitest": "^2.1.9"
   }

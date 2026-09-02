@@ -52,8 +52,8 @@ fi
 rm -rf "$LIB_DIR"
 mkdir -p "$LIB_DIR" "$BIN_DIR"
 tar -xzf "$WORK/$ARCHIVE" -C "$LIB_DIR"
-ln -sf "$LIB_DIR/dist/index.js" "$BIN_DIR/storyboard"
-chmod +x "$LIB_DIR/dist/index.js"
+ln -sf "$LIB_DIR/dist/index.mjs" "$BIN_DIR/storyboard"
+chmod +x "$LIB_DIR/dist/index.mjs"
 
 printf 'Installed storyboard %s to %s\n' "$VERSION" "$BIN_DIR/storyboard"
 case ":$PATH:" in
