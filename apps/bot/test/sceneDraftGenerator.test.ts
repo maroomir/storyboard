@@ -7,6 +7,7 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiEngine } from '../src/ai/aiGateway';
+import { legacyConfiguration } from './configurationStub';
 import { ContentService } from '../src/content/contentService';
 import {
   joinStoryPath,
@@ -118,7 +119,9 @@ describe('scene draft generation', () => {
       reviseMaxIterations: 2,
       autoGrounding: false,
     };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -154,7 +157,9 @@ describe('scene draft generation', () => {
   // runs, and `scene/` is tracked so filling them is a commit of its own.
   it('fills missing scene grounding and commits it to the scene frontmatter', async () => {
     const draftConfig = { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -185,7 +190,9 @@ describe('scene draft generation', () => {
       reviseMaxIterations: 2,
       autoGrounding: false,
     };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const before = readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8');
     const logBefore = fixture.git('log', '--format=%s');
     const generator = new SceneDraftGenerator({
@@ -224,7 +231,9 @@ describe('scene draft generation', () => {
     fixture.git('commit', '--quiet', '-m', 'author grounding');
 
     const draftConfig = { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -247,7 +256,9 @@ describe('scene draft generation', () => {
       reviseMaxIterations: 2,
       autoGrounding: false,
     };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -270,7 +281,9 @@ describe('scene draft generation', () => {
   it('runs the shared revise loop after generation when the gate is on', async () => {
     const stages: string[] = [];
     const draftConfig = { reviseAfterGenerate: true, reviseMaxIterations: 2, autoGrounding: false };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -297,7 +310,9 @@ describe('scene draft generation', () => {
       reviseMaxIterations: 2,
       autoGrounding: false,
     };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,
@@ -377,7 +392,9 @@ describe('scene draft generation', () => {
       reviseMaxIterations: 2,
       autoGrounding: false,
     };
-    const engine = createAiEngine({ providers: { default: 'mock' }, draft: draftConfig });
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
     const generator = new SceneDraftGenerator({
       store,
       content,

@@ -1,7 +1,9 @@
 import { accessSync, constants } from 'node:fs';
 import { join } from 'node:path';
 
-import type { ProvidersConfig } from './config';
+import type { ConfigBridge } from '@storyboard/story-ai';
+
+import { listCliProvidersInUse } from './sharedConfig';
 
 type CliProviderId = 'claude-code' | 'codex';
 
@@ -10,37 +12,12 @@ export interface CliProviderCommand {
   readonly command: string;
 }
 
-// Mirrors getDefaultCommand in @storyboard/story-ai's ConfigBridge: an unset `command` means the
-// provider looks for this name on PATH.
-const DEFAULT_CLI_COMMANDS: Record<CliProviderId, string> = {
-  'claude-code': 'claude',
-  codex: 'codex',
-};
-
-function isCliProviderId(providerId: string): providerId is CliProviderId {
-  return providerId === 'claude-code' || providerId === 'codex';
-}
-
 // Every CLI provider this config can actually reach — the default plus anything a task pins — so
 // diagnostics check only the commands that a generation would really invoke.
-export function collectCliProviderCommands(
-  providers: ProvidersConfig | undefined,
-): CliProviderCommand[] {
-  const providerIds = new Set<CliProviderId>();
-
-  if (providers?.default !== undefined && isCliProviderId(providers.default)) {
-    providerIds.add(providers.default);
-  }
-  for (const entry of Object.values(providers?.tasks ?? {})) {
-    const providerId = typeof entry === 'string' ? entry : entry.provider;
-    if (isCliProviderId(providerId)) {
-      providerIds.add(providerId);
-    }
-  }
-
-  return [...providerIds].map((providerId) => ({
+export function collectCliProviderCommands(configBridge: ConfigBridge): CliProviderCommand[] {
+  return listCliProvidersInUse(configBridge).map(({ providerId, command }) => ({
     providerId,
-    command: providers?.models?.[providerId]?.command ?? DEFAULT_CLI_COMMANDS[providerId],
+    command,
   }));
 }
 

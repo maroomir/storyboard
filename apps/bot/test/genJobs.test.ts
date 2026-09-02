@@ -8,6 +8,7 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiService } from '../src/ai/aiGateway';
+import { legacyConfiguration } from './configurationStub';
 import { ChatContext } from '../src/chat/context';
 import {
   createDraftCommandHandler,
@@ -86,7 +87,7 @@ describe('generation jobs end to end', () => {
       isTrackedPath: createGitTrackedPathPredicate(client),
     });
     const content = new ContentService(store, gate);
-    const aiService = createAiService({ providers: { default: 'mock' } });
+    const aiService = createAiService({ configuration: legacyConfiguration({ default: 'mock' }) });
 
     const sender = {
       sendMessage: async (_chatId: number, view: MessageView): Promise<SentMessageRef> => {

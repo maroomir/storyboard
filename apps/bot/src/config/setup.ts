@@ -7,7 +7,6 @@ export interface BotSetupInput {
   readonly botToken: string;
   readonly allowedChatIds: readonly number[];
   readonly workspacePath: string;
-  readonly defaultProvider: SetupProviderId;
 }
 
 export function parseChatIds(input: string): number[] | undefined {
@@ -34,7 +33,7 @@ export function isPlausibleBotToken(token: string): boolean {
 }
 
 // Minimal config the strict schema accepts; every omitted section falls back to the bot's own
-// defaults, so the wizard never has to chase them.
+// defaults. The provider choice goes to the shared config instead (writeSharedDefaultProvider).
 export function buildBotConfig(input: BotSetupInput): Record<string, unknown> {
   return {
     telegram: {
@@ -43,9 +42,6 @@ export function buildBotConfig(input: BotSetupInput): Record<string, unknown> {
     },
     workspace: {
       path: input.workspacePath,
-    },
-    providers: {
-      default: input.defaultProvider,
     },
   };
 }

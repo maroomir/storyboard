@@ -44,12 +44,17 @@ enforces the direction and rejects cycles.
 
 ## Config
 
-`~/.storyboard/bot.json`, overridable with `STORYBOARD_HOME`. `workspace.path` must be an absolute
-path to a real Storyboard workspace (`.storyboard/project.json` must exist). `workspace.remote` is
-optional: with no remote the bot still commits every save and `/sync` settles as `no-remote` without
-touching the network. `draft.reviseAfterGenerate` (default true) runs the shared review→revise loop
-after every generation; `draft.reviseMaxIterations` (1–5, default 2) bounds it. Full example:
-`apps/bot/config.example.json`; operator docs: `apps/bot/README.md`.
+`~/.storyboard/bot.json` holds only what is bot-specific (telegram, workspace, privacy, jobs,
+dashboard), overridable with `STORYBOARD_HOME`. `workspace.path` must be an absolute path to a real
+Storyboard workspace (`.storyboard/project.json` must exist). `workspace.remote` is optional: with no
+remote the bot still commits every save and `/sync` settles as `no-remote` without touching the
+network. AI selection and draft switches (`defaultProvider`, `tasks`, `providers.*`, `draft.*`,
+`grounding.autoApprove`) come from the shared `~/.storyboard/config.json` and the workspace's
+`.storyboard/config.json` through `@storyboard/story-config` (`apps/bot/src/config/sharedConfig.ts`);
+`setup` writes the chosen provider there. The bot refuses an API-key provider at boot and refuses
+generation when no provider is configured. Legacy `providers`/`draft` blocks in `bot.json` still
+apply as overrides with a boot warning. Full example: `apps/bot/config.example.json`; operator docs:
+`apps/bot/README.md`.
 
 ## Git onboarding
 
@@ -63,7 +68,7 @@ ignore step first is what keeps generated drafts out of the first commit.
 The extension knows nothing about the bot, and the bot knows nothing about the extension. There is
 no status bar observer, no setup wizard, no config writer, and no launchd control on the extension
 side — all of that was removed. The bot owns its own onboarding, config file, and process
-lifecycle. The only thing the two share is the workspace on disk and the `@storyboard/*` packages.
+lifecycle. The only things the two share are the workspace on disk, the `~/.storyboard` config/secrets files, and the `@storyboard/*` packages.
 Do not reintroduce a code path in either app that names the other.
 
 ## Generation runs the engine, not a copy

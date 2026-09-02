@@ -1,7 +1,9 @@
 {
   "telegram": {
     "botToken": "123456789:REPLACE_WITH_BOTFATHER_TOKEN",
-    "allowedChatIds": [123456789],
+    "allowedChatIds": [
+      123456789
+    ],
     "allowedUserIds": []
   },
   "workspace": {
@@ -9,22 +11,6 @@
     "remote": "origin",
     "pushDebounceSec": 30,
     "syncIntervalSec": 300
-  },
-  "providers": {
-    "default": "claude-code",
-    "tasks": {
-      "sceneDraft": "claude-code",
-      "draftRevision": { "provider": "codex", "model": "gpt-5.2-codex" }
-    },
-    "models": {
-      "claude-code": { "model": "claude-sonnet-5", "timeoutMs": 600000 },
-      "codex": { "model": "gpt-5.2-codex", "reasoningEffort": "medium" }
-    }
-  },
-  "draft": {
-    "reviseAfterGenerate": true,
-    "autoGrounding": true,
-    "reviseMaxIterations": 2
   },
   "jobs": {
     "heavyConcurrency": 1,

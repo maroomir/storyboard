@@ -75,19 +75,18 @@ describe('strict bot provider config', () => {
     expect(config.providers?.models?.['codex']?.reasoningEffort).toBe('high');
   });
 
-  it('defaults the revise gate on and clamps its iteration range', () => {
+  // The draft switches now come from the shared config; a bot.json block is optional, still
+  // validated, and reported as legacy so the operator moves it.
+  it('leaves the draft block out unless bot.json names it, and clamps its iteration range', () => {
     const defaulted = loadConfig(writeConfig(dir, BASE));
-    expect(defaulted.config.draft).toEqual({
-      reviseAfterGenerate: true,
-      reviseMaxIterations: 2,
-      autoGrounding: true,
-    });
+    expect(defaulted.config.draft).toBeUndefined();
 
     const explicit = loadConfig(
       writeConfig(dir, { ...BASE, draft: { reviseAfterGenerate: false, reviseMaxIterations: 5 } }),
     );
-    expect(explicit.config.draft.reviseAfterGenerate).toBe(false);
-    expect(explicit.config.draft.reviseMaxIterations).toBe(5);
+    expect(explicit.config.draft?.reviseAfterGenerate).toBe(false);
+    expect(explicit.config.draft?.reviseMaxIterations).toBe(5);
+    expect(explicit.warnings.some((warning) => warning.includes('`draft` 블록'))).toBe(true);
 
     expect(() =>
       loadConfig(writeConfig(dir, { ...BASE, draft: { reviseMaxIterations: 9 } })),

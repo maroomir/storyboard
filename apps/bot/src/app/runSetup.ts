@@ -12,6 +12,7 @@ import {
   writeBotConfigFile,
   type SetupProviderId,
 } from '@/config/setup';
+import { writeSharedDefaultProvider } from '@/config/sharedConfig';
 import { expandHome, resolvePaths } from '@/config/paths';
 
 interface Prompter {
@@ -138,9 +139,14 @@ export async function runSetup(): Promise<number> {
     await writeBotConfigFile(
       paths.home,
       paths.configFile,
-      buildBotConfig({ botToken, allowedChatIds, workspacePath, defaultProvider }),
+      buildBotConfig({ botToken, allowedChatIds, workspacePath }),
     );
     process.stdout.write(`\n저장했습니다: ${paths.configFile} (0600)\n`);
+
+    const sharedConfigFile = await writeSharedDefaultProvider(defaultProvider);
+    process.stdout.write(
+      `기본 프로바이더 ${defaultProvider} 를 ${sharedConfigFile} 에 저장했습니다 (익스텐션·CLI와 공유).\n`,
+    );
 
     const firstChatId = allowedChatIds[0];
     if (firstChatId !== undefined) {

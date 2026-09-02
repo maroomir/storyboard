@@ -4,9 +4,11 @@ import {
   initializeWorkspaceRepository,
 } from '@storyboard/story-git';
 
-import { collectPermissionWarnings, type ProvidersConfig } from '@/config/config';
+import { collectPermissionWarnings } from '@/config/config';
 import { collectCliProviderCommands, findExecutableOnPath } from '@/config/environment';
 import type { ChatContext } from '@/chat/context';
+import type { ConfigBridge } from '@storyboard/story-ai';
+
 import type { IncomingUpdate } from '@/chat/ports';
 import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 import { describeOutcome } from './edit';
@@ -15,7 +17,7 @@ import { describeOutcome } from './edit';
 // the provider selection it was booted with.
 export interface DoctorEnvironment {
   readonly configFile: string;
-  readonly providers: ProvidersConfig | undefined;
+  readonly configBridge: ConfigBridge;
   readonly remote: string | undefined;
 }
 
@@ -79,7 +81,7 @@ async function buildReport(ctx: ChatContext, environment: DoctorEnvironment): Pr
 
   lines.push(...describeRemote(git, environment.remote));
   lines.push(`✅ 동기화 상태: ${ctx.sync.getState()}`);
-  lines.push(...describeProviders(environment.providers));
+  lines.push(...describeProviders(environment.configBridge));
   lines.push(...describeJobs(ctx));
 
   for (const warning of collectPermissionWarnings(environment.configFile)) {
@@ -117,10 +119,16 @@ function describeRemote(git: GitClient, remote: string | undefined): string[] {
     : [`❌ 원격 \`${remote}\`이 저장소에 없습니다 — \`/sync\`가 실패합니다.`];
 }
 
-function describeProviders(providers: ProvidersConfig | undefined): string[] {
-  const commands = collectCliProviderCommands(providers);
+function describeProviders(configBridge: ConfigBridge): string[] {
+  if (!configBridge.isDefaultProviderConfigured()) {
+    return [
+      '❌ 프로바이더: 기본 AI 제공자가 설정되지 않아 생성 작업이 거부됩니다. ~/.storyboard/config.json 의 defaultProvider 를 채우세요.',
+    ];
+  }
+
+  const commands = collectCliProviderCommands(configBridge);
   if (commands.length === 0) {
-    return ['ℹ️ 프로바이더: CLI 미사용 (mock)'];
+    return [`ℹ️ 프로바이더: ${configBridge.getDefaultProvider()} (CLI 미사용)`];
   }
 
   return commands.map(({ providerId, command }) => {

@@ -13,6 +13,7 @@ import {
 import { aiTaskCatalog } from '@storyboard/story-ai';
 
 import { createAiEngine } from '@/ai/aiGateway';
+import { assertBotProviderSelection, createBotConfiguration } from '@/config/sharedConfig';
 import type { UsageRecord } from '@storyboard/story-ai';
 import { createJobAwareCliRunner } from '@/provider/abortableCliRunner';
 import { getActiveJobId } from '@/provider/jobSignalContext';
@@ -144,17 +145,25 @@ export class StoryboardBotApplication {
       registry,
       configBridge,
     } = createAiEngine({
-      providers: config.providers,
-      draft: config.draft,
+      configuration: createBotConfiguration({
+        workspacePath: config.workspace.path,
+        providers: config.providers,
+        draft: config.draft,
+      }),
       cliRunner: createJobAwareCliRunner(),
       onUsage: recordJobUsage,
     });
+    assertBotProviderSelection(configBridge);
     const sceneDraftGenerator = new SceneDraftGenerator({
       store: this.store,
       content: this.content,
       registry,
       configBridge,
-      autoGrounding: config.draft.autoGrounding !== false,
+      // A queued job cannot stop to ask Telegram for approval, so the bot grounds automatically
+      // unless the shared config says otherwise.
+      autoGrounding:
+        configBridge.getValueOrigin('grounding.autoApprove') === 'default' ||
+        configBridge.isSceneGroundingAutoApproveEnabled(),
       generator: `storyboard-bot@${packageJson.version}`,
       onUsage: (record) => recordJobUsage(record),
     });
@@ -195,7 +204,7 @@ export class StoryboardBotApplication {
       createSyncHandler(),
       createDoctorHandler({
         configFile: options.configFilePath,
-        providers: config.providers,
+        configBridge,
         remote: config.workspace.remote,
       }),
       createRenameHandler(),

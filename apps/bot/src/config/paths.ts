@@ -1,5 +1,8 @@
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+
+import { expandHome, resolveStoryboardHome } from '@storyboard/story-config';
+
+export { expandHome };
 
 export interface BotPaths {
   readonly home: string;
@@ -7,26 +10,11 @@ export interface BotPaths {
   readonly stateDb: string;
 }
 
-// Expands a leading `~` / `~/` to the home directory. Node's fs does not do shell tilde expansion,
-// so a config value like "~/story/novel" would otherwise create a literal "~" directory in the CWD.
-// `~user` is left untouched (we do not resolve other users' homes).
-export function expandHome(path: string): string {
-  if (path === '~') {
-    return homedir();
-  }
-  if (path.startsWith('~/')) {
-    return join(homedir(), path.slice(2));
-  }
-  return path;
-}
-
-// Resolves the storyboard-bot home directory and the files inside it. STORYBOARD_HOME overrides the
-// default (~/.storyboard) so tests and alternate installs can point elsewhere. Story content does
-// NOT live here — it lives in the Storyboard workspace named by `workspace.path`. The home is
-// shared with the other Storyboard apps, so every file this app owns carries a `bot` prefix.
+// The Storyboard home is shared with the other apps (config.json, secrets.json live there), so the
+// files this app owns carry a `bot` prefix. Story content does NOT live here — it lives in the
+// workspace named by `workspace.path`.
 export function resolvePaths(env: NodeJS.ProcessEnv = process.env): BotPaths {
-  const override = env.STORYBOARD_HOME?.trim();
-  const home = override ? expandHome(override) : join(homedir(), '.storyboard');
+  const home = resolveStoryboardHome(env);
 
   return {
     home,
