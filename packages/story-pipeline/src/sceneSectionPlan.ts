@@ -185,10 +185,36 @@ function repeatedFromPrevious(previousSection: string | undefined, expanded: str
 // 다시 나오는 경우만 센다.
 const repeatedDialogueRunLimit = 3;
 
-export function findRepeatedDialogueRun(text: string): number {
-  const lines = [...text.matchAll(quotedDialoguePattern)]
+function dialogueLinesOf(text: string): string[] {
+  return [...text.matchAll(quotedDialoguePattern)]
     .map((match) => (match[1] ?? '').replace(/\s/g, ''))
     .filter((line) => line.length >= 6);
+}
+
+// 살붙임은 구간마다 문장을 새로 쓰므로 두 구간이 같은 사건을 다뤄도 서술이 겹치지 않는다.
+// 같은 것은 뼈대에서 온 대사뿐이라, 겹침은 대사로 재야 보인다.
+export function findRepeatedDialogueRunBetween(first: string, second: string): number {
+  const left = dialogueLinesOf(first);
+  const right = dialogueLinesOf(second);
+  let longest = 0;
+
+  for (let i = 0; i < left.length; i += 1) {
+    for (let j = 0; j < right.length; j += 1) {
+      let run = 0;
+
+      while (i + run < left.length && j + run < right.length && left[i + run] === right[j + run]) {
+        run += 1;
+      }
+
+      longest = Math.max(longest, run);
+    }
+  }
+
+  return longest;
+}
+
+export function findRepeatedDialogueRun(text: string): number {
+  const lines = dialogueLinesOf(text);
   let longest = 0;
 
   for (let first = 0; first < lines.length; first += 1) {
@@ -280,6 +306,19 @@ export function validateExpandedSection(input: {
     violations.push({
       kind: 'repeats-previous',
       detail: `직전 구간을 약 ${repeated.toLocaleString()}자 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
+    });
+  }
+
+  // 문장을 새로 쓰면 축자 비교를 빠져나간다. 같은 사건을 다시 다뤘는지는 대사로만 드러난다.
+  const repeatedDialogue =
+    input.previousSection === undefined
+      ? 0
+      : findRepeatedDialogueRunBetween(input.previousSection, input.expanded);
+
+  if (repeatedDialogue >= repeatedDialogueRunLimit) {
+    violations.push({
+      kind: 'repeats-previous',
+      detail: `직전 구간의 대사 ${repeatedDialogue}개를 순서까지 같게 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
     });
   }
 

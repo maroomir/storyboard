@@ -445,6 +445,31 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("repeats-previous")
   })
 
+  // 살붙임은 구간마다 문장을 새로 쓴다. 같은 사건을 다시 다뤄도 서술이 겹치지 않으므로
+  // 축자 비교는 빠져나가고, 뼈대에서 온 대사만 같게 남는다.
+  it("rejects an expansion that retells the previous section with fresh prose", () => {
+    const previousSection = [
+      '진아가 원고를 내려다봤다. "회수부터 하죠."',
+      '도현이 고개를 들었다. "계정 접근도 막아야 해."',
+      '유정이 종이를 모았다. "공지는 제가 올릴게요."'
+    ].join("\n\n")
+    const retold = [
+      '창밖이 어두워지고 있었다. 진아는 손끝을 말았다. "회수부터 하죠."',
+      '도현은 의자를 뒤로 밀었다. "계정 접근도 막아야 해."',
+      '유정은 파일을 덮었다. "공지는 제가 올릴게요."',
+      "묘사".repeat(200)
+    ].join("\n\n")
+
+    const violations = validateExpandedSection({
+      ...base,
+      section: "지훈이 뒤따랐다.",
+      previousSection,
+      expanded: retold
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("repeats-previous")
+  })
+
   it("lets an expansion that merely continues from the previous section pass", () => {
     const violations = validateExpandedSection({
       ...base,
