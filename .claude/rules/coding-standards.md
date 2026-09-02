@@ -81,7 +81,7 @@ for schema-first types and the error-class template. Generic readability and ver
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
   ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
-  `format ← ai ← pipeline ← engine`; `story-git` stays dependency-free.
+  `format ← ai ← pipeline ← engine`, `ai ← config`; `story-git` stays dependency-free.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`

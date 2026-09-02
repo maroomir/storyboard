@@ -49,11 +49,14 @@ import {
 } from '@storyboard/story-ai';
 
 import { ConsoleLogger } from './adapters/consoleLogger';
-import { createFileConfiguration } from './adapters/fileConfiguration';
-import { createFileSecretStorage } from './adapters/fileSecretStorage';
 import { NodeFileSystem } from './adapters/nodeFileSystem';
 import { NodeWorkspaceLocator } from './adapters/nodeWorkspaceLocator';
 import { resolveCliPaths } from './adapters/paths';
+import {
+  createFileConfiguration,
+  createFileSecretStorage,
+  resolveWorkspaceConfigFile,
+} from '@storyboard/story-config';
 
 export interface CliContainer {
   readonly workspaceRoot: StoryUri;
@@ -121,7 +124,9 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 // The CLI's service graph. It mirrors the extension's platform module one-for-one: only the four
 // host adapters differ, which is the whole point of the engine boundary.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
-  const paths = resolveCliPaths();
+  const paths = resolveCliPaths(process.env, (message) =>
+    process.stderr.write(`[warn] ${message}\n`),
+  );
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
@@ -129,14 +134,12 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const fileSystem = new NodeFileSystem();
   const workspaceLocator = new NodeWorkspaceLocator(folder);
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
-  const configBridge = new ConfigBridge({
-    getConfiguration: () =>
-      createFileConfiguration(
-        paths.configFile,
-        `${workspaceRoot.fsPath}/.storyboard/cli.json`.replace('//', '/'),
-        configOverrides(options),
-      ),
+  const configuration = createFileConfiguration({
+    userConfigFile: paths.configFile,
+    workspaceConfigFile: resolveWorkspaceConfigFile(workspaceRoot.fsPath),
+    overrides: configOverrides(options),
   });
+  const configBridge = new ConfigBridge({ getConfiguration: () => configuration });
   const aiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,

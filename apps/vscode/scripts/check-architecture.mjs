@@ -19,7 +19,14 @@ const INFRASTRUCTURE_ROOT = path.join(SOURCE_ROOT, 'infrastructure');
 const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
 
 const PACKAGES_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages');
-const SHARED_PACKAGES = ['story-engine', 'story-format', 'story-ai', 'story-pipeline', 'story-git'];
+const SHARED_PACKAGES = [
+  'story-engine',
+  'story-format',
+  'story-ai',
+  'story-pipeline',
+  'story-git',
+  'story-config',
+];
 // Each package addresses its own files through a Node subpath import declared in its package.json.
 // The prefix is private to the package: reaching for another one's would bind two packages through
 // a path instead of through the entry point that is their actual contract.
@@ -29,6 +36,7 @@ const PACKAGE_INTERNAL_PREFIXES = {
   'story-ai': '#ai/',
   'story-pipeline': '#pipeline/',
   'story-git': '#git/',
+  'story-config': '#config/',
 };
 const ENGINE_SHARED_ROOT = path.join(PACKAGES_ROOT, 'story-engine', 'src', 'shared');
 
