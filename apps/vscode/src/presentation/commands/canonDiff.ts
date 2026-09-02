@@ -46,18 +46,25 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
   const paths = getStoryboardProjectPaths(workspaceRoot);
 
   try {
-    const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
-    const canon = (await uriExists(paths.bibleCanon))
-      ? await readBibleFile(paths.bibleCanon, fileSystem)
-      : createEmptyBible();
-    const candidates = await readCandidateRecords(paths, dependencies.logger);
+    const { pending, reportUri } = await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Notification, title: 'Canon diff 정리 중…' },
+      async () => {
+        const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
+        const canon = (await uriExists(paths.bibleCanon))
+          ? await readBibleFile(paths.bibleCanon, fileSystem)
+          : createEmptyBible();
+        const candidates = await readCandidateRecords(paths, dependencies.logger);
 
-    const { pending } = diffCandidatesAgainstCanon(canon, candidates);
-    const markdown = buildCanonDiffMarkdown(project.name, pending, canon);
+        const diff = diffCandidatesAgainstCanon(canon, candidates);
+        const markdown = buildCanonDiffMarkdown(project.name, diff.pending, canon);
 
-    await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
-    const reportUri = vscode.Uri.joinPath(paths.manuscriptDirectory, 'CANON.md');
-    await vscode.workspace.fs.writeFile(reportUri, new TextEncoder().encode(markdown));
+        await vscode.workspace.fs.createDirectory(paths.manuscriptDirectory);
+        const target = vscode.Uri.joinPath(paths.manuscriptDirectory, 'CANON.md');
+        await vscode.workspace.fs.writeFile(target, new TextEncoder().encode(markdown));
+
+        return { pending: diff.pending, reportUri: target };
+      },
+    );
 
     const document = await vscode.workspace.openTextDocument(reportUri);
     await vscode.window.showTextDocument(document);

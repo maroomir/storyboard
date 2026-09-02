@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { SummarizeChaptersUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';
 
@@ -74,5 +75,5 @@ async function reportFailure(
 
   logger.error('Chapter summarize failed', new Error(result.message));
   logger.show();
-  await vscode.window.showErrorMessage(`장별 요약에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`장별 요약에 실패했습니다: ${result.message}`);
 }

@@ -53,6 +53,7 @@ const expectedMethods = [
   'studio.session.save',
   'studio.stage',
   'usage.read',
+  'workspace.runCommand',
 ];
 
 describe('storyboard RPC registry', () => {

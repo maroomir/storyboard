@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const reviewManuscriptCommand = 'storyboard.manuscript.review';
 
@@ -77,5 +78,5 @@ async function reportFailure(
 
   logger.error('Manuscript review failed', new Error(result.message));
   logger.show();
-  await vscode.window.showErrorMessage(`원고 최종 검사에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`원고 최종 검사에 실패했습니다: ${result.message}`);
 }

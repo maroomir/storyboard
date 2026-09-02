@@ -70,10 +70,10 @@ async function runExportManuscript(
     return;
   }
 
-  const result = await dependencies.exportManuscriptUseCase.writeExport(
-    targetUri,
-    source.markdown,
-    picked.format,
+  const result = await vscode.window.withProgress(
+    { location: vscode.ProgressLocation.Notification, title: '원고 내보내는 중…' },
+    () =>
+      dependencies.exportManuscriptUseCase.writeExport(targetUri, source.markdown, picked.format),
   );
   if (!result.ok) {
     await reportFailure(result.message, dependencies.logger);

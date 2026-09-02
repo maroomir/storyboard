@@ -249,6 +249,11 @@ export const commands = {
     void command
     void callback
     return { dispose: (): void => undefined }
+  },
+  executeCommand: async (command: string, ...args: unknown[]): Promise<unknown> => {
+    void command
+    void args
+    return undefined
   }
 }
 

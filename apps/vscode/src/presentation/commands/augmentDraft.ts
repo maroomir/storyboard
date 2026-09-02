@@ -14,6 +14,7 @@ import type { Draft } from '@storyboard/story-format';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '@storyboard/story-ai';
 import { resolveExpandRange } from './expandDraft';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const augmentDraftCommand = 'storyboard.draft.augment';
 const augmentSelectionCommand = 'storyboard.draft.augmentSelection';
@@ -326,7 +327,7 @@ async function reportAugmentFailure(
   }
 
   dependencies.logger.show();
-  await vscode.window.showErrorMessage(`초안 보충에 실패했습니다: ${result.message}`);
+  await showStoryboardFailure(`초안 보충에 실패했습니다: ${result.message}`);
 }
 
 async function runAugmentDraft(

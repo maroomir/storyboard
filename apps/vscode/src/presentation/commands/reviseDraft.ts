@@ -7,6 +7,7 @@ import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { parseSceneStem } from '@storyboard/story-format';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';
 
@@ -96,7 +97,7 @@ async function runReviseDraft(
         dependencies.logger.error('Draft revise loop failed', error);
         dependencies.logger.show();
         const message = error instanceof Error ? error.message : String(error);
-        await vscode.window.showErrorMessage(`초안 검수·재작성에 실패했습니다: ${message}`);
+        await showStoryboardFailure(`초안 검수·재작성에 실패했습니다: ${message}`);
       }
     },
   );

@@ -4,6 +4,7 @@ import { type GenerateDraftUseCase, type GenerateDraftResult } from '@storyboard
 import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';
@@ -89,7 +90,7 @@ async function runGenerateDraftForWorkspaceScene(
 
       if (!result.ok) {
         if (result.kind === 'failed') {
-          void vscode.window.showErrorMessage(result.message);
+          void showStoryboardFailure(result.message);
         }
         return;
       }

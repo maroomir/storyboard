@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommandRpcHandlers';
+
 import type { ISceneSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { emptyUsageSummary } from '@storyboard/story-engine';
@@ -105,6 +107,7 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
         await vscode.window.showTextDocument(document);
         return {};
       },
+      ...createRunCommandRpcHandlers(),
       'scenes.openDraft': async (
         payload,
       ): Promise<StoryboardResponsePayload<'scenes.openDraft'>> => {

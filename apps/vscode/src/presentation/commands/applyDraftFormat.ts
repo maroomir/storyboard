@@ -5,6 +5,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
 
@@ -53,7 +54,7 @@ async function reportApplyFormatFailure(
       return;
     case 'failed':
       logger.show();
-      await vscode.window.showErrorMessage(`장르 포맷 적용에 실패했습니다: ${result.message}`);
+      await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${result.message}`);
       return;
   }
 }
@@ -123,7 +124,7 @@ async function runApplyDraftFormatForScene(
     dependencies.logger.error('Apply draft format failed', error);
     dependencies.logger.show();
     const message = error instanceof Error ? error.message : String(error);
-    await vscode.window.showErrorMessage(`장르 포맷 적용에 실패했습니다: ${message}`);
+    await showStoryboardFailure(`장르 포맷 적용에 실패했습니다: ${message}`);
   }
 }
 

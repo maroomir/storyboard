@@ -4,6 +4,7 @@ import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-format';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
 
@@ -99,6 +100,6 @@ async function reportResult(
   if (result.kind === 'failed') {
     logger.error('Outline generation failed', new Error(result.message));
     logger.show();
-    await vscode.window.showErrorMessage(`아웃라인 생성에 실패했습니다: ${result.message}`);
+    await showStoryboardFailure(`아웃라인 생성에 실패했습니다: ${result.message}`);
   }
 }

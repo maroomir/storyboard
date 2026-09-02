@@ -8,6 +8,7 @@ import type { StoryboardCard } from '@storyboard/story-format';
 import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
 import type { CreateCardUseCase } from '@storyboard/story-engine';
+import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';
@@ -48,7 +49,7 @@ async function recommendCards(
   }
 
   if (result.kind === 'failed') {
-    await vscode.window.showErrorMessage(result.message);
+    await showStoryboardFailure(result.message);
     return;
   }
 
