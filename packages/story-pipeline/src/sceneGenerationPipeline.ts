@@ -182,6 +182,7 @@ async function expandSectionWithRetries(input: {
       expanded,
       characters: input.characters,
       targetLength: input.targetLength,
+      ...(input.previousSection === undefined ? {} : { previousSection: input.previousSection }),
     });
 
     if (violations.length === 0) {
@@ -210,6 +211,8 @@ const violationWeights: Readonly<Record<SectionViolation['kind'], number>> = {
   'foreign-script': 3,
   'dialogue-count': 2,
   'lost-dialogue': 2,
+  // 앞 구간을 다시 쓴 판은 원고를 못 쓰게 만든다. 분량 미달보다 무겁게 센다.
+  'repeats-previous': 3,
   'too-long': 1,
   'too-short': 1,
 };

@@ -19,9 +19,12 @@ import {
   type SceneGenerationPipelineStage
 } from '@storyboard/story-pipeline'
 
-// 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채운다.
+// 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채우되,
+// 채움 문자열에 prefix 를 섞어 구간마다 다른 본문이 되게 한다. 모든 구간이 같은 글자로 채워지면
+// 직전 구간 재기술 검사가(정당하게) 걸린다.
 function longProse(prefix: string, length = 3000): string {
-  return `${prefix} ${"묘사".repeat(length)}`
+  const unit = `${prefix}묘사`
+  return `${prefix} ${unit.repeat(Math.ceil((length * 2) / unit.length))}`
 }
 
 const eliaCard: CharacterCard = { type: "character", id: "elia", name: "엘리아", role: "main" }
@@ -388,6 +391,31 @@ describe("validateExpandedSection", () => {
     targetLength: 100,
     skeleton: "엘리아가 걷는다."
   }
+
+  // 구간마다 따로 보면 각 구간은 멀쩡하다. 앞 구간을 삼킨 판이 통과하면 원고 후반이
+  // 전반의 복사본이 된다.
+  it("rejects an expansion that rewrites the previous section", () => {
+    const previousSection = "엘리아는 골목을 빠져나왔다. ".repeat(30)
+    const violations = validateExpandedSection({
+      ...base,
+      section: "지훈이 뒤따랐다.",
+      previousSection,
+      expanded: `${previousSection} 지훈이 뒤따라 걸었다. ${"묘사".repeat(200)}`
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("repeats-previous")
+  })
+
+  it("lets an expansion that merely continues from the previous section pass", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "지훈이 뒤따랐다.",
+      previousSection: "엘리아는 골목을 빠져나왔다. ".repeat(30),
+      expanded: `지훈이 뒤따라 걸었다. ${"새로운 묘사".repeat(200)}`
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("repeats-previous")
+  })
 
   it("passes an expansion that only thickens the prose", () => {
     const violations = validateExpandedSection({

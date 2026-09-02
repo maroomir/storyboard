@@ -103,6 +103,7 @@ export interface SectionViolation {
     | 'lost-dialogue'
     | 'too-short'
     | 'too-long'
+    | 'repeats-previous'
     | 'dialogue-count';
   readonly detail: string;
 }
@@ -150,12 +151,41 @@ function matchedLength(left: string, right: string): number {
 
 // NOTE: 뼈대가 정답지라서 위반을 AI 없이 결정론적으로 가려낼 수 있다. 살붙임은 문장만 두껍게 하는
 // 작업이므로, 뼈대에 없던 인물이나 사라진 대사는 그 자체로 규칙 위반이다.
+// NOTE: 살붙임이 직전 구간을 다시 써 내면 원고 후반이 전반의 복사본이 된다. 구간마다 따로
+// 검사하면 각 구간은 멀쩡해 보이므로 여기서 겹침을 직접 본다. 길이만으로는 판별할 수 없다 —
+// 길게 쓴 구간과 앞 구간을 삼킨 구간의 글자 수가 같을 수 있다.
+const repeatedRunWindow = 100;
+const repeatedRunLimit = 300;
+
+function withoutWhitespace(text: string): string {
+  return text.replace(/\s/g, '');
+}
+
+function repeatedFromPrevious(previousSection: string | undefined, expanded: string): number {
+  if (previousSection === undefined) {
+    return 0;
+  }
+
+  const previous = withoutWhitespace(previousSection);
+  const written = withoutWhitespace(expanded);
+  let repeated = 0;
+
+  for (let start = 0; start + repeatedRunWindow <= previous.length; start += repeatedRunWindow) {
+    if (written.includes(previous.slice(start, start + repeatedRunWindow))) {
+      repeated += repeatedRunWindow;
+    }
+  }
+
+  return repeated;
+}
+
 export function validateExpandedSection(input: {
   readonly skeleton: string;
   readonly section: string;
   readonly expanded: string;
   readonly characters: readonly CharacterCard[];
   readonly targetLength: number;
+  readonly previousSection?: string;
 }): SectionViolation[] {
   const violations: SectionViolation[] = [];
 
@@ -198,6 +228,14 @@ export function validateExpandedSection(input: {
     violations.push({
       kind: 'too-short',
       detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자)`,
+    });
+  }
+
+  const repeated = repeatedFromPrevious(input.previousSection, input.expanded);
+  if (repeated >= repeatedRunLimit) {
+    violations.push({
+      kind: 'repeats-previous',
+      detail: `직전 구간을 약 ${repeated.toLocaleString()}자 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
     });
   }
 
