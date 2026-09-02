@@ -8,6 +8,7 @@ import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
 import type { ConfigBridge, GrammarIssue } from '@storyboard/story-ai';
+import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
 const grammarCheckCommand = 'storyboard.draft.grammarCheck';
 const applyGrammarFixCommand = 'storyboard.draft.applyGrammarFix';
@@ -92,7 +93,10 @@ class GrammarDiagnosticsController {
   }
 
   public async runForDocument(document: vscode.TextDocument): Promise<void> {
-    if (!(await this.canRun(document))) {
+    if (
+      !isTaskProviderReady(this.dependencies.configBridge, 'grammarCheck') ||
+      !(await this.canRun(document))
+    ) {
       this.collection.delete(document.uri);
       return;
     }

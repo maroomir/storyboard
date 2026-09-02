@@ -12,6 +12,7 @@ afterEach(() => {
 function createSnapshot(): SettingsReadSnapshot {
   return {
     defaultProvider: "mock",
+    isDefaultProviderConfigured: true,
     providers: [],
     providerConfigs: {} as SettingsReadSnapshot["providerConfigs"],
     taskAssignments: {},

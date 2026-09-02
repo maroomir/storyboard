@@ -148,6 +148,7 @@ async function buildSettingsReadSnapshot(
 
   return {
     defaultProvider,
+    isDefaultProviderConfigured: configBridge.isDefaultProviderConfigured(),
     providers,
     providerConfigs,
     taskAssignments,

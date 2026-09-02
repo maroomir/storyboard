@@ -15,6 +15,8 @@ import {
 } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { isCliProvider } from '@storyboard/story-ai';
+import type { ConfigBridge } from '@storyboard/story-ai';
+import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 import type { AiProviderId, InlineCompletionContext } from '@storyboard/story-ai';
 import { parseDraftSceneParts } from '@/infrastructure/vscode/draftSceneLink';
 
@@ -27,6 +29,7 @@ const inlineMaxActiveCharacters = 3;
 
 export interface RegisterInlineCompletionProviderDependencies {
   readonly aiGateway: AiGateway;
+  readonly configBridge: ConfigBridge;
 }
 
 interface InlineCompletionCacheValue {
@@ -150,6 +153,7 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
   ): boolean {
     return (
       isDraftMarkdownFile(documentUri, workspaceFolder) &&
+      isTaskProviderReady(this.dependencies.configBridge, 'inlineCompletion') &&
       shouldRunInlineCompletion(this.dependencies.aiGateway.getTaskProvider('inlineCompletion'))
     );
   }

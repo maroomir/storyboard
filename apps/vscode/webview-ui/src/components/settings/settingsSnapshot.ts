@@ -65,6 +65,7 @@ export interface SettingsConfigFiles {
 
 export interface SettingsReadSnapshot {
   readonly defaultProvider: AiProviderId;
+  readonly isDefaultProviderConfigured: boolean;
   readonly providers: readonly AiProviderStatus[];
   readonly providerConfigs: Readonly<Record<AiProviderId, ProviderRuntimeConfig>>;
   readonly taskAssignments: Readonly<Record<string, TaskAiAssignment>>;
@@ -141,7 +142,8 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     typeof candidate.configFiles.user !== 'string' ||
     !Array.isArray(candidate.settingCatalog) ||
     !candidate.settingValues ||
-    typeof candidate.settingValues !== 'object'
+    typeof candidate.settingValues !== 'object' ||
+    typeof candidate.isDefaultProviderConfigured !== 'boolean'
   ) {
     return undefined;
   }

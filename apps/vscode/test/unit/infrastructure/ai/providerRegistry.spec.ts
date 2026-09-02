@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderRegistry, ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
+import { AiProviderError, AiProviderRegistry, ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { ClaudeClientLike, CliRunner, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {
@@ -149,6 +149,34 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("claude-code")
     expect(response.model).toBe("sonnet")
     expect(response.text).toBe("cli-ok")
+  })
+
+  // A fresh install used to generate against `mock` and exit clean; with the guard on, the same
+  // call is refused until the author picks a provider, and a task override counts as a pick.
+  it("refuses to resolve a task when no provider is configured and the guard is on", async () => {
+    const guarded = createAiProviderRegistry({
+      secretStore: new SecretStore(new FakeSecretStorage(new Map())),
+      configBridge: new ConfigBridge({
+        getConfiguration: (): StoryboardConfigurationLike =>
+          new FakeConfiguration(new Map([["tasks", { grammarCheck: { provider: "mock" } }]]))
+      }),
+      requireConfiguredProvider: true
+    })
+
+    expect(() => guarded.getTaskProvider("sceneDraft")).toThrow(AiProviderError)
+    await expect(
+      guarded.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "x" }] })
+    ).rejects.toMatchObject({ code: "missing-provider" })
+    expect(guarded.isTaskProviderConfigured("sceneDraft")).toBe(false)
+
+    expect(guarded.getTaskProvider("grammarCheck")).toBe("mock")
+    expect(guarded.isTaskProviderConfigured("grammarCheck")).toBe(true)
+  })
+
+  it("keeps the mock fallback when the guard is off", () => {
+    const registry = createRegistry(new Map(), new Map())
+
+    expect(registry.getTaskProvider("sceneDraft")).toBe("mock")
   })
 
   it("marks Claude Code and Codex providers as keyless and available", async () => {

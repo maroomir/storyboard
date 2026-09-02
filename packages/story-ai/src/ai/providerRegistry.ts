@@ -37,7 +37,14 @@ export interface AiProviderRegistryOptions {
     readonly providerId: AiProviderId;
     readonly onFallback?: (message: string) => void;
   };
+  // A fresh install has no `defaultProvider`, and silently generating with `mock` there writes a
+  // fake draft that exits clean. With this on, a task that resolves to no configured provider is
+  // refused with `missing-provider` so the host can ask the author to choose one.
+  readonly requireConfiguredProvider?: boolean;
 }
+
+export const missingProviderMessage =
+  '기본 AI 제공자가 설정되지 않았습니다. 설정에서 제공자를 고른 뒤 다시 시도하세요.';
 
 export class AiProviderRegistry {
   public constructor(private readonly options: AiProviderRegistryOptions) {}
@@ -60,16 +67,17 @@ export class AiProviderRegistry {
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
-    const { providerId, model } = this.options.configBridge.getTaskAiConfig(request.taskName);
+    const { providerId, model } = this.getTaskAiConfig(request.taskName);
     return this.generateWithProvider(providerId, request, model);
   }
 
   public generateStream(request: AiGenerateRequest): AsyncIterable<AiStreamChunk> {
-    const { providerId, model } = this.options.configBridge.getTaskAiConfig(request.taskName);
+    const { providerId, model } = this.getTaskAiConfig(request.taskName);
     return this.generateStreamWithProvider(providerId, request, model);
   }
 
   public getTaskProvider(taskName: AiTaskName): AiProviderId {
+    this.assertTaskProviderConfigured(taskName);
     return this.options.configBridge.getTaskProvider(taskName);
   }
 
@@ -77,7 +85,23 @@ export class AiProviderRegistry {
     readonly providerId: AiProviderId;
     readonly model: string;
   } {
+    this.assertTaskProviderConfigured(taskName);
     return this.options.configBridge.getTaskAiConfig(taskName);
+  }
+
+  public isTaskProviderConfigured(taskName: AiTaskName): boolean {
+    const { configBridge } = this.options;
+
+    return (
+      configBridge.getTaskProviderOverride(taskName) !== null ||
+      configBridge.isDefaultProviderConfigured()
+    );
+  }
+
+  private assertTaskProviderConfigured(taskName: AiTaskName): void {
+    if (this.options.requireConfiguredProvider && !this.isTaskProviderConfigured(taskName)) {
+      throw new AiProviderError('missing-provider', 'mock', missingProviderMessage);
+    }
   }
 
   public async generateWithProvider(

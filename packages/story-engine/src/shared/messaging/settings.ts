@@ -67,6 +67,7 @@ const settingDefinitionPayloadSchema = z.object({
 // live, so the panel can tell the author "saved to this work" versus "saved for every work".
 export const settingsReadResponsePayloadSchema = z.object({
   defaultProvider: providerIdSchema,
+  isDefaultProviderConfigured: z.boolean(),
   providers: z.array(aiProviderStatusSchema),
   providerConfigs: providerConfigsPayloadSchema,
   taskAssignments: taskAssignmentsPayloadSchema,

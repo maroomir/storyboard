@@ -18,6 +18,7 @@ function buildValidSnapshot(): SettingsReadSnapshot {
 
   return {
     defaultProvider: "codex",
+    isDefaultProviderConfigured: true,
     providers: AI_PROVIDER_IDS.map((id) => ({
       providerId: id,
       displayName: id,

@@ -13,6 +13,7 @@ function buildSnapshot(): SettingsReadSnapshot {
 
   return {
     defaultProvider: "claude",
+    isDefaultProviderConfigured: true,
     providers: AI_PROVIDER_IDS.map((id) => ({
       providerId: id,
       displayName: id,

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 
+import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
 import type { SettingsConfigFiles } from '@/presentation/messaging/settingsRpcHandlers';
 
 export interface ProviderStatusBarDependencies {
@@ -18,7 +19,16 @@ const originLabels = {
 export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
   readonly text: string;
   readonly tooltip: string;
+  readonly command: string;
 } {
+  if (!deps.configBridge.isDefaultProviderConfigured()) {
+    return {
+      text: '$(warning) AI 제공자 선택',
+      tooltip: 'Storyboard 가 쓸 기본 AI 제공자를 아직 고르지 않았습니다. 클릭해서 고르세요.',
+      command: chooseProviderCommand,
+    };
+  }
+
   const providerId = deps.configBridge.getDefaultProvider();
   const model = deps.configBridge.getProviderConfig(providerId).model ?? '';
   const origin = deps.configBridge.getValueOrigin('defaultProvider');
@@ -28,6 +38,7 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
   return {
     text: `$(sparkle) ${providerId}${model ? ` · ${model}` : ''}`,
     tooltip: `Storyboard 기본 AI: ${providerId}${model ? ` / ${model}` : ''}\n출처: ${originLabels[origin]}${origin === 'default' ? '' : ` (${file})`}\n클릭하면 설정을 엽니다.`,
+    command: 'storyboard.settings.open',
   };
 }
 
@@ -37,12 +48,12 @@ export function registerProviderStatusBarItem(
   deps: ProviderStatusBarDependencies,
 ): vscode.Disposable {
   const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
-  item.command = 'storyboard.settings.open';
 
   const refresh = (): void => {
     const status = describeProviderStatus(deps);
     item.text = status.text;
     item.tooltip = status.tooltip;
+    item.command = status.command;
   };
 
   refresh();

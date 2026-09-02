@@ -46,7 +46,13 @@ export function DefaultProviderSection({
           title="기본 제공자와 모델"
           description="태스크가 «기본값 사용»일 때 쓰는 제공자와, 그 제공자의 기본 모델입니다. 모델은 아래 태스크에서 다른 값으로 덮어쓸 수 있습니다."
         />
-        <StatusPill tone="success">{selectedProvider?.displayName ?? defaultProviderId}</StatusPill>
+        {snapshot.isDefaultProviderConfigured ? (
+          <StatusPill tone="success">
+            {selectedProvider?.displayName ?? defaultProviderId}
+          </StatusPill>
+        ) : (
+          <StatusPill tone="warning">선택 필요</StatusPill>
+        )}
       </div>
       <div className="grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
         <label className="flex flex-col gap-1.5">
@@ -59,7 +65,7 @@ export function DefaultProviderSection({
           </span>
           <select
             className={sbSelectClass}
-            value={defaultProviderId}
+            value={snapshot.isDefaultProviderConfigured ? defaultProviderId : ''}
             disabled={pending}
             onChange={(event) => {
               const providerId = event.target.value;
@@ -80,6 +86,11 @@ export function DefaultProviderSection({
                 });
             }}
           >
+            {snapshot.isDefaultProviderConfigured ? null : (
+              <option value="" disabled>
+                제공자를 선택하세요
+              </option>
+            )}
             {AI_PROVIDER_IDS.map((id) => (
               <option key={id} value={id}>
                 {getProviderStatus(snapshot, id)?.displayName ?? id}

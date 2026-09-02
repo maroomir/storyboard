@@ -45,8 +45,19 @@ export function SettingsSummaryCards({
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-label="설정 요약">
       <article className={summaryCardClass}>
         <p className={summaryLabelClass}>기본 AI</p>
-        <span className={summaryValueClass}>{defaultProviderName}</span>
-        <span className="text-xs text-sb-fg-muted">{defaultModelName}</span>
+        {snapshot.isDefaultProviderConfigured ? (
+          <>
+            <span className={summaryValueClass}>{defaultProviderName}</span>
+            <span className="text-xs text-sb-fg-muted">{defaultModelName}</span>
+          </>
+        ) : (
+          <>
+            <span className={summaryValueClass}>선택 필요</span>
+            <span className="text-xs text-amber-500">
+              고르기 전에는 생성이 실행되지 않습니다
+            </span>
+          </>
+        )}
         <Button variant="ghost" className={summaryLinkClass} onClick={() => onNavigate('defaults')}>
           변경 ›
         </Button>
