@@ -27,7 +27,13 @@ function buildValidSnapshot(): SettingsReadSnapshot {
     providerConfigs,
     taskAssignments: { sceneDialogue: { providerId: null, model: null } },
     modelCatalog,
-    taskCatalog: [{ name: "sceneDialogue", label: "장면 대사", status: "wired" }]
+    taskCatalog: [{ name: "sceneDialogue", label: "장면 대사", status: "wired" }],
+    origins: { defaultProvider: "user" },
+    configFiles: { user: "/home/me/.storyboard/config.json" },
+    settingCatalog: [
+      { key: "draft.keepHistory", label: "이전 초안 보관", description: "", kind: "boolean", defaultValue: false, group: "생성" }
+    ],
+    settingValues: { "draft.keepHistory": false }
   } as SettingsReadSnapshot
 }
 

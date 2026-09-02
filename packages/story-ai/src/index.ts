@@ -62,6 +62,7 @@ export * from './contracts/draftReview';
 export * from './contracts/models';
 export * from './contracts/pricing';
 export * from './contracts/sceneCoverage';
+export * from './contracts/settingCatalog';
 export * from './contracts/sceneDialogueAttribution';
 export * from './contracts/studioAgent';
 export * from './contracts/studioCardSeed';

@@ -11,9 +11,11 @@ import {
   getProviderStatus,
   hasTaskOverride,
   isAiProviderId,
+  parseSaveTarget,
   pickModelForTaskProvider,
   type AiProviderId,
   type AiTaskName,
+  type SaveTarget,
   type SettingsReadSnapshot,
   type TaskCatalogItem,
 } from './settingsSnapshot';
@@ -23,10 +25,12 @@ export function TaskAssignmentsSection({
   snapshot,
   callRpc,
   onRpcError,
+  onSaved,
 }: {
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
+  readonly onSaved: (label: string, target: SaveTarget) => void;
 }): React.ReactElement {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
@@ -52,13 +56,20 @@ export function TaskAssignmentsSection({
     providerId: AiProviderId | null,
     model: string | null,
   ): void => {
-    void callRpc('settings.updateTaskAiConfig', { taskName, providerId, model }).catch(
-      (error: unknown) => {
+    const label = snapshot.taskCatalog.find((task) => task.name === taskName)?.label ?? taskName;
+
+    void callRpc('settings.updateTaskAiConfig', { taskName, providerId, model })
+      .then((payload) =>
+        onSaved(
+          providerId === null ? `${label} 오버라이드 제거` : `${label} 오버라이드`,
+          parseSaveTarget(payload),
+        ),
+      )
+      .catch((error: unknown) => {
         onRpcError(
           error instanceof Error ? error.message : '태스크 오버라이드를 저장하지 못했습니다.',
         );
-      },
-    );
+      });
   };
 
   const closePicker = (): void => {

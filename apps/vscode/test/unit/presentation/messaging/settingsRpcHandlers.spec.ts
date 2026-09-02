@@ -4,12 +4,18 @@ import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/
 import {
   parseStoryboardRequestMessage,
   settingsUpdateProviderModelRequestPayloadSchema,
+  settingsUpdateSettingValueRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion
 } from "@storyboard/story-engine"
 import { aiProviderIds, aiTaskNames, ConfigBridge, createAiProviderRegistry, SecretStore, storyboardModelCatalog } from '@storyboard/story-ai';
 import type { AiProviderRegistry, ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"
+
+const configFiles = (): { user: string; workspace?: string } => ({
+  user: "/home/me/.storyboard/config.json",
+  workspace: "/work/novel/.storyboard/config.json"
+})
 class MutableFakeConfiguration implements StoryboardConfigurationLike {
   public constructor(private readonly values: Map<string, unknown>) {}
 
@@ -146,7 +152,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
@@ -173,7 +179,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
     expect(snapshot.providerConfigs["claude-code"].command).toBe("/custom/claude")
@@ -197,7 +203,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
@@ -219,7 +225,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     await handlers["settings.updateDefaultProvider"]!({ providerId: "openai" }, {} as never)
     expect(configuration.get("defaultProvider")).toBe("openai")
@@ -246,6 +252,54 @@ describe("createSettingsRpcHandlers", () => {
     expect(tasksAfterClear["grammarCheck"]).toBeUndefined()
   })
 
+  it("reports where each value came from and where a write landed", async () => {
+    const configuration = new Map<string, unknown>([["defaultProvider", "codex"], ["draft.keepHistory", true]])
+    const registry = createTestRegistry(configuration, new Map())
+    const secretStore = new SecretStore(new FakeSecretStorage(new Map()))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => ({
+        get: <T>(section: string, defaultValue: T): T =>
+          (configuration.has(section) ? configuration.get(section) : defaultValue) as T,
+        inspect: <T>(section: string): { globalValue?: T; workspaceValue?: T } =>
+          section === "draft.keepHistory"
+            ? { workspaceValue: configuration.get(section) as T }
+            : { globalValue: configuration.get(section) as T | undefined },
+        update: async (section, value): Promise<void> => {
+          configuration.set(section, value)
+        }
+      })
+    })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
+
+    const snapshot = await handlers["settings.read"]!({}, {} as never)
+
+    expect(snapshot.origins["defaultProvider"]).toBe("user")
+    expect(snapshot.origins["draft.keepHistory"]).toBe("workspace")
+    expect(snapshot.origins["draft.reviseMaxIterations"]).toBe("default")
+    expect(snapshot.configFiles).toEqual(configFiles())
+    expect(snapshot.settingValues["draft.keepHistory"]).toBe(true)
+    expect(snapshot.settingValues["draft.reviseMaxIterations"]).toBe(2)
+    expect(snapshot.settingCatalog.map((entry) => entry.key)).toContain("studio.validation")
+
+    const saved = await handlers["settings.updateSettingValue"]!({ key: "draft.keepHistory", value: false }, {} as never)
+    expect(saved).toEqual({ origin: "workspace", file: "/work/novel/.storyboard/config.json" })
+    expect(configuration.get("draft.keepHistory")).toBe(false)
+
+    const savedDefault = await handlers["settings.updateDefaultProvider"]!({ providerId: "mock" }, {} as never)
+    expect(savedDefault).toEqual({ origin: "user", file: "/home/me/.storyboard/config.json" })
+  })
+
+  it("rejects settings.updateSettingValue outside the catalog or its bounds (zod)", () => {
+    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "nope", value: true }).success).toBe(false)
+    expect(
+      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.reviseMaxIterations", value: 9 }).success
+    ).toBe(false)
+    expect(
+      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.reviseMaxIterations", value: 3 }).success
+    ).toBe(true)
+    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.keepHistory", value: "yes" }).success).toBe(false)
+  })
+
   it("writes and deletes API keys via secrets RPC", async () => {
     const configuration = new Map<string, unknown>()
     const secretValues = new Map<string, string>()
@@ -254,7 +308,7 @@ describe("createSettingsRpcHandlers", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
     })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry })
+    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     const writeResult = await handlers["secrets.writeApiKey"]!({ providerId: "openai", apiKey: "new-secret" }, {} as never)
     expect(writeResult).toEqual({ hasApiKey: true })
@@ -353,7 +407,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry }))
+    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,
@@ -382,7 +436,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry }))
+    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,
@@ -411,7 +465,7 @@ describe("settings RPC via webview bridge", () => {
     })
     const webview = new FakeWebview()
 
-    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry }))
+    createWebviewBridge(webview, createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles }))
 
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,

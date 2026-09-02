@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle2, LoaderCircle, PlugZap } from 'lucide-react';
 import React from 'react';
 
-import { type ConnectionTestState } from './settingsSnapshot';
+import { originLabel, type ConfigValueOrigin, type ConnectionTestState } from './settingsSnapshot';
 
 export function StatusPill({
   tone,
@@ -22,6 +22,32 @@ export function StatusPill({
       className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${toneClass}`}
     >
       {children}
+    </span>
+  );
+}
+
+// Tells the author which config layer a value is coming from; a default is dimmed because there
+// is nothing saved for it anywhere.
+export function OriginPill({
+  origin,
+  file,
+}: {
+  readonly origin: ConfigValueOrigin;
+  readonly file?: string;
+}): React.ReactElement {
+  const label = originLabel(origin);
+  const tone = origin === 'default' ? 'text-sb-fg-muted' : 'text-sb-fg';
+
+  return (
+    <span
+      className={`inline-flex items-center rounded border border-sb-border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide ${tone}`}
+      title={
+        origin === 'default'
+          ? '저장된 값이 없어 기본값을 씁니다'
+          : `${label} 설정 파일: ${file ?? ''}`
+      }
+    >
+      {label}
     </span>
   );
 }

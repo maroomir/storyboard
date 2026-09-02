@@ -5,6 +5,7 @@ import { registerOpenSettingsCommand } from '@/presentation/commands/openSetting
 import { RelationGraphProvider } from '@/presentation/providers/RelationGraphProvider';
 import { SettingsPanelProvider } from '@/presentation/providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
+import { registerProviderStatusBarItem } from '@/presentation/statusBar/providerStatusBarItem';
 
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
@@ -22,16 +23,24 @@ export class WorkbenchModule implements IApplicationModule {
       collectCardProposalsUseCase,
       createCardUseCase,
       configBridge,
+      homeStores,
       logger,
       proposalReviewService,
       secretStore,
       studioChatUseCase,
     } = this.platform;
+    const configFiles = (): { readonly user: string; readonly workspace?: string } => ({
+      user: homeStores.paths.configFile,
+      ...(homeStores.workspaceConfigFile === undefined
+        ? {}
+        : { workspace: homeStores.workspaceConfigFile }),
+    });
     const relationGraphPanel = new RelationGraphProvider({ aiProviderRegistry });
     const settingsPanel = new SettingsPanelProvider({
       aiProviderRegistry,
       secretStore,
       configBridge,
+      configFiles,
     });
 
     this.disposables.add(
@@ -47,6 +56,7 @@ export class WorkbenchModule implements IApplicationModule {
       ),
       registerOpenRelationGraphCommand(context, relationGraphPanel),
       registerOpenSettingsCommand(context, settingsPanel),
+      registerProviderStatusBarItem({ configBridge, configFiles }),
       relationGraphPanel,
       settingsPanel,
     );

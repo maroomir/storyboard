@@ -90,7 +90,9 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 변수로 홈 위치를 옮길 수 있습니다.
 
 키 이름은 아래 문서의 `draft.keepHistory` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
-파일을 편집합니다. 예전 버전에서 VSCode `settings.json` 에 두었던 `storyboard.*` 값은 처음 활성화될 때 한 번
+파일을 편집합니다. 패널은 값마다 출처(공통 / 이 작품 / 기본값)를 표시하고, 저장할 때마다 어느 파일에 저장됐는지
+알려 줍니다. 생성·검수·편집기 스위치는 **옵션** 탭에 모여 있습니다. 상태바의 `✦ provider · model` 항목이 현재
+기본 AI를 보여 주며, 누르면 설정 패널이 열립니다. 예전 버전에서 VSCode `settings.json` 에 두었던 `storyboard.*` 값은 처음 활성화될 때 한 번
 자동으로 옮겨집니다.
 
 ```json

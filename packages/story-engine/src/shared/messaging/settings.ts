@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-import { storyboardModelCatalog } from '@storyboard/story-ai';
+import {
+  findStoryboardSetting,
+  isValidStoryboardSettingValue,
+  storyboardModelCatalog,
+} from '@storyboard/story-ai';
 import { aiProviderStatusSchema } from './ai';
 import { aiTaskNameSchema, providerIdSchema } from './atoms';
 
@@ -44,6 +48,23 @@ const taskCatalogEntrySchema = z.object({
   status: aiTaskStatusSchema,
 });
 
+export const configValueOriginSchema = z.enum(['default', 'user', 'workspace']);
+
+const settingValueSchema = z.union([z.boolean(), z.number(), z.string()]);
+
+const settingDefinitionPayloadSchema = z.object({
+  key: z.string().trim().min(1),
+  label: z.string().trim().min(1),
+  description: z.string(),
+  kind: z.enum(['boolean', 'integer', 'string']),
+  defaultValue: settingValueSchema,
+  minimum: z.number().optional(),
+  maximum: z.number().optional(),
+  group: z.string().trim().min(1),
+});
+
+// `origins` says which config layer each value came from and `configFiles` where those layers
+// live, so the panel can tell the author "saved to this work" versus "saved for every work".
 export const settingsReadResponsePayloadSchema = z.object({
   defaultProvider: providerIdSchema,
   providers: z.array(aiProviderStatusSchema),
@@ -51,6 +72,13 @@ export const settingsReadResponsePayloadSchema = z.object({
   taskAssignments: taskAssignmentsPayloadSchema,
   modelCatalog: storyboardModelCatalogPayloadSchema,
   taskCatalog: z.array(taskCatalogEntrySchema).min(1),
+  origins: z.record(z.string(), configValueOriginSchema),
+  configFiles: z.object({
+    user: z.string().trim().min(1),
+    workspace: z.string().trim().min(1).optional(),
+  }),
+  settingCatalog: z.array(settingDefinitionPayloadSchema),
+  settingValues: z.record(z.string(), settingValueSchema),
 });
 
 export const settingsReadRequestPayloadSchema = z.object({});
@@ -118,4 +146,29 @@ export const settingsUpdateTaskAiConfigRequestPayloadSchema = z
     }
   });
 
-export const settingsMutationOkResponsePayloadSchema = z.object({});
+export const settingsUpdateSettingValueRequestPayloadSchema = z
+  .object({
+    key: z.string().trim().min(1),
+    value: settingValueSchema,
+  })
+  .superRefine((data, ctx) => {
+    const definition = findStoryboardSetting(data.key);
+
+    if (!definition) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Unknown setting: ${data.key}.` });
+      return;
+    }
+
+    if (!isValidStoryboardSettingValue(definition, data.value)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Value is not valid for ${data.key} (${definition.kind}).`,
+      });
+    }
+  });
+
+// Where the write landed, so the panel can confirm it instead of leaving the author guessing.
+export const settingsMutationOkResponsePayloadSchema = z.object({
+  origin: configValueOriginSchema.optional(),
+  file: z.string().optional(),
+});

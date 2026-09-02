@@ -43,6 +43,26 @@ export interface TaskCatalogItem {
   readonly status: AiTaskStatus;
 }
 
+export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
+
+export type SettingValue = boolean | number | string;
+
+export interface SettingDefinition {
+  readonly key: string;
+  readonly label: string;
+  readonly description: string;
+  readonly kind: 'boolean' | 'integer' | 'string';
+  readonly defaultValue: SettingValue;
+  readonly minimum?: number;
+  readonly maximum?: number;
+  readonly group: string;
+}
+
+export interface SettingsConfigFiles {
+  readonly user: string;
+  readonly workspace?: string;
+}
+
 export interface SettingsReadSnapshot {
   readonly defaultProvider: AiProviderId;
   readonly providers: readonly AiProviderStatus[];
@@ -50,6 +70,49 @@ export interface SettingsReadSnapshot {
   readonly taskAssignments: Readonly<Record<string, TaskAiAssignment>>;
   readonly modelCatalog: Readonly<Record<AiProviderId, readonly ProviderModelOption[]>>;
   readonly taskCatalog: readonly TaskCatalogItem[];
+  readonly origins: Readonly<Record<string, ConfigValueOrigin>>;
+  readonly configFiles: SettingsConfigFiles;
+  readonly settingCatalog: readonly SettingDefinition[];
+  readonly settingValues: Readonly<Record<string, SettingValue>>;
+}
+
+export interface SaveTarget {
+  readonly origin?: ConfigValueOrigin;
+  readonly file?: string;
+}
+
+export function parseSaveTarget(value: unknown): SaveTarget {
+  if (!value || typeof value !== 'object') {
+    return {};
+  }
+
+  const candidate = value as { origin?: unknown; file?: unknown };
+  const origin =
+    candidate.origin === 'user' ||
+    candidate.origin === 'workspace' ||
+    candidate.origin === 'default'
+      ? candidate.origin
+      : undefined;
+
+  return {
+    ...(origin === undefined ? {} : { origin }),
+    ...(typeof candidate.file === 'string' ? { file: candidate.file } : {}),
+  };
+}
+
+export function originLabel(origin: ConfigValueOrigin | undefined): string {
+  switch (origin) {
+    case 'workspace':
+      return '이 작품';
+    case 'user':
+      return '공통';
+    default:
+      return '기본값';
+  }
+}
+
+export function getValueOrigin(snapshot: SettingsReadSnapshot, key: string): ConfigValueOrigin {
+  return snapshot.origins[key] ?? 'default';
 }
 
 export function isAiProviderId(value: string): value is AiProviderId {
@@ -71,9 +134,27 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
     !candidate.providerConfigs ||
     !candidate.taskAssignments ||
     !candidate.modelCatalog ||
-    !Array.isArray(candidate.taskCatalog)
+    !Array.isArray(candidate.taskCatalog) ||
+    !candidate.origins ||
+    typeof candidate.origins !== 'object' ||
+    !candidate.configFiles ||
+    typeof candidate.configFiles.user !== 'string' ||
+    !Array.isArray(candidate.settingCatalog) ||
+    !candidate.settingValues ||
+    typeof candidate.settingValues !== 'object'
   ) {
     return undefined;
+  }
+
+  for (const definition of candidate.settingCatalog) {
+    if (
+      !definition ||
+      typeof definition !== 'object' ||
+      typeof (definition as SettingDefinition).key !== 'string' ||
+      typeof (definition as SettingDefinition).label !== 'string'
+    ) {
+      return undefined;
+    }
   }
 
   for (const id of AI_PROVIDER_IDS) {

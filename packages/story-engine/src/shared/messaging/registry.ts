@@ -67,6 +67,7 @@ import {
   settingsUpdateProviderBaseUrlRequestPayloadSchema,
   settingsUpdateProviderCommandRequestPayloadSchema,
   settingsUpdateProviderModelRequestPayloadSchema,
+  settingsUpdateSettingValueRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
 } from './settings';
 import {
@@ -127,6 +128,7 @@ export const storyboardRequestPayloadSchemas = {
   'settings.updateProviderBaseUrl': settingsUpdateProviderBaseUrlRequestPayloadSchema,
   'settings.updateProviderCommand': settingsUpdateProviderCommandRequestPayloadSchema,
   'settings.updateTaskAiConfig': settingsUpdateTaskAiConfigRequestPayloadSchema,
+  'settings.updateSettingValue': settingsUpdateSettingValueRequestPayloadSchema,
   'secrets.writeApiKey': secretsWriteApiKeyRequestPayloadSchema,
   'secrets.deleteApiKey': secretsDeleteApiKeyRequestPayloadSchema,
   'project.readContract': projectReadContractRequestPayloadSchema,
@@ -175,6 +177,7 @@ export const storyboardResponsePayloadSchemas = {
   'settings.updateProviderBaseUrl': settingsMutationOkResponsePayloadSchema,
   'settings.updateProviderCommand': settingsMutationOkResponsePayloadSchema,
   'settings.updateTaskAiConfig': settingsMutationOkResponsePayloadSchema,
+  'settings.updateSettingValue': settingsMutationOkResponsePayloadSchema,
   'secrets.writeApiKey': secretsWriteApiKeyResponsePayloadSchema,
   'secrets.deleteApiKey': secretsDeleteApiKeyResponsePayloadSchema,
   'project.readContract': projectReadContractResponsePayloadSchema,

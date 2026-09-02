@@ -4,9 +4,11 @@ import { Button } from '../ui/Button';
 import { ConnectionTestButton, StatusPill } from './SettingsPrimitives';
 import {
   getProviderStatus,
+  parseSaveTarget,
   requiresApiKey,
   type AiProviderId,
   type ConnectionTestState,
+  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { fieldGroupClass, sbInputClass } from './settingsStyles';
@@ -16,6 +18,7 @@ export function ProviderConfigCard({
   snapshot,
   callRpc,
   onRpcError,
+  onSaved,
   apiKeyDraft,
   setApiKeyDraft,
   commandDraft,
@@ -31,6 +34,7 @@ export function ProviderConfigCard({
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
+  readonly onSaved: (label: string, target: SaveTarget) => void;
   readonly apiKeyDraft: Partial<Record<AiProviderId, string>>;
   readonly setApiKeyDraft: React.Dispatch<
     React.SetStateAction<Partial<Record<AiProviderId, string>>>
@@ -89,6 +93,7 @@ export function ProviderConfigCard({
 
     void callRpc('secrets.writeApiKey', { providerId, apiKey: value })
       .then(() => {
+        onSaved(`${displayName} API 키`, {});
         setApiKeyDraft((previous) => {
           const next = { ...previous };
           delete next[providerId];
@@ -108,7 +113,8 @@ export function ProviderConfigCard({
     }
 
     void callRpc('settings.updateProviderBaseUrl', { providerId: 'ollama', baseUrl: trimmed })
-      .then(() => {
+      .then((payload) => {
+        onSaved('Ollama Base URL', parseSaveTarget(payload));
         if (!baseUrlFocused) {
           setOllamaBaseUrlDraft(null);
         }
@@ -126,7 +132,8 @@ export function ProviderConfigCard({
     }
 
     void callRpc('settings.updateProviderCommand', { providerId, command: trimmed })
-      .then(() => {
+      .then((payload) => {
+        onSaved(`${displayName} 실행 명령`, parseSaveTarget(payload));
         setCommandDraft((previous) => {
           const next = { ...previous };
           delete next[providerId];

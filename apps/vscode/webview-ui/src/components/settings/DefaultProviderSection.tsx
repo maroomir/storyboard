@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 
 import { SectionHeader } from '../ui/SectionHeader';
-import { StatusPill } from './SettingsPrimitives';
+import { OriginPill, StatusPill } from './SettingsPrimitives';
 import {
   AI_PROVIDER_IDS,
   getProviderStatus,
+  getValueOrigin,
   isAiProviderId,
+  parseSaveTarget,
   pickModelForTaskProvider,
+  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
 import { sbSelectClass, sectionCardClass } from './settingsStyles';
@@ -15,13 +18,19 @@ export function DefaultProviderSection({
   snapshot,
   callRpc,
   onRpcError,
+  onSaved,
 }: {
   readonly snapshot: SettingsReadSnapshot;
   readonly callRpc: (method: string, payload: Record<string, unknown>) => Promise<unknown>;
   readonly onRpcError: (message: string) => void;
+  readonly onSaved: (label: string, target: SaveTarget) => void;
 }): React.ReactElement {
   const [pending, setPending] = useState(false);
   const defaultProviderId = snapshot.defaultProvider;
+  const originFileOf = (key: string): string | undefined =>
+    getValueOrigin(snapshot, key) === 'workspace'
+      ? snapshot.configFiles.workspace
+      : snapshot.configFiles.user;
   const selectedProvider = getProviderStatus(snapshot, defaultProviderId);
   const defaultModelCatalog = snapshot.modelCatalog[defaultProviderId];
   const defaultModelSelectValue = pickModelForTaskProvider(
@@ -41,7 +50,13 @@ export function DefaultProviderSection({
       </div>
       <div className="grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2 sm:items-end">
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-sb-fg">기본 제공자</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-sb-fg">
+            기본 제공자
+            <OriginPill
+              origin={getValueOrigin(snapshot, 'defaultProvider')}
+              file={originFileOf('defaultProvider')}
+            />
+          </span>
           <select
             className={sbSelectClass}
             value={defaultProviderId}
@@ -54,6 +69,7 @@ export function DefaultProviderSection({
 
               setPending(true);
               void callRpc('settings.updateDefaultProvider', { providerId })
+                .then((payload) => onSaved('기본 제공자', parseSaveTarget(payload)))
                 .catch((error: unknown) => {
                   onRpcError(
                     error instanceof Error ? error.message : '기본 제공자를 바꾸지 못했습니다.',
@@ -72,7 +88,13 @@ export function DefaultProviderSection({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium text-sb-fg">기본 모델</span>
+          <span className="flex items-center gap-2 text-sm font-medium text-sb-fg">
+            기본 모델
+            <OriginPill
+              origin={getValueOrigin(snapshot, `providers.${defaultProviderId}.model`)}
+              file={originFileOf(`providers.${defaultProviderId}.model`)}
+            />
+          </span>
           <select
             className={sbSelectClass}
             value={defaultModelSelectValue}
@@ -85,6 +107,7 @@ export function DefaultProviderSection({
 
               setPending(true);
               void callRpc('settings.updateProviderModel', { providerId: defaultProviderId, model })
+                .then((payload) => onSaved('기본 모델', parseSaveTarget(payload)))
                 .catch((error: unknown) => {
                   onRpcError(
                     error instanceof Error ? error.message : '기본 모델을 바꾸지 못했습니다.',

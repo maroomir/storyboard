@@ -1,4 +1,4 @@
-import { ListChecks, Plug, ScrollText, Star } from 'lucide-react';
+import { CheckCircle2, ListChecks, Plug, ScrollText, SlidersHorizontal, Star } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { createRequestId } from '@webview/lib/messaging';
@@ -8,16 +8,26 @@ import { SectionHeader } from '../ui/SectionHeader';
 import { Tabs } from '../ui/Tabs';
 import { DefaultProviderSection } from './DefaultProviderSection';
 import { GenerationContractSection } from './GenerationContractSection';
+import { GenerationOptionsSection } from './GenerationOptionsSection';
 import { ProviderConfigCard } from './ProviderConfigCard';
 import { SettingsSummaryCards } from './SettingsSummaryCards';
 import { TaskAssignmentsSection } from './TaskAssignmentsSection';
 import {
   AI_PROVIDER_IDS,
+  originLabel,
   parseSettingsReadSnapshot,
   type AiProviderId,
   type ConnectionTestState,
+  type SaveTarget,
   type SettingsReadSnapshot,
 } from './settingsSnapshot';
+
+interface SavedNotice {
+  readonly message: string;
+  readonly file?: string;
+}
+
+const savedNoticeDurationMs = 4000;
 
 const settingsPanelClass = 'mx-auto flex w-full max-w-5xl flex-col gap-4';
 
@@ -115,6 +125,8 @@ export function SettingsView({
     parsedInitial ? null : '설정을 불러오지 못했습니다.',
   );
   const [rpcError, setRpcError] = useState<string | null>(null);
+  const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
+  const savedNoticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [apiKeyDraft, setApiKeyDraft] = useState<Partial<Record<AiProviderId, string>>>({});
   const [commandDraft, setCommandDraft] = useState<Partial<Record<AiProviderId, string>>>({});
   const [ollamaBaseUrlDraft, setOllamaBaseUrlDraft] = useState<string | null>(null);
@@ -131,6 +143,29 @@ export function SettingsView({
   const onRpcError = useCallback((message: string): void => {
     setRpcError(message);
   }, []);
+
+  // The native controls already show the new value optimistically, so without this line a save
+  // and a no-op look identical; the notice names the layer the value landed in.
+  const onSaved = useCallback((label: string, target: SaveTarget): void => {
+    const where =
+      target.origin === undefined ? '' : ` · ${originLabel(target.origin)} 설정에 저장됨`;
+    setSavedNotice({ message: `${label}${where}`, ...(target.file ? { file: target.file } : {}) });
+
+    if (savedNoticeTimer.current) {
+      clearTimeout(savedNoticeTimer.current);
+    }
+
+    savedNoticeTimer.current = setTimeout(() => setSavedNotice(null), savedNoticeDurationMs);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (savedNoticeTimer.current) {
+        clearTimeout(savedNoticeTimer.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (snapshot || !vscodeApi) {
@@ -225,7 +260,12 @@ export function SettingsView({
       label: '기본값',
       icon: Star,
       panel: (
-        <DefaultProviderSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
+        <DefaultProviderSection
+          snapshot={snapshot}
+          callRpc={callRpc}
+          onRpcError={onRpcError}
+          onSaved={onSaved}
+        />
       ),
     },
     {
@@ -246,6 +286,7 @@ export function SettingsView({
                 snapshot={snapshot}
                 callRpc={callRpc}
                 onRpcError={onRpcError}
+                onSaved={onSaved}
                 apiKeyDraft={apiKeyDraft}
                 setApiKeyDraft={setApiKeyDraft}
                 commandDraft={commandDraft}
@@ -267,7 +308,25 @@ export function SettingsView({
       label: '태스크',
       icon: ListChecks,
       panel: (
-        <TaskAssignmentsSection snapshot={snapshot} callRpc={callRpc} onRpcError={onRpcError} />
+        <TaskAssignmentsSection
+          snapshot={snapshot}
+          callRpc={callRpc}
+          onRpcError={onRpcError}
+          onSaved={onSaved}
+        />
+      ),
+    },
+    {
+      id: 'options',
+      label: '옵션',
+      icon: SlidersHorizontal,
+      panel: (
+        <GenerationOptionsSection
+          snapshot={snapshot}
+          callRpc={callRpc}
+          onRpcError={onRpcError}
+          onSaved={onSaved}
+        />
       ),
     },
     {
@@ -285,10 +344,30 @@ export function SettingsView({
           <SectionHeader
             eyebrow="Storyboard"
             title="설정"
-            description="AI 기본값, 연결 정보, 태스크별 덮어쓰기를 필요한 범위만 열어 관리합니다."
+            description="AI 기본값, 연결 정보, 태스크별 덮어쓰기, 생성 옵션을 필요한 범위만 열어 관리합니다."
           />
           <SettingsSummaryCards snapshot={snapshot} onNavigate={setActiveTabId} />
+          <p className="m-0 text-xs text-sb-fg-muted">
+            공통 설정: <code>{snapshot.configFiles.user}</code>
+            {snapshot.configFiles.workspace ? (
+              <>
+                {' · '}이 작품 설정: <code>{snapshot.configFiles.workspace}</code>
+              </>
+            ) : null}
+            {' · '}CLI와 봇도 같은 파일을 읽습니다.
+          </p>
         </header>
+
+        {savedNotice ? (
+          <div
+            role="status"
+            className="flex items-center gap-2 rounded-md border border-sb-border-focus bg-sb-bg-widget/80 px-3 py-2 text-sm text-sb-fg"
+            title={savedNotice.file}
+          >
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+            <span>{savedNotice.message}</span>
+          </div>
+        ) : null}
 
         {rpcError ? (
           <div className="flex items-start justify-between gap-3 rounded-md border border-sb-border-warning bg-sb-bg-widget/80 px-3 py-2 text-sm text-sb-fg">
