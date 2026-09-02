@@ -13,6 +13,7 @@ import {
 import type { OutlineFileSystem } from '@storyboard/story-format';
 import { readProjectJson } from '@storyboard/story-engine';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import type { ConfigBridge } from '@storyboard/story-ai';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';
 
@@ -23,11 +24,19 @@ const outlineFileSystem: OutlineFileSystem = {
     vscode.workspace.fs.writeFile(uri as vscode.Uri, content),
 };
 
-export function registerGenerateSceneSeedsCommand(): vscode.Disposable {
-  return vscode.commands.registerCommand(generateSceneSeedsCommand, () => runGenerateSceneSeeds());
+export interface RegisterGenerateSceneSeedsCommandDependencies {
+  readonly configBridge: ConfigBridge;
 }
 
-async function runGenerateSceneSeeds(): Promise<void> {
+export function registerGenerateSceneSeedsCommand({
+  configBridge,
+}: RegisterGenerateSceneSeedsCommandDependencies): vscode.Disposable {
+  return vscode.commands.registerCommand(generateSceneSeedsCommand, () =>
+    runGenerateSceneSeeds(configBridge),
+  );
+}
+
+async function runGenerateSceneSeeds(configBridge: ConfigBridge): Promise<void> {
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
@@ -47,10 +56,10 @@ async function runGenerateSceneSeeds(): Promise<void> {
   }
 
   const project = await readProjectJson(vscodeFileSystem, paths.projectJson);
-  const inspected = vscode.workspace
-    .getConfiguration('storyboard')
-    .inspect<number>('scene.prefixDigits');
-  const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, inspected);
+  const digitCount = resolveScenePrefixDigitCount(
+    project.editor.scenePrefixDigits,
+    configBridge.inspectScenePrefixDigits(),
+  );
 
   let seeds: GeneratedSceneSeed[];
   try {

@@ -8,7 +8,13 @@ import {
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
 import { storyboardModelCatalog } from '#ai/contracts/models';
 
-const storyboardWorkspaceConfigurationTarget = 2;
+// The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
+// too: a write lands in the workspace file only when that layer already holds the key, so the value
+// the author sees change is the one that was actually in effect.
+const userConfigurationTarget = 1;
+const workspaceConfigurationTarget = 2;
+
+export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
 
 export interface ProviderModelConfig {
   readonly model?: string;
@@ -192,7 +198,7 @@ export class ConfigBridge {
 
     const merged = this.readTasksPersistMap(configuration);
     merged[taskName] = { provider: config.providerId, model: config.model };
-    await configuration.update('tasks', merged, storyboardWorkspaceConfigurationTarget);
+    await configuration.update('tasks', merged, this.resolveUpdateTarget('tasks'));
   }
 
   public async clearTaskAiConfig(taskName: AiTaskName): Promise<void> {
@@ -201,11 +207,29 @@ export class ConfigBridge {
 
     const merged = this.readTasksPersistMap(configuration);
     delete merged[taskName];
-    await configuration.update('tasks', merged, storyboardWorkspaceConfigurationTarget);
+    await configuration.update('tasks', merged, this.resolveUpdateTarget('tasks'));
+  }
+
+  public getValueOrigin(section: string): ConfigValueOrigin {
+    const inspected = this.dependencies.getConfiguration().inspect?.<unknown>(section);
+
+    if (inspected?.workspaceValue !== undefined || inspected?.workspaceFolderValue !== undefined) {
+      return 'workspace';
+    }
+
+    return inspected?.globalValue !== undefined ? 'user' : 'default';
   }
 
   public isGrammarRealtimeEnabled(): boolean {
     return this.dependencies.getConfiguration().get('grammar.realtimeEnabled', false);
+  }
+
+  public isSlopRealtimeEnabled(): boolean {
+    return this.dependencies.getConfiguration().get('slop.realtimeEnabled', false);
+  }
+
+  public isStudioValidationEnabled(): boolean {
+    return this.dependencies.getConfiguration().get('studio.validation', true);
   }
 
   public getScenePrefixDigits(): number {
@@ -362,7 +386,13 @@ export class ConfigBridge {
   private async configurationUpdate<T>(section: string, value: T): Promise<void> {
     const configuration = this.dependencies.getConfiguration();
     this.assertConfigurationUpdate(configuration);
-    await configuration.update(section, value, storyboardWorkspaceConfigurationTarget);
+    await configuration.update(section, value, this.resolveUpdateTarget(section));
+  }
+
+  private resolveUpdateTarget(section: string): number {
+    return this.getValueOrigin(section) === 'workspace'
+      ? workspaceConfigurationTarget
+      : userConfigurationTarget;
   }
 }
 

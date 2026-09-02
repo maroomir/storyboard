@@ -1,9 +1,7 @@
-import { readFileSync } from "node:fs"
-import path from "node:path"
 import { describe, expect, it } from "vitest"
 
-import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
-import type { AiProviderId } from '@storyboard/story-ai';
+import { aiProviderIds, ConfigBridge, storyboardModelCatalog } from '@storyboard/story-ai';
+import type { AiProviderId, StoryboardConfigurationLike } from '@storyboard/story-ai';
 describe("storyboardModelCatalog vs package.json defaults", () => {
   it("includes every GPT-5.6 Codex model", () => {
     const codexModelIds = storyboardModelCatalog.codex.map((option) => option.id)
@@ -13,26 +11,22 @@ describe("storyboardModelCatalog vs package.json defaults", () => {
     )
   })
 
-  it("includes every contributed provider model default from package.json", () => {
-    const packageJsonPath = path.join(process.cwd(), "package.json")
-    const raw = readFileSync(packageJsonPath, "utf8")
-    const packageJson = JSON.parse(raw) as {
-      readonly contributes?: {
-        readonly configuration?: { readonly properties?: Record<string, { readonly default?: unknown }> }
-      }
-    }
-
-    const properties = packageJson.contributes?.configuration?.properties ?? {}
+  // The extension contributes no VSCode configuration any more, so the defaults the bridge falls
+  // back to are the only ones there are — every one of them must be a catalog model.
+  it("includes every provider model default the ConfigBridge falls back to", () => {
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => ({
+        get: <T>(_section: string, defaultValue: T): T => defaultValue
+      })
+    })
 
     for (const providerId of aiProviderIds) {
       if (providerId === "mock") {
         continue
       }
 
-      const key = `storyboard.providers.${providerId}.model`
-      const defaultModel = properties[key]?.default
-
-      expect(typeof defaultModel, `missing default for ${key}`).toBe("string")
+      const defaultModel = configBridge.getProviderConfig(providerId).model
+      expect(typeof defaultModel, `missing default for ${providerId}`).toBe("string")
       const ids = storyboardModelCatalog[providerId as AiProviderId].map((o) => o.id)
       expect(ids).toContain(defaultModel)
     }

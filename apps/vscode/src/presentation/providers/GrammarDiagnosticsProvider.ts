@@ -7,7 +7,7 @@ import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
-import type { GrammarIssue } from '@storyboard/story-ai';
+import type { ConfigBridge, GrammarIssue } from '@storyboard/story-ai';
 
 const grammarCheckCommand = 'storyboard.draft.grammarCheck';
 const applyGrammarFixCommand = 'storyboard.draft.applyGrammarFix';
@@ -17,6 +17,7 @@ const quickFixKind = (vscode.CodeActionKind?.QuickFix ?? 'quickfix') as vscode.C
 
 export interface RegisterGrammarDiagnosticsProviderDependencies {
   readonly aiGateway: AiGateway;
+  readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
 
@@ -219,11 +220,7 @@ export function registerGrammarDiagnosticsProvider(
     void controller.runForDocument(document);
   });
   const changeListener = vscode.workspace.onDidChangeTextDocument((event) => {
-    const realtimeEnabled = vscode.workspace
-      .getConfiguration('storyboard')
-      .get<boolean>('grammar.realtimeEnabled', false);
-
-    if (!realtimeEnabled) {
+    if (!dependencies.configBridge.isGrammarRealtimeEnabled()) {
       return;
     }
 

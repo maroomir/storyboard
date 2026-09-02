@@ -21,11 +21,11 @@ English README: [`README.en.md`](README.en.md)
 - 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 diff로 확인 → 승인해야 반영. 대화는 대상별로 저장되어 이어집니다
 - 재생성 없이 카드 기반 보충: **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역) 명령으로 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
-- 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `storyboard.grounding.autoApprove`를 켜면 자동 수락
+- 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `grounding.autoApprove`를 켜면 자동 수락
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
-- 이전 초안 히스토리 보관(`storyboard.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
-- 장면 전환 구분자 삽입(`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
+- 이전 초안 히스토리 보관(`draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
+- 장면 전환 구분자 삽입(`draft.sceneBreakEnabled`/`draft.sceneBreakSeparator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격
@@ -82,11 +82,26 @@ npm run build
 
 API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다. 실제 provider를 쓰려면 `Storyboard: Set API Key...` 명령으로 키를 저장합니다.
 
+## 설정 파일
+
+Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 에 저장되며, CLI와 Telegram 봇이 같은
+파일을 읽습니다. 작품마다 다르게 두고 싶은 값은 워크스페이스의 `.storyboard/config.json` 에 적으면 그 작품에서만
+공통값을 덮어씁니다. API 키는 `~/.storyboard/secrets.json`(권한 0600)에 있습니다. `STORYBOARD_HOME` 환경
+변수로 홈 위치를 옮길 수 있습니다.
+
+키 이름은 아래 문서의 `draft.keepHistory` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
+파일을 편집합니다. 예전 버전에서 VSCode `settings.json` 에 두었던 `storyboard.*` 값은 처음 활성화될 때 한 번
+자동으로 옮겨집니다.
+
+```json
+{ "defaultProvider": "claude-code", "draft": { "keepHistory": true } }
+```
+
 이미 **Claude Code**나 **Codex** CLI를 쓰고 있다면 API 키 없이 그 구독을 그대로 활용할 수 있습니다.
 각 CLI(`claude` / `codex`)를 설치하고 자체 로그인(`claude` 구독 로그인 / `codex login`의 ChatGPT 로그인)을
-마친 뒤 `storyboard.defaultProvider`를 `claude-code` 또는 `codex`로 설정하면 됩니다. CLI 실행 파일이 PATH에
-없으면 설정 패널 **연결** 탭의 «실행 명령» 입력(또는 `storyboard.providers.claude-code.command` /
-`storyboard.providers.codex.command` 설정)에 절대 경로를 지정하고, 모델은 `...model` 설정으로 바꿉니다.
+마친 뒤 설정 패널에서 기본 제공자를 `claude-code` 또는 `codex`로 고르면 됩니다(설정 파일의 `defaultProvider`). CLI 실행 파일이 PATH에
+없으면 설정 패널 **연결** 탭의 «실행 명령» 입력(설정 파일의 `providers.claude-code.command` /
+`providers.codex.command`)에 절대 경로를 지정하고, 모델은 `providers.<id>.model` 로 바꿉니다.
 연결 테스트는 CLI를 찾지 못하면 «CLI 미설치»를, 설치는 됐지만 로그인되지 않았으면 연결 실패를 표시합니다.
 
 CLI provider 사용 시 참고할 점:
@@ -95,7 +110,7 @@ CLI provider 사용 시 참고할 점:
   `codex exec --json`에서 파싱합니다. Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 달러는 기록하지
   않고, 사이드바 배지는 `12.3k 토큰`처럼 토큰 수를 보여 줍니다. 단가표가 있는 API provider는 `$0.42 · 12.3k`로
   달러와 토큰을 함께 표시합니다.
-- **추론 강도(Codex)**: `storyboard.providers.codex.reasoningEffort`를 `minimal`·`low`·`medium`·`high`로 지정하면
+- **추론 강도(Codex)**: 설정 파일의 `providers.codex.reasoningEffort`를 `minimal`·`low`·`medium`·`high`로 지정하면
   Codex CLI에 `model_reasoning_effort`로 전달됩니다. 비워 두면 CLI 기본값을 씁니다.
 - **스트리밍**: 두 CLI는 실시간 토큰 스트리밍 대신 생성을 끝까지 마친 뒤 전체 결과를 한 번에 전달합니다(의도된 동작).
 - **인라인 완성**: CLI provider에서는 인라인 완성이 비활성화됩니다. 키 입력마다 CLI 프로세스를 새로 띄우는 비용이

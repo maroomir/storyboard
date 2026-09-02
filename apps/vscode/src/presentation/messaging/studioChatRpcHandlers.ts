@@ -14,6 +14,7 @@ import {
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createStudioCardInvokeResolver } from '@/presentation/messaging/studioCardToolResolver';
 import { createStudioInvokeResolver } from '@/presentation/messaging/studioToolResolver';
@@ -31,12 +32,11 @@ export interface StudioChatRpcHandlersDependencies {
   readonly collectUseCase: CollectCardProposalsUseCase;
   readonly logger: IStoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
+  readonly configBridge: ConfigBridge;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
   readonly getTarget: () => Promise<StudioTarget>;
   readonly postProgress: (stage: StudioChatStage | 'idle') => void;
 }
-
-const validationSettingKey = 'studio.validation';
 
 export function createStudioChatRpcHandlers(
   deps: StudioChatRpcHandlersDependencies,
@@ -83,7 +83,7 @@ export function createStudioChatRpcHandlers(
           hasSelection: selection !== undefined,
           ...(payload.tool === undefined ? {} : { pinnedTool: payload.tool }),
           ...usageAttributionFor(payload.entity),
-          isValidationEnabled: isValidationEnabled(),
+          isValidationEnabled: deps.configBridge.isStudioValidationEnabled(),
           resolveLookup: (requests) => resolveStudioLookups(vscodeFileSystem, root, requests),
           ...toolResolverFor(deps, root, payload.entity, entityContext),
           resolveFollowUps: (followUps) =>
@@ -195,10 +195,6 @@ function readSelectedDraftText(entityContext: StudioEntityContext): string | und
 // the one a proposal may rewrite.
 function sceneFocusOf(target: StudioTarget): StudioSceneFocus {
   return target.kind === 'scene' ? 'card' : 'draft';
-}
-
-function isValidationEnabled(): boolean {
-  return vscode.workspace.getConfiguration('storyboard').get<boolean>(validationSettingKey, true);
 }
 
 function sayTurn(message: string): StudioChatTurn {

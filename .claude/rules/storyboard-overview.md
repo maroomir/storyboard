@@ -85,9 +85,9 @@ What each check actually enforces, so a green run is not read as more than it is
 
 ## State Strategy
 
-- Use `context.globalState` for user settings that apply across workspaces.
-- Use `context.workspaceState` for workspace-specific state.
-- Use `context.secrets` for credentials and sensitive tokens.
+- Settings live in `~/.storyboard/config.json` (all workspaces) and `<workspace>/.storyboard/config.json` (one workspace), read and written through `ConfigBridge` over `@storyboard/story-config`; the extension contributes no VSCode `configuration`.
+- Credentials live in `~/.storyboard/secrets.json` (0600) through `SecretStore`, shared with the CLI and the bot.
+- Use `context.workspaceState` only for transient editor state that no other app needs.
 - Avoid duplicating persistent state in the webview; treat extension host state as the source of truth.
 
 ## Communication Strategy

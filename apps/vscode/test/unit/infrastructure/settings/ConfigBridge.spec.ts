@@ -360,6 +360,45 @@ describe("ConfigBridge", () => {
       ).getDraftSceneBreakSeparator()
     ).toBe("3")
   })
+
+  it("exposes realtime and studio validation switches with their defaults", () => {
+    const configBridge = createConfigBridge(new Map())
+
+    expect(configBridge.isSlopRealtimeEnabled()).toBe(false)
+    expect(configBridge.isStudioValidationEnabled()).toBe(true)
+    expect(
+      createConfigBridge(new Map([["slop.realtimeEnabled", true], ["studio.validation", false]])).isSlopRealtimeEnabled()
+    ).toBe(true)
+  })
+
+  // A write lands in the layer the author is looking at: the workspace file only when it already
+  // holds the key, otherwise the shared home file.
+  it("writes to the workspace layer only when the key already lives there", async () => {
+    const targets: Array<[string, number | undefined]> = []
+    const configuration: StoryboardConfigurationLike = {
+      get: <T>(_section: string, defaultValue: T): T => defaultValue,
+      inspect: <T>(section: string): { globalValue?: T; workspaceValue?: T } =>
+        section === "providers.openai.model"
+          ? { workspaceValue: "gpt-5-mini" as T }
+          : section === "defaultProvider"
+            ? { globalValue: "codex" as T }
+            : {},
+      update: async (section, _value, target): Promise<void> => {
+        targets.push([section, target])
+      }
+    }
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike => configuration
+    })
+
+    await configBridge.setProviderModel("openai", "gpt-5-nano")
+    await configBridge.setDefaultProvider("openai")
+
+    expect(targets).toEqual([["providers.openai.model", 2], ["defaultProvider", 1]])
+    expect(configBridge.getValueOrigin("providers.openai.model")).toBe("workspace")
+    expect(configBridge.getValueOrigin("defaultProvider")).toBe("user")
+    expect(configBridge.getValueOrigin("draft.keepHistory")).toBe("default")
+  })
 })
 
 function createConfigBridge(values: ReadonlyMap<string, unknown>): ConfigBridge {

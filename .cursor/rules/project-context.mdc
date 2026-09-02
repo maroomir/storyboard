@@ -74,7 +74,7 @@ apps/bot/src/                      # util → config → … → app (ordered la
 - Split extension→webview vs webview→extension message types when it helps clarity.
 - **Validate** at extension boundaries for user input, paths, or external data.
 - Extension host is **source of truth** for persistence; avoid duplicating state in the webview without a deliberate sync strategy.
-- **State**: `globalState` (user-wide), `workspaceState` (workspace), `secrets` (credentials).
+- **State**: settings in `~/.storyboard/config.json` + `<workspace>/.storyboard/config.json` and keys in `~/.storyboard/secrets.json` via `@storyboard/story-config` (no VSCode `configuration`, no `globalState`, no `context.secrets`); `workspaceState` only for transient editor state.
 
 ## Security
 

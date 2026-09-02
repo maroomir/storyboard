@@ -78,9 +78,12 @@ for schema-first types and the error-class template. Generic readability and ver
   downgraded to `mock` (which would overwrite a real draft and still exit 0).
 - Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
   warnings go to stderr.
-- State: story content lives in the git workspace only. App-operational state lives under
-  `~/.storyboard/<app>.json` honoring `STORYBOARD_HOME` (with tilde expansion), secrets at 0600.
-  The extension uses `context.secrets` plus workspace files — not `globalState` — as its stores.
+- State: story content lives in the git workspace only. Engine settings live in the shared
+  `~/.storyboard/config.json` (overridden by `<workspace>/.storyboard/config.json`) and API keys in
+  `~/.storyboard/secrets.json` at 0600, both via `@storyboard/story-config` and honoring
+  `STORYBOARD_HOME` (with tilde expansion). App-operational state that only one app needs (the
+  bot's token, its state db) lives under `~/.storyboard/<app>.json`. The extension contributes no
+  VSCode `configuration` and uses neither `globalState` nor `context.secrets` as a store.
 
 ## Shared Package References
 
