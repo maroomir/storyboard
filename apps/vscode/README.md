@@ -80,7 +80,7 @@ npm run build
 4. `Storyboard: Initialize Project`를 실행합니다.
 5. `Storyboard: Open Settings`에서 **작품 계약**을 채운 뒤 `Storyboard: Generate Novel`을 실행하거나, Activity Bar의 Characters / Backgrounds / Scenes 뷰에서 카드와 씬을 직접 생성합니다.
 
-API 키 없이도 기본 `mock` provider로 흐름을 확인할 수 있습니다. 실제 provider를 쓰려면 `Storyboard: Set API Key...` 명령으로 키를 저장합니다.
+처음 활성화하면 상태바와 알림이 AI 제공자를 고르라고 안내합니다. 고르기 전에는 초안 생성이 실행되지 않습니다. 흐름만 확인하려면 `Mock`을 고르면 API 키 없이 가짜 텍스트로 동작하고, 실제 provider를 고르면 바로 API 키를 묻습니다(`Storyboard: Set API Key...`로 나중에 바꿀 수 있습니다).
 
 ## 설정 파일
 

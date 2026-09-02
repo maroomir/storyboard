@@ -34,12 +34,15 @@ describe("providerStatusBarItem", () => {
     expect(status.tooltip).toContain("이 작품 설정 (/work/novel/.storyboard/config.json)")
   })
 
-  it("marks an unset provider as the default value", () => {
+  it("asks the author to choose when no provider is configured", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => createConfiguration(new Map())
     })
 
-    expect(describeProviderStatus({ configBridge, configFiles }).tooltip).toContain("출처: 기본값")
+    const status = describeProviderStatus({ configBridge, configFiles })
+
+    expect(status.text).toBe("$(warning) AI 제공자 선택")
+    expect(status.command).toBe("storyboard.provider.choose")
   })
 
   it("shows the item, opens settings on click, and refreshes when the configuration changes", () => {
@@ -60,10 +63,11 @@ describe("providerStatusBarItem", () => {
     expect(item?.command).toBe("storyboard.settings.open")
     expect(item?.text).toBe("$(sparkle) codex · gpt-5.6-sol")
 
-    values.set("defaultProvider", "mock")
+    values.delete("defaultProvider")
     notify?.()
 
-    expect(item?.text).toBe("$(sparkle) mock")
+    expect(item?.text).toBe("$(warning) AI 제공자 선택")
+    expect(item?.command).toBe("storyboard.provider.choose")
 
     disposable.dispose()
     expect(item?.isVisible).toBe(false)

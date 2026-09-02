@@ -143,6 +143,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const aiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,
+    requireConfiguredProvider: true,
     // A long unattended run should finish on the second provider rather than abort halfway.
     ...(options.fallbackProvider === undefined
       ? {}

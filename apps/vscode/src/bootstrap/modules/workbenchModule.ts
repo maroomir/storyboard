@@ -2,6 +2,11 @@ import * as vscode from 'vscode';
 
 import { registerOpenRelationGraphCommand } from '@/presentation/commands/openRelationGraph';
 import { registerOpenSettingsCommand } from '@/presentation/commands/openSettings';
+import {
+  nudgeToChooseProvider,
+  registerChooseProviderCommand,
+} from '@/presentation/commands/chooseProvider';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { RelationGraphProvider } from '@/presentation/providers/RelationGraphProvider';
 import { SettingsPanelProvider } from '@/presentation/providers/SettingsPanelProvider';
 import { registerSidebarStudioProvider } from '@/presentation/providers/SidebarStudioProvider';
@@ -57,9 +62,18 @@ export class WorkbenchModule implements IApplicationModule {
       registerOpenRelationGraphCommand(context, relationGraphPanel),
       registerOpenSettingsCommand(context, settingsPanel),
       registerProviderStatusBarItem({ configBridge, configFiles }),
+      registerChooseProviderCommand({ configBridge, registry: aiProviderRegistry, secretStore }),
       relationGraphPanel,
       settingsPanel,
     );
+
+    void resolveStoryboardWorkspaceRoot().then((root) => {
+      if (root !== undefined) {
+        return nudgeToChooseProvider({ configBridge, registry: aiProviderRegistry, secretStore });
+      }
+
+      return undefined;
+    });
   }
 
   public dispose(): void {

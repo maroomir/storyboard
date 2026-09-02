@@ -123,7 +123,11 @@ export class PlatformModule implements IApplicationModule {
       onDidChangeConfiguration: homeStores.onDidChangeConfiguration,
     });
     void migrateLegacySettings(context, homeStores, logger);
-    const aiProviderRegistry = createAiProviderRegistry({ secretStore, configBridge });
+    const aiProviderRegistry = createAiProviderRegistry({
+      secretStore,
+      configBridge,
+      requireConfiguredProvider: true,
+    });
     const fileSystem = new VscodeFileSystem();
     const workspaceLocator = new VscodeWorkspaceLocator();
     const postGenerationUpdates = new PostGenerationUpdateManager();

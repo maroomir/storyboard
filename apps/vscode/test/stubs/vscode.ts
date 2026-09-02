@@ -210,6 +210,8 @@ export const window: {
   showInputBox: (options?: unknown) => Promise<string | undefined>
   showWarningMessage: (message: string) => Promise<void>
   showErrorMessage: (message: string) => Promise<void>
+  showInformationMessage: (message: string, ...items: string[]) => Promise<string | undefined>
+  showQuickPick: (items: unknown, options?: unknown) => Promise<unknown>
   activeTextEditor: unknown
   tabGroups: { activeTabGroup: { activeTab: { input: unknown } | undefined } }
   createStatusBarItem: (alignment?: StatusBarAlignment, priority?: number) => StatusBarItemLike
@@ -217,6 +219,8 @@ export const window: {
   showInputBox: async () => undefined,
   showWarningMessage: async () => undefined,
   showErrorMessage: async () => undefined,
+  showInformationMessage: async () => undefined,
+  showQuickPick: async () => undefined,
   activeTextEditor: undefined,
   tabGroups: { activeTabGroup: { activeTab: undefined } },
   createStatusBarItem: (): StatusBarItemLike => {

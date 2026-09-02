@@ -361,6 +361,12 @@ describe("ConfigBridge", () => {
     ).toBe("3")
   })
 
+  it("tells a configured default provider apart from the mock fallback", () => {
+    expect(createConfigBridge(new Map()).isDefaultProviderConfigured()).toBe(false)
+    expect(createConfigBridge(new Map([["defaultProvider", "nope"]])).isDefaultProviderConfigured()).toBe(false)
+    expect(createConfigBridge(new Map([["defaultProvider", "mock"]])).isDefaultProviderConfigured()).toBe(true)
+  })
+
   it("exposes realtime and studio validation switches with their defaults", () => {
     const configBridge = createConfigBridge(new Map())
 

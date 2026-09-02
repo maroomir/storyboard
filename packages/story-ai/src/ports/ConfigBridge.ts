@@ -77,8 +77,19 @@ export interface ConfigBridgeDependencies {
 export class ConfigBridge {
   public constructor(private readonly dependencies: ConfigBridgeDependencies) {}
 
+  // The effective default: `mock` when nothing is configured, so read-only surfaces (status bar,
+  // settings snapshot) always have a value to show. Hosts that must not generate against an
+  // unchosen provider check `isDefaultProviderConfigured` (or the registry's guard) instead.
   public getDefaultProvider(): AiProviderId {
     return this.getProviderId('defaultProvider', 'mock');
+  }
+
+  public isDefaultProviderConfigured(): boolean {
+    const configured = this.dependencies
+      .getConfiguration()
+      .get<unknown>('defaultProvider', undefined);
+
+    return typeof configured === 'string' && isConfiguredProvider(configured);
   }
 
   public getProviderConfig(providerId: AiProviderId): ProviderModelConfig {

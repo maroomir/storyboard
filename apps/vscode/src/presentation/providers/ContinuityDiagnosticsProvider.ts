@@ -1,5 +1,8 @@
 import * as vscode from 'vscode';
 
+import type { ConfigBridge } from '@storyboard/story-ai';
+import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
+
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { sceneContextPaths } from '@storyboard/story-engine';
@@ -24,6 +27,7 @@ const continuitySource = 'storyboard-continuity';
 
 export interface RegisterContinuityDiagnosticsProviderDependencies {
   readonly aiGateway: AiGateway;
+  readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
 
@@ -66,7 +70,10 @@ class ContinuityDiagnosticsController {
   }
 
   public async runForDocument(document: vscode.TextDocument): Promise<void> {
-    if (!(await this.canRun(document))) {
+    if (
+      !isTaskProviderReady(this.dependencies.configBridge, 'continuityCheck') ||
+      !(await this.canRun(document))
+    ) {
       this.collection.delete(document.uri);
       return;
     }
