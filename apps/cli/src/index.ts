@@ -13,7 +13,7 @@ import {
 import { commands, type CommandOutcome } from './commands/index';
 import { createCliContainer } from './container';
 
-const version = '0.7.3';
+const version = '0.8.0';
 
 const usage = `storyboard ${version} — Storyboard workspaces from the command line
 

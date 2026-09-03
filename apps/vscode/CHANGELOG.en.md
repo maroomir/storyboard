@@ -10,13 +10,34 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-03
+
+### Added
+
+- **A `storyboard` command line app.** Create a workspace, create and edit cards and scenes, generate and regenerate drafts, run the three checks (continuity, grammar, canon), and export the manuscript — all from a terminal, with no editor. Results go to stdout, progress and warnings to stderr, and success is reported through the exit code, so another AI agent can drive it directly. Configuration lives in `~/.storyboard/cli.json` (overridden per workspace by `.storyboard/cli.json`); keys are stored in `~/.storyboard/cli-secrets.json` at 0600.
+- **One tag now ships three artifacts.** The extension VSIX, the bot tarball, and the CLI tarball are attached to the same release with checksums, and `scripts/install.sh` installs the CLI in one line.
+
 ### Changed (breaking)
 
 - **The extension ID changes from `maroomir.storyboard` to `maroomir.storyboard-vscode`.** VS Code treats it as a separate extension, so an existing install must be removed and the new VSIX installed by hand. Command titles (`Storyboard: …`), command IDs (`storyboard.*`), setting keys (`storyboard.*`), and the workspace file format are unchanged. The rename frees the plain `storyboard` name for the CLI executable.
 
 ### Removed
 
-- **Every Telegram bot feature is gone from the extension.** The status bar watcher, the settings panel's «Telegram bot» tab, and the four commands `Storyboard: Set Up Telegram Bot…`, `Open Telegram Bot Config File`, `Restart Telegram Bot`, and `Open Telegram Bot Dashboard` no longer exist. The bot is now a fully independent app that owns its own configuration and process lifecycle, and the extension does not know it exists. If you use the bot, configure it from the bot's own documentation.
+- **Every Telegram bot feature is gone from the extension.** The status bar watcher, the settings panel's «Telegram bot» tab, and the four commands `Storyboard: Set Up Telegram Bot…`, `Open Telegram Bot Config File`, `Restart Telegram Bot`, and `Open Telegram Bot Dashboard` no longer exist. The bot is now a fully independent app that owns its own configuration and process lifecycle (`node dist/index.js setup`), and the extension does not know it exists.
+
+### Fixed
+
+- **Bot draft generation no longer misses canon facts and the story-state ledger.** The bot now runs the same generation pipeline as the extension and the CLI, so draft quality no longer depends on which app produced it.
+- **Manuscript assembly in the bot goes through the shared pipeline** instead of its own copy.
+- **The bot refuses to build an outline on an empty contract** rather than writing an empty outline and reporting success.
+- **A bot write that would bypass the commit gate is refused.** Tracked files must go through the mutate gate.
+- **The CLI provider's usage-limit fallback is restored.**
+- **The file modified-time contract is unified across apps**, fixing a mis-firing bot draft gate.
+
+### Internal
+
+- The repository is now an npm-workspaces monorepo: `apps/vscode`, `apps/bot`, and `apps/cli` share `packages/story-engine`, `story-format`, `story-ai`, and `story-git`, with a single version in the root `package.json` propagated by `npm run version:sync`. All three apps write through the same codecs, so a card edited anywhere serializes to identical bytes.
+- Each app has an architecture check enforcing its layer direction and rejecting import cycles, and imports are unified on `@/` inside an app and Node subpath prefixes (`#engine/` and friends) inside a package.
 
 ## [0.7.3] - 2026-08-31
 
