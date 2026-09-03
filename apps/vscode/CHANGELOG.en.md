@@ -10,6 +10,24 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-03
+
+Fixes found by writing a full 32-scene novel from an empty folder using only the CLI.
+
+### Added
+
+- **A new `storyboard project set` command.** Change the project contract — genre, audience, point of view, target length — at any time. `storyboard init` now takes the same values as flags, and `--from <file>` reads them from a JSON file in one go. Until now `init` wrote an empty contract and nothing could fill it, so `project.json` had to be edited by hand.
+- **The contract can fix the chapter and scene counts.** Outline generation honours them, so asking for "8 chapters, 32 scenes" produces exactly that.
+
+### Fixed
+
+- **`storyboard scene seeds` carries the chapter plan into each scene.** It used to leave a single placeholder line where the scene summary belongs, so the outline never reached the draft.
+- **`storyboard cards build` and `scene complete` write their results.** They used to print a proposal and stop, leaving the work to be copied by hand. Pass `--dry-run` to see the proposal only.
+- **A card named in a non-Latin script keeps its name.** `storyboard card create --name 서진아` silently became `new-card`; it now asks for `--id` when it cannot derive one.
+- **An empty field in a scene card no longer fails `cards build`.** A blank value reads as absent.
+- **Drafts are now tracked by git.** A new workspace tracks `draft/`, so generated manuscripts can be read and reverted like any other file. The rebuildable `.draft/`, `manuscript/` and cache directories stay ignored.
+- **A long scene no longer repeats itself near the end.** Scenes with a large target length are written in several passes, and asking every pass for the same amount left the last one — which had the least material — rewriting earlier dialogue. Each pass is now given a share that matches how much of the scene it covers, and a pass that repeats the previous one is rejected and rewritten.
+
 ## [0.8.0] - 2026-09-03
 
 ### Added
