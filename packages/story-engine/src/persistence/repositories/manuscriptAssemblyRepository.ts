@@ -98,6 +98,16 @@ export class ManuscriptAssemblyRepository
     return reportUri;
   }
 
+  public async readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined> {
+    const summaryUri = getStoryboardProjectPaths(workspaceRoot).chapterSummaries;
+
+    if (!(await this.fileSystem.exists(summaryUri))) {
+      return undefined;
+    }
+
+    return new TextDecoder().decode(await this.fileSystem.readFile(summaryUri));
+  }
+
   public async saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.memoryDirectory);

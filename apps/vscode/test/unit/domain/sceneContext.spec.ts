@@ -520,15 +520,15 @@ describe("readPreviousSceneContext rolling summary", () => {
     expect(result).not.toBe("")
   })
 
-  it("QAS-C6-05: caps an over-budget summary to its tail 2000 chars", async () => {
+  it("QAS-C6-05: caps an over-budget summary with no chapter sections to its tail", async () => {
     const fileSystem = new MockFileSystem()
-    fileSystem.setFile(summaryPath, "HEAD-MARKER" + "x".repeat(3000) + "TAIL-MARKER")
+    fileSystem.setFile(summaryPath, "HEAD-MARKER" + "x".repeat(9000) + "TAIL-MARKER")
     setDraftTail(fileSystem, "DRAFT-TAIL-MARKER")
 
     const result = await readPrevious(mockPaths, 2, fileSystem)
 
     expect(result).toBeDefined()
-    expect(result?.length).toBeLessThanOrEqual(2000)
+    expect(result?.length).toBeLessThanOrEqual(8000)
     expect(result?.length).toBeGreaterThanOrEqual(1000)
     expect(result).toContain("TAIL-MARKER")
     expect(result).not.toContain("HEAD-MARKER")
@@ -545,24 +545,43 @@ describe("readPreviousSceneContext rolling summary", () => {
 
   it("QAS-C6-07: returns the whole trimmed file when length equals the budget", async () => {
     const fileSystem = new MockFileSystem()
-    const wholeSummary = "z".repeat(2000)
+    const wholeSummary = "z".repeat(8000)
     fileSystem.setFile(summaryPath, wholeSummary)
 
     const result = await readPrevious(mockPaths, 2, fileSystem)
 
     expect(result).toBe(wholeSummary)
-    expect(result?.length).toBe(2000)
+    expect(result?.length).toBe(8000)
   })
 
-  it("QAS-C6-08: returns the trailing 2000 chars when length is just over the budget", async () => {
+  it("QAS-C6-08: returns the trailing 8000 chars when length is just over the budget", async () => {
     const fileSystem = new MockFileSystem()
-    const overBudget = "w".repeat(2001)
+    const overBudget = "w".repeat(8001)
     fileSystem.setFile(summaryPath, overBudget)
 
     const result = await readPrevious(mockPaths, 2, fileSystem)
 
-    expect(result?.length).toBe(2000)
-    expect(result).toBe(overBudget.slice(-2000))
+    expect(result?.length).toBe(8000)
+    expect(result).toBe(overBudget.slice(-8000))
+  })
+
+  it("QAS-C6-08a: compresses the oldest chapters instead of cutting the opening", async () => {
+    const fileSystem = new MockFileSystem()
+    const chapter = (title: string, marker: string): string =>
+      `## ${title}\n\n${marker}\n${"d".repeat(3000)}\n\n`
+    fileSystem.setFile(
+      summaryPath,
+      `# 장별 요약\n\n${chapter("1장", "OPENING-MARKER")}${chapter("2장", "MIDDLE-MARKER")}${chapter("3장", "LATEST-MARKER")}`,
+    )
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result?.length).toBeLessThanOrEqual(8000)
+    // The opening chapter survives as its heading plus one line; the latest keeps its detail.
+    expect(result).toContain("## 1장")
+    expect(result).toContain("OPENING-MARKER")
+    expect(result).toContain("LATEST-MARKER")
+    expect(result).toContain("d".repeat(3000))
   })
 
   it("QAS-C6-09: falls back to the tail when the summary read is unreadable", async () => {

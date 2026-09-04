@@ -15,6 +15,7 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
   instructions: [] as string[]
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
+const summarizeChaptersMock = vi.fn()
 
 vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
@@ -156,7 +157,10 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
     sceneSeedRepository: { saveSeeds: async (): Promise<void> => undefined } as never,
     summarizeChaptersUseCase: {
-      execute: async (): Promise<unknown> => ({ ok: true, kind: "summarized" })
+      execute: async (...args: unknown[]): Promise<unknown> => {
+        summarizeChaptersMock(...args)
+        return { ok: true, kind: "summarized" }
+      }
     } as never,
     usageSink: { record: async (): Promise<void> => undefined },
     fileSystem: stubFileSystem
@@ -196,6 +200,7 @@ describe("NovelPipeline", () => {
     generateDraftMock.mockClear()
     runReviseDraftWorkflowMock.mockClear()
     recordRevisionEntryMock.mockClear()
+    summarizeChaptersMock.mockClear()
     generateDraftMock.mockResolvedValue({ ok: true, kind: "generated" })
   })
 
@@ -225,6 +230,20 @@ describe("NovelPipeline", () => {
     expect(chapterMessages).toHaveLength(2)
     expect(chapterMessages[0]?.message).toContain("1장")
     expect(chapterMessages[1]?.message).toContain("2장")
+  })
+
+  it("refreshes the rolling summary after each chapter, not only at the end", async () => {
+    const harness = createHarness()
+
+    await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    const chapterIndexes = summarizeChaptersMock.mock.calls
+      .map((call) => (call[1] as { chapterIndex?: number } | undefined)?.chapterIndex)
+      .filter((chapterIndex) => chapterIndex !== undefined)
+    expect(chapterIndexes).toEqual([0, 1])
+
+    // The final summaries stage still runs, resummarizing the whole manuscript.
+    expect(summarizeChaptersMock.mock.calls.at(-1)?.[1]).toBeUndefined()
   })
 
   it("drafts and revises every scene of every chapter in order", async () => {
