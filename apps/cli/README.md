@@ -24,6 +24,7 @@ npm install && npm run cli:build && node apps/cli/dist/index.mjs --help
 ```bash
 storyboard init --title "밤의 항해"   # an empty directory becomes a workspace
 storyboard setup                      # pick the AI provider (and key) — shared with the extension and the bot
+storyboard project set --genre …      # the contract the outline needs (init takes the same flags)
 storyboard doctor                     # what is still missing, with the command that fixes it
 ```
 
