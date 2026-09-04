@@ -128,3 +128,33 @@ describe("assembleManuscript", () => {
     expect(extrasChapter?.markdown).toContain("보너스 본문")
   })
 })
+
+describe("scene stem markers", () => {
+  const draftsByOrder = drafts([
+    [1, { stem: "01-arrival", body: "도착 본문" }],
+    [2, { stem: "02-meeting", body: "만남 본문" }]
+  ])
+
+  it("omits markers from the manuscript a reader opens", () => {
+    const manuscript = assembleManuscript({ plan, projectName: "작품", draftsByOrder })
+
+    expect(manuscript.includedCount).toBe(2)
+    expect(manuscript.volumeMarkdown).not.toContain("<!-- scene:")
+  })
+
+  it("marks each scene with its stem when the review asks for it", () => {
+    const manuscript = assembleManuscript({
+      plan,
+      projectName: "작품",
+      draftsByOrder,
+      annotateSceneStems: true
+    })
+
+    expect(manuscript.volumeMarkdown).toContain("<!-- scene: 01-arrival -->")
+    expect(manuscript.volumeMarkdown).toContain("<!-- scene: 02-meeting -->")
+    // The marker precedes the body it labels, so an issue found in the body maps to the stem above.
+    expect(manuscript.volumeMarkdown.indexOf("<!-- scene: 01-arrival -->")).toBeLessThan(
+      manuscript.volumeMarkdown.indexOf("도착 본문")
+    )
+  })
+})

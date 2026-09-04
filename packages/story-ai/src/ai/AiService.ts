@@ -18,6 +18,7 @@ import {
 } from './CardAiService';
 import {
   DraftAiService,
+  type ContinuityCheckOptions,
   type DraftExpansionContext,
   type InlineCompletionContext,
 } from './DraftAiService';
@@ -76,7 +77,11 @@ export type {
   ExtractFactsByCharacterOptions,
   ExtractTraitsByCharacterOptions,
 } from './CardAiService';
-export type { DraftExpansionContext, InlineCompletionContext } from './DraftAiService';
+export type {
+  ContinuityCheckOptions,
+  DraftExpansionContext,
+  InlineCompletionContext,
+} from './DraftAiService';
 
 export class StoryboardAiService {
   private readonly cardAiService: CardAiService;
@@ -279,7 +284,7 @@ export class StoryboardAiService {
   public async checkContinuity(
     body: string,
     facts: readonly string[],
-    options: GenerateTextOptions = {},
+    options: ContinuityCheckOptions = {},
   ): Promise<ContinuityIssue[]> {
     return this.draftAiService.checkContinuity(body, facts, options);
   }

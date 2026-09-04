@@ -1,5 +1,6 @@
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
+import type { ChapterPlan } from '@storyboard/story-format';
 import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import {
   cancel,
@@ -9,6 +10,7 @@ import {
   runChapterStages,
   runOutlineStage,
   runReviewStage,
+  runReviseFromReviewStage,
   runSeedsStage,
   runSummariesStage,
 } from './novelStages';
@@ -90,6 +92,95 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
   return { paths, state, completed, persist, runStageOnce, newAiService };
 }
 
+interface ReviewStageContext {
+  readonly options: NovelPipelineOptions;
+  readonly paths: StoryboardProjectPaths;
+  readonly plan: ChapterPlan;
+  readonly completed: Set<NovelStageName>;
+  readonly persist: (patch: Partial<NovelRunState>) => Promise<void>;
+  readonly runStageOnce: (
+    stage: NovelStageName,
+    label: string,
+    run: () => Promise<void>,
+  ) => Promise<void>;
+  readonly newAiService: () => NovelAiService;
+}
+
+// The final review reads the whole assembled volume, so it sees contradictions no per-scene check
+// can. Its high-severity findings are rewritten once, then the volume is reviewed again so the
+// report on disk describes the text that actually shipped.
+async function runReviewAndReviseStages(
+  ctx: ReviewStageContext,
+): Promise<NovelPipelineResult | undefined> {
+  const { options, paths, plan, completed, persist, runStageOnce, newAiService } = ctx;
+
+  if (completed.has('revise-from-review')) {
+    await runStageOnce('review', '원고 최종 검사 중…', async () => {
+      await runReviewStage(
+        options.workspaceUri,
+        options.project,
+        plan,
+        newAiService(),
+        options.deps.aiProviderRegistry,
+        options.deps.novelReviewRepository,
+      );
+    });
+    return undefined;
+  }
+
+  options.onProgress('review', '원고 최종 검사 중…');
+  const review = await runReviewStage(
+    options.workspaceUri,
+    options.project,
+    plan,
+    newAiService(),
+    options.deps.aiProviderRegistry,
+    options.deps.novelReviewRepository,
+  );
+  completed.add('review');
+  await persist({});
+
+  if (review.targets.length === 0) {
+    completed.add('revise-from-review');
+    await persist({});
+    return undefined;
+  }
+
+  if (options.runMode === 'review-approval') {
+    const stems = review.targets.map((target) => target.sceneStem).join(', ');
+    const paused = await pauseForApproval(options, persist, {
+      kind: 'review',
+      info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
+      pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
+    });
+    if (paused) {
+      return paused;
+    }
+  }
+
+  options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
+  const revisedStems = await runReviseFromReviewStage(options, paths, review.targets);
+  completed.add('revise-from-review');
+  await persist({});
+
+  if (options.shouldCancel()) {
+    return await cancel(persist);
+  }
+
+  options.onProgress('review', '재작성분 재검사 중…');
+  await runReviewStage(
+    options.workspaceUri,
+    options.project,
+    plan,
+    newAiService(),
+    options.deps.aiProviderRegistry,
+    options.deps.novelReviewRepository,
+    revisedStems,
+  );
+
+  return undefined;
+}
+
 async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
   const { paths, state, completed, persist, runStageOnce, newAiService } =
     createNovelRunContext(options);
@@ -154,16 +245,18 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
       runAssembleStage(options.workspaceUri, options.deps.assembleManuscriptUseCase),
     );
 
-    await runStageOnce('review', '원고 최종 검사 중…', () =>
-      runReviewStage(
-        options.workspaceUri,
-        options.project,
-        plan,
-        newAiService(),
-        options.deps.aiProviderRegistry,
-        options.deps.novelReviewRepository,
-      ),
-    );
+    const reviewFeedback = await runReviewAndReviseStages({
+      options,
+      paths,
+      plan,
+      completed,
+      persist,
+      runStageOnce,
+      newAiService,
+    });
+    if (reviewFeedback) {
+      return reviewFeedback;
+    }
 
     await runStageOnce('summaries', '장별 요약 중…', () =>
       runSummariesStage(options.workspaceUri, options.deps.summarizeChaptersUseCase),

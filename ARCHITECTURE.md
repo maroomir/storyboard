@@ -797,9 +797,15 @@ ReviewIssue {
 
 ### Phase F: One-Click Novel (초기 구현)
 
-- `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→seeds(C)→장별 draft/검수(D)→assemble/review/summaries(E)를 한 진행 상태로 실행한다.
+- `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→seeds(C)→장별 draft/검수(D)→assemble/review/재작성/재검사/summaries(E)를 한 진행 상태로 실행한다.
+- 최종 검사는 조립 원고에 `<!-- scene: <stem> -->` 주석을 넣어 읽으므로, 각 이슈가 자기 씬을
+  `sceneStem`으로 지목한다. high 이슈는 씬별로 모아 해당 초안을 **1회 재작성**하고, 그 뒤 전권을
+  **1회 재검사**해 보고서를 다시 쓴다. 씬을 특정하지 못한 이슈는 재작성 대상이 아니며 보고서의
+  «재작성 결과»에 건수로 남는다. 재작성이 넘겨받는 이슈는 씬 단위 검사가 볼 수 없는 장거리 모순이라,
+  수정 루프의 첫 회차 검사 결과에 합쳐져 들어간다.
 - 실패·중단 시 단계·장 진행 상태를 `.storyboard/cache/novel-run.json`(재시작 가능한 작업 큐)에 남기고, 다시 실행하면 중단 지점부터 재개한다.
-- 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행 중 하나를 고를 수 있다.
+- 사용자는 전체 자동 실행, outline 승인 후 실행, chapter별 승인 실행, 최종 검사 후 재작성 승인
+  실행(`review-approval`) 중 하나를 고를 수 있다. CLI는 무인 실행이라 항상 `auto`다.
 - 문서 export(PDF/DOCX)와 매우 긴 원고의 분할 검사는 후속에서 다룬다.
 
 ### Phase G: Multi-Agent Collaboration (계획)

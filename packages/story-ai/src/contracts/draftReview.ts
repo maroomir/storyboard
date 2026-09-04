@@ -15,12 +15,15 @@ export interface DraftCritiqueIssue {
   readonly severity: Severity;
   readonly excerpt?: string;
   readonly comment: string;
+  // Present only when the critiqued body carried scene markers, as the final review's does.
+  readonly sceneStem?: string;
 }
 
 export interface ContinuityIssueLike {
   readonly original: string;
   readonly reason: string;
   readonly severity: Severity;
+  readonly sceneStem?: string;
 }
 
 const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
@@ -34,6 +37,7 @@ const draftCritiqueIssueSchema = z.object({
   severity: z.enum(severities).default('low'),
   excerpt: z.string().trim().min(1).optional(),
   comment: z.string().trim().min(1),
+  sceneStem: z.string().trim().min(1).optional(),
 });
 
 export function coerceCritiqueIssues(rawText: string): DraftCritiqueIssue[] {

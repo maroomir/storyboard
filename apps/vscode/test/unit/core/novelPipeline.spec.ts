@@ -16,6 +16,9 @@ const runReviseDraftWorkflowMock = vi.fn(async () => ({
 }))
 const recordRevisionEntryMock = vi.fn(async () => undefined)
 const summarizeChaptersMock = vi.fn()
+const checkContinuityMock = vi.fn(async () => [] as unknown[])
+const critiqueDraftMock = vi.fn(async () => [] as unknown[])
+const saveReviewMock = vi.fn(async () => undefined)
 
 vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
@@ -122,8 +125,8 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
           styleRules: []
         }),
         generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
-        checkContinuity: async (): Promise<unknown[]> => [],
-        critiqueDraft: async (): Promise<unknown[]> => [],
+        checkContinuity: async (): Promise<unknown[]> => checkContinuityMock(),
+        critiqueDraft: async (): Promise<unknown[]> => critiqueDraftMock(),
         summarizeChapter: async (): Promise<string> => ""
       }),
       getTaskProvider: () => "mock"
@@ -137,10 +140,16 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     logger: { error: () => undefined, info: () => undefined } as never,
     novelReviewRepository: {
       loadReviewSource: async (): Promise<unknown> => ({
-        draftsByOrder: new Map(),
-        canonFactLines: []
+        draftsByOrder: new Map([
+          [1, { stem: "01-s1", body: "씬1 본문" }],
+          [2, { stem: "02-s2", body: "씬2 본문" }],
+          [3, { stem: "03-s3", body: "씬3 본문" }]
+        ]),
+        canonFactLines: ["hero — 나이: 17"]
       }),
-      saveReview: async (): Promise<void> => undefined
+      saveReview: async (_root: unknown, markdown: string): Promise<void> => {
+        saveReviewMock(markdown)
+      }
     } as never,
     novelRunStateRepository: {
       readExisting: async (): Promise<undefined> => undefined,
@@ -195,12 +204,29 @@ const expectedStageOrder: NovelStageName[] = [
   "summaries"
 ]
 
+// With no high-severity findings the revise stage emits no progress but still completes, so a
+// resume does not run the review a second time.
+const expectedCompletedStages: NovelStageName[] = [
+  "outline",
+  "seeds",
+  "chapters",
+  "assemble",
+  "review",
+  "revise-from-review",
+  "summaries"
+]
+
 describe("NovelPipeline", () => {
   beforeEach(() => {
     generateDraftMock.mockClear()
     runReviseDraftWorkflowMock.mockClear()
     recordRevisionEntryMock.mockClear()
     summarizeChaptersMock.mockClear()
+    checkContinuityMock.mockClear()
+    critiqueDraftMock.mockClear()
+    saveReviewMock.mockClear()
+    checkContinuityMock.mockResolvedValue([])
+    critiqueDraftMock.mockResolvedValue([])
     generateDraftMock.mockResolvedValue({ ok: true, kind: "generated" })
   })
 
@@ -268,7 +294,7 @@ describe("NovelPipeline", () => {
     expect(result.outcome).toBe("completed")
     const finalState = harness.persistedStates.at(-1)
     expect(finalState?.status).toBe("done")
-    expect(finalState?.completedStages).toEqual(expectedStageOrder)
+    expect(finalState?.completedStages).toEqual(expectedCompletedStages)
   })
 
   it("skips stages already present in resumeState.completedStages", async () => {
@@ -342,5 +368,105 @@ describe("NovelPipeline", () => {
     const finalState = harness.persistedStates.at(-1)
     expect(finalState?.status).toBe("failed")
     expect(finalState?.lastError).toBeDefined()
+  })
+
+  describe("review feedback", () => {
+    const highContinuityIssue = {
+      start: 0,
+      end: 3,
+      original: "열여덟 살",
+      reason: "설정은 17세다",
+      severity: "high",
+      sceneStem: "02-s2"
+    }
+
+    it("rewrites only the scenes the review named, once each", async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
+      const harness = createHarness()
+
+      await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      const reviseFromReview = runReviseDraftWorkflowMock.mock.calls.filter(
+        (call) => (call[0] as { maxIterations: number }).maxIterations === 1
+      )
+      expect(reviseFromReview).toHaveLength(1)
+      expect((reviseFromReview[0]?.[0] as { sceneStem: string }).sceneStem).toBe("02-s2")
+      expect(
+        (reviseFromReview[0]?.[0] as { seedIssues: { continuityIssues: unknown[] } }).seedIssues
+          .continuityIssues
+      ).toEqual([highContinuityIssue])
+    })
+
+    it("reviews the volume again after rewriting so the report matches the shipped text", async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
+      runReviseDraftWorkflowMock.mockResolvedValue({
+        passed: true,
+        revisionCount: 1,
+        remainingBlocking: 0,
+        cancelled: false,
+        instructions: []
+      })
+      const harness = createHarness()
+
+      await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      expect(checkContinuityMock).toHaveBeenCalledTimes(2)
+      expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain("재작성한 씬: 02-s2")
+    })
+
+    it("skips the rewrite entirely when the review found no high issues", async () => {
+      const harness = createHarness()
+
+      await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+      expect(
+        runReviseDraftWorkflowMock.mock.calls.filter(
+          (call) => (call[0] as { maxIterations: number }).maxIterations === 1
+        )
+      ).toHaveLength(0)
+    })
+
+    it("reports a high issue that named no draft instead of dropping it", async () => {
+      checkContinuityMock.mockResolvedValueOnce([
+        { ...highContinuityIssue, sceneStem: "99-unknown" }
+      ])
+      const harness = createHarness()
+
+      await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+      expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain(
+        "씬을 특정하지 못해 재작성하지 못한 high 이슈: 1건"
+      )
+    })
+
+    it("pauses for approval before rewriting in review-approval mode", async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
+      const harness = createHarness({ runMode: "review-approval" })
+
+      const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      expect(result.outcome).toBe("completed")
+      expect(harness.approvals.map((approval) => approval.kind)).toContain("review")
+      expect(harness.approvals.at(-1)?.info).toContain("02-s2")
+    })
+
+    it("stops without rewriting when review approval is declined", async () => {
+      checkContinuityMock.mockResolvedValueOnce([highContinuityIssue])
+      const harness = createHarness({
+        runMode: "review-approval",
+        requestApproval: async (): Promise<boolean> => false
+      })
+
+      const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+      expect(result.outcome).toBe("paused")
+      expect(
+        runReviseDraftWorkflowMock.mock.calls.filter(
+          (call) => (call[0] as { maxIterations: number }).maxIterations === 1
+        )
+      ).toHaveLength(0)
+    })
   })
 })

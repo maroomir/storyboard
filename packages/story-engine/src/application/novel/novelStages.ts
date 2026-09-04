@@ -7,7 +7,12 @@ import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import type { StoryUri } from '@storyboard/story-format';
-import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type {
+  AiProviderRegistry,
+  ContinuityIssueLike,
+  DraftCritiqueIssue,
+} from '@storyboard/story-ai';
+import type { ReviseSeedIssues } from '@storyboard/story-pipeline';
 import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type {
@@ -209,6 +214,17 @@ export async function runAssembleStage(
   }
 }
 
+export interface ReviewStageResult {
+  // Scenes with at least one high-severity finding, each with the issues to answer.
+  readonly targets: readonly ReviewTarget[];
+  readonly highCount: number;
+}
+
+export interface ReviewTarget {
+  readonly sceneStem: string;
+  readonly seedIssues: ReviseSeedIssues;
+}
+
 export async function runReviewStage(
   workspaceUri: StoryUri,
   project: StoryboardProject,
@@ -216,14 +232,21 @@ export async function runReviewStage(
   aiService: NovelAiService,
   registry: AiProviderRegistry,
   reviewRepository: INovelReviewRepository,
-): Promise<void> {
+  revisedStems: readonly string[] = [],
+): Promise<ReviewStageResult> {
   const { draftsByOrder, canonFactLines } = await reviewRepository.loadReviewSource(workspaceUri);
-  const manuscript = assembleManuscript({ plan, projectName: project.name, draftsByOrder });
+  const manuscript = assembleManuscript({
+    plan,
+    projectName: project.name,
+    draftsByOrder,
+    annotateSceneStems: true,
+  });
   const characters = collectCharacterIds(plan);
 
   const [continuityIssues, critiqueIssues] = await Promise.all([
     aiService.checkContinuity(manuscript.volumeMarkdown, canonFactLines, {
       providerId: registry.getTaskProvider('continuityCheck'),
+      hasSceneMarkers: true,
     }),
     aiService.critiqueDraft(
       {
@@ -233,10 +256,14 @@ export async function runReviewStage(
         facts: canonFactLines,
         styleConstraints: project.setting?.styleConstraints ?? [],
         qualityCriteria: project.setting?.qualityCriteria ?? [],
+        hasSceneMarkers: true,
       },
       { providerId: registry.getTaskProvider('draftCritique') },
     ),
   ]);
+
+  const knownStems = new Set([...draftsByOrder.values()].map((draft) => draft.stem));
+  const targets = groupHighIssuesByScene(continuityIssues, critiqueIssues, knownStems);
 
   const reportMarkdown = buildManuscriptReviewMarkdown({
     projectName: project.name,
@@ -244,9 +271,134 @@ export async function runReviewStage(
     generatedAt: new Date().toISOString(),
     continuityIssues,
     critiqueIssues,
+    revisedStems,
+    unroutedHighCount: countUnroutedHighIssues(continuityIssues, critiqueIssues, knownStems),
   });
 
   await reviewRepository.saveReview(workspaceUri, reportMarkdown);
+
+  return {
+    targets,
+    highCount:
+      continuityIssues.filter((issue) => issue.severity === 'high').length +
+      critiqueIssues.filter((issue) => issue.severity === 'high').length,
+  };
+}
+
+// An issue can only be rewritten if the review named a scene that actually has a draft. The rest
+// stay in the report — silently dropping them would read as "nothing to fix".
+function groupHighIssuesByScene(
+  continuityIssues: readonly ContinuityIssueLike[],
+  critiqueIssues: readonly DraftCritiqueIssue[],
+  knownStems: ReadonlySet<string>,
+): ReviewTarget[] {
+  const byStem = new Map<
+    string,
+    { continuity: ContinuityIssueLike[]; critique: DraftCritiqueIssue[] }
+  >();
+
+  const bucketFor = (
+    sceneStem: string | undefined,
+  ): { continuity: ContinuityIssueLike[]; critique: DraftCritiqueIssue[] } | undefined => {
+    if (sceneStem === undefined || !knownStems.has(sceneStem)) {
+      return undefined;
+    }
+
+    const existing = byStem.get(sceneStem);
+    if (existing) {
+      return existing;
+    }
+
+    const created = {
+      continuity: [] as ContinuityIssueLike[],
+      critique: [] as DraftCritiqueIssue[],
+    };
+    byStem.set(sceneStem, created);
+    return created;
+  };
+
+  for (const issue of continuityIssues) {
+    if (issue.severity !== 'high') {
+      continue;
+    }
+    bucketFor(issue.sceneStem)?.continuity.push(issue);
+  }
+
+  for (const issue of critiqueIssues) {
+    if (issue.severity !== 'high') {
+      continue;
+    }
+    bucketFor(issue.sceneStem)?.critique.push(issue);
+  }
+
+  return [...byStem.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([sceneStem, issues]) => ({
+      sceneStem,
+      seedIssues: { continuityIssues: issues.continuity, critiqueIssues: issues.critique },
+    }));
+}
+
+function countUnroutedHighIssues(
+  continuityIssues: readonly ContinuityIssueLike[],
+  critiqueIssues: readonly DraftCritiqueIssue[],
+  knownStems: ReadonlySet<string>,
+): number {
+  const isUnrouted = (sceneStem: string | undefined): boolean =>
+    sceneStem === undefined || !knownStems.has(sceneStem);
+
+  return (
+    continuityIssues.filter((issue) => issue.severity === 'high' && isUnrouted(issue.sceneStem))
+      .length +
+    critiqueIssues.filter((issue) => issue.severity === 'high' && isUnrouted(issue.sceneStem))
+      .length
+  );
+}
+
+// One rewrite pass per named scene, carrying the volume-level findings a per-scene check could not
+// have seen. The caller reviews once more afterwards so the report reflects the rewritten text.
+export async function runReviseFromReviewStage(
+  options: NovelPipelineOptions,
+  paths: StoryboardProjectPaths,
+  targets: readonly ReviewTarget[],
+): Promise<string[]> {
+  const revisedStems: string[] = [];
+
+  for (const target of targets) {
+    if (options.shouldCancel()) {
+      return revisedStems;
+    }
+
+    options.onProgress('revise-from-review', `«${target.sceneStem}» 재작성 중…`);
+
+    const result = await options.deps.reviseDraftUseCase.execute({
+      workspaceUri: options.workspaceUri,
+      paths,
+      draftUri: draftPath(options.workspaceUri, target.sceneStem),
+      sceneStem: target.sceneStem,
+      maxIterations: 1,
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? 50,
+      reviseScoreThreshold: 0,
+      seedIssues: target.seedIssues,
+      shouldCancel: options.shouldCancel,
+    });
+
+    if (result.revisionCount > 0) {
+      revisedStems.push(target.sceneStem);
+    }
+
+    await recordRevisionEntry(options.deps.fileSystem, paths, {
+      sceneStem: target.sceneStem,
+      checkedAt: new Date().toISOString(),
+      revisionCount: result.revisionCount,
+      remainingBlocking: result.remainingBlocking,
+      instructions: result.instructions,
+      preservedOriginal: result.preservedOriginal,
+      rejection: result.rejection,
+    });
+  }
+
+  return revisedStems;
 }
 
 export async function runSummariesStage(

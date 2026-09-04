@@ -26,6 +26,8 @@ export interface ContinuityIssue {
   readonly original: string;
   readonly reason: string;
   readonly severity: Severity;
+  // Present only when the checked body carried scene markers, as the final review's does.
+  readonly sceneStem?: string;
 }
 
 export function isAttributed(attribution: UsageAttribution): boolean {
@@ -128,6 +130,7 @@ export function toContinuityIssue(value: unknown): ContinuityIssue[] {
     readonly original?: unknown;
     readonly reason?: unknown;
     readonly severity?: unknown;
+    readonly sceneStem?: unknown;
   };
 
   if (
@@ -152,6 +155,9 @@ export function toContinuityIssue(value: unknown): ContinuityIssue[] {
       original: candidate.original,
       reason: candidate.reason,
       severity,
+      ...(typeof candidate.sceneStem === 'string' && candidate.sceneStem.trim().length > 0
+        ? { sceneStem: candidate.sceneStem.trim() }
+        : {}),
     },
   ];
 }

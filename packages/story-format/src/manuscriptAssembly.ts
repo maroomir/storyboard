@@ -10,6 +10,10 @@ export interface AssembleManuscriptInput {
   readonly plan: ChapterPlan;
   readonly projectName: string;
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
+  // Emits `<!-- scene: <stem> -->` before each scene. The final review reads the whole volume at
+  // once, so an issue it finds can only be routed back to a draft file if the text says which
+  // scene it came from. Off for the manuscript a reader opens.
+  readonly annotateSceneStems?: boolean;
 }
 
 export interface AssembledChapter {
@@ -50,7 +54,12 @@ export function assembleManuscript(input: AssembleManuscriptInput): AssembledMan
 
       if (draft) {
         includedCount += 1;
-        return sceneBlock(flatScene.scene.title, draft.body, sceneIndexInGroup);
+        return sceneBlock(
+          flatScene.scene.title,
+          draft.body,
+          sceneIndexInGroup,
+          input.annotateSceneStems === true ? draft.stem : undefined,
+        );
       }
 
       missingCount += 1;
@@ -174,9 +183,14 @@ function demoteHeadings(chapterMarkdown: string): string {
     .join('\n');
 }
 
-function sceneBlock(title: string, body: string, sceneIndexInGroup: number): string {
+export function sceneStemMarker(stem: string): string {
+  return `<!-- scene: ${stem} -->`;
+}
+
+function sceneBlock(title: string, body: string, sceneIndexInGroup: number, stem?: string): string {
   const heading = `## ${title.trim().length > 0 ? title : `장면 ${sceneIndexInGroup + 1}`}`;
-  return `${heading}\n\n${body.trim()}`;
+  const marker = stem === undefined ? '' : `${sceneStemMarker(stem)}\n\n`;
+  return `${heading}\n\n${marker}${body.trim()}`;
 }
 
 function missingSceneBlock(title: string, sceneIndexInGroup: number): string {

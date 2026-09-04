@@ -36,7 +36,7 @@ export interface NovelPipelineDependencies {
   readonly fileSystem: IFileSystem;
 }
 
-export type NovelApprovalKind = 'outline' | 'chapter';
+export type NovelApprovalKind = 'outline' | 'chapter' | 'review';
 
 export interface NovelPipelineRunOptions {
   readonly workspaceUri: StoryUri;

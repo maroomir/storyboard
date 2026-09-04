@@ -35,6 +35,7 @@ English README: [`README.en.md`](README.en.md)
 - **씬 기반 카드 구성**: `scene/*.card`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
 - 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
 - `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`.storyboard/memory/summaries.md`), 복선 체크리스트(`FORESHADOWING.md`)
+- 최종 검사가 찾은 high 이슈를 해당 씬 초안에 되먹여 1회 재작성하고 전권을 다시 검사. 재작성한 씬은 `REVIEW.md`의 «재작성 결과»에 남음
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
