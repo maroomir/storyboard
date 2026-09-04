@@ -60,6 +60,7 @@ export function createWorkspaceFixture(options?: { readonly initGit?: boolean })
     STORYBOARD_RELATIVE_PATHS.sceneDirectory,
     STORYBOARD_RELATIVE_PATHS.draftDirectory,
     STORYBOARD_RELATIVE_PATHS.cacheDirectory,
+    STORYBOARD_RELATIVE_PATHS.memoryDirectory,
   ]) {
     mkdirSync(join(root, ...directory.split('/')), { recursive: true });
   }

@@ -15,6 +15,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 - One VSCode workspace folder = one novel project.
 - Tracked content: `character/`, `background/`, `scene/`, `.storyboard/project.json` (and optional `.storyboard/settings.json`).
 - Regeneratable: `draft/`, `.storyboard/cache/`—default gitignore targets; do not treat as durable user source.
+- Durable AI memory: `.storyboard/memory/` (story state, persona/background memory, dialogue sidecars, chapter summaries) is tracked—no committed input reproduces it.
 
 ## `.card` (YAML)
 

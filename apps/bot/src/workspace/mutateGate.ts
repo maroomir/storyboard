@@ -112,6 +112,27 @@ export class MutateGate {
     return this.commitTracked(written, commitMessage) ?? { status: 'committed', paths: written };
   }
 
+  // AI memory the engine already wrote through the file system port. The bytes are on disk and
+  // must not be rewritten — re-applying identical content would settle as a no-op and leave the
+  // files uncommitted — so this stages and commits the existing paths and nothing else.
+  public commitExisting(relativePaths: readonly string[], commitMessage: string): MutateOutcome {
+    if (relativePaths.length === 0) {
+      return { status: 'no-op' };
+    }
+
+    const blocker = this.git.findBlocker();
+    if (blocker !== undefined) {
+      return { status: 'blocked', detail: describeBlocker(blocker) };
+    }
+
+    return (
+      this.commitTracked(relativePaths, commitMessage) ?? {
+        status: 'committed',
+        paths: [...relativePaths],
+      }
+    );
+  }
+
   private checkAndDelete(deletion: WorkspaceDeletion): 'deleted' | StaleFile['reason'] {
     const absolutePath = this.store.absolutePath(deletion.relativePath);
     const current = tryReadTextSync(absolutePath);

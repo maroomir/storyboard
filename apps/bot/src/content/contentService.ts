@@ -198,6 +198,12 @@ export class ContentService {
     );
   }
 
+  // AI memory the engine already wrote to disk through the file system port. One commit carries
+  // every memory file a generation job touched, instead of one commit per file or none at all.
+  public commitMemory(relativePaths: readonly string[], commitMessage: string): MutateOutcome {
+    return this.gate.commitExisting(relativePaths, commitMessage);
+  }
+
   // Gitignored artifacts (manuscript/) overwrite in place: they are always reproducible from the
   // tracked inputs, so last-writer-wins is acceptable and no commit is attempted.
   public async writeArtifact(relativePath: string, body: string): Promise<MutateOutcome> {

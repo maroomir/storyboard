@@ -25,7 +25,7 @@ export interface SceneContextWorkspacePaths {
   readonly backgroundDirectory: StoryUri;
   readonly draftDirectory: StoryUri;
   readonly bibleCanon?: StoryUri;
-  readonly manuscriptSummary?: StoryUri;
+  readonly chapterSummaries?: StoryUri;
   readonly storyState?: StoryUri;
   readonly joinPath: (base: StoryUri, ...pathSegments: string[]) => StoryUri;
 }
@@ -87,12 +87,12 @@ async function readRollingSummary(
   paths: SceneContextWorkspacePaths,
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<string | undefined> {
-  if (!paths.manuscriptSummary) {
+  if (!paths.chapterSummaries) {
     return undefined;
   }
 
   try {
-    const content = new TextDecoder().decode(await fileSystem.readFile(paths.manuscriptSummary));
+    const content = new TextDecoder().decode(await fileSystem.readFile(paths.chapterSummaries));
     const trimmed = content.trim();
     return trimmed.length > 0 ? boundSummary(trimmed) : undefined;
   } catch {

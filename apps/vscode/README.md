@@ -16,7 +16,7 @@ English README: [`README.en.md`](README.en.md)
 - outline에서 `scene/*.card` 씬 시드를 만들고 `draft/*.md` 초안을 생성
 - 씬 생성은 **뼈대 → 대사 다듬기 → 구간 살붙임 → 기계 검증** 4단으로 진행. 씬 전체의 사건 순서·등장·종료 지점을 뼈대에서 한 번에 확정한 뒤 문장만 두껍게 하므로, 같은 인물이 두 번 처음 등장하거나 도입이 반복되는 결함이 구조적으로 나오지 않음
 - 생성 검증은 AI 없이 결정론적으로 동작: 뼈대에 없던 인물·다른 문자 체계·사라진 대사·분량 미달을 잡아 재시도하고, 남은 위반은 초안 frontmatter의 `warnings`로 올려 어느 구간을 먼저 볼지 알림
-- 씬 간 이야기 상태 원장(`.storyboard/cache/storyState.md`): 확정 사실·인물 관계와 말투·공개된 정보·살아 있는 모티프를 씬 순서와 함께 누적해 다음 씬 프롬프트와 연속성 검사에 주입. 앞 씬을 재생성해도 뒤 씬 상태가 새어 들어가지 않음
+- 씬 간 이야기 상태 원장(`.storyboard/memory/storyState.md`): 확정 사실·인물 관계와 말투·공개된 정보·살아 있는 모티프를 씬 순서와 함께 누적해 다음 씬 프롬프트와 연속성 검사에 주입. 앞 씬을 재생성해도 뒤 씬 상태가 새어 들어가지 않음
 - 캐넌 공개 시점(`revealFrom`): 사실이 **참이 되는 시점**(`validFrom`)과 **밝혀지는 시점**을 분리해, 1화부터 참인 결말 반전이 초반 본문에 누설되지 않게 함
 - 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 diff로 확인 → 승인해야 반영. 대화는 대상별로 저장되어 이어집니다
@@ -34,7 +34,7 @@ English README: [`README.en.md`](README.en.md)
 - **이야기 완결**: `scene/*.card`만 이어서 읽고 기존 씬을 건드리지 않은 채 끝번호 뒤에 완결 씬을 제안합니다. 연속된 앞부분만 선택해 VS Code diff와 최종 확인 뒤 추가합니다.
 - **씬 기반 카드 구성**: `scene/*.card`를 유일한 새 사실 근거로 읽어 신규 인물·장소 카드와 기존 카드의 필드별 보강안을 함께 제안합니다. 선택한 항목만 diff 검토 뒤 반영하며, 신규 캐릭터는 profile PNG를 만들지 않습니다.
 - 씬별 검수·재작성 루프와 `revision-plan.yaml` 기록
-- `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`SUMMARY.md`), 복선 체크리스트(`FORESHADOWING.md`)
+- `manuscript/` 원고 조립, 최종 검사(`REVIEW.md`), 장별 요약(`.storyboard/memory/summaries.md`), 복선 체크리스트(`FORESHADOWING.md`)
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프

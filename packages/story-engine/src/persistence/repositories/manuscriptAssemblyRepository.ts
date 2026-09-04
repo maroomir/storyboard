@@ -13,7 +13,6 @@ import type {
   ManuscriptReviewSource,
 } from '#engine/application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '#engine/application/manuscript/summarizeChaptersUseCase';
-import { summaryFileName } from '#engine/domain/chapterSummaries';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { AssembledManuscript } from '@storyboard/story-format';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
@@ -101,8 +100,8 @@ export class ManuscriptAssemblyRepository
 
   public async saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.manuscriptDirectory);
-    const summaryUri = joinStoryPath(paths.manuscriptDirectory, summaryFileName);
+    await this.fileSystem.createDirectory(paths.memoryDirectory);
+    const summaryUri = paths.chapterSummaries;
     await this.fileSystem.writeFile(summaryUri, new TextEncoder().encode(markdown));
     return summaryUri;
   }

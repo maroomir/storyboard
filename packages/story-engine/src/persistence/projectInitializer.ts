@@ -18,6 +18,7 @@ export async function createStoryboardDirectories(
 ): Promise<void> {
   await Promise.all([
     fs.createDirectory(paths.sceneCacheDirectory),
+    fs.createDirectory(paths.memoryDirectory),
     fs.createDirectory(paths.characterProfileDirectory),
     fs.createDirectory(paths.backgroundDirectory),
     fs.createDirectory(paths.sceneDirectory),
@@ -61,5 +62,6 @@ Storyboard 프로젝트 노트입니다.
 - \`background/\`: 배경 카드
 - \`scene/\`: 사용자가 작성하는 씬 시드
 - \`draft/\`: AI가 생성하는 원고 산출물
+- \`.storyboard/memory/\`: 재생성할 수 없는 AI 기억 (이야기 상태, 페르소나, 챕터 요약)
 `;
 }

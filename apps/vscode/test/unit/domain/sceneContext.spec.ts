@@ -403,7 +403,7 @@ describe("readPreviousSceneContext", () => {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
-    manuscriptSummary: "/mock/workspace/manuscript/SUMMARY.md",
+    chapterSummaries: "/mock/workspace/.storyboard/memory/summaries.md",
     joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
 
@@ -449,12 +449,12 @@ describe("readPreviousSceneContext", () => {
 })
 
 describe("readPreviousSceneContext rolling summary", () => {
-  const summaryPath = "/mock/workspace/manuscript/SUMMARY.md"
+  const summaryPath = "/mock/workspace/.storyboard/memory/summaries.md"
   const mockPaths = {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
-    manuscriptSummary: summaryPath,
+    chapterSummaries: summaryPath,
     joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
 
@@ -467,7 +467,7 @@ describe("readPreviousSceneContext rolling summary", () => {
   }
 
   const readPrevious = (
-    paths: typeof mockPaths | Omit<typeof mockPaths, "manuscriptSummary">,
+    paths: typeof mockPaths | Omit<typeof mockPaths, "chapterSummaries">,
     order: number,
     fileSystem: MockFileSystem
   ): Promise<string | undefined> =>
@@ -576,8 +576,8 @@ describe("readPreviousSceneContext rolling summary", () => {
 
   it("QAS-C6-10: skips the summary entirely when no path member is present", async () => {
     const fileSystem = new MockFileSystem()
-    const { manuscriptSummary, ...pathsWithoutSummary } = mockPaths
-    void manuscriptSummary
+    const { chapterSummaries, ...pathsWithoutSummary } = mockPaths
+    void chapterSummaries
     fileSystem.setFile(summaryPath, "SUMMARY-MARKER should be ignored without a path member")
     setDraftTail(fileSystem, "TAIL-MARKER")
 
@@ -609,12 +609,12 @@ describe("readPreviousSceneContext rolling summary", () => {
 
 describe("buildNarrativeContext", () => {
   const biblePath = "/mock/workspace/.storyboard/bible/canon.yaml"
-  const summaryPath = "/mock/workspace/manuscript/SUMMARY.md"
+  const summaryPath = "/mock/workspace/.storyboard/memory/summaries.md"
   const basePaths = {
     characterDirectory: "/mock/workspace/character",
     backgroundDirectory: "/mock/workspace/background",
     draftDirectory: "/mock/workspace/draft",
-    manuscriptSummary: summaryPath,
+    chapterSummaries: summaryPath,
     joinPath: (base: unknown, ...segments: string[]): string => `${base as string}/${segments.join("/")}`
   }
   const firstScene: SceneFile = {
@@ -693,7 +693,7 @@ describe("buildNarrativeContext", () => {
     const secondContext: SceneContext = { scene: secondScene, characters: [eliaCard, jihoonCard] }
 
     const result = await buildNarrativeContext(
-      { ...basePaths, manuscriptSummary: undefined },
+      { ...basePaths, chapterSummaries: undefined },
       secondContext,
       fileSystem
     )
