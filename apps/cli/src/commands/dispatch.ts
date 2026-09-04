@@ -14,6 +14,12 @@ import {
 import { createCliContainer } from '@/container';
 import { renderCommandHelp, renderUnknownCommand, renderUsage } from '@/help';
 import { findCommandSpec } from './catalog';
+import {
+  completionShells,
+  computeCompletions,
+  formatCompletions,
+  renderCompletionScript,
+} from './completion';
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
 
@@ -101,6 +107,14 @@ export async function dispatch(
   argv: readonly string[],
   deps: DispatchDependencies,
 ): Promise<DispatchResult> {
+  // The shell hands over the half-typed line verbatim, so it must not go through the parser,
+  // which would reject the partial flag the author is in the middle of typing.
+  if (argv[0] === '__complete') {
+    const completions = computeCompletions(argv.slice(1), { cwd: deps.cwd });
+    const text = formatCompletions(completions);
+    return { exitCode: 0, stdout: text.length > 0 ? `${text}\n` : '', stderr: '' };
+  }
+
   const parsed = parseArguments(argv);
   const mode: OutputMode = { json: argv.includes('--json') };
 
@@ -109,7 +123,7 @@ export async function dispatch(
   }
 
   // `help <verb>` and `tui` are not handlers, but they must resolve as verbs.
-  const args = resolveVerb(parsed, [...Object.keys(commands), 'help', 'tui']);
+  const args = resolveVerb(parsed, [...Object.keys(commands), 'help', 'tui', 'completion']);
 
   if (flagBoolean(args.flags, 'version')) {
     return { exitCode: 0, stdout: `${deps.version}\n`, stderr: '' };
@@ -134,6 +148,15 @@ export async function dispatch(
     }
 
     return { exitCode: 0, stdout: commandHelp ?? renderUsage(deps.version), stderr: '' };
+  }
+
+  // `eval "$(storyboard completion zsh)"` runs on every shell start, so it must stay a pure
+  // print: no container, no config read, nothing on stderr.
+  if (verb === 'completion') {
+    const script = renderCompletionScript(args.positionals[0] ?? '');
+    return script === undefined
+      ? failure(`셸을 지정해 주세요: storyboard completion <${completionShells.join('|')}>`, mode)
+      : { exitCode: 0, stdout: script, stderr: '' };
   }
 
   const handler = commands[verb];

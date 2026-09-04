@@ -31,6 +31,22 @@ storyboard doctor                     # what is still missing, with the command 
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
 verb suggests the closest real ones. `-v` prints the version.
 
+## Tab completion
+
+`install.sh` registers completion for the shell it runs in (zsh, bash or fish) by appending one
+line to your rc file, guarded by a `# storyboard completion` marker. To do it by hand:
+
+```bash
+eval "$(storyboard completion zsh)"      # ~/.zshrc
+eval "$(storyboard completion bash)"     # ~/.bashrc
+storyboard completion fish | source      # ~/.config/fish/conf.d/storyboard.fish
+```
+
+Tab then completes verbs (with a one-line description in zsh and fish), the flags each verb takes,
+provider and model ids, config keys, and the scene stems and card ids in the current workspace (or
+the one named by `--workspace`). The shell asks the hidden `storyboard __complete <words…>` verb,
+which reads the same command catalog the help does.
+
 ## Interactive screen
 
 `storyboard` with no arguments at a terminal opens an Ink-based screen: a header with the
