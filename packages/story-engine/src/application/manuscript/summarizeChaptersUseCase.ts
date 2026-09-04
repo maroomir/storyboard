@@ -1,16 +1,26 @@
 import type { StoryUri } from '@storyboard/story-format';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import { buildChapterSummariesMarkdown, type ChapterSummary } from '#engine/domain/chapterSummaries';
+import {
+  buildChapterSummariesMarkdown,
+  mergeChapterSummary,
+  parseChapterSummariesMarkdown,
+  type ChapterSummary,
+} from '#engine/domain/chapterSummaries';
 import { assembleManuscript } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadAssemblySource(workspaceRoot: StoryUri): Promise<ManuscriptAssemblySource>;
+  readChapterSummaries(workspaceRoot: StoryUri): Promise<string | undefined>;
   saveChapterSummaries(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri>;
 }
 
 export type SummarizeChaptersOptions = {
+  // Summarize only this chapter (0-based) and merge it into the existing file. The novel pipeline
+  // passes it after each chapter so a later chapter generates against the story so far; omitting it
+  // resummarizes the whole manuscript.
+  readonly chapterIndex?: number;
   readonly onProgress?: (current: number, total: number) => void;
   readonly shouldCancel?: () => boolean;
 };
@@ -52,21 +62,34 @@ export class SummarizeChaptersUseCase {
         plan: source.plan,
         projectName: source.projectName,
       });
+      const targeted =
+        options.chapterIndex === undefined
+          ? manuscript.chapters
+          : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
+
+      if (targeted.length === 0) {
+        return { kind: 'missing_drafts', ok: false };
+      }
+
       const aiService = this.aiGateway.createService(workspaceRoot);
       const providerId = this.aiGateway.getTaskProvider('chapterSummary');
-      const summaries: ChapterSummary[] = [];
+      let summaries =
+        options.chapterIndex === undefined ? [] : await this.readExisting(workspaceRoot);
 
-      for (const [index, chapter] of manuscript.chapters.entries()) {
+      for (const [index, chapter] of targeted.entries()) {
         if (options.shouldCancel?.()) {
           return { kind: 'cancelled', ok: false };
         }
 
-        options.onProgress?.(index + 1, manuscript.chapters.length);
+        options.onProgress?.(index + 1, targeted.length);
         const summary = await aiService.summarizeChapter(
           { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
           { providerId },
         );
-        summaries.push({ chapterTitle: chapter.chapterTitle, summary });
+        summaries = mergeChapterSummary(summaries, {
+          chapterTitle: chapter.chapterTitle,
+          summary,
+        });
       }
 
       const summaryUri = await this.repository.saveChapterSummaries(
@@ -82,5 +105,10 @@ export class SummarizeChaptersUseCase {
         ok: false,
       };
     }
+  }
+
+  private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
+    const markdown = await this.repository.readChapterSummaries(workspaceRoot);
+    return markdown === undefined ? [] : parseChapterSummariesMarkdown(markdown);
   }
 }

@@ -64,7 +64,7 @@ export async function buildSceneContext(
   };
 }
 
-const summaryContextBudget = 2000;
+const summaryContextBudget = 8000;
 
 export async function readPreviousSceneContext(
   paths: SceneContextWorkspacePaths,
@@ -100,11 +100,45 @@ async function readRollingSummary(
   }
 }
 
+// Over budget, the oldest chapters are compressed to their first line rather than the whole file
+// being cut from the front: a raw tail cut drops the opening chapters entirely, which is exactly
+// where a long-range setup a later scene has to honour was established.
 function boundSummary(content: string): string {
   const trimmed = content.trim();
-  return trimmed.length <= summaryContextBudget
-    ? trimmed
-    : trimmed.slice(-summaryContextBudget).trim();
+
+  if (trimmed.length <= summaryContextBudget) {
+    return trimmed;
+  }
+
+  const [preamble, ...chapters] = trimmed.split(/^(?=## )/m);
+  const sections = [preamble ?? '', ...chapters];
+
+  for (
+    let index = 1;
+    index < sections.length && joinSections(sections).length > summaryContextBudget;
+    index += 1
+  ) {
+    sections[index] = firstLines(sections[index] ?? '');
+  }
+
+  const compressed = joinSections(sections);
+  return compressed.length <= summaryContextBudget
+    ? compressed
+    : compressed.slice(-summaryContextBudget).trim();
+}
+
+function joinSections(sections: readonly string[]): string {
+  return sections.join('').trim();
+}
+
+// The heading plus the first sentence-bearing line — enough to say which chapter it was and what
+// happened, without the beat-by-beat detail a recent chapter still needs.
+function firstLines(section: string): string {
+  const lines = section.split('\n');
+  const heading = lines[0] ?? '';
+  const summary = lines.slice(1).find((line) => line.trim().length > 0) ?? '';
+
+  return `${heading}\n${summary.trim()}\n\n`;
 }
 
 async function readPreviousDraftTail(

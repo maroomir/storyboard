@@ -152,6 +152,8 @@ export async function runChapterStages(
 
     await runChapterDraftsAndRevise(group, paths, options);
 
+    await refreshChapterSummary(options, chapterIndex);
+
     await persist({ nextChapterIndex: chapterIndex + 1 });
 
     if (options.shouldCancel()) {
@@ -174,6 +176,25 @@ export async function runChapterStages(
   completed.add('chapters');
   await persist({});
   return undefined;
+}
+
+// The rolling summary is what a later chapter reads as "the story so far", so it is refreshed as
+// each chapter lands rather than only at the end of the run. A failure here costs the next chapter
+// its recap, not the run, so it is reported and the pipeline continues.
+async function refreshChapterSummary(
+  options: NovelPipelineOptions,
+  chapterIndex: number,
+): Promise<void> {
+  const result = await options.deps.summarizeChaptersUseCase.execute(options.workspaceUri, {
+    chapterIndex,
+  });
+
+  if (!result.ok) {
+    options.onProgress(
+      'chapters',
+      `${chapterIndex + 1}장 요약을 갱신하지 못했습니다. 다음 장은 이전 요약으로 진행합니다.`,
+    );
+  }
 }
 
 export async function runAssembleStage(

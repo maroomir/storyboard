@@ -244,7 +244,7 @@ npm run build
 
 1. **`Storyboard: Assemble Manuscript`** 실행 → `manuscript/NN-chapter.md`, `manuscript/manuscript.md`, `manuscript/FORESHADOWING.md`가 생성되는지 확인한다.
 2. **`Storyboard: Review Manuscript`** 실행 → `manuscript/REVIEW.md`가 생성되고 설정 모순·비평 요약이 표시되는지 확인한다.
-3. **`Storyboard: Summarize Chapters`** 실행 → `.storyboard/memory/summaries.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다. 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지(요약 파일이 없을 때와 비교) 확인한다. 알려진 한계: 롤링 요약은 장(chapter) 단위로 분리하지 않으므로, 전체 원고를 요약한 뒤 앞쪽 씬을 재생성하면 뒤 장의 상태가 컨텍스트에 섞일 수 있다(향후 chapter-aware 슬라이싱으로 개선 예정).
+3. **`Storyboard: Summarize Chapters`** 실행 → `.storyboard/memory/summaries.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다. 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지(요약 파일이 없을 때와 비교) 확인한다. 원클릭 생성에서는 장마다 요약이 갱신되므로, 2장 생성 전에 `.storyboard/memory/summaries.md`에 1장 섹션이 이미 있는지 확인한다.
 4. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
 5. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 

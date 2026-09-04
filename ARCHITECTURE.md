@@ -788,7 +788,11 @@ ReviewIssue {
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
 - 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
-- 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 2000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
+- 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 8000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
+- 원클릭 실행에서는 이 요약을 **장마다** 갱신한다. 한 장의 초안·검수가 끝나면 그 장만 요약해
+  기존 파일에 `## <장 제목>` 섹션 단위로 병합하므로, 다음 장은 «지금까지의 줄거리»를 받고 시작한다.
+  마지막 summaries 단계는 그대로 남아 전체를 다시 요약한다. 요약이 예산을 넘으면 앞을 잘라내지 않고
+  **오래된 장부터 제목+한 줄로 압축**한다 — 앞을 자르면 장거리 복선이 확립된 도입부가 통째로 사라진다.
 - 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
 ### Phase F: One-Click Novel (초기 구현)
