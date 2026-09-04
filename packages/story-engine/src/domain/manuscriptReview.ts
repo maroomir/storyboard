@@ -10,6 +10,10 @@ export interface ManuscriptReviewInput {
   readonly generatedAt: string;
   readonly continuityIssues: readonly ContinuityIssueLike[];
   readonly critiqueIssues: readonly DraftCritiqueIssue[];
+  // Scenes the pipeline rewrote from this review's findings before the report was written.
+  readonly revisedStems?: readonly string[];
+  // High-severity findings that named no draft, so no rewrite could answer them.
+  readonly unroutedHighCount?: number;
 }
 
 const categoryLabels: Record<CritiqueCategory, string> = {
@@ -36,6 +40,14 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
   if (total === 0) {
     sections.push('발견된 이슈가 없습니다.');
     sections.push(scoreLine);
+
+    // A clean report after a rewrite still has to say what was rewritten, or the run reads as if
+    // the first review found nothing.
+    const feedbackAfterClean = buildFeedbackSection(input);
+    if (feedbackAfterClean) {
+      sections.push(feedbackAfterClean);
+    }
+
     return `${sections.join('\n\n')}\n`;
   }
 
@@ -51,7 +63,31 @@ export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): str
   sections.push(buildContinuitySection(input.continuityIssues));
   sections.push(buildCritiqueSection(input.critiqueIssues));
 
+  const feedback = buildFeedbackSection(input);
+  if (feedback) {
+    sections.push(feedback);
+  }
+
   return `${sections.join('\n\n')}\n`;
+}
+
+function buildFeedbackSection(input: ManuscriptReviewInput): string | undefined {
+  const revisedStems = input.revisedStems ?? [];
+  const unroutedHighCount = input.unroutedHighCount ?? 0;
+
+  if (revisedStems.length === 0 && unroutedHighCount === 0) {
+    return undefined;
+  }
+
+  const lines = [
+    revisedStems.length > 0 ? `- 재작성한 씬: ${revisedStems.join(', ')}` : '- 재작성한 씬: 없음',
+  ];
+
+  if (unroutedHighCount > 0) {
+    lines.push(`- 씬을 특정하지 못해 재작성하지 못한 high 이슈: ${unroutedHighCount}건`);
+  }
+
+  return `## 재작성 결과\n\n${lines.join('\n')}`;
 }
 
 function buildContinuitySection(issues: readonly ContinuityIssueLike[]): string {

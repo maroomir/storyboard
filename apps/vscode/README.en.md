@@ -27,6 +27,7 @@ Korean README: [`README.md`](README.md)
 - Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.
 - Review and revise individual scene drafts while recording instructions in `revision-plan.yaml`.
 - Assemble `manuscript/`, run final review (`REVIEW.md`), write chapter summaries (`.storyboard/memory/summaries.md`), and track foreshadowing (`FORESHADOWING.md`).
+- Route the final review's high-severity findings back into the scenes they name, rewrite each once, then review the volume again. Rewritten scenes are listed in `REVIEW.md`.
 - Compare unpromoted candidate facts against `canon.yaml` with `Canon Diff Report`.
 - Export the assembled manuscript as Markdown or plain text.
 - Visualize character relationships with a relation graph.

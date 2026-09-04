@@ -3,7 +3,12 @@ import { z } from 'zod';
 
 const novelRunStateVersion = '1.0.0';
 
-const novelRunModes = ['auto', 'outline-approval', 'chapter-approval'] as const;
+const novelRunModes = [
+  'auto',
+  'outline-approval',
+  'chapter-approval',
+  'review-approval',
+] as const;
 export type NovelRunMode = (typeof novelRunModes)[number];
 
 export const novelStageNames = [
@@ -12,6 +17,7 @@ export const novelStageNames = [
   'chapters',
   'assemble',
   'review',
+  'revise-from-review',
   'summaries',
 ] as const;
 export type NovelStageName = (typeof novelStageNames)[number];

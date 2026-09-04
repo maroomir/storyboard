@@ -236,7 +236,7 @@ npm run build
 3. 아웃라인 승인 또는 장별 승인 모드에서 확인 다이얼로그가 의도한 지점에 뜨는지 확인한다.
 4. 진행 중 취소 후 다시 실행하면 `.storyboard/cache/novel-run.json`을 바탕으로 이어서 진행 선택지가 보이는지 확인한다.
 
-**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `FORESHADOWING.md`와 `.storyboard/memory/summaries.md`가 생성된다.
+**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `FORESHADOWING.md`와 `.storyboard/memory/summaries.md`가 생성된다. high 이슈가 있었다면 `REVIEW.md`의 «재작성 결과»에 재작성한 씬 목록이 있고, 그 씬의 `.draft/`에 재작성 전 판본이 남는다.
 
 ### 8c. 장편 산출물 명령 (선택)
 

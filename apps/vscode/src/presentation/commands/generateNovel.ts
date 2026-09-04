@@ -27,6 +27,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
   auto: '전체 자동',
   'outline-approval': '아웃라인 승인 후 진행',
   'chapter-approval': '장별 승인 후 진행',
+  'review-approval': '최종 검사 후 재작성 승인',
 };
 
 export interface RegisterGenerateNovelCommandDependencies {
@@ -142,6 +143,11 @@ async function pickRunMode(): Promise<NovelRunMode | undefined> {
       label: runModeLabels['chapter-approval'],
       description: '각 장 초안·검수 후 멈춰 승인',
       mode: 'chapter-approval',
+    },
+    {
+      label: runModeLabels['review-approval'],
+      description: '최종 검사가 찾은 high 이슈를 재작성하기 전에 멈춰 승인',
+      mode: 'review-approval',
     },
   ];
 

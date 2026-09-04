@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { buildRevisionInstructions, coerceCritiqueIssues, countBlockingIssues, scoreCritique, shouldPassRevise } from '@storyboard/story-ai';
+import { buildRevisionInstructions, coerceCritiqueIssues, countBlockingIssues, scoreCritique, shouldPassRevise, toContinuityIssue } from '@storyboard/story-ai';
 import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-ai';
 
 describe("coerceCritiqueIssues", () => {
@@ -236,5 +236,43 @@ describe("draftReview module purity", () => {
     expect(source).not.toMatch(/from\s+["']vscode["']/)
     expect(source).not.toMatch(/services\/ai/)
     expect(source).not.toMatch(/from\s+["']https?:\/\//)
+  })
+})
+
+describe("scene stem on review issues", () => {
+  it("keeps the scene a critique issue names", () => {
+    const issues = coerceCritiqueIssues(
+      '[{"category":"voice","severity":"high","comment":"말투 어긋남","sceneStem":"02-meeting"}]'
+    )
+
+    expect(issues[0]?.sceneStem).toBe("02-meeting")
+  })
+
+  it("leaves the scene undefined when the review names none", () => {
+    const issues = coerceCritiqueIssues('[{"category":"voice","severity":"high","comment":"말투"}]')
+
+    expect(issues[0]?.sceneStem).toBeUndefined()
+  })
+
+  it("keeps the scene a continuity issue names and ignores a blank one", () => {
+    const named = toContinuityIssue({
+      start: 0,
+      end: 3,
+      original: "열여덟",
+      reason: "설정은 17세",
+      severity: "high",
+      sceneStem: " 02-meeting "
+    })
+    const blank = toContinuityIssue({
+      start: 0,
+      end: 3,
+      original: "열여덟",
+      reason: "설정은 17세",
+      severity: "high",
+      sceneStem: "  "
+    })
+
+    expect(named[0]?.sceneStem).toBe("02-meeting")
+    expect(blank[0]?.sceneStem).toBeUndefined()
   })
 })

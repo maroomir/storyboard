@@ -6,6 +6,8 @@ import {
 } from '@storyboard/story-ai';
 import type {
   AiProviderRegistry,
+  ContinuityIssueLike,
+  DraftCritiqueIssue,
   DraftRevisionInput,
   StoryboardAiService,
   StyleDirective,
@@ -41,6 +43,11 @@ export interface ReviseLoopContext {
   readonly targetLength?: number;
 }
 
+export interface ReviseSeedIssues {
+  readonly continuityIssues: readonly ContinuityIssueLike[];
+  readonly critiqueIssues: readonly DraftCritiqueIssue[];
+}
+
 export interface ReviseLoopOptions {
   readonly aiService: StoryboardAiService;
   readonly registry: AiProviderRegistry;
@@ -52,6 +59,10 @@ export interface ReviseLoopOptions {
   readonly maxCompressionPercent: number;
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
+  // Issues found somewhere other than this draft — the final review reads the whole assembled
+  // volume, so a long-range contradiction it spots is invisible to a per-scene check. They join the
+  // first iteration's own findings and are dropped afterwards, once the rewrite has answered them.
+  readonly seedIssues?: ReviseSeedIssues;
 }
 
 export interface ReviseLoopResult {
@@ -70,8 +81,8 @@ export interface ReviseLoopResult {
 }
 
 function buildRevisionPasses(
-  continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>,
-  critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>,
+  continuityIssues: readonly ContinuityIssueLike[],
+  critiqueIssues: readonly DraftCritiqueIssue[],
   characters: readonly ReviseLoopCharacter[],
   globalInstructions: readonly string[],
 ): readonly (readonly string[])[] {
@@ -131,8 +142,8 @@ async function runReviewChecks(
 }
 
 function evaluateReviewResult(
-  continuityIssues: Awaited<ReturnType<StoryboardAiService['checkContinuity']>>,
-  critiqueIssues: Awaited<ReturnType<StoryboardAiService['critiqueDraft']>>,
+  continuityIssues: readonly ContinuityIssueLike[],
+  critiqueIssues: readonly DraftCritiqueIssue[],
   threshold: number,
 ): { blocking: number; instructions: string[]; passed: boolean } {
   const blocking = countBlockingIssues(continuityIssues, critiqueIssues);
@@ -230,7 +241,10 @@ export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseL
   while (!isCancelled()) {
     options.onProgress?.(`검사 중 (${revisionCount + 1}/${maxIterations + 1})…`);
 
-    const { continuityIssues, critiqueIssues } = await runReviewChecks(session, body);
+    const checked = await runReviewChecks(session, body);
+    const seed = revisionCount === 0 ? options.seedIssues : undefined;
+    const continuityIssues = [...checked.continuityIssues, ...(seed?.continuityIssues ?? [])];
+    const critiqueIssues = [...checked.critiqueIssues, ...(seed?.critiqueIssues ?? [])];
     const review = evaluateReviewResult(continuityIssues, critiqueIssues, reviseScoreThreshold);
     blocking = review.blocking;
     lastInstructions = review.instructions;

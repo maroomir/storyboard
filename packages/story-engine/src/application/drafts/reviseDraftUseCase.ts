@@ -29,6 +29,7 @@ import {
   resolveSceneTargetLength,
   runReviseLoop,
   type ReviseLoopContext,
+  type ReviseSeedIssues,
 } from '@storyboard/story-pipeline';
 
 async function readContractGuidance(
@@ -73,6 +74,9 @@ export interface ReviseDraftRequest {
   readonly reviseScoreThreshold: number;
   readonly onProgress?: (message: string) => void;
   readonly shouldCancel?: () => boolean;
+  // Issues the final review found while reading the whole assembled volume, which a per-scene
+  // check cannot see on its own.
+  readonly seedIssues?: ReviseSeedIssues;
 }
 
 export interface ReviseDraftWorkflowResult {
@@ -172,6 +176,7 @@ async function runReviseDraftWorkflow(
     maxCompressionPercent,
     onProgress: options.onProgress,
     shouldCancel: options.shouldCancel,
+    ...(options.seedIssues === undefined ? {} : { seedIssues: options.seedIssues }),
   });
 
   if (result.revisionCount > 0 && !result.rejection && !result.cancelled) {

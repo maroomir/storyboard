@@ -1,4 +1,10 @@
 import type { GenerateTextOptions } from './aiServiceTypes';
+
+export interface ContinuityCheckOptions extends GenerateTextOptions {
+  // The body is an assembled volume carrying `<!-- scene: <stem> -->` markers, so each issue is
+  // asked to name its scene.
+  readonly hasSceneMarkers?: boolean;
+}
 import { AiTextGateway } from './AiTextGateway';
 import {
   toContinuityIssue,
@@ -58,12 +64,12 @@ export class DraftAiService {
   public async checkContinuity(
     body: string,
     facts: readonly string[],
-    options: GenerateTextOptions = {},
+    options: ContinuityCheckOptions = {},
   ): Promise<ContinuityIssue[]> {
     if (facts.length === 0) return [];
 
     const variant = this.gateway.resolvePromptVariant('continuityCheck', options);
-    const prompt = ContinuityCheckPrompt.build(body, facts, variant);
+    const prompt = ContinuityCheckPrompt.build(body, facts, variant, options.hasSceneMarkers);
     const response = await this.generateWithDefaults(
       'continuityCheck',
       prompt,
