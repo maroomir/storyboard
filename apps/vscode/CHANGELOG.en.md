@@ -10,6 +10,26 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-04
+
+### Fixed
+
+- **A long scene's later half no longer repeats its earlier half.** Across a 32-scene run, 11 scenes had a second half that copied the first, one of them 18% duplicate. The cause was three-layered and all three are now closed: a skeleton that lays out the same run of dialogue twice is retried with a reason, an expansion that rewrites the previous section is rejected, and a version that dodged the verbatim check by rewording is caught by comparing dialogue order.
+- **The last section is no longer asked for length it has no material for.** Section budgets are now split in proportion to the actual length of each skeleton slice instead of evenly, so a thin slice has no reason to pad by repeating what came before.
+- **The purpose, conflict, and turn an outline assigns to each scene now reach draft generation.** Previously, generating straight from a scene seed gave the model a single line of material: "this is an auto-generated scene seed."
+- **A card build response is no longer discarded when the model writes an unknown value as an empty string.** An empty optional field now reads as absent.
+- **A card created from a Korean name no longer gets an unrelated `new-card`, `new-card-2` id.** When no usable id can be derived, the CLI asks for `--id` instead of silently guessing.
+
+### Changed
+
+- **`draft/` is git-tracked in a new workspace.** Drafts are the readable result but had no history and so no point to return to. `.draft/`, `manuscript/`, and `.storyboard/cache/` are rebuildable from them and stay ignored. Existing workspaces keep their `.gitignore` as-is — remove the `draft/` line by hand to track drafts there.
+
+### Added
+
+- **The project contract can fix the chapter and scene counts.** Set `chapterCount` and `scenesPerChapter` and the structure holds across outline regenerations. Previously the only option was to ask for it in prose in the description, where the value was recorded nowhere.
+- **The CLI takes the project contract as input.** `storyboard init` accepts contract flags and `--from <json>`, and `storyboard project set` edits them later. Previously the `project.json` written by `init` had no `setting`, so the CLI alone could not reach outline generation.
+- **The CLI's `cards build` and `scene complete` now write files.** Use `--dry-run` to see the proposal JSON only; ending scenes skip files that already exist.
+
 ## [0.8.0] - 2026-09-03
 
 ### Added
