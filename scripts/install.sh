@@ -56,6 +56,25 @@ ln -sf "$LIB_DIR/dist/index.mjs" "$BIN_DIR/storyboard"
 chmod +x "$LIB_DIR/dist/index.mjs"
 
 printf 'Installed storyboard %s to %s\n' "$VERSION" "$BIN_DIR/storyboard"
+
+# Tab completion: one line in the shell's rc file, guarded by a marker so a reinstall never adds
+# a second copy. Only the shell that is running the install is touched.
+MARKER="# storyboard completion"
+register_completion() {
+  local rc="$1" line="$2"
+  if [ -f "$rc" ] && grep -qF "$MARKER" "$rc"; then
+    return
+  fi
+  mkdir -p "$(dirname "$rc")"
+  printf '\n%s\n%s\n' "$MARKER" "$line" >> "$rc"
+  printf 'Registered tab completion in %s\n' "$rc"
+}
+case "$(basename "${SHELL:-}")" in
+  zsh) register_completion "${ZDOTDIR:-$HOME}/.zshrc" 'eval "$(storyboard completion zsh)"' ;;
+  bash) register_completion "$HOME/.bashrc" 'eval "$(storyboard completion bash)"' ;;
+  fish) register_completion "${XDG_CONFIG_HOME:-$HOME/.config}/fish/conf.d/storyboard.fish" 'storyboard completion fish | source' ;;
+  *) printf 'Tab completion: run  storyboard completion <zsh|bash|fish>  and follow the comment at the top.\n' ;;
+esac
 case ":$PATH:" in
   *":$BIN_DIR:"*) ;;
   *) printf 'Add it to your PATH:\n  export PATH="%s:$PATH"\n' "$BIN_DIR" ;;

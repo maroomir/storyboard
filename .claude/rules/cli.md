@@ -60,6 +60,15 @@ shell line. Because Ink and yoga-layout use top-level await the bundle is ESM (`
 `react-devtools-core` to a stub. Nothing outside `tui/` may import `ink` or `react`. The TUI refuses
 to start without a TTY so agents never end up inside it.
 
+## Shell completion (`apps/cli/src/commands/completion.ts`)
+
+`storyboard completion <zsh|bash|fish>` prints a script that delegates every Tab to the hidden
+`storyboard __complete <words…>` verb, which `dispatch.ts` answers before the argument parser runs
+(a half-typed flag must not be rejected). Candidates come from the catalog (verbs, per-verb flags,
+`<stem>`/`<id>`/`<provider>`/`<key>` positional slots) plus the workspace's `scene/` and card
+directories; output is `text<TAB>description` per line. `scripts/install.sh` appends the
+registration line to the running shell's rc file under a `# storyboard completion` marker.
+
 ## Verification
 
 From the repo root: `npm test` and `npm run lint` (both drive all three apps).

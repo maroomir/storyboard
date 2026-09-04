@@ -167,6 +167,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'completion',
+    group: '시작하기',
+    usage: 'completion <zsh|bash|fish>',
+    summary: '셸 Tab 완성 스크립트를 출력합니다',
+    examples: ['eval "$(storyboard completion zsh)"', 'storyboard completion fish | source'],
+    needsWorkspace: false,
+  },
+  {
     verb: 'tui',
     group: '시작하기',
     usage: 'tui',
