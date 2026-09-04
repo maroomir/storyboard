@@ -10,6 +10,29 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-09-04
+
+### Changed (breaking)
+
+- **Settings and API keys move to `~/.storyboard/`, shared by all three apps.** Previously the extension used VS Code `settings.json` and its secret storage, the CLI used `cli.json`, and the bot used `bot.json`, so the same key had to be entered three times. There is now one place: `~/.storyboard/config.json` for shared settings, `<workspace>/.storyboard/config.json` for per-project ones, and `~/.storyboard/secrets.json` (0600) for keys. **On first activation the extension migrates your existing `storyboard.*` settings and stored keys once and removes them from VS Code** — nothing to do by hand, but `storyboard.*` entries no longer appear in the VS Code settings UI; use the settings panel instead. The CLI's old `cli.json`/`cli-secrets.json` and the bot's `bot.json` AI block are still read, with a warning, for now.
+- **Generation is refused until an AI provider is chosen.** The default used to be `mock`, so a fresh install produced fake drafts without any choice being made. Now a missing provider stops the run with an error, and the extension offers a «Choose provider» button while the CLI points at `storyboard setup`. Background features such as inline completion, grammar, and continuity skip silently instead of erroring.
+
+### Added
+
+- **The CLI has an interactive screen.** Running `storyboard` with no arguments (or `storyboard tui`) opens a screen headed by the workspace and provider where you can keep entering commands and watch progress and results in place. It supports prefix suggestions (Tab), history, and `/help`, `/doctor`, `/setup`, `/clear`, `/quit`. It refuses to start without a TTY, so an agent can never end up trapped inside it.
+- **Shell tab completion.** `storyboard completion <zsh|bash|fish>` prints a registration script that completes commands and options as well as the scene and card names in your workspace. Installing via `install.sh` registers it in your shell's rc file automatically.
+- **New `setup`, `doctor`, and `config` verbs.** `setup` gets a new machine's provider and key in place, `doctor` checks the home directory, settings, provider, key, executable, and workspace — **and names the command that fixes each problem** — and `config show|set` shows values along with where they came from.
+- **`--help` is worth reading.** Thirty commands are organised into seven groups with examples, `<command> --help` gives per-verb help, and `-h`/`-v` work. A typo suggests the nearest command, and running with no arguments no longer exits with an error.
+- **Eight long-running commands now show progress**, with an N/M counter for scene seed generation and legacy scene migration.
+- **Failure notifications carry a next action.** A missing API key offers «Open settings» and a missing provider offers «Choose provider», across thirteen call sites. Empty sidebars now show a button instead of a sentence telling you to open the command palette.
+- **The settings panel confirms every save and shows where each value comes from.** Saving reports whether it landed in the project or the shared config, and each value carries an origin badge. A new «Options» tab exposes the generation and review switches, and the status bar shows the current default provider and model.
+- **The bot reads the shared config too.** A provider chosen in the extension or the CLI now applies to the bot, and `/doctor` reports the provider actually in use.
+
+### Fixed
+
+- **The cost badge no longer reads $0.00 for subscription providers.** Providers with no price table, such as `codex` and `claude-code`, show «12.3k tokens»; priced ones show «$0.42 · 12.3k»; nothing recorded shows «—». Studio conversation usage is now recorded in the ledger as well.
+- **Opening a character, background, or scene card no longer disables the Studio chat.** A `.card` file opens in a custom editor, so it was not seen as the active text editor.
+
 ## [0.8.1] - 2026-09-04
 
 ### Fixed
