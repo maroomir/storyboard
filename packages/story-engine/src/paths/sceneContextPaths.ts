@@ -1,4 +1,3 @@
-import { summaryFileName } from '#engine/domain/chapterSummaries';
 import { joinStoryPath, type StoryUri } from './storyUri';
 import type { StoryboardProjectPaths } from './projectPaths';
 import type { SceneContextWorkspacePaths } from '@storyboard/story-format';
@@ -9,7 +8,7 @@ export function sceneContextPaths(paths: StoryboardProjectPaths): SceneContextWo
     backgroundDirectory: paths.backgroundDirectory,
     draftDirectory: paths.draftDirectory,
     bibleCanon: paths.bibleCanon,
-    manuscriptSummary: joinStoryPath(paths.manuscriptDirectory, summaryFileName),
+    chapterSummaries: paths.chapterSummaries,
     storyState: paths.storyState,
     joinPath: (base: StoryUri, ...segments: string[]): StoryUri => joinStoryPath(base, ...segments),
   };

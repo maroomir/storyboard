@@ -93,7 +93,7 @@ draft/NN-slug.md
 manuscript/NN-chapter.md
 manuscript/manuscript.md
 manuscript/REVIEW.md
-manuscript/SUMMARY.md
+.storyboard/memory/summaries.md
 manuscript/FORESHADOWING.md
 ```
 
@@ -183,7 +183,7 @@ mood: 설렘
 
 - **`Storyboard: Assemble Manuscript`**: `chapters.yaml` 순서로 `draft/*.md`를 장별 파일과 `manuscript/manuscript.md`로 조립합니다.
 - **`Storyboard: Review Manuscript`**: 전체 조립 원고를 canon 연속성·캐릭터 보이스·장면 목적·반복 기준으로 검사해 `manuscript/REVIEW.md`를 만듭니다.
-- **`Storyboard: Summarize Chapters`**: 장별 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 만듭니다.
+- **`Storyboard: Summarize Chapters`**: 장별 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 만듭니다.
 - **`Storyboard: Canon Diff Report`**: 아직 canon으로 승격하지 않은 설정 후보를 `manuscript/CANON.md`에 정리합니다.
 - **`Storyboard: Export Draft…`**: `manuscript/manuscript.md`를 Markdown 또는 일반 텍스트로 내보냅니다.
 

@@ -24,10 +24,12 @@ export interface StoryboardProjectPaths {
   readonly metadataDirectory: StoryUri;
   readonly projectJson: StoryUri;
   readonly cacheDirectory: StoryUri;
+  readonly memoryDirectory: StoryUri;
   readonly usageLedger: StoryUri;
   readonly novelRunState: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
   readonly storyState: StoryUri;
+  readonly chapterSummaries: StoryUri;
   readonly sceneDialogueDirectory: StoryUri;
   readonly personaMemoryDirectory: StoryUri;
   readonly backgroundMemoryDirectory: StoryUri;
@@ -68,10 +70,12 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     metadataDirectory: resolve(STORYBOARD_RELATIVE_PATHS.metadataDirectory),
     projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
     cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
+    memoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.memoryDirectory),
     usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
     novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
+    chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
     sceneDialogueDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
     personaMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),

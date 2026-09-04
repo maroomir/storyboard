@@ -61,14 +61,20 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   │   ├── synopsis.md
 │   │   ├── chapters.yaml
 │   │   └── revision-plan.yaml     # 검수·재작성 이력 (scene 단위)
+│   ├── memory/                   # 재생성 불가능한 AI 기억 (git 추적)
+│   │   ├── personas/             # 캐릭터별 페르소나 기억
+│   │   │   └── elia.json
+│   │   ├── backgrounds/          # 배경별 분위기 기억
+│   │   │   └── school.json
+│   │   ├── dialogue/             # 씬별 대사 사이드카
+│   │   │   └── 01-prologue.json
+│   │   ├── storyState.md         # 씬 간 이야기 상태 원장
+│   │   └── summaries.md          # 장별 롤링 요약
 │   └── cache/                    # AI 컨텍스트 캐시 (.gitignore)
-│       ├── personas/             # 캐릭터별 페르소나 캐시
-│       │   └── elia.json
 │       ├── bible/                # 자동 추출된 설정 사실 후보 (candidate)
 │       │   └── 01-prologue.json
 │       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
 │       │   └── 01-prologue.json
-│       ├── storyState.md         # 씬 간 이야기 상태 원장
 │       └── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
 │
 ├── character/
@@ -111,7 +117,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `.storyboard/` | 프로젝트 메타 + 내부 저장소 | 하위 폴더별 정책 적용 |
 | `.storyboard/bible/` | 스토리 바이블 정전 설정 | 추적 (사람이 확정한 설정) |
 | `.storyboard/outline/` | 장편 시놉시스·챕터·씬 계획·재작성 계획 | 추적 |
-| `.storyboard/cache/` | AI 컨텍스트 스냅샷 | 제외 |
+| `.storyboard/memory/` | 재생성 불가능한 AI 기억 (이야기 상태, 페르소나·배경, 대사 사이드카, 장별 요약) | 추적 |
+| `.storyboard/cache/` | 커밋된 입력으로 다시 만들 수 있는 AI 컨텍스트 스냅샷 | 제외 |
 | `character/` | 캐릭터 카드 + 프로필 이미지 | 추적 |
 | `background/` | 배경 카드 | 추적 |
 | `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
@@ -514,22 +521,22 @@ bible candidate와 같은 결을 가지는, **캐릭터 카드 필드용** 후�
 relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고, attributes는 카드에 없는 key만 제안한다(기존 값 비파괴).
 배경 `characterIds`는 후보를 거치지 않고 배경 카드에 결정적으로 직접 기록된다.
 
-### 4.9 `.storyboard/cache/personas/`·`backgrounds/` (에이전트 영속 메모리)
+### 4.9 `.storyboard/memory/personas/`·`backgrounds/` (에이전트 영속 메모리)
 
 > 페르소나 메모리(`personas/`)와 배경 메모리(`backgrounds/`) 모두 구현됨(Phase G-2·G-4).
 
 카드 = 에이전트의 메모리를 카드 단위로 영속화해 씬 진행에 따라 진화시킨다. 페르소나/배경 묘사를 매 씬 새로 생성하지 않고 재사용·갱신한다. 페르소나 캐시는 draft 생성 시 `buildPersonas` 단계가, 배경 분위기 묘사 캐시는 대화 생성 직전 드로잉 단계가 카드 단위로 먼저 조회하고, 캐시가 없거나 `cardHash`가 어긋날 때만 새로 생성·저장한다.
 
 ```json
-// .storyboard/cache/personas/<character-id>.json
+// .storyboard/memory/personas/<character-id>.json
 { "cardId": "elia", "persona": "<1인칭 페르소나>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
-// .storyboard/cache/backgrounds/<background-id>.json
+// .storyboard/memory/backgrounds/<background-id>.json
 { "cardId": "school", "atmosphere": "<장소·시대 분위기 묘사>", "updatedThroughScene": "03-...", "cardHash": "sha256:..." }
 ```
 
 `cardHash`로 카드가 바뀌면 무효화한다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
 
-### 4.10 `.storyboard/cache/storyState.md` (이야기 상태 원장)
+### 4.10 `.storyboard/memory/storyState.md` (이야기 상태 원장)
 
 씬 사이의 기억이 직전 드래프트 꼬리 1,000자뿐이면, 앞 화가 확립한 사실·관계·공개된 정보가 다음 씬에
 전달되지 않고 **씬 경계마다 상태가 리셋된다.** 그 결과 인물의 상태가 역전되고(정지 여부), 이미 공개한
@@ -580,7 +587,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.card` 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
 | `storyboard.manuscript.review` | `Storyboard: Review Manuscript` | 조립한 전체 원고를 continuity·비평으로 검사해 `manuscript/REVIEW.md` 보고서 생성 |
-| `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성 |
+| `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성 |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.draft.reviseLoop` | `Storyboard: Review & Revise Draft (Current Scene)` | 초안을 연속성·비평으로 검사하고 차단 이슈를 재작성으로 고치는 루프 |
 | `storyboard.bible.promoteCandidates` | `Storyboard: Promote Bible Candidates to Canon` | 자동 추출된 설정 후보를 골라 `canon.yaml`로 승격 |
@@ -781,7 +788,7 @@ ReviewIssue {
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
 - 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
-- 장별 AI 요약과 이전 장 recap을 `manuscript/SUMMARY.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 2000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
+- 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 2000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
 - 미승격 설정 후보(candidate)를 canon과 대조해 `manuscript/CANON.md`로 정리한다(`storyboard.bible.canonDiff`).
 
 ### Phase F: One-Click Novel (초기 구현)
@@ -796,7 +803,7 @@ ReviewIssue {
 §8의 협업 모델을 단계적으로 구현한다.
 
 - **G-1 에이전트 명명·격상**: 기존 파이프라인 단계를 §8.1 카탈로그의 에이전트로 명명·정합(코드 동작 변경 없음, 문서/역할 정리).
-- **G-2 카드 단위 영속 메모리**: 페르소나/배경을 `.storyboard/cache/personas/`·`backgrounds/`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
+- **G-2 카드 단위 영속 메모리**: 페르소나/배경을 `.storyboard/memory/personas/`·`backgrounds/`(4.9)에 카드 단위로 캐싱하고 `cardHash`로 무효화. 매 씬 재생성 의존 해소.
 - **G-3 검수 이슈 라우팅**: `ReviewIssue.target`(§8.3)과 결정적 `category→agent` 매핑을 도입해, 검수 이슈를 해당 에이전트의 부분 재생성으로 라우팅. 전역 이슈만 전체 재작성으로 폴백.
 - **G-4 드로잉 에이전트 능동 묘사**: 배경을 사실 주입에서 장소·시대 분위기 묘사 생성으로 확장. 구현됨 — `backgroundDescription` 작업으로 분위기를 생성해 대화 컨텍스트에 주입하고 `backgrounds/` 메모리(4.9)에 `cardHash` 무효화로 캐싱한다.
 

@@ -155,7 +155,7 @@ npm run build
 - `draft/` 아래에 대응하는 `.md` 파일이 생기거나 갱신된다.
 - 진행 알림/로그에 치명적 오류만 없으면 된다(첫 실행은 시간이 걸릴 수 있음).
 - 진행 알림이 **`페르소나 준비` → `장면 뼈대 잡기` → `대사 다듬기` → `구간 살붙임 N/M`** 순서로 바뀐다. 목표 분량이 7,000자 이하인 짧은 씬은 살붙임이 `1/1`로 한 번만 돈다.
-- 두 번째 씬부터는 `.storyboard/cache/storyState.md`가 생기고, `<!-- through-scene: N -->`과 `- [N] 내용` 형식의 항목이 쌓인다.
+- 두 번째 씬부터는 `.storyboard/memory/storyState.md`가 생기고, `<!-- through-scene: N -->`과 `- [N] 내용` 형식의 항목이 쌓인다.
 - 생성한 초안의 frontmatter에 `warnings`가 붙었다면 [`GUIDE.md`](GUIDE.md) §12의 읽는 법대로 해당 구간을 확인한다. 경고가 있어도 본문은 정상 출력되어야 한다.
 
 **명령 팔레트로 동일 동작**
@@ -236,7 +236,7 @@ npm run build
 3. 아웃라인 승인 또는 장별 승인 모드에서 확인 다이얼로그가 의도한 지점에 뜨는지 확인한다.
 4. 진행 중 취소 후 다시 실행하면 `.storyboard/cache/novel-run.json`을 바탕으로 이어서 진행 선택지가 보이는지 확인한다.
 
-**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `SUMMARY.md`, `FORESHADOWING.md`가 생성된다.
+**성공 기준**: 완료 후 `manuscript/manuscript.md`가 열리고, `manuscript/REVIEW.md`, `FORESHADOWING.md`와 `.storyboard/memory/summaries.md`가 생성된다.
 
 ### 8c. 장편 산출물 명령 (선택)
 
@@ -244,7 +244,7 @@ npm run build
 
 1. **`Storyboard: Assemble Manuscript`** 실행 → `manuscript/NN-chapter.md`, `manuscript/manuscript.md`, `manuscript/FORESHADOWING.md`가 생성되는지 확인한다.
 2. **`Storyboard: Review Manuscript`** 실행 → `manuscript/REVIEW.md`가 생성되고 설정 모순·비평 요약이 표시되는지 확인한다.
-3. **`Storyboard: Summarize Chapters`** 실행 → `manuscript/SUMMARY.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다. 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지(SUMMARY.md가 없을 때와 비교) 확인한다. 알려진 한계: 롤링 요약은 장(chapter) 단위로 분리하지 않으므로, 전체 원고를 요약한 뒤 앞쪽 씬을 재생성하면 뒤 장의 상태가 컨텍스트에 섞일 수 있다(향후 chapter-aware 슬라이싱으로 개선 예정).
+3. **`Storyboard: Summarize Chapters`** 실행 → `.storyboard/memory/summaries.md`에 장별 요약과 이전 장 recap이 표시되는지 확인한다. 이후 2번째 이상 씬을 재생성하면 이전 장면 컨텍스트가 raw tail 대신 이 롤링 요약에서 오는지(요약 파일이 없을 때와 비교) 확인한다. 알려진 한계: 롤링 요약은 장(chapter) 단위로 분리하지 않으므로, 전체 원고를 요약한 뒤 앞쪽 씬을 재생성하면 뒤 장의 상태가 컨텍스트에 섞일 수 있다(향후 chapter-aware 슬라이싱으로 개선 예정).
 4. **`Storyboard: Canon Diff Report`** 실행 → `manuscript/CANON.md`가 생성되고, 아직 `canon.yaml`로 승격되지 않은 설정 후보가 목록으로 보이는지 확인한다. (후보가 없으면 "없음" 안내)
 5. **`Storyboard: Export Draft…`** 실행 → 형식(Markdown/Plain text) 선택 후 저장 다이얼로그가 뜨고, 저장한 파일이 열리는지 확인한다. 조립 원고(`manuscript/manuscript.md`)가 없으면 먼저 **Assemble Manuscript** 안내가 나오는지 확인한다.
 

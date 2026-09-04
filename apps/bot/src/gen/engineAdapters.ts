@@ -36,6 +36,11 @@ function pathOf(uri: StoryUri): string {
 // means a write there has to be a commit.
 const untrackedPrefixes = ['draft/', '.draft/', 'manuscript/', '.storyboard/cache/'];
 
+// AI memory is tracked but the engine writes it through the file system port, after the draft it
+// belongs to is already on disk. Buffering the paths and committing them once when the job ends
+// keeps "a save is a commit" true without a commit per memory file.
+const memoryPrefix = '.storyboard/memory/';
+
 // The bot's write policy expressed as a file system: a draft goes through ContentService so the
 // archive-then-write path and the outcome reporting stay the bot's only way to touch `draft/`,
 // while gitignored side artefacts (`.storyboard/cache/`, `.draft/`) go straight to disk.
@@ -46,6 +51,7 @@ const untrackedPrefixes = ['draft/', '.draft/', 'manuscript/', '.storyboard/cach
 // as the engine grows: the fix is to give that use case a repository port, not to relax this.
 export class BotFileSystem implements IFileSystem {
   private lastDraftOutcome: MutateOutcome | undefined;
+  private readonly pendingMemoryPaths = new Set<string>();
 
   public constructor(
     private readonly content: ContentService,
@@ -88,6 +94,12 @@ export class BotFileSystem implements IFileSystem {
     return this.lastDraftOutcome;
   }
 
+  public takePendingMemoryPaths(): readonly string[] {
+    const paths = [...this.pendingMemoryPaths];
+    this.pendingMemoryPaths.clear();
+    return paths;
+  }
+
   private refuseTrackedWrite(uri: StoryUri): void {
     const rootPath = this.workspaceRoot.path.replace(/\/$/, '');
 
@@ -96,6 +108,11 @@ export class BotFileSystem implements IFileSystem {
     }
 
     const relativePath = uri.path.slice(rootPath.length + 1);
+
+    if (relativePath.startsWith(memoryPrefix)) {
+      this.pendingMemoryPaths.add(relativePath);
+      return;
+    }
 
     if (!untrackedPrefixes.some((prefix) => relativePath.startsWith(prefix))) {
       throw new Error(

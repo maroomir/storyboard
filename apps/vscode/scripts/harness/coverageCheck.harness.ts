@@ -38,7 +38,7 @@ const paths = {
   backgroundDirectory: path.join(workspace, "background"),
   draftDirectory: path.join(workspace, "draft"),
   bibleCanon: path.join(workspace, ".storyboard", "bible", "canon.yaml"),
-  manuscriptSummary: undefined,
+  chapterSummaries: undefined,
   joinPath: (base: unknown, ...segments: string[]): string => path.join(base as string, ...segments)
 }
 

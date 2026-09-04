@@ -76,6 +76,8 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
       await this.runRevise(engine, sceneStem, isCancelled);
     }
 
+    this.commitMemory(engine, sceneStem);
+
     return { status: 'written', outcome: engine.fileSystem.takeDraftOutcome() };
   }
 
@@ -88,6 +90,8 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     const engine = this.createEngine();
     const result = await this.runRevise(engine, sceneStem, isCancelled);
 
+    this.commitMemory(engine, sceneStem);
+
     return {
       passed: result?.passed ?? true,
       preservedOriginal: result?.preservedOriginal === true,
@@ -96,6 +100,19 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
       cancelled: result?.cancelled ?? false,
       outcome: engine.fileSystem.takeDraftOutcome(),
     };
+  }
+
+  // The engine writes AI memory (story state, dialogue sidecars) after the draft it belongs to, so
+  // it cannot ride the draft's own commit. One commit per job keeps it in history all the same.
+  private commitMemory(engine: BotEngine, sceneStem: string): void {
+    const relativePaths = engine.fileSystem.takePendingMemoryPaths();
+
+    if (relativePaths.length > 0) {
+      this.options.content.commitMemory(
+        relativePaths,
+        `storyboard-bot: update memory for ${sceneStem}`,
+      );
+    }
   }
 
   private async runRevise(

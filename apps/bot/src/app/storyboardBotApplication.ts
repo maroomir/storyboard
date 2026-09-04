@@ -12,6 +12,10 @@ import {
 
 import { aiTaskCatalog } from '@storyboard/story-ai';
 
+import { NodeUri, getStoryboardProjectPaths, migrateLegacyMemory } from '@storyboard/story-engine';
+
+import { BotFileSystem } from '@/gen/engineAdapters';
+
 import { createAiEngine } from '@/ai/aiGateway';
 import { assertBotProviderSelection, createBotConfiguration } from '@/config/sharedConfig';
 import type { UsageRecord } from '@storyboard/story-ai';
@@ -250,6 +254,8 @@ export class StoryboardBotApplication {
       this.logger.warn(`${repository.detail} (편집 명령은 저장소가 준비될 때까지 거부됩니다.)`);
     }
 
+    await this.migrateLegacyMemory();
+
     // The native command menu is cosmetic; a Telegram hiccup here must not stop the bot.
     try {
       await this.gateway.setCommandMenu(
@@ -296,6 +302,25 @@ export class StoryboardBotApplication {
     await this.dashboard?.stop();
     await this.gateway.stop();
     this.db.close();
+  }
+
+  // AI memory moved out of the gitignored cache directory. A workspace created before that move is
+  // relocated at boot and the relocation committed, so the memory enters history exactly once.
+  private async migrateLegacyMemory(): Promise<void> {
+    try {
+      const workspaceRoot = NodeUri.file(this.store.root);
+      const { movedPaths } = await migrateLegacyMemory(
+        new BotFileSystem(this.content, workspaceRoot),
+        getStoryboardProjectPaths(workspaceRoot),
+      );
+
+      if (movedPaths.length > 0) {
+        this.content.commitMemory(movedPaths, 'storyboard-bot: migrate AI memory');
+      }
+    } catch (error) {
+      this.logger.warn('AI 기억 이관에 실패했습니다. 기존 위치의 기억은 승계되지 않습니다.');
+      this.logger.error('migrateLegacyMemory 실패', error);
+    }
   }
 
   private buildContext(update: IncomingUpdate): ChatContext {

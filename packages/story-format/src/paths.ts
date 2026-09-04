@@ -6,10 +6,12 @@ export interface StoryboardRelativePaths {
   readonly metadataDirectory: string;
   readonly projectJson: string;
   readonly cacheDirectory: string;
+  readonly memoryDirectory: string;
   readonly usageLedger: string;
   readonly novelRunState: string;
   readonly sceneCacheDirectory: string;
   readonly storyState: string;
+  readonly chapterSummaries: string;
   readonly sceneDialogueDirectory: string;
   readonly personaMemoryDirectory: string;
   readonly backgroundMemoryDirectory: string;
@@ -41,13 +43,15 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   metadataDirectory: '.storyboard',
   projectJson: '.storyboard/project.json',
   cacheDirectory: '.storyboard/cache',
+  memoryDirectory: '.storyboard/memory',
   usageLedger: '.storyboard/cache/usage.json',
   novelRunState: '.storyboard/cache/novel-run.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
-  storyState: '.storyboard/cache/storyState.md',
-  sceneDialogueDirectory: '.storyboard/cache/dialogue',
-  personaMemoryDirectory: '.storyboard/cache/personas',
-  backgroundMemoryDirectory: '.storyboard/cache/backgrounds',
+  storyState: '.storyboard/memory/storyState.md',
+  chapterSummaries: '.storyboard/memory/summaries.md',
+  sceneDialogueDirectory: '.storyboard/memory/dialogue',
+  personaMemoryDirectory: '.storyboard/memory/personas',
+  backgroundMemoryDirectory: '.storyboard/memory/backgrounds',
   bibleCacheDirectory: '.storyboard/cache/bible',
   cardCacheDirectory: '.storyboard/cache/cards',
   studioSessionDirectory: '.storyboard/cache/studio-sessions',

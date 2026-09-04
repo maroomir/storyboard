@@ -149,3 +149,64 @@ describe('draft writes in a trackDraft workspace', () => {
     expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });
 });
+
+describe('memory commits', () => {
+  let fixture: WorkspaceFixture;
+  let content: ContentService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fixture = createWorkspaceFixture();
+    const store = new WorkspaceStore(fixture.root);
+    const client = new GitClient(fixture.root);
+    const gate = new MutateGate(
+      store,
+      client,
+      new SyncService(client, {}, silentLogger),
+      silentLogger,
+      { isTrackedPath: createGitTrackedPathPredicate(client) },
+    );
+    content = new ContentService(store, gate);
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it('commits every memory file a job touched in one commit', async () => {
+    fixture.write('.storyboard/memory/storyState.md', '# 상태\n');
+    fixture.write('.storyboard/memory/dialogue/01-prologue.json', '{"turns":[]}\n');
+
+    const outcome = content.commitMemory(
+      ['.storyboard/memory/storyState.md', '.storyboard/memory/dialogue/01-prologue.json'],
+      'storyboard-bot: update memory for 01-prologue',
+    );
+
+    expect(outcome?.status).toBe('committed');
+    expect(git(fixture.root, 'log', '--format=%s').split('\n')[0]).toBe(
+      'storyboard-bot: update memory for 01-prologue',
+    );
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD').split('\n').sort()).toEqual(
+      ['.storyboard/memory/dialogue/01-prologue.json', '.storyboard/memory/storyState.md'],
+    );
+  });
+
+  it("leaves the user's unrelated edits out of the memory commit", async () => {
+    fixture.write('.storyboard/memory/storyState.md', '# 상태\n');
+    fixture.write('scene/01-prologue.card', 'type: scene\n');
+
+    content.commitMemory(
+      ['.storyboard/memory/storyState.md'],
+      'storyboard-bot: update memory for 01-prologue',
+    );
+
+    expect(git(fixture.root, 'show', '--name-only', '--format=', 'HEAD')).toBe(
+      '.storyboard/memory/storyState.md',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toContain('scene/');
+  });
+
+  it('reports nothing when the job wrote no memory', async () => {
+    expect(content.commitMemory([], 'storyboard-bot: update memory')).toEqual({ status: 'no-op' });
+  });
+});

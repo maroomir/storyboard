@@ -21,10 +21,13 @@ except operational state.
   snapshot of workspace content; read through.
 - **Commits name explicit paths.** `git add .` is forbidden — a bot commit must never sweep in the
   user's unrelated uncommitted work.
-- **Drafts are committed; the rest of the generated tree is not.** `draft/` is the readable result,
-  so a draft save is a commit like any tracked write. `.draft/`, `manuscript/`, and
-  `.storyboard/cache/` are rebuildable from it and stay gitignored, exactly as the extension
-  scaffolds them.
+- **Drafts and AI memory are committed; the rest of the generated tree is not.** `draft/` is the readable result,
+  so a draft save is a commit like any tracked write. `.storyboard/memory/` holds what no committed
+  input reproduces (story state, persona/background memory, dialogue sidecars, chapter summaries)
+  and is tracked too — the engine writes it after the draft, so `BotFileSystem` buffers those paths
+  and `sceneDraftGenerator` commits them once per job through `ContentService.commitMemory`.
+  `.draft/`, `manuscript/`, and `.storyboard/cache/` are rebuildable and stay gitignored, exactly as
+  the extension scaffolds them.
 - **No seedcoat.** The `.seed` archive is gone from the whole repository — story content lives in the
   git workspace only. `apps/bot/scripts/check-architecture.mjs` fails the build if a `seed` import reappears.
 
@@ -79,7 +82,8 @@ extension and the CLI run. What is bot-specific lives in the injected adapters
 
 - `BotFileSystem` routes a `draft/` write through `ContentService`, so the archive-then-write path
   stays the bot's only way to touch a draft. Gitignored side artefacts (`.draft/`, `manuscript/`,
-  `.storyboard/cache/`) go straight to disk, and **a tracked path is refused outright** — an engine
+  `.storyboard/cache/`) go straight to disk, `.storyboard/memory/` goes to disk with its path
+  buffered for the job's memory commit, and **any other tracked path is refused outright** — an engine
   use case that reached for the file system to write one would break "a save is a commit" silently.
   The fix when that happens is to give the use case a repository port, not to relax the guard.
 - `BotSceneRepository` holds the hash from the read the edit was derived from and uses it as the

@@ -2,7 +2,11 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import {
+  getStoryboardProjectPaths,
+  migrateLegacyMemory,
+  type IStoryboardLogger,
+} from '@storyboard/story-engine';
 
 import {
   flagBoolean,
@@ -214,6 +218,13 @@ export async function dispatch(
       ? {}
       : { fallbackProvider: flagString(args.flags, 'fallback') }),
   });
+
+  if (needsWorkspace) {
+    await migrateLegacyMemory(
+      container.fileSystem,
+      getStoryboardProjectPaths(container.workspaceRoot),
+    );
+  }
 
   const outcome = await handler({ container, args });
 

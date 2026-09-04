@@ -145,12 +145,14 @@ describe('scene draft generation', () => {
     expect(draft.providerId).toBe('mock');
     expect(draft.model).toBeDefined();
 
-    // draft/ is gitignored, so generation must not add a commit.
+    // draft/ is gitignored, so the draft itself adds no commit; the AI memory the job wrote is
+    // tracked and rides a single commit of its own.
     const log = execFileSync('git', ['-C', fixture.root, 'log', '--format=%s'], {
       encoding: 'utf8',
       shell: false,
     }).trim();
-    expect(log.split('\n')).toHaveLength(2);
+    expect(log.split('\n')).toHaveLength(3);
+    expect(log.split('\n')[0]).toBe('storyboard-bot: update memory for 01-prologue');
   });
 
   // Ported from the extension: the four grounding facts are settled before the dialogue prompt
@@ -181,7 +183,7 @@ describe('scene draft generation', () => {
     expect(raw).toContain('엘리아가 학교에서 첫 장면을 시작한다.');
 
     const log = fixture.git('log', '--format=%s').split('\n');
-    expect(log[0]).toBe('storyboard-bot: ground scene/01-prologue.card');
+    expect(log).toContain('storyboard-bot: ground scene/01-prologue.card');
   });
 
   it('leaves the scene untouched when auto grounding is off', async () => {
@@ -208,7 +210,9 @@ describe('scene draft generation', () => {
     await generator.generate('01-prologue', () => false);
 
     expect(readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8')).toBe(before);
-    expect(fixture.git('log', '--format=%s')).toBe(logBefore);
+    // The job still commits its own AI memory; what it must not do is ground the scene.
+    expect(fixture.git('log', '--format=%s')).not.toContain('ground scene/01-prologue.card');
+    expect(fixture.git('log', '--format=%s').endsWith(logBefore)).toBe(true);
   });
 
   it('keeps user-authored grounding and only fills the empty fields', async () => {
@@ -332,8 +336,8 @@ describe('scene draft generation', () => {
   });
 
   // Generation now uses the engine's own memory stores, so the round trip is asserted against those
-  // — the extension's exact record format, an edited card treated as a miss, and no commit
-  // (.storyboard/cache/ is gitignored).
+  // — the extension's exact record format, an edited card treated as a miss, and no commit at write
+  // time (memory paths are buffered and committed once when the generation job ends).
   it('round-trips persona and background memory through the shared codec', async () => {
     const character = (await store.readCard('character', 'elia')).value as CharacterCard;
     const background = (await store.readCard('background', 'school')).value as BackgroundCard;
