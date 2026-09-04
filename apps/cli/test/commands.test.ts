@@ -12,8 +12,28 @@ let home: string;
 let workspace: string;
 let previousHome: string | undefined;
 
-function args(path: string[], flags: Record<string, string | boolean> = {}, positionals: string[] = []): ParsedArguments {
+function args(
+  path: string[],
+  flags: Record<string, string | boolean> = {},
+  positionals: string[] = [],
+): ParsedArguments {
   return { path, flags, positionals };
+}
+
+const silentLogger = {
+  info: () => undefined,
+  warn: () => undefined,
+  error: () => undefined,
+  show: () => undefined,
+};
+
+function container() {
+  return createCliContainer({
+    workspacePath: workspace,
+    logger: silentLogger,
+    canPrompt: false,
+    version: '0.0.0',
+  });
 }
 
 async function run(verb: string, parsed: ParsedArguments) {
@@ -21,7 +41,7 @@ async function run(verb: string, parsed: ParsedArguments) {
   if (!handler) {
     throw new Error(`unknown verb: ${verb}`);
   }
-  return await handler({ container: createCliContainer({ workspacePath: workspace }), args: parsed });
+  return await handler({ container: container(), args: parsed });
 }
 
 beforeEach(async () => {
@@ -29,6 +49,9 @@ beforeEach(async () => {
   home = mkdtempSync(join(tmpdir(), 'storyboard-cli-home-'));
   process.env.STORYBOARD_HOME = home;
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
+  // Generation verbs refuse an unconfigured provider, so the temp home names one the way
+  // `storyboard setup` would.
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
   await run('init', args(['init'], { title: '시그널' }));
 });
 
@@ -80,19 +103,36 @@ describe('project contract', () => {
 
   it('reads a contract file and lets flags win over it', async () => {
     const file = join(home, 'contract.json');
-    writeFileSync(file, JSON.stringify({ genre: '무협', audience: '성인', styleConstraints: ['단문'] }));
+    writeFileSync(
+      file,
+      JSON.stringify({ genre: '무협', audience: '성인', styleConstraints: ['단문'] }),
+    );
 
-    const outcome = await run('project set', args(['project', 'set'], { from: file, genre: '하이틴 로맨스' }));
+    const outcome = await run(
+      'project set',
+      args(['project', 'set'], { from: file, genre: '하이틴 로맨스' }),
+    );
 
     expect(outcome.ok).toBe(true);
-    expect(settingOf()).toMatchObject({ genre: '하이틴 로맨스', audience: '성인', styleConstraints: ['단문'] });
+    expect(settingOf()).toMatchObject({
+      genre: '하이틴 로맨스',
+      audience: '성인',
+      styleConstraints: ['단문'],
+    });
   });
 
   it('keeps the keys it was not given', async () => {
-    await run('project set', args(['project', 'set'], { genre: '하이틴 로맨스', audience: '10~20대' }));
+    await run(
+      'project set',
+      args(['project', 'set'], { genre: '하이틴 로맨스', audience: '10~20대' }),
+    );
     await run('project set', args(['project', 'set'], { 'target-words': '480000' }));
 
-    expect(settingOf()).toMatchObject({ genre: '하이틴 로맨스', audience: '10~20대', targetWordCount: 480000 });
+    expect(settingOf()).toMatchObject({
+      genre: '하이틴 로맨스',
+      audience: '10~20대',
+      targetWordCount: 480000,
+    });
   });
 
   it('refuses a point of view the format does not define', async () => {
@@ -114,7 +154,10 @@ describe('card create', () => {
   // 예전에는 한글 이름이 new-card, new-card-2 로 번호를 받아 이름과 무관한 id 가 조용히 생겼고,
   // 씬 카드가 그 id 로 인물을 참조했다.
   it('refuses a name it cannot turn into an id instead of inventing one', async () => {
-    const outcome = await run('card create character', args(['card', 'create', 'character'], { name: '서진아' }));
+    const outcome = await run(
+      'card create character',
+      args(['card', 'create', 'character'], { name: '서진아' }),
+    );
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('--id');
@@ -128,7 +171,9 @@ describe('card create', () => {
     );
 
     expect(outcome.ok).toBe(true);
-    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain('name: 서진아');
+    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
+      'name: 서진아',
+    );
   });
 
   it('rejects an explicit id that is not file-name safe', async () => {
@@ -146,7 +191,7 @@ describe('cards build', () => {
   // 익스텐션은 제안을 골라 파일까지 쓰는데 CLI 는 JSON 만 뱉고 끝이었다. 파리티 테스트는
   // verb 존재만 보므로 이 반쪽 상태를 잡지 못했다.
   function containerWith(targets: unknown[]) {
-    const real = createCliContainer({ workspacePath: workspace });
+    const real = container();
     return {
       ...real,
       buildStoryCardsUseCase: { execute: async () => ({ targets, snapshots: [] }) },
@@ -168,7 +213,9 @@ describe('cards build', () => {
     const outcome = await commands['cards build']({ container, args: args(['cards', 'build']) });
 
     expect(outcome.ok).toBe(true);
-    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain('name: 서진아');
+    expect(readFileSync(join(workspace, 'character', 'seo-jina.card'), 'utf8')).toContain(
+      'name: 서진아',
+    );
   });
 
   it('leaves the tree alone under --dry-run', async () => {
@@ -183,7 +230,10 @@ describe('cards build', () => {
       },
     ]);
 
-    await commands['cards build']({ container, args: args(['cards', 'build'], { 'dry-run': true }) });
+    await commands['cards build']({
+      container,
+      args: args(['cards', 'build'], { 'dry-run': true }),
+    });
 
     expect(existsSync(join(workspace, 'character', 'seo-jina.card'))).toBe(false);
   });
@@ -213,12 +263,20 @@ describe('scene complete', () => {
   }
 
   function containerProposing(fileName: string) {
-    const real = createCliContainer({ workspacePath: workspace });
+    const real = container();
     return {
       ...real,
       completeStoryScenesUseCase: {
         execute: async () => ({
-          scenes: [{ fileName, content: 'type: scene\nid: proposed\n', title: '제안', resolvedThreads: [], openThreads: [] }],
+          scenes: [
+            {
+              fileName,
+              content: 'type: scene\nid: proposed\n',
+              title: '제안',
+              resolvedThreads: [],
+              openThreads: [],
+            },
+          ],
           snapshots: [],
         }),
       },
@@ -242,7 +300,10 @@ describe('scene complete', () => {
     const container = containerProposing('01-first.card');
     const before = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
 
-    const outcome = await commands['scene complete']({ container, args: args(['scene', 'complete']) });
+    const outcome = await commands['scene complete']({
+      container,
+      args: args(['scene', 'complete']),
+    });
 
     expect((outcome.data as { skipped: string[] }).skipped).toContain('01-first.card');
     expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toBe(before);
