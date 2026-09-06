@@ -384,6 +384,20 @@ describe('pre-0.8 workspace migration', () => {
     expect(migrated).toContain('유정이 큐 사인을 놓친다.');
   });
 
+  it('skips a card it cannot parse and names it', async () => {
+    writeLegacyScene();
+    writeFileSync(join(workspace, 'scene', '02-broken.card'), 'type: scene\nid: [\n');
+
+    const outcome = await run('scene migrate', args(['scene', 'migrate']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('플레이스홀더 요약 1개');
+    expect(outcome.message).toContain('02-broken.card');
+
+    const doctor = await run('doctor', args(['doctor']));
+    expect(doctor.message).toContain('읽지 못한 카드');
+  });
+
   it('leaves an authored summary alone', async () => {
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),

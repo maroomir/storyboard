@@ -34,7 +34,6 @@ import {
   isLegacySceneFileName,
   isLegacySeedPlaceholderSummary,
   stripLegacySeedPlaceholder,
-  parseSceneCard,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
   serializeSceneCard,
@@ -55,6 +54,7 @@ import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
+import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
@@ -659,12 +659,12 @@ const migrateScenes: CommandHandler = async ({ container }) => {
     converted.push(conversion.fileName);
   }
 
-  const clearedPlaceholders = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
+  const { cleared, unreadable } = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
 
   return {
     ok: true,
-    message: describeSceneMigration(converted.length, clearedPlaceholders.length),
-    data: { converted, clearedPlaceholders },
+    message: describeSceneMigration(converted.length, cleared.length, unreadable),
+    data: { converted, clearedPlaceholders: cleared, unreadable },
   };
 };
 
@@ -672,21 +672,20 @@ const migrateScenes: CommandHandler = async ({ container }) => {
 async function clearLegacySeedPlaceholders(
   container: CliContainer,
   sceneDirectory: StoryUri,
-): Promise<readonly string[]> {
+): Promise<{ readonly cleared: readonly string[]; readonly unreadable: readonly string[] }> {
   const names = await container.fileSystem
     .listFileNames(sceneDirectory)
     .catch(() => [] as readonly string[]);
+  const { cards, unreadable } = await readSceneCards(container, sceneDirectory, names);
   const cleared: string[] = [];
 
-  for (const fileName of names.filter((name) => name.endsWith('.card'))) {
-    const uri = joinStoryPath(sceneDirectory, fileName);
-    const card = parseSceneCard(new TextDecoder().decode(await container.fileSystem.readFile(uri)));
+  for (const { fileName, card } of cards) {
     if (!isLegacySeedPlaceholderSummary(card.summary)) {
       continue;
     }
 
     await container.fileSystem.writeFile(
-      uri,
+      joinStoryPath(sceneDirectory, fileName),
       new TextEncoder().encode(
         serializeSceneCard({ ...card, summary: stripLegacySeedPlaceholder(card.summary ?? '') }),
       ),
@@ -694,10 +693,14 @@ async function clearLegacySeedPlaceholders(
     cleared.push(fileName);
   }
 
-  return cleared;
+  return { cleared, unreadable };
 }
 
-function describeSceneMigration(converted: number, cleared: number): string {
+function describeSceneMigration(
+  converted: number,
+  cleared: number,
+  unreadable: readonly string[],
+): string {
   const parts: string[] = [];
   if (converted > 0) {
     parts.push(`씬 ${converted}개를 카드로 옮겼습니다.`);
@@ -705,8 +708,14 @@ function describeSceneMigration(converted: number, cleared: number): string {
   if (cleared > 0) {
     parts.push(`플레이스홀더 요약 ${cleared}개를 비웠습니다.`);
   }
+  if (parts.length === 0) {
+    parts.push('바꿀 씬이 없습니다.');
+  }
+  if (unreadable.length > 0) {
+    parts.push(`읽지 못한 카드는 건너뛰었습니다: ${unreadable.join(', ')}`);
+  }
 
-  return parts.length === 0 ? '바꿀 씬이 없습니다.' : parts.join(' ');
+  return parts.join(' ');
 }
 
 // Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
