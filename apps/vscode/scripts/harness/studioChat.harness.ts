@@ -7,6 +7,7 @@ import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import { ClaudeCodeProvider } from '@storyboard/story-ai';
 import { CodexProvider } from '@storyboard/story-ai';
+import { GeminiCliProvider } from '@storyboard/story-ai';
 import { createDefaultCliRunner, type CliRunResult } from '@storyboard/story-ai';
 import type { AiGenerateResponse, AiProvider } from '@storyboard/story-ai';
 
@@ -33,10 +34,13 @@ import { createUsageSummary } from './usageSummary';
 // It WRITES to the workspace; run it on a git-clean tree and read the result with `git diff`.
 const workspace = process.env.STUDIO_WS ?? process.env.SCENE_WS ?? '';
 const providerId = process.env.STUDIO_PROVIDER ?? process.env.SCENE_PROVIDER ?? 'codex';
+const defaultModels: Readonly<Record<string, string>> = {
+  'claude-code': 'claude-sonnet-4-6',
+  codex: 'gpt-5.5',
+  'gemini-cli': 'flash',
+};
 const model =
-  process.env.STUDIO_MODEL ??
-  process.env.SCENE_MODEL ??
-  (providerId === 'claude-code' ? 'claude-sonnet-4-6' : 'gpt-5.5');
+  process.env.STUDIO_MODEL ?? process.env.SCENE_MODEL ?? defaultModels[providerId] ?? 'gpt-5.5';
 const cliTimeoutMs = Number(process.env.STUDIO_CLI_TIMEOUT ?? '600000');
 const onlyScenario = process.env.STUDIO_CASE;
 const applyProposals = process.env.STUDIO_APPLY !== '0';
@@ -151,10 +155,18 @@ function createRegistry(): AiProviderRegistry {
     (input): Promise<CliRunResult> =>
       baseRunner({ ...input, timeoutMs: cliTimeoutMs });
 
-  const provider: AiProvider =
-    providerId === 'claude-code'
-      ? new ClaudeCodeProvider({ command: 'claude', model, createRunner })
-      : new CodexProvider({ command: 'codex', model, createRunner });
+  const provider: AiProvider = createHarnessProvider();
+
+  function createHarnessProvider(): AiProvider {
+    switch (providerId) {
+      case 'claude-code':
+        return new ClaudeCodeProvider({ command: 'claude', model, createRunner });
+      case 'gemini-cli':
+        return new GeminiCliProvider({ command: 'gemini', model, createRunner });
+      default:
+        return new CodexProvider({ command: 'codex', model, createRunner });
+    }
+  }
 
   const registry = {
     generate: async (request: unknown): Promise<AiGenerateResponse> => {

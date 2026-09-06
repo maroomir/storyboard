@@ -261,10 +261,15 @@ npm run build
 
 동일 씬·동일 설정으로 **Generate**를 다시 실행했을 때, 캐시 hit 메시지 또는 기대한 재사용 동작이 있는지 확인한다. (프로젝트 옵션·입력이 동일해야 함)
 
-### 11. API 키·기본 provider (`storyboard.defaultProvider`)
+### 11. API 키·기본 provider (`defaultProvider`)
 
-Storyboard는 **기본 AI 백엔드**를 설정 키 `storyboard.defaultProvider`로 고릅니다.  
-가능한 값: `mock`, `openai`, `claude`, `google`, `ollama` (`apps/vscode/package.json`의 `contributes.configuration`과 동일).
+Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `defaultProvider`로 고릅니다(작품별로 덮어쓰려면
+`<워크스페이스>/.storyboard/config.json`). VSCode 설정 화면에는 더 이상 `storyboard.*` 항목이 없습니다.
+가능한 값: `mock`, `openai`, `claude`, `google`, `grok`, `ollama`, `claude-code`, `codex`, `gemini-cli`.
+
+키가 필요한 것은 `openai`·`claude`·`google`·`grok`이며, 키는 `~/.storyboard/secrets.json`(0600)에 저장됩니다.
+`claude-code`·`codex`·`gemini-cli`는 각 CLI의 자체 로그인을 쓰므로 키가 필요 없습니다.
+설치 직후에는 기본 provider가 비어 있어 생성이 거부되므로, 먼저 `Storyboard: Choose AI Provider`로 하나를 고릅니다.
 
 #### A. 키 없이 스모크 (`mock`)
 
