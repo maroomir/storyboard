@@ -46,6 +46,7 @@ import {
   createAiProviderRegistry,
   SecretStore,
   type AiProviderId,
+  type AiProviderRegistry,
 } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -66,6 +67,7 @@ export interface CliContainer {
   readonly homePaths: StoryboardHomePaths;
   readonly workspaceConfigFile: string | undefined;
   readonly aiGateway: AiGateway;
+  readonly aiProviderRegistry: AiProviderRegistry;
   readonly logger: IStoryboardLogger;
   // False inside the TUI, where stdin belongs to the screen and a readline prompt would fight it.
   readonly canPrompt: boolean;
@@ -230,6 +232,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     homePaths: resolveStoryboardHomePaths(),
     workspaceConfigFile,
     aiGateway,
+    aiProviderRegistry,
     logger,
     fileSystem,
     secretStore,
