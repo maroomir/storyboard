@@ -20,13 +20,20 @@ describe("usage limit detection", () => {
     for (const message of [
       "You've hit your usage limit",
       "Upgrade to Pro to continue",
-      "rate limit exceeded",
       "quota exhausted",
-      "429 Too Many Requests",
+      "TerminalQuotaError: You have exhausted your daily quota on this model.",
       "Usage limit reached for gemini-3-flash-preview. Access resets at 09:00",
       "RESOURCE_EXHAUSTED: Resource exhausted. Please try again later"
     ]) {
       expect(isUsageLimitError(new Error(message))).toBe(true)
+    }
+  })
+
+  // The switch is one-way and lasts the whole run, so a throttle that clears in seconds must not
+  // trip it — that would move the rest of a manuscript onto the other model over a momentary 429.
+  it("does not treat a transient per-minute throttle as exhaustion", () => {
+    for (const message of ["rate limit exceeded", "429 Too Many Requests"]) {
+      expect(isUsageLimitError(new Error(message))).toBe(false)
     }
   })
 

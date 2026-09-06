@@ -6,7 +6,7 @@ import { CodexProvider } from './providers/CodexProvider';
 import { GeminiCliProvider } from './providers/GeminiCliProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
 import { GrokProvider } from './providers/GrokProvider';
-import { FallbackProvider } from './providers/FallbackProvider';
+import { FallbackProvider, UsageLimitLatch } from './providers/FallbackProvider';
 import { MockAiProvider } from './providers/MockAiProvider';
 import { OllamaProvider, type OllamaClientLike } from './providers/OllamaProvider';
 import { OpenAiProvider, type OpenAiClientLike } from './providers/OpenAiProvider';
@@ -21,7 +21,7 @@ import {
   type AiProviderStatus,
   type AiTaskName,
   type CliProviderId,
-  isCliProvider,
+  requiresApiKey,
 } from '#ai/contracts/aiTypes';
 import { SecretStore } from '#ai/ports/SecretStore';
 import { ConfigBridge } from '#ai/ports/ConfigBridge';
@@ -51,6 +51,9 @@ export const missingProviderMessage =
   '기본 AI 제공자가 설정되지 않았습니다. 설정에서 제공자를 고른 뒤 다시 시도하세요.';
 
 export class AiProviderRegistry {
+  // One latch per primary provider, so the switch survives the per-call provider construction.
+  private readonly usageLimitLatches = new Map<AiProviderId, UsageLimitLatch>();
+
   public constructor(private readonly options: AiProviderRegistryOptions) {}
 
   public async listProviders(): Promise<AiProviderStatus[]> {
@@ -150,7 +153,19 @@ export class AiProviderRegistry {
       primary,
       await this.createProvider(fallback.providerId),
       fallback.onFallback,
+      this.usageLimitLatchFor(providerId),
     );
+  }
+
+  private usageLimitLatchFor(providerId: AiProviderId): UsageLimitLatch {
+    const existing = this.usageLimitLatches.get(providerId);
+    if (existing) {
+      return existing;
+    }
+
+    const latch = new UsageLimitLatch();
+    this.usageLimitLatches.set(providerId, latch);
+    return latch;
   }
 
   private async createProvider(
@@ -233,9 +248,9 @@ export class AiProviderRegistry {
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
     const config = this.options.configBridge.getProviderConfig(providerId);
-    const hasApiKey = isKeylessProvider(providerId)
-      ? true
-      : await this.options.secretStore.hasApiKey(providerId);
+    const hasApiKey = requiresApiKey(providerId)
+      ? await this.options.secretStore.hasApiKey(providerId)
+      : true;
 
     return {
       providerId,
@@ -251,9 +266,7 @@ export function createAiProviderRegistry(options: AiProviderRegistryOptions): Ai
   return new AiProviderRegistry(options);
 }
 
-function isKeylessProvider(providerId: AiProviderId): boolean {
-  return providerId === 'mock' || providerId === 'ollama' || isCliProvider(providerId);
-}
+
 
 function getProviderDisplayName(providerId: AiProviderId): string {
   switch (providerId) {
