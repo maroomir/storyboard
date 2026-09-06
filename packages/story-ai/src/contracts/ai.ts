@@ -2,6 +2,7 @@ export const aiProviderIds = [
   'openai',
   'claude',
   'google',
+  'grok',
   'ollama',
   'claude-code',
   'codex',

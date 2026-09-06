@@ -21,6 +21,12 @@ export const storyboardModelPricing = {
     'gemini-2.5-pro': { inputPricePerMillion: 1.25, outputPricePerMillion: 10.0 },
     'gemini-2.5-flash-lite': { inputPricePerMillion: 0.05, outputPricePerMillion: 0.2 },
   },
+  grok: {
+    // docs.x.ai/docs/models 2026-09 기준, 프롬프트 200k 토큰 미만 요금.
+    'grok-4.6': { inputPricePerMillion: 2.0, outputPricePerMillion: 6.0 },
+    'grok-4.5': { inputPricePerMillion: 2.0, outputPricePerMillion: 6.0 },
+    'grok-4.3': { inputPricePerMillion: 1.25, outputPricePerMillion: 2.5 },
+  },
   ollama: {
     'llama3.3': { inputPricePerMillion: 0, outputPricePerMillion: 0 },
     'llama3.2': { inputPricePerMillion: 0, outputPricePerMillion: 0 },
