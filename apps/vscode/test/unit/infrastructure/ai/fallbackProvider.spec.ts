@@ -22,7 +22,9 @@ describe("usage limit detection", () => {
       "Upgrade to Pro to continue",
       "rate limit exceeded",
       "quota exhausted",
-      "429 Too Many Requests"
+      "429 Too Many Requests",
+      "Usage limit reached for gemini-3-flash-preview. Access resets at 09:00",
+      "RESOURCE_EXHAUSTED: Resource exhausted. Please try again later"
     ]) {
       expect(isUsageLimitError(new Error(message))).toBe(true)
     }

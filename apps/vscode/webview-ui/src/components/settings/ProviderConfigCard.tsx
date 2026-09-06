@@ -5,6 +5,8 @@ import { ConnectionTestButton, StatusPill } from './SettingsPrimitives';
 import {
   getProviderStatus,
   parseSaveTarget,
+  defaultCliCommand,
+  isCliProvider,
   requiresApiKey,
   type AiProviderId,
   type ConnectionTestState,
@@ -55,7 +57,7 @@ export function ProviderConfigCard({
   const status = getProviderStatus(snapshot, providerId);
   const displayName = status?.displayName ?? providerId;
   const config = snapshot.providerConfigs[providerId];
-  const isCli = providerId === 'claude-code' || providerId === 'codex';
+  const isCli = isCliProvider(providerId);
   const showApiKey = requiresApiKey(providerId);
   const isOllama = providerId === 'ollama';
   const testState = connectionTest[providerId] ?? 'idle';
@@ -231,7 +233,7 @@ export function ProviderConfigCard({
                   autoComplete="off"
                   spellCheck={false}
                   value={resolvedCommand}
-                  placeholder={providerId === 'claude-code' ? 'claude' : 'codex'}
+                  placeholder={defaultCliCommand(providerId)}
                   onChange={(event) => {
                     const next = event.target.value;
                     setCommandDraft((previous) => ({ ...previous, [providerId]: next }));
@@ -252,7 +254,7 @@ export function ProviderConfigCard({
           {isCli && testState === 'not-installed' ? (
             <p className="m-0 text-xs text-sb-fg-error">
               CLI 미설치: 실행 명령 «
-              {resolvedCommand || (providerId === 'claude-code' ? 'claude' : 'codex')}»을 찾을 수
+              {resolvedCommand || defaultCliCommand(providerId)}»을 찾을 수
               없습니다. 설치 후 PATH를 확인하거나 위에서 명령 경로를 지정하세요.
             </p>
           ) : null}

@@ -3,6 +3,7 @@ import { createInterface } from 'node:readline/promises';
 
 import {
   aiProviderIds,
+  cliProviderIds,
   isCliProvider,
   storyboardModelCatalog,
   storyboardSettingCatalog,
@@ -441,8 +442,8 @@ async function setProviderField(
     }
     await configBridge.setProviderModel(providerId, raw);
   } else if (field === 'command') {
-    if (providerId !== 'claude-code' && providerId !== 'codex') {
-      return { ok: false, message: 'command 는 claude-code, codex 에만 있습니다.' };
+    if (!isCliProvider(providerId)) {
+      return { ok: false, message: `command 는 ${cliProviderIds.join(', ')} 에만 있습니다.` };
     }
     await configBridge.setProviderCommand(providerId, raw);
   } else {

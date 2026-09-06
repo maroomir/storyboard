@@ -6,10 +6,21 @@ export const aiProviderIds = [
   'ollama',
   'claude-code',
   'codex',
+  'gemini-cli',
   'mock',
 ] as const;
 
 export type AiProviderId = (typeof aiProviderIds)[number];
+
+// Subscription CLIs the engine drives through a spawned command instead of an HTTP client. They
+// share one config shape (`command`, `model`, `timeoutMs`) and the usage-limit fallback.
+export const cliProviderIds = [
+  'claude-code',
+  'codex',
+  'gemini-cli',
+] as const satisfies readonly AiProviderId[];
+
+export type CliProviderId = (typeof cliProviderIds)[number];
 
 export const aiTaskCatalog = [
   { name: 'sceneGrounding', label: '씬 사실 시트', status: 'wired' },
@@ -78,6 +89,6 @@ export function isAiProviderId(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId);
 }
 
-export function isCliProvider(providerId: AiProviderId): boolean {
-  return providerId === 'claude-code' || providerId === 'codex';
+export function isCliProvider(providerId: AiProviderId): providerId is CliProviderId {
+  return (cliProviderIds as readonly AiProviderId[]).includes(providerId);
 }

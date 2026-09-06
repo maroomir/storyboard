@@ -3,6 +3,7 @@ import { type CliRunner } from './providers/cliRunner';
 import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
 import { CodexProvider } from './providers/CodexProvider';
+import { GeminiCliProvider } from './providers/GeminiCliProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
 import { GrokProvider } from './providers/GrokProvider';
 import { FallbackProvider } from './providers/FallbackProvider';
@@ -19,6 +20,7 @@ import {
   type AiProviderId,
   type AiProviderStatus,
   type AiTaskName,
+  type CliProviderId,
   isCliProvider,
 } from '#ai/contracts/aiTypes';
 import { SecretStore } from '#ai/ports/SecretStore';
@@ -134,7 +136,7 @@ export class AiProviderRegistry {
   }
 
   private async createCliProviderWithFallback(
-    providerId: 'claude-code' | 'codex',
+    providerId: CliProviderId,
     modelOverride?: string,
   ): Promise<AiProvider> {
     const primary = this.createCliProvider(providerId, modelOverride);
@@ -167,6 +169,7 @@ export class AiProviderRegistry {
         return this.createOllamaProvider(modelOverride);
       case 'claude-code':
       case 'codex':
+      case 'gemini-cli':
         return this.createCliProviderWithFallback(providerId, modelOverride);
       default:
         throw new AiProviderError(
@@ -207,7 +210,7 @@ export class AiProviderRegistry {
   }
 
   private createCliProvider(
-    providerId: 'claude-code' | 'codex',
+    providerId: CliProviderId,
     modelOverride?: string,
   ): AiProvider {
     const config = this.options.configBridge.getProviderConfig(providerId);
@@ -218,9 +221,14 @@ export class AiProviderRegistry {
       createRunner: this.options.createCliRunner,
     };
 
-    return providerId === 'claude-code'
-      ? new ClaudeCodeProvider(settings)
-      : new CodexProvider({ ...settings, reasoningEffort: config.reasoningEffort });
+    switch (providerId) {
+      case 'claude-code':
+        return new ClaudeCodeProvider(settings);
+      case 'codex':
+        return new CodexProvider({ ...settings, reasoningEffort: config.reasoningEffort });
+      case 'gemini-cli':
+        return new GeminiCliProvider(settings);
+    }
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {
@@ -263,6 +271,8 @@ function getProviderDisplayName(providerId: AiProviderId): string {
       return 'Claude Code (CLI)';
     case 'codex':
       return 'Codex (CLI)';
+    case 'gemini-cli':
+      return 'Gemini CLI';
     case 'mock':
       return 'Mock AI';
   }

@@ -9,6 +9,12 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- **xAI Grok을 제공자로 고를 수 있습니다.** `grok` 제공자는 xAI의 OpenAI 호환 API(`api.x.ai`)를 쓰며, 키는 다른 API 제공자처럼 `~/.storyboard/secrets.json`에 넣습니다. 모델 카탈로그는 `grok-4.6`·`grok-4.5`·`grok-4.3`이고 단가표가 있어 달러 비용이 함께 표시됩니다.
+- **Gemini CLI를 제공자로 고를 수 있습니다.** `gemini-cli` 제공자는 Claude Code·Codex처럼 설치된 `gemini` 명령을 헤드리스로 실행해 Google 계정 로그인만으로 생성합니다. 모델은 `flash`·`pro` 별칭이나 `gemini-2.5-pro` 같은 id를 쓰고, 사용량은 CLI의 JSON `stats`에서 읽으며, 사용 한도에 걸리면 다른 CLI와 같은 폴백 규칙을 따릅니다. 연결 테스트는 설치 여부만 확인하고 로그인 안 됨은 첫 생성에서 안내합니다.
+- **봇이 API 키 제공자도 씁니다.** 이전에는 봇이 CLI 제공자(claude-code·codex·mock)만 허용해 공통 설정이 OpenAI·Claude·Gemini를 가리키면 부팅을 거부했습니다. 이제 봇도 공통 `~/.storyboard/secrets.json`의 키를 읽어 모든 제공자로 생성하며, `/doctor`가 사용 중인 제공자의 키 유무를 보고하고 `storyboard-bot setup`은 전체 제공자를 제시합니다.
+
 ## [0.8.2] - 2026-09-04
 
 ### 변경 (호환성 주의)

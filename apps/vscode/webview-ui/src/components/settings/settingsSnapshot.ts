@@ -6,9 +6,30 @@ export const AI_PROVIDER_IDS = [
   'ollama',
   'claude-code',
   'codex',
+  'gemini-cli',
   'mock',
 ] as const;
 export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
+// NOTE: Mirrors `cliProviderIds` in @storyboard/story-ai — the webview bundle cannot import it.
+export const CLI_PROVIDER_IDS = [
+  'claude-code',
+  'codex',
+  'gemini-cli',
+] as const satisfies readonly AiProviderId[];
+
+export function isCliProvider(providerId: AiProviderId): boolean {
+  return (CLI_PROVIDER_IDS as readonly AiProviderId[]).includes(providerId);
+}
+
+const DEFAULT_CLI_COMMANDS: Readonly<Record<(typeof CLI_PROVIDER_IDS)[number], string>> = {
+  'claude-code': 'claude',
+  codex: 'codex',
+  'gemini-cli': 'gemini',
+};
+
+export function defaultCliCommand(providerId: AiProviderId): string {
+  return (DEFAULT_CLI_COMMANDS as Partial<Record<AiProviderId, string>>)[providerId] ?? providerId;
+}
 export type AiTaskName = string;
 type AiTaskStatus = 'wired' | 'planned';
 
@@ -221,12 +242,7 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
 }
 
 export function requiresApiKey(providerId: AiProviderId): boolean {
-  return (
-    providerId !== 'mock' &&
-    providerId !== 'ollama' &&
-    providerId !== 'claude-code' &&
-    providerId !== 'codex'
-  );
+  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
 }
 
 export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {

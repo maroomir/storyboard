@@ -36,6 +36,9 @@ export const storyboardModelPricing = {
   codex: {
     // Codex CLI는 ChatGPT 구독으로 인증돼 토큰당 과금이 아니므로 사용량만 기록한다.
   },
+  'gemini-cli': {
+    // Gemini CLI는 Google 계정 로그인 한도로 동작해 토큰당 과금이 아니므로 사용량만 기록한다.
+  },
   mock: {
     'mock-default': { inputPricePerMillion: 0, outputPricePerMillion: 0 },
   },

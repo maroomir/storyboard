@@ -2,6 +2,7 @@ import type { AiProviderId, AiTaskName } from './ai';
 
 export {
   aiProviderIds,
+  cliProviderIds,
   aiTaskCatalog,
   aiTaskLabels,
   aiTaskNames,
@@ -10,6 +11,7 @@ export {
 } from './ai';
 export type {
   AiProviderId,
+  CliProviderId,
   AiTaskCatalogEntry,
   AiTaskName,
   AiTaskStatus,

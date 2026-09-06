@@ -44,5 +44,13 @@ export const storyboardModelCatalog = {
     { id: 'gpt-5.4', displayName: 'Codex · GPT-5.4' },
     { id: 'gpt-5.4-mini', displayName: 'Codex · GPT-5.4 mini' },
   ],
+  'gemini-cli': [
+    { id: 'flash', displayName: 'Gemini CLI · Flash (현행 별칭)' },
+    { id: 'pro', displayName: 'Gemini CLI · Pro (현행 별칭)' },
+    { id: 'gemini-3.1-pro-preview', displayName: 'Gemini CLI · 3.1 Pro Preview' },
+    { id: 'gemini-3-flash-preview', displayName: 'Gemini CLI · 3 Flash Preview' },
+    { id: 'gemini-2.5-pro', displayName: 'Gemini CLI · 2.5 Pro' },
+    { id: 'gemini-2.5-flash', displayName: 'Gemini CLI · 2.5 Flash' },
+  ],
   mock: [{ id: 'mock-default', displayName: 'Mock (offline)' }],
 } as const satisfies Record<AiProviderId, readonly ProviderModelOption[]>;
