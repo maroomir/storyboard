@@ -193,6 +193,37 @@ describe("AiProviderRegistry", () => {
       ])
     )
   })
+
+  // The registry builds a fresh provider per call, so the "switched once, never goes back" promise
+  // only holds if the exhaustion latch outlives the instance. Without it every later task re-spawns
+  // the exhausted CLI just to be told no again — hundreds of wasted processes in a long run.
+  it("keeps a CLI provider's usage-limit switch across separate generate calls", async () => {
+    let primaryCalls = 0
+    const exhaustedRunner: CliRunner = async () => {
+      primaryCalls += 1
+      return { stdout: "", stderr: "You have exhausted your daily quota on this model.", exitCode: 1 }
+    }
+    const notices: string[] = []
+    const secretStore = new SecretStore(new FakeSecretStorage(createDefaultSecretValues()))
+    const configBridge = new ConfigBridge({
+      getConfiguration: (): StoryboardConfigurationLike =>
+        new FakeConfiguration(new Map<string, unknown>([["defaultProvider", "codex"]]))
+    })
+    const registry = createAiProviderRegistry({
+      secretStore,
+      configBridge,
+      createCliRunner: (): CliRunner => exhaustedRunner,
+      cliUsageLimitFallback: { providerId: "mock", onFallback: (message) => notices.push(message) }
+    })
+
+    const first = await registry.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "1" }] })
+    const second = await registry.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "2" }] })
+
+    expect(first.providerId).toBe("mock")
+    expect(second.providerId).toBe("mock")
+    expect(primaryCalls).toBe(1)
+    expect(notices).toHaveLength(1)
+  })
 })
 
 function createRegistry(
