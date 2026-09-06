@@ -399,3 +399,32 @@ describe('pre-0.8 workspace migration', () => {
     expect(outcome.message).toContain('manuscript/');
   });
 });
+
+describe('scene generate warnings', () => {
+  // 초안 앞머리의 warnings 는 사람이 파일을 열어야 보인다. 무인 실행에서는 아무도 열지 않는다.
+  it('reports the draft warnings on stderr and in the json data', async () => {
+    const warned: string[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      logger: { ...silentLogger, warn: (message: string) => warned.push(message) },
+      generateDraftUseCase: {
+        execute: async () => ({
+          ok: true,
+          kind: 'generated',
+          draftUri: real.workspaceRoot,
+          warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
+        }),
+      },
+    } as unknown as Parameters<(typeof commands)['scene generate']>[0]['container'];
+
+    const outcome = await commands['scene generate']({
+      container: stubbed,
+      args: args(['scene', 'generate'], {}, ['01-first']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(warned).toEqual(['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)']);
+    expect((outcome.data as { warnings: string[] }).warnings).toHaveLength(1);
+  });
+});

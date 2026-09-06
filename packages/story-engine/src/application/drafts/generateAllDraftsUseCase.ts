@@ -100,6 +100,10 @@ export class GenerateAllDraftsUseCase {
         if (result.kind === 'cache_hit') cacheHits += 1;
         else {
           generated += 1;
+          // 배치는 무인 실행이라 초안 앞머리의 warnings를 아무도 보지 않는다. 여기서 한 번 알린다.
+          if (result.warnings.length > 0) {
+            this.logger.warn(`${label}: ${result.warnings.join(' / ')}`);
+          }
           await this.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
             onWillRun: () => options.onProgress?.({ current, kind: 'revising', label, total }),
             shouldCancel: options.shouldCancel,

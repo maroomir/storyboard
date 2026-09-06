@@ -133,11 +133,18 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     }
   }
 
+  // 초안 앞머리에만 남기면 아무도 보지 않는다. 경고는 stderr로 알리되 생성 자체는 성공이다 —
+  // 분량 미달은 모델 편차에서도 나오므로 게이트로 쓰면 정상 결과까지 실패로 만든다.
+  const warnings = result.kind === 'generated' ? result.warnings : [];
+  for (const warning of warnings) {
+    container.logger.warn(warning);
+  }
+
   return {
     ok: true,
     message:
       result.kind === 'cache_hit' ? '입력이 같아 기존 초안을 씁니다.' : '초안을 생성했습니다.',
-    data: { draft: (result.draftUri as StoryUri).fsPath },
+    data: { draft: (result.draftUri as StoryUri).fsPath, warnings },
   };
 };
 

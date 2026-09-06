@@ -54,7 +54,12 @@ export interface GenerateDraftRequest {
 }
 
 export type GenerateDraftResult =
-  | { readonly ok: true; readonly kind: 'generated'; readonly draftUri: StoryUri }
+  | {
+      readonly ok: true;
+      readonly kind: 'generated';
+      readonly draftUri: StoryUri;
+      readonly warnings: readonly string[];
+    }
   | { readonly ok: true; readonly kind: 'cache_hit'; readonly draftUri: StoryUri }
   | { readonly ok: false; readonly kind: 'failed'; readonly message: string }
   | { readonly ok: false; readonly kind: 'cancelled' };
