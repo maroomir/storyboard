@@ -2,15 +2,15 @@ import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
+import { aiProviderIds, isAiProviderId, isCliProvider, type AiProviderId } from '@storyboard/story-ai';
+
 import {
   buildBotConfig,
   fetchTelegramBotUsername,
   isPlausibleBotToken,
   parseChatIds,
   sendTelegramTestMessage,
-  setupProviderIds,
   writeBotConfigFile,
-  type SetupProviderId,
 } from '@/config/setup';
 import { writeSharedDefaultProvider } from '@/config/sharedConfig';
 import { expandHome, resolvePaths } from '@/config/paths';
@@ -56,8 +56,12 @@ function parseWorkspacePath(answer: string): string | undefined {
   return existsSync(join(expanded, '.storyboard', 'project.json')) ? expanded : undefined;
 }
 
-function parseProvider(answer: string): SetupProviderId | undefined {
-  return setupProviderIds.find((id) => id === answer);
+function parseProvider(answer: string): AiProviderId | undefined {
+  return isAiProviderId(answer) ? answer : undefined;
+}
+
+function requiresApiKey(providerId: AiProviderId): boolean {
+  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
 }
 
 // The wizard refuses rather than guesses: an unusable answer three times in a row aborts with a
@@ -131,7 +135,7 @@ export async function runSetup(): Promise<number> {
     const defaultProvider =
       (await askUntilValid(
         prompter,
-        `기본 프로바이더 [${setupProviderIds.join(' | ')}] (기본 codex): `,
+        `기본 프로바이더 [${aiProviderIds.join(' | ')}] (기본 codex): `,
         parseProvider,
         '목록에 있는 값을 넣어 주세요.',
       )) ?? 'codex';
@@ -147,6 +151,11 @@ export async function runSetup(): Promise<number> {
     process.stdout.write(
       `기본 프로바이더 ${defaultProvider} 를 ${sharedConfigFile} 에 저장했습니다 (익스텐션·CLI와 공유).\n`,
     );
+    if (requiresApiKey(defaultProvider)) {
+      process.stdout.write(
+        `${defaultProvider} 는 API 키가 필요합니다. 익스텐션 설정 패널이나 \`storyboard apikey set ${defaultProvider}\` 로 ~/.storyboard/secrets.json 에 넣어 주세요.\n`,
+      );
+    }
 
     const firstChatId = allowedChatIds[0];
     if (firstChatId !== undefined) {

@@ -35,13 +35,13 @@ describe('strict bot provider config', () => {
     const path = writeConfig(dir, { ...BASE, providers: { default: 'Ollama' } });
 
     expect(() => loadConfig(path)).toThrow(ConfigError);
-    expect(() => loadConfig(path)).toThrow(/CLI 전용/);
+    expect(() => loadConfig(path)).toThrow(/알 수 없는 프로바이더/);
   });
 
-  it('rejects API-key providers with a clear message', () => {
+  it('accepts an API-key provider — the key comes from the shared secrets file', () => {
     const path = writeConfig(dir, { ...BASE, providers: { default: 'openai' } });
 
-    expect(() => loadConfig(path)).toThrow(/openai.*지원하지 않습니다/);
+    expect(loadConfig(path).config.providers?.default).toBe('openai');
   });
 
   it('rejects unsupported fields in a provider section instead of stripping them', () => {

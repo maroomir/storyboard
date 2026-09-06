@@ -48,8 +48,9 @@ remote the bot still commits every save and `/sync` settles as `no-remote` witho
 network. AI selection and draft switches (`defaultProvider`, `tasks`, `providers.*`, `draft.*`,
 `grounding.autoApprove`) come from the shared `~/.storyboard/config.json` and the workspace's
 `.storyboard/config.json` through `@storyboard/story-config` (`apps/bot/src/config/sharedConfig.ts`);
-`setup` writes the chosen provider there. The bot refuses an API-key provider at boot and refuses
-generation when no provider is configured. Legacy `providers`/`draft` blocks in `bot.json` still
+`setup` writes the chosen provider there. Every engine provider is allowed: API-key providers read
+the shared `~/.storyboard/secrets.json` (the bot never holds a key of its own — `/doctor` reports a
+missing key), and generation is refused when no provider is configured. Legacy `providers`/`draft` blocks in `bot.json` still
 apply as overrides with a boot warning. Full example: `apps/bot/config.example.json`; operator docs:
 `apps/bot/README.md`.
 

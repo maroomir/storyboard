@@ -6,8 +6,9 @@ import {
 
 import { collectPermissionWarnings } from '@/config/config';
 import { collectCliProviderCommands, findExecutableOnPath } from '@/config/environment';
+import { listProvidersInUse } from '@/config/sharedConfig';
 import type { ChatContext } from '@/chat/context';
-import type { ConfigBridge } from '@storyboard/story-ai';
+import { isCliProvider, type AiProviderId, type ConfigBridge } from '@storyboard/story-ai';
 
 import type { IncomingUpdate } from '@/chat/ports';
 import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
@@ -18,6 +19,7 @@ import { describeOutcome } from './edit';
 export interface DoctorEnvironment {
   readonly configFile: string;
   readonly configBridge: ConfigBridge;
+  readonly hasApiKey: (providerId: AiProviderId) => Promise<boolean>;
   readonly remote: string | undefined;
 }
 
@@ -81,7 +83,7 @@ async function buildReport(ctx: ChatContext, environment: DoctorEnvironment): Pr
 
   lines.push(...describeRemote(git, environment.remote));
   lines.push(`✅ 동기화 상태: ${ctx.sync.getState()}`);
-  lines.push(...describeProviders(environment.configBridge));
+  lines.push(...(await describeProviders(environment)));
   lines.push(...describeJobs(ctx));
 
   for (const warning of collectPermissionWarnings(environment.configFile)) {
@@ -119,24 +121,41 @@ function describeRemote(git: GitClient, remote: string | undefined): string[] {
     : [`❌ 원격 \`${remote}\`이 저장소에 없습니다 — \`/sync\`가 실패합니다.`];
 }
 
-function describeProviders(configBridge: ConfigBridge): string[] {
+async function describeProviders(environment: DoctorEnvironment): Promise<string[]> {
+  const { configBridge } = environment;
   if (!configBridge.isDefaultProviderConfigured()) {
     return [
       '❌ 프로바이더: 기본 AI 제공자가 설정되지 않아 생성 작업이 거부됩니다. ~/.storyboard/config.json 의 defaultProvider 를 채우세요.',
     ];
   }
 
-  const commands = collectCliProviderCommands(configBridge);
-  if (commands.length === 0) {
-    return [`ℹ️ 프로바이더: ${configBridge.getDefaultProvider()} (CLI 미사용)`];
-  }
-
-  return commands.map(({ providerId, command }) => {
+  const cliLines = collectCliProviderCommands(configBridge).map(({ providerId, command }) => {
     const resolved = findExecutableOnPath(command);
     return resolved === undefined
       ? `❌ 프로바이더 ${providerId}: \`${command}\`을 PATH에서 찾을 수 없어 생성이 실패합니다.`
       : `✅ 프로바이더 ${providerId}: ${resolved}`;
   });
+
+  const apiKeyLines: string[] = [];
+  for (const providerId of listProvidersInUse(configBridge)) {
+    if (!requiresApiKey(providerId)) {
+      continue;
+    }
+    apiKeyLines.push(
+      (await environment.hasApiKey(providerId))
+        ? `✅ 프로바이더 ${providerId}: API 키 있음`
+        : `❌ 프로바이더 ${providerId}: ~/.storyboard/secrets.json 에 API 키가 없어 생성이 실패합니다.`,
+    );
+  }
+
+  const lines = [...cliLines, ...apiKeyLines];
+  return lines.length > 0
+    ? lines
+    : [`ℹ️ 프로바이더: ${configBridge.getDefaultProvider()} (키·실행 파일 불필요)`];
+}
+
+function requiresApiKey(providerId: AiProviderId): boolean {
+  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
 }
 
 function describeJobs(ctx: ChatContext): string[] {
