@@ -173,10 +173,20 @@ export function extractSceneNarrativeSource(body: string): string {
 
 // NOTE: 0.8 이전 `scene seeds`는 summary에 안내 문구 한 줄을 넣었다. summary가 비어 있지 않으면
 // extractSceneNarrativeSource가 그것만을 서사 재료로 삼으므로, 남아 있으면 초안이 안내 문구로 쓰인다.
-const legacySeedPlaceholderSuffix = '자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';
+const legacySeedPlaceholderSuffix =
+  '자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';
 
 export function isLegacySeedPlaceholderSummary(summary: string | undefined): boolean {
   return summary !== undefined && summary.trim().endsWith(legacySeedPlaceholderSuffix);
+}
+
+// 저자가 안내 문구를 지우지 않고 그 위에 요약을 써 둔 카드도 있으므로 마지막 줄만 걷어 낸다.
+export function stripLegacySeedPlaceholder(summary: string): string | undefined {
+  const lines = summary.trimEnd().split('\n');
+  lines.pop();
+  const authored = lines.join('\n').trim();
+
+  return authored.length > 0 ? authored : undefined;
 }
 
 export function parseSceneFileName(fileName: string): SceneFileNameParts | undefined {

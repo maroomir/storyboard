@@ -33,6 +33,7 @@ import {
   createEmptyCharacter,
   isLegacySceneFileName,
   isLegacySeedPlaceholderSummary,
+  stripLegacySeedPlaceholder,
   parseSceneCard,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
@@ -686,7 +687,9 @@ async function clearLegacySeedPlaceholders(
 
     await container.fileSystem.writeFile(
       uri,
-      new TextEncoder().encode(serializeSceneCard({ ...card, summary: undefined })),
+      new TextEncoder().encode(
+        serializeSceneCard({ ...card, summary: stripLegacySeedPlaceholder(card.summary ?? '') }),
+      ),
     );
     cleared.push(fileName);
   }

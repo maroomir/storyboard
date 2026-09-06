@@ -360,6 +360,30 @@ describe('pre-0.8 workspace migration', () => {
     expect(migrated).toContain('진아가 마이크를 처음 켰다.');
   });
 
+  it('keeps the summary an author wrote above the placeholder', async () => {
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      [
+        'type: scene',
+        'id: 01-first',
+        'title: 첫 방송',
+        'summary: |-',
+        '  진아가 마이크를 켠다.',
+        '  유정이 큐 사인을 놓친다.',
+        `  ${placeholderSummary}`,
+        '',
+      ].join('\n'),
+    );
+
+    const outcome = await run('scene migrate', args(['scene', 'migrate']));
+
+    expect(outcome.ok).toBe(true);
+    const migrated = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
+    expect(migrated).not.toContain('자동 생성된 씬 시드');
+    expect(migrated).toContain('진아가 마이크를 켠다.');
+    expect(migrated).toContain('유정이 큐 사인을 놓친다.');
+  });
+
   it('leaves an authored summary alone', async () => {
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),
