@@ -12,11 +12,10 @@ import {
   type AiProviderId,
   type ConfigBridge,
 } from '@storyboard/story-ai';
-import { getStoryboardProjectPaths, joinStoryPath } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   isLegacySceneFileName,
   isLegacySeedPlaceholderSummary,
-  parseSceneCard,
   readMissingGitignoreEntries,
 } from '@storyboard/story-format';
 
@@ -24,6 +23,7 @@ import { findExecutableOnPath } from '@/adapters/executablePath';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 import type { CommandContext, CommandOutcome } from './outcome';
+import { readSceneCards } from './sceneCards';
 
 const endOfText = '\u0003';
 const deleteChar = '\u007f';
@@ -295,19 +295,18 @@ async function checkCliProviderLogin(
 async function countLegacySeedPlaceholders(
   container: CliContainer,
   sceneFileNames: readonly string[],
-): Promise<number> {
+): Promise<{ readonly placeholders: number; readonly unreadable: readonly string[] }> {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  let count = 0;
+  const { cards, unreadable } = await readSceneCards(
+    container,
+    paths.sceneDirectory,
+    sceneFileNames,
+  );
+  const placeholders = cards.filter(({ card }) =>
+    isLegacySeedPlaceholderSummary(card.summary),
+  ).length;
 
-  for (const fileName of sceneFileNames) {
-    const uri = joinStoryPath(paths.sceneDirectory, fileName);
-    const card = parseSceneCard(new TextDecoder().decode(await container.fileSystem.readFile(uri)));
-    if (isLegacySeedPlaceholderSummary(card.summary)) {
-      count += 1;
-    }
-  }
-
-  return count;
+  return { placeholders, unreadable };
 }
 
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
@@ -338,7 +337,10 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     .filter((uri) => !existsSync(uri.fsPath))
     .map((uri) => `${basename(uri.fsPath)}/`);
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
-  const placeholderScenes = await countLegacySeedPlaceholders(container, scenes);
+  const { placeholders: placeholderScenes, unreadable } = await countLegacySeedPlaceholders(
+    container,
+    scenes,
+  );
   const missingIgnoreEntries = readMissingGitignoreEntries(
     existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
   );
@@ -362,6 +364,15 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             label: '구형 씬',
             detail: `scene/*.txt 가 ${legacyScenes.length}개 남아 있어 읽히지 않습니다.`,
             fix: 'storyboard scene migrate',
+          },
+        ]
+      : []),
+    ...(unreadable.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '씬 카드',
+            detail: `읽지 못한 카드가 있습니다 (${unreadable.join(', ')}).`,
           },
         ]
       : []),
