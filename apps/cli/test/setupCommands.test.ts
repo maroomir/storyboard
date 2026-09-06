@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -85,9 +85,16 @@ describe('storyboard doctor', () => {
 
   // 실행 파일이 있어도 로그아웃 상태면 생성이 통째로 실패한다.
   it('fails when a subscription CLI provider is not logged in', async () => {
+    // 로그인 검사는 실행 파일이 있어야 돌므로 PATH의 claude 대신 임시 홈 안의 더미를 가리킨다.
+    const fakeClaude = join(home, 'claude');
+    writeFileSync(fakeClaude, '#!/bin/sh\nexit 0\n');
+    chmodSync(fakeClaude, 0o755);
     writeFileSync(
       join(home, 'config.json'),
-      JSON.stringify({ defaultProvider: 'claude-code', providers: { 'claude-code': { model: 'sonnet' } } }),
+      JSON.stringify({
+        defaultProvider: 'claude-code',
+        providers: { 'claude-code': { model: 'sonnet', command: fakeClaude } },
+      }),
     );
     const real = container();
     const stubbed = {
