@@ -365,7 +365,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             status: 'warn' as const,
             label: '디렉터리',
             detail: `${missingDirectories.join(', ')} 이(가) 없습니다.`,
-            fix: 'storyboard init --title "작품 이름"',
+            fix: 'storyboard init --repair',
           },
         ]
       : []),
@@ -395,7 +395,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             status: 'warn' as const,
             label: '.gitignore',
             detail: `생성물 항목이 빠졌습니다 (${missingIgnoreEntries.join(', ')}).`,
-            fix: 'storyboard init --title "작품 이름"',
+            fix: 'storyboard init --repair',
           },
         ]
       : []),
