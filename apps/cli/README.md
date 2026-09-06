@@ -28,6 +28,14 @@ storyboard project set --genre …      # the contract the outline needs (init t
 storyboard doctor                     # what is still missing, with the command that fixes it
 ```
 
+`doctor` also checks that a subscription CLI provider (`claude-code`, `codex`) is logged in — it
+spawns the provider once, so allow up to 15 s — and looks at the workspace for what an older
+Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
+`scene seeds`, a stale `.gitignore` block, cards it cannot parse. `storyboard init --repair`
+restores the directories and `.gitignore` of an existing workspace without touching the contract
+(a plain `init` refuses one); `storyboard scene migrate` converts the `.txt` files and clears the
+placeholder line while keeping any summary you wrote above it.
+
 `storyboard` with no arguments prints the grouped command list with these steps at the top;
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
 verb suggests the closest real ones. `-v` prints the version.
@@ -88,6 +96,10 @@ and run `cards build` again.
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
 forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
 → `storyboard setup`, no key → `storyboard apikey set <provider>`.
+
+`scene generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
+`--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
+runs, which is how you tell a 20-minute scene apart from a hung one.
 
 `--fallback <id>` keeps a long unattended run alive: when a CLI provider answers "usage limit", the
 remaining calls go to that provider instead of the run aborting halfway. The switch is one-way.
