@@ -478,6 +478,8 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
       return 'claude-sonnet-4-6';
     case 'google':
       return 'gemini-2.5-flash';
+    case 'grok':
+      return 'grok-4.6';
     case 'claude-code':
       return 'sonnet';
     case 'codex':

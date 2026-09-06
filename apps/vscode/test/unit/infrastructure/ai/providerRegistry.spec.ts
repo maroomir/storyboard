@@ -12,6 +12,7 @@ describe("AiProviderRegistry", () => {
         expect.objectContaining({ providerId: "openai", hasApiKey: true, isAvailable: true }),
         expect.objectContaining({ providerId: "claude", hasApiKey: true, isAvailable: true }),
         expect.objectContaining({ providerId: "google", hasApiKey: true, isAvailable: true }),
+        expect.objectContaining({ providerId: "grok", hasApiKey: true, isAvailable: true }),
         expect.objectContaining({ providerId: "ollama", hasApiKey: true, isAvailable: true })
       ])
     )
@@ -107,11 +108,12 @@ describe("AiProviderRegistry", () => {
     expect(registry.getTaskProvider("traitsExtraction")).toBe("mock")
   })
 
-  it("checks Claude, Google, and Ollama connections through registered clients", async () => {
+  it("checks Claude, Google, Grok, and Ollama connections through registered clients", async () => {
     const registry = createRegistry()
 
     await expect(registry.checkConnection("claude")).resolves.toEqual({ ok: true })
     await expect(registry.checkConnection("google")).resolves.toEqual({ ok: true })
+    await expect(registry.checkConnection("grok")).resolves.toEqual({ ok: true })
     await expect(registry.checkConnection("ollama")).resolves.toEqual({ ok: true })
   })
 
@@ -208,6 +210,7 @@ function createRegistry(
     createGoogleClient: (): GoogleClientLike => createFakeGoogleClient(),
     createOllamaClient: (): OllamaClientLike => createFakeOllamaClient(),
     createOpenAiClient: (): OpenAiClientLike => createFakeOpenAiClient(),
+    createGrokClient: (): OpenAiClientLike => createFakeOpenAiClient(),
     createCliRunner: (): CliRunner => cliRunner
   })
 }
@@ -216,7 +219,8 @@ function createDefaultSecretValues(): Map<string, string> {
   return new Map([
     ["storyboard.apiKey.openai", "sk-test"],
     ["storyboard.apiKey.claude", "sk-ant-test"],
-    ["storyboard.apiKey.google", "google-test"]
+    ["storyboard.apiKey.google", "google-test"],
+    ["storyboard.apiKey.grok", "xai-test"]
   ])
 }
 

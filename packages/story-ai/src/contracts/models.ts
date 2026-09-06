@@ -21,6 +21,11 @@ export const storyboardModelCatalog = {
     { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro' },
     { id: 'gemini-2.5-flash-lite', displayName: 'Gemini 2.5 Flash-Lite' },
   ],
+  grok: [
+    { id: 'grok-4.6', displayName: 'Grok 4.6' },
+    { id: 'grok-4.5', displayName: 'Grok 4.5' },
+    { id: 'grok-4.3', displayName: 'Grok 4.3' },
+  ],
   ollama: [
     { id: 'llama3.3', displayName: 'Llama 3.3' },
     { id: 'llama3.2', displayName: 'Llama 3.2' },
