@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  cliProviderIds,
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   storyboardModelCatalog,
@@ -109,7 +110,7 @@ export const settingsUpdateProviderBaseUrlRequestPayloadSchema = z.object({
 });
 
 export const settingsUpdateProviderCommandRequestPayloadSchema = z.object({
-  providerId: z.enum(['claude-code', 'codex']),
+  providerId: z.enum(cliProviderIds),
   command: z.string().trim().min(1),
 });
 

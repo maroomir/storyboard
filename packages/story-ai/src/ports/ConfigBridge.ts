@@ -4,6 +4,7 @@ import {
   aiTaskNames,
   type AiProviderId,
   type AiTaskName,
+  type CliProviderId,
 } from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
 import { storyboardModelCatalog } from '#ai/contracts/models';
@@ -102,7 +103,7 @@ export class ConfigBridge {
       };
     }
 
-    if (providerId === 'claude-code' || providerId === 'codex') {
+    if (isCliProvider(providerId)) {
       const model = configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId));
 
       const reasoningEffort =
@@ -181,10 +182,7 @@ export class ConfigBridge {
     await this.configurationUpdate('providers.ollama.baseUrl', baseUrl);
   }
 
-  public async setProviderCommand(
-    providerId: 'claude-code' | 'codex',
-    command: string,
-  ): Promise<void> {
+  public async setProviderCommand(providerId: CliProviderId, command: string): Promise<void> {
     await this.configurationUpdate(`providers.${providerId}.command`, command);
   }
 
@@ -484,12 +482,21 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
       return 'sonnet';
     case 'codex':
       return 'gpt-5.6-sol';
+    case 'gemini-cli':
+      return 'flash';
     case 'mock':
     case 'ollama':
       return undefined;
   }
 }
 
-function getDefaultCommand(providerId: 'claude-code' | 'codex'): string {
-  return providerId === 'claude-code' ? 'claude' : 'codex';
+function getDefaultCommand(providerId: CliProviderId): string {
+  switch (providerId) {
+    case 'claude-code':
+      return 'claude';
+    case 'codex':
+      return 'codex';
+    case 'gemini-cli':
+      return 'gemini';
+  }
 }

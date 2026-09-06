@@ -74,6 +74,7 @@
             "ollama",
             "claude-code",
             "codex",
+            "gemini-cli",
             "mock"
           ]
         },
@@ -94,6 +95,7 @@
                   "ollama",
                   "claude-code",
                   "codex",
+                  "gemini-cli",
                   "mock"
                 ]
               },
@@ -110,6 +112,7 @@
                       "ollama",
                       "claude-code",
                       "codex",
+                      "gemini-cli",
                       "mock"
                     ]
                   },
@@ -138,6 +141,7 @@
               "ollama",
               "claude-code",
               "codex",
+              "gemini-cli",
               "mock"
             ]
           },

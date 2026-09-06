@@ -126,6 +126,7 @@ describe("AiProviderRegistry", () => {
 
     await expect(registry.checkConnection("claude-code")).resolves.toEqual({ ok: false, reason: "not-installed" })
     await expect(registry.checkConnection("codex")).resolves.toEqual({ ok: false, reason: "not-installed" })
+    await expect(registry.checkConnection("gemini-cli")).resolves.toEqual({ ok: false, reason: "not-installed" })
   })
 
   it("reports missing provider keys with a normalized error", async () => {
@@ -187,7 +188,8 @@ describe("AiProviderRegistry", () => {
     await expect(registry.listProviders()).resolves.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ providerId: "claude-code", hasApiKey: true, isAvailable: true }),
-        expect.objectContaining({ providerId: "codex", hasApiKey: true, isAvailable: true })
+        expect.objectContaining({ providerId: "codex", hasApiKey: true, isAvailable: true }),
+        expect.objectContaining({ providerId: "gemini-cli", hasApiKey: true, isAvailable: true })
       ])
     )
   })

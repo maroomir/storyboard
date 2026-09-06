@@ -10,6 +10,12 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **xAI Grok as a provider.** The `grok` provider talks to xAI's OpenAI-compatible API (`api.x.ai`); the key goes into `~/.storyboard/secrets.json` like any other API provider. The catalog lists `grok-4.6`, `grok-4.5` and `grok-4.3`, with a price table so dollar cost is shown alongside tokens.
+- **Gemini CLI as a provider.** The `gemini-cli` provider runs the installed `gemini` command headlessly, like Claude Code and Codex, so a Google account login is all it needs. Models are the `flash`/`pro` aliases or ids such as `gemini-2.5-pro`; usage is read from the CLI's JSON `stats`, and hitting the usage limit follows the same fallback rule as the other CLIs. The connection test only checks the install; a missing login is reported on the first generation.
+- **The bot accepts API-key providers.** It used to allow CLI providers only (claude-code, codex, mock) and refused to boot when the shared config named OpenAI, Claude or Gemini. It now reads keys from the shared `~/.storyboard/secrets.json` and generates with any provider; `/doctor` reports whether each provider in use has a key, and `storyboard-bot setup` offers the full list.
+
 ## [0.8.3] - 2026-09-05
 
 ### Added
