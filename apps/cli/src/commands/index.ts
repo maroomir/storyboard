@@ -71,6 +71,17 @@ function sceneUriFor(root: StoryUri, stem: string): StoryUri {
   return scenePath(root, stem);
 }
 
+// 한 씬이 10~25분 걸리는데 --verbose 로도 아무 것도 찍히지 않아, 멈춘 것인지 도는 것인지
+// 구분할 수 없었다. 엔진은 이미 단계와 구간 번호를 알려 준다.
+// CLI 는 story-pipeline 을 직접 import 할 수 없어(아키텍처 검사) 단계 이름을 문자열로 받는다.
+const sceneStageLabels: Record<string, string> = {
+  buildPersonas: '인물 기억',
+  draftSkeleton: '뼈대',
+  polishDialogue: '대사 다듬기',
+  expandSection: '살붙임',
+  attributeDialogue: '화자 붙이기',
+};
+
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
     const result = await container.generateAllDraftsUseCase.execute({
@@ -105,7 +116,11 @@ const generateScene: CommandHandler = async ({ container, args }) => {
 
   const result = await container.generateDraftUseCase.execute(
     sceneUriFor(container.workspaceRoot, stem),
-    { force: flagBoolean(args.flags, 'force') },
+    {
+      force: flagBoolean(args.flags, 'force'),
+      onPipelineProgress: (stage, current, total) =>
+        container.logger.info(`${sceneStageLabels[stage] ?? stage} ${current}/${total}`),
+    },
   );
 
   if (!result.ok) {
@@ -121,6 +136,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     const revised = await container.reviseAfterGenerateGate.runForScene(
       container.workspaceRoot,
       stem,
+      { onProgress: (message) => container.logger.info(message) },
     );
 
     // A rejected candidate means the original was kept. Saying nothing would let an unattended run
