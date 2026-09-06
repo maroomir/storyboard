@@ -611,18 +611,20 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 
 ## 6. 설정 키
 
-`apps/vscode/package.json#contributes.configuration`에 다음을 노출한다.
+설정은 VSCode `contributes.configuration`이 아니라 세 앱이 함께 쓰는 파일에 있다. 공통값은
+`~/.storyboard/config.json`, 작품별 재정의는 `<워크스페이스>/.storyboard/config.json`이며, 키 이름은 아래에서
+`storyboard.` 접두사를 뺀 형태다(예: `defaultProvider`, `providers.codex.model`).
 
-- `storyboard.defaultProvider`: `"openai" | "claude" | "google" | "ollama" | "claude-code" | "codex" | "mock"`
-- `storyboard.providers.openai.model`
-- `storyboard.providers.claude.model`
-- `storyboard.providers.google.model`
-- `storyboard.providers.ollama.baseUrl`
-- `storyboard.providers.ollama.model`
-- `storyboard.providers.claude-code.command` / `storyboard.providers.claude-code.model`
-- `storyboard.providers.claude-code.timeoutMs` / `storyboard.providers.codex.timeoutMs`: CLI 호출당 타임아웃(ms), 기본 `600000`(10분). 긴 추론 비트가 이전 180초를 초과해 끊기던 문제 해소.
-- `storyboard.providers.codex.command` / `storyboard.providers.codex.model`
-- `storyboard.tasks.<taskName>.provider`: 작업별 provider 오버라이드
+- `defaultProvider`: `"openai" | "claude" | "google" | "grok" | "ollama" | "claude-code" | "codex" | "gemini-cli" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다.
+- `providers.openai.model`
+- `providers.claude.model`
+- `providers.google.model`
+- `providers.grok.model`: xAI OpenAI 호환 API(`https://api.x.ai/v1`), 기본 `grok-4.6`
+- `providers.ollama.baseUrl`
+- `providers.ollama.model`
+- `providers.<cli>.command` / `providers.<cli>.model`: `<cli>`는 `claude-code`·`codex`·`gemini-cli`
+- `providers.<cli>.timeoutMs`: CLI 호출당 타임아웃(ms), 기본 `600000`(10분). 긴 추론 비트가 이전 180초를 초과해 끊기던 문제 해소.
+- `tasks.<taskName>.provider`: 작업별 provider 오버라이드
 - `storyboard.draft.reviseAfterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
 - `storyboard.grammar.realtimeEnabled`: 기본 `false`
 - `storyboard.scene.prefixDigits`: 기본 `2`
@@ -630,24 +632,36 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `storyboard.draft.reviseScoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
 
-API 키는 설정에 노출하지 않고 `vscode.SecretStorage`에만 저장한다.
+API 키는 설정 파일이 아니라 `~/.storyboard/secrets.json`(모드 0600)에만 저장하며, 세 앱이 같은 파일을 읽는다.
+키가 필요한 provider는 `openai`·`claude`·`google`·`grok`이고, `mock`·`ollama`와 CLI provider는 키가 없다.
 
-`claude-code`·`codex` provider는 클라우드 API를 직접 호출하는 대신 로컬에 설치된 `claude`·`codex` CLI를
-헤드리스 모드로 실행해 생성 결과를 가져온다. 인증은 각 CLI의 자체 로그인(구독)이 처리하므로 API 키가
-필요 없고(keyless), CLI는 셸 보간 없이(`shell:false`) 임시 디렉터리에서 읽기 전용으로 실행하며 프롬프트는
-stdin으로만 전달한다. 실행 명령(`storyboard.providers.<id>.command`)은 설정 패널에서 사용자가 바꿀 수
-있으나, 웹뷰에서 들어온 명령 값은 호스트 경계에서 검증한 뒤 인자 배열로만 전달한다.
-연결 테스트는 `claude auth status`(또는 `codex login status`)로 바이너리와 로그인 여부를 함께 검증하며,
-바이너리를 찾지 못한 경우(`ENOENT`)는 그 밖의 실패와 구분해 «CLI 미설치»로 표시한다.
+`claude-code`·`codex`·`gemini-cli` provider는 클라우드 API를 직접 호출하는 대신 로컬에 설치된
+`claude`·`codex`·`gemini` CLI를 헤드리스 모드로 실행해 생성 결과를 가져온다. 인증은 각 CLI의 자체
+로그인(구독·계정)이 처리하므로 API 키가 필요 없고(keyless), CLI는 셸 보간 없이(`shell:false`) 임시
+디렉터리에서 읽기 전용으로 실행하며 프롬프트는 stdin으로만 전달한다. 실행 명령(`providers.<id>.command`)은
+설정 패널에서 사용자가 바꿀 수 있으나, 웹뷰에서 들어온 명령 값은 호스트 경계에서 검증한 뒤 인자 배열로만
+전달한다.
+
+연결 테스트는 provider마다 확인할 수 있는 만큼만 확인한다. `claude auth status`와 `codex login status`는
+바이너리와 로그인 여부를 함께 검증한다. `gemini`에는 로그인 상태만 묻는 부명령이 없어 `--version`으로
+설치 여부만 확인하고, 로그인 실패는 첫 생성에서 exit 41 또는 stderr의 `Error authenticating`으로 드러나
+로그인 안내로 바뀐다. 바이너리를 찾지 못한 경우(`ENOENT`)는 그 밖의 실패와 구분해 «CLI 미설치»로 표시한다.
 
 **사용량·비용**: `claude-code`는 `--output-format json` 출력의 `total_cost_usd`를 비용으로 그대로 기록한다.
-`codex`는 `codex exec --json` 이벤트에서 토큰 사용량을 파싱한다. Codex CLI는 ChatGPT 구독으로 인증돼
-토큰당 과금이 아니므로 USD 비용은 `0`으로 기록한다.
+`codex`는 `codex exec --json` 이벤트에서, `gemini-cli`는 `--output-format json`의 `stats.models.<모델>.tokens`
+에서 토큰 사용량을 파싱한다(응답한 모델이 여러 개면 합산한다 — CLI가 Pro에서 Flash로 조용히 내려갈 수
+있다). 이 셋은 구독·계정 한도로 인증돼 토큰당 과금이 아니므로 USD 비용은 기록하지 않고, 단가표가 없는
+provider의 사용량이 섞인 합계는 «구독 CLI 사용량 제외»로 표시해 달러 금액이 전체 청구액처럼 보이지 않게
+한다.
 
-CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 두 CLI는 토큰 스트리밍을 노출하지 않으므로 생성을
+**사용 한도 폴백**: CLI가 기간 할당량 소진을 알리면 무인 실행이 반쪽짜리 원고로 중단되지 않도록 남은
+호출을 설정된 대체 provider로 넘긴다. 전환은 단방향이고 실행 내내 유지되므로, 몇 초면 풀리는 분당 스로틀
+(`rate limit`·`429`)은 소진으로 보지 않는다.
+
+CLI provider는 의도적으로 **버퍼링 폴백**을 쓴다. 세 CLI 모두 토큰 스트리밍을 노출하지 않으므로 생성을
 끝까지 마친 뒤 전체 결과를 한 번에 전달하며, 실시간 토큰 스트리밍은 제공하지 않는다(설계상 의도).
 같은 이유로 **인라인 완성은 CLI provider에서 비활성화**한다. 키 입력마다 CLI 프로세스를 새로 띄우면
-지연·비용이 과도하고, 두 CLI는 `temperature`·출력 길이 제어를 노출하지 않기 때문이다(설계상 의도).
+지연·비용이 과도하고, CLI는 `temperature`·출력 길이 제어를 노출하지 않기 때문이다(설계상 의도).
 따라서 `temperature`와 `maxTokens`(출력 토큰 상한)도 CLI provider에는 적용되지 않는다.
 
 ## 7. 비목표 (Non-Goals)
