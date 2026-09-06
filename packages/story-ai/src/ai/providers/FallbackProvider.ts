@@ -3,7 +3,8 @@ import type { AiProviderId } from '#ai/contracts/ai';
 
 // A subscription CLI answers "usage limit" rather than a retryable error, so a long unattended run
 // dies partway with half a manuscript written. These are the phrasings the CLI providers use.
-const usageLimitPattern = /usage limit|upgrade to pro|rate limit|quota|too many requests/i;
+const usageLimitPattern =
+  /usage limit|upgrade to pro|rate limit|quota|too many requests|resource_exhausted/i;
 
 export function isUsageLimitError(error: unknown): boolean {
   return usageLimitPattern.test(error instanceof Error ? error.message : String(error));

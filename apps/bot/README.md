@@ -67,7 +67,7 @@ node apps/bot/dist/index.js
   "providers": { "codex": { "reasoningEffort": "medium" } }, "draft": { "reviseMaxIterations": 2 } }
 ```
 
-봇은 익스텐션·CLI와 같은 프로바이더를 모두 씁니다. `claude-code` · `codex` 같은 구독 CLI는 각자의 로그인을,
+봇은 익스텐션·CLI와 같은 프로바이더를 모두 씁니다. `claude-code` · `codex` · `gemini-cli` 같은 구독 CLI는 각자의 로그인을,
 `openai` · `claude` · `google` · `grok` 같은 API 키 프로바이더는 공통 **`~/.storyboard/secrets.json`**(0600)의 키를
 씁니다 — 봇은 키를 따로 갖지 않으므로 익스텐션 설정 패널이나 `storyboard apikey set <provider>` 로 넣어 두세요.
 키가 없거나 프로바이더가 아예 없으면 생성 작업이 거부됩니다(`/doctor`가 알려 줍니다). 씬

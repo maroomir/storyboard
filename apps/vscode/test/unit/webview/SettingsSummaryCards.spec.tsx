@@ -42,7 +42,7 @@ describe("SettingsSummaryCards", () => {
     render(<SettingsSummaryCards snapshot={buildSnapshot()} onNavigate={vi.fn()} />)
 
     expect(screen.getByText("claude 모델")).toBeTruthy()
-    expect(screen.getByText("1 / 3 키 등록")).toBeTruthy()
+    expect(screen.getByText("1 / 4 키 등록")).toBeTruthy()
     expect(screen.getByText("1개 활성")).toBeTruthy()
     expect(screen.getByText("나머지 1개는 기본값")).toBeTruthy()
   })
