@@ -400,6 +400,36 @@ describe('pre-0.8 workspace migration', () => {
   });
 });
 
+describe('scene generate progress', () => {
+  // 한 씬이 10~25분 걸리는데 --verbose 로도 아무 것도 찍히지 않았다.
+  it('logs the pipeline stage and section index', async () => {
+    const logged: string[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      logger: { ...silentLogger, info: (message: string) => logged.push(message) },
+      generateDraftUseCase: {
+        execute: async (
+          _uri: unknown,
+          request: {
+            onPipelineProgress?: (stage: string, current: number, total: number) => void;
+          },
+        ) => {
+          request.onPipelineProgress?.('expandSection', 2, 3);
+          return { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] };
+        },
+      },
+    } as unknown as Parameters<(typeof commands)['scene generate']>[0]['container'];
+
+    await commands['scene generate']({
+      container: stubbed,
+      args: args(['scene', 'generate'], {}, ['01-first']),
+    });
+
+    expect(logged).toEqual(['살붙임 2/3']);
+  });
+});
+
 describe('scene generate warnings', () => {
   // 초안 앞머리의 warnings 는 사람이 파일을 열어야 보인다. 무인 실행에서는 아무도 열지 않는다.
   it('reports the draft warnings on stderr and in the json data', async () => {
