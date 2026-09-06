@@ -39,14 +39,30 @@ export async function ensureWorkspaceGitignore(
   }
 
   const current = new TextDecoder().decode(await fs.readFile(gitignoreUri));
-  if (current.includes('# Storyboard generated files')) {
+  const separator = current.endsWith('\n') || current.length === 0 ? '' : '\n';
+
+  if (!current.includes('# Storyboard generated files')) {
+    await fs.writeFile(
+      gitignoreUri,
+      new TextEncoder().encode(`${current}${separator}${STORYBOARD_GITIGNORE_BLOCK}`),
+    );
     return;
   }
 
-  const separator = current.endsWith('\n') ? '' : '\n';
+  // NOTE: 마커가 있다는 것만으로 넘어가면 0.8 이전 워크스페이스에 `manuscript/`가 영영 추가되지
+  // 않아 생성물이 통째로 커밋 대상에 남는다. 빠진 항목만 이어 붙인다.
+  const existing = new Set(current.split('\n').map((line) => line.trim()));
+  const missing = STORYBOARD_GITIGNORE_BLOCK.split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#') && !existing.has(line));
+
+  if (missing.length === 0) {
+    return;
+  }
+
   await fs.writeFile(
     gitignoreUri,
-    new TextEncoder().encode(`${current}${separator}${STORYBOARD_GITIGNORE_BLOCK}`),
+    new TextEncoder().encode(`${current}${separator}${missing.join('\n')}\n`),
   );
 }
 
