@@ -10,7 +10,7 @@ import {
   inspectWorkspaceRepository,
 } from '@storyboard/story-git';
 
-import { aiTaskCatalog } from '@storyboard/story-ai';
+import { aiTaskCatalog, missingProviderMessage, requiresApiKey } from '@storyboard/story-ai';
 
 import { NodeUri, getStoryboardProjectPaths, migrateLegacyMemory } from '@storyboard/story-engine';
 
@@ -23,7 +23,7 @@ import { createJobAwareCliRunner } from '@/provider/abortableCliRunner';
 import { getActiveJobId } from '@/provider/jobSignalContext';
 import { createWorkerRemoteSyncExecutor } from '@/sync/workerExecutor';
 
-import { ChatContext } from '@/chat/context';
+import { ChatContext, type CheckGenerationReadiness } from '@/chat/context';
 import {
   createBibleHandler,
   createCardsHandler,
@@ -85,6 +85,7 @@ export class StoryboardBotApplication {
   private readonly db: BotDatabase;
   private readonly genJobs: GenJobs;
   private dashboard: DashboardHandle | undefined;
+  private readonly checkGenerationReadiness: CheckGenerationReadiness;
 
   public constructor(private readonly options: StoryboardBotApplicationOptions) {
     const { config, logger } = options;
@@ -158,6 +159,21 @@ export class StoryboardBotApplication {
       cliRunner: createJobAwareCliRunner(),
       onUsage: recordJobUsage,
     });
+
+    // The bot no longer refuses an API-key provider at boot, so this is what keeps a keyless one
+    // from being discovered halfway through a queued job.
+    this.checkGenerationReadiness = async (): Promise<string | undefined> => {
+      if (!configBridge.isDefaultProviderConfigured()) {
+        return missingProviderMessage;
+      }
+
+      const providerId = configBridge.getDefaultProvider();
+      if (requiresApiKey(providerId) && !(await secretStore.hasApiKey(providerId))) {
+        return `${providerId} 는 API 키가 필요한데 ~/.storyboard/secrets.json 에 키가 없습니다.`;
+      }
+
+      return undefined;
+    };
     const sceneDraftGenerator = new SceneDraftGenerator({
       store: this.store,
       content: this.content,
@@ -332,6 +348,7 @@ export class StoryboardBotApplication {
       this.store,
       this.sync,
       this.genJobs.manager,
+      this.checkGenerationReadiness,
     );
   }
 }

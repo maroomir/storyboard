@@ -11,6 +11,10 @@ import type {
   SentMessageRef,
 } from './ports';
 
+// Returns the reason generation cannot run right now, or undefined when it can. Checked before a
+// job is queued so a missing API key is answered immediately instead of at the first AI call.
+export type CheckGenerationReadiness = () => Promise<string | undefined>;
+
 // Facade handed to each command handler. Handlers reach the outside world only through this
 // object, so they stay decoupled from the gateway and from each other.
 export class ChatContext {
@@ -21,7 +25,12 @@ export class ChatContext {
     public readonly store: WorkspaceStore,
     public readonly sync: SyncService,
     public readonly jobs?: IEnqueueJob,
+    private readonly checkGenerationReadiness?: CheckGenerationReadiness,
   ) {}
+
+  public async describeGenerationBlocker(): Promise<string | undefined> {
+    return this.checkGenerationReadiness?.();
+  }
 
   public get chatId(): number {
     return this.update.chatId;

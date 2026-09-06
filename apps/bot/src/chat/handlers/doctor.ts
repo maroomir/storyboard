@@ -8,7 +8,7 @@ import { collectPermissionWarnings } from '@/config/config';
 import { collectCliProviderCommands, findExecutableOnPath } from '@/config/environment';
 import { listProvidersInUse } from '@/config/sharedConfig';
 import type { ChatContext } from '@/chat/context';
-import { isCliProvider, type AiProviderId, type ConfigBridge } from '@storyboard/story-ai';
+import { requiresApiKey, type AiProviderId, type ConfigBridge } from '@storyboard/story-ai';
 
 import type { IncomingUpdate } from '@/chat/ports';
 import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
@@ -154,9 +154,6 @@ async function describeProviders(environment: DoctorEnvironment): Promise<string
     : [`ℹ️ 프로바이더: ${configBridge.getDefaultProvider()} (키·실행 파일 불필요)`];
 }
 
-function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
-}
 
 function describeJobs(ctx: ChatContext): string[] {
   if (!ctx.jobs) {

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
-import { aiProviderIds, isAiProviderId, isCliProvider, type AiProviderId } from '@storyboard/story-ai';
+import { aiProviderIds, isAiProviderId, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 
 import {
   buildBotConfig,
@@ -28,24 +28,32 @@ function createPrompter(): Prompter {
   };
 }
 
+// Two very different outcomes the caller must not confuse: `skipped` means the operator pressed
+// enter to take the default, `exhausted` means three unusable answers in a row. A step with a
+// default treats them differently, and every step aborts on `exhausted`.
+type AskOutcome<T> =
+  | { readonly kind: 'answered'; readonly value: T }
+  | { readonly kind: 'skipped' }
+  | { readonly kind: 'exhausted' };
+
 async function askUntilValid<T>(
   prompter: Prompter,
   question: string,
   parse: (answer: string) => T | undefined,
   complaint: string,
-): Promise<T | undefined> {
+): Promise<AskOutcome<T>> {
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const answer = (await prompter.ask(question)).trim();
     if (answer.length === 0) {
-      return undefined;
+      return { kind: 'skipped' };
     }
     const parsed = parse(answer);
     if (parsed !== undefined) {
-      return parsed;
+      return { kind: 'answered', value: parsed };
     }
     process.stdout.write(`  ${complaint}\n`);
   }
-  return undefined;
+  return { kind: 'exhausted' };
 }
 
 function parseWorkspacePath(answer: string): string | undefined {
@@ -60,9 +68,6 @@ function parseProvider(answer: string): AiProviderId | undefined {
   return isAiProviderId(answer) ? answer : undefined;
 }
 
-function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
-}
 
 // The wizard refuses rather than guesses: an unusable answer three times in a row aborts with a
 // non-zero exit so a scripted install cannot end up with a half-written config.
@@ -92,16 +97,17 @@ export async function runSetup(): Promise<number> {
       }
     }
 
-    const botToken = await askUntilValid(
+    const botTokenOutcome = await askUntilValid(
       prompter,
       'BotFather 토큰: ',
       (answer) => (isPlausibleBotToken(answer) ? answer.trim() : undefined),
       '토큰 형태가 아닙니다 (예: 123456789:AA...).',
     );
-    if (botToken === undefined) {
+    if (botTokenOutcome.kind !== 'answered') {
       process.stdout.write('토큰이 없어 중단합니다.\n');
       return 1;
     }
+    const botToken = botTokenOutcome.value;
 
     const username = await fetchTelegramBotUsername(botToken);
     process.stdout.write(
@@ -110,35 +116,44 @@ export async function runSetup(): Promise<number> {
         : `  확인됨: @${username}\n`,
     );
 
-    const allowedChatIds = await askUntilValid(
+    const allowedChatIdsOutcome = await askUntilValid(
       prompter,
       '허용할 chat id (쉼표나 공백으로 구분): ',
       parseChatIds,
       '정수만 넣어 주세요.',
     );
-    if (allowedChatIds === undefined) {
+    if (allowedChatIdsOutcome.kind !== 'answered') {
       process.stdout.write('허용 목록이 비어 중단합니다. 아무나 봇을 쓰게 둘 수는 없습니다.\n');
       return 1;
     }
+    const allowedChatIds = allowedChatIdsOutcome.value;
 
-    const workspacePath = await askUntilValid(
+    const workspacePathOutcome = await askUntilValid(
       prompter,
       'Storyboard 워크스페이스 절대 경로: ',
       parseWorkspacePath,
       '절대 경로여야 하고 그 안에 .storyboard/project.json 이 있어야 합니다.',
     );
-    if (workspacePath === undefined) {
+    if (workspacePathOutcome.kind !== 'answered') {
       process.stdout.write('워크스페이스를 확인하지 못해 중단합니다.\n');
       return 1;
     }
+    const workspacePath = workspacePathOutcome.value;
 
+    // Enter takes the default; three unusable answers abort rather than silently writing `codex`
+    // into the shared config, which the operator would only discover at the first generation.
+    const providerOutcome = await askUntilValid(
+      prompter,
+      `기본 프로바이더 [${aiProviderIds.join(' | ')}] (기본 codex): `,
+      parseProvider,
+      '목록에 있는 값을 넣어 주세요.',
+    );
+    if (providerOutcome.kind === 'exhausted') {
+      process.stdout.write('프로바이더를 정하지 못해 중단합니다.\n');
+      return 1;
+    }
     const defaultProvider =
-      (await askUntilValid(
-        prompter,
-        `기본 프로바이더 [${aiProviderIds.join(' | ')}] (기본 codex): `,
-        parseProvider,
-        '목록에 있는 값을 넣어 주세요.',
-      )) ?? 'codex';
+      providerOutcome.kind === 'answered' ? providerOutcome.value : ('codex' as AiProviderId);
 
     await writeBotConfigFile(
       paths.home,
