@@ -17,6 +17,7 @@ import {
   isLegacySceneFileName,
   isLegacySeedPlaceholderSummary,
   parseSceneCard,
+  readMissingGitignoreEntries,
 } from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
@@ -291,23 +292,6 @@ async function checkCliProviderLogin(
   }
 }
 
-// `init`을 다시 실행하면 ensureWorkspaceGitignore가 채워 준다. 여기서는 무엇이 빠졌는지만 알린다.
-const storyboardGitignoreEntries = ['.storyboard/cache/', '.draft/', 'manuscript/'] as const;
-
-function readMissingGitignoreEntries(gitignorePath: string): readonly string[] {
-  if (!existsSync(gitignorePath)) {
-    return storyboardGitignoreEntries;
-  }
-
-  const lines = new Set(
-    readFileSync(gitignorePath, 'utf8')
-      .split('\n')
-      .map((line) => line.trim()),
-  );
-
-  return storyboardGitignoreEntries.filter((entry) => !lines.has(entry));
-}
-
 async function countLegacySeedPlaceholders(
   container: CliContainer,
   sceneFileNames: readonly string[],
@@ -355,7 +339,9 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     .map((uri) => `${basename(uri.fsPath)}/`);
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
   const placeholderScenes = await countLegacySeedPlaceholders(container, scenes);
-  const missingIgnoreEntries = readMissingGitignoreEntries(paths.gitignore.fsPath);
+  const missingIgnoreEntries = readMissingGitignoreEntries(
+    existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
+  );
 
   return [
     { status: 'ok', label: '워크스페이스', detail: root.fsPath },

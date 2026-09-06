@@ -1,16 +1,6 @@
-import type { StoryUri } from '@storyboard/story-format';
+import { mergeStoryboardGitignore, type StoryUri } from '@storyboard/story-format';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-
-const STORYBOARD_GITIGNORE_BLOCK = `
-# Storyboard generated files
-.storyboard/cache/
-.draft/
-manuscript/
-character/.sample.card
-background/.sample.card
-scene/.sample.card
-`;
 
 export async function createStoryboardDirectories(
   fs: IFileSystem,
@@ -30,40 +20,14 @@ export async function ensureWorkspaceGitignore(
   fs: IFileSystem,
   gitignoreUri: StoryUri,
 ): Promise<void> {
-  if (!(await fs.exists(gitignoreUri))) {
-    await fs.writeFile(
-      gitignoreUri,
-      new TextEncoder().encode(STORYBOARD_GITIGNORE_BLOCK.trimStart()),
-    );
-    return;
+  const current = (await fs.exists(gitignoreUri))
+    ? new TextDecoder().decode(await fs.readFile(gitignoreUri))
+    : undefined;
+  const merged = mergeStoryboardGitignore(current);
+
+  if (merged !== undefined) {
+    await fs.writeFile(gitignoreUri, new TextEncoder().encode(merged));
   }
-
-  const current = new TextDecoder().decode(await fs.readFile(gitignoreUri));
-  const separator = current.endsWith('\n') || current.length === 0 ? '' : '\n';
-
-  if (!current.includes('# Storyboard generated files')) {
-    await fs.writeFile(
-      gitignoreUri,
-      new TextEncoder().encode(`${current}${separator}${STORYBOARD_GITIGNORE_BLOCK}`),
-    );
-    return;
-  }
-
-  // NOTE: 마커가 있다는 것만으로 넘어가면 0.8 이전 워크스페이스에 `manuscript/`가 영영 추가되지
-  // 않아 생성물이 통째로 커밋 대상에 남는다. 빠진 항목만 이어 붙인다.
-  const existing = new Set(current.split('\n').map((line) => line.trim()));
-  const missing = STORYBOARD_GITIGNORE_BLOCK.split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith('#') && !existing.has(line));
-
-  if (missing.length === 0) {
-    return;
-  }
-
-  await fs.writeFile(
-    gitignoreUri,
-    new TextEncoder().encode(`${current}${separator}${missing.join('\n')}\n`),
-  );
 }
 
 export function createWorkspaceReadme(projectName: string): string {

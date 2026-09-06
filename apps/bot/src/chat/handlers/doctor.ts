@@ -1,3 +1,4 @@
+import { mergeStoryboardGitignore } from '@storyboard/story-format';
 import {
   GitClient,
   inspectWorkspaceRepository,
@@ -235,7 +236,7 @@ async function runInit(ctx: ChatContext): Promise<void> {
     return;
   }
 
-  const result = initializeWorkspaceRepository(ctx.store.root);
+  const result = initializeWorkspaceRepository(ctx.store.root, mergeStoryboardGitignore);
   const after = inspectWorkspaceRepository(ctx.store.root);
 
   await ctx.reply({

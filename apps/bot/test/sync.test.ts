@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync, existsSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { mergeStoryboardGitignore } from '@storyboard/story-format';
 import {
   GitClient,
   SyncService,
@@ -123,7 +124,7 @@ describe('workspace onboarding', () => {
       shell: false,
     });
 
-    const result = initializeWorkspaceRepository(bare.root);
+    const result = initializeWorkspaceRepository(bare.root, mergeStoryboardGitignore);
 
     expect(result.gitignoreUpdated).toBe(true);
     expect(result.committed).toBe(true);
@@ -143,8 +144,8 @@ describe('workspace onboarding', () => {
   it('does not duplicate the ignore block on a second run', () => {
     const bare = createWorkspaceFixture({ initGit: false });
 
-    expect(ensureWorkspaceGitignore(bare.root)).toBe(true);
-    expect(ensureWorkspaceGitignore(bare.root)).toBe(false);
+    expect(ensureWorkspaceGitignore(bare.root, mergeStoryboardGitignore)).toBe(true);
+    expect(ensureWorkspaceGitignore(bare.root, mergeStoryboardGitignore)).toBe(false);
 
     const content = readFileSync(join(bare.root, '.gitignore'), 'utf8');
     expect(content.match(/# Storyboard generated files/g)).toHaveLength(1);
