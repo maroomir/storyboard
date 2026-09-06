@@ -3,6 +3,7 @@ import { extractDraftBody } from '@storyboard/story-format';
 import type { ChatContext } from '@/chat/context';
 import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 import type { IncomingUpdate, InlineKeyboard } from '@/chat/ports';
+import { formatJobUsage } from '@/gen/types';
 import { enqueueDraftJob } from './generate';
 
 function handler(
@@ -357,9 +358,7 @@ export function createStatusHandler(): ICommandHandler {
 
     const usage = ctx.jobs?.getUsageSince(Date.now() - 24 * 60 * 60 * 1000);
     if (usage) {
-      lines.push(
-        `24시간 사용량: 입력 ${usage.inputTokens} · 출력 ${usage.outputTokens} 토큰 · $${usage.costUsd.toFixed(4)}`,
-      );
+      lines.push(`24시간 사용량: ${formatJobUsage(usage)}`);
     }
 
     await ctx.reply({ text: lines.join('\n') });

@@ -18,6 +18,9 @@ export interface JobUsage {
   readonly inputTokens: number;
   readonly outputTokens: number;
   readonly costUsd: number;
+  // True when some of these tokens came from a provider with no price table, so `costUsd` is a
+  // floor rather than the whole bill.
+  readonly hasUnpricedUsage?: boolean;
 }
 
 export interface GenJob {
@@ -78,6 +81,18 @@ export interface JobsConfig {
 }
 
 export const EMPTY_JOB_USAGE: JobUsage = { inputTokens: 0, outputTokens: 0, costUsd: 0 };
+
+// Never print a bare dollar figure for a total that has unpriced tokens in it: it reads as the
+// whole bill when it is only the part that had a price list.
+export function formatJobUsage(usage: JobUsage): string {
+  const tokens = `입력 ${usage.inputTokens.toLocaleString()} · 출력 ${usage.outputTokens.toLocaleString()} 토큰`;
+  const cost =
+    usage.hasUnpricedUsage === true
+      ? `$${usage.costUsd.toFixed(4)} (구독 CLI 사용량 제외)`
+      : `$${usage.costUsd.toFixed(4)}`;
+
+  return `${tokens} · ${cost}`;
+}
 
 export function buildTargetKey(target: JobTarget): string {
   if (typeof target.scene === 'string' && target.scene.length > 0) {

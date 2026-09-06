@@ -12,6 +12,7 @@ import { JobQueue } from '../src/gen/jobQueue';
 import { JobRunControl } from '../src/gen/jobRunControl';
 import { JobStateMachine } from '../src/gen/jobStateMachine';
 import { SqliteJobStore } from '../src/gen/jobStore';
+import { formatJobUsage } from '../src/gen/types';
 import { JobWorker } from '../src/gen/jobWorker';
 import { PipelineRunner, type IPipeline } from '../src/gen/pipelineRunner';
 import { getActiveJobId } from '../src/provider/jobSignalContext';
@@ -292,7 +293,38 @@ describe('job worker resilience', () => {
       await executor.execute(job);
     }
 
-    expect(jobStore.load(jobId)?.usage).toEqual({ inputTokens: 11, outputTokens: 22, costUsd: 0 });
-    expect(manager.getUsageSince(0)).toEqual({ inputTokens: 11, outputTokens: 22, costUsd: 0 });
+    const pricedTotals = { inputTokens: 11, outputTokens: 22, costUsd: 0, hasUnpricedUsage: false };
+    expect(jobStore.load(jobId)?.usage).toEqual(pricedTotals);
+    expect(manager.getUsageSince(0)).toEqual(pricedTotals);
+  });
+
+  // A subscription CLI bills by plan, not by token, so its $0 must not be summed with a priced
+  // provider's dollars as if the total were the whole bill.
+  it('flags usage from a provider with no price table', () => {
+    const jobStore = new SqliteJobStore(db);
+    const manager = new JobManager({
+      store: jobStore,
+      queue: new JobQueue(jobStore),
+      stateMachine: new JobStateMachine(),
+    });
+    const jobId = manager.enqueue({
+      kind: 'draft',
+      class: 'heavy',
+      target: { scene: '03-y' },
+      chatId: 1,
+    });
+
+    manager.recordUsage({
+      jobId,
+      taskName: 'sceneDraft',
+      providerId: 'codex',
+      inputTokens: 100,
+      outputTokens: 200,
+      costUsd: 0,
+    });
+
+    expect(manager.getUsageSince(0).hasUnpricedUsage).toBe(true);
+    expect(jobStore.load(jobId)?.usage.hasUnpricedUsage).toBe(true);
+    expect(formatJobUsage(manager.getUsageSince(0))).toContain('구독 CLI 사용량 제외');
   });
 });

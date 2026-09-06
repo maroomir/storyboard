@@ -43,3 +43,10 @@ export const storyboardModelPricing = {
     'mock-default': { inputPricePerMillion: 0, outputPricePerMillion: 0 },
   },
 } as const satisfies Record<AiProviderId, Record<string, ModelPricePerMillion>>;
+
+// A subscription CLI authenticates with a plan, not a per-token bill, so its usage has tokens but
+// no dollars. Summing its cost as 0 alongside a priced provider would understate the real charge
+// while still looking like an exact figure, so callers that report money ask this first.
+export function isUnpricedProvider(providerId: AiProviderId): boolean {
+  return Object.keys(storyboardModelPricing[providerId]).length === 0;
+}

@@ -56,11 +56,13 @@ describe('generation jobs end to end', () => {
   let genJobs: GenJobs;
   let router: UpdateRouter;
   let sent: string[];
+  let generationBlocker: string | undefined;
   let store: WorkspaceStore;
 
   beforeEach(() => {
     vi.clearAllMocks();
     sent = [];
+    generationBlocker = undefined;
     fixture = createWorkspaceFixture();
     copySharedFixture(fixture, 'cards', 'character.card', 'character/elia.card');
     copySharedFixture(fixture, 'cards', 'background.card', 'background/school.card');
@@ -149,7 +151,15 @@ describe('generation jobs end to end', () => {
       sender,
       registry,
       buildContext: (update) =>
-        new ChatContext(update, sender, content, store, sync, genJobs.manager),
+        new ChatContext(
+          update,
+          sender,
+          content,
+          store,
+          sync,
+          genJobs.manager,
+          () => Promise.resolve(generationBlocker),
+        ),
       logger: silentLogger,
     });
   });
@@ -159,6 +169,18 @@ describe('generation jobs end to end', () => {
     db.close();
     rmSync(dbDir, { recursive: true, force: true });
     fixture.cleanup();
+  });
+
+  // The bot allows API-key providers now, so a key that is not there must be answered at the
+  // command, not discovered when the queued job finally builds the provider.
+  it('refuses to queue a job when generation cannot run', async () => {
+    generationBlocker = 'openai 는 API 키가 필요한데 ~/.storyboard/secrets.json 에 키가 없습니다.';
+
+    await router.handleUpdate(message('/draft 01-prologue'));
+
+    expect(sent[0]).toContain('API 키가 필요한데');
+    expect(sent[0]).toContain('/doctor');
+    expect(existsSync(join(fixture.root, 'draft', '01-prologue.md'))).toBe(false);
   });
 
   it('runs /draft as a queued job and writes the draft without committing', async () => {

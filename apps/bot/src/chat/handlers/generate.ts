@@ -1,7 +1,7 @@
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
 import { DuplicateJobError, type IEnqueueJob } from '@/gen/jobManager';
-import { defaultJobClass, type JobKind, type JobSpec } from '@/gen/types';
+import { defaultJobClass, formatJobUsage, type JobKind, type JobSpec } from '@/gen/types';
 import { hashContent } from '@/workspace/workspaceStore';
 import type { ChatContext } from '@/chat/context';
 import type { IncomingUpdate } from '@/chat/ports';
@@ -19,6 +19,14 @@ const KIND_LABELS: Record<JobKind, string> = {
 async function enqueue(ctx: ChatContext, spec: JobSpec): Promise<void> {
   if (ctx.jobs === undefined) {
     await ctx.reply({ text: '생성 기능이 아직 초기화되지 않았습니다.' });
+    return;
+  }
+
+  // Queuing a job that cannot possibly run wastes the slot and reports the reason minutes later,
+  // when the provider is finally constructed. Answer it now instead.
+  const blocker = await ctx.describeGenerationBlocker();
+  if (blocker !== undefined) {
+    await ctx.reply({ text: `${blocker}\n/doctor 로 자세한 상태를 볼 수 있습니다.` });
     return;
   }
 
@@ -271,7 +279,7 @@ export function createUsageHandler(): ICommandHandler {
       const now = Date.now();
       const lines = USAGE_WINDOWS.map(({ label, ms }) => {
         const usage = ctx.jobs!.getUsageSince(now - ms);
-        return `${label}: 입력 ${usage.inputTokens.toLocaleString()} · 출력 ${usage.outputTokens.toLocaleString()} 토큰 · $${usage.costUsd.toFixed(4)}`;
+        return `${label}: ${formatJobUsage(usage)}`;
       });
       await ctx.reply({ text: ['💳 사용량', ...lines].join('\n') });
     },
