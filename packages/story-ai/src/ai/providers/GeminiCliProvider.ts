@@ -188,9 +188,12 @@ export class GeminiCliProvider implements AiProvider {
   }
 }
 
+// NOTE: gemini-cli writes warnings to stderr during a perfectly good run, so the stderr phrasing
+// only classifies a run that already failed — never one that exited 0 with an answer.
 function isAuthenticationFailure(result: CliRunResult): boolean {
   return (
-    result.exitCode === authenticationExitCode || authenticationStderrPattern.test(result.stderr)
+    result.exitCode !== 0 &&
+    (result.exitCode === authenticationExitCode || authenticationStderrPattern.test(result.stderr))
   );
 }
 
