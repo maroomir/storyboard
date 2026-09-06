@@ -49,6 +49,7 @@ export * from './ai/providers/FallbackProvider';
 export * from './ai/providers/ClaudeProvider';
 export * from './ai/providers/CodexProvider';
 export * from './ai/providers/GoogleProvider';
+export * from './ai/providers/GrokProvider';
 export * from './ai/providers/MockAiProvider';
 export * from './ai/providers/OllamaProvider';
 export * from './ai/providers/OpenAiProvider';

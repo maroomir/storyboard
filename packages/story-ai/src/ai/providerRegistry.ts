@@ -4,6 +4,7 @@ import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
 import { CodexProvider } from './providers/CodexProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
+import { GrokProvider } from './providers/GrokProvider';
 import { FallbackProvider } from './providers/FallbackProvider';
 import { MockAiProvider } from './providers/MockAiProvider';
 import { OllamaProvider, type OllamaClientLike } from './providers/OllamaProvider';
@@ -28,6 +29,7 @@ export interface AiProviderRegistryOptions {
   readonly configBridge: ConfigBridge;
   readonly createClaudeClient?: (apiKey: string) => ClaudeClientLike;
   readonly createGoogleClient?: (apiKey: string) => GoogleClientLike;
+  readonly createGrokClient?: (apiKey: string) => OpenAiClientLike;
   readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike;
   readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike;
   readonly createCliRunner?: () => CliRunner;
@@ -159,6 +161,7 @@ export class AiProviderRegistry {
       case 'openai':
       case 'claude':
       case 'google':
+      case 'grok':
         return this.createApiKeyProvider(providerId, modelOverride);
       case 'ollama':
         return this.createOllamaProvider(modelOverride);
@@ -175,7 +178,7 @@ export class AiProviderRegistry {
   }
 
   private async createApiKeyProvider(
-    providerId: 'openai' | 'claude' | 'google',
+    providerId: 'openai' | 'claude' | 'google' | 'grok',
     modelOverride?: string,
   ): Promise<AiProvider> {
     const config = this.options.configBridge.getProviderConfig(providerId);
@@ -189,6 +192,8 @@ export class AiProviderRegistry {
         return new ClaudeProvider({ apiKey, model, createClient: this.options.createClaudeClient });
       case 'google':
         return new GoogleProvider({ apiKey, model, createClient: this.options.createGoogleClient });
+      case 'grok':
+        return new GrokProvider({ apiKey, model, createClient: this.options.createGrokClient });
     }
   }
 
@@ -250,6 +255,8 @@ function getProviderDisplayName(providerId: AiProviderId): string {
       return 'Claude';
     case 'google':
       return 'Google Gemini';
+    case 'grok':
+      return 'xAI Grok';
     case 'ollama':
       return 'Ollama';
     case 'claude-code':

@@ -39,7 +39,7 @@ English README: [`README.en.md`](README.en.md)
 - 미승격 설정 후보를 `canon.yaml`과 대조하는 `Canon Diff Report`
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
-- `mock`, OpenAI, Claude, Google, Ollama AI provider 지원
+- `mock`, OpenAI, Claude, Google Gemini, xAI Grok, Ollama AI provider 지원
 - Claude Code(`claude`)·Codex(`codex`) CLI provider 지원 — API 키 없이 구독 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 
