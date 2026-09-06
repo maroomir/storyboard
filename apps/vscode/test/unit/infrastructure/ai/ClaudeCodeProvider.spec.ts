@@ -102,7 +102,9 @@ describe("ClaudeCodeProvider", () => {
       "json",
       "--model",
       "sonnet",
-      "--append-system-prompt",
+      "--tools",
+      "",
+      "--system-prompt",
       "지시문"
     ])
     expect(captured?.stdin).toBe("본문")
@@ -132,7 +134,9 @@ describe("ClaudeCodeProvider", () => {
 
     await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
 
+    expect(captured?.args).not.toContain("--system-prompt")
     expect(captured?.args).not.toContain("--append-system-prompt")
+    expect(captured?.args).toEqual(["-p", "--output-format", "json", "--model", "sonnet", "--tools", ""])
   })
 
   it("maps a non-zero generate exit code to a generation error", async () => {
