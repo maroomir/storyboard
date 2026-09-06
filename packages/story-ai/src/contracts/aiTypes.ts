@@ -8,6 +8,7 @@ export {
   aiTaskNames,
   isAiProviderId,
   isCliProvider,
+  requiresApiKey,
 } from './ai';
 export type {
   AiProviderId,

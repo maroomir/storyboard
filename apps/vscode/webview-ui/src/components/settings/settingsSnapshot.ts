@@ -241,6 +241,7 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
   return candidate as SettingsReadSnapshot;
 }
 
+// NOTE: Mirrors `requiresApiKey` in @storyboard/story-ai — kept in sync by settingsSnapshot.spec.
 export function requiresApiKey(providerId: AiProviderId): boolean {
   return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
 }

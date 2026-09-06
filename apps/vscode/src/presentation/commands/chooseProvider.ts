@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { aiProviderIds, isCliProvider } from '@storyboard/story-ai';
+import { aiProviderIds, isCliProvider, requiresApiKey } from '@storyboard/story-ai';
 import type {
   AiProviderId,
   AiProviderRegistry,
@@ -18,10 +18,6 @@ export interface ChooseProviderDependencies {
 
 interface ProviderPickItem extends vscode.QuickPickItem {
   readonly providerId: AiProviderId;
-}
-
-function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
 }
 
 // The first thing a new install has to decide. Picking a keyed provider flows straight into the
