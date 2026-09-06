@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 
 import {
@@ -12,7 +13,11 @@ import {
   type ConfigBridge,
 } from '@storyboard/story-ai';
 import { getStoryboardProjectPaths, joinStoryPath } from '@storyboard/story-engine';
-import { isLegacySeedPlaceholderSummary, parseSceneCard } from '@storyboard/story-format';
+import {
+  isLegacySceneFileName,
+  isLegacySeedPlaceholderSummary,
+  parseSceneCard,
+} from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
 import { flagString } from '@/cliArguments';
@@ -336,18 +341,44 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     ];
   }
 
-  const scenes = (await container.fileSystem.listFileNames(paths.sceneDirectory)).filter((name) =>
-    name.endsWith('.card'),
-  );
-  const drafts = (await container.fileSystem.listFileNames(paths.draftDirectory)).filter((name) =>
-    name.endsWith('.md'),
-  );
+  // 0.8 이전 워크스페이스나 손으로 지운 디렉터리는 진단 대상이지 예외가 아니다.
+  const sceneFileNames = await container.fileSystem
+    .listFileNames(paths.sceneDirectory)
+    .catch(() => []);
+  const scenes = sceneFileNames.filter((name) => name.endsWith('.card'));
+  const legacyScenes = sceneFileNames.filter((name) => isLegacySceneFileName(name));
+  const drafts = (
+    await container.fileSystem.listFileNames(paths.draftDirectory).catch(() => [])
+  ).filter((name) => name.endsWith('.md'));
+  const missingDirectories = [paths.sceneDirectory, paths.draftDirectory]
+    .filter((uri) => !existsSync(uri.fsPath))
+    .map((uri) => `${basename(uri.fsPath)}/`);
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
   const placeholderScenes = await countLegacySeedPlaceholders(container, scenes);
   const missingIgnoreEntries = readMissingGitignoreEntries(paths.gitignore.fsPath);
 
   return [
     { status: 'ok', label: '워크스페이스', detail: root.fsPath },
+    ...(missingDirectories.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '디렉터리',
+            detail: `${missingDirectories.join(', ')} 이(가) 없습니다.`,
+            fix: 'storyboard init --title "작품 이름"',
+          },
+        ]
+      : []),
+    ...(legacyScenes.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '구형 씬',
+            detail: `scene/*.txt 가 ${legacyScenes.length}개 남아 있어 읽히지 않습니다.`,
+            fix: 'storyboard scene migrate',
+          },
+        ]
+      : []),
     ...(placeholderScenes > 0
       ? [
           {

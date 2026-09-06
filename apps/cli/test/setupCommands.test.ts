@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -110,6 +110,30 @@ describe('storyboard doctor', () => {
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('로그인되어 있지 않습니다');
+  });
+});
+
+describe('storyboard doctor on a pre-0.8 workspace', () => {
+  function checksOf(
+    outcome: Awaited<ReturnType<typeof runDoctor>>,
+  ): { label: string; detail: string }[] {
+    return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
+  }
+
+  it('reports missing directories and legacy scene files instead of throwing', async () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    mkdirSync(join(workspace, '.storyboard'));
+    writeFileSync(join(workspace, '.storyboard', 'project.json'), '{}');
+    mkdirSync(join(workspace, 'scene'));
+    writeFileSync(join(workspace, 'scene', '01-old.txt'), '[목적] 오래된 시드\n');
+
+    const outcome = await runDoctor({ container: container(), args: args() });
+
+    expect(outcome.ok).toBe(true);
+    const checks = checksOf(outcome);
+    expect(checks.find((check) => check.label === '디렉터리')?.detail).toContain('draft/');
+    expect(checks.find((check) => check.label === '구형 씬')?.detail).toContain('1개');
+    expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
   });
 });
 
