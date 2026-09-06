@@ -31,7 +31,8 @@ Korean README: [`README.md`](README.md)
 - Compare unpromoted candidate facts against `canon.yaml` with `Canon Diff Report`.
 - Export the assembled manuscript as Markdown or plain text.
 - Visualize character relationships with a relation graph.
-- Use `mock`, OpenAI, Claude, Google, and Ollama AI providers.
+- Use `mock`, OpenAI, Claude, Google Gemini, xAI Grok, and Ollama AI providers.
+- Use the Claude Code (`claude`), Codex (`codex`), and Gemini CLI (`gemini`) CLI providers — generate on your existing subscription or account login, no API key.
 - Localize extension command titles through `package.nls.json` and `package.nls.ko.json`.
 
 The current implementation supports both the manual `scene/*.txt` → `draft/*.md` flow and the one-click long-form generation flow. One-click generation stores resumable stage state in `.storyboard/cache/novel-run.json`; long-manuscript PDF/DOCX export and deeper batch review remain follow-up work. See [`ARCHITECTURE.md`](../../ARCHITECTURE.md) for the structure.
@@ -70,7 +71,18 @@ npm run build
 4. Run `Storyboard: Initialize Project`.
 5. Fill the **Generation Contract** in `Storyboard: Open Settings`, then run `Storyboard: Generate Novel`, or manually create cards and scenes from the Characters / Backgrounds / Scenes views.
 
-The default `mock` provider lets you verify the flow without an API key. To use a real provider, save a key with `Storyboard: Set API Key...`.
+Pick a provider before generating: nothing is chosen on a fresh install, and generation is refused until you choose one. Run `Storyboard: Choose AI Provider`, or set `defaultProvider` in `~/.storyboard/config.json`. Providers that authenticate with a key (`openai`, `claude`, `google`, `grok`) take one through `Storyboard: Set API Key...`, stored in `~/.storyboard/secrets.json` (mode 0600) and shared with the CLI and the bot. `mock` invents text for flow checks and needs nothing.
+
+### CLI providers
+
+If you already use **Claude Code**, **Codex**, or **Gemini CLI**, Storyboard can generate on that subscription or account with no API key. Install the CLI (`claude` / `codex` / `gemini`), complete its own login (`claude` subscription login, `codex login`, or the Google sign-in on the first `gemini` run), then choose `claude-code`, `codex`, or `gemini-cli` as the default provider.
+
+- **Executable path**: if the binary is not on `PATH`, set an absolute path in the settings panel's **Connection** tab, or as `providers.<id>.command` in the config file. The model is `providers.<id>.model` — Gemini CLI takes the `flash`/`pro` aliases or ids such as `gemini-2.5-pro`.
+- **Connection test**: reports "CLI not installed" when the binary is missing. Claude Code and Codex also report a failed login; Gemini CLI has no command that reports login state, so it verifies the install only and reports a missing login on the first generation.
+- **Usage and cost**: Claude Code reports `total_cost_usd` directly. Codex and Gemini CLI usage is parsed from their JSON output. Both authenticate with a plan rather than per-token billing, so no dollar figure is recorded and the badge shows tokens (`12.3k tokens`); a provider with a price list shows both (`$0.42 · 12.3k`).
+- **Reasoning effort (Codex)**: `providers.codex.reasoningEffort` accepts `minimal`, `low`, `medium`, or `high`, passed to the CLI as `model_reasoning_effort`. Leave it empty for the CLI default.
+- **Usage limits**: when a CLI reports that its period allowance is exhausted, an unattended run moves the remaining calls to a configured fallback provider rather than aborting half-written. A transient per-minute throttle is not treated as exhaustion.
+- **Streaming**: CLI providers deliver the whole result at the end rather than streaming tokens. This is intended.
 
 ## Development
 

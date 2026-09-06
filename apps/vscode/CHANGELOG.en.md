@@ -16,6 +16,16 @@ after the first public release.
 - **Gemini CLI as a provider.** The `gemini-cli` provider runs the installed `gemini` command headlessly, like Claude Code and Codex, so a Google account login is all it needs. Models are the `flash`/`pro` aliases or ids such as `gemini-2.5-pro`; usage is read from the CLI's JSON `stats`, and hitting the usage limit follows the same fallback rule as the other CLIs. The connection test only checks the install; a missing login is reported on the first generation.
 - **The bot accepts API-key providers.** It used to allow CLI providers only (claude-code, codex, mock) and refused to boot when the shared config named OpenAI, Claude or Gemini. It now reads keys from the shared `~/.storyboard/secrets.json` and generates with any provider; `/doctor` reports whether each provider in use has a key, and `storyboard-bot setup` offers the full list.
 
+### Fixed
+
+- **A CLI provider that hit its usage limit is no longer called again and again.** The switch used to reset on every call, so after the limit was reached every remaining task still re-ran that CLI, got refused, and only then fell back — hundreds of wasted process launches over one long manuscript. The switch now lasts the whole run. Alongside that, a per-minute throttle (`rate limit`, `429`) that clears in seconds is no longer treated as exhaustion; one momentary throttle could previously move the rest of a manuscript onto another model.
+- **Totals that mix in subscription-CLI usage are labelled.** The bot's `/usage` and status report summed tokens from providers with no price list as $0, showing less than the real charge while looking like an exact figure.
+- **Gemini CLI no longer discards a successful answer.** An authentication-related warning on stderr during a good run made it throw away the response and report a login failure.
+- **Generation jobs are not queued for a provider with no key.** Now that the bot accepts API-key providers, a missing key is answered at the command instead of when the job finally runs.
+- **The bot setup wizard aborts when no provider is chosen.** Three unusable answers used to settle silently on `codex`; it now stops like every other step.
+- **`"sceneDraft": "codex"` in `bot.json` now takes effect.** The shorthand passed the schema but the engine could not read it, so the task quietly fell back to the default provider.
+- **The Set API Key command only offers providers that need one.** Storing a key against `ollama` or a CLI provider did nothing.
+
 ## [0.8.3] - 2026-09-05
 
 ### Added
