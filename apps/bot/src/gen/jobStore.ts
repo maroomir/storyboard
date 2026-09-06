@@ -1,3 +1,5 @@
+import { isAiProviderId, isUnpricedProvider } from '@storyboard/story-ai';
+
 import type {
   FailureReason,
   GenJob,
@@ -37,6 +39,10 @@ interface UsageTotalsRow {
   readonly input_tokens: number | null;
   readonly output_tokens: number | null;
   readonly cost_usd: number | null;
+}
+
+interface UsageProviderRow {
+  readonly provider_id: string;
 }
 
 export class SqliteJobStore implements IAccessJobStore {
@@ -155,6 +161,9 @@ export class SqliteJobStore implements IAccessJobStore {
       inputTokens: job.usage.inputTokens + entry.inputTokens,
       outputTokens: job.usage.outputTokens + entry.outputTokens,
       costUsd: job.usage.costUsd + entry.costUsd,
+      hasUnpricedUsage:
+        job.usage.hasUnpricedUsage === true ||
+        (isAiProviderId(entry.providerId) && isUnpricedProvider(entry.providerId)),
     };
     this.updateState(entry.jobId, { state: job.state, usage });
   }
@@ -212,10 +221,21 @@ export class SqliteJobStore implements IAccessJobStore {
       )
       .get(since) as UsageTotalsRow;
 
+    // The ledger records the provider, not the model, which is enough: a provider with no price
+    // table has no priced model either.
+    const providerRows = this.db
+      .prepare(`SELECT DISTINCT provider_id FROM usage_ledger WHERE recorded_at >= ?`)
+      .all(since) as UsageProviderRow[];
+    const hasUnpricedUsage = providerRows.some(
+      ({ provider_id: providerId }) =>
+        isAiProviderId(providerId) && isUnpricedProvider(providerId),
+    );
+
     return {
       inputTokens: Number(row.input_tokens ?? 0),
       outputTokens: Number(row.output_tokens ?? 0),
       costUsd: Number(row.cost_usd ?? 0),
+      hasUnpricedUsage,
     };
   }
 }

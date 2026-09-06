@@ -54,6 +54,22 @@ describe('bot shared configuration', () => {
     expect(legacy.get('defaultProvider', 'none')).toBe('codex');
   });
 
+  // `bot.json` accepts a bare provider name for a task; the engine reads only the object form, so
+  // the shorthand has to be expanded or the task silently falls back to the default provider.
+  it('expands a bare provider name in a legacy task entry', () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    const configBridge = new ConfigBridge({
+      getConfiguration: () =>
+        createBotConfiguration({
+          workspacePath: workspace,
+          env: { STORYBOARD_HOME: home },
+          providers: { default: 'mock', tasks: { sceneDraft: 'codex' } },
+        }),
+    });
+
+    expect(configBridge.getTaskProviderOverride('sceneDraft')).toBe('codex');
+  });
+
   it('flattens only the legacy values that were actually set', () => {
     expect(flattenLegacyBlocks(undefined, undefined)).toEqual({});
     expect(

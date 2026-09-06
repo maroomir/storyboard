@@ -21,6 +21,20 @@ export interface BotConfigurationOptions {
   readonly env?: NodeJS.ProcessEnv;
 }
 
+// `bot.json` lets a task be written as a bare provider name (`"sceneDraft": "codex"`), but the
+// engine only reads the object form, so the shorthand would resolve to nothing and the task would
+// quietly fall back to the default provider. Expand it here rather than let it look configured.
+function normalizeLegacyTaskEntries(
+  tasks: NonNullable<ProvidersConfig['tasks']>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(tasks).map(([taskName, entry]) => [
+      taskName,
+      typeof entry === 'string' ? { provider: entry } : entry,
+    ]),
+  );
+}
+
 // Flattens the legacy `bot.json` blocks into the dotted keys the shared config uses. They ride as
 // overrides so an install that has not moved them yet behaves exactly as before; the boot warning
 // tells the operator to move them.
@@ -34,7 +48,7 @@ export function flattenLegacyBlocks(
     overrides['defaultProvider'] = providers.default;
   }
   if (providers?.tasks !== undefined) {
-    overrides['tasks'] = providers.tasks;
+    overrides['tasks'] = normalizeLegacyTaskEntries(providers.tasks);
   }
   for (const [providerId, section] of Object.entries(providers?.models ?? {})) {
     for (const key of ['model', 'command', 'timeoutMs', 'reasoningEffort'] as const) {
