@@ -82,6 +82,28 @@ describe('storyboard doctor', () => {
     expect(outcome.message).toContain('워크스페이스가 아닙니다');
     expect((outcome.data as { checks: unknown[] }).checks.length).toBeGreaterThan(3);
   });
+
+  // 실행 파일이 있어도 로그아웃 상태면 생성이 통째로 실패한다.
+  it('fails when a subscription CLI provider is not logged in', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ defaultProvider: 'claude-code', providers: { 'claude-code': { model: 'sonnet' } } }),
+    );
+    const real = container();
+    const stubbed = {
+      ...real,
+      aiProviderRegistry: {
+        checkConnection: async () => {
+          throw new Error('Claude Code에 로그인되어 있지 않습니다.');
+        },
+      },
+    } as unknown as ReturnType<typeof createCliContainer>;
+
+    const outcome = await runDoctor({ container: stubbed, args: args() });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('로그인되어 있지 않습니다');
+  });
 });
 
 describe('storyboard config', () => {

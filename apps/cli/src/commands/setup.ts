@@ -253,9 +253,37 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
           }
         : { status: 'ok', label: 'CLI 실행 파일', detail: resolved },
     );
+
+    if (resolved !== undefined) {
+      checks.push(await checkCliProviderLogin(container, providerId));
+    }
   }
 
   return checks;
+}
+
+// 실행 파일이 있어도 로그아웃 상태면 생성이 통째로 실패한다. 프로바이더가 이미 로그인 확인
+// 방법을 알고 있으므로 doctor 에서 그대로 부른다.
+async function checkCliProviderLogin(
+  container: CliContainer,
+  providerId: AiProviderId,
+): Promise<DoctorCheck> {
+  try {
+    const result = await container.aiProviderRegistry.checkConnection(providerId);
+    return result.ok
+      ? { status: 'ok', label: '로그인', detail: `${providerId} 세션이 살아 있습니다.` }
+      : {
+          status: 'fail',
+          label: '로그인',
+          detail: `${providerId} CLI를 실행할 수 없습니다 (${result.reason}).`,
+        };
+  } catch (error) {
+    return {
+      status: 'fail',
+      label: '로그인',
+      detail: error instanceof Error ? error.message : String(error),
+    };
+  }
 }
 
 // `init`을 다시 실행하면 ensureWorkspaceGitignore가 채워 준다. 여기서는 무엇이 빠졌는지만 알린다.
