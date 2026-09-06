@@ -126,9 +126,13 @@ export class ClaudeCodeProvider implements AiProvider {
     const { systemPrompt, userPrompt } = splitCliPrompt(request.messages);
     // NOTE: claude CLI는 temperature·출력 토큰 상한 플래그를 노출하지 않아
     // request.temperature와 request.maxTokens는 적용되지 않는다.
-    const args = ['-p', '--output-format', 'json', '--model', this.model];
+    // NOTE: 기본 claude는 도구를 쓰는 코딩 에이전트다. `--tools ''`로 도구를 끄고
+    //       `--append-system-prompt` 대신 `--system-prompt`로 그 페르소나를 통째로 갈아끼워야
+    //       "I'll write the scene..." 같은 에이전트 말투가 초안에 섞이지 않는다.
+    //       `--bare`는 키체인을 건너뛰어 로그인 세션을 못 찾으므로 쓰지 않는다.
+    const args = ['-p', '--output-format', 'json', '--model', this.model, '--tools', ''];
     if (systemPrompt) {
-      args.push('--append-system-prompt', systemPrompt);
+      args.push('--system-prompt', systemPrompt);
     }
 
     let result;
