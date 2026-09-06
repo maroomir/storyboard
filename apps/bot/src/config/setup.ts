@@ -1,8 +1,5 @@
 import { promises as fs } from 'node:fs';
 
-export const setupProviderIds = ['claude-code', 'codex', 'mock'] as const;
-export type SetupProviderId = (typeof setupProviderIds)[number];
-
 export interface BotSetupInput {
   readonly botToken: string;
   readonly allowedChatIds: readonly number[];

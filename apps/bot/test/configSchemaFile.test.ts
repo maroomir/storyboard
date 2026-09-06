@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
+import { aiProviderIds } from '@storyboard/story-ai';
 import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 
@@ -34,17 +35,13 @@ describe('storyboard-bot config JSON Schema', () => {
     expect(readFileSync(SCHEMA_FILE, 'utf8')).toBe(generated);
   });
 
-  it('requires the two keys that block boot and knows the CLI-only providers', () => {
+  it('requires the two keys that block boot and lists every engine provider', () => {
     const schema = buildSchema() as {
       required?: string[];
       properties: { providers: { properties: { default: { enum?: string[] } } } };
     };
 
     expect(schema.required).toEqual(['telegram', 'workspace']);
-    expect(schema.properties.providers.properties.default.enum).toEqual([
-      'mock',
-      'claude-code',
-      'codex',
-    ]);
+    expect(schema.properties.providers.properties.default.enum).toEqual([...aiProviderIds]);
   });
 });

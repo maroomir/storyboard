@@ -67,8 +67,10 @@ node apps/bot/dist/index.js
   "providers": { "codex": { "reasoningEffort": "medium" } }, "draft": { "reviseMaxIterations": 2 } }
 ```
 
-봇은 CLI 프로바이더(`mock` · `claude-code` · `codex`)만 씁니다. 공통 설정이 API 키 프로바이더를 가리키면 부팅 시
-거부하고, 프로바이더가 아예 없으면 생성 작업이 `missing-provider`로 거부됩니다(`/doctor`가 알려 줍니다). 씬
+봇은 익스텐션·CLI와 같은 프로바이더를 모두 씁니다. `claude-code` · `codex` 같은 구독 CLI는 각자의 로그인을,
+`openai` · `claude` · `google` · `grok` 같은 API 키 프로바이더는 공통 **`~/.storyboard/secrets.json`**(0600)의 키를
+씁니다 — 봇은 키를 따로 갖지 않으므로 익스텐션 설정 패널이나 `storyboard apikey set <provider>` 로 넣어 두세요.
+키가 없거나 프로바이더가 아예 없으면 생성 작업이 거부됩니다(`/doctor`가 알려 줍니다). 씬
 사실 시트 자동 승인(`grounding.autoApprove`)은 공통 설정에 값이 없을 때 봇에서는 켜진 것으로 봅니다 — 대기열
 작업은 승인을 물을 수 없기 때문입니다.
 

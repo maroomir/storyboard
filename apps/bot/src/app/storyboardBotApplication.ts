@@ -17,7 +17,7 @@ import { NodeUri, getStoryboardProjectPaths, migrateLegacyMemory } from '@storyb
 import { BotFileSystem } from '@/gen/engineAdapters';
 
 import { createAiEngine } from '@/ai/aiGateway';
-import { assertBotProviderSelection, createBotConfiguration } from '@/config/sharedConfig';
+import { createBotConfiguration } from '@/config/sharedConfig';
 import type { UsageRecord } from '@storyboard/story-ai';
 import { createJobAwareCliRunner } from '@/provider/abortableCliRunner';
 import { getActiveJobId } from '@/provider/jobSignalContext';
@@ -148,6 +148,7 @@ export class StoryboardBotApplication {
       service: aiService,
       registry,
       configBridge,
+      secretStore,
     } = createAiEngine({
       configuration: createBotConfiguration({
         workspacePath: config.workspace.path,
@@ -157,7 +158,6 @@ export class StoryboardBotApplication {
       cliRunner: createJobAwareCliRunner(),
       onUsage: recordJobUsage,
     });
-    assertBotProviderSelection(configBridge);
     const sceneDraftGenerator = new SceneDraftGenerator({
       store: this.store,
       content: this.content,
@@ -209,6 +209,7 @@ export class StoryboardBotApplication {
       createDoctorHandler({
         configFile: options.configFilePath,
         configBridge,
+        hasApiKey: (providerId) => secretStore.hasApiKey(providerId),
         remote: config.workspace.remote,
       }),
       createRenameHandler(),

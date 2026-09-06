@@ -1,6 +1,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { isAbsolute } from 'node:path';
 
+import { aiProviderIds } from '@storyboard/story-ai';
 import { z, ZodError } from 'zod';
 
 import { expandHome } from './paths';
@@ -27,14 +28,11 @@ const workspaceConfigSchema = z.object({
 });
 
 // Slim provider selection. The AI engine itself lives in @storyboard/story-ai; this block only
-// chooses which provider and model it runs with. The bot is CLI-only by decision #22/#33: API-key
-// providers are rejected here with a clear message instead of failing at job time, and every
-// section is strict so a typo or an unsupported field errors loudly instead of being silently
-// stripped (blind-pass B5/M1/M2/M3).
-const botProviderIds = ['mock', 'claude-code', 'codex'] as const;
-
-const botProviderIdSchema = z.enum(botProviderIds, {
-  message: `프로바이더는 CLI 전용입니다: ${['mock', 'claude-code', 'codex'].join(', ')} (openai·claude·google은 봇에서 지원하지 않습니다)`,
+// chooses which provider and model it runs with. Every engine provider is accepted — API-key ones
+// read the shared ~/.storyboard/secrets.json — and every section is strict so a typo or an
+// unsupported field errors loudly instead of being silently stripped (blind-pass B5/M1/M2/M3).
+const botProviderIdSchema = z.enum(aiProviderIds, {
+  message: `알 수 없는 프로바이더입니다. 쓸 수 있는 값: ${aiProviderIds.join(', ')}`,
 });
 
 const providerSectionSchema = z.strictObject({

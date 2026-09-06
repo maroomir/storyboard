@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 
-import { createAiService } from '../src/ai/aiGateway';
+import { createAiEngine, createAiService } from '../src/ai/aiGateway';
 
 function configuration(values: Record<string, unknown>): StoryboardConfigurationLike {
   return {
@@ -25,6 +25,28 @@ describe('bot AI gateway', () => {
 
     expect(typeof response.text).toBe('string');
     expect(response.text.length).toBeGreaterThan(0);
+  });
+
+  // The bot holds no keys of its own: an API-key provider reads the shared secrets store, which
+  // is what lets the extension's `apikey set` unlock generation here too.
+  it('reads API keys through the injected shared secret storage', async () => {
+    const values = new Map([['storyboard.apiKey.openai', 'sk-test']]);
+    const { registry } = createAiEngine({
+      configuration: configuration({ defaultProvider: 'openai' }),
+      secretStorage: {
+        get: async (key) => values.get(key),
+        store: async (key, value) => {
+          values.set(key, value);
+        },
+        delete: async (key) => {
+          values.delete(key);
+        },
+      },
+    });
+
+    const statuses = await registry.listProviders();
+    expect(statuses.find((status) => status.providerId === 'openai')?.hasApiKey).toBe(true);
+    expect(statuses.find((status) => status.providerId === 'claude')?.hasApiKey).toBe(false);
   });
 
   // A queued job has nobody to pick a provider for it, so an empty config is refused instead of
