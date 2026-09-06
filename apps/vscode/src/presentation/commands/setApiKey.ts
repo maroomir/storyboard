@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
-import { aiProviderIds, SecretStore } from '@storyboard/story-ai';
+import { aiProviderIds, requiresApiKey, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-ai';
 const setApiKeyCommand = 'storyboard.apiKey.set';
-const apiKeyProviderIds = aiProviderIds.filter((providerId) => providerId !== 'mock');
+// Only the providers a key does anything for: storing one against ollama or a CLI provider would
+// look like it enabled something and change nothing.
+const apiKeyProviderIds = aiProviderIds.filter(requiresApiKey);
 
 export interface RegisterSetApiKeyCommandDependencies {
   readonly secretStore: SecretStore;

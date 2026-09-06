@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest"
 
+import { aiProviderIds, cliProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-ai"
+
 import {
   AI_PROVIDER_IDS,
+  CLI_PROVIDER_IDS,
+  defaultCliCommand,
   formatResolvedTaskAi,
   parseSettingsReadSnapshot,
   pickModelForTaskProvider,
+  requiresApiKey,
   type SettingsReadSnapshot
 } from "@webview/components/settings/settingsSnapshot"
 
@@ -77,5 +82,31 @@ describe("formatResolvedTaskAi", () => {
   it("resolves a default-provider task to the default provider and its model", () => {
     const snapshot = buildValidSnapshot()
     expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("codex / codex model")
+  })
+
+  // The webview bundle cannot import @storyboard/story-ai, so these lists are hand-mirrored. A new
+  // provider added to the engine and forgotten here would silently vanish from the settings panel.
+  describe("mirrors of the engine provider lists", () => {
+    it("lists exactly the engine's provider ids, in the same order", () => {
+      expect([...AI_PROVIDER_IDS]).toEqual([...aiProviderIds])
+    })
+
+    it("lists exactly the engine's CLI provider ids", () => {
+      expect([...CLI_PROVIDER_IDS]).toEqual([...cliProviderIds])
+    })
+
+    it("agrees with the engine on which providers need an API key", () => {
+      for (const providerId of aiProviderIds) {
+        expect(requiresApiKey(providerId)).toBe(engineRequiresApiKey(providerId))
+      }
+    })
+
+    it("names the binary each CLI provider actually runs", () => {
+      expect(Object.fromEntries(cliProviderIds.map((id) => [id, defaultCliCommand(id)]))).toEqual({
+        "claude-code": "claude",
+        codex: "codex",
+        "gemini-cli": "gemini"
+      })
+    })
   })
 })

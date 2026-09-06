@@ -132,6 +132,24 @@ describe("GeminiCliProvider", () => {
     ).rejects.toMatchObject({ message: expect.stringContaining("IneligibleTierError") })
   })
 
+  // gemini-cli writes warnings to stderr on runs that succeed; a good answer must survive them.
+  it("keeps a successful answer even when stderr mentions authentication", async () => {
+    const provider = new GeminiCliProvider({
+      command: "gemini",
+      model: "flash",
+      createRunner: (): CliRunner =>
+        createFakeRunner({
+          exitCode: 0,
+          stdout: JSON.stringify({ response: "정상 응답" }),
+          stderr: "Error authenticating with cached credentials, retrying with the fallback method"
+        })
+    })
+
+    const response = await provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "x" }] })
+
+    expect(response.text).toBe("정상 응답")
+  })
+
   it("surfaces a json error object and keeps the quota phrasing for the fallback detector", async () => {
     const stdout = JSON.stringify({
       error: { type: "TerminalQuotaError", message: "You have exhausted your daily quota on this model.", code: 429 }

@@ -5,6 +5,7 @@ import {
   aiProviderIds,
   cliProviderIds,
   isCliProvider,
+  requiresApiKey,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
@@ -19,10 +20,6 @@ import type { CommandContext, CommandOutcome } from './outcome';
 
 const endOfText = '\u0003';
 const deleteChar = '\u007f';
-
-function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
-}
 
 function isProviderId(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId);

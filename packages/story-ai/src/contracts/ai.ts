@@ -92,3 +92,10 @@ export function isAiProviderId(value: string): value is AiProviderId {
 export function isCliProvider(providerId: AiProviderId): providerId is CliProviderId {
   return (cliProviderIds as readonly AiProviderId[]).includes(providerId);
 }
+
+// Who needs a key in ~/.storyboard/secrets.json. `mock` invents text, `ollama` is a local server,
+// and a CLI provider carries its own login — every other provider authenticates with a key. Every
+// host asks this one question the same way, so it lives here rather than in each app.
+export function requiresApiKey(providerId: AiProviderId): boolean {
+  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
+}
