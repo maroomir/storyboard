@@ -328,3 +328,74 @@ describe('scene create', () => {
     expect(existsSync(join(workspace, 'scene', '01-scene-1.card'))).toBe(true);
   });
 });
+
+describe('pre-0.8 workspace migration', () => {
+  const placeholderSummary =
+    '> 1막 · 1장 — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';
+
+  function writeLegacyScene(): void {
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      [
+        'type: scene',
+        'id: 01-first',
+        'title: 첫 방송',
+        'purpose: 진아가 마이크를 처음 켰다.',
+        `summary: '${placeholderSummary}'`,
+        '',
+      ].join('\n'),
+    );
+  }
+
+  // summary가 비어 있지 않으면 초안이 그 한 줄만 서사 재료로 받는다.
+  it('clears the legacy placeholder summary', async () => {
+    writeLegacyScene();
+
+    const outcome = await run('scene migrate', args(['scene', 'migrate']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('플레이스홀더');
+    const migrated = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
+    expect(migrated).not.toContain('자동 생성된 씬 시드');
+    expect(migrated).toContain('진아가 마이크를 처음 켰다.');
+  });
+
+  it('leaves an authored summary alone', async () => {
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
+    );
+
+    await run('scene migrate', args(['scene', 'migrate']));
+
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+      '진아가 사연을 읽었다.',
+    );
+  });
+
+  // 0.8 이전 워크스페이스에는 마커만 있고 manuscript/ 가 없다.
+  it('tops up a stale gitignore block on re-init', async () => {
+    writeFileSync(
+      join(workspace, '.gitignore'),
+      '# Storyboard generated files\n.storyboard/cache/\n.draft/\n',
+    );
+
+    await run('init', args(['init'], { title: '시그널' }));
+
+    expect(readFileSync(join(workspace, '.gitignore'), 'utf8')).toContain('manuscript/');
+  });
+
+  it('reports both gaps in doctor', async () => {
+    writeLegacyScene();
+    writeFileSync(
+      join(workspace, '.gitignore'),
+      '# Storyboard generated files\n.storyboard/cache/\n.draft/\n',
+    );
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).toContain('플레이스홀더 요약이 1개');
+    expect(outcome.message).toContain('storyboard scene migrate');
+    expect(outcome.message).toContain('manuscript/');
+  });
+});

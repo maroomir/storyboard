@@ -32,6 +32,8 @@ import {
   createEmptyBackground,
   createEmptyCharacter,
   isLegacySceneFileName,
+  isLegacySeedPlaceholderSummary,
+  parseSceneCard,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
   serializeSceneCard,
@@ -633,15 +635,53 @@ const migrateScenes: CommandHandler = async ({ container }) => {
     converted.push(conversion.fileName);
   }
 
+  const clearedPlaceholders = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
+
   return {
     ok: true,
-    message:
-      converted.length === 0
-        ? '바꿀 씬이 없습니다.'
-        : `씬 ${converted.length}개를 카드로 옮겼습니다.`,
-    data: converted,
+    message: describeSceneMigration(converted.length, clearedPlaceholders.length),
+    data: { converted, clearedPlaceholders },
   };
 };
+
+// 0.8 이전 시드의 안내 문구가 summary에 남아 있으면 초안이 그 한 줄만 서사 재료로 받는다.
+async function clearLegacySeedPlaceholders(
+  container: CliContainer,
+  sceneDirectory: StoryUri,
+): Promise<readonly string[]> {
+  const names = await container.fileSystem
+    .listFileNames(sceneDirectory)
+    .catch(() => [] as readonly string[]);
+  const cleared: string[] = [];
+
+  for (const fileName of names.filter((name) => name.endsWith('.card'))) {
+    const uri = joinStoryPath(sceneDirectory, fileName);
+    const card = parseSceneCard(new TextDecoder().decode(await container.fileSystem.readFile(uri)));
+    if (!isLegacySeedPlaceholderSummary(card.summary)) {
+      continue;
+    }
+
+    await container.fileSystem.writeFile(
+      uri,
+      new TextEncoder().encode(serializeSceneCard({ ...card, summary: undefined })),
+    );
+    cleared.push(fileName);
+  }
+
+  return cleared;
+}
+
+function describeSceneMigration(converted: number, cleared: number): string {
+  const parts: string[] = [];
+  if (converted > 0) {
+    parts.push(`씬 ${converted}개를 카드로 옮겼습니다.`);
+  }
+  if (cleared > 0) {
+    parts.push(`플레이스홀더 요약 ${cleared}개를 비웠습니다.`);
+  }
+
+  return parts.length === 0 ? '바꿀 씬이 없습니다.' : parts.join(' ');
+}
 
 // Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
 // generation — `buildSceneSeeds` is deterministic.
@@ -1050,8 +1090,17 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
 const initProject: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
 
+  // 이미 워크스페이스면 계약은 손대지 않고 발판(디렉터리·.gitignore)만 채운다. 0.8 이전에 만든
+  // 워크스페이스에는 생성물 무시 항목이 빠져 있어 원고가 통째로 커밋 대상에 남는다.
   if (await container.fileSystem.exists(paths.projectJson)) {
-    return { ok: false, message: '이미 Storyboard 워크스페이스입니다.' };
+    await createStoryboardDirectories(container.fileSystem, paths);
+    await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
+
+    return {
+      ok: true,
+      message: '이미 Storyboard 워크스페이스입니다. 디렉터리와 .gitignore만 최신으로 맞췄습니다.',
+      data: { repaired: true },
+    };
   }
 
   const name = flagString(args.flags, 'title') ?? args.positionals[0];

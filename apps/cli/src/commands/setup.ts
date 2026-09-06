@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
 
 import {
@@ -11,7 +11,8 @@ import {
   type AiProviderId,
   type ConfigBridge,
 } from '@storyboard/story-ai';
-import { getStoryboardProjectPaths } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, joinStoryPath } from '@storyboard/story-engine';
+import { isLegacySeedPlaceholderSummary, parseSceneCard } from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
 import { flagString } from '@/cliArguments';
@@ -257,6 +258,41 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
   return checks;
 }
 
+// `init`을 다시 실행하면 ensureWorkspaceGitignore가 채워 준다. 여기서는 무엇이 빠졌는지만 알린다.
+const storyboardGitignoreEntries = ['.storyboard/cache/', '.draft/', 'manuscript/'] as const;
+
+function readMissingGitignoreEntries(gitignorePath: string): readonly string[] {
+  if (!existsSync(gitignorePath)) {
+    return storyboardGitignoreEntries;
+  }
+
+  const lines = new Set(
+    readFileSync(gitignorePath, 'utf8')
+      .split('\n')
+      .map((line) => line.trim()),
+  );
+
+  return storyboardGitignoreEntries.filter((entry) => !lines.has(entry));
+}
+
+async function countLegacySeedPlaceholders(
+  container: CliContainer,
+  sceneFileNames: readonly string[],
+): Promise<number> {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  let count = 0;
+
+  for (const fileName of sceneFileNames) {
+    const uri = joinStoryPath(paths.sceneDirectory, fileName);
+    const card = parseSceneCard(new TextDecoder().decode(await container.fileSystem.readFile(uri)));
+    if (isLegacySeedPlaceholderSummary(card.summary)) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
   const root = container.workspaceRoot;
   const paths = getStoryboardProjectPaths(root);
@@ -279,9 +315,31 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     name.endsWith('.md'),
   );
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
+  const placeholderScenes = await countLegacySeedPlaceholders(container, scenes);
+  const missingIgnoreEntries = readMissingGitignoreEntries(paths.gitignore.fsPath);
 
   return [
     { status: 'ok', label: '워크스페이스', detail: root.fsPath },
+    ...(placeholderScenes > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '씬 요약',
+            detail: `0.8 이전 플레이스홀더 요약이 ${placeholderScenes}개 남아 있어 초안이 안내 문구로 쓰입니다.`,
+            fix: 'storyboard scene migrate',
+          },
+        ]
+      : []),
+    ...(missingIgnoreEntries.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '.gitignore',
+            detail: `생성물 항목이 빠졌습니다 (${missingIgnoreEntries.join(', ')}).`,
+            fix: 'storyboard init --title "작품 이름"',
+          },
+        ]
+      : []),
     {
       status: hasOutline ? 'ok' : 'info',
       label: '아웃라인',
