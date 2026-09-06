@@ -62,6 +62,10 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'id', valueLabel: '<slug>', summary: 'card create 의 파일명 (기본: 이름에서 유도)' },
   { name: 'to', valueLabel: '<id>', summary: 'card rename 의 새 id' },
   { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
+  {
+    name: 'repair',
+    summary: 'init: 이미 있는 워크스페이스의 디렉터리와 .gitignore 만 보수합니다 (계약은 그대로)',
+  },
   { name: 'language', valueLabel: '<code>', summary: 'init 의 언어 (기본 ko)' },
   {
     name: 'from',
@@ -102,10 +106,12 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'init',
     group: '시작하기',
-    usage: 'init --title <name>',
-    summary: '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다)',
+    usage: 'init --title <name> | init --repair',
+    summary:
+      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다). --repair 는 0.8 이전 워크스페이스의 발판을 보수합니다',
     flags: [
       'title',
+      'repair',
       'language',
       'from',
       'genre',
@@ -120,6 +126,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     examples: [
       'storyboard init --title "밤의 항해"',
       'storyboard init --title "밤의 항해" --genre 미스터리 --audience 성인 --pov third-limited --target-words 300000',
+      'storyboard init --repair',
     ],
     needsWorkspace: false,
   },

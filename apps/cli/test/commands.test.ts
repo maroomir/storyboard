@@ -404,9 +404,29 @@ describe('pre-0.8 workspace migration', () => {
       '# Storyboard generated files\n.storyboard/cache/\n.draft/\n',
     );
 
-    await run('init', args(['init'], { title: '시그널' }));
+    const outcome = await run('init', args(['init'], { repair: true }));
 
+    expect(outcome.ok).toBe(true);
     expect(readFileSync(join(workspace, '.gitignore'), 'utf8')).toContain('manuscript/');
+    expect(
+      JSON.parse(readFileSync(join(workspace, '.storyboard', 'project.json'), 'utf8')).name,
+    ).toBe('시그널');
+  });
+
+  // 계약 플래그가 조용히 버려진 채 exit 0 이 되면 에이전트는 제목이 바뀌었다고 믿는다.
+  it('refuses a plain init on an existing workspace', async () => {
+    const outcome = await run('init', args(['init'], { title: '새 제목' }));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('--repair');
+  });
+
+  it('refuses --repair outside a workspace', async () => {
+    rmSync(join(workspace, '.storyboard'), { recursive: true, force: true });
+
+    const outcome = await run('init', args(['init'], { repair: true }));
+
+    expect(outcome.ok).toBe(false);
   });
 
   it('reports both gaps in doctor', async () => {

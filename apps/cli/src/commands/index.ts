@@ -1116,16 +1116,33 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
 const initProject: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
 
-  // 이미 워크스페이스면 계약은 손대지 않고 발판(디렉터리·.gitignore)만 채운다. 0.8 이전에 만든
-  // 워크스페이스에는 생성물 무시 항목이 빠져 있어 원고가 통째로 커밋 대상에 남는다.
-  if (await container.fileSystem.exists(paths.projectJson)) {
+  // `--repair` 는 계약은 손대지 않고 발판(디렉터리·.gitignore)만 채운다. 0.8 이전에 만든
+  // 워크스페이스에는 생성물 무시 항목이 빠져 있어 원고가 통째로 커밋 대상에 남는다. 플래그 없이
+  // 기존 워크스페이스에 오면 거부해, --title 이 조용히 무시된 채 exit 0 이 되는 일을 막는다.
+  const isExistingWorkspace = await container.fileSystem.exists(paths.projectJson);
+
+  if (flagBoolean(args.flags, 'repair')) {
+    if (!isExistingWorkspace) {
+      return {
+        ok: false,
+        message: 'Storyboard 워크스페이스가 아닙니다: storyboard init --title "작품 이름"',
+      };
+    }
+
     await createStoryboardDirectories(container.fileSystem, paths);
     await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
 
     return {
       ok: true,
-      message: '이미 Storyboard 워크스페이스입니다. 디렉터리와 .gitignore만 최신으로 맞췄습니다.',
+      message: '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.',
       data: { repaired: true },
+    };
+  }
+
+  if (isExistingWorkspace) {
+    return {
+      ok: false,
+      message: '이미 Storyboard 워크스페이스입니다. 발판만 보수하려면 storyboard init --repair',
     };
   }
 
