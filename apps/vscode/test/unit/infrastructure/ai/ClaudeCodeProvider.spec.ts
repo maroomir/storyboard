@@ -151,6 +151,18 @@ describe("ClaudeCodeProvider", () => {
     ).rejects.toMatchObject({ code: "generation-failed", providerId: "claude-code" })
   })
 
+  it("puts the failure reason in the error message", async () => {
+    const provider = new ClaudeCodeProvider({
+      command: "claude",
+      model: "sonnet",
+      createRunner: (): CliRunner => createFakeRunner({ exitCode: 1, stderr: "5-hour limit reached" })
+    })
+
+    await expect(
+      provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
+    ).rejects.toMatchObject({ message: expect.stringContaining("5-hour limit reached") })
+  })
+
   it("treats an is_error result as a generation failure", async () => {
     const provider = new ClaudeCodeProvider({
       command: "claude",
@@ -161,7 +173,11 @@ describe("ClaudeCodeProvider", () => {
 
     await expect(
       provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "본문" }] })
-    ).rejects.toMatchObject({ code: "generation-failed", providerId: "claude-code" })
+    ).rejects.toMatchObject({
+      code: "generation-failed",
+      providerId: "claude-code",
+      message: expect.stringContaining("거부됨")
+    })
   })
 })
 

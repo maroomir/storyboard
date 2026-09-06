@@ -10,9 +10,11 @@ import {
 } from '#ai/contracts/aiTypes';
 import {
   type CliRunner,
+  type CliRunResult,
   createDefaultCliRunner,
   isCommandNotFound,
   splitCliPrompt,
+  truncateFailureMessage,
 } from './cliRunner';
 
 const connectionTimeoutMs = 15_000;
@@ -155,20 +157,23 @@ export class ClaudeCodeProvider implements AiProvider {
     }
 
     if (result.exitCode !== 0) {
+      const failureMessage = extractClaudeCodeFailureMessage(result);
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        `Claude Code CLI가 비정상 종료했습니다 (exit ${result.exitCode ?? 'unknown'}).`,
-        result.stderr,
+        `Claude Code CLI가 비정상 종료했습니다 (exit ${result.exitCode ?? 'unknown'})` +
+          `${failureMessage ? `: ${failureMessage}` : '.'}`,
+        failureMessage ?? result.stderr,
       );
     }
 
     const parsed = parseClaudeCodeResult(result.stdout);
     if (parsed.is_error) {
+      const failureMessage = parsed.result ? truncateFailureMessage(parsed.result.trim()) : undefined;
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        'Claude Code CLI가 오류 결과를 반환했습니다.',
+        `Claude Code CLI가 오류 결과를 반환했습니다${failureMessage ? `: ${failureMessage}` : '.'}`,
         parsed.result,
       );
     }
@@ -191,6 +196,19 @@ function isLoggedIn(stdout: string): boolean {
   } catch {
     return false;
   }
+}
+
+// 실패 사유를 메시지 본문에 넣는다. cause에만 두면 배치 실행 로그에는 exit 코드만 남아
+// 한도 초과인지 인증 문제인지 구분할 수 없다.
+function extractClaudeCodeFailureMessage(result: CliRunResult): string | undefined {
+  const parsed = parseClaudeCodeResult(result.stdout);
+  const resultMessage = parsed.result?.trim();
+  if (resultMessage) {
+    return truncateFailureMessage(resultMessage);
+  }
+
+  const stderrMessage = result.stderr.trim();
+  return stderrMessage.length > 0 ? truncateFailureMessage(stderrMessage) : undefined;
 }
 
 function parseClaudeCodeResult(stdout: string): ClaudeCodeJsonResult {
