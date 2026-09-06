@@ -1,6 +1,6 @@
 import {
-  aiProviderIds,
   aiTaskNames,
+  isCliProvider,
   type AiProviderId,
   type ConfigBridge,
 } from '@storyboard/story-ai';
@@ -12,16 +12,7 @@ import {
   resolveWorkspaceConfigFile,
 } from '@storyboard/story-config';
 
-import { ConfigError, type DraftConfig, type ProvidersConfig } from './config';
-
-// The bot runs CLI providers only (decision #22/#33): API-key providers would need keys the bot
-// never holds, so a shared config that names one is refused at boot rather than at job time.
-export const botProviderIds = ['mock', 'claude-code', 'codex'] as const;
-export type BotProviderId = (typeof botProviderIds)[number];
-
-export function isBotProviderId(value: string): value is BotProviderId {
-  return (botProviderIds as readonly string[]).includes(value);
-}
+import type { DraftConfig, ProvidersConfig } from './config';
 
 export interface BotConfigurationOptions {
   readonly workspacePath: string;
@@ -77,7 +68,7 @@ export function createBotConfiguration(
 }
 
 export async function writeSharedDefaultProvider(
-  providerId: BotProviderId,
+  providerId: AiProviderId,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<string> {
   const home = resolveStoryboardHomePaths(env);
@@ -87,36 +78,9 @@ export async function writeSharedDefaultProvider(
   return home.configFile;
 }
 
-export function assertBotProviderSelection(configBridge: ConfigBridge): void {
-  const offending: string[] = [];
-
-  if (configBridge.isDefaultProviderConfigured()) {
-    const providerId = configBridge.getDefaultProvider();
-    if (!isBotProviderId(providerId)) {
-      offending.push(`defaultProvider=${providerId}`);
-    }
-  }
-
-  for (const taskName of aiTaskNames) {
-    const override = configBridge.getTaskProviderOverride(taskName);
-    if (override !== null && !isBotProviderId(override)) {
-      offending.push(`tasks.${taskName}=${override}`);
-    }
-  }
-
-  if (offending.length > 0) {
-    throw new ConfigError(
-      'invalid-schema',
-      `봇은 CLI 프로바이더만 씁니다 (${botProviderIds.join(', ')}). 공통 설정의 다음 항목을 바꿔 주세요: ${offending.join(', ')} (API 키 프로바이더 ${aiProviderIds.filter((id) => !isBotProviderId(id)).join('·')}는 봇에서 지원하지 않습니다)`,
-    );
-  }
-}
-
-// A CLI provider is "in use" when it is the default or any task points at it; the doctor checks
-// that each one's binary is on PATH.
-export function listCliProvidersInUse(
-  configBridge: ConfigBridge,
-): ReadonlyArray<{ readonly providerId: 'claude-code' | 'codex'; readonly command: string }> {
+// A provider is "in use" when it is the default or any task points at it; the doctor checks each
+// one — a CLI provider's binary on PATH, an API-key provider's key in the shared secrets file.
+export function listProvidersInUse(configBridge: ConfigBridge): readonly AiProviderId[] {
   const providerIds = new Set<AiProviderId>();
 
   if (configBridge.isDefaultProviderConfigured()) {
@@ -129,8 +93,14 @@ export function listCliProvidersInUse(
     }
   }
 
-  return [...providerIds]
-    .filter((id): id is 'claude-code' | 'codex' => id === 'claude-code' || id === 'codex')
+  return [...providerIds];
+}
+
+export function listCliProvidersInUse(
+  configBridge: ConfigBridge,
+): ReadonlyArray<{ readonly providerId: AiProviderId; readonly command: string }> {
+  return listProvidersInUse(configBridge)
+    .filter((providerId) => isCliProvider(providerId))
     .map((providerId) => ({
       providerId,
       command: configBridge.getProviderConfig(providerId).command ?? providerId,

@@ -246,6 +246,7 @@ describe('/doctor', () => {
       createDoctorHandler({
         configFile: join(root, 'absent-config.json'),
         configBridge: legacyConfigBridge(undefined),
+        hasApiKey: async () => true,
         remote: undefined,
         ...environment,
       }),
@@ -381,6 +382,19 @@ describe('/doctor', () => {
     expect(sent[0]).toContain('/nope/claude');
   });
 
+  it('reports a missing API key as the reason generation would fail', async () => {
+    fixture = createWorkspaceFixture();
+    build(fixture.root, {
+      configBridge: legacyConfigBridge({ default: 'openai' }),
+      hasApiKey: async () => false,
+    });
+
+    await router.handleUpdate(message('/doctor'));
+
+    expect(sent[0]).toContain('❌ 프로바이더 openai');
+    expect(sent[0]).toContain('API 키가 없어');
+  });
+
   it('reports a resolvable provider CLI with the path it found', async () => {
     fixture = createWorkspaceFixture();
     build(fixture.root, {
@@ -401,7 +415,7 @@ describe('/doctor', () => {
 
     await router.handleUpdate(message('/doctor'));
 
-    expect(sent[0]).toContain('ℹ️ 프로바이더: mock (CLI 미사용)');
+    expect(sent[0]).toContain('ℹ️ 프로바이더: mock (키·실행 파일 불필요)');
   });
 
   it('reports a configured remote that the repository does not have', async () => {

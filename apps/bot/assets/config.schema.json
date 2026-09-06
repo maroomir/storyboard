@@ -67,9 +67,14 @@
         "default": {
           "type": "string",
           "enum": [
-            "mock",
+            "openai",
+            "claude",
+            "google",
+            "grok",
+            "ollama",
             "claude-code",
-            "codex"
+            "codex",
+            "mock"
           ]
         },
         "tasks": {
@@ -82,9 +87,14 @@
               {
                 "type": "string",
                 "enum": [
-                  "mock",
+                  "openai",
+                  "claude",
+                  "google",
+                  "grok",
+                  "ollama",
                   "claude-code",
-                  "codex"
+                  "codex",
+                  "mock"
                 ]
               },
               {
@@ -93,9 +103,14 @@
                   "provider": {
                     "type": "string",
                     "enum": [
-                      "mock",
+                      "openai",
+                      "claude",
+                      "google",
+                      "grok",
+                      "ollama",
                       "claude-code",
-                      "codex"
+                      "codex",
+                      "mock"
                     ]
                   },
                   "model": {
@@ -116,9 +131,14 @@
           "propertyNames": {
             "type": "string",
             "enum": [
-              "mock",
+              "openai",
+              "claude",
+              "google",
+              "grok",
+              "ollama",
               "claude-code",
-              "codex"
+              "codex",
+              "mock"
             ]
           },
           "additionalProperties": {

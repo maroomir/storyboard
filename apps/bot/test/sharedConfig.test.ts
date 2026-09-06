@@ -6,12 +6,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { ConfigBridge } from '@storyboard/story-ai';
 
-import { ConfigError } from '../src/config/config';
 import {
-  assertBotProviderSelection,
   createBotConfiguration,
   flattenLegacyBlocks,
   listCliProvidersInUse,
+  listProvidersInUse,
   writeSharedDefaultProvider,
 } from '../src/config/sharedConfig';
 
@@ -78,12 +77,12 @@ describe('bot shared configuration', () => {
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({ defaultProvider: 'codex' });
   });
 
-  it('refuses an API-key provider coming from the shared config', () => {
+  it('lists every provider the shared config puts in use, API-key ones included', () => {
     writeFileSync(
       join(home, 'config.json'),
       JSON.stringify({
         defaultProvider: 'openai',
-        tasks: { grammarCheck: { provider: 'claude' } },
+        tasks: { grammarCheck: { provider: 'claude' }, sceneDraft: { provider: 'codex' } },
       }),
     );
     const configBridge = new ConfigBridge({
@@ -91,10 +90,8 @@ describe('bot shared configuration', () => {
         createBotConfiguration({ workspacePath: workspace, env: { STORYBOARD_HOME: home } }),
     });
 
-    expect(() => assertBotProviderSelection(configBridge)).toThrow(ConfigError);
-    expect(() => assertBotProviderSelection(configBridge)).toThrow(
-      /defaultProvider=openai.*tasks\.grammarCheck=claude/,
-    );
+    expect(listProvidersInUse(configBridge)).toEqual(['openai', 'codex', 'claude']);
+    expect(listCliProvidersInUse(configBridge)).toEqual([{ providerId: 'codex', command: 'codex' }]);
   });
 
   it('lists the CLI providers a generation would actually invoke with their commands', () => {
@@ -111,7 +108,6 @@ describe('bot shared configuration', () => {
         createBotConfiguration({ workspacePath: workspace, env: { STORYBOARD_HOME: home } }),
     });
 
-    expect(() => assertBotProviderSelection(configBridge)).not.toThrow();
     expect(listCliProvidersInUse(configBridge)).toEqual([
       { providerId: 'claude-code', command: 'claude' },
       { providerId: 'codex', command: '/opt/codex' },

@@ -1,14 +1,12 @@
 import { accessSync, constants } from 'node:fs';
 import { join } from 'node:path';
 
-import type { ConfigBridge } from '@storyboard/story-ai';
+import type { AiProviderId, ConfigBridge } from '@storyboard/story-ai';
 
 import { listCliProvidersInUse } from './sharedConfig';
 
-type CliProviderId = 'claude-code' | 'codex';
-
 export interface CliProviderCommand {
-  readonly providerId: CliProviderId;
+  readonly providerId: AiProviderId;
   readonly command: string;
 }
 
