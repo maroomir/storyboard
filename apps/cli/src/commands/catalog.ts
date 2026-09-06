@@ -151,7 +151,8 @@ export const commandCatalog: readonly CommandSpec[] = [
     verb: 'doctor',
     group: '시작하기',
     usage: 'doctor',
-    summary: '설정 파일·프로바이더·API 키·CLI 실행 파일·워크스페이스 상태를 점검합니다',
+    summary:
+      '설정 파일·프로바이더·API 키·CLI 실행 파일과 로그인·워크스페이스 상태를 점검합니다 (init --repair 로 보수)',
     examples: ['storyboard doctor', 'storyboard doctor --json'],
     needsWorkspace: false,
   },
@@ -428,7 +429,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     verb: 'scene migrate',
     group: '유지보수',
     usage: 'scene migrate',
-    summary: '구형 scene/*.txt 를 .card 로 옮깁니다',
+    summary: '구형 scene/*.txt 를 .card 로 옮기고 시드 플레이스홀더 요약을 지웁니다',
   },
 ];
 
