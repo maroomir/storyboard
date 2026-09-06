@@ -15,6 +15,7 @@ import {
   createDefaultCliRunner,
   isCommandNotFound,
   splitCliPrompt,
+  truncateFailureMessage,
 } from './cliRunner';
 
 const connectionTimeoutMs = 15_000;
@@ -350,11 +351,6 @@ function normalizeCodexErrorMessage(message: string): string {
   }
 
   return truncateFailureMessage(trimmed);
-}
-
-function truncateFailureMessage(message: string): string {
-  const maxLength = 1_000;
-  return message.length > maxLength ? `${message.slice(0, maxLength - 3)}...` : message;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

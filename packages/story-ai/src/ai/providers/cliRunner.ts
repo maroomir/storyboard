@@ -88,6 +88,11 @@ export function isCommandNotFound(error: unknown): boolean {
   );
 }
 
+export function truncateFailureMessage(message: string): string {
+  const maxLength = 1_000;
+  return message.length > maxLength ? `${message.slice(0, maxLength - 3)}...` : message;
+}
+
 export interface SplitCliPrompt {
   readonly systemPrompt?: string;
   readonly userPrompt: string;
