@@ -37,12 +37,12 @@ describe("GenerateAllDraftsUseCase", () => {
     const generateDraftUseCase = {
       execute: vi
         .fn()
-        .mockResolvedValueOnce({ kind: "generated", ok: true, draftUri: firstScene })
+        .mockResolvedValueOnce({ kind: "generated", ok: true, draftUri: firstScene, warnings: ["1구간: 목표 3,000자에 크게 못 미칩니다"] })
         .mockResolvedValueOnce({ kind: "cache_hit", ok: true, draftUri: secondScene })
         .mockResolvedValueOnce({ kind: "failed", ok: false, message: "AI unavailable" })
     }
     const reviseAfterGenerateGate = { maybeRunAfterGenerate: vi.fn(async () => undefined) }
-    const currentLogger = logger() as { error: ReturnType<typeof vi.fn> }
+    const currentLogger = logger() as { error: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
 
     const result = await new GenerateAllDraftsUseCase(
       generateDraftUseCase as never,
@@ -51,6 +51,10 @@ describe("GenerateAllDraftsUseCase", () => {
       repository(1, [firstScene, secondScene, thirdScene])
     ).execute()
 
+    // 무인 배치에서는 초안 앞머리의 경고를 아무도 열어보지 않는다.
+    expect(currentLogger.warn).toHaveBeenCalledWith(
+      "01-opening.txt: 1구간: 목표 3,000자에 크게 못 미칩니다"
+    )
     expect(result).toEqual({
       kind: "completed",
       ok: true,
