@@ -495,7 +495,11 @@ describe('scene generate warnings', () => {
     const real = container();
     const stubbed = {
       ...real,
-      logger: { ...silentLogger, warn: (message: string) => warned.push(message) },
+      logger: {
+        ...silentLogger,
+        warn: (message: string) => warned.push(message),
+        info: (message: string) => warned.push(message),
+      },
       generateDraftUseCase: {
         execute: async () => ({
           ok: true,
@@ -503,6 +507,17 @@ describe('scene generate warnings', () => {
           draftUri: real.workspaceRoot,
           warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
         }),
+      },
+      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
+      reviseAfterGenerateGate: {
+        runForScene: async (
+          _root: unknown,
+          _stem: string,
+          options: { onProgress: (m: string) => void },
+        ) => {
+          options.onProgress('검사 중 (1/1)');
+          return undefined;
+        },
       },
     } as unknown as Parameters<(typeof commands)['scene generate']>[0]['container'];
 
@@ -512,7 +527,8 @@ describe('scene generate warnings', () => {
     });
 
     expect(outcome.ok).toBe(true);
-    expect(warned).toEqual(['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)']);
+    // 검수 재작성이 이미 고쳤을 수 있는 문제를 그 뒤에 알리면 stale 경고가 된다.
+    expect(warned).toEqual(['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)', '검사 중 (1/1)']);
     expect((outcome.data as { warnings: string[] }).warnings).toHaveLength(1);
   });
 });

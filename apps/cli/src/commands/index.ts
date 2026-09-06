@@ -128,6 +128,14 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: result.kind === 'failed' ? result.message : '취소했습니다.' };
   }
 
+  // 초안 앞머리에만 남기면 아무도 보지 않는다. 경고는 stderr로 알리되 생성 자체는 성공이다 —
+  // 분량 미달은 모델 편차에서도 나오므로 게이트로 쓰면 정상 결과까지 실패로 만든다. 검수
+  // 재작성 뒤에 찍으면 이미 고쳐진 문제를 다시 알리는 꼴이라 생성 직후에 낸다.
+  const warnings = result.kind === 'generated' ? result.warnings : [];
+  for (const warning of warnings) {
+    container.logger.warn(warning);
+  }
+
   // `--no-revise` overrides the setting; without it the workspace's `draft.reviseAfterGenerate`
   // decides, exactly as it does in the extension and the bot.
   const reviseRequested =
@@ -148,13 +156,6 @@ const generateScene: CommandHandler = async ({ container, args }) => {
           `(${revised.rejection.candidateLength}자 / 원본 ${revised.rejection.originalLength}자).`,
       );
     }
-  }
-
-  // 초안 앞머리에만 남기면 아무도 보지 않는다. 경고는 stderr로 알리되 생성 자체는 성공이다 —
-  // 분량 미달은 모델 편차에서도 나오므로 게이트로 쓰면 정상 결과까지 실패로 만든다.
-  const warnings = result.kind === 'generated' ? result.warnings : [];
-  for (const warning of warnings) {
-    container.logger.warn(warning);
   }
 
   return {
