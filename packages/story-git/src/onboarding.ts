@@ -3,19 +3,10 @@ import { join } from 'node:path';
 
 import { GitClient, type RepositoryBlocker } from './gitClient';
 
-// The block Storyboard writes into a workspace .gitignore. Generated artifacts must be ignored
-// BEFORE the first commit, otherwise the initial commit sweeps every draft into history.
-const STORYBOARD_GITIGNORE_BLOCK = `
-# Storyboard generated files
-.storyboard/cache/
-.draft/
-manuscript/
-character/.sample.card
-background/.sample.card
-scene/.sample.card
-`;
-
-const GITIGNORE_MARKER = '# Storyboard generated files';
+// The ignore block itself belongs to the workspace format, not to git: callers hand in the merge
+// so this package stays dependency-free. Generated artifacts must be ignored BEFORE the first
+// commit, otherwise the initial commit sweeps every draft into history.
+export type GitignoreMerge = (current: string | undefined) => string | undefined;
 
 export type OnboardingStatus =
   | 'ready'
@@ -96,6 +87,7 @@ export function describeBlocker(blocker: RepositoryBlocker): string {
 // existing content as the baseline. Callers must confirm with the user first — this writes history.
 export function initializeWorkspaceRepository(
   workspaceRoot: string,
+  mergeGitignore: GitignoreMerge,
   options?: { readonly branch?: string; readonly initialCommitMessage?: string },
 ): OnboardingResult {
   const git = new GitClient(workspaceRoot);
@@ -105,7 +97,7 @@ export function initializeWorkspaceRepository(
     git.initRepository(options?.branch ?? 'main');
   }
 
-  const gitignoreUpdated = ensureWorkspaceGitignore(workspaceRoot);
+  const gitignoreUpdated = ensureWorkspaceGitignore(workspaceRoot, mergeGitignore);
 
   const committed = git.commitAll(
     options?.initialCommitMessage ?? 'chore: Track Storyboard workspace',
@@ -114,21 +106,19 @@ export function initializeWorkspaceRepository(
   return { initialized, gitignoreUpdated, committed };
 }
 
-// Appends the Storyboard ignore block when absent. Returns whether the file was changed.
-export function ensureWorkspaceGitignore(workspaceRoot: string): boolean {
+// Writes what the merge returns. Returns whether the file was changed.
+export function ensureWorkspaceGitignore(
+  workspaceRoot: string,
+  mergeGitignore: GitignoreMerge,
+): boolean {
   const gitignorePath = join(workspaceRoot, '.gitignore');
+  const current = existsSync(gitignorePath) ? readFileSync(gitignorePath, 'utf8') : undefined;
+  const merged = mergeGitignore(current);
 
-  if (!existsSync(gitignorePath)) {
-    writeFileSync(gitignorePath, STORYBOARD_GITIGNORE_BLOCK.trimStart(), 'utf8');
-    return true;
-  }
-
-  const current = readFileSync(gitignorePath, 'utf8');
-  if (current.includes(GITIGNORE_MARKER)) {
+  if (merged === undefined) {
     return false;
   }
 
-  const separator = current.endsWith('\n') ? '' : '\n';
-  writeFileSync(gitignorePath, `${current}${separator}${STORYBOARD_GITIGNORE_BLOCK}`, 'utf8');
+  writeFileSync(gitignorePath, merged, 'utf8');
   return true;
 }

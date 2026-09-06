@@ -59,7 +59,7 @@ apply as overrides with a boot warning. Full example: `apps/bot/config.example.j
 The extension writes a `.gitignore` but never runs `git init`, so a real workspace may not be a
 repository yet. `inspectWorkspaceRepository` reports that, and `initializeWorkspaceRepository` fixes
 it in the required order: init → ensure the ignore block → commit the existing content. Doing the
-ignore step first is what keeps generated drafts out of the first commit.
+ignore step first is what keeps generated drafts out of the first commit. The block itself (marker + entries) is `mergeStoryboardGitignore` in `@storyboard/story-format`, shared with the extension's and the CLI's `init` and the CLI doctor; `story-git` takes it as an argument so it stays dependency-free.
 
 ## No extension-side integration
 
