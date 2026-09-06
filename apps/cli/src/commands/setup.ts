@@ -284,12 +284,18 @@ async function checkCliProviderLogin(
           detail: `${providerId} CLI를 실행할 수 없습니다 (${result.reason}).`,
         };
   } catch (error) {
-    return {
-      status: 'fail',
-      label: '로그인',
-      detail: error instanceof Error ? error.message : String(error),
-    };
+    return { status: 'fail', label: '로그인', detail: describeLoginFailure(error) };
   }
+}
+
+// 타임아웃·spawn 실패의 실제 원인은 cause 에 있다. 한 줄만 덧붙여 사용자가 무엇을 고칠지 알게 한다.
+function describeLoginFailure(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+
+  const cause = error.cause instanceof Error ? ` (${error.cause.message})` : '';
+  return `${error.message}${cause}`;
 }
 
 async function countLegacySeedPlaceholders(

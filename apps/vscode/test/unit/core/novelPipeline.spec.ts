@@ -6,7 +6,13 @@ import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type { NovelRunState, NovelStageName } from "@storyboard/story-engine"
 import { parseNovelRunState, serializeNovelRunState } from "@storyboard/story-engine"
 
-const generateDraftMock = vi.fn(async () => ({ ok: true, kind: "generated" }) as const)
+const generatedResult = {
+  ok: true,
+  kind: "generated",
+  draftUri: vscode.Uri.file("/ws/draft/01.md"),
+  warnings: [] as readonly string[]
+} as const
+const generateDraftMock = vi.fn(async () => generatedResult)
 const runReviseDraftWorkflowMock = vi.fn(async () => ({
   passed: true,
   revisionCount: 0,
@@ -227,7 +233,7 @@ describe("NovelPipeline", () => {
     saveReviewMock.mockClear()
     checkContinuityMock.mockResolvedValue([])
     critiqueDraftMock.mockResolvedValue([])
-    generateDraftMock.mockResolvedValue({ ok: true, kind: "generated" })
+    generateDraftMock.mockResolvedValue(generatedResult)
   })
 
   afterEach(() => {
