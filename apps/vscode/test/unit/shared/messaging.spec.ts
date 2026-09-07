@@ -83,7 +83,14 @@ describe("storyboard messaging protocol", () => {
     const response = createStoryboardSuccessResponse(request, {
       isStoryboardProject: true,
       format: "novel",
-      setting: { genre: "판타지", prohibitions: [], styleConstraints: [], qualityCriteria: [] },
+      setting: {
+        genre: "판타지",
+        threads: [],
+        narrators: [],
+        prohibitions: [],
+        styleConstraints: [],
+        qualityCriteria: []
+      },
       readiness: { isReady: false, missing: ["audience", "pov", "targetWordCount"], warnings: [] }
     })
 

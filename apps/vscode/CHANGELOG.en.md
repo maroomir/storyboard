@@ -10,6 +10,13 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Point of view can change per scene and per chapter.** The contract's point of view now has five values, including first-person retrospective and second person, and a named **narrator card** (`narrator/*.card`) can be selected from a scene card's `narrator` or a chapter's `narrator` in `chapters.yaml`. A narrator carries person, knowledge boundary (witnessed / omniscient / retrospective), tense and voice; resolution runs scene > chapter > project. Projects with no narrator cards keep behaving exactly as before, with one contract-wide point of view.
+- **Choosing a composition writes omnibus, alternating-POV and frame stories.** Picking a composition in the contract makes a preset create the continuity threads and narrator cards, and outline generation receives instructions for that shape (each episode closing on its own, a narrator per chapter, the frame sitting at the first and last chapter). In an omnibus the story-state ledger, chapter summaries, previous-scene context and character memory stay inside one episode; only canon is shared.
+- **A first-person or limited narrator no longer states what it could not know.** Every story-state entry now records the characters present when that fact was established, and a witnessed narrator's prompt drops entries its focal character did not witness. Review also gained point-of-view and narrator-voice checks.
+- **The CLI gained `narrator` verbs and `scene show`.** `storyboard narrator add|list|show|remove` manages narrators, and `storyboard init --composition omnibus --episodes 4` picks a composition. `scene show <stem>` prints the narration and thread a scene will be generated with, and `doctor` catches dangling narrator references and threads the contract does not declare.
+
 ## [0.8.7] - 2026-09-07
 
 ### Added

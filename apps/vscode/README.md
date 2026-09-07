@@ -8,7 +8,9 @@ English README: [`README.en.md`](README.en.md)
 
 - 목표 방향: 원클릭 장편 생성 IDE(Autonomous Fiction Studio)
 - 워크스페이스 폴더 하나를 하나의 Storyboard 프로젝트로 초기화
-- **작품 계약** 설정으로 장르·독자층·시점·목표 분량·금지 조건·문체/품질 기준 관리
+- **작품 계약** 설정으로 장르·독자층·시점·구성·목표 분량·금지 조건·문체/품질 기준 관리
+- 시점은 다섯 값(1인칭, 1인칭 회고, 2인칭, 3인칭 제한, 3인칭 전지) 가운데 하나이며, `narrator/*.card`로 이름 붙인 서술자를 만들면 씬·장마다 시점을 달리할 수 있음
+- 구성(선형·옴니버스·시점 교차·액자식)을 고르면 연속성 줄기와 서술자 카드를 프리셋이 만들고, 옴니버스는 편 안에서만 이야기 상태·요약·기억이 이어짐
 - `Storyboard: Generate Novel`로 작품 설정 → outline → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
 - `.storyboard/outline/synopsis.md`, `chapters.yaml`, `revision-plan.yaml` 기반 장편 구조 계획
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
@@ -61,7 +63,7 @@ manuscript/*.md
 ```
 
 - 워크스페이스 폴더 하나가 프로젝트 하나입니다.
-- 프로젝트 설정은 자동 장편 생성의 입력 계약입니다. `Storyboard: Open Settings`의 **작품 계약** 탭에서 독자층·목표 분량·시점·금지 조건을 입력하고 생성 준비 상태를 확인합니다.
+- 프로젝트 설정은 자동 장편 생성의 입력 계약입니다. `Storyboard: Open Settings`의 **작품 계약** 탭에서 독자층·목표 분량·시점·구성·금지 조건을 입력하고 생성 준비 상태를 확인합니다. 구성을 고르면 연속성 줄기와 서술자 카드가 함께 만들어지고, 그 결과는 같은 탭에 요약으로 표시됩니다.
 - `Storyboard: Generate Novel Outline`은 `synopsis.md`와 `chapters.yaml`을 만들고, `Storyboard: Generate Scene Seeds`는 이 계획에서 씬 시드를 파생합니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
 - `scene/*.card` 파일 하나가 씬 하나이며(`type: scene`), 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다. 구형 `scene/*.txt` 워크스페이스는 **Storyboard: Migrate Scenes to Cards** 명령으로 변환합니다.

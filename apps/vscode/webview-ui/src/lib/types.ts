@@ -105,6 +105,9 @@ export interface SceneCard {
   readonly location?: string;
   readonly mood?: string;
   readonly relationStage?: string;
+  readonly povCharacter?: string;
+  readonly narrator?: string;
+  readonly thread?: string;
   readonly targetWordCount?: number;
   readonly grounding?: SceneGrounding;
   readonly purpose?: string;
@@ -120,6 +123,12 @@ export interface SceneCard {
 
 export type EditorCard = StoryboardCard | SceneCard;
 
+export interface NarratorRosterEntry {
+  readonly id: string;
+  readonly name: string;
+  readonly summary: string;
+}
+
 export interface CharacterRosterEntry {
   readonly id: string;
   readonly name: string;
@@ -132,6 +141,7 @@ export interface CardEditorInitialData {
   readonly card?: EditorCard;
   readonly imageUri?: string;
   readonly characterRoster?: readonly CharacterRosterEntry[];
+  readonly narratorRoster?: readonly NarratorRosterEntry[];
   readonly error?: string;
 }
 

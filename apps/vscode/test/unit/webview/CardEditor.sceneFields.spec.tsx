@@ -82,3 +82,63 @@ describe("CardEditor scene form", () => {
     expect(screen.getByText("둘째 비트")).toBeTruthy()
   })
 })
+
+describe("CardEditor narrator selection", () => {
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  function renderWithRoster(card: SceneCard): void {
+    vi.stubGlobal("acquireVsCodeApi", () => ({ postMessage: vi.fn() }))
+    render(
+      <CardEditor
+        initialData={{
+          ...initialData,
+          card,
+          narratorRoster: [
+            { id: "hana-first", name: "하나의 목소리", summary: "1인칭 · 목격 범위 · 초점 hana" },
+            { id: "wide", name: "전지", summary: "3인칭 · 전지" }
+          ]
+        }}
+      />
+    )
+  }
+
+  it("offers the project default plus every narrator card", () => {
+    renderWithRoster(sceneCard)
+
+    const select = screen.getByLabelText("서술자") as HTMLSelectElement
+    const options = [...select.options].map((option) => option.value)
+
+    expect(options).toEqual(["", "hana-first", "wide"])
+    expect(select.value).toBe("")
+  })
+
+  it("keeps a narrator the roster does not have so the choice is not silently dropped", () => {
+    renderWithRoster({ ...sceneCard, narrator: "ghost" })
+
+    const select = screen.getByLabelText("서술자") as HTMLSelectElement
+
+    expect(select.value).toBe("ghost")
+    expect([...select.options].some((option) => option.textContent?.includes("카드 없음"))).toBe(true)
+  })
+
+  it("writes the chosen narrator back to the card", () => {
+    renderWithRoster(sceneCard)
+
+    const select = screen.getByLabelText("서술자")
+    fireEvent.change(select, { target: { value: "wide" } })
+
+    expect((screen.getByLabelText("서술자") as HTMLSelectElement).value).toBe("wide")
+  })
+
+  it("shows the thread field with the default thread as its placeholder", () => {
+    renderWithRoster(sceneCard)
+
+    const thread = screen.getByLabelText("연속성 줄기") as HTMLInputElement
+
+    expect(thread.placeholder).toBe("main")
+  })
+})
+

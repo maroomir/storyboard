@@ -1,6 +1,6 @@
 import type React from 'react';
 
-import type { SceneCard, SceneGrounding } from '@webview/lib/types';
+import type { NarratorRosterEntry, SceneCard, SceneGrounding } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';
 
@@ -26,12 +26,14 @@ type SceneStructureKey = 'purpose' | 'conflict' | 'twist' | 'emotionalShift' | '
 export function SceneFields({
   card,
   updateCard,
+  narratorRoster = [],
 }: {
   readonly card: SceneCard;
   readonly updateCard: (card: SceneCard) => void;
+  readonly narratorRoster?: readonly NarratorRosterEntry[];
 }): React.ReactElement {
   const updateOptionalText = (
-    key: 'title' | 'location' | 'mood' | 'relationStage',
+    key: 'title' | 'location' | 'mood' | 'relationStage' | 'povCharacter' | 'thread',
     value: string,
   ): void => {
     updateCard({ ...card, [key]: value === '' ? undefined : value });
@@ -92,6 +94,48 @@ export function SceneFields({
             className={sbInputClass}
             value={card.relationStage ?? ''}
             onChange={(event) => updateOptionalText('relationStage', event.target.value)}
+          />
+        </label>
+        <label className="flex min-w-0 flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">시점 인물</span>
+          <input
+            className={sbInputClass}
+            value={card.povCharacter ?? ''}
+            onChange={(event) => updateOptionalText('povCharacter', event.target.value)}
+          />
+        </label>
+        <label className="flex min-w-0 flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">서술자</span>
+          <select
+            className={sbInputClass}
+            value={card.narrator ?? ''}
+            onChange={(event) =>
+              updateCard({
+                ...card,
+                narrator: event.target.value === '' ? undefined : event.target.value,
+              })
+            }
+          >
+            <option value="">프로젝트 기본</option>
+            {narratorRoster.map((narrator) => (
+              <option key={narrator.id} value={narrator.id}>
+                {narrator.name} — {narrator.summary}
+              </option>
+            ))}
+            {/* 로스터에 없는 값이 카드에 적혀 있으면 선택이 조용히 지워지지 않게 남겨 둔다. */}
+            {card.narrator !== undefined &&
+            !narratorRoster.some((narrator) => narrator.id === card.narrator) ? (
+              <option value={card.narrator}>{card.narrator} (카드 없음)</option>
+            ) : null}
+          </select>
+        </label>
+        <label className="flex min-w-0 flex-col gap-[0.35rem]">
+          <span className="text-sm text-sb-fg-muted">연속성 줄기</span>
+          <input
+            className={sbInputClass}
+            value={card.thread ?? ''}
+            placeholder="main"
+            onChange={(event) => updateOptionalText('thread', event.target.value)}
           />
         </label>
         <label className="flex min-w-0 flex-col gap-[0.35rem]">

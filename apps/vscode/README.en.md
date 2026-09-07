@@ -51,7 +51,8 @@ manuscript/*.md
 ```
 
 - One workspace folder is one project.
-- Project settings are the input contract for autonomous novel generation. Edit audience, target word count, point of view, and prohibitions in the **Generation Contract** tab of `Storyboard: Open Settings`, and check generation readiness there.
+- Project settings are the input contract for autonomous novel generation. Edit audience, target word count, point of view, composition, and prohibitions in the **Generation Contract** tab of `Storyboard: Open Settings`, and check generation readiness there. Choosing a composition creates the continuity threads and narrator cards, and the same tab summarizes what it made.
+- Point of view is one of five values (first, first-retrospective, second, third-limited, third-omniscient). Naming a narrator in `narrator/*.card` lets a scene or a chapter pick a different one.
 - `Storyboard: Generate Novel Outline` writes `synopsis.md` and `chapters.yaml`; `Storyboard: Generate Scene Seeds` derives scene seeds from that plan.
 - `.card` files are YAML-based reference cards.
 - One `scene/*.txt` file is one scene, written manually or generated from the outline.
