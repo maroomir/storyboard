@@ -194,6 +194,7 @@ export class StoryboardBotApplication {
       aiService,
       draftGenerator: sceneDraftGenerator,
       draftReviser: sceneDraftGenerator,
+      beatsExpander: sceneDraftGenerator,
       sender: this.gateway,
       jobsConfig: config.jobs,
       logger,

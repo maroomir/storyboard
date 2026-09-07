@@ -6,15 +6,20 @@ import {
   parseSceneCard,
   sceneFileRelativePath,
   sceneRelativePath,
+  sceneSummaryFileName,
+  sceneSummaryReference,
   serializeSceneCard,
   validateSceneSlugInput,
+  type SceneCard,
 } from '@storyboard/story-format';
 
+import type { WorkspaceWrite } from '@/workspace/workspaceChanges';
 import { hashContent } from '@/workspace/workspaceStore';
 import type { ChatContext } from '@/chat/context';
 import type { IncomingUpdate } from '@/chat/ports';
 import { commandArgs, isCommand, type ICommandHandler } from '@/chat/registry';
 import { describeOutcome } from './edit';
+import { enqueueBeatsJob } from './generate';
 
 const USAGE = [
   '사용법:',
@@ -23,13 +28,16 @@ const USAGE = [
   '',
   '/scene edit <씬 stem> — 본문 전체 교체',
   '/scene append <씬 stem> — 본문 끝에 덧붙이기',
-  '(본문은 명령 다음 줄부터 여러 줄로 씁니다)',
+  '(본문은 scene/<stem>.summary.md 에 저장되며, 명령 다음 줄부터 여러 줄로 씁니다)',
+  '',
+  '/scene beats <씬 stem> — 카드 재료와 본문으로 사건 비트 전개',
+  '/scene beats <씬 stem> force — 이미 있는 비트를 다시 뽑기',
 ].join('\n');
 
 export function createSceneCommandHandler(): ICommandHandler {
   return {
     command: '/scene',
-    description: '씬 시드 생성·편집 (/scene new · edit · append)',
+    description: '씬 시드 생성·편집·비트 전개 (/scene new · edit · append · beats)',
     match: (update: IncomingUpdate) => isCommand(update, '/scene'),
     execute: async (ctx) => {
       const parsed = parseSceneCommand(commandArgs(ctx.update));
@@ -43,16 +51,23 @@ export function createSceneCommandHandler(): ICommandHandler {
         return;
       }
 
+      if (parsed.action === 'beats') {
+        await expandSceneBeats(ctx, parsed.target, parsed.force);
+        return;
+      }
+
       await updateScene(ctx, parsed.action, parsed.target, parsed.body);
     },
   };
 }
 
-interface SceneCommand {
-  readonly action: 'new' | 'edit' | 'append';
-  readonly target: string;
-  readonly body: string;
-}
+type SceneCommand =
+  | {
+      readonly action: 'new' | 'edit' | 'append';
+      readonly target: string;
+      readonly body: string;
+    }
+  | { readonly action: 'beats'; readonly target: string; readonly force: boolean };
 
 // `/scene <action> <target>` on the first line, the body on the lines after it. Telegram sends the
 // whole message as one text, so multi-line bodies arrive naturally.
@@ -62,11 +77,16 @@ function parseSceneCommand(args: string): SceneCommand | undefined {
   const body = firstLineEnd === -1 ? '' : args.slice(firstLineEnd + 1).trim();
 
   const [action, target, ...rest] = firstLine.split(/\s+/).filter((token) => token.length > 0);
-  if (
-    (action !== 'new' && action !== 'edit' && action !== 'append') ||
-    target === undefined ||
-    rest.length > 0
-  ) {
+  if (target === undefined) {
+    return undefined;
+  }
+
+  if (action === 'beats') {
+    const force = rest.length === 1 && rest[0] === 'force';
+    return force || rest.length === 0 ? { action, target, force } : undefined;
+  }
+
+  if ((action !== 'new' && action !== 'edit' && action !== 'append') || rest.length > 0) {
     return undefined;
   }
 
@@ -92,12 +112,23 @@ async function createScene(ctx: ChatContext, slug: string, body: string): Promis
   const order = computeNextSceneOrderFromSceneFileNames(sceneFileNames);
   const prefix = formatSceneOrderPrefix(order, digitCount);
   const relativePath = sceneFileRelativePath(prefix, slug);
+  const stem = `${prefix}-${slug}`;
+  const summaryFileName = sceneSummaryFileName(stem);
 
   // baselineHash 없음 = 생성 전용: 같은 이름이 그 사이 생겼다면 게이트가 거부한다.
-  const outcome = await ctx.content.writeTracked(
-    relativePath,
-    serializeSceneCard({ type: 'scene', id: `${prefix}-${slug}`, summary: body }),
-    undefined,
+  const outcome = await ctx.content.writeTrackedSet(
+    [
+      {
+        relativePath,
+        content: serializeSceneCard({ type: 'scene', id: stem, summary: summaryFileName }),
+        baselineHash: undefined,
+      },
+      {
+        relativePath: summaryRelativePath(summaryFileName),
+        content: `${body}\n`,
+        baselineHash: undefined,
+      },
+    ],
     `storyboard-bot: create ${relativePath}`,
   );
 
@@ -134,12 +165,12 @@ async function updateScene(
 
   const relativePath = sceneRelativePath(sceneStem);
   const raw = await ctx.store.readText(relativePath);
-  const nextContent = applySceneSummaryEdit(raw, action, body);
+  const card = parseSceneCard(raw);
+  const existingSummary = (await ctx.store.readSceneSummaryText(card.summary)) ?? card.summary;
+  const summaryText = mergeSummaryEdit(existingSummary, action, body);
 
-  const outcome = await ctx.content.writeTracked(
-    relativePath,
-    nextContent,
-    hashContent(raw),
+  const outcome = await ctx.content.writeTrackedSet(
+    await planSummaryWrites(ctx, relativePath, raw, card, summaryText),
     `storyboard-bot: update ${relativePath}`,
   );
 
@@ -156,13 +187,72 @@ async function updateScene(
   });
 }
 
-// NOTE: /scene edit·append는 자유 산문 채널이므로 카드의 summary 필드만 다룬다. 구조 필드
-// (purpose/conflict/…)는 카드 에디터가 담당한다.
-function applySceneSummaryEdit(raw: string, action: 'edit' | 'append', body: string): string {
-  const card = parseSceneCard(raw);
-  const existingSummary = card.summary?.trim() ?? '';
-  const summary =
-    action === 'edit' || existingSummary.length === 0 ? body : `${existingSummary}\n\n${body}`;
+// NOTE: /scene edit·append는 자유 산문 채널이므로 카드의 summary 만 다룬다. 구조 필드
+// (purpose/conflict/…)는 카드 에디터가 담당한다. 산문은 `<stem>.summary.md` 에 두고 카드에는
+// 파일 이름만 남기므로, 인라인 summary 를 가진 구형 카드는 첫 편집에서 파일로 옮겨진다.
+function mergeSummaryEdit(
+  existingSummary: string | undefined,
+  action: 'edit' | 'append',
+  body: string,
+): string {
+  const existing = existingSummary?.trim() ?? '';
+  return action === 'edit' || existing.length === 0 ? body : `${existing}\n\n${body}`;
+}
 
-  return serializeSceneCard({ ...card, summary });
+async function planSummaryWrites(
+  ctx: ChatContext,
+  cardRelativePath: string,
+  raw: string,
+  card: SceneCard,
+  summaryText: string,
+): Promise<WorkspaceWrite[]> {
+  const summaryFileName = sceneSummaryReference(card.summary) ?? sceneSummaryFileName(card.id);
+  const summaryPath = summaryRelativePath(summaryFileName);
+  const summaryWrite: WorkspaceWrite = {
+    relativePath: summaryPath,
+    content: `${summaryText}\n`,
+    baselineHash: await readBaselineHash(ctx, summaryPath),
+  };
+
+  if (card.summary === summaryFileName) {
+    return [summaryWrite];
+  }
+
+  return [
+    {
+      relativePath: cardRelativePath,
+      content: serializeSceneCard({ ...card, summary: summaryFileName }),
+      baselineHash: hashContent(raw),
+    },
+    summaryWrite,
+  ];
+}
+
+async function readBaselineHash(
+  ctx: ChatContext,
+  relativePath: string,
+): Promise<string | undefined> {
+  try {
+    return hashContent(await ctx.store.readText(relativePath));
+  } catch {
+    return undefined;
+  }
+}
+
+function summaryRelativePath(summaryFileName: string): string {
+  return `${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${summaryFileName}`;
+}
+
+async function expandSceneBeats(
+  ctx: ChatContext,
+  sceneStem: string,
+  force: boolean,
+): Promise<void> {
+  const scenes = await ctx.content.listScenes();
+  if (!scenes.some((scene) => scene.stem === sceneStem)) {
+    await ctx.reply({ text: `씬을 찾을 수 없습니다: ${sceneStem}` });
+    return;
+  }
+
+  await enqueueBeatsJob(ctx, sceneStem, force);
 }

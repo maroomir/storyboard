@@ -198,6 +198,14 @@ export class ContentService {
     );
   }
 
+  // A scene card and its `<stem>.summary.md` change together, so they land in one commit.
+  public writeTrackedSet(
+    writes: readonly WorkspaceWrite[],
+    commitMessage: string,
+  ): Promise<MutateOutcome> {
+    return this.gate.apply({ writes }, commitMessage);
+  }
+
   // AI memory the engine already wrote to disk through the file system port. One commit carries
   // every memory file a generation job touched, instead of one commit per file or none at all.
   public commitMemory(relativePaths: readonly string[], commitMessage: string): MutateOutcome {

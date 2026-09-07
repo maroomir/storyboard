@@ -620,15 +620,19 @@ describe('/scene', () => {
     fixture.cleanup();
   });
 
-  // The end-to-end create path: numbering follows the existing scenes and the write is a commit.
-  it('creates the next-numbered scene from a multi-line message and commits it', async () => {
+  // The end-to-end create path: numbering follows the existing scenes, the prose lands in the
+  // summary file, and the card plus the file are one commit.
+  it('creates the next-numbered scene with a summary file and commits both', async () => {
     await router.handleUpdate(
       message('/scene new first-kiss\n골목에서 우연히 마주친다.\n비가 온다.'),
     );
 
     expect(sent[0]?.text).toContain('씬을 만들었습니다: 02-first-kiss');
     expect(readFileSync(join(fixture.root, 'scene', '02-first-kiss.card'), 'utf8')).toBe(
-      'type: scene\nid: 02-first-kiss\nsummary: |-\n  골목에서 우연히 마주친다.\n  비가 온다.\n',
+      'type: scene\nid: 02-first-kiss\nsummary: 02-first-kiss.summary.md\n',
+    );
+    expect(readFileSync(join(fixture.root, 'scene', '02-first-kiss.summary.md'), 'utf8')).toBe(
+      '골목에서 우연히 마주친다.\n비가 온다.\n',
     );
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe(
       'storyboard-bot: create scene/02-first-kiss.card',
@@ -646,30 +650,39 @@ describe('/scene', () => {
     expect(git(fixture.root, 'log', '-1', '--format=%s')).toBe('seed scenes');
   });
 
-  it('replaces a scene summary while preserving its other fields', async () => {
+  it('replaces the summary file while leaving a referencing card untouched', async () => {
     fixture.write(
       'scene/03-meet.card',
-      'type: scene\nid: 03-meet\ntitle: 만남\ncharacters:\n  - elia\nsummary: 예전 본문\n',
+      'type: scene\nid: 03-meet\ntitle: 만남\ncharacters:\n  - elia\nsummary: 03-meet.summary.md\n',
     );
+    fixture.write('scene/03-meet.summary.md', '예전 본문\n');
     fixture.git('add', '--all');
     fixture.git('commit', '--quiet', '-m', 'add frontmatter scene');
 
     await router.handleUpdate(message('/scene edit 03-meet\n새 본문입니다.'));
 
     expect(sent[0]?.text).toContain('본문을 교체했습니다');
-    const saved = readFileSync(join(fixture.root, 'scene', '03-meet.card'), 'utf8');
-    expect(saved).toBe(
-      'type: scene\nid: 03-meet\ntitle: 만남\ncharacters:\n  - elia\nsummary: 새 본문입니다.\n',
+    expect(readFileSync(join(fixture.root, 'scene', '03-meet.card'), 'utf8')).toBe(
+      'type: scene\nid: 03-meet\ntitle: 만남\ncharacters:\n  - elia\nsummary: 03-meet.summary.md\n',
     );
+    expect(readFileSync(join(fixture.root, 'scene', '03-meet.summary.md'), 'utf8')).toBe(
+      '새 본문입니다.\n',
+    );
+    expect(git(fixture.root, 'show', '--stat', '--format=', 'HEAD')).not.toContain('03-meet.card');
   });
 
-  it('appends to an existing scene summary', async () => {
+  // A card that still carries inline prose is moved to the summary file on its first edit.
+  it('appends to an inline summary by moving it into the summary file', async () => {
     await router.handleUpdate(message('/scene append 01-prologue\n덧붙인 문단.'));
 
     expect(sent[0]?.text).toContain('덧붙였습니다');
     expect(readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8')).toBe(
-      'type: scene\nid: 01-prologue\nsummary: |-\n  prologue seed\n\n  덧붙인 문단.\n',
+      'type: scene\nid: 01-prologue\nsummary: 01-prologue.summary.md\n',
     );
+    expect(readFileSync(join(fixture.root, 'scene', '01-prologue.summary.md'), 'utf8')).toBe(
+      'prologue seed\n\n덧붙인 문단.\n',
+    );
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
   });
 
   it('rejects edits to unknown scenes and shows usage for malformed input', async () => {
@@ -681,5 +694,8 @@ describe('/scene', () => {
 
     await router.handleUpdate(message('/scene delete 01-prologue'));
     expect(sent[2]?.text).toContain('사용법');
+
+    await router.handleUpdate(message('/scene beats 01-prologue now'));
+    expect(sent[3]?.text).toContain('사용법');
   });
 });

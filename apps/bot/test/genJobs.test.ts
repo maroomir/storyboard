@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { serializeChapterPlan } from '@storyboard/story-format';
+import { applySceneBeats, serializeChapterPlan } from '@storyboard/story-format';
 import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -21,6 +21,7 @@ import {
 } from '../src/chat/handlers/generate';
 import type { IncomingUpdate, MessageView, SentMessageRef } from '../src/chat/ports';
 import { CommandRegistry } from '../src/chat/registry';
+import { createSceneCommandHandler } from '../src/chat/handlers/scene';
 import { UpdateRouter } from '../src/chat/router';
 import { ContentService } from '../src/content/contentService';
 import { createGenJobs, type GenJobs } from '../src/app/createGenJobs';
@@ -128,6 +129,22 @@ describe('generation jobs end to end', () => {
           cancelled: false,
         }),
       },
+      beatsExpander: {
+        expandBeats: async (sceneStem, force) => {
+          const scene = await store.readScene(sceneStem);
+          if (!force && (scene.value.card.beats?.length ?? 0) > 0) {
+            return { status: 'kept' as const, beatCount: scene.value.card.beats?.length ?? 0 };
+          }
+          const beats = ['모의 비트 하나', '모의 비트 둘'];
+          await content.writeTracked(
+            scene.relativePath,
+            applySceneBeats(await store.readText(scene.relativePath), beats),
+            scene.contentHash,
+            `storyboard-bot: beats ${scene.relativePath}`,
+          );
+          return { status: 'written' as const, beatCount: beats.length };
+        },
+      },
       sender,
       jobsConfig: { heavyConcurrency: 1, lightConcurrency: 1 },
       logger: silentLogger,
@@ -140,6 +157,7 @@ describe('generation jobs end to end', () => {
       createReviewCommandHandler(),
       createOutlineCommandHandler(),
       createManuscriptCommandHandler(),
+      createSceneCommandHandler(),
       createJobsHandler(),
       createJobLogHandler(),
       createUsageHandler(),
@@ -198,6 +216,25 @@ describe('generation jobs end to end', () => {
       shell: false,
     }).trim();
     expect(log.split('\n')).toHaveLength(2);
+  });
+
+  it('runs /scene beats as a light job and keeps existing beats unless forced', async () => {
+    await router.handleUpdate(message('/scene beats 01-prologue'));
+    await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
+
+    const cardPath = join(fixture.root, 'scene', '01-prologue.card');
+    expect(readFileSync(cardPath, 'utf8')).toContain('모의 비트 둘');
+    const log = execFileSync('git', ['-C', fixture.root, 'log', '--format=%s'], {
+      encoding: 'utf8',
+      shell: false,
+    }).trim();
+    expect(log.split('\n')[0]).toBe('storyboard-bot: beats scene/01-prologue.card');
+
+    sent.length = 0;
+    await router.handleUpdate(message('/scene beats 01-prologue'));
+    await waitFor(() => sent.some((text) => text.includes('✅ 잡')));
+    await router.handleUpdate(message('/log 2'));
+    expect(sent.at(-1)).toContain('이미 비트 2개가 있어 그대로 둡니다');
   });
 
   it('runs /outline and commits synopsis.md with the enqueue baseline', async () => {
