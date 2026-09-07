@@ -380,8 +380,11 @@ describe('pre-0.8 workspace migration', () => {
     expect(outcome.ok).toBe(true);
     const migrated = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
     expect(migrated).not.toContain('자동 생성된 씬 시드');
-    expect(migrated).toContain('진아가 마이크를 켠다.');
-    expect(migrated).toContain('유정이 큐 사인을 놓친다.');
+    // 걷어 낸 뒤 남은 저자 산문은 인라인 summary 이므로 같은 실행에서 파일로 옮겨진다.
+    expect(migrated).toContain('summary: 01-first.summary.md');
+    expect(readFileSync(join(workspace, 'scene', '01-first.summary.md'), 'utf8')).toBe(
+      '진아가 마이크를 켠다.\n유정이 큐 사인을 놓친다.\n',
+    );
   });
 
   it('skips a card it cannot parse and names it', async () => {
@@ -398,17 +401,25 @@ describe('pre-0.8 workspace migration', () => {
     expect(doctor.message).toContain('읽지 못한 카드');
   });
 
-  it('leaves an authored summary alone', async () => {
+  // 창작자가 쓴 사건과 기계가 펼친 beats 를 구별하려고 summary 산문은 카드 옆 파일로 둔다.
+  it('moves an authored inline summary into <stem>.summary.md', async () => {
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),
       ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
     );
 
-    await run('scene migrate', args(['scene', 'migrate']));
+    const outcome = await run('scene migrate', args(['scene', 'migrate']));
 
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
-      '진아가 사연을 읽었다.',
+    expect(outcome.message).toContain('인라인 summary 1개');
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toBe(
+      'type: scene\nid: 01-first\nsummary: 01-first.summary.md\n',
     );
+    expect(readFileSync(join(workspace, 'scene', '01-first.summary.md'), 'utf8')).toBe(
+      '진아가 사연을 읽었다.\n',
+    );
+
+    const again = await run('scene migrate', args(['scene', 'migrate']));
+    expect(again.message).toBe('바꿀 씬이 없습니다.');
   });
 
   // 0.8 이전 워크스페이스에는 마커만 있고 manuscript/ 가 없다.
@@ -455,6 +466,93 @@ describe('pre-0.8 workspace migration', () => {
     expect(outcome.message).toContain('플레이스홀더 요약이 1개');
     expect(outcome.message).toContain('storyboard scene migrate');
     expect(outcome.message).toContain('manuscript/');
+  });
+
+  it('reports inline summaries and missing beats in doctor', async () => {
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
+    );
+    writeFileSync(
+      join(workspace, 'scene', '02-second.card'),
+      ['type: scene', 'id: 02-second', 'beats:', '  - 진아가 스튜디오에 들어선다.', ''].join('\n'),
+    );
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).toContain('인라인 summary 씬이 1개');
+    expect(outcome.message).toContain('비트 없는 씬이 1개');
+    expect(outcome.message).toContain('storyboard scene beats --all');
+  });
+});
+
+describe('scene beats', () => {
+  function writeScene(stem: string, extra: string[] = []): void {
+    writeFileSync(
+      join(workspace, 'scene', `${stem}.card`),
+      ['type: scene', `id: ${stem}`, 'purpose: 첫 방송', ...extra, ''].join('\n'),
+    );
+  }
+
+  it('writes the proposed beats to the card', async () => {
+    writeScene('01-first');
+
+    const outcome = await run('scene beats', args(['scene', 'beats'], {}, ['01-first']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.data).toMatchObject({ stem: '01-first', written: true });
+    const card = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
+    expect(card).toContain('beats:\n  - 모의 비트 하나\n  - 모의 비트 둘\n  - 모의 비트 셋\n');
+    expect(card).toContain('purpose: 첫 방송');
+  });
+
+  it('keeps existing beats unless --force, and never writes on --dry-run', async () => {
+    writeScene('01-first', ['beats:', '  - 창작자가 다듬은 비트']);
+
+    const kept = await run('scene beats', args(['scene', 'beats'], {}, ['01-first']));
+    expect(kept.ok).toBe(true);
+    expect(kept.message).toContain('--force');
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+      '창작자가 다듬은 비트',
+    );
+
+    const dry = await run(
+      'scene beats',
+      args(['scene', 'beats'], { force: true, 'dry-run': true }, ['01-first']),
+    );
+    expect(dry.data).toMatchObject({ written: false, beats: ['모의 비트 하나', '모의 비트 둘', '모의 비트 셋'] });
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+      '창작자가 다듬은 비트',
+    );
+
+    const forced = await run('scene beats', args(['scene', 'beats'], { force: true }, ['01-first']));
+    expect(forced.data).toMatchObject({ written: true });
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).not.toContain(
+      '창작자가 다듬은 비트',
+    );
+  });
+
+  it('fills only the scenes without beats on --all', async () => {
+    writeScene('01-first');
+    writeScene('02-second', ['beats:', '  - 이미 있는 비트']);
+
+    const outcome = await run('scene beats', args(['scene', 'beats'], { all: true }));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.data).toMatchObject({ proposed: 1, failures: [] });
+    expect(readFileSync(join(workspace, 'scene', '02-second.card'), 'utf8')).toContain(
+      '이미 있는 비트',
+    );
+    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toContain(
+      '모의 비트 하나',
+    );
+  });
+
+  it('requires a stem without --all', async () => {
+    const outcome = await run('scene beats', args(['scene', 'beats']));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('scene beats 01-scene-1-1');
   });
 });
 

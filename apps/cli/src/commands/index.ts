@@ -30,6 +30,7 @@ import { pointOfViews, type PointOfView, type ProjectSetting } from '@storyboard
 import {
   convertLegacySceneText,
   createEmptyBackground,
+  extractInlineSceneSummary,
   createEmptyCharacter,
   isLegacySceneFileName,
   isLegacySeedPlaceholderSummary,
@@ -165,6 +166,91 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     data: { draft: (result.draftUri as StoryUri).fsPath, warnings },
   };
 };
+
+// 비트는 `scene generate` 가 비어 있을 때 자동으로 채우지만, 생성 전에 사건 전개를 검수하려는
+// 창작자를 위해 verb 로도 노출한다. --all 은 비트 없는 씬만 고르고, --force 가 있어야 다시 뽑는다.
+const generateSceneBeats: CommandHandler = async ({ container, args }) => {
+  const force = flagBoolean(args.flags, 'force');
+  const dryRun = flagBoolean(args.flags, 'dry-run');
+
+  if (flagBoolean(args.flags, 'all')) {
+    const paths = getStoryboardProjectPaths(container.workspaceRoot);
+    const names = await container.fileSystem
+      .listFileNames(paths.sceneDirectory)
+      .catch(() => [] as readonly string[]);
+    const stems = names
+      .map((fileName) => parseSceneFileName(fileName)?.stem)
+      .filter((stem): stem is string => stem !== undefined)
+      .sort();
+    const results: Record<string, unknown> = {};
+    const failures: string[] = [];
+    let proposed = 0;
+
+    for (const stem of stems) {
+      const result = await runSceneBeats(container, stem, force, dryRun);
+      results[stem] = result;
+      if (!result.ok) {
+        failures.push(stem);
+      } else if (result.kind === 'proposed') {
+        proposed += 1;
+        container.logger.info(`${stem}: 비트 ${result.beats.length}개`);
+      }
+    }
+
+    return {
+      ok: failures.length === 0,
+      message:
+        failures.length === 0
+          ? `씬 ${proposed}개의 비트를 ${dryRun ? '제안했습니다 (적용하지 않음)' : '썼습니다'}, ${stems.length - proposed}개는 그대로 둡니다.`
+          : `${failures.length}건 실패 (비트 ${proposed}개 처리): ${failures.join(', ')}`,
+      data: { proposed, failures, results },
+    };
+  }
+
+  const stem = sceneStemFrom(args);
+  if (stem === undefined) {
+    return {
+      ok: false,
+      message: '씬 stem을 지정해 주세요. 예: storyboard scene beats 01-scene-1-1',
+    };
+  }
+
+  const result = await runSceneBeats(container, stem, force, dryRun);
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  if (result.kind === 'kept') {
+    return {
+      ok: true,
+      message: `이미 비트 ${result.beats.length}개가 있습니다 (--force 로 다시 뽑습니다).`,
+      data: { stem, beats: result.beats, written: false },
+    };
+  }
+
+  return {
+    ok: true,
+    message: result.written
+      ? `비트 ${result.beats.length}개를 카드에 썼습니다.`
+      : `비트 ${result.beats.length}개를 제안했습니다 (적용하지 않음).`,
+    data: { stem, beats: result.beats, written: result.written },
+  };
+};
+
+function runSceneBeats(
+  container: CliContainer,
+  stem: string,
+  force: boolean,
+  dryRun: boolean,
+): ReturnType<CliContainer['generateSceneBeatsUseCase']['execute']> {
+  return container.generateSceneBeatsUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+    sceneUri: sceneUriFor(container.workspaceRoot, stem),
+    fileName: `${stem}.card`,
+    force,
+    dryRun,
+  });
+}
 
 const reviseScene: CommandHandler = async ({ container, args }) => {
   const stem = sceneStemFrom(args);
@@ -660,12 +746,16 @@ const migrateScenes: CommandHandler = async ({ container }) => {
     converted.push(conversion.fileName);
   }
 
-  const { cleared, unreadable } = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
+  const { cleared } = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
+  const { extracted, unreadable } = await extractInlineSceneSummaries(
+    container,
+    paths.sceneDirectory,
+  );
 
   return {
     ok: true,
-    message: describeSceneMigration(converted.length, cleared.length, unreadable),
-    data: { converted, clearedPlaceholders: cleared, unreadable },
+    message: describeSceneMigration(converted.length, cleared.length, extracted.length, unreadable),
+    data: { converted, clearedPlaceholders: cleared, extractedSummaries: extracted, unreadable },
   };
 };
 
@@ -697,9 +787,42 @@ async function clearLegacySeedPlaceholders(
   return { cleared, unreadable };
 }
 
+// 인라인 summary 산문은 창작자의 사건 재료다. 기계가 펼친 beats 와 구별되도록 카드 옆
+// `<stem>.summary.md` 로 옮기고 카드에는 파일명만 남긴다. 플레이스홀더를 걷어 낸 뒤에 돈다.
+async function extractInlineSceneSummaries(
+  container: CliContainer,
+  sceneDirectory: StoryUri,
+): Promise<{ readonly extracted: readonly string[]; readonly unreadable: readonly string[] }> {
+  const names = await container.fileSystem
+    .listFileNames(sceneDirectory)
+    .catch(() => [] as readonly string[]);
+  const { cards, unreadable } = await readSceneCards(container, sceneDirectory, names);
+  const extracted: string[] = [];
+
+  for (const { fileName, card } of cards) {
+    const extraction = extractInlineSceneSummary(card);
+    if (extraction === undefined) {
+      continue;
+    }
+
+    await container.fileSystem.writeFile(
+      joinStoryPath(sceneDirectory, extraction.summaryFileName),
+      new TextEncoder().encode(extraction.summaryText),
+    );
+    await container.fileSystem.writeFile(
+      joinStoryPath(sceneDirectory, fileName),
+      new TextEncoder().encode(serializeSceneCard(extraction.card)),
+    );
+    extracted.push(extraction.summaryFileName);
+  }
+
+  return { extracted, unreadable };
+}
+
 function describeSceneMigration(
   converted: number,
   cleared: number,
+  extracted: number,
   unreadable: readonly string[],
 ): string {
   const parts: string[] = [];
@@ -708,6 +831,9 @@ function describeSceneMigration(
   }
   if (cleared > 0) {
     parts.push(`플레이스홀더 요약 ${cleared}개를 비웠습니다.`);
+  }
+  if (extracted > 0) {
+    parts.push(`인라인 summary ${extracted}개를 summary 파일로 옮겼습니다.`);
   }
   if (parts.length === 0) {
     parts.push('바꿀 씬이 없습니다.');
@@ -1462,6 +1588,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'config show': runConfigShow,
   'config set': runConfigSet,
   'scene generate': generateScene,
+  'scene beats': generateSceneBeats,
   'scene revise': reviseScene,
   'scene draft': showDraftPath,
   'outline generate': generateOutline,

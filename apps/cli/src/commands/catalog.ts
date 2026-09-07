@@ -50,10 +50,13 @@ export const flagCatalog: readonly FlagSpec[] = [
   },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
-  { name: 'all', summary: 'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 생성합니다' },
+  {
+    name: 'all',
+    summary: 'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene beats: 비트 없는 씬을 모두',
+  },
   {
     name: 'force',
-    summary: '이미 있는 결과를 덮어씁니다 (scene generate, scene seeds, outline generate)',
+    summary: '이미 있는 결과를 덮어씁니다 (scene generate, scene beats, scene seeds, outline generate)',
   },
   { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
   { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
@@ -262,6 +265,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     examples: ['storyboard scene generate 01-scene-1-1', 'storyboard scene generate --all'],
   },
   {
+    verb: 'scene beats',
+    group: '씬과 초안',
+    usage: 'scene beats <stem> | --all',
+    summary: '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
+    flags: ['all', 'force', 'dry-run'],
+    examples: ['storyboard scene beats 01-scene-1-1', 'storyboard scene beats --all --dry-run'],
+  },
+  {
     verb: 'scene revise',
     group: '씬과 초안',
     usage: 'scene revise <stem>',
@@ -429,7 +440,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     verb: 'scene migrate',
     group: '유지보수',
     usage: 'scene migrate',
-    summary: '구형 scene/*.txt 를 .card 로 옮기고 시드 플레이스홀더 요약을 지웁니다',
+    summary: '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
   },
 ];
 
