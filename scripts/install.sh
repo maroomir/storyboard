@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the Storyboard CLI from a GitHub release.
 #
-#   curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/install.sh | bash
 #
 # Or, with the release tarball already on disk (a private repository, an offline machine):
 #
@@ -14,7 +14,7 @@
 # needs Node 20 or newer on the machine.
 set -euo pipefail
 
-REPO="${STORYBOARD_REPO:-maroomir/storyboard}"
+REPO="${STORYBOARD_REPO:-webfic/storyboard}"
 VERSION="${STORYBOARD_VERSION:-latest}"
 PREFIX="${STORYBOARD_PREFIX:-$HOME/.local}"
 CLI_LIB_DIR="$PREFIX/share/storyboard"

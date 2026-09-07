@@ -88,11 +88,27 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
 7. Creates a GitHub Release with all three assets and the checksum attached.
+8. Publishes the same notes and assets to the public repository, `webfic/storyboard`: it copies
+   both changelogs and `scripts/install.sh` there, commits, tags and pushes, then creates the
+   matching GitHub Release. The step needs the `WEBFIC_RELEASE_TOKEN` secret (a fine-grained PAT
+   with `contents: write` on `webfic/storyboard`); without it the step logs a warning and the
+   release stays private only.
+
+## The public repository
+
+`webfic/storyboard` is the user-facing side of the product: README, changelogs, `install.sh`,
+issue templates, the wiki, and the releases. It holds **no source** — the source stays here.
+
+- Every release is published **twice**, here and there, under the same tag.
+- The wiki is not updated by the workflow. When user-facing behavior changes, update the wiki
+  pages by hand (or ask an agent to) — they are at `github.com/webfic/storyboard/wiki`.
+- Users install from the public repository, so `scripts/install.sh` defaults to
+  `STORYBOARD_REPO=webfic/storyboard`. Set that variable to install from a private release instead.
 
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
-- **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
+- **CLI** — `curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/install.sh | bash`.
   The script resolves the latest release, verifies the checksum, unpacks the CLI into
   `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
   script, so the machine needs Node 20 or newer. With the tarball already downloaded (private
