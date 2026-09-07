@@ -72,8 +72,9 @@ export const PersonaDialoguePrompt = {
     style?: StyleDirective,
     grounding?: SceneGrounding,
   ): PromptArtifact {
+    const knowledge = style?.narration?.knowledge;
     const povInteriorityLine =
-      style?.pov === 'first' || style?.pov === 'third-limited'
+      knowledge === 'witnessed' || knowledge === 'retrospective'
         ? '시점 화자의 내면 독백(생각·판단·자기합리화·감정)을 대사 사이에 충분히 녹여라.'
         : undefined;
 

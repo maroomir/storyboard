@@ -1,5 +1,4 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
-import type { StyleDirective } from '#ai/contracts/styleDirective';
+import { describeNarration, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface DraftCritiqueInput {
@@ -31,7 +30,9 @@ function buildGeneric(input: DraftCritiqueInput): PromptArtifact {
     system: [
       '한국어 장편 소설 초안을 비평하는 도우미다.',
       '다음 세 관점만 검토한다: 캐릭터 보이스(voice), 장면 목적 달성(purpose), 불필요한 반복(repetition).',
-      '[문체 제약]·[시점]·[장르·톤]·[관계 단계]를 위반한 서술·대사는 voice로, [품질 기준] 미달은 purpose로 보고한다.',
+      '[문체 제약]·[시점]·[서술자 목소리]·[장르·톤]·[관계 단계]를 위반한 서술·대사는 voice로, [품질 기준] 미달은 purpose로 보고한다.',
+      '[시점]에 목격 범위가 적혀 있으면, 시점 인물이 보거나 듣지 못한 사건과 다른 인물의 속마음을 단정한 서술을 시점 이탈로 보고하라.',
+      '[서술자 목소리]가 있으면 서술 문장이 그 목소리를 벗어난 대목을 보고하라. 인물 대사는 이 기준이 아니라 [캐릭터 카드]로 판단한다.',
       '[캐릭터 카드]의 말투·보이스는 캐릭터 판단의 최우선 기준이다. [품질 기준]과 충돌하면 캐릭터 카드를 따르고, 그 충돌을 본문 문제로 보고하지 마라.',
       '문법·맞춤법은 보지 않는다. 명백한 문제만 보고하고, 사소하면 severity를 low로 둔다.',
       '설명 없이 JSON 배열만 출력하라.',
@@ -72,8 +73,12 @@ function buildUserBlock(input: DraftCritiqueInput): string {
   if (input.styleConstraints && input.styleConstraints.length > 0) {
     sections.push(`[문체 제약]\n${input.styleConstraints.join('\n')}`);
   }
-  if (input.styleDirective?.pov) {
-    sections.push(`[시점]\n${pointOfViewLabels[input.styleDirective.pov]}`);
+  const narration = input.styleDirective?.narration;
+  if (narration) {
+    sections.push(`[시점]\n${describeNarration(narration)}`);
+  }
+  if (narration?.voice && narration.voice.length > 0) {
+    sections.push(`[서술자 목소리]\n${narration.voice.join('\n')}`);
   }
   if (input.styleDirective?.genre) {
     sections.push(`[장르·톤]\n${input.styleDirective.genre}`);

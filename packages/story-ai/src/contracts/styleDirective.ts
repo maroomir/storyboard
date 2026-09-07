@@ -1,12 +1,15 @@
 import {
-  pointOfViewLabels,
+  narrativeTenseLabels,
+  narratorKnowledgeLabels,
+  narratorPersonLabels,
   resolveCraftContract,
   resolveSceneTargetLength,
   sceneGroundingFieldLabels,
 } from '@storyboard/story-format';
 import type {
   CraftContractOverride,
-  PointOfView,
+  NarrationDirective,
+  NarrativeTense,
   ProjectSetting,
   SceneGrounding,
 } from '@storyboard/story-format';
@@ -14,12 +17,11 @@ import type {
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.
 export interface StyleDirective {
-  readonly pov?: PointOfView;
+  readonly narration?: NarrationDirective;
   readonly genre?: string;
   readonly styleConstraints?: readonly string[];
   readonly prohibitions?: readonly string[];
   readonly relationStage?: string;
-  readonly povCharacter?: string;
   readonly targetWordCount?: number;
   readonly craftContract?: CraftContractOverride;
 }
@@ -31,7 +33,7 @@ export function buildStyleDirective(
   relationStage?: string,
   targetWordCount?: number,
   sceneBody?: string,
-  povCharacter?: string,
+  narration?: NarrationDirective,
 ): StyleDirective | undefined {
   const resolvedTargetWordCount =
     sceneBody === undefined
@@ -48,17 +50,14 @@ export function buildStyleDirective(
   const prohibitions =
     setting?.prohibitions && setting.prohibitions.length > 0 ? setting.prohibitions : undefined;
   const trimmedRelationStage = relationStage?.trim();
-  const trimmedPovCharacter = povCharacter?.trim();
   const directive: StyleDirective = {
-    pov: setting?.pov,
+    narration,
     genre: setting?.genre,
     craftContract: setting?.craftContract,
     styleConstraints,
     prohibitions,
     relationStage:
       trimmedRelationStage && trimmedRelationStage.length > 0 ? trimmedRelationStage : undefined,
-    povCharacter:
-      trimmedPovCharacter && trimmedPovCharacter.length > 0 ? trimmedPovCharacter : undefined,
     targetWordCount:
       typeof resolvedTargetWordCount === 'number' &&
       Number.isInteger(resolvedTargetWordCount) &&
@@ -67,13 +66,12 @@ export function buildStyleDirective(
         : undefined,
   };
 
-  return directive.pov ||
+  return directive.narration ||
     directive.genre ||
     directive.craftContract ||
     directive.styleConstraints ||
     directive.prohibitions ||
     directive.relationStage ||
-    directive.povCharacter ||
     directive.targetWordCount
     ? directive
     : undefined;
@@ -139,10 +137,48 @@ export function sceneGroundingLines(grounding: SceneGrounding | undefined): stri
   return entries.length > 0 ? ['[이 장면의 확정 사실]', ...entries] : [];
 }
 
-function povLine(directive: StyleDirective): string | undefined {
-  return directive.pov
-    ? `서술 시점: ${pointOfViewLabels[directive.pov]} — 처음부터 끝까지 이 시점을 유지하라.`
+const personGuides: Record<NonNullable<NarrationDirective['person']>, string> = {
+  first: "화자가 자신을 '나'로 부르는 1인칭",
+  second: "독자를 '당신'으로 부르는 2인칭",
+  third: '3인칭',
+};
+
+// NOTE: 지식 경계가 없으면 1인칭 화자가 자기가 없던 자리의 일과 남의 속마음까지 서술한다. 인칭만
+// 지정하던 종전 지시로는 그것이 위반인지 프롬프트에 드러나지 않았다.
+const knowledgeGuides: Record<NonNullable<NarrationDirective['knowledge']>, string> = {
+  witnessed:
+    '서술자가 직접 보거나 듣거나 겪은 것만 서술하라. 그 자리에 없던 사건과 다른 인물의 속마음은 겉으로 드러난 행동·표정·말로만 전하고, 서술자가 알 수 없는 사실을 단정하지 마라.',
+  omniscient:
+    '어느 인물의 내면에도 들어갈 수 있고 인물들이 모르는 사실도 서술할 수 있다. 다만 한 문단 안에서 시점 인물을 옮겨 다니지 마라.',
+  retrospective:
+    '서술자는 이 이야기의 결말을 이미 아는 자리에서 돌아본다. 그때는 몰랐다는 것을 지금의 시선으로 짚을 수 있다. 다만 앞으로 벌어질 일을 미리 알려 긴장을 죽이지 마라.',
+};
+
+function narrationPersonLine(narration: NarrationDirective): string | undefined {
+  return narration.person
+    ? `서술 시점: ${narratorPersonLabels[narration.person]} — ${personGuides[narration.person]}으로 처음부터 끝까지 유지하라.`
     : undefined;
+}
+
+function narrationKnowledgeLine(narration: NarrationDirective): string | undefined {
+  return narration.knowledge ? knowledgeGuides[narration.knowledge] : undefined;
+}
+
+function narrationVoiceLine(narration: NarrationDirective): string | undefined {
+  return narration.voice && narration.voice.length > 0
+    ? `서술자의 목소리: ${narration.voice.join(' / ')} — 서술 문장이 이 목소리를 유지하게 하라.`
+    : undefined;
+}
+
+export function describeNarration(narration: NarrationDirective): string {
+  const parts = [
+    narration.person ? narratorPersonLabels[narration.person] : undefined,
+    narration.knowledge ? narratorKnowledgeLabels[narration.knowledge] : undefined,
+    narration.focal ? `초점 ${narration.focal}` : undefined,
+    narration.tense ? narrativeTenseLabels[narration.tense] : undefined,
+  ].filter((part): part is string => part !== undefined);
+
+  return parts.length > 0 ? parts.join(' · ') : '지정 없음';
 }
 
 function genreLine(directive: StyleDirective): string | undefined {
@@ -161,9 +197,9 @@ function prohibitionLine(directive: StyleDirective): string | undefined {
     : undefined;
 }
 
-function povCharacterLine(directive: StyleDirective): string | undefined {
-  return directive.povCharacter
-    ? `이 장면의 시점 인물: ${directive.povCharacter} — 이 인물의 지각과 내면만 서술하고, 다른 인물의 속마음은 겉으로 드러난 행동·표정으로만 전하라.`
+function focalCharacterLine(directive: StyleDirective): string | undefined {
+  return directive.narration?.focal
+    ? `이 장면의 시점 인물: ${directive.narration.focal} — 이 인물의 지각과 내면만 서술하고, 다른 인물의 속마음은 겉으로 드러난 행동·표정으로만 전하라.`
     : undefined;
 }
 
@@ -185,12 +221,16 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
     return [];
   }
 
+  const narration = directive.narration;
+
   return [
-    povLine(directive),
+    narration ? narrationPersonLine(narration) : undefined,
+    narration ? narrationKnowledgeLine(narration) : undefined,
+    narration ? narrationVoiceLine(narration) : undefined,
     genreLine(directive),
     styleConstraintLine(directive),
     prohibitionLine(directive),
-    povCharacterLine(directive),
+    focalCharacterLine(directive),
     relationLine(directive),
     lengthLine(directive),
   ].filter((line): line is string => Boolean(line));
@@ -199,10 +239,13 @@ export function narrativeStyleLines(directive: StyleDirective | undefined): stri
 // 페르소나·대사처럼 시점이 중립인 단계용: 톤·문체·관계 단계를 반영한다.
 // NOTE: 시제와 따옴표는 어느 프롬프트에서도 지정하지 않아 장면마다 달라졌다. 액션 씬이 현재형으로
 // 흐르고 한 편만 직선 따옴표로 나온 것이 그 결과다. 한 작품 안에서 갈리면 안 되는 규약이라 고정한다.
-export const proseConventionLines: readonly string[] = [
-  '서술은 과거형으로 쓰고 한 장면 안에서 시제를 섞지 마라. 대사 안의 시제는 인물의 말이므로 예외다.',
-  '대사는 곡선 큰따옴표(\u201c \u201d)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.',
-];
+// 어느 시제로 고정할지는 서술자가 정하고, 정하지 않았으면 과거형이다.
+export function proseConventionLines(tense: NarrativeTense = 'past'): readonly string[] {
+  return [
+    `서술은 ${narrativeTenseLabels[tense]}으로 쓰고 한 장면 안에서 시제를 섞지 마라. 대사 안의 시제는 인물의 말이므로 예외다.`,
+    '대사는 곡선 큰따옴표(\u201c \u201d)로 감싸라. 직선 따옴표나 다른 기호로 대신하지 마라.',
+  ];
+}
 
 export function voiceStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
@@ -213,7 +256,7 @@ export function voiceStyleLines(directive: StyleDirective | undefined): string[]
     genreLine(directive),
     styleConstraintLine(directive),
     prohibitionLine(directive),
-    povCharacterLine(directive),
+    focalCharacterLine(directive),
     relationLine(directive),
   ].filter((line): line is string => Boolean(line));
 }

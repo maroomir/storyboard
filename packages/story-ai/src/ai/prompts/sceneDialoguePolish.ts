@@ -38,7 +38,7 @@ function buildGeneric(input: SceneDialoguePolishInput): PromptArtifact {
       '뼈대에 없는 인물을 등장시키거나 말하게 하지 마라.',
       '행동·이동을 적은 서술 문장과 단독 줄의 --- 표시는 위치와 내용을 그대로 두어라.',
       '설명이나 머리말 없이 손본 뼈대 전문만 한국어로 출력하라.',
-      ...proseConventionLines,
+      ...proseConventionLines(input.style?.narration?.tense),
       ...voiceStyleLines(input.style),
     ].join('\n'),
     user: buildUserBlock(input),

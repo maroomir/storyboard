@@ -56,7 +56,7 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
       ...(input.retryReasons && input.retryReasons.length > 0
         ? [`앞서 쓴 결과가 다음 이유로 반려됐다. 이번에는 어기지 마라: ${input.retryReasons.join(' / ')}`]
         : []),
-      ...proseConventionLines,
+      ...proseConventionLines(style?.narration?.tense),
       ...(style ? voiceStyleLines(style) : []),
       ...craftContractLines(style?.craftContract),
     ]

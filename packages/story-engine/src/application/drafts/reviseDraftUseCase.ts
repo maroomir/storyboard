@@ -15,6 +15,7 @@ import {
   serializeDraft,
   readDraftFile,
   readSceneFile,
+  resolveNarration,
   writeDraftFile,
 } from '@storyboard/story-format';
 import type { ProjectSetting } from '@storyboard/story-format';
@@ -142,7 +143,10 @@ async function prepareReviseDraftContext(
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
-        scene.frontmatter.povCharacter,
+        resolveNarration({
+          pov: setting?.pov,
+          focalFallback: scene.frontmatter.povCharacter,
+        }),
       ),
       characters: context.characters,
       targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
