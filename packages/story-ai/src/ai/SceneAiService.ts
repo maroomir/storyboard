@@ -12,6 +12,7 @@ import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
 import { GenreFormattingPrompt } from './prompts/genreFormatting';
 import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
+import { SceneBeatsPrompt } from './prompts/sceneBeats';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from './prompts/sceneSkeleton';
 import {
@@ -33,6 +34,7 @@ import {
 import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
 import { parseJsonArray, parseJsonObject } from '#ai/contracts/aiResponseParser';
+import { sceneGroundingLines } from '#ai/contracts/styleDirective';
 import {
   sceneGroundingFieldKeys,
   sceneGroundingFieldLabels,
@@ -90,6 +92,36 @@ export class SceneAiService {
     });
 
     return toSceneGrounding(parseJsonObject(response.text), input.missingFields);
+  }
+
+  public async proposeSceneBeats(
+    input: {
+      readonly sceneBody: string;
+      readonly summary?: string;
+      readonly grounding?: SceneGrounding;
+      readonly characterNames: readonly string[];
+      readonly beatCount: number;
+    },
+    options: GenerateTextOptions = {},
+  ): Promise<string[]> {
+    const variant = this.gateway.resolvePromptVariant('sceneBeats', options);
+    const prompt = SceneBeatsPrompt.build(
+      {
+        sceneBody: input.sceneBody,
+        ...(input.summary === undefined ? {} : { summary: input.summary }),
+        grounding: sceneGroundingLines(input.grounding),
+        characterNames: input.characterNames,
+        beatCount: input.beatCount,
+      },
+      variant,
+    );
+    const response = await this.gateway.generate('sceneBeats', toPromptMessages(prompt), {
+      ...options,
+      temperature: options.temperature ?? SceneBeatsPrompt.config.temperature,
+      maxTokens: options.maxTokens ?? SceneBeatsPrompt.config.maxTokens,
+    });
+
+    return toStringList(parseJsonArray(response.text));
   }
 
   // summary(자유 산문)에서 비어 있는 구조 필드만 제안받는다. 이미 작성된 필드는 모순 방지용
@@ -331,6 +363,13 @@ function toSceneStructureProposal(
   }
 
   return proposal;
+}
+
+function toStringList(parsed: unknown[] | null): string[] {
+  return (parsed ?? [])
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 }
 
 function toSceneGrounding(

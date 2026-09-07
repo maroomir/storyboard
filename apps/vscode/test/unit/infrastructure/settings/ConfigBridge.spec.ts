@@ -308,6 +308,17 @@ describe("ConfigBridge", () => {
     ).toBe(3)
   })
 
+  it("reads the scene beats switches with clamped defaults", () => {
+    expect(createConfigBridge(new Map()).isAutoBeatsEnabled()).toBe(true)
+    expect(createConfigBridge(new Map<string, unknown>([["draft.autoBeats", false]])).isAutoBeatsEnabled()).toBe(false)
+    expect(createConfigBridge(new Map()).getCharsPerBeat()).toBe(1500)
+    expect(createConfigBridge(new Map<string, unknown>([["draft.charsPerBeat", 10]])).getCharsPerBeat()).toBe(300)
+    expect(createConfigBridge(new Map<string, unknown>([["draft.charsPerBeat", 2000]])).getCharsPerBeat()).toBe(2000)
+    expect(createConfigBridge(new Map()).getMinBeats()).toBe(5)
+    expect(createConfigBridge(new Map<string, unknown>([["draft.minBeats", 0]])).getMinBeats()).toBe(1)
+    expect(createConfigBridge(new Map<string, unknown>([["draft.minBeats", 8]])).getMinBeats()).toBe(8)
+  })
+
   it("clamps revise score threshold to [0, 100] with a default of 0", () => {
     expect(createConfigBridge(new Map()).getReviseScoreThreshold()).toBe(0)
     expect(

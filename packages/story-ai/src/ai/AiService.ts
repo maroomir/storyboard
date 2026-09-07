@@ -143,6 +143,13 @@ export class StoryboardAiService {
     return this.sceneAiService.proposeSceneGrounding(input, options);
   }
 
+  public async proposeSceneBeats(
+    input: Parameters<SceneAiService['proposeSceneBeats']>[0],
+    options: GenerateTextOptions = {},
+  ): Promise<string[]> {
+    return this.sceneAiService.proposeSceneBeats(input, options);
+  }
+
   public async proposeSceneStructure(
     input: Parameters<SceneAiService['proposeSceneStructure']>[0],
     options: GenerateTextOptions = {},

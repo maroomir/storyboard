@@ -317,6 +317,24 @@ export class ConfigBridge {
     return this.dependencies.getConfiguration().get('grounding.autoApprove', false);
   }
 
+  public isAutoBeatsEnabled(): boolean {
+    return this.dependencies.getConfiguration().get('draft.autoBeats', true);
+  }
+
+  public getCharsPerBeat(): number {
+    const configured = this.dependencies.getConfiguration().get('draft.charsPerBeat', 1500);
+    const value = Math.floor(Number.isFinite(configured) ? configured : 1500);
+
+    return Math.min(10_000, Math.max(300, value));
+  }
+
+  public getMinBeats(): number {
+    const configured = this.dependencies.getConfiguration().get('draft.minBeats', 5);
+    const value = Math.floor(Number.isFinite(configured) ? configured : 5);
+
+    return Math.min(50, Math.max(1, value));
+  }
+
   public isKeepDraftHistoryEnabled(): boolean {
     return this.dependencies.getConfiguration().get('draft.keepHistory', false);
   }
