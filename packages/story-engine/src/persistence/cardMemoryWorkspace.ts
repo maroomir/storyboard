@@ -15,6 +15,7 @@ import {
   readBackgroundMemoryFile,
   readDraftFile,
   readPersonaMemoryFile,
+  parseSceneStem,
   readSceneDialogueFile,
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
@@ -43,6 +44,16 @@ function backgroundMemoryFilePath(paths: StoryboardProjectPaths, cardId: string)
   return joinStoryPath(paths.backgroundMemoryDirectory, `${cardId}.json`);
 }
 
+// 씬 N을 만드는 동안, N 이후까지 진화한 기억은 두 가지로 쓸 수 없다: 아직 오지 않은 씬의 정보를
+// 담고 있고(스포일러), N을 다시 만든다면 그 기억이 전제한 판본이 폐기된다. 원장의 되감기와 같은
+// 판정이다. 씬 번호를 읽을 수 없으면 근거가 없으므로 그대로 쓴다.
+function isMemoryAheadOfScene(updatedThroughScene: string, sceneStem: string): boolean {
+  const memoryOrder = parseSceneStem(updatedThroughScene)?.order;
+  const currentOrder = parseSceneStem(sceneStem)?.order;
+
+  return memoryOrder !== undefined && currentOrder !== undefined && memoryOrder >= currentOrder;
+}
+
 export function createPersonaMemoryStore(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,
@@ -58,7 +69,11 @@ export function createPersonaMemoryStore(
 
       try {
         const record = await readPersonaMemoryFile(uri, fs);
-        return record.cardHash === computePersonaCardHash(card) ? record.persona : undefined;
+        const isReusable =
+          record.cardHash === computePersonaCardHash(card) &&
+          !isMemoryAheadOfScene(record.updatedThroughScene, sceneStem);
+
+        return isReusable ? record.persona : undefined;
       } catch {
         return undefined;
       }
@@ -90,7 +105,11 @@ export function createBackgroundMemoryStore(
 
       try {
         const record = await readBackgroundMemoryFile(uri, fs);
-        return record.cardHash === computeBackgroundCardHash(card) ? record.atmosphere : undefined;
+        const isReusable =
+          record.cardHash === computeBackgroundCardHash(card) &&
+          !isMemoryAheadOfScene(record.updatedThroughScene, sceneStem);
+
+        return isReusable ? record.atmosphere : undefined;
       } catch {
         return undefined;
       }
