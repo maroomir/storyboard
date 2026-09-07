@@ -1,7 +1,7 @@
 import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneRepository } from '#engine/ports/repositories';
-import { applySceneGrounding, readSceneFile } from '@storyboard/story-format';
+import { applySceneBeats, applySceneGrounding, readSceneFile } from '@storyboard/story-format';
 import type { SceneFile, SceneGrounding } from '@storyboard/story-format';
 export class SceneRepository implements ISceneRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
@@ -15,6 +15,14 @@ export class SceneRepository implements ISceneRepository {
     await this.fileSystem.writeFile(
       uri,
       new TextEncoder().encode(applySceneGrounding(rawScene, grounding)),
+    );
+  }
+
+  public async writeBeats(uri: StoryUri, beats: readonly string[]): Promise<void> {
+    const rawScene = new TextDecoder().decode(await this.fileSystem.readFile(uri));
+    await this.fileSystem.writeFile(
+      uri,
+      new TextEncoder().encode(applySceneBeats(rawScene, beats)),
     );
   }
 }

@@ -16,6 +16,7 @@ import {
   serializeSceneCache,
 } from '@storyboard/story-engine';
 import {
+  applySceneBeats,
   applySceneGrounding,
   draftRelativePath,
   joinStoryPath,
@@ -26,7 +27,7 @@ import {
 
 import type { ContentService } from '@/content/contentService';
 import type { MutateOutcome } from '@/workspace/workspaceChanges';
-import type { WorkspaceStore } from '@/workspace/workspaceStore';
+import { hashContent, type WorkspaceStore } from '@/workspace/workspaceStore';
 
 function pathOf(uri: StoryUri): string {
   return uri.fsPath;
@@ -229,6 +230,18 @@ export class BotSceneRepository implements ISceneRepository {
   }
 
   public async writeGrounding(uri: StoryUri, grounding: SceneGrounding): Promise<void> {
+    await this.writeCard(uri, 'ground', (raw) => applySceneGrounding(raw, grounding));
+  }
+
+  public async writeBeats(uri: StoryUri, beats: readonly string[]): Promise<void> {
+    await this.writeCard(uri, 'beats', (raw) => applySceneBeats(raw, beats));
+  }
+
+  private async writeCard(
+    uri: StoryUri,
+    verb: 'ground' | 'beats',
+    edit: (raw: string) => string,
+  ): Promise<void> {
     const stem =
       pathOf(uri)
         .split('/')
@@ -237,19 +250,24 @@ export class BotSceneRepository implements ISceneRepository {
     const baseline = this.baselineByPath.get(stem);
 
     if (!baseline) {
-      throw new Error(`grounding write without a read baseline: ${stem}`);
+      throw new Error(`${verb} write without a read baseline: ${stem}`);
     }
 
+    const written = edit(baseline.raw);
     const outcome = await this.content.writeTracked(
       baseline.path,
-      applySceneGrounding(baseline.raw, grounding),
+      written,
       baseline.hash,
-      `storyboard-bot: ground ${baseline.path}`,
+      `storyboard-bot: ${verb} ${baseline.path}`,
     );
 
     if (!isSettled(outcome)) {
       this.onStaleGrounding?.();
+      return;
     }
+
+    // grounding 다음에 beats 가 같은 잡에서 이어 쓰이므로, 두 번째 쓰기의 기준선은 첫 쓰기의 결과다.
+    this.baselineByPath.set(stem, { ...baseline, raw: written, hash: hashContent(written) });
   }
 }
 

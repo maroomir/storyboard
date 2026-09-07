@@ -19,6 +19,7 @@ import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
+import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding } from './resolveSceneGrounding';
 
 export interface SceneGenerationInputs {
@@ -243,17 +244,14 @@ async function loadSceneContextBundle(
   // NOTE: 사실 시트는 컨텍스트를 만든 뒤 확정한다. 그래야 카드 id가 아닌 실제 인물 이름으로 제안받고,
   // 확정된 사실이 inputHash와 생성 프롬프트에 같이 반영된다. grounding은 characters/location을
   // 건드리지 않으므로 컨텍스트를 다시 만들지 않고 씬만 갈아 끼운다.
-  const grounded = await resolveSceneGrounding(
-    sceneUri,
-    rawScene,
-    builtContext.characters.map((character) => character.name),
-    options,
-  );
+  const characterNames = builtContext.characters.map((character) => character.name);
+  const grounded = await resolveSceneGrounding(sceneUri, rawScene, characterNames, options);
   if (grounded.kind === 'cancelled') {
     return { ok: false, result: { ok: false, kind: 'cancelled' } };
   }
 
-  const scene = grounded.scene;
+  // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
+  const scene = await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
   const context = { ...builtContext, scene };
 
   const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);

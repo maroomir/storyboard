@@ -8,6 +8,7 @@ export interface IProjectRepository {
 export interface ISceneRepository {
   read(uri: StoryUri, fileName: string): Promise<SceneFile>;
   writeGrounding(uri: StoryUri, grounding: SceneGrounding): Promise<void>;
+  writeBeats(uri: StoryUri, beats: readonly string[]): Promise<void>;
 }
 
 export interface IDraftRepository {

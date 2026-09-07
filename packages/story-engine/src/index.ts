@@ -22,6 +22,8 @@ export * from './application/drafts/generateAllDraftsUseCase';
 export * from './application/drafts/generateDraftTypes';
 export * from './application/drafts/generateDraftUseCase';
 export * from './application/drafts/postGenerationScheduling';
+export * from './application/drafts/generateSceneBeatsUseCase';
+export * from './application/drafts/resolveSceneBeats';
 export * from './application/drafts/resolveSceneGrounding';
 export * from './application/drafts/reviseAfterGenerateGate';
 export * from './application/drafts/reviseDraftUseCase';

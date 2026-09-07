@@ -86,7 +86,8 @@ const sceneBackgroundCard = {
 
 const aiServiceStub = {
   marker: "ai-service",
-  proposeSceneGrounding: vi.fn(async () => ({ incident: "제안된 사건" }))
+  proposeSceneGrounding: vi.fn(async () => ({ incident: "제안된 사건" })),
+  proposeSceneBeats: vi.fn(async () => ["첫 비트", "둘째 비트"])
 }
 
 const pipelineSuccessResult = {
@@ -121,6 +122,9 @@ function createLogger(): LoggerSpy {
 interface ConfigBridgeStub {
   readonly getDraftSceneBreakSeparator: () => string | undefined
   readonly isSceneGroundingAutoApproveEnabled: () => boolean
+  readonly isAutoBeatsEnabled: () => boolean
+  readonly getCharsPerBeat: () => number
+  readonly getMinBeats: () => number
   readonly isAiContextCondenseEnabled: () => boolean
   readonly isKeepDraftHistoryEnabled: () => boolean
   readonly isUpdateCardsAfterGenerateEnabled: () => boolean
@@ -131,6 +135,9 @@ function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBr
   return {
     getDraftSceneBreakSeparator: () => undefined,
     isSceneGroundingAutoApproveEnabled: () => true,
+    isAutoBeatsEnabled: () => false,
+    getCharsPerBeat: () => 1500,
+    getMinBeats: () => 5,
     isAiContextCondenseEnabled: () => false,
     isKeepDraftHistoryEnabled: () => false,
     isUpdateCardsAfterGenerateEnabled: () => false,
@@ -189,6 +196,7 @@ interface DependencyOverrides {
   readonly postGenerationUpdates?: PostGenerationUpdatesStub
   readonly sceneCacheRepository?: SceneCacheRepositoryStub
   readonly writeGrounding?: ReturnType<typeof vi.fn>
+  readonly writeBeats?: ReturnType<typeof vi.fn>
 }
 
 function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftUseCaseDependencies {
@@ -212,7 +220,8 @@ function createDependencies(overrides: DependencyOverrides = {}): GenerateDraftU
     },
     sceneRepository: {
       read: vi.fn(async () => fakeScene),
-      writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined)
+      writeGrounding: overrides.writeGrounding ?? vi.fn(async () => undefined),
+      writeBeats: overrides.writeBeats ?? vi.fn(async () => undefined)
     }
   } as never
 }
@@ -257,6 +266,7 @@ describe("GenerateDraftUseCase", () => {
     archiveExistingDraftMock.mockReset().mockResolvedValue(undefined)
     pipelineRunMock.mockReset().mockResolvedValue(pipelineSuccessResult)
     aiServiceStub.proposeSceneGrounding.mockClear()
+    aiServiceStub.proposeSceneBeats.mockClear()
   })
 
   describe("cache hit and force", () => {
@@ -653,6 +663,95 @@ describe("GenerateDraftUseCase", () => {
 
       expect(result.kind).toBe("generated")
       expect(writeGrounding).toHaveBeenCalledWith(sceneUri, { incident: "사용자가 고친 사건" })
+    })
+  })
+
+  describe("scene beats", () => {
+    const beatScene = {
+      ...fakeScene,
+      frontmatter: { targetWordCount: 3000 },
+      card: { type: "scene", id: "01-intro", purpose: "첫 만남", summary: "01-intro.summary.md" },
+      summaryText: "준서가 하나를 만난다.\n",
+      body: "[목적]\n첫 만남\n\n준서가 하나를 만난다."
+    }
+
+    function createBeatsDependencies(
+      overrides: DependencyOverrides & { readonly scene?: typeof beatScene } = {}
+    ): GenerateDraftUseCaseDependencies {
+      const scene = overrides.scene ?? beatScene
+      buildSceneContextMock.mockReset().mockResolvedValue(sceneContext({ scene }))
+      const dependencies = createDependencies({
+        configBridge: createConfigBridge({ isAutoBeatsEnabled: () => true }),
+        ...overrides
+      })
+      dependencies.sceneRepository.read = vi.fn(async () => scene) as never
+      return dependencies
+    }
+
+    it("proposes beats from the card and the summary, writes them, and feeds the beat body to the pipeline", async () => {
+      const writeBeats = vi.fn(async () => undefined)
+      const dependencies = createBeatsDependencies({ writeBeats })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(aiServiceStub.proposeSceneBeats).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sceneBody: "[목적]\n첫 만남\n",
+          summary: "준서가 하나를 만난다.\n",
+          characterNames: ["준서", "하나"],
+          // max(minBeats 5, ceil(3000 / 1500))
+          beatCount: 5
+        }),
+        expect.objectContaining({ providerId: "provider:sceneBeats" })
+      )
+      expect(writeBeats).toHaveBeenCalledWith(sceneUri, ["첫 비트", "둘째 비트"])
+      expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
+        context: { scene: { body: "[목적]\n첫 만남\n\n첫 비트\n\n둘째 비트\n" } }
+      })
+    })
+
+    it("keeps existing beats and skips the proposal", async () => {
+      const writeBeats = vi.fn(async () => undefined)
+      const dependencies = createBeatsDependencies({
+        writeBeats,
+        scene: { ...beatScene, card: { ...beatScene.card, beats: ["이미 있는 비트"] } }
+      })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(aiServiceStub.proposeSceneBeats).not.toHaveBeenCalled()
+      expect(writeBeats).not.toHaveBeenCalled()
+    })
+
+    it("skips beats entirely when draft.autoBeats is off", async () => {
+      const writeBeats = vi.fn(async () => undefined)
+      const dependencies = createBeatsDependencies({
+        writeBeats,
+        configBridge: createConfigBridge({ isAutoBeatsEnabled: () => false })
+      })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(aiServiceStub.proposeSceneBeats).not.toHaveBeenCalled()
+    })
+
+    it("warns and generates from the card alone when the proposal fails", async () => {
+      aiServiceStub.proposeSceneBeats.mockRejectedValueOnce(new Error("모델 오류"))
+      const logger = createLogger()
+      const writeBeats = vi.fn(async () => undefined)
+      const dependencies = createBeatsDependencies({ writeBeats, logger })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect(writeBeats).not.toHaveBeenCalled()
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining("씬 비트를 전개하지 못했습니다"))
+      expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
+        context: { scene: { body: beatScene.body } }
+      })
     })
   })
 })
