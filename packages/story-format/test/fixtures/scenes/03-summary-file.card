@@ -1,0 +1,8 @@
+type: scene
+id: 03-summary-file
+title: 파일 요약
+targetWordCount: 3000
+summary: 03-summary-file.summary.md
+beats:
+  - 샘플 캐릭터가 방송실 문을 연다.
+  - 책상 위에 낯선 사연 엽서가 놓여 있다.
