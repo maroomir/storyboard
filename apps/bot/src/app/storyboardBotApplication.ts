@@ -36,6 +36,7 @@ import {
 } from '@/chat/handlers/read';
 import { createDoctorHandler } from '@/chat/handlers/doctor';
 import { createRenameHandler, createSetHandler } from '@/chat/handlers/edit';
+import { createNarratorHandler } from '@/chat/handlers/narrator';
 import { createSceneCommandHandler } from '@/chat/handlers/scene';
 import {
   createDraftCommandHandler,
@@ -232,6 +233,7 @@ export class StoryboardBotApplication {
       createRenameHandler(),
       createSetHandler(),
       createSceneCommandHandler(),
+      createNarratorHandler(),
       createDraftCommandHandler(),
       createReviewCommandHandler(),
       createOutlineCommandHandler(),

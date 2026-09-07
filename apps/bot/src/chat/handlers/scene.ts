@@ -1,6 +1,9 @@
+import { describeNarration } from '@storyboard/story-ai';
 import {
   STORYBOARD_RELATIVE_PATHS,
   clampScenePrefixDigits,
+  mainThreadId,
+  resolveNarration,
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
   parseSceneCard,
@@ -26,6 +29,7 @@ const USAGE = [
   '/scene new <slug>',
   '<컨셉 본문…>',
   '',
+  '/scene show <씬 stem> — 이 씬에 적용될 시점·줄기',
   '/scene edit <씬 stem> — 본문 전체 교체',
   '/scene append <씬 stem> — 본문 끝에 덧붙이기',
   '(본문은 scene/<stem>.summary.md 에 저장되며, 명령 다음 줄부터 여러 줄로 씁니다)',
@@ -56,6 +60,11 @@ export function createSceneCommandHandler(): ICommandHandler {
         return;
       }
 
+      if (parsed.action === 'show') {
+        await showScene(ctx, parsed.target);
+        return;
+      }
+
       await updateScene(ctx, parsed.action, parsed.target, parsed.body);
     },
   };
@@ -63,11 +72,17 @@ export function createSceneCommandHandler(): ICommandHandler {
 
 type SceneCommand =
   | {
-      readonly action: 'new' | 'edit' | 'append';
+      readonly action: 'new' | 'show' | 'edit' | 'append';
       readonly target: string;
       readonly body: string;
     }
   | { readonly action: 'beats'; readonly target: string; readonly force: boolean };
+
+const bodyActions = ['new', 'show', 'edit', 'append'] as const;
+
+function isBodyAction(value: string | undefined): value is 'new' | 'show' | 'edit' | 'append' {
+  return value !== undefined && (bodyActions as readonly string[]).includes(value);
+}
 
 // `/scene <action> <target>` on the first line, the body on the lines after it. Telegram sends the
 // whole message as one text, so multi-line bodies arrive naturally.
@@ -86,11 +101,53 @@ function parseSceneCommand(args: string): SceneCommand | undefined {
     return force || rest.length === 0 ? { action, target, force } : undefined;
   }
 
-  if ((action !== 'new' && action !== 'edit' && action !== 'append') || rest.length > 0) {
+  if (!isBodyAction(action) || rest.length > 0) {
     return undefined;
   }
 
   return { action, target, body };
+}
+
+// 씬이 어떤 시점으로 생성될지는 씬 카드 > 프로젝트 기본 순으로 정해진다. 결과가 어긋나 보일 때
+// 어느 단계에서 온 값인지 확인하는 자리다.
+async function showScene(ctx: ChatContext, sceneStem: string): Promise<void> {
+  const scene = await ctx.store.readScene(sceneStem);
+  const project = await ctx.store.readProject();
+  const narrators = new Map(
+    (await ctx.content.listNarrators()).map((card) => [card.id, card] as const),
+  );
+
+  let narration: string;
+  try {
+    const resolved = resolveNarration({
+      ...(scene.value.card.narrator === undefined
+        ? {}
+        : { sceneNarrator: scene.value.card.narrator }),
+      ...(project.value.setting?.narration?.defaultNarrator === undefined
+        ? {}
+        : { defaultNarrator: project.value.setting.narration.defaultNarrator }),
+      ...(project.value.setting?.pov === undefined ? {} : { pov: project.value.setting.pov }),
+      ...(scene.value.frontmatter.povCharacter === undefined
+        ? {}
+        : { focalFallback: scene.value.frontmatter.povCharacter }),
+      narrators,
+    });
+    narration = resolved ? describeNarration(resolved) : '지정 없음';
+  } catch (error) {
+    narration = error instanceof Error ? error.message : String(error);
+  }
+
+  await ctx.reply({
+    text: [
+      `🎬 ${scene.value.card.title ?? sceneStem} (${sceneStem})`,
+      `시점: ${narration}`,
+      `줄기: ${scene.value.card.thread ?? mainThreadId}`,
+      ...(scene.value.card.characters && scene.value.card.characters.length > 0
+        ? [`인물: ${scene.value.card.characters.join(', ')}`]
+        : []),
+      ...(scene.value.card.summary === undefined ? [] : ['', scene.value.card.summary]),
+    ].join('\n'),
+  });
 }
 
 async function createScene(ctx: ChatContext, slug: string, body: string): Promise<void> {

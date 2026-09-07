@@ -12,6 +12,7 @@ import {
   parseCard,
   parseCardIdFromFileName,
   parseChapterPlan,
+  parseNarratorCard,
   parseScene,
   parseSceneCard,
   sceneSummaryReference,
@@ -19,6 +20,7 @@ import {
   parseBible,
   sceneRelativePath,
   type ChapterPlan,
+  type NarratorCard,
   type SceneFile,
   type StoryBible,
   type StoryboardCard,
@@ -142,6 +144,31 @@ export class WorkspaceStore {
     const raw = await this.readText(relativePath);
 
     return { value: parseCard(raw), relativePath, contentHash: hashContent(raw) };
+  }
+
+  // 서술자 카드는 씬·장이 고르는 시점의 정본이다. 봇은 읽고 만들기만 하고, 고치는 자리는
+  // 카드 에디터다.
+  public async listNarrators(): Promise<NarratorCard[]> {
+    const names = await this.listDirectory(STORYBOARD_RELATIVE_PATHS.narratorDirectory);
+    const narrators: NarratorCard[] = [];
+
+    for (const name of names) {
+      if (!name.endsWith('.card') || name.startsWith('.')) {
+        continue;
+      }
+
+      try {
+        narrators.push(
+          parseNarratorCard(
+            await this.readText(`${STORYBOARD_RELATIVE_PATHS.narratorDirectory}/${name}`),
+          ),
+        );
+      } catch {
+        continue;
+      }
+    }
+
+    return narrators.sort((left, right) => left.id.localeCompare(right.id));
   }
 
   public async listScenes(): Promise<SceneSummary[]> {

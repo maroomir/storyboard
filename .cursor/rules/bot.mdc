@@ -107,6 +107,18 @@ save rather than clobbering it. And a queued job cannot stop to ask Telegram for
 `draft.autoGrounding` off maps to the engine's `skipSceneGrounding`, which leaves the scene exactly
 as authored and generates anyway — distinct from a declined approval, which cancels the run.
 
+## Narrators
+
+시점은 `narrator/*.card`로 이름 붙일 수 있고, 씬 카드의 `narrator`가 그 카드를 고른다. `narrator/`는
+**tracked**이므로 `/narrator add`도 `ContentService.createNarrator`를 통한 커밋이다 — 봇이 파일
+시스템으로 직접 쓰는 길은 없다. `/scene show`는 씬 카드 > 프로젝트 기본 순으로 해석된 시점과
+연속성 줄기를 보여 주고, 참조가 끊긴 서술자는 그 자리에서 사유가 드러난다.
+
+연속성 줄기(`thread`)가 갈리면 이야기 상태·장 요약·직전 씬 맥락·인물 기억이
+`.storyboard/memory/threads/<id>/` 아래로 내려간다. 기본 줄기 `main`은 종전 경로 그대로이고,
+그 경로들은 모두 `.storyboard/memory/` 접두사 아래이므로 `BotFileSystem`의 메모리 버퍼 규칙이
+그대로 적용된다 — 새 예외를 추가할 필요가 없다.
+
 ## Scene cards
 
 Scenes are `.card` files too (`type: scene`), so a scene write is a canonical re-serialization like
