@@ -75,3 +75,62 @@ describe("validateGenerationContract", () => {
     expect(readiness.warnings).toHaveLength(0)
   })
 })
+
+describe("composition warnings", () => {
+  it("accepts an omnibus with two episodes", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ composition: "omnibus", threads: { ep1: { title: "나룻배" }, ep2: { title: "등불" } } })
+    )
+
+    expect(readiness.warnings).toEqual([])
+  })
+
+  it("warns when an omnibus declares fewer than two episodes", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ composition: "omnibus", threads: { ep1: { title: "나룻배" } } })
+    )
+
+    expect(readiness.warnings.some((warning) => warning.includes("편을 두 개 이상"))).toBe(true)
+  })
+
+  it("warns when a frame wraps a thread that is not defined", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ composition: "frame", threads: { frame: { title: "화자", wraps: ["ghost"] } } })
+    )
+
+    expect(readiness.warnings.some((warning) => warning.includes("정의되지 않은 줄기"))).toBe(true)
+  })
+
+  it("warns when a thread wraps itself", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ threads: { frame: { title: "화자", wraps: ["frame"] } } })
+    )
+
+    expect(readiness.warnings.some((warning) => warning.includes("자기 자신을 감쌉니다"))).toBe(true)
+  })
+
+  it("warns when a frame composition has no wrapping thread", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ composition: "frame", threads: { ep1: { title: "안" } } })
+    )
+
+    expect(readiness.warnings.some((warning) => warning.includes("외화 줄기가 필요"))).toBe(true)
+  })
+
+  it("warns when alternating point of view is paired with an omniscient narrator", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ composition: "alternating-pov", pov: "third-omniscient" })
+    )
+
+    expect(readiness.warnings.some((warning) => warning.includes("시점 교차와 맞지 않습니다"))).toBe(true)
+  })
+
+  it("lets a thread wrap the default main thread", () => {
+    const readiness = validateGenerationContract(
+      buildSetting({ threads: { frame: { title: "화자", wraps: ["main"] } } })
+    )
+
+    expect(readiness.warnings).toEqual([])
+  })
+})
+

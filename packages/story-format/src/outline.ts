@@ -142,6 +142,9 @@ export interface FlatChapterScene {
   readonly chapterTitle: string;
   readonly actIndex: number;
   readonly chapterIndex: number;
+  // 씬 시드가 물려받을 장의 서술자·줄기. 시점 교차는 이 값을 씬마다 복사해 표현한다.
+  readonly chapterNarrator?: string;
+  readonly chapterThread?: string;
 }
 
 export function flattenChapterPlan(plan: ChapterPlan): FlatChapterScene[] {
@@ -156,6 +159,8 @@ export function flattenChapterPlan(plan: ChapterPlan): FlatChapterScene[] {
           chapterTitle: chapter.title,
           actIndex,
           chapterIndex,
+          ...(chapter.narrator === undefined ? {} : { chapterNarrator: chapter.narrator }),
+          ...(chapter.thread === undefined ? {} : { chapterThread: chapter.thread }),
         });
       }
     });
