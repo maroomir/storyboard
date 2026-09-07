@@ -37,8 +37,8 @@ file-backed `SecretStore`/`ConfigBridge`.
 `.storyboard/config.json`, overridable wholesale
 with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
 reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.json` at 0600. Both
-files come from `@storyboard/story-config`; legacy `cli.json`/`cli-secrets.json` are read with a
-warning until the shared files exist. `setup` / `doctor` / `config show|set` are the onboarding
+files come from `@storyboard/story-config`; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
+read at all. `setup` / `doctor` / `config show|set` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
 `apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.
