@@ -28,6 +28,10 @@ import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './genera
 import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding } from './resolveSceneGrounding';
 import { auditStoryMemory, markStoryStateStaleEntries } from './storyStateAudit';
+import {
+  auditChapterMemory,
+  markStaleChapterSummaries,
+} from '#engine/application/manuscript/chapterSummaryAudit';
 
 export interface SceneGenerationInputs {
   readonly workspaceFolder: StoryWorkspaceFolder;
@@ -309,6 +313,13 @@ async function loadSceneContextBundle(
   });
   await markStoryStateStaleEntries(thread.threadPaths, options.fileSystem, memoryAudit);
 
+  // 장별 요약도 그것을 낳은 초안에 매여 있다. 원장과 같은 이유로 서사 컨텍스트를 만들기 전에
+  // 표시해야, 곧이어 요약을 읽는 buildNarrativeContext가 낡은 장을 프롬프트에서 뺀다. 요약도
+  // 줄기별로 갈리므로 원장과 같은 스레드 경로로 감사한다.
+  const chapterAuditRequest = { fileSystem: options.fileSystem, paths: thread.threadPaths };
+  const chapterAudit = await auditChapterMemory(chapterAuditRequest);
+  await markStaleChapterSummaries(chapterAuditRequest, chapterAudit);
+
   const narrativeContext = await buildNarrativeContext(
     sceneContextPaths(thread.threadPaths),
     context,
@@ -339,7 +350,9 @@ async function loadSceneContextBundle(
     canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
     sceneBreakJoiner,
     inputHash,
-    warnings: memoryAudit.staleWarning === undefined ? [] : [memoryAudit.staleWarning],
+    warnings: [memoryAudit.staleWarning, chapterAudit.staleWarning].filter(
+      (warning): warning is string => warning !== undefined,
+    ),
     threadPaths: thread.threadPaths,
     threadId: thread.threadId,
     narration,

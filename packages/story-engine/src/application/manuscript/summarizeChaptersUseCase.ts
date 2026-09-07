@@ -1,12 +1,13 @@
 import type { StoryUri } from '@storyboard/story-format';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
+  auditChapterSummaries,
   buildChapterSummariesMarkdown,
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
   type ChapterSummary,
 } from '#engine/domain/chapterSummaries';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript, computeDraftBodyHash } from '@storyboard/story-format';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {
@@ -73,8 +74,18 @@ export class SummarizeChaptersUseCase {
 
       const aiService = this.aiGateway.createService(workspaceRoot);
       const providerId = this.aiGateway.getTaskProvider('chapterSummary');
-      let summaries =
-        options.chapterIndex === undefined ? [] : await this.readExisting(workspaceRoot);
+      const sourceHashes = new Map(
+        manuscript.chapters.map((chapter) => [
+          chapter.chapterTitle,
+          computeDraftBodyHash(chapter.markdown),
+        ]),
+      );
+      // 한 장만 다시 요약할 때도 나머지 장의 낡음 표시를 다시 매긴다. 이 실행이 요약 파일을
+      // 어차피 쓰므로, 표시가 실제와 어긋난 채로 남는 창이 생기지 않는다.
+      let summaries: readonly ChapterSummary[] =
+        options.chapterIndex === undefined
+          ? []
+          : auditChapterSummaries(await this.readExisting(workspaceRoot), sourceHashes).summaries;
 
       for (const [index, chapter] of targeted.entries()) {
         if (options.shouldCancel?.()) {
@@ -89,6 +100,8 @@ export class SummarizeChaptersUseCase {
         summaries = mergeChapterSummary(summaries, {
           chapterTitle: chapter.chapterTitle,
           summary,
+          sourceHash: computeDraftBodyHash(chapter.markdown),
+          isStale: false,
         });
       }
 

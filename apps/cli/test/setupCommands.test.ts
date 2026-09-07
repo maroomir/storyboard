@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { collectCurrentChapterHashes, getStoryboardProjectPaths } from '@storyboard/story-engine';
+
 import { createCliContainer } from '../src/container';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from '../src/commands/setup';
 import { commands } from '../src/commands';
@@ -199,6 +201,71 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(check?.status).toBe('warn');
     expect(check?.detail).toContain('씬 1');
     expect(check?.fix).toContain('storyboard draft generate');
+  });
+});
+
+describe('storyboard doctor chapter summaries', () => {
+  function checksOf(outcome: { data?: unknown }): { label: string; detail: string; fix?: string }[] {
+    return (outcome.data as { checks: { label: string; detail: string; fix?: string }[] }).checks;
+  }
+
+  // 장별 요약은 그 장의 초안에서 나온 것이므로, 초안을 고치고 다시 요약하지 않으면 낡는다.
+  function writeWorkspaceWithSummary(draftBody: string, recordedHash: string): void {
+    mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
+    mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
+    mkdirSync(join(workspace, 'draft'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'project.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        id: 'p1',
+        name: '테스트',
+        format: 'novel',
+        language: 'ko',
+        createdAt: new Date().toISOString(),
+        editor: { scenePrefixDigits: 2 },
+      }),
+    );
+    writeFileSync(
+      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+      'version: 1.0.0\nacts:\n  - id: act-1\n    title: 1막\n    chapters:\n      - id: chapter-1\n        title: 1장\n        scenes:\n          - id: s1\n            title: 첫 씬\n',
+    );
+    writeFileSync(
+      join(workspace, 'draft', '01-first.md'),
+      `---\nsceneStem: 01-first\nformat: novel\ngeneratedAt: '2026-09-07T00:00:00.000Z'\n---\n${draftBody}\n`,
+    );
+    writeFileSync(
+      join(workspace, '.storyboard', 'memory', 'summaries.md'),
+      `# 장별 요약\n\n> 대상: 테스트\n\n## 1장\n\n<!-- chapter-input: ${recordedHash} -->\n\n1장 요약\n`,
+    );
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+  }
+
+  it('reports a summary that no longer matches its chapter drafts', async () => {
+    writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
+
+    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+      (entry) => entry.label === '장별 요약',
+    );
+
+    expect(check?.detail).toContain('1장');
+    expect(check?.fix).toBe('storyboard manuscript summaries');
+  });
+
+  it('says nothing is wrong once the recorded hash matches the assembled chapter', async () => {
+    writeWorkspaceWithSummary('첫 장 본문', 'sha256:stale');
+    const cli = container();
+    const current = await collectCurrentChapterHashes(
+      { fileSystem: cli.fileSystem, paths: getStoryboardProjectPaths(cli.workspaceRoot) },
+      '테스트',
+    );
+    writeWorkspaceWithSummary('첫 장 본문', current.get('1장') as string);
+
+    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+      (entry) => entry.label === '장별 요약',
+    );
+
+    expect(check?.detail).toContain('맞습니다');
   });
 });
 
