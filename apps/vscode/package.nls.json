@@ -13,6 +13,7 @@
   "storyboard.apiKey.set.title": "Storyboard: Set API Key...",
   "storyboard.draft.generate.title": "Storyboard: Generate Draft (Current Scene)",
   "storyboard.draft.regenerate.title": "Storyboard: Regenerate Draft (Current Scene)",
+  "storyboard.scene.beats.title": "Storyboard: Expand Scene Beats (Current Scene)",
   "storyboard.draft.generateAll.title": "Storyboard: Generate All Drafts",
   "storyboard.outline.generate.title": "Storyboard: Generate Novel Outline",
   "storyboard.scene.generateAllSeeds.title": "Storyboard: Generate Scene Seeds",

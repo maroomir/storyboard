@@ -13,6 +13,7 @@
   "storyboard.apiKey.set.title": "Storyboard: API 키 설정...",
   "storyboard.draft.generate.title": "Storyboard: 초안 생성 (현재 씬)",
   "storyboard.draft.regenerate.title": "Storyboard: 초안 다시 생성 (현재 씬)",
+  "storyboard.scene.beats.title": "Storyboard: 씬 비트 전개 (현재 씬)",
   "storyboard.draft.generateAll.title": "Storyboard: 모든 초안 생성",
   "storyboard.outline.generate.title": "Storyboard: 장편 아웃라인 생성",
   "storyboard.scene.generateAllSeeds.title": "Storyboard: 씬 시드 생성",

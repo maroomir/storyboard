@@ -13,6 +13,7 @@ const sceneCard: SceneCard = {
   grounding: { incident: "첫 등교일에 소문이 퍼졌다" },
   purpose: "첫 만남을 보여준다",
   foreshadowing: ["전학 이유"],
+  beats: ["첫 비트", "둘째 비트"],
   summary: "자유 메모"
 }
 
@@ -43,7 +44,7 @@ describe("CardEditor scene form", () => {
     expect(form.getByText("사실 시트 (Grounding)")).toBeTruthy()
     expect(form.getByText("목적")).toBeTruthy()
     expect(form.getByText("회수할 복선")).toBeTruthy()
-    expect(form.getByText("Summary (자유 메모)")).toBeTruthy()
+    expect(form.getByText("Summary (자유 메모 — <stem>.summary.md 에 저장)")).toBeTruthy()
   })
 
   it("shows entity-only tabs for neither collect nor AI record", () => {
@@ -69,7 +70,15 @@ describe("CardEditor scene form", () => {
       type: "scene",
       id: "01-prologue",
       purpose: "귀향 이유를 제시한다",
+      beats: ["첫 비트", "둘째 비트"],
       summary: "자유 메모"
     })
+  })
+
+  it("lists the expanded beats in the preview", () => {
+    renderWithApi()
+
+    expect(screen.getByText("Beats")).toBeTruthy()
+    expect(screen.getByText("둘째 비트")).toBeTruthy()
   })
 })

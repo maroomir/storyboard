@@ -72,6 +72,10 @@
         "title": "%storyboard.draft.regenerate.title%"
       },
       {
+        "command": "storyboard.scene.beats",
+        "title": "%storyboard.scene.beats.title%"
+      },
+      {
         "command": "storyboard.draft.generateAll",
         "title": "%storyboard.draft.generateAll.title%"
       },

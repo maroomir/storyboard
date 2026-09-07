@@ -156,7 +156,9 @@ export function SceneFields({
       />
 
       <label className="flex flex-col gap-[0.35rem]">
-        <span className="text-sm text-sb-fg-muted">Summary (자유 메모)</span>
+        <span className="text-sm text-sb-fg-muted">
+          Summary (자유 메모 — &lt;stem&gt;.summary.md 에 저장)
+        </span>
         <textarea
           className={`${sceneTextareaClass} min-h-36`}
           value={card.summary ?? ''}
