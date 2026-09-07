@@ -27,7 +27,6 @@ import {
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
-  findRepeatedDialogueRun,
   SECTION_OUTPUT_LIMIT,
   type SectionViolation,
 } from './sceneSectionPlan';
@@ -146,8 +145,9 @@ function buildSkeletonContext(
   return sections.length > 0 ? sections.join('\n\n') : undefined;
 }
 
-// 뼈대는 씬에서 가장 비싼 호출이라 한 번만 다시 부른다. 두 판 다 되풀이하면 덜 되풀이한 쪽을
-// 남긴다 — 사건이 빠진 판보다는 겹친 판이 고치기 쉽다.
+// 뼈대는 씬에서 가장 비싼 호출이라 한 번만 다시 부른다. 두 판 다 위반이면 가벼운 쪽을, 같은
+// 무게면 목표 분량에 가까운 쪽을 남긴다 — 사건이 빠진 판보다는 겹친 판이 고치기 쉽고, 되풀이 없이
+// 더 두꺼운 판이 살붙임의 부담을 덜어 준다.
 const SKELETON_RETRY_LIMIT = 1;
 
 async function draftSkeletonWithRetries(
@@ -155,24 +155,32 @@ async function draftSkeletonWithRetries(
   input: Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0],
   options: GenerateTextOptions,
 ): Promise<string> {
-  let best: { text: string; run: number } | undefined;
+  let reasons: string[] = [];
+  let best: { text: string; weight: number; distance: number } | undefined;
 
   for (let attempt = 0; attempt <= SKELETON_RETRY_LIMIT; attempt += 1) {
-    const reasons = best === undefined ? [] : validateSceneSkeleton(best.text).map((v) => v.detail);
     const skeleton = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
-    const violations = validateSceneSkeleton(skeleton);
+    const violations = validateSceneSkeleton(skeleton, input.targetLength);
 
     if (violations.length === 0) {
       return skeleton;
     }
 
-    const run = findRepeatedDialogueRun(skeleton);
-    if (best === undefined || run < best.run) {
-      best = { text: skeleton, run };
+    const weight = weighViolations(violations);
+    const distance =
+      input.targetLength === undefined ? 0 : Math.abs(skeleton.length - input.targetLength);
+    if (
+      best === undefined ||
+      weight < best.weight ||
+      (weight === best.weight && distance < best.distance)
+    ) {
+      best = { text: skeleton, weight, distance };
     }
+
+    reasons = violations.map((violation) => violation.detail);
   }
 
   return best?.text ?? '';

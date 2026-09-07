@@ -180,6 +180,46 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     expect(input.targetLength).toBe(5000)
   })
 
+  it("redrafts a skeleton that came in under half its target, carrying the reason", async () => {
+    const ai = createRecordingAiService()
+    const thin = `엘리아가 문을 열었다. "가자." ${"짧다. ".repeat(20)}`
+    const fuller = `엘리아가 문을 열었다. "가자." ${"밀고 당기는 말이 이어졌다. ".repeat(80)}`
+    ai.draftSceneSkeleton.mockResolvedValueOnce(thin).mockResolvedValueOnce(fuller)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 3000 }
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
+    const retryInput = ai.draftSceneSkeleton.mock.calls[1]?.[0] as {
+      retryReasons?: readonly string[]
+    }
+    expect(retryInput.retryReasons?.join(" ")).toContain("절반")
+    expect(result.skeleton).toBe(fuller)
+  })
+
+  it("keeps the fuller of two short skeletons rather than the last one", async () => {
+    const ai = createRecordingAiService()
+    const thin = `"가자." ${"짧다. ".repeat(10)}`
+    const thinner = `"가자." ${"짧다. ".repeat(5)}`
+    ai.draftSceneSkeleton.mockResolvedValueOnce(thin).mockResolvedValueOnce(thinner)
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 3000 }
+    })
+
+    expect(ai.draftSceneSkeleton).toHaveBeenCalledTimes(2)
+    expect(result.skeleton).toBe(thin)
+  })
+
   it("passes the card end state so the skeleton knows where to stop", async () => {
     const ai = createRecordingAiService()
 
@@ -504,6 +544,20 @@ describe("findRepeatedDialogueRun", () => {
 
     expect(validateSceneSkeleton(`${repeated}\n\n걸었다.\n\n${repeated}`)).not.toEqual([])
     expect(validateSceneSkeleton(repeated)).toEqual([])
+  })
+
+  // 실측(the-missing-summer 23씬): 뼈대가 목표 1,000자의 1/3(337~368자)만 나와 살붙임이 9배
+  // 확장을 떠안았고 최종 분량이 목표 절반에도 못 미쳤다.
+  it("flags a skeleton under half of its target and tells it to add beats, not description", () => {
+    const violations = validateSceneSkeleton("가".repeat(300), 1000)
+
+    expect(violations.map((violation) => violation.kind)).toEqual(["too-short"])
+    expect(violations[0]?.detail).toContain("단계로 쪼개")
+  })
+
+  it("accepts a thin skeleton when no target was given, or when it clears half", () => {
+    expect(validateSceneSkeleton("가".repeat(300))).toEqual([])
+    expect(validateSceneSkeleton("가".repeat(500), 1000)).toEqual([])
   })
 })
 

@@ -273,17 +273,29 @@ export function findRepeatedDialogueRun(text: string): number {
   return longest;
 }
 
-export function validateSceneSkeleton(skeleton: string): SectionViolation[] {
+// NOTE: 뼈대는 일부러 얇게 쓰는 단계라 살붙임(0.85)만큼 죄지 않는다. 실측에서 뼈대가 목표의 1/3만
+// 나오면 살붙임이 9배 확장을 떠안아 분량이 목표 절반에도 못 미쳤다. 절반 아래면 한 번 더 부른다.
+const skeletonMinimumLengthRatio = 0.5;
+
+export function validateSceneSkeleton(skeleton: string, targetLength?: number): SectionViolation[] {
+  const violations: SectionViolation[] = [];
   const run = findRepeatedDialogueRun(skeleton);
 
-  return run >= repeatedDialogueRunLimit
-    ? [
-        {
-          kind: 'repeats-previous',
-          detail: `같은 대사 ${run}개가 순서까지 같게 두 번 나옵니다. 각 사건은 한 번만 쓰세요`,
-        },
-      ]
-    : [];
+  if (run >= repeatedDialogueRunLimit) {
+    violations.push({
+      kind: 'repeats-previous',
+      detail: `같은 대사 ${run}개가 순서까지 같게 두 번 나옵니다. 각 사건은 한 번만 쓰세요`,
+    });
+  }
+
+  if (targetLength !== undefined && skeleton.length < targetLength * skeletonMinimumLengthRatio) {
+    violations.push({
+      kind: 'too-short',
+      detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 절반에도 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
+    });
+  }
+
+  return violations;
 }
 
 export function validateExpandedSection(input: {
