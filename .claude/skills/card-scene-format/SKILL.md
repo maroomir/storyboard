@@ -16,6 +16,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 - Tracked content: `character/`, `background/`, `scene/`, `.storyboard/project.json` (and optional `.storyboard/settings.json`).
 - Regeneratable: `draft/`, `.storyboard/cache/`—default gitignore targets; do not treat as durable user source.
 - Durable AI memory: `.storyboard/memory/` (story state, persona/background memory, dialogue sidecars, chapter summaries) is tracked—no committed input reproduces it.
+- `storyState.md` entries carry the input hash of the scene that produced them (`<!-- scene-input: N sha256:… -->`). Editing a card or scene without regenerating that scene marks its entries `- [N!] …`: kept in the file, dropped from prompts, reported in generation warnings and `storyboard doctor`.
 
 ## `.card` (YAML)
 

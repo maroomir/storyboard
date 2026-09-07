@@ -176,6 +176,23 @@ export interface NarrativeContext {
   readonly prompt?: string;
 }
 
+// NOTE: 씬 입력 해시(computeSceneInputHash)에도 이 사실 목록이 들어간다. 원장 감사가 지난 씬의
+// 해시를 다시 계산할 때 초안 꼬리나 원장까지 읽을 필요가 없도록 사실 해석만 따로 뽑아 둔다.
+export async function resolveSceneBibleFacts(
+  paths: SceneContextWorkspacePaths,
+  context: SceneContext,
+  fileSystem: SceneContextWorkspaceFileSystem,
+): Promise<readonly BibleFact[]> {
+  const bible = await readSceneBible(paths, fileSystem);
+
+  return selectInjectedFacts(
+    bible,
+    sceneSubjects(context),
+    context.scene.body,
+    context.scene.order,
+  );
+}
+
 // NOTE: Replaces the raw previous-draft tail as the pipeline's previousContext, prepending
 // canon bible facts for the scene's entities so long-range setting stays consistent.
 export async function buildNarrativeContext(
@@ -186,13 +203,7 @@ export async function buildNarrativeContext(
   const rawPreviousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem);
   const previousContext =
     rawPreviousContext === undefined ? undefined : stripForeignScript(rawPreviousContext);
-  const bible = await readSceneBible(paths, fileSystem);
-  const bibleFacts = selectInjectedFacts(
-    bible,
-    sceneSubjects(context),
-    context.scene.body,
-    context.scene.order,
-  );
+  const bibleFacts = await resolveSceneBibleFacts(paths, context, fileSystem);
   const storyState = await readSceneStoryState(
     paths,
     context.scene.order,

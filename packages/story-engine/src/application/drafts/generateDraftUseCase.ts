@@ -210,7 +210,12 @@ async function persistGeneratedDraft(
     schedulePostGenerationUpdates(inputs, options, aiService, result);
   }
 
-  return { ok: true, kind: 'generated', draftUri, warnings: result.warnings };
+  return {
+    ok: true,
+    kind: 'generated',
+    draftUri,
+    warnings: [...inputs.warnings, ...result.warnings],
+  };
 }
 
 async function runAndPersistDraft(

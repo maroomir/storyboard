@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Edited cards and scenes now invalidate the story-state ledger.** Each ledger entry records the input hash of the scene that produced it, so editing a card or a scene without regenerating that scene marks its entries stale; regenerating an earlier scene marks the later ones stale too (rewind). Stale entries stay in the ledger as `- [22!] …` but are dropped from generation prompts, and both the generation warnings and `storyboard doctor` name the scenes to regenerate. Regenerating a scene clears its marks. A pre-0.8 ledger has nothing to compare against, so it is never called stale — `storyboard init --repair` seals it against today's cards and scenes.
+
 ## [0.8.6] - 2026-09-07
 
 ### Added

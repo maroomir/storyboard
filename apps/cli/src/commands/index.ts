@@ -19,6 +19,7 @@ import {
   NodeUri,
   sceneFilePath,
   sceneContextPaths,
+  sealStoryMemory,
   scenePath,
   readProjectJson,
   writeProjectJson,
@@ -26,7 +27,12 @@ import {
 } from '@storyboard/story-engine';
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
-import { pointOfViews, type PointOfView, type ProjectSetting } from '@storyboard/story-format';
+import {
+  formatSceneOrderRanges,
+  pointOfViews,
+  type PointOfView,
+  type ProjectSetting,
+} from '@storyboard/story-format';
 import {
   convertLegacySceneText,
   createEmptyBackground,
@@ -930,7 +936,12 @@ const completeStory: CommandHandler = async ({ container, args }) => {
       skipped.length === 0
         ? `완결 씬 ${written.length}개를 만들었습니다.`
         : `완결 씬 ${written.length}개를 만들고 이미 있는 ${skipped.length}개는 건너뛰었습니다.`,
-    data: { written, skipped, centralQuestion: proposal.centralQuestion, climaxChoice: proposal.climaxChoice },
+    data: {
+      written,
+      skipped,
+      centralQuestion: proposal.centralQuestion,
+      climaxChoice: proposal.climaxChoice,
+    },
   };
 };
 
@@ -1248,6 +1259,28 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
 };
 
 // An agent starting from an empty directory needs this first; without it the CLI can only work in
+// 0.8 이전 원장에는 씬 입력 해시가 없어 낡음을 판정할 근거가 없다. 보수 시점의 카드·씬을
+// 기준으로 삼는다 — 그 뒤에 고친 것부터 낡음으로 잡힌다.
+async function sealWorkspaceStoryState(
+  container: CliContainer,
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+): Promise<readonly number[]> {
+  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
+    () => undefined,
+  );
+
+  if (project === undefined) {
+    return [];
+  }
+
+  return await sealStoryMemory({
+    fileSystem: container.fileSystem,
+    paths,
+    format: project.format,
+    sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
+  });
+}
+
 // a workspace the extension already created.
 const initProject: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
@@ -1267,11 +1300,15 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
     await createStoryboardDirectories(container.fileSystem, paths);
     await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
+    const sealedSceneOrders = await sealWorkspaceStoryState(container, paths);
 
     return {
       ok: true,
-      message: '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.',
-      data: { repaired: true },
+      message:
+        sealedSceneOrders.length === 0
+          ? '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.'
+          : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`,
+      data: { repaired: true, sealedSceneOrders },
     };
   }
 
@@ -1353,7 +1390,9 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
   return { ok: true, message: '작품 계약을 갱신했습니다.', data: setting };
 };
 
-type ContractInput = { readonly setting: Partial<ProjectSetting> | undefined } | { readonly message: string };
+type ContractInput =
+  | { readonly setting: Partial<ProjectSetting> | undefined }
+  | { readonly message: string };
 
 async function readContractInput(
   container: CliContainer,
@@ -1375,7 +1414,9 @@ async function readContractInput(
       const record = parsed as Record<string, unknown>;
       fromFile = (record.setting ?? record) as Partial<ProjectSetting>;
     } catch (error) {
-      return { message: `${fromPath} 를 읽지 못했습니다: ${error instanceof Error ? error.message : String(error)}` };
+      return {
+        message: `${fromPath} 를 읽지 못했습니다: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
   }
 
@@ -1409,7 +1450,9 @@ async function readContractInput(
   }
 
   const fromFlags: Partial<ProjectSetting> = {
-    ...(flagString(args.flags, 'genre') === undefined ? {} : { genre: flagString(args.flags, 'genre') }),
+    ...(flagString(args.flags, 'genre') === undefined
+      ? {}
+      : { genre: flagString(args.flags, 'genre') }),
     ...(flagString(args.flags, 'audience') === undefined
       ? {}
       : { audience: flagString(args.flags, 'audience') }),

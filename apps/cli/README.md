@@ -31,10 +31,14 @@ storyboard doctor                     # what is still missing, with the command 
 `doctor` also checks that a subscription CLI provider (`claude-code`, `codex`) is logged in — it
 spawns the provider once, so allow up to 15 s — and looks at the workspace for what an older
 Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
-`scene seeds`, a stale `.gitignore` block, cards it cannot parse. `storyboard init --repair`
-restores the directories and `.gitignore` of an existing workspace without touching the contract
-(a plain `init` refuses one); `storyboard scene migrate` converts the `.txt` files, clears the
-placeholder line while keeping any summary you wrote above it, and moves that inline summary into
+`scene seeds`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
+ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
+scene has been edited since are reported as stale, and generation drops them from the prompt until
+you regenerate that scene. `storyboard init --repair` restores the directories and `.gitignore` of
+an existing workspace without touching the contract (a plain `init` refuses one) and seals a
+pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
+stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
+keeping any summary you wrote above it, and moves that inline summary into
 `scene/<stem>.summary.md` so the card holds only the file name. `doctor` also counts the scenes that
 still carry an inline summary and the scenes without beats (fix: `scene beats --all`).
 

@@ -111,7 +111,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '시작하기',
     usage: 'init --title <name> | init --repair',
     summary:
-      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다). --repair 는 0.8 이전 워크스페이스의 발판을 보수합니다',
+      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다). --repair 는 0.8 이전 워크스페이스의 발판을 보수하고 이야기 상태 원장을 봉인합니다',
     flags: [
       'title',
       'repair',
@@ -155,7 +155,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '시작하기',
     usage: 'doctor',
     summary:
-      '설정 파일·프로바이더·API 키·CLI 실행 파일과 로그인·워크스페이스 상태를 점검합니다 (init --repair 로 보수)',
+      '설정 파일·프로바이더·API 키·CLI 실행 파일과 로그인·워크스페이스·이야기 상태 원장을 점검합니다 (init --repair 로 보수)',
     examples: ['storyboard doctor', 'storyboard doctor --json'],
     needsWorkspace: false,
   },
