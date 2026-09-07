@@ -15,6 +15,7 @@ import {
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
   isLegacySceneFileName,
+  isInlineSceneSummary,
   isLegacySeedPlaceholderSummary,
   readMissingGitignoreEntries,
 } from '@storyboard/story-format';
@@ -298,10 +299,17 @@ function describeLoginFailure(error: unknown): string {
   return `${error.message}${cause}`;
 }
 
-async function countLegacySeedPlaceholders(
+interface SceneCardCensus {
+  readonly placeholders: number;
+  readonly inlineSummaries: number;
+  readonly withoutBeats: number;
+  readonly unreadable: readonly string[];
+}
+
+async function surveySceneCards(
   container: CliContainer,
   sceneFileNames: readonly string[],
-): Promise<{ readonly placeholders: number; readonly unreadable: readonly string[] }> {
+): Promise<SceneCardCensus> {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
   const { cards, unreadable } = await readSceneCards(
     container,
@@ -311,8 +319,14 @@ async function countLegacySeedPlaceholders(
   const placeholders = cards.filter(({ card }) =>
     isLegacySeedPlaceholderSummary(card.summary),
   ).length;
+  // 플레이스홀더는 인라인 summary 이기도 하지만 migrate 가 먼저 비우므로 따로 세지 않는다.
+  const inlineSummaries = cards.filter(
+    ({ card }) =>
+      isInlineSceneSummary(card.summary) && !isLegacySeedPlaceholderSummary(card.summary),
+  ).length;
+  const withoutBeats = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
 
-  return { placeholders, unreadable };
+  return { placeholders, inlineSummaries, withoutBeats, unreadable };
 }
 
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
@@ -343,10 +357,12 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     .filter((uri) => !existsSync(uri.fsPath))
     .map((uri) => `${basename(uri.fsPath)}/`);
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
-  const { placeholders: placeholderScenes, unreadable } = await countLegacySeedPlaceholders(
-    container,
-    scenes,
-  );
+  const {
+    placeholders: placeholderScenes,
+    inlineSummaries,
+    withoutBeats,
+    unreadable,
+  } = await surveySceneCards(container, scenes);
   const missingIgnoreEntries = readMissingGitignoreEntries(
     existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
   );
@@ -389,6 +405,26 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             label: '씬 요약',
             detail: `0.8 이전 플레이스홀더 요약이 ${placeholderScenes}개 남아 있어 초안이 안내 문구로 쓰입니다.`,
             fix: 'storyboard scene migrate',
+          },
+        ]
+      : []),
+    ...(inlineSummaries > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '씬 요약',
+            detail: `인라인 summary 씬이 ${inlineSummaries}개 있습니다. summary 는 <stem>.summary.md 파일로 둡니다.`,
+            fix: 'storyboard scene migrate',
+          },
+        ]
+      : []),
+    ...(withoutBeats > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '씬 비트',
+            detail: `비트 없는 씬이 ${withoutBeats}개 있습니다. 생성 시 자동으로 채우지만 미리 검수하려면 뽑아 두세요.`,
+            fix: 'storyboard scene beats --all',
           },
         ]
       : []),

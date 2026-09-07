@@ -15,6 +15,7 @@ import {
   ExportManuscriptUseCase,
   GenerateAllDraftsUseCase,
   GenerateDraftUseCase,
+  GenerateSceneBeatsUseCase,
   GenerateOutlineUseCase,
   ManuscriptAssemblyRepository,
   NovelPipeline,
@@ -75,6 +76,7 @@ export interface CliContainer {
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
@@ -238,6 +240,13 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     secretStore,
     configBridge,
     generateDraftUseCase,
+    generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase({
+      aiGateway,
+      configBridge,
+      fileSystem,
+      logger,
+      sceneRepository,
+    }),
     generateAllDraftsUseCase: new GenerateAllDraftsUseCase(
       generateDraftUseCase,
       logger,
