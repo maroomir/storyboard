@@ -12,6 +12,7 @@ import type {
 export interface IOutlineRepository {
   hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
+  loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   save(
     workspaceRoot: StoryUri,
@@ -58,7 +59,7 @@ export class GenerateOutlineUseCase {
       }
 
       const aiService = this.aiGateway.createService(workspaceRoot);
-      const brief = toOutlineBrief(project);
+      const brief = toOutlineBrief(project, await this.repository.loadNarratorIds(workspaceRoot));
       options.onProgress?.('시놉시스 생성 중…');
       const synopsis = await aiService.generateOutlineSynopsis(brief);
       const characters = await this.repository.loadCharacterBriefs(workspaceRoot);

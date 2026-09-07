@@ -26,6 +26,7 @@ describe("GenerateOutlineUseCase", () => {
     const repository: IOutlineRepository = {
       hasExisting: vi.fn(),
       loadCharacterBriefs: vi.fn(),
+      loadNarratorIds: vi.fn(async () => []),
       save: vi.fn(),
       loadProject: vi.fn(async () =>
         parseProjectJson(
@@ -54,6 +55,7 @@ describe("GenerateOutlineUseCase", () => {
     const repository: IOutlineRepository = {
       hasExisting: vi.fn(async () => false),
       loadCharacterBriefs: vi.fn(async () => []),
+      loadNarratorIds: vi.fn(async () => []),
       loadProject: vi.fn(async () => project()),
       save: vi.fn(async () => ({}) as never)
     }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   pointOfViews,
+  type CompositionKind,
   type PointOfView,
   type ProjectFormat,
   type StoryboardProject,
@@ -128,6 +129,17 @@ export interface OutlineBrief {
   readonly prohibitions: readonly string[];
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
+  // 구성이 아웃라인 프롬프트를 바꾼다. 옴니버스는 편마다 독립된 결말을, 시점 교차는 장마다 다른
+  // 서술자를, 액자식은 외화를 앞뒤에 두도록 지시한다.
+  readonly composition?: CompositionKind;
+  readonly threads: readonly OutlineThreadBrief[];
+  readonly narratorIds: readonly string[];
+}
+
+export interface OutlineThreadBrief {
+  readonly id: string;
+  readonly title: string;
+  readonly wraps?: readonly string[];
 }
 
 export interface OutlineCharacterBrief {
@@ -169,10 +181,20 @@ export function flattenChapterPlan(plan: ChapterPlan): FlatChapterScene[] {
   return flatScenes;
 }
 
-export function toOutlineBrief(project: StoryboardProject): OutlineBrief {
+export function toOutlineBrief(
+  project: StoryboardProject,
+  narratorIds: readonly string[] = [],
+): OutlineBrief {
   const setting = project.setting;
 
   return {
+    composition: setting?.composition,
+    threads: Object.entries(setting?.threads ?? {}).map(([id, thread]) => ({
+      id,
+      title: thread.title,
+      ...(thread.wraps === undefined ? {} : { wraps: thread.wraps }),
+    })),
+    narratorIds,
     projectName: project.name,
     format: project.format,
     language: project.language,
