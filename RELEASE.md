@@ -98,7 +98,9 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
   `~/.local/share/storyboard` and the bot into `~/.local/share/storyboard-bot`, installs the bot's
   runtime dependencies (`npm install --omit=dev`, only `better-sqlite3`), and links `~/.local/bin/storyboard` and
   `~/.local/bin/storyboard-bot`. The tarballs are bundled Node scripts, so the machine needs Node 20
-  or newer plus npm. Configure the bot afterwards with `storyboard-bot setup`.
+  or newer plus npm. Configure the bot afterwards with `storyboard-bot setup`. With the tarballs
+  already downloaded (private repository, offline machine), `./install.sh --from <dir>` installs
+  from that directory instead and verifies `SHA256SUMS` when it is there too.
 - **Bot by hand** — unpack `storyboard-bot-<version>.tar.gz`, run `npm install --omit=dev` in that
   directory (it pulls only `better-sqlite3`), then `node dist/index.js setup` and `node dist/index.js`.
 
