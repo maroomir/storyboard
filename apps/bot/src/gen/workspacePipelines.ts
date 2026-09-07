@@ -51,7 +51,7 @@ function writeFailure(outcome: MutateOutcome): PipelineResult | undefined {
     const files = outcome.files.map((file) => file.relativePath).join(', ');
     return {
       success: false,
-      failureReason: 'provider_error',
+      failureReason: 'workspace_conflict',
       errorMessage: `작업 시작 후 Desktop에서 변경되어 저장하지 않았습니다: ${files}. 다시 실행해주세요.`,
     };
   }

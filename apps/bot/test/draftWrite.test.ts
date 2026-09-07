@@ -97,6 +97,85 @@ describe('draft writes', () => {
   });
 });
 
+// A refused draft is minutes of generation and provider spend. The guard discards it by design so
+// the concurrent edit wins, so the body has to survive somewhere ignored or the cost is simply lost.
+describe('a draft refused by the freshness guard', () => {
+  let fixture: WorkspaceFixture;
+  let content: ContentService;
+  // Set to the bytes a Desktop save lands between the job's read and its write; cleared once used.
+  let pendingDesktopEdit: string | undefined;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fixture = createWorkspaceFixture();
+    pendingDesktopEdit = undefined;
+    const store = new WorkspaceStore(fixture.root);
+    const client = new GitClient(fixture.root);
+    const gate = new MutateGate(
+      store,
+      client,
+      new SyncService(client, {}, silentLogger),
+      silentLogger,
+      {
+        isTrackedPath: createGitTrackedPathPredicate(client),
+        onWillWrite: (relativePath) => {
+          if (relativePath === 'draft/01-prologue.md' && pendingDesktopEdit !== undefined) {
+            fixture.write('draft/01-prologue.md', pendingDesktopEdit);
+            pendingDesktopEdit = undefined;
+          }
+        },
+      },
+    );
+    content = new ContentService(store, gate);
+  });
+
+  afterEach(() => {
+    fixture.cleanup();
+  });
+
+  it('keeps the generated body under .draft/ and names it in the outcome', async () => {
+    await content.writeDraft('01-prologue', '# 프롤로그\n1차 본문\n');
+    pendingDesktopEdit = '# 프롤로그\n작가가 손으로 고친 본문\n';
+
+    const outcome = await content.writeDraft('01-prologue', '# 프롤로그\n봇이 새로 만든 본문\n');
+
+    expect(outcome.status).toBe('stale');
+    if (outcome.status !== 'stale') {
+      return;
+    }
+
+    expect(outcome.preservedPath).toMatch(/^\.draft\/01-prologue\/.*-refused-01\.md$/);
+    expect(readFileSync(join(fixture.root, outcome.preservedPath ?? ''), 'utf8')).toBe(
+      '# 프롤로그\n봇이 새로 만든 본문\n',
+    );
+    // The writer that won is untouched: the bot never resolves the conflict for the user.
+    expect(readFileSync(join(fixture.root, 'draft', '01-prologue.md'), 'utf8')).toBe(
+      '# 프롤로그\n작가가 손으로 고친 본문\n',
+    );
+  });
+
+  it('does not overwrite an earlier refusal or disturb the revision numbering', async () => {
+    await content.writeDraft('01-prologue', '# 프롤로그\n1차 본문\n');
+
+    pendingDesktopEdit = '# 프롤로그\n작가 수정 1\n';
+    const first = await content.writeDraft('01-prologue', '# 프롤로그\n거부본 A\n');
+    pendingDesktopEdit = '# 프롤로그\n작가 수정 2\n';
+    const second = await content.writeDraft('01-prologue', '# 프롤로그\n거부본 B\n');
+
+    const preserved = [first, second].map((outcome) =>
+      outcome.status === 'stale' ? outcome.preservedPath : undefined,
+    );
+
+    expect(preserved[0]).toMatch(/-refused-01\.md$/);
+    expect(preserved[1]).toMatch(/-refused-02\.md$/);
+
+    const archived = readdirSync(join(fixture.root, '.draft', '01-prologue')).sort();
+    expect(archived.filter((name) => name.includes('-refused-'))).toHaveLength(2);
+    // The rev-NN history keeps counting from its own series.
+    expect(archived.filter((name) => name.includes('-rev-')).length).toBeGreaterThan(0);
+  });
+});
+
 // A workspace that tracks draft/ (Desktop's trackDraft: no draft/ line in .gitignore) must get its
 // generated drafts committed — tracked-ness follows the workspace's own git rules.
 describe('draft writes in a trackDraft workspace', () => {

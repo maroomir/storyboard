@@ -12,6 +12,8 @@ after the first public release.
 
 ### Fixed
 
+- **A draft refused by a concurrent edit is kept instead of discarded.** When the same draft changes in Desktop or on a phone while a job runs, the bot's save is refused by design — and until now the minutes of generation and provider spend behind it were simply lost. The refused body is now kept at `.draft/<scene>/<timestamp>-refused-NN.md` and the failure message names that path, so the two versions can be merged by hand. The version that won is untouched and the bot still never merges for you. The failure is recorded as `workspace_conflict` rather than a provider error.
+
 - **`storyboard-bot` announces a sync conflict in chat.** When the phone and the bot each commit the same file the bot's push stops, and until now nothing said so until you typed `/status` or `/sync` — it just looked like the bot had gone quiet. Entering the conflict state now sends the conflicting paths and the recovery steps to every allowlisted chat, once; the periodic sync no longer repeats the warning when it meets the same conflict again.
 
 ### Docs

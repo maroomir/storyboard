@@ -69,7 +69,7 @@ export class DraftPipeline implements IPipeline {
     if (outcome !== undefined && (outcome.status === 'blocked' || outcome.status === 'stale')) {
       return {
         success: false,
-        failureReason: 'provider_error',
+        failureReason: outcome.status === 'stale' ? 'workspace_conflict' : 'provider_error',
         errorMessage: describeFailure(outcome),
       };
     }
@@ -84,7 +84,12 @@ function describeFailure(outcome: MutateOutcome): string {
     return outcome.detail;
   }
   if (outcome.status === 'stale') {
-    return outcome.files.map((file) => file.relativePath).join(', ');
+    const files = outcome.files.map((file) => file.relativePath).join(', ');
+    const preserved =
+      outcome.preservedPath === undefined
+        ? ''
+        : ` 생성된 초안은 ${outcome.preservedPath}에 보관했습니다.`;
+    return `작업 중 ${files}이(가) 바뀌어 저장하지 않았습니다.${preserved}`;
   }
   return '알 수 없는 실패';
 }

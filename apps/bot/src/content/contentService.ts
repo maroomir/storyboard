@@ -205,7 +205,16 @@ export class ContentService {
       });
     }
 
-    return this.gate.apply({ writes }, `storyboard-bot: generate ${relativePath}`);
+    const outcome = await this.gate.apply({ writes }, `storyboard-bot: generate ${relativePath}`);
+
+    if (outcome.status !== 'stale') {
+      return outcome;
+    }
+
+    // A refused draft cost minutes of generation and provider spend, and the guard discards it by
+    // design so the concurrent edit wins. Keeping it under the ignored history directory lets the
+    // user merge the two by hand — the bot still never resolves the conflict for them.
+    return { ...outcome, preservedPath: await this.preserveRefusedDraft(sceneStem, body) };
   }
 
   // Tracked generated outputs (synopsis.md, chapters.yaml) commit with the enqueue-time baseline,
@@ -253,6 +262,35 @@ export class ContentService {
     } catch {
       return undefined;
     }
+  }
+
+  // Returns the path the body was kept at, or undefined when even that write failed — a refused
+  // draft must never turn a reported conflict into an unreported crash.
+  private async preserveRefusedDraft(
+    sceneStem: string,
+    body: string,
+  ): Promise<string | undefined> {
+    const relativePath = await this.nextRefusedDraftPath(sceneStem);
+    const outcome = await this.gate.apply(
+      { writes: [{ relativePath, content: body, baselineHash: undefined }] },
+      `storyboard-bot: preserve refused ${relativePath}`,
+    );
+
+    return outcome.status === 'written' || outcome.status === 'committed'
+      ? relativePath
+      : undefined;
+  }
+
+  private async nextRefusedDraftPath(sceneStem: string): Promise<string> {
+    const directory = `${STORYBOARD_RELATIVE_PATHS.draftHistoryDirectory}/${sceneStem}`;
+    const existing = await this.store.listDirectoryNames(directory);
+    const highestAttempt = existing.reduce((highest, name) => {
+      const match = /-refused-(\d+)\.md$/.exec(name);
+      return match ? Math.max(highest, Number(match[1])) : highest;
+    }, 0);
+    const attempt = String(highestAttempt + 1).padStart(2, '0');
+
+    return `${directory}/${this.stamp()}-refused-${attempt}.md`;
   }
 
   private async nextDraftHistoryPath(sceneStem: string): Promise<string> {

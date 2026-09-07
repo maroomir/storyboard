@@ -83,10 +83,14 @@ export class ReviewPipeline implements IPipeline {
 
     const outcome = report.outcome;
     if (outcome !== undefined && (outcome.status === 'blocked' || outcome.status === 'stale')) {
+      const preserved =
+        outcome.status === 'stale' && outcome.preservedPath !== undefined
+          ? ` 수정본은 ${outcome.preservedPath}에 보관했습니다.`
+          : '';
       return {
         success: false,
-        failureReason: 'provider_error',
-        errorMessage: '검수 결과를 저장하지 못했습니다 (동시 편집 감지).',
+        failureReason: outcome.status === 'stale' ? 'workspace_conflict' : 'provider_error',
+        errorMessage: `검수 결과를 저장하지 못했습니다 (동시 편집 감지).${preserved}`,
       };
     }
 

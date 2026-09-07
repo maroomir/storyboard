@@ -6,6 +6,10 @@ export type FailureReason =
   | 'rate_limit'
   | 'not_installed'
   | 'provider_error'
+  // The provider succeeded and the workspace refused the write: the file moved under the job
+  // (Desktop or a phone commit). Reporting it as a provider error hid a fixable conflict behind
+  // "the AI failed".
+  | 'workspace_conflict'
   | 'cancelled'
   | null;
 

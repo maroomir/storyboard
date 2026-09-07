@@ -42,7 +42,13 @@ export type MutateOutcome =
       readonly detail: string;
     }
   | { readonly status: 'no-op' }
-  | { readonly status: 'stale'; readonly files: readonly StaleFile[] }
+  | {
+      readonly status: 'stale';
+      readonly files: readonly StaleFile[];
+      // Set when the refused content was expensive to produce and was kept somewhere ignored, so
+      // the caller can point the user at it instead of only reporting the loss.
+      readonly preservedPath?: string;
+    }
   | { readonly status: 'blocked'; readonly detail: string };
 
 export function describeStale(files: readonly StaleFile[]): string {
