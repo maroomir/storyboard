@@ -108,7 +108,11 @@ any card write. Legacy `scene/*.txt` is no longer read: `/doctor` reports how ma
 `/doctor migrate` converts them in one commit through `ContentService.migrateLegacyScenes`. That
 plan carries deletions, and a deletion is baseline-hash guarded exactly like a write — a Desktop
 edit landing mid-migration refuses instead of destroying the file. `/scene edit`/`append` operate on
-the card's `summary` field only; structured fields belong to the card editor.
+the scene's summary only — the prose in `scene/<stem>.summary.md`, with the card holding just the
+file name (`WorkspaceStore.readScene` reads both, and an inline summary is moved to the file on the
+first edit) — while structured fields belong to the card editor. `/scene beats` runs
+`GenerateSceneBeatsUseCase` as a light job and commits the card as
+`storyboard-bot: beats scene/<stem>.card`; `/draft` does the same first when the card has no beats.
 
 ## Card formatting
 

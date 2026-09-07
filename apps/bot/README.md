@@ -87,7 +87,8 @@ node apps/bot/dist/index.js
 | `/cards` · `/show <id>` · `/scenes` · `/bible` · `/status` | 조회 |
 | `/read <씬 stem>` | 초안 열람 — 장문은 미리보기+Markdown 첨부, 인자 없이 부르면 버튼 선택. `privacy.minimizeChatBody`가 켜져 있으면 본문 없이 첨부만 |
 | `/rename <id> <새 이름>` · `/set <id> <항목> <값1> \| <값2>` | 카드 편집(저장=커밋) |
-| `/scene new <slug>` · `/scene edit·append <씬 stem>` | 씬 카드 생성·`summary` 교체·덧붙이기(본문은 다음 줄부터, 구조 필드는 보존) |
+| `/scene new <slug>` · `/scene edit·append <씬 stem>` | 씬 카드 생성·요약 교체·덧붙이기(본문은 다음 줄부터, 구조 필드는 보존). 요약은 `scene/<stem>.summary.md`에 두고 카드에는 파일명만 남깁니다 |
+| `/scene beats <씬 stem> [force]` | 씬 카드의 사건 비트를 전개해 `beats`에 커밋(light 작업). 이미 비트가 있으면 `force`를 붙여야 다시 뽑습니다. `/draft`도 비트가 없으면 먼저 뽑습니다(`draft.autoBeats`) |
 | `/draft <씬 stem>` | 씬 초안 생성(확장과 동일한 파이프라인 + 검토→수정 루프). `/draft all`은 초안 없는 씬만 일괄 큐잉(기존 초안 재생성 안 함) |
 | `/review <씬 stem>` | 기존 초안을 재생성 없이 검수·수정(공유 review→revise 루프) |
 | `/outline` · `/plan` · `/manuscript` | 시놉시스·챕터 계획·원고 조립 |

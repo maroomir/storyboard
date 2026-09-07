@@ -33,8 +33,10 @@ spawns the provider once, so allow up to 15 s — and looks at the workspace for
 Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
 `scene seeds`, a stale `.gitignore` block, cards it cannot parse. `storyboard init --repair`
 restores the directories and `.gitignore` of an existing workspace without touching the contract
-(a plain `init` refuses one); `storyboard scene migrate` converts the `.txt` files and clears the
-placeholder line while keeping any summary you wrote above it.
+(a plain `init` refuses one); `storyboard scene migrate` converts the `.txt` files, clears the
+placeholder line while keeping any summary you wrote above it, and moves that inline summary into
+`scene/<stem>.summary.md` so the card holds only the file name. `doctor` also counts the scenes that
+still carry an inline summary and the scenes without beats (fix: `scene beats --all`).
 
 `storyboard` with no arguments prints the grouped command list with these steps at the top;
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
@@ -72,6 +74,7 @@ storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10
   --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
 storyboard outline generate
 storyboard scene seeds
+storyboard scene beats 01-scene-1-1 --dry-run
 storyboard scene generate 01-scene-1-1 --force
 storyboard scene generate --all
 storyboard scene revise 01-scene-1-1
@@ -96,6 +99,15 @@ and run `cards build` again.
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
 forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
 → `storyboard setup`, no key → `storyboard apikey set <provider>`.
+
+A draft is only as long as the events its scene card carries, so `scene generate` first expands
+the card's `beats` when it has none — from the structured fields, the grounding facts and the
+summary in `scene/<stem>.summary.md` (staying inside that summary when there is one) — and writes
+them to the card before drafting. `scene beats <stem> | --all` runs that step on its own so you can
+read the beats before spending a generation: `--dry-run` only prints the proposal, `--all` picks the
+scenes without beats, and existing beats are regenerated only with `--force`. The count is
+`max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))` (defaults 5 and 1,500);
+`draft.autoBeats: false` turns the automatic step off.
 
 `scene generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
 `--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
