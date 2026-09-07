@@ -139,8 +139,24 @@ const minimumLengthRatio = 0.85;
 // 앞부분만 남기고 잘린 대사는 42%, 다른 대사로 대체된 경우는 18%라 그 사이에서 끊는다.
 const DIALOGUE_PRESERVED_RATIO = 0.85;
 
+// NOTE: 살붙임은 긴 한 턴을 두세 문장으로 쪼개 호흡을 만든다. 조각 하나씩 원문과 비교하면 각각이
+// 임계값에 못 미쳐 사라진 것으로 잡히므로, 이어진 조각을 합친 것과도 비교한다.
+const DIALOGUE_SPLIT_LIMIT = 3;
+
 function isDialoguePreserved(line: string, candidates: readonly string[]): boolean {
-  return candidates.some((candidate) => similarityRatio(line, candidate) >= DIALOGUE_PRESERVED_RATIO);
+  for (let start = 0; start < candidates.length; start += 1) {
+    let joined = '';
+
+    for (let width = 0; width < DIALOGUE_SPLIT_LIMIT && start + width < candidates.length; width += 1) {
+      joined = width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
+
+      if (similarityRatio(line, joined) >= DIALOGUE_PRESERVED_RATIO) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 // 두 문자열이 공유하는 부분의 비율. difflib의 SequenceMatcher.ratio와 같은 정의다.

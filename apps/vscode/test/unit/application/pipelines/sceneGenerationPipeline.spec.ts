@@ -606,6 +606,30 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
+  // 실측(the-missing-summer 23씬): 살붙임이 한 턴을 두 문장으로 쪼개 호흡을 만들자 조각마다
+  // 유사도 0.60·0.53으로 소실 판정이 나 재시도를 태우고 경고까지 남겼다. 합치면 0.89다.
+  it("accepts a skeleton turn the expansion split into consecutive fragments", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '명태가 말했다. "구조가 늦은 건, 내가 인정합니다. 현장 정리도 내가 지시했고."',
+      expanded:
+        '"구조가 늦은 건 인정합니다." 그가 말했다. 목소리가 낮았다. "현장 정리도 내가 시켰고." ' +
+        "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("lost-dialogue")
+  })
+
+  it("does not let unrelated neighbouring lines pass off as a split turn", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '명태가 말했다. "구조가 늦은 건, 내가 인정합니다. 현장 정리도 내가 지시했고."',
+      expanded: '"누가요." 서연이 물었다. "그건." 명태가 입을 다물었다. ' + "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
+  })
+
   it("flags a skeleton line that the expansion dropped", () => {
     const violations = validateExpandedSection({
       ...base,
