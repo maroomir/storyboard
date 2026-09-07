@@ -7,7 +7,8 @@ import { GitClient, SyncService } from '@storyboard/story-git';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createAiEngine } from '../src/ai/aiGateway';
-import { legacyConfiguration } from './configurationStub';
+import { legacyConfiguration, stubConfiguration } from './configurationStub';
+import { flattenLegacyBlocks } from '../src/config/sharedConfig';
 import { ContentService } from '../src/content/contentService';
 import {
   joinStoryPath,
@@ -68,6 +69,17 @@ function context(isCancelled = (): boolean => false): {
   };
 }
 
+// Beat expansion is on by default and commits the card like grounding does; tests that count
+// commits or pin the card bytes switch it off so they keep measuring what they were written for.
+function configurationWithoutBeats(
+  draft: Parameters<typeof legacyConfiguration>[1],
+): ReturnType<typeof legacyConfiguration> {
+  return stubConfiguration({
+    ...flattenLegacyBlocks({ default: 'mock' }, draft),
+    'draft.autoBeats': false,
+  });
+}
+
 describe('scene draft generation', () => {
   let fixture: WorkspaceFixture;
   let store: WorkspaceStore;
@@ -120,7 +132,7 @@ describe('scene draft generation', () => {
       autoGrounding: false,
     };
     const engine = createAiEngine({
-      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+      configuration: configurationWithoutBeats(draftConfig),
     });
     const generator = new SceneDraftGenerator({
       store,
@@ -186,6 +198,35 @@ describe('scene draft generation', () => {
     expect(log).toContain('storyboard-bot: ground scene/01-prologue.card');
   });
 
+  // Beats are expanded after grounding and land in the same card, so the second write must take
+  // the first write's result as its baseline instead of the read-time hash.
+  it('expands scene beats after grounding and commits them to the card', async () => {
+    const draftConfig = { reviseAfterGenerate: false, reviseMaxIterations: 2, autoGrounding: true };
+    const engine = createAiEngine({
+      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+    });
+    const generator = new SceneDraftGenerator({
+      store,
+      content,
+      registry: engine.registry,
+      configBridge: engine.configBridge,
+      autoGrounding: draftConfig.autoGrounding,
+      onUsage: () => undefined,
+      generator: 'storyboard-bot@0.0.0-test',
+    });
+
+    await generator.generate('01-prologue', () => false);
+
+    const scene = await store.readScene('01-prologue');
+    expect(scene.value.card.beats).toEqual(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']);
+    expect(scene.value.frontmatter.grounding).toBeDefined();
+
+    const log = fixture.git('log', '--format=%s').split('\n');
+    expect(log.indexOf('storyboard-bot: beats scene/01-prologue.card')).toBeLessThan(
+      log.indexOf('storyboard-bot: ground scene/01-prologue.card'),
+    );
+  });
+
   it('leaves the scene untouched when auto grounding is off', async () => {
     const draftConfig = {
       reviseAfterGenerate: false,
@@ -193,7 +234,7 @@ describe('scene draft generation', () => {
       autoGrounding: false,
     };
     const engine = createAiEngine({
-      configuration: legacyConfiguration({ default: 'mock' }, draftConfig),
+      configuration: configurationWithoutBeats(draftConfig),
     });
     const before = readFileSync(join(fixture.root, 'scene', '01-prologue.card'), 'utf8');
     const logBefore = fixture.git('log', '--format=%s');

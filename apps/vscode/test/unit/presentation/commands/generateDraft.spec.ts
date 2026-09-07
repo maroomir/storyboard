@@ -68,7 +68,8 @@ function createOptions(
     sceneCacheRepository: {} as never,
     sceneRepository: {
       read: (...args: unknown[]): unknown => readSceneFileMock(...args),
-      writeGrounding: async (): Promise<void> => undefined
+      writeGrounding: async (): Promise<void> => undefined,
+      writeBeats: async (): Promise<void> => undefined
     } as never,
     workspaceLocator: {
       folders: () => workspace.workspaceFolders ?? [],
