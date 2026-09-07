@@ -16,6 +16,7 @@ Storyboard 워크스페이스를 텔레그램에서 조회·편집·생성하는
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+#   tarball 을 이미 받아 두었다면:  ./install.sh --from ~/Downloads
 storyboard-bot setup       # 최초 1회
 storyboard-bot             # 실행
 ```
