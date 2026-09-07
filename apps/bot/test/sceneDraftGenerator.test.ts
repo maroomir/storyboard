@@ -387,16 +387,24 @@ describe('scene draft generation', () => {
     const paths = getStoryboardProjectPaths(NodeUri.file(fixture.root));
     const fileSystem = new BotFileSystem(content, NodeUri.file(fixture.root));
 
-    const personaStore = createPersonaMemoryStore(fileSystem, paths, '01-prologue');
-    await personaStore.save(character, '조용하지만 단단한 화자.');
-    expect(await personaStore.load(character)).toBe('조용하지만 단단한 화자.');
+    // 기억은 씬 1까지 진화한 것으로 저장하고 씬 2를 만드는 자리에서 읽는다. 같은 씬의 자리에서
+    // 읽으면 되감기 규칙이 그 기억을 버리므로(§4.9) 왕복 자체를 볼 수 없다.
+    await createPersonaMemoryStore(fileSystem, paths, '01-prologue').save(
+      character,
+      '조용하지만 단단한 화자.',
+    );
+    const personaReader = createPersonaMemoryStore(fileSystem, paths, '02-arrival');
+    expect(await personaReader.load(character)).toBe('조용하지만 단단한 화자.');
 
-    const backgroundStore = createBackgroundMemoryStore(fileSystem, paths, '01-prologue');
-    await backgroundStore.save(background, '봄비 냄새가 남은 복도.');
-    expect(await backgroundStore.load(background)).toBe('봄비 냄새가 남은 복도.');
+    await createBackgroundMemoryStore(fileSystem, paths, '01-prologue').save(
+      background,
+      '봄비 냄새가 남은 복도.',
+    );
+    const backgroundReader = createBackgroundMemoryStore(fileSystem, paths, '02-arrival');
+    expect(await backgroundReader.load(background)).toBe('봄비 냄새가 남은 복도.');
 
     const editedCharacter = { ...character, name: `${character.name}2` };
-    expect(await personaStore.load(editedCharacter)).toBeUndefined();
+    expect(await personaReader.load(editedCharacter)).toBeUndefined();
 
     expect(fixture.git('log', '--format=%s').split('\n')).toHaveLength(commitsBefore);
   });
