@@ -147,6 +147,25 @@ command — `/doctor` reports non-canonical cards and `/doctor format` rewrites 
 commit — so it never rides along inside a content edit's diff. `canonicalizeCardText`
 (`packages/story-format/src/files/card.ts`) is the shared predicate; do not add a second one.
 
+## Mobile reading is a git client, not a bot feature
+
+Reading and hand-editing drafts from a phone is done by cloning the workspace's `workspace.remote`
+in a git client — Telegram stays the control channel (generate, status, card edits). This is
+documented in `apps/bot/README.md` ("모바일에서 읽고 손질하기") and adds **no code**: a save is
+already a commit, the debounced push and the periodic fetch→rebase→push already exist.
+
+Two consequences shape that document and must not be eroded:
+
+- A phone commit is a **second writer outside `MutateGate`**. The freshness guard refuses a bot
+  write whose baseline the phone moved (`changed-on-disk`), and a rebase conflict always
+  **aborts** — the bot keeps its local commits, never pulls on the user's behalf, never
+  force-pushes, and keeps committing locally while push stays blocked. Recovery is a human
+  resolving the rebase in the workspace; the next `/sync` (or periodic tick) settles `clean` on
+  its own, no restart. Do not relax that policy and do not add any "merge the phone's edit for
+  the user" automation.
+- Do not add a new read or write path for this use case — no draft-body route on the dashboard, no
+  Telegram mini app, no PWA. The phone reads through git or not at all.
+
 ## Verification
 
 Run from the repo root: `npm test` (drives both workspaces) and `npm run lint`.

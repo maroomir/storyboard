@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Docs
+
+- **How to use `storyboard-bot` from a phone.** Telegram stays the control channel; reading and polishing drafts happens in a git client that clones `workspace.remote`. The bot README now covers the setup, the "polish only while the bot is idle" rule, and the sync-conflict recovery steps. No code changed.
+
 ## [0.8.9] - 2026-09-07
 
 ### Added
