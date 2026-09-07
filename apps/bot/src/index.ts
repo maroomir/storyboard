@@ -1,3 +1,7 @@
+import packageJson from '../package.json';
+
+import { parseCommandLine, usageText } from './app/commandLine';
+import { runDoctor } from './app/runDoctor';
 import { runSetup } from './app/runSetup';
 import { StoryboardBotApplication } from './app/storyboardBotApplication';
 import { ConfigError, loadConfig } from './config/config';
@@ -8,8 +12,24 @@ import { WorkspaceError } from './workspace/workspaceStore';
 const SHUTDOWN_TIMEOUT_MS = 15_000;
 
 async function main(): Promise<number> {
-  if (process.argv[2] === 'setup') {
-    return runSetup();
+  const command = parseCommandLine(process.argv.slice(2));
+
+  switch (command.kind) {
+    case 'help':
+      process.stdout.write(`${usageText}\n`);
+      return 0;
+    case 'version':
+      process.stdout.write(`${packageJson.version}\n`);
+      return 0;
+    case 'setup':
+      return runSetup();
+    case 'doctor':
+      return runDoctor();
+    case 'unknown':
+      process.stderr.write(`error: 알 수 없는 명령: ${command.argument}\n\n${usageText}\n`);
+      return 1;
+    case 'run':
+      break;
   }
 
   const logger = createLogger();
@@ -20,6 +40,12 @@ async function main(): Promise<number> {
     loaded = loadConfig(paths.configFile);
   } catch (error) {
     if (error instanceof ConfigError) {
+      // A first run has no config yet, which is onboarding rather than a fault; a config that
+      // exists but is broken stays an error the operator must read.
+      if (error.code === 'not-found') {
+        process.stderr.write(onboardingText(paths.configFile));
+        return 1;
+      }
       logger.error(`설정을 불러오지 못했습니다 (${error.code}): ${error.message}`);
       return 1;
     }
@@ -49,6 +75,17 @@ async function main(): Promise<number> {
 
   installShutdownHandlers(application, logger);
   return 0;
+}
+
+function onboardingText(configFile: string): string {
+  return [
+    `설정이 아직 없습니다: ${configFile}`,
+    '',
+    '  storyboard-bot setup    토큰·허용 chat id·워크스페이스를 묻고 파일을 만듭니다',
+    '',
+    '직접 쓰려면 config.example.json 을 복사해 0600 으로 두세요.',
+    '',
+  ].join('\n');
 }
 
 // A shutdown must be forceable and must not lie about its outcome: a second signal exits

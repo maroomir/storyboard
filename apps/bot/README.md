@@ -45,6 +45,18 @@ node apps/bot/dist/index.js
 ./apps/bot/scripts/install-launchd.sh --uninstall
 ```
 
+터미널 명령은 네 가지입니다. 인식하지 못하는 인자는 봇을 띄우지 않고 사용법과 함께 거부합니다.
+
+| 명령 | 설명 |
+|---|---|
+| `storyboard-bot` | 봇 실행 |
+| `storyboard-bot setup` | 대화형 설정 마법사 |
+| `storyboard-bot doctor` | 설정·워크스페이스·git·프로바이더 점검. 봇이 뜨지 않는 상태에서도 답합니다 |
+| `storyboard-bot --help` / `--version` | 사용법과 버전 |
+
+텔레그램의 `/doctor`는 워크스페이스 내용까지 보지만 봇이 떠 있어야 합니다. 설정이 없거나 깨져서
+봇 자체가 뜨지 않을 때는 터미널의 `storyboard-bot doctor`를 쓰세요.
+
 `STORYBOARD_HOME` 환경변수로 `~/.storyboard` 위치를 바꿀 수 있습니다.
 
 봇은 설정을 **부팅 때만** 읽으므로, 고친 뒤에는 다시 띄워야 반영됩니다(launchd로 설치했다면
