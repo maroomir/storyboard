@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 
 import { aliasesFromTsconfig } from '../../scripts/aliases.mjs';
+import { writeRuntimeManifest } from '../../scripts/runtimeManifest.mjs';
+
+import { bundleExternals } from './scripts/bundleExternals.mjs';
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,8 +18,7 @@ await esbuild.build({
     path.join(packageRoot, 'src/index.ts'),
     path.join(packageRoot, 'src/sync/syncWorker.ts'),
   ],
-  // Native addon: it must stay a runtime require, not be inlined.
-  external: ['better-sqlite3'],
+  external: bundleExternals,
   format: 'cjs',
   logLevel: 'info',
   outdir: path.join(packageRoot, 'dist'),
@@ -27,3 +29,5 @@ await esbuild.build({
   banner: { js: '#!/usr/bin/env node' },
   alias: aliasesFromTsconfig(path.join(packageRoot, 'tsconfig.json')),
 });
+
+writeRuntimeManifest(packageRoot, bundleExternals);

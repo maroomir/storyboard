@@ -45,8 +45,7 @@ jobs:
           npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
           npm run build --workspace @storyboard/bot
           npm run build --workspace @storyboard/cli
-          tar -czf "release/storyboard-bot-${version}.tar.gz" -C apps/bot dist package.json README.md config.example.json assets
-          tar -czf "release/storyboard-cli-${version}.tar.gz" -C apps/cli dist package.json
+          scripts/package-tarballs.sh "$version" release
           cp scripts/install.sh release/install.sh
 
       - name: Create checksum
