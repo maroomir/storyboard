@@ -17,6 +17,15 @@ export const bibleFactSubjectSchema = z.object({
 // A scene reference is an `NN-slug` stem or a bare order; both resolve to a numeric scene order.
 const sceneReferenceSchema = z.union([z.string().trim().min(1), z.number().int().positive()]);
 
+const revealFromSchema = z.union([
+  sceneReferenceSchema,
+  z.object({
+    scene: sceneReferenceSchema,
+    // 이 사실을 아는 인물 카드 id. 적으면 나머지 등장 인물은 '아직 모름'으로 표시된다.
+    knownBy: z.array(z.string().trim().min(1)).optional(),
+  }),
+]);
+
 export const bibleFactSchema = z
   .object({
     id: z.string().trim().min(1),
@@ -29,14 +38,17 @@ export const bibleFactSchema = z
     validUntil: sceneReferenceSchema.optional(),
     // NOTE: validFrom은 사실이 '참'이 되는 시점이고, revealFrom은 독자·인물에게 '밝혀지는' 시점이다.
     // 결말의 반전은 1화부터 참이지만 회수 씬 전에는 프롬프트에 넣으면 안 되므로 둘을 분리한다.
-    revealFrom: sceneReferenceSchema.optional(),
+    // 두 축은 재는 자도 다르다 — validFrom/validUntil은 서사 시간(씬 카드의 storyTime), revealFrom은
+    // 서술 순서(씬 순번)로 잰다. 회상 씬은 사건 시점으로 되돌아가지만 독자가 이미 읽은 것을 되돌리지
+    // 못하기 때문이다. knownBy를 적으면 그 시점에 아직 모르는 인물을 프롬프트에 표시한다.
+    revealFrom: revealFromSchema.optional(),
     keywords: z.array(z.string().trim().min(1)).optional(),
   })
   // NOTE: Reject a string range bound only when it cannot resolve to a scene order; numeric
   // bounds are file-agnostic and an inverted range is left to the resolver (treated as empty).
   .superRefine((fact, ctx) => {
     for (const field of ['validFrom', 'validUntil', 'revealFrom'] as const) {
-      const bound = fact[field];
+      const bound = field === 'revealFrom' ? revealFromScene(fact) : fact[field];
       if (typeof bound === 'string' && resolveSceneOrder(bound) === undefined) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -55,6 +67,24 @@ export const storyBibleSchema = z.object({
 export type BibleFactSubject = z.infer<typeof bibleFactSubjectSchema>;
 export type BibleFact = z.infer<typeof bibleFactSchema>;
 export type StoryBible = z.infer<typeof storyBibleSchema>;
+
+// revealFrom은 씬 참조 하나이거나 { scene, knownBy } 객체다. 두 모양을 읽는 자리는 여러 곳이므로
+// 씬 참조와 인지 목록을 꺼내는 함수를 하나씩 둔다.
+export function revealFromScene(fact: BibleFact): string | number | undefined {
+  const reveal = fact.revealFrom;
+
+  if (reveal === undefined) {
+    return undefined;
+  }
+
+  return typeof reveal === 'object' ? reveal.scene : reveal;
+}
+
+export function revealKnownBy(fact: BibleFact): readonly string[] | undefined {
+  const reveal = fact.revealFrom;
+
+  return typeof reveal === 'object' ? reveal.knownBy : undefined;
+}
 
 export function createEmptyBible(): StoryBible {
   return { version: storyBibleVersion, facts: [] };
@@ -100,12 +130,27 @@ interface ResolvedFactVersion {
   readonly index: number;
 }
 
-function resolveBound(bound: BibleFact['validFrom'], openValue: number): number {
+// 씬 참조는 파일 이름으로 적히지만, 유효 구간은 사건이 벌어진 시점으로 재야 한다. 회상 씬은 순번이
+// 뒤여도 사건은 앞이므로, 참조를 씬 순번으로 푼 뒤 그 씬의 서사 시간으로 바꾼다.
+export function resolveStoryTime(
+  sceneOrder: number,
+  storyTimeline: ReadonlyMap<number, number> | undefined,
+): number {
+  return storyTimeline?.get(sceneOrder) ?? sceneOrder;
+}
+
+function resolveBound(
+  bound: BibleFact['validFrom'],
+  openValue: number,
+  storyTimeline: ReadonlyMap<number, number> | undefined,
+): number {
   if (bound === undefined) {
     return openValue;
   }
 
-  return resolveSceneOrder(bound) ?? openValue;
+  const order = resolveSceneOrder(bound);
+
+  return order === undefined ? openValue : resolveStoryTime(order, storyTimeline);
 }
 
 // Latest-wins: higher validFrom, then higher validUntil, then later declaration order.
@@ -131,8 +176,10 @@ function resolveValidWinners(
   bible: StoryBible,
   sceneOrder: number,
   isActivated: FactActivationPredicate,
+  storyTimeline?: ReadonlyMap<number, number>,
 ): ResolvedFactVersion[] {
   const winners = new Map<string, ResolvedFactVersion>();
+  const sceneStoryTime = resolveStoryTime(sceneOrder, storyTimeline);
 
   bible.facts.forEach((fact, index) => {
     if (fact.status !== 'canon') {
@@ -143,10 +190,10 @@ function resolveValidWinners(
       return;
     }
 
-    const from = resolveBound(fact.validFrom, Number.NEGATIVE_INFINITY);
-    const until = resolveBound(fact.validUntil, Number.POSITIVE_INFINITY);
+    const from = resolveBound(fact.validFrom, Number.NEGATIVE_INFINITY, storyTimeline);
+    const until = resolveBound(fact.validUntil, Number.POSITIVE_INFINITY, storyTimeline);
 
-    if (from > until || sceneOrder < from || sceneOrder > until) {
+    if (from > until || sceneStoryTime < from || sceneStoryTime > until) {
       return;
     }
 
@@ -166,6 +213,7 @@ export function selectValidBibleFacts(
   bible: StoryBible,
   subjects: readonly BibleFactSubject[],
   sceneOrder: number,
+  options?: InjectionOptions,
 ): BibleFact[] {
   if (subjects.length === 0) {
     return [];
@@ -173,13 +221,18 @@ export function selectValidBibleFacts(
 
   const wanted = new Set(subjects.map((subject) => `${subject.kind}:${subject.id}`));
 
-  return resolveValidWinners(bible, sceneOrder, (fact) =>
-    wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
+  return resolveValidWinners(
+    bible,
+    sceneOrder,
+    (fact) => wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
+    options?.storyTimeline,
   ).map((version) => version.fact);
 }
 
 export interface InjectionOptions {
   readonly budget?: number;
+  // 씬 순번 → 서사 시간. 없는 씬은 순번을 그대로 쓰므로, 시간을 적지 않은 워크스페이스는 종전과 같다.
+  readonly storyTimeline?: ReadonlyMap<number, number>;
 }
 
 function countKeywordHits(keywords: readonly string[] | undefined, sceneTextLower: string): number {
@@ -241,9 +294,12 @@ export function selectInjectedFacts(
   sceneOrder: number,
   options?: InjectionOptions,
 ): BibleFact[] {
+  // 공개 시점은 독자가 무엇을 읽었는지의 문제이므로 서술 순서(씬 순번)로 잰다. 회상 씬이라도
+  // 이미 밝혀진 사실은 밝혀진 채다.
   const isRevealed = (fact: BibleFact): boolean => {
-    const revealOrder =
-      fact.revealFrom === undefined ? undefined : resolveSceneOrder(fact.revealFrom);
+    const reveal = revealFromScene(fact);
+    const revealOrder = reveal === undefined ? undefined : resolveSceneOrder(reveal);
+
     return revealOrder === undefined || sceneOrder >= revealOrder;
   };
 
@@ -252,6 +308,7 @@ export function selectInjectedFacts(
     bible,
     sceneOrder,
     (fact) => isRevealed(fact) && wanted.has(`${fact.subject.kind}:${fact.subject.id}`),
+    options?.storyTimeline,
   );
 
   const sceneTextLower = sceneText.toLowerCase();
@@ -259,6 +316,7 @@ export function selectInjectedFacts(
     bible,
     sceneOrder,
     (fact) => isRevealed(fact) && countKeywordHits(fact.keywords, sceneTextLower) > 0,
+    options?.storyTimeline,
   );
 
   const entityIds = new Set(entityWinners.map((version) => version.fact.id));

@@ -18,6 +18,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 - Durable AI memory: `.storyboard/memory/` (story state, persona/background memory, dialogue sidecars, chapter summaries) is tracked—no committed input reproduces it.
 - `storyState.md` entries carry the input hash of the scene that produced them (`<!-- scene-input: N sha256:… -->`). Editing a card or scene without regenerating that scene marks its entries `- [N!] …`: kept in the file, dropped from prompts, reported in generation warnings and `storyboard doctor`.
 - `summaries.md` chapters carry the hash of the chapter body they were written from (`<!-- chapter-input: sha256:… -->`). Editing a draft without resummarizing that chapter appends `stale`: kept in the file, dropped from scene prompts, reported in generation warnings and `storyboard doctor`.
+- A scene card may declare an integer `storyTime` (the event's place in story time, defaulting to the scene order). Canon `validFrom`/`validUntil` are measured on that axis so a flashback gets the facts that were true then; `revealFrom` stays on scene order, and its object form `{ scene, knownBy }` marks characters who do not know yet.
 
 ## `.card` (YAML)
 

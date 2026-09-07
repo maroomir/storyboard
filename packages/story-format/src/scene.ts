@@ -39,6 +39,9 @@ export const sceneFrontmatterSchema = z
     narrator: z.string().trim().min(1).optional(),
     thread: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
+    // 서사 시간 축. 없으면 씬 순서를 쓴다. 회상·액자처럼 서술 순서와 사건 순서가 어긋나는 씬에만
+    // 적으면 되고, 캐넌의 validFrom/validUntil은 이 축으로 비교한다.
+    storyTime: z.number().int().optional(),
     grounding: sceneGroundingSchema.optional(),
   })
   .passthrough();
@@ -58,6 +61,7 @@ export const sceneCardSchema = z.object({
   narrator: z.string().trim().min(1).optional(),
   thread: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
+  storyTime: z.number().int().optional(),
   grounding: sceneGroundingSchema.optional(),
   purpose: z.string().trim().min(1).optional(),
   conflict: z.string().trim().min(1).optional(),
@@ -141,6 +145,7 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
     ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
     ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
+    ...(card.storyTime === undefined ? {} : { storyTime: card.storyTime }),
     ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
   };
 }

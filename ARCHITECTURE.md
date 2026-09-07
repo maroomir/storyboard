@@ -434,6 +434,25 @@ summary: 01-arrival.summary.md
 - `endState`는 씬 폼의 **종료 지점** 입력란과 **Summary에서 구조화** 제안 항목에 함께 들어 있다.
   `povCharacter`는 현재 카드 YAML을 직접 편집해 넣는다(폼 입력란·AI 제안 미노출).
 
+#### 서사 시간 (`storyTime`)
+
+회상·액자 구성·시간 점프가 있으면 **씬 순번(서술 순서)과 사건 시점(서사 시간)이 어긋난다.** 캐넌의
+`validFrom`/`validUntil`을 씬 순번으로 재면, 20화에서 죽은 인물이 25화 회상에서도 죽은 상태로
+주입된다. 씬 카드의 정수 `storyTime`이 그 씬의 사건 시점이고, 유효 구간은 이 축으로 잰다.
+
+```yaml
+type: scene
+id: 25-memory
+storyTime: 3        # 25화지만 사건은 3화 시점이다
+```
+
+- **적지 않은 씬은 순번을 서사 시간으로 쓴다.** 순차 전개만 하는 작품은 아무것도 바뀌지 않는다.
+- 구간의 경계(`validFrom: 20-fall`)도 **그 씬의 서사 시간**으로 풀린다. 경계가 회상 씬을 가리켜도
+  뜻이 유지된다.
+- **공개 시점(`revealFrom`)은 여전히 씬 순번으로 잰다.** 회상이라고 독자가 이미 읽은 반전이 다시
+  덮이지는 않기 때문이다. 두 축을 다른 자로 재는 것이 이 설계의 핵심이다.
+- 시간축을 쓰는 사실이 하나도 없으면 씬을 읽지 않는다. 비용은 구간을 실제로 쓰는 워크스페이스만 낸다.
+
 #### 사실 시트 (`grounding`)
 
 씬이 가사·분위기 스케치처럼 추상적이면 생성물도 은유만 남는다. 이를 막기 위해 생성 직전에 씬을 구체적
@@ -568,6 +587,7 @@ facts:
     validFrom: 05-awakening                  # 선택: 사실이 '참'이 되는 시점 (NN-slug 또는 씬 번호)
     validUntil: 20-fall                      # 선택: 사실이 더 이상 참이 아니게 되는 시점
     revealFrom: 28-reveal                    # 선택: 사실이 '밝혀지는' 시점 — 그 전 씬에는 주입 안 함
+    # revealFrom: { scene: 28-reveal, knownBy: [elia] }   # 인물별 인지: 나머지 등장 인물은 '아직 모름'으로 표시
     keywords: [붉은 제국, Crimson Empire]      # 선택: 씬 본문에 등장 시 비-엔티티 사실도 활성화
 ```
 
@@ -576,6 +596,10 @@ facts:
 공개 여부와 무관하게 모든 씬 프롬프트에 주입되어 초반 본문에 그대로 누설된다. `revealFrom`은 밝혀지는
 시점을 따로 선언해, `selectInjectedFacts`가 **엔티티 경로와 키워드 경로 양쪽에서** 미도달 사실을
 제외하게 한다. `revealFrom`이 없는 사실은 종전대로 항상 주입된다.
+**인물별 인지 격차**는 `revealFrom: { scene, knownBy }`로 적는다. 독자에게 공개된 뒤에는 사실을 주입하되,
+`knownBy`에 없는 등장 인물을 `(아직 모름: 지훈)`으로 표시한다 — 빼 버리면 서술자까지 모르는 것이 되어
+"A는 알고 B는 모르는" 장면을 쓸 수 없다. `validFrom`/`validUntil`은 씬 카드의 `storyTime`(§4.4)으로,
+`revealFrom`은 씬 순번으로 잰다.
 
 **candidate → canon 흐름**: 초안 생성 시 설정 사실 추출(`factExtraction`)이 등장 인물의 고정 설정을
 `.storyboard/cache/bible/<scene>.json`에 **candidate**로 자동 저장한다. `Storyboard: Promote Bible

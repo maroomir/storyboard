@@ -5,11 +5,13 @@ import {
   type BackgroundCard,
   type CharacterCard,
 } from './card';
-import type { SceneFile } from './scene';
+import { parseSceneFileName, type SceneFile } from './scene';
+import { parseSceneCard } from './files/scene';
 import { readCardFile } from './files/card';
 import { readBibleFile } from './files/bible';
 import {
   createEmptyBible,
+  revealKnownBy,
   selectInjectedFacts,
   type BibleFact,
   type BibleFactSubject,
@@ -27,6 +29,8 @@ import { stripForeignScript } from './foreignScript';
 
 export interface SceneContextWorkspacePaths {
   readonly characterDirectory: StoryUri;
+  // 서사 시간(§4.4)을 읽어 오는 곳. 없으면 씬 순번을 서사 시간으로 쓴다.
+  readonly sceneDirectory?: StoryUri;
   readonly backgroundDirectory: StoryUri;
   readonly draftDirectory: StoryUri;
   readonly bibleCanon?: StoryUri;
@@ -219,13 +223,62 @@ export async function resolveSceneBibleFacts(
   fileSystem: SceneContextWorkspaceFileSystem,
 ): Promise<readonly BibleFact[]> {
   const bible = await readSceneBible(paths, fileSystem);
+  const storyTimeline = await readStoryTimeline(paths, fileSystem, bible);
 
-  return selectInjectedFacts(
-    bible,
-    sceneSubjects(context),
-    context.scene.body,
-    context.scene.order,
+  return selectInjectedFacts(bible, sceneSubjects(context), context.scene.body, context.scene.order, {
+    ...(storyTimeline === undefined ? {} : { storyTimeline }),
+  });
+}
+
+// 유효 구간을 쓰는 사실이 하나도 없으면 서사 시간을 볼 일도 없다. 씬을 전부 읽는 비용을 그때만
+// 치르게 해, 시간축을 쓰지 않는 워크스페이스는 종전과 같은 읽기 수로 남는다.
+async function readStoryTimeline(
+  paths: SceneContextWorkspacePaths,
+  fileSystem: SceneContextWorkspaceFileSystem,
+  bible: StoryBible,
+): Promise<ReadonlyMap<number, number> | undefined> {
+  const usesRanges = bible.facts.some(
+    (fact) => fact.validFrom !== undefined || fact.validUntil !== undefined,
   );
+
+  if (!usesRanges || !paths.sceneDirectory) {
+    return undefined;
+  }
+
+  const sceneDirectory = paths.sceneDirectory;
+  const timeline = new Map<number, number>();
+  let entries: [string, { type: 'file' | 'directory' }][];
+
+  try {
+    entries = await fileSystem.readDirectory(sceneDirectory);
+  } catch {
+    return undefined;
+  }
+
+  await Promise.all(
+    entries.map(async ([fileName, entry]) => {
+      const parts = entry.type === 'file' ? parseSceneFileName(fileName) : undefined;
+
+      if (parts === undefined) {
+        return;
+      }
+
+      try {
+        const raw = new TextDecoder().decode(
+          await fileSystem.readFile(paths.joinPath(sceneDirectory, fileName)),
+        );
+        const storyTime = parseSceneCard(raw).storyTime;
+
+        if (storyTime !== undefined) {
+          timeline.set(parts.order, storyTime);
+        }
+      } catch {
+        // 읽히지 않는 씬은 시간을 선언하지 않은 것과 같다. 순번을 그대로 쓴다.
+      }
+    }),
+  );
+
+  return timeline.size > 0 ? timeline : undefined;
 }
 
 // NOTE: Replaces the raw previous-draft tail as the pipeline's previousContext, prepending
@@ -283,8 +336,25 @@ export function formatBibleFactLines(context: SceneContext, facts: readonly Bibl
 
   return facts.map((fact) => {
     const subject = names.get(`${fact.subject.kind}:${fact.subject.id}`) ?? fact.subject.id;
-    return `${subject} — ${fact.key}: ${fact.value}`;
+
+    return `${subject} — ${fact.key}: ${fact.value}${formatUnawareSuffix(context, fact)}`;
   });
+}
+
+// 독자에게 공개된 사실이라고 등장 인물이 다 아는 것은 아니다. knownBy가 적힌 사실은 아직 모르는
+// 인물을 이름으로 적어, 서술자는 알고 그 인물은 모르는 장면을 쓸 수 있게 한다.
+function formatUnawareSuffix(context: SceneContext, fact: BibleFact): string {
+  const knownBy = revealKnownBy(fact);
+
+  if (knownBy === undefined) {
+    return '';
+  }
+
+  const unaware = context.characters
+    .filter((character) => !knownBy.includes(character.id))
+    .map((character) => character.name);
+
+  return unaware.length === 0 ? '' : ` (아직 모름: ${unaware.join(', ')})`;
 }
 
 async function readSceneBible(

@@ -484,3 +484,66 @@ describe("selectInjectedFacts — revealFrom spoiler gate", () => {
     expect(injectedIds(bibleOf([plain]), "본문", 1, [elia])).toEqual(["eye"])
   })
 })
+
+// 회상·액자 구성에서는 씬 순번과 사건 시점이 어긋난다. 유효 구간은 서사 시간으로 재고, 공개 시점은
+// 독자가 읽은 순서(씬 순번)로 잰다.
+describe("selectInjectedFacts — story time axis", () => {
+  const alive = factOf({ id: "alive", key: "상태", value: "살아 있다", validUntil: 20 })
+  const dead = factOf({ id: "dead", key: "상태", value: "죽었다", validFrom: 21 })
+  const bible = bibleOf([alive, dead])
+
+  // 씬 25는 사건 시점이 3인 회상이다.
+  const flashback = new Map([[25, 3]])
+
+  it("uses the scene order as story time when no timeline is given", () => {
+    expect(injectedIds(bible, "본문", 25, [elia])).toEqual(["dead"])
+  })
+
+  it("resolves a flashback scene to the fact that was true at that story time", () => {
+    expect(
+      selectInjectedFacts(bible, [elia], "본문", 25, { storyTimeline: flashback }).map((f) => f.id)
+    ).toEqual(["alive"])
+  })
+
+  it("maps a bound's referenced scene through the timeline as well", () => {
+    // 구간 끝으로 적힌 20화가 사건 시점 40의 장면이면, 사건 시점 30인 26화는 아직 그 구간 안이다.
+    const onlyAlive = bibleOf([alive])
+    const timeline = new Map([
+      [20, 40],
+      [26, 30]
+    ])
+
+    expect(injectedIds(onlyAlive, "본문", 26, [elia])).toEqual([])
+    expect(
+      selectInjectedFacts(onlyAlive, [elia], "본문", 26, { storyTimeline: timeline }).map(
+        (f) => f.id
+      )
+    ).toEqual(["alive"])
+  })
+
+  it("keeps the reveal gate on narrative order even inside a flashback", () => {
+    const spoilerBible = bibleOf([factOf({ id: "twist", key: "정체", value: "봉인", revealFrom: 20 })])
+
+    expect(
+      selectInjectedFacts(spoilerBible, [elia], "본문", 25, { storyTimeline: flashback }).map(
+        (f) => f.id
+      )
+    ).toEqual(["twist"])
+  })
+})
+
+describe("selectInjectedFacts — per-character reveal", () => {
+  const withKnownBy = factOf({
+    id: "twist",
+    key: "정체",
+    value: "봉인",
+    revealFrom: { scene: 10, knownBy: ["elia"] }
+  })
+
+  it("gates injection on the reveal scene inside the object form", () => {
+    const bible = bibleOf([withKnownBy])
+
+    expect(injectedIds(bible, "본문", 9, [elia])).toEqual([])
+    expect(injectedIds(bible, "본문", 10, [elia])).toEqual(["twist"])
+  })
+})
