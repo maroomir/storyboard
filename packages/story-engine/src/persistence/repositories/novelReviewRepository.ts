@@ -7,6 +7,10 @@ import type {
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { readBibleFile } from '@storyboard/story-format';
+import {
+  parseChapterSummariesMarkdown,
+  type ChapterSummary,
+} from '#engine/domain/chapterSummaries';
 export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
@@ -16,8 +20,9 @@ export class NovelReviewRepository implements INovelReviewRepository {
       warn: (): void => undefined,
     });
     const canonFactLines = await this.loadCanonFactLines(paths.bibleCanon);
+    const chapterSummaries = await this.loadFreshChapterSummaries(paths.chapterSummaries);
 
-    return { draftsByOrder, canonFactLines };
+    return { draftsByOrder, canonFactLines, chapterSummaries };
   }
 
   public async saveReview(workspaceRoot: StoryUri, markdown: string): Promise<void> {
@@ -27,6 +32,16 @@ export class NovelReviewRepository implements INovelReviewRepository {
       joinStoryPath(paths.manuscriptDirectory, 'REVIEW.md'),
       new TextEncoder().encode(markdown),
     );
+  }
+
+  // 낡은 요약은 폐기된 판본의 줄거리이므로 검수 창에도 실을 수 없다.
+  private async loadFreshChapterSummaries(summaryUri: StoryUri): Promise<ChapterSummary[]> {
+    try {
+      const markdown = new TextDecoder().decode(await this.fileSystem.readFile(summaryUri));
+      return parseChapterSummariesMarkdown(markdown).filter((chapter) => chapter.isStale !== true);
+    } catch {
+      return [];
+    }
   }
 
   private async loadCanonFactLines(bibleCanonUri: StoryUri): Promise<string[]> {

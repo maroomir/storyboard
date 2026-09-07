@@ -5,13 +5,17 @@ import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
 import { flattenChapterPlan } from '@storyboard/story-format';
 import type { ChapterPlan } from '@storyboard/story-format';
+import type { ChapterSummary } from '#engine/domain/chapterSummaries';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
+import { reviewChapterWindows } from './reviewChapterWindows';
 
 export type ManuscriptReviewSource = {
   readonly source: ManuscriptAssemblySource;
   readonly styleConstraints: readonly string[];
   readonly qualityCriteria: readonly string[];
   readonly canonFactLines: readonly string[];
+  // 앞 장을 창에 실을 때 쓰는 장별 요약. 낡은 항목은 저장소가 걸러 낸다.
+  readonly chapterSummaries: readonly ChapterSummary[];
 };
 
 export interface IManuscriptReviewRepository {
@@ -48,36 +52,34 @@ export class ReviewManuscriptUseCase {
         return { kind: 'missing_outline', ok: false };
       }
 
-      const { source, styleConstraints, qualityCriteria, canonFactLines } =
+      const { source, styleConstraints, qualityCriteria, canonFactLines, chapterSummaries } =
         await this.repository.loadReviewSource(workspaceRoot, this.logger);
       if (source.draftsByOrder.size === 0) {
         return { kind: 'missing_drafts', ok: false };
       }
 
+      // 이슈가 어느 씬에서 나왔는지 짚어야 보고서에서 초안으로 되짚을 수 있다.
       const manuscript = assembleManuscript({
         draftsByOrder: source.draftsByOrder,
         plan: source.plan,
         projectName: source.projectName,
+        annotateSceneStems: true,
       });
       const characters = collectCharacterIds(source.plan);
       const aiService = this.aiGateway.createService(workspaceRoot);
 
-      const [continuityIssues, critiqueIssues] = await Promise.all([
-        aiService.checkContinuity(manuscript.volumeMarkdown, canonFactLines, {
-          providerId: this.aiGateway.getTaskProvider('continuityCheck'),
-        }),
-        aiService.critiqueDraft(
-          {
-            body: manuscript.volumeMarkdown,
-            intent: '전체 원고 최종 검수',
-            characters,
-            facts: canonFactLines,
-            styleConstraints,
-            qualityCriteria,
-          },
-          { providerId: this.aiGateway.getTaskProvider('draftCritique') },
-        ),
-      ]);
+      const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
+        aiService,
+        manuscript,
+        storySoFar: chapterSummaries,
+        canonFactLines,
+        characters,
+        styleConstraints,
+        qualityCriteria,
+        hasSceneMarkers: true,
+        continuityProviderId: this.aiGateway.getTaskProvider('continuityCheck'),
+        critiqueProviderId: this.aiGateway.getTaskProvider('draftCritique'),
+      });
 
       const reportMarkdown = buildManuscriptReviewMarkdown({
         projectName: source.projectName,

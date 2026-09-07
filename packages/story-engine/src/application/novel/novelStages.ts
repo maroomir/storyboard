@@ -2,6 +2,7 @@ import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/a
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import { assembleManuscript } from '@storyboard/story-format';
 import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
+import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import { draftPath, scenePath, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
@@ -234,7 +235,8 @@ export async function runReviewStage(
   reviewRepository: INovelReviewRepository,
   revisedStems: readonly string[] = [],
 ): Promise<ReviewStageResult> {
-  const { draftsByOrder, canonFactLines } = await reviewRepository.loadReviewSource(workspaceUri);
+  const { draftsByOrder, canonFactLines, chapterSummaries } =
+    await reviewRepository.loadReviewSource(workspaceUri);
   const manuscript = assembleManuscript({
     plan,
     projectName: project.name,
@@ -243,24 +245,18 @@ export async function runReviewStage(
   });
   const characters = collectCharacterIds(plan);
 
-  const [continuityIssues, critiqueIssues] = await Promise.all([
-    aiService.checkContinuity(manuscript.volumeMarkdown, canonFactLines, {
-      providerId: registry.getTaskProvider('continuityCheck'),
-      hasSceneMarkers: true,
-    }),
-    aiService.critiqueDraft(
-      {
-        body: manuscript.volumeMarkdown,
-        intent: '전체 원고 최종 검수',
-        characters,
-        facts: canonFactLines,
-        styleConstraints: project.setting?.styleConstraints ?? [],
-        qualityCriteria: project.setting?.qualityCriteria ?? [],
-        hasSceneMarkers: true,
-      },
-      { providerId: registry.getTaskProvider('draftCritique') },
-    ),
-  ]);
+  const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
+    aiService,
+    manuscript,
+    storySoFar: chapterSummaries,
+    canonFactLines,
+    characters,
+    styleConstraints: project.setting?.styleConstraints ?? [],
+    qualityCriteria: project.setting?.qualityCriteria ?? [],
+    hasSceneMarkers: true,
+    continuityProviderId: registry.getTaskProvider('continuityCheck'),
+    critiqueProviderId: registry.getTaskProvider('draftCritique'),
+  });
 
   const knownStems = new Set([...draftsByOrder.values()].map((draft) => draft.stem));
   const targets = groupHighIssuesByScene(continuityIssues, critiqueIssues, knownStems);

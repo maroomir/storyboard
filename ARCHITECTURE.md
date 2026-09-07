@@ -695,7 +695,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.card` 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
-| `storyboard.manuscript.review` | `Storyboard: Review Manuscript` | 조립한 전체 원고를 continuity·비평으로 검사해 `manuscript/REVIEW.md` 보고서 생성 |
+| `storyboard.manuscript.review` | `Storyboard: Review Manuscript` | 조립한 원고를 장 단위 창으로 continuity·비평 검사해 `manuscript/REVIEW.md` 보고서 생성 |
 | `storyboard.manuscript.summaries` | `Storyboard: Summarize Chapters` | 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성 |
 | `storyboard.draft.continuityCheck` | `Storyboard: Continuity Check (Draft)` | 초안을 `.storyboard/bible/canon.yaml`과 대조해 설정 모순 진단 |
 | `storyboard.draft.reviseLoop` | `Storyboard: Review & Revise Draft (Current Scene)` | 초안을 연속성·비평으로 검사하고 차단 이슈를 재작성으로 고치는 루프 |
@@ -909,7 +909,11 @@ ReviewIssue {
 
 - `chapters.yaml` 순서로 `draft/*.md`를 chapter별 파일과 전체 volume 파일(`manuscript/`)로 결정적으로 조립한다(`storyboard.manuscript.assemble`).
 - 초안이 없는 계획 씬은 자리표시·집계, 계획 밖 초안은 "기타" 챕터로 보존한다.
-- 조립한 전체 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
+- 조립한 원고를 canon 연속성·비평(보이스/목적/반복)으로 검사해 `manuscript/REVIEW.md` 보고서를 남긴다(`storyboard.manuscript.review`).
+  검사는 **장을 창으로 삼아** 돈다 — 한 장의 본문에 앞 장들의 요약(§4.10의 낡음 표시를 제외한 것)을
+  `[설정]` 줄로 실어 장마다 연속성·비평 한 쌍을 호출한다. 전권을 한 호출에 넣으면 뒤로 갈수록 모델의
+  주의가 옅어져 30만 자 한복판의 모순이 검출되지 않는다. 이슈의 offset은 그 장 본문 기준이 되지만,
+  보고서와 재작성 라우팅은 `<!-- scene: <stem> -->` 주석으로 씬을 짚으므로 영향이 없다.
 - 조립 시 `chapters.yaml`의 회수 대상 복선을 장별 체크리스트(`manuscript/FORESHADOWING.md`)로 정리한다.
 - 장별 AI 요약과 이전 장 recap을 `.storyboard/memory/summaries.md`로 생성한다(`storyboard.manuscript.summaries`). 이 파일이 있으면 이후 씬 생성(order > 1)이 이전 장면 컨텍스트로 raw 마지막 1000자 대신 이 롤링 요약(최대 8000자)을 read-only로 우선 사용한다. 파일이 없으면 기존 1000자 tail 동작과 동일하다.
 - 요약은 **그 장의 초안에서 나온 것**이므로 초안이 바뀌면 낡는다. 원장(§4.10)과 같은 판정을 쓴다 —

@@ -1,6 +1,7 @@
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
 import type { GeneratedSceneSeed } from '#engine/domain/sceneSeedFactory';
 import type { StoryUri } from '@storyboard/story-format';
+import type { ChapterSummary } from '#engine/domain/chapterSummaries';
 import type { NovelRunState } from '#engine/domain/files/novelRunState';
 import type {
   ChapterPlan,
@@ -31,6 +32,8 @@ export interface ISceneSeedRepository {
 export interface NovelReviewSource {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;
   readonly canonFactLines: readonly string[];
+  // 앞 장을 검수 창에 실을 때 쓰는 장별 요약. 낡은 항목은 저장소가 걸러 낸다.
+  readonly chapterSummaries: readonly ChapterSummary[];
 }
 
 export interface INovelReviewRepository {

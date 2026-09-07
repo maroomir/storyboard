@@ -19,6 +19,10 @@ import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
 import { readProjectJson } from '#engine/persistence/projectJson';
+import {
+  parseChapterSummariesMarkdown,
+  type ChapterSummary,
+} from '#engine/domain/chapterSummaries';
 
 export class ManuscriptAssemblyRepository
   implements
@@ -75,11 +79,12 @@ export class ManuscriptAssemblyRepository
     logger: Pick<IStoryboardLogger, 'warn'>,
   ): Promise<ManuscriptReviewSource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
-    const [project, plan, draftsByOrder, canonFactLines] = await Promise.all([
+    const [project, plan, draftsByOrder, canonFactLines, chapterSummaries] = await Promise.all([
       readProjectJson(this.fileSystem, paths.projectJson),
       readChapterPlanFile(paths.outlineChapters, this.fileSystem),
       collectDraftsByOrder(this.fileSystem, paths, this.fileSystem, logger),
       this.loadCanonFactLines(paths.bibleCanon),
+      this.loadFreshChapterSummaries(workspaceRoot),
     ]);
 
     return {
@@ -87,6 +92,7 @@ export class ManuscriptAssemblyRepository
       styleConstraints: project.setting?.styleConstraints ?? [],
       qualityCriteria: project.setting?.qualityCriteria ?? [],
       canonFactLines,
+      chapterSummaries,
     };
   }
 
@@ -140,6 +146,15 @@ export class ManuscriptAssemblyRepository
     );
 
     return paths.manuscriptVolume;
+  }
+
+  // 낡은 요약은 폐기된 판본의 줄거리이므로 검수 창에도 실을 수 없다.
+  private async loadFreshChapterSummaries(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
+    const markdown = await this.readChapterSummaries(workspaceRoot);
+
+    return markdown === undefined
+      ? []
+      : parseChapterSummariesMarkdown(markdown).filter((chapter) => chapter.isStale !== true);
   }
 
   private async loadCanonFactLines(bibleCanonUri: StoryUri): Promise<string[]> {
