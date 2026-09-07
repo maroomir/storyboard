@@ -15,6 +15,7 @@ import {
   type BibleFactSubject,
   type StoryBible,
 } from './bible';
+import { isStaleChapterSection } from './chapterSummaryMarks';
 import { isIgnoredSampleCardFileName } from './sampleCard';
 import { detectCharactersInText } from './characterDetector';
 import {
@@ -102,11 +103,29 @@ async function readRollingSummary(
 
   try {
     const content = new TextDecoder().decode(await fileSystem.readFile(paths.chapterSummaries));
-    const trimmed = content.trim();
-    return trimmed.length > 0 ? boundSummary(trimmed) : undefined;
+    const fresh = dropStaleChapters(content.trim());
+    return fresh === undefined ? undefined : boundSummary(fresh);
   } catch {
     return undefined;
   }
+}
+
+// A chapter marked stale was written from a draft that has since changed, so injecting it would
+// carry the discarded version's events into the next scene. Dropping every chapter leaves only the
+// file header, which is worth less than the previous draft's tail, so that falls back instead.
+function dropStaleChapters(content: string): string | undefined {
+  if (content.length === 0) {
+    return undefined;
+  }
+
+  const [preamble, ...chapters] = content.split(/^(?=## )/m);
+  const fresh = chapters.filter((chapter) => !isStaleChapterSection(chapter));
+
+  if (chapters.length > 0 && fresh.length === 0) {
+    return undefined;
+  }
+
+  return [preamble ?? '', ...fresh].join('').trim();
 }
 
 // Over budget, the oldest chapters are compressed to their first line rather than the whole file

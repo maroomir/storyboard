@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   SummarizeChaptersUseCase,
+  auditChapterSummaries,
   buildChapterSummariesMarkdown,
+  formatChapterSummaryStaleWarning,
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
 } from '@storyboard/story-engine';
@@ -113,9 +115,9 @@ describe('SummarizeChaptersUseCase', () => {
 
     expect(result).toMatchObject({ ok: true, summaryCount: 2 });
     expect(summarized).toEqual(['2장']);
-    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toEqual([
+    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toMatchObject([
       { chapterTitle: '1장', summary: '먼저 쓴 요약' },
-      { chapterTitle: '2장', summary: '2장 요약' },
+      { chapterTitle: '2장', summary: '2장 요약', isStale: false },
     ]);
   });
 
@@ -127,8 +129,8 @@ describe('SummarizeChaptersUseCase', () => {
 
     await useCase.execute(workspaceUri, { chapterIndex: 0 });
 
-    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toEqual([
-      { chapterTitle: '1장', summary: '1장 요약' },
+    expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toMatchObject([
+      { chapterTitle: '1장', summary: '1장 요약', isStale: false },
     ]);
   });
 
@@ -148,5 +150,76 @@ describe('SummarizeChaptersUseCase', () => {
 
     expect(result).toMatchObject({ ok: false, kind: 'cancelled' });
     expect(saved).toEqual([]);
+  });
+});
+
+describe('chapter summary invalidation', () => {
+  const summaries = [
+    { chapterTitle: '1장', summary: '앞 장 요약', sourceHash: 'sha256:aaa' },
+    { chapterTitle: '2장', summary: '뒷 장 요약', sourceHash: 'sha256:bbb' },
+  ];
+
+  it('marks a chapter whose draft no longer hashes to the recorded input', () => {
+    const audit = auditChapterSummaries(
+      summaries,
+      new Map([
+        ['1장', 'sha256:changed'],
+        ['2장', 'sha256:bbb'],
+      ]),
+    );
+
+    expect(audit.staleChapterTitles).toEqual(['1장']);
+    expect(audit.summaries[0]?.isStale).toBe(true);
+    expect(audit.summaries[1]?.isStale).toBe(false);
+  });
+
+  it('treats a chapter that lost its drafts as stale rather than valid', () => {
+    const audit = auditChapterSummaries(summaries, new Map([['2장', 'sha256:bbb']]));
+
+    expect(audit.staleChapterTitles).toEqual(['1장']);
+  });
+
+  it('leaves a pre-0.8 summary with no recorded input alone', () => {
+    const audit = auditChapterSummaries([{ chapterTitle: '1장', summary: '옛 요약' }], new Map());
+
+    expect(audit.staleChapterTitles).toEqual([]);
+    expect(audit.unsealedChapterTitles).toEqual(['1장']);
+    expect(audit.summaries[0]?.isStale).toBeUndefined();
+  });
+
+  it('clears the mark once the chapter is summarized again', () => {
+    const marked = auditChapterSummaries(summaries, new Map()).summaries;
+
+    const audit = auditChapterSummaries(
+      marked,
+      new Map([
+        ['1장', 'sha256:aaa'],
+        ['2장', 'sha256:bbb'],
+      ]),
+    );
+
+    expect(audit.staleChapterTitles).toEqual([]);
+    expect(audit.summaries.every((chapter) => chapter.isStale === false)).toBe(true);
+  });
+
+  it('keeps the mark through a markdown round trip', () => {
+    const marked = auditChapterSummaries(summaries, new Map()).summaries;
+
+    const parsed = parseChapterSummariesMarkdown(buildChapterSummariesMarkdown('작품', marked));
+
+    expect(parsed).toEqual(marked);
+    expect(formatChapterSummaryStaleWarning(auditChapterSummaries(parsed, new Map()))).toContain(
+      '1장, 2장',
+    );
+  });
+
+  it('reports nothing when every chapter still matches', () => {
+    expect(
+      formatChapterSummaryStaleWarning({
+        summaries,
+        staleChapterTitles: [],
+        unsealedChapterTitles: [],
+      }),
+    ).toBeUndefined();
   });
 });

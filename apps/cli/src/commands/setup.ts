@@ -13,6 +13,7 @@ import {
   type ConfigBridge,
 } from '@storyboard/story-ai';
 import {
+  auditChapterMemory,
   auditStoryMemory,
   getStoryboardProjectPaths,
   loadNarratorCards,
@@ -503,6 +504,47 @@ async function collectStoryStateChecks(
   return [{ status: 'ok', label: '이야기 상태', detail: '원장이 지금의 카드·씬과 맞습니다.' }];
 }
 
+// 장별 요약(.storyboard/memory/summaries.md)이 지금의 초안과 어긋나는지 본다. 어긋난 채로 두면
+// 폐기된 판본의 줄거리가 다음 씬 프롬프트로 들어간다.
+async function collectChapterSummaryChecks(
+  container: CliContainer,
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+): Promise<DoctorCheck[]> {
+  if (!existsSync(paths.chapterSummaries.fsPath)) {
+    return [];
+  }
+
+  const { audit } = await auditChapterMemory({ fileSystem: container.fileSystem, paths });
+
+  if (audit.summaries.length === 0) {
+    return [];
+  }
+
+  if (audit.staleChapterTitles.length > 0) {
+    return [
+      {
+        status: 'warn',
+        label: '장별 요약',
+        detail: `${audit.staleChapterTitles.join(', ')}의 요약이 지금의 초안과 어긋나 프롬프트에서 빠집니다.`,
+        fix: 'storyboard manuscript summaries',
+      },
+    ];
+  }
+
+  if (audit.unsealedChapterTitles.length > 0) {
+    return [
+      {
+        status: 'info',
+        label: '장별 요약',
+        detail: `${audit.unsealedChapterTitles.join(', ')}에 초안 기록이 없어 낡음을 판정할 수 없습니다.`,
+        fix: 'storyboard manuscript summaries',
+      },
+    ];
+  }
+
+  return [{ status: 'ok', label: '장별 요약', detail: '요약이 지금의 초안과 맞습니다.' }];
+}
+
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
   const root = container.workspaceRoot;
   const paths = getStoryboardProjectPaths(root);
@@ -604,6 +646,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
         ]
       : []),
     ...(await collectStoryStateChecks(container, paths)),
+    ...(await collectChapterSummaryChecks(container, paths)),
     ...(missingIgnoreEntries.length > 0
       ? [
           {

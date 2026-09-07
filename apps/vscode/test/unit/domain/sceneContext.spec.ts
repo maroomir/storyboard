@@ -584,6 +584,33 @@ describe("readPreviousSceneContext rolling summary", () => {
     expect(result).toContain("d".repeat(3000))
   })
 
+  it("QAS-C6-11: drops a chapter marked stale so its discarded events are not injected", async () => {
+    const fileSystem = new MockFileSystem()
+    const stale = `## 1장\n\n<!-- chapter-input: sha256:old stale -->\n\nSTALE-MARKER\n\n`
+    const fresh = `## 2장\n\n<!-- chapter-input: sha256:new -->\n\nFRESH-MARKER\n`
+    fileSystem.setFile(summaryPath, `# 장별 요약\n\n${stale}${fresh}`)
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toContain("FRESH-MARKER")
+    expect(result).not.toContain("STALE-MARKER")
+  })
+
+  it("QAS-C6-12: falls back to the draft tail when every chapter is stale", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(
+      summaryPath,
+      `# 장별 요약\n\n## 1장\n\n<!-- chapter-input: sha256:old stale -->\n\nSTALE-MARKER\n`
+    )
+    setDraftTail(fileSystem, "TAIL-MARKER")
+
+    const result = await readPrevious(mockPaths, 2, fileSystem)
+
+    expect(result).toContain("TAIL-MARKER")
+    expect(result).not.toContain("STALE-MARKER")
+  })
+
   it("QAS-C6-09: falls back to the tail when the summary read is unreadable", async () => {
     const fileSystem = new MockFileSystem()
     setDraftTail(fileSystem, "TAIL-MARKER")

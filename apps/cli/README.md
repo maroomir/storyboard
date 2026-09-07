@@ -34,7 +34,9 @@ Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeho
 `scene seeds`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
 ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
-you regenerate that scene. `storyboard init --repair` restores the directories and `.gitignore` of
+you regenerate that scene. The chapter summaries (`.storyboard/memory/summaries.md`) are checked the
+same way against the drafts they were written from, and `storyboard manuscript summaries` refreshes
+the ones that no longer match. `storyboard init --repair` restores the directories and `.gitignore` of
 an existing workspace without touching the contract (a plain `init` refuses one) and seals a
 pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
 stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
