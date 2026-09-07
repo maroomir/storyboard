@@ -124,9 +124,10 @@ function skeletonTargetLength(styleDirective: StyleDirective | undefined): numbe
 function sectionTargetLengths(
   styleDirective: StyleDirective | undefined,
   sections: readonly string[],
+  outputLimit: number,
 ): number[] {
-  const target = styleDirective?.targetWordCount ?? SECTION_OUTPUT_LIMIT * sections.length;
-  return planSectionTargetLengths(sections, target);
+  const target = styleDirective?.targetWordCount ?? outputLimit * sections.length;
+  return planSectionTargetLengths(sections, target, outputLimit);
 }
 
 // NOTE: 씬 간 연속성 재료(캐넌·이전 씬)는 사건을 정하는 뼈대 단계에만 넣는다. 살붙임은 뼈대만 보고
@@ -458,11 +459,12 @@ async function executeSceneGenerationPipeline(
   assertNotCancelled(shouldCancel);
 
   // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
+  const outputLimit = input.sectionOutputLimit ?? SECTION_OUTPUT_LIMIT;
   const sections = splitSkeletonIntoSections(
     polished.text,
-    planSectionCount(styleDirective?.targetWordCount ?? 0),
+    planSectionCount(styleDirective?.targetWordCount ?? 0, outputLimit),
   );
-  const targetLengths = sectionTargetLengths(styleDirective, sections);
+  const targetLengths = sectionTargetLengths(styleDirective, sections, outputLimit);
   const expandedSections: string[] = [];
   const warnings: string[] = [...polished.warnings];
 

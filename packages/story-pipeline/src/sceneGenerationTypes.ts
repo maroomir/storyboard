@@ -64,6 +64,8 @@ export interface RunSceneGenerationPipelineInput {
   readonly backgroundId?: string;
   readonly canonFactLines?: readonly string[];
   readonly useContextCondense?: boolean;
+  // 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수. 목표 분량을 이 값으로 나눠 구간 수가 정해진다.
+  readonly sectionOutputLimit?: number;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
   readonly dialogueCorpus?: SceneDialogueCorpus;
