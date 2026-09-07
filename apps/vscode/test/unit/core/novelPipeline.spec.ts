@@ -33,7 +33,15 @@ vi.mock("../../../../../packages/story-engine/src/persistence/characterBriefs", 
 vi.mock("../../../../../packages/story-engine/src/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
 vi.mock("@storyboard/story-format", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-format")>()),
-  assembleManuscript: (): unknown => ({ chapters: [], volumeMarkdown: "", includedCount: 0 })
+  // 검수는 장을 창으로 삼으므로 조립 결과에 장이 있어야 한다.
+  assembleManuscript: (): unknown => ({
+    chapters: [
+      { fileName: "01-ch-1.md", actTitle: "1막", chapterTitle: "1장", markdown: "1장 본문" },
+      { fileName: "02-ch-2.md", actTitle: "1막", chapterTitle: "2장", markdown: "2장 본문" }
+    ],
+    volumeMarkdown: "",
+    includedCount: 0
+  })
 }))
 vi.mock("@storyboard/story-engine", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-engine")>()),
@@ -151,7 +159,8 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
           [2, { stem: "02-s2", body: "씬2 본문" }],
           [3, { stem: "03-s3", body: "씬3 본문" }]
         ]),
-        canonFactLines: ["hero — 나이: 17"]
+        canonFactLines: ["hero — 나이: 17"],
+        chapterSummaries: []
       }),
       saveReview: async (_root: unknown, markdown: string): Promise<void> => {
         saveReviewMock(markdown)
@@ -377,6 +386,9 @@ describe("NovelPipeline", () => {
   })
 
   describe("review feedback", () => {
+    // 한 번의 검수가 도는 호출 수 = 조립된 장 수(위 assembleManuscript 모의가 2장을 낸다).
+    const callsPerReview = 2
+
     const highContinuityIssue = {
       start: 0,
       end: 3,
@@ -416,7 +428,7 @@ describe("NovelPipeline", () => {
 
       await new NovelPipeline(harness.dependencies).run(harness.options)
 
-      expect(checkContinuityMock).toHaveBeenCalledTimes(2)
+      expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview * 2)
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain("재작성한 씬: 02-s2")
     })
 
@@ -425,7 +437,7 @@ describe("NovelPipeline", () => {
 
       await new NovelPipeline(harness.dependencies).run(harness.options)
 
-      expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+      expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview)
       expect(
         runReviseDraftWorkflowMock.mock.calls.filter(
           (call) => (call[0] as { maxIterations: number }).maxIterations === 1
@@ -441,7 +453,7 @@ describe("NovelPipeline", () => {
 
       await new NovelPipeline(harness.dependencies).run(harness.options)
 
-      expect(checkContinuityMock).toHaveBeenCalledTimes(1)
+      expect(checkContinuityMock).toHaveBeenCalledTimes(callsPerReview)
       expect(saveReviewMock.mock.calls.at(-1)?.[0]).toContain(
         "씬을 특정하지 못해 재작성하지 못한 high 이슈: 1건"
       )

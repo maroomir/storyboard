@@ -35,6 +35,7 @@ export * from './application/drafts/sceneGenerationInputs';
 export * from './application/drafts/updateStoryState';
 export * from './application/manuscript/assembleManuscriptUseCase';
 export * from './application/manuscript/chapterSummaryAudit';
+export * from './application/manuscript/reviewChapterWindows';
 export * from './application/manuscript/exportManuscriptUseCase';
 export * from './application/manuscript/reviewManuscriptUseCase';
 export * from './application/manuscript/summarizeChaptersUseCase';
