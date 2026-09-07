@@ -16,11 +16,22 @@ const fieldGroupClass = 'flex max-w-md flex-col gap-1.5';
 
 const POV_OPTIONS = [
   { id: 'first', label: '1인칭' },
+  { id: 'first-retrospective', label: '1인칭 회고 (결말을 아는 화자)' },
+  { id: 'second', label: '2인칭' },
   { id: 'third-limited', label: '3인칭 제한적 시점' },
   { id: 'third-omniscient', label: '3인칭 전지적 시점' },
 ] as const;
 
 type PointOfView = (typeof POV_OPTIONS)[number]['id'];
+
+const COMPOSITION_OPTIONS = [
+  { id: 'linear', label: '선형 — 한 줄기로 이어지는 이야기' },
+  { id: 'omnibus', label: '옴니버스 — 편마다 독립된 사건과 결말' },
+  { id: 'alternating-pov', label: '시점 교차 — 장마다 서술자가 바뀜' },
+  { id: 'frame', label: '액자식 — 외화가 내화를 감쌈' },
+] as const;
+
+type CompositionKind = (typeof COMPOSITION_OPTIONS)[number]['id'];
 
 const CONTRACT_FIELD_LABELS: Record<string, string> = {
   genre: '장르',
@@ -29,10 +40,25 @@ const CONTRACT_FIELD_LABELS: Record<string, string> = {
   targetWordCount: '목표 분량',
 };
 
+interface ContractThread {
+  readonly id: string;
+  readonly title: string;
+  readonly wraps?: readonly string[];
+}
+
+interface ContractNarrator {
+  readonly id: string;
+  readonly name: string;
+  readonly summary: string;
+}
+
 interface ContractSetting {
   readonly genre?: string;
   readonly audience?: string;
   readonly pov?: PointOfView;
+  readonly composition?: CompositionKind;
+  readonly threads: readonly ContractThread[];
+  readonly narrators: readonly ContractNarrator[];
   readonly targetWordCount?: number;
   readonly prohibitions: readonly string[];
   readonly styleConstraints: readonly string[];
@@ -56,6 +82,9 @@ interface ContractDraft {
   genre: string;
   audience: string;
   pov: PointOfView | '';
+  composition: CompositionKind | '';
+  episodeCount: string;
+  povCharacters: string;
   targetWordCount: string;
   prohibitions: string[];
   styleConstraints: string[];
@@ -64,6 +93,10 @@ interface ContractDraft {
 
 function isPointOfView(value: string): value is PointOfView {
   return POV_OPTIONS.some((option) => option.id === value);
+}
+
+function isCompositionKind(value: string): value is CompositionKind {
+  return COMPOSITION_OPTIONS.some((option) => option.id === value);
 }
 
 function parseContractSnapshot(value: unknown): ContractSnapshot | undefined {
@@ -94,6 +127,9 @@ function toDraft(setting: ContractSetting | undefined): ContractDraft {
     genre: setting?.genre ?? '',
     audience: setting?.audience ?? '',
     pov: setting?.pov ?? '',
+    composition: setting?.composition ?? '',
+    episodeCount: setting?.threads.length ? String(setting.threads.length) : '',
+    povCharacters: '',
     targetWordCount: setting?.targetWordCount !== undefined ? String(setting.targetWordCount) : '',
     prohibitions: setting ? [...setting.prohibitions] : [],
     styleConstraints: setting ? [...setting.styleConstraints] : [],
@@ -104,10 +140,19 @@ function toDraft(setting: ContractSetting | undefined): ContractDraft {
 function buildUpdatePayload(draft: ContractDraft): Record<string, unknown> {
   const targetWordCount = parsePositiveInt(draft.targetWordCount);
 
+  const povCharacters = draft.povCharacters
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+  const episodeCount = parsePositiveInt(draft.episodeCount);
+
   return {
     genre: draft.genre,
     audience: draft.audience,
     pov: draft.pov === '' ? null : draft.pov,
+    composition: draft.composition === '' ? null : draft.composition,
+    ...(episodeCount === null ? {} : { episodeCount }),
+    ...(povCharacters.length > 0 ? { povCharacters } : {}),
     targetWordCount,
     prohibitions: draft.prohibitions,
     styleConstraints: draft.styleConstraints,
@@ -153,6 +198,35 @@ function ReadinessBanner({
       {readiness.warnings.map((warning, index) => (
         <p key={`warning-${index}`} className="m-0 text-xs text-sb-fg-muted">
           {warning}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// 프리셋이 만든 결과를 보여 주는 자리. 줄기와 서술자는 여기서 고치지 않는다 — 줄기는 구성이,
+// 서술자는 카드 에디터가 소유한다.
+function NarrationSummary({
+  threads,
+  narrators,
+}: {
+  readonly threads: readonly ContractThread[];
+  readonly narrators: readonly ContractNarrator[];
+}): React.ReactElement | null {
+  if (threads.length === 0 && narrators.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="flex max-w-3xl flex-col gap-2 rounded-md border border-sb-border bg-sb-bg-widget/50 px-3 py-2">
+      {threads.length > 0 ? (
+        <p className="m-0 text-xs text-sb-fg-muted">
+          연속성 줄기: {threads.map((thread) => `${thread.title} (${thread.id})`).join(', ')}
+        </p>
+      ) : null}
+      {narrators.map((narrator) => (
+        <p key={narrator.id} className="m-0 text-xs text-sb-fg-muted">
+          서술자 {narrator.name} ({narrator.id}) — {narrator.summary}
         </p>
       ))}
     </div>
@@ -301,6 +375,57 @@ export function GenerationContractSection({
         </label>
 
         <label className={fieldGroupClass}>
+          <span className="text-sm font-medium text-sb-fg">구성</span>
+          <select
+            className={sbSelectClass}
+            value={draft.composition}
+            onChange={(event) => {
+              const value = event.target.value;
+              save({
+                ...draft,
+                composition: value === '' || !isCompositionKind(value) ? '' : value,
+              });
+            }}
+          >
+            <option value="">선택 안 함 (선형)</option>
+            {COMPOSITION_OPTIONS.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {draft.composition === 'omnibus' ? (
+          <label className={fieldGroupClass}>
+            <span className="text-sm font-medium text-sb-fg">편 수</span>
+            <input
+              className={sbInputClass}
+              type="number"
+              min={2}
+              step={1}
+              value={draft.episodeCount}
+              placeholder="예: 4"
+              onChange={(event) => setDraft({ ...draft, episodeCount: event.target.value })}
+              onBlur={() => save(draft)}
+            />
+          </label>
+        ) : null}
+
+        {draft.composition === 'alternating-pov' ? (
+          <label className={fieldGroupClass}>
+            <span className="text-sm font-medium text-sb-fg">시점 인물 (쉼표로 구분)</span>
+            <input
+              className={sbInputClass}
+              value={draft.povCharacters}
+              placeholder="예: hana, jun"
+              onChange={(event) => setDraft({ ...draft, povCharacters: event.target.value })}
+              onBlur={() => save(draft)}
+            />
+          </label>
+        ) : null}
+
+        <label className={fieldGroupClass}>
           <span className="text-sm font-medium text-sb-fg">목표 분량 (자)</span>
           <input
             className={sbInputClass}
@@ -314,6 +439,11 @@ export function GenerationContractSection({
           />
         </label>
       </div>
+
+      <NarrationSummary
+        threads={snapshot.setting?.threads ?? []}
+        narrators={snapshot.setting?.narrators ?? []}
+      />
 
       <div className="grid max-w-3xl grid-cols-1 gap-4">
         <ListField

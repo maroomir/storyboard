@@ -20,7 +20,12 @@ import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { loadCharacterRoster } from '@storyboard/story-engine';
+import {
+  getStoryboardProjectPaths,
+  loadCharacterRoster,
+  loadNarratorCards,
+} from '@storyboard/story-engine';
+import { describeNarration } from '@storyboard/story-ai';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -56,6 +61,7 @@ interface CardEditorInitialData {
   readonly card?: WorkspaceCard;
   readonly imageUri?: string;
   readonly characterRoster?: Awaited<ReturnType<typeof loadCharacterRoster>>;
+  readonly narratorRoster?: readonly { id: string; name: string; summary: string }[];
   readonly error?: string;
 }
 
@@ -253,6 +259,26 @@ function createCardEditorHandlers(
   };
 }
 
+async function loadNarratorRoster(
+  workspaceRoot: vscode.Uri,
+): Promise<{ id: string; name: string; summary: string }[]> {
+  const narrators = await loadNarratorCards(
+    getStoryboardProjectPaths(workspaceRoot),
+    vscodeFileSystem,
+  );
+
+  return [...narrators.values()].map((card) => ({
+    id: card.id,
+    name: card.name,
+    summary: describeNarration({
+      person: card.person,
+      knowledge: card.knowledge,
+      ...(card.focal === undefined ? {} : { focal: card.focal }),
+      tense: card.tense ?? 'past',
+    }),
+  }));
+}
+
 async function createInitialData(
   document: vscode.TextDocument,
   webview: vscode.Webview,
@@ -266,6 +292,9 @@ async function createInitialData(
       card.type === 'character'
         ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
         : undefined;
+    // 씬 카드의 서술자 드롭다운은 워크스페이스의 서술자 카드에서 채운다.
+    const narratorRoster =
+      card.type === 'scene' ? await loadNarratorRoster(workspaceRoot) : undefined;
 
     return {
       documentUri: document.uri.toString(),
@@ -273,6 +302,7 @@ async function createInitialData(
       card,
       imageUri: resolveCardImageUri(document, card, webview),
       ...(characterRoster === undefined ? {} : { characterRoster }),
+      ...(narratorRoster === undefined ? {} : { narratorRoster }),
     };
   } catch (error) {
     return {

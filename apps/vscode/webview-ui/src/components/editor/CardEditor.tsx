@@ -139,7 +139,11 @@ export function CardEditor({
                 updateCard={updateCard}
                 onStatusChange={setStatus}
               />
-              <SceneFields card={card} updateCard={updateCard} />
+              <SceneFields
+                card={card}
+                updateCard={updateCard}
+                narratorRoster={documentState.narratorRoster}
+              />
             </div>
           ),
         },
