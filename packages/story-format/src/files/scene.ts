@@ -1,20 +1,25 @@
-import type { StoryUri } from '#format/storyUri';
+import { joinStoryPath, type StoryUri } from '#format/storyUri';
+import { posix } from 'node:path';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
 import {
+  isSceneSummaryReference,
   parseSceneFileName,
   renderSceneCardBody,
   sceneCardSchema,
+  sceneSummaryReference,
   toSceneFrontmatter,
   type SceneCard,
   type SceneFile,
+  type SceneFileNameParts,
 } from '#format/scene';
 
 export type SceneParseErrorCode =
   | 'invalid-scene-file-name'
   | 'invalid-scene-card-yaml'
-  | 'invalid-scene-card-schema';
+  | 'invalid-scene-card-schema'
+  | 'missing-scene-summary-file';
 
 export interface SceneFileSystem {
   readonly readFile: (uri: StoryUri) => PromiseLike<Uint8Array>;
@@ -31,7 +36,13 @@ export class SceneParseError extends Error {
   }
 }
 
-export function parseScene(rawScene: string, fileName: string): SceneFile {
+// summaryText 는 카드 옆 summary 파일의 내용이다. 인라인 summary 는 아직 파일로 옮기지 않은
+// 카드이므로 그 값을 그대로 산문으로 쓴다.
+export function parseScene(rawScene: string, fileName: string, summaryText?: string): SceneFile {
+  return toSceneFile(requireSceneFileNameParts(fileName), parseSceneCard(rawScene), summaryText);
+}
+
+function requireSceneFileNameParts(fileName: string): SceneFileNameParts {
   const fileNameParts = parseSceneFileName(fileName);
 
   if (!fileNameParts) {
@@ -41,13 +52,23 @@ export function parseScene(rawScene: string, fileName: string): SceneFile {
     );
   }
 
-  const card = parseSceneCard(rawScene);
+  return fileNameParts;
+}
+
+function toSceneFile(
+  fileNameParts: SceneFileNameParts,
+  card: SceneCard,
+  summaryText: string | undefined,
+): SceneFile {
+  const resolvedSummary =
+    summaryText ?? (isSceneSummaryReference(card.summary) ? undefined : card.summary);
 
   return {
     ...fileNameParts,
     card,
     frontmatter: toSceneFrontmatter(card),
-    body: renderSceneCardBody(card),
+    body: renderSceneCardBody(card, resolvedSummary),
+    ...(resolvedSummary === undefined ? {} : { summaryText: resolvedSummary }),
   };
 }
 
@@ -90,8 +111,38 @@ export async function readSceneFile(
   fileSystem: SceneFileSystem,
   fileName: string,
 ): Promise<SceneFile> {
-  const bytes = await fileSystem.readFile(uri);
-  return parseScene(new TextDecoder().decode(bytes), fileName);
+  const fileNameParts = requireSceneFileNameParts(fileName);
+  const card = parseSceneCard(new TextDecoder().decode(await fileSystem.readFile(uri)));
+  const summaryText = await readSceneSummaryText(uri, fileSystem, card);
+
+  return toSceneFile(fileNameParts, card, summaryText);
+}
+
+export function sceneSummaryUri(sceneUri: StoryUri, summaryFileName: string): StoryUri {
+  return joinStoryPath(sceneUri.with({ path: posix.dirname(sceneUri.path) }), summaryFileName);
+}
+
+async function readSceneSummaryText(
+  sceneUri: StoryUri,
+  fileSystem: SceneFileSystem,
+  card: SceneCard,
+): Promise<string | undefined> {
+  const summaryFileName = sceneSummaryReference(card.summary);
+
+  if (summaryFileName === undefined) {
+    return undefined;
+  }
+
+  try {
+    const bytes = await fileSystem.readFile(sceneSummaryUri(sceneUri, summaryFileName));
+    return new TextDecoder().decode(bytes);
+  } catch (error) {
+    throw new SceneParseError(
+      'missing-scene-summary-file',
+      `summary 파일 ${summaryFileName} 을 읽을 수 없습니다.`,
+      error,
+    );
+  }
 }
 
 export function serializeSceneCard(card: SceneCard): string {
@@ -135,5 +186,6 @@ function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
     ...(card.foreshadowing === undefined ? {} : { foreshadowing: card.foreshadowing }),
     ...(card.neededCanon === undefined ? {} : { neededCanon: card.neededCanon }),
     ...(card.summary === undefined ? {} : { summary: card.summary }),
+    ...(card.beats === undefined ? {} : { beats: card.beats }),
   };
 }

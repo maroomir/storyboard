@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
 export const legacySceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.txt$/;
 export const sceneStemPattern = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
+// 창작자가 쓴 사건 산문은 카드 옆 `<stem>.summary.md`에 두고, 카드의 summary 에는 그 파일명만 적는다.
+export const sceneSummaryFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
 
 // 씬을 구체적인 사건으로 못박는 4개 사실. 가사·분위기 스케치처럼 추상적인 씬이 은유만으로
 // 생성되는 것을 막는다.
@@ -60,6 +62,7 @@ export const sceneCardSchema = z.object({
   foreshadowing: z.array(z.string().trim().min(1)).optional(),
   neededCanon: z.array(z.string().trim().min(1)).optional(),
   summary: z.string().optional(),
+  beats: z.array(z.string().trim().min(1)).optional(),
 });
 
 export type SceneCard = z.infer<typeof sceneCardSchema>;
@@ -81,6 +84,45 @@ export interface SceneFile {
   readonly card: SceneCard;
   readonly frontmatter: SceneFrontmatter;
   readonly body: string;
+  readonly summaryText?: string;
+}
+
+export function sceneSummaryFileName(stem: string): string {
+  return `${stem}.summary.md`;
+}
+
+export function sceneSummaryReference(summary: string | undefined): string | undefined {
+  const trimmed = summary?.trim();
+  return trimmed !== undefined && sceneSummaryFileNamePattern.test(trimmed) ? trimmed : undefined;
+}
+
+export function isSceneSummaryReference(summary: string | undefined): boolean {
+  return sceneSummaryReference(summary) !== undefined;
+}
+
+// 파일로 옮기지 않은 인라인 산문. doctor 가 세고 `scene migrate` 가 파일로 뽑는다.
+export function isInlineSceneSummary(summary: string | undefined): boolean {
+  return summary !== undefined && summary.trim().length > 0 && !isSceneSummaryReference(summary);
+}
+
+export interface SceneSummaryExtraction {
+  readonly card: SceneCard;
+  readonly summaryFileName: string;
+  readonly summaryText: string;
+}
+
+export function extractInlineSceneSummary(card: SceneCard): SceneSummaryExtraction | undefined {
+  if (card.summary === undefined || !isInlineSceneSummary(card.summary)) {
+    return undefined;
+  }
+
+  const summaryFileName = sceneSummaryFileName(card.id);
+
+  return {
+    card: { ...card, summary: summaryFileName },
+    summaryFileName,
+    summaryText: `${card.summary.trim()}\n`,
+  };
 }
 
 export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
@@ -108,8 +150,9 @@ export const sceneSeedSectionLabels = {
 } as const;
 
 // NOTE: 프롬프트는 씬 의도를 하나의 텍스트로 받는다. 구조 필드를 기존 씬 시드와 같은
-// `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다.
-export function renderSceneCardBody(card: SceneCard): string {
+// `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다. 사건 재료는 라벨 없는 블록으로 놓이며
+// beats 가 있으면 그것이 summary 산문을 대신한다(beats 는 summary 안에서 펼친 것이라 중복이다).
+export function renderSceneCardBody(card: SceneCard, summaryText?: string): string {
   const blocks: string[] = [];
 
   if (card.purpose !== undefined) {
@@ -149,8 +192,11 @@ export function renderSceneCardBody(card: SceneCard): string {
     );
   }
 
-  const summary = card.summary?.trim();
-  if (summary !== undefined && summary.length > 0) {
+  const beats = card.beats ?? [];
+  const summary = summaryText?.trim();
+  if (beats.length > 0) {
+    blocks.push(beats.join('\n\n'));
+  } else if (summary !== undefined && summary.length > 0) {
     blocks.push(summary);
   }
 

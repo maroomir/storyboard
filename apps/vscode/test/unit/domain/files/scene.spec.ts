@@ -6,11 +6,16 @@ import { describe, expect, it } from "vitest"
 
 import {
   canonicalizeSceneCardText,
+  extractInlineSceneSummary,
   extractSceneNarrativeSource,
+  isInlineSceneSummary,
+  NodeUri,
   parseScene,
   parseSceneFileName,
   parseSceneStem,
+  readSceneFile,
   resolveSceneOrder,
+  sceneSummaryReference,
   serializeSceneCard,
   SceneParseError
 } from '@storyboard/story-format';
@@ -258,5 +263,92 @@ describe("extractSceneNarrativeSource", () => {
     const scene = parseScene("type: scene\nid: 01-a\nconflict: 다툰다\n", "01-a.card")
 
     expect(extractSceneNarrativeSource(scene.body)).toContain("[갈등]")
+  })
+})
+
+describe("scene summary file and beats", () => {
+  const fileSystem = {
+    files: new Map<string, string>(),
+    async readFile(uri: NodeUri): Promise<Uint8Array> {
+      const content = this.files.get(uri.path)
+      if (content === undefined) {
+        throw new Error(`not found: ${uri.path}`)
+      }
+      return new TextEncoder().encode(content)
+    }
+  }
+
+  it("keeps the summary reference and beats round-trippable in canonical order", () => {
+    const rawScene = readFixtureScene("03-summary-file.card")
+    const scene = parseScene(rawScene, "03-summary-file.card")
+
+    expect(scene.card.summary).toBe("03-summary-file.summary.md")
+    expect(scene.card.beats).toHaveLength(2)
+    expect(canonicalizeSceneCardText(rawScene)).toEqual({ text: rawScene, changed: false })
+  })
+
+  it("renders beats as plain narrative paragraphs instead of the summary prose", () => {
+    const scene = parseScene(
+      readFixtureScene("03-summary-file.card"),
+      "03-summary-file.card",
+      "요약 산문"
+    )
+
+    expect(scene.summaryText).toBe("요약 산문")
+    expect(scene.body).toBe(
+      "[목표 분량]\n약 3,000자\n\n샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다.\n"
+    )
+    expect(extractSceneNarrativeSource(scene.body)).not.toContain("요약 산문")
+  })
+
+  it("renders the summary file text when the card has no beats", () => {
+    const scene = parseScene("type: scene\nid: 04-a\nsummary: 04-a.summary.md\n", "04-a.card", "파일 산문\n")
+
+    expect(scene.body).toBe("파일 산문\n")
+  })
+
+  it("does not treat a summary reference as narrative when no file text is supplied", () => {
+    const scene = parseScene("type: scene\nid: 04-a\nsummary: 04-a.summary.md\n", "04-a.card")
+
+    expect(scene.body).toBe("")
+    expect(scene.summaryText).toBeUndefined()
+  })
+
+  it("reads the summary file next to the card", async () => {
+    fileSystem.files.set("/ws/scene/03-summary-file.card", readFixtureScene("03-summary-file.card"))
+    fileSystem.files.set("/ws/scene/03-summary-file.summary.md", readFixtureScene("03-summary-file.summary.md"))
+
+    const scene = await readSceneFile(NodeUri.file("/ws/scene/03-summary-file.card"), fileSystem, "03-summary-file.card")
+
+    expect(scene.summaryText).toBe("샘플 캐릭터가 방송실에 들어와 낯선 사연 엽서를 발견한다.\n")
+  })
+
+  it("fails loudly when the referenced summary file is missing", async () => {
+    fileSystem.files.set("/ws/scene/05-lost.card", "type: scene\nid: 05-lost\nsummary: 05-lost.summary.md\n")
+
+    await expect(readSceneFile(NodeUri.file("/ws/scene/05-lost.card"), fileSystem, "05-lost.card")).rejects.toMatchObject({
+      code: "missing-scene-summary-file"
+    })
+  })
+
+  it("distinguishes a file reference from inline prose", () => {
+    expect(sceneSummaryReference(" 01-a.summary.md ")).toBe("01-a.summary.md")
+    expect(sceneSummaryReference("01-a.summary.md 를 본다")).toBeUndefined()
+    expect(isInlineSceneSummary("01-a.summary.md")).toBe(false)
+    expect(isInlineSceneSummary("산문")).toBe(true)
+    expect(isInlineSceneSummary("  ")).toBe(false)
+    expect(isInlineSceneSummary(undefined)).toBe(false)
+  })
+
+  it("extracts inline prose into a summary file reference", () => {
+    const extraction = extractInlineSceneSummary({ type: "scene", id: "01-a", summary: "산문 한 줄\n" })
+
+    expect(extraction).toEqual({
+      card: { type: "scene", id: "01-a", summary: "01-a.summary.md" },
+      summaryFileName: "01-a.summary.md",
+      summaryText: "산문 한 줄\n"
+    })
+    expect(extractInlineSceneSummary({ type: "scene", id: "01-a", summary: "01-a.summary.md" })).toBeUndefined()
+    expect(extractInlineSceneSummary({ type: "scene", id: "01-a" })).toBeUndefined()
   })
 })
