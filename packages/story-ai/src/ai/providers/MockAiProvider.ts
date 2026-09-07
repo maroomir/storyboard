@@ -108,6 +108,8 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
         relation: '모의 관계',
         time: '모의 시점',
       });
+    case 'sceneBeats':
+      return JSON.stringify(['모의 비트 하나', '모의 비트 둘', '모의 비트 셋']);
     case 'sceneStructure':
       return JSON.stringify({
         purpose: '모의 목적',

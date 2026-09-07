@@ -24,6 +24,7 @@ export type CliProviderId = (typeof cliProviderIds)[number];
 
 export const aiTaskCatalog = [
   { name: 'sceneGrounding', label: '씬 사실 시트', status: 'wired' },
+  { name: 'sceneBeats', label: '씬 비트 전개', status: 'wired' },
   { name: 'sceneStructure', label: '씬 구조화', status: 'wired' },
   { name: 'situationExtraction', label: '상황 추출', status: 'wired' },
   { name: 'personaGeneration', label: '페르소나 생성', status: 'wired' },
