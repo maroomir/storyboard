@@ -11,6 +11,17 @@ Storyboard 워크스페이스를 텔레그램에서 조회·편집·생성하는
 
 ## 설치와 실행
 
+릴리즈에서 설치하려면 CLI와 같은 한 줄이면 됩니다. 스크립트가 `storyboard`와 `storyboard-bot`을 함께
+`~/.local/bin`에 링크하고, 봇의 네이티브 모듈(`better-sqlite3`)도 설치합니다(Node 20+와 npm 필요).
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+storyboard-bot setup       # 최초 1회
+storyboard-bot             # 실행
+```
+
+소스에서 직접 빌드해 쓰려면:
+
 ```bash
 # 레포 루트에서
 npm install
