@@ -10,6 +10,17 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-09-05
+
+### Added
+
+- **Final full-manuscript review feeds back into the manuscript.** It found long-range contradictions but left them in the `REVIEW.md` report, with no indication of which draft to fix. The review now names a scene for each issue, rewrites only the scenes carrying severe ones, then re-runs the full review and updates the report. Issues that could not be pinned to a scene are counted in the report rather than dropped. A run mode that shows the target scenes and asks for approval before rewriting was added as well (the CLI is unattended and keeps going automatically).
+
+### Changed
+
+- **The "story so far" is refreshed after each chapter.** The rolling summary used to be produced only in the pipeline's final step, so the summary file stayed empty throughout a one-click first run and later chapters were written knowing nothing but the last 1,000 characters of the previous draft. The injection budget also grew from 2,000 to 8,000 characters, and overflow now compresses the oldest chapters to a title and one line instead of truncating the front, so setups planted in the opening survive.
+- **AI-built memory moves to `.storyboard/memory/` and is git-tracked.** The story-state ledger, character and background memory, dialogue records, and per-chapter summaries cannot be rebuilt from committed inputs, yet they lived in the ignored `.storyboard/cache/` and so sat outside version control. **Existing workspaces are migrated once, automatically, the first time they are opened** — nothing to do by hand.
+
 ## [0.8.2] - 2026-09-04
 
 ### Changed (breaking)
