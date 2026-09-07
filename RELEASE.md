@@ -88,12 +88,16 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
-- **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
-  The script resolves the latest release, verifies the checksum, unpacks into
-  `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
-  script, so the machine needs Node 20 or newer.
-- **Bot** — unpack `storyboard-bot-<version>.tar.gz`, run `node dist/index.js setup`, then
-  `node dist/index.js`.
+- **CLI and bot** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
+  The script resolves the latest release, verifies both checksums, unpacks the CLI into
+  `~/.local/share/storyboard` and the bot into `~/.local/share/storyboard-bot`, installs the bot's
+  one native module (`better-sqlite3`) next to it, and links `~/.local/bin/storyboard` and
+  `~/.local/bin/storyboard-bot`. The tarballs are bundled Node scripts, so the machine needs Node 20
+  or newer plus npm. Configure the bot afterwards with `storyboard-bot setup`.
+- **Bot by hand** — unpack `storyboard-bot-<version>.tar.gz`, install `better-sqlite3` into its
+  `node_modules` (the shipped `package.json` also lists workspace packages that are already inlined
+  in the bundle, so install it from an empty manifest and move `node_modules` over), then run
+  `node dist/index.js setup` and `node dist/index.js`.
 
 If the workflow fails, delete the failed tag only after deciding whether the release commit itself
 should change.
