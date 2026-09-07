@@ -491,3 +491,59 @@ describe("story state invalidation", () => {
     expect(formatSceneOrderRanges([5])).toBe("5")
   })
 })
+
+describe("story state witnesses", () => {
+  const witnessedState: StoryState = {
+    throughSceneOrder: 3,
+    sceneInputHashes: new Map(),
+    entries: [
+      { section: "facts", text: "하나가 등불을 껐다", throughScene: 1, witnesses: ["hana"] },
+      { section: "facts", text: "준이 다리에서 기다렸다", throughScene: 2, witnesses: ["jun"] },
+      { section: "facts", text: "둘이 시장에서 마주쳤다", throughScene: 2, witnesses: ["hana", "jun"] },
+      { section: "facts", text: "목격자 없는 구 버전 항목", throughScene: 2 }
+    ]
+  }
+
+  it("round-trips witnesses through serialize and parse", () => {
+    expect(parseStoryState(serializeStoryState(witnessedState))).toEqual(witnessedState)
+  })
+
+  it("writes the witness list beside the scene number", () => {
+    expect(serializeStoryState(witnessedState)).toContain("- [1|hana] 하나가 등불을 껐다")
+  })
+
+  it("still reads an entry tagged with a scene number but no witnesses", () => {
+    const parsed = parseStoryState("# 이야기 상태\n<!-- through-scene: 2 -->\n## 확정 사실\n- [1] 옛 항목\n")
+
+    expect(parsed.entries).toEqual([{ section: "facts", text: "옛 항목", throughScene: 1 }])
+  })
+
+  it("hides facts the focal character did not witness", () => {
+    const prompt = formatStoryStateForPrompt(witnessedState, 4, undefined, { focal: "hana" })
+
+    expect(prompt).toContain("하나가 등불을 껐다")
+    expect(prompt).toContain("둘이 시장에서 마주쳤다")
+    expect(prompt).not.toContain("준이 다리에서 기다렸다")
+  })
+
+  it("keeps entries with no recorded witnesses, which cannot be judged", () => {
+    const prompt = formatStoryStateForPrompt(witnessedState, 4, undefined, { focal: "hana" })
+
+    expect(prompt).toContain("목격자 없는 구 버전 항목")
+  })
+
+  it("keeps every entry when no focal character is given", () => {
+    const prompt = formatStoryStateForPrompt(witnessedState, 4)
+
+    expect(prompt).toContain("준이 다리에서 기다렸다")
+  })
+
+  it("carries witnesses through a merge", () => {
+    const merged = mergeStoryState(createEmptyStoryState(), [{ section: "facts", text: "새 사실", witnesses: ["hana"] }], 5)
+
+    expect(merged.entries).toEqual([
+      { section: "facts", text: "새 사실", throughScene: 5, witnesses: ["hana"] }
+    ])
+  })
+})
+

@@ -7,7 +7,6 @@ import {
   createDraft,
   joinCardText,
   parseDraft,
-  resolveNarration,
   serializeDraft,
 } from '@storyboard/story-format';
 import type { BackgroundCard } from '@storyboard/story-format';
@@ -165,7 +164,7 @@ async function persistGeneratedDraft(
   result: Awaited<ReturnType<SceneGenerationPipeline['run']>>,
   cacheProviders: SceneCacheRecord['providers'],
 ): Promise<GenerateDraftResult> {
-  const { paths, scene, project, draftUri, cacheUri } = inputs;
+  const { paths, threadPaths, scene, project, draftUri, cacheUri } = inputs;
 
   const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
   const draft = createDraft({
@@ -200,7 +199,7 @@ async function persistGeneratedDraft(
   // 사이드카는 초안이 디스크에 자리잡은 뒤에 쓴다. 먼저 쓰면 살붙임이 실패한 뒤에도 존재하지 않는
   // 초안을 기술하는 기록이 남는다.
   if (result.dialogueRecord) {
-    await createSceneDialogueStore(options.fileSystem, paths).save(result.dialogueRecord);
+    await createSceneDialogueStore(options.fileSystem, threadPaths).save(result.dialogueRecord);
   }
 
   await options.sceneCacheRepository.write(cacheUri, cacheRecord);
@@ -223,7 +222,7 @@ async function runAndPersistDraft(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
 ): Promise<GenerateDraftResult> {
-  const { workspaceFolder, paths, scene, project, context, previousContext } = inputs;
+  const { workspaceFolder, paths, threadPaths, scene, project, context, previousContext } = inputs;
 
   const aiService = options.aiGateway.createService(workspaceFolder.uri);
   const pipelineProviders = {
@@ -254,10 +253,7 @@ async function runAndPersistDraft(
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
-        resolveNarration({
-          pov: project.setting?.pov,
-          focalFallback: scene.frontmatter.povCharacter,
-        }),
+        inputs.narration,
       ),
       previousContext,
       canonFactLines: inputs.canonFactLines,
@@ -271,9 +267,9 @@ async function runAndPersistDraft(
       },
       shouldCancel: options.shouldCancel,
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
-      personaStore: createPersonaMemoryStore(options.fileSystem, paths, scene.stem),
-      backgroundStore: createBackgroundMemoryStore(options.fileSystem, paths, scene.stem),
-      dialogueCorpus: createSceneDialogueStore(options.fileSystem, paths),
+      personaStore: createPersonaMemoryStore(options.fileSystem, threadPaths, scene.stem),
+      backgroundStore: createBackgroundMemoryStore(options.fileSystem, threadPaths, scene.stem),
+      dialogueCorpus: createSceneDialogueStore(options.fileSystem, threadPaths),
       backgroundRecentExcerpt,
     }).run();
 

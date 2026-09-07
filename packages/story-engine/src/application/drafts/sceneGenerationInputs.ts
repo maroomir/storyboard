@@ -7,7 +7,9 @@ import {
   buildSceneContext,
   formatBibleFactLines,
   parseSceneFileName,
+  resolveNarration,
   SceneParseError,
+  type NarrationDirective,
 } from '@storyboard/story-format';
 import {
   draftPath,
@@ -16,6 +18,7 @@ import {
 } from '#engine/paths/projectPaths';
 
 import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
+import { resolveSceneThread } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
@@ -26,6 +29,10 @@ import { auditStoryMemory, markStoryStateStaleEntries } from './storyStateAudit'
 export interface SceneGenerationInputs {
   readonly workspaceFolder: StoryWorkspaceFolder;
   readonly paths: ReturnType<typeof getStoryboardProjectPaths>;
+  // 연속성 재료(이야기 상태·요약·인물 기억)를 읽고 쓰는 경로. 줄기가 하나면 paths와 같다.
+  readonly threadPaths: ReturnType<typeof getStoryboardProjectPaths>;
+  readonly threadId: string;
+  readonly narration: NarrationDirective | undefined;
   readonly scene: Awaited<ReturnType<ISceneRepository['read']>>;
   readonly project: Awaited<ReturnType<IProjectRepository['read']>>;
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
@@ -195,6 +202,9 @@ export async function loadSceneGenerationInputs(
     inputs: {
       workspaceFolder,
       paths,
+      threadPaths: contextResult.threadPaths,
+      threadId: contextResult.threadId,
+      narration: contextResult.narration,
       scene,
       project,
       context,
@@ -220,6 +230,9 @@ type SceneContextBundleResult =
       readonly sceneBreakJoiner: string | undefined;
       readonly inputHash: string;
       readonly warnings: readonly string[];
+      readonly threadPaths: ReturnType<typeof getStoryboardProjectPaths>;
+      readonly threadId: string;
+      readonly narration: NarrationDirective | undefined;
     };
 
 async function loadSceneContextBundle(
@@ -257,22 +270,39 @@ async function loadSceneContextBundle(
   // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
   const scene = await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
   const context = { ...builtContext, scene };
+
+  const thread = await resolveSceneThread(paths, scene, project, options.fileSystem);
+  const narration = resolveNarration({
+    pov: project.setting?.pov,
+    focalFallback: scene.frontmatter.povCharacter,
+  });
   const sceneBreakJoiner = resolveSceneBreakJoiner(
     options.configBridge.getDraftSceneBreakSeparator(),
   );
 
   // NOTE: 원장 감사는 서사 컨텍스트를 만들기 전에 끝나야 한다. 낡은 항목을 원장에 표시해 두어야
-  // 곧이어 원장을 읽는 buildNarrativeContext가 그 항목을 프롬프트에서 뺀다.
+  // 곧이어 원장을 읽는 buildNarrativeContext가 그 항목을 프롬프트에서 뺀다. 줄기가 갈렸으면
+  // 그 줄기의 원장을 봐야 하므로 스레드 경로로 감사한다.
   const memoryAudit = await auditStoryMemory({
     fileSystem: options.fileSystem,
-    paths,
+    paths: thread.threadPaths,
     format: project.format,
     sceneBreakJoiner,
     beforeSceneOrder: scene.order,
   });
-  await markStoryStateStaleEntries(paths, options.fileSystem, memoryAudit);
+  await markStoryStateStaleEntries(thread.threadPaths, options.fileSystem, memoryAudit);
 
-  const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);
+  const narrativeContext = await buildNarrativeContext(
+    sceneContextPaths(thread.threadPaths),
+    context,
+    options.fileSystem,
+    {
+      previousSceneOrder: thread.previousSceneOrder,
+      ...(narration?.knowledge === 'witnessed' && narration.focal
+        ? { focalFilter: { focal: narration.focal } }
+        : {}),
+    },
+  );
   const inputHash = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
@@ -292,5 +322,8 @@ async function loadSceneContextBundle(
     sceneBreakJoiner,
     inputHash,
     warnings: memoryAudit.staleWarning === undefined ? [] : [memoryAudit.staleWarning],
+    threadPaths: thread.threadPaths,
+    threadId: thread.threadId,
+    narration,
   };
 }
