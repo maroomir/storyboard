@@ -1,6 +1,7 @@
 import {
   mergeStoryState,
   readStoryState,
+  recordStoryStateScene,
   writeStoryState,
   formatStoryStateForPrompt,
   type StoryStateEntry,
@@ -21,7 +22,7 @@ export async function updateStoryStateAfterGeneration(
   aiService: StoryboardAiService,
   draftBody: string,
 ): Promise<void> {
-  const { paths, scene } = inputs;
+  const { paths, scene, inputHash } = inputs;
 
   try {
     const previous = await readStoryState(paths.storyState, options.fileSystem);
@@ -37,11 +38,11 @@ export async function updateStoryStateAfterGeneration(
       },
     );
 
-    if (items.length === 0) {
-      return;
-    }
+    const merged =
+      items.length === 0
+        ? recordStoryStateScene(previous, scene.order, inputHash)
+        : mergeStoryState(previous, toStoryStateEntries(items), scene.order, inputHash);
 
-    const merged = mergeStoryState(previous, toStoryStateEntries(items), scene.order);
     await writeStoryState(paths.storyState, merged, options.fileSystem);
   } catch (error) {
     options.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);

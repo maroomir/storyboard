@@ -95,6 +95,7 @@ const pipelineSuccessResult = {
   detectedCharacters: ["준서"],
   situations: [],
   personasUsed: new Map<string, string>(),
+  warnings: [] as readonly string[],
   providers: {}
 }
 

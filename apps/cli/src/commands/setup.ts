@@ -12,8 +12,13 @@ import {
   type AiProviderId,
   type ConfigBridge,
 } from '@storyboard/story-ai';
-import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import {
+  auditStoryMemory,
+  getStoryboardProjectPaths,
+  readProjectJson,
+} from '@storyboard/story-engine';
+import {
+  formatSceneOrderRanges,
   isLegacySceneFileName,
   isInlineSceneSummary,
   isLegacySeedPlaceholderSummary,
@@ -329,6 +334,56 @@ async function surveySceneCards(
   return { placeholders, inlineSummaries, withoutBeats, unreadable };
 }
 
+// 원장(.storyboard/memory/storyState.md)이 지금의 카드·씬과 어긋나는지 본다. 어긋난 채로 두면
+// 폐기된 판본의 사실이 다음 씬 프롬프트로 들어간다.
+async function collectStoryStateChecks(
+  container: CliContainer,
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+): Promise<DoctorCheck[]> {
+  if (!existsSync(paths.storyState.fsPath)) {
+    return [];
+  }
+
+  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
+    () => undefined,
+  );
+
+  if (project === undefined) {
+    return [];
+  }
+
+  const { audit } = await auditStoryMemory({
+    fileSystem: container.fileSystem,
+    paths,
+    format: project.format,
+    sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
+  });
+
+  if (audit.staleSceneOrders.length > 0) {
+    return [
+      {
+        status: 'warn',
+        label: '이야기 상태',
+        detail: `씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}의 항목 ${audit.staleEntryCount}개가 지금의 카드·씬과 어긋나 프롬프트에서 빠집니다.`,
+        fix: `storyboard draft generate <씬 ${audit.staleSceneOrders[0] as number}부터 차례로>`,
+      },
+    ];
+  }
+
+  if (audit.unsealedSceneOrders.length > 0) {
+    return [
+      {
+        status: 'info',
+        label: '이야기 상태',
+        detail: `씬 ${formatSceneOrderRanges(audit.unsealedSceneOrders)}에 입력 기록이 없어 낡음을 판정할 수 없습니다.`,
+        fix: 'storyboard init --repair',
+      },
+    ];
+  }
+
+  return [{ status: 'ok', label: '이야기 상태', detail: '원장이 지금의 카드·씬과 맞습니다.' }];
+}
+
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
   const root = container.workspaceRoot;
   const paths = getStoryboardProjectPaths(root);
@@ -428,6 +483,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
           },
         ]
       : []),
+    ...(await collectStoryStateChecks(container, paths)),
     ...(missingIgnoreEntries.length > 0
       ? [
           {

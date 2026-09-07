@@ -21,6 +21,7 @@ import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding } from './resolveSceneGrounding';
+import { auditStoryMemory, markStoryStateStaleEntries } from './storyStateAudit';
 
 export interface SceneGenerationInputs {
   readonly workspaceFolder: StoryWorkspaceFolder;
@@ -32,6 +33,7 @@ export interface SceneGenerationInputs {
   readonly canonFactLines: readonly string[];
   readonly sceneBreakJoiner: string | undefined;
   readonly inputHash: string;
+  readonly warnings: readonly string[];
   readonly draftUri: StoryUri;
   readonly cacheUri: StoryUri;
 }
@@ -200,6 +202,7 @@ export async function loadSceneGenerationInputs(
       canonFactLines: contextResult.canonFactLines,
       sceneBreakJoiner,
       inputHash,
+      warnings: contextResult.warnings,
       draftUri: draftPath(workspaceFolder.uri, scene.stem),
       cacheUri: sceneCacheFilePath(paths, scene.stem),
     },
@@ -216,6 +219,7 @@ type SceneContextBundleResult =
       readonly canonFactLines: readonly string[];
       readonly sceneBreakJoiner: string | undefined;
       readonly inputHash: string;
+      readonly warnings: readonly string[];
     };
 
 async function loadSceneContextBundle(
@@ -253,11 +257,22 @@ async function loadSceneContextBundle(
   // 비트는 확정된 사실 시트를 재료로 삼으므로 그 뒤에 뽑는다. 본문에 들어가 inputHash 에도 반영된다.
   const scene = await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
   const context = { ...builtContext, scene };
-
-  const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);
   const sceneBreakJoiner = resolveSceneBreakJoiner(
     options.configBridge.getDraftSceneBreakSeparator(),
   );
+
+  // NOTE: 원장 감사는 서사 컨텍스트를 만들기 전에 끝나야 한다. 낡은 항목을 원장에 표시해 두어야
+  // 곧이어 원장을 읽는 buildNarrativeContext가 그 항목을 프롬프트에서 뺀다.
+  const memoryAudit = await auditStoryMemory({
+    fileSystem: options.fileSystem,
+    paths,
+    format: project.format,
+    sceneBreakJoiner,
+    beforeSceneOrder: scene.order,
+  });
+  await markStoryStateStaleEntries(paths, options.fileSystem, memoryAudit);
+
+  const narrativeContext = await buildNarrativeContext(ctxPaths, context, options.fileSystem);
   const inputHash = computeSceneInputHash({
     sceneBody: context.scene.body,
     characters: context.characters,
@@ -276,5 +291,6 @@ async function loadSceneContextBundle(
     canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
     sceneBreakJoiner,
     inputHash,
+    warnings: memoryAudit.staleWarning === undefined ? [] : [memoryAudit.staleWarning],
   };
 }

@@ -7,12 +7,17 @@ import {
   storyStateFactLines
 } from '@storyboard/story-format';
 import {
+  auditStoryState,
   createEmptyStoryState,
+  formatSceneOrderRanges,
   formatStoryStateForPrompt,
+  formatStoryStateStaleWarning,
   mergeStoryState,
+  sealStoryState,
   parseStoryState,
   readStoryState,
   serializeStoryState,
+  storyStateSceneOrders,
   writeStoryState,
   type StoryState,
   type StoryStateEntry
@@ -43,8 +48,12 @@ class MemoryFileSystem {
   }
 }
 
+const inputHash = `sha256:${"a".repeat(64)}`
+const otherInputHash = `sha256:${"b".repeat(64)}`
+
 const sampleState: StoryState = {
   throughSceneOrder: 2,
+  sceneInputHashes: new Map(),
   entries: [
     { section: "facts", text: "브로크만 정지하지 않았다" },
     { section: "relations", text: "이준→브로크: 존댓말" },
@@ -63,7 +72,11 @@ describe("storyState serialization", () => {
   })
 
   it("omits sections that have no entries", () => {
-    const factsOnly: StoryState = { throughSceneOrder: 1, entries: [sampleState.entries[0]!] }
+    const factsOnly: StoryState = {
+      throughSceneOrder: 1,
+      sceneInputHashes: new Map(),
+      entries: [sampleState.entries[0]!]
+    }
 
     const serialized = serializeStoryState(factsOnly)
     expect(serialized).toContain("## 확정 사실")
@@ -93,7 +106,7 @@ describe("mergeStoryState", () => {
   it("appends new entries and advances the through-scene order", () => {
     const additions: StoryStateEntry[] = [{ section: "facts", text: "이준이 경매에서 낙찰했다" }]
 
-    const merged = mergeStoryState(sampleState, additions, 8)
+    const merged = mergeStoryState(sampleState, additions, 8, inputHash)
 
     expect(merged.throughSceneOrder).toBe(8)
     expect(merged.entries).toContainEqual({ ...additions[0], throughScene: 8 })
@@ -104,13 +117,13 @@ describe("mergeStoryState", () => {
     const merged = mergeStoryState(sampleState, [
       { section: "facts", text: "브로크만 정지하지 않았다" },
       { section: "facts", text: "   " }
-    ], 3)
+    ], 3, inputHash)
 
     expect(merged.entries).toHaveLength(sampleState.entries.length)
   })
 
   it("never lowers the through-scene order", () => {
-    expect(mergeStoryState(sampleState, [], 1).throughSceneOrder).toBe(2)
+    expect(mergeStoryState(sampleState, [], 1, inputHash).throughSceneOrder).toBe(2)
   })
 
   // 원장은 작품의 기억이므로 버리지 않는다. 프롬프트 예산은 주입 시점에 맞춘다.
@@ -120,7 +133,7 @@ describe("mergeStoryState", () => {
       text: `사실 ${index}`
     }))
 
-    const merged = mergeStoryState(createEmptyStoryState(), additions, 5)
+    const merged = mergeStoryState(createEmptyStoryState(), additions, 5, inputHash)
 
     expect(merged.entries).toHaveLength(40)
     expect(merged.entries[0]?.text).toBe("사실 0")
@@ -140,7 +153,8 @@ describe("story state injection budget", () => {
         section: "facts" as const,
         text: `${subject}가 봉인되었다`
       })),
-      5
+      5,
+      inputHash
     )
   }
 
@@ -269,6 +283,7 @@ describe("StoryStateUpdatePrompt", () => {
 describe("storyState scene tagging", () => {
   const tagged: StoryState = {
     throughSceneOrder: 3,
+    sceneInputHashes: new Map(),
     entries: [
       { section: "facts", text: "1화 사실", throughScene: 1 },
       { section: "facts", text: "3화 사실", throughScene: 3 },
@@ -295,6 +310,7 @@ describe("storyState scene tagging", () => {
   it("returns undefined when every entry is from a later scene", () => {
     const laterOnly: StoryState = {
       throughSceneOrder: 5,
+      sceneInputHashes: new Map(),
       entries: [{ section: "facts", text: "5화 사실", throughScene: 5 }]
     }
 
@@ -302,13 +318,13 @@ describe("storyState scene tagging", () => {
   })
 
   it("stamps merged additions with the scene order", () => {
-    const merged = mergeStoryState(createEmptyStoryState(), [{ section: "facts", text: "새 사실" }], 7)
+    const merged = mergeStoryState(createEmptyStoryState(), [{ section: "facts", text: "새 사실" }], 7, inputHash)
 
     expect(merged.entries[0]?.throughScene).toBe(7)
   })
 
   it("replaces the same scene's earlier entries when it is regenerated", () => {
-    const merged = mergeStoryState(tagged, [{ section: "facts", text: "다시 만든 3화 사실" }], 3)
+    const merged = mergeStoryState(tagged, [{ section: "facts", text: "다시 만든 3화 사실" }], 3, inputHash)
 
     expect(merged.entries.map((entry) => entry.text)).toEqual([
       "1화 사실",
@@ -355,5 +371,123 @@ describe("stripForeignScript", () => {
     const clean = "이준은 BROK-07 각인과 漢字를 보았다."
 
     expect(stripForeignScript(clean)).toBe(clean)
+  })
+})
+
+describe("story state invalidation", () => {
+  function ledgerThrough(order: number, hash = inputHash): StoryState {
+    let state = createEmptyStoryState()
+
+    for (let scene = 1; scene <= order; scene += 1) {
+      state = mergeStoryState(state, [{ section: "facts", text: `${scene}화 사실` }], scene, hash)
+    }
+
+    return state
+  }
+
+  function currentHashes(orders: readonly number[], hash = inputHash): Map<number, string> {
+    return new Map(orders.map((order) => [order, hash]))
+  }
+
+  it("round-trips the scene input hashes and the stale marker", () => {
+    const state = ledgerThrough(2)
+    const rewound = mergeStoryState(state, [{ section: "facts", text: "다시 만든 1화" }], 1, otherInputHash)
+
+    const serialized = serializeStoryState(rewound)
+    expect(serialized).toContain(`<!-- scene-input: 1 ${otherInputHash} -->`)
+    expect(serialized).toContain("- [2!] 2화 사실")
+    expect(parseStoryState(serialized)).toEqual(rewound)
+  })
+
+  // 되감기: 21을 다시 만들면 22~32는 폐기된 판본을 전제로 뽑힌 항목이다.
+  it("marks later scenes stale when an earlier scene is regenerated", () => {
+    const rewound = mergeStoryState(ledgerThrough(5), [{ section: "facts", text: "새 3화" }], 3, inputHash)
+
+    expect(rewound.entries.filter((entry) => entry.isStale === true).map((entry) => entry.text)).toEqual([
+      "4화 사실",
+      "5화 사실"
+    ])
+    expect(rewound.entries.find((entry) => entry.text === "2화 사실")?.isStale).toBeUndefined()
+  })
+
+  it("keeps stale entries out of the prompt but leaves them in the file", () => {
+    const rewound = mergeStoryState(ledgerThrough(5), [{ section: "facts", text: "새 3화" }], 3, inputHash)
+
+    const prompt = formatStoryStateForPrompt(rewound)
+    expect(prompt).toContain("2화 사실")
+    expect(prompt).not.toContain("4화 사실")
+    expect(serializeStoryState(rewound)).toContain("4화 사실")
+  })
+
+  it("clears the stale mark when the scene itself is regenerated", () => {
+    const rewound = mergeStoryState(ledgerThrough(5), [{ section: "facts", text: "새 3화" }], 3, inputHash)
+    const repaired = mergeStoryState(rewound, [{ section: "facts", text: "새 4화" }], 4, inputHash)
+
+    expect(repaired.entries.find((entry) => entry.text === "새 4화")?.isStale).toBeUndefined()
+    expect(repaired.entries.filter((entry) => entry.isStale === true).map((entry) => entry.text)).toEqual([
+      "5화 사실"
+    ])
+  })
+
+  // 입력 해시: 카드나 씬을 고쳐 놓고 그 씬을 다시 만들지 않은 경우.
+  it("marks a scene stale when its current input hash differs", () => {
+    const audit = auditStoryState(ledgerThrough(3), new Map([[1, inputHash], [2, otherInputHash], [3, inputHash]]))
+
+    expect(audit.staleSceneOrders).toEqual([2])
+    expect(audit.staleEntryCount).toBe(1)
+    expect(formatStoryStateForPrompt(audit.state)).not.toContain("2화 사실")
+  })
+
+  it("marks a scene stale when its scene file is gone", () => {
+    const audit = auditStoryState(ledgerThrough(3), currentHashes([1, 3]))
+
+    expect(audit.staleSceneOrders).toEqual([2])
+  })
+
+  it("reports nothing when every recorded hash still matches", () => {
+    const audit = auditStoryState(ledgerThrough(3), currentHashes([1, 2, 3]))
+
+    expect(audit.staleSceneOrders).toEqual([])
+    expect(audit.unsealedSceneOrders).toEqual([])
+    expect(formatStoryStateStaleWarning(audit)).toBeUndefined()
+  })
+
+  it("carries a rewound scene into the audit report", () => {
+    const rewound = mergeStoryState(ledgerThrough(5), [{ section: "facts", text: "새 3화" }], 3, inputHash)
+
+    const audit = auditStoryState(rewound, currentHashes([1, 2, 3, 4, 5]))
+
+    expect(audit.staleSceneOrders).toEqual([4, 5])
+    expect(formatStoryStateStaleWarning(audit)).toContain("씬 4~5")
+  })
+
+  // 0.8 이전 원장에는 해시가 없다. 대조할 근거가 없다고 사실을 버리지는 않는다.
+  it("treats an unsealed scene as valid and reports it for sealing", () => {
+    const legacy = parseStoryState("# 이야기 상태\n<!-- through-scene: 2 -->\n## 확정 사실\n- [1] 옛 사실\n- [2] 옛 사실 2\n")
+
+    const audit = auditStoryState(legacy, currentHashes([1, 2], otherInputHash))
+
+    expect(audit.staleSceneOrders).toEqual([])
+    expect(audit.unsealedSceneOrders).toEqual([1, 2])
+    expect(formatStoryStateForPrompt(audit.state)).toContain("옛 사실")
+  })
+
+  it("seals only the scenes that have no recorded hash", () => {
+    const legacy = parseStoryState("# 이야기 상태\n<!-- through-scene: 2 -->\n<!-- scene-input: 1 " + inputHash + " -->\n## 확정 사실\n- [1] 옛 사실\n- [2] 옛 사실 2\n")
+
+    const sealed = sealStoryState(legacy, currentHashes([1, 2], otherInputHash))
+
+    expect(sealed.sceneInputHashes.get(1)).toBe(inputHash)
+    expect(sealed.sceneInputHashes.get(2)).toBe(otherInputHash)
+    expect(auditStoryState(sealed, currentHashes([1, 2], otherInputHash)).staleSceneOrders).toEqual([1])
+  })
+
+  it("lists the scene orders a ledger carries", () => {
+    expect(storyStateSceneOrders(ledgerThrough(3))).toEqual([1, 2, 3])
+  })
+
+  it("compacts scene orders into contiguous ranges", () => {
+    expect(formatSceneOrderRanges([22, 23, 24, 27, 30, 31])).toBe("22~24, 27, 30~31")
+    expect(formatSceneOrderRanges([5])).toBe("5")
   })
 })

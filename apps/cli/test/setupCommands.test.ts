@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createCliContainer } from '../src/container';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from '../src/commands/setup';
+import { commands } from '../src/commands';
 import type { ParsedArguments } from '../src/cliArguments';
 
 let home: string;
@@ -134,6 +135,70 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(checks.find((check) => check.label === '디렉터리')?.detail).toContain('draft/');
     expect(checks.find((check) => check.label === '구형 씬')?.detail).toContain('1개');
     expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
+  });
+
+  // 원장 무효화. 봉인 없는 0.8 이전 원장은 판정 근거가 없으므로 낡음이 아니라 보수 대상이다.
+  function writeWorkspaceWithLedger(ledger: string): void {
+    mkdirSync(join(workspace, '.storyboard', 'memory'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'project.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        id: 'p1',
+        name: '테스트',
+        format: 'novel',
+        language: 'ko',
+        createdAt: new Date().toISOString(),
+        editor: { scenePrefixDigits: 2 },
+      }),
+    );
+    mkdirSync(join(workspace, 'scene'), { recursive: true });
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      'type: scene\nid: 01-first\nsummary: 첫 방송을 마친다.\n',
+    );
+    writeFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), ledger);
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+  }
+
+  const unsealedLedger =
+    '# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 1화 사실\n';
+
+  it('asks for a repair when the ledger carries no input record', async () => {
+    writeWorkspaceWithLedger(unsealedLedger);
+
+    const outcome = await runDoctor({ container: container(), args: args() });
+
+    const check = checksOf(outcome).find((entry) => entry.label === '이야기 상태');
+    expect(check?.status).toBe('info');
+    expect(check?.fix).toBe('storyboard init --repair');
+  });
+
+  it('reports a ledger that no longer matches its scene after the repair sealed it', async () => {
+    writeWorkspaceWithLedger(unsealedLedger);
+
+    const repaired = await (commands['init'] as (context: never) => Promise<{ ok: boolean }>)({
+      container: container(),
+      args: args({ repair: true }),
+    });
+    expect(repaired.ok).toBe(true);
+    expect(readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8')).toContain(
+      '<!-- scene-input: 1 sha256:',
+    );
+
+    const sealed = await runDoctor({ container: container(), args: args() });
+    expect(checksOf(sealed).find((entry) => entry.label === '이야기 상태')?.status).toBe('ok');
+
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
+    );
+
+    const stale = await runDoctor({ container: container(), args: args() });
+    const check = checksOf(stale).find((entry) => entry.label === '이야기 상태');
+    expect(check?.status).toBe('warn');
+    expect(check?.detail).toContain('씬 1');
+    expect(check?.fix).toContain('storyboard draft generate');
   });
 });
 

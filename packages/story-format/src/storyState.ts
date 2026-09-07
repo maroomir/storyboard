@@ -18,10 +18,17 @@ export interface StoryStateEntry {
   // NOTE: 그 항목이 확립된 씬 번호. 앞 씬을 다시 생성할 때 뒤 씬의 상태를 읽지 않으려면
   // 항목마다 시점이 있어야 한다. 번호가 없는 항목(구 버전 원장)은 항상 유효한 것으로 본다.
   readonly throughScene?: number;
+  // NOTE: 그 항목을 낳은 입력이 더 이상 워크스페이스에 없다는 표시. 지우지 않고 표시만 하는 것은
+  // 사람이 무엇이 버려졌는지 원장에서 볼 수 있어야 하기 때문이다. 프롬프트에서만 빠진다.
+  readonly isStale?: boolean;
 }
 
 export interface StoryState {
   readonly throughSceneOrder: number;
+  // NOTE: 항목을 낳은 씬의 입력 해시(scene cache와 같은 computeSceneInputHash 값). 카드나 씬을
+  // 고친 뒤 그 씬을 다시 생성하지 않으면 원장만 옛 전제를 붙들고 있으므로, 기록해 두고 대조한다.
+  // 해시가 없는 씬(0.8 이전 원장)은 대조할 수 없으므로 유효한 것으로 본다.
+  readonly sceneInputHashes: ReadonlyMap<number, string>;
   readonly entries: readonly StoryStateEntry[];
 }
 
@@ -31,11 +38,12 @@ export interface StoryStateFileSystem {
 }
 
 const throughLinePattern = /^<!--\s*through-scene:\s*(\d+)\s*-->$/;
+const sceneInputLinePattern = /^<!--\s*scene-input:\s*(\d+)\s+(sha256:[0-9a-f]{64})\s*-->$/;
 const sectionEntries = Object.entries(storyStateSectionLabels) as [StoryStateSection, string][];
 const labelToSection = new Map(sectionEntries.map(([section, label]) => [label, section]));
 
 export function createEmptyStoryState(): StoryState {
-  return { throughSceneOrder: 0, entries: [] };
+  return { throughSceneOrder: 0, sceneInputHashes: new Map(), entries: [] };
 }
 
 export function parseStoryState(content: string): StoryState {
@@ -43,6 +51,7 @@ export function parseStoryState(content: string): StoryState {
   let throughSceneOrder = 0;
   let current: StoryStateSection | undefined;
   const entries: StoryStateEntry[] = [];
+  const sceneInputHashes = new Map<number, string>();
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
@@ -50,6 +59,12 @@ export function parseStoryState(content: string): StoryState {
     const throughMatch = throughLinePattern.exec(line);
     if (throughMatch?.[1]) {
       throughSceneOrder = Number.parseInt(throughMatch[1], 10);
+      continue;
+    }
+
+    const sceneInputMatch = sceneInputLinePattern.exec(line);
+    if (sceneInputMatch?.[1] && sceneInputMatch[2]) {
+      sceneInputHashes.set(Number.parseInt(sceneInputMatch[1], 10), sceneInputMatch[2]);
       continue;
     }
 
@@ -66,10 +81,10 @@ export function parseStoryState(content: string): StoryState {
     }
   }
 
-  return { throughSceneOrder, entries };
+  return { throughSceneOrder, sceneInputHashes, entries };
 }
 
-const entrySceneTagPattern = /^\[(\d+)\]\s*(.+)$/;
+const entrySceneTagPattern = /^\[(\d+)(!?)\]\s*(.+)$/;
 
 function parseEntryLine(section: StoryStateSection, text: string): StoryStateEntry | undefined {
   if (text.length === 0) {
@@ -77,8 +92,13 @@ function parseEntryLine(section: StoryStateSection, text: string): StoryStateEnt
   }
 
   const tagged = entrySceneTagPattern.exec(text);
-  if (tagged?.[1] && tagged[2]) {
-    return { section, text: tagged[2], throughScene: Number.parseInt(tagged[1], 10) };
+  if (tagged?.[1] && tagged[3]) {
+    const entry: StoryStateEntry = {
+      section,
+      text: tagged[3],
+      throughScene: Number.parseInt(tagged[1], 10),
+    };
+    return tagged[2] === '!' ? { ...entry, isStale: true } : entry;
   }
 
   return { section, text };
@@ -87,23 +107,28 @@ function parseEntryLine(section: StoryStateSection, text: string): StoryStateEnt
 export function serializeStoryState(state: StoryState): string {
   const blocks: string[] = ['# 이야기 상태', `<!-- through-scene: ${state.throughSceneOrder} -->`];
 
+  for (const order of [...state.sceneInputHashes.keys()].sort((left, right) => left - right)) {
+    blocks.push(`<!-- scene-input: ${order} ${state.sceneInputHashes.get(order) as string} -->`);
+  }
+
   for (const [section, label] of sectionEntries) {
     const items = state.entries.filter((entry) => entry.section === section);
     if (items.length === 0) {
       continue;
     }
 
-    blocks.push(
-      `## ${label}`,
-      ...items.map((item) =>
-        item.throughScene === undefined
-          ? `- ${item.text}`
-          : `- [${item.throughScene}] ${item.text}`,
-      ),
-    );
+    blocks.push(`## ${label}`, ...items.map((item) => `- ${formatEntryTag(item)}${item.text}`));
   }
 
   return `${blocks.join('\n')}\n`;
+}
+
+function formatEntryTag(entry: StoryStateEntry): string {
+  if (entry.throughScene === undefined) {
+    return '';
+  }
+
+  return `[${entry.throughScene}${entry.isStale === true ? '!' : ''}] `;
 }
 
 export async function readStoryState(
@@ -134,11 +159,13 @@ export function mergeStoryState(
   previous: StoryState,
   additions: readonly StoryStateEntry[],
   throughSceneOrder: number,
+  sceneInputHash: string,
 ): StoryState {
   // NOTE: 같은 씬을 다시 생성하면 그 씬이 앞서 남긴 항목은 낡은 판본이므로 걷어내고 새로 쌓는다.
   // 그러지 않으면 폐기된 전개가 원장에 남아 뒤 씬으로 계속 전달된다.
-  const merged: StoryStateEntry[] = previous.entries.filter(
-    (entry) => entry.throughScene !== throughSceneOrder,
+  const merged: StoryStateEntry[] = rewindEntriesAfter(
+    previous.entries.filter((entry) => entry.throughScene !== throughSceneOrder),
+    throughSceneOrder,
   );
   const seen = new Set(merged.map((entry) => `${entry.section}:${entry.text}`));
 
@@ -159,8 +186,48 @@ export function mergeStoryState(
 
   return {
     throughSceneOrder: Math.max(previous.throughSceneOrder, throughSceneOrder),
+    sceneInputHashes: withSceneInputHash(previous, throughSceneOrder, sceneInputHash),
     entries: merged,
   };
+}
+
+// 항목은 그대로 두고 이번 판본의 기준만 남긴다. 원장 갱신이 실패해도 되감기와 입력 해시는 남아야
+// 다음 감사가 옳은 기준으로 대조한다. 그 씬의 기존 항목까지 지우지는 않는다 — 갱신 실패로 기억을
+// 잃는 쪽이 더 나쁘다.
+export function recordStoryStateScene(
+  previous: StoryState,
+  throughSceneOrder: number,
+  sceneInputHash: string,
+): StoryState {
+  return {
+    throughSceneOrder: Math.max(previous.throughSceneOrder, throughSceneOrder),
+    sceneInputHashes: withSceneInputHash(previous, throughSceneOrder, sceneInputHash),
+    entries: rewindEntriesAfter(previous.entries, throughSceneOrder),
+  };
+}
+
+// 되감기. 다시 만든 씬보다 뒤 항목은 이제 폐기된 판본을 전제로 뽑힌 것이다. 지우지 않고 표시만
+// 하므로, 그 씬을 다시 생성하면 mergeStoryState가 통째로 갈아 끼우면서 표시도 함께 사라진다.
+function rewindEntriesAfter(
+  entries: readonly StoryStateEntry[],
+  throughSceneOrder: number,
+): StoryStateEntry[] {
+  return entries.map((entry) =>
+    entry.throughScene !== undefined && entry.throughScene > throughSceneOrder
+      ? { ...entry, isStale: true }
+      : entry,
+  );
+}
+
+function withSceneInputHash(
+  previous: StoryState,
+  throughSceneOrder: number,
+  sceneInputHash: string,
+): ReadonlyMap<number, string> {
+  const sceneInputHashes = new Map(previous.sceneInputHashes);
+  sceneInputHashes.set(throughSceneOrder, sceneInputHash);
+
+  return sceneInputHashes;
 }
 
 // NOTE: 예산을 넘으면 최근 것만 남기는 대신 이번 씬과 겹치는 낱말이 많은 항목을 먼저 고른다.
@@ -231,6 +298,7 @@ export function selectStoryStateEntries(
   const visible = state.entries.filter(
     (entry) =>
       entry.section === section &&
+      entry.isStale !== true &&
       (beforeSceneOrder === undefined ||
         entry.throughScene === undefined ||
         entry.throughScene < beforeSceneOrder),
@@ -256,4 +324,129 @@ export function formatStoryStateForPrompt(
   }
 
   return ['[이야기 상태]', ...blocks].join('\n');
+}
+
+// NOTE: 원장 항목이 어떤 입력에서 나왔는지를 대조하는 감사. 판정은 두 가지다.
+//   1) 기록된 입력 해시와 현재 해시가 다르면 그 씬의 항목은 낡았다(카드·씬을 고쳤다).
+//   2) 어떤 씬을 다시 생성하면 그보다 뒤 항목이 낡는다 — 이쪽은 mergeStoryState가 표시한다.
+// 해시가 기록되지 않은 씬(0.8 이전 원장)은 대조할 근거가 없으므로 유효로 두고 봉인 대상으로만
+// 보고한다. 없는 근거로 사실을 버리는 쪽이 더 나쁘다.
+export interface StoryStateAudit {
+  readonly state: StoryState;
+  readonly staleSceneOrders: readonly number[];
+  readonly unsealedSceneOrders: readonly number[];
+  readonly staleEntryCount: number;
+}
+
+export function storyStateSceneOrders(state: StoryState): number[] {
+  const orders = new Set<number>();
+
+  for (const entry of state.entries) {
+    if (entry.throughScene !== undefined) {
+      orders.add(entry.throughScene);
+    }
+  }
+
+  return [...orders].sort((left, right) => left - right);
+}
+
+// beforeSceneOrder를 주면 그 씬보다 앞에서 확립된 것만 보고한다. 뒤 씬의 낡은 항목은 어차피
+// 이번 프롬프트에 실리지 않으므로, 32씬을 순서대로 다시 만드는 동안 매 씬 경고가 뜨는 것을 막는다.
+// 표시(state) 자체는 언제나 원장 전체에 대해 매긴다.
+export function auditStoryState(
+  state: StoryState,
+  currentSceneInputHashes: ReadonlyMap<number, string>,
+  beforeSceneOrder?: number,
+): StoryStateAudit {
+  const unsealedSceneOrders: number[] = [];
+  const staleOrders = new Set<number>();
+
+  for (const order of storyStateSceneOrders(state)) {
+    const recorded = state.sceneInputHashes.get(order);
+
+    if (recorded === undefined) {
+      unsealedSceneOrders.push(order);
+      continue;
+    }
+
+    if (currentSceneInputHashes.get(order) !== recorded) {
+      staleOrders.add(order);
+    }
+  }
+
+  // 되감기로 이미 표시된 씬도 같은 낡음이다. 감사 결과가 보고하는 범위에 함께 넣는다.
+  for (const entry of state.entries) {
+    if (entry.isStale === true && entry.throughScene !== undefined) {
+      staleOrders.add(entry.throughScene);
+    }
+  }
+
+  const entries = state.entries.map((entry) =>
+    entry.throughScene !== undefined && staleOrders.has(entry.throughScene)
+      ? { ...entry, isStale: true }
+      : entry,
+  );
+
+  const isReported = (order: number): boolean =>
+    beforeSceneOrder === undefined || order < beforeSceneOrder;
+  const reportedStaleOrders = [...staleOrders]
+    .filter(isReported)
+    .sort((left, right) => left - right);
+  const reportedStaleSet = new Set(reportedStaleOrders);
+
+  return {
+    state: { ...state, entries },
+    staleSceneOrders: reportedStaleOrders,
+    unsealedSceneOrders: unsealedSceneOrders.filter(isReported),
+    staleEntryCount: entries.filter(
+      (entry) => entry.throughScene !== undefined && reportedStaleSet.has(entry.throughScene),
+    ).length,
+  };
+}
+
+// 봉인은 대조 근거를 만드는 일회성 조치다. 이미 기록된 씬은 건드리지 않는다 — 덮어쓰면 고쳐 놓고
+// 다시 생성하지 않은 씬이 유효한 것으로 둔갑한다.
+export function sealStoryState(
+  state: StoryState,
+  currentSceneInputHashes: ReadonlyMap<number, string>,
+): StoryState {
+  const sceneInputHashes = new Map(state.sceneInputHashes);
+
+  for (const order of storyStateSceneOrders(state)) {
+    const current = currentSceneInputHashes.get(order);
+
+    if (current !== undefined && !sceneInputHashes.has(order)) {
+      sceneInputHashes.set(order, current);
+    }
+  }
+
+  return { ...state, sceneInputHashes };
+}
+
+export function formatSceneOrderRanges(orders: readonly number[]): string {
+  const sorted = [...new Set(orders)].sort((left, right) => left - right);
+  const ranges: { start: number; end: number }[] = [];
+
+  for (const order of sorted) {
+    const last = ranges[ranges.length - 1];
+
+    if (last !== undefined && order === last.end + 1) {
+      last.end = order;
+      continue;
+    }
+
+    ranges.push({ start: order, end: order });
+  }
+
+  return ranges
+    .map((range) => (range.start === range.end ? `${range.start}` : `${range.start}~${range.end}`))
+    .join(', ');
+}
+
+export function formatStoryStateStaleWarning(audit: StoryStateAudit): string | undefined {
+  if (audit.staleSceneOrders.length === 0) {
+    return undefined;
+  }
+
+  return `이야기 상태 원장에 낡은 항목 ${audit.staleEntryCount}개가 있습니다 (씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}). 프롬프트에서 제외했습니다 — 해당 씬을 다시 생성하면 사라집니다.`;
 }
