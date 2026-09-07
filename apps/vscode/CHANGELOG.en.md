@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.8] - 2026-09-07
+
 ### Added
 
 - **Point of view can change per scene and per chapter.** The contract's point of view now has five values, including first-person retrospective and second person, and a named **narrator card** (`narrator/*.card`) can be selected from a scene card's `narrator` or a chapter's `narrator` in `chapters.yaml`. A narrator carries person, knowledge boundary (witnessed / omniscient / retrospective), tense and voice; resolution runs scene > chapter > project. Projects with no narrator cards keep behaving exactly as before, with one contract-wide point of view. A scene's narrator, thread and focal character take part in the draft cache and the ledger audit, so changing only the point of view regenerates the draft and marks what that scene had established as stale.
@@ -17,6 +19,8 @@ after the first public release.
 - **A first-person or limited narrator no longer states what it could not know.** Every story-state entry now records the characters present when that fact was established, and a witnessed narrator's prompt drops entries its focal character did not witness. Review also gained point-of-view and narrator-voice checks.
 - **The CLI gained `narrator` verbs and `scene show`.** `storyboard narrator add|list|show|remove` manages narrators, and `storyboard init --composition omnibus --episodes 4` picks a composition. `scene show <stem>` prints the narration and thread a scene will be generated with, and `doctor` catches dangling narrator references and threads the contract does not declare.
 - **`doctor` reports ledger lines it could not read.** A hand-edited tag such as `- [2!!] …` leaves that entry outside both the point-of-view filter and the staleness audit. Doctor now reports how many such lines there are with an example, and it looks at every thread ledger too.
+- **`install.sh` can install from tarballs you already downloaded.** Pass `--from <directory>` and it uses the `storyboard-cli` and `storyboard-bot` tarballs there. This covers the case where the repository is private and the script's unauthenticated fetch of the release assets fails with a 404 — download the assets by hand, then install. A `SHA256SUMS` in the same directory is verified; without one the script warns and continues.
+
 ## [0.8.7] - 2026-09-07
 
 ### Added
