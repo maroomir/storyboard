@@ -85,3 +85,36 @@ jobs:
             release/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
             --notes-file release-notes.md
+
+      # 공개 저장소 webfic/storyboard 는 소스 없이 문서·릴리즈만 담는다.
+      # 토큰이 없으면 사설 릴리즈만 나가고 이 단계는 건너뛴다.
+      - name: Publish to the public repository
+        env:
+          GH_TOKEN: ${{ secrets.WEBFIC_RELEASE_TOKEN }}
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::WEBFIC_RELEASE_TOKEN is not set; skipping the public release."
+            exit 0
+          fi
+          git clone --depth 1 \
+            "https://x-access-token:${GH_TOKEN}@github.com/webfic/storyboard.git" public
+          cp apps/vscode/CHANGELOG.md apps/vscode/CHANGELOG.en.md public/
+          cp scripts/install.sh public/install.sh
+          cd public
+          git config user.name "Maroomir Yoon"
+          git config user.email "maroomir@gmail.com"
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git add CHANGELOG.md CHANGELOG.en.md install.sh
+            git commit -m "chore: release $GITHUB_REF_NAME"
+          fi
+          git tag -f "$GITHUB_REF_NAME"
+          git push origin HEAD:main
+          git push -f origin "$GITHUB_REF_NAME"
+          gh release delete "$GITHUB_REF_NAME" --repo webfic/storyboard --yes 2>/dev/null || true
+          gh release create "$GITHUB_REF_NAME" --repo webfic/storyboard \
+            ../release/storyboard-vscode-*.vsix \
+            ../release/storyboard-cli-*.tar.gz \
+            ../release/install.sh \
+            ../release/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file ../release-notes.md
