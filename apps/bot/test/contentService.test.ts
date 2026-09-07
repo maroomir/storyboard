@@ -54,6 +54,53 @@ describe('ContentService', () => {
     fixture.cleanup();
   });
 
+  it('lists narrator cards and skips one that will not parse', async () => {
+    fixture.write(
+      'narrator/hana-first.card',
+      'type: narrator\nid: hana-first\nname: 하나의 목소리\nperson: first\nknowledge: witnessed\nfocal: hana\n',
+    );
+    fixture.write('narrator/broken.card', 'type: narrator\nid: [\n');
+
+    const narrators = await content.listNarrators();
+
+    expect(narrators.map((card) => card.id)).toEqual(['hana-first']);
+    expect(narrators[0]).toMatchObject({ person: 'first', knowledge: 'witnessed', focal: 'hana' });
+  });
+
+  it('commits a new narrator card, because narrator/ is tracked', async () => {
+    const outcome = await content.createNarrator({
+      type: 'narrator',
+      id: 'wide',
+      name: '전지',
+      person: 'third',
+      knowledge: 'omniscient',
+    });
+
+    expect(outcome.status).toBe('committed');
+    expect(existsSync(join(fixture.root, 'narrator', 'wide.card'))).toBe(true);
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+    expect(git(fixture.root, 'log', '-1', '--pretty=%s')).toContain('narrator/wide.card');
+  });
+
+  it('refuses to overwrite a narrator that appeared since the read', async () => {
+    fixture.write('narrator/wide.card', 'type: narrator\nid: wide\nname: 먼저\nperson: third\nknowledge: omniscient\n');
+    execFileSync('git', ['-C', fixture.root, 'add', 'narrator/wide.card'], { shell: false });
+    execFileSync('git', ['-C', fixture.root, 'commit', '--quiet', '-m', 'desktop narrator'], {
+      shell: false,
+    });
+
+    const outcome = await content.createNarrator({
+      type: 'narrator',
+      id: 'wide',
+      name: '나중',
+      person: 'first',
+      knowledge: 'witnessed',
+    });
+
+    expect(outcome.status).toBe('stale');
+    expect(readFileSync(join(fixture.root, 'narrator', 'wide.card'), 'utf8')).toContain('먼저');
+  });
+
   it('migrates legacy scene texts into cards as a single commit', async () => {
     fixture.write(
       'scene/01-prologue.txt',

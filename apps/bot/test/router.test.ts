@@ -11,6 +11,7 @@ import { ChatContext } from '../src/chat/context';
 import { createDoctorHandler, type DoctorEnvironment } from '../src/chat/handlers/doctor';
 import { legacyConfigBridge } from './configurationStub';
 import { createRenameHandler, createSetHandler } from '../src/chat/handlers/edit';
+import { createNarratorHandler } from '../src/chat/handlers/narrator';
 import { createSceneCommandHandler } from '../src/chat/handlers/scene';
 import {
   createBibleHandler,
@@ -596,6 +597,7 @@ describe('/scene', () => {
     };
     const registry = new CommandRegistry();
     registry.register(createSceneCommandHandler());
+    registry.register(createNarratorHandler());
     router = new UpdateRouter({
       sender,
       registry,
@@ -698,4 +700,60 @@ describe('/scene', () => {
     await router.handleUpdate(message('/scene beats 01-prologue now'));
     expect(sent[3]?.text).toContain('사용법');
   });
+  it('reports the narration a scene will be generated with', async () => {
+    await router.handleUpdate(message('/scene show 01-prologue'));
+
+    expect(sent[0]?.text).toContain('시점: 3인칭 · 목격 범위');
+    expect(sent[0]?.text).toContain('줄기: main');
+  });
+
+  it('names the narrator card a scene points at', async () => {
+    fixture.write(
+      'narrator/hana-first.card',
+      'type: narrator\nid: hana-first\nname: 하나\nperson: first\nknowledge: retrospective\nfocal: hana\n',
+    );
+    fixture.write(
+      'scene/01-prologue.card',
+      'type: scene\nid: 01-prologue\nnarrator: hana-first\nthread: ep2\nsummary: prologue\n',
+    );
+
+    await router.handleUpdate(message('/scene show 01-prologue'));
+
+    expect(sent[0]?.text).toContain('1인칭 · 회고');
+    expect(sent[0]?.text).toContain('줄기: ep2');
+  });
+
+  it('says which narrator a scene names when its card is missing', async () => {
+    fixture.write(
+      'scene/01-prologue.card',
+      'type: scene\nid: 01-prologue\nnarrator: ghost\nsummary: prologue\n',
+    );
+
+    await router.handleUpdate(message('/scene show 01-prologue'));
+
+    expect(sent[0]?.text).toContain('ghost');
+  });
+
+  it('falls back to the contract point of view when no narrator card exists', async () => {
+    await router.handleUpdate(message('/narrator'));
+
+    expect(sent[0]?.text).toContain('작품 기본 시점: 3인칭 · 목격 범위');
+    expect(sent[0]?.text).toContain('서술자 카드가 없어');
+  });
+
+  it('creates a narrator card as its own commit', async () => {
+    await router.handleUpdate(message('/narrator add wide third omniscient'));
+
+    expect(sent[0]?.text).toContain('narrator/wide.card');
+    expect(existsSync(join(fixture.root, 'narrator', 'wide.card'))).toBe(true);
+    expect(git(fixture.root, 'status', '--porcelain')).toBe('');
+  });
+
+  it('refuses a person the format does not define', async () => {
+    await router.handleUpdate(message('/narrator add wide fourth witnessed'));
+
+    expect(sent[0]?.text).toContain('first, second, third');
+    expect(existsSync(join(fixture.root, 'narrator', 'wide.card'))).toBe(false);
+  });
+
 });

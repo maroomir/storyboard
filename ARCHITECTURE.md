@@ -197,6 +197,32 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 }
 ```
 
+#### 시점과 구성 (`pov`·`composition`·`threads`)
+
+`pov`는 `first` | `first-retrospective` | `second` | `third-limited` | `third-omniscient` 다섯 값
+가운데 하나이고, 이 값 하나에서 **암묵 서술자**(인칭 + 지식 경계)를 파생한다. 파일은 만들어지지
+않는다. 값이 아예 없으면 프롬프트에 시점 지시가 나가지 않는다 — 시점을 설정한 적 없는 기존 작품의
+결과가 달라지지 않게 하려는 의도다.
+
+`composition`은 `linear` | `omnibus` | `alternating-pov` | `frame`이며, 고르면 프리셋이 연속성
+줄기(`threads`)와 서술자 카드(§4.2a)를 만든다. `threads`는 `{ "<id>": { "title": string,
+"wraps"?: string[] } }` 모양이고, `wraps`는 액자식에서 외화가 감싸는 내화 줄기다.
+`narration.defaultNarrator`는 이름 붙인 기본 서술자다.
+
+```jsonc
+"setting": {
+  "pov": "first",
+  "composition": "omnibus",
+  "threads": { "ep1": { "title": "나룻배" }, "ep2": { "title": "등불" } },
+  "narration": { "defaultNarrator": "hana-first" }
+}
+```
+
+줄기는 **연속성의 스코프**다. 이야기 상태 원장(§4.10)·장 요약·직전 씬 맥락·페르소나/배경 기억이
+줄기 안에서만 이어지고, 캐넌(§4.7)만 전역으로 공유된다. 기본 줄기 `main`은 종전 경로를 그대로
+쓰고, 나머지 줄기는 `.storyboard/memory/threads/<id>/` 아래로 내려간다. 씬 번호는 전역으로
+유지되고 원고 조립도 번호순이다.
+
 ### 4.2 `.card` (YAML)
 
 `.card`의 실제 텍스트 포맷은 YAML이다. VSCode에서는 `CustomTextEditorProvider`로 등록된 커스텀 에디터가 이 YAML을 카드 폼(이미지 + key/value 영역)으로 렌더링한다. 사용자가 텍스트로 직접 편집하고 싶으면 "Open With…"로 일반 텍스트 에디터를 선택할 수도 있다.
@@ -288,6 +314,35 @@ description:
   - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-engine/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
   - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
+### 4.2a `.card` (서술자 카드, `narrator/`)
+
+시점에 이름을 붙인 카드다. 씬 카드의 `narrator`나 `chapters.yaml` 장의 `narrator`가 이 id를 고른다.
+만들지 않아도 되며, 없으면 `setting.pov` 하나가 모든 씬에 적용된다.
+
+```yaml
+type: narrator
+id: hana-first
+name: 하나의 목소리
+person: first          # first | second | third
+knowledge: witnessed   # witnessed | omniscient | retrospective
+tense: past            # past | present (생략 시 past)
+focal: hana            # 초점 인물 카드 id
+voice:
+  - 건조한 단문
+  - 자기 비하 섞인 유머
+```
+
+- `knowledge`가 `witnessed`면 서술자는 초점 인물이 보거나 듣거나 겪은 것만 서술한다. 이 경계는
+  프롬프트 지시, 검수 항목, 그리고 이야기 상태 원장의 목격자 필터(§4.10) 세 곳에서 강제된다.
+- `retrospective`는 결말을 이미 아는 자리에서 회고하는 화자다.
+- `tense`는 `proseConventionLines`가 고정하는 시제를 정한다. 지정하지 않으면 과거형이다.
+- `voice`는 서술 문장의 목소리이며, 검수의 «서술자 목소리 이탈» 항목이 이 값을 기준으로 삼는다.
+
+**해석 순서는 씬 카드 > 장(`chapters.yaml`) > 프로젝트 기본**이다. 초점 인물은 서술자 카드의
+`focal` → 씬의 `povCharacter` 순으로 정해진다. 참조한 서술자 카드가 없으면 조용히 기본값으로
+떨어지지 않고 `NarrationError`로 거절한다 — 잘못된 시점으로 초안을 덮어쓰는 것보다 멈추는 편이
+낫기 때문이다. CLI `doctor`가 이 참조를 생성 전에 검사한다.
+
 ### 4.3 `.png`
 
 - 캐릭터 프로필: `character/profile/<id>.png`
@@ -357,6 +412,13 @@ summary: 01-arrival.summary.md
   `scene beats` verb·확장 명령·봇 `/scene beats`는 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
   비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
   우선한다.
+
+#### 서술자와 줄기 (`narrator`·`thread`)
+
+`narrator`는 이 씬이 쓸 서술자 카드 id, `thread`는 이 씬이 속한 연속성 줄기다. 둘 다 생략할 수 있고,
+생략하면 장 → 프로젝트 기본으로 내려간다(`thread`의 기본은 `main`). 아웃라인에서 씬 시드를 만들 때
+장의 `narrator`·`thread`가 씬 카드로 **복사**되므로, 시점 교차는 `chapters.yaml`의 장에 한 줄만
+적으면 표현된다.
 
 #### 장면의 경계 (`endState`·`povCharacter`)
 
@@ -524,7 +586,7 @@ Candidates to Canon` 명령으로 작가가 후보를 골라 `canon.yaml`로 승
 장편 자동 생성은 outline을 명시적 산출물로 저장해야 재시도와 검수가 가능하다.
 
 - `synopsis.md`: 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 시점, 문체 규칙. (`storyboard.outline.generate`가 생성)
-- `chapters.yaml`: act/chapter/scene 구조, chapter/scene 목표 분량, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. (`storyboard.outline.generate`가 생성)
+- `chapters.yaml`: act/chapter/scene 구조, chapter/scene 목표 분량, 각 씬의 목적, 등장 인물, 배경, 갈등, 반전, 감정 변화, 회수할 복선, 필요한 설정 사실. 장에는 `narrator`·`thread`를 둘 수 있고, 씬 시드를 만들 때 씬 카드로 복사된다. (`storyboard.outline.generate`가 생성)
 - `revision-plan.yaml`: 검사 결과와 재작성 지시를 scene 단위로 누적. (`storyboard.draft.reviseLoop`·`storyboard.novel.generate`가 기록)
 
 이 파일들은 사람이 검토할 수 있는 계획이면서, `scene/*.card`와 `draft/*.md`를 생성하는 입력이다. `synopsis.md`·`chapters.yaml`는 `storyboard.outline.generate`로 생성하며, 사용자가 VSCode에서 직접 편집한다. `chapters.yaml`에서 `scene/NN-slug.card` 시드를 파생하는 흐름은 `storyboard.scene.generateAllSeeds`가 담당하고, 생성된 시드는 기존 `Generate All Drafts`가 그대로 처리한다.
@@ -553,6 +615,12 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 `cardHash`로 카드가 바뀌면 무효화한다. 씬 단위 캐시(4.6)는 그대로 두고, 이 캐시는 **카드 단위**로 분리해 부분 재생성(§8 라우팅)의 입력으로 쓴다.
 
 ### 4.10 `.storyboard/memory/storyState.md` (이야기 상태 원장)
+
+항목은 `- [<씬 번호>|<목격자 id들>] <사실>` 형태로 적힌다. 목격자는 그 사실이 확립된 씬에 있던
+인물이며, `witnessed` 서술자의 초점 인물이 목격자에 없으면 그 항목은 프롬프트 주입에서 빠진다 —
+화자가 없던 자리의 일을 아는 것이 시점 이탈이기 때문이다. 목격자가 적히지 않은 구 버전 항목
+(`- [12] …`, `- …`)은 판정할 수 없으므로 그대로 통과시킨다. 줄기가 여럿이면 이 파일은 줄기별로
+`.storyboard/memory/threads/<id>/storyState.md`에 놓인다.
 
 씬 사이의 기억이 직전 드래프트 꼬리 1,000자뿐이면, 앞 화가 확립한 사실·관계·공개된 정보가 다음 씬에
 전달되지 않고 **씬 경계마다 상태가 리셋된다.** 그 결과 인물의 상태가 역전되고(정지 여부), 이미 공개한

@@ -55,6 +55,24 @@ If documents conflict in a way that could change behavior, investigate and ask b
 - Any import that climbs out of its own folder uses the alias; `./sibling` is fine and `../` fails the architecture check.
 - Aliases live in each project's `tsconfig.json`; [`scripts/aliases.mjs`](scripts/aliases.mjs) feeds the same table to esbuild, Vite, and Vitest, so no bundler config restates a path.
 
+## Narration and Composition
+
+시점은 `setting.pov`(5값: `first`, `first-retrospective`, `second`, `third-limited`,
+`third-omniscient`) 하나로 시작하고, 이름 붙인 서술자가 필요해지면 `narrator/*.card`를 만든다.
+카드는 인칭·지식 경계(`witnessed`/`omniscient`/`retrospective`)·시제·초점 인물·목소리를 갖는다.
+해석은 **씬 카드 > `chapters.yaml`의 장 > 프로젝트 기본** 순이며, 아무것도 없으면 프롬프트에
+시점 지시가 나가지 않는다(기존 작품의 결과가 달라지지 않게 하려는 의도).
+
+구성(`setting.composition`)은 `linear` / `omnibus` / `alternating-pov` / `frame` 네 프리셋이고,
+프리셋이 연속성 줄기(`setting.threads`)와 서술자 카드를 만든다. 줄기는 이야기 상태 원장·장
+요약·직전 씬 맥락·페르소나/배경 기억의 스코프다 — 기본 줄기 `main`은 종전 경로를 쓰고 나머지는
+`.storyboard/memory/threads/<id>/` 아래로 내려가며, **캐넌만 전역으로 공유**된다. 씬 번호는
+전역으로 유지되고 원고 조립도 번호순이다.
+
+지식 경계는 이야기 상태 원장의 항목마다 기록된 목격자(`- [12|hana,jun] …`)로 강제된다.
+`witnessed` 서술자의 초점 인물이 목격자에 없으면 그 항목은 프롬프트에서 빠지고, 목격자가 없는
+구 버전 항목은 판정할 수 없으므로 통과시킨다.
+
 ## Domain Boundaries
 
 Keep responsibilities separated by runtime and dependency direction.

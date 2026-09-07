@@ -3,6 +3,9 @@ import {
   canonicalizeCardText,
   convertLegacySceneText,
   draftRelativePath,
+  narratorCardRelativePath,
+  serializeNarratorCard,
+  type NarratorCard,
   type StoryboardCard,
 } from '@storyboard/story-format';
 
@@ -39,6 +42,27 @@ export class ContentService {
 
   public listScenes(): Promise<SceneSummary[]> {
     return this.store.listScenes();
+  }
+
+  public listNarrators(): Promise<NarratorCard[]> {
+    return this.store.listNarrators();
+  }
+
+  // `narrator/` 는 tracked 이므로 서술자를 만드는 것도 커밋이다. 베이스라인이 없다는 것은 새 파일을
+  // 뜻하고, 그 사이 누가 같은 id 를 만들었으면 게이트가 거절한다.
+  public createNarrator(card: NarratorCard): Promise<MutateOutcome> {
+    return this.gate.apply(
+      {
+        writes: [
+          {
+            relativePath: narratorCardRelativePath(card.id),
+            content: serializeNarratorCard(card),
+            baselineHash: undefined,
+          },
+        ],
+      },
+      `storyboard-bot: add narrator/${card.id}.card`,
+    );
   }
 
   public readCard(kind: CardKind, id: string): Promise<ReadFile<StoryboardCard>> {
