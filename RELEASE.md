@@ -40,9 +40,14 @@ Reproduce the artifacts:
 version="$(node -p "require('./package.json').version")"
 mkdir -p release
 npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
-tar -czf "release/storyboard-bot-${version}.tar.gz" -C apps/bot dist package.json README.md config.example.json assets
-tar -czf "release/storyboard-cli-${version}.tar.gz" -C apps/cli dist package.json
+npm run bot:build && npm run cli:build
+scripts/package-tarballs.sh "$version" release
 ```
+
+Each build writes a runtime `dist/package.json` that lists only the bundle's esbuild externals as
+dependencies (the source manifest's `@storyboard/*` workspace entries are inlined in the bundle and
+would make `npm install` in an unpacked tarball fail). `package-tarballs.sh` ships that manifest at
+the tarball root, never the source one.
 
 ## Version commit
 
@@ -91,13 +96,11 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 - **CLI and bot** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
   The script resolves the latest release, verifies both checksums, unpacks the CLI into
   `~/.local/share/storyboard` and the bot into `~/.local/share/storyboard-bot`, installs the bot's
-  one native module (`better-sqlite3`) next to it, and links `~/.local/bin/storyboard` and
+  runtime dependencies (`npm install --omit=dev`, only `better-sqlite3`), and links `~/.local/bin/storyboard` and
   `~/.local/bin/storyboard-bot`. The tarballs are bundled Node scripts, so the machine needs Node 20
   or newer plus npm. Configure the bot afterwards with `storyboard-bot setup`.
-- **Bot by hand** — unpack `storyboard-bot-<version>.tar.gz`, install `better-sqlite3` into its
-  `node_modules` (the shipped `package.json` also lists workspace packages that are already inlined
-  in the bundle, so install it from an empty manifest and move `node_modules` over), then run
-  `node dist/index.js setup` and `node dist/index.js`.
+- **Bot by hand** — unpack `storyboard-bot-<version>.tar.gz`, run `npm install --omit=dev` in that
+  directory (it pulls only `better-sqlite3`), then `node dist/index.js setup` and `node dist/index.js`.
 
 If the workflow fails, delete the failed tag only after deciding whether the release commit itself
 should change.

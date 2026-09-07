@@ -29,6 +29,10 @@ if [ "$VERSION" = "latest" ]; then
 fi
 
 VERSION="${VERSION#v}"
+# Older tarballs ship the source manifest, whose workspace entries make the bot's npm install fail.
+MIN_VERSION="0.8.6"
+[ "$(printf '%s\n%s\n' "$MIN_VERSION" "$VERSION" | sort -V | head -n1)" = "$MIN_VERSION" ] \
+  || fail "This installer supports storyboard $MIN_VERSION or newer (requested $VERSION)."
 CLI_ARCHIVE="storyboard-cli-${VERSION}.tar.gz"
 BOT_ARCHIVE="storyboard-bot-${VERSION}.tar.gz"
 BASE="https://github.com/$REPO/releases/download/v${VERSION}"
@@ -63,19 +67,13 @@ tar -xzf "$WORK/$CLI_ARCHIVE" -C "$CLI_LIB_DIR"
 chmod +x "$CLI_LIB_DIR/dist/index.mjs"
 ln -sf "$CLI_LIB_DIR/dist/index.mjs" "$BIN_DIR/storyboard"
 
-# The bot bundle leaves better-sqlite3 external because it is a native module. Install just that,
-# pinned to the range the bundle was built against, from a scratch manifest: the shipped
-# package.json also lists @storyboard/* workspace packages (already inlined in the bundle) that npm
-# would try to resolve from the registry and fail on.
+# The tarball's package.json is the runtime manifest the build emits, so it names only the bundle's
+# externals (the native better-sqlite3) and a plain install resolves.
 rm -rf "$BOT_LIB_DIR"
 mkdir -p "$BOT_LIB_DIR"
 tar -xzf "$WORK/$BOT_ARCHIVE" -C "$BOT_LIB_DIR"
-sqlite_range="$(node -p 'require(require("path").resolve(process.argv[1])).dependencies["better-sqlite3"]' "$BOT_LIB_DIR/package.json")"
-mkdir -p "$WORK/sqlite"
-printf '{"private":true}\n' > "$WORK/sqlite/package.json"
-(cd "$WORK/sqlite" && npm install --no-save --no-package-lock --no-audit --no-fund --loglevel=error "better-sqlite3@${sqlite_range}") \
-  || fail "Could not install better-sqlite3 for the bot."
-mv "$WORK/sqlite/node_modules" "$BOT_LIB_DIR/node_modules"
+(cd "$BOT_LIB_DIR" && npm install --omit=dev --no-package-lock --no-audit --no-fund --loglevel=error) \
+  || fail "Could not install the bot's runtime dependencies."
 chmod +x "$BOT_LIB_DIR/dist/index.js"
 ln -sf "$BOT_LIB_DIR/dist/index.js" "$BIN_DIR/storyboard-bot"
 

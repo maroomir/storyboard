@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import * as esbuild from 'esbuild';
 
 import { aliasesFromTsconfig } from '../../scripts/aliases.mjs';
+import { writeRuntimeManifest } from '../../scripts/runtimeManifest.mjs';
 
 const packageRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -37,3 +38,6 @@ await esbuild.build({
     'react-devtools-core': path.join(packageRoot, 'scripts/stubs/react-devtools-core.js'),
   },
 });
+
+// The CLI bundle has no externals; the manifest still ships so both tarballs have the same shape.
+writeRuntimeManifest(packageRoot, []);
