@@ -49,13 +49,23 @@ describe("DraftCritiquePrompt", () => {
     expect(artifact.user).toContain("말투: 짧은 존댓말")
   })
 
-  it("includes pov and relation stage from the style directive", () => {
+  it("includes narration and relation stage from the style directive", () => {
     const artifact = DraftCritiquePrompt.build(
-      { ...input, styleDirective: { pov: "first", genre: "허세 코미디", relationStage: "적대적 첫 만남" } },
+      {
+        ...input,
+        styleDirective: {
+          narration: { person: "first", knowledge: "witnessed", voice: ["건조한 단문"] },
+          genre: "허세 코미디",
+          relationStage: "적대적 첫 만남"
+        }
+      },
       "generic"
     )
 
     expect(artifact.user).toContain("[시점]")
+    expect(artifact.user).toContain("1인칭 · 목격 범위")
+    expect(artifact.user).toContain("[서술자 목소리]")
+    expect(artifact.user).toContain("건조한 단문")
     expect(artifact.user).toContain("[관계 단계]")
     expect(artifact.user).toContain("적대적 첫 만남")
     expect(artifact.system).toContain("관계 단계")

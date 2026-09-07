@@ -7,6 +7,7 @@ import {
   createDraft,
   joinCardText,
   parseDraft,
+  resolveNarration,
   serializeDraft,
 } from '@storyboard/story-format';
 import type { BackgroundCard } from '@storyboard/story-format';
@@ -253,7 +254,10 @@ async function runAndPersistDraft(
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
-        scene.frontmatter.povCharacter,
+        resolveNarration({
+          pov: project.setting?.pov,
+          focalFallback: scene.frontmatter.povCharacter,
+        }),
       ),
       previousContext,
       canonFactLines: inputs.canonFactLines,

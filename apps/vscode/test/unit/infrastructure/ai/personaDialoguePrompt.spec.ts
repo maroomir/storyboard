@@ -84,25 +84,25 @@ describe("PersonaDialoguePrompt scene-craft lines", () => {
   })
 })
 
-describe("PersonaDialoguePrompt pov interiority line", () => {
-  it("includes the interiority line when pov is first", () => {
-    expect(buildDialogue("generic", { pov: "first" }).system).toContain(POV_INTERIORITY_LINE)
+describe("PersonaDialoguePrompt focal interiority line", () => {
+  it("includes the interiority line when the narrator only knows what was witnessed", () => {
+    expect(buildDialogue("generic", { narration: { person: "first", knowledge: "witnessed" } }).system).toContain(POV_INTERIORITY_LINE)
   })
 
-  it("includes the interiority line when pov is third-limited", () => {
-    expect(buildDialogue("generic", { pov: "third-limited" }).system).toContain(POV_INTERIORITY_LINE)
+  it("includes the interiority line when the narrator looks back on the story", () => {
+    expect(buildDialogue("generic", { narration: { person: "first", knowledge: "retrospective" } }).system).toContain(POV_INTERIORITY_LINE)
   })
 
   it("omits the interiority line when style is undefined", () => {
     expect(buildDialogue("generic").system).not.toContain(POV_INTERIORITY_LINE)
   })
 
-  it("omits the interiority line when pov is third-omniscient", () => {
-    expect(buildDialogue("generic", { pov: "third-omniscient" }).system).not.toContain(POV_INTERIORITY_LINE)
+  it("omits the interiority line when the narrator is omniscient", () => {
+    expect(buildDialogue("generic", { narration: { person: "third", knowledge: "omniscient" } }).system).not.toContain(POV_INTERIORITY_LINE)
   })
 
-  it("omits the interiority line for the xs variant even when pov is first", () => {
-    expect(buildDialogue("xs", { pov: "first" }).system).not.toContain(POV_INTERIORITY_LINE)
+  it("omits the interiority line for the xs variant even when the narrator is limited", () => {
+    expect(buildDialogue("xs", { narration: { person: "first", knowledge: "witnessed" } }).system).not.toContain(POV_INTERIORITY_LINE)
   })
 })
 
