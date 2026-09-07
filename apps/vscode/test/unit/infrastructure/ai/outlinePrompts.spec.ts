@@ -14,7 +14,9 @@ const brief: OutlineBrief = {
   tags: ["학원"],
   prohibitions: ["과도한 폭력"],
   styleConstraints: ["단문 위주"],
-  qualityCriteria: ["복선 회수"]
+  qualityCriteria: ["복선 회수"],
+  threads: [],
+  narratorIds: []
 }
 
 const synopsis: OutlineSynopsis = {
@@ -86,3 +88,60 @@ describe("ChapterPlanPrompt", () => {
     expect(xs.system.length).toBeLessThan(generic.system.length)
   })
 })
+
+describe("composition instructions", () => {
+  it("says nothing about composition for a linear project", () => {
+    const artifact = ChapterPlanPrompt.build(brief, synopsis, characters, "generic")
+
+    expect(artifact.system).not.toContain("옴니버스")
+    expect(artifact.system).not.toContain('"thread"')
+  })
+
+  it("asks an omnibus to close each episode on its own", () => {
+    const omnibus: OutlineBrief = {
+      ...brief,
+      composition: "omnibus",
+      threads: [
+        { id: "ep1", title: "나룻배" },
+        { id: "ep2", title: "등불" }
+      ]
+    }
+
+    const artifact = ChapterPlanPrompt.build(omnibus, synopsis, characters, "generic")
+
+    expect(artifact.system).toContain("옴니버스")
+    expect(artifact.system).toContain("ep1(나룻배), ep2(등불)")
+    expect(artifact.system).toContain('"thread"')
+  })
+
+  it("asks alternating point of view to rotate narrators by chapter", () => {
+    const alternating: OutlineBrief = {
+      ...brief,
+      composition: "alternating-pov",
+      narratorIds: ["hana-pov", "jun-pov"]
+    }
+
+    const artifact = ChapterPlanPrompt.build(alternating, synopsis, characters, "generic")
+
+    expect(artifact.system).toContain("시점 교차")
+    expect(artifact.system).toContain("hana-pov, jun-pov")
+    expect(artifact.system).toContain('"narrator"')
+  })
+
+  it("asks a frame to sit at the first and last chapter", () => {
+    const frame: OutlineBrief = {
+      ...brief,
+      composition: "frame",
+      threads: [
+        { id: "frame", title: "외화", wraps: ["inner"] },
+        { id: "inner", title: "내화" }
+      ]
+    }
+
+    const artifact = ChapterPlanPrompt.build(frame, synopsis, characters, "generic")
+
+    expect(artifact.system).toContain("액자식")
+    expect(artifact.system).toContain("첫 장과 마지막 장")
+  })
+})
+

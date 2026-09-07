@@ -15,6 +15,7 @@ import type {
   StoryboardProject,
 } from '@storyboard/story-format';
 import { readProjectJson } from '#engine/persistence/projectJson';
+import { loadNarratorCards } from '#engine/persistence/narratorCards';
 export class OutlineRepository implements IOutlineRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 
@@ -33,6 +34,15 @@ export class OutlineRepository implements IOutlineRepository {
       this.fileSystem,
       getStoryboardProjectPaths(workspaceRoot).characterDirectory,
     );
+  }
+
+  public async loadNarratorIds(workspaceRoot: StoryUri): Promise<readonly string[]> {
+    const narrators = await loadNarratorCards(
+      getStoryboardProjectPaths(workspaceRoot),
+      this.fileSystem,
+    );
+
+    return [...narrators.keys()];
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
