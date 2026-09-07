@@ -176,8 +176,8 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 ```
 
 API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by all three apps. `STORYBOARD_HOME`
-moves the whole directory. An older install that still has `cli.json` / `cli-secrets.json` keeps
-working from them until the shared files exist, and is warned once per run to rename.
+moves the whole directory. The pre-0.8 `cli.json` / `cli-secrets.json` are no longer read: rename
+them to `config.json` / `secrets.json`, or run `storyboard setup` again.
 
 ## What this app does not do
 

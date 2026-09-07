@@ -10,6 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Terminal commands for `storyboard-bot`.** `storyboard-bot doctor` checks the config file, workspace, git and providers, and `--help` / `--version` print usage and version. Unlike Telegram's `/doctor` it answers before the bot can start, so a missing or broken config explains itself in the terminal.
+
+### Changed
+
+- **Unknown arguments are refused.** A mistyped command such as `storyboard-bot init` used to be ignored and the bot started anyway, which made a typo look like a configuration failure. It now prints usage and exits 1.
+- **A missing config reads as onboarding, not an error.** A first run is not a fault, so it points at `storyboard-bot setup`. A config file that exists but is broken still logs an ERROR as before.
+
+### Removed
+
+- **The CLI no longer reads the pre-0.8 `cli.json` / `cli-secrets.json`.** Rename them to the shared `~/.storyboard/config.json` / `secrets.json`, or run `storyboard setup` again.
+
 ## [0.8.8] - 2026-09-07
 
 ### Added

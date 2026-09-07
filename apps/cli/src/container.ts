@@ -136,9 +136,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 // The CLI's service graph. It mirrors the extension's platform module one-for-one: only the four
 // host adapters differ, which is the whole point of the engine boundary.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
-  const paths = resolveCliPaths(process.env, (message) =>
-    process.stderr.write(`[warn] ${message}\n`),
-  );
+  const paths = resolveCliPaths(process.env);
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
