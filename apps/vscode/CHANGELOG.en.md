@@ -10,9 +10,16 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.7] - 2026-09-07
+
+### Added
+
+- **One `install.sh` line now installs the Telegram bot alongside the CLI.** Previously only the CLI was installed; the bot had to be unpacked by hand, and even then failed to run because `better-sqlite3` — outside the bundle — was missing. Both tarballs are now checksum-verified and unpacked, the bot's runtime dependency is installed, and both `storyboard` and `storyboard-bot` are linked. Follow up with `storyboard-bot setup`. Node 20 or newer plus npm is required.
+
 ### Fixed
 
 - **Edited cards and scenes now invalidate the story-state ledger.** Each ledger entry records the input hash of the scene that produced it, so editing a card or a scene without regenerating that scene marks its entries stale; regenerating an earlier scene marks the later ones stale too (rewind). Stale entries stay in the ledger as `- [22!] …` but are dropped from generation prompts, and both the generation warnings and `storyboard doctor` name the scenes to regenerate. Regenerating a scene clears its marks. A pre-0.8 ledger has nothing to compare against, so it is never called stale — `storyboard init --repair` seals it against today's cards and scenes.
+- **`npm install` in an unpacked tarball no longer fails with a 404.** The published artifacts carried the source manifest, including `@storyboard/*` workspace dependencies that do not exist in the registry. Each tarball now ships a runtime manifest listing only the external dependencies the bundle actually needs. **`install.sh` refuses versions 0.8.5 and older**, so move to this release or newer if you were installing an old one.
 
 ## [0.8.6] - 2026-09-07
 
