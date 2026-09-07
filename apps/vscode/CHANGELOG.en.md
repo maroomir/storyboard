@@ -10,14 +10,27 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.9] - 2026-09-07
+
 ### Added
 
 - **Terminal commands for `storyboard-bot`.** `storyboard-bot doctor` checks the config file, workspace, git and providers, and `--help` / `--version` print usage and version. Unlike Telegram's `/doctor` it answers before the bot can start, so a missing or broken config explains itself in the terminal.
+- **Canon validity is measured on a story time axis.** Put an integer `storyTime` on a scene card and validity ranges are measured on that axis, so a flashback, frame story, or time jump no longer means "a character who died in chapter 20 is still dead in a chapter 25 flashback." Scenes without one keep using the scene ordinal, and if no fact uses the time axis the scenes are not read at all. Reveal timing (`revealFrom`) stays on the scene ordinal — it is about the order the reader read things — and now takes a `{ scene, knownBy }` form so "A knows, B does not" is expressible: characters who do not know are marked `(not yet known: Jihun)`, preserving dramatic irony.
+- **The section expansion output limit is configurable.** Lowering `draft.sectionOutputLimit` (default 7,000) splits the work into more sections, which means more calls and more length. When the target is below the limit, expansion runs only once and length stays stuck near the skeleton's — and the prompt's character-count instruction proved ineffective in practice, leaving nothing to adjust.
 
 ### Changed
 
 - **Unknown arguments are refused.** A mistyped command such as `storyboard-bot init` used to be ignored and the bot started anyway, which made a typo look like a configuration failure. It now prints usage and exits 1.
 - **A missing config reads as onboarding, not an error.** A first run is not a fault, so it points at `storyboard-bot setup`. A config file that exists but is broken still logs an ERROR as before.
+- **Final review now runs one chapter at a time.** It used to put the whole manuscript in a single call, so at two or three volumes the model's attention thinned toward the end and contradictions in the middle went essentially undetected. Each chapter now gets its own continuity and critique pair, carrying the preceding chapters' summaries so contradictions across chapter boundaries stay visible. It no longer depends on a long-context model, so review quality survives a change of provider.
+
+### Fixed
+
+- **Drafts of event-light scenes no longer fall far short of the target length.** The skeleton prompt asked for "no description" and "about N characters" at once; the two instructions conflict and which one wins was down to the model. In practice one model wrote a third of the target, leaving expansion to carry a ninefold stretch, and the final draft came in under half. Length is now explicitly filled by event density rather than description, and a skeleton under half the target is re-requested once with the reason attached.
+- **Expansion no longer pads its length by repeating.** With the material exhausted, repetition was the model's only way to reach the target, so a section would restate dialogue the previous one had already broken up and repeat a closing action. The old check only caught a section rewritten wholesale, so smaller repetitions passed. Repetition is now a violation, and a short clean version wins over a long padded one.
+- **Splitting a long line into several sentences is no longer mistaken for losing it.** Comparing each fragment against the original meant a split line fell under the threshold and was flagged as missing, burning two retries and leaving a warning on the draft. Consecutive fragments are now compared joined as well.
+- **Editing an earlier chapter marks its summary stale.** Nothing recorded which draft a summary came from, so rewriting an earlier chapter left the summary frozen on the old text and the discarded version's plot kept flowing into later chapters' prompts. A stale chapter is not deleted, only excluded from the prompt, and generation warnings plus `doctor` name the chapters to re-summarise.
+- **Rewriting an early scene no longer leaks information from later ones.** Character and background memory was reused on the card hash alone, so memory that had evolved through scene 30 was used verbatim while rewriting scene 5. Memory updated after the scene being written is now rebuilt — closing an asymmetry where the ledger had rewind but card memory did not.
 
 ### Removed
 
