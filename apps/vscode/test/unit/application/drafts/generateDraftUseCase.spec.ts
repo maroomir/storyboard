@@ -58,6 +58,7 @@ const fakeScene = {
   order: 1,
   orderText: "01",
   slug: "intro",
+  card: { type: "scene", id: "01-intro" },
   frontmatter: {},
   body: "씬 본문"
 }

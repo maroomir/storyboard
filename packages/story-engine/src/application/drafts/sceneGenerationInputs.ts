@@ -7,7 +7,6 @@ import {
   buildSceneContext,
   formatBibleFactLines,
   parseSceneFileName,
-  resolveNarration,
   SceneParseError,
   type NarrationDirective,
 } from '@storyboard/story-format';
@@ -18,6 +17,7 @@ import {
 } from '#engine/paths/projectPaths';
 
 import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
+import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
@@ -271,11 +271,25 @@ async function loadSceneContextBundle(
   const scene = await resolveSceneBeats(sceneUri, grounded.scene, characterNames, options);
   const context = { ...builtContext, scene };
 
-  const thread = await resolveSceneThread(paths, scene, project, options.fileSystem);
-  const narration = resolveNarration({
-    pov: project.setting?.pov,
-    focalFallback: scene.frontmatter.povCharacter,
-  });
+  const chapterDefaults = await readChapterNarrationDefaults(
+    paths,
+    scene.order,
+    options.fileSystem,
+  );
+  const thread = await resolveSceneThread(
+    paths,
+    scene,
+    project,
+    options.fileSystem,
+    chapterDefaults.thread,
+  );
+  const narration = await resolveSceneNarration(
+    paths,
+    scene,
+    project,
+    chapterDefaults,
+    options.fileSystem,
+  );
   const sceneBreakJoiner = resolveSceneBreakJoiner(
     options.configBridge.getDraftSceneBreakSeparator(),
   );

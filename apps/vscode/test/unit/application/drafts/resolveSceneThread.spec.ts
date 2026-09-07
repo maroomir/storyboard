@@ -109,3 +109,34 @@ describe('resolveSceneThread', () => {
     expect(resolved.threadPaths.draftDirectory).toBe(paths.draftDirectory);
   });
 });
+
+describe('chapter defaults', () => {
+  it('takes the thread from the chapter when the scene card names none', async () => {
+    const planFileSystem = {
+      readDirectory: async (): Promise<[string, { type: 'file' | 'directory' }][]> => [
+        ['01-dock.card', { type: 'file' as const }],
+        ['02-alley.card', { type: 'file' as const }],
+      ],
+      readFile: async (uri: StoryUri): Promise<Uint8Array> => {
+        const name = uri.path.split('/').pop() ?? '';
+        const bodies: Record<string, string> = {
+          '01-dock.card': 'type: scene\nid: 01-dock\nsummary: 나룻배.\n',
+          '02-alley.card': 'type: scene\nid: 02-alley\nsummary: 골목.\n',
+        };
+        const body = bodies[name];
+
+        if (body === undefined) {
+          throw new Error(`missing ${name}`);
+        }
+
+        return new TextEncoder().encode(body);
+      },
+    } as unknown as Parameters<typeof resolveSceneThread>[3];
+
+    const scene = parseScene('type: scene\nid: 02-alley\nsummary: 골목.\n', '02-alley.card');
+    const resolved = await resolveSceneThread(paths, scene, threadedProject, planFileSystem, 'ep1');
+
+    expect(resolved.threadId).toBe('ep1');
+    expect(resolved.previousSceneOrder).toBe(1);
+  });
+});

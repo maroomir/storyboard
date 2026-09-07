@@ -64,6 +64,8 @@ function buildSceneSeedCard(stem: string, flatScene: FlatChapterScene): SceneCar
     type: 'scene',
     id: stem,
     title: scene.title,
+    ...(flatScene.chapterNarrator === undefined ? {} : { narrator: flatScene.chapterNarrator }),
+    ...(flatScene.chapterThread === undefined ? {} : { thread: flatScene.chapterThread }),
     ...(scene.characters.length > 0 ? { characters: [...scene.characters] } : {}),
     ...(scene.location === undefined ? {} : { location: scene.location }),
     ...(scene.targetWordCount === undefined ? {} : { targetWordCount: scene.targetWordCount }),
