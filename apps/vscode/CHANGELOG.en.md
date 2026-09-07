@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-09-07
+
 ### Added
 
 - **The CLI recognises and repairs pre-0.8 workspaces.** `doctor` reports missing directories (`draft/`, `scene/`), legacy `scene/*.txt`, placeholder summaries left by the seed factory, a stale `.gitignore` block, and scene cards it cannot parse — one line each, with the command that fixes it. `storyboard init --repair` brings the directories and `.gitignore` of an existing workspace up to date without touching the contract; a plain `init` now refuses an existing workspace. `scene migrate` clears the placeholder line as well as converting `.txt`, keeping whatever summary the author wrote above it.
@@ -21,6 +23,8 @@ after the first public release.
 - **The claude-code provider now runs as a novelist only.** Tools are disabled and the system prompt is replaced wholesale, so agent phrasing like "I'll write the scene…" no longer leaks into drafts.
 - **claude-code failures name their reason.** Instead of only "exited abnormally (exit 1)", the message now carries the reason the CLI gave (usage limit, authentication…), and a failed `doctor` login check appends its cause.
 - **One `.gitignore` block definition serves all three apps.** A stale block that has the marker but lacks entries gets the missing lines (`manuscript/` etc.) appended.
+- **A single broken scene card no longer stops `doctor` or `scene migrate`.** A card with malformed YAML used to make `doctor` produce no diagnosis at all, and made `scene migrate` die with an exception after the `.txt` conversion, leaving the job half done. Both now report the unreadable file names separately and carry on with the rest.
+- **Warnings are printed right after generation.** `scene generate`'s length warning appeared only after the review rewrite had finished, re-reporting a problem that had already been fixed.
 
 ## [0.8.4] - 2026-09-07
 
