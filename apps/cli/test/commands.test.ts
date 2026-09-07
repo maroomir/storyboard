@@ -1,6 +1,14 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -754,6 +762,45 @@ describe('scene show', () => {
 
     expect(outcome.message).toContain('전지');
     expect(outcome.message).toContain('줄기: ep2');
+  });
+});
+
+describe('doctor: unreadable ledger lines', () => {
+  function writeLedger(relativePath: string, ...lines: readonly string[]): void {
+    const absolute = join(workspace, ...relativePath.split('/'));
+    mkdirSync(dirname(absolute), { recursive: true });
+    writeFileSync(
+      absolute,
+      ['# 이야기 상태', '<!-- through-scene: 2 -->', '## 확정 사실', ...lines, ''].join('\n'),
+    );
+  }
+
+  it('stays quiet about a ledger it can read', async () => {
+    writeLedger('.storyboard/memory/storyState.md', '- [1] 사실', '- [2|hana] 사실', '- 태그 없는 사실');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).not.toContain('태그를 읽지 못한 원장 줄');
+  });
+
+  it('reports a hand-edited line whose tag no longer parses', async () => {
+    writeLedger('.storyboard/memory/storyState.md', '- [1] 사실', '- [2!!] 망가진 줄');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).toContain('태그를 읽지 못한 원장 줄이 1개');
+    expect(outcome.message).toContain('[2!!] 망가진 줄');
+  });
+
+  it('looks at the ledger of every declared thread', async () => {
+    await run('project set', args(['project', 'set'], { composition: 'omnibus', episodes: '2' }));
+    writeLedger('.storyboard/memory/storyState.md', '- [1] 사실');
+    writeLedger('.storyboard/memory/threads/ep2/storyState.md', '- [삼] 편 안의 망가진 줄');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).toContain('태그를 읽지 못한 원장 줄이 1개');
+    expect(outcome.message).toContain('[삼] 편 안의 망가진 줄');
   });
 });
 

@@ -16,7 +16,10 @@ import {
   isDirectSceneCardFile,
 } from '#engine/paths/projectPaths';
 
-import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
+import {
+  computeSceneInputHash,
+  sceneNarrationHashInput,
+} from '#engine/domain/files/sceneCache';
 import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
@@ -325,6 +328,7 @@ async function loadSceneContextBundle(
     bibleFacts: narrativeContext.bibleFacts,
     sceneBreakJoiner,
     grounding: scene.frontmatter.grounding,
+    narration: sceneNarrationHashInput(scene),
   });
 
   return {

@@ -122,6 +122,36 @@ function parseWitnesses(raw: string | undefined): readonly string[] | undefined 
   return names.length > 0 ? names : undefined;
 }
 
+// 태그처럼 생겼지만 태그로 읽히지 않는 줄. 손으로 고치다 `[3!!]`이나 `[삼]`처럼 만들면 대괄호가
+// 본문의 일부가 되어 씬 번호도 목격자도 붙지 않는다 — 파싱은 계속되지만 그 항목은 시점 필터도
+// 낡음 판정도 받지 못하므로, doctor가 사람에게 알린다.
+const suspectTagPattern = /^\[[^\]]*\]/;
+
+export function findUnreadableStoryStateLines(content: string): string[] {
+  const unreadable: string[] = [];
+  let insideSection = false;
+
+  for (const rawLine of content.split('\n')) {
+    const line = rawLine.trim();
+
+    if (line.startsWith('## ')) {
+      insideSection = labelToSection.has(line.slice(3).trim());
+      continue;
+    }
+
+    if (!insideSection || !line.startsWith('- ')) {
+      continue;
+    }
+
+    const text = line.slice(2).trim();
+    if (suspectTagPattern.test(text) && !entrySceneTagPattern.test(text)) {
+      unreadable.push(text);
+    }
+  }
+
+  return unreadable;
+}
+
 export function serializeStoryState(state: StoryState): string {
   const blocks: string[] = ['# 이야기 상태', `<!-- through-scene: ${state.throughSceneOrder} -->`];
 

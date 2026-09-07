@@ -17,15 +17,18 @@ import {
   getStoryboardProjectPaths,
   loadNarratorCards,
   readProjectJson,
+  resolveThreadPaths,
 } from '@storyboard/story-engine';
 import {
   formatSceneOrderRanges,
+  findUnreadableStoryStateLines,
   isLegacySceneFileName,
   isInlineSceneSummary,
   isLegacySeedPlaceholderSummary,
   mainThreadId,
   readMissingGitignoreEntries,
   type SceneCard,
+  type StoryboardProject,
 } from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
@@ -371,6 +374,7 @@ async function collectNarrationChecks(
     (narrator) =>
       narrator.focal === undefined && (narrator.person === 'first' || narrator.person === 'second'),
   );
+  const unreadableLedgerLines = await findUnreadableLedgerLines(container, project);
 
   return [
     ...(narrators.size > 0
@@ -411,7 +415,42 @@ async function collectNarrationChecks(
           },
         ]
       : []),
+    ...(unreadableLedgerLines.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '이야기 상태',
+            detail: `태그를 읽지 못한 원장 줄이 ${unreadableLedgerLines.length}개 있습니다 (예: ${unreadableLedgerLines[0]}). 그 항목은 시점 필터와 낡음 판정을 받지 못합니다.`,
+            fix: '해당 줄을 `- [<씬 번호>] <내용>` 형태로 고쳐 주세요.',
+          },
+        ]
+      : []),
   ];
+}
+
+// 줄기별 원장까지 함께 본다. 편이 갈린 작품에서 깨진 줄이 기본 원장에만 있으리라는 보장이 없다.
+async function findUnreadableLedgerLines(
+  container: CliContainer,
+  project: StoryboardProject | undefined,
+): Promise<string[]> {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const threadIds = Object.keys(project?.setting?.threads ?? {});
+  const ledgerPaths = [
+    paths.storyState,
+    ...threadIds.map((threadId) => resolveThreadPaths(paths, threadId).storyState),
+  ];
+
+  const lines: string[] = [];
+  for (const ledgerPath of ledgerPaths) {
+    try {
+      const content = new TextDecoder().decode(await container.fileSystem.readFile(ledgerPath));
+      lines.push(...findUnreadableStoryStateLines(content));
+    } catch {
+      continue;
+    }
+  }
+
+  return lines;
 }
 
 // 원장(.storyboard/memory/storyState.md)이 지금의 카드·씬과 어긋나는지 본다. 어긋난 채로 두면
