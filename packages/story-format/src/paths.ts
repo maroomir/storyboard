@@ -29,6 +29,7 @@ export interface StoryboardRelativePaths {
   readonly sampleCharacterCard: string;
   readonly backgroundDirectory: string;
   readonly sampleBackgroundCard: string;
+  readonly narratorDirectory: string;
   readonly sceneDirectory: string;
   readonly sampleScene: string;
   readonly draftDirectory: string;
@@ -66,6 +67,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   sampleCharacterCard: 'character/.sample.card',
   backgroundDirectory: 'background',
   sampleBackgroundCard: 'background/.sample.card',
+  narratorDirectory: 'narrator',
   sceneDirectory: 'scene',
   sampleScene: 'scene/.sample.card',
   draftDirectory: 'draft',
@@ -86,6 +88,10 @@ export function characterProfileRelativePath(id: string): string {
 
 export function backgroundCardRelativePath(id: string): string {
   return `background/${id}.card`;
+}
+
+export function narratorCardRelativePath(id: string): string {
+  return `narrator/${id}.card`;
 }
 
 export function sceneRelativePath(sceneStem: string): string {
@@ -148,6 +154,10 @@ export function isDirectCharacterCardRelativePath(relativePath: string): boolean
 
 export function isDirectBackgroundCardRelativePath(relativePath: string): boolean {
   return isDirectChildWithExtension(relativePath, 'background', '.card');
+}
+
+export function isDirectNarratorCardRelativePath(relativePath: string): boolean {
+  return isDirectChildWithExtension(relativePath, 'narrator', '.card');
 }
 
 // 마이그레이션 전용: 구형 씬 텍스트(.txt)를 찾아 변환 대상으로 보고할 때만 쓴다.

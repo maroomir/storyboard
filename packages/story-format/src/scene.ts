@@ -36,6 +36,8 @@ export const sceneFrontmatterSchema = z
     mood: z.string().trim().min(1).optional(),
     relationStage: z.string().trim().min(1).optional(),
     povCharacter: z.string().trim().min(1).optional(),
+    narrator: z.string().trim().min(1).optional(),
+    thread: z.string().trim().min(1).optional(),
     targetWordCount: z.number().int().positive().optional(),
     grounding: sceneGroundingSchema.optional(),
   })
@@ -52,6 +54,9 @@ export const sceneCardSchema = z.object({
   mood: z.string().trim().min(1).optional(),
   relationStage: z.string().trim().min(1).optional(),
   povCharacter: z.string().trim().min(1).optional(),
+  // 이 씬의 서술자 카드 id와 연속성 줄기. 생략하면 장 → 프로젝트 기본으로 내려간다.
+  narrator: z.string().trim().min(1).optional(),
+  thread: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
   grounding: sceneGroundingSchema.optional(),
   purpose: z.string().trim().min(1).optional(),
@@ -133,6 +138,8 @@ export function toSceneFrontmatter(card: SceneCard): SceneFrontmatter {
     ...(card.mood === undefined ? {} : { mood: card.mood }),
     ...(card.relationStage === undefined ? {} : { relationStage: card.relationStage }),
     ...(card.povCharacter === undefined ? {} : { povCharacter: card.povCharacter }),
+    ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
+    ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
     ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
   };

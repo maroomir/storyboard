@@ -4,7 +4,15 @@ export const projectFormats = ['novel', 'screenplay', 'play', 'essay', 'poem'] a
 
 export type ProjectFormat = (typeof projectFormats)[number];
 
-export const pointOfViews = ['first', 'third-limited', 'third-omniscient'] as const;
+// NOTE: 창작자가 고르는 시점 목록. 서술자 카드를 만들지 않아도 이 값 하나로 서술 인칭·지식 경계가
+// 정해진다(암묵 서술자). 값 추가는 하위 호환이다 — 기존 세 값의 의미는 그대로다.
+export const pointOfViews = [
+  'first',
+  'first-retrospective',
+  'second',
+  'third-limited',
+  'third-omniscient',
+] as const;
 
 export type PointOfView = (typeof pointOfViews)[number];
 
@@ -74,6 +82,33 @@ export function resolveCraftContract(override: CraftContractOverride | undefined
   };
 }
 
+// 구성. 스레드와 서술자를 어떻게 배치할지 정하는 프리셋이며, 실제 배치는 프리셋이 threads와
+// 아웃라인 지시로 풀어낸다.
+export const compositionKinds = ['linear', 'omnibus', 'alternating-pov', 'frame'] as const;
+
+export type CompositionKind = (typeof compositionKinds)[number];
+
+export const compositionKindLabels: Record<CompositionKind, string> = {
+  linear: '선형',
+  omnibus: '옴니버스',
+  'alternating-pov': '시점 교차',
+  frame: '액자식',
+};
+
+// 연속성 줄기. 이야기 상태·장 요약·직전 씬 맥락은 스레드 안에서만 이어지고, 캐넌만 전역이다.
+export interface StoryThread {
+  readonly title: string;
+  // 액자식에서 이 스레드가 감싸는 내부 스레드. 조립할 때 외화를 앞뒤에 두는 근거가 된다.
+  readonly wraps?: readonly string[];
+}
+
+export const mainThreadId = 'main';
+
+export interface ProjectNarration {
+  // 이름 붙인 기본 서술자(`narrator/<id>.card`). 없으면 `pov`에서 암묵 서술자를 파생한다.
+  readonly defaultNarrator?: string;
+}
+
 export interface ProjectSetting {
   readonly genre?: string;
   readonly country?: string;
@@ -83,6 +118,9 @@ export interface ProjectSetting {
   readonly audience?: string;
   readonly targetWordCount?: number;
   readonly pov?: PointOfView;
+  readonly narration?: ProjectNarration;
+  readonly composition?: CompositionKind;
+  readonly threads?: Readonly<Record<string, StoryThread>>;
   // 아웃라인이 만들 장·씬 개수. 작품마다 한 번 정하는 값이라 계약에 둔다.
   readonly chapterCount?: number;
   readonly scenesPerChapter?: number;

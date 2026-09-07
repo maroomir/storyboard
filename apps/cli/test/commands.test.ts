@@ -136,7 +136,7 @@ describe('project contract', () => {
   });
 
   it('refuses a point of view the format does not define', async () => {
-    const outcome = await run('project set', args(['project', 'set'], { pov: 'second' }));
+    const outcome = await run('project set', args(['project', 'set'], { pov: 'omniscient' }));
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('third-limited');

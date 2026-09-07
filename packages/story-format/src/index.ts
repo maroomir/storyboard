@@ -9,6 +9,7 @@ export * from './cardReferenceRewriter';
 export * from './characterDetector';
 export * from './Draft';
 export * from './manuscriptAssembly';
+export * from './narrator';
 export * from './outline';
 export * from './paths';
 export * from './project';
