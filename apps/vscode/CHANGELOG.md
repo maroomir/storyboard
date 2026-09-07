@@ -9,12 +9,17 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
-## [0.8.5] - 2026-09-07
+## [0.8.6] - 2026-09-07
 
 ### 추가
 
 - **씬 카드에 사건 비트(`beats`)가 생기고, 초안 생성 전에 자동으로 전개됩니다.** 초안 분량은 씬 카드의 사건 밀도가 정하는데, 창작자가 쓴 짧은 요약만으로는 목표 분량에 못 미치는 일이 잦았습니다. 이제 `scene generate`는 카드에 `beats`가 없으면 카드 재료·근거 사실·요약을 바탕으로 비트를 먼저 뽑아 카드에 쓴 뒤(요약이 있으면 그 범위 안에서만) 초안을 씁니다. 비트 수는 `max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))`(기본 5 · 1,500자)이고, `draft.autoBeats`를 끄면 이 단계를 건너뜁니다. 미리 검수하려면 CLI `storyboard scene beats <stem> | --all [--dry-run] [--force]`, 확장 «Storyboard: 씬 비트 전개 (현재 씬)», 봇 `/scene beats <stem> [force]`를 쓰세요 — 이미 있는 비트는 `--force`/`force`로만 다시 뽑습니다. 초안 프롬프트에서는 `beats`가 `summary`보다 우선합니다.
 - **씬 요약이 `scene/<stem>.summary.md` 파일로 옮겨 갑니다.** 카드의 `summary`에는 파일명만 남고 산문은 옆 파일에 둡니다(창작자가 쓴 사건과 기계가 펼친 비트를 구별하기 위해서입니다). 카드 에디터의 Summary 칸과 봇 `/scene edit|append`는 이 파일을 읽고 씁니다. 기존 인라인 요약은 `storyboard scene migrate`가 파일로 뽑아 주고, `doctor`가 인라인 요약이 남은 씬 수와 비트 없는 씬 수를 경고합니다. `scene complete`가 새로 제안하는 씬은 당분간 인라인 요약으로 나오며, 첫 편집이나 `scene migrate`에서 파일로 옮겨집니다.
+
+## [0.8.5] - 2026-09-07
+
+### 추가
+
 - **CLI가 0.8 이전 워크스페이스를 알아보고 고쳐 줍니다.** `doctor`가 빠진 디렉터리(`draft/`·`scene/`), 구형 `scene/*.txt`, 자동 생성 시드의 플레이스홀더 요약, 오래된 `.gitignore` 블록, 읽을 수 없는 씬 카드를 각각 한 줄씩 보고하고 고치는 명령을 함께 알려 줍니다. `storyboard init --repair`는 이미 있는 워크스페이스의 디렉터리와 `.gitignore`만 최신으로 맞추고 작품 계약은 건드리지 않으며, 그냥 `init`은 기존 워크스페이스를 거부합니다. `scene migrate`는 `.txt` 변환에 더해 플레이스홀더 줄을 지우되, 창작자가 그 위에 써 둔 요약은 그대로 둡니다.
 - **`doctor`가 구독형 CLI 제공자의 로그인 상태를 확인합니다.** 실행 파일이 있어도 로그아웃 상태면 실패로 보고합니다. 이 검사는 제공자 CLI를 실제로 한 번 띄우므로 최대 15초쯤 걸릴 수 있습니다.
 - **`scene generate`가 초안의 경고를 보여 줍니다.** 분량 미달 같은 경고가 stderr에 찍히고 `--json`의 `data.warnings`에도 실립니다(종료 코드는 0 유지). `--verbose`를 주면 뼈대·살붙임·검수 같은 파이프라인 단계가 진행되는 대로 stderr에 남습니다.

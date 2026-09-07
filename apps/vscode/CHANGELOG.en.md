@@ -10,12 +10,17 @@ after the first public release.
 
 ## [Unreleased]
 
-## [0.8.5] - 2026-09-07
+## [0.8.6] - 2026-09-07
 
 ### Added
 
 - **Scene cards gain event beats (`beats`), expanded automatically before drafting.** A draft's length is bounded by the event density of its scene card, and a short author summary rarely carried enough events to reach the target word count. `scene generate` now expands beats first when the card has none — from the card's fields, grounding facts and summary (staying inside the summary when there is one) — writes them to the card, and then drafts. The count is `max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))` (defaults 5 and 1,500 characters); `draft.autoBeats: false` skips the step. To review beats up front, use the CLI `storyboard scene beats <stem> | --all [--dry-run] [--force]`, the extension command "Storyboard: Expand Scene Beats (Current Scene)", or the bot's `/scene beats <stem> [force]` — existing beats are only regenerated with `--force`/`force`. In the draft prompt, `beats` take precedence over `summary`.
 - **Scene summaries move to `scene/<stem>.summary.md`.** The card's `summary` now holds only the file name and the prose lives in the sibling file, keeping the author's events apart from machine-expanded beats. The card editor's Summary field and the bot's `/scene edit|append` read and write that file. `storyboard scene migrate` extracts existing inline summaries into files, and `doctor` warns about scenes that still have an inline summary and scenes without beats. Scenes newly proposed by `scene complete` still come with an inline summary for now; the first edit or `scene migrate` moves it to the file.
+
+## [0.8.5] - 2026-09-07
+
+### Added
+
 - **The CLI recognises and repairs pre-0.8 workspaces.** `doctor` reports missing directories (`draft/`, `scene/`), legacy `scene/*.txt`, placeholder summaries left by the seed factory, a stale `.gitignore` block, and scene cards it cannot parse — one line each, with the command that fixes it. `storyboard init --repair` brings the directories and `.gitignore` of an existing workspace up to date without touching the contract; a plain `init` now refuses an existing workspace. `scene migrate` clears the placeholder line as well as converting `.txt`, keeping whatever summary the author wrote above it.
 - **`doctor` checks the login state of subscription CLI providers.** An installed but logged-out CLI is reported as a failure. The check spawns the provider CLI once, so it may take up to about 15 seconds.
 - **`scene generate` shows the draft's warnings.** Warnings such as a short draft go to stderr and into `data.warnings` under `--json` (exit code stays 0). With `--verbose`, the pipeline stages (skeleton, flesh-out, review…) are logged to stderr as they run.

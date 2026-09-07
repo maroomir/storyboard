@@ -1,6 +1,6 @@
 {
   "name": "@storyboard/bot",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "private": true,
   "description": "Telegram front end for Storyboard: edits a Storyboard workspace over chat, committing every save",
   "license": "Apache-2.0",
