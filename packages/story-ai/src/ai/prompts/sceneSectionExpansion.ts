@@ -37,6 +37,7 @@ function buildGeneric(input: SceneSectionExpansionInput): PromptArtifact {
       '[직전 구간]이 있으면 그 문체와 호흡을 이어받고, 이미 묘사된 공간·인물을 다시 소개하지 마라.',
       '뼈대에 단독 줄로 --- 가 있으면 장면 전환 표시이므로 위치와 형태를 그대로 유지하라.',
       `이번 구간의 목표 분량: 약 ${input.targetLength.toLocaleString()}자 (공백 포함).`,
+      '분량은 사건 사이의 감각·행동·내면으로만 채워라. 이미 쓴 대사·행동·문장을 되풀이해 채우지 마라. 채울 재료가 없으면 목표에 못 미친 채 끝내는 쪽이 낫다.',
       '설명이나 머리말 없이 완성된 본문만 한국어로 출력하라.',
       ...proseConventionLines(input.style?.narration?.tense),
       ...narrativeStyleLines(stripLength(input.style)),
