@@ -123,6 +123,11 @@ node apps/bot/dist/index.js
    Obsidian(git 플러그인), 안드로이드는 MGit이나 Obsidian(git 플러그인)이 그런 예이고, GitHub·GitLab 모바일 앱은
    읽기만 하기에 충분합니다.
 
+git 명령을 직접 쓰고 싶지 않다면 **Obsidian + Git 플러그인**이 가장 손이 덜 갑니다. 워크스페이스 디렉터리를
+그대로 vault로 열고(초안이 `draft/*.md`라 별도 변환이 필요 없습니다), 커뮤니티 플러그인 Git을 켠 뒤 자동
+pull 간격만 정해 두면 폰에서는 평범한 마크다운 노트를 읽고 고치는 경험이 됩니다. 커밋·푸시는 플러그인이
+알아서 하므로, 아래 «손질은 봇이 놀 때» 규칙만 지키면 git을 의식할 일이 거의 없습니다.
+
 이후의 흐름은 이렇습니다.
 
 - 봇이 초안을 저장하면 즉시 로컬 커밋이 되고, `pushDebounceSec`(기본 30초) 안에 다른 저장이 없으면 fetch→rebase→push가
@@ -187,7 +192,7 @@ node apps/bot/dist/index.js
 | `/narrator` · `/narrator add <id> <인칭> <지식 경계> [초점]` | 서술자 카드 조회·생성 (`narrator/` 는 tracked 이므로 생성도 커밋) |
 | `/draft <씬 stem>` | 씬 초안 생성(확장과 동일한 파이프라인 + 검토→수정 루프). `/draft all`은 초안 없는 씬만 일괄 큐잉(기존 초안 재생성 안 함) |
 | `/review <씬 stem>` | 기존 초안을 재생성 없이 검수·수정(공유 review→revise 루프) |
-| `/outline` · `/plan` · `/manuscript` | 시놉시스·챕터 계획·원고 조립 |
+| `/outline` · `/plan` · `/manuscript` | 시놉시스 생성 · 챕터 계획 생성 · 챕터 계획 기준 원고 조립 (모두 조회가 아니라 생성 작업) |
 | `/jobs` · `/log <번호>` · `/stop <번호>` | 작업 목록·단계 이력·취소(실행 중 CLI 프로세스까지 중단) |
 | `/usage` | 24시간·7일·30일 토큰·비용 사용량 |
 | `/sync` | 원격 동기화(fetch→rebase→push, 충돌 시 자동 중단·보고) |
