@@ -179,6 +179,7 @@ function normalizeSceneCardForSerialization(card: SceneCard): SceneCard {
     ...(card.narrator === undefined ? {} : { narrator: card.narrator }),
     ...(card.thread === undefined ? {} : { thread: card.thread }),
     ...(card.targetWordCount === undefined ? {} : { targetWordCount: card.targetWordCount }),
+    ...(card.storyTime === undefined ? {} : { storyTime: card.storyTime }),
     ...(card.grounding === undefined ? {} : { grounding: card.grounding }),
     ...(card.purpose === undefined ? {} : { purpose: card.purpose }),
     ...(card.conflict === undefined ? {} : { conflict: card.conflict }),

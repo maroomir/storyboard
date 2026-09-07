@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest"
 
-import { buildNarrativeContext, buildSceneContext, serializeBible, serializeCard } from '@storyboard/story-format';
+import {
+  buildNarrativeContext,
+  buildSceneContext,
+  formatBibleFactLines,
+  resolveSceneBibleFacts,
+  serializeBible,
+  serializeCard
+} from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard, SceneContext, SceneContextWorkspaceFileSystem, SceneFile, StoryBible } from '@storyboard/story-format';
 const eliaCard: CharacterCard = {
   type: "character",
@@ -803,5 +810,138 @@ describe("buildNarrativeContext", () => {
     expect(after.bibleFacts.map((fact) => fact.id)).toEqual(["arm-b"])
     expect(after.prompt).toContain("의수")
     expect(after.prompt).not.toContain("멀쩡함")
+  })
+})
+
+describe("scene bible facts with a story time axis", () => {
+  const scenePaths = {
+    characterDirectory: "/mock/workspace/character",
+    sceneDirectory: "/mock/workspace/scene",
+    backgroundDirectory: "/mock/workspace/background",
+    draftDirectory: "/mock/workspace/draft",
+    bibleCanon: "/mock/workspace/.storyboard/bible/canon.yaml",
+    joinPath: (base: unknown, ...segments: string[]): string =>
+      `${base as string}/${segments.join("/")}`
+  }
+
+  const rangedBible: StoryBible = {
+    version: "1.0.0",
+    facts: [
+      {
+        id: "alive",
+        subject: { kind: "character", id: "elia" },
+        key: "상태",
+        value: "살아 있다",
+        status: "canon",
+        validUntil: 20
+      },
+      {
+        id: "dead",
+        subject: { kind: "character", id: "elia" },
+        key: "상태",
+        value: "죽었다",
+        status: "canon",
+        validFrom: 21
+      }
+    ]
+  }
+
+  function workspace(storyTimeLine: string): MockFileSystem {
+    const fileSystem = new MockFileSystem()
+
+    fileSystem.setDirectory("/mock/workspace/character", [["elia.card", { type: "file" }]])
+    fileSystem.setDirectory("/mock/workspace/background", [])
+    fileSystem.setFile("/mock/workspace/character/elia.card", serializeCard(eliaCard))
+    fileSystem.setFile(scenePaths.bibleCanon, serializeBible(rangedBible))
+    fileSystem.setDirectory("/mock/workspace/scene", [["25-memory.card", { type: "file" }]])
+    fileSystem.setFile(
+      "/mock/workspace/scene/25-memory.card",
+      `type: scene\nid: 25-memory\n${storyTimeLine}summary: 엘리아를 떠올린다.\n`
+    )
+
+    return fileSystem
+  }
+
+  const flashbackScene: SceneFile = {
+    stem: "25-memory",
+    order: 25,
+    orderText: "25",
+    slug: "memory",
+    frontmatter: {},
+    body: "엘리아를 떠올린다."
+  }
+
+  async function resolveIds(fileSystem: MockFileSystem): Promise<string[]> {
+    const context = await buildSceneContext(scenePaths, flashbackScene, fileSystem)
+    const facts = await resolveSceneBibleFacts(scenePaths, context, fileSystem)
+
+    return facts.map((fact) => fact.id)
+  }
+
+  it("reads the flashback's story time from its scene card", async () => {
+    expect(await resolveIds(workspace("storyTime: 3\n"))).toEqual(["alive"])
+  })
+
+  it("falls back to the scene order when no scene declares a story time", async () => {
+    expect(await resolveIds(workspace(""))).toEqual(["dead"])
+  })
+})
+
+describe("formatBibleFactLines with a per-character reveal", () => {
+  const context: SceneContext = {
+    scene: {
+      stem: "12-reveal",
+      order: 12,
+      orderText: "12",
+      slug: "reveal",
+      frontmatter: {},
+      body: "엘리아와 지훈이 마주 앉는다."
+    },
+    characters: [eliaCard, jihoonCard]
+  }
+
+  it("names the characters who do not know the revealed fact yet", () => {
+    const lines = formatBibleFactLines(context, [
+      {
+        id: "twist",
+        subject: { kind: "character", id: "elia" },
+        key: "정체",
+        value: "관리자",
+        status: "canon",
+        revealFrom: { scene: 10, knownBy: ["elia"] }
+      }
+    ])
+
+    expect(lines).toEqual(["엘리아 — 정체: 관리자 (아직 모름: 지훈)"])
+  })
+
+  it("adds no marker when every character in the scene knows", () => {
+    const lines = formatBibleFactLines(context, [
+      {
+        id: "twist",
+        subject: { kind: "character", id: "elia" },
+        key: "정체",
+        value: "관리자",
+        status: "canon",
+        revealFrom: { scene: 10, knownBy: ["elia", "jihoon"] }
+      }
+    ])
+
+    expect(lines).toEqual(["엘리아 — 정체: 관리자"])
+  })
+
+  it("adds no marker when the fact carries no knownBy list", () => {
+    const lines = formatBibleFactLines(context, [
+      {
+        id: "eye",
+        subject: { kind: "character", id: "elia" },
+        key: "눈",
+        value: "녹색",
+        status: "canon",
+        revealFrom: 10
+      }
+    ])
+
+    expect(lines).toEqual(["엘리아 — 눈: 녹색"])
   })
 })
