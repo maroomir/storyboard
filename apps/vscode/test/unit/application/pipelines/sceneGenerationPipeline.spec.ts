@@ -365,6 +365,41 @@ describe("runSceneGenerationPipeline — 기계 검증", () => {
   })
 })
 
+// 구간 상한은 설정으로 내려온다. 낮추면 같은 목표 분량이 더 많은 호출로 쪼개지고, 그것이 분량을
+// 늘리는 유일한 손잡이다.
+describe("runSceneGenerationPipeline — 구간 상한 설정", () => {
+  const longSkeleton = Array.from({ length: 6 }, (_, i) => `문단${i} ${"가".repeat(300)}`).join(
+    "\n\n"
+  )
+
+  async function countExpandCalls(sectionOutputLimit?: number): Promise<number> {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce(longSkeleton)
+    ai.expandSceneSection.mockImplementation(
+      async (input) => longProse(`확장:${(input as { section: string }).section.slice(0, 5)}`)
+    )
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      styleDirective: { targetWordCount: 6000 },
+      ...(sectionOutputLimit === undefined ? {} : { sectionOutputLimit })
+    })
+
+    return ai.expandSceneSection.mock.calls.length
+  }
+
+  it("runs a single expansion at the default limit", async () => {
+    expect(await countExpandCalls()).toBe(1)
+  })
+
+  it("splits into more calls when the limit is lowered", async () => {
+    expect(await countExpandCalls(2000)).toBe(3)
+  })
+})
+
 describe("planSectionCount", () => {
   it("keeps each section under the output limit", () => {
     expect(planSectionCount(5000)).toBe(1)
@@ -375,6 +410,11 @@ describe("planSectionCount", () => {
 
   it("falls back to a single section without a target", () => {
     expect(planSectionCount(0)).toBe(1)
+  })
+
+  it("honours a configured limit in place of the default", () => {
+    expect(planSectionCount(6000, 2000)).toBe(3)
+    expect(planSectionCount(6000, 20000)).toBe(1)
   })
 })
 

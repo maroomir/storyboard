@@ -96,6 +96,17 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '생성',
   },
   {
+    key: 'draft.sectionOutputLimit',
+    label: '살붙임 구간 상한',
+    description:
+      '한 번의 살붙임 호출이 낼 수 있는 최대 글자 수입니다. 목표 분량을 이 값으로 나눠 구간 수를 정하므로, 낮추면 호출이 늘고 분량이 늘어납니다.',
+    kind: 'integer',
+    defaultValue: 7000,
+    minimum: 1000,
+    maximum: 20000,
+    group: '생성',
+  },
+  {
     key: 'draft.minBeats',
     label: '최소 비트 수',
     description: '목표 분량이 작아도 이 개수 이상의 사건 비트를 뽑습니다.',

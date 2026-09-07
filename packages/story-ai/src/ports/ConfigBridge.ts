@@ -335,6 +335,13 @@ export class ConfigBridge {
     return Math.min(50, Math.max(1, value));
   }
 
+  public getSectionOutputLimit(): number {
+    const configured = this.dependencies.getConfiguration().get('draft.sectionOutputLimit', 7000);
+    const value = Math.floor(Number.isFinite(configured) ? configured : 7000);
+
+    return Math.min(20_000, Math.max(1_000, value));
+  }
+
   public isKeepDraftHistoryEnabled(): boolean {
     return this.dependencies.getConfiguration().get('draft.keepHistory', false);
   }

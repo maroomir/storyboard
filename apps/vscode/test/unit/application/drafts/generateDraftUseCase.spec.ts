@@ -128,6 +128,7 @@ interface ConfigBridgeStub {
   readonly getCharsPerBeat: () => number
   readonly getMinBeats: () => number
   readonly isAiContextCondenseEnabled: () => boolean
+  readonly getSectionOutputLimit: () => number
   readonly isKeepDraftHistoryEnabled: () => boolean
   readonly isUpdateCardsAfterGenerateEnabled: () => boolean
   readonly isVerifyCardCandidatesEnabled: () => boolean
@@ -141,6 +142,7 @@ function createConfigBridge(overrides: Partial<ConfigBridgeStub> = {}): ConfigBr
     getCharsPerBeat: () => 1500,
     getMinBeats: () => 5,
     isAiContextCondenseEnabled: () => false,
+    getSectionOutputLimit: () => 7000,
     isKeepDraftHistoryEnabled: () => false,
     isUpdateCardsAfterGenerateEnabled: () => false,
     isVerifyCardCandidatesEnabled: () => false,
