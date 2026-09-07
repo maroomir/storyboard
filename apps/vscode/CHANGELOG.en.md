@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`storyboard-bot` announces a sync conflict in chat.** When the phone and the bot each commit the same file the bot's push stops, and until now nothing said so until you typed `/status` or `/sync` — it just looked like the bot had gone quiet. Entering the conflict state now sends the conflicting paths and the recovery steps to every allowlisted chat, once; the periodic sync no longer repeats the warning when it meets the same conflict again.
+
 ### Docs
 
 - **How to use `storyboard-bot` from a phone.** Telegram stays the control channel; reading and polishing drafts happens in a git client that clones `workspace.remote`. The bot README now covers the setup, the "polish only while the bot is idle" rule, and the sync-conflict recovery steps. No code changed.

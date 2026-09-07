@@ -56,6 +56,7 @@ import type { BotConfig } from '@/config/config';
 import { ContentService } from '@/content/contentService';
 import { startDashboardServer, type DashboardHandle } from '@/dashboard/server';
 import { createGenJobs, type GenJobs } from './createGenJobs';
+import { createSyncConflictNotifier } from './syncConflictNotifier';
 import { SceneDraftGenerator } from '@/gen/sceneDraftGenerator';
 import { openDatabase, type BotDatabase } from '@/store/db';
 import { TelegramGateway } from '@/telegram/gateway';
@@ -103,6 +104,12 @@ export class StoryboardBotApplication {
         executeRemoteSync: createWorkerRemoteSyncExecutor(join(__dirname, 'syncWorker.js')),
       },
       logger,
+      createSyncConflictNotifier({
+        allowedChatIds: config.telegram.allowedChatIds,
+        // The gateway is built further down, so the send is resolved at call time.
+        sendMessage: (chatId, text) => this.gateway.sendMessage(chatId, { text }),
+        logger,
+      }),
     );
     this.pushScheduler = new PushScheduler(
       config.workspace.pushDebounceSec * 1000,

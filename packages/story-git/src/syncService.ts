@@ -98,9 +98,18 @@ export class SyncService implements CommitHook {
     }
 
     if (outcome.state === 'conflict') {
+      // The periodic sync keeps meeting the same conflict until a person resolves it, so only the
+      // transition into the state is announced; repeating it every interval would train the user
+      // to ignore the message that says their drafts stopped reaching the remote.
+      const isNewConflict = this.state !== 'conflict';
+
       this.conflicts = [...outcome.conflicts];
       this.state = 'conflict';
-      this.notify?.(conflictMessage(outcome.conflicts));
+
+      if (isNewConflict) {
+        this.notify?.(conflictMessage(outcome.conflicts));
+      }
+
       return { state: 'conflict', pushed: false, conflicts: outcome.conflicts };
     }
 

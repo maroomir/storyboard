@@ -249,6 +249,43 @@ describe('SyncService', () => {
     rmSync(other, { recursive: true, force: true });
   });
 
+  it('announces a conflict once, not on every periodic sync that meets it again', async () => {
+    const origin = mkdtempSync(join(tmpdir(), 'storyboard-bot-origin-'));
+    execFileSync('git', ['init', '--bare', '--quiet', '--initial-branch=main', origin], {
+      shell: false,
+    });
+    git(fixture.root, 'remote', 'add', 'origin', origin);
+    git(fixture.root, 'push', '--quiet', '-u', 'origin', 'main');
+
+    const other = mkdtempSync(join(tmpdir(), 'storyboard-bot-other-'));
+    execFileSync('git', ['clone', '--quiet', origin, other], { shell: false });
+    git(other, 'config', 'user.name', 'Other');
+    git(other, 'config', 'user.email', 'other@example.com');
+    mkdirSync(join(other, 'character'), { recursive: true });
+    writeFileSync(join(other, 'character', 'elia.card'), 'id: elia\nname: FromRemote\n');
+    git(other, 'add', '--all');
+    git(other, 'commit', '--quiet', '-m', 'remote change');
+    git(other, 'push', '--quiet');
+
+    fixture.write('character/elia.card', 'id: elia\nname: FromBot\n');
+    const client = new GitClient(fixture.root);
+    client.commit(['character/elia.card'], 'storyboard-bot: update character/elia.card');
+
+    const notify = vi.fn();
+    const service = new SyncService(client, { remote: 'origin' }, silentLogger, notify);
+
+    expect((await service.syncNow()).state).toBe('conflict');
+    expect((await service.syncNow()).state).toBe('conflict');
+    expect((await service.syncNow()).state).toBe('conflict');
+
+    // The periodic sync meets the same conflict every interval; only entering the state is news.
+    expect(notify).toHaveBeenCalledOnce();
+    expect(notify.mock.calls[0]?.[0]).toContain('character/elia.card');
+
+    rmSync(origin, { recursive: true, force: true });
+    rmSync(other, { recursive: true, force: true });
+  });
+
   it('reports offline when the remote is unreachable', async () => {
     git(
       fixture.root,
