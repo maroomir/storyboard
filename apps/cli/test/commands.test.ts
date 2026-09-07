@@ -630,3 +630,130 @@ describe('scene generate warnings', () => {
     expect((outcome.data as { warnings: string[] }).warnings).toHaveLength(1);
   });
 });
+
+describe('narrator verbs', () => {
+  it('reports no narrator cards on a fresh workspace', async () => {
+    const outcome = await run('narrator list', args(['narrator', 'list']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('작품 계약의 시점');
+  });
+
+  it('creates a narrator card and lists it', async () => {
+    const created = await run(
+      'narrator add',
+      args(['narrator', 'add'], { person: 'first', focal: 'hana', voice: '건조한 단문, 자기 비하' }, ['hana-first']),
+    );
+
+    expect(created.ok).toBe(true);
+    expect(existsSync(join(workspace, 'narrator', 'hana-first.card'))).toBe(true);
+
+    const listed = await run('narrator list', args(['narrator', 'list']));
+    expect(listed.message).toContain('hana-first');
+    expect(listed.message).toContain('1인칭');
+  });
+
+  it('refuses a person the format does not define', async () => {
+    const outcome = await run('narrator add', args(['narrator', 'add'], { person: 'fourth' }, ['x']));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('first, second, third');
+  });
+
+  it('refuses an id that is not a valid file name', async () => {
+    const outcome = await run('narrator add', args(['narrator', 'add'], {}, ['하나']));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('영소문자');
+  });
+
+  it('refuses to overwrite an existing narrator', async () => {
+    await run('narrator add', args(['narrator', 'add'], {}, ['hana-first']));
+    const again = await run('narrator add', args(['narrator', 'add'], {}, ['hana-first']));
+
+    expect(again.ok).toBe(false);
+    expect(again.message).toContain('이미 있습니다');
+  });
+
+  it('shows one narrator and removes it', async () => {
+    await run('narrator add', args(['narrator', 'add'], { person: 'first', knowledge: 'retrospective' }, ['old-hana']));
+
+    const shown = await run('narrator show', args(['narrator', 'show'], {}, ['old-hana']));
+    expect(shown.message).toContain('회고');
+
+    const removed = await run('narrator remove', args(['narrator', 'remove'], {}, ['old-hana']));
+    expect(removed.ok).toBe(true);
+    expect(existsSync(join(workspace, 'narrator', 'old-hana.card'))).toBe(false);
+  });
+
+  it('reports a narrator that does not exist', async () => {
+    const outcome = await run('narrator show', args(['narrator', 'show'], {}, ['ghost']));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('ghost');
+  });
+});
+
+describe('composition presets', () => {
+  it('creates omnibus threads from the contract flags', async () => {
+    const outcome = await run(
+      'project set',
+      args(['project', 'set'], { composition: 'omnibus', episodes: '4' }),
+    );
+
+    expect(outcome.ok).toBe(true);
+
+    const project = JSON.parse(
+      readFileSync(join(workspace, '.storyboard', 'project.json'), 'utf8'),
+    ) as { setting?: { composition?: string; threads?: Record<string, unknown> } };
+
+    expect(project.setting?.composition).toBe('omnibus');
+    expect(Object.keys(project.setting?.threads ?? {})).toEqual(['ep1', 'ep2', 'ep3', 'ep4']);
+  });
+
+  it('writes narrator cards for an alternating point of view', async () => {
+    const outcome = await run(
+      'project set',
+      args(['project', 'set'], { composition: 'alternating-pov', 'pov-characters': 'hana,jun', pov: 'first' }),
+    );
+
+    expect(outcome.ok).toBe(true);
+    expect(existsSync(join(workspace, 'narrator', 'hana-pov.card'))).toBe(true);
+    expect(existsSync(join(workspace, 'narrator', 'jun-pov.card'))).toBe(true);
+  });
+
+  it('refuses a composition the format does not define', async () => {
+    const outcome = await run('project set', args(['project', 'set'], { composition: 'anthology' }));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('omnibus');
+  });
+});
+
+describe('scene show', () => {
+  it('reports the narration a scene will be generated with', async () => {
+    await run('project set', args(['project', 'set'], { pov: 'first' }));
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-night-market']));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('시점: 1인칭');
+    expect(outcome.message).toContain('줄기: main');
+  });
+
+  it('reports the narrator card a scene names', async () => {
+    await run('narrator add', args(['narrator', 'add'], { person: 'third', knowledge: 'omniscient' }, ['wide']));
+    await run('scene create', args(['scene', 'create'], { name: 'bridge' }));
+    writeFileSync(
+      join(workspace, 'scene', '01-bridge.card'),
+      'type: scene\nid: 01-bridge\nnarrator: wide\nthread: ep2\n',
+    );
+
+    const outcome = await run('scene show', args(['scene', 'show'], {}, ['01-bridge']));
+
+    expect(outcome.message).toContain('전지');
+    expect(outcome.message).toContain('줄기: ep2');
+  });
+});
+
