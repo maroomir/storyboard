@@ -17,7 +17,11 @@ import {
 } from './bible';
 import { isIgnoredSampleCardFileName } from './sampleCard';
 import { detectCharactersInText } from './characterDetector';
-import { formatStoryStateForPrompt, readStoryState } from './storyState';
+import {
+  formatStoryStateForPrompt,
+  readStoryState,
+  type StoryStateFocalFilter,
+} from './storyState';
 import { stripForeignScript } from './foreignScript';
 
 export interface SceneContextWorkspacePaths {
@@ -66,12 +70,17 @@ export async function buildSceneContext(
 
 const summaryContextBudget = 8000;
 
+// NOTE: previousSceneOrder는 같은 스레드의 직전 씬이다. 주지 않으면 종전대로 바로 앞 번호를 본다 —
+// 스레드를 쓰지 않는 작품은 그 둘이 언제나 같다.
 export async function readPreviousSceneContext(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
   fileSystem: SceneContextWorkspaceFileSystem,
+  previousSceneOrder?: number,
 ): Promise<string | undefined> {
-  if (currentSceneOrder <= 1) {
+  const previousOrder = previousSceneOrder ?? currentSceneOrder - 1;
+
+  if (previousOrder < 1) {
     return undefined;
   }
 
@@ -80,7 +89,7 @@ export async function readPreviousSceneContext(
     return rollingSummary;
   }
 
-  return readPreviousDraftTail(paths, currentSceneOrder - 1, fileSystem);
+  return readPreviousDraftTail(paths, previousOrder, fileSystem);
 }
 
 async function readRollingSummary(
@@ -176,6 +185,13 @@ export interface NarrativeContext {
   readonly prompt?: string;
 }
 
+export interface NarrativeContextOptions {
+  // 같은 스레드의 직전 씬 번호. 생략하면 바로 앞 번호를 본다.
+  readonly previousSceneOrder?: number;
+  // 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 이야기 상태 항목을 빼고 준다.
+  readonly focalFilter?: StoryStateFocalFilter;
+}
+
 // NOTE: 씬 입력 해시(computeSceneInputHash)에도 이 사실 목록이 들어간다. 원장 감사가 지난 씬의
 // 해시를 다시 계산할 때 초안 꼬리나 원장까지 읽을 필요가 없도록 사실 해석만 따로 뽑아 둔다.
 export async function resolveSceneBibleFacts(
@@ -199,8 +215,14 @@ export async function buildNarrativeContext(
   paths: SceneContextWorkspacePaths,
   context: SceneContext,
   fileSystem: SceneContextWorkspaceFileSystem,
+  options?: NarrativeContextOptions,
 ): Promise<NarrativeContext> {
-  const rawPreviousContext = await readPreviousSceneContext(paths, context.scene.order, fileSystem);
+  const rawPreviousContext = await readPreviousSceneContext(
+    paths,
+    context.scene.order,
+    fileSystem,
+    options?.previousSceneOrder,
+  );
   const previousContext =
     rawPreviousContext === undefined ? undefined : stripForeignScript(rawPreviousContext);
   const bibleFacts = await resolveSceneBibleFacts(paths, context, fileSystem);
@@ -209,6 +231,7 @@ export async function buildNarrativeContext(
     context.scene.order,
     fileSystem,
     context.scene.body,
+    options?.focalFilter,
   );
   const prompt = composeNarrativePrompt(
     formatBibleFactLines(context, bibleFacts),
@@ -226,13 +249,14 @@ async function readSceneStoryState(
   currentSceneOrder: number,
   fileSystem: SceneContextWorkspaceFileSystem,
   sceneText: string,
+  focalFilter: StoryStateFocalFilter | undefined,
 ): Promise<string | undefined> {
   if (!paths.storyState || currentSceneOrder <= 1) {
     return undefined;
   }
 
   const state = await readStoryState(paths.storyState, fileSystem);
-  return formatStoryStateForPrompt(state, currentSceneOrder, sceneText);
+  return formatStoryStateForPrompt(state, currentSceneOrder, sceneText, focalFilter);
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {

@@ -21,6 +21,10 @@ export interface StoryStateEntry {
   // NOTE: 그 항목을 낳은 입력이 더 이상 워크스페이스에 없다는 표시. 지우지 않고 표시만 하는 것은
   // 사람이 무엇이 버려졌는지 원장에서 볼 수 있어야 하기 때문이다. 프롬프트에서만 빠진다.
   readonly isStale?: boolean;
+  // NOTE: 그 사실이 확립된 씬에 있던 인물들. 목격 범위 서술자는 초점 인물이 여기 없는 항목을
+  // 프롬프트에서 받지 못한다 — 화자가 모르는 사실을 서술하는 것이 시점 이탈이기 때문이다.
+  // 목격자가 적히지 않은 항목(구 버전 원장)은 판정할 수 없으므로 그대로 통과시킨다.
+  readonly witnesses?: readonly string[];
 }
 
 export interface StoryState {
@@ -84,7 +88,9 @@ export function parseStoryState(content: string): StoryState {
   return { throughSceneOrder, sceneInputHashes, entries };
 }
 
-const entrySceneTagPattern = /^\[(\d+)(!?)\]\s*(.+)$/;
+// `[12]`·`[12!]`·`[12|hana,jun]`·`[12!|hana,jun]` 네 형태를 모두 읽는다. `!` 는 낡은 항목,
+// `|` 뒤는 목격자다. 둘 다 없는 형태가 구 버전 원장이다.
+const entrySceneTagPattern = /^\[(\d+)(!?)(?:\|([^\]]*))?\]\s*(.+)$/;
 
 function parseEntryLine(section: StoryStateSection, text: string): StoryStateEntry | undefined {
   if (text.length === 0) {
@@ -92,16 +98,28 @@ function parseEntryLine(section: StoryStateSection, text: string): StoryStateEnt
   }
 
   const tagged = entrySceneTagPattern.exec(text);
-  if (tagged?.[1] && tagged[3]) {
-    const entry: StoryStateEntry = {
+  if (tagged?.[1] && tagged[4]) {
+    const witnesses = parseWitnesses(tagged[3]);
+
+    return {
       section,
-      text: tagged[3],
+      text: tagged[4],
       throughScene: Number.parseInt(tagged[1], 10),
+      ...(tagged[2] === '!' ? { isStale: true } : {}),
+      ...(witnesses ? { witnesses } : {}),
     };
-    return tagged[2] === '!' ? { ...entry, isStale: true } : entry;
   }
 
   return { section, text };
+}
+
+function parseWitnesses(raw: string | undefined): readonly string[] | undefined {
+  const names = (raw ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+
+  return names.length > 0 ? names : undefined;
 }
 
 export function serializeStoryState(state: StoryState): string {
@@ -128,7 +146,10 @@ function formatEntryTag(entry: StoryStateEntry): string {
     return '';
   }
 
-  return `[${entry.throughScene}${entry.isStale === true ? '!' : ''}] `;
+  const witnesses =
+    entry.witnesses && entry.witnesses.length > 0 ? `|${entry.witnesses.join(',')}` : '';
+
+  return `[${entry.throughScene}${entry.isStale === true ? '!' : ''}${witnesses}] `;
 }
 
 export async function readStoryState(
@@ -181,7 +202,14 @@ export function mergeStoryState(
     }
 
     seen.add(key);
-    merged.push({ section: addition.section, text, throughScene: throughSceneOrder });
+    merged.push({
+      section: addition.section,
+      text,
+      throughScene: throughSceneOrder,
+      ...(addition.witnesses && addition.witnesses.length > 0
+        ? { witnesses: addition.witnesses }
+        : {}),
+    });
   }
 
   return {
@@ -289,11 +317,17 @@ function compactForOverlap(text: string): string {
   return text.toLowerCase().replace(/[^0-9a-z가-힣]+/g, '');
 }
 
+// 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 항목을 주입에서 뺀다.
+export interface StoryStateFocalFilter {
+  readonly focal: string;
+}
+
 export function selectStoryStateEntries(
   state: StoryState,
   section: StoryStateSection,
   beforeSceneOrder: number | undefined,
   sceneText?: string,
+  focalFilter?: StoryStateFocalFilter,
 ): StoryStateEntry[] {
   const visible = state.entries.filter(
     (entry) =>
@@ -301,10 +335,22 @@ export function selectStoryStateEntries(
       entry.isStale !== true &&
       (beforeSceneOrder === undefined ||
         entry.throughScene === undefined ||
-        entry.throughScene < beforeSceneOrder),
+        entry.throughScene < beforeSceneOrder) &&
+      isWitnessedBy(entry, focalFilter),
   );
 
   return selectWithinBudget(visible, sceneText, sectionInjectionBudget);
+}
+
+function isWitnessedBy(
+  entry: StoryStateEntry,
+  focalFilter: StoryStateFocalFilter | undefined,
+): boolean {
+  if (!focalFilter || !entry.witnesses || entry.witnesses.length === 0) {
+    return true;
+  }
+
+  return entry.witnesses.includes(focalFilter.focal);
 }
 
 // NOTE: beforeSceneOrder를 주면 그 씬보다 앞에서 확립된 항목만 남긴다. 앞 씬을 다시 생성할 때
@@ -313,9 +359,10 @@ export function formatStoryStateForPrompt(
   state: StoryState,
   beforeSceneOrder?: number,
   sceneText?: string,
+  focalFilter?: StoryStateFocalFilter,
 ): string | undefined {
   const blocks = sectionEntries.flatMap(([section, label]) => {
-    const items = selectStoryStateEntries(state, section, beforeSceneOrder, sceneText);
+    const items = selectStoryStateEntries(state, section, beforeSceneOrder, sceneText, focalFilter);
     return items.length > 0 ? [`${label}:`, ...items.map((item) => `- ${item.text}`)] : [];
   });
 

@@ -7,6 +7,7 @@ export interface StoryboardRelativePaths {
   readonly projectJson: string;
   readonly cacheDirectory: string;
   readonly memoryDirectory: string;
+  readonly threadMemoryDirectory: string;
   readonly usageLedger: string;
   readonly novelRunState: string;
   readonly sceneCacheDirectory: string;
@@ -45,6 +46,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   projectJson: '.storyboard/project.json',
   cacheDirectory: '.storyboard/cache',
   memoryDirectory: '.storyboard/memory',
+  threadMemoryDirectory: '.storyboard/memory/threads',
   usageLedger: '.storyboard/cache/usage.json',
   novelRunState: '.storyboard/cache/novel-run.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
@@ -77,6 +79,16 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   gitignore: '.gitignore',
   readme: 'README.md',
 };
+
+// NOTE: 스레드는 연속성 줄기다. 기본 줄기('main')는 종전 경로를 그대로 쓰고, 나머지 줄기만
+// 하위 디렉터리로 갈라 이야기 상태·요약·인물 기억이 줄기 밖으로 새지 않게 한다.
+export function threadMemoryRelativePath(threadId: string, leafRelativePath: string): string {
+  const leaf = leafRelativePath.startsWith(`${STORYBOARD_RELATIVE_PATHS.memoryDirectory}/`)
+    ? leafRelativePath.slice(STORYBOARD_RELATIVE_PATHS.memoryDirectory.length + 1)
+    : leafRelativePath;
+
+  return `${STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory}/${threadId}/${leaf}`;
+}
 
 export function characterCardRelativePath(id: string): string {
   return `character/${id}.card`;

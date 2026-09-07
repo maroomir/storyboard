@@ -9,9 +9,11 @@ import {
   isDirectCharacterCardRelativePath,
   isDirectSceneCardRelativePath,
   isDraftMarkdownRelativePath,
+  mainThreadId,
   parseCardIdFromFileName,
   sceneFileRelativePath,
   sceneRelativePath,
+  threadMemoryRelativePath,
 } from '@storyboard/story-format';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
 
@@ -25,6 +27,7 @@ export interface StoryboardProjectPaths {
   readonly projectJson: StoryUri;
   readonly cacheDirectory: StoryUri;
   readonly memoryDirectory: StoryUri;
+  readonly threadMemoryDirectory: StoryUri;
   readonly usageLedger: StoryUri;
   readonly novelRunState: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
@@ -47,6 +50,7 @@ export interface StoryboardProjectPaths {
   readonly sampleCharacterCard: StoryUri;
   readonly backgroundDirectory: StoryUri;
   readonly sampleBackgroundCard: StoryUri;
+  readonly narratorDirectory: StoryUri;
   readonly sceneDirectory: StoryUri;
   readonly sampleScene: StoryUri;
   readonly draftDirectory: StoryUri;
@@ -71,6 +75,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     projectJson: resolve(STORYBOARD_RELATIVE_PATHS.projectJson),
     cacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cacheDirectory),
     memoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.memoryDirectory),
+    threadMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory),
     usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
     novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
@@ -93,6 +98,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     sampleCharacterCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleCharacterCard),
     backgroundDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundDirectory),
     sampleBackgroundCard: resolve(STORYBOARD_RELATIVE_PATHS.sampleBackgroundCard),
+    narratorDirectory: resolve(STORYBOARD_RELATIVE_PATHS.narratorDirectory),
     sceneDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneDirectory),
     sampleScene: resolve(STORYBOARD_RELATIVE_PATHS.sampleScene),
     draftDirectory: resolve(STORYBOARD_RELATIVE_PATHS.draftDirectory),
@@ -101,6 +107,31 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     manuscriptVolume: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptVolume),
     gitignore: resolve(STORYBOARD_RELATIVE_PATHS.gitignore),
     readme: resolve(STORYBOARD_RELATIVE_PATHS.readme),
+  };
+}
+
+// NOTE: 연속성 재료만 줄기별로 가른다. 캐넌·아웃라인·씬·초안은 작품 하나에 하나라 그대로 둔다.
+// 기본 줄기는 종전 경로를 그대로 써서 스레드를 쓰지 않는 작품의 파일 배치가 달라지지 않는다.
+export function resolveThreadPaths(
+  paths: StoryboardProjectPaths,
+  threadId: string | undefined,
+): StoryboardProjectPaths {
+  if (threadId === undefined || threadId === mainThreadId) {
+    return paths;
+  }
+
+  const resolveThreadPath = (relativePath: string): StoryUri =>
+    resolveWorkspacePath(paths.workspaceRoot, threadMemoryRelativePath(threadId, relativePath));
+
+  return {
+    ...paths,
+    storyState: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.storyState),
+    chapterSummaries: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.chapterSummaries),
+    sceneDialogueDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.sceneDialogueDirectory),
+    personaMemoryDirectory: resolveThreadPath(STORYBOARD_RELATIVE_PATHS.personaMemoryDirectory),
+    backgroundMemoryDirectory: resolveThreadPath(
+      STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory,
+    ),
   };
 }
 

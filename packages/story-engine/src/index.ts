@@ -28,6 +28,7 @@ export * from './application/drafts/resolveSceneGrounding';
 export * from './application/drafts/reviseAfterGenerateGate';
 export * from './application/drafts/storyStateAudit';
 export * from './application/drafts/reviseDraftUseCase';
+export * from './application/drafts/resolveSceneThread';
 export * from './application/drafts/sceneGenerationInputs';
 export * from './application/drafts/updateStoryState';
 export * from './application/manuscript/assembleManuscriptUseCase';

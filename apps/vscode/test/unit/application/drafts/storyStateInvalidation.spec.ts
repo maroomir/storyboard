@@ -245,7 +245,10 @@ describe("ledger updates after generation", () => {
   function generationInputs(order: number, hash: string): never {
     return {
       paths,
+      // 줄기를 선언하지 않은 작품에서는 threadPaths가 paths와 같다.
+      threadPaths: paths,
       scene: { stem: `0${order}-scene`, order },
+      context: { characters: [] },
       inputHash: hash
     } as never
   }

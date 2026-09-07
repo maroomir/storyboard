@@ -10,8 +10,17 @@ import type { StoryboardAiService, StoryStateUpdateItem } from '@storyboard/stor
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 
-function toStoryStateEntries(items: readonly StoryStateUpdateItem[]): StoryStateEntry[] {
-  return items.map((item) => ({ section: item.section, text: item.text }));
+// NOTE: 목격자는 그 씬에 있던 인물이다. 목격 범위 서술자가 자기가 없던 자리의 사실을 아는 것을
+// 막으려면, 사실이 확립되는 자리에서 누가 그 자리에 있었는지를 남겨 두어야 한다.
+function toStoryStateEntries(
+  items: readonly StoryStateUpdateItem[],
+  witnesses: readonly string[],
+): StoryStateEntry[] {
+  return items.map((item) => ({
+    section: item.section,
+    text: item.text,
+    ...(witnesses.length > 0 ? { witnesses } : {}),
+  }));
 }
 
 // NOTE: 다음 씬 생성이 이 원장을 읽으므로 백그라운드 큐가 아니라 저장 경로에서 await 한다.
@@ -22,10 +31,10 @@ export async function updateStoryStateAfterGeneration(
   aiService: StoryboardAiService,
   draftBody: string,
 ): Promise<void> {
-  const { paths, scene, inputHash } = inputs;
+  const { threadPaths, scene, context, inputHash } = inputs;
 
   try {
-    const previous = await readStoryState(paths.storyState, options.fileSystem);
+    const previous = await readStoryState(threadPaths.storyState, options.fileSystem);
     const items = await aiService.updateStoryState(
       {
         sceneTitle: scene.stem,
@@ -38,12 +47,18 @@ export async function updateStoryStateAfterGeneration(
       },
     );
 
+    const witnesses = context.characters.map((character) => character.id);
     const merged =
       items.length === 0
         ? recordStoryStateScene(previous, scene.order, inputHash)
-        : mergeStoryState(previous, toStoryStateEntries(items), scene.order, inputHash);
+        : mergeStoryState(
+            previous,
+            toStoryStateEntries(items, witnesses),
+            scene.order,
+            inputHash,
+          );
 
-    await writeStoryState(paths.storyState, merged, options.fileSystem);
+    await writeStoryState(threadPaths.storyState, merged, options.fileSystem);
   } catch (error) {
     options.logger.warn(`이야기 상태를 갱신하지 못했습니다: ${String(error)}`);
   }
