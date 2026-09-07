@@ -298,13 +298,15 @@ description:
 씬도 카드다. 캐릭터·배경과 같은 `.card` 캐리어를 쓰지만 스키마는 `type: scene`으로 구분되며,
 파일명이 순서를 인코딩한다는 점만 다르다.
 
-최소 형태:
+최소 형태 (`scene/01-arrival.card` + `scene/01-arrival.summary.md`):
 ```yaml
 type: scene
 id: 01-arrival
-summary: |-
-  주인공이 학교에 도착했다. 정문 앞에서 깊게 숨을 들이쉬고,
-  친구 지훈을 발견한다.
+summary: 01-arrival.summary.md
+```
+```text
+주인공이 학교에 도착했다. 정문 앞에서 깊게 숨을 들이쉬고,
+친구 지훈을 발견한다.
 ```
 
 전체 형태:
@@ -331,16 +333,30 @@ foreshadowing:
   - 전학 이유
 neededCanon:
   - 학교는 3월에 학기를 시작한다
-summary: 자유 메모. 구조 필드로 못 담는 내용을 그대로 적는다.
+beats:
+  - 정문 앞에서 숨을 고르다 지훈을 발견한다
+  - 지훈이 먼저 이름을 부르고, 둘은 나란히 교문을 지난다
+summary: 01-arrival.summary.md
 ```
 
 - **직렬화는 canonical**이다(고정 키 순서, block sequence). 카드와 같은 규칙이라 손으로 쓴 씬은
   첫 프로그램적 저장에서 정규화된다.
 - 구조 필드는 프롬프트에 넣을 때 기존 씬 시드와 같은 `[목적]`/`[갈등]` 라벨 블록으로 렌더링되므로
   (`renderSceneCardBody`), 생성 프롬프트 계약은 형식 전환과 무관하게 유지된다.
-- `summary`는 해석 없이 그대로 프롬프트에 붙는 자유 메모다. 비어 있는 구조 필드는 카드 에디터의
-  **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울 수 있고, 반영은 비어 있는 필드에만
-  적용된다(사용자가 적어 둔 값이 항상 이긴다).
+- `summary`는 해석 없이 그대로 프롬프트에 붙는 창작자의 자유 메모다. 산문은 카드 옆
+  `scene/<stem>.summary.md`에 두고 카드에는 그 파일명만 적는다 — 창작자가 쓴 사건과 기계가 펼친
+  비트를 파일 단위로 구별하기 위해서다. `parseScene`은 카드와 파일 본문을 함께 받고, 카드 에디터의
+  Summary 칸과 봇 `/scene edit|append`는 이 파일을 읽고 쓴다. 인라인 산문은 구형이라
+  `scene migrate`가 파일로 뽑는다(`scene complete`가 새로 제안하는 씬만 아직 인라인으로 나온다).
+  비어 있는 구조 필드는 카드 에디터의 **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울
+  수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
+- `beats`는 초안이 따라갈 시간 순 사건 목록이다. 초안 분량의 실질 상한은 씬의 사건 밀도이므로,
+  `scene generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
+  `max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))`개를 뽑아 카드에 쓴다
+  (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `draft.autoBeats`로 끔).
+  `scene beats` verb·확장 명령·봇 `/scene beats`는 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
+  비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
+  우선한다.
 
 #### 장면의 경계 (`endState`·`povCharacter`)
 
