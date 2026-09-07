@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   findForeignScriptSpans,
+  findUnreadableStoryStateLines,
   hasForeignScript,
   stripForeignScript,
   storyStateFactLines
@@ -544,6 +545,45 @@ describe("story state witnesses", () => {
     expect(merged.entries).toEqual([
       { section: "facts", text: "새 사실", throughScene: 5, witnesses: ["hana"] }
     ])
+  })
+})
+
+describe("findUnreadableStoryStateLines", () => {
+  function ledgerWith(...lines: readonly string[]): string {
+    return ["# 이야기 상태", "<!-- through-scene: 3 -->", "## 확정 사실", ...lines, ""].join("\n")
+  }
+
+  it("says nothing about lines it can read", () => {
+    expect(
+      findUnreadableStoryStateLines(
+        ledgerWith("- 태그 없는 사실", "- [2] 사실", "- [2!] 사실", "- [2|hana] 사실", "- [2!|hana,jun] 사실")
+      )
+    ).toEqual([])
+  })
+
+  it("reports a bracket prefix that is not a scene tag", () => {
+    expect(findUnreadableStoryStateLines(ledgerWith("- [삼] 사실"))).toEqual(["[삼] 사실"])
+    expect(findUnreadableStoryStateLines(ledgerWith("- [2!!] 사실"))).toEqual(["[2!!] 사실"])
+    expect(findUnreadableStoryStateLines(ledgerWith("- [] 사실"))).toEqual(["[] 사실"])
+  })
+
+  it("ignores bullets outside a known section", () => {
+    const stray = ["# 이야기 상태", "## 알 수 없는 절", "- [삼] 사실", ""].join("\n")
+
+    expect(findUnreadableStoryStateLines(stray)).toEqual([])
+  })
+
+  it("looks at every section, not just the first", () => {
+    const twoSections = [
+      "# 이야기 상태",
+      "## 확정 사실",
+      "- [2] 사실",
+      "## 공개된 정보",
+      "- [abc] 공개",
+      ""
+    ].join("\n")
+
+    expect(findUnreadableStoryStateLines(twoSections)).toEqual(["[abc] 공개"])
   })
 })
 

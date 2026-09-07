@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import type {
   BackgroundCard,
+  SceneFile,
   BibleFact,
   CharacterCard,
   ProjectFormat,
@@ -48,6 +49,28 @@ export interface SceneInputHashInput {
   readonly bibleFacts?: readonly BibleFact[];
   readonly sceneBreakJoiner?: string;
   readonly grounding?: SceneGrounding;
+  // 시점을 정하는 씬 카드 필드. 프롬프트를 바꾸므로 digest 에 들어가야 캐시가 무효화된다.
+  readonly narration?: SceneNarrationHashInput;
+}
+
+export interface SceneNarrationHashInput {
+  readonly narrator?: string;
+  readonly thread?: string;
+  readonly povCharacter?: string;
+}
+
+// 생성과 원장 감사가 같은 값을 digest 해야 한다. 두 곳이 각자 필드를 고르면 한쪽만 고쳐질 때
+// 해시가 갈려, 고치지 않은 씬이 통째로 낡음으로 잡힌다.
+export function sceneNarrationHashInput(scene: SceneFile): SceneNarrationHashInput | undefined {
+  const narration: SceneNarrationHashInput = {
+    ...(scene.card.narrator === undefined ? {} : { narrator: scene.card.narrator }),
+    ...(scene.card.thread === undefined ? {} : { thread: scene.card.thread }),
+    ...(scene.frontmatter.povCharacter === undefined
+      ? {}
+      : { povCharacter: scene.frontmatter.povCharacter }),
+  };
+
+  return Object.keys(narration).length > 0 ? narration : undefined;
 }
 
 const sceneCacheBackgroundSnapshotSchema = z.object({
@@ -117,6 +140,17 @@ function digestBibleFacts(
     .sort((a, b) => `${a.kind}:${a.id}:${a.key}`.localeCompare(`${b.kind}:${b.id}:${b.key}`));
 }
 
+// 값이 하나도 없으면 키 자체를 넣지 않는다. 넣으면 이 필드를 쓰지 않는 기존 워크스페이스의 해시가
+// 전부 바뀌어, 고치지 않은 씬까지 한 번씩 다시 생성된다.
+function hasNarrationInput(narration: SceneNarrationHashInput | undefined): boolean {
+  return (
+    narration !== undefined &&
+    (narration.narrator !== undefined ||
+      narration.thread !== undefined ||
+      narration.povCharacter !== undefined)
+  );
+}
+
 export function computeSceneInputHash(input: SceneInputHashInput): string {
   // NOTE: A draft cache hit skips the whole generation pipeline (incl. persona/background
   // regen), so every card field that reaches a generation prompt must be digested here or
@@ -156,6 +190,7 @@ export function computeSceneInputHash(input: SceneInputHashInput): string {
     ...(input.grounding && Object.keys(input.grounding).length > 0
       ? { grounding: input.grounding }
       : {}),
+    ...(hasNarrationInput(input.narration) ? { narration: input.narration } : {}),
   };
   const hash = createHash('sha256').update(JSON.stringify(digestSource)).digest('hex');
 

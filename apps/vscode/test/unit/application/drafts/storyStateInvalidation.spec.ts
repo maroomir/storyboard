@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths } from "@storyboard/story-engine"
-import { parseStoryState } from "@storyboard/story-format"
+import { getStoryboardProjectPaths, resolveThreadPaths } from "@storyboard/story-engine"
+import { formatStoryStateForPrompt, parseStoryState, readStoryState } from "@storyboard/story-format"
 import type { FileSystemDirectoryEntry, IFileSystem } from "@storyboard/story-engine"
 import {
   auditStoryMemory,
@@ -220,6 +220,90 @@ describe("auditStoryMemory", () => {
     const marked = fileSystem.read(paths.storyState.path) ?? ""
     expect(marked).toContain("- [2!] 2화 사실")
     expect(marked).toContain("- [1] 1화 사실")
+  })
+
+  // 시점을 바꾸면 초안이 달라지므로 그 씬이 남긴 원장 항목도 낡는다. 해시에 narrator·thread·
+  // povCharacter 가 없으면 시점만 바꾼 씬은 영원히 최신으로 판정된다.
+  it("marks a scene whose narrator changed", async () => {
+    const hashes = await sealedLedger(fileSystem, [1, 2, 3])
+    fileSystem.write(paths.storyState.path, ledger(hashes))
+    fileSystem.write(
+      "/ws/scene/02-second.card",
+      `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\nnarrator: hana-first\n`
+    )
+
+    const result = await auditStoryMemory(auditRequest(fileSystem))
+
+    expect(result.audit.staleSceneOrders).toEqual([2])
+  })
+
+  it("marks a scene that moved to another thread", async () => {
+    const hashes = await sealedLedger(fileSystem, [1, 2, 3])
+    fileSystem.write(paths.storyState.path, ledger(hashes))
+    fileSystem.write(
+      "/ws/scene/02-second.card",
+      `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\nthread: ep2\n`
+    )
+
+    const result = await auditStoryMemory(auditRequest(fileSystem))
+
+    expect(result.audit.staleSceneOrders).toEqual([2])
+  })
+
+  it("marks a scene whose focal character changed", async () => {
+    const hashes = await sealedLedger(fileSystem, [1, 2, 3])
+    fileSystem.write(paths.storyState.path, ledger(hashes))
+    fileSystem.write(
+      "/ws/scene/02-second.card",
+      `${sceneCard("02", "second", "익명 사연이 도착한다.").trimEnd()}\npovCharacter: jina\n`
+    )
+
+    const result = await auditStoryMemory(auditRequest(fileSystem))
+
+    expect(result.audit.staleSceneOrders).toEqual([2])
+  })
+
+  // 줄기가 갈린 작품에서는 그 줄기의 원장만 감사하고 표시해야 한다. 기본 원장을 건드리면
+  // 다른 편의 사실이 이 편의 경고로 새어 나온다.
+  it("audits and marks only the thread ledger it was given", async () => {
+    const threadPaths = resolveThreadPaths(paths, "ep2")
+    const hashes = await sealedLedger(fileSystem, [1, 2, 3])
+    const mainLedger = ledger(hashes)
+    fileSystem.write(paths.storyState.path, mainLedger)
+    fileSystem.write(threadPaths.storyState.path, mainLedger)
+    fileSystem.write("/ws/scene/02-second.card", sceneCard("02", "second", "고쳐 쓴 요약."))
+
+    const result = await auditStoryMemory({
+      ...(auditRequest(fileSystem) as object),
+      paths: threadPaths
+    } as never)
+    await markStoryStateStaleEntries(threadPaths, fileSystem, result)
+
+    expect(fileSystem.read(threadPaths.storyState.path)).toContain("- [2!] 2화 사실")
+    expect(fileSystem.read(paths.storyState.path)).toBe(mainLedger)
+  })
+
+  // 순서 계약: 표시를 먼저 해야 곧이어 원장을 읽는 프롬프트가 낡은 항목을 빼고 받는다.
+  it("keeps a stale fact in the prompt until the marks are written", async () => {
+    const hashes = await sealedLedger(fileSystem, [1, 2, 3])
+    fileSystem.write(paths.storyState.path, ledger(hashes))
+    fileSystem.write("/ws/scene/02-second.card", sceneCard("02", "second", "고쳐 쓴 요약."))
+
+    const beforeMarking = formatStoryStateForPrompt(
+      await readStoryState(paths.storyState, fileSystem),
+      3
+    )
+    expect(beforeMarking).toContain("2화 사실")
+
+    const result = await auditStoryMemory(auditRequest(fileSystem, 3))
+    await markStoryStateStaleEntries(paths, fileSystem, result)
+
+    const afterMarking = formatStoryStateForPrompt(
+      await readStoryState(paths.storyState, fileSystem),
+      3
+    )
+    expect(afterMarking ?? "").not.toContain("2화 사실")
+    expect(afterMarking).toContain("1화 사실")
   })
 
   it("returns an empty audit when the ledger does not exist", async () => {

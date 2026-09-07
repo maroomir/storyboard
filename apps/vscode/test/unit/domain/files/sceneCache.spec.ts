@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest"
 
+import { parseScene } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
   computeSceneInputHash,
   parseSceneCache,
+  sceneNarrationHashInput,
   serializeSceneCache,
   type SceneCacheRecord
 } from "@storyboard/story-engine"
@@ -182,3 +184,64 @@ describe("scene cache codec", () => {
     expect(withJoiner).not.toBe(withoutJoiner)
   })
 })
+
+describe("scene input hash: narration fields", () => {
+  const base = {
+    sceneBody: "샘플 캐릭터가 등장한다.",
+    characters: [sampleCharacter],
+    background: sampleBackground,
+    format: "novel" as const
+  }
+
+  // NOTE: narrator·thread·povCharacter 는 프롬프트를 바꾼다. digest 에 없으면 시점을 바꾼 뒤
+  // `scene generate` 가 캐시를 맞다고 판단해 옛 시점의 초안을 그대로 내놓는다.
+  it("changes the hash when the scene names a different narrator", () => {
+    const before = computeSceneInputHash({ ...base, narration: { narrator: "hana-first" } })
+    const after = computeSceneInputHash({ ...base, narration: { narrator: "wide" } })
+
+    expect(after).not.toBe(before)
+  })
+
+  it("changes the hash when the scene moves to another thread", () => {
+    const before = computeSceneInputHash({ ...base, narration: { thread: "ep1" } })
+    const after = computeSceneInputHash({ ...base, narration: { thread: "ep2" } })
+
+    expect(after).not.toBe(before)
+  })
+
+  it("changes the hash when the focal character changes", () => {
+    const before = computeSceneInputHash({ ...base, narration: { povCharacter: "hana" } })
+    const after = computeSceneInputHash({ ...base, narration: { povCharacter: "jun" } })
+
+    expect(after).not.toBe(before)
+  })
+
+  // 이 필드를 쓰지 않는 기존 워크스페이스의 해시는 그대로여야 한다. 바뀌면 업그레이드만으로
+  // 고치지 않은 씬까지 전부 다시 생성된다.
+  it("keeps the pre-narration hash when the scene uses none of the fields", () => {
+    const legacy = computeSceneInputHash(base)
+
+    expect(computeSceneInputHash({ ...base, narration: undefined })).toBe(legacy)
+    expect(computeSceneInputHash({ ...base, narration: {} })).toBe(legacy)
+  })
+
+  it("derives the digest input from the scene card and frontmatter", () => {
+    const scene = parseScene(
+      "type: scene\nid: 01-dock\nnarrator: hana-first\nthread: ep2\npovCharacter: hana\nsummary: 사건.\n",
+      "01-dock.card"
+    )
+
+    expect(sceneNarrationHashInput(scene)).toEqual({
+      narrator: "hana-first",
+      thread: "ep2",
+      povCharacter: "hana"
+    })
+  })
+
+  it("reports nothing to digest for a scene that steers no narration", () => {
+    const scene = parseScene("type: scene\nid: 01-dock\nsummary: 사건.\n", "01-dock.card")
+
+    expect(sceneNarrationHashInput(scene)).toBeUndefined()
+  })
+})
+

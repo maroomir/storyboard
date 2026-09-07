@@ -16,7 +16,10 @@ import {
   type StoryStateAudit,
   type StoryUri,
 } from '@storyboard/story-format';
-import { computeSceneInputHash } from '#engine/domain/files/sceneCache';
+import {
+  computeSceneInputHash,
+  sceneNarrationHashInput,
+} from '#engine/domain/files/sceneCache';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
@@ -102,6 +105,7 @@ async function computeCurrentSceneInputHash(
       bibleFacts,
       sceneBreakJoiner,
       grounding: context.scene.frontmatter.grounding,
+      narration: sceneNarrationHashInput(context.scene),
     });
   } catch {
     // 읽히지 않는 씬은 "그 입력이 더 이상 없다"와 같다. 해시를 비워 두면 감사가 낡음으로 판정한다.
