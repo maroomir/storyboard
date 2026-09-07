@@ -114,6 +114,7 @@ export interface SceneCard {
   readonly endState?: string;
   readonly foreshadowing?: readonly string[];
   readonly neededCanon?: readonly string[];
+  readonly beats?: readonly string[];
   readonly summary?: string;
 }
 

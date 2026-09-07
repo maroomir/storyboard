@@ -91,6 +91,19 @@ export function ScenePreviewPanel({
           </p>
         </div>
       ) : null}
+
+      {card.beats && card.beats.length > 0 ? (
+        <div className="flex flex-col gap-1 border-t border-sb-border/60 pt-3">
+          <p className="m-0 text-xs font-semibold uppercase tracking-wide text-sb-fg-muted">
+            Beats
+          </p>
+          <ol className="m-0 flex flex-col gap-1 pl-5 text-sm leading-relaxed text-sb-fg">
+            {card.beats.map((beat, index) => (
+              <li key={index}>{beat}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
     </section>
   );
 }

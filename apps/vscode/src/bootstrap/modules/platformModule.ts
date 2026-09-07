@@ -21,6 +21,7 @@ import {
   ExportManuscriptUseCase,
   GenerateAllDraftsUseCase,
   GenerateDraftUseCase,
+  GenerateSceneBeatsUseCase,
   GenerateOutlineUseCase,
   ManuscriptAssemblyRepository,
   NovelPipeline,
@@ -83,6 +84,7 @@ export interface IPlatformServices {
   readonly cardSidebarRepository: CardSidebarRepository;
   readonly fileSystem: VscodeFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly logger: IStoryboardLogger;
@@ -198,6 +200,13 @@ export class PlatformModule implements IApplicationModule {
       sceneRepository,
       workspaceLocator,
     });
+    const generateSceneBeatsUseCase = new GenerateSceneBeatsUseCase({
+      aiGateway,
+      configBridge,
+      fileSystem,
+      logger,
+      sceneRepository,
+    });
     const generateOutlineUseCase = new GenerateOutlineUseCase(aiGateway, outlineRepository);
     const reviseDraftUseCase = new ReviseDraftUseCase({
       aiProviderRegistry,
@@ -276,6 +285,7 @@ export class PlatformModule implements IApplicationModule {
       generateAllDraftsUseCase,
       generateDraftUseCase,
       generateOutlineUseCase,
+      generateSceneBeatsUseCase,
       logger,
       novelPipeline,
       novelRunStateRepository,

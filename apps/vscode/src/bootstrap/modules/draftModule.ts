@@ -6,6 +6,7 @@ import { registerExpandDraftCommand } from '@/presentation/commands/expandDraft'
 import { registerCondenseDraftCommand } from '@/presentation/commands/condenseDraft';
 import { registerGenerateAllDraftsCommand } from '@/presentation/commands/generateAllDrafts';
 import { registerGenerateDraftCommands } from '@/presentation/commands/generateDraft';
+import { registerGenerateSceneBeatsCommand } from '@/presentation/commands/generateSceneBeats';
 import { registerMigrateScenesCommand } from '@/presentation/commands/migrateScenes';
 import { registerNewSceneCommands } from '@/presentation/commands/newScene';
 import { registerReviseDraftCommand } from '@/presentation/commands/reviseDraft';
@@ -36,6 +37,7 @@ export class DraftModule implements IApplicationModule {
       expandDraftUseCase,
       generateDraftUseCase,
       generateAllDraftsUseCase,
+      generateSceneBeatsUseCase,
       logger,
       reviseAfterGenerateGate,
       reviseDraftUseCase,
@@ -52,6 +54,7 @@ export class DraftModule implements IApplicationModule {
         generateAllDraftsUseCase,
         logger,
       }),
+      registerGenerateSceneBeatsCommand({ generateSceneBeatsUseCase }),
       registerApplyDraftFormatCommand({ applyDraftFormatUseCase, logger }),
       registerReviseDraftCommand({
         configBridge,

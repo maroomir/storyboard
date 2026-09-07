@@ -1,14 +1,18 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
+import { uriExists } from '@/infrastructure/vscode/workspace';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import {
   CardParseError,
+  isInlineSceneSummary,
   parseCard,
   parseSceneFileName,
   parseWorkspaceCard,
   sceneSeedSectionLabels,
+  sceneSummaryFileName,
+  sceneSummaryReference,
   serializeCard,
   serializeWorkspaceCard,
 } from '@storyboard/story-format';
@@ -159,24 +163,23 @@ function createCardEditorHandlers(
 ): StoryboardRpcHandlers {
   return {
     'cards.read': async (): Promise<{ readonly card: WorkspaceCard }> => ({
-      card: parseWorkspaceCard(document.getText()),
+      card: await loadEditorCard(document),
     }),
     'cards.write': async (payload): Promise<{ readonly card: WorkspaceCard }> => {
-      await replaceDocumentText(document, serializeWorkspaceCard(payload.card));
+      await persistEditorCard(document, payload.card);
       return { card: payload.card };
     },
     'cards.writeRaw': async (
       payload,
     ): Promise<{ readonly card: WorkspaceCard; readonly rawText: string }> => {
       const card = parseWorkspaceCard(payload.rawText);
-      const rawText = serializeWorkspaceCard(card);
-      await replaceDocumentText(document, rawText);
+      const rawText = await persistEditorCard(document, card);
       return { card, rawText };
     },
     'cards.structureScene': async (): Promise<
       StoryboardResponsePayload<'cards.structureScene'>
     > => {
-      const card = parseWorkspaceCard(document.getText());
+      const card = await loadEditorCard(document);
 
       if (card.type !== 'scene') {
         throw new Error('씬 카드에서만 구조화를 제안할 수 있습니다.');
@@ -258,7 +261,7 @@ async function createInitialData(
   const workspaceRoot = getDocumentWorkspaceRoot(document);
 
   try {
-    const card = parseWorkspaceCard(rawText);
+    const card = await loadEditorCard(document);
     const characterRoster =
       card.type === 'character'
         ? await loadCharacterRoster(vscodeFileSystem, workspaceRoot)
@@ -329,6 +332,98 @@ function describeKnownStructureFields(card: SceneCard): string[] {
 function getDocumentWorkspaceRoot(document: vscode.TextDocument): vscode.Uri {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
   return workspaceFolder?.uri ?? vscode.Uri.joinPath(document.uri, '..');
+}
+
+// NOTE: The editor shows summary prose, but the card on disk holds only `<stem>.summary.md`;
+// the prose lives in that sidecar so a creator's summary stays apart from machine-written beats.
+async function loadEditorCard(document: vscode.TextDocument): Promise<WorkspaceCard> {
+  const card = parseWorkspaceCard(document.getText());
+  const summaryFileName = card.type === 'scene' ? sceneSummaryReference(card.summary) : undefined;
+
+  if (card.type !== 'scene' || summaryFileName === undefined) {
+    return card;
+  }
+
+  const summaryText = await readSiblingText(sceneSummarySiblingUri(document, summaryFileName));
+  return { ...card, summary: summaryText.trim() === '' ? undefined : summaryText.trimEnd() };
+}
+
+async function persistEditorCard(
+  document: vscode.TextDocument,
+  card: WorkspaceCard,
+): Promise<string> {
+  if (card.type !== 'scene') {
+    return replaceCardText(document, serializeWorkspaceCard(card));
+  }
+
+  const existingReference = resolveExistingSummaryReference(document);
+  const inlineSummary = isInlineSceneSummary(card.summary) ? card.summary?.trim() : undefined;
+
+  if (existingReference === undefined && inlineSummary === undefined) {
+    return replaceCardText(document, serializeWorkspaceCard(card));
+  }
+
+  const fileName = document.uri.path.split('/').pop() ?? '';
+  const summaryFileName =
+    existingReference ?? sceneSummaryFileName(parseSceneFileName(fileName)?.stem ?? card.id);
+  await writeSiblingText(
+    sceneSummarySiblingUri(document, summaryFileName),
+    `${inlineSummary ?? ''}\n`,
+  );
+
+  return replaceCardText(document, serializeWorkspaceCard({ ...card, summary: summaryFileName }));
+}
+
+function resolveExistingSummaryReference(document: vscode.TextDocument): string | undefined {
+  try {
+    const current = parseWorkspaceCard(document.getText());
+    return current.type === 'scene' ? sceneSummaryReference(current.summary) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function sceneSummarySiblingUri(document: vscode.TextDocument, fileName: string): vscode.Uri {
+  return vscode.Uri.joinPath(document.uri, '..', fileName);
+}
+
+function findOpenDocument(uri: vscode.Uri): vscode.TextDocument | undefined {
+  return vscode.workspace.textDocuments.find(
+    (candidate) => candidate.uri.toString() === uri.toString(),
+  );
+}
+
+async function readSiblingText(uri: vscode.Uri): Promise<string> {
+  const open = findOpenDocument(uri);
+  if (open !== undefined) {
+    return open.getText();
+  }
+
+  try {
+    return new TextDecoder().decode(await vscode.workspace.fs.readFile(uri));
+  } catch {
+    return '';
+  }
+}
+
+async function writeSiblingText(uri: vscode.Uri, text: string): Promise<void> {
+  const open =
+    findOpenDocument(uri) ??
+    ((await uriExists(uri)) ? await vscode.workspace.openTextDocument(uri) : undefined);
+
+  if (open === undefined) {
+    await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(text));
+    return;
+  }
+
+  if (open.getText() !== text) {
+    await replaceDocumentText(open, text);
+  }
+}
+
+async function replaceCardText(document: vscode.TextDocument, nextText: string): Promise<string> {
+  await replaceDocumentText(document, nextText);
+  return nextText;
 }
 
 async function replaceDocumentText(document: vscode.TextDocument, nextText: string): Promise<void> {
