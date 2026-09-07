@@ -10,11 +10,19 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-09-07
+
 ### Added
 
 - **xAI Grok as a provider.** The `grok` provider talks to xAI's OpenAI-compatible API (`api.x.ai`); the key goes into `~/.storyboard/secrets.json` like any other API provider. The catalog lists `grok-4.6`, `grok-4.5` and `grok-4.3`, with a price table so dollar cost is shown alongside tokens.
 - **Gemini CLI as a provider.** The `gemini-cli` provider runs the installed `gemini` command headlessly, like Claude Code and Codex, so a Google account login is all it needs. Models are the `flash`/`pro` aliases or ids such as `gemini-2.5-pro`; usage is read from the CLI's JSON `stats`, and hitting the usage limit follows the same fallback rule as the other CLIs. The connection test only checks the install; a missing login is reported on the first generation.
 - **The bot accepts API-key providers.** It used to allow CLI providers only (claude-code, codex, mock) and refused to boot when the shared config named OpenAI, Claude or Gemini. It now reads keys from the shared `~/.storyboard/secrets.json` and generates with any provider; `/doctor` reports whether each provider in use has a key, and `storyboard-bot setup` offers the full list.
+- **Final full-manuscript review feeds back into the manuscript.** It found long-range contradictions but left them in the `REVIEW.md` report, with no indication of which draft to fix. The review now names a scene for each issue, rewrites only the scenes carrying severe ones, then re-runs the full review and updates the report. Issues that could not be pinned to a scene are counted in the report rather than dropped. A run mode that shows the target scenes and asks for approval before rewriting was added as well (the CLI is unattended and keeps going automatically).
+
+### Changed
+
+- **The "story so far" is refreshed after each chapter.** The rolling summary used to be produced only in the pipeline's final step, so the summary file stayed empty throughout a one-click first run and later chapters were written knowing nothing but the last 1,000 characters of the previous draft. The injection budget also grew from 2,000 to 8,000 characters, and overflow now compresses the oldest chapters to a title and one line instead of truncating the front, so setups planted in the opening survive.
+- **AI-built memory moves to `.storyboard/memory/` and is git-tracked.** The story-state ledger, character and background memory, dialogue records, and per-chapter summaries cannot be rebuilt from committed inputs, yet they lived in the ignored `.storyboard/cache/` and so sat outside version control. **Existing workspaces are migrated once, automatically, the first time they are opened** — nothing to do by hand.
 
 ### Fixed
 
