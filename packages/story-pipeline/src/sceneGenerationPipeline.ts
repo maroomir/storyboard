@@ -249,6 +249,8 @@ const violationWeights: Readonly<Record<SectionViolation['kind'], number>> = {
   'lost-dialogue': 2,
   // 앞 구간을 다시 쓴 판은 원고를 못 쓰게 만든다. 분량 미달보다 무겁게 센다.
   'repeats-previous': 3,
+  // 되풀이로 채운 분량은 없느니만 못하다. 짧지만 깨끗한 판이 이겨야 한다.
+  repetition: 3,
   'too-long': 1,
   'too-short': 1,
 };

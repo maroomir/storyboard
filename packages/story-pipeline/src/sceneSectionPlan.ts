@@ -124,6 +124,7 @@ export interface SectionViolation {
     | 'too-short'
     | 'too-long'
     | 'repeats-previous'
+    | 'repetition'
     | 'dialogue-count';
   readonly detail: string;
 }
@@ -333,7 +334,7 @@ export function validateExpandedSection(input: {
   if (input.expanded.length < input.targetLength * minimumLengthRatio) {
     violations.push({
       kind: 'too-short',
-      detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자)`,
+      detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이의 감각·행동·내면을 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
     });
   }
 
@@ -358,7 +359,97 @@ export function validateExpandedSection(input: {
     });
   }
 
+  const padding = findPaddingRepetition(input.section, input.expanded, input.previousSection);
+  if (padding !== undefined) {
+    violations.push({ kind: 'repetition', detail: padding });
+  }
+
   return violations;
+}
+
+// NOTE: 새 사건을 못 만들게 한 채 분량을 요구하면, 모델이 분량을 채우는 유일한 수단은 되풀이다.
+// 실측에서 앞 구간이 쪼개 쓴 대사 턴을 다음 구간이 통째로 다시 쓰고, 마무리 동작을 두 번 넣었다.
+// 되풀이는 위 검사들이 보는 "구간 전체를 다시 씀"보다 작은 단위라 따로 잡는다. 대사는 정확히,
+// 지문은 문단 유사도로 본다.
+const PADDING_PARAGRAPH_MIN_LENGTH = 40;
+const PADDING_PARAGRAPH_RATIO = 0.8;
+
+function findPaddingRepetition(
+  section: string,
+  expanded: string,
+  previousSection: string | undefined,
+): string | undefined {
+  const repeatedLine = findRepeatedDialogueLine(section, expanded, previousSection);
+  if (repeatedLine !== undefined) {
+    return `같은 대사를 두 번 썼습니다 ("${repeatedLine}"). 분량이 모자라도 이미 쓴 대사를 되풀이하지 마세요`;
+  }
+
+  const repeatedParagraph = findNearDuplicateParagraph(expanded, previousSection);
+  if (repeatedParagraph !== undefined) {
+    return `같은 내용의 문단을 되풀이했습니다 ("${repeatedParagraph.slice(0, 30)}…"). 채울 재료가 없으면 짧게 끝내세요`;
+  }
+
+  return undefined;
+}
+
+function countOccurrences(lines: readonly string[]): Map<string, number> {
+  const counts = new Map<string, number>();
+
+  for (const line of lines) {
+    counts.set(line, (counts.get(line) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+// 뼈대 조각에 한 번 있는 대사가 두 번 나오거나, 직전 구간에서 이미 쓴 대사가 이 조각에 없는데
+// 다시 나오면 되풀이다. 조각 자체가 같은 말을 두 번 시키는 경우(되뇌기)는 그대로 둔다.
+function findRepeatedDialogueLine(
+  section: string,
+  expanded: string,
+  previousSection: string | undefined,
+): string | undefined {
+  const allowed = countOccurrences(dialogueLinesOf(section));
+  const written = dialogueLinesOf(expanded);
+  const writtenCounts = countOccurrences(written);
+  const previous = new Set(previousSection === undefined ? [] : dialogueLinesOf(previousSection));
+
+  for (const line of written) {
+    const count = writtenCounts.get(line) ?? 0;
+    const permitted = allowed.get(line) ?? 0;
+
+    if (count > Math.max(1, permitted) || (permitted === 0 && previous.has(line))) {
+      return line;
+    }
+  }
+
+  return undefined;
+}
+
+function narrationParagraphsOf(text: string): string[] {
+  return text
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.replace(quotedDialoguePattern, '').replace(/\s+/g, ' ').trim())
+    .filter((paragraph) => paragraph.length >= PADDING_PARAGRAPH_MIN_LENGTH);
+}
+
+function findNearDuplicateParagraph(
+  expanded: string,
+  previousSection: string | undefined,
+): string | undefined {
+  const paragraphs = narrationParagraphsOf(expanded);
+  const earlier = previousSection === undefined ? [] : narrationParagraphsOf(previousSection);
+
+  for (let index = 0; index < paragraphs.length; index += 1) {
+    const paragraph = paragraphs[index] as string;
+    const candidates = [...earlier, ...paragraphs.slice(0, index)];
+
+    if (candidates.some((other) => similarityRatio(paragraph, other) >= PADDING_PARAGRAPH_RATIO)) {
+      return paragraph;
+    }
+  }
+
+  return undefined;
 }
 
 function countDialogueTurns(text: string): number {

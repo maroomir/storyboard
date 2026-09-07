@@ -22,12 +22,23 @@ import {
   type SceneGenerationPipelineStage
 } from '@storyboard/story-pipeline'
 
-// 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채우되,
-// 채움 문자열에 prefix 를 섞어 구간마다 다른 본문이 되게 한다. 모든 구간이 같은 글자로 채워지면
-// 직전 구간 재기술 검사가(정당하게) 걸린다.
+// 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채우되, prefix 를
+// 씨앗으로 삼은 결정적 난수열로 채워 구간마다 다른 본문이 되게 한다. 같은 조각을 되풀이해 채우면
+// 직전 구간 재기술 검사와 되풀이 검사가(정당하게) 걸린다.
 function longProse(prefix: string, length = 3000): string {
-  const unit = `${prefix}묘사`
-  return `${prefix} ${unit.repeat(Math.ceil((length * 2) / unit.length))}`
+  const syllables = "가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허"
+  let state = [...prefix].reduce((sum, char) => sum + char.charCodeAt(0), 1)
+  let filler = ""
+
+  while (filler.length < length * 2) {
+    state = (state * 48271) % 2147483647
+    filler += syllables[state % syllables.length]
+    if (state % 7 === 0) {
+      filler += " "
+    }
+  }
+
+  return `${prefix} ${filler}`
 }
 
 const eliaCard: CharacterCard = { type: "character", id: "elia", name: "엘리아", role: "main" }
@@ -640,6 +651,73 @@ describe("validateExpandedSection", () => {
     expect(violations.map((violation) => violation.kind)).toContain("lost-dialogue")
   })
 
+  // 실측(the-missing-summer 23씬, 구간 상한 1000): 새 사건이 금지된 채 분량을 요구받자 앞 구간이
+  // 쪼개 쓴 대사 턴을 통째로 다시 쓰고 마무리 동작을 두 번 넣어 분량을 채웠다.
+  it("flags a dialogue line written twice when the skeleton slice has it once", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '명태가 말했다. "내 손으로 죽인 건 아닙니다."',
+      expanded:
+        '"내 손으로 죽인 건 아닙니다." 명태가 말했다. ' +
+        "묘사".repeat(20) +
+        ' 그가 다시 말했다. "내 손으로 죽인 건 아닙니다." ' +
+        "다른 묘사".repeat(20)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("repetition")
+  })
+
+  it("flags a dialogue line re-rendered from the previous section", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '서연이 물었다. "그게 누구예요."',
+      previousSection: '명태가 말했다. "구조가 늦은 건 인정합니다." 형광등이 깜박였다.',
+      expanded:
+        '"구조가 늦은 건 인정합니다." 명태가 되풀이했다. "그게 누구예요." 서연이 물었다. ' +
+        "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("repetition")
+  })
+
+  it("lets the skeleton have a character repeat a line on purpose", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: '서연이 물었다. "이름을 말하세요." 명태가 침묵했다. 서연이 다시 물었다. "이름을 말하세요."',
+      expanded:
+        '"이름을 말하세요." 서연이 물었다. 명태는 입을 다물었다. "이름을 말하세요." 서연이 또박또박 되물었다. ' +
+        "묘사".repeat(30)
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("repetition")
+  })
+
+  it("flags a narration paragraph that near-duplicates an earlier one", () => {
+    const beat =
+      "서연이 숨을 멈췄다가 다시 천천히 내쉬었다. 콧속으로 들어온 공기가 눅눅한 종이 냄새를 실어 왔다. 그녀는 명태에게서 눈을 떼지 않았다."
+    const violations = validateExpandedSection({
+      ...base,
+      section: "서연이 숨을 골랐다.",
+      expanded: `${beat}\n\n명태의 손끝이 하얗게 질려 있었다. ${"묘사".repeat(20)}\n\n${beat.replace("천천히", "느리게")}`
+    })
+
+    expect(violations.map((violation) => violation.kind)).toContain("repetition")
+  })
+
+  it("does not mistake distinct paragraphs for padding", () => {
+    const violations = validateExpandedSection({
+      ...base,
+      section: "서연이 숨을 골랐다.",
+      expanded:
+        "서연이 숨을 멈췄다가 다시 천천히 내쉬었다. 콧속으로 들어온 공기가 눅눅한 종이 냄새를 실어 왔다.\n\n" +
+        "명태의 손끝이 하얗게 질려 있었다. 입이 열렸다가 소리 없이 닫혔다. 목울대가 한 번 크게 움직였다.\n\n" +
+        "형광등 소리만 방 안을 채웠다. 서연은 그 정적을 그대로 두었다. 재촉하면 그가 문을 닫아버릴 것을 알았다. " +
+        "묘사".repeat(20)
+    })
+
+    expect(violations.map((violation) => violation.kind)).not.toContain("repetition")
+  })
+
   it("flags an expansion that stopped well short of its section target", () => {
     const violations = validateExpandedSection({
       ...base,
@@ -668,8 +746,8 @@ describe("대사 다듬기 단계", () => {
     const polished = skeleton.replace('"가자, 지금."', '"가자, 지금 당장."')
     ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
     ai.polishSceneDialogue.mockResolvedValueOnce(polished)
-    ai.expandSceneSection.mockImplementation(async (input) =>
-      longProse((input as { section: string }).section)
+    ai.expandSceneSection.mockImplementation(
+      async (input) => `${(input as { section: string }).section} ${longProse("살붙인 본문")}`
     )
 
     const result = await runSceneGenerationPipeline({
