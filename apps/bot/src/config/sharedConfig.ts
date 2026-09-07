@@ -15,7 +15,9 @@ import {
 import type { DraftConfig, ProvidersConfig } from './config';
 
 export interface BotConfigurationOptions {
-  readonly workspacePath: string;
+  // Absent when no bot config has been written yet, which is exactly when `doctor` still has to
+  // report on the shared home file.
+  readonly workspacePath: string | undefined;
   readonly providers?: ProvidersConfig | undefined;
   readonly draft?: DraftConfig | undefined;
   readonly env?: NodeJS.ProcessEnv;
@@ -76,7 +78,10 @@ export function createBotConfiguration(
 
   return createFileConfiguration({
     userConfigFile: home.configFile,
-    workspaceConfigFile: resolveWorkspaceConfigFile(options.workspacePath),
+    workspaceConfigFile:
+      options.workspacePath === undefined
+        ? undefined
+        : resolveWorkspaceConfigFile(options.workspacePath),
     overrides: flattenLegacyBlocks(options.providers, options.draft),
   });
 }
