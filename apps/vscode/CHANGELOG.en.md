@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-09-07
+
 ### Added
 
 - **xAI Grok as a provider.** The `grok` provider talks to xAI's OpenAI-compatible API (`api.x.ai`); the key goes into `~/.storyboard/secrets.json` like any other API provider. The catalog lists `grok-4.6`, `grok-4.5` and `grok-4.3`, with a price table so dollar cost is shown alongside tokens.
