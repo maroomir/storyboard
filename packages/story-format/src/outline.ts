@@ -11,6 +11,8 @@ export const outlineVersion = '1.0.0';
 
 export const pointOfViewLabels: Record<PointOfView, string> = {
   first: '1인칭',
+  'first-retrospective': '1인칭 회고',
+  second: '2인칭',
   'third-limited': '3인칭 제한적',
   'third-omniscient': '3인칭 전지적',
 };
@@ -45,6 +47,9 @@ export interface ChapterPlanChapter {
   readonly title: string;
   readonly summary?: string;
   readonly targetWordCount?: number;
+  // 이 장의 기본 서술자와 연속성 줄기. 씬 카드가 값을 가지면 씬이 이긴다.
+  readonly narrator?: string;
+  readonly thread?: string;
   readonly scenes: readonly ScenePlan[];
 }
 
@@ -90,6 +95,8 @@ const chapterPlanChapterSchema = z.object({
   title: z.string().trim().min(1),
   summary: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
+  narrator: z.string().trim().min(1).optional(),
+  thread: z.string().trim().min(1).optional(),
   scenes: z.array(scenePlanSchema).default([]),
 });
 
