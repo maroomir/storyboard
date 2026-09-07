@@ -13,6 +13,8 @@ import {
   parseCardIdFromFileName,
   parseChapterPlan,
   parseScene,
+  parseSceneCard,
+  sceneSummaryReference,
   parseSceneStem,
   parseBible,
   sceneRelativePath,
@@ -176,12 +178,28 @@ export class WorkspaceStore {
   public async readScene(sceneStem: string): Promise<ReadFile<SceneFile>> {
     const relativePath = sceneRelativePath(sceneStem);
     const raw = await this.readText(relativePath);
+    const summaryText = await this.readSceneSummaryText(parseSceneCard(raw).summary);
 
     return {
-      value: parseScene(raw, `${sceneStem}.card`),
+      value: parseScene(raw, `${sceneStem}.card`, summaryText),
       relativePath,
       contentHash: hashContent(raw),
     };
+  }
+
+  // summary 가 `<stem>.summary.md` 참조면 그 파일이 창작자의 사건 메모다. 파일이 아직 없으면 비어 있는 것으로 본다.
+  public async readSceneSummaryText(summary: string | undefined): Promise<string | undefined> {
+    const summaryFileName = sceneSummaryReference(summary);
+
+    if (summaryFileName === undefined) {
+      return undefined;
+    }
+
+    try {
+      return await this.readText(`${STORYBOARD_RELATIVE_PATHS.sceneDirectory}/${summaryFileName}`);
+    } catch {
+      return '';
+    }
   }
 
   public async readDraft(sceneStem: string): Promise<ReadFile<string> | undefined> {

@@ -11,6 +11,7 @@ const KIND_LABELS: Record<JobKind, string> = {
   draft: '초안 생성',
   review: '리뷰',
   suggest: '제안',
+  beats: '씬 비트 전개',
   outline: '시놉시스 생성',
   plan: '챕터 계획 생성',
   manuscript: '원고 조립',
@@ -49,6 +50,21 @@ export async function enqueueDraftJob(ctx: ChatContext, sceneStem: string): Prom
     kind: 'draft',
     class: defaultJobClass('draft'),
     target: { scene: sceneStem },
+    chatId: ctx.chatId,
+  });
+}
+
+// Beats rewrite the tracked scene card, so the pipeline reads the card itself for its baseline.
+export async function enqueueBeatsJob(
+  ctx: ChatContext,
+  sceneStem: string,
+  force: boolean,
+): Promise<void> {
+  await enqueue(ctx, {
+    kind: 'beats',
+    class: defaultJobClass('beats'),
+    target: { scene: sceneStem },
+    options: { force },
     chatId: ctx.chatId,
   });
 }

@@ -6,6 +6,7 @@ import type { BotDatabase } from '@/store/db';
 import { TelegramProgressReporter } from '@/telegram/jobProgressReporter';
 import type { Logger } from '@/util/logger';
 import type { WorkspaceStore } from '@/workspace/workspaceStore';
+import { BeatsPipeline, type BeatsExpander } from '@/gen/beatsPipeline';
 import { DraftPipeline, type DraftGenerator } from '@/gen/draftPipeline';
 import { ReviewPipeline, type DraftReviser } from '@/gen/reviewPipeline';
 import { JobExecutor } from '@/gen/jobExecutor';
@@ -32,6 +33,7 @@ export interface CreateGenJobsOptions {
   readonly aiService: StoryboardAiService;
   readonly draftGenerator: DraftGenerator;
   readonly draftReviser: DraftReviser;
+  readonly beatsExpander: BeatsExpander;
   readonly sender: ISendMessage;
   readonly jobsConfig: JobsConfig;
   readonly logger: Logger;
@@ -70,6 +72,10 @@ export function createGenJobs(options: CreateGenJobsOptions): GenJobs {
       store: options.store,
       content: options.content,
       reviser: options.draftReviser,
+    }),
+    beats: new BeatsPipeline({
+      store: options.store,
+      expander: options.beatsExpander,
     }),
     outline: new OutlinePipeline({
       store: options.store,

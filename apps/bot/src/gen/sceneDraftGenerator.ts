@@ -1,6 +1,7 @@
 import {
   DraftRepository,
   GenerateDraftUseCase,
+  GenerateSceneBeatsUseCase,
   ReviseDraftUseCase,
   NodeUri,
   draftPath,
@@ -23,6 +24,7 @@ import {
   BotSceneRepository,
   BotWorkspaceLocator,
 } from './engineAdapters';
+import type { BeatsExpander, BeatsExpansionOutcome } from './beatsPipeline';
 import type { DraftGenerationOutcome, DraftGenerator } from './draftPipeline';
 import type { DraftReviser, DraftRevisionReport } from './reviewPipeline';
 
@@ -43,7 +45,7 @@ export interface SceneDraftGeneratorOptions {
 // Runs the extension's use cases, not a copy of them. Everything specific to the bot lives in the
 // adapters this class injects: drafts and cache go through ContentService, grounding rides the
 // mutate gate with the read-time hash as its baseline.
-export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
+export class SceneDraftGenerator implements DraftGenerator, DraftReviser, BeatsExpander {
   public constructor(private readonly options: SceneDraftGeneratorOptions) {}
 
   public async generate(
@@ -79,6 +81,27 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
     this.commitMemory(engine, sceneStem);
 
     return { status: 'written', outcome: engine.fileSystem.takeDraftOutcome() };
+  }
+
+  // The /scene beats command: the same expansion `generate` runs before drafting, on its own.
+  public async expandBeats(sceneStem: string, force: boolean): Promise<BeatsExpansionOutcome> {
+    const engine = this.createEngine();
+    const result = await engine.generateBeats.execute({
+      workspaceRoot: engine.workspaceRoot,
+      sceneUri: engine.sceneUri(sceneStem),
+      fileName: `${sceneStem}.card`,
+      force,
+    });
+
+    if (!result.ok) {
+      return { status: 'failed', errorMessage: result.message };
+    }
+
+    if (result.kind === 'kept' || !result.written) {
+      return { status: 'kept', beatCount: result.beats.length };
+    }
+
+    return { status: 'written', beatCount: result.beats.length };
   }
 
   // The /review command: the same loop over the draft that already exists, without regenerating it.
@@ -147,11 +170,25 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
       },
     };
     const aiGateway = new AiGateway(registry, usageSink, logger);
+    const sceneRepository = new BotSceneRepository(store, content, (verb) =>
+      this.options.onStage?.(
+        `${verb === 'ground' ? '사실 시트' : '씬 비트'} 저장 건너뜀 (동시 편집 감지)`,
+        0,
+        0,
+      ),
+    );
 
     return {
       workspaceRoot,
       fileSystem,
       sceneUri: (sceneStem) => scenePath(workspaceRoot, sceneStem),
+      generateBeats: new GenerateSceneBeatsUseCase({
+        aiGateway,
+        configBridge,
+        fileSystem,
+        logger,
+        sceneRepository,
+      }),
       // NOTE: no `postGenerationUpdates`. Those updaters write tracked `character/`/`background/`
       // cards through the file system port, which would bypass the mutate gate — no commit, no
       // freshness guard. The bot must not carry that capability until a tracked-write port exists.
@@ -164,9 +201,7 @@ export class SceneDraftGenerator implements DraftGenerator, DraftReviser {
         logger,
         projectRepository: new BotProjectRepository(store),
         sceneCacheRepository: new BotSceneCacheRepository(fileSystem),
-        sceneRepository: new BotSceneRepository(store, content, () =>
-          this.options.onStage?.('사실 시트 저장 건너뜀 (동시 편집 감지)', 0, 0),
-        ),
+        sceneRepository,
         workspaceLocator: new BotWorkspaceLocator(store.root),
       }),
       revise: new ReviseDraftUseCase({
@@ -186,6 +221,7 @@ interface BotEngine {
   readonly fileSystem: BotFileSystem;
   readonly sceneUri: (sceneStem: string) => StoryUri;
   readonly generateDraft: GenerateDraftUseCase;
+  readonly generateBeats: GenerateSceneBeatsUseCase;
   readonly revise: ReviseDraftUseCase;
 }
 

@@ -1,4 +1,4 @@
-export type JobKind = 'draft' | 'review' | 'suggest' | 'outline' | 'plan' | 'manuscript';
+export type JobKind = 'draft' | 'review' | 'suggest' | 'beats' | 'outline' | 'plan' | 'manuscript';
 export type JobClass = 'heavy' | 'light';
 export type JobState = 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'cancelled';
 export type FailureReason =
@@ -103,7 +103,7 @@ export function buildTargetKey(target: JobTarget): string {
 }
 
 export function defaultJobClass(kind: JobKind): JobClass {
-  return kind === 'suggest' ? 'light' : 'heavy';
+  return kind === 'suggest' || kind === 'beats' ? 'light' : 'heavy';
 }
 
 function stableJson(value: unknown): string {

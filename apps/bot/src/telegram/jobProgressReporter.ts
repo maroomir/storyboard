@@ -113,6 +113,10 @@ function finishedButtonLabel(kind: GenJob['kind']): string {
     return '제안 보기';
   }
 
+  if (kind === 'beats') {
+    return '씬 카드 보기';
+  }
+
   if (kind === 'outline') {
     return '아웃라인 보기';
   }

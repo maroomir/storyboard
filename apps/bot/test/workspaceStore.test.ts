@@ -74,6 +74,26 @@ describe('WorkspaceStore', () => {
     expect(scenes[0]?.relativePath).toBe('scene/01-first.card');
   });
 
+  it('reads the scene summary from its sidecar file when the card references one', async () => {
+    fixture.write(
+      'scene/01-first.card',
+      'type: scene\nid: 01-first\nsummary: 01-first.summary.md\n',
+    );
+    fixture.write('scene/01-first.summary.md', '진아가 마이크를 켠다.\n');
+    fixture.write(
+      'scene/02-second.card',
+      'type: scene\nid: 02-second\nsummary: 02-second.summary.md\n',
+    );
+
+    const withFile = await store.readScene('01-first');
+    const withoutFile = await store.readScene('02-second');
+
+    expect(withFile.value.summaryText).toBe('진아가 마이크를 켠다.\n');
+    expect(withFile.value.body).toBe('진아가 마이크를 켠다.\n');
+    expect(withoutFile.value.summaryText).toBe('');
+    expect(withoutFile.value.body).toBe('');
+  });
+
   it('returns undefined for optional files that do not exist', async () => {
     await expect(store.readBible()).resolves.toBeUndefined();
     await expect(store.readChapterPlan()).resolves.toBeUndefined();

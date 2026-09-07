@@ -209,13 +209,15 @@ export class BotProjectRepository implements IProjectRepository {
 // `scene/` is tracked, so filling grounding is a commit of its own. The baseline is the hash from
 // the read that the proposal was derived from — not a fresh one — which is what makes a Desktop
 // edit landing mid-job refuse the write instead of clobbering it.
+export type SceneCardWriteVerb = 'ground' | 'beats';
+
 export class BotSceneRepository implements ISceneRepository {
   private readonly baselineByPath = new Map<string, { path: string; hash: string; raw: string }>();
 
   public constructor(
     private readonly store: WorkspaceStore,
     private readonly content: ContentService,
-    private readonly onStaleGrounding?: () => void,
+    private readonly onStaleWrite?: (verb: SceneCardWriteVerb) => void,
   ) {}
 
   public async read(_uri: StoryUri, fileName: string): Promise<SceneFile> {
@@ -239,7 +241,7 @@ export class BotSceneRepository implements ISceneRepository {
 
   private async writeCard(
     uri: StoryUri,
-    verb: 'ground' | 'beats',
+    verb: SceneCardWriteVerb,
     edit: (raw: string) => string,
   ): Promise<void> {
     const stem =
@@ -262,7 +264,7 @@ export class BotSceneRepository implements ISceneRepository {
     );
 
     if (!isSettled(outcome)) {
-      this.onStaleGrounding?.();
+      this.onStaleWrite?.(verb);
       return;
     }
 
