@@ -95,6 +95,41 @@ the same inputs on `project set` — keys you leave out keep their current value
 storyboard project set --target-words 320000 --from contract.json
 ```
 
+### 시점과 구성
+
+`--pov` 는 `first`, `first-retrospective`, `second`, `third-limited`, `third-omniscient` 다섯 가운데
+하나이고, 그 값 하나가 작품 전체의 서술 인칭과 지식 경계를 정한다. 씬마다 시점을 달리하려면
+서술자에 이름을 붙인다:
+
+```bash
+storyboard narrator add hana-first --person first --focal hana --voice "건조한 단문"
+storyboard narrator list
+```
+
+만든 뒤 씬 카드의 `narrator:` 에 그 id 를 적으면 그 씬만 그 시점으로 생성된다. 장 단위로 바꾸려면
+`.storyboard/outline/chapters.yaml` 의 장에 `narrator:` 를 적는다 — 씬 시드를 만들 때 씬 카드로
+복사되고, 씬 카드의 값이 장의 값을 이긴다.
+
+구성은 프리셋으로 고른다. 프리셋이 연속성 줄기(`threads`)와 서술자 카드를 대신 만든다:
+
+```bash
+storyboard init --title "네 개의 밤" --composition omnibus --episodes 4
+storyboard project set --composition alternating-pov --pov-characters hana,jun --pov first
+```
+
+- `linear` — 지금까지의 동작. 줄기 하나.
+- `omnibus` — 편마다 독립된 사건과 결말. 이야기 상태·장 요약·직전 씬 맥락이 편 안에서만 이어지고,
+  캐넌만 공유한다.
+- `alternating-pov` — 인물마다 서술자 카드를 만들고 장마다 번갈아 배정한다.
+- `frame` — 외화가 내화를 감싸고, 외화는 첫 장과 마지막 장에 놓인다.
+
+씬 하나가 어떤 시점으로 생성될지는 `scene show` 가 해석된 결과로 보여 주고, 끊긴 서술자 참조나
+작품 계약에 없는 줄기는 `doctor` 가 미리 잡는다:
+
+```bash
+storyboard scene show 03-night-market
+```
+
 `cards build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
 without touching the tree. A new card whose name yields no ascii id is reported rather than filed
 under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`

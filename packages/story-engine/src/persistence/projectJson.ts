@@ -3,7 +3,12 @@ import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { z } from 'zod';
 
-import { pointOfViews, projectFormats, storyboardProjectVersion } from '@storyboard/story-format';
+import {
+  compositionKinds,
+  pointOfViews,
+  projectFormats,
+  storyboardProjectVersion,
+} from '@storyboard/story-format';
 import type { ProjectFormat, StoryboardProject } from '@storyboard/story-format';
 
 const projectEditorSchema = z.object({
@@ -21,6 +26,15 @@ const craftContractOverrideSchema = z.object({
   sceneLengthMultiplier: z.number().nonnegative().optional(),
 });
 
+const storyThreadSchema = z.object({
+  title: z.string().trim().min(1),
+  wraps: z.array(z.string().trim().min(1)).optional(),
+});
+
+const projectNarrationSchema = z.object({
+  defaultNarrator: z.string().trim().min(1).optional(),
+});
+
 const projectSettingSchema = z.object({
   genre: z.string().trim().min(1).optional(),
   country: z.string().trim().min(1).optional(),
@@ -30,6 +44,9 @@ const projectSettingSchema = z.object({
   audience: z.string().trim().min(1).optional(),
   targetWordCount: z.number().int().positive().optional(),
   pov: z.enum(pointOfViews).optional(),
+  narration: projectNarrationSchema.optional(),
+  composition: z.enum(compositionKinds).optional(),
+  threads: z.record(z.string().trim().min(1), storyThreadSchema).optional(),
   chapterCount: z.number().int().positive().optional(),
   scenesPerChapter: z.number().int().positive().optional(),
   prohibitions: z.array(z.string()).default([]),

@@ -15,6 +15,7 @@ import {
 import {
   auditStoryMemory,
   getStoryboardProjectPaths,
+  loadNarratorCards,
   readProjectJson,
 } from '@storyboard/story-engine';
 import {
@@ -22,7 +23,9 @@ import {
   isLegacySceneFileName,
   isInlineSceneSummary,
   isLegacySeedPlaceholderSummary,
+  mainThreadId,
   readMissingGitignoreEntries,
+  type SceneCard,
 } from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
@@ -309,6 +312,8 @@ interface SceneCardCensus {
   readonly inlineSummaries: number;
   readonly withoutBeats: number;
   readonly unreadable: readonly string[];
+  // 서술자·줄기 검사도 같은 카드를 본다. 한 번 읽어 두 진단이 나눠 쓴다.
+  readonly cards: readonly { readonly fileName: string; readonly card: SceneCard }[];
 }
 
 async function surveySceneCards(
@@ -331,7 +336,82 @@ async function surveySceneCards(
   ).length;
   const withoutBeats = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
 
-  return { placeholders, inlineSummaries, withoutBeats, unreadable };
+  return { placeholders, inlineSummaries, withoutBeats, unreadable, cards };
+}
+
+// NOTE: 끊긴 서술자 참조와 정의되지 않은 줄기는 생성이 그 씬에 닿아야 드러난다. 장편은 그때가
+// 수십 분 뒤이므로, 씬을 읽는 김에 미리 본다.
+async function collectNarrationChecks(
+  container: CliContainer,
+  sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
+): Promise<DoctorCheck[]> {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const narrators = await loadNarratorCards(paths, container.fileSystem);
+  const project = await readProjectJson(container.fileSystem, paths.projectJson).catch(
+    () => undefined,
+  );
+  const declaredThreads = new Set([...Object.keys(project?.setting?.threads ?? {}), mainThreadId]);
+
+  const referencedNarrators = new Set(
+    [
+      ...sceneCards.map(({ card }) => card.narrator),
+      project?.setting?.narration?.defaultNarrator,
+    ].filter((id): id is string => id !== undefined),
+  );
+  const missingNarrators = [...referencedNarrators].filter((id) => !narrators.has(id));
+  const unknownThreads = [
+    ...new Set(
+      sceneCards
+        .map(({ card }) => card.thread)
+        .filter((thread): thread is string => thread !== undefined)
+        .filter((thread) => !declaredThreads.has(thread)),
+    ),
+  ];
+  const focallessNarrators = [...narrators.values()].filter(
+    (narrator) =>
+      narrator.focal === undefined && (narrator.person === 'first' || narrator.person === 'second'),
+  );
+
+  return [
+    ...(narrators.size > 0
+      ? [
+          {
+            status: 'ok' as const,
+            label: '서술자',
+            detail: `${narrators.size}개 (${[...narrators.keys()].join(', ')})`,
+          },
+        ]
+      : []),
+    ...(missingNarrators.length > 0
+      ? [
+          {
+            status: 'fail' as const,
+            label: '서술자 참조',
+            detail: `카드가 없는 서술자를 참조합니다 (${missingNarrators.join(', ')}). 그 씬은 생성되지 않습니다.`,
+            fix: `storyboard narrator add ${missingNarrators[0]}`,
+          },
+        ]
+      : []),
+    ...(unknownThreads.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '줄기',
+            detail: `작품 계약에 없는 줄기를 씬이 참조합니다 (${unknownThreads.join(', ')}).`,
+            fix: 'storyboard project set --composition omnibus --episodes <n>',
+          },
+        ]
+      : []),
+    ...(focallessNarrators.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '서술자 초점',
+            detail: `초점 인물이 없는 1·2인칭 서술자가 있습니다 (${focallessNarrators.map((narrator) => narrator.id).join(', ')}). 씬의 povCharacter 가 없으면 화자가 정해지지 않습니다.`,
+          },
+        ]
+      : []),
+  ];
 }
 
 // 원장(.storyboard/memory/storyState.md)이 지금의 카드·씬과 어긋나는지 본다. 어긋난 채로 두면
@@ -417,6 +497,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     inlineSummaries,
     withoutBeats,
     unreadable,
+    cards: sceneCards,
   } = await surveySceneCards(container, scenes);
   const missingIgnoreEntries = readMissingGitignoreEntries(
     existsSync(paths.gitignore.fsPath) ? readFileSync(paths.gitignore.fsPath, 'utf8') : undefined,
@@ -508,6 +589,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
         ? {}
         : { fix: 'storyboard scene seeds  또는  storyboard scene create --name <이름>' }),
     },
+    ...(await collectNarrationChecks(container, sceneCards)),
   ];
 }
 

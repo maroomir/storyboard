@@ -7,7 +7,19 @@ import {
   storyboardModelCatalog,
   storyboardSettingCatalog,
 } from '@storyboard/story-ai';
-import { isIgnoredSampleCardFileName } from '@storyboard/story-format';
+import {
+  compositionKindLabels,
+  compositionKinds,
+  isIgnoredSampleCardFileName,
+  narrativeTenseLabels,
+  narrativeTenses,
+  narratorKnowledgeLabels,
+  narratorKnowledges,
+  narratorPersonLabels,
+  narratorPersons,
+  pointOfViewLabels,
+  pointOfViews,
+} from '@storyboard/story-format';
 
 import { commandCatalog, findCommandSpec, findFlagSpec, type CommandSpec } from './catalog';
 
@@ -108,6 +120,28 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
     }
     case 'key':
       return configKeyCompletions();
+    case 'pov':
+      return pointOfViews.map((value) => ({ text: value, description: pointOfViewLabels[value] }));
+    case 'composition':
+      return compositionKinds.map((value) => ({
+        text: value,
+        description: compositionKindLabels[value],
+      }));
+    case 'person':
+      return narratorPersons.map((value) => ({
+        text: value,
+        description: narratorPersonLabels[value],
+      }));
+    case 'knowledge':
+      return narratorKnowledges.map((value) => ({
+        text: value,
+        description: narratorKnowledgeLabels[value],
+      }));
+    case 'tense':
+      return narrativeTenses.map((value) => ({
+        text: value,
+        description: narrativeTenseLabels[value],
+      }));
     case 'language':
       return ['ko', 'en', 'ja'].map((code) => ({ text: code, description: '' }));
     case 'workspace':
@@ -158,6 +192,13 @@ function positionalCompletions(
         description: '씬',
       }));
     case '<id>': {
+      if (spec.verb.startsWith('narrator ')) {
+        return listFiles(join(root, 'narrator'), '.card').map((id) => ({
+          text: id,
+          description: '서술자',
+        }));
+      }
+
       const kind = spec.verb.endsWith('character') ? 'character' : 'background';
       return listFiles(join(root, kind), '.card').map((id) => ({
         text: id,

@@ -6,6 +6,7 @@ import {
   characterCardPath,
   draftPath,
   analyzeSlop,
+  buildCompositionPreset,
   buildSceneSeeds,
   createDefaultProjectJson,
   diffCandidatesAgainstCanon,
@@ -28,8 +29,13 @@ import {
 
 import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
 import {
+  compositionKinds,
   formatSceneOrderRanges,
+  mainThreadId,
   pointOfViews,
+  serializeNarratorCard,
+  type CompositionKind,
+  type NarratorCard,
   type PointOfView,
   type ProjectSetting,
 } from '@storyboard/story-format';
@@ -61,6 +67,13 @@ import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
+import {
+  addNarrator,
+  describeSceneNarration,
+  listNarrators,
+  removeNarrator,
+  showNarrator,
+} from './narrators';
 import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
 
@@ -355,6 +368,52 @@ const showDraftPath: CommandHandler = async ({ container, args }) => {
     ok: await container.fileSystem.exists(uri),
     message: uri.fsPath,
     data: { path: uri.fsPath },
+  };
+};
+
+// 파생이 어떻게 됐는지 확인하는 자리. 서술자 카드를 만들지 않은 작품도 계약의 시점 하나가 어떤
+// 서술로 풀리는지 여기서 볼 수 있다.
+const showScene: CommandHandler = async ({ container, args }) => {
+  const stem = sceneStemFrom(args);
+
+  if (stem === undefined) {
+    return { ok: false, message: '씬 stem 을 지정해 주세요.' };
+  }
+
+  const uri = scenePath(container.workspaceRoot, stem);
+
+  if (!(await container.fileSystem.exists(uri))) {
+    return { ok: false, message: `씬을 찾을 수 없습니다: ${stem}` };
+  }
+
+  const scene = await readSceneFile(uri, container.fileSystem, `${stem}.card`);
+  const narration = await describeSceneNarration(
+    container,
+    scene.card.narrator,
+    scene.frontmatter.povCharacter,
+  );
+  const thread = scene.card.thread ?? mainThreadId;
+
+  return {
+    ok: true,
+    message: [
+      `${scene.card.title ?? stem} (${stem})`,
+      `시점: ${narration}`,
+      `줄기: ${thread}`,
+      ...(scene.card.characters && scene.card.characters.length > 0
+        ? [`인물: ${scene.card.characters.join(', ')}`]
+        : []),
+      ...(scene.card.location === undefined ? [] : [`배경: ${scene.card.location}`]),
+      ...(scene.card.summary === undefined ? [] : ['', scene.card.summary]),
+    ].join('\n'),
+    data: {
+      stem,
+      title: scene.card.title ?? null,
+      narrator: scene.card.narrator ?? null,
+      narration,
+      thread,
+      characters: scene.card.characters ?? [],
+    },
   };
 };
 
@@ -1351,11 +1410,18 @@ const initProject: CommandHandler = async ({ container, args }) => {
     paths.readme,
     new TextEncoder().encode(createWorkspaceReadme(project.name)),
   );
+  const createdNarrators = await writePresetNarratorCards(
+    container,
+    contract.narratorCards ?? [],
+  );
 
   return {
     ok: true,
     message:
       `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}\n` +
+      (createdNarrators.length > 0
+        ? `서술자 카드를 만들었습니다: ${createdNarrators.join(', ')}\n`
+        : '') +
       '다음: `storyboard project set` 으로 작품 계약을 채우고 `storyboard outline generate` 를 실행하세요.' +
       (container.configBridge.isDefaultProviderConfigured()
         ? ''
@@ -1378,7 +1444,7 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
     return {
       ok: false,
       message:
-        '바꿀 값을 지정해 주세요. --genre --audience --pov --target-words --chapters --scenes-per-chapter --concept --description 또는 --from <json>.',
+        '바꿀 값을 지정해 주세요. --genre --audience --pov --target-words --chapters --scenes-per-chapter --concept --description --composition 또는 --from <json>.',
     };
   }
 
@@ -1386,13 +1452,48 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
   const setting = mergeSetting(project.setting, contract.setting);
 
   await writeProjectJson(container.fileSystem, paths.projectJson, { ...project, setting });
+  await writePresetNarratorCards(container, contract.narratorCards ?? []);
 
   return { ok: true, message: '작품 계약을 갱신했습니다.', data: setting };
 };
 
 type ContractInput =
-  | { readonly setting: Partial<ProjectSetting> | undefined }
+  | {
+      readonly setting: Partial<ProjectSetting> | undefined;
+      // 구성 프리셋이 함께 만들라고 내놓은 서술자 카드. init·project set 이 워크스페이스에 쓴다.
+      readonly narratorCards?: readonly NarratorCard[];
+    }
   | { readonly message: string };
+
+async function writePresetNarratorCards(
+  container: CliContainer,
+  cards: readonly NarratorCard[],
+): Promise<string[]> {
+  if (cards.length === 0) {
+    return [];
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  await container.fileSystem.createDirectory(paths.narratorDirectory);
+
+  const written: string[] = [];
+  for (const card of cards) {
+    const uri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
+
+    // 이미 있는 서술자는 손대지 않는다. 프리셋을 다시 돌렸다고 작가가 고친 목소리를 잃으면 안 된다.
+    if (await container.fileSystem.exists(uri)) {
+      continue;
+    }
+
+    await container.fileSystem.writeFile(
+      uri,
+      new TextEncoder().encode(serializeNarratorCard(card)),
+    );
+    written.push(card.id);
+  }
+
+  return written;
+}
 
 async function readContractInput(
   container: CliContainer,
@@ -1449,6 +1550,35 @@ async function readContractInput(
     parsedNumbers[key] = value;
   }
 
+  const composition = flagString(args.flags, 'composition');
+
+  if (composition !== undefined && !compositionKinds.includes(composition as CompositionKind)) {
+    return { message: `--composition 은 ${compositionKinds.join(', ')} 중 하나여야 합니다.` };
+  }
+
+  const episodesRaw = flagString(args.flags, 'episodes');
+  const episodeCount = episodesRaw === undefined ? undefined : Number(episodesRaw);
+
+  if (episodeCount !== undefined && (!Number.isInteger(episodeCount) || episodeCount <= 0)) {
+    return { message: `--episodes 는 양의 정수여야 합니다: ${episodesRaw}` };
+  }
+
+  const povCharacters = (flagString(args.flags, 'pov-characters') ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id.length > 0);
+
+  // 프리셋이 줄기와 서술자 카드를 만든다. 창작자는 구성 하나만 고르면 된다.
+  const preset =
+    composition === undefined
+      ? undefined
+      : buildCompositionPreset({
+          composition: composition as CompositionKind,
+          ...(episodeCount === undefined ? {} : { episodeCount }),
+          ...(povCharacters.length > 0 ? { povCharacters } : {}),
+          ...(pov === undefined ? {} : { pov: pov as PointOfView }),
+        });
+
   const fromFlags: Partial<ProjectSetting> = {
     ...(flagString(args.flags, 'genre') === undefined
       ? {}
@@ -1464,11 +1594,15 @@ async function readContractInput(
       ? {}
       : { description: flagString(args.flags, 'description') }),
     ...parsedNumbers,
+    ...(preset?.setting ?? {}),
   };
 
   const merged = { ...(fromFile ?? {}), ...fromFlags };
 
-  return { setting: Object.keys(merged).length === 0 ? undefined : merged };
+  return {
+    setting: Object.keys(merged).length === 0 ? undefined : merged,
+    ...(preset && preset.narratorCards.length > 0 ? { narratorCards: preset.narratorCards } : {}),
+  };
 }
 
 // 계약은 한 번에 다 채워지지 않는다. 주지 않은 키는 그대로 두고 준 키만 덮어쓴다.
@@ -1663,6 +1797,11 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card create character': createCard,
   'card create background': createCard,
   'scene create': createScene,
+  'scene show': showScene,
+  'narrator list': listNarrators,
+  'narrator show': showNarrator,
+  'narrator add': addNarrator,
+  'narrator remove': removeNarrator,
   'draft format': applyDraftFormat,
   'draft augment': augmentDraft,
   'manuscript export': exportManuscript,
