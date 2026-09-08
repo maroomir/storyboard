@@ -1,13 +1,13 @@
 # Release Guide
 
-This guide describes how to publish a Storyboard release to GitHub Releases. One tag ships all
-three apps: the VSCode extension, the Telegram bot and the CLI.
+This guide describes how to publish a Storyboard release to GitHub Releases. One tag ships both
+apps: the VSCode extension and the CLI.
 
 ## Prerequisites
 
 - The release branch is ready to publish.
 - **The version lives in the root `package.json`.** Every app mirrors it; `npm run version:sync`
-  writes the root version into `apps/vscode`, `apps/bot`, `apps/cli` and the version string the
+  writes the root version into `apps/vscode`, `apps/cli` and the version string the
   CLI prints. Never hand-edit an app's version.
 - The single root `package-lock.json` is refreshed by `npm install` after the sync.
 - `apps/vscode/CHANGELOG.md` and `apps/vscode/CHANGELOG.en.md` carry the target version's section.
@@ -29,7 +29,7 @@ Run the same checks the release workflow runs.
 
 ```bash
 npm run compile
-npm run build      # bundles all three apps
+npm run build      # bundles both apps
 npm run lint
 npm test
 ```
@@ -40,11 +40,11 @@ Reproduce the artifacts:
 version="$(node -p "require('./package.json').version")"
 mkdir -p release
 npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
-npm run bot:build && npm run cli:build
+npm run cli:build
 scripts/package-tarballs.sh "$version" release
 ```
 
-Each build writes a runtime `dist/package.json` that lists only the bundle's esbuild externals as
+The CLI build writes a runtime `dist/package.json` that lists only the bundle's esbuild externals as
 dependencies (the source manifest's `@storyboard/*` workspace entries are inlined in the bundle and
 would make `npm install` in an unpacked tarball fail). `package-tarballs.sh` ships that manifest at
 the tarball root, never the source one.
@@ -54,7 +54,7 @@ the tarball root, never the source one.
 The version commit should include at least:
 
 - `package.json` (the version) and `package-lock.json`
-- `apps/vscode/package.json`, `apps/bot/package.json`, `apps/cli/package.json`
+- `apps/vscode/package.json`, `apps/cli/package.json`
 - `apps/cli/src/index.ts` (the printed version)
 - `apps/vscode/CHANGELOG.md`, `apps/vscode/CHANGELOG.en.md`
 
@@ -80,29 +80,24 @@ be synced to it — the workflow checks both and refuses otherwise.
 Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 
 1. Installs dependencies with `npm ci`.
-2. Verifies the tag matches the root version and that all three apps are synced to it.
+2. Verifies the tag matches the root version and that both apps are synced to it.
 3. Runs lint and tests from the repository root.
-4. Packages three artifacts: `storyboard-vscode-<version>.vsix`,
-   `storyboard-bot-<version>.tar.gz`, `storyboard-cli-<version>.tar.gz`.
+4. Packages two artifacts: `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`.
 5. Copies `scripts/install.sh` alongside them and creates `SHA256SUMS` over everything.
 6. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
-7. Creates a GitHub Release with all four assets and the checksum attached.
+7. Creates a GitHub Release with all three assets and the checksum attached.
 
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
-- **CLI and bot** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
-  The script resolves the latest release, verifies both checksums, unpacks the CLI into
-  `~/.local/share/storyboard` and the bot into `~/.local/share/storyboard-bot`, installs the bot's
-  runtime dependencies (`npm install --omit=dev`, only `better-sqlite3`), and links `~/.local/bin/storyboard` and
-  `~/.local/bin/storyboard-bot`. The tarballs are bundled Node scripts, so the machine needs Node 20
-  or newer plus npm. Configure the bot afterwards with `storyboard-bot setup`. With the tarballs
-  already downloaded (private repository, offline machine), `./install.sh --from <dir>` installs
-  from that directory instead and verifies `SHA256SUMS` when it is there too.
-- **Bot by hand** — unpack `storyboard-bot-<version>.tar.gz`, run `npm install --omit=dev` in that
-  directory (it pulls only `better-sqlite3`), then `node dist/index.js setup` and `node dist/index.js`.
+- **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
+  The script resolves the latest release, verifies the checksum, unpacks the CLI into
+  `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
+  script, so the machine needs Node 20 or newer. With the tarball already downloaded (private
+  repository, offline machine), `./install.sh --from <dir>` installs from that directory instead
+  and verifies `SHA256SUMS` when it is there too.
 
 If the workflow fails, delete the failed tag only after deciding whether the release commit itself
 should change.

@@ -38,12 +38,11 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Package the three artifacts
+      - name: Package the two artifacts
         run: |
           version="${GITHUB_REF_NAME#v}"
           mkdir -p release
           npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
-          npm run build --workspace @storyboard/bot
           npm run build --workspace @storyboard/cli
           scripts/package-tarballs.sh "$version" release
           cp scripts/install.sh release/install.sh
@@ -81,7 +80,6 @@ jobs:
           gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
           gh release create "$GITHUB_REF_NAME" \
             release/storyboard-vscode-*.vsix \
-            release/storyboard-bot-*.tar.gz \
             release/storyboard-cli-*.tar.gz \
             release/install.sh \
             release/SHA256SUMS \

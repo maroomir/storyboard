@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Packages the bot and CLI release tarballs from already-built dist/ directories.
+# Packages the CLI release tarball from the already-built dist/ directory.
 #
 #   scripts/package-tarballs.sh <version> [out-dir]     (out-dir defaults to ./release)
 #
-# Each tarball carries the bundle under dist/ and, at its root, the runtime manifest the build
+# The tarball carries the bundle under dist/ and, at its root, the runtime manifest the build
 # wrote to dist/package.json (only the bundle's externals as dependencies), so `npm install` in the
 # unpacked directory resolves. The source package.json is never shipped.
 set -euo pipefail
@@ -29,12 +29,8 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$out_dir"
 
-mkdir -p "$work/bot"
-stage_app "$repo_root/apps/bot" "$work/bot" README.md config.example.json assets
-tar -czf "$out_dir/storyboard-bot-${version}.tar.gz" -C "$work/bot" .
-
 mkdir -p "$work/cli"
 stage_app "$repo_root/apps/cli" "$work/cli"
 tar -czf "$out_dir/storyboard-cli-${version}.tar.gz" -C "$work/cli" .
 
-printf 'Packaged storyboard-bot-%s.tar.gz and storyboard-cli-%s.tar.gz into %s\n' "$version" "$version" "$out_dir"
+printf 'Packaged storyboard-cli-%s.tar.gz into %s\n' "$version" "$out_dir"
