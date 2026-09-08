@@ -21,6 +21,6 @@ Use when the user asks to prepare a release, bump the extension version, update 
 
 ## After verification
 
-Run the scripts from the root `package.json` listed in the skill (typically `compile`, `lint`, `test`, `build`, `package:vsix` when packaging); `compile` and `package:vsix` are extension-only; `build`, `lint` and `test` fan out to all three apps.
+Run the scripts from the root `package.json` listed in the skill (typically `compile`, `lint`, `test`, `build`, `package:vsix` when packaging); `compile` and `package:vsix` are extension-only; `build`, `lint` and `test` fan out to both apps.
 
-Create **`git tag v<version>`** and push only after the maintainer confirms; the tag must match the **root** `package.json` version with a leading `v`, and every app must already be synced to it (`node scripts/sync-version.mjs --check`). One tag ships the VSIX, the bot tarball and the CLI tarball.
+Create **`git tag v<version>`** and push only after the maintainer confirms; the tag must match the **root** `package.json` version with a leading `v`, and every app must already be synced to it (`node scripts/sync-version.mjs --check`). One tag ships the VSIX and the CLI tarball.

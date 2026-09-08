@@ -72,7 +72,7 @@ npm run build
 4. Run `Storyboard: Initialize Project`.
 5. Fill the **Generation Contract** in `Storyboard: Open Settings`, then run `Storyboard: Generate Novel`, or manually create cards and scenes from the Characters / Backgrounds / Scenes views.
 
-Pick a provider before generating: nothing is chosen on a fresh install, and generation is refused until you choose one. Run `Storyboard: Choose AI Provider`, or set `defaultProvider` in `~/.storyboard/config.json`. Providers that authenticate with a key (`openai`, `claude`, `google`, `grok`) take one through `Storyboard: Set API Key...`, stored in `~/.storyboard/secrets.json` (mode 0600) and shared with the CLI and the bot. `mock` invents text for flow checks and needs nothing.
+Pick a provider before generating: nothing is chosen on a fresh install, and generation is refused until you choose one. Run `Storyboard: Choose AI Provider`, or set `defaultProvider` in `~/.storyboard/config.json`. Providers that authenticate with a key (`openai`, `claude`, `google`, `grok`) take one through `Storyboard: Set API Key...`, stored in `~/.storyboard/secrets.json` (mode 0600) and shared with the CLI. `mock` invents text for flow checks and needs nothing.
 
 ### CLI providers
 

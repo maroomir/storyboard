@@ -49,7 +49,7 @@ npm run build
 
 ## 4. Package
 
-One tag ships three artifacts. Reproduce them locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode`, plus `storyboard-bot-<version>.tar.gz` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers all four.
+One tag ships two artifacts. Reproduce them locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers all three.
 
 Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
 

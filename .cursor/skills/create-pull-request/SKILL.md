@@ -61,7 +61,7 @@ Use `.github/pull_request_template.md` as the body skeleton. Keep every section 
 them as follows:
 
 - **요약**: one or two sentences on what changed and why, replacing the HTML comment.
-- **반영 내용**: one table row per change, grouped by workspace (`vscode`, `bot`, `cli`, `story-engine`, `story-format`,
+- **반영 내용**: one table row per change, grouped by workspace (`vscode`, `cli`, `story-engine`, `story-format`,
   `story-ai`, `story-git`, `docs`, `rules`, `ci`). Derive rows from `git diff origin/main..HEAD --stat`
   and the commit subjects; list the main files in backticks, not every file.
 - **배경**: fill `[Problem]` and `[Cause & Measure]` from the commit bodies (same labels as the commit

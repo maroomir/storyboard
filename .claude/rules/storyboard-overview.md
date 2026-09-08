@@ -6,14 +6,13 @@ The current implementation is still smaller than that target. Treat `scene/*.car
 
 The repository is an npm-workspaces monorepo (`workspaces: ["apps/*", "packages/*"]`) with a single root `package-lock.json` and **one version for the whole repo**, held in the root manifest and mirrored into the apps by `npm run version:sync`.
 
-The three apps share `packages/story-engine` and know nothing about each other. Only the host adapters differ: file system, workspace locator, logger, secrets, configuration, usage sink.
+The two apps share `packages/story-engine` and know nothing about each other. Only the host adapters differ: file system, workspace locator, logger, secrets, configuration, usage sink.
 
 ## Monorepo Layout
 
 | Workspace | Name | Role |
 |---|---|---|
 | `apps/vscode` | `storyboard-vscode` | The VSCode extension. Holds the released version and the only `v*` tag. |
-| `apps/bot` | `@storyboard/bot` | Telegram front end (`storyboard-bot`). Edits the **same** git workspace — no clone, no separate store. |
 | `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
 | `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: domain policies, file records, and the RPC/contract types every app speaks. Holds what used to be `apps/vscode/src/{domain,shared}`. |
 | `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
@@ -26,8 +25,8 @@ tsconfig `paths`, esbuild `alias`, and vitest `alias` — three places, all of w
 `apps/vscode/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app
 module.
 
-All three apps write through the same codecs, so a card edited in Telegram, in the editor, or from
-the terminal serializes to identical bytes — the shared fixtures in
+Both apps write through the same codecs, so a card edited in the editor or from the terminal
+serializes to identical bytes — the shared fixtures in
 `packages/story-format/test/fixtures/` are the round-trip guard for that claim.
 
 ## Current Architecture
@@ -45,15 +44,12 @@ graph TB
     subgraph Apps[Host apps]
         VscodeApp[apps/vscode: presentation, webview, VSCode adapters]
         CliApp[apps/cli: verbs, Node adapters]
-        BotApp[apps/bot: telegram handlers, ContentService adapters]
     end
 
     VscodeApp --> Application
     CliApp --> Application
-    BotApp --> Application
     VscodeApp -.implements.-> Ports
     CliApp -.implements.-> Ports
-    BotApp -.implements.-> Ports
     Application --> Persistence
     Application --> Domain
     Persistence --> Ports
@@ -67,9 +63,9 @@ What each check actually enforces, so a green run is not read as more than it is
   and every shared package stays free of `vscode` and of app imports. The inner layers left for the
   engine, so nothing here validates them any more.
 - `packages/story-engine`'s `shared` may import only itself (checked from the extension script).
-- `apps/bot` and `apps/cli` each enforce their own ordered layer direction and reject cycles; the
-  CLI additionally fails if it imports `@storyboard/story-pipeline` directly, which would be a
-  second copy of the generation loop.
+- `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
+  if it imports `@storyboard/story-pipeline` directly, which would be a second copy of the
+  generation loop.
 
 - `packages/story-engine` — its own layer direction: `shared` may import only itself, `domain` only
   `domain`/`shared`, `paths` and `ai` only what is inward of them, `ports` only `ports`/`paths`/
@@ -104,7 +100,7 @@ What each check actually enforces, so a green run is not read as more than it is
 ## State Strategy
 
 - Settings live in `~/.storyboard/config.json` (all workspaces) and `<workspace>/.storyboard/config.json` (one workspace), read and written through `ConfigBridge` over `@storyboard/story-config`; the extension contributes no VSCode `configuration`.
-- Credentials live in `~/.storyboard/secrets.json` (0600) through `SecretStore`, shared with the CLI and the bot.
+- Credentials live in `~/.storyboard/secrets.json` (0600) through `SecretStore`, shared with the CLI.
 - Use `context.workspaceState` only for transient editor state that no other app needs.
 - Avoid duplicating persistent state in the webview; treat extension host state as the source of truth.
 

@@ -65,7 +65,7 @@ alwaysApply: true
 
 ## Current layout
 
-The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with three apps over one engine. The inner layers live in `packages/story-engine`; each app supplies host adapters and nothing else.
+The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with two apps over one engine. The inner layers live in `packages/story-engine`; each app supplies host adapters and nothing else.
 
 ```text
 packages/story-engine/src/
@@ -81,7 +81,6 @@ apps/vscode/src/bootstrap/         # Lifecycle and feature modules; the DI graph
 apps/vscode/src/presentation/      # Commands, providers, webview RPC (VS Code I/O only)
 apps/vscode/src/infrastructure/    # VSCode adapters: fs, settings, secrets, usage
 apps/cli/src/                      # adapters/ then commands/ (verb definitions)
-apps/bot/src/                      # util → config → … → app (ordered layers)
 ```
 
 `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles; every shared package stays free of `vscode` and app imports; and the engine's `shared` imports only itself. `packages/story-engine` enforces its own layer direction too (`shared` imports only itself; `domain` only `domain`/`shared`; `ports` only `ports`/`paths`/`domain`), with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
