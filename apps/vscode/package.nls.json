@@ -40,5 +40,6 @@
   "storyboard.draft.augmentSelection.title": "Storyboard: Update Selection from Cards",
   "storyboard.draft.editSelection.title": "Storyboard: Edit Selection with Instruction...",
   "storyboard.draft.export.title": "Storyboard: Export Draft…",
+  "storyboard.state.reseal.title": "Storyboard: Reseal Story State",
   "storyboard.scene.migrate.title": "Storyboard: Migrate Scenes to Cards"
 }

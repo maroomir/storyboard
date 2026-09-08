@@ -23,6 +23,7 @@ import {
   sealStoryMemory,
   scenePath,
   readProjectJson,
+  resealStoryMemory,
   writeProjectJson,
   type StoryUri,
 } from '@storyboard/story-engine';
@@ -1340,6 +1341,65 @@ async function sealWorkspaceStoryState(
   });
 }
 
+// "5", "5-8", "5,7,9" 를 받는다. 형식이 어긋나면 undefined 로 알려 조용히 전체를 봉인하는 일을 막는다.
+function parseSceneOrders(raw: string): readonly number[] | undefined {
+  const orders = new Set<number>();
+
+  for (const part of raw.split(',')) {
+    const bounds = /^(\d+)(?:-(\d+))?$/.exec(part.trim());
+    const start = Number(bounds?.[1]);
+
+    if (bounds === undefined || bounds === null || !Number.isInteger(start)) {
+      return undefined;
+    }
+
+    const end = bounds[2] === undefined ? start : Number(bounds[2]);
+
+    if (end < start) {
+      return undefined;
+    }
+
+    for (let order = start; order <= end; order += 1) {
+      orders.add(order);
+    }
+  }
+
+  return [...orders];
+}
+
+// 낡음 판정은 옳다. 사람이 "카드는 고쳤지만 이 초안이 맞다"고 판단했을 때 그 판단을 원장에 남기는
+// 유일한 통로이므로, 자동으로 도는 곳이 없고 이 명령만 덮어쓴다.
+const resealState: CommandHandler = async ({ container, args }) => {
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const rawOrders = args.positionals[0];
+  const sceneOrders = rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
+
+  if (rawOrders !== undefined && sceneOrders === undefined) {
+    return {
+      ok: false,
+      message: `씬 범위를 알아볼 수 없습니다: ${rawOrders}\n  5 · 5-8 · 5,7,9 처럼 적어 주세요.`,
+    };
+  }
+
+  const resealed = await resealStoryMemory({
+    fileSystem: container.fileSystem,
+    paths,
+    format: project.format,
+    sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
+    ...(sceneOrders === undefined ? {} : { sceneOrders }),
+  });
+
+  return {
+    ok: true,
+    message:
+      resealed.length === 0
+        ? '다시 봉인할 낡은 항목이 없습니다.'
+        : `씬 ${formatSceneOrderRanges(resealed)}의 원장 항목을 지금의 카드·씬으로 다시 봉인했습니다.`,
+    data: { sceneOrders: resealed },
+  };
+};
+
 // a workspace the extension already created.
 const initProject: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
@@ -1782,6 +1842,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'check continuity': checkDraft,
   'check slop': checkDraft,
   init: initProject,
+  'state reseal': resealState,
   'project set': setProjectContract,
   'scene seeds': generateSceneSeeds,
   'scene complete': completeStory,

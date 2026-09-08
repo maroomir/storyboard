@@ -500,6 +500,36 @@ export function sealStoryState(
   return { ...state, sceneInputHashes };
 }
 
+// NOTE: 봉인과 달리 이미 기록된 해시를 덮어쓰고 낡음 표시를 지운다. 카드만 고치고 초안은 그대로
+// 쓰기로 한 판단을 원장에 반영하는 유일한 길이므로, 대상 씬을 반드시 명시적으로 받는다.
+export function resealStoryState(
+  state: StoryState,
+  currentSceneInputHashes: ReadonlyMap<number, string>,
+  sceneOrders: ReadonlySet<number>,
+): StoryState {
+  const sceneInputHashes = new Map(state.sceneInputHashes);
+
+  for (const order of sceneOrders) {
+    const current = currentSceneInputHashes.get(order);
+
+    if (current !== undefined) {
+      sceneInputHashes.set(order, current);
+    }
+  }
+
+  const entries = state.entries.map((entry) => {
+    if (entry.throughScene === undefined || !sceneOrders.has(entry.throughScene)) {
+      return entry;
+    }
+
+    const { isStale: _cleared, ...kept } = entry;
+
+    return kept;
+  });
+
+  return { ...state, sceneInputHashes, entries };
+}
+
 export function formatSceneOrderRanges(orders: readonly number[]): string {
   const sorted = [...new Set(orders)].sort((left, right) => left - right);
   const ranges: { start: number; end: number }[] = [];

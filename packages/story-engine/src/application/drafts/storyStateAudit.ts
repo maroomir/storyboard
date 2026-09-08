@@ -1,6 +1,7 @@
 import {
   auditStoryState,
   formatStoryStateStaleWarning,
+  resealStoryState,
   sealStoryState,
   serializeStoryState,
   writeStoryState,
@@ -181,6 +182,41 @@ export async function sealStoryMemory(request: StoryStateAuditRequest): Promise<
   );
 
   return [...currentHashes.keys()].sort((left, right) => left - right);
+}
+
+export interface ResealStoryMemoryRequest extends StoryStateAuditRequest {
+  // 비우면 지금 낡음으로 잡힌 씬 전부. 봉인하지 않은 씬은 대상이 아니다 — 그건 sealStoryMemory 다.
+  readonly sceneOrders?: readonly number[];
+}
+
+// 카드를 고치고도 초안은 그대로 두기로 한 판단을 원장에 반영한다. 낡음 판정 자체는 옳으므로
+// 자동으로 하지 않고, 사람이 이 명령을 불러 "지금 초안이 맞다"고 선언할 때만 덮어쓴다.
+export async function resealStoryMemory(
+  request: ResealStoryMemoryRequest,
+): Promise<readonly number[]> {
+  const fileSystem = memoizeFileReads(request.fileSystem);
+  const state = await readStoryState(request.paths.storyState, fileSystem);
+  const currentHashes = await collectCurrentSceneInputHashes(
+    request,
+    fileSystem,
+    storyStateSceneOrders(state),
+  );
+  const requested = request.sceneOrders;
+  const targets = auditStoryState(state, currentHashes).staleSceneOrders.filter(
+    (order) => requested === undefined || requested.includes(order),
+  );
+
+  if (targets.length === 0) {
+    return [];
+  }
+
+  await writeStoryState(
+    request.paths.storyState,
+    resealStoryState(state, currentHashes, new Set(targets)),
+    request.fileSystem,
+  );
+
+  return targets;
 }
 
 async function collectCurrentSceneInputHashes(

@@ -8,6 +8,7 @@ import { registerGenerateAllDraftsCommand } from '@/presentation/commands/genera
 import { registerGenerateDraftCommands } from '@/presentation/commands/generateDraft';
 import { registerGenerateSceneBeatsCommand } from '@/presentation/commands/generateSceneBeats';
 import { registerMigrateScenesCommand } from '@/presentation/commands/migrateScenes';
+import { registerResealStoryStateCommand } from '@/presentation/commands/resealStoryState';
 import { registerNewSceneCommands } from '@/presentation/commands/newScene';
 import { registerReviseDraftCommand } from '@/presentation/commands/reviseDraft';
 import { registerCharacterHoverProvider } from '@/presentation/providers/CharacterHoverProvider';
@@ -34,6 +35,7 @@ export class DraftModule implements IApplicationModule {
       augmentDraftUseCase,
       configBridge,
       condenseDraftUseCase,
+      fileSystem,
       expandDraftUseCase,
       generateDraftUseCase,
       generateAllDraftsUseCase,
@@ -67,6 +69,7 @@ export class DraftModule implements IApplicationModule {
       registerAugmentDraftCommands({ augmentDraftUseCase, logger }),
       registerNewSceneCommands({ configBridge }),
       registerMigrateScenesCommand({ logger }),
+      registerResealStoryStateCommand({ configBridge, fileSystem, logger }),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway, configBridge }),
       registerGrammarDiagnosticsProvider({ aiGateway, configBridge, logger }),

@@ -207,6 +207,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'state reseal',
+    group: '유지보수',
+    usage: 'state reseal [<씬 범위>]',
+    summary:
+      '카드를 고쳤지만 지금 초안이 맞다고 보고 이야기 상태 원장을 다시 봉인합니다 (범위를 비우면 낡은 씬 전부)',
+    examples: ['storyboard state reseal', 'storyboard state reseal 5-32'],
+  },
+  {
     verb: 'completion',
     group: '시작하기',
     usage: 'completion <zsh|bash|fish>',
