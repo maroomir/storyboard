@@ -33,6 +33,7 @@ import {
 } from '@storyboard/story-format';
 
 import { findExecutableOnPath } from '@/adapters/executablePath';
+import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 import type { CommandContext, CommandOutcome } from './outcome';
@@ -712,6 +713,14 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
           },
         ]
       : []),
+    isGitRepository(root.fsPath)
+      ? { status: 'ok' as const, label: 'git', detail: '저장소 있음' }
+      : {
+          status: 'warn' as const,
+          label: 'git',
+          detail: '워크스페이스가 git 저장소가 아닙니다.',
+          fix: 'storyboard init --repair',
+        },
     {
       status: hasOutline ? 'ok' : 'info',
       label: '아웃라인',

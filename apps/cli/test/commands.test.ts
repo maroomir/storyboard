@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -491,6 +492,62 @@ describe('pre-0.8 workspace migration', () => {
     expect(outcome.message).toContain('인라인 summary 씬이 1개');
     expect(outcome.message).toContain('비트 없는 씬이 1개');
     expect(outcome.message).toContain('storyboard scene beats --all');
+  });
+});
+
+describe('git repository', () => {
+  function git(...gitArgs: string[]): string | undefined {
+    try {
+      return execFileSync('git', gitArgs, {
+        cwd: workspace,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim();
+    } catch {
+      return undefined;
+    }
+  }
+
+  // 발판(.gitignore)이 저장소보다 먼저 있어야 생성물이 첫 커밋에 쓸려 들어가지 않는다. 그 첫 커밋은
+  // CLI 가 아니라 사용자의 몫이라 HEAD 는 아직 비어 있어야 한다.
+  it('makes a new workspace a repository on main without committing', () => {
+    expect(existsSync(join(workspace, '.git'))).toBe(true);
+    expect(git('symbolic-ref', 'HEAD')).toBe('refs/heads/main');
+    expect(git('rev-parse', '--verify', 'HEAD')).toBeUndefined();
+    expect(readFileSync(join(workspace, '.gitignore'), 'utf8')).toContain('manuscript/');
+  });
+
+  it('creates the repository for an existing workspace on --repair', async () => {
+    rmSync(join(workspace, '.git'), { recursive: true, force: true });
+
+    const outcome = await run('init', args(['init'], { repair: true }));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('git 저장소도 만들었습니다');
+    expect(git('rev-parse', '--is-inside-work-tree')).toBe('true');
+  });
+
+  it('leaves an existing repository untouched', async () => {
+    git('symbolic-ref', 'HEAD', 'refs/heads/draft');
+
+    const outcome = await run('init', args(['init'], { repair: true }));
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).not.toContain('git 저장소');
+    expect(git('symbolic-ref', 'HEAD')).toBe('refs/heads/draft');
+  });
+
+  it('points a repository-less workspace at init --repair in doctor', async () => {
+    rmSync(join(workspace, '.git'), { recursive: true, force: true });
+
+    const outcome = await run('doctor', args(['doctor']));
+    const { checks } = outcome.data as {
+      checks: { label: string; status: string; fix?: string }[];
+    };
+    const check = checks.find((entry) => entry.label === 'git');
+
+    expect(check?.status).toBe('warn');
+    expect(check?.fix).toBe('storyboard init --repair');
   });
 });
 

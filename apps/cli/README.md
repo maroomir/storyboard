@@ -22,7 +22,7 @@ npm install && npm run cli:build && node apps/cli/dist/index.mjs --help
 ## First run
 
 ```bash
-storyboard init --title "밤의 항해"   # an empty directory becomes a workspace
+storyboard init --title "밤의 항해"   # an empty directory becomes a workspace (and a git repository)
 storyboard setup                      # pick the AI provider (and key) — shared with the extension
 storyboard project set --genre …      # the contract the outline needs (init takes the same flags)
 storyboard doctor                     # what is still missing, with the command that fixes it
@@ -194,7 +194,8 @@ them to `config.json` / `secrets.json`, or run `storyboard setup` again.
 
 ## What this app does not do
 
-- **It does not commit.** Files are written; git is yours.
+- **It does not commit.** Files are written; git is yours. `init` does run `git init` (after writing
+  the ignore block) so a new workspace starts tracked, but the first commit is yours too.
 - **It has no editor chrome.** Inline completion, hover, the `.card` custom editor and the relation
   graph have no terminal form. The capabilities behind the diagnostics providers do, and become
   `check` verbs.
