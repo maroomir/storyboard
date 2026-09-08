@@ -136,7 +136,7 @@ async function prepareApply(
     return { ok: false, message: `${proposal.targetFile} 를 더 이상 대상으로 삼을 수 없습니다.` };
   }
 
-  // SECURITY: the bot and other editors share this workspace, so a patch derived from stale bytes
+  // SECURITY: other editors and tools share this workspace, so a patch derived from stale bytes
   // is refused rather than overwriting whatever landed in the meantime.
   if (hashBaseline(entityContext.baseline) !== proposal.baselineHash) {
     return { ok: false, message: staleBaselineMessage };

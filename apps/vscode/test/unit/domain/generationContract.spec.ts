@@ -64,7 +64,7 @@ describe("validateGenerationContract", () => {
     expect(readiness.warnings[0]).toContain("로맨스")
   })
 
-  // project.json is hand-editable and the bot parses it without a schema, so these arrays really do
+  // project.json is hand-editable, so these arrays really do
   // arrive missing. Spreading undefined used to throw and take the whole outline job down with it.
   it("survives a setting whose optional arrays were omitted", () => {
     const bare = { genre: "판타지", audience: "성인", pov: "first", targetWordCount: 120_000 }

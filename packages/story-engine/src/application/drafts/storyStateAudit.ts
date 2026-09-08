@@ -134,7 +134,7 @@ export async function auditStoryMemory(request: StoryStateAuditRequest): Promise
 }
 
 // 표시는 사람이 원장에서 무엇이 버려졌는지 보기 위한 것이므로 파일에 남긴다. 바뀐 것이 없으면
-// 쓰지 않는다 — 봇에서는 원장 저장이 곧 커밋이라 무의미한 커밋이 쌓인다.
+// 쓰지 않는다 — 뜻 없는 저장은 파일 시각과 diff 만 어지럽힌다.
 export async function markStoryStateStaleEntries(
   paths: StoryboardProjectPaths,
   fileSystem: IFileSystem,

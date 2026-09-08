@@ -160,7 +160,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   }
 
   // `--no-revise` overrides the setting; without it the workspace's `draft.reviseAfterGenerate`
-  // decides, exactly as it does in the extension and the bot.
+  // decides, exactly as it does in the extension.
   const reviseRequested =
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
