@@ -24,7 +24,6 @@ const SHARED_PACKAGES = [
   'story-format',
   'story-ai',
   'story-pipeline',
-  'story-git',
   'story-config',
 ];
 // Each package addresses its own files through a Node subpath import declared in its package.json.
@@ -35,7 +34,6 @@ const PACKAGE_INTERNAL_PREFIXES = {
   'story-format': '#format/',
   'story-ai': '#ai/',
   'story-pipeline': '#pipeline/',
-  'story-git': '#git/',
   'story-config': '#config/',
 };
 const ENGINE_SHARED_ROOT = path.join(PACKAGES_ROOT, 'story-engine', 'src', 'shared');

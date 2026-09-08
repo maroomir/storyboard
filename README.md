@@ -10,7 +10,6 @@
 | [`packages/story-format`](packages/story-format/)     | `@storyboard/story-format`   | 워크스페이스 파일 포맷: 스키마·코덱·경로 규약·공유 픽스처                 |
 | [`packages/story-ai`](packages/story-ai/)             | `@storyboard/story-ai`       | AI 엔진: 프로바이더 레지스트리·프롬프트 카탈로그·계약 타입·포트           |
 | [`packages/story-pipeline`](packages/story-pipeline/) | `@storyboard/story-pipeline` | 씬 생성 단계 오케스트레이션                                               |
-| [`packages/story-git`](packages/story-git/)           | `@storyboard/story-git`      | 커밋·동기화 계층 (저장 성공 = 커밋)                                       |
 | [`packages/story-config`](packages/story-config/)     | `@storyboard/story-config`   | 공용 홈(`~/.storyboard`): 설정 계층·시크릿 파일·변경 감시                 |
 
 ## 시작하기

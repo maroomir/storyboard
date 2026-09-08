@@ -4,7 +4,7 @@
 
 ## 반영 내용
 
-<!-- 변경을 영역별로 한 줄씩. 영역: vscode / cli / story-engine / story-format / story-ai / story-git / docs / rules / ci -->
+<!-- 변경을 영역별로 한 줄씩. 영역: vscode / cli / story-engine / story-format / story-ai / docs / rules / ci -->
 
 | 영역 | 변경 | 주요 파일 |
 |---|---|---|
