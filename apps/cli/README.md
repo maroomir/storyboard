@@ -23,7 +23,7 @@ npm install && npm run cli:build && node apps/cli/dist/index.mjs --help
 
 ```bash
 storyboard init --title "밤의 항해"   # an empty directory becomes a workspace
-storyboard setup                      # pick the AI provider (and key) — shared with the extension and the bot
+storyboard setup                      # pick the AI provider (and key) — shared with the extension
 storyboard project set --genre …      # the contract the outline needs (init takes the same flags)
 storyboard doctor                     # what is still missing, with the command that fixes it
 ```
@@ -172,7 +172,7 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 
 ## Config
 
-`~/.storyboard/config.json`, shared with the extension and the bot, overridden per workspace by
+`~/.storyboard/config.json`, shared with the extension, overridden per workspace by
 `.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix.
 `storyboard config show` prints the effective values with their origin (공통 / 이 작품 / 기본값) and
 `storyboard config set <key> <value>` edits them with the same validation the settings panel uses.
@@ -188,14 +188,13 @@ the one 0600 home file.
 { "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "codex", "model": "gpt-5.6-terra" } } }
 ```
 
-API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by all three apps. `STORYBOARD_HOME`
+API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by both apps. `STORYBOARD_HOME`
 moves the whole directory. The pre-0.8 `cli.json` / `cli-secrets.json` are no longer read: rename
 them to `config.json` / `secrets.json`, or run `storyboard setup` again.
 
 ## What this app does not do
 
-- **It does not commit.** Files are written; git is yours. (The Telegram bot is the app whose
-  invariant is "a save is a commit".)
+- **It does not commit.** Files are written; git is yours.
 - **It has no editor chrome.** Inline completion, hover, the `.card` custom editor and the relation
   graph have no terminal form. The capabilities behind the diagnostics providers do, and become
   `check` verbs.

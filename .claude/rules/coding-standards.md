@@ -1,19 +1,18 @@
 # Monorepo Coding Standards
 
-Cross-cutting standards for how the three apps and the shared packages are structured, named, and
-typed. The reference module is **`apps/bot`** — its rules are enforced end to end and it
-demonstrates every section below; on the package side, **`packages/story-format`** is the reference
+Cross-cutting standards for how both apps and the shared packages are structured, named, and
+typed. The reference module is **`apps/cli`** — its rules are enforced end to end by its own
+architecture check; on the package side, **`packages/story-format`** is the reference
 for schema-first types and the error-class template. Generic readability and verb rules live in
 `.claude/rules/clean-code.md`; this file covers only what is monorepo-specific.
 
 ## Directory and File Structure
 
 - Apps are ordered one-way layer stacks enforced by each app's `scripts/check-architecture.mjs`.
-  The bot's single `LAYER_ORDER` line (`util → config → … → app`) is the model: every source file
+  The CLI's single `LAYER_ORDER` line (`adapters → commands → tui`) is the model: every source file
   lives in exactly one layer, and a layer imports only itself and layers to its left.
 - Each app has exactly one composition root that builds the object graph once:
-  `StoryboardBotApplication` (bot), `createCliContainer()` (cli), `PlatformModule.initialize()`
-  (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
+  `createCliContainer()` (cli) and `PlatformModule.initialize()` (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
   or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
   contract. Inside a package, organize by role — `story-ai`'s `ai/` (services), `contracts/`
@@ -21,9 +20,9 @@ for schema-first types and the error-class template. Generic readability and ver
 - Packages ship TypeScript source (no build); every app must resolve `@storyboard/*` identically in
   tsconfig `paths`, esbuild `alias`, and vitest `alias` — keep all three in sync when adding a
   package.
-- Tests belong to the apps (packages have no runners). Bot/cli use flat `test/*.test.ts`; vscode
-  uses `test/unit/**/*.spec.ts(x)` mirroring layers. A new app follows the bot's shape. Bot git
-  tests run against real repositories — never replace them with stubs.
+- Tests belong to the apps (packages have no runners). The CLI uses flat `test/*.test.ts`; vscode
+  uses `test/unit/**/*.spec.ts(x)` mirroring layers. A new app follows the CLI's shape. Git tests
+  run against real repositories in a temp directory — never replace them with stubs.
 
 ## Naming
 
@@ -64,8 +63,8 @@ for schema-first types and the error-class template. Generic readability and ver
   2. Programmer/config errors are **thrown** as custom errors following the story-format template:
      `class XError extends Error` with a `code` string-literal union, optional `cause`, and
      `this.name` set. Codes are English kebab-case; messages are Korean.
-- Catch-alls live only at the outermost isolation ring (the bot's `UpdateRouter.handleUpdate`:
-  log, always answer the user). A deliberately swallowed side-effect failure carries a comment
+- Catch-alls live only at the outermost isolation ring (the CLI's `index.ts`: log to stderr, set
+  the exit code). A deliberately swallowed side-effect failure carries a comment
   saying why (usageSink: accounting must never fail a paid generation). No silent mid-layer
   catches — a corrupt config file must fail loudly as a typed `ConfigError`, never fall back to
   `{}`.
@@ -76,8 +75,8 @@ for schema-first types and the error-class template. Generic readability and ver
 - State: story content lives in the git workspace only. Engine settings live in the shared
   `~/.storyboard/config.json` (overridden by `<workspace>/.storyboard/config.json`) and API keys in
   `~/.storyboard/secrets.json` at 0600, both via `@storyboard/story-config` and honoring
-  `STORYBOARD_HOME` (with tilde expansion). App-operational state that only one app needs (the
-  bot's token, its state db) lives under `~/.storyboard/<app>.json`. The extension contributes no
+  `STORYBOARD_HOME` (with tilde expansion). App-operational state that only one app needs
+  lives under `~/.storyboard/<app>.json`. The extension contributes no
   VSCode `configuration` and uses neither `globalState` nor `context.secrets` as a store.
 
 ## Shared Package References
@@ -88,7 +87,7 @@ for schema-first types and the error-class template. Generic readability and ver
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`
-  directly; the bot must not import anything `seed`-related.
+  directly.
 - When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
   promote the existing one into a shared package instead of re-implementing it locally.
 

@@ -4,7 +4,7 @@
 
 ## 반영 내용
 
-<!-- 변경을 영역별로 한 줄씩. 영역: vscode / bot / cli / story-engine / story-format / story-ai / story-git / docs / rules / ci -->
+<!-- 변경을 영역별로 한 줄씩. 영역: vscode / cli / story-engine / story-format / story-ai / story-git / docs / rules / ci -->
 
 | 영역 | 변경 | 주요 파일 |
 |---|---|---|
@@ -24,7 +24,7 @@
 
 **수동 확인:**
 
-<!-- 자동 검증으로 못 잡는 동작(확장 UI, Telegram 봇, 실제 git 워크스페이스 등)은 절차와 결과를 적는다. 하지 않았으면 "N/A". -->
+<!-- 자동 검증으로 못 잡는 동작(확장 UI, 실제 git 워크스페이스 등)은 절차와 결과를 적는다. 하지 않았으면 "N/A". -->
 
 ## 참고
 

@@ -401,7 +401,7 @@ summary: 01-arrival.summary.md
 - `summary`는 해석 없이 그대로 프롬프트에 붙는 창작자의 자유 메모다. 산문은 카드 옆
   `scene/<stem>.summary.md`에 두고 카드에는 그 파일명만 적는다 — 창작자가 쓴 사건과 기계가 펼친
   비트를 파일 단위로 구별하기 위해서다. `parseScene`은 카드와 파일 본문을 함께 받고, 카드 에디터의
-  Summary 칸과 봇 `/scene edit|append`는 이 파일을 읽고 쓴다. 인라인 산문은 구형이라
+  Summary 칸이 이 파일을 읽고 쓴다. 인라인 산문은 구형이라
   `scene migrate`가 파일로 뽑는다(`scene complete`가 새로 제안하는 씬만 아직 인라인으로 나온다).
   비어 있는 구조 필드는 카드 에디터의 **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울
   수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
@@ -409,7 +409,7 @@ summary: 01-arrival.summary.md
   `scene generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
   `max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))`개를 뽑아 카드에 쓴다
   (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `draft.autoBeats`로 끔).
-  `scene beats` verb·확장 명령·봇 `/scene beats`는 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
+  `scene beats` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
   비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
   우선한다.
 
@@ -479,10 +479,6 @@ grounding:
 - 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
   무효화되어 다음 생성에 그대로 반영된다.
 - 씬 카드 직렬화가 canonical이므로 grounding만 바뀌어도 카드 전체가 다시 직렬화된다.
-- 봇(storyboard-bot)도 같은 단계를 돌린다. 다만 큐에 올라간 작업이 승인을 기다릴 수 없으므로
-  `draft.autoGrounding`(기본 켜짐)이 "채우고 커밋"을 뜻하고, 끄면 grounding을 건드리지 않는다.
-  `scene/`은 git 추적 대상이라 사실 시트를 채우는 것은 `storyboard-bot: ground scene/<stem>.card` 커밋으로
-  남는다.
 
 #### 파일명 규칙 (강제)
 
@@ -501,8 +497,6 @@ v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다
 
 - 데스크톱: `Storyboard: Migrate Scenes to Cards` (`storyboard.scene.migrate`) — 확인 후 `.card`
   생성·`.txt` 삭제.
-- 봇: `/doctor`가 구형 씬 개수를 보고하고 `/doctor migrate`가 단일 커밋으로 변환한다. 삭제도
-  baseline 해시 검증을 거치므로 Desktop이 도중에 손댄 씬은 변환을 거부한다.
 
 ### 4.5 `.md` (출력 원고, `draft/`)
 
@@ -515,7 +509,7 @@ v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다
 sceneStem: 01-prologue
 format: novel
 generatedAt: '2026-08-22T12:00:00.000Z'
-generator: storyboard@0.6.1   # 확장은 storyboard@<버전>, 봇은 storyboard-bot@<버전>
+generator: storyboard@0.6.1
 providerId: claude-code
 model: claude-sonnet-5
 warnings:                     # 생성 검증이 잡았으나 재시도로 못 고친 항목 (선택)
@@ -744,7 +738,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 
 ## 6. 설정 키
 
-설정은 VSCode `contributes.configuration`이 아니라 세 앱이 함께 쓰는 파일에 있다. 공통값은
+설정은 VSCode `contributes.configuration`이 아니라 두 앱이 함께 쓰는 파일에 있다. 공통값은
 `~/.storyboard/config.json`, 작품별 재정의는 `<워크스페이스>/.storyboard/config.json`이며, 키 이름은 아래에서
 `storyboard.` 접두사를 뺀 형태다(예: `defaultProvider`, `providers.codex.model`).
 
@@ -766,7 +760,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `storyboard.draft.reviseScoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
 
-API 키는 설정 파일이 아니라 `~/.storyboard/secrets.json`(모드 0600)에만 저장하며, 세 앱이 같은 파일을 읽는다.
+API 키는 설정 파일이 아니라 `~/.storyboard/secrets.json`(모드 0600)에만 저장하며, 두 앱이 같은 파일을 읽는다.
 키가 필요한 provider는 `openai`·`claude`·`google`·`grok`이고, `mock`·`ollama`와 CLI provider는 키가 없다.
 
 `claude-code`·`codex`·`gemini-cli` provider는 클라우드 API를 직접 호출하는 대신 로컬에 설치된
@@ -1001,15 +995,14 @@ ReviewIssue {
 
 ### 12.0 모노레포 배치
 
-저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. **버전도 루트 하나**이며 `npm run version:sync`가 세 앱에 복제한다.
+저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. **버전도 루트 하나**이며 `npm run version:sync`가 두 앱에 복제한다.
 
-앱은 셋이고 서로를 모른다. 셋 다 `packages/story-engine`(도메인 정책·유즈케이스·저장 계층·공유 계약)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록.
+앱은 둘이고 서로를 모른다. 둘 다 `packages/story-engine`(도메인 정책·유즈케이스·저장 계층·공유 계약)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록.
 
 | 앱 | 워크스페이스 | 실행 이름 |
 |---|---|---|
 | VSCode 확장 | `apps/vscode` (`storyboard-vscode`) | 확장 ID `maroomir.storyboard-vscode` |
 | CLI | `apps/cli` (`@storyboard/cli`) | `storyboard` — 헤드라인 제품이자 레퍼런스 구현 |
-| 텔레그램 봇 | `apps/bot` (`@storyboard/bot`) | `storyboard-bot` |
 
 CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test.ts`가 확장의 `contributes.commands` 전 항목을 CLI 동사·에디터 전용·미구현 중 하나로 분류하도록 강제한다.
 
@@ -1017,7 +1010,7 @@ CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test
 
 ### 12.1 계층 구조
 
-내부 계층은 `packages/story-engine`으로 옮겨 세 앱이 공유한다. 앱에 남은 것은 호스트 어댑터와 그
+내부 계층은 `packages/story-engine`으로 옮겨 두 앱이 공유한다. 앱에 남은 것은 호스트 어댑터와 그
 호스트의 입출력뿐이다.
 
 ```text
@@ -1045,7 +1038,7 @@ apps/vscode/src/extension.ts
 
 - `apps/vscode`: `extension.ts`의 fan-out, `infrastructure → presentation/bootstrap` 금지, 순환 금지,
   공유 패키지의 `vscode`·앱 import 금지, 엔진 `shared`의 자기 참조 한정.
-- `apps/bot`·`apps/cli`: 각자의 순서형 레이어 방향과 순환 금지. CLI는 `@storyboard/story-pipeline`
+- `apps/cli`: 순서형 레이어 방향과 순환 금지. `@storyboard/story-pipeline`
   직접 import도 거부한다(생성 루프의 두 번째 사본 방지).
 - `packages/story-engine`: 자체 레이어 방향 — `shared` 는 자기만, `domain` 은 `domain`/`shared` 만,
   `paths`·`ai` 는 그보다 안쪽만, `ports` 는 `ports`/`paths`/`domain` 만 import 한다. 순환도 막는다.

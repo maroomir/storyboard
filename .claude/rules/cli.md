@@ -6,8 +6,8 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 ## Non-negotiable invariants
 
 - **The CLI owns no orchestration.** Every verb calls an engine use case. Assembling pipeline
-  stages by hand here would be the fourth copy of the generation loop (after the extension, the bot
-  and the harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
+  stages by hand here would be the third copy of the generation loop (after the extension and the
+  harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
   `@storyboard/story-pipeline` directly.
 - **Parity is a test, not a promise.** `apps/cli/test/parity.test.ts` maps every
   `contributes.commands` entry in `apps/vscode/package.json` to a CLI verb, an editor-only
@@ -16,8 +16,7 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 - **stdout carries the result; everything else goes to stderr.** `--json` output must stay pipeable.
 - **Exit codes are the contract.** 0 on success, non-zero on failure — an agent branches on it.
 - **The CLI does not commit.** It writes files and leaves git to the user, exactly like the
-  extension. "A save is a commit" is the bot's invariant, not this app's.
-- **The CLI knows nothing about the bot**, and the bot knows nothing about the CLI.
+  extension.
 
 ## Layering
 
@@ -33,7 +32,7 @@ file-backed `SecretStore`/`ConfigBridge`.
 
 ## Config
 
-`~/.storyboard/config.json` (shared with the extension and the bot), overridden per workspace by
+`~/.storyboard/config.json` (shared with the extension), overridden per workspace by
 `.storyboard/config.json`, overridable wholesale
 with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
 reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.json` at 0600. Both
@@ -82,6 +81,6 @@ registration line to the running shell's rc file under a `# storyboard completio
 
 ## Verification
 
-From the repo root: `npm test` and `npm run lint` (both drive all three apps).
+From the repo root: `npm test` and `npm run lint` (both drive both apps).
 CLI-only: `npm run test --workspace @storyboard/cli`, `npm run lint --workspace @storyboard/cli`,
 `npm run cli:build`.

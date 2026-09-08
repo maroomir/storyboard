@@ -87,7 +87,7 @@ npm run build
 
 ## 설정 파일
 
-Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 에 저장되며, CLI와 Telegram 봇이 같은
+Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 에 저장되며, CLI가 같은
 파일을 읽습니다. 작품마다 다르게 두고 싶은 값은 워크스페이스의 `.storyboard/config.json` 에 적으면 그 작품에서만
 공통값을 덮어씁니다. API 키는 `~/.storyboard/secrets.json`(권한 0600)에 있습니다. `STORYBOARD_HOME` 환경
 변수로 홈 위치를 옮길 수 있습니다.

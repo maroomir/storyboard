@@ -2,7 +2,6 @@
 @.claude/rules/agent-behavior.md
 @.claude/rules/architecture.md
 @.claude/rules/storyboard-overview.md
-@.claude/rules/bot.md
 @.claude/rules/cli.md
 @.claude/rules/vscode-extension.md
 @.claude/rules/webview.md
