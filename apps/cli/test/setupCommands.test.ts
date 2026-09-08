@@ -163,8 +163,22 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
   }
 
-  const unsealedLedger =
-    '# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 1화 사실\n';
+  const unsealedLedger = '# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 1화 사실\n';
+
+  async function runCommand(
+    verb: string,
+    parsed: ParsedArguments,
+  ): Promise<{ ok: boolean; data?: unknown }> {
+    const handler = commands[verb] as (context: never) => Promise<{ ok: boolean; data?: unknown }>;
+
+    return await handler({ container: container(), args: parsed } as never);
+  }
+
+  async function staleCheckStatus(): Promise<string | undefined> {
+    const outcome = await runDoctor({ container: container(), args: args() });
+
+    return checksOf(outcome).find((entry) => entry.label === '이야기 상태')?.status;
+  }
 
   it('asks for a repair when the ledger carries no input record', async () => {
     writeWorkspaceWithLedger(unsealedLedger);
@@ -184,9 +198,9 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       args: args({ repair: true }),
     });
     expect(repaired.ok).toBe(true);
-    expect(readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8')).toContain(
-      '<!-- scene-input: 1 sha256:',
-    );
+    expect(
+      readFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), 'utf8'),
+    ).toContain('<!-- scene-input: 1 sha256:');
 
     const sealed = await runDoctor({ container: container(), args: args() });
     expect(checksOf(sealed).find((entry) => entry.label === '이야기 상태')?.status).toBe('ok');
@@ -202,10 +216,49 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(check?.detail).toContain('씬 1');
     expect(check?.fix).toContain('storyboard scene generate');
   });
+
+  it('clears the stale mark when state reseal accepts the drafts as they are', async () => {
+    writeWorkspaceWithLedger(unsealedLedger);
+    await runCommand('init', args({ repair: true }));
+
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
+    );
+    expect(await staleCheckStatus()).toBe('warn');
+
+    const resealed = await runCommand('state reseal', args());
+
+    expect(resealed.ok).toBe(true);
+    expect(resealed.data).toMatchObject({ sceneOrders: [1] });
+    expect(await staleCheckStatus()).toBe('ok');
+
+    // 두 번째 호출은 할 일이 없다고 답하되 실패는 아니다 — 에이전트가 반복 실행해도 안전해야 한다.
+    const again = await runCommand('state reseal', args());
+    expect(again.ok).toBe(true);
+    expect(again.data).toMatchObject({ sceneOrders: [] });
+  });
+
+  it('refuses a scene range it cannot read instead of resealing everything', async () => {
+    writeWorkspaceWithLedger(unsealedLedger);
+    await runCommand('init', args({ repair: true }));
+
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      'type: scene\nid: 01-first\nsummary: 고쳐 쓴 요약.\n',
+    );
+
+    const refused = await runCommand('state reseal', args({}, ['8-3']));
+
+    expect(refused.ok).toBe(false);
+    expect(await staleCheckStatus()).toBe('warn');
+  });
 });
 
 describe('storyboard doctor chapter summaries', () => {
-  function checksOf(outcome: { data?: unknown }): { label: string; detail: string; fix?: string }[] {
+  function checksOf(outcome: {
+    data?: unknown;
+  }): { label: string; detail: string; fix?: string }[] {
     return (outcome.data as { checks: { label: string; detail: string; fix?: string }[] }).checks;
   }
 

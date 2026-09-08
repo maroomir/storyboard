@@ -113,6 +113,10 @@
         "title": "%storyboard.draft.applyFormat.title%"
       },
       {
+        "command": "storyboard.state.reseal",
+        "title": "%storyboard.state.reseal.title%"
+      },
+      {
         "command": "storyboard.scene.migrate",
         "title": "%storyboard.scene.migrate.title%"
       },
