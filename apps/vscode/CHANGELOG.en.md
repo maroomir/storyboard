@@ -10,6 +10,14 @@ after the first public release.
 
 ## [Unreleased]
 
+### Removed
+
+- **The Telegram bot (`storyboard-bot`) is gone.** The app that read, edited and generated a workspace from Telegram has been removed from the repository. What existed only to serve it goes with it: the "a save is a commit" write model (mutate gate and freshness guard), the commit/sync package (`@storyboard/story-git`), the job queue, and the native `better-sqlite3` dependency. Two apps remain — the VSCode extension and the CLI — and a release now ships two artifacts, the VSIX and the CLI tarball. Reading drafts from a phone means cloning the workspace with a git client, and that repository is now created by `storyboard init`.
+
+### Added
+
+- **`storyboard init` creates the git repository.** Until now the only thing that turned a workspace into a repository was the bot's `/doctor init`, so a project started from the extension or the CLI needed a hand-run `git init`. Both `init` and `init --repair` now write the `.gitignore` first and then run `git init` when the directory is not a repository yet, so a project starts on history with nothing generated within reach of the first commit. That first commit is still yours, and `storyboard doctor` reports a workspace that has no repository.
+
 ## [0.8.10] - 2026-09-10
 
 ### Added
