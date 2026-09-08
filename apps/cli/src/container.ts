@@ -56,10 +56,12 @@ import { NodeFileSystem } from './adapters/nodeFileSystem';
 import { NodeWorkspaceLocator } from './adapters/nodeWorkspaceLocator';
 import { resolveCliPaths } from './adapters/paths';
 import {
+  configurationTargets,
   createFileConfiguration,
   createFileSecretStorage,
   resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
+  type ConfigurationTarget,
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
@@ -67,6 +69,8 @@ export interface CliContainer {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
   readonly workspaceConfigFile: string | undefined;
+  // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
+  readonly configWriteFile: string;
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly logger: IStoryboardLogger;
@@ -107,6 +111,9 @@ export interface CliContainerOptions {
   readonly model?: string;
   readonly reviseMaxIterations?: number;
   readonly fallbackProvider?: string;
+  // Which config file `setup`/`config set` write to. Decided from the run's location and
+  // `--global` before the container exists, so every writer here agrees on one answer.
+  readonly configWriteTarget?: ConfigurationTarget;
 }
 
 // `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
@@ -150,7 +157,10 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     workspaceConfigFile,
     overrides: configOverrides(options),
   });
-  const configBridge = new ConfigBridge({ getConfiguration: () => configuration });
+  const configBridge = new ConfigBridge({
+    getConfiguration: () => configuration,
+    ...(options.configWriteTarget === undefined ? {} : { writeTarget: options.configWriteTarget }),
+  });
   const aiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,
@@ -231,6 +241,9 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     canPrompt: options.canPrompt,
     homePaths: resolveStoryboardHomePaths(),
     workspaceConfigFile,
+    configWriteFile:
+      configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??
+      paths.configFile,
     aiGateway,
     aiProviderRegistry,
     logger,

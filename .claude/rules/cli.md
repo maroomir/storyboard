@@ -38,7 +38,11 @@ file-backed `SecretStore`/`ConfigBridge`.
 with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
 reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.json` at 0600. Both
 files come from `@storyboard/story-config`; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
-read at all. `setup` / `doctor` / `config show|set` are the onboarding
+read at all. **Writes follow git's rule**: `setup` and `config set` write the workspace file when run
+inside a workspace, `--global` writes the home file, and outside a workspace they refuse rather than
+guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
+command picks a file on its own. Secrets are exempt — always the one 0600 home file.
+`setup` / `doctor` / `config show|set` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
 `apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.

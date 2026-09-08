@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
+import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import {
   getStoryboardProjectPaths,
   migrateLegacyMemory,
@@ -26,6 +27,20 @@ import {
 } from './completion';
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
+
+// 설정 파일을 쓰는 verb 는 이 둘뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
+const configWritingVerbs = new Set(['setup', 'config set']);
+
+function resolveConfigWriteTarget(
+  isGlobal: boolean,
+  isWorkspace: boolean,
+): ConfigurationTarget | undefined {
+  if (isGlobal) {
+    return configurationTargets.user;
+  }
+
+  return isWorkspace ? configurationTargets.workspace : undefined;
+}
 
 export interface DispatchDependencies {
   readonly version: string;
@@ -188,8 +203,24 @@ export async function dispatch(
   const workspacePath = resolve(deps.cwd, flagString(args.flags, 'workspace') ?? '.');
   const spec = findCommandSpec(verb);
   const needsWorkspace = spec?.needsWorkspace !== false;
+  const isWorkspace = existsSync(join(workspacePath, '.storyboard', 'project.json'));
 
-  if (needsWorkspace && !existsSync(join(workspacePath, '.storyboard', 'project.json'))) {
+  // NOTE: git 과 같은 규칙 — 설정은 지금 있는 작품에 저장하고, 모든 작품에 걸려면 --global 을
+  // 명시한다. 작품 밖에서 플래그 없이 부르면 어디에 쓰는지 모호하므로 거부한다.
+  const configWriteTarget = configWritingVerbs.has(verb)
+    ? resolveConfigWriteTarget(flagBoolean(args.flags, 'global'), isWorkspace)
+    : undefined;
+
+  if (configWriteTarget === undefined && configWritingVerbs.has(verb)) {
+    return failure(
+      `Storyboard 워크스페이스가 아닙니다: ${workspacePath}\n` +
+        `  이 작품에 저장하려면   storyboard ${verb} --workspace <경로>\n` +
+        `  모든 작품에 저장하려면 storyboard ${verb} --global`,
+      mode,
+    );
+  }
+
+  if (needsWorkspace && !isWorkspace) {
     return failure(
       `Storyboard 워크스페이스가 아닙니다: ${workspacePath}\n` +
         '  새로 만들려면   storyboard init --title "작품 이름"\n' +
@@ -217,6 +248,7 @@ export async function dispatch(
     ...(flagString(args.flags, 'fallback') === undefined
       ? {}
       : { fallbackProvider: flagString(args.flags, 'fallback') }),
+    ...(configWriteTarget === undefined ? {} : { configWriteTarget }),
   });
 
   if (needsWorkspace) {
