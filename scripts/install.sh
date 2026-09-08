@@ -1,29 +1,28 @@
 #!/usr/bin/env bash
-# Installs the Storyboard CLI and the Telegram bot from a GitHub release.
+# Installs the Storyboard CLI from a GitHub release.
 #
 #   curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
 #
-# Or, with the release tarballs already on disk (a private repository, an offline machine):
+# Or, with the release tarball already on disk (a private repository, an offline machine):
 #
 #   ./install.sh --from ~/Downloads
 #
-# The directory must hold storyboard-cli-<version>.tar.gz and storyboard-bot-<version>.tar.gz; a
-# SHA256SUMS next to them is verified when present.
+# The directory must hold storyboard-cli-<version>.tar.gz; a SHA256SUMS next to it is verified
+# when present.
 #
-# The tarballs hold bundled Node scripts, not native binaries, so they are platform independent and
-# need Node 20 or newer on the machine. The bot additionally needs npm for its one native module.
+# The tarball holds a bundled Node script, not a native binary, so it is platform independent and
+# needs Node 20 or newer on the machine.
 set -euo pipefail
 
 REPO="${STORYBOARD_REPO:-maroomir/storyboard}"
 VERSION="${STORYBOARD_VERSION:-latest}"
 PREFIX="${STORYBOARD_PREFIX:-$HOME/.local}"
 CLI_LIB_DIR="$PREFIX/share/storyboard"
-BOT_LIB_DIR="$PREFIX/share/storyboard-bot"
 BIN_DIR="$PREFIX/bin"
 
 fail() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() {
-  printf 'usage: install.sh [--from <dir>]\n  --from <dir>  install from release tarballs in <dir> instead of downloading\n'
+  printf 'usage: install.sh [--from <dir>]\n  --from <dir>  install from the release tarball in <dir> instead of downloading\n'
 }
 
 SOURCE_DIR=""
@@ -39,7 +38,6 @@ done
 command -v node >/dev/null 2>&1 || fail "Node.js 20+ is required but was not found on PATH."
 node_major="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$node_major" -ge 20 ] || fail "Node.js 20+ is required (found $(node -v))."
-command -v npm >/dev/null 2>&1 || fail "npm is required to install the bot's native module."
 
 if [ -n "$SOURCE_DIR" ]; then
   [ -d "$SOURCE_DIR" ] || fail "Not a directory: $SOURCE_DIR"
@@ -66,18 +64,13 @@ else
 fi
 
 VERSION="${VERSION#v}"
-# Older tarballs ship the source manifest, whose workspace entries make the bot's npm install fail.
-MIN_VERSION="0.8.6"
-[ "$(printf '%s\n%s\n' "$MIN_VERSION" "$VERSION" | sort -V | head -n1)" = "$MIN_VERSION" ] \
-  || fail "This installer supports storyboard $MIN_VERSION or newer (requested $VERSION)."
 CLI_ARCHIVE="storyboard-cli-${VERSION}.tar.gz"
-BOT_ARCHIVE="storyboard-bot-${VERSION}.tar.gz"
 BASE="https://github.com/$REPO/releases/download/v${VERSION}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # The checksum file covers every asset; verifying is not optional when we pipe a script to a shell.
-# Local tarballs were put there by the user, so a missing SHA256SUMS only downgrades to a warning.
+# A local tarball was put there by the user, so a missing SHA256SUMS only downgrades to a warning.
 HAS_CHECKSUMS=1
 if [ -n "$SOURCE_DIR" ]; then
   if [ -f "$SOURCE_DIR/SHA256SUMS" ]; then
@@ -115,7 +108,6 @@ else
   printf 'Downloading storyboard %s\n' "$VERSION"
 fi
 acquire_verified "$CLI_ARCHIVE"
-acquire_verified "$BOT_ARCHIVE"
 
 mkdir -p "$BIN_DIR"
 
@@ -125,18 +117,7 @@ tar -xzf "$WORK/$CLI_ARCHIVE" -C "$CLI_LIB_DIR"
 chmod +x "$CLI_LIB_DIR/dist/index.mjs"
 ln -sf "$CLI_LIB_DIR/dist/index.mjs" "$BIN_DIR/storyboard"
 
-# The tarball's package.json is the runtime manifest the build emits, so it names only the bundle's
-# externals (the native better-sqlite3) and a plain install resolves.
-rm -rf "$BOT_LIB_DIR"
-mkdir -p "$BOT_LIB_DIR"
-tar -xzf "$WORK/$BOT_ARCHIVE" -C "$BOT_LIB_DIR"
-(cd "$BOT_LIB_DIR" && npm install --omit=dev --no-package-lock --no-audit --no-fund --loglevel=error) \
-  || fail "Could not install the bot's runtime dependencies."
-chmod +x "$BOT_LIB_DIR/dist/index.js"
-ln -sf "$BOT_LIB_DIR/dist/index.js" "$BIN_DIR/storyboard-bot"
-
 printf 'Installed storyboard %s to %s\n' "$VERSION" "$BIN_DIR/storyboard"
-printf 'Installed storyboard-bot %s to %s (run  storyboard-bot setup  to configure it)\n' "$VERSION" "$BIN_DIR/storyboard-bot"
 
 # Tab completion: one line in the shell's rc file, guarded by a marker so a reinstall never adds
 # a second copy. Only the shell that is running the install is touched.
