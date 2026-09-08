@@ -9,6 +9,14 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 제거
+
+- **Telegram 봇(`storyboard-bot`)이 사라졌습니다.** 텔레그램에서 워크스페이스를 조회·편집·생성하던 앱을 저장소에서 걷어냈습니다. 봇만을 위해 존재하던 «저장 = 커밋» 쓰기 모델(mutate gate·신선도 가드)과 커밋·동기화 패키지(`@storyboard/story-git`), 잡 큐와 네이티브 의존(`better-sqlite3`)도 함께 사라집니다. 남는 것은 VSCode 확장과 CLI 둘이고, 릴리즈 산출물도 VSIX 와 CLI tarball 둘입니다. 폰에서 초안을 읽는 방법은 워크스페이스를 git 클라이언트로 클론하는 것이며, 이제 그 저장소는 `storyboard init` 이 만들어 줍니다.
+
+### 추가
+
+- **`storyboard init` 이 git 저장소도 만듭니다.** 지금까지 워크스페이스를 저장소로 만들어 주는 것은 봇의 `/doctor init` 뿐이어서, 확장이나 CLI 로 시작한 작품은 사용자가 직접 `git init` 을 해야 했습니다. 이제 `init` 과 `init --repair` 가 `.gitignore` 를 먼저 쓴 뒤 저장소가 아니면 `git init` 을 실행하므로, 생성물이 첫 커밋에 쓸려 들어갈 여지 없이 작품이 처음부터 이력 위에서 시작합니다. 첫 커밋은 여전히 사용자의 몫이고, `storyboard doctor` 가 저장소가 아닌 워크스페이스를 짚어 줍니다.
+
 ## [0.8.10] - 2026-09-10
 
 ### 추가
