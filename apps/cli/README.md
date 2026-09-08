@@ -171,7 +171,14 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 `~/.storyboard/config.json`, shared with the extension and the bot, overridden per workspace by
 `.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix.
 `storyboard config show` prints the effective values with their origin (공통 / 이 작품 / 기본값) and
-`storyboard config set <key> <value>` edits them with the same validation the settings panel uses:
+`storyboard config set <key> <value>` edits them with the same validation the settings panel uses.
+
+Writes follow git's rule: run inside a workspace and the value lands in that workspace's
+`.storyboard/config.json`; add `--global` to write `~/.storyboard/config.json` instead. Outside a
+workspace, `config set` and `setup` refuse rather than guess — pass `--global` (or `--workspace`).
+Because the workspace layer wins the merge, a `--global` write that the current workspace overrides
+says so instead of looking like it did nothing. API keys ignore all of this: they only ever live in
+the one 0600 home file.
 
 ```json
 { "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "codex", "model": "gpt-5.6-terra" } } }

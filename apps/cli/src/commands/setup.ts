@@ -193,10 +193,16 @@ export async function runSetup({ container, args }: CommandContext): Promise<Com
 
   return {
     ok: true,
+    // NOTE: API 키는 --global 여부와 상관없이 0600 홈 파일 하나에만 산다. 설정 파일만 갈린다.
     message:
-      `기본 프로바이더를 ${providerId} 로 저장했습니다: ${home.configFile}` +
+      `기본 프로바이더를 ${providerId} 로 저장했습니다: ${container.configWriteFile}` +
       (keyStored ? `\nAPI 키를 저장했습니다: ${home.secretsFile}` : ''),
-    data: { providerId, model: configBridge.getProviderConfig(providerId).model, keyStored },
+    data: {
+      providerId,
+      model: configBridge.getProviderConfig(providerId).model,
+      keyStored,
+      file: container.configWriteFile,
+    },
   };
 }
 
@@ -784,15 +790,17 @@ function parseSettingValue(
 }
 
 function describeSaved(container: CliContainer, key: string, value: unknown): CommandOutcome {
+  const file = container.configWriteFile;
   const origin = container.configBridge.getValueOrigin(key);
-  const file =
-    origin === 'workspace' && container.workspaceConfigFile !== undefined
-      ? container.workspaceConfigFile
-      : container.homePaths.configFile;
+  // NOTE: 작품 파일이 공통을 덮는다. --global 로 썼는데 이 작품에 같은 키가 있으면 방금 쓴 값은
+  // 여기서 가려지므로, 조용히 넘어가면 "고쳤는데 안 바뀐다"가 된다.
+  const isShadowed = file === container.homePaths.configFile && origin === 'workspace';
 
   return {
     ok: true,
-    message: `${key} = ${String(value)} 저장했습니다: ${file}`,
+    message:
+      `${key} = ${String(value)} 저장했습니다: ${file}` +
+      (isShadowed ? `\n다만 이 작품의 ${container.workspaceConfigFile} 값이 우선합니다.` : ''),
     data: { key, value, origin, file },
   };
 }

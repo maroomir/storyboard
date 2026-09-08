@@ -73,6 +73,9 @@ export interface ConfigBridgeDependencies {
   readonly onDidChangeConfiguration?: (
     listener: (event: StoryboardConfigurationChangeEventLike) => void,
   ) => { readonly dispose: () => void };
+  // NOTE: 어느 층에 쓸지 호스트가 못박을 때 쓴다. CLI 는 git 처럼 실행 위치로 정하므로 한 번
+  // 정해진 값을 넘기고, 생략하면 그 키가 이미 있던 층을 따른다.
+  readonly writeTarget?: number;
 }
 
 export class ConfigBridge {
@@ -449,9 +452,12 @@ export class ConfigBridge {
   }
 
   private resolveUpdateTarget(section: string): number {
-    return this.getValueOrigin(section) === 'workspace'
-      ? workspaceConfigurationTarget
-      : userConfigurationTarget;
+    return (
+      this.dependencies.writeTarget ??
+      (this.getValueOrigin(section) === 'workspace'
+        ? workspaceConfigurationTarget
+        : userConfigurationTarget)
+    );
   }
 }
 

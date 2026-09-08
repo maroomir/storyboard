@@ -37,6 +37,7 @@ export interface FlagSpec {
 // One table drives the parser (which flags take a value), `--help`, per-verb help and the README.
 export const flagCatalog: readonly FlagSpec[] = [
   { name: 'workspace', valueLabel: '<path>', summary: '대상 워크스페이스 (기본: 현재 디렉터리)' },
+  { name: 'global', summary: '설정을 이 작품이 아니라 모든 작품(~/.storyboard/config.json)에 저장' },
   {
     name: 'provider',
     valueLabel: '<id>',
@@ -161,10 +162,11 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'setup',
     group: '시작하기',
-    usage: 'setup [--provider <id>]',
-    summary: '기본 AI 프로바이더와 API 키를 정합니다 (터미널이면 질문, 아니면 --provider)',
-    flags: ['provider', 'model'],
-    examples: ['storyboard setup', 'storyboard setup --provider codex'],
+    usage: 'setup [--provider <id>] [--global]',
+    summary:
+      '기본 AI 프로바이더와 API 키를 정합니다 (터미널이면 질문, 아니면 --provider). 설정은 이 작품에, --global 이면 모든 작품에 저장합니다',
+    flags: ['provider', 'model', 'global'],
+    examples: ['storyboard setup', 'storyboard setup --provider codex --global'],
     needsWorkspace: false,
   },
   {
@@ -194,8 +196,10 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'config set',
     group: '시작하기',
-    usage: 'config set <key> <value>',
-    summary: '~/.storyboard/config.json 의 값을 바꿉니다 (--workspace 안이면 그 작품 파일)',
+    usage: 'config set <key> <value> [--global]',
+    summary:
+      '이 작품의 .storyboard/config.json 값을 바꿉니다 (--global 이면 ~/.storyboard/config.json)',
+    flags: ['global'],
     examples: [
       'storyboard config set defaultProvider claude-code',
       'storyboard config set draft.reviseMaxIterations 3',

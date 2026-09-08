@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -79,11 +79,38 @@ describe('dispatch', () => {
     expect(result.stdout).toBe('');
   });
 
-  it('runs a machine-wide verb without a workspace and returns its outcome', async () => {
-    const result = await dispatch(['setup', '--provider', 'mock'], deps());
+  it('runs a config-writing verb outside a workspace only when --global says where', async () => {
+    const ambiguous = await dispatch(['setup', '--provider', 'mock'], deps());
+
+    expect(ambiguous.exitCode).toBe(1);
+    expect(ambiguous.stderr).toContain('--global');
+
+    const result = await dispatch(['setup', '--provider', 'mock', '--global'], deps());
 
     expect(result.exitCode).toBe(0);
     expect(result.outcome?.ok).toBe(true);
     expect(result.stdout).toContain('mock');
+    expect(result.outcome?.data).toMatchObject({ file: join(home, 'config.json') });
+  });
+
+  it('writes settings to the workspace it is run in, and to the home file with --global', async () => {
+    mkdirSync(join(cwd, '.storyboard'), { recursive: true });
+    writeFileSync(join(cwd, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
+
+    const local = await dispatch(['config', 'set', 'draft.charsPerBeat', '300'], deps());
+
+    expect(local.exitCode).toBe(0);
+    expect(local.outcome?.data).toMatchObject({
+      file: join(cwd, '.storyboard', 'config.json'),
+      origin: 'workspace',
+    });
+
+    const global = await dispatch(
+      ['config', 'set', 'draft.charsPerBeat', '900', '--global'],
+      deps(),
+    );
+
+    expect(global.outcome?.data).toMatchObject({ file: join(home, 'config.json') });
+    expect(readFileSync(join(cwd, '.storyboard', 'config.json'), 'utf8')).toContain('300');
   });
 });
