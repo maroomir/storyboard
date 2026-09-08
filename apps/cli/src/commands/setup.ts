@@ -485,7 +485,7 @@ async function collectStoryStateChecks(
         status: 'warn',
         label: '이야기 상태',
         detail: `씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}의 항목 ${audit.staleEntryCount}개가 지금의 카드·씬과 어긋나 프롬프트에서 빠집니다.`,
-        fix: `storyboard draft generate <씬 ${audit.staleSceneOrders[0] as number}부터 차례로>`,
+        fix: 'storyboard scene generate --all',
       },
     ];
   }

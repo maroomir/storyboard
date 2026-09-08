@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import { commandCatalog, flagCatalog } from '../src/commands/catalog';
 import { commands } from '../src/commands/index';
 import { renderCommandHelp, renderUnknownCommand, renderUsage, suggestVerbs } from '../src/help';
+
+const setupSource = readFileSync(new URL('../src/commands/setup.ts', import.meta.url), 'utf8');
+const commandMentionPattern = /storyboard ([a-z][a-z0-9-]*)(?: ([a-z][a-z0-9-]*))?/g;
 
 describe('command catalog', () => {
   it('describes every verb the CLI implements, and nothing else', () => {
@@ -11,6 +16,19 @@ describe('command catalog', () => {
 
     expect([...implemented].filter((verb) => !catalogVerbs.has(verb))).toEqual([]);
     expect([...catalogVerbs].filter((verb) => !implemented.has(verb))).toEqual([]);
+  });
+
+  // NOTE: doctor 의 fix 안내는 사용자가 그대로 복사해 실행한다. 존재하지 않는 verb 를 적으면
+  // 진단만 맞고 처방이 틀린 채로 통과한다.
+  it('is the only source of the commands doctor and setup tell users to run', () => {
+    const catalogVerbs = new Set(commandCatalog.map((spec) => spec.verb));
+
+    for (const [, head, tail] of setupSource.matchAll(commandMentionPattern)) {
+      const verb =
+        tail !== undefined && catalogVerbs.has(`${head} ${tail}`) ? `${head} ${tail}` : head;
+
+      expect(catalogVerbs, `setup.ts tells the user to run "storyboard ${verb}"`).toContain(verb);
+    }
   });
 
   it('only references flags the parser knows', () => {
