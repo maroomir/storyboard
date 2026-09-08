@@ -200,7 +200,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     const check = checksOf(stale).find((entry) => entry.label === '이야기 상태');
     expect(check?.status).toBe('warn');
     expect(check?.detail).toContain('씬 1');
-    expect(check?.fix).toContain('storyboard draft generate');
+    expect(check?.fix).toContain('storyboard scene generate');
   });
 });
 
