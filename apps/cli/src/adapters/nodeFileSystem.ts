@@ -5,7 +5,7 @@ import type { FileSystemDirectoryEntry, IFileSystem, StoryUri } from '@storyboar
 
 // NOTE: a truncating write leaves a half-file behind when the process dies mid-draft, and a
 // truncated draft is silently dropped by manuscript assembly. Write to a sibling and rename, the
-// same rule the bot's MutateGate follows.
+// same rule the extension's atomic write follows.
 async function writeAtomically(target: string, content: Uint8Array): Promise<void> {
   const temporary = `${target}.tmp-${Date.now().toString(36)}`;
 

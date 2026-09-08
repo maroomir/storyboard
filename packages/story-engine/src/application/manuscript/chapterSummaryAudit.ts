@@ -73,7 +73,7 @@ export async function auditChapterMemory(
       staleWarning: formatChapterSummaryStaleWarning(audit),
       projectName: project.name,
       // 표시가 실제로 바뀐 경우에만 쓴다. 같은 빌더로 양쪽을 렌더링해, 파일 서식 차이가 아니라
-      // 낡음 표시의 차이만 비교한다 — 봇에서는 요약 저장이 곧 커밋이다.
+      // 낡음 표시의 차이만 비교한다 — 뜻 없는 저장은 파일 시각과 diff 만 어지럽힌다.
       needsMarking:
         buildChapterSummariesMarkdown(project.name, audit.summaries) !==
         buildChapterSummariesMarkdown(project.name, summaries),

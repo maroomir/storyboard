@@ -305,7 +305,7 @@ describe("GenerateDraftUseCase", () => {
     })
 
     // force는 캐시 적중 판정을 건너뛴다. 덮어쓰기 전 출처 판정은 그와 별개로 여전히 수행하므로
-    // 여기서 캐시 기록을 읽는 것 자체는 정상이다 — 읽지 않으면 봇 초안을 보관 없이 지운다.
+    // 여기서 캐시 기록을 읽는 것 자체는 정상이다 — 읽지 않으면 남이 쓴 초안을 보관 없이 지운다.
     it("bypasses the cache hit shortcut and regenerates when force is true", async () => {
       const sceneCacheRepository = createSceneCacheRepository()
       const draftRepository = createDraftRepository()
@@ -440,7 +440,7 @@ describe("GenerateDraftUseCase", () => {
       expect(archiveExistingDraftMock).not.toHaveBeenCalled()
     })
 
-    // 봇이 쓴 초안은 씬 캐시 기록이 없어 판정이 불가능하다. draft/는 기본 gitignore이고
+    // 캐시 기록 없이 만들어진 초안은 출처 판정이 불가능하다. draft/는 기본 gitignore이고
     // keepHistory 기본값이 꺼짐이라, 보관하지 않으면 되돌릴 곳이 없다.
     it("archives a draft it did not write even when keep-draft-history is disabled", async () => {
       const logger = createLogger()

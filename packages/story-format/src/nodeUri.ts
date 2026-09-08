@@ -4,7 +4,7 @@ import type { StoryUri } from './storyUri';
 
 const isWindows = sep === '\\';
 
-// A file URI for a host with no editor — the CLI and the bot both use it. `path` is always posix so the engine's path joining behaves
+// A file URI for a host with no editor — the CLI uses it. `path` is always posix so the engine's path joining behaves
 // identically everywhere; `fsPath` converts back to what Node's fs expects.
 export class NodeUri implements StoryUri {
   public readonly scheme = 'file';

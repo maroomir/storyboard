@@ -34,7 +34,7 @@ export function renderGettingStarted(): string {
   return [
     '처음이라면',
     '  storyboard init --title "작품 이름"      빈 디렉터리를 워크스페이스로',
-    '  storyboard setup                        AI 프로바이더와 키 설정 (익스텐션·봇과 공유)',
+    '  storyboard setup                        AI 프로바이더와 키 설정 (익스텐션과 공유)',
     '  storyboard outline generate             작품 계약에서 시놉시스·챕터 계획',
     '  storyboard scene seeds                  챕터 계획에서 씬 시드',
     '  storyboard scene generate --all         초안 생성 (검수·수정 포함)',

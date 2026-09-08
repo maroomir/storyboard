@@ -1,5 +1,5 @@
-// The block Storyboard writes into a workspace .gitignore. Every writer (extension init, CLI init,
-// bot onboarding) and the CLI doctor read this one list, so a new generated artefact is added here
+// The block Storyboard writes into a workspace .gitignore. Every writer (extension init, CLI init)
+// and the CLI doctor read this one list, so a new generated artefact is added here
 // and nowhere else. Generated artifacts must be ignored BEFORE the first commit, otherwise the
 // initial commit sweeps every draft into history.
 export const storyboardGitignoreMarker = '# Storyboard generated files';

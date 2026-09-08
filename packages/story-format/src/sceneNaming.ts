@@ -2,7 +2,7 @@ import { parseSceneFileName, sceneFileNamePattern } from './scene';
 
 const sceneSlugInputPattern = /^[a-z0-9][a-z0-9-]*$/;
 
-// Shared by the extension's scene-create command and the bot's /scene command, so both apps assign
+// Shared by the extension's scene-create command and the CLI's `scene create`, so both apps assign
 // the same next number and accept the same slugs.
 export function computeNextSceneOrderFromSceneFileNames(fileNames: readonly string[]): number {
   let maxOrder = 0;

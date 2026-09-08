@@ -104,10 +104,10 @@ function buildSceneCacheRecord(
   };
 }
 
-// NOTE: 디스크의 초안이 우리가 마지막으로 쓴 그것인지 판정한다. 봇이 쓴 초안이나 사람이 고친
-// 초안은 여기서 거짓이 되고, 그런 초안은 히스토리 설정과 무관하게 보관한 뒤에만 덮어쓴다.
-// 봇은 씬 캐시를 쓰지 않으므로 기록 자체가 없고, 구버전 기록에는 bodyHash가 없다 — 둘 다
-// 판정 불가이므로 보수적으로 보관한다.
+// NOTE: 디스크의 초안이 우리가 마지막으로 쓴 그것인지 판정한다. 사람이 고친 초안이나 캐시 기록
+// 없이 만들어진 초안은 여기서 거짓이 되고, 그런 초안은 히스토리 설정과 무관하게 보관한 뒤에만
+// 덮어쓴다. 기록 자체가 없거나 구버전 기록에 bodyHash가 없으면 판정 불가이므로 보수적으로
+// 보관한다.
 async function isDraftOursToOverwrite(
   inputs: SceneGenerationInputs,
   options: GenerateDraftWorkflowOptions,
@@ -184,12 +184,12 @@ async function persistGeneratedDraft(
   const bodyHash = computeDraftBodyHash(parseDraft(serializeDraft(draft)).body);
   const cacheRecord = buildSceneCacheRecord(inputs, result, cacheProviders, bodyHash);
 
-  // 우리가 쓴 초안이 아니면(봇 산출물·사람 수정본) 설정과 무관하게 보관한다. draft/는 기본
+  // 우리가 쓴 초안이 아니면(다른 도구의 산출물·사람 수정본) 설정과 무관하게 보관한다. draft/는 기본
   // gitignore이고 keepHistory 기본값이 꺼짐이라, 이 보관이 없으면 되돌릴 곳이 없다.
   const isOurs = await isDraftOursToOverwrite(inputs, options);
   if (!isOurs) {
     options.logger.warn(
-      `이 초안은 마지막 생성 결과와 다릅니다(봇 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${scene.stem}`,
+      `이 초안은 마지막 생성 결과와 다릅니다(다른 도구로 생성 또는 직접 수정). 덮어쓰기 전에 .draft 히스토리에 보관합니다: ${scene.stem}`,
     );
   }
   await maybeArchiveExistingDraft(inputs, options, !isOurs);
