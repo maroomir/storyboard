@@ -16,7 +16,9 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 - **stdout carries the result; everything else goes to stderr.** `--json` output must stay pipeable.
 - **Exit codes are the contract.** 0 on success, non-zero on failure — an agent branches on it.
 - **The CLI does not commit.** It writes files and leaves git to the user, exactly like the
-  extension.
+  extension. `init` (and `init --repair`) does run `git init` when the directory is not a
+  repository yet — the ignore block is written first, so a fresh workspace is born tracked with
+  nothing generated in reach of the first commit — but that first commit is still the user's.
 
 ## Layering
 
@@ -25,10 +27,11 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 
 ## Host adapters
 
-Only five files differ from what the extension supplies, which is the whole point of the engine
+Only six files differ from what the extension supplies, which is the whole point of the engine
 boundary: `NodeFileSystem` (temp-file-then-rename writes), `NodeUri` (posix `path`, OS `fsPath`),
-`NodeWorkspaceLocator` (one workspace, containment test), `ConsoleLogger` (stderr), and the
-file-backed `SecretStore`/`ConfigBridge`.
+`NodeWorkspaceLocator` (one workspace, containment test), `ConsoleLogger` (stderr), the
+file-backed `SecretStore`/`ConfigBridge`, and `gitRepository` (probe and `git init` through
+`execFileSync`, used by `init` and `doctor` only).
 
 ## Config
 

@@ -1,5 +1,7 @@
 import { resolve } from 'node:path';
 
+import { ensureGitRepository, type GitRepositoryOutcome } from '@/adapters/gitRepository';
+
 import {
   applyStoryCardChanges,
   backgroundCardPath,
@@ -1419,15 +1421,17 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
     await createStoryboardDirectories(container.fileSystem, paths);
     await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
+    const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
     const sealedSceneOrders = await sealWorkspaceStoryState(container, paths);
 
     return {
       ok: true,
       message:
-        sealedSceneOrders.length === 0
+        (sealedSceneOrders.length === 0
           ? '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.'
-          : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`,
-      data: { repaired: true, sealedSceneOrders },
+          : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`) +
+        describeGitRepository(gitRepository),
+      data: { repaired: true, sealedSceneOrders, gitRepository },
     };
   }
 
@@ -1470,6 +1474,7 @@ const initProject: CommandHandler = async ({ container, args }) => {
     paths.readme,
     new TextEncoder().encode(createWorkspaceReadme(project.name)),
   );
+  const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
   const createdNarrators = await writePresetNarratorCards(
     container,
     contract.narratorCards ?? [],
@@ -1478,7 +1483,8 @@ const initProject: CommandHandler = async ({ container, args }) => {
   return {
     ok: true,
     message:
-      `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}\n` +
+      `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
+      `${describeGitRepository(gitRepository)}\n` +
       (createdNarrators.length > 0
         ? `서술자 카드를 만들었습니다: ${createdNarrators.join(', ')}\n`
         : '') +
@@ -1486,9 +1492,28 @@ const initProject: CommandHandler = async ({ container, args }) => {
       (container.configBridge.isDefaultProviderConfigured()
         ? ''
         : '\nAI 프로바이더가 아직 없습니다: `storyboard setup`'),
-    data: { id: project.id, name: project.name, format: project.format, setting: project.setting },
+    data: {
+      id: project.id,
+      name: project.name,
+      format: project.format,
+      setting: project.setting,
+      gitRepository,
+    },
   };
 };
+
+// The ignore block is in place before the repository exists, so nothing generated can slip into the
+// user's first commit; the CLI itself never makes that commit.
+function describeGitRepository(outcome: GitRepositoryOutcome): string {
+  switch (outcome) {
+    case 'initialized':
+      return ' git 저장소도 만들었습니다(main). 첫 커밋은 직접 남기세요.';
+    case 'unavailable':
+      return ' git 을 실행하지 못해 저장소는 만들지 않았습니다.';
+    case 'exists':
+      return '';
+  }
+}
 
 // 계약은 outline generate 의 입구다. 이걸 채우는 길이 없으면 워크스페이스를 만들고도 CLI 만으로는
 // 한 걸음도 못 나간다. init 이 처음 채우고, project set 이 나중에 고친다 — 둘 다 같은 입력을 읽는다.

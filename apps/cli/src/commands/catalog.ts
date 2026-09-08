@@ -68,7 +68,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
   {
     name: 'repair',
-    summary: 'init: 이미 있는 워크스페이스의 디렉터리와 .gitignore 만 보수합니다 (계약은 그대로)',
+    summary: 'init: 이미 있는 워크스페이스의 디렉터리·.gitignore·git 저장소만 보수합니다 (계약은 그대로)',
   },
   { name: 'language', valueLabel: '<code>', summary: 'init 의 언어 (기본 ko)' },
   {
@@ -133,7 +133,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '시작하기',
     usage: 'init --title <name> | init --repair',
     summary:
-      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받습니다). --repair 는 0.8 이전 워크스페이스의 발판을 보수하고 이야기 상태 원장을 봉인합니다',
+      '현재 디렉터리를 Storyboard 워크스페이스로 만듭니다 (작품 계약도 함께 받고, git 저장소가 아니면 git init 도 합니다 — 첫 커밋은 직접). --repair 는 0.8 이전 워크스페이스의 발판을 보수하고 이야기 상태 원장을 봉인합니다',
     flags: [
       'title',
       'repair',
