@@ -30,7 +30,7 @@ describe("providerStatusBarItem", () => {
 
     const status = describeProviderStatus({ configBridge, configFiles })
 
-    expect(status.text).toBe("$(sparkle) claude-code · sonnet")
+    expect(status.text).toBe("$(sparkle) claude-code · opus")
     expect(status.tooltip).toContain("이 작품 설정 (/work/novel/.storyboard/config.json)")
   })
 

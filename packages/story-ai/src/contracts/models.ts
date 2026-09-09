@@ -32,8 +32,8 @@ export const storyboardModelCatalog = {
     { id: 'qwen2.5', displayName: 'Qwen 2.5' },
   ],
   'claude-code': [
-    { id: 'sonnet', displayName: 'Claude Code · Sonnet' },
     { id: 'opus', displayName: 'Claude Code · Opus' },
+    { id: 'sonnet', displayName: 'Claude Code · Sonnet' },
     { id: 'haiku', displayName: 'Claude Code · Haiku' },
   ],
   codex: [
