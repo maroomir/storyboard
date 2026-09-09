@@ -220,13 +220,35 @@ export function renderSceneCardBody(card: SceneCard, summaryText?: string): stri
 // (「발키리가 시비를 건다」가 [갈등]과 요약에서 각각) 금지문이 소재로 둔갑한다(「브로크와의 대면은
 // 다음 장면에」→ 대장간 도착을 씀). 그래서 사건 목록만 따로 떼어 넘긴다.
 export function extractSceneNarrativeSource(body: string): string {
+  return splitSceneNarrativeSource(body).narrative;
+}
+
+export interface SceneNarrativeParts {
+  // 사건 재료. 뼈대가 «무엇이 일어나는가»로 삼는 것.
+  readonly narrative: string;
+  // 목적·갈등·반전 같은 설계 블록. 사건 재료와 섞으면 카드 메타가 산문으로 새므로 따로 넘긴다.
+  // 사건 재료가 따로 없어 본문 전체가 재료가 된 경우에는 비어 있다 — 이미 그 안에 들어 있다.
+  readonly design: string;
+}
+
+// NOTE: 비트나 요약이 있으면 설계 블록이 통째로 버려져 뼈대가 목적·갈등·반전을 모르는 채 쓰였다.
+// 실측(sonnet, 목표 3,000자·1구간)에서 뼈대가 1,801자 → 743자로 줄어 초안이 그만큼 짧아졌다.
+// 재료와 설계를 나눠 둘 다 넘기되, 섞지는 않는다.
+export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
   const blocks = body
     .split(/\n\s*\n+/)
     .map((block) => block.trim())
     .filter((block) => block.length > 0);
   const narrative = blocks.filter((block) => !block.startsWith('['));
 
-  return narrative.length > 0 ? narrative.join('\n\n') : body.trim();
+  if (narrative.length === 0) {
+    return { narrative: body.trim(), design: '' };
+  }
+
+  return {
+    narrative: narrative.join('\n\n'),
+    design: blocks.filter((block) => block.startsWith('[')).join('\n\n'),
+  };
 }
 
 // NOTE: 0.8 이전 `scene seeds`는 summary에 안내 문구 한 줄을 넣었다. summary가 비어 있지 않으면

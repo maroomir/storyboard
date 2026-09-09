@@ -36,6 +36,7 @@ after the first public release.
 
 ### Fixed
 
+- **Drafts got shorter when the scene card had beats.** With beats present, the skeleton stage never saw the card's purpose, conflict, twist or emotional shift: the filter meant to keep craft blocks out of the event material dropped them entirely. Those blocks now reach the skeleton as a separate "scene design" section, kept apart from the event material. Measured (sonnet, 3,000-char target) the skeleton grew 743 → 1,900 chars and the draft 1,636 → 2,928 (98% of target), and the gap between having beats and not having them fell from 37% to 0.4%. Beat coverage was unchanged.
 - **`doctor` pointed at a command that does not exist.** A stale ledger told you to run `storyboard draft generate`, which fails as an unknown command. It now names `storyboard scene generate --all`, which actually clears it.
 
 ### Removed

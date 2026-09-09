@@ -12,6 +12,8 @@ import { type PromptArtifact, type PromptVariantId } from './types';
 
 export interface SceneSkeletonInput {
   readonly narrativeSource: string;
+  // 카드의 목적·갈등·반전 같은 설계 블록. 사건 재료와 섞으면 그대로 산문에 실리므로 따로 받는다.
+  readonly design?: string;
   readonly personas: ReadonlyMap<string, string>;
   readonly background: Background;
   readonly previousContext?: string;
@@ -47,6 +49,9 @@ function buildGeneric(input: SceneSkeletonInput): PromptArtifact {
         : undefined,
       '한 인물이 이미 그 자리에 있으면 다시 등장시키지 말고, 이미 벌어진 일은 다시 일으키지 마라.',
       '입력에 없는 새로운 사건·설정·인물을 지어내지 마라.',
+      input.design
+        ? '[장면 설계]는 이 장면이 무엇을 해내야 하는지 알려 주는 지시다. 그 문장을 본문에 옮겨 적지 말고, 사건을 그 목적·갈등·반전이 드러나도록 풀어써라.'
+        : undefined,
       '페르소나에 따옴표로 적힌 예시 대사는 말투를 알려 주는 참고일 뿐이다. 그 문장을 대사로 옮겨 쓰지 마라.',
       '시간이나 장소가 바뀌는 지점에는 단독 줄에 --- 를 넣어 장면 전환을 표시하라.',
       input.endState
@@ -89,6 +94,7 @@ function buildUserBlock(input: SceneSkeletonInput): string {
     personaLines.length > 0 ? '[등장 캐릭터 페르소나]' : undefined,
     ...personaLines,
     input.previousContext ? `\n[이전 맥락]\n${input.previousContext}` : undefined,
+    input.design ? `\n[장면 설계]\n${input.design}` : undefined,
     `\n[이 장면의 사건]\n${input.narrativeSource}`,
   ]
     .filter((line): line is string => Boolean(line))
