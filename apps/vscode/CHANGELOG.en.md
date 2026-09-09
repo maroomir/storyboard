@@ -21,6 +21,7 @@ after the first public release.
 
 ### Changed
 
+- **`claude-code` now defaults to Opus.** Measured on a 15,000-character scene target, Sonnet reached 47% of the target and Opus 92%. A default that cannot reach the target sends people looking for a pipeline bug, so the default is Opus. Switch back with `storyboard config set providers.claude-code.model sonnet` or from the settings panel.
 - **Settings are written where git would write them.** `storyboard config set` and `storyboard setup` write the workspace's `.storyboard/config.json` when run inside a workspace; `--global` writes the shared file, and outside a workspace they refuse rather than guess. They previously always wrote the shared file, so a per-project setting had to be hand-written. API keys are unaffected: still the one 0600 home file.
 - **Unknown arguments are refused.** A mistyped command such as `storyboard-bot init` used to be ignored and the bot started anyway, which made a typo look like a configuration failure. It now prints usage and exits 1.
 - **A missing config reads as onboarding, not an error.** A first run is not a fault, so it points at `storyboard-bot setup`. A config file that exists but is broken still logs an ERROR as before.

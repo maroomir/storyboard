@@ -150,7 +150,7 @@ describe("AiProviderRegistry", () => {
     })
 
     expect(response.providerId).toBe("claude-code")
-    expect(response.model).toBe("sonnet")
+    expect(response.model).toBe("opus")
     expect(response.text).toBe("cli-ok")
   })
 

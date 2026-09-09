@@ -223,7 +223,7 @@ describe("ConfigBridge", () => {
 
     expect(configBridge.getProviderConfig("claude-code")).toEqual({
       command: "/custom/claude",
-      model: "sonnet",
+      model: "opus",
       timeoutMs: 600000
     })
     expect(configBridge.getProviderConfig("codex")).toEqual({

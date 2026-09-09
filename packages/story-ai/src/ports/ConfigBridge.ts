@@ -510,7 +510,9 @@ function getDefaultModel(providerId: AiProviderId): string | undefined {
     case 'grok':
       return 'grok-4.6';
     case 'claude-code':
-      return 'sonnet';
+      // NOTE: 실측(2026-09-09) — 씬 목표 15,000자에서 sonnet 은 목표의 47%, opus 는 92%에 그친다.
+      // 기본값이 목표를 못 맞추는 쪽이면 사용자가 원인을 파이프라인에서 찾게 되므로 opus 를 쓴다.
+      return 'opus';
     case 'codex':
       return 'gpt-5.6-sol';
     case 'gemini-cli':
