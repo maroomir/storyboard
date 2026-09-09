@@ -1,0 +1,22 @@
+{
+  "claude-code:opus": {
+    "measured": {
+      "date": "2026-09-09",
+      "workspace": "level-zero",
+      "sceneTarget": 15000,
+      "runs": 1,
+      "reach": 0.92,
+      "expansionRatio": 1.32
+    }
+  },
+  "claude-code:sonnet": {
+    "measured": {
+      "date": "2026-09-09",
+      "workspace": "level-zero",
+      "sceneTarget": 15000,
+      "runs": 3,
+      "reach": 0.51,
+      "expansionRatio": 1.94
+    }
+  }
+}

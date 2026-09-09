@@ -138,20 +138,24 @@ const minimumLengthRatio = 0.85;
 // NOTE: 살붙임은 문맥에 맞춰 조사나 군더더기를 정리한다. 완전 일치로 보면 그런 재작성이 전부
 // 누락으로 잡히고, 재시도할 때마다 표현이 또 달라져 수렴하지도 않는다. 실측상 재작성은 87%,
 // 앞부분만 남기고 잘린 대사는 42%, 다른 대사로 대체된 경우는 18%라 그 사이에서 끊는다.
-const DIALOGUE_PRESERVED_RATIO = 0.85;
+export const DIALOGUE_PRESERVED_RATIO = 0.85;
 
 // NOTE: 살붙임은 긴 한 턴을 두세 문장으로 쪼개 호흡을 만든다. 조각 하나씩 원문과 비교하면 각각이
 // 임계값에 못 미쳐 사라진 것으로 잡히므로, 이어진 조각을 합친 것과도 비교한다.
 const DIALOGUE_SPLIT_LIMIT = 3;
 
-function isDialoguePreserved(line: string, candidates: readonly string[]): boolean {
+function isDialoguePreserved(
+  line: string,
+  candidates: readonly string[],
+  preservedRatio: number,
+): boolean {
   for (let start = 0; start < candidates.length; start += 1) {
     let joined = '';
 
     for (let width = 0; width < DIALOGUE_SPLIT_LIMIT && start + width < candidates.length; width += 1) {
       joined = width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
 
-      if (similarityRatio(line, joined) >= DIALOGUE_PRESERVED_RATIO) {
+      if (similarityRatio(line, joined) >= preservedRatio) {
         return true;
       }
     }
@@ -305,6 +309,9 @@ export function validateExpandedSection(input: {
   readonly characters: readonly CharacterCard[];
   readonly targetLength: number;
   readonly previousSection?: string;
+  // 모델 문체에 따라 같은 대사를 옮겨 적는 방식이 달라 임계가 고정이면 오탐이 난다.
+  readonly dialoguePreservedRatio?: number;
+  readonly paddingParagraphRatio?: number;
 }): SectionViolation[] {
   const violations: SectionViolation[] = [];
 
@@ -334,7 +341,15 @@ export function validateExpandedSection(input: {
   );
   const lost = [...input.section.matchAll(quotedDialoguePattern)]
     .map((match) => (match[1] ?? '').trim())
-    .filter((line) => line.length >= 6 && !isDialoguePreserved(line, expandedLines));
+    .filter(
+      (line) =>
+        line.length >= 6 &&
+        !isDialoguePreserved(
+          line,
+          expandedLines,
+          input.dialoguePreservedRatio ?? DIALOGUE_PRESERVED_RATIO,
+        ),
+    );
 
   if (lost.length > 0) {
     violations.push({
@@ -371,7 +386,12 @@ export function validateExpandedSection(input: {
     });
   }
 
-  const padding = findPaddingRepetition(input.section, input.expanded, input.previousSection);
+  const padding = findPaddingRepetition(
+    input.section,
+    input.expanded,
+    input.previousSection,
+    input.paddingParagraphRatio ?? PADDING_PARAGRAPH_RATIO,
+  );
   if (padding !== undefined) {
     violations.push({ kind: 'repetition', detail: padding });
   }
@@ -384,19 +404,20 @@ export function validateExpandedSection(input: {
 // 되풀이는 위 검사들이 보는 "구간 전체를 다시 씀"보다 작은 단위라 따로 잡는다. 대사는 정확히,
 // 지문은 문단 유사도로 본다.
 const PADDING_PARAGRAPH_MIN_LENGTH = 40;
-const PADDING_PARAGRAPH_RATIO = 0.8;
+export const PADDING_PARAGRAPH_RATIO = 0.8;
 
 function findPaddingRepetition(
   section: string,
   expanded: string,
   previousSection: string | undefined,
+  paddingRatio: number,
 ): string | undefined {
   const repeatedLine = findRepeatedDialogueLine(section, expanded, previousSection);
   if (repeatedLine !== undefined) {
     return `같은 대사를 두 번 썼습니다 ("${repeatedLine}"). 분량이 모자라도 이미 쓴 대사를 되풀이하지 마세요`;
   }
 
-  const repeatedParagraph = findNearDuplicateParagraph(expanded, previousSection);
+  const repeatedParagraph = findNearDuplicateParagraph(expanded, previousSection, paddingRatio);
   if (repeatedParagraph !== undefined) {
     return `같은 내용의 문단을 되풀이했습니다 ("${repeatedParagraph.slice(0, 30)}…"). 채울 재료가 없으면 짧게 끝내세요`;
   }
@@ -448,6 +469,7 @@ function narrationParagraphsOf(text: string): string[] {
 function findNearDuplicateParagraph(
   expanded: string,
   previousSection: string | undefined,
+  paddingRatio: number,
 ): string | undefined {
   const paragraphs = narrationParagraphsOf(expanded);
   const earlier = previousSection === undefined ? [] : narrationParagraphsOf(previousSection);
@@ -456,7 +478,7 @@ function findNearDuplicateParagraph(
     const paragraph = paragraphs[index] as string;
     const candidates = [...earlier, ...paragraphs.slice(0, index)];
 
-    if (candidates.some((other) => similarityRatio(paragraph, other) >= PADDING_PARAGRAPH_RATIO)) {
+    if (candidates.some((other) => similarityRatio(paragraph, other) >= paddingRatio)) {
       return paragraph;
     }
   }

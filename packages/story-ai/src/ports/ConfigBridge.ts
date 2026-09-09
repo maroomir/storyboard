@@ -8,6 +8,7 @@ import {
 } from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
 import { storyboardModelCatalog } from '#ai/contracts/models';
+import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
 import { findStoryboardSetting, isValidStoryboardSettingValue } from '#ai/contracts/settingCatalog';
 
 // The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
@@ -17,6 +18,10 @@ const userConfigurationTarget = 1;
 const workspaceConfigurationTarget = 2;
 
 export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
+
+// 파이프라인의 SceneGenerationTuning 과 구조적으로 같다. story-ai 는 story-pipeline 을 의존하지
+// 않으므로(의존 방향이 반대다) 타입을 가져오지 않고 같은 모양을 선언한다.
+export type SceneGenerationTuningLike = Omit<ModelProfile, 'measured' | 'sectionOutputLimit'>;
 
 export interface ProviderModelConfig {
   readonly model?: string;
@@ -338,9 +343,32 @@ export class ConfigBridge {
     return Math.min(50, Math.max(1, value));
   }
 
+  // 실측으로 정한 모델별 손잡이. 재보지 않은 모델이면 undefined 이고, 호출자는 자기 기본값을 쓴다.
+  public getModelProfile(): ModelProfile | undefined {
+    const providerId = this.getDefaultProvider();
+
+    return findModelProfile(providerId, this.getProviderConfig(providerId).model);
+  }
+
+  // 사용자 설정 → 모델 프로필 → 코드 기본값 순. 사용자가 적은 값이 언제나 이긴다.
+  public getSceneGenerationTuning(): SceneGenerationTuningLike {
+    const profile = this.getModelProfile();
+
+    if (profile === undefined) {
+      return {};
+    }
+
+    const { measured: _measured, sectionOutputLimit: _limit, ...tuning } = profile;
+
+    return tuning;
+  }
+
   public getSectionOutputLimit(): number {
-    const configured = this.dependencies.getConfiguration().get('draft.sectionOutputLimit', 7000);
-    const value = Math.floor(Number.isFinite(configured) ? configured : 7000);
+    const profileLimit = this.getModelProfile()?.sectionOutputLimit ?? 7000;
+    const configured = this.dependencies
+      .getConfiguration()
+      .get('draft.sectionOutputLimit', profileLimit);
+    const value = Math.floor(Number.isFinite(configured) ? configured : profileLimit);
 
     return Math.min(20_000, Math.max(1_000, value));
   }

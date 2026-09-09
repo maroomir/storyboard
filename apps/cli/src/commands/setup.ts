@@ -327,14 +327,6 @@ interface SceneCardCensus {
   readonly largestSceneTarget: number;
 }
 
-// 실측(2026-09-09, claude-code, 씬 10개 비트·구간 상한 7000, 씬당 3회)에서 나온 목표 달성률.
-// 재지 않은 프로바이더·모델은 여기 없고, 없으면 아무 말도 하지 않는다 — 추측으로 경고하면
-// 진단 전체가 신뢰를 잃는다.
-const measuredLargeSceneReach: Readonly<Record<string, number>> = {
-  'claude-code:sonnet': 0.51,
-  'claude-code:opus': 0.92,
-};
-
 // 3,000자에서는 sonnet 도 85%를 냈고 15,000자에서 51%로 떨어졌다. 그 사이 어딘가가 경계이므로
 // 두 실측점 중간을 기준으로 삼는다.
 const largeSceneTarget = 8_000;
@@ -354,11 +346,14 @@ function collectSceneLengthReachChecks(
 
   const providerId = configBridge.getDefaultProvider();
   const model = configBridge.getProviderConfig(providerId).model;
-  const reach = measuredLargeSceneReach[`${providerId}:${model ?? ''}`];
+  // 실측표는 모델 프로필 하나에 모여 있다. 재보지 않은 조합은 프로필이 없고, 그러면 말하지 않는다.
+  const measured = configBridge.getModelProfile()?.measured;
 
-  if (reach === undefined || reach >= acceptableReach) {
+  if (measured === undefined || measured.reach >= acceptableReach) {
     return [];
   }
+
+  const reach = measured.reach;
 
   return [
     {
@@ -366,7 +361,8 @@ function collectSceneLengthReachChecks(
       label: '모델과 목표 분량',
       detail:
         `씬 목표가 최대 ${largestSceneTarget.toLocaleString('en-US')}자인데 ${providerId} · ${model} 은 ` +
-        `실측상 그런 씬에서 목표의 ${Math.round(reach * 100)}% 정도까지만 씁니다. ` +
+        `실측상 그런 씬에서 목표의 ${Math.round(reach * 100)}% 정도까지만 씁니다` +
+        ` (${measured.date} · ${measured.workspace} · ${measured.runs}회). ` +
         '구간 상한을 1000 근처로 낮추면 실측상 40% 남짓 늘지만, 그래도 목표에는 못 미칩니다.',
       fix: 'storyboard config set providers.claude-code.model opus',
     },

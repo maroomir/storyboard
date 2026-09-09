@@ -268,6 +268,7 @@ async function runAndPersistDraft(
       shouldCancel: options.shouldCancel,
       useContextCondense: options.configBridge.isAiContextCondenseEnabled(),
       sectionOutputLimit: options.configBridge.getSectionOutputLimit(),
+      tuning: options.configBridge.getSceneGenerationTuning(),
       personaStore: createPersonaMemoryStore(options.fileSystem, threadPaths, scene.stem),
       backgroundStore: createBackgroundMemoryStore(options.fileSystem, threadPaths, scene.stem),
       dialogueCorpus: createSceneDialogueStore(options.fileSystem, threadPaths),
