@@ -8,7 +8,7 @@ import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard
 import {
   computeDraftBodyHash,
   createEmptyBackground,
-  extractSceneNarrativeSource,
+  splitSceneNarrativeSource,
   unknownDialogueSpeaker,
 } from '@storyboard/story-format';
 import { condensePreviousContext } from './sceneGenerationPolicies';
@@ -60,6 +60,7 @@ interface ResolvedExecutionContext {
   readonly onProgress?: RunSceneGenerationPipelineInput['onProgress'];
   readonly shouldCancel?: () => boolean;
   readonly narrativeSource: string;
+  readonly design: string;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
@@ -78,6 +79,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   } = input;
   const sceneStem = input.sceneStem ?? input.context.scene.stem;
   const body = context.scene.body.trim();
+  const narrativeParts = splitSceneNarrativeSource(body);
 
   if (body.length === 0) {
     throw new Error(
@@ -100,8 +102,10 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     providers,
     onProgress,
     shouldCancel,
-    // 작법 블록을 제외한 서술만 사건 재료로 쓴다. 블록이 섞이면 같은 등장이 두 번 뽑힌다.
-    narrativeSource: extractSceneNarrativeSource(body),
+    // 작법 블록은 사건 재료와 섞지 않는다 — 섞이면 같은 등장이 두 번 뽑히고 카드 메타가 산문에
+    // 실린다 — 대신 뼈대에 «설계»로 따로 넘긴다.
+    narrativeSource: narrativeParts.narrative,
+    design: narrativeParts.design,
     condensedPreviousContext: condensePreviousContext(
       previousContext,
       input.useContextCondense === true,
@@ -402,6 +406,7 @@ async function executeSceneGenerationPipeline(
     onProgress,
     shouldCancel,
     narrativeSource,
+    design,
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
@@ -439,6 +444,7 @@ async function executeSceneGenerationPipeline(
     aiService,
     {
       narrativeSource,
+      ...(design.length > 0 ? { design } : {}),
       personas: personasUsed,
       background,
       previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),

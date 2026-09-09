@@ -8,6 +8,7 @@ import {
   canonicalizeSceneCardText,
   extractInlineSceneSummary,
   extractSceneNarrativeSource,
+  splitSceneNarrativeSource,
   isInlineSceneSummary,
   NodeUri,
   parseScene,
@@ -263,6 +264,38 @@ describe("extractSceneNarrativeSource", () => {
     const scene = parseScene("type: scene\nid: 01-a\nconflict: 다툰다\n", "01-a.card")
 
     expect(extractSceneNarrativeSource(scene.body)).toContain("[갈등]")
+  })
+})
+
+describe("splitSceneNarrativeSource", () => {
+  // 비트·요약이 있으면 설계 블록이 통째로 버려져 뼈대가 목적·갈등·반전을 모르는 채 쓰였다.
+  it("keeps the craft blocks as design instead of dropping them", () => {
+    const cardText = [
+      "type: scene",
+      "id: 01-square",
+      "purpose: 종료 공지로 세계의 시한을 박는다",
+      "conflict: 발키리가 레벨 0을 조롱하며 시비를 건다",
+      "summary: 이준이 좌판을 정리한다. 하늘에 공지가 뜬다.",
+      ""
+    ].join("\n")
+    const scene = parseScene(cardText, "01-square.card")
+
+    const parts = splitSceneNarrativeSource(scene.body)
+
+    expect(parts.narrative).toBe("이준이 좌판을 정리한다. 하늘에 공지가 뜬다.")
+    expect(parts.design).toContain("[목적]")
+    expect(parts.design).toContain("[갈등]")
+    // 재료와 설계는 섞이지 않는다 — 섞이면 카드 메타가 그대로 산문에 실린다.
+    expect(parts.narrative).not.toContain("[갈등]")
+  })
+
+  it("leaves design empty when the whole body is already the material", () => {
+    const scene = parseScene("type: scene\nid: 01-a\nconflict: 다툰다\n", "01-a.card")
+
+    const parts = splitSceneNarrativeSource(scene.body)
+
+    expect(parts.narrative).toContain("[갈등]")
+    expect(parts.design).toBe("")
   })
 })
 
