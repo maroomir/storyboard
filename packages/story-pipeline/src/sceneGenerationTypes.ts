@@ -47,6 +47,17 @@ export class SceneGenerationPipelineCancelledError extends Error {
   }
 }
 
+// NOTE: 값은 호스트가 모델 프로필에서 꺼내 넣는다. 파이프라인은 어느 모델인지 알 필요가 없고,
+// 테스트는 이 손잡이만 흔들어 재시도·임계 동작을 결정론적으로 확인할 수 있다.
+export interface SceneGenerationTuning {
+  readonly skeletonRatio?: number;
+  readonly skeletonRetryLimit?: number;
+  readonly sectionRetryLimit?: number;
+  readonly polishLengthLimitRatio?: number;
+  readonly dialoguePreservedRatio?: number;
+  readonly paddingParagraphRatio?: number;
+}
+
 export interface RunSceneGenerationPipelineInput {
   readonly context: SceneContext;
   readonly aiService: SceneGenerationPipelineAiService;
@@ -66,6 +77,8 @@ export interface RunSceneGenerationPipelineInput {
   readonly useContextCondense?: boolean;
   // 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수. 목표 분량을 이 값으로 나눠 구간 수가 정해진다.
   readonly sectionOutputLimit?: number;
+  // 모델마다 실측으로 달리 잡는 손잡이. 생략한 값은 파이프라인 기본값을 쓴다.
+  readonly tuning?: SceneGenerationTuning;
   readonly personaStore?: PersonaMemoryStore;
   readonly backgroundStore?: BackgroundMemoryStore;
   readonly dialogueCorpus?: SceneDialogueCorpus;

@@ -36,6 +36,7 @@ import {
   type RunSceneGenerationPipelineResult,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineTaskProviders,
+  type SceneGenerationTuning,
 } from './sceneGenerationTypes';
 
 export type {
@@ -61,6 +62,7 @@ interface ResolvedExecutionContext {
   readonly shouldCancel?: () => boolean;
   readonly narrativeSource: string;
   readonly design: string;
+  readonly tuning: SceneGenerationTuning;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
@@ -106,6 +108,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     // 실린다 — 대신 뼈대에 «설계»로 따로 넘긴다.
     narrativeSource: narrativeParts.narrative,
     design: narrativeParts.design,
+    tuning: input.tuning ?? {},
     condensedPreviousContext: condensePreviousContext(
       previousContext,
       input.useContextCondense === true,
@@ -119,9 +122,12 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
 // 1/3을 뼈대에 배분해 확장이 3배 남짓이 되게 한다.
 const SKELETON_LENGTH_RATIO = 1 / 3;
 
-function skeletonTargetLength(styleDirective: StyleDirective | undefined): number | undefined {
+function skeletonTargetLength(
+  styleDirective: StyleDirective | undefined,
+  skeletonRatio: number,
+): number | undefined {
   const target = styleDirective?.targetWordCount;
-  return target === undefined ? undefined : Math.round(target * SKELETON_LENGTH_RATIO);
+  return target === undefined ? undefined : Math.round(target * skeletonRatio);
 }
 
 function sectionTargetLengths(
@@ -158,11 +164,12 @@ async function draftSkeletonWithRetries(
   aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton'>,
   input: Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0],
   options: GenerateTextOptions,
+  retryLimit: number,
 ): Promise<string> {
   let reasons: string[] = [];
   let best: { text: string; weight: number; distance: number } | undefined;
 
-  for (let attempt = 0; attempt <= SKELETON_RETRY_LIMIT; attempt += 1) {
+  for (let attempt = 0; attempt <= retryLimit; attempt += 1) {
     const skeleton = await aiService.draftSceneSkeleton(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
@@ -198,6 +205,9 @@ async function expandSectionWithRetries(input: {
   readonly targetLength: number;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
+  readonly retryLimit?: number;
+  readonly dialoguePreservedRatio?: number;
+  readonly paddingParagraphRatio?: number;
 }): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best: {
@@ -212,7 +222,7 @@ async function expandSectionWithRetries(input: {
     distance: Number.POSITIVE_INFINITY,
   };
 
-  for (let attempt = 0; attempt <= SECTION_RETRY_LIMIT; attempt += 1) {
+  for (let attempt = 0; attempt <= (input.retryLimit ?? SECTION_RETRY_LIMIT); attempt += 1) {
     const expanded = await input.aiService.expandSceneSection(
       {
         skeleton: input.skeleton,
@@ -231,6 +241,12 @@ async function expandSectionWithRetries(input: {
       characters: input.characters,
       targetLength: input.targetLength,
       ...(input.previousSection === undefined ? {} : { previousSection: input.previousSection }),
+      ...(input.dialoguePreservedRatio === undefined
+        ? {}
+        : { dialoguePreservedRatio: input.dialoguePreservedRatio }),
+      ...(input.paddingParagraphRatio === undefined
+        ? {}
+        : { paddingParagraphRatio: input.paddingParagraphRatio }),
     });
 
     if (violations.length === 0) {
@@ -282,6 +298,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly voiceSamples: ReadonlyMap<string, readonly string[]>;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
+  readonly polishLengthLimitRatio?: number;
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
   let lastViolations: readonly SectionViolation[] = [];
 
@@ -295,7 +312,7 @@ async function polishDialogueOrKeepSkeleton(input: {
       skeleton: input.skeleton,
       polished,
       characters: input.characters,
-      lengthLimit: input.skeleton.length * POLISH_LENGTH_LIMIT_RATIO,
+      lengthLimit: input.skeleton.length * (input.polishLengthLimitRatio ?? POLISH_LENGTH_LIMIT_RATIO),
     });
 
     if (violations.length === 0) {
@@ -407,6 +424,7 @@ async function executeSceneGenerationPipeline(
     shouldCancel,
     narrativeSource,
     design,
+    tuning,
     condensedPreviousContext,
     sceneRef,
     detectedCharacters,
@@ -450,12 +468,13 @@ async function executeSceneGenerationPipeline(
       previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),
       endState: context.scene.card?.endState,
       grounding: context.scene.frontmatter.grounding,
-      targetLength: skeletonTargetLength(styleDirective),
+      targetLength: skeletonTargetLength(styleDirective, tuning.skeletonRatio ?? SKELETON_LENGTH_RATIO),
     },
     withAttribution(
       { ...buildGenerateOptions(providers, 'sceneSkeleton'), styleDirective },
       { primary: sceneRef },
     ),
+    tuning.skeletonRetryLimit ?? SKELETON_RETRY_LIMIT,
   );
   assertNotCancelled(shouldCancel);
 
@@ -471,6 +490,9 @@ async function executeSceneGenerationPipeline(
       { ...buildGenerateOptions(providers, 'sceneDialoguePolish'), styleDirective },
       { primary: sceneRef },
     ),
+    ...(tuning.polishLengthLimitRatio === undefined
+      ? {}
+      : { polishLengthLimitRatio: tuning.polishLengthLimitRatio }),
   });
   assertNotCancelled(shouldCancel);
 
@@ -498,6 +520,15 @@ async function executeSceneGenerationPipeline(
         { ...buildGenerateOptions(providers, 'sceneSectionExpansion'), styleDirective },
         { primary: sceneRef },
       ),
+      ...(tuning.sectionRetryLimit === undefined
+        ? {}
+        : { retryLimit: tuning.sectionRetryLimit }),
+      ...(tuning.dialoguePreservedRatio === undefined
+        ? {}
+        : { dialoguePreservedRatio: tuning.dialoguePreservedRatio }),
+      ...(tuning.paddingParagraphRatio === undefined
+        ? {}
+        : { paddingParagraphRatio: tuning.paddingParagraphRatio }),
     });
 
     expandedSections.push(outcome.text);
