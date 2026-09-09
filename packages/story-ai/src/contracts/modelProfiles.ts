@@ -19,6 +19,8 @@ const measurementSchema = z.object({
   reach: z.number().positive(),
   // 뼈대 → 초안 팽창 배율. skeletonRatio 를 정하는 근거.
   expansionRatio: z.number().positive().optional(),
+  // 이 실측이 돈 구간 수. 같은 상한이라도 목표가 다르면 구간 수가 달라지므로 함께 남긴다.
+  sections: z.number().int().positive().optional(),
 });
 
 // 파이프라인이 모델마다 달리 잡을 수 있는 손잡이. 전부 선택이며, 없으면 파이프라인 기본값을 쓴다.

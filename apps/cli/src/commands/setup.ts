@@ -777,7 +777,9 @@ function describeOrigin(configBridge: ConfigBridge, key: string): string {
     case 'user':
       return '공통';
     default:
-      return '기본값';
+      // 실측으로 정한 모델 기본값과 코드 기본값은 사용자에게 다른 것이다 — 전자는 모델을 바꾸면
+      // 따라 바뀐다.
+      return configBridge.getModelProfileDefault(key) === undefined ? '기본값' : '모델 실측';
   }
 }
 

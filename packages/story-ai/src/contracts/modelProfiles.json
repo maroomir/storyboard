@@ -1,13 +1,15 @@
 {
   "claude-code:opus": {
     "measured": {
-      "date": "2026-09-09",
+      "date": "2026-09-10",
       "workspace": "level-zero",
       "sceneTarget": 15000,
-      "runs": 1,
-      "reach": 0.92,
-      "expansionRatio": 1.32
-    }
+      "runs": 2,
+      "reach": 1.01,
+      "expansionRatio": 1.32,
+      "sections": 1
+    },
+    "sectionOutputLimit": 15000
   },
   "claude-code:sonnet": {
     "measured": {
@@ -16,7 +18,8 @@
       "sceneTarget": 15000,
       "runs": 3,
       "reach": 0.51,
-      "expansionRatio": 1.94
+      "expansionRatio": 1.94,
+      "sections": 3
     }
   }
 }
