@@ -235,11 +235,19 @@ export class ConfigBridge {
       throw new Error(`알 수 없는 설정입니다: ${key}`);
     }
 
-    const value = this.dependencies.getConfiguration().get<unknown>(key, definition.defaultValue);
+    // NOTE: 모델 프로필이 주는 값도 «기본값»이다. 여기서 안 보면 설정 화면은 7000 이라 말하는데
+    // 생성은 15000 으로 도는, 사람이 원인을 못 찾는 어긋남이 생긴다.
+    const fallback = this.getModelProfileDefault(key) ?? definition.defaultValue;
+    const value = this.dependencies.getConfiguration().get<unknown>(key, fallback);
 
     return isValidStoryboardSettingValue(definition, value)
       ? (value as boolean | number | string)
-      : definition.defaultValue;
+      : fallback;
+  }
+
+  // 설정 키와 모델 프로필 항목이 같은 값을 가리키는 경우. 지금은 구간 상한 하나뿐이다.
+  public getModelProfileDefault(key: string): number | undefined {
+    return key === 'draft.sectionOutputLimit' ? this.getModelProfile()?.sectionOutputLimit : undefined;
   }
 
   public async setSettingValue(key: string, value: boolean | number | string): Promise<void> {
@@ -364,7 +372,7 @@ export class ConfigBridge {
   }
 
   public getSectionOutputLimit(): number {
-    const profileLimit = this.getModelProfile()?.sectionOutputLimit ?? 7000;
+    const profileLimit = this.getModelProfileDefault('draft.sectionOutputLimit') ?? 7000;
     const configured = this.dependencies
       .getConfiguration()
       .get('draft.sectionOutputLimit', profileLimit);
