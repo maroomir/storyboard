@@ -239,6 +239,41 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(again.data).toMatchObject({ sceneOrders: [] });
   });
 
+  it('warns only when the measured model cannot reach a large scene target', async () => {
+    function writeWorkspaceWithSceneTarget(targetWordCount: number, model: string): void {
+      writeWorkspaceWithLedger(unsealedLedger);
+      writeFileSync(
+        join(workspace, 'scene', '01-first.card'),
+        `type: scene\nid: 01-first\ntargetWordCount: ${targetWordCount}\nsummary: 첫 방송.\n`,
+      );
+      writeFileSync(
+        join(home, 'config.json'),
+        JSON.stringify({
+          defaultProvider: 'claude-code',
+          providers: { 'claude-code': { model } },
+        }),
+      );
+    }
+
+    const reachLabel = '모델과 목표 분량';
+
+    writeWorkspaceWithSceneTarget(15_000, 'sonnet');
+    const weak = await runDoctor({ container: container(), args: args() });
+    const warning = checksOf(weak).find((entry) => entry.label === reachLabel);
+    expect(warning?.status).toBe('warn');
+    expect(warning?.detail).toContain('51%');
+
+    // 실측상 목표를 채우는 모델에는 말하지 않는다.
+    writeWorkspaceWithSceneTarget(15_000, 'opus');
+    const strong = await runDoctor({ container: container(), args: args() });
+    expect(checksOf(strong).find((entry) => entry.label === reachLabel)).toBeUndefined();
+
+    // 짧은 씬은 같은 모델로도 목표에 근접하므로 경고 대상이 아니다.
+    writeWorkspaceWithSceneTarget(3_000, 'sonnet');
+    const small = await runDoctor({ container: container(), args: args() });
+    expect(checksOf(small).find((entry) => entry.label === reachLabel)).toBeUndefined();
+  });
+
   it('refuses a scene range it cannot read instead of resealing everything', async () => {
     writeWorkspaceWithLedger(unsealedLedger);
     await runCommand('init', args({ repair: true }));

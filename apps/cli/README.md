@@ -44,7 +44,9 @@ pre-0.8 ledger against today's cards and scenes, so edits made after the repair 
 stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
 keeping any summary you wrote above it, and moves that inline summary into
 `scene/<stem>.summary.md` so the card holds only the file name. `doctor` also counts the scenes that
-still carry an inline summary and the scenes without beats (fix: `scene beats --all`).
+still carry an inline summary and the scenes without beats (fix: `scene beats --all`), and it warns
+when the configured model cannot reach the largest scene target — measured, not guessed, and silent
+for combinations that were never measured.
 
 `storyboard` with no arguments prints the grouped command list with these steps at the top;
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
