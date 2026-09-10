@@ -21,6 +21,8 @@ const measurementSchema = z.object({
   expansionRatio: z.number().positive().optional(),
   // 이 실측이 돈 구간 수. 같은 상한이라도 목표가 다르면 구간 수가 달라지므로 함께 남긴다.
   sections: z.number().int().positive().optional(),
+  // 후보값을 왜 떨어뜨렸는지. 같은 스윕을 다시 돌리지 않게 근거를 남긴다.
+  skeletonRatioCandidates: z.string().optional(),
 });
 
 // 파이프라인이 모델마다 달리 잡을 수 있는 손잡이. 전부 선택이며, 없으면 파이프라인 기본값을 쓴다.

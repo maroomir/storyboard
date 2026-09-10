@@ -261,7 +261,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     const weak = await runDoctor({ container: container(), args: args() });
     const warning = checksOf(weak).find((entry) => entry.label === reachLabel);
     expect(warning?.status).toBe('warn');
-    expect(warning?.detail).toContain('51%');
+    expect(warning?.detail).toContain('61%');
 
     // 실측상 목표를 채우는 모델에는 말하지 않는다.
     writeWorkspaceWithSceneTarget(15_000, 'opus');

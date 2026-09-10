@@ -7,19 +7,23 @@
       "runs": 2,
       "reach": 1.01,
       "expansionRatio": 1.32,
-      "sections": 1
+      "sections": 1,
+      "skeletonRatioCandidates": "0.33=88% / 0.55=137% / 0.80=115%"
     },
-    "sectionOutputLimit": 15000
+    "sectionOutputLimit": 15000,
+    "skeletonRatio": 0.33
   },
   "claude-code:sonnet": {
     "measured": {
-      "date": "2026-09-09",
+      "date": "2026-09-10",
       "workspace": "level-zero",
       "sceneTarget": 15000,
-      "runs": 3,
-      "reach": 0.51,
-      "expansionRatio": 1.94,
-      "sections": 3
-    }
+      "runs": 2,
+      "reach": 0.61,
+      "expansionRatio": 1.39,
+      "sections": 3,
+      "skeletonRatioCandidates": "0.33=44% / 0.55=51% / 0.80=61%"
+    },
+    "skeletonRatio": 0.8
   }
 }
