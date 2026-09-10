@@ -1,3 +1,4 @@
+import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 import { AiProviderError } from '#ai/contracts/aiProviderError';
 import { type CliRunner } from './providers/cliRunner';
 import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
@@ -264,29 +265,4 @@ export class AiProviderRegistry {
 
 export function createAiProviderRegistry(options: AiProviderRegistryOptions): AiProviderRegistry {
   return new AiProviderRegistry(options);
-}
-
-
-
-function getProviderDisplayName(providerId: AiProviderId): string {
-  switch (providerId) {
-    case 'openai':
-      return 'OpenAI';
-    case 'claude':
-      return 'Claude';
-    case 'google':
-      return 'Google Gemini';
-    case 'grok':
-      return 'xAI Grok';
-    case 'ollama':
-      return 'Ollama';
-    case 'claude-code':
-      return 'Claude Code (CLI)';
-    case 'codex':
-      return 'Codex (CLI)';
-    case 'gemini-cli':
-      return 'Gemini CLI';
-    case 'mock':
-      return 'Mock AI';
-  }
 }

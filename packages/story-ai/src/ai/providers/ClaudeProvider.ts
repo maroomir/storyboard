@@ -12,6 +12,7 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
+import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 
@@ -57,7 +58,7 @@ interface ClaudeMessageResponse {
 
 export class ClaudeProvider implements AiProvider {
   public readonly id: AiProviderId = 'claude';
-  public readonly displayName = 'Claude';
+  public readonly displayName = getProviderDisplayName('claude');
   private readonly client: ClaudeClientLike;
   private readonly model: string;
 

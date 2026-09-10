@@ -9,6 +9,7 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
+import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
 interface GoogleGenerativeModelLike {
   readonly generateContent: (prompt: string) => Promise<GoogleGenerateContentResultLike>;
@@ -45,7 +46,7 @@ interface GoogleModelOptions {
 
 export class GoogleProvider implements AiProvider {
   public readonly id: AiProviderId = 'google';
-  public readonly displayName = 'Google Gemini';
+  public readonly displayName = getProviderDisplayName('google');
   private readonly client: GoogleClientLike;
   private readonly model: string;
 

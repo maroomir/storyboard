@@ -7,7 +7,15 @@ import {
   type CliProviderId,
 } from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
-import { storyboardModelCatalog } from '#ai/contracts/models';
+import {
+  cliProviderDefaults,
+  getDefaultCliCommand,
+  getDefaultModelId,
+  isModelInCatalogForProvider,
+  isRetiredModelId,
+  providerCatalog,
+  storyboardModelCatalog,
+} from '#ai/contracts/providerCatalog';
 import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
 import { findStoryboardSetting, isValidStoryboardSettingValue } from '#ai/contracts/settingCatalog';
 
@@ -30,8 +38,6 @@ export interface ProviderModelConfig {
   readonly timeoutMs?: number;
   readonly reasoningEffort?: string;
 }
-
-const defaultCliGenerateTimeoutMs = 600_000;
 
 const defaultReviseMaxIterations = 2;
 const minReviseMaxIterations = 1;
@@ -106,13 +112,13 @@ export class ConfigBridge {
 
     if (providerId === 'ollama') {
       return {
-        baseUrl: configuration.get('providers.ollama.baseUrl', 'http://localhost:11434'),
-        model: configuration.get('providers.ollama.model', 'llama3.3'),
+        baseUrl: configuration.get('providers.ollama.baseUrl', providerCatalog.ollama.defaultBaseUrl),
+        model: configuration.get('providers.ollama.model', providerCatalog.ollama.defaultModel),
       };
     }
 
     if (isCliProvider(providerId)) {
-      const model = configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId));
+      const model = configuration.get(`providers.${providerId}.model`, getDefaultModelId(providerId));
 
       const reasoningEffort =
         providerId === 'codex'
@@ -122,22 +128,22 @@ export class ConfigBridge {
       return {
         command: configuration.get(
           `providers.${providerId}.command`,
-          getDefaultCommand(providerId),
+          getDefaultCliCommand(providerId),
         ),
         model:
           providerId === 'codex'
-            ? resolveEffectiveModelForTask(model, storyboardModelCatalog.codex[0].id, providerId)
+            ? resolveEffectiveModelForTask(model, defaultModelIdFor(providerId), providerId)
             : model,
         timeoutMs: configuration.get(
           `providers.${providerId}.timeoutMs`,
-          defaultCliGenerateTimeoutMs,
+          cliProviderDefaults.generateTimeoutMs,
         ),
         ...(reasoningEffort ? { reasoningEffort } : {}),
       };
     }
 
     return {
-      model: configuration.get(`providers.${providerId}.model`, getDefaultModel(providerId)),
+      model: configuration.get(`providers.${providerId}.model`, getDefaultModelId(providerId)),
     };
   }
 
@@ -164,8 +170,7 @@ export class ConfigBridge {
     const defaultProvider = this.getDefaultProvider();
     const providerId = stored?.provider ?? defaultProvider;
     const runtime = this.getProviderConfig(providerId);
-    const catalog = storyboardModelCatalog[providerId];
-    const fallbackModelId = catalog[0].id;
+    const fallbackModelId = defaultModelIdFor(providerId);
 
     const taskModel =
       stored?.model !== undefined && isModelInCatalogForProvider(providerId, stored.model)
@@ -497,17 +502,10 @@ export class ConfigBridge {
   }
 }
 
-function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string): boolean {
-  return storyboardModelCatalog[providerId].some((entry) => entry.id === modelId);
+// mock 은 카탈로그에 기본 모델을 두지 않으므로 목록의 첫 모델이 그 자리를 대신한다.
+function defaultModelIdFor(providerId: AiProviderId): string {
+  return getDefaultModelId(providerId) ?? storyboardModelCatalog[providerId][0].id;
 }
-
-// Model ids retired from the CLI backends. A setting saved by an old install must upgrade to the
-// current default instead of reaching the CLI as a dead model; anything NOT in this list passes
-// through for CLI providers (decision #32), because the CLIs ship new names faster than the
-// catalog can track and validate models themselves.
-const retiredCliModelIds: Partial<Record<AiProviderId, ReadonlySet<string>>> = {
-  codex: new Set(['gpt-5-codex']),
-};
 
 function resolveEffectiveModelForTask(
   configuredGlobal: string | undefined,
@@ -521,7 +519,7 @@ function resolveEffectiveModelForTask(
   }
 
   if (isCliProvider(providerId) || providerId === 'mock') {
-    return retiredCliModelIds[providerId]?.has(trimmed) === true ? fallbackModelId : trimmed;
+    return isRetiredModelId(providerId, trimmed) ? fallbackModelId : trimmed;
   }
 
   if (isModelInCatalogForProvider(providerId, trimmed)) {
@@ -533,39 +531,4 @@ function resolveEffectiveModelForTask(
 
 function isConfiguredProvider(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId);
-}
-
-function getDefaultModel(providerId: AiProviderId): string | undefined {
-  switch (providerId) {
-    case 'openai':
-      return 'gpt-5.4-mini';
-    case 'claude':
-      return 'claude-sonnet-4-6';
-    case 'google':
-      return 'gemini-2.5-flash';
-    case 'grok':
-      return 'grok-4.6';
-    case 'claude-code':
-      // NOTE: 실측(2026-09-09) — 씬 목표 15,000자에서 sonnet 은 목표의 47%, opus 는 92%에 그친다.
-      // 기본값이 목표를 못 맞추는 쪽이면 사용자가 원인을 파이프라인에서 찾게 되므로 opus 를 쓴다.
-      return 'opus';
-    case 'codex':
-      return 'gpt-5.6-sol';
-    case 'gemini-cli':
-      return 'flash';
-    case 'mock':
-    case 'ollama':
-      return undefined;
-  }
-}
-
-function getDefaultCommand(providerId: CliProviderId): string {
-  switch (providerId) {
-    case 'claude-code':
-      return 'claude';
-    case 'codex':
-      return 'codex';
-    case 'gemini-cli':
-      return 'gemini';
-  }
 }

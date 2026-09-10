@@ -16,9 +16,8 @@ import {
   splitCliPrompt,
   truncateFailureMessage,
 } from './cliRunner';
+import { cliProviderDefaults, getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
-const connectionTimeoutMs = 15_000;
-const defaultGenerateTimeoutMs = 600_000;
 
 export interface ClaudeCodeProviderOptions {
   readonly command: string | undefined;
@@ -41,7 +40,7 @@ interface ClaudeCodeJsonResult {
 
 export class ClaudeCodeProvider implements AiProvider {
   public readonly id: AiProviderId = 'claude-code';
-  public readonly displayName = 'Claude Code (CLI)';
+  public readonly displayName = getProviderDisplayName('claude-code');
   private readonly command: string;
   private readonly model: string;
   private readonly generateTimeoutMs: number;
@@ -69,7 +68,7 @@ export class ClaudeCodeProvider implements AiProvider {
 
     this.command = command;
     this.model = model;
-    this.generateTimeoutMs = options.generateTimeoutMs ?? defaultGenerateTimeoutMs;
+    this.generateTimeoutMs = options.generateTimeoutMs ?? cliProviderDefaults.generateTimeoutMs;
     this.run = options.createRunner?.() ?? createDefaultCliRunner();
   }
 
@@ -80,7 +79,7 @@ export class ClaudeCodeProvider implements AiProvider {
       const result = await this.run({
         command: this.command,
         args: ['auth', 'status', '--json'],
-        timeoutMs: connectionTimeoutMs,
+        timeoutMs: cliProviderDefaults.connectionCheckTimeoutMs,
       });
       if (result.exitCode !== 0) {
         throw new AiProviderError(
