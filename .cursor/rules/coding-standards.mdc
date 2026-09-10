@@ -84,6 +84,34 @@ for schema-first types and the error-class template. Generic readability and ver
   lives under `~/.storyboard/<app>.json`. The extension contributes no
   VSCode `configuration` and uses neither `globalState` nor `context.secrets` as a store.
 
+## Parameters and Tables
+
+The rule is one owner per value. A number, a name, or a list that two places must agree on lives in
+exactly one file; everything else derives from it.
+
+- **Where a value lives**: tuning numbers a person adjusts go in a JSON data file next to a zod
+  schema that documents each knob — `packages/story-ai/src/contracts/modelProfiles.json` (per model),
+  `packages/story-pipeline/src/pipelineDefaults.json` (model-agnostic generation), and
+  `packages/story-ai/src/ai/prompts/promptTuning.json` (per prompt) are the models to copy.
+  Identifiers and enums stay TypeScript `as const` so the literal types survive — `providerCatalog`,
+  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. JSON loses literal types, so
+  never move an enum into one.
+- **The layering for generation knobs** is user setting → model profile → pipeline default. A value
+  that only one model needs belongs in the model profile, never in the shared default.
+- **Setting defaults and bounds** belong to `storyboardSettingCatalog` alone. Read them through
+  `booleanSettingDefault` / `integerSettingDefault` / `clampIntegerSetting`; never restate a default
+  or a `Math.min`/`Math.max` bound at a call site.
+- **Record why a measured value is what it is** next to the value, as `modelProfiles.json` does with
+  its `measured` block. A number with no provenance cannot be re-tuned.
+- **The webview reads the real tables**, not copies: `@storyboard/story-engine/contracts` re-exports
+  the browser-safe catalogs through `packages/story-engine/src/shared/catalogs.ts`. Add a re-export
+  there rather than a second declaration under `webview-ui`.
+- **Two homes that cannot be merged** (`package.json` contributions versus code constants, or the
+  webview security allowlist) get a test that fails when they disagree — see
+  `apps/vscode/test/unit/presentation/manifest.spec.ts`.
+- **`apps/vscode/scripts/check-architecture.mjs` fails the build** when a literal appears outside the
+  file that owns it. Add the pair to `OWNED_LITERALS` when you give a value a single home.
+
 ## Shared Package References
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared

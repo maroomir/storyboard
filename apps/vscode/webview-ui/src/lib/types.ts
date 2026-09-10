@@ -145,14 +145,9 @@ export interface CardEditorInitialData {
   readonly error?: string;
 }
 
-export type SidebarRunnableCommand =
-  | 'storyboard.init'
-  | 'storyboard.settings.open'
-  | 'storyboard.outline.generate'
-  | 'storyboard.scene.create'
-  | 'storyboard.scene.generateAllSeeds'
-  | 'storyboard.character.create'
-  | 'storyboard.background.create';
+// SECURITY: 사이드바가 부를 수 있는 명령 목록은 익스텐션 호스트가 검사하는 스키마가 갖는다.
+// 여기서 다시 적으면 웹뷰만 아는 명령이 생겨 그 검사를 지나칠 수 있다.
+export type { SidebarRunnableCommand } from '@storyboard/story-engine/contracts';
 
 export interface UsageAmount {
   readonly costUsd: number;
