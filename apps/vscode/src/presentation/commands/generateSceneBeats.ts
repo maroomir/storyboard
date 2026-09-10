@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import type { GenerateSceneBeatsUseCase } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const GENERATE_SCENE_BEATS_COMMAND = 'storyboard.scene.beats';
 
@@ -27,9 +28,7 @@ async function runCommand(
   const workspaceFolder = sceneUri && vscode.workspace.getWorkspaceFolder(sceneUri);
 
   if (!sceneUri || !workspaceFolder || !isDirectSceneCardFile(sceneUri, workspaceFolder)) {
-    await vscode.window.showErrorMessage(
-      '씬 파일 URI가 없습니다. `scene` 폴더의 `.card` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);
     return;
   }
 

@@ -14,6 +14,7 @@ import type { OutlineFileSystem } from '@storyboard/story-format';
 import { readProjectJson } from '@storyboard/story-engine';
 import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 import type { ConfigBridge } from '@storyboard/story-ai';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const generateSceneSeedsCommand = 'storyboard.scene.generateAllSeeds';
 
@@ -40,18 +41,14 @@ async function runGenerateSceneSeeds(configBridge: ConfigBridge): Promise<void> 
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
   const paths = getStoryboardProjectPaths(workspaceRoot);
 
   if (!(await uriExists(paths.outlineChapters))) {
-    await vscode.window.showWarningMessage(
-      '아웃라인(chapters.yaml)이 없습니다. 먼저 Generate Novel Outline을 실행해 주세요.',
-    );
+    await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
     return;
   }
 

@@ -10,6 +10,7 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
+import { connectionCheckFailedMessage, generationFailedMessage, missingModelMessage } from '#ai/contracts/providerCatalog';
 
 export interface OllamaClientLike {
   readonly get: (path: string) => Promise<unknown>;
@@ -59,7 +60,7 @@ export class OllamaProvider implements AiProvider {
     }
 
     if (!model) {
-      throw new AiProviderError('missing-model', this.id, 'Ollama 모델이 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
     }
 
     this.model = model;
@@ -75,7 +76,7 @@ export class OllamaProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'Ollama 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }
@@ -100,7 +101,7 @@ export class OllamaProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        'Ollama 텍스트 생성에 실패했습니다.',
+        generationFailedMessage(this.id),
         error,
       );
     }

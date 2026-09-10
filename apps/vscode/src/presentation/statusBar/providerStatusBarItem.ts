@@ -4,6 +4,7 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 
 import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
 import type { SettingsConfigFiles } from '@/presentation/messaging/settingsRpcHandlers';
+import { openSettingsCommand } from '@/presentation/commands/openSettings';
 
 export interface ProviderStatusBarDependencies {
   readonly configBridge: ConfigBridge;
@@ -38,7 +39,7 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
   return {
     text: `$(sparkle) ${providerId}${model ? ` · ${model}` : ''}`,
     tooltip: `Storyboard 기본 AI: ${providerId}${model ? ` / ${model}` : ''}\n출처: ${originLabels[origin]}${origin === 'default' ? '' : ` (${file})`}\n클릭하면 설정을 엽니다.`,
-    command: 'storyboard.settings.open',
+    command: openSettingsCommand,
   };
 }
 

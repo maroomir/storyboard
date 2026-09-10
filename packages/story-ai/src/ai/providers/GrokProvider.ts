@@ -9,7 +9,14 @@ import {
   type AiProviderId,
 } from '#ai/contracts/aiTypes';
 import { type OpenAiClientLike } from './OpenAiProvider';
-import { getProviderDisplayName, providerCatalog } from '#ai/contracts/providerCatalog';
+import {
+  connectionCheckFailedMessage,
+  generationFailedMessage,
+  getProviderDisplayName,
+  missingApiKeyMessage,
+  missingModelMessage,
+  providerCatalog,
+} from '#ai/contracts/providerCatalog';
 
 // xAI serves Grok through an OpenAI-compatible chat completions endpoint, so the client shape is
 // the OpenAI one; only the base URL and the key differ.
@@ -32,11 +39,11 @@ export class GrokProvider implements AiProvider {
     const model = options.model?.trim();
 
     if (!apiKey) {
-      throw new AiProviderError('missing-api-key', this.id, 'xAI API 키가 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-api-key', this.id, missingApiKeyMessage(this.id));
     }
 
     if (!model) {
-      throw new AiProviderError('missing-model', this.id, 'Grok 모델이 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
     }
 
     this.model = model;
@@ -51,7 +58,7 @@ export class GrokProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'xAI Grok 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }
@@ -78,7 +85,7 @@ export class GrokProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        'xAI Grok 텍스트 생성에 실패했습니다.',
+        generationFailedMessage(this.id),
         error,
       );
     }

@@ -17,7 +17,12 @@ import {
   splitCliPrompt,
   truncateFailureMessage,
 } from './cliRunner';
-import { cliProviderDefaults, getProviderDisplayName } from '#ai/contracts/providerCatalog';
+import {
+  cliProviderDefaults,
+  connectionCheckFailedMessage,
+  getProviderDisplayName,
+  missingModelMessage,
+} from '#ai/contracts/providerCatalog';
 
 
 export interface CodexProviderOptions {
@@ -50,7 +55,7 @@ export class CodexProvider implements AiProvider {
     }
 
     if (!model) {
-      throw new AiProviderError('missing-model', this.id, 'Codex 모델이 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
     }
 
     this.command = command;
@@ -97,7 +102,7 @@ export class CodexProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'Codex CLI 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }

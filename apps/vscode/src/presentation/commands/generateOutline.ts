@@ -5,6 +5,8 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-format';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { openSettingsCommand } from '@/presentation/commands/openSettings';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
 
@@ -27,9 +29,7 @@ async function runGenerateOutline(
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
@@ -92,7 +92,7 @@ async function reportResult(
       openSettings,
     );
     if (choice === openSettings) {
-      await vscode.commands.executeCommand('storyboard.settings.open');
+      await vscode.commands.executeCommand(openSettingsCommand);
     }
     return;
   }

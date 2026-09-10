@@ -12,7 +12,13 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
-import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
+import {
+  connectionCheckFailedMessage,
+  generationFailedMessage,
+  getProviderDisplayName,
+  missingApiKeyMessage,
+  missingModelMessage,
+} from '#ai/contracts/providerCatalog';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 
@@ -70,12 +76,12 @@ export class ClaudeProvider implements AiProvider {
       throw new AiProviderError(
         'missing-api-key',
         this.id,
-        'Claude API 키가 설정되어 있지 않습니다.',
+        missingApiKeyMessage(this.id),
       );
     }
 
     if (!model) {
-      throw new AiProviderError('missing-model', this.id, 'Claude 모델이 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
     }
 
     this.model = model;
@@ -95,7 +101,7 @@ export class ClaudeProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'Claude 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }
@@ -129,7 +135,7 @@ export class ClaudeProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        'Claude 텍스트 생성에 실패했습니다.',
+        generationFailedMessage(this.id),
         error,
       );
     }
