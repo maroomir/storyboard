@@ -16,6 +16,28 @@ export const pointOfViews = [
 
 export type PointOfView = (typeof pointOfViews)[number];
 
+// 이름이 쓰이는 자리가 둘이라 칸도 둘이다. `label` 은 아웃라인 본문처럼 «시점: » 뒤에 붙는 짧은
+// 이름이고, `optionLabel` 은 고르는 자리에서 혼자 서는 이름이다.
+export interface NarrativeChoiceLabels {
+  readonly label: string;
+  readonly optionLabel: string;
+}
+
+export const pointOfViewCatalog: Record<PointOfView, NarrativeChoiceLabels> = {
+  first: { label: '1인칭', optionLabel: '1인칭' },
+  'first-retrospective': {
+    label: '1인칭 회고',
+    optionLabel: '1인칭 회고 (결말을 아는 화자)',
+  },
+  second: { label: '2인칭', optionLabel: '2인칭' },
+  'third-limited': { label: '3인칭 제한적', optionLabel: '3인칭 제한적 시점' },
+  'third-omniscient': { label: '3인칭 전지적', optionLabel: '3인칭 전지적 시점' },
+};
+
+export const pointOfViewLabels: Record<PointOfView, string> = Object.fromEntries(
+  pointOfViews.map((pov) => [pov, pointOfViewCatalog[pov].label]),
+) as Record<PointOfView, string>;
+
 export const contractFieldKeys = ['genre', 'audience', 'pov', 'targetWordCount'] as const;
 
 export type ContractFieldKey = (typeof contractFieldKeys)[number];
@@ -88,12 +110,16 @@ export const compositionKinds = ['linear', 'omnibus', 'alternating-pov', 'frame'
 
 export type CompositionKind = (typeof compositionKinds)[number];
 
-export const compositionKindLabels: Record<CompositionKind, string> = {
-  linear: '선형',
-  omnibus: '옴니버스',
-  'alternating-pov': '시점 교차',
-  frame: '액자식',
+export const compositionCatalog: Record<CompositionKind, NarrativeChoiceLabels> = {
+  linear: { label: '선형', optionLabel: '선형 — 한 줄기로 이어지는 이야기' },
+  omnibus: { label: '옴니버스', optionLabel: '옴니버스 — 편마다 독립된 사건과 결말' },
+  'alternating-pov': { label: '시점 교차', optionLabel: '시점 교차 — 장마다 서술자가 바뀜' },
+  frame: { label: '액자식', optionLabel: '액자식 — 외화가 내화를 감쌈' },
 };
+
+export const compositionKindLabels: Record<CompositionKind, string> = Object.fromEntries(
+  compositionKinds.map((kind) => [kind, compositionCatalog[kind].label]),
+) as Record<CompositionKind, string>;
 
 // 연속성 줄기. 이야기 상태·장 요약·직전 씬 맥락은 스레드 안에서만 이어지고, 캐넌만 전역이다.
 export interface StoryThread {

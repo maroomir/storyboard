@@ -4,11 +4,10 @@ import { ZodError } from 'zod';
 
 import {
   chapterPlanSchema,
-  pointOfViewLabels,
   type ChapterPlan,
   type OutlineSynopsis,
 } from '#format/outline';
-import type { PointOfView } from '#format/project';
+import { pointOfViewLabels, type PointOfView } from '#format/project';
 
 export type ChapterPlanParseErrorCode = 'invalid-yaml' | 'invalid-chapter-plan-schema';
 

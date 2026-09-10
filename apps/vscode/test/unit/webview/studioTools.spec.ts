@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import {
+  isSpanRequiredTool,
+  studioAgentToolNames,
+  studioToolNamesByShape,
+} from '@storyboard/story-ai';
+
 import { findTool, isToolTarget, slashToken, toolCandidates } from '@webview/lib/studioTools';
 import type { StudioTarget } from '@webview/lib/types';
 
@@ -82,3 +88,29 @@ describe('findTool', () => {
     }
   });
 });
+
+// 도구 목록과 선택 필요 여부는 계약이 갖고, 이 파일은 명령어·설명만 갖는다. 계약에 도구가 늘었는데
+// 화면 항목을 빠뜨리면 슬래시 메뉴에서 조용히 사라지므로 여기서 막는다.
+describe('studio tool table against the contract', () => {
+  it('presents every agent tool the contract declares', () => {
+    for (const tool of studioAgentToolNames) {
+      expect(findTool(tool), `${tool} has no composer entry`).toBeDefined()
+    }
+  })
+
+  it('asks for a selection exactly where the contract requires a span', () => {
+    for (const tool of studioAgentToolNames) {
+      expect(findTool(tool)?.needsSelection, `${tool} selection rule`).toBe(isSpanRequiredTool(tool))
+    }
+  })
+
+  it('offers a draft tool on drafts and a card tool on cards', () => {
+    for (const tool of studioToolNamesByShape.draft) {
+      expect(findTool(tool)?.targets, `${tool} targets`).toContain('draft')
+    }
+
+    for (const tool of studioToolNamesByShape.entityCard) {
+      expect(findTool(tool)?.targets, `${tool} targets`).toContain('character')
+    }
+  })
+})

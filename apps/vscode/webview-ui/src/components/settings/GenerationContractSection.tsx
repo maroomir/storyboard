@@ -1,6 +1,17 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 
+import {
+  compositionCatalog,
+  compositionKinds,
+  contractFieldLabels,
+  pointOfViewCatalog,
+  pointOfViews,
+  type CompositionKind,
+  type ContractFieldKey,
+  type PointOfView,
+} from '@storyboard/story-engine/contracts';
+
 import { ListField } from '../editor/fields/ListField';
 import { SectionHeader } from '../ui/SectionHeader';
 
@@ -14,31 +25,19 @@ const sectionCardClass =
 
 const fieldGroupClass = 'flex max-w-md flex-col gap-1.5';
 
-const POV_OPTIONS = [
-  { id: 'first', label: '1인칭' },
-  { id: 'first-retrospective', label: '1인칭 회고 (결말을 아는 화자)' },
-  { id: 'second', label: '2인칭' },
-  { id: 'third-limited', label: '3인칭 제한적 시점' },
-  { id: 'third-omniscient', label: '3인칭 전지적 시점' },
-] as const;
+function contractFieldLabelFor(key: string): string {
+  return contractFieldLabels[key as ContractFieldKey] ?? key;
+}
 
-type PointOfView = (typeof POV_OPTIONS)[number]['id'];
+const POV_OPTIONS = pointOfViews.map((id) => ({
+  id,
+  label: pointOfViewCatalog[id].optionLabel,
+}));
 
-const COMPOSITION_OPTIONS = [
-  { id: 'linear', label: '선형 — 한 줄기로 이어지는 이야기' },
-  { id: 'omnibus', label: '옴니버스 — 편마다 독립된 사건과 결말' },
-  { id: 'alternating-pov', label: '시점 교차 — 장마다 서술자가 바뀜' },
-  { id: 'frame', label: '액자식 — 외화가 내화를 감쌈' },
-] as const;
-
-type CompositionKind = (typeof COMPOSITION_OPTIONS)[number]['id'];
-
-const CONTRACT_FIELD_LABELS: Record<string, string> = {
-  genre: '장르',
-  audience: '독자층',
-  pov: '시점',
-  targetWordCount: '목표 분량',
-};
+const COMPOSITION_OPTIONS = compositionKinds.map((id) => ({
+  id,
+  label: compositionCatalog[id].optionLabel,
+}));
 
 interface ContractThread {
   readonly id: string;
@@ -92,11 +91,11 @@ interface ContractDraft {
 }
 
 function isPointOfView(value: string): value is PointOfView {
-  return POV_OPTIONS.some((option) => option.id === value);
+  return (pointOfViews as readonly string[]).includes(value);
 }
 
 function isCompositionKind(value: string): value is CompositionKind {
-  return COMPOSITION_OPTIONS.some((option) => option.id === value);
+  return (compositionKinds as readonly string[]).includes(value);
 }
 
 function parseContractSnapshot(value: unknown): ContractSnapshot | undefined {
@@ -192,7 +191,7 @@ function ReadinessBanner({
       </div>
       {readiness.missing.length > 0 ? (
         <p className="m-0 text-xs text-sb-fg-muted">
-          누락: {readiness.missing.map((key) => CONTRACT_FIELD_LABELS[key] ?? key).join(', ')}
+          누락: {readiness.missing.map((key) => contractFieldLabelFor(key)).join(', ')}
         </p>
       ) : null}
       {readiness.warnings.map((warning, index) => (

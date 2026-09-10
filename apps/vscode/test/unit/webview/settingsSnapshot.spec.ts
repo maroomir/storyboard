@@ -84,14 +84,11 @@ describe("formatResolvedTaskAi", () => {
     expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("codex / codex model")
   })
 
-  // The webview bundle cannot import @storyboard/story-ai, so these lists are hand-mirrored. A new
-  // provider added to the engine and forgotten here would silently vanish from the settings panel.
-  describe("mirrors of the engine provider lists", () => {
-    it("lists exactly the engine's provider ids, in the same order", () => {
+  // 웹뷰는 이 목록을 직접 계약에서 읽으므로 사본 대조는 더 이상 의미가 없다. 대신 계약이 실제로
+  // 브라우저 번들에 닿는지와, 실행 명령이 사람이 아는 이름 그대로인지를 확인한다.
+  describe("provider lists read straight from the contract", () => {
+    it("reaches the settings panel with every provider the engine knows", () => {
       expect([...AI_PROVIDER_IDS]).toEqual([...aiProviderIds])
-    })
-
-    it("lists exactly the engine's CLI provider ids", () => {
       expect([...CLI_PROVIDER_IDS]).toEqual([...cliProviderIds])
     })
 
