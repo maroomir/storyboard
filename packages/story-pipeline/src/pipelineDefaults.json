@@ -1,0 +1,47 @@
+{
+  "section": {
+    "retryLimit": 2,
+    "minimumLengthRatio": 0.85,
+    "repeatedRunWindow": 100,
+    "repeatedRunLimit": 300
+  },
+  "skeleton": {
+    "lengthRatio": 0.3333333333333333,
+    "retryLimit": 1,
+    "minimumLengthRatio": 0.5
+  },
+  "dialogue": {
+    "preservedRatio": 0.85,
+    "splitLimit": 3,
+    "repeatedRunLimit": 3,
+    "minimumLineLength": 6,
+    "minimumQuotedLength": 4
+  },
+  "polish": {
+    "lengthLimitRatio": 2,
+    "retryLimit": 2
+  },
+  "padding": {
+    "paragraphRatio": 0.8,
+    "paragraphMinimumLength": 40
+  },
+  "voiceSamples": {
+    "limit": 4,
+    "minimumLength": 12,
+    "maximumLength": 60
+  },
+  "context": {
+    "condensedMaxChars": 1200,
+    "maxSceneBreakNewlines": 10
+  },
+  "violationWeights": {
+    "cast": 3,
+    "foreign-script": 3,
+    "dialogue-count": 2,
+    "lost-dialogue": 2,
+    "repeats-previous": 3,
+    "repetition": 3,
+    "too-long": 1,
+    "too-short": 1
+  }
+}
