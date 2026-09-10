@@ -35,7 +35,7 @@ jobs:
       - name: Compile
         run: npm run compile
 
-      # `compile` only covers the extension host. Bundling all three apps is what catches a change
+      # `compile` only covers the extension host. Bundling both apps is what catches a change
       # that typechecks but cannot be built.
       - name: Build
         run: npm run build

@@ -20,7 +20,7 @@ node -p "require('./package.json').version"
 The version lives in the **root** `package.json` and every app mirrors it. Agree the target version with the maintainer, edit the root `package.json`, then:
 
 ```bash
-npm run version:sync   # writes it into the three apps and the CLI's printed version
+npm run version:sync   # writes it into both apps and the CLI's printed version
 npm install            # refreshes the single root package-lock.json (never hand-edit it)
 node scripts/sync-version.mjs --check
 ```
@@ -41,7 +41,7 @@ npm run lint
 npm test
 ```
 
-Full bundle (all three apps) before packaging:
+Full bundle (both apps) before packaging:
 
 ```bash
 npm run build
