@@ -10,14 +10,6 @@ import {
 
 export const outlineVersion = '1.0.0';
 
-export const pointOfViewLabels: Record<PointOfView, string> = {
-  first: '1인칭',
-  'first-retrospective': '1인칭 회고',
-  second: '2인칭',
-  'third-limited': '3인칭 제한적',
-  'third-omniscient': '3인칭 전지적',
-};
-
 export interface OutlineSynopsis {
   readonly logline: string;
   readonly genrePromise: string;

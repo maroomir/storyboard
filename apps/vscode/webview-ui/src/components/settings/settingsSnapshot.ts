@@ -1,35 +1,24 @@
-export const AI_PROVIDER_IDS = [
-  'openai',
-  'claude',
-  'google',
-  'grok',
-  'ollama',
-  'claude-code',
-  'codex',
-  'gemini-cli',
-  'mock',
-] as const;
-export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
-// NOTE: Mirrors `cliProviderIds` in @storyboard/story-ai — the webview bundle cannot import it.
-export const CLI_PROVIDER_IDS = [
-  'claude-code',
-  'codex',
-  'gemini-cli',
-] as const satisfies readonly AiProviderId[];
+import {
+  aiProviderIds,
+  cliProviderIds,
+  getDefaultCliCommand,
+  isCliProvider as isCliProviderId,
+  requiresApiKey as providerRequiresApiKey,
+  type AiProviderId,
+} from '@storyboard/story-engine/contracts';
+
+export const AI_PROVIDER_IDS = aiProviderIds;
+export const CLI_PROVIDER_IDS = cliProviderIds;
+export type { AiProviderId };
 
 export function isCliProvider(providerId: AiProviderId): boolean {
-  return (CLI_PROVIDER_IDS as readonly AiProviderId[]).includes(providerId);
+  return isCliProviderId(providerId);
 }
-
-const DEFAULT_CLI_COMMANDS: Readonly<Record<(typeof CLI_PROVIDER_IDS)[number], string>> = {
-  'claude-code': 'claude',
-  codex: 'codex',
-  'gemini-cli': 'gemini',
-};
 
 export function defaultCliCommand(providerId: AiProviderId): string {
-  return (DEFAULT_CLI_COMMANDS as Partial<Record<AiProviderId, string>>)[providerId] ?? providerId;
+  return isCliProviderId(providerId) ? getDefaultCliCommand(providerId) : providerId;
 }
+
 export type AiTaskName = string;
 type AiTaskStatus = 'wired' | 'planned';
 
@@ -241,9 +230,8 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
   return candidate as SettingsReadSnapshot;
 }
 
-// NOTE: Mirrors `requiresApiKey` in @storyboard/story-ai — kept in sync by settingsSnapshot.spec.
 export function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
+  return providerRequiresApiKey(providerId);
 }
 
 export function hasTaskOverride(snapshot: SettingsReadSnapshot, taskName: AiTaskName): boolean {
