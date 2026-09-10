@@ -1,5 +1,6 @@
 import { describeNarration, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface DraftCritiqueInput {
   readonly body: string;
@@ -16,10 +17,7 @@ export interface DraftCritiqueInput {
 }
 
 export const DraftCritiquePrompt = {
-  config: {
-    temperature: 0.2,
-    maxTokens: 2000,
-  },
+  config: promptTuning('draftCritique'),
   build(input: DraftCritiqueInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

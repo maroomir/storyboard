@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface CardCandidateExtraction {
   readonly attributes: readonly { readonly key: string; readonly value: string }[];
@@ -10,10 +11,7 @@ export interface CardCandidateExtraction {
 }
 
 export const CardCandidateExtractionPrompt = {
-  config: {
-    temperature: 0.2,
-    maxTokens: 700,
-  },
+  config: promptTuning('cardCandidateExtraction'),
   build(
     body: string,
     characterName: string,

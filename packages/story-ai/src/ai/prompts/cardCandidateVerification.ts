@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const CardCandidateVerificationPrompt = {
-  config: {
-    temperature: 0,
-    maxTokens: 200,
-  },
+  config: promptTuning('cardCandidateVerification'),
   build(
     body: string,
     characterName: string,

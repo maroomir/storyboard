@@ -1,5 +1,6 @@
 import { sceneSeedSectionLabels } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export type SceneStructureFieldKey =
   | 'purpose'
@@ -30,10 +31,7 @@ const fieldGuides: Readonly<Record<SceneStructureFieldKey, string>> = {
 const listFields: readonly SceneStructureFieldKey[] = ['foreshadowing', 'neededCanon'];
 
 export const SceneStructurePrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 700,
-  },
+  config: promptTuning('sceneStructure'),
   build(input: SceneStructurePromptInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     const requested = input.missingFields.map(
       (key) => `- ${key} (${sceneSeedSectionLabels[key]}): ${fieldGuides[key]}`,

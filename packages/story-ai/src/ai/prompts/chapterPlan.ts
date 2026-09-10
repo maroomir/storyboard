@@ -4,13 +4,11 @@ import type {
   OutlineSynopsis,
 } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 import { briefToUserBlock } from './outlineSynopsis';
 
 export const ChapterPlanPrompt = {
-  config: {
-    temperature: 0.6,
-    maxTokens: 4000,
-  },
+  config: promptTuning('chapterPlan'),
   build(
     brief: OutlineBrief,
     synopsis: OutlineSynopsis,

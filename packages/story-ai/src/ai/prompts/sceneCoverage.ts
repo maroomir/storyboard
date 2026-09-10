@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const SceneCoveragePrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 2000,
-  },
+  config: promptTuning('sceneCoverage'),
   build(
     beats: readonly string[],
     draft: string,

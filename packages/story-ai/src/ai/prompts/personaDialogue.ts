@@ -8,6 +8,7 @@ import {
   type StyleDirective,
 } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 function buildSystemLines(
   variant: PromptVariantId,
@@ -59,10 +60,7 @@ function buildSystemLines(
 }
 
 export const PersonaDialoguePrompt = {
-  config: {
-    temperature: 0.8,
-    maxTokens: 2000,
-  },
+  config: promptTuning('personaDialogue'),
   build(
     situation: string,
     personas: ReadonlyMap<string, string>,

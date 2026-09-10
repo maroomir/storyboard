@@ -1,5 +1,6 @@
 import { sceneGroundingFieldLabels, type SceneGroundingFieldKey } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface SceneGroundingPromptInput {
   readonly sceneBody: string;
@@ -16,10 +17,7 @@ const fieldGuides: Readonly<Record<SceneGroundingFieldKey, string>> = {
 };
 
 export const SceneGroundingPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 600,
-  },
+  config: promptTuning('sceneGrounding'),
   build(input: SceneGroundingPromptInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     const requested = input.missingFields.map(
       (key) => `- ${key} (${sceneGroundingFieldLabels[key]}): ${fieldGuides[key]}`,

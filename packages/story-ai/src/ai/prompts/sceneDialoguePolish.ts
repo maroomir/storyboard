@@ -4,6 +4,7 @@ import {
   type StyleDirective,
 } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface SceneDialoguePolishInput {
   readonly skeleton: string;
@@ -17,10 +18,7 @@ export interface SceneDialoguePolishInput {
 // 말투만 손보는 단계를 둔다. 턴을 늘리는 것은 이 단계의 일이 아니다. 새 정보를 담을 수 없는 자리에
 // 턴만 더하면 앞 대사를 되풀이하는 빈 되묻기가 생기기 때문이다. 대화 밀도는 뼈대 단계가 책임진다.
 export const SceneDialoguePolishPrompt = {
-  config: {
-    temperature: 0.8,
-    maxTokens: 8000,
-  },
+  config: promptTuning('sceneDialoguePolish'),
   build(input: SceneDialoguePolishInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

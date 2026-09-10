@@ -1,12 +1,10 @@
 import type { Background } from '@storyboard/story-format';
 import { joinCardText } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const BackgroundDescriptionPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 400,
-  },
+  config: promptTuning('backgroundDescription'),
   build(
     background: Background,
     variant: PromptVariantId = 'generic',

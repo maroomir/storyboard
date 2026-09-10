@@ -2,6 +2,7 @@ import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-format';
 import { craftContractLines, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export type DraftAugmentScope = 'draft' | 'selection';
 
@@ -16,10 +17,7 @@ export interface DraftAugmentInput {
 }
 
 export const DraftAugmentPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 4000,
-  },
+  config: promptTuning('draftAugment'),
   build(
     input: DraftAugmentInput,
     variant: PromptVariantId = 'generic',

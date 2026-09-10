@@ -5,6 +5,7 @@ import {
   type StyleDirective,
 } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 const formatGuides: Readonly<Record<ProjectFormat, string>> = {
   novel:
@@ -16,10 +17,7 @@ const formatGuides: Readonly<Record<ProjectFormat, string>> = {
 };
 
 export const GenreFormattingPrompt = {
-  config: {
-    temperature: 0.5,
-    maxTokens: 12000,
-  },
+  config: promptTuning('genreFormatting'),
   build(
     dialogue: string,
     format: ProjectFormat,

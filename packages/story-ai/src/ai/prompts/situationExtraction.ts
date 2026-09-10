@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const SituationExtractionPrompt = {
-  config: {
-    temperature: 0.3,
-    maxTokens: 1000,
-  },
+  config: promptTuning('situationExtraction'),
   build(input: string, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

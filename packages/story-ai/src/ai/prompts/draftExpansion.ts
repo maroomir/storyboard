@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface DraftExpansionPromptContext {
   readonly activeCharacter?: string;
@@ -6,10 +7,7 @@ export interface DraftExpansionPromptContext {
 }
 
 export const DraftExpansionPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 2400,
-  },
+  config: promptTuning('draftExpansion'),
   build(
     selection: string,
     context: DraftExpansionPromptContext = {},
