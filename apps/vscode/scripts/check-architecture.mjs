@@ -132,10 +132,56 @@ function checkEngineSharedFloor(_report, failures) {
   }
 }
 
+// 값 하나를 한 파일만 갖게 만들어 두어도, 다음 사람이 급할 때 리터럴을 다시 적으면 원래대로
+// 돌아간다. 소유자가 정해진 문자열은 그 파일 밖에서 보이면 실패시킨다 — 테스트와 달리 이 검사는
+// «아직 아무도 쓰지 않는 새 사본»도 잡는다.
+const OWNED_LITERALS = [
+  { literal: "'.storyboard/project.json'", owner: 'packages/story-format/src/paths.ts' },
+  { literal: "'.sample.card'", owner: 'packages/story-format/src/sampleCard.ts' },
+  {
+    literal: "'storyboard.settings.open'",
+    owner: 'apps/vscode/src/presentation/commands/openSettings.ts',
+    // SECURITY: 웹뷰가 부를 수 있는 명령 목록은 익스텐션을 import 할 수 없는 패키지에 있어야 해서
+    // 이 id 는 그곳에도 적힌다. 둘이 어긋나는지는 manifest.spec 이 본다.
+    alsoAllowed: ['packages/story-engine/src/shared/messaging/commands.ts'],
+  },
+  { literal: "'storyboard.card'", owner: 'apps/vscode/src/contributionIds.ts' },
+  { literal: "'gpt-5.6-sol'", owner: 'packages/story-ai/src/contracts/providerCatalog.ts' },
+  { literal: "'http://localhost:11434'", owner: 'packages/story-ai/src/contracts/providerCatalog.ts' },
+];
+
+const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
+
+function checkOwnedLiterals(_report, failures) {
+  const roots = [SOURCE_ROOT, path.join(PACKAGE_ROOT, 'webview-ui', 'src')].concat(
+    SHARED_PACKAGES.map((name) => path.join(PACKAGES_ROOT, name, 'src')),
+    [path.join(REPO_ROOT, 'apps', 'cli', 'src')],
+  );
+
+  for (const root of roots) {
+    if (!fs.existsSync(root)) {
+      continue;
+    }
+
+    for (const filePath of collectSourceFiles(root)) {
+      const relative = path.relative(REPO_ROOT, filePath).replaceAll(path.sep, '/');
+      const text = fs.readFileSync(filePath, 'utf8');
+
+      for (const { literal, owner, alsoAllowed = [] } of OWNED_LITERALS) {
+        if (relative === owner || alsoAllowed.includes(relative) || !text.includes(literal)) {
+          continue;
+        }
+
+        failures.push(`${relative} repeats ${literal}, which ${owner} owns`);
+      }
+    }
+  }
+}
+
 runArchitectureCheck('Extension', SOURCE_ROOT, {
   rules: [refuseInfrastructureReachingOutward],
   importRules: [refuseWideExtensionEntry, requireAliasForEscapingImport(SOURCE_ROOT, '@/')],
   aliases: { '@/': '@/' },
-  extraChecks: [checkSharedPackages, checkEngineSharedFloor],
+  extraChecks: [checkSharedPackages, checkEngineSharedFloor, checkOwnedLiterals],
   extraSummary: () => (summary.length > 0 ? `, ${summary.join(', ')}` : ''),
 });

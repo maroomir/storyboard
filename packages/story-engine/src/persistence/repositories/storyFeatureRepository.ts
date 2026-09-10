@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { createHash } from 'node:crypto';
 
@@ -18,7 +18,7 @@ export class StoryFeatureRepository implements IStoryFeatureRepository {
   public async load(workspaceRoot: StoryUri): Promise<StoryFeatureSource> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     const [projectText, sceneFiles, cardFiles, canonText] = await Promise.all([
-      readRequiredText(this.fileSystem, paths.projectJson, '.storyboard/project.json'),
+      readRequiredText(this.fileSystem, paths.projectJson, STORYBOARD_RELATIVE_PATHS.projectJson),
       readTextFiles(
         this.fileSystem,
         paths.sceneDirectory,

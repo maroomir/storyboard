@@ -203,6 +203,25 @@ Code should be easy for another person to understand quickly and modify safely.
 
 For the full agent-facing checklist, read `.claude/rules/clean-code.md`.
 
+## Parameters and Tables
+
+One owner per value. A number, name, or list that two places must agree on lives in exactly one
+file; everything else derives from it.
+
+- Tuning numbers a person adjusts go in a JSON data file beside a zod schema that documents each
+  knob: `modelProfiles.json` (per model), `pipelineDefaults.json` (model-agnostic generation),
+  `promptTuning.json` (per prompt).
+- Identifiers and enums stay TypeScript `as const` so literal types survive — `providerCatalog`,
+  `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
+- Generation knobs layer as user setting → model profile → pipeline default. Setting defaults and
+  bounds belong to `storyboardSettingCatalog` alone.
+- The webview reads the real tables through `@storyboard/story-engine/contracts`, never a copy.
+- Where two homes cannot be merged (manifest versus code), a test must fail when they disagree.
+- `apps/vscode/scripts/check-architecture.mjs` fails the build when an owned literal appears outside
+  its owner file; add the pair to `OWNED_LITERALS` when you give a value a single home.
+
+For the full standard, read `.claude/rules/coding-standards.md`.
+
 ## Reference Project Usage
 
 When using `/Users/maroomir/Git/clien/cline` as a reference:

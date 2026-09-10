@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest"
 
+import { sidebarRunnableCommands } from "@storyboard/story-engine/contracts"
+
 import manifest from "../../../package.json"
 import {
   cardEditorViewType,
@@ -34,6 +36,14 @@ describe("package.json contributions", () => {
 
         expect(commandIds, `${menu} points at ${entry.command}`).toContain(entry.command)
       }
+    }
+  })
+
+  // SECURITY: 사이드바가 부를 수 있다고 스키마가 허락한 명령이 기여 목록에 없으면, 웹뷰 버튼이
+  // 아무 일도 하지 않거나 등록되지 않은 명령을 부른다.
+  it("contributes every command the sidebar is allowed to run", () => {
+    for (const command of sidebarRunnableCommands) {
+      expect(commandIds, `${command} is not contributed`).toContain(command)
     }
   })
 
