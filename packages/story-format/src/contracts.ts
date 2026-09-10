@@ -1,0 +1,7 @@
+// 브라우저 번들이 실을 수 있는 두 번째 진입점. 패키지 배럴은 nodeUri 처럼 node 전용 모듈도 함께
+// 내보내므로, 웹뷰가 배럴에서 값을 가져오면 번들러가 그 모듈까지 해석하려다 실패한다. 여기에는
+// 어느 런타임에서나 안전한 표와 스키마만 둔다.
+export * from './project';
+export * from './narrator';
+export * from './card';
+export * from './scene';

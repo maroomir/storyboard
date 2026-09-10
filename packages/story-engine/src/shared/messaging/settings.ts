@@ -5,7 +5,7 @@ import {
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   storyboardModelCatalog,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-ai/contracts';
 import { aiProviderStatusSchema } from './ai';
 import { aiTaskNameSchema, providerIdSchema } from './atoms';
 

@@ -14,6 +14,12 @@
       ],
       "@storyboard/story-pipeline": [
         "../story-pipeline/src/index.ts"
+      ],
+      "@storyboard/story-format/contracts": [
+        "../story-format/src/contracts.ts"
+      ],
+      "@storyboard/story-ai/contracts": [
+        "../story-ai/src/contracts.ts"
       ]
     }
   },

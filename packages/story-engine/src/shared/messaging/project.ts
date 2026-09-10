@@ -5,7 +5,7 @@ import {
   contractFieldKeys,
   pointOfViews,
   projectFormats,
-} from '@storyboard/story-format';
+} from '@storyboard/story-format/contracts';
 
 const generationContractReadinessSchema = z.object({
   isReady: z.boolean(),
