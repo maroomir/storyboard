@@ -55,7 +55,13 @@ export function aliasesFromTsconfig(tsconfigPath) {
   const root = path.resolve(directory, baseUrl);
   const aliases = {};
 
-  for (const [pattern, targets] of Object.entries(paths)) {
+  // NOTE: 별칭은 앞에서부터 접두사로 맞춰 보므로 짧은 키가 긴 키를 가린다. `@storyboard/story-ai`가
+  // 먼저 있으면 `@storyboard/story-ai/contracts`가 영영 걸리지 않는다. 긴 것부터 넣는다.
+  const orderedPaths = Object.entries(paths).sort(
+    ([left], [right]) => right.length - left.length,
+  );
+
+  for (const [pattern, targets] of orderedPaths) {
     const target = targets[0];
 
     if (!target) {

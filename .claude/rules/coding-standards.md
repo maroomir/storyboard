@@ -106,6 +106,12 @@ exactly one file; everything else derives from it.
   `apps/vscode/test/unit/presentation/manifest.spec.ts`.
 - **`apps/vscode/scripts/check-architecture.mjs` fails the build** when a literal appears outside the
   file that owns it. Add the pair to `OWNED_LITERALS` when you give a value a single home.
+- **Browser-safe entry points**: a package barrel may export node-only modules, so anything the
+  webview bundle reaches value-first must come from the narrow entry — `@storyboard/story-ai/contracts`,
+  `@storyboard/story-format/contracts`, `@storyboard/story-engine/contracts`. `story-engine/shared`
+  itself must import only those, never a package barrel. Declare a new entry in the package's
+  `exports` and in every consumer's tsconfig `paths`; `scripts/aliases.mjs` orders aliases
+  longest-first so `pkg/contracts` is not shadowed by `pkg`.
 
 ## Shared Package References
 

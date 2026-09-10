@@ -219,6 +219,8 @@ file; everything else derives from it.
 - Where two homes cannot be merged (manifest versus code), a test must fail when they disagree.
 - `apps/vscode/scripts/check-architecture.mjs` fails the build when an owned literal appears outside
   its owner file; add the pair to `OWNED_LITERALS` when you give a value a single home.
+- Anything the webview reaches value-first must come from a narrow entry (`@storyboard/*/contracts`),
+  never a package barrel: barrels export node-only modules and break the browser bundle.
 
 For the full standard, read `.claude/rules/coding-standards.md`.
 

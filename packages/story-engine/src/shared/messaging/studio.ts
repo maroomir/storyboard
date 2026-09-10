@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { studioAgentToolNames } from '@storyboard/story-ai';
+import { studioAgentToolNames } from '@storyboard/story-ai/contracts';
 
 import { uriStringSchema } from './atoms';
 

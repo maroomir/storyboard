@@ -12,13 +12,13 @@ export {
   storyboardModelCatalog,
   studioAgentToolNames,
   studioToolNamesByShape,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-ai/contracts';
 export type {
   AiProviderId,
   CliProviderId,
   ProviderModelOption,
   StudioAgentToolName,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-ai/contracts';
 export {
   compositionCatalog,
   compositionKindLabels,
@@ -28,10 +28,10 @@ export {
   pointOfViewCatalog,
   pointOfViewLabels,
   pointOfViews,
-} from '@storyboard/story-format';
+} from '@storyboard/story-format/contracts';
 export type {
   CompositionKind,
   ContractFieldKey,
   NarrativeChoiceLabels,
   PointOfView,
-} from '@storyboard/story-format';
+} from '@storyboard/story-format/contracts';
