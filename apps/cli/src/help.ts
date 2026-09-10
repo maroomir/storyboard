@@ -4,6 +4,8 @@ import {
   findCommandSpec,
   findFlagSpec,
   flagCatalog,
+  globalFlagNames,
+  sharedFlagNames,
   type CommandSpec,
 } from './commands/catalog';
 
@@ -67,17 +69,7 @@ export function renderUsage(version: string): string {
   sections.push(
     '',
     '공통 옵션',
-    ...[
-      'workspace',
-      'provider',
-      'model',
-      'fallback',
-      'json',
-      'quiet',
-      'verbose',
-      'help',
-      'version',
-    ].map(renderFlagLine),
+    ...globalFlagNames.map(renderFlagLine),
     '',
     '설정 파일  ~/.storyboard/config.json (공통) · <워크스페이스>/.storyboard/config.json (이 작품)',
     '키 파일    ~/.storyboard/secrets.json (0600)',
@@ -100,7 +92,7 @@ export function renderCommandHelp(verb: string): string | undefined {
     lines.push('', '옵션', ...spec.flags.map(renderFlagLine));
   }
 
-  lines.push('', '공통 옵션', ...['workspace', 'json', 'quiet', 'verbose'].map(renderFlagLine));
+  lines.push('', '공통 옵션', ...sharedFlagNames.map(renderFlagLine));
 
   if (spec.examples && spec.examples.length > 0) {
     lines.push('', '예시', ...spec.examples.map((example) => `  ${example}`));

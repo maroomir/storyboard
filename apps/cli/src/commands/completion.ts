@@ -21,7 +21,16 @@ import {
   pointOfViews,
 } from '@storyboard/story-format';
 
-import { commandCatalog, findCommandSpec, findFlagSpec, type CommandSpec } from './catalog';
+import {
+  commandCatalog,
+  completionShells,
+  findCommandSpec,
+  findFlagSpec,
+  globalFlagNames,
+  initLanguages,
+  type CommandSpec,
+} from './catalog';
+export { completionShells, type CompletionShell } from './catalog';
 
 export interface Completion {
   readonly text: string;
@@ -32,19 +41,6 @@ export interface CompletionContext {
   readonly cwd: string;
 }
 
-export const completionShells = ['zsh', 'bash', 'fish'] as const;
-export type CompletionShell = (typeof completionShells)[number];
-
-const commonFlags = [
-  'workspace',
-  'provider',
-  'model',
-  'fallback',
-  'json',
-  'quiet',
-  'verbose',
-  'help',
-];
 
 function unique(items: readonly Completion[]): Completion[] {
   const seen = new Set<string>();
@@ -95,7 +91,7 @@ function describeVerbWord(prefixWords: readonly string[]): Completion[] {
 }
 
 function flagCompletions(spec: CommandSpec | undefined): Completion[] {
-  const names = [...(spec?.flags ?? []), ...commonFlags];
+  const names = [...(spec?.flags ?? []), ...globalFlagNames.filter((name) => name !== 'version')];
   return unique(
     names.map((name) => {
       const flag = findFlagSpec(name);
@@ -143,7 +139,7 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
         description: narrativeTenseLabels[value],
       }));
     case 'language':
-      return ['ko', 'en', 'ja'].map((code) => ({ text: code, description: '' }));
+      return initLanguages.map((code) => ({ text: code, description: '' }));
     case 'workspace':
       // Directories are the shell's own business; returning nothing lets it fall back to paths.
       return [];

@@ -16,6 +16,43 @@ export type CommandGroup =
   | '원고'
   | '유지보수';
 
+// 어느 verb 에나 붙는 옵션. 최상위 도움말·verb 도움말·자동완성이 같은 목록을 봐야 «있다고 적혀
+// 있는데 완성되지 않는» 옵션이 생기지 않는다.
+export const globalFlagNames = [
+  'workspace',
+  'provider',
+  'model',
+  'fallback',
+  'json',
+  'quiet',
+  'verbose',
+  'help',
+  'version',
+] as const;
+
+// verb 도움말 아래에 늘 붙는 짧은 목록.
+export const sharedFlagNames = ['workspace', 'json', 'quiet', 'verbose'] as const;
+
+export const completionShells = ['zsh', 'bash', 'fish'] as const;
+
+export type CompletionShell = (typeof completionShells)[number];
+
+export const initLanguages = ['ko', 'en', 'ja'] as const;
+
+// `config show` 가 프로바이더마다 보여 주는 칸과, `config set` 이 실제로 쓸 수 있는 칸. 두 목록이
+// 다른 것은 뜻이 있어서다 — 보여 주기만 하는 값이 있다.
+export const displayedProviderKeys = [
+  'model',
+  'command',
+  'baseUrl',
+  'timeoutMs',
+  'reasoningEffort',
+] as const;
+
+export const settableProviderKeys = ['model', 'command', 'baseUrl'] as const;
+
+export type SettableProviderKey = (typeof settableProviderKeys)[number];
+
 export const commandGroups: readonly CommandGroup[] = [
   '시작하기',
   '기획',
@@ -79,7 +116,11 @@ export const flagCatalog: readonly FlagSpec[] = [
     name: 'repair',
     summary: 'init: 이미 있는 워크스페이스의 디렉터리·.gitignore·git 저장소만 보수합니다 (계약은 그대로)',
   },
-  { name: 'language', valueLabel: '<code>', summary: 'init 의 언어 (기본 ko)' },
+  {
+    name: 'language',
+    valueLabel: '<code>',
+    summary: `init 의 언어 (기본 ${initLanguages[0]})`,
+  },
   {
     name: 'from',
     valueLabel: '<path>',
@@ -237,7 +278,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'completion',
     group: '시작하기',
-    usage: 'completion <zsh|bash|fish>',
+    usage: `completion <${completionShells.join('|')}>`,
     summary: '셸 Tab 완성 스크립트를 출력합니다',
     examples: ['eval "$(storyboard completion zsh)"', 'storyboard completion fish | source'],
     needsWorkspace: false,

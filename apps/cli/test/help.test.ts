@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { commandCatalog, flagCatalog } from '../src/commands/catalog';
+import {
+  commandCatalog,
+  completionShells,
+  flagCatalog,
+  globalFlagNames,
+  initLanguages,
+} from '../src/commands/catalog';
+import { computeCompletions } from '../src/commands/completion';
 import { commands } from '../src/commands/index';
 import { renderCommandHelp, renderUnknownCommand, renderUsage, suggestVerbs } from '../src/help';
 
@@ -88,5 +95,31 @@ describe('suggestVerbs', () => {
     );
     expect(renderUnknownCommand('scen generate')).toContain('storyboard scene generate');
     expect(renderUnknownCommand('xyzzy')).toContain('storyboard --help');
+  });
+});
+
+// 옵션 목록·셸 목록·언어 목록이 도움말과 자동완성에 따로 적혀 있던 시절에는 «도움말에는 있는데
+// 완성되지 않는» 옵션이 생겼다. 이제 한 목록에서 나오는지 여기서 본다.
+describe('surfaces built from one list', () => {
+  it('prints every global flag in the top-level help', () => {
+    const usage = renderUsage();
+
+    for (const name of globalFlagNames) {
+      expect(usage, `--${name} is missing from the help`).toContain(`--${name}`);
+    }
+  });
+
+  it('names every completion shell in the verb usage line', () => {
+    const spec = commandCatalog.find((entry) => entry.verb === 'completion');
+
+    for (const shell of completionShells) {
+      expect(spec?.usage, `${shell} is missing from the usage line`).toContain(shell);
+    }
+  });
+
+  it('completes exactly the languages init accepts', () => {
+    const completions = computeCompletions(['init', '--language', ''], { cwd: process.cwd() });
+
+    expect(completions.map((entry) => entry.text)).toEqual([...initLanguages]);
   });
 });
