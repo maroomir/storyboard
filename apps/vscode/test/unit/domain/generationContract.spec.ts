@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { validateGenerationContract } from "@storyboard/story-engine"
 import type { ProjectSetting } from '@storyboard/story-format';
+import { compositionPresetDefaults } from "@storyboard/story-format"
 
 function buildSetting(overrides: Partial<ProjectSetting> = {}): ProjectSetting {
   return {
@@ -90,7 +91,11 @@ describe("composition warnings", () => {
       buildSetting({ composition: "omnibus", threads: { ep1: { title: "나룻배" } } })
     )
 
-    expect(readiness.warnings.some((warning) => warning.includes("편을 두 개 이상"))).toBe(true)
+    expect(
+      readiness.warnings.some((warning) =>
+        warning.includes(`편을 ${compositionPresetDefaults.minimumOmnibusEpisodes}개 이상`)
+      )
+    ).toBe(true)
   })
 
   it("warns when a frame wraps a thread that is not defined", () => {

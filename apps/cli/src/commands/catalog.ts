@@ -1,3 +1,12 @@
+import {
+  compositionKinds,
+  compositionPresetDefaults,
+  narrativeTenses,
+  narratorKnowledges,
+  narratorPersons,
+  pointOfViews,
+} from '@storyboard/story-format';
+
 export type CommandGroup =
   | '시작하기'
   | '기획'
@@ -81,27 +90,38 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'pov',
     valueLabel: '<value>',
-    summary:
-      '작품 계약: 시점 (first, first-retrospective, second, third-limited, third-omniscient)',
+    summary: `작품 계약: 시점 (${pointOfViews.join(', ')})`,
   },
   {
     name: 'composition',
     valueLabel: '<kind>',
-    summary: '작품 계약: 구성 (linear, omnibus, alternating-pov, frame)',
+    summary: `작품 계약: 구성 (${compositionKinds.join(', ')})`,
   },
-  { name: 'episodes', valueLabel: '<n>', summary: '옴니버스 구성이 만들 편 수 (기본 3)' },
+  {
+    name: 'episodes',
+    valueLabel: '<n>',
+    summary: `옴니버스 구성이 만들 편 수 (기본 ${compositionPresetDefaults.omnibusEpisodeCount})`,
+  },
   {
     name: 'pov-characters',
     valueLabel: '<ids>',
     summary: '시점 교차가 서술자 카드를 만들 인물 id (쉼표로 구분)',
   },
-  { name: 'person', valueLabel: '<value>', summary: 'narrator add: 인칭 (first, second, third)' },
+  {
+    name: 'person',
+    valueLabel: '<value>',
+    summary: `narrator add: 인칭 (${narratorPersons.join(', ')})`,
+  },
   {
     name: 'knowledge',
     valueLabel: '<value>',
-    summary: 'narrator add: 지식 경계 (witnessed, omniscient, retrospective)',
+    summary: `narrator add: 지식 경계 (${narratorKnowledges.join(', ')})`,
   },
-  { name: 'tense', valueLabel: '<value>', summary: 'narrator add: 시제 (past, present)' },
+  {
+    name: 'tense',
+    valueLabel: '<value>',
+    summary: `narrator add: 시제 (${narrativeTenses.join(', ')})`,
+  },
   { name: 'focal', valueLabel: '<id>', summary: 'narrator add: 초점 인물 카드 id' },
   { name: 'voice', valueLabel: '<text>', summary: 'narrator add: 서술자 목소리 (쉼표로 구분)' },
   { name: 'target-words', valueLabel: '<n>', summary: '작품 계약: 목표 분량(자)' },

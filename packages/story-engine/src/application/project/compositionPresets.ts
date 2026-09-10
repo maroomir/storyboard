@@ -1,4 +1,8 @@
-import { mainThreadId } from '@storyboard/story-format';
+import {
+  compositionPresetDefaults,
+  deriveNarrationFromPointOfView,
+  mainThreadId,
+} from '@storyboard/story-format';
 import type {
   CompositionKind,
   NarratorCard,
@@ -30,10 +34,6 @@ export interface CompositionPreset {
   readonly narratorCards: readonly NarratorCard[];
 }
 
-const defaultEpisodeCount = 3;
-const frameThreadId = 'frame';
-const innerThreadId = 'inner';
-
 export function buildCompositionPreset(request: CompositionPresetRequest): CompositionPreset {
   switch (request.composition) {
     case 'linear':
@@ -48,11 +48,15 @@ export function buildCompositionPreset(request: CompositionPresetRequest): Compo
 }
 
 function buildOmnibusSetting(request: CompositionPresetRequest): CompositionPresetSetting {
-  const episodeCount = Math.max(2, request.episodeCount ?? defaultEpisodeCount);
+  const episodeCount = Math.max(
+    compositionPresetDefaults.minimumOmnibusEpisodes,
+    request.episodeCount ?? compositionPresetDefaults.omnibusEpisodeCount,
+  );
   const threads: Record<string, StoryThread> = {};
 
   for (let episode = 1; episode <= episodeCount; episode += 1) {
-    threads[`ep${episode}`] = { title: `${episode}편` };
+    const threadId = `${compositionPresetDefaults.episodeThreadIdPrefix}${episode}`;
+    threads[threadId] = { title: `${episode}${compositionPresetDefaults.episodeTitleSuffix}` };
   }
 
   return { composition: 'omnibus', threads };
@@ -62,8 +66,13 @@ function buildFrameSetting(): CompositionPresetSetting {
   return {
     composition: 'frame',
     threads: {
-      [frameThreadId]: { title: '외화', wraps: [innerThreadId] },
-      [innerThreadId]: { title: '내화' },
+      [compositionPresetDefaults.frameThreadId]: {
+        title: compositionPresetDefaults.frameThreadTitle,
+        wraps: [compositionPresetDefaults.innerThreadId],
+      },
+      [compositionPresetDefaults.innerThreadId]: {
+        title: compositionPresetDefaults.innerThreadTitle,
+      },
     },
   };
 }
@@ -77,16 +86,21 @@ function buildAlternatingPovPreset(request: CompositionPresetRequest): Compositi
   return {
     setting: {
       composition: 'alternating-pov',
-      threads: { [mainThreadId]: { title: '본편' } },
+      threads: { [mainThreadId]: { title: compositionPresetDefaults.mainThreadTitle } },
       ...(firstNarrator ? { narration: { defaultNarrator: firstNarrator.id } } : {}),
     },
     narratorCards,
   };
 }
 
+// 시점에서 인칭·지식 경계를 뽑는 표는 story-format 이 갖는다. 여기서 다시 계산하던 시절에는
+// 2인칭이 3인칭 서술자로, 전지적 시점이 목격 서술자로 만들어졌다.
+const fallbackNarration = { person: 'third', knowledge: 'witnessed' } as const;
+
 function buildNarratorCard(characterId: string, pov: PointOfView | undefined): NarratorCard {
-  const person: NarratorPerson = pov === 'first' || pov === 'first-retrospective' ? 'first' : 'third';
-  const knowledge: NarratorKnowledge = pov === 'first-retrospective' ? 'retrospective' : 'witnessed';
+  const derived = pov ? deriveNarrationFromPointOfView(pov) : fallbackNarration;
+  const person: NarratorPerson = derived.person;
+  const knowledge: NarratorKnowledge = derived.knowledge;
 
   return {
     type: 'narrator',
