@@ -38,6 +38,11 @@ import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { readSceneCards } from './sceneCards';
+import {
+  displayedProviderKeys,
+  settableProviderKeys,
+  type SettableProviderKey,
+} from './catalog';
 
 const endOfText = '\u0003';
 const deleteChar = '\u007f';
@@ -771,14 +776,6 @@ export async function runDoctor({ container }: CommandContext): Promise<CommandO
   };
 }
 
-const configurableProviderKeys = [
-  'model',
-  'command',
-  'baseUrl',
-  'timeoutMs',
-  'reasoningEffort',
-] as const;
-
 function describeOrigin(configBridge: ConfigBridge, key: string): string {
   switch (configBridge.getValueOrigin(key)) {
     case 'workspace':
@@ -804,7 +801,7 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
 
   for (const providerId of aiProviderIds) {
     const runtime = configBridge.getProviderConfig(providerId);
-    for (const key of configurableProviderKeys) {
+    for (const key of displayedProviderKeys) {
       const value = runtime[key];
       if (value !== undefined) {
         const settingKey = `providers.${providerId}.${key}`;
@@ -919,11 +916,13 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return describeSaved(container, key, raw);
   }
 
-  const providerMatch = /^providers\.([a-z-]+)\.(model|command|baseUrl)$/.exec(key);
+  const providerMatch = new RegExp(
+    `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
+  ).exec(key);
 
   if (providerMatch) {
     const providerId = providerMatch[1] ?? '';
-    const field = providerMatch[2] as 'model' | 'command' | 'baseUrl';
+    const field = providerMatch[2] as SettableProviderKey;
 
     if (!isProviderId(providerId)) {
       return { ok: false, message: `알 수 없는 프로바이더: ${providerId}` };
@@ -938,7 +937,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return {
       ok: false,
       message:
-        `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: defaultProvider, providers.<id>.model|command|baseUrl, ` +
+        `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: defaultProvider, providers.<id>.${settableProviderKeys.join('|')}, ` +
         storyboardSettingCatalog.map((entry) => entry.key).join(', '),
     };
   }
