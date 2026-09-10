@@ -1,16 +1,12 @@
+import { critiqueCategories } from '@storyboard/story-ai';
 import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from '@storyboard/story-ai';
 
 export const reviewAgents = ['canon', 'persona', 'narrator', 'setting'] as const;
 
 export type ReviewAgent = (typeof reviewAgents)[number];
 
-export const reviewCategories = [
-  'voice',
-  'purpose',
-  'repetition',
-  'continuity',
-  'grammar',
-] as const;
+// 초안 비평 카테고리에 검수만 쓰는 두 가지를 더한 것이다. 비평 쪽이 늘면 여기도 함께 늘어야 한다.
+export const reviewCategories = [...critiqueCategories, 'continuity', 'grammar'] as const;
 
 export type ReviewCategory = (typeof reviewCategories)[number];
 
@@ -51,9 +47,6 @@ const categoryToAgent: Record<ReviewCategory, ReviewAgent | undefined> = {
   continuity: 'canon',
   grammar: undefined,
 };
-
-// 그룹 순서는 결정적으로 고정해 누적 재작성 결과를 재현 가능하게 한다.
-const agentOrder: readonly ReviewAgent[] = ['canon', 'persona', 'narrator', 'setting'];
 
 export function resolveAgent(category: ReviewCategory): ReviewAgent | undefined {
   return categoryToAgent[category];
@@ -110,7 +103,7 @@ export function routeReviewIssues(issues: readonly ReviewIssue[]): ReviewRouting
 
   const groups: RoutedIssueGroup[] = [];
 
-  for (const agent of agentOrder) {
+  for (const agent of reviewAgents) {
     const agentIssues = targeted.filter((issue) => issue.target.agent === agent);
     if (agentIssues.length === 0) {
       continue;

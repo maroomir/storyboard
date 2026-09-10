@@ -26,7 +26,7 @@ export interface ContinuityIssueLike {
   readonly sceneStem?: string;
 }
 
-const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
+export const critiqueCategoryLabels: Record<CritiqueCategory, string> = {
   voice: '캐릭터 보이스',
   purpose: '장면 목적',
   repetition: '반복',
@@ -68,23 +68,37 @@ export interface CritiqueScore {
   readonly issueCount: number;
 }
 
-const baseCritiqueScore = 100;
-
-const critiqueDeduction: Record<CritiqueCategory, Record<Severity, number>> = {
-  purpose: { high: 15, low: 5 },
-  voice: { high: 12, low: 4 },
-  repetition: { high: 8, low: 3 },
+// 검수 점수의 저울. 만점에서 문제마다 깎는다. 장면 목적이 가장 무겁고 반복이 가장 가볍다 —
+// 목적이 없는 씬은 다시 써야 하지만 반복은 다듬어 고칠 수 있기 때문이다.
+export const critiqueScoring: {
+  readonly baseScore: number;
+  readonly deduction: Record<CritiqueCategory, Record<Severity, number>>;
+} = {
+  baseScore: 100,
+  deduction: {
+    purpose: { high: 15, low: 5 },
+    voice: { high: 12, low: 4 },
+    repetition: { high: 8, low: 3 },
+  },
 };
 
 export function scoreCritique(critiqueIssues: readonly DraftCritiqueIssue[]): CritiqueScore {
-  const perCategory: Record<CritiqueCategory, number> = { voice: 0, purpose: 0, repetition: 0 };
+  const perCategory = Object.fromEntries(
+    critiqueCategories.map((category) => [category, 0]),
+  ) as Record<CritiqueCategory, number>;
 
   for (const issue of critiqueIssues) {
-    perCategory[issue.category] += critiqueDeduction[issue.category][issue.severity];
+    perCategory[issue.category] += critiqueScoring.deduction[issue.category][issue.severity];
   }
 
-  const totalDeduction = perCategory.voice + perCategory.purpose + perCategory.repetition;
-  const overall = Math.max(0, Math.min(baseCritiqueScore, baseCritiqueScore - totalDeduction));
+  const totalDeduction = critiqueCategories.reduce(
+    (total, category) => total + perCategory[category],
+    0,
+  );
+  const overall = Math.max(
+    0,
+    Math.min(critiqueScoring.baseScore, critiqueScoring.baseScore - totalDeduction),
+  );
 
   return { overall, perCategory, issueCount: critiqueIssues.length };
 }

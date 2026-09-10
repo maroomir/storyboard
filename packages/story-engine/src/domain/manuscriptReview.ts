@@ -1,9 +1,5 @@
-import { scoreCritique } from '@storyboard/story-ai';
-import type {
-  ContinuityIssueLike,
-  CritiqueCategory,
-  DraftCritiqueIssue,
-} from '@storyboard/story-ai';
+import { critiqueCategoryLabels, scoreCritique } from '@storyboard/story-ai';
+import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-ai';
 export interface ManuscriptReviewInput {
   readonly projectName: string;
   readonly sceneCount: number;
@@ -15,12 +11,6 @@ export interface ManuscriptReviewInput {
   // High-severity findings that named no draft, so no rewrite could answer them.
   readonly unroutedHighCount?: number;
 }
-
-const categoryLabels: Record<CritiqueCategory, string> = {
-  voice: '캐릭터 보이스',
-  purpose: '장면 목적',
-  repetition: '반복',
-};
 
 export function buildManuscriptReviewMarkdown(input: ManuscriptReviewInput): string {
   const highCount = input.critiqueIssues.filter((issue) => issue.severity === 'high').length;
@@ -98,7 +88,7 @@ function buildContinuitySection(issues: readonly ContinuityIssueLike[]): string 
 function buildCritiqueSection(issues: readonly DraftCritiqueIssue[]): string {
   const lines = issues.map((issue) => {
     const excerpt = issue.excerpt ? ` ("${issue.excerpt}")` : '';
-    return `- [${categoryLabels[issue.category]}/${issue.severity}] ${issue.comment}${excerpt}`;
+    return `- [${critiqueCategoryLabels[issue.category]}/${issue.severity}] ${issue.comment}${excerpt}`;
   });
   return `## 비평 (voice/purpose/repetition)\n\n${lines.length > 0 ? lines.join('\n') : '_없음_'}`;
 }
