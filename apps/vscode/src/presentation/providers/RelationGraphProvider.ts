@@ -9,6 +9,7 @@ import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
+import { STORYBOARD_GLOBS } from '@storyboard/story-format';
 
 const panelViewType = 'storyboard.relationGraph';
 
@@ -76,7 +77,7 @@ export class RelationGraphProvider implements IRelationGraphPanel {
     const storyboardRoot = await resolveStoryboardWorkspaceRoot();
     if (storyboardRoot) {
       const watcher = vscode.workspace.createFileSystemWatcher(
-        new vscode.RelativePattern(storyboardRoot, 'character/*.card'),
+        new vscode.RelativePattern(storyboardRoot, STORYBOARD_GLOBS.characterCards),
       );
       const scheduleRefresh = (): void => {
         void this.refreshWebview();

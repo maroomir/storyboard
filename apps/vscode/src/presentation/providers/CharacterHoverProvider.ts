@@ -3,7 +3,13 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths, isDraftMarkdownFile } from '@storyboard/story-engine';
 import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { detectCharactersInText, readCardFile } from '@storyboard/story-format';
+import {
+  STORYBOARD_FILE_EXTENSIONS,
+  STORYBOARD_GLOBS,
+  detectCharactersInText,
+  isIgnoredSampleCardFileName,
+  readCardFile,
+} from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 
@@ -60,7 +66,9 @@ async function listCharacterCardsInWorkspace(
   const cardNames = entries
     .filter(
       ([name, type]) =>
-        type === vscode.FileType.File && name.endsWith('.card') && name !== '.sample.card',
+        type === vscode.FileType.File &&
+        name.endsWith(STORYBOARD_FILE_EXTENSIONS.card) &&
+        !isIgnoredSampleCardFileName(name),
     )
     .map(([name]) => name);
 
@@ -137,6 +145,9 @@ export class CharacterHoverProvider implements vscode.HoverProvider {
 }
 
 export function registerCharacterHoverProvider(): vscode.Disposable {
-  const selector: vscode.DocumentSelector = { scheme: 'file', pattern: '**/draft/*.md' };
+  const selector: vscode.DocumentSelector = {
+    scheme: 'file',
+    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+  };
   return vscode.languages.registerHoverProvider(selector, new CharacterHoverProvider());
 }

@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
-import { CardParseError, parseCard } from '@storyboard/story-format';
+import { CardParseError, STORYBOARD_GLOBS, parseCard } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createDiagnostic } from './diagnosticsShared';
 
 const cardSource = 'storyboard-card';
-const cardGlobs = ['character/*.card', 'background/*.card'] as const;
+const cardGlobs = [STORYBOARD_GLOBS.characterCards, STORYBOARD_GLOBS.backgroundCards] as const;
 
 export interface CardDiagnosticSpan {
   readonly line: number;

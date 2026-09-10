@@ -15,6 +15,7 @@ import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { SidebarCardSummary, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
+import { STORYBOARD_GLOBS } from '@storyboard/story-format';
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;
@@ -199,13 +200,13 @@ export function registerSidebarCardsProviders(
     viewType: sidebarViewIds.characters,
     cardType: 'character',
     title: 'Characters',
-    cardGlob: 'character/*.card',
+    cardGlob: STORYBOARD_GLOBS.characterCards,
   };
   const backgroundsOptions: SidebarCardsProviderOptions = {
     viewType: sidebarViewIds.backgrounds,
     cardType: 'background',
     title: 'Backgrounds',
-    cardGlob: 'background/*.card',
+    cardGlob: STORYBOARD_GLOBS.backgroundCards,
   };
 
   const charactersProvider = new SidebarCardsProvider(
