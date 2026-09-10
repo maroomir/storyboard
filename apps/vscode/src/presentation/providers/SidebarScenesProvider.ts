@@ -15,9 +15,9 @@ import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { sidebarViewIds } from '@/contributionIds';
 
 const generateDraftCommand = 'storyboard.draft.generate';
-const scenesSidebarViewId = 'storyboard.scenesView';
 
 interface SidebarScenesInitialData {
   readonly title: string;
@@ -208,7 +208,7 @@ export function registerSidebarScenesProvider(
   const provider = new SidebarScenesProvider(context.extensionUri, dependencies);
 
   return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider(scenesSidebarViewId, provider),
+    vscode.window.registerWebviewViewProvider(sidebarViewIds.scenes, provider),
     provider,
   );
 }

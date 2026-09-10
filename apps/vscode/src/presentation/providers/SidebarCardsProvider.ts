@@ -14,8 +14,7 @@ import type { AiProviderRegistry, UsageSummaryByEntity } from '@storyboard/story
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { SidebarCardSummary, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
-
-const cardEditorViewType = 'storyboard.card';
+import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;
@@ -197,13 +196,13 @@ export function registerSidebarCardsProviders(
   dependencies: SidebarCardsProvidersDependencies,
 ): vscode.Disposable {
   const charactersOptions: SidebarCardsProviderOptions = {
-    viewType: 'storyboard.charactersView',
+    viewType: sidebarViewIds.characters,
     cardType: 'character',
     title: 'Characters',
     cardGlob: 'character/*.card',
   };
   const backgroundsOptions: SidebarCardsProviderOptions = {
-    viewType: 'storyboard.backgroundsView',
+    viewType: sidebarViewIds.backgrounds,
     cardType: 'background',
     title: 'Backgrounds',
     cardGlob: 'background/*.card',

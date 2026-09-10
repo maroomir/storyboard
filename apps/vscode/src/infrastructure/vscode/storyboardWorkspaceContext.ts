@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 
 import { anyStoryboardProjectInWorkspace } from './workspace';
-
-const STORYBOARD_WORKSPACE_READY_CONTEXT_KEY = 'storyboard.workspaceReady';
+import { workspaceReadyContextKey } from '@/contributionIds';
 
 export async function refreshStoryboardWorkspaceContext(): Promise<void> {
   const ready = await anyStoryboardProjectInWorkspace();
-  await vscode.commands.executeCommand('setContext', STORYBOARD_WORKSPACE_READY_CONTEXT_KEY, ready);
+  await vscode.commands.executeCommand('setContext', workspaceReadyContextKey, ready);
 }
 
 export function registerStoryboardWorkspaceContext(

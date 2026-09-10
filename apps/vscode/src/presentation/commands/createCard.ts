@@ -5,10 +5,10 @@ import { getTargetWorkspaceFolder } from '@/infrastructure/vscode/workspace';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import { cardIdPattern } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
+import { cardEditorViewType } from '@/contributionIds';
 
 const createCharacterCommand = 'storyboard.character.create';
 const createBackgroundCommand = 'storyboard.background.create';
-const cardEditorViewType = 'storyboard.card';
 export function registerCreateCardCommands(dependencies: {
   readonly createCardUseCase: CreateCardUseCase;
 }): vscode.Disposable {

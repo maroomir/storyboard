@@ -32,8 +32,7 @@ import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
-
-const cardEditorViewType = 'storyboard.card';
+import { cardEditorViewType } from '@/contributionIds';
 
 export interface CardCustomEditorDependencies {
   readonly aiGateway: AiGateway;

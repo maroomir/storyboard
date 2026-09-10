@@ -8,8 +8,8 @@ import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
+import { cardEditorViewType } from '@/contributionIds';
 
-const cardEditorViewType = 'storyboard.card';
 const panelViewType = 'storyboard.relationGraph';
 
 export interface RelationGraphPanelDependencies {
