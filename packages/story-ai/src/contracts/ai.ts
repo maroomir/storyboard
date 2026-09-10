@@ -1,26 +1,31 @@
-export const aiProviderIds = [
-  'openai',
-  'claude',
-  'google',
-  'grok',
-  'ollama',
-  'claude-code',
-  'codex',
-  'gemini-cli',
-  'mock',
-] as const;
+import { providerCatalog } from './providerCatalog';
 
-export type AiProviderId = (typeof aiProviderIds)[number];
+export type {
+  AiProviderId,
+  CliProviderId,
+  ModelPricePerMillion,
+  ProviderCatalogEntry,
+  ProviderModelEntry,
+  ProviderModelOption,
+  ProviderModelOptions,
+  ProviderTransport,
+} from './providerCatalog';
+export {
+  aiProviderIds,
+  cliProviderIds,
+  cliProviderDefaults,
+  getDefaultCliCommand,
+  getDefaultModelId,
+  getProviderDisplayName,
+  isModelInCatalogForProvider,
+  isRetiredModelId,
+  isUnpricedProvider,
+  providerCatalog,
+  storyboardModelCatalog,
+  storyboardModelPricing,
+} from './providerCatalog';
 
-// Subscription CLIs the engine drives through a spawned command instead of an HTTP client. They
-// share one config shape (`command`, `model`, `timeoutMs`) and the usage-limit fallback.
-export const cliProviderIds = [
-  'claude-code',
-  'codex',
-  'gemini-cli',
-] as const satisfies readonly AiProviderId[];
-
-export type CliProviderId = (typeof cliProviderIds)[number];
+import type { AiProviderId, CliProviderId } from './providerCatalog';
 
 export const aiTaskCatalog = [
   { name: 'sceneGrounding', label: '씬 사실 시트', status: 'wired' },
@@ -87,16 +92,15 @@ export interface UsageSummaryByEntity {
 }
 
 export function isAiProviderId(value: string): value is AiProviderId {
-  return aiProviderIds.includes(value as AiProviderId);
+  return Object.hasOwn(providerCatalog, value);
 }
 
 export function isCliProvider(providerId: AiProviderId): providerId is CliProviderId {
-  return (cliProviderIds as readonly AiProviderId[]).includes(providerId);
+  return providerCatalog[providerId].transport === 'cli';
 }
 
-// Who needs a key in ~/.storyboard/secrets.json. `mock` invents text, `ollama` is a local server,
-// and a CLI provider carries its own login — every other provider authenticates with a key. Every
-// host asks this one question the same way, so it lives here rather than in each app.
+// ~/.storyboard/secrets.json 에 키가 필요한 쪽. 호스트마다 같은 질문을 다르게 답하지 않도록
+// 카탈로그의 한 칸으로 판정한다.
 export function requiresApiKey(providerId: AiProviderId): boolean {
-  return providerId !== 'mock' && providerId !== 'ollama' && !isCliProvider(providerId);
+  return providerCatalog[providerId].requiresApiKey;
 }

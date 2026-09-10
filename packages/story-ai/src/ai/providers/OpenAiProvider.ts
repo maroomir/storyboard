@@ -10,6 +10,7 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
+import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
 interface OpenAiModelsLike {
   readonly list: () => Promise<unknown>;
@@ -53,7 +54,7 @@ interface OpenAiChatCompletionResponse {
 
 export class OpenAiProvider implements AiProvider {
   public readonly id: AiProviderId = 'openai';
-  public readonly displayName = 'OpenAI';
+  public readonly displayName = getProviderDisplayName('openai');
   private readonly client: OpenAiClientLike;
   private readonly model: string;
 

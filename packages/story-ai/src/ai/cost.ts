@@ -1,4 +1,4 @@
-import { type ModelPricePerMillion, storyboardModelPricing } from '#ai/contracts/pricing';
+import { type ModelPricePerMillion, storyboardModelPricing } from '#ai/contracts/providerCatalog';
 
 import type { AiGenerateResponse, AiProviderId, AiUsage } from '#ai/contracts/aiTypes';
 

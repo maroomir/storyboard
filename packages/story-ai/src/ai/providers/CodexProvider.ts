@@ -17,9 +17,8 @@ import {
   splitCliPrompt,
   truncateFailureMessage,
 } from './cliRunner';
+import { cliProviderDefaults, getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
-const connectionTimeoutMs = 15_000;
-const defaultGenerateTimeoutMs = 600_000;
 
 export interface CodexProviderOptions {
   readonly command: string | undefined;
@@ -31,7 +30,7 @@ export interface CodexProviderOptions {
 
 export class CodexProvider implements AiProvider {
   public readonly id: AiProviderId = 'codex';
-  public readonly displayName = 'Codex (CLI)';
+  public readonly displayName = getProviderDisplayName('codex');
   private readonly command: string;
   private readonly model: string;
   private readonly reasoningEffort: string | undefined;
@@ -57,7 +56,7 @@ export class CodexProvider implements AiProvider {
     this.command = command;
     this.model = model;
     this.reasoningEffort = options.reasoningEffort?.trim() || undefined;
-    this.generateTimeoutMs = options.generateTimeoutMs ?? defaultGenerateTimeoutMs;
+    this.generateTimeoutMs = options.generateTimeoutMs ?? cliProviderDefaults.generateTimeoutMs;
     this.run = options.createRunner?.() ?? createDefaultCliRunner();
   }
 
@@ -68,7 +67,7 @@ export class CodexProvider implements AiProvider {
       const result = await this.run({
         command: this.command,
         args: ['login', 'status'],
-        timeoutMs: connectionTimeoutMs,
+        timeoutMs: cliProviderDefaults.connectionCheckTimeoutMs,
       });
       if (result.exitCode !== 0) {
         throw new AiProviderError(

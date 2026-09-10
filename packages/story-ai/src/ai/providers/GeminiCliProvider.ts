@@ -14,10 +14,10 @@ import {
   createDefaultCliRunner,
   isCommandNotFound,
   splitCliPrompt,
+  truncateFailureMessage,
 } from './cliRunner';
+import { cliProviderDefaults, getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
-const connectionTimeoutMs = 15_000;
-const defaultGenerateTimeoutMs = 600_000;
 // gemini-cli exits 41 (FatalAuthenticationError) when no cached login or key env var is usable;
 // a cached login the service no longer accepts exits 55 with "Error authenticating: …" instead
 // (gemini-cli 0.58.0, IneligibleTierError), so the stderr prefix is checked too.
@@ -52,7 +52,7 @@ interface GeminiCliJsonResult {
 
 export class GeminiCliProvider implements AiProvider {
   public readonly id: AiProviderId = 'gemini-cli';
-  public readonly displayName = 'Gemini CLI';
+  public readonly displayName = getProviderDisplayName('gemini-cli');
   private readonly command: string;
   private readonly model: string;
   private readonly generateTimeoutMs: number;
@@ -80,7 +80,7 @@ export class GeminiCliProvider implements AiProvider {
 
     this.command = command;
     this.model = model;
-    this.generateTimeoutMs = options.generateTimeoutMs ?? defaultGenerateTimeoutMs;
+    this.generateTimeoutMs = options.generateTimeoutMs ?? cliProviderDefaults.generateTimeoutMs;
     this.run = options.createRunner?.() ?? createDefaultCliRunner();
   }
 
@@ -91,7 +91,7 @@ export class GeminiCliProvider implements AiProvider {
       const result = await this.run({
         command: this.command,
         args: ['--version'],
-        timeoutMs: connectionTimeoutMs,
+        timeoutMs: cliProviderDefaults.connectionCheckTimeoutMs,
       });
       if (result.exitCode !== 0) {
         throw new AiProviderError(
@@ -246,9 +246,4 @@ function extractGeminiCliFailureMessage(
 
   const stderrMessage = result.stderr.trim();
   return stderrMessage.length > 0 ? truncateFailureMessage(stderrMessage) : undefined;
-}
-
-function truncateFailureMessage(message: string): string {
-  const maxLength = 1_000;
-  return message.length > maxLength ? `${message.slice(0, maxLength - 3)}...` : message;
 }

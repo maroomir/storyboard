@@ -7,12 +7,13 @@ import {
   type AiTaskName,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
+import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 
 const mockCatalogModelId = 'mock-default';
 
 export class MockAiProvider implements AiProvider {
   public readonly id: AiProviderId = 'mock';
-  public readonly displayName = 'Mock AI';
+  public readonly displayName = getProviderDisplayName('mock');
 
   public async checkConnection(): Promise<boolean> {
     return true;

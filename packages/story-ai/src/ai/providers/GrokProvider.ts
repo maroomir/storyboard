@@ -9,10 +9,11 @@ import {
   type AiProviderId,
 } from '#ai/contracts/aiTypes';
 import { type OpenAiClientLike } from './OpenAiProvider';
+import { getProviderDisplayName, providerCatalog } from '#ai/contracts/providerCatalog';
 
 // xAI serves Grok through an OpenAI-compatible chat completions endpoint, so the client shape is
 // the OpenAI one; only the base URL and the key differ.
-export const grokApiBaseUrl = 'https://api.x.ai/v1';
+export const grokApiBaseUrl = providerCatalog.grok.defaultBaseUrl;
 
 export interface GrokProviderOptions {
   readonly apiKey: string | undefined;
@@ -22,7 +23,7 @@ export interface GrokProviderOptions {
 
 export class GrokProvider implements AiProvider {
   public readonly id: AiProviderId = 'grok';
-  public readonly displayName = 'xAI Grok';
+  public readonly displayName = getProviderDisplayName('grok');
   private readonly client: OpenAiClientLike;
   private readonly model: string;
 
