@@ -373,7 +373,7 @@ async function migrateLegacySettings(
       `VSCode 설정 ${result.movedSettings.length}개와 API 키 ${result.movedApiKeys.length}개를 ${homeStores.paths.home} 으로 옮겼습니다.`,
     );
     const choice = await vscode.window.showInformationMessage(
-      `Storyboard 설정을 ${homeStores.paths.configFile} 로 옮겼습니다. 이제 세 앱이 같은 설정을 씁니다.`,
+      `Storyboard 설정을 ${homeStores.paths.configFile} 로 옮겼습니다. 이제 확장과 CLI 가 같은 설정을 씁니다.`,
       '파일 열기',
     );
 

@@ -26,7 +26,7 @@ export function expandHome(path: string): string {
 }
 
 // STORYBOARD_HOME moves the whole directory, which is what tests and alternate installs use. The
-// three apps share this directory: one config, one secrets file, one place for usage and caches.
+// apps share this directory: one config, one secrets file, one place for usage and caches.
 export function resolveStoryboardHome(env: NodeJS.ProcessEnv = process.env): string {
   const override = env.STORYBOARD_HOME?.trim();
 
