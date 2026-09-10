@@ -2,7 +2,7 @@
   "name": "storyboard-vscode",
   "displayName": "%displayName%",
   "description": "%description%",
-  "version": "0.8.9",
+  "version": "0.8.10",
   "publisher": "maroomir",
   "license": "Apache-2.0",
   "repository": {

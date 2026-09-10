@@ -10,21 +10,34 @@ after the first public release.
 
 ## [Unreleased]
 
-## [0.8.9] - 2026-09-07
+## [0.8.10] - 2026-09-10
 
 ### Added
 
 - **The story-state ledger can be resealed.** When a card changed but the draft it produced still stands, `storyboard state reseal [<scene range>]` and the extension's **Storyboard: Reseal Story State** record today's cards as the ledger's basis. Until now the only way to clear a stale mark was to regenerate the scene, so merely filling in beats dropped everything that scene had established from the prompt. Resealing cannot be undone, so the extension names the scenes and asks first.
 - **`doctor` checks the model against the scene targets.** When a workspace's largest scene target is one the configured model was measured to fall short of, it says so with the measured figure, instead of letting you find out after a long generation run. Combinations that were never measured produce no advice.
-- **Terminal commands for `storyboard-bot`.** `storyboard-bot doctor` checks the config file, workspace, git and providers, and `--help` / `--version` print usage and version. Unlike Telegram's `/doctor` it answers before the bot can start, so a missing or broken config explains itself in the terminal.
-- **Canon validity is measured on a story time axis.** Put an integer `storyTime` on a scene card and validity ranges are measured on that axis, so a flashback, frame story, or time jump no longer means "a character who died in chapter 20 is still dead in a chapter 25 flashback." Scenes without one keep using the scene ordinal, and if no fact uses the time axis the scenes are not read at all. Reveal timing (`revealFrom`) stays on the scene ordinal — it is about the order the reader read things — and now takes a `{ scene, knownBy }` form so "A knows, B does not" is expressible: characters who do not know are marked `(not yet known: Jihun)`, preserving dramatic irony.
-- **The section expansion output limit is configurable.** Lowering `draft.sectionOutputLimit` (default 7,000) splits the work into more sections, which means more calls and more length. When the target is below the limit, expansion runs only once and length stays stuck near the skeleton's — and the prompt's character-count instruction proved ineffective in practice, leaving nothing to adjust.
 
 ### Changed
 
 - **Generation parameters are now measured per model.** How many sections a scene is written in is optimal at different values for different models. Opus writes a 15,000-character scene best in **one** call (101% of target), so its section limit is 15,000 — more output than the previous three-call setup at 92%, for a third of the cost. The share of the target budgeted to the skeleton is optimal in opposite directions too: Sonnet needs 0.8 (44% → 61% of target) while Opus overshoots to 137% at that value and keeps the previous 1/3. Models that were never measured keep the previous defaults, and `config show` labels a measured default as such. A value you set yourself always wins.
 - **`claude-code` now defaults to Opus.** Measured on a 15,000-character scene target, Sonnet reached 47% of the target and Opus 92%. A default that cannot reach the target sends people looking for a pipeline bug, so the default is Opus. Switch back with `storyboard config set providers.claude-code.model sonnet` or from the settings panel.
 - **Settings are written where git would write them.** `storyboard config set` and `storyboard setup` write the workspace's `.storyboard/config.json` when run inside a workspace; `--global` writes the shared file, and outside a workspace they refuse rather than guess. They previously always wrote the shared file, so a per-project setting had to be hand-written. API keys are unaffected: still the one 0600 home file.
+
+### Fixed
+
+- **Drafts got shorter when the scene card had beats.** With beats present, the skeleton stage never saw the card's purpose, conflict, twist or emotional shift: the filter meant to keep craft blocks out of the event material dropped them entirely. Those blocks now reach the skeleton as a separate "scene design" section, kept apart from the event material. Measured (sonnet, 3,000-char target) the skeleton grew 743 → 1,900 chars and the draft 1,636 → 2,928 (98% of target), and the gap between having beats and not having them fell from 37% to 0.4%. Beat coverage was unchanged.
+- **`doctor` pointed at a command that does not exist.** A stale ledger told you to run `storyboard draft generate`, which fails as an unknown command. It now names `storyboard scene generate --all`, which actually clears it.
+
+## [0.8.9] - 2026-09-07
+
+### Added
+
+- **Terminal commands for `storyboard-bot`.** `storyboard-bot doctor` checks the config file, workspace, git and providers, and `--help` / `--version` print usage and version. Unlike Telegram's `/doctor` it answers before the bot can start, so a missing or broken config explains itself in the terminal.
+- **Canon validity is measured on a story time axis.** Put an integer `storyTime` on a scene card and validity ranges are measured on that axis, so a flashback, frame story, or time jump no longer means "a character who died in chapter 20 is still dead in a chapter 25 flashback." Scenes without one keep using the scene ordinal, and if no fact uses the time axis the scenes are not read at all. Reveal timing (`revealFrom`) stays on the scene ordinal — it is about the order the reader read things — and now takes a `{ scene, knownBy }` form so "A knows, B does not" is expressible: characters who do not know are marked `(not yet known: Jihun)`, preserving dramatic irony.
+- **The section expansion output limit is configurable.** Lowering `draft.sectionOutputLimit` (default 7,000) splits the work into more sections, which means more calls and more length. When the target is below the limit, expansion runs only once and length stays stuck near the skeleton's — and the prompt's character-count instruction proved ineffective in practice, leaving nothing to adjust.
+
+### Changed
+
 - **Unknown arguments are refused.** A mistyped command such as `storyboard-bot init` used to be ignored and the bot started anyway, which made a typo look like a configuration failure. It now prints usage and exits 1.
 - **A missing config reads as onboarding, not an error.** A first run is not a fault, so it points at `storyboard-bot setup`. A config file that exists but is broken still logs an ERROR as before.
 - **Final review now runs one chapter at a time.** It used to put the whole manuscript in a single call, so at two or three volumes the model's attention thinned toward the end and contradictions in the middle went essentially undetected. Each chapter now gets its own continuity and critique pair, carrying the preceding chapters' summaries so contradictions across chapter boundaries stay visible. It no longer depends on a long-context model, so review quality survives a change of provider.
@@ -36,11 +49,6 @@ after the first public release.
 - **Splitting a long line into several sentences is no longer mistaken for losing it.** Comparing each fragment against the original meant a split line fell under the threshold and was flagged as missing, burning two retries and leaving a warning on the draft. Consecutive fragments are now compared joined as well.
 - **Editing an earlier chapter marks its summary stale.** Nothing recorded which draft a summary came from, so rewriting an earlier chapter left the summary frozen on the old text and the discarded version's plot kept flowing into later chapters' prompts. A stale chapter is not deleted, only excluded from the prompt, and generation warnings plus `doctor` name the chapters to re-summarise.
 - **Rewriting an early scene no longer leaks information from later ones.** Character and background memory was reused on the card hash alone, so memory that had evolved through scene 30 was used verbatim while rewriting scene 5. Memory updated after the scene being written is now rebuilt — closing an asymmetry where the ledger had rewind but card memory did not.
-
-### Fixed
-
-- **Drafts got shorter when the scene card had beats.** With beats present, the skeleton stage never saw the card's purpose, conflict, twist or emotional shift: the filter meant to keep craft blocks out of the event material dropped them entirely. Those blocks now reach the skeleton as a separate "scene design" section, kept apart from the event material. Measured (sonnet, 3,000-char target) the skeleton grew 743 → 1,900 chars and the draft 1,636 → 2,928 (98% of target), and the gap between having beats and not having them fell from 37% to 0.4%. Beat coverage was unchanged.
-- **`doctor` pointed at a command that does not exist.** A stale ledger told you to run `storyboard draft generate`, which fails as an unknown command. It now names `storyboard scene generate --all`, which actually clears it.
 
 ### Removed
 
