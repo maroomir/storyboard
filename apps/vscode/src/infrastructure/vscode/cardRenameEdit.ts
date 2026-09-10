@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 
 import {
-  cardIdPattern,
   CardParseError,
+  STORYBOARD_GLOBS,
+  cardIdPattern,
   parseCard,
   rewriteCardIdReferences,
   serializeCard,
@@ -165,7 +166,7 @@ async function appendCharacterReferenceUpdates(
   newUri: vscode.Uri,
 ): Promise<void> {
   const characterUris = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(candidate.workspaceRoot, 'character/*.card'),
+    new vscode.RelativePattern(candidate.workspaceRoot, STORYBOARD_GLOBS.characterCards),
   );
 
   for (const cardUri of characterUris) {
@@ -177,7 +178,7 @@ async function appendCharacterReferenceUpdates(
   }
 
   const backgroundUris = await vscode.workspace.findFiles(
-    new vscode.RelativePattern(candidate.workspaceRoot, 'background/*.card'),
+    new vscode.RelativePattern(candidate.workspaceRoot, STORYBOARD_GLOBS.backgroundCards),
   );
 
   for (const cardUri of backgroundUris) {

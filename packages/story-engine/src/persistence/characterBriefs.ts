@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { STORYBOARD_FILE_EXTENSIONS, isIgnoredSampleCardFileName, joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { readCardFile } from '@storyboard/story-format';
 import type { OutlineCharacterBrief } from '@storyboard/story-format';
@@ -16,7 +16,11 @@ export async function listCharacterBriefs(
   const briefs: OutlineCharacterBrief[] = [];
 
   for (const [name, fileType] of entries) {
-    if (fileType.type !== 'file' || !name.endsWith('.card') || name === '.sample.card') {
+    if (
+      fileType.type !== 'file' ||
+      !name.endsWith(STORYBOARD_FILE_EXTENSIONS.card) ||
+      isIgnoredSampleCardFileName(name)
+    ) {
       continue;
     }
 

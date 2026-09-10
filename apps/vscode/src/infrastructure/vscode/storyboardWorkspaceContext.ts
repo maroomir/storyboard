@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 import { anyStoryboardProjectInWorkspace } from './workspace';
 import { workspaceReadyContextKey } from '@/contributionIds';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
 export async function refreshStoryboardWorkspaceContext(): Promise<void> {
   const ready = await anyStoryboardProjectInWorkspace();
@@ -18,7 +19,7 @@ export function registerStoryboardWorkspaceContext(
     const inner: vscode.Disposable[] = [];
 
     for (const folder of vscode.workspace.workspaceFolders ?? []) {
-      const pattern = new vscode.RelativePattern(folder, '.storyboard/project.json');
+      const pattern = new vscode.RelativePattern(folder, STORYBOARD_RELATIVE_PATHS.projectJson);
       const watcher = vscode.workspace.createFileSystemWatcher(pattern);
       inner.push(watcher);
 

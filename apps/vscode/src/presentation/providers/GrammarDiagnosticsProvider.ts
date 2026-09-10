@@ -5,7 +5,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-format';
+import { STORYBOARD_GLOBS, parseDraft } from '@storyboard/story-format';
 import { LatestRequestGuard } from './latestRequestGuard';
 import type { ConfigBridge, GrammarIssue } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
@@ -202,7 +202,10 @@ export function registerGrammarDiagnosticsProvider(
   dependencies: RegisterGrammarDiagnosticsProviderDependencies,
 ): vscode.Disposable {
   const controller = new GrammarDiagnosticsController(dependencies);
-  const selector: vscode.DocumentSelector = { scheme: 'file', pattern: '**/draft/*.md' };
+  const selector: vscode.DocumentSelector = {
+    scheme: 'file',
+    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+  };
 
   const commandRegistration = vscode.commands.registerCommand(
     grammarCheckCommand,

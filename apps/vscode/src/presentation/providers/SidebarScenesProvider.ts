@@ -16,6 +16,7 @@ import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
+import { STORYBOARD_GLOBS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
 const generateDraftCommand = 'storyboard.draft.generate';
 
@@ -126,13 +127,13 @@ export class SidebarScenesProvider implements vscode.WebviewViewProvider, vscode
 
   private registerWatchers(workspaceRoot: vscode.Uri): void {
     const sceneWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(workspaceRoot, 'scene/*.card'),
+      new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.sceneCards),
     );
     const draftWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(workspaceRoot, 'draft/**/*.md'),
+      new vscode.RelativePattern(workspaceRoot, STORYBOARD_GLOBS.draftMarkdown),
     );
     const projectWatcher = vscode.workspace.createFileSystemWatcher(
-      new vscode.RelativePattern(workspaceRoot, '.storyboard/project.json'),
+      new vscode.RelativePattern(workspaceRoot, STORYBOARD_RELATIVE_PATHS.projectJson),
     );
 
     const refresh = (): void => {

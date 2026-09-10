@@ -27,6 +27,7 @@ import {
 } from './completion';
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
 // 설정 파일을 쓰는 verb 는 이 둘뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
 const configWritingVerbs = new Set(['setup', 'config set']);
@@ -203,7 +204,7 @@ export async function dispatch(
   const workspacePath = resolve(deps.cwd, flagString(args.flags, 'workspace') ?? '.');
   const spec = findCommandSpec(verb);
   const needsWorkspace = spec?.needsWorkspace !== false;
-  const isWorkspace = existsSync(join(workspacePath, '.storyboard', 'project.json'));
+  const isWorkspace = existsSync(join(workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson));
 
   // NOTE: git 과 같은 규칙 — 설정은 지금 있는 작품에 저장하고, 모든 작품에 걸려면 --global 을
   // 명시한다. 작품 밖에서 플래그 없이 부르면 어디에 쓰는지 모호하므로 거부한다.

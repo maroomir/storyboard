@@ -11,6 +11,7 @@ import {
 } from '@storyboard/story-config';
 
 import { StoryboardTui, type TuiHeaderInfo } from './app';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
 
 export interface RunTuiOptions {
   readonly version: string;
@@ -20,7 +21,7 @@ export interface RunTuiOptions {
 // The header answers the two questions a person has before typing anything: where am I, and
 // which AI will answer. Both come from the same files the one-shot commands read.
 export function describeHeader(cwd: string): TuiHeaderInfo {
-  const isWorkspace = existsSync(join(cwd, '.storyboard', 'project.json'));
+  const isWorkspace = existsSync(join(cwd, STORYBOARD_RELATIVE_PATHS.projectJson));
   const home = resolveStoryboardHomePaths();
   const configBridge = new ConfigBridge({
     getConfiguration: () =>

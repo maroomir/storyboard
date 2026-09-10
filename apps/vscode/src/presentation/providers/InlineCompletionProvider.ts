@@ -7,7 +7,12 @@ import {
   sceneFilePath,
   sceneContextPaths,
 } from '@storyboard/story-engine';
-import { buildSceneContext, parseDraft, readSceneFile } from '@storyboard/story-format';
+import {
+  STORYBOARD_GLOBS,
+  buildSceneContext,
+  parseDraft,
+  readSceneFile,
+} from '@storyboard/story-format';
 import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
 import {
   sceneContextFileSystem,
@@ -261,7 +266,10 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
 export function registerInlineCompletionProvider(
   dependencies: RegisterInlineCompletionProviderDependencies,
 ): vscode.Disposable {
-  const selector: vscode.DocumentSelector = { scheme: 'file', pattern: '**/draft/*.md' };
+  const selector: vscode.DocumentSelector = {
+    scheme: 'file',
+    pattern: STORYBOARD_GLOBS.anyDraftMarkdown,
+  };
   return vscode.languages.registerInlineCompletionItemProvider(
     selector,
     new DraftInlineCompletionProvider(dependencies),
