@@ -28,8 +28,7 @@ import { createStudioProposalRpcHandlers } from '@/presentation/messaging/studio
 import { createStudioSessionRpcHandlers } from '@/presentation/messaging/studioSessionRpcHandlers';
 import { computeStudioTarget, resolveActiveStudioFocus } from './studioTarget';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
-
-const studioSidebarViewId = 'storyboard.studioView';
+import { sidebarViewIds } from '@/contributionIds';
 
 interface SidebarStudioInitialData {
   readonly title: string;
@@ -213,7 +212,7 @@ export function registerSidebarStudioProvider(
   );
 
   return vscode.Disposable.from(
-    vscode.window.registerWebviewViewProvider(studioSidebarViewId, provider),
+    vscode.window.registerWebviewViewProvider(sidebarViewIds.studio, provider),
     provider,
     toolDiagnostics,
   );
