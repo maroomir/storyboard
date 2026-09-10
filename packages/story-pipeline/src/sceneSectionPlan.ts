@@ -1,9 +1,13 @@
 import { characterMatchTokens } from '@storyboard/story-format';
 import type { CharacterCard } from '@storyboard/story-format';
 import { findForeignScriptSpans } from '@storyboard/story-format';
+import { integerSettingDefault } from '@storyboard/story-ai';
+
+import { pipelineDefaults } from './pipelineDefaults';
 
 // 한 번의 살붙임 호출이 낼 수 있는 최대 분량. 출력 한도에 걸려 뒷부분이 잘리는 것을 막는다.
-export const SECTION_OUTPUT_LIMIT = 7000;
+// 창작자가 고칠 수 있는 값이므로 기본값은 설정 카탈로그가 갖는다.
+export const SECTION_OUTPUT_LIMIT = integerSettingDefault('draft.sectionOutputLimit');
 
 // NOTE: 뼈대를 문단 경계에서 끊어 구간으로 나눈다. 구간 수는 목표 분량이 상한을 넘지 않는 최소값이라,
 // 짧은 씬은 사실상 단일 패스로 돌고 긴 씬만 쪼개진다.
@@ -129,20 +133,23 @@ export interface SectionViolation {
   readonly detail: string;
 }
 
-export const quotedDialoguePattern = /[“"]([^”"\n]{4,})[”"]/g;
+export const quotedDialoguePattern = new RegExp(
+  `[“"]([^”"\\n]{${pipelineDefaults.dialogue.minimumQuotedLength},})[”"]`,
+  'g',
+);
 
 // NOTE: 하한이 목표의 절반이면 그 사이 분량이 그대로 채택돼 원고가 목표에 상시 미달한다. 재시도가
 // 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.
-const minimumLengthRatio = 0.85;
+const minimumLengthRatio = pipelineDefaults.section.minimumLengthRatio;
 
 // NOTE: 살붙임은 문맥에 맞춰 조사나 군더더기를 정리한다. 완전 일치로 보면 그런 재작성이 전부
 // 누락으로 잡히고, 재시도할 때마다 표현이 또 달라져 수렴하지도 않는다. 실측상 재작성은 87%,
 // 앞부분만 남기고 잘린 대사는 42%, 다른 대사로 대체된 경우는 18%라 그 사이에서 끊는다.
-export const DIALOGUE_PRESERVED_RATIO = 0.85;
+export const DIALOGUE_PRESERVED_RATIO = pipelineDefaults.dialogue.preservedRatio;
 
 // NOTE: 살붙임은 긴 한 턴을 두세 문장으로 쪼개 호흡을 만든다. 조각 하나씩 원문과 비교하면 각각이
 // 임계값에 못 미쳐 사라진 것으로 잡히므로, 이어진 조각을 합친 것과도 비교한다.
-const DIALOGUE_SPLIT_LIMIT = 3;
+const DIALOGUE_SPLIT_LIMIT = pipelineDefaults.dialogue.splitLimit;
 
 function isDialoguePreserved(
   line: string,
@@ -195,8 +202,8 @@ function matchedLength(left: string, right: string): number {
 // NOTE: 살붙임이 직전 구간을 다시 써 내면 원고 후반이 전반의 복사본이 된다. 구간마다 따로
 // 검사하면 각 구간은 멀쩡해 보이므로 여기서 겹침을 직접 본다. 길이만으로는 판별할 수 없다 —
 // 길게 쓴 구간과 앞 구간을 삼킨 구간의 글자 수가 같을 수 있다.
-const repeatedRunWindow = 100;
-const repeatedRunLimit = 300;
+const repeatedRunWindow = pipelineDefaults.section.repeatedRunWindow;
+const repeatedRunLimit = pipelineDefaults.section.repeatedRunLimit;
 
 function withoutWhitespace(text: string): string {
   return text.replace(/\s/g, '');
@@ -224,12 +231,12 @@ function repeatedFromPrevious(previousSection: string | undefined, expanded: str
 // 후반이 전반을 되풀이한다. 살붙임 결과만 비교하면 주변 서술이 달라 눈치챌 수 없다 — 뼈대에서
 // 잡아야 한다. 인물이 한 마디를 되뇌는 것과 구분하려고 "연속된 여러 대사가 순서까지 같게"
 // 다시 나오는 경우만 센다.
-const repeatedDialogueRunLimit = 3;
+const repeatedDialogueRunLimit = pipelineDefaults.dialogue.repeatedRunLimit;
 
 function dialogueLinesOf(text: string): string[] {
   return [...text.matchAll(quotedDialoguePattern)]
     .map((match) => (match[1] ?? '').replace(/\s/g, ''))
-    .filter((line) => line.length >= 6);
+    .filter((line) => line.length >= pipelineDefaults.dialogue.minimumLineLength);
 }
 
 // 살붙임은 구간마다 문장을 새로 쓰므로 두 구간이 같은 사건을 다뤄도 서술이 겹치지 않는다.
@@ -279,7 +286,7 @@ export function findRepeatedDialogueRun(text: string): number {
 
 // NOTE: 뼈대는 일부러 얇게 쓰는 단계라 살붙임(0.85)만큼 죄지 않는다. 실측에서 뼈대가 목표의 1/3만
 // 나오면 살붙임이 9배 확장을 떠안아 분량이 목표 절반에도 못 미쳤다. 절반 아래면 한 번 더 부른다.
-const skeletonMinimumLengthRatio = 0.5;
+const skeletonMinimumLengthRatio = pipelineDefaults.skeleton.minimumLengthRatio;
 
 export function validateSceneSkeleton(skeleton: string, targetLength?: number): SectionViolation[] {
   const violations: SectionViolation[] = [];
@@ -343,7 +350,7 @@ export function validateExpandedSection(input: {
     .map((match) => (match[1] ?? '').trim())
     .filter(
       (line) =>
-        line.length >= 6 &&
+        line.length >= pipelineDefaults.dialogue.minimumLineLength &&
         !isDialoguePreserved(
           line,
           expandedLines,
@@ -403,8 +410,8 @@ export function validateExpandedSection(input: {
 // 실측에서 앞 구간이 쪼개 쓴 대사 턴을 다음 구간이 통째로 다시 쓰고, 마무리 동작을 두 번 넣었다.
 // 되풀이는 위 검사들이 보는 "구간 전체를 다시 씀"보다 작은 단위라 따로 잡는다. 대사는 정확히,
 // 지문은 문단 유사도로 본다.
-const PADDING_PARAGRAPH_MIN_LENGTH = 40;
-export const PADDING_PARAGRAPH_RATIO = 0.8;
+const PADDING_PARAGRAPH_MIN_LENGTH = pipelineDefaults.padding.paragraphMinimumLength;
+export const PADDING_PARAGRAPH_RATIO = pipelineDefaults.padding.paragraphRatio;
 
 function findPaddingRepetition(
   section: string,

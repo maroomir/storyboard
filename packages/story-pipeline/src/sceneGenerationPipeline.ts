@@ -50,7 +50,9 @@ export type {
 } from './sceneGenerationTypes';
 export { SceneGenerationPipelineCancelledError } from './sceneGenerationTypes';
 
-const SECTION_RETRY_LIMIT = 2;
+import { pipelineDefaults } from './pipelineDefaults';
+
+const SECTION_RETRY_LIMIT = pipelineDefaults.section.retryLimit;
 
 interface ResolvedExecutionContext {
   readonly context: SceneContext;
@@ -120,7 +122,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
 
 // NOTE: 뼈대가 얇으면 살붙임이 감당 못 할 배율(15배)을 요구받아 분량이 미달한다. 최종 목표의
 // 1/3을 뼈대에 배분해 확장이 3배 남짓이 되게 한다.
-const SKELETON_LENGTH_RATIO = 1 / 3;
+const SKELETON_LENGTH_RATIO = pipelineDefaults.skeleton.lengthRatio;
 
 function skeletonTargetLength(
   styleDirective: StyleDirective | undefined,
@@ -158,7 +160,7 @@ function buildSkeletonContext(
 // 뼈대는 씬에서 가장 비싼 호출이라 한 번만 다시 부른다. 두 판 다 위반이면 가벼운 쪽을, 같은
 // 무게면 목표 분량에 가까운 쪽을 남긴다 — 사건이 빠진 판보다는 겹친 판이 고치기 쉽고, 되풀이 없이
 // 더 두꺼운 판이 살붙임의 부담을 덜어 준다.
-const SKELETON_RETRY_LIMIT = 1;
+const SKELETON_RETRY_LIMIT = pipelineDefaults.skeleton.retryLimit;
 
 async function draftSkeletonWithRetries(
   aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton'>,
@@ -270,18 +272,8 @@ async function expandSectionWithRetries(input: {
 
 // NOTE: 마지막 판이 가장 나은 판이라는 보장이 없다. 새 인물이나 문자 오염은 원고를 못 쓰게 만들고
 // 분량 미달은 읽는 데 지장이 없으므로, 같은 개수라도 가벼운 쪽을 남긴다.
-const violationWeights: Readonly<Record<SectionViolation['kind'], number>> = {
-  cast: 3,
-  'foreign-script': 3,
-  'dialogue-count': 2,
-  'lost-dialogue': 2,
-  // 앞 구간을 다시 쓴 판은 원고를 못 쓰게 만든다. 분량 미달보다 무겁게 센다.
-  'repeats-previous': 3,
-  // 되풀이로 채운 분량은 없느니만 못하다. 짧지만 깨끗한 판이 이겨야 한다.
-  repetition: 3,
-  'too-long': 1,
-  'too-short': 1,
-};
+const violationWeights: Readonly<Record<SectionViolation['kind'], number>> =
+  pipelineDefaults.violationWeights;
 
 function weighViolations(violations: readonly SectionViolation[]): number {
   return violations.reduce((total, violation) => total + violationWeights[violation.kind], 0);
@@ -289,7 +281,7 @@ function weighViolations(violations: readonly SectionViolation[]): number {
 
 // NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
 // 대사 개성은 덜해도 사건은 안전하고, 되돌린 사실은 헤더 경고로 알린다.
-const POLISH_LENGTH_LIMIT_RATIO = 2;
+const POLISH_LENGTH_LIMIT_RATIO = pipelineDefaults.polish.lengthLimitRatio;
 
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
@@ -302,7 +294,7 @@ async function polishDialogueOrKeepSkeleton(input: {
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
   let lastViolations: readonly SectionViolation[] = [];
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < pipelineDefaults.polish.retryLimit; attempt += 1) {
     const polished = await input.aiService.polishSceneDialogue(
       { skeleton: input.skeleton, personas: input.personas, voiceSamples: input.voiceSamples },
       input.options,

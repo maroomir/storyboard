@@ -1,9 +1,11 @@
 import { resolveSceneOrder, type SceneDialogueRecord } from '@storyboard/story-format';
 
-export const VOICE_SAMPLE_LIMIT = 4;
+import { pipelineDefaults } from './pipelineDefaults';
 
-const minimumSampleLength = 12;
-const maximumSampleLength = 60;
+export const VOICE_SAMPLE_LIMIT = pipelineDefaults.voiceSamples.limit;
+
+const minimumSampleLength = pipelineDefaults.voiceSamples.minimumLength;
+const maximumSampleLength = pipelineDefaults.voiceSamples.maximumLength;
 
 // NOTE: 말투 기준점이라 매 생성마다 같은 입력에서 같은 표본이 나와야 한다. AI를 쓰지 않고 씬 순서와
 // 길이만으로 고르며, 작품 전체에 고르게 걸치도록 후보를 등분해 각 구간의 첫 대사를 뽑는다.
