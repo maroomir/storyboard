@@ -1,3 +1,5 @@
+import { clampIntegerSetting, integerSettingDefault } from '@storyboard/story-ai';
+
 export { resolveSceneTargetLength } from '@storyboard/story-format';
 
 export type DraftCandidateRejectionReason = 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
@@ -14,15 +16,16 @@ export interface DraftCandidateValidation {
   readonly reason?: DraftCandidateRejectionReason;
 }
 
-const MIN_COMPRESSION_PERCENT = 0;
-const MAX_COMPRESSION_PERCENT = 90;
+// 허용 범위와 기본값은 설정 카탈로그가 갖는다. 여기서 다시 적으면 설정 화면이 허용한 값을 파이프라인이
+// 잘라내는 상태로 갈라질 수 있다.
+const maxCompressionPercentKey = 'draft.maxCompressionPercent';
 
 export function normalizeMaxCompressionPercent(value: number): number {
   if (!Number.isFinite(value)) {
-    return 50;
+    return integerSettingDefault(maxCompressionPercentKey);
   }
 
-  return Math.min(MAX_COMPRESSION_PERCENT, Math.max(MIN_COMPRESSION_PERCENT, Math.floor(value)));
+  return clampIntegerSetting(maxCompressionPercentKey, Math.floor(value));
 }
 
 export function resolveMinimumDraftLength(
