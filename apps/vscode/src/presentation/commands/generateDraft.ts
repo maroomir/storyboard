@@ -5,6 +5,7 @@ import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';
@@ -134,9 +135,7 @@ async function runCommand(
   const sceneUri = resolveSceneUriFromInvocation(invokedUri);
 
   if (!sceneUri) {
-    await vscode.window.showErrorMessage(
-      '씬 파일 URI가 없습니다. `scene` 폴더의 `.card` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);
     return;
   }
 

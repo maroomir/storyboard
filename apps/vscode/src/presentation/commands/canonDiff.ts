@@ -14,6 +14,7 @@ import {
   type BibleCandidateRecord,
 } from '@storyboard/story-engine';
 import { readProjectJson } from '@storyboard/story-engine';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 const canonDiffCommand = 'storyboard.bible.canonDiff';
 
 const fileSystem: BibleFileSystem & BibleCandidateFileSystem = {
@@ -37,9 +38,7 @@ async function runCanonDiff(dependencies: RegisterCanonDiffCommandDependencies):
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 

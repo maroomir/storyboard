@@ -15,6 +15,7 @@ import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentSt
 import type { DraftAugmentScope } from '@storyboard/story-ai';
 import { resolveExpandRange } from './expandDraft';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const augmentDraftCommand = 'storyboard.draft.augment';
 const augmentSelectionCommand = 'storyboard.draft.augmentSelection';
@@ -132,9 +133,7 @@ async function resolveAugmentEditorContext(
   }
 
   if (!(await hasStoryboardProject(workspaceFolder))) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return undefined;
   }
 

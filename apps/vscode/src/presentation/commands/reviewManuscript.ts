@@ -4,6 +4,7 @@ import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const reviewManuscriptCommand = 'storyboard.manuscript.review';
 
@@ -25,9 +26,7 @@ async function runReviewManuscript(
 ): Promise<void> {
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
   if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
@@ -64,9 +63,7 @@ async function reportFailure(
   logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'missing_outline') {
-    await vscode.window.showWarningMessage(
-      '아웃라인(chapters.yaml)이 없습니다. 먼저 Generate Novel Outline을 실행해 주세요.',
-    );
+    await vscode.window.showWarningMessage(storyboardMessages.missingOutline);
     return;
   }
   if (result.kind === 'missing_drafts') {

@@ -6,6 +6,7 @@ import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseDraft } from '@storyboard/story-format';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const expandDraftCommand = 'storyboard.draft.expand';
 
@@ -68,9 +69,7 @@ async function resolveExpandTarget(
   }
 
   if (!(await hasStoryboardProject(workspaceFolder))) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return undefined;
   }
 

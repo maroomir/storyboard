@@ -7,6 +7,7 @@ import type {
 } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { stageProgressLabel } from './generateDraft';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
 
@@ -41,9 +42,7 @@ async function runGenerateAllDrafts(
 
   if (!result.ok) {
     if (result.kind === 'no_projects') {
-      await vscode.window.showErrorMessage(
-        'Storyboard 프로젝트(.storyboard/project.json)가 있는 워크스페이스 폴더가 없습니다.',
-      );
+      await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
     } else {
       await vscode.window.showInformationMessage('처리할 `scene/*.card` 파일이 없습니다.');
     }

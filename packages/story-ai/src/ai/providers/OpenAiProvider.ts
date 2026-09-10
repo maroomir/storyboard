@@ -10,7 +10,13 @@ import {
   type AiProviderId,
   type AiUsage,
 } from '#ai/contracts/aiTypes';
-import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
+import {
+  connectionCheckFailedMessage,
+  generationFailedMessage,
+  getProviderDisplayName,
+  missingApiKeyMessage,
+  missingModelMessage,
+} from '#ai/contracts/providerCatalog';
 
 interface OpenAiModelsLike {
   readonly list: () => Promise<unknown>;
@@ -66,12 +72,12 @@ export class OpenAiProvider implements AiProvider {
       throw new AiProviderError(
         'missing-api-key',
         this.id,
-        'OpenAI API 키가 설정되어 있지 않습니다.',
+        missingApiKeyMessage(this.id),
       );
     }
 
     if (!model) {
-      throw new AiProviderError('missing-model', this.id, 'OpenAI 모델이 설정되어 있지 않습니다.');
+      throw new AiProviderError('missing-model', this.id, missingModelMessage(this.id));
     }
 
     this.model = model;
@@ -86,7 +92,7 @@ export class OpenAiProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'OpenAI 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }
@@ -108,7 +114,7 @@ export class OpenAiProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        'OpenAI 텍스트 생성에 실패했습니다.',
+        generationFailedMessage(this.id),
         error,
       );
     }

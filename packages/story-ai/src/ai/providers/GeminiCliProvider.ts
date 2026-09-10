@@ -16,7 +16,12 @@ import {
   splitCliPrompt,
   truncateFailureMessage,
 } from './cliRunner';
-import { cliProviderDefaults, getProviderDisplayName } from '#ai/contracts/providerCatalog';
+import {
+  cliProviderDefaults,
+  connectionCheckFailedMessage,
+  getProviderDisplayName,
+  missingModelMessage,
+} from '#ai/contracts/providerCatalog';
 
 // gemini-cli exits 41 (FatalAuthenticationError) when no cached login or key env var is usable;
 // a cached login the service no longer accepts exits 55 with "Error authenticating: …" instead
@@ -74,7 +79,7 @@ export class GeminiCliProvider implements AiProvider {
       throw new AiProviderError(
         'missing-model',
         this.id,
-        'Gemini CLI 모델이 설정되어 있지 않습니다.',
+        missingModelMessage(this.id),
       );
     }
 
@@ -121,7 +126,7 @@ export class GeminiCliProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        'Gemini CLI 연결 확인에 실패했습니다.',
+        connectionCheckFailedMessage(this.id),
         error,
       );
     }

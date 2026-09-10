@@ -6,6 +6,7 @@ import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { parseSceneFileName } from '@storyboard/story-format';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const applyDraftFormatCommand = 'storyboard.draft.applyFormat';
 
@@ -71,9 +72,7 @@ async function runApplyDraftFormatForScene(
   }
 
   if (!(await hasStoryboardProject(workspaceFolder))) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
@@ -135,9 +134,7 @@ async function runCommand(
   const sceneUri = resolveSceneUri(invokedUri);
 
   if (!sceneUri) {
-    await vscode.window.showErrorMessage(
-      '씬 파일 URI가 없습니다. `scene` 폴더의 `.card` 파일을 열거나 탐색기에서 명령을 실행해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingSceneUri);
     return;
   }
 

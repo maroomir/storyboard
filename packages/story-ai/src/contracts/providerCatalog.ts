@@ -334,3 +334,23 @@ export function isRetiredModelId(providerId: AiProviderId, modelId: string): boo
 export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string): boolean {
   return catalogRows[providerId].models.some((model) => model.id === modelId);
 }
+
+// 프로바이더가 내는 네 가지 실패 문구. 여덟 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
+// 호스트가 «키가 없다»를 알아보려고 문구 조각을 손으로 베껴 두게 된다.
+export const missingApiKeyMarker = 'API 키가 설정되어 있지 않습니다';
+
+export function missingApiKeyMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} ${missingApiKeyMarker}.`;
+}
+
+export function missingModelMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 모델이 설정되어 있지 않습니다.`;
+}
+
+export function connectionCheckFailedMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 연결 확인에 실패했습니다.`;
+}
+
+export function generationFailedMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 텍스트 생성에 실패했습니다.`;
+}

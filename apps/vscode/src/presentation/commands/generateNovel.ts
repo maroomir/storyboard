@@ -13,6 +13,8 @@ import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vsco
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine';
 import type { ContractFieldKey } from '@storyboard/story-format';
+import { openSettingsCommand } from '@/presentation/commands/openSettings';
+import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 
 const generateNovelCommand = 'storyboard.novel.generate';
 
@@ -50,9 +52,7 @@ async function runGenerateNovel(
   const workspaceRoot = await resolveStoryboardWorkspaceRoot();
 
   if (!workspaceRoot) {
-    await vscode.window.showErrorMessage(
-      'Storyboard 프로젝트(.storyboard/project.json)가 없습니다. 먼저 초기화해 주세요.',
-    );
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspace);
     return;
   }
 
@@ -68,7 +68,7 @@ async function runGenerateNovel(
       openSettings,
     );
     if (choice === openSettings) {
-      await vscode.commands.executeCommand('storyboard.settings.open');
+      await vscode.commands.executeCommand(openSettingsCommand);
     }
     return;
   }

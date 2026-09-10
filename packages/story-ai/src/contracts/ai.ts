@@ -12,6 +12,11 @@ export type {
 } from './providerCatalog';
 export {
   aiProviderIds,
+  connectionCheckFailedMessage,
+  generationFailedMessage,
+  missingApiKeyMarker,
+  missingApiKeyMessage,
+  missingModelMessage,
   cliProviderIds,
   cliProviderDefaults,
   getDefaultCliCommand,
