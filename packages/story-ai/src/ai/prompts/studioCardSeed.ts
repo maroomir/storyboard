@@ -1,10 +1,8 @@
 import type { PromptArtifact } from './types';
+import { promptTuning } from './promptTuning';
 
 export const StudioCardSeedPrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 300,
-  },
+  config: promptTuning('studioCardSeed'),
   build(description: string): PromptArtifact {
     return {
       system: [

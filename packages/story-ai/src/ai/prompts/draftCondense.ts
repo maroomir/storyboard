@@ -1,5 +1,6 @@
 import type { ProjectFormat } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface DraftCondenseInput {
   readonly body: string;
@@ -11,10 +12,7 @@ export interface DraftCondenseInput {
 }
 
 export const DraftCondensePrompt = {
-  config: {
-    temperature: 0.4,
-    maxTokens: 4000,
-  },
+  config: promptTuning('draftCondense'),
   build(input: DraftCondenseInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     const system =
       variant === 'xs'

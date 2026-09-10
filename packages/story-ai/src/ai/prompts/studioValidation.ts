@@ -1,4 +1,5 @@
 import type { PromptArtifact } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface StudioValidationPromptInput {
   readonly entityLabel: string;
@@ -8,10 +9,7 @@ export interface StudioValidationPromptInput {
 }
 
 export const StudioValidationPrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 1200,
-  },
+  config: promptTuning('studioValidation'),
   build(input: StudioValidationPromptInput): PromptArtifact {
     return {
       system: [

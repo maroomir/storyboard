@@ -1,4 +1,5 @@
 import type { PromptArtifact } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface StudioCardAuditPromptInput {
   readonly entityLabel: string;
@@ -7,10 +8,7 @@ export interface StudioCardAuditPromptInput {
 }
 
 export const StudioCardAuditPrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 1200,
-  },
+  config: promptTuning('studioCardAudit'),
   build(input: StudioCardAuditPromptInput): PromptArtifact {
     return {
       system: [

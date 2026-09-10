@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const GrammarCheckPrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 2000,
-  },
+  config: promptTuning('grammarCheck'),
   build(body: string, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(body) : buildGeneric(body);
   },

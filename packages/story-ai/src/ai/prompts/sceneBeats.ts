@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface SceneBeatsPromptInput {
   readonly sceneBody: string;
@@ -12,10 +13,7 @@ export interface SceneBeatsPromptInput {
 // 창작자 요약이 있으면 그 사건을 더 작은 단계로 쪼개기만 하고, 없으면 구조 필드와 확정 사실을
 // 전개해 사건을 정한다.
 export const SceneBeatsPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 1500,
-  },
+  config: promptTuning('sceneBeats'),
   build(input: SceneBeatsPromptInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     const hasSummary = input.summary !== undefined && input.summary.trim().length > 0;
 

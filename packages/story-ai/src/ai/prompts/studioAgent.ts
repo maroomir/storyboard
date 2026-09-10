@@ -4,6 +4,7 @@ import {
   type StudioAgentToolName,
 } from '#ai/contracts/studioAgent';
 import type { PromptArtifact } from './types';
+import { promptTuning } from './promptTuning';
 
 export type StudioAgentPatchShape = 'entityCard' | 'sceneCard' | 'draft';
 
@@ -23,10 +24,7 @@ export interface StudioAgentPromptInput {
 }
 
 export const StudioAgentPrompt = {
-  config: {
-    temperature: 0.4,
-    maxTokens: 3000,
-  },
+  config: promptTuning('studioAgent'),
   build(input: StudioAgentPromptInput): PromptArtifact {
     return {
       system: buildSystem(input),

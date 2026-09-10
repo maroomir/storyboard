@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const ContinuityCheckPrompt = {
-  config: {
-    temperature: 0.1,
-    maxTokens: 2000,
-  },
+  config: promptTuning('continuityCheck'),
   build(
     body: string,
     facts: readonly string[],

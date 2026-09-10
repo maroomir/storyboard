@@ -5,6 +5,7 @@ import {
   type StyleDirective,
 } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface SceneSectionExpansionInput {
   readonly skeleton: string;
@@ -18,10 +19,7 @@ export interface SceneSectionExpansionInput {
 // NOTE: 뼈대가 이미 사건·등장·순서를 확정했으므로 이 단계는 문장만 두껍게 한다. 씬 전체 뼈대를
 // 함께 주어 앞뒤에 무슨 일이 있는지 보이게 하고, 직전 구간 완성문으로 문체와 호흡을 잇는다.
 export const SceneSectionExpansionPrompt = {
-  config: {
-    temperature: 0.75,
-    maxTokens: 8000,
-  },
+  config: promptTuning('sceneSectionExpansion'),
   build(input: SceneSectionExpansionInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

@@ -1,5 +1,6 @@
 import type { ProjectFormat } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface DraftRevisionInput {
   readonly body: string;
@@ -11,10 +12,7 @@ export interface DraftRevisionInput {
 }
 
 export const DraftRevisionPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 4000,
-  },
+  config: promptTuning('draftRevision'),
   build(input: DraftRevisionInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

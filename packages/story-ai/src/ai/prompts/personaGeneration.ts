@@ -2,12 +2,10 @@ import type { Character } from '@storyboard/story-format';
 import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import { voiceStyleLines, type StyleDirective } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const PersonaGenerationPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 500,
-  },
+  config: promptTuning('personaGeneration'),
   build(
     character: Character,
     variant: PromptVariantId = 'generic',

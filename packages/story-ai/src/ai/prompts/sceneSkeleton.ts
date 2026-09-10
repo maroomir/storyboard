@@ -9,6 +9,7 @@ import {
   type StyleDirective,
 } from '#ai/contracts/styleDirective';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface SceneSkeletonInput {
   readonly narrativeSource: string;
@@ -27,10 +28,7 @@ export interface SceneSkeletonInput {
 // NOTE: 씬의 뼈대를 한 번에 쓴다. 사건 순서·등장·종료 지점 같은 연속성 결정이 전부 이 한 문맥에서
 // 내려지므로, 뒤 단계는 문장만 다듬으면 되고 "이미 나온 인물"을 실어 나를 필요가 없어진다.
 export const SceneSkeletonPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 8000,
-  },
+  config: promptTuning('sceneSkeleton'),
   build(input: SceneSkeletonInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

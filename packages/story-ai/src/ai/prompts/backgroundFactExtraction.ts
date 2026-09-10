@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface BackgroundFactExtraction {
   readonly description: readonly string[];
@@ -9,10 +10,7 @@ export interface BackgroundFactExtraction {
 }
 
 export const BackgroundFactExtractionPrompt = {
-  config: {
-    temperature: 0.2,
-    maxTokens: 700,
-  },
+  config: promptTuning('backgroundFactExtraction'),
   build(
     body: string,
     backgroundName: string,

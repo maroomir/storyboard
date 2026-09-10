@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface ChapterSummaryInput {
   readonly chapterTitle: string;
@@ -6,10 +7,7 @@ export interface ChapterSummaryInput {
 }
 
 export const ChapterSummaryPrompt = {
-  config: {
-    temperature: 0.3,
-    maxTokens: 600,
-  },
+  config: promptTuning('chapterSummary'),
   build(input: ChapterSummaryInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

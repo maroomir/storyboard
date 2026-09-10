@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface StoryStateUpdateInput {
   readonly sceneTitle: string;
@@ -7,10 +8,7 @@ export interface StoryStateUpdateInput {
 }
 
 export const StoryStateUpdatePrompt = {
-  config: {
-    temperature: 0.2,
-    maxTokens: 900,
-  },
+  config: promptTuning('storyStateUpdate'),
   build(input: StoryStateUpdateInput, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(input) : buildGeneric(input);
   },

@@ -1,6 +1,7 @@
 import { isCharacterRole } from '@storyboard/story-format';
 import type { CharacterRole } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export type RecommendationCategory = 'character' | 'background';
 
@@ -11,10 +12,7 @@ export interface RecommendedEntity {
 }
 
 export const CardRecommendationPrompt = {
-  config: {
-    temperature: 0.2,
-    maxTokens: 700,
-  },
+  config: promptTuning('cardRecommendation'),
   build(
     body: string,
     category: RecommendationCategory,

@@ -1,10 +1,8 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const TraitsExtractionPrompt = {
-  config: {
-    temperature: 0.3,
-    maxTokens: 800,
-  },
+  config: promptTuning('traitsExtraction'),
   build(
     script: string,
     characterName: string,

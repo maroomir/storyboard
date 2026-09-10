@@ -1,12 +1,10 @@
 import { pointOfViewLabels } from '@storyboard/story-format';
 import type { OutlineBrief } from '@storyboard/story-format';
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export const OutlineSynopsisPrompt = {
-  config: {
-    temperature: 0.7,
-    maxTokens: 2000,
-  },
+  config: promptTuning('outlineSynopsis'),
   build(brief: OutlineBrief, variant: PromptVariantId = 'generic'): PromptArtifact {
     return variant === 'xs' ? buildXs(brief) : buildGeneric(brief);
   },

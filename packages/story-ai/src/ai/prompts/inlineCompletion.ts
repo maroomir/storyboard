@@ -1,4 +1,5 @@
 import { type PromptArtifact, type PromptVariantId } from './types';
+import { promptTuning } from './promptTuning';
 
 export interface InlineCompletionPromptContext {
   readonly activeCharacter?: string;
@@ -7,10 +8,7 @@ export interface InlineCompletionPromptContext {
 }
 
 export const InlineCompletionPrompt = {
-  config: {
-    temperature: 0.5,
-    maxTokens: 120,
-  },
+  config: promptTuning('inlineCompletion'),
   build(
     prefix: string,
     context: InlineCompletionPromptContext = {},
