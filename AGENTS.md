@@ -208,9 +208,9 @@ For the full agent-facing checklist, read `.claude/rules/clean-code.md`.
 One owner per value. A number, name, or list that two places must agree on lives in exactly one
 file; everything else derives from it.
 
-- Tuning numbers a person adjusts go in a JSON data file beside a zod schema that documents each
-  knob: `modelProfiles.json` (per model), `pipelineDefaults.json` (model-agnostic generation),
-  `promptTuning.json` (per prompt).
+- Tuning numbers a person adjusts go in a `*.params.json` data file beside a zod schema that
+  documents each knob, owned by the package whose behaviour it changes. `git ls-files '*.params.json'`
+  lists them; the map with one row per file is in `.claude/rules/coding-standards.md`.
 - Identifiers and enums stay TypeScript `as const` so literal types survive — `providerCatalog`,
   `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
 - Generation knobs layer as user setting → model profile → pipeline default. Setting defaults and

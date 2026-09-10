@@ -85,9 +85,8 @@ The rule is one owner per value. A number, a name, or a list that two places mus
 exactly one file; everything else derives from it.
 
 - **Where a value lives**: tuning numbers a person adjusts go in a JSON data file next to a zod
-  schema that documents each knob — `packages/story-ai/src/contracts/modelProfiles.json` (per model),
-  `packages/story-pipeline/src/pipelineDefaults.json` (model-agnostic generation), and
-  `packages/story-ai/src/ai/prompts/promptTuning.json` (per prompt) are the models to copy.
+  schema that documents each knob — the `*.params.json` files listed in **The parameter map** below
+  are the models to copy.
   Identifiers and enums stay TypeScript `as const` so the literal types survive — `providerCatalog`,
   `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. JSON loses literal types, so
   never move an enum into one.
@@ -96,7 +95,7 @@ exactly one file; everything else derives from it.
 - **Setting defaults and bounds** belong to `storyboardSettingCatalog` alone. Read them through
   `booleanSettingDefault` / `integerSettingDefault` / `clampIntegerSetting`; never restate a default
   or a `Math.min`/`Math.max` bound at a call site.
-- **Record why a measured value is what it is** next to the value, as `modelProfiles.json` does with
+- **Record why a measured value is what it is** next to the value, as `modelProfiles.params.json` does with
   its `measured` block. A number with no provenance cannot be re-tuned.
 - **The webview reads the real tables**, not copies: `@storyboard/story-engine/contracts` re-exports
   the browser-safe catalogs through `packages/story-engine/src/shared/catalogs.ts`. Add a re-export
@@ -112,6 +111,24 @@ exactly one file; everything else derives from it.
   itself must import only those, never a package barrel. Declare a new entry in the package's
   `exports` and in every consumer's tsconfig `paths`; `scripts/aliases.mjs` orders aliases
   longest-first so `pkg/contracts` is not shadowed by `pkg`.
+
+### The parameter map
+
+Every tunable data file carries the `*.params.json` suffix, so `git ls-files '*.params.json'` lists
+them all. Each sits beside the zod schema that documents its knobs and is owned by the package whose
+behaviour it changes.
+
+| File | Owner | Holds |
+|---|---|---|
+| `packages/story-ai/src/contracts/modelProfiles.params.json` | story-ai | Per-model measured overrides, with the `measured` block recording where each number came from |
+| `packages/story-ai/src/ai/prompts/promptTuning.params.json` | story-ai | `temperature` and `maxTokens` for every prompt, keyed by prompt module name |
+| `packages/story-pipeline/src/pipelineDefaults.params.json` | story-pipeline | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
+
+Identifier tables stay TypeScript (`as const`) and live with their owner:
+`providerCatalog.ts` and `settingCatalog.ts` (story-ai), `project.ts` / `paths.ts` / `narrator.ts`
+(story-format), `contributionIds.ts` and `storyboardMessages.ts` (vscode), `commands/catalog.ts` (cli).
+
+Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a row in this table.
 
 ## Shared Package References
 
