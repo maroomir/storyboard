@@ -10,6 +10,23 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-11
+
+### Fixed
+
+- **The alternating-viewpoint composition no longer creates narrator cards that contradict the project's point of view.** The preset computed person and knowledge boundary on its own, so a second-person project got a third-person narrator card and an omniscient project got a witness-scoped one. It now uses the single derivation rule the format defines.
+- **`storyboard config set` no longer rejects `timeoutMs` and `reasoningEffort`.** The list of settable fields and the check that validated them were written separately, and the check had fallen behind.
+- **The defaults and bounds shown in the settings UI can no longer drift from the ones generation actually uses.** A single setting's default and range were written in three places, so changing one quietly diverged from the others.
+
+### Changed
+
+- **Provider names now come from one place.** Eight providers each spelled out their own "no key", "no model", "connection failed" and "generation failed" messages, so names such as xAI and Claude Code differed from screen to screen. All of them now use the catalog's display name.
+
+### Internal
+
+- Every scattered value was given a single owner: the provider table (models, pricing, default commands), critique categories, paths, extensions and watch globs, the CLI's help and completion lists, extension contribution ids, and repeated notice text each now come from one table. The temperature and token budget of all 35 prompts, along with the generation pipeline's defaults, were collected into `*.params.json` files so measurement-driven tuning has one place to happen.
+- An architecture check now fails the build when a string with a designated owner reappears elsewhere — writing the rule down does not stop the next person from spelling the literal out again.
+
 ## [0.9.0] - 2026-09-10
 
 ### Removed
