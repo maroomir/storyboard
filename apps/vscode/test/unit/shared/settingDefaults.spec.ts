@@ -1,0 +1,87 @@
+import { describe, expect, it } from "vitest"
+
+import {
+  ConfigBridge,
+  storyboardSettingCatalog,
+  type StoryboardConfigurationLike,
+  type StoryboardSettingDefinition
+} from "@storyboard/story-ai"
+
+// 설정을 읽는 접근자마다 기본값과 허용 범위를 다시 적던 시절에는 설정 화면과 실제 생성이 서로 다른
+// 값을 쓰는 상태로 갈라질 수 있었다. 이 표는 카탈로그의 모든 키를 접근자에 이어 붙여, 새 설정이
+// 들어오면 행을 추가하게 만들고 접근자가 카탈로그를 벗어나면 실패한다.
+const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | number | string | undefined>> = {
+  "draft.reviseAfterGenerate": (bridge) => bridge.isReviseAfterGenerateEnabled(),
+  "draft.reviseMaxIterations": (bridge) => bridge.getReviseMaxIterations(),
+  "draft.reviseScoreThreshold": (bridge) => bridge.getReviseScoreThreshold(),
+  "draft.maxCompressionPercent": (bridge) => bridge.getMaxCompressionPercent(),
+  "draft.updateCardsAfterGenerate": (bridge) => bridge.isUpdateCardsAfterGenerateEnabled(),
+  "draft.verifyCardCandidates": (bridge) => bridge.isVerifyCardCandidatesEnabled(),
+  "grounding.autoApprove": (bridge) => bridge.isSceneGroundingAutoApproveEnabled(),
+  "draft.autoBeats": (bridge) => bridge.isAutoBeatsEnabled(),
+  "draft.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),
+  "draft.sectionOutputLimit": (bridge) => bridge.getSectionOutputLimit(),
+  "draft.minBeats": (bridge) => bridge.getMinBeats(),
+  "draft.keepHistory": (bridge) => bridge.isKeepDraftHistoryEnabled(),
+  "draft.sceneBreakEnabled": (bridge) => bridge.getDraftSceneBreakSeparator() !== undefined,
+  "draft.sceneBreakSeparator": (bridge) => bridge.getDraftSceneBreakSeparator(),
+  "ai.contextCondenseEnabled": (bridge) => bridge.isAiContextCondenseEnabled(),
+  "scene.prefixDigits": (bridge) => bridge.getScenePrefixDigits(),
+  "studio.validation": (bridge) => bridge.isStudioValidationEnabled(),
+  "grammar.realtimeEnabled": (bridge) => bridge.isGrammarRealtimeEnabled(),
+  "slop.realtimeEnabled": (bridge) => bridge.isSlopRealtimeEnabled()
+}
+
+function bridgeReading(values: Readonly<Record<string, unknown>>): ConfigBridge {
+  return new ConfigBridge({
+    getConfiguration: (): StoryboardConfigurationLike => ({
+      get: <T,>(section: string, defaultValue: T): T =>
+        (values[section] as T | undefined) ?? defaultValue
+    })
+  })
+}
+
+const integerSettings = storyboardSettingCatalog.filter(
+  (definition): definition is StoryboardSettingDefinition => definition.kind === "integer"
+)
+
+describe("ConfigBridge against the setting catalog", () => {
+  it("covers every catalogued setting", () => {
+    expect(Object.keys(readers).sort()).toEqual(
+      storyboardSettingCatalog.map((definition) => definition.key).sort()
+    )
+  })
+
+  it("returns the catalogued default when nothing is configured", () => {
+    const bridge = bridgeReading({})
+
+    for (const definition of storyboardSettingCatalog) {
+      // 장면 구분자는 구분자 사용이 꺼져 있으면 undefined 다. 그 조합은 아래에서 따로 본다.
+      if (definition.key === "draft.sceneBreakSeparator") {
+        continue
+      }
+
+      expect(readers[definition.key]?.(bridge), definition.key).toBe(definition.defaultValue)
+    }
+  })
+
+  it("clamps an out-of-range integer to the catalogued bounds", () => {
+    for (const definition of integerSettings) {
+      const belowBridge = bridgeReading({ [definition.key]: -1_000_000 })
+      const aboveBridge = bridgeReading({ [definition.key]: 1_000_000 })
+
+      expect(readers[definition.key]?.(belowBridge), `${definition.key} floor`).toBe(
+        definition.minimum
+      )
+      expect(readers[definition.key]?.(aboveBridge), `${definition.key} ceiling`).toBe(
+        definition.maximum
+      )
+    }
+  })
+
+  it("hands back the catalogued separator once scene breaks are on", () => {
+    const bridge = bridgeReading({ "draft.sceneBreakEnabled": true })
+
+    expect(bridge.getDraftSceneBreakSeparator()).toBe("---")
+  })
+})

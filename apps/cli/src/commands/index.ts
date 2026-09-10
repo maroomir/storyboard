@@ -30,7 +30,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-engine';
 
-import { aiProviderIds, type AiProviderId } from '@storyboard/story-ai';
+import { aiProviderIds, integerSettingDefault, type AiProviderId } from '@storyboard/story-ai';
 import {
   compositionKinds,
   formatSceneOrderRanges,
@@ -349,7 +349,10 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     project,
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
     runMode: 'auto',
-    reviseMaxIterations: Number(flagString(args.flags, 'revise-iterations') ?? '2'),
+    reviseMaxIterations: Number(
+      flagString(args.flags, 'revise-iterations') ??
+        integerSettingDefault('draft.reviseMaxIterations'),
+    ),
     onProgress: (stage, message) => container.logger.info(`${stage}: ${message}`),
     requestApproval: async () => true,
     shouldCancel: () => false,

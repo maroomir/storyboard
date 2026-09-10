@@ -27,6 +27,7 @@ import type {
   NovelPipelineOptions,
   NovelPipelineResult,
 } from './novelPipelineTypes';
+import { integerSettingDefault } from '@storyboard/story-ai';
 
 export interface ChapterGroup {
   readonly title: string;
@@ -112,7 +113,7 @@ async function runChapterDraftsAndRevise(
       draftUri: draftPath(options.workspaceUri, stem),
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? 50,
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('draft.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       shouldCancel: options.shouldCancel,
     });
@@ -373,7 +374,7 @@ export async function runReviseFromReviewStage(
       draftUri: draftPath(options.workspaceUri, target.sceneStem),
       sceneStem: target.sceneStem,
       maxIterations: 1,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? 50,
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('draft.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       seedIssues: target.seedIssues,
       shouldCancel: options.shouldCancel,

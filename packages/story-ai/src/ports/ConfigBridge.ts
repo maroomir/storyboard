@@ -17,7 +17,14 @@ import {
   storyboardModelCatalog,
 } from '#ai/contracts/providerCatalog';
 import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
-import { findStoryboardSetting, isValidStoryboardSettingValue } from '#ai/contracts/settingCatalog';
+import {
+  booleanSettingDefault,
+  clampIntegerSetting,
+  findStoryboardSetting,
+  integerSettingDefault,
+  isValidStoryboardSettingValue,
+  stringSettingDefault,
+} from '#ai/contracts/settingCatalog';
 
 // The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
 // too: a write lands in the workspace file only when that layer already holds the key, so the value
@@ -38,10 +45,6 @@ export interface ProviderModelConfig {
   readonly timeoutMs?: number;
   readonly reasoningEffort?: string;
 }
-
-const defaultReviseMaxIterations = 2;
-const minReviseMaxIterations = 1;
-const maxReviseMaxIterations = 5;
 
 export interface TaskAiStoredEntry {
   readonly provider: AiProviderId;
@@ -265,6 +268,18 @@ export class ConfigBridge {
     await this.configurationUpdate(key, value);
   }
 
+  private readBooleanSetting(key: string): boolean {
+    return this.dependencies.getConfiguration().get(key, booleanSettingDefault(key));
+  }
+
+  private readIntegerSetting(key: string, fallback?: number): number {
+    const defaultValue = fallback ?? integerSettingDefault(key);
+    const configured = this.dependencies.getConfiguration().get(key, defaultValue);
+    const value = Math.floor(Number.isFinite(configured) ? configured : defaultValue);
+
+    return clampIntegerSetting(key, value);
+  }
+
   public getValueOrigin(section: string): ConfigValueOrigin {
     const inspected = this.dependencies.getConfiguration().inspect?.<unknown>(section);
 
@@ -276,19 +291,19 @@ export class ConfigBridge {
   }
 
   public isGrammarRealtimeEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('grammar.realtimeEnabled', false);
+    return this.readBooleanSetting('grammar.realtimeEnabled');
   }
 
   public isSlopRealtimeEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('slop.realtimeEnabled', false);
+    return this.readBooleanSetting('slop.realtimeEnabled');
   }
 
   public isStudioValidationEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('studio.validation', true);
+    return this.readBooleanSetting('studio.validation');
   }
 
   public getScenePrefixDigits(): number {
-    return this.dependencies.getConfiguration().get('scene.prefixDigits', 2);
+    return this.readIntegerSetting('scene.prefixDigits');
   }
 
   public inspectScenePrefixDigits(): ScenePrefixDigitsInspectLike | undefined {
@@ -296,64 +311,47 @@ export class ConfigBridge {
   }
 
   public isAiContextCondenseEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('ai.contextCondenseEnabled', false);
+    return this.readBooleanSetting('ai.contextCondenseEnabled');
   }
 
   public isReviseAfterGenerateEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('draft.reviseAfterGenerate', true);
+    return this.readBooleanSetting('draft.reviseAfterGenerate');
   }
 
   public getReviseMaxIterations(): number {
-    const configured = this.dependencies
-      .getConfiguration()
-      .get('draft.reviseMaxIterations', defaultReviseMaxIterations);
-    const value = Math.floor(Number.isFinite(configured) ? configured : defaultReviseMaxIterations);
-
-    return Math.min(maxReviseMaxIterations, Math.max(minReviseMaxIterations, value));
+    return this.readIntegerSetting('draft.reviseMaxIterations');
   }
 
   public getReviseScoreThreshold(): number {
-    const configured = this.dependencies.getConfiguration().get('draft.reviseScoreThreshold', 0);
-    const value = Math.floor(Number.isFinite(configured) ? configured : 0);
-
-    return Math.min(100, Math.max(0, value));
+    return this.readIntegerSetting('draft.reviseScoreThreshold');
   }
 
   public getMaxCompressionPercent(): number {
-    const configured = this.dependencies.getConfiguration().get('draft.maxCompressionPercent', 50);
-    const value = Math.floor(Number.isFinite(configured) ? configured : 50);
-
-    return Math.min(90, Math.max(0, value));
+    return this.readIntegerSetting('draft.maxCompressionPercent');
   }
 
   public isUpdateCardsAfterGenerateEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('draft.updateCardsAfterGenerate', false);
+    return this.readBooleanSetting('draft.updateCardsAfterGenerate');
   }
 
   public isVerifyCardCandidatesEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('draft.verifyCardCandidates', true);
+    return this.readBooleanSetting('draft.verifyCardCandidates');
   }
 
   public isSceneGroundingAutoApproveEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('grounding.autoApprove', false);
+    return this.readBooleanSetting('grounding.autoApprove');
   }
 
   public isAutoBeatsEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('draft.autoBeats', true);
+    return this.readBooleanSetting('draft.autoBeats');
   }
 
   public getCharsPerBeat(): number {
-    const configured = this.dependencies.getConfiguration().get('draft.charsPerBeat', 1500);
-    const value = Math.floor(Number.isFinite(configured) ? configured : 1500);
-
-    return Math.min(10_000, Math.max(300, value));
+    return this.readIntegerSetting('draft.charsPerBeat');
   }
 
   public getMinBeats(): number {
-    const configured = this.dependencies.getConfiguration().get('draft.minBeats', 5);
-    const value = Math.floor(Number.isFinite(configured) ? configured : 5);
-
-    return Math.min(50, Math.max(1, value));
+    return this.readIntegerSetting('draft.minBeats');
   }
 
   // 실측으로 정한 모델별 손잡이. 재보지 않은 모델이면 undefined 이고, 호출자는 자기 기본값을 쓴다.
@@ -376,28 +374,30 @@ export class ConfigBridge {
     return tuning;
   }
 
+  // 사용자 설정 → 모델 실측 프로필 → 카탈로그 기본값 순.
   public getSectionOutputLimit(): number {
-    const profileLimit = this.getModelProfileDefault('draft.sectionOutputLimit') ?? 7000;
-    const configured = this.dependencies
-      .getConfiguration()
-      .get('draft.sectionOutputLimit', profileLimit);
-    const value = Math.floor(Number.isFinite(configured) ? configured : profileLimit);
+    const profileLimit =
+      this.getModelProfileDefault('draft.sectionOutputLimit') ??
+      integerSettingDefault('draft.sectionOutputLimit');
 
-    return Math.min(20_000, Math.max(1_000, value));
+    return this.readIntegerSetting('draft.sectionOutputLimit', profileLimit);
   }
 
   public isKeepDraftHistoryEnabled(): boolean {
-    return this.dependencies.getConfiguration().get('draft.keepHistory', false);
+    return this.readBooleanSetting('draft.keepHistory');
   }
 
   public getDraftSceneBreakSeparator(): string | undefined {
     const configuration = this.dependencies.getConfiguration();
 
-    if (!configuration.get('draft.sceneBreakEnabled', false)) {
+    if (!this.readBooleanSetting('draft.sceneBreakEnabled')) {
       return undefined;
     }
 
-    return configuration.get('draft.sceneBreakSeparator', '---');
+    return configuration.get(
+      'draft.sceneBreakSeparator',
+      stringSettingDefault('draft.sceneBreakSeparator'),
+    );
   }
 
   public onDidChange(listener: () => void): { readonly dispose: () => void } {

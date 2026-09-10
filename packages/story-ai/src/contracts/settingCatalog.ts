@@ -209,3 +209,38 @@ export function isValidStoryboardSettingValue(
       return typeof value === 'string' && value.trim().length > 0;
   }
 }
+
+// 기본값과 허용 범위는 이 카탈로그가 갖는다. 설정을 읽는 쪽이 같은 숫자를 다시 적으면 설정 화면과
+// 실제 생성이 서로 다른 값을 쓰는 상태로 조용히 갈라진다.
+function requireSetting(key: string, kind: StoryboardSettingKind): StoryboardSettingDefinition {
+  const definition = findStoryboardSetting(key);
+
+  if (definition === undefined) {
+    throw new Error(`알 수 없는 설정 키: ${key}`);
+  }
+
+  if (definition.kind !== kind) {
+    throw new Error(`설정 ${key} 는 ${definition.kind} 인데 ${kind} 로 읽으려 했습니다.`);
+  }
+
+  return definition;
+}
+
+export function booleanSettingDefault(key: string): boolean {
+  return requireSetting(key, 'boolean').defaultValue as boolean;
+}
+
+export function integerSettingDefault(key: string): number {
+  return requireSetting(key, 'integer').defaultValue as number;
+}
+
+export function stringSettingDefault(key: string): string {
+  return requireSetting(key, 'string').defaultValue as string;
+}
+
+export function clampIntegerSetting(key: string, value: number): number {
+  const definition = requireSetting(key, 'integer');
+  const atLeast = definition.minimum === undefined ? value : Math.max(definition.minimum, value);
+
+  return definition.maximum === undefined ? atLeast : Math.min(definition.maximum, atLeast);
+}
