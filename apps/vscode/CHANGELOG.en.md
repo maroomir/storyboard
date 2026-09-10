@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-10
+
 ### Removed
 
 - **The Telegram bot (`storyboard-bot`) is gone.** The app that read, edited and generated a workspace from Telegram has been removed from the repository. What existed only to serve it goes with it: the "a save is a commit" write model (mutate gate and freshness guard), the commit/sync package (`@storyboard/story-git`), the job queue, and the native `better-sqlite3` dependency. Two apps remain — the VSCode extension and the CLI — and a release now ships two artifacts, the VSIX and the CLI tarball. Reading drafts from a phone means cloning the workspace with a git client, and that repository is now created by `storyboard init`.

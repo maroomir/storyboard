@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-10
+
 ### 제거
 
 - **Telegram 봇(`storyboard-bot`)이 사라졌습니다.** 텔레그램에서 워크스페이스를 조회·편집·생성하던 앱을 저장소에서 걷어냈습니다. 봇만을 위해 존재하던 «저장 = 커밋» 쓰기 모델(mutate gate·신선도 가드)과 커밋·동기화 패키지(`@storyboard/story-git`), 잡 큐와 네이티브 의존(`better-sqlite3`)도 함께 사라집니다. 남는 것은 VSCode 확장과 CLI 둘이고, 릴리즈 산출물도 VSIX 와 CLI tarball 둘입니다. 폰에서 초안을 읽는 방법은 워크스페이스를 git 클라이언트로 클론하는 것이며, 이제 그 저장소는 `storyboard init` 이 만들어 줍니다.
