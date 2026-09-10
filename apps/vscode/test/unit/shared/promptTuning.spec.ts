@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import promptTuningTable from "../../../../../packages/story-ai/src/ai/prompts/promptTuning.json"
+import promptTuningTable from "../../../../../packages/story-ai/src/ai/prompts/promptTuning.params.json"
 
 const promptsDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

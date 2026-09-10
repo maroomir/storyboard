@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import defaultsData from './pipelineDefaults.json';
+import defaultsData from './pipelineDefaults.params.json';
 
-// 생성 파이프라인이 모델을 가리지 않고 쓰는 기본값. 모델별로 재본 값은 modelProfiles.json 이
+// 생성 파이프라인이 모델을 가리지 않고 쓰는 기본값. 모델별로 재본 값은 modelProfiles.params.json 이
 // 이 위에 덮어쓰고, 창작자가 적은 설정이 그보다 앞선다 — 이 파일은 그 층의 맨 아래다.
 // 값을 바꾸면 모든 모델의 생성 결과가 함께 움직이므로, 한 모델에서만 관찰한 값은 여기가 아니라
 // 모델 프로필에 적는다.

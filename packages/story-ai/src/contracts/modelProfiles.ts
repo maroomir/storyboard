@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import profileData from './modelProfiles.json';
+import profileData from './modelProfiles.params.json';
 
 // NOTE: 모델마다 «한 번 호출에 쓰는 양»과 «같은 말을 되풀이하는 성향»이 다르다. 그 차이를 코드
 // 상수로 두면 모델을 바꿀 때마다 파이프라인을 고쳐야 하므로, 실측으로 정한 값만 여기 모은다.
