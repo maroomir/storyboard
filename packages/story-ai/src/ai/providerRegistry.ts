@@ -7,7 +7,6 @@ import { CodexProvider } from './providers/CodexProvider';
 import { GeminiCliProvider } from './providers/GeminiCliProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
 import { GrokProvider } from './providers/GrokProvider';
-import { FallbackProvider, UsageLimitLatch } from './providers/FallbackProvider';
 import { MockAiProvider } from './providers/MockAiProvider';
 import { OllamaProvider, type OllamaClientLike } from './providers/OllamaProvider';
 import { OpenAiProvider, type OpenAiClientLike } from './providers/OpenAiProvider';
@@ -36,12 +35,6 @@ export interface AiProviderRegistryOptions {
   readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike;
   readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike;
   readonly createCliRunner?: () => CliRunner;
-  // When a CLI provider answers "usage limit", send the remaining calls here instead of aborting.
-  // A long unattended run otherwise dies partway with half a manuscript written.
-  readonly cliUsageLimitFallback?: {
-    readonly providerId: AiProviderId;
-    readonly onFallback?: (message: string) => void;
-  };
   // A fresh install has no `defaultProvider`, and silently generating with `mock` there writes a
   // fake draft that exits clean. With this on, a task that resolves to no configured provider is
   // refused with `missing-provider` so the host can ask the author to choose one.
@@ -52,9 +45,6 @@ export const missingProviderMessage =
   '기본 AI 제공자가 설정되지 않았습니다. 설정에서 제공자를 고른 뒤 다시 시도하세요.';
 
 export class AiProviderRegistry {
-  // One latch per primary provider, so the switch survives the per-call provider construction.
-  private readonly usageLimitLatches = new Map<AiProviderId, UsageLimitLatch>();
-
   public constructor(private readonly options: AiProviderRegistryOptions) {}
 
   public async listProviders(): Promise<AiProviderStatus[]> {
@@ -139,36 +129,6 @@ export class AiProviderRegistry {
     yield { type: 'done', response };
   }
 
-  private async createCliProviderWithFallback(
-    providerId: CliProviderId,
-    modelOverride?: string,
-  ): Promise<AiProvider> {
-    const primary = this.createCliProvider(providerId, modelOverride);
-    const fallback = this.options.cliUsageLimitFallback;
-
-    if (!fallback || fallback.providerId === providerId) {
-      return primary;
-    }
-
-    return new FallbackProvider(
-      primary,
-      await this.createProvider(fallback.providerId),
-      fallback.onFallback,
-      this.usageLimitLatchFor(providerId),
-    );
-  }
-
-  private usageLimitLatchFor(providerId: AiProviderId): UsageLimitLatch {
-    const existing = this.usageLimitLatches.get(providerId);
-    if (existing) {
-      return existing;
-    }
-
-    const latch = new UsageLimitLatch();
-    this.usageLimitLatches.set(providerId, latch);
-    return latch;
-  }
-
   private async createProvider(
     providerId: AiProviderId,
     modelOverride?: string,
@@ -186,7 +146,7 @@ export class AiProviderRegistry {
       case 'claude-code':
       case 'codex':
       case 'gemini-cli':
-        return this.createCliProviderWithFallback(providerId, modelOverride);
+        return this.createCliProvider(providerId, modelOverride);
       default:
         throw new AiProviderError(
           'provider-not-registered',

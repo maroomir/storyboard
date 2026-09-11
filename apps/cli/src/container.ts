@@ -46,7 +46,6 @@ import {
   ConfigBridge,
   createAiProviderRegistry,
   SecretStore,
-  type AiProviderId,
   type AiProviderRegistry,
 } from '@storyboard/story-ai';
 
@@ -110,7 +109,6 @@ export interface CliContainerOptions {
   readonly provider?: string;
   readonly model?: string;
   readonly reviseMaxIterations?: number;
-  readonly fallbackProvider?: string;
   // Which config file `setup`/`config set` write to. Decided from the run's location and
   // `--global` before the container exists, so every writer here agrees on one answer.
   readonly configWriteTarget?: ConfigurationTarget;
@@ -165,15 +163,6 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     secretStore,
     configBridge,
     requireConfiguredProvider: true,
-    // A long unattended run should finish on the second provider rather than abort halfway.
-    ...(options.fallbackProvider === undefined
-      ? {}
-      : {
-          cliUsageLimitFallback: {
-            providerId: options.fallbackProvider as AiProviderId,
-            onFallback: (message: string) => logger.warn(message),
-          },
-        }),
   });
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so

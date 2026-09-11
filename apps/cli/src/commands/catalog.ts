@@ -22,7 +22,6 @@ export const globalFlagNames = [
   'workspace',
   'provider',
   'model',
-  'fallback',
   'json',
   'quiet',
   'verbose',
@@ -90,11 +89,6 @@ export const flagCatalog: readonly FlagSpec[] = [
     summary: '이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)',
   },
   { name: 'model', valueLabel: '<name>', summary: '그 프로바이더의 모델' },
-  {
-    name: 'fallback',
-    valueLabel: '<id>',
-    summary: 'CLI 프로바이더가 사용 한도에 걸리면 넘어갈 프로바이더',
-  },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
   {
@@ -377,8 +371,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '기획',
     usage: 'novel generate',
     summary: '기획부터 원고 조립까지 한 번에 돌립니다 (모든 승인 자동)',
-    flags: ['revise-iterations', 'fallback'],
-    examples: ['storyboard novel generate --fallback codex'],
+    flags: ['revise-iterations'],
   },
   {
     verb: 'scene show',
