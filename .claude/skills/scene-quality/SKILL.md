@@ -28,7 +28,7 @@ If not given, ask for the workspace path and scene file before starting.
 
 - **Source `scene/*.card` is IMMUTABLE.** Never edit or augment it. Quality must come from the pipeline (`apps/vscode/src/`) + the workspace cards.
 - **gt is the evaluation ORACLE only.** It may inform character/background cards, but must NEVER be injected into generation prompts.
-- **Provider:** codex (gpt-5.5) default; the harness auto-falls-back to claude-code (sonnet-4.6) on a codex usage-limit mid-run. Force with `SCENE_PROVIDER=claude-code`.
+- **Provider:** claude (Sonnet 5) default. Every provider is metered, so each iteration costs real money — say so before a full regeneration. Switch with `SCENE_PROVIDER=openai|google`.
 - **Every `apps/vscode/src/` change is tested** by the test-engineer; **commit per validated feature, never batch** (the user verifies via commits). Branch first if on `main`.
 - A full regeneration is ~30–50 CLI calls / ~40–90 min. Plan iterations; don't poll — background tasks notify on completion.
 
@@ -42,7 +42,7 @@ If not given, ask for the workspace path and scene file before starting.
 ## Loop
 
 1. **Generate** (writes `draft/NN-slug.md`):
-   `npm run cli:build && node apps/cli/dist/index.js scene generate <NN-slug> --workspace <ws> --force --provider codex --model gpt-5.6-terra --fallback claude-code`
+   `npm run cli:build && node apps/cli/dist/index.js scene generate <NN-slug> --workspace <ws> --force --provider claude --model claude-sonnet-5`
    Back up each iteration to `<ws>/draft-history/` before regenerating.
 2. **Objective coverage:**
    `cd apps/vscode && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts coverageCheck`
@@ -52,7 +52,7 @@ If not given, ask for the workspace path and scene file before starting.
 5. **Fix** in `packages/story-engine/` or `packages/story-ai/` (pipeline/prompts) and/or workspace cards. Tester adds tests for any engine change. For cards, only `voice`/`aliases`/`traits`/`description` (+`name`/`role`) actually affect generation — see `apps/vscode/docs/card-parameter-impact.md`.
 6. **Regenerate → re-score.** Loop until all four axes ≥4 and coveredRatio → 1.0. Then commit per feature.
 
-Useful knobs: `SCENE_PROVIDER=claude-code` (force claude), `SCENE_REVISE=0` (skip the post-gen revise loop to save CLI cost), `SCENE_MODEL=<id>`. Legacy `GUERRILA_*` env names still work as a fallback.
+Useful knobs: `SCENE_PROVIDER=openai|google` (switch provider), `SCENE_REVISE=0` (skip the post-gen revise loop to save API cost), `SCENE_MODEL=<id>`. Legacy `GUERRILA_*` env names still work as a fallback.
 
 ## Known levers & pitfalls (from prior runs)
 

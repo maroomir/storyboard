@@ -6,21 +6,18 @@ import { test } from "vitest"
 import { buildSceneContext, readSceneFile } from "@storyboard/story-format"
 import { StoryboardAiService } from "@storyboard/story-ai"
 import type { AiProviderRegistry } from "@storyboard/story-ai"
-import { ClaudeCodeProvider } from "@storyboard/story-ai"
-import { CodexProvider } from "@storyboard/story-ai"
-import { createDefaultCliRunner, type CliRunResult } from "@storyboard/story-ai"
 import type { AiGenerateResponse, AiProvider } from "@storyboard/story-ai"
 import { summarizeSceneCoverage } from "@storyboard/story-ai"
 
 import { createUsageSummary } from "./usageSummary"
+import { createHarnessProvider, defaultHarnessModel, resolveHarnessProviderId } from "./harnessProvider"
 
 // NOTE: Diagnostic — runs the new checkSceneCoverage feature against the current draft to verify
 // every source beat is dramatized in order. Re-extracts beats so it does not depend on stale cache.
 const workspace = process.env.SCENE_WS ?? process.env.GUERRILA_WS ?? "/Users/maroomir/Git/maroomir/guerrila"
 const sceneFileName = process.env.SCENE_FILE ?? process.env.GUERRILA_SCENE ?? "01-first-meeting.card"
-const providerId = process.env.SCENE_PROVIDER ?? process.env.GUERRILA_PROVIDER ?? "codex"
-const model =
-  process.env.SCENE_MODEL ?? process.env.GUERRILA_MODEL ?? (providerId === "claude-code" ? "claude-sonnet-4-6" : "gpt-5.5")
+const providerId = resolveHarnessProviderId(process.env.SCENE_PROVIDER ?? process.env.GUERRILA_PROVIDER)
+const model = process.env.SCENE_MODEL ?? process.env.GUERRILA_MODEL ?? defaultHarnessModel(providerId)
 
 const fileSystem = {
   readFile: async (uri: unknown): Promise<Uint8Array> => new Uint8Array(await nodeFs.readFile(uri as string)),
@@ -42,14 +39,7 @@ const paths = {
   joinPath: (base: unknown, ...segments: string[]): string => path.join(base as string, ...segments)
 }
 
-function createRegistry(): AiProviderRegistry {
-  const baseRunner = createDefaultCliRunner()
-  const createRunner = (): typeof baseRunner => (input): Promise<CliRunResult> =>
-    baseRunner({ ...input, timeoutMs: 600_000 })
-  const provider: AiProvider =
-    providerId === "claude-code"
-      ? new ClaudeCodeProvider({ command: "claude", model, createRunner })
-      : new CodexProvider({ command: "codex", model, createRunner })
+function createRegistry(provider: AiProvider): AiProviderRegistry {
   const registry = {
     generate: (request: unknown): Promise<AiGenerateResponse> => provider.generate(request as never),
     generateWithProvider: (_id: unknown, request: unknown): Promise<AiGenerateResponse> =>
@@ -64,7 +54,8 @@ test("check scene coverage of current draft", async () => {
   const scene = await readSceneFile(path.join(workspace, "scene", sceneFileName), fileSystem, sceneFileName)
   const context = await buildSceneContext(paths, scene, fileSystem)
   const usage = createUsageSummary()
-  const aiService = new StoryboardAiService(createRegistry(), { onUsage: usage.onUsage })
+  const provider = await createHarnessProvider(providerId, model)
+  const aiService = new StoryboardAiService(createRegistry(provider), { onUsage: usage.onUsage })
   const attribution = { primary: { kind: "scene" as const, id: scene.stem } }
 
   try {

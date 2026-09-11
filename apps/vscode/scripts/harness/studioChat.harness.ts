@@ -5,10 +5,6 @@ import { test } from 'vitest';
 
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import { ClaudeCodeProvider } from '@storyboard/story-ai';
-import { CodexProvider } from '@storyboard/story-ai';
-import { GeminiCliProvider } from '@storyboard/story-ai';
-import { createDefaultCliRunner, type CliRunResult } from '@storyboard/story-ai';
 import type { AiGenerateResponse, AiProvider } from '@storyboard/story-ai';
 
 import { StudioChatUseCase, type StudioChatRequest } from '@storyboard/story-engine';
@@ -27,21 +23,21 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StudioChatTurn, StudioEntity } from '@storyboard/story-engine';
 
 import { createUsageSummary } from './usageSummary';
+import {
+  createHarnessProvider,
+  defaultHarnessModel,
+  resolveHarnessProviderId,
+} from './harnessProvider';
 
 // NOTE: Diagnostic — drives the REAL Studio chat agent and the REAL apply path against a real
 // workspace and a real CLI provider, so the prompt contract (say/ask/propose/lookup, follow-ups,
 // field limits), the baseline guard and the writes are verified against a model rather than a stub.
 // It WRITES to the workspace; run it on a git-clean tree and read the result with `git diff`.
 const workspace = process.env.STUDIO_WS ?? process.env.SCENE_WS ?? '';
-const providerId = process.env.STUDIO_PROVIDER ?? process.env.SCENE_PROVIDER ?? 'codex';
-const defaultModels: Readonly<Record<string, string>> = {
-  'claude-code': 'claude-sonnet-4-6',
-  codex: 'gpt-5.5',
-  'gemini-cli': 'flash',
-};
-const model =
-  process.env.STUDIO_MODEL ?? process.env.SCENE_MODEL ?? defaultModels[providerId] ?? 'gpt-5.5';
-const cliTimeoutMs = Number(process.env.STUDIO_CLI_TIMEOUT ?? '600000');
+const providerId = resolveHarnessProviderId(
+  process.env.STUDIO_PROVIDER ?? process.env.SCENE_PROVIDER,
+);
+const model = process.env.STUDIO_MODEL ?? process.env.SCENE_MODEL ?? defaultHarnessModel(providerId);
 const onlyScenario = process.env.STUDIO_CASE;
 const applyProposals = process.env.STUDIO_APPLY !== '0';
 
@@ -148,26 +144,7 @@ function backVscodeFsWithDisk(): void {
   };
 }
 
-function createRegistry(): AiProviderRegistry {
-  const baseRunner = createDefaultCliRunner();
-  const createRunner =
-    (): typeof baseRunner =>
-    (input): Promise<CliRunResult> =>
-      baseRunner({ ...input, timeoutMs: cliTimeoutMs });
-
-  const provider: AiProvider = createHarnessProvider();
-
-  function createHarnessProvider(): AiProvider {
-    switch (providerId) {
-      case 'claude-code':
-        return new ClaudeCodeProvider({ command: 'claude', model, createRunner });
-      case 'gemini-cli':
-        return new GeminiCliProvider({ command: 'gemini', model, createRunner });
-      default:
-        return new CodexProvider({ command: 'codex', model, createRunner });
-    }
-  }
-
+function createRegistry(provider: AiProvider): AiProviderRegistry {
   const registry = {
     generate: async (request: unknown): Promise<AiGenerateResponse> => {
       const response = await provider.generate(request as never);
@@ -193,8 +170,11 @@ const harnessLogger = {
   info: (): void => undefined,
 } as unknown as IStoryboardLogger;
 
-function createGateway(onUsage: ReturnType<typeof createUsageSummary>['onUsage']): AiGateway {
-  const service = new StoryboardAiService(createRegistry(), { onUsage });
+function createGateway(
+  provider: AiProvider,
+  onUsage: ReturnType<typeof createUsageSummary>['onUsage'],
+): AiGateway {
+  const service = new StoryboardAiService(createRegistry(provider), { onUsage });
 
   return {
     createService: () => service,
@@ -321,12 +301,14 @@ test('studio chat against a real workspace', async () => {
 
   backVscodeFsWithDisk();
 
+  const provider = await createHarnessProvider(providerId, model);
+
   // NOTE: STUDIO_SEED runs only the card-seed extraction (kind/name/roman id) and exits — the
   // cheapest way to watch the /create wizard's one AI call against a real provider.
   if (process.env.STUDIO_SEED) {
     const usage = createUsageSummary();
     const seed = await (
-      createGateway(usage.onUsage).createService(vscode.Uri.file(workspace) as never) as never as {
+      createGateway(provider, usage.onUsage).createService(vscode.Uri.file(workspace) as never) as never as {
         extractStudioCardSeed: (description: string) => Promise<unknown>;
       }
     ).extractStudioCardSeed(process.env.STUDIO_SEED);
@@ -337,7 +319,7 @@ test('studio chat against a real workspace', async () => {
 
   const root = vscode.Uri.file(workspace) as never;
   const usage = createUsageSummary();
-  const gateway = createGateway(usage.onUsage);
+  const gateway = createGateway(provider, usage.onUsage);
   const useCase = new StudioChatUseCase(gateway, harnessLogger);
   const selected = onlyScenario
     ? scenarios.filter((scenario) => scenario.name === onlyScenario)
