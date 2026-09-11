@@ -128,7 +128,6 @@ export function SettingsView({
   const [savedNotice, setSavedNotice] = useState<SavedNotice | null>(null);
   const savedNoticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [apiKeyDraft, setApiKeyDraft] = useState<Partial<Record<AiProviderId, string>>>({});
-  const [commandDraft, setCommandDraft] = useState<Partial<Record<AiProviderId, string>>>({});
   const [ollamaBaseUrlDraft, setOllamaBaseUrlDraft] = useState<string | null>(null);
   const [baseUrlFocused, setBaseUrlFocused] = useState(false);
   const baseUrlFocusedRef = useRef(baseUrlFocused);
@@ -289,8 +288,6 @@ export function SettingsView({
                 onSaved={onSaved}
                 apiKeyDraft={apiKeyDraft}
                 setApiKeyDraft={setApiKeyDraft}
-                commandDraft={commandDraft}
-                setCommandDraft={setCommandDraft}
                 ollamaBaseUrlDraft={ollamaBaseUrlDraft}
                 setOllamaBaseUrlDraft={setOllamaBaseUrlDraft}
                 baseUrlFocused={baseUrlFocused}

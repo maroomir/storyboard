@@ -36,7 +36,6 @@ export const aiProvidersListResponsePayloadSchema = z.object({
 
 export const aiProvidersCheckConnectionResponsePayloadSchema = z.object({
   ok: z.boolean(),
-  reason: z.literal('not-installed').optional(),
 });
 
 const aiUsageSchema = z.object({

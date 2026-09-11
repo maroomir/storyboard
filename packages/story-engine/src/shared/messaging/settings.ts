@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import {
-  cliProviderIds,
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   storyboardModelCatalog,
@@ -22,7 +21,6 @@ const storyboardModelCatalogPayloadSchema = z.record(
 const providerRuntimeConfigSchema = z.object({
   model: z.string().trim().min(1),
   baseUrl: z.string().trim().min(1).optional(),
-  command: z.string().trim().min(1).optional(),
 });
 
 const providerConfigsPayloadSchema = z.record(providerIdSchema, providerRuntimeConfigSchema);
@@ -107,11 +105,6 @@ export const settingsUpdateProviderModelRequestPayloadSchema = z
 export const settingsUpdateProviderBaseUrlRequestPayloadSchema = z.object({
   providerId: z.literal('ollama'),
   baseUrl: z.string().trim().min(1),
-});
-
-export const settingsUpdateProviderCommandRequestPayloadSchema = z.object({
-  providerId: z.enum(cliProviderIds),
-  command: z.string().trim().min(1),
 });
 
 export const settingsUpdateTaskAiConfigRequestPayloadSchema = z

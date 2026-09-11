@@ -3,7 +3,6 @@ import { join, resolve } from 'node:path';
 
 import {
   aiProviderIds,
-  isCliProvider,
   storyboardModelCatalog,
   storyboardSettingCatalog,
 } from '@storyboard/story-ai';
@@ -150,9 +149,6 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
 function configKeyCompletions(): Completion[] {
   const providerKeys = aiProviderIds.flatMap((id) => [
     { text: `providers.${id}.model`, description: `${id} 모델` },
-    ...(isCliProvider(id)
-      ? [{ text: `providers.${id}.command`, description: `${id} 실행 명령` }]
-      : []),
     ...(id === 'ollama'
       ? [{ text: 'providers.ollama.baseUrl', description: 'Ollama Base URL' }]
       : []),

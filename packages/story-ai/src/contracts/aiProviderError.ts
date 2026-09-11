@@ -1,4 +1,4 @@
-import { type AiConnectionFailureReason, type AiProviderId } from './aiTypes';
+import { type AiProviderId } from './aiTypes';
 
 export type AiProviderErrorCode =
   | 'missing-provider'
@@ -9,17 +9,13 @@ export type AiProviderErrorCode =
   | 'generation-failed';
 
 export class AiProviderError extends Error {
-  public readonly connectionReason?: AiConnectionFailureReason;
-
   public constructor(
     public readonly code: AiProviderErrorCode,
     public readonly providerId: AiProviderId,
     message: string,
     public override readonly cause?: unknown,
-    options?: { readonly connectionReason?: AiConnectionFailureReason },
   ) {
     super(message);
     this.name = 'AiProviderError';
-    this.connectionReason = options?.connectionReason;
   }
 }

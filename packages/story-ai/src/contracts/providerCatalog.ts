@@ -1,14 +1,13 @@
-// 프로바이더 한 곳. 표시명·기본 모델·기본 실행 명령·모델 목록·요금이 provider 마다 한 행이며,
+// 프로바이더 한 곳. 표시명·기본 모델·모델 목록·요금이 provider 마다 한 행이며,
 // 아래의 파생 표들은 전부 이 행에서 나온다. 프로바이더를 추가할 때 고쳐야 하는 파일은 여기 하나다.
 
-export type ProviderTransport = 'http' | 'cli' | 'mock';
+export type ProviderTransport = 'http' | 'mock';
 
 export interface ProviderModelEntry {
   readonly id: string;
   readonly displayName: string;
-  // 구독형 CLI 는 토큰당 과금이 아니므로 값이 없다. 없으면 요금표에서 그 모델이 빠진다.
-  readonly inputPricePerMillion?: number;
-  readonly outputPricePerMillion?: number;
+  readonly inputPricePerMillion: number;
+  readonly outputPricePerMillion: number;
 }
 
 export interface ProviderCatalogEntry {
@@ -16,10 +15,7 @@ export interface ProviderCatalogEntry {
   readonly transport: ProviderTransport;
   readonly requiresApiKey: boolean;
   readonly defaultModel: string | undefined;
-  readonly defaultCommand: string | undefined;
   readonly defaultBaseUrl: string | undefined;
-  // CLI 백엔드에서 사라진 모델 id. 옛 설정이 죽은 모델로 호출을 보내지 않도록 기본값으로 되돌린다.
-  readonly retiredModelIds: readonly string[];
   readonly models: readonly ProviderModelEntry[];
 }
 
@@ -29,9 +25,7 @@ export const providerCatalog = {
     transport: 'http',
     requiresApiKey: true,
     defaultModel: 'gpt-5.4-mini',
-    defaultCommand: undefined,
     defaultBaseUrl: undefined,
-    retiredModelIds: [],
     models: [
       {
         id: 'gpt-5.4-mini',
@@ -57,11 +51,15 @@ export const providerCatalog = {
     displayName: 'Claude',
     transport: 'http',
     requiresApiKey: true,
-    defaultModel: 'claude-sonnet-4-6',
-    defaultCommand: undefined,
+    defaultModel: 'claude-sonnet-5',
     defaultBaseUrl: undefined,
-    retiredModelIds: [],
     models: [
+      {
+        id: 'claude-sonnet-5',
+        displayName: 'Claude Sonnet 5',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 10.0,
+      },
       {
         id: 'claude-sonnet-4-6',
         displayName: 'Claude Sonnet 4.6',
@@ -87,9 +85,7 @@ export const providerCatalog = {
     transport: 'http',
     requiresApiKey: true,
     defaultModel: 'gemini-2.5-flash',
-    defaultCommand: undefined,
     defaultBaseUrl: undefined,
-    retiredModelIds: [],
     models: [
       {
         id: 'gemini-2.5-flash',
@@ -116,9 +112,7 @@ export const providerCatalog = {
     transport: 'http',
     requiresApiKey: true,
     defaultModel: 'grok-4.6',
-    defaultCommand: undefined,
     defaultBaseUrl: 'https://api.x.ai/v1',
-    retiredModelIds: [],
     // NOTE: docs.x.ai/docs/models 2026-09 기준, 프롬프트 200k 토큰 미만 요금.
     models: [
       {
@@ -146,9 +140,7 @@ export const providerCatalog = {
     transport: 'http',
     requiresApiKey: false,
     defaultModel: 'llama3.3',
-    defaultCommand: undefined,
     defaultBaseUrl: 'http://localhost:11434',
-    retiredModelIds: [],
     models: [
       {
         id: 'llama3.3',
@@ -170,64 +162,12 @@ export const providerCatalog = {
       },
     ],
   },
-  'claude-code': {
-    displayName: 'Claude Code (CLI)',
-    transport: 'cli',
-    requiresApiKey: false,
-    // NOTE: 실측(2026-09-09) — 씬 목표 15,000자에서 sonnet 은 목표의 47%, opus 는 92%에 그친다.
-    // 기본값이 목표를 못 맞추는 쪽이면 사용자가 원인을 파이프라인에서 찾게 되므로 opus 를 쓴다.
-    defaultModel: 'opus',
-    defaultCommand: 'claude',
-    defaultBaseUrl: undefined,
-    retiredModelIds: [],
-    models: [
-      { id: 'opus', displayName: 'Claude Code · Opus' },
-      { id: 'sonnet', displayName: 'Claude Code · Sonnet' },
-      { id: 'haiku', displayName: 'Claude Code · Haiku' },
-    ],
-  },
-  codex: {
-    displayName: 'Codex (CLI)',
-    transport: 'cli',
-    requiresApiKey: false,
-    defaultModel: 'gpt-5.6-sol',
-    defaultCommand: 'codex',
-    defaultBaseUrl: undefined,
-    retiredModelIds: ['gpt-5-codex'],
-    models: [
-      { id: 'gpt-5.6-sol', displayName: 'Codex · GPT-5.6 Sol' },
-      { id: 'gpt-5.6-terra', displayName: 'Codex · GPT-5.6 Terra' },
-      { id: 'gpt-5.6-luna', displayName: 'Codex · GPT-5.6 Luna' },
-      { id: 'gpt-5.5', displayName: 'Codex · GPT-5.5' },
-      { id: 'gpt-5.4', displayName: 'Codex · GPT-5.4' },
-      { id: 'gpt-5.4-mini', displayName: 'Codex · GPT-5.4 mini' },
-    ],
-  },
-  'gemini-cli': {
-    displayName: 'Gemini CLI',
-    transport: 'cli',
-    requiresApiKey: false,
-    defaultModel: 'flash',
-    defaultCommand: 'gemini',
-    defaultBaseUrl: undefined,
-    retiredModelIds: [],
-    models: [
-      { id: 'flash', displayName: 'Gemini CLI · Flash (현행 별칭)' },
-      { id: 'pro', displayName: 'Gemini CLI · Pro (현행 별칭)' },
-      { id: 'gemini-3.1-pro-preview', displayName: 'Gemini CLI · 3.1 Pro Preview' },
-      { id: 'gemini-3-flash-preview', displayName: 'Gemini CLI · 3 Flash Preview' },
-      { id: 'gemini-2.5-pro', displayName: 'Gemini CLI · 2.5 Pro' },
-      { id: 'gemini-2.5-flash', displayName: 'Gemini CLI · 2.5 Flash' },
-    ],
-  },
   mock: {
     displayName: 'Mock AI',
     transport: 'mock',
     requiresApiKey: false,
     defaultModel: undefined,
-    defaultCommand: undefined,
     defaultBaseUrl: undefined,
-    retiredModelIds: [],
     models: [
       {
         id: 'mock-default',
@@ -241,28 +181,23 @@ export const providerCatalog = {
 
 export type AiProviderId = keyof typeof providerCatalog;
 
-type ProviderIdsByTransport<T extends ProviderTransport> = {
-  [K in AiProviderId]: (typeof providerCatalog)[K]['transport'] extends T ? K : never;
-}[AiProviderId];
+// 0.9.1 까지 있던 구독형 CLI 프로바이더. 각 제공자가 프로그램적·대량 호출에는 API 키를 쓰라고
+// 못박고 있어 제품에서 뺐다. 옛 설정 파일이 그대로 남아 있으면 «고르지 않음» 으로 떨어져 생성이
+// 통째로 막히므로, 읽는 시점에 같은 계열의 종량제 프로바이더로 옮긴다.
+export const retiredProviderReplacements: Readonly<Record<string, AiProviderId>> = {
+  'claude-code': 'claude',
+  codex: 'openai',
+  'gemini-cli': 'google',
+};
 
-// 구독 CLI. HTTP 클라이언트 대신 명령을 띄워 부르고, `command`·`model`·`timeoutMs` 설정 모양과
-// 사용량 한도 폴백을 공유한다.
-export type CliProviderId = ProviderIdsByTransport<'cli'>;
+export function replaceRetiredProviderId(value: string): AiProviderId | undefined {
+  return retiredProviderReplacements[value];
+}
 
 export const aiProviderIds = Object.keys(providerCatalog) as unknown as readonly [
   AiProviderId,
   ...AiProviderId[],
 ];
-
-export const cliProviderIds = aiProviderIds.filter(
-  (providerId) => providerCatalog[providerId].transport === 'cli',
-) as unknown as readonly [CliProviderId, ...CliProviderId[]];
-
-// CLI 를 띄우는 두 시간 상한. 프로바이더마다 따로 두면 하나만 고치고 나머지를 놓친다.
-export const cliProviderDefaults = {
-  generateTimeoutMs: 600_000,
-  connectionCheckTimeoutMs: 15_000,
-} as const;
 
 // `as const` 는 행마다 실제로 적힌 필드만 남기므로, 선택 필드를 읽는 파생 표는 선언된 모양으로
 // 한 번 넓혀서 읽는다.
@@ -296,24 +231,16 @@ export const storyboardModelPricing = Object.fromEntries(
   aiProviderIds.map((providerId) => [
     providerId,
     Object.fromEntries(
-      catalogRows[providerId].models
-        .filter((model) => model.inputPricePerMillion !== undefined)
-        .map((model) => [
-          model.id,
-          {
-            inputPricePerMillion: model.inputPricePerMillion,
-            outputPricePerMillion: model.outputPricePerMillion,
-          },
-        ]),
+      catalogRows[providerId].models.map((model) => [
+        model.id,
+        {
+          inputPricePerMillion: model.inputPricePerMillion,
+          outputPricePerMillion: model.outputPricePerMillion,
+        },
+      ]),
     ),
   ]),
 ) as unknown as Readonly<Record<AiProviderId, Readonly<Record<string, ModelPricePerMillion>>>>;
-
-// 구독 CLI 는 요금제로 인증하므로 토큰은 있어도 금액이 없다. 0원으로 더하면 실제 청구액을 낮춰
-// 보이게 하면서도 정확한 숫자처럼 보이므로, 금액을 보고하는 쪽은 이것부터 묻는다.
-export function isUnpricedProvider(providerId: AiProviderId): boolean {
-  return Object.keys(storyboardModelPricing[providerId]).length === 0;
-}
 
 export function getProviderDisplayName(providerId: AiProviderId): string {
   return providerCatalog[providerId].displayName;
@@ -323,19 +250,11 @@ export function getDefaultModelId(providerId: AiProviderId): string | undefined 
   return providerCatalog[providerId].defaultModel;
 }
 
-export function getDefaultCliCommand(providerId: CliProviderId): string {
-  return providerCatalog[providerId].defaultCommand;
-}
-
-export function isRetiredModelId(providerId: AiProviderId, modelId: string): boolean {
-  return catalogRows[providerId].retiredModelIds.includes(modelId);
-}
-
 export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string): boolean {
   return catalogRows[providerId].models.some((model) => model.id === modelId);
 }
 
-// 프로바이더가 내는 네 가지 실패 문구. 여덟 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
+// 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
 // 호스트가 «키가 없다»를 알아보려고 문구 조각을 손으로 베껴 두게 된다.
 export const missingApiKeyMarker = 'API 키가 설정되어 있지 않습니다';
 

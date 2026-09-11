@@ -2,7 +2,6 @@ import { providerCatalog } from './providerCatalog';
 
 export type {
   AiProviderId,
-  CliProviderId,
   ModelPricePerMillion,
   ProviderCatalogEntry,
   ProviderModelEntry,
@@ -17,20 +16,17 @@ export {
   missingApiKeyMarker,
   missingApiKeyMessage,
   missingModelMessage,
-  cliProviderIds,
-  cliProviderDefaults,
-  getDefaultCliCommand,
   getDefaultModelId,
   getProviderDisplayName,
   isModelInCatalogForProvider,
-  isRetiredModelId,
-  isUnpricedProvider,
   providerCatalog,
+  replaceRetiredProviderId,
+  retiredProviderReplacements,
   storyboardModelCatalog,
   storyboardModelPricing,
 } from './providerCatalog';
 
-import type { AiProviderId, CliProviderId } from './providerCatalog';
+import type { AiProviderId } from './providerCatalog';
 
 export const aiTaskCatalog = [
   { name: 'sceneGrounding', label: '씬 사실 시트', status: 'wired' },
@@ -98,10 +94,6 @@ export interface UsageSummaryByEntity {
 
 export function isAiProviderId(value: string): value is AiProviderId {
   return Object.hasOwn(providerCatalog, value);
-}
-
-export function isCliProvider(providerId: AiProviderId): providerId is CliProviderId {
-  return providerCatalog[providerId].transport === 'cli';
 }
 
 // ~/.storyboard/secrets.json 에 키가 필요한 쪽. 호스트마다 같은 질문을 다르게 답하지 않도록

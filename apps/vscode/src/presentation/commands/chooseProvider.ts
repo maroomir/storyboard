@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { aiProviderIds, isCliProvider, requiresApiKey } from '@storyboard/story-ai';
+import { aiProviderIds, requiresApiKey } from '@storyboard/story-ai';
 import type {
   AiProviderId,
   AiProviderRegistry,
@@ -38,9 +38,7 @@ export async function chooseDefaultProvider(
       notes.push('현재 기본');
     }
 
-    if (isCliProvider(providerId)) {
-      notes.push('구독 CLI · API 키 불필요');
-    } else if (providerId === 'ollama') {
+    if (providerId === 'ollama') {
       notes.push('로컬');
     } else if (providerId === 'mock') {
       notes.push('가짜 텍스트 · 흐름 확인용');

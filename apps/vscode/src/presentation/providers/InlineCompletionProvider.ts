@@ -19,10 +19,9 @@ import {
   vscodeFsAdapter,
 } from '@/infrastructure/vscode/workspaceFsAdapters';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { isCliProvider } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
-import type { AiProviderId, InlineCompletionContext } from '@storyboard/story-ai';
+import type { InlineCompletionContext } from '@storyboard/story-ai';
 import { parseDraftSceneParts } from '@/infrastructure/vscode/draftSceneLink';
 
 const inlineCompletionDelayMs = 700;
@@ -86,11 +85,6 @@ function formatSceneIntent(sceneBody: string): string | undefined {
   return trimmed.length <= inlineSceneIntentChars
     ? trimmed
     : trimmed.slice(0, inlineSceneIntentChars).trim();
-}
-
-// NOTE: CLI provider는 호출마다 프로세스를 새로 띄워 키 입력당 인라인 완성에는 부적합하므로 건너뛴다.
-export function shouldRunInlineCompletion(providerId: AiProviderId): boolean {
-  return !isCliProvider(providerId);
 }
 
 export function trimInlineCompletionPrefix(text: string): string {
@@ -158,8 +152,7 @@ class DraftInlineCompletionProvider implements vscode.InlineCompletionItemProvid
   ): boolean {
     return (
       isDraftMarkdownFile(documentUri, workspaceFolder) &&
-      isTaskProviderReady(this.dependencies.configBridge, 'inlineCompletion') &&
-      shouldRunInlineCompletion(this.dependencies.aiGateway.getTaskProvider('inlineCompletion'))
+      isTaskProviderReady(this.dependencies.configBridge, 'inlineCompletion')
     );
   }
 

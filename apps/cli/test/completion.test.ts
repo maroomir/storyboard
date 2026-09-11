@@ -62,7 +62,7 @@ describe('computeCompletions', () => {
       expect.arrayContaining(['--all', '--force', '--json']),
     );
     expect(texts(['scene', 'generate', '--a'])).toEqual(['--all']);
-    expect(texts(['setup', '--provider', 'c'])).toEqual(['claude', 'claude-code', 'codex']);
+    expect(texts(['setup', '--provider', 'c'])).toEqual(['claude']);
     expect(texts(['setup', '--provider', 'openai', '--model', ''])).toContain('gpt-5-mini');
     expect(texts(['config', 'set', 'draft.'])).toEqual(
       expect.arrayContaining(['draft.keepHistory']),

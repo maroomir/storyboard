@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { aiProviderIds, cliProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-ai"
+import { aiProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-ai"
 
 import {
   AI_PROVIDER_IDS,
-  CLI_PROVIDER_IDS,
-  defaultCliCommand,
   formatResolvedTaskAi,
   parseSettingsReadSnapshot,
   pickModelForTaskProvider,
@@ -22,7 +20,7 @@ function buildValidSnapshot(): SettingsReadSnapshot {
   )
 
   return {
-    defaultProvider: "codex",
+    defaultProvider: "claude",
     isDefaultProviderConfigured: true,
     providers: AI_PROVIDER_IDS.map((id) => ({
       providerId: id,
@@ -55,13 +53,13 @@ describe("parseSettingsReadSnapshot", () => {
 
   it("rejects a provider whose model catalog is empty", () => {
     const snapshot = buildValidSnapshot()
-    const brokenCatalog = { ...snapshot.modelCatalog, codex: [] }
+    const brokenCatalog = { ...snapshot.modelCatalog, claude: [] }
     expect(parseSettingsReadSnapshot({ ...snapshot, modelCatalog: brokenCatalog })).toBeUndefined()
   })
 
   it("rejects a default-provider task that still carries a model", () => {
     const snapshot = buildValidSnapshot()
-    const taskAssignments = { sceneDialogue: { providerId: null, model: "codex-model" } }
+    const taskAssignments = { sceneDialogue: { providerId: null, model: "claude-model" } }
     expect(parseSettingsReadSnapshot({ ...snapshot, taskAssignments })).toBeUndefined()
   })
 })
@@ -69,27 +67,26 @@ describe("parseSettingsReadSnapshot", () => {
 describe("pickModelForTaskProvider", () => {
   it("keeps a preferred model when it is in the catalog", () => {
     const snapshot = buildValidSnapshot()
-    expect(pickModelForTaskProvider(snapshot, "codex", "codex-model")).toBe("codex-model")
+    expect(pickModelForTaskProvider(snapshot, "claude", "claude-model")).toBe("claude-model")
   })
 
   it("falls back to the catalog head when the preferred model is unknown", () => {
     const snapshot = buildValidSnapshot()
-    expect(pickModelForTaskProvider(snapshot, "codex", "ghost-model")).toBe("codex-model")
+    expect(pickModelForTaskProvider(snapshot, "claude", "ghost-model")).toBe("claude-model")
   })
 })
 
 describe("formatResolvedTaskAi", () => {
   it("resolves a default-provider task to the default provider and its model", () => {
     const snapshot = buildValidSnapshot()
-    expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("codex / codex model")
+    expect(formatResolvedTaskAi(snapshot, "sceneDialogue")).toBe("claude / claude model")
   })
 
   // 웹뷰는 이 목록을 직접 계약에서 읽으므로 사본 대조는 더 이상 의미가 없다. 대신 계약이 실제로
-  // 브라우저 번들에 닿는지와, 실행 명령이 사람이 아는 이름 그대로인지를 확인한다.
+  // 브라우저 번들에 닿는지를 확인한다.
   describe("provider lists read straight from the contract", () => {
     it("reaches the settings panel with every provider the engine knows", () => {
       expect([...AI_PROVIDER_IDS]).toEqual([...aiProviderIds])
-      expect([...CLI_PROVIDER_IDS]).toEqual([...cliProviderIds])
     })
 
     it("agrees with the engine on which providers need an API key", () => {
@@ -98,12 +95,5 @@ describe("formatResolvedTaskAi", () => {
       }
     })
 
-    it("names the binary each CLI provider actually runs", () => {
-      expect(Object.fromEntries(cliProviderIds.map((id) => [id, defaultCliCommand(id)]))).toEqual({
-        "claude-code": "claude",
-        codex: "codex",
-        "gemini-cli": "gemini"
-      })
-    })
   })
 })

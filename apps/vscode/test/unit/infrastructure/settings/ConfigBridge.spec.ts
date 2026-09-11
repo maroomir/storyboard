@@ -208,78 +208,32 @@ describe("ConfigBridge", () => {
 
     await configBridge.setProviderBaseUrl("http://127.0.0.1:11434")
     expect(values.get("providers.ollama.baseUrl")).toBe("http://127.0.0.1:11434")
-
-    await configBridge.setProviderCommand("claude-code", "/usr/local/bin/claude")
-    expect(values.get("providers.claude-code.command")).toBe("/usr/local/bin/claude")
-
-    await configBridge.setProviderCommand("codex", "/opt/codex")
-    expect(values.get("providers.codex.command")).toBe("/opt/codex")
   })
 
-  it("reads CLI provider command with defaults", () => {
-    const configBridge = createConfigBridge(
-      new Map<string, unknown>([["providers.claude-code.command", "/custom/claude"]])
-    )
-
-    expect(configBridge.getProviderConfig("claude-code")).toEqual({
-      command: "/custom/claude",
-      model: "opus",
-      timeoutMs: 600000
-    })
-    expect(configBridge.getProviderConfig("codex")).toEqual({
-      command: "codex",
-      model: "gpt-5.6-sol",
-      timeoutMs: 600000
-    })
-  })
-
-  it("reads a configured CLI provider timeout override", () => {
-    const configBridge = createConfigBridge(
-      new Map<string, unknown>([["providers.codex.timeoutMs", 300000]])
-    )
-
-    expect(configBridge.getProviderConfig("codex").timeoutMs).toBe(300000)
-    expect(configBridge.getProviderConfig("claude-code").timeoutMs).toBe(600000)
-  })
-
-  it("reads a configured Codex reasoning effort for codex only", () => {
-    const configBridge = createConfigBridge(
-      new Map<string, unknown>([["providers.codex.reasoningEffort", "high"]])
-    )
-
-    expect(configBridge.getProviderConfig("codex").reasoningEffort).toBe("high")
-    expect(configBridge.getProviderConfig("claude-code").reasoningEffort).toBeUndefined()
-  })
-
-  it("omits the Codex reasoning effort when blank", () => {
-    const configBridge = createConfigBridge(
-      new Map<string, unknown>([["providers.codex.reasoningEffort", "  "]])
-    )
-
-    expect(configBridge.getProviderConfig("codex")).toEqual({
-      command: "codex",
-      model: "gpt-5.6-sol",
-      timeoutMs: 600000
-    })
-  })
-
-  it("falls back from legacy Codex models to the current catalog default", () => {
+  // A config file written before the subscription CLIs left still names one. Reading it must land
+  // on a provider that exists, or the workspace reports "no provider chosen" and refuses to run.
+  it("resolves a retired subscription-CLI provider onto its metered replacement", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "codex"],
-        ["providers.codex.model", "gpt-5-codex"]
+        ["defaultProvider", "claude-code"],
+        ["tasks", { grammarCheck: { provider: "gemini-cli" } }]
       ])
     )
 
-    expect(configBridge.getProviderConfig("codex")).toEqual({
-      command: "codex",
-      model: "gpt-5.6-sol",
-      timeoutMs: 600000
-    })
+    expect(configBridge.isDefaultProviderConfigured()).toBe(true)
+    expect(configBridge.getDefaultProvider()).toBe("claude")
     expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
-      providerId: "codex",
-      model: "gpt-5.6-sol"
+      providerId: "claude",
+      model: "claude-sonnet-5"
     })
+    expect(configBridge.getTaskProviderOverride("grammarCheck")).toBe("google")
+  })
+
+  it("still reports an unknown provider as unconfigured", () => {
+    const configBridge = createConfigBridge(new Map<string, unknown>([["defaultProvider", "nope"]]))
+
+    expect(configBridge.isDefaultProviderConfigured()).toBe(false)
+    expect(configBridge.getDefaultProvider()).toBe("mock")
   })
 
   it("throws when update is not available on configuration", async () => {

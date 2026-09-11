@@ -1,7 +1,12 @@
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
-import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
+import {
+  aiProviderIds,
+  replaceRetiredProviderId,
+  storyboardModelCatalog,
+  type AiProviderId,
+} from '@storyboard/story-ai';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import {
   getStoryboardProjectPaths,
@@ -97,7 +102,13 @@ function validateProvider(
   }
 
   if (!aiProviderIds.includes(provider as AiProviderId)) {
-    return `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+    // NOTE: 설정 파일의 낡은 이름은 조용히 옮기지만, 명령줄에 직접 적은 이름은 짚어 준다.
+    // 사람이 방금 타이핑한 프로바이더가 말없이 다른 것으로 바뀌면 모델도 요금도 달라진다.
+    const replacement = replaceRetiredProviderId(provider);
+
+    return replacement === undefined
+      ? `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`
+      : `${provider} 는 더 이상 지원하지 않습니다. --provider ${replacement} 을 쓰세요.`;
   }
 
   const catalog = storyboardModelCatalog[provider as AiProviderId];

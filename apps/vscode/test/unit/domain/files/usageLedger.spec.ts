@@ -96,7 +96,7 @@ describe("usageLedger", () => {
             id: "legacy",
             recordedAt: "2026-01-01T00:00:00.000Z",
             taskName: "sceneDraft",
-            providerId: "codex",
+            providerId: "claude",
             usage: { inputTokens: 10, outputTokens: 10 },
             costUsd: 0,
             attribution: {}
