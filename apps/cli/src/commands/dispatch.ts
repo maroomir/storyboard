@@ -112,16 +112,6 @@ function validateProvider(
   return undefined;
 }
 
-function validateFallback(provider: string | undefined): string | undefined {
-  if (provider === undefined) {
-    return undefined;
-  }
-
-  return aiProviderIds.includes(provider as AiProviderId)
-    ? undefined
-    : `알 수 없는 폴백 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
-}
-
 // One entry for both faces of the CLI: `index.ts` prints what comes back, the TUI renders it.
 export async function dispatch(
   argv: readonly string[],
@@ -193,9 +183,10 @@ export async function dispatch(
     };
   }
 
-  const providerFailure =
-    validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model')) ??
-    validateFallback(flagString(args.flags, 'fallback'));
+  const providerFailure = validateProvider(
+    flagString(args.flags, 'provider'),
+    flagString(args.flags, 'model'),
+  );
 
   if (providerFailure !== undefined) {
     return failure(providerFailure, mode);
@@ -246,9 +237,6 @@ export async function dispatch(
       ? {}
       : { model: flagString(args.flags, 'model') }),
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
-    ...(flagString(args.flags, 'fallback') === undefined
-      ? {}
-      : { fallbackProvider: flagString(args.flags, 'fallback') }),
     ...(configWriteTarget === undefined ? {} : { configWriteTarget }),
   });
 

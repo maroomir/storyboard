@@ -103,7 +103,6 @@ function flagCompletions(spec: CommandSpec | undefined): Completion[] {
 function valueCompletions(flagName: string, words: readonly string[]): Completion[] | undefined {
   switch (flagName) {
     case 'provider':
-    case 'fallback':
       return aiProviderIds.map((id) => ({ text: id, description: '' }));
     case 'model': {
       const providerIndex = words.indexOf('--provider');

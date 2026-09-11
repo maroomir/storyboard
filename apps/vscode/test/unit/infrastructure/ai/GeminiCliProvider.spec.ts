@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, GeminiCliProvider, isUsageLimitError } from '@storyboard/story-ai';
+import { AiProviderError, GeminiCliProvider } from '@storyboard/story-ai';
 import type { CliRunInput, CliRunner, CliRunResult } from '@storyboard/story-ai';
 describe("GeminiCliProvider", () => {
   it("requires a command and a model", () => {
@@ -169,7 +169,6 @@ describe("GeminiCliProvider", () => {
 
     expect(caught).toMatchObject({ code: "generation-failed", providerId: "gemini-cli" })
     expect((caught as Error).message).toContain("exhausted your daily quota")
-    expect(isUsageLimitError(caught)).toBe(true)
   })
 
   it("reports a non-zero exit with stderr when there is no json error", async () => {
