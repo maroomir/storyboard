@@ -2,18 +2,19 @@ import { describe, expect, it } from "vitest"
 
 import {
   aiProviderIds,
-  cliProviderIds,
   ConfigBridge,
   providerCatalog,
+  replaceRetiredProviderId,
+  retiredProviderReplacements,
   storyboardModelCatalog,
 } from '@storyboard/story-ai';
 import type { AiProviderId, StoryboardConfigurationLike } from '@storyboard/story-ai';
 describe("storyboardModelCatalog vs package.json defaults", () => {
-  it("includes every GPT-5.6 Codex model", () => {
-    const codexModelIds = storyboardModelCatalog.codex.map((option) => option.id)
+  it("offers the current Claude models", () => {
+    const claudeModelIds = storyboardModelCatalog.claude.map((option) => option.id)
 
-    expect(codexModelIds).toEqual(
-      expect.arrayContaining(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"])
+    expect(claudeModelIds).toEqual(
+      expect.arrayContaining(["claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"])
     )
   })
 
@@ -54,25 +55,27 @@ describe("providerCatalog internal consistency", () => {
     }
   })
 
-  it("gives every CLI provider a command and no other provider one", () => {
+  // Every provider Storyboard speaks to is billed per token now, so a missing price would make a
+  // paid run look free rather than merely unknown.
+  it("reaches every provider over http or the offline mock", () => {
     for (const providerId of aiProviderIds) {
       const entry = providerCatalog[providerId]
-      const isCli = (cliProviderIds as readonly string[]).includes(providerId)
 
-      expect(entry.transport === "cli", `${providerId} transport disagrees with cliProviderIds`).toBe(isCli)
-      expect(typeof entry.defaultCommand === "string", `${providerId} command`).toBe(isCli)
+      expect(["http", "mock"], `${providerId} transport`).toContain(entry.transport)
     }
   })
 
-  it("keeps retired model ids out of the offered models", () => {
-    for (const providerId of aiProviderIds) {
-      const entry = providerCatalog[providerId]
-      const ids = entry.models.map((model) => model.id)
+  // The subscription CLIs left in 0.9.2. A workspace configured for one must land on a provider
+  // that still exists, or the author's next run refuses with "no provider chosen".
+  it("maps every retired provider id onto a provider that still exists", () => {
+    for (const retiredId of Object.keys(retiredProviderReplacements)) {
+      expect(aiProviderIds, `${retiredId} is still in the catalog`).not.toContain(retiredId)
 
-      for (const retired of entry.retiredModelIds) {
-        expect(ids, `${providerId} still offers retired ${retired}`).not.toContain(retired)
-      }
+      const replacement = replaceRetiredProviderId(retiredId)
+      expect(aiProviderIds, `${retiredId} maps outside the catalog`).toContain(replacement)
     }
+
+    expect(replaceRetiredProviderId("openai")).toBeUndefined()
   })
 
   it("keeps model ids unique inside a provider and prices paired", () => {
@@ -84,10 +87,8 @@ describe("providerCatalog internal consistency", () => {
       expect(new Set(ids).size, `${providerId} repeats a model id`).toBe(ids.length)
 
       for (const model of entry.models) {
-        expect(
-          (model.inputPricePerMillion === undefined) === (model.outputPricePerMillion === undefined),
-          `${providerId}/${model.id} prices only one direction`
-        ).toBe(true)
+        expect(typeof model.inputPricePerMillion, `${providerId}/${model.id} input price`).toBe("number")
+        expect(typeof model.outputPricePerMillion, `${providerId}/${model.id} output price`).toBe("number")
       }
     }
   })

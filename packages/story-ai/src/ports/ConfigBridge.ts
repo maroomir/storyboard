@@ -1,19 +1,15 @@
 import {
-  isCliProvider,
   aiProviderIds,
   aiTaskNames,
   type AiProviderId,
   type AiTaskName,
-  type CliProviderId,
 } from '#ai/contracts/aiTypes';
 import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
 import {
-  cliProviderDefaults,
-  getDefaultCliCommand,
   getDefaultModelId,
   isModelInCatalogForProvider,
-  isRetiredModelId,
   providerCatalog,
+  replaceRetiredProviderId,
   storyboardModelCatalog,
 } from '#ai/contracts/providerCatalog';
 import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
@@ -41,9 +37,6 @@ export type SceneGenerationTuningLike = Omit<ModelProfile, 'measured' | 'section
 export interface ProviderModelConfig {
   readonly model?: string;
   readonly baseUrl?: string;
-  readonly command?: string;
-  readonly timeoutMs?: number;
-  readonly reasoningEffort?: string;
 }
 
 export interface TaskAiStoredEntry {
@@ -107,7 +100,7 @@ export class ConfigBridge {
       .getConfiguration()
       .get<unknown>('defaultProvider', undefined);
 
-    return typeof configured === 'string' && isConfiguredProvider(configured);
+    return typeof configured === 'string' && resolveStoredProviderId(configured) !== undefined;
   }
 
   public getProviderConfig(providerId: AiProviderId): ProviderModelConfig {
@@ -117,31 +110,6 @@ export class ConfigBridge {
       return {
         baseUrl: configuration.get('providers.ollama.baseUrl', providerCatalog.ollama.defaultBaseUrl),
         model: configuration.get('providers.ollama.model', providerCatalog.ollama.defaultModel),
-      };
-    }
-
-    if (isCliProvider(providerId)) {
-      const model = configuration.get(`providers.${providerId}.model`, getDefaultModelId(providerId));
-
-      const reasoningEffort =
-        providerId === 'codex'
-          ? configuration.get('providers.codex.reasoningEffort', '').trim() || undefined
-          : undefined;
-
-      return {
-        command: configuration.get(
-          `providers.${providerId}.command`,
-          getDefaultCliCommand(providerId),
-        ),
-        model:
-          providerId === 'codex'
-            ? resolveEffectiveModelForTask(model, defaultModelIdFor(providerId), providerId)
-            : model,
-        timeoutMs: configuration.get(
-          `providers.${providerId}.timeoutMs`,
-          cliProviderDefaults.generateTimeoutMs,
-        ),
-        ...(reasoningEffort ? { reasoningEffort } : {}),
       };
     }
 
@@ -196,10 +164,6 @@ export class ConfigBridge {
 
   public async setProviderBaseUrl(baseUrl: string): Promise<void> {
     await this.configurationUpdate('providers.ollama.baseUrl', baseUrl);
-  }
-
-  public async setProviderCommand(providerId: CliProviderId, command: string): Promise<void> {
-    await this.configurationUpdate(`providers.${providerId}.command`, command);
   }
 
   public async setTaskAiConfig(
@@ -417,7 +381,7 @@ export class ConfigBridge {
       .getConfiguration()
       .get(section, fallback as string);
 
-    return isConfiguredProvider(configuredProvider) ? configuredProvider : fallback;
+    return resolveStoredProviderId(configuredProvider) ?? fallback;
   }
 
   private readTaskStoredEntry(
@@ -441,17 +405,19 @@ export class ConfigBridge {
     const rawProvider = nested?.provider ?? fromDotProvider;
     const rawModel = nested?.model ?? fromDotModel;
 
-    if (!rawProvider || !isConfiguredProvider(rawProvider)) {
+    const provider = rawProvider ? resolveStoredProviderId(rawProvider) : undefined;
+
+    if (provider === undefined) {
       return undefined;
     }
 
     const trimmedModel = typeof rawModel === 'string' ? rawModel.trim() : '';
 
-    if (trimmedModel.length > 0 && isModelInCatalogForProvider(rawProvider, trimmedModel)) {
-      return { provider: rawProvider, model: trimmedModel };
+    if (trimmedModel.length > 0 && isModelInCatalogForProvider(provider, trimmedModel)) {
+      return { provider, model: trimmedModel };
     }
 
-    return { provider: rawProvider };
+    return { provider };
   }
 
   private readTasksPersistMap(
@@ -518,8 +484,8 @@ function resolveEffectiveModelForTask(
     return fallbackModelId;
   }
 
-  if (isCliProvider(providerId) || providerId === 'mock') {
-    return isRetiredModelId(providerId, trimmed) ? fallbackModelId : trimmed;
+  if (providerId === 'mock') {
+    return trimmed;
   }
 
   if (isModelInCatalogForProvider(providerId, trimmed)) {
@@ -529,6 +495,12 @@ function resolveEffectiveModelForTask(
   return fallbackModelId;
 }
 
-function isConfiguredProvider(value: string): value is AiProviderId {
-  return aiProviderIds.includes(value as AiProviderId);
+// 설정 파일이 적어 둔 프로바이더 이름을 지금 쓸 수 있는 것으로 옮긴다. 없어진 구독형 CLI 이름은
+// 같은 계열의 종량제 프로바이더가 되고, 그래도 모르는 이름이면 undefined 다.
+function resolveStoredProviderId(value: string): AiProviderId | undefined {
+  if (aiProviderIds.includes(value as AiProviderId)) {
+    return value as AiProviderId;
+  }
+
+  return replaceRetiredProviderId(value);
 }

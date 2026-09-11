@@ -1,10 +1,6 @@
 import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 import { AiProviderError } from '#ai/contracts/aiProviderError';
-import { type CliRunner } from './providers/cliRunner';
-import { ClaudeCodeProvider } from './providers/ClaudeCodeProvider';
 import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
-import { CodexProvider } from './providers/CodexProvider';
-import { GeminiCliProvider } from './providers/GeminiCliProvider';
 import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
 import { GrokProvider } from './providers/GrokProvider';
 import { MockAiProvider } from './providers/MockAiProvider';
@@ -20,7 +16,6 @@ import {
   type AiProviderId,
   type AiProviderStatus,
   type AiTaskName,
-  type CliProviderId,
   requiresApiKey,
 } from '#ai/contracts/aiTypes';
 import { SecretStore } from '#ai/ports/SecretStore';
@@ -34,7 +29,6 @@ export interface AiProviderRegistryOptions {
   readonly createGrokClient?: (apiKey: string) => OpenAiClientLike;
   readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike;
   readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike;
-  readonly createCliRunner?: () => CliRunner;
   // A fresh install has no `defaultProvider`, and silently generating with `mock` there writes a
   // fake draft that exits clean. With this on, a task that resolves to no configured provider is
   // refused with `missing-provider` so the host can ask the author to choose one.
@@ -52,16 +46,8 @@ export class AiProviderRegistry {
   }
 
   public async checkConnection(providerId: AiProviderId): Promise<AiConnectionResult> {
-    try {
-      await (await this.createProvider(providerId)).checkConnection();
-      return { ok: true };
-    } catch (error) {
-      if (error instanceof AiProviderError && error.connectionReason === 'not-installed') {
-        return { ok: false, reason: 'not-installed' };
-      }
-
-      throw error;
-    }
+    await (await this.createProvider(providerId)).checkConnection();
+    return { ok: true };
   }
 
   public async generate(request: AiGenerateRequest): Promise<AiGenerateResponse> {
@@ -143,10 +129,6 @@ export class AiProviderRegistry {
         return this.createApiKeyProvider(providerId, modelOverride);
       case 'ollama':
         return this.createOllamaProvider(modelOverride);
-      case 'claude-code':
-      case 'codex':
-      case 'gemini-cli':
-        return this.createCliProvider(providerId, modelOverride);
       default:
         throw new AiProviderError(
           'provider-not-registered',
@@ -183,28 +165,6 @@ export class AiProviderRegistry {
       model: modelOverride ?? config.model,
       createClient: this.options.createOllamaClient,
     });
-  }
-
-  private createCliProvider(
-    providerId: CliProviderId,
-    modelOverride?: string,
-  ): AiProvider {
-    const config = this.options.configBridge.getProviderConfig(providerId);
-    const settings = {
-      command: config.command,
-      model: modelOverride ?? config.model,
-      generateTimeoutMs: config.timeoutMs,
-      createRunner: this.options.createCliRunner,
-    };
-
-    switch (providerId) {
-      case 'claude-code':
-        return new ClaudeCodeProvider(settings);
-      case 'codex':
-        return new CodexProvider({ ...settings, reasoningEffort: config.reasoningEffort });
-      case 'gemini-cli':
-        return new GeminiCliProvider(settings);
-    }
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {

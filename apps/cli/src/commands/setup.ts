@@ -4,8 +4,6 @@ import { createInterface } from 'node:readline/promises';
 
 import {
   aiProviderIds,
-  cliProviderIds,
-  isCliProvider,
   requiresApiKey,
   storyboardModelCatalog,
   storyboardSettingCatalog,
@@ -32,7 +30,6 @@ import {
   type StoryboardProject,
 } from '@storyboard/story-format';
 
-import { findExecutableOnPath } from '@/adapters/executablePath';
 import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
@@ -52,9 +49,6 @@ function isProviderId(value: string): value is AiProviderId {
 }
 
 function describeProvider(providerId: AiProviderId): string {
-  if (isCliProvider(providerId)) {
-    return '구독 CLI · API 키 불필요';
-  }
   if (providerId === 'ollama') {
     return '로컬';
   }
@@ -271,56 +265,7 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
     );
   }
 
-  if (isCliProvider(providerId)) {
-    const command = runtime.command ?? providerId;
-    const resolved = findExecutableOnPath(command);
-    checks.push(
-      resolved === undefined
-        ? {
-            status: 'fail',
-            label: 'CLI 실행 파일',
-            detail: `\`${command}\` 을 PATH 에서 찾을 수 없습니다.`,
-            fix: `storyboard config set providers.${providerId}.command /절대/경로`,
-          }
-        : { status: 'ok', label: 'CLI 실행 파일', detail: resolved },
-    );
-
-    if (resolved !== undefined) {
-      checks.push(await checkCliProviderLogin(container, providerId));
-    }
-  }
-
   return checks;
-}
-
-// 실행 파일이 있어도 로그아웃 상태면 생성이 통째로 실패한다. 프로바이더가 이미 로그인 확인
-// 방법을 알고 있으므로 doctor 에서 그대로 부른다.
-async function checkCliProviderLogin(
-  container: CliContainer,
-  providerId: AiProviderId,
-): Promise<DoctorCheck> {
-  try {
-    const result = await container.aiProviderRegistry.checkConnection(providerId);
-    return result.ok
-      ? { status: 'ok', label: '로그인', detail: `${providerId} 세션이 살아 있습니다.` }
-      : {
-          status: 'fail',
-          label: '로그인',
-          detail: `${providerId} CLI를 실행할 수 없습니다 (${result.reason}).`,
-        };
-  } catch (error) {
-    return { status: 'fail', label: '로그인', detail: describeLoginFailure(error) };
-  }
-}
-
-// 타임아웃·spawn 실패의 실제 원인은 cause 에 있다. 한 줄만 덧붙여 사용자가 무엇을 고칠지 알게 한다.
-function describeLoginFailure(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return String(error);
-  }
-
-  const cause = error.cause instanceof Error ? ` (${error.cause.message})` : '';
-  return `${error.message}${cause}`;
 }
 
 interface SceneCardCensus {
@@ -865,25 +810,20 @@ function describeSaved(container: CliContainer, key: string, value: unknown): Co
 async function setProviderField(
   container: CliContainer,
   providerId: AiProviderId,
-  field: 'model' | 'command' | 'baseUrl',
+  field: 'model' | 'baseUrl',
   raw: string,
 ): Promise<CommandOutcome> {
   const { configBridge } = container;
 
   if (field === 'model') {
     const catalog = storyboardModelCatalog[providerId];
-    if (!isCliProvider(providerId) && !catalog.some((entry) => entry.id === raw)) {
+    if (!catalog.some((entry) => entry.id === raw)) {
       return {
         ok: false,
         message: `${providerId} 에 없는 모델: ${raw}\n쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`,
       };
     }
     await configBridge.setProviderModel(providerId, raw);
-  } else if (field === 'command') {
-    if (!isCliProvider(providerId)) {
-      return { ok: false, message: `command 는 ${cliProviderIds.join(', ')} 에만 있습니다.` };
-    }
-    await configBridge.setProviderCommand(providerId, raw);
   } else {
     if (providerId !== 'ollama') {
       return { ok: false, message: 'baseUrl 은 ollama 에만 있습니다.' };

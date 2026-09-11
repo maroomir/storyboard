@@ -33,7 +33,7 @@ function createSecretStore(): SecretStore & { values: Map<string, string> } {
 const registry = {
   listProviders: async () => [
     { providerId: "openai", displayName: "OpenAI", hasApiKey: false, isAvailable: true },
-    { providerId: "claude-code", displayName: "Claude Code", hasApiKey: false, isAvailable: true, model: "sonnet" },
+    { providerId: "ollama", displayName: "Ollama", hasApiKey: true, isAvailable: true, model: "llama3.3" },
     { providerId: "mock", displayName: "Mock", hasApiKey: false, isAvailable: true }
   ]
 } as unknown as AiProviderRegistry
@@ -50,7 +50,7 @@ describe("chooseDefaultProvider", () => {
     vi.spyOn(vscode.window, "showQuickPick").mockImplementation(async (items: unknown) => {
       const list = items as Array<{ providerId: string; description?: string }>
       expect(list.find((item) => item.providerId === "openai")?.description).toBe("API 키 필요")
-      expect(list.find((item) => item.providerId === "claude-code")?.description).toBe("구독 CLI · API 키 불필요")
+      expect(list.find((item) => item.providerId === "ollama")?.description).toBe("로컬")
       return list.find((item) => item.providerId === "openai")
     })
     vi.spyOn(vscode.window, "showInputBox").mockResolvedValue("sk-new")
@@ -67,11 +67,11 @@ describe("chooseDefaultProvider", () => {
     const secretStore = createSecretStore()
     const inputBox = vi.spyOn(vscode.window, "showInputBox")
     vi.spyOn(vscode.window, "showQuickPick").mockImplementation(async (items: unknown) =>
-      (items as Array<{ providerId: string }>).find((item) => item.providerId === "claude-code")
+      (items as Array<{ providerId: string }>).find((item) => item.providerId === "ollama")
     )
 
     await chooseDefaultProvider({ configBridge: createConfigBridge(values), registry, secretStore })
-    expect(values.get("defaultProvider")).toBe("claude-code")
+    expect(values.get("defaultProvider")).toBe("ollama")
     expect(inputBox).not.toHaveBeenCalled()
 
     vi.spyOn(vscode.window, "showQuickPick").mockResolvedValue(undefined)

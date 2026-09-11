@@ -17,7 +17,7 @@ function buildSnapshot(overrides: Partial<SettingsReadSnapshot> = {}): SettingsR
     providerConfigs,
     modelCatalog,
     taskAssignments: {
-      sceneDraft: { providerId: "codex", model: "codex-model" },
+      sceneDraft: { providerId: "claude", model: "claude-model" },
       grammarCheck: { providerId: null, model: null },
       continuityCheck: { providerId: null, model: null }
     },

@@ -4,7 +4,6 @@ import {
   aiProviderIds,
   aiTaskCatalog,
   aiTaskNames,
-  isCliProvider,
   storyboardModelCatalog,
   storyboardSettingCatalog,
 } from '@storyboard/story-ai';
@@ -70,13 +69,6 @@ export function createSettingsRpcHandlers(
       return savedTo('providers.ollama.baseUrl');
     },
 
-    'settings.updateProviderCommand': async (
-      payload,
-    ): Promise<StoryboardResponsePayload<'settings.updateProviderCommand'>> => {
-      await configBridge.setProviderCommand(payload.providerId, payload.command);
-      return savedTo(`providers.${payload.providerId}.command`);
-    },
-
     'settings.updateTaskAiConfig': async (
       payload,
     ): Promise<StoryboardResponsePayload<'settings.updateTaskAiConfig'>> => {
@@ -128,7 +120,6 @@ const originTrackedKeys = [
   'tasks',
   'providers.ollama.baseUrl',
   ...aiProviderIds.map((id) => `providers.${id}.model`),
-  ...aiProviderIds.filter(isCliProvider).map((id) => `providers.${id}.command`),
   ...storyboardSettingCatalog.map((entry) => entry.key),
 ];
 
@@ -182,9 +173,6 @@ function buildProviderConfigsPayload(
     if (id === 'ollama') {
       const baseUrl = runtime.baseUrl?.trim();
       result[id] = baseUrl !== undefined && baseUrl.length > 0 ? { model, baseUrl } : { model };
-    } else if (isCliProvider(id)) {
-      const command = runtime.command?.trim();
-      result[id] = command !== undefined && command.length > 0 ? { model, command } : { model };
     } else {
       result[id] = { model };
     }

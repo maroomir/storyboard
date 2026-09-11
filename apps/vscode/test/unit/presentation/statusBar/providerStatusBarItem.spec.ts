@@ -25,12 +25,12 @@ describe("providerStatusBarItem", () => {
   it("names the default provider, its model, and where that choice came from", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike =>
-        createConfiguration(new Map<string, unknown>([["defaultProvider", "claude-code"]]), ["defaultProvider"])
+        createConfiguration(new Map<string, unknown>([["defaultProvider", "claude"]]), ["defaultProvider"])
     })
 
     const status = describeProviderStatus({ configBridge, configFiles })
 
-    expect(status.text).toBe("$(sparkle) claude-code · opus")
+    expect(status.text).toBe("$(sparkle) claude · claude-sonnet-5")
     expect(status.tooltip).toContain("이 작품 설정 (/work/novel/.storyboard/config.json)")
   })
 
@@ -46,7 +46,7 @@ describe("providerStatusBarItem", () => {
   })
 
   it("shows the item, opens settings on click, and refreshes when the configuration changes", () => {
-    const values = new Map<string, unknown>([["defaultProvider", "codex"]])
+    const values = new Map<string, unknown>([["defaultProvider", "openai"]])
     let notify: (() => void) | undefined
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => createConfiguration(values),
@@ -61,7 +61,7 @@ describe("providerStatusBarItem", () => {
 
     expect(item?.isVisible).toBe(true)
     expect(item?.command).toBe("storyboard.settings.open")
-    expect(item?.text).toBe("$(sparkle) codex · gpt-5.6-sol")
+    expect(item?.text).toBe("$(sparkle) openai · gpt-5.4-mini")
 
     values.delete("defaultProvider")
     notify?.()

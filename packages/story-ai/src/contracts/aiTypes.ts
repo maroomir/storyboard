@@ -2,17 +2,14 @@ import type { AiProviderId, AiTaskName } from './ai';
 
 export {
   aiProviderIds,
-  cliProviderIds,
   aiTaskCatalog,
   aiTaskLabels,
   aiTaskNames,
   isAiProviderId,
-  isCliProvider,
   requiresApiKey,
 } from './ai';
 export type {
   AiProviderId,
-  CliProviderId,
   AiTaskCatalogEntry,
   AiTaskName,
   AiTaskStatus,
@@ -80,11 +77,8 @@ export interface AiProviderStatus {
   readonly isAvailable: boolean;
 }
 
-export type AiConnectionFailureReason = 'not-installed';
-
 export interface AiConnectionResult {
   readonly ok: boolean;
-  readonly reason?: AiConnectionFailureReason;
 }
 
 export interface AiProvider {

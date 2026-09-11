@@ -49,11 +49,11 @@ afterEach(() => {
 
 describe('storyboard setup', () => {
   it('writes the provider given on the command line into the shared config', async () => {
-    const outcome = await runSetup({ container: container(), args: args({ provider: 'codex' }) });
+    const outcome = await runSetup({ container: container(), args: args({ provider: 'claude' }) });
 
     expect(outcome.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
-      defaultProvider: 'codex',
+      defaultProvider: 'claude',
     });
     expect(outcome.message).toContain(join(home, 'config.json'));
   });
@@ -86,34 +86,6 @@ describe('storyboard doctor', () => {
     expect((outcome.data as { checks: unknown[] }).checks.length).toBeGreaterThan(3);
   });
 
-  // 실행 파일이 있어도 로그아웃 상태면 생성이 통째로 실패한다.
-  it('fails when a subscription CLI provider is not logged in', async () => {
-    // 로그인 검사는 실행 파일이 있어야 돌므로 PATH의 claude 대신 임시 홈 안의 더미를 가리킨다.
-    const fakeClaude = join(home, 'claude');
-    writeFileSync(fakeClaude, '#!/bin/sh\nexit 0\n');
-    chmodSync(fakeClaude, 0o755);
-    writeFileSync(
-      join(home, 'config.json'),
-      JSON.stringify({
-        defaultProvider: 'claude-code',
-        providers: { 'claude-code': { model: 'sonnet', command: fakeClaude } },
-      }),
-    );
-    const real = container();
-    const stubbed = {
-      ...real,
-      aiProviderRegistry: {
-        checkConnection: async () => {
-          throw new Error('Claude Code에 로그인되어 있지 않습니다.');
-        },
-      },
-    } as unknown as ReturnType<typeof createCliContainer>;
-
-    const outcome = await runDoctor({ container: stubbed, args: args() });
-
-    expect(outcome.ok).toBe(false);
-    expect(outcome.message).toContain('로그인되어 있지 않습니다');
-  });
 });
 
 describe('storyboard doctor on a pre-0.8 workspace', () => {
@@ -239,41 +211,6 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(again.data).toMatchObject({ sceneOrders: [] });
   });
 
-  it('warns only when the measured model cannot reach a large scene target', async () => {
-    function writeWorkspaceWithSceneTarget(targetWordCount: number, model: string): void {
-      writeWorkspaceWithLedger(unsealedLedger);
-      writeFileSync(
-        join(workspace, 'scene', '01-first.card'),
-        `type: scene\nid: 01-first\ntargetWordCount: ${targetWordCount}\nsummary: 첫 방송.\n`,
-      );
-      writeFileSync(
-        join(home, 'config.json'),
-        JSON.stringify({
-          defaultProvider: 'claude-code',
-          providers: { 'claude-code': { model } },
-        }),
-      );
-    }
-
-    const reachLabel = '모델과 목표 분량';
-
-    writeWorkspaceWithSceneTarget(15_000, 'sonnet');
-    const weak = await runDoctor({ container: container(), args: args() });
-    const warning = checksOf(weak).find((entry) => entry.label === reachLabel);
-    expect(warning?.status).toBe('warn');
-    expect(warning?.detail).toContain('61%');
-
-    // 실측상 목표를 채우는 모델에는 말하지 않는다.
-    writeWorkspaceWithSceneTarget(15_000, 'opus');
-    const strong = await runDoctor({ container: container(), args: args() });
-    expect(checksOf(strong).find((entry) => entry.label === reachLabel)).toBeUndefined();
-
-    // 짧은 씬은 같은 모델로도 목표에 근접하므로 경고 대상이 아니다.
-    writeWorkspaceWithSceneTarget(3_000, 'sonnet');
-    const small = await runDoctor({ container: container(), args: args() });
-    expect(checksOf(small).find((entry) => entry.label === reachLabel)).toBeUndefined();
-  });
-
   it('refuses a scene range it cannot read instead of resealing everything', async () => {
     writeWorkspaceWithLedger(unsealedLedger);
     await runCommand('init', args({ repair: true }));
@@ -393,20 +330,20 @@ describe('storyboard config', () => {
     });
     expect(badModel.ok).toBe(false);
 
-    const cliModel = await runConfigSet({
+    const goodModel = await runConfigSet({
       container: container(),
-      args: args({}, ['providers.codex.model', 'gpt-9-preview']),
+      args: args({}, ['providers.claude.model', 'claude-haiku-4-5']),
     });
-    expect(cliModel.ok).toBe(true);
+    expect(goodModel.ok).toBe(true);
 
     const provider = await runConfigSet({
       container: container(),
-      args: args({}, ['defaultProvider', 'claude-code']),
+      args: args({}, ['defaultProvider', 'claude']),
     });
     expect(provider.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
-      providers: { codex: { model: 'gpt-9-preview' } },
-      defaultProvider: 'claude-code',
+      providers: { claude: { model: 'claude-haiku-4-5' } },
+      defaultProvider: 'claude',
     });
   });
 });

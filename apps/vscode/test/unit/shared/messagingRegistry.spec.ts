@@ -35,7 +35,6 @@ const expectedMethods = [
   'settings.read',
   'settings.updateDefaultProvider',
   'settings.updateProviderBaseUrl',
-  'settings.updateProviderCommand',
   'settings.updateProviderModel',
   'settings.updateSettingValue',
   'settings.updateTaskAiConfig',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { AiProviderError, AiProviderRegistry, ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
-import type { ClaudeClientLike, CliRunner, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
+import type { ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {
     const registry = createRegistry()
@@ -34,24 +34,16 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("mock")
   })
 
-  it("passes the configured Codex reasoning effort through to the CLI args", async () => {
-    const calls: Parameters<CliRunner>[0][] = []
-    const capturingRunner: CliRunner = async (input) => {
-      calls.push(input)
-      return { stdout: "ok", stderr: "", exitCode: 0 }
-    }
-    const registry = createRegistry(
-      new Map<string, unknown>([
-        ["defaultProvider", "codex"],
-        ["providers.codex.reasoningEffort", "high"]
-      ]),
-      createDefaultSecretValues(),
-      capturingRunner
-    )
+  // A workspace configured for a subscription CLI must keep working after those providers left.
+  it("resolves a retired subscription-CLI default onto its metered replacement", async () => {
+    const registry = createRegistry(new Map<string, unknown>([["defaultProvider", "claude-code"]]))
 
-    await registry.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "테스트" }] })
+    const response = await registry.generate({
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "테스트" }]
+    })
 
-    expect(calls[0]?.args).toContain('model_reasoning_effort="high"')
+    expect(response.providerId).toBe("claude")
   })
 
   it("uses per-task model override for generate when stored in workspace tasks", async () => {
@@ -117,18 +109,6 @@ describe("AiProviderRegistry", () => {
     await expect(registry.checkConnection("ollama")).resolves.toEqual({ ok: true })
   })
 
-  it("reports a missing CLI binary as a not-installed connection result", async () => {
-    const enoent = Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" })
-    const enoentRunner: CliRunner = async () => {
-      throw enoent
-    }
-    const registry = createRegistry(new Map(), new Map(), enoentRunner)
-
-    await expect(registry.checkConnection("claude-code")).resolves.toEqual({ ok: false, reason: "not-installed" })
-    await expect(registry.checkConnection("codex")).resolves.toEqual({ ok: false, reason: "not-installed" })
-    await expect(registry.checkConnection("gemini-cli")).resolves.toEqual({ ok: false, reason: "not-installed" })
-  })
-
   it("reports missing provider keys with a normalized error", async () => {
     const registry = createRegistry(new Map(), new Map())
 
@@ -136,22 +116,6 @@ describe("AiProviderRegistry", () => {
       code: "missing-api-key",
       providerId: "claude"
     })
-  })
-
-  it("routes generation to the Claude Code CLI runner without requiring an API key", async () => {
-    const registry = createRegistry(
-      new Map<string, unknown>([["defaultProvider", "claude-code"]]),
-      new Map()
-    )
-
-    const response = await registry.generate({
-      taskName: "sceneDraft",
-      messages: [{ role: "user", content: "테스트" }]
-    })
-
-    expect(response.providerId).toBe("claude-code")
-    expect(response.model).toBe("opus")
-    expect(response.text).toBe("cli-ok")
   })
 
   // A fresh install used to generate against `mock` and exit clean; with the guard on, the same
@@ -182,23 +146,11 @@ describe("AiProviderRegistry", () => {
     expect(registry.getTaskProvider("sceneDraft")).toBe("mock")
   })
 
-  it("marks Claude Code and Codex providers as keyless and available", async () => {
-    const registry = createRegistry(new Map(), new Map())
-
-    await expect(registry.listProviders()).resolves.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ providerId: "claude-code", hasApiKey: true, isAvailable: true }),
-        expect.objectContaining({ providerId: "codex", hasApiKey: true, isAvailable: true }),
-        expect.objectContaining({ providerId: "gemini-cli", hasApiKey: true, isAvailable: true })
-      ])
-    )
-  })
 })
 
 function createRegistry(
   configuration = new Map<string, unknown>(),
-  secretValues = createDefaultSecretValues(),
-  cliRunner: CliRunner = createFakeCliRunner()
+  secretValues = createDefaultSecretValues()
 ): AiProviderRegistry {
   const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
   const configBridge = new ConfigBridge({
@@ -212,8 +164,7 @@ function createRegistry(
     createGoogleClient: (): GoogleClientLike => createFakeGoogleClient(),
     createOllamaClient: (): OllamaClientLike => createFakeOllamaClient(),
     createOpenAiClient: (): OpenAiClientLike => createFakeOpenAiClient(),
-    createGrokClient: (): OpenAiClientLike => createFakeOpenAiClient(),
-    createCliRunner: (): CliRunner => cliRunner
+    createGrokClient: (): OpenAiClientLike => createFakeOpenAiClient()
   })
 }
 
@@ -292,8 +243,4 @@ function createFakeOllamaClient(): OllamaClientLike {
       message: { content: "ok" }
     })
   }
-}
-
-function createFakeCliRunner(): CliRunner {
-  return async () => ({ stdout: JSON.stringify({ result: "cli-ok" }), stderr: "", exitCode: 0 })
 }

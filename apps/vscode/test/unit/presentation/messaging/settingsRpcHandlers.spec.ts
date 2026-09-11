@@ -166,26 +166,7 @@ describe("createSettingsRpcHandlers", () => {
       expect(snapshot.modelCatalog[id].map((o) => o.id)).toEqual(storyboardModelCatalog[id].map((o) => o.id))
     }
 
-    expect(snapshot.providerConfigs["claude-code"].command).toBe("claude")
-    expect(snapshot.providerConfigs["codex"].command).toBe("codex")
-    expect(snapshot.providerConfigs["openai"].command).toBeUndefined()
-  })
-
-  it("ships the configured CLI command in settings.read and writes it via updateProviderCommand", async () => {
-    const configuration = new Map<string, unknown>([["providers.claude-code.command", "/custom/claude"]])
-    const secretValues = new Map<string, string>()
-    const registry = createTestRegistry(configuration, secretValues)
-    const secretStore = new SecretStore(new FakeSecretStorage(secretValues))
-    const configBridge = new ConfigBridge({
-      getConfiguration: (): StoryboardConfigurationLike => new MutableFakeConfiguration(configuration)
-    })
-    const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
-
-    const snapshot = await handlers["settings.read"]!({}, {} as never)
-    expect(snapshot.providerConfigs["claude-code"].command).toBe("/custom/claude")
-
-    await handlers["settings.updateProviderCommand"]!({ providerId: "codex", command: "/opt/codex" }, {} as never)
-    expect(configuration.get("providers.codex.command")).toBe("/opt/codex")
+    expect(snapshot.providerConfigs["ollama"].baseUrl).toBe("http://localhost:11434")
   })
 
   it("settings.read returns stored task model alongside provider when both are set", async () => {
@@ -426,7 +407,7 @@ describe("settings RPC via webview bridge", () => {
     })
   })
 
-  it("returns validation-error for settings.updateProviderCommand on a non-CLI provider", async () => {
+  it("returns validation-error for settings.updateProviderBaseUrl on a non-Ollama provider", async () => {
     const configuration = new Map<string, unknown>()
     const secretValues = new Map<string, string>()
     const registry = createTestRegistry(configuration, secretValues)
@@ -441,9 +422,9 @@ describe("settings RPC via webview bridge", () => {
     await webview.receive({
       protocolVersion: storyboardMessageProtocolVersion,
       type: "request",
-      id: "bad-command",
-      method: "settings.updateProviderCommand",
-      payload: { providerId: "openai", command: "claude" }
+      id: "bad-base-url",
+      method: "settings.updateProviderBaseUrl",
+      payload: { providerId: "openai", baseUrl: "http://localhost:11434" }
     })
 
     expect(webview.postedMessages).toHaveLength(1)

@@ -1,28 +1,16 @@
 import {
   aiProviderIds,
-  cliProviderIds,
-  getDefaultCliCommand,
-  isCliProvider as isCliProviderId,
   requiresApiKey as providerRequiresApiKey,
   type AiProviderId,
 } from '@storyboard/story-engine/contracts';
 
 export const AI_PROVIDER_IDS = aiProviderIds;
-export const CLI_PROVIDER_IDS = cliProviderIds;
 export type { AiProviderId };
-
-export function isCliProvider(providerId: AiProviderId): boolean {
-  return isCliProviderId(providerId);
-}
-
-export function defaultCliCommand(providerId: AiProviderId): string {
-  return isCliProviderId(providerId) ? getDefaultCliCommand(providerId) : providerId;
-}
 
 export type AiTaskName = string;
 type AiTaskStatus = 'wired' | 'planned';
 
-export type ConnectionTestState = 'idle' | 'loading' | 'ok' | 'error' | 'not-installed';
+export type ConnectionTestState = 'idle' | 'loading' | 'ok' | 'error';
 
 export interface AiProviderStatus {
   readonly providerId: AiProviderId;
@@ -40,7 +28,6 @@ interface ProviderModelOption {
 interface ProviderRuntimeConfig {
   readonly model: string;
   readonly baseUrl?: string;
-  readonly command?: string;
 }
 
 interface TaskAiAssignment {

@@ -209,46 +209,10 @@ describe("storyboard messaging protocol", () => {
     }
   })
 
-  it("parses settings.updateProviderCommand for CLI providers and rejects others", () => {
-    const request = parseStoryboardRequestMessage({
-      protocolVersion: storyboardMessageProtocolVersion,
-      type: "request",
-      id: "command-1",
-      method: "settings.updateProviderCommand",
-      payload: { providerId: "claude-code", command: "/usr/local/bin/claude" }
-    })
-    expect(request.method).toBe("settings.updateProviderCommand")
-    expect(request.payload).toEqual({ providerId: "claude-code", command: "/usr/local/bin/claude" })
-
-    expect(() =>
-      parseStoryboardRequestMessage({
-        protocolVersion: storyboardMessageProtocolVersion,
-        type: "request",
-        id: "command-2",
-        method: "settings.updateProviderCommand",
-        payload: { providerId: "openai", command: "claude" }
-      })
-    ).toThrow()
-
-    expect(() =>
-      parseStoryboardRequestMessage({
-        protocolVersion: storyboardMessageProtocolVersion,
-        type: "request",
-        id: "command-3",
-        method: "settings.updateProviderCommand",
-        payload: { providerId: "codex", command: "   " }
-      })
-    ).toThrow()
-  })
-
-  it("validates checkConnection responses with an optional reason discriminator", () => {
+  it("validates checkConnection responses", () => {
     expect(aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: true })).toEqual({ ok: true })
-    expect(
-      aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: false, reason: "not-installed" })
-    ).toEqual({ ok: false, reason: "not-installed" })
-    expect(() =>
-      aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: false, reason: "exploded" })
-    ).toThrow()
+    expect(aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: false })).toEqual({ ok: false })
+    expect(() => aiProvidersCheckConnectionResponsePayloadSchema.parse({ ok: "yes" })).toThrow()
   })
 
   it("parses scenes.list and scenes.openScene requests", () => {

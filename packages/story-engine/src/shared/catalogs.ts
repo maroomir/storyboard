@@ -2,10 +2,7 @@
 // 표는 그 표를 소유한 패키지에서 여기로 한 번 더 내보낸다. 사본을 만들 이유가 사라진다.
 export {
   aiProviderIds,
-  cliProviderIds,
-  getDefaultCliCommand,
   getProviderDisplayName,
-  isCliProvider,
   isSpanRequiredTool,
   providerCatalog,
   requiresApiKey,
@@ -15,7 +12,6 @@ export {
 } from '@storyboard/story-ai/contracts';
 export type {
   AiProviderId,
-  CliProviderId,
   ProviderModelOption,
   StudioAgentToolName,
 } from '@storyboard/story-ai/contracts';

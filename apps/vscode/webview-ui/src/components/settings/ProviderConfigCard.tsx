@@ -5,8 +5,6 @@ import { ConnectionTestButton, StatusPill } from './SettingsPrimitives';
 import {
   getProviderStatus,
   parseSaveTarget,
-  defaultCliCommand,
-  isCliProvider,
   requiresApiKey,
   type AiProviderId,
   type ConnectionTestState,
@@ -23,8 +21,6 @@ export function ProviderConfigCard({
   onSaved,
   apiKeyDraft,
   setApiKeyDraft,
-  commandDraft,
-  setCommandDraft,
   ollamaBaseUrlDraft,
   setOllamaBaseUrlDraft,
   baseUrlFocused,
@@ -41,10 +37,6 @@ export function ProviderConfigCard({
   readonly setApiKeyDraft: React.Dispatch<
     React.SetStateAction<Partial<Record<AiProviderId, string>>>
   >;
-  readonly commandDraft: Partial<Record<AiProviderId, string>>;
-  readonly setCommandDraft: React.Dispatch<
-    React.SetStateAction<Partial<Record<AiProviderId, string>>>
-  >;
   readonly ollamaBaseUrlDraft: string | null;
   readonly setOllamaBaseUrlDraft: React.Dispatch<React.SetStateAction<string | null>>;
   readonly baseUrlFocused: boolean;
@@ -57,29 +49,25 @@ export function ProviderConfigCard({
   const status = getProviderStatus(snapshot, providerId);
   const displayName = status?.displayName ?? providerId;
   const config = snapshot.providerConfigs[providerId];
-  const isCli = isCliProvider(providerId);
   const showApiKey = requiresApiKey(providerId);
   const isOllama = providerId === 'ollama';
   const testState = connectionTest[providerId] ?? 'idle';
   const [isExpanded, setIsExpanded] = useState(providerId === snapshot.defaultProvider);
-  const hasConnectionFields = showApiKey || isOllama || isCli;
+  const hasConnectionFields = showApiKey || isOllama;
 
   const resolvedBaseUrl =
     ollamaBaseUrlDraft !== null ? ollamaBaseUrlDraft : (config.baseUrl ?? 'http://127.0.0.1:11434');
-
-  const resolvedCommand = commandDraft[providerId] ?? config.command ?? '';
 
   const runConnectionTest = (): void => {
     setConnectionTest((previous) => ({ ...previous, [providerId]: 'loading' }));
     void callRpc('ai.providers.checkConnection', { providerId })
       .then((payload) => {
         const result =
-          typeof payload === 'object' && payload !== null
-            ? (payload as { ok?: boolean; reason?: string })
-            : {};
-        const next =
-          result.ok === true ? 'ok' : result.reason === 'not-installed' ? 'not-installed' : 'error';
-        setConnectionTest((previous) => ({ ...previous, [providerId]: next }));
+          typeof payload === 'object' && payload !== null ? (payload as { ok?: boolean }) : {};
+        setConnectionTest((previous) => ({
+          ...previous,
+          [providerId]: result.ok === true ? 'ok' : 'error',
+        }));
       })
       .catch(() => {
         setConnectionTest((previous) => ({ ...previous, [providerId]: 'error' }));
@@ -126,27 +114,6 @@ export function ProviderConfigCard({
       });
   };
 
-  const saveCommand = (): void => {
-    const trimmed = resolvedCommand.trim();
-    if (trimmed.length === 0) {
-      onRpcError('CLI 실행 명령을 입력하세요.');
-      return;
-    }
-
-    void callRpc('settings.updateProviderCommand', { providerId, command: trimmed })
-      .then((payload) => {
-        onSaved(`${displayName} 실행 명령`, parseSaveTarget(payload));
-        setCommandDraft((previous) => {
-          const next = { ...previous };
-          delete next[providerId];
-          return next;
-        });
-      })
-      .catch((error: unknown) => {
-        onRpcError(error instanceof Error ? error.message : '실행 명령을 저장하지 못했습니다.');
-      });
-  };
-
   return (
     <details
       className="group overflow-hidden rounded-lg border border-sb-border bg-sb-bg-sidebar/80"
@@ -175,7 +142,6 @@ export function ProviderConfigCard({
             <StatusPill tone="warning">키 필요</StatusPill>
           ) : null}
           {isOllama ? <StatusPill tone="neutral">로컬</StatusPill> : null}
-          {isCli ? <StatusPill tone="neutral">CLI</StatusPill> : null}
           {providerId === 'mock' ? <StatusPill tone="neutral">Mock</StatusPill> : null}
           <StatusPill tone={status?.isAvailable ? 'neutral' : 'error'}>
             {status?.isAvailable ? '사용 가능' : '비활성'}
@@ -219,44 +185,6 @@ export function ProviderConfigCard({
                 </Button>
               </div>
             </div>
-          ) : null}
-
-          {isCli ? (
-            <div className={fieldGroupClass}>
-              <label className="text-sm font-medium text-sb-fg" htmlFor={`${providerId}-command`}>
-                실행 명령
-              </label>
-              <div className="flex min-w-0 gap-2">
-                <input
-                  id={`${providerId}-command`}
-                  className={sbInputClass}
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={resolvedCommand}
-                  placeholder={defaultCliCommand(providerId)}
-                  onChange={(event) => {
-                    const next = event.target.value;
-                    setCommandDraft((previous) => ({ ...previous, [providerId]: next }));
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="shrink-0"
-                  onClick={saveCommand}
-                >
-                  적용
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          {isCli && testState === 'not-installed' ? (
-            <p className="m-0 text-xs text-sb-fg-error">
-              CLI 미설치: 실행 명령 «
-              {resolvedCommand || defaultCliCommand(providerId)}»을 찾을 수
-              없습니다. 설치 후 PATH를 확인하거나 위에서 명령 경로를 지정하세요.
-            </p>
           ) : null}
 
           {showApiKey ? (
