@@ -42,7 +42,6 @@ English README: [`README.en.md`](README.en.md)
 - 조립 원고 Markdown / plain text 내보내기
 - 캐릭터 관계 그래프
 - `mock`, OpenAI, Claude, Google Gemini, xAI Grok, Ollama AI provider 지원
-- Claude Code(`claude`)·Codex(`codex`)·Gemini CLI(`gemini`) CLI provider 지원 — API 키 없이 구독·계정 로그인으로 생성
 - 명령 제목 다국어(i18n) 지원 (`package.nls.json`, `package.nls.ko.json`)
 
 현재 구현은 수동 `scene/*.card → draft/*.md` 흐름과 원클릭 장편 생성 흐름을 함께 지원합니다. 원클릭 생성은 재개 가능한 단계 상태를 `.storyboard/cache/novel-run.json`에 저장하며, 긴 원고의 PDF/DOCX 내보내기와 더 세밀한 배치 검수는 후속 작업입니다. 자세한 구조는 [`ARCHITECTURE.md`](../../ARCHITECTURE.md)를 봅니다.
@@ -99,29 +98,16 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 자동으로 옮겨집니다.
 
 ```json
-{ "defaultProvider": "claude-code", "draft": { "keepHistory": true } }
+{ "defaultProvider": "claude", "draft": { "keepHistory": true } }
 ```
 
-이미 **Claude Code**, **Codex**, **Gemini CLI**를 쓰고 있다면 API 키 없이 그 구독·계정을 그대로 활용할 수 있습니다.
-각 CLI(`claude` / `codex` / `gemini`)를 설치하고 자체 로그인(`claude` 구독 로그인 / `codex login`의 ChatGPT 로그인 /
-`gemini` 첫 실행의 Google 로그인)을 마친 뒤 설정 패널에서 기본 제공자를 `claude-code`·`codex`·`gemini-cli` 중 하나로
-고르면 됩니다(설정 파일의 `defaultProvider`). CLI 실행 파일이 PATH에
-없으면 설정 패널 **연결** 탭의 «실행 명령» 입력(설정 파일의 `providers.<id>.command`)에 절대 경로를 지정하고,
-모델은 `providers.<id>.model` 로 바꿉니다. Gemini CLI의 모델은 `flash`·`pro` 별칭이나 `gemini-2.5-pro` 같은 id를 씁니다.
-연결 테스트는 CLI를 찾지 못하면 «CLI 미설치»를, 설치는 됐지만 로그인되지 않았으면 연결 실패를 표시합니다(Gemini CLI는
-로그인 상태를 묻는 명령이 없어 설치만 확인하고, 로그인 안 됨은 첫 생성에서 안내합니다).
+생성은 모두 API 키로 이루어집니다. 설정 패널의 **연결** 탭에서 제공자를 고르고 키를 넣으면 되고, 키는
+`~/.storyboard/secrets.json`에 0600으로 저장돼 CLI와 공유됩니다. `ollama`만 키 없이 로컬에서 돕니다.
 
-CLI provider 사용 시 참고할 점:
-
-- **사용량·비용**: Claude Code 비용은 CLI가 보고하는 `total_cost_usd`를 그대로 씁니다. Codex 사용량은
-  `codex exec --json`에서, Gemini CLI 사용량은 `--output-format json`의 `stats`에서 파싱합니다. 두 CLI는 구독·계정
-  한도로 인증돼 토큰당 과금이 아니므로 달러는 기록하지 않고, 사이드바 배지는 `12.3k 토큰`처럼 토큰 수를 보여 줍니다. 단가표가 있는 API provider는 `$0.42 · 12.3k`로
-  달러와 토큰을 함께 표시합니다.
-- **추론 강도(Codex)**: 설정 파일의 `providers.codex.reasoningEffort`를 `minimal`·`low`·`medium`·`high`로 지정하면
-  Codex CLI에 `model_reasoning_effort`로 전달됩니다. 비워 두면 CLI 기본값을 씁니다.
-- **스트리밍**: CLI provider는 실시간 토큰 스트리밍 대신 생성을 끝까지 마친 뒤 전체 결과를 한 번에 전달합니다(의도된 동작).
-- **인라인 완성**: CLI provider에서는 인라인 완성이 비활성화됩니다. 키 입력마다 CLI 프로세스를 새로 띄우는 비용이
-  크고, 두 CLI가 길이·`temperature` 제어를 노출하지 않기 때문입니다(의도된 동작).
+0.9.2에서 Claude Code·Codex·Gemini CLI 구독 provider를 제외했습니다. Anthropic·OpenAI·Google 모두 구독과 계정
+로그인을 대화형 개인 사용으로 한정하고, 프로그램적·대량 호출에는 API 키를 쓰도록 안내합니다. Storyboard의
+장편 생성은 후자에 해당하므로 API 키 경로 하나로 정리했습니다. 기존 설정에 `claude-code`·`codex`·`gemini-cli`가
+남아 있으면 각각 `claude`·`openai`·`google`로 읽습니다. 모델은 `providers.<id>.model`로 바꿉니다.
 
 ## 개발
 

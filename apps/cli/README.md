@@ -1,7 +1,7 @@
 # storyboard (CLI)
 
 Storyboard from a terminal. Same engine as the VSCode extension, no editor required — which is what
-lets another AI agent (Codex, Claude Code, Gemini) drive a Storyboard workspace.
+lets another AI agent drive a Storyboard workspace.
 
 ## Install
 
@@ -28,9 +28,7 @@ storyboard project set --genre …      # the contract the outline needs (init t
 storyboard doctor                     # what is still missing, with the command that fixes it
 ```
 
-`doctor` also checks that a subscription CLI provider (`claude-code`, `codex`) is logged in — it
-spawns the provider once, so allow up to 15 s — and looks at the workspace for what an older
-Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
+`doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
 `scene seeds`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
 ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
@@ -158,9 +156,6 @@ scenes without beats, and existing beats are regenerated only with `--force`. Th
 `--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
 runs, which is how you tell a 20-minute scene apart from a hung one.
 
-`--fallback <id>` keeps a long unattended run alive: when a CLI provider answers "usage limit", the
-remaining calls go to that provider instead of the run aborting halfway. The switch is one-way.
-
 `--workspace <path>` picks the workspace (default: the current directory). `--json` puts a single
 JSON object on stdout — for failures too (`{"ok":false,"message":…}`), so an agent never has to
 parse loose text; progress and warnings always go to stderr. Exit code is 0 on success and non-zero
@@ -185,8 +180,14 @@ says so instead of looking like it did nothing. API keys ignore all of this: the
 the one 0600 home file.
 
 ```json
-{ "defaultProvider": "codex", "tasks": { "sceneDraft": { "provider": "codex", "model": "gpt-5.6-terra" } } }
+{ "defaultProvider": "claude", "tasks": { "sceneDraft": { "provider": "claude", "model": "claude-sonnet-5" } } }
 ```
+
+Every provider Storyboard speaks to is reached with an API key (or runs locally, for `ollama`).
+Subscription CLI providers were removed in 0.9.2: Anthropic, OpenAI and Google all limit a
+subscription or account login to interactive personal use and direct programmatic and bulk
+workflows to API keys, which is exactly what this app is for. A config file that still names
+`claude-code`, `codex` or `gemini-cli` is read as `claude`, `openai` or `google`.
 
 API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by both apps. `STORYBOARD_HOME`
 moves the whole directory. The pre-0.8 `cli.json` / `cli-secrets.json` are no longer read: rename

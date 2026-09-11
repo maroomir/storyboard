@@ -10,6 +10,16 @@ after the first public release.
 
 ## [Unreleased]
 
+### Removed
+
+- **The subscription CLI providers (Claude Code, Codex, Gemini CLI) are gone.** Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API keys. Storyboard's long-form generation — and the unattended CLI runs it is built for — is the latter, so the path is now API keys only. Gone with them: the CLI command, timeout, and reasoning-effort settings, the settings panel's "executable" field and "CLI not installed" state, and the usage-limit fallback (`--fallback`).
+- **The `--fallback` option is gone.** It existed only to survive a subscription CLI's period allowance running out.
+
+### Changed
+
+- **Existing configs keep working.** A stored `claude-code`, `codex`, or `gemini-cli` is read as `claude`, `openai`, or `google`. A `--provider codex` typed on the command line is refused with the replacement named rather than silently substituted.
+- **Claude now defaults to Sonnet 5 (`claude-sonnet-5`)**, at $2 input / $10 output per million tokens.
+
 ## [0.9.1] - 2026-09-11
 
 ### Fixed

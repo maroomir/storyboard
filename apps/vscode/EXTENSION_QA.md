@@ -265,10 +265,11 @@ npm run build
 
 Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `defaultProvider`로 고릅니다(작품별로 덮어쓰려면
 `<워크스페이스>/.storyboard/config.json`). VSCode 설정 화면에는 더 이상 `storyboard.*` 항목이 없습니다.
-가능한 값: `mock`, `openai`, `claude`, `google`, `grok`, `ollama`, `claude-code`, `codex`, `gemini-cli`.
+가능한 값: `mock`, `openai`, `claude`, `google`, `grok`, `ollama`.
 
 키가 필요한 것은 `openai`·`claude`·`google`·`grok`이며, 키는 `~/.storyboard/secrets.json`(0600)에 저장됩니다.
-`claude-code`·`codex`·`gemini-cli`는 각 CLI의 자체 로그인을 쓰므로 키가 필요 없습니다.
+`ollama`는 로컬 실행이라 키가 없습니다. 0.9.2 이전 설정에 남은 `claude-code`·`codex`·`gemini-cli`는 각각
+`claude`·`openai`·`google`로 읽히므로, 그 값이 보이면 설정 패널에서 다시 골라 저장해 둡니다.
 설치 직후에는 기본 provider가 비어 있어 생성이 거부되므로, 먼저 `Storyboard: Choose AI Provider`로 하나를 고릅니다.
 
 #### A. 키 없이 스모크 (`mock`)
