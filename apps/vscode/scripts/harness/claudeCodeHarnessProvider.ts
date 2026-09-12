@@ -15,6 +15,8 @@ interface ClaudeCodeJsonResult {
   readonly usage?: {
     readonly input_tokens?: number
     readonly output_tokens?: number
+    readonly cache_creation_input_tokens?: number
+    readonly cache_read_input_tokens?: number
   }
 }
 
@@ -46,8 +48,12 @@ export function createClaudeCodeHarnessProvider(model: string, timeoutMs: number
         model,
         text: parsed.result ?? "",
         usage: {
+          // NOTE: claude -p 는 자체 시스템 맥락을 캐시로 올리므로 input_tokens 는 2 같은 숫자만
+          // 나온다. 실제로 읽힌 양은 캐시 칸에 있어 함께 세지 않으면 집계가 거짓이 된다.
           inputTokens: parsed.usage?.input_tokens ?? 0,
-          outputTokens: parsed.usage?.output_tokens ?? 0
+          outputTokens: parsed.usage?.output_tokens ?? 0,
+          cacheCreationInputTokens: parsed.usage?.cache_creation_input_tokens,
+          cacheReadInputTokens: parsed.usage?.cache_read_input_tokens
         }
       }
     }

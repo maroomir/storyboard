@@ -3,8 +3,8 @@ import path from "node:path"
 
 import { afterAll, test } from "vitest"
 
-import { buildSceneContext, readSceneFile } from "@storyboard/story-format"
-import type { ProjectFormat, ProjectSetting } from "@storyboard/story-format"
+import { NodeUri, buildSceneContext, joinStoryPath, readSceneFile } from "@storyboard/story-format"
+import type { ProjectFormat, ProjectSetting, StoryUri } from "@storyboard/story-format"
 import { StoryboardAiService, buildStyleDirective } from "@storyboard/story-ai"
 import type { AiGenerateResponse, AiProvider, AiProviderRegistry } from "@storyboard/story-ai"
 import { SceneGenerationPipeline } from "@storyboard/story-pipeline"
@@ -45,24 +45,30 @@ interface SweepRow {
 
 const rows: SweepRow[] = []
 
+// NOTE: 씬 카드는 옆의 `*.summary.md` 를 형제 경로로 찾으므로 문자열 경로로는 읽히지 않는다.
+// CLI 가 쓰는 NodeUri 를 그대로 써서 두 앱과 같은 경로 규칙을 따른다.
+const workspaceUri = NodeUri.file(workspace)
+
 const fileSystem = {
-  readFile: async (uri: unknown): Promise<Uint8Array> => new Uint8Array(await nodeFs.readFile(uri as string)),
+  readFile: async (uri: unknown): Promise<Uint8Array> =>
+    new Uint8Array(await nodeFs.readFile((uri as StoryUri).fsPath)),
   writeFile: async (uri: unknown, content: Uint8Array): Promise<void> => {
-    await nodeFs.writeFile(uri as string, content)
+    await nodeFs.writeFile((uri as StoryUri).fsPath, content)
   },
   readDirectory: async (uri: unknown): Promise<[string, { type: "file" | "directory" }][]> => {
-    const entries = await nodeFs.readdir(uri as string, { withFileTypes: true })
+    const entries = await nodeFs.readdir((uri as StoryUri).fsPath, { withFileTypes: true })
     return entries.map((entry) => [entry.name, { type: entry.isDirectory() ? "directory" : "file" }])
   }
 }
 
 const paths = {
-  characterDirectory: path.join(workspace, "character"),
-  backgroundDirectory: path.join(workspace, "background"),
-  draftDirectory: path.join(workspace, "draft"),
-  bibleCanon: path.join(workspace, ".storyboard", "bible", "canon.yaml"),
+  characterDirectory: joinStoryPath(workspaceUri, "character"),
+  backgroundDirectory: joinStoryPath(workspaceUri, "background"),
+  draftDirectory: joinStoryPath(workspaceUri, "draft"),
+  bibleCanon: joinStoryPath(workspaceUri, ".storyboard", "bible", "canon.yaml"),
   chapterSummaries: undefined,
-  joinPath: (base: unknown, ...segments: string[]): string => path.join(base as string, ...segments)
+  joinPath: (base: unknown, ...segments: string[]): StoryUri =>
+    joinStoryPath(base as StoryUri, ...segments)
 }
 
 function createRegistry(provider: AiProvider): AiProviderRegistry {
@@ -95,13 +101,12 @@ for (const skeletonRatio of skeletonRatios) {
         `sweep ${label}`,
         async () => {
           const project = await readProjectFile()
-          // 하네스는 파일 경로를 그대로 쓴다. StoryUri 래퍼는 앱 어댑터의 것이라 여기서는 형만 맞춘다.
           const scene = await readSceneFile(
-            path.join(workspace, "scene", sceneFileName) as never,
+            joinStoryPath(workspaceUri, "scene", sceneFileName),
             fileSystem,
             sceneFileName
           )
-          const context = await buildSceneContext(paths as never, scene, fileSystem)
+          const context = await buildSceneContext(paths, scene, fileSystem)
           const usage = createUsageSummary()
           const provider = await createHarnessProvider(providerId, model)
           const aiService = new StoryboardAiService(createRegistry(provider), { onUsage: usage.onUsage })
@@ -142,6 +147,11 @@ for (const skeletonRatio of skeletonRatios) {
             console.log(
               `SWEEP ${label} target=${row.targetLength} skeleton=${row.skeletonLength} draft=${row.draftLength} reach=${row.reach.toFixed(3)} expansion=${row.expansionRatio.toFixed(2)} warnings=${row.warnings.length}`
             )
+            // 도달률이 낮을 때 원인은 대개 재시도로도 못 고친 위반이다. 숫자만으로는 못 읽는다.
+            for (const warning of row.warnings) {
+              // eslint-disable-next-line no-console
+              console.log(`  ! ${warning}`)
+            }
           } finally {
             usage.print()
           }
