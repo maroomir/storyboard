@@ -187,7 +187,8 @@ Every provider Storyboard speaks to is reached with an API key (or runs locally,
 Subscription CLI providers were removed in 0.9.2: Anthropic, OpenAI and Google all limit a
 subscription or account login to interactive personal use and direct programmatic and bulk
 workflows to API keys, which is exactly what this app is for. A config file that still names
-`claude-code`, `codex` or `gemini-cli` is read as `claude`, `openai` or `google`.
+`claude-code`, `codex` or `gemini-cli` names nothing: the provider reads as unchosen and generation
+refuses until you pick one, because the metered replacement bills at a different rate.
 
 API keys live in `~/.storyboard/secrets.json` at mode 0600, shared by both apps. `STORYBOARD_HOME`
 moves the whole directory. The pre-0.8 `cli.json` / `cli-secrets.json` are no longer read: rename

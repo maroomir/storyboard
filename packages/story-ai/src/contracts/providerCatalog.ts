@@ -181,19 +181,6 @@ export const providerCatalog = {
 
 export type AiProviderId = keyof typeof providerCatalog;
 
-// 0.9.1 까지 있던 구독형 CLI 프로바이더. 각 제공자가 프로그램적·대량 호출에는 API 키를 쓰라고
-// 못박고 있어 제품에서 뺐다. 옛 설정 파일이 그대로 남아 있으면 «고르지 않음» 으로 떨어져 생성이
-// 통째로 막히므로, 읽는 시점에 같은 계열의 종량제 프로바이더로 옮긴다.
-export const retiredProviderReplacements: Readonly<Record<string, AiProviderId>> = {
-  'claude-code': 'claude',
-  codex: 'openai',
-  'gemini-cli': 'google',
-};
-
-export function replaceRetiredProviderId(value: string): AiProviderId | undefined {
-  return retiredProviderReplacements[value];
-}
-
 export const aiProviderIds = Object.keys(providerCatalog) as unknown as readonly [
   AiProviderId,
   ...AiProviderId[],

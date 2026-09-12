@@ -34,8 +34,9 @@ describe("AiProviderRegistry", () => {
     expect(response.providerId).toBe("mock")
   })
 
-  // A workspace configured for a subscription CLI must keep working after those providers left.
-  it("resolves a retired subscription-CLI default onto its metered replacement", async () => {
+  // A config still naming a subscription CLI is not quietly moved onto a metered provider: it
+  // reads as no choice at all, because the replacement would bill the author at a different rate.
+  it("treats a retired subscription-CLI default as no choice, not as claude", async () => {
     const registry = createRegistry(new Map<string, unknown>([["defaultProvider", "claude-code"]]))
 
     const response = await registry.generate({
@@ -43,7 +44,8 @@ describe("AiProviderRegistry", () => {
       messages: [{ role: "user", content: "테스트" }]
     })
 
-    expect(response.providerId).toBe("claude")
+    expect(response.providerId).not.toBe("claude")
+    expect(response.providerId).toBe("mock")
   })
 
   it("uses per-task model override for generate when stored in workspace tasks", async () => {

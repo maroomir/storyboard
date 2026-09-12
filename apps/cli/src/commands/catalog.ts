@@ -80,7 +80,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'provider',
     valueLabel: '<id>',
-    summary: '이번 실행에만 쓸 프로바이더 (codex, claude-code, mock …)',
+    summary: '이번 실행에만 쓸 프로바이더 (claude, openai, google …)',
   },
   { name: 'model', valueLabel: '<name>', summary: '그 프로바이더의 모델' },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
@@ -215,7 +215,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary:
       '기본 AI 프로바이더와 API 키를 정합니다 (터미널이면 질문, 아니면 --provider). 설정은 이 작품에, --global 이면 모든 작품에 저장합니다',
     flags: ['provider', 'model', 'global'],
-    examples: ['storyboard setup', 'storyboard setup --provider codex --global'],
+    examples: ['storyboard setup', 'storyboard setup --provider claude --global'],
     needsWorkspace: false,
   },
   {
@@ -250,7 +250,7 @@ export const commandCatalog: readonly CommandSpec[] = [
       '이 작품의 .storyboard/config.json 값을 바꿉니다 (--global 이면 ~/.storyboard/config.json)',
     flags: ['global'],
     examples: [
-      'storyboard config set defaultProvider claude-code',
+      'storyboard config set defaultProvider claude',
       'storyboard config set draft.reviseMaxIterations 3',
     ],
     needsWorkspace: false,

@@ -742,7 +742,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 `~/.storyboard/config.json`, 작품별 재정의는 `<워크스페이스>/.storyboard/config.json`이며, 키 이름은 아래에서
 `storyboard.` 접두사를 뺀 형태다(예: `defaultProvider`, `providers.claude.model`).
 
-- `defaultProvider`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 읽는 시점에 각각 `claude`·`openai`·`google`로 옮긴다.
+- `defaultProvider`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 카탈로그에 없으므로 «고르지 않음»으로 떨어져 생성이 거부된다 — 요금이 다른 provider 를 대신 골라 주지 않는다.
 - `providers.openai.model`
 - `providers.claude.model`: 기본 `claude-sonnet-5`
 - `providers.google.model`
@@ -768,6 +768,8 @@ CLI 앱은 다른 에이전트가 무인으로 모는 것이 주용도이므로,
 없앴다. 함께 사라진 것들: CLI 실행 명령·타임아웃·추론 강도 설정, `settings.updateProviderCommand`
 RPC, «CLI 미설치» 연결 상태, 사용 한도 폴백(`--fallback`), 그리고 CLI provider 에서 인라인 완성을
 끄던 분기. 남은 provider 는 전부 종량제이거나 로컬이므로 모델 행마다 단가가 반드시 있다.
+옛 이름을 대신 골라 주는 표는 두지 않는다. 요금이 다른 곳으로 말없이 옮기는 것보다 한 번 거부하고
+사람이 다시 고르게 하는 편이 낫다.
 
 ## 7. 비목표 (Non-Goals)
 

@@ -4,8 +4,6 @@ import {
   aiProviderIds,
   ConfigBridge,
   providerCatalog,
-  replaceRetiredProviderId,
-  retiredProviderReplacements,
   storyboardModelCatalog,
 } from '@storyboard/story-ai';
 import type { AiProviderId, StoryboardConfigurationLike } from '@storyboard/story-ai';
@@ -65,17 +63,13 @@ describe("providerCatalog internal consistency", () => {
     }
   })
 
-  // The subscription CLIs left in 0.9.2. A workspace configured for one must land on a provider
-  // that still exists, or the author's next run refuses with "no provider chosen".
-  it("maps every retired provider id onto a provider that still exists", () => {
-    for (const retiredId of Object.keys(retiredProviderReplacements)) {
+  // The subscription CLIs left in 0.9.2 and nothing maps onto them any more. A config naming one
+  // must fall through to "no provider chosen" so the author picks again — the model and the price
+  // are different, so choosing on their behalf would spend money they did not agree to.
+  it("keeps the retired subscription CLIs out of the catalog", () => {
+    for (const retiredId of ["claude-code", "codex", "gemini-cli"]) {
       expect(aiProviderIds, `${retiredId} is still in the catalog`).not.toContain(retiredId)
-
-      const replacement = replaceRetiredProviderId(retiredId)
-      expect(aiProviderIds, `${retiredId} maps outside the catalog`).toContain(replacement)
     }
-
-    expect(replaceRetiredProviderId("openai")).toBeUndefined()
   })
 
   it("keeps model ids unique inside a provider and prices paired", () => {

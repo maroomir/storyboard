@@ -9,7 +9,6 @@ import {
   getDefaultModelId,
   isModelInCatalogForProvider,
   providerCatalog,
-  replaceRetiredProviderId,
   storyboardModelCatalog,
 } from '#ai/contracts/providerCatalog';
 import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
@@ -495,12 +494,9 @@ function resolveEffectiveModelForTask(
   return fallbackModelId;
 }
 
-// 설정 파일이 적어 둔 프로바이더 이름을 지금 쓸 수 있는 것으로 옮긴다. 없어진 구독형 CLI 이름은
-// 같은 계열의 종량제 프로바이더가 되고, 그래도 모르는 이름이면 undefined 다.
+// 설정 파일이 적어 둔 프로바이더 이름. 카탈로그에 없으면 undefined 이고, 호출자는 «고르지 않음»
+// 으로 다룬다 — 없어진 이름을 말없이 다른 프로바이더로 바꾸지 않는다. 모델도 요금도 다르기 때문에
+// 사람이 다시 고르는 편이 낫다.
 function resolveStoredProviderId(value: string): AiProviderId | undefined {
-  if (aiProviderIds.includes(value as AiProviderId)) {
-    return value as AiProviderId;
-  }
-
-  return replaceRetiredProviderId(value);
+  return aiProviderIds.includes(value as AiProviderId) ? (value as AiProviderId) : undefined;
 }
