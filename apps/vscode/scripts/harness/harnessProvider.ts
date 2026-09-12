@@ -9,9 +9,16 @@ import {
 } from '@storyboard/story-ai';
 import { createFileSecretStorage, resolveStoryboardHomePaths } from '@storyboard/story-config';
 
+import { createClaudeCodeHarnessProvider } from './claudeCodeHarnessProvider';
+
 // NOTE: 하네스는 앱이 아니라 진단 스크립트라 컨테이너를 세우지 않는다. 대신 두 앱이 쓰는 같은
 // 0600 시크릿 파일에서 키를 읽어 프로바이더 하나만 만든다. 키는 로그에 남기지 않는다.
-const harnessProviderIds = ['claude', 'openai', 'google'] as const;
+// `claude-code` 는 제품에 없는 진단 전용 경로다 — 구독 CLI 를 개인 계정으로 부르므로 키가 필요 없고,
+// 이 경로로 잰 값은 모델 프로필에 기록하지 않는다.
+const harnessProviderIds = ['claude', 'openai', 'google', 'claude-code'] as const;
+
+const claudeCodeDefaultModel = 'sonnet';
+const claudeCodeTimeoutMs = 600_000;
 
 export type HarnessProviderId = (typeof harnessProviderIds)[number];
 
@@ -30,6 +37,10 @@ export function resolveHarnessProviderId(configured: string | undefined): Harnes
 }
 
 export function defaultHarnessModel(providerId: HarnessProviderId): string {
+  if (providerId === 'claude-code') {
+    return claudeCodeDefaultModel;
+  }
+
   const model = getDefaultModelId(providerId);
 
   if (model === undefined) {
@@ -43,6 +54,10 @@ export async function createHarnessProvider(
   providerId: HarnessProviderId,
   model: string,
 ): Promise<AiProvider> {
+  if (providerId === 'claude-code') {
+    return createClaudeCodeHarnessProvider(model, claudeCodeTimeoutMs);
+  }
+
   const secretStore = new SecretStore(
     createFileSecretStorage(resolveStoryboardHomePaths(process.env).secretsFile),
   );

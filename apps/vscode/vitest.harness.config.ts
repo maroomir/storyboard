@@ -5,7 +5,7 @@ import { defineConfig } from "vitest/config"
 
 import { aliasesFromTsconfig } from "../../scripts/aliases.mjs"
 
-// NOTE: Separate from vitest.config.ts so the codex-backed generation harness never runs during
+// NOTE: Separate from vitest.config.ts so the generation harness never runs during
 // `npm test`. Run explicitly: `npx vitest run --config vitest.harness.config.ts`.
 const packageRoot = path.dirname(fileURLToPath(import.meta.url))
 
