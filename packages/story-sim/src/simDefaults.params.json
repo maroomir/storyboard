@@ -1,0 +1,16 @@
+{
+  "panel": {
+    "commonReaderCount": 4,
+    "engagementScaleMax": 5,
+    "quoteRetryLimit": 1
+  },
+  "run": {
+    "repeats": 3,
+    "sceneCount": 8
+  },
+  "referencePricePerMillion": {
+    "opus": { "input": 15.0, "output": 75.0 },
+    "sonnet": { "input": 3.0, "output": 15.0 },
+    "haiku": { "input": 1.0, "output": 5.0 }
+  }
+}
