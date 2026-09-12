@@ -149,7 +149,8 @@ describe('budget estimate', () => {
     const estimate = estimateBudget({
       points: 12,
       judgeCallsPerRun: 55,
-      generationModel: 'sonnet',
+      generationProvider: 'claude' as const,
+      generationModel: 'claude-sonnet-5',
       baseline,
     });
 
@@ -163,52 +164,56 @@ describe('budget estimate', () => {
       repeats: 1,
       sceneCount: 1,
       judgeCallsPerRun: 0,
-      generationModel: 'sonnet',
+      generationProvider: 'claude' as const,
+      generationModel: 'claude-sonnet-5',
       baseline: { ...baseline, generationCallsPerScene: 1000 },
     });
 
-    // 1,000회 × (4,000 입력 + 1,500 출력) 토큰을 sonnet 단가로.
-    expect(estimate.estimatedRefUsd).toBeCloseTo((4_000_000 / 1e6) * 3 + (1_500_000 / 1e6) * 15);
-    expect(estimate.assumptions.join(' ')).toContain('(ref)');
+    // 1,000회 × (4,000 입력 + 1,500 출력) 토큰을 claude-sonnet-5 단가로.
+    expect(estimate.estimatedUsd).toBeCloseTo((4_000_000 / 1e6) * 2 + (1_500_000 / 1e6) * 10);
   });
 
   it('leaves the cost at zero and says why for an unpriced model', () => {
     const estimate = estimateBudget({
       points: 1,
       judgeCallsPerRun: 0,
+      generationProvider: 'claude' as const,
       generationModel: 'unlisted',
       baseline,
     });
 
-    expect(estimate.estimatedRefUsd).toBe(0);
-    expect(estimate.assumptions.join(' ')).toContain('참조 단가가 없어');
+    expect(estimate.estimatedUsd).toBeUndefined();
+    expect(estimate.assumptions.join(' ')).toContain('요금을 몰라');
   });
 
   it('counts judge calls in the clock even though they leave the cost axis', () => {
     const withJudge = estimateBudget({
       points: 1,
       judgeCallsPerRun: 100,
-      generationModel: 'sonnet',
+      generationProvider: 'claude' as const,
+      generationModel: 'claude-sonnet-5',
       baseline,
     });
     const withoutJudge = estimateBudget({
       points: 1,
       judgeCallsPerRun: 0,
-      generationModel: 'sonnet',
+      generationProvider: 'claude' as const,
+      generationModel: 'claude-sonnet-5',
       baseline,
     });
 
     expect(withJudge.estimatedWallClockHours).toBeGreaterThan(
       withoutJudge.estimatedWallClockHours,
     );
-    expect(withJudge.estimatedRefUsd).toBe(withoutJudge.estimatedRefUsd);
+    expect(withJudge.estimatedUsd).toBe(withoutJudge.estimatedUsd);
   });
 
   it('honours a run cap', () => {
     const estimate = estimateBudget({
       points: 12,
       judgeCallsPerRun: 0,
-      generationModel: 'sonnet',
+      generationProvider: 'claude' as const,
+      generationModel: 'claude-sonnet-5',
       baseline,
     });
 

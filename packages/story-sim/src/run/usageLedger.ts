@@ -1,6 +1,5 @@
+import { computeCostUsd } from '@storyboard/story-ai';
 import type { AiTaskName, UsageRecord } from '@storyboard/story-ai';
-
-import { simDefaults } from '#sim/simDefaults';
 
 export interface TaskUsage {
   readonly calls: number;
@@ -8,42 +7,27 @@ export interface TaskUsage {
   readonly outputTokens: number;
 }
 
-// NOTE: 비용은 서로 다른 세 가지 사실이고 어느 둘도 합치면 안 된다. costReportedUsd 는 CLI 가
-// 실제로 보고한 금액이라 한 호출이라도 빠지면 총합을 말할 수 없어 undefined 가 된다.
-// costRefUsd 는 지점끼리 비교하려고 토큰을 참조 단가로 환산한 값이라 청구액이 아니다.
-// unpricedCallCount 는 금액이 없던 호출 수로, undefined 의 이유를 설명한다.
+// NOTE: 남은 프로바이더는 전부 종량제라 모델마다 요금이 필수 칸이다. 그래서 금액은 하나뿐이고
+// 환산값을 따로 들 이유가 없다. 다만 요금을 모르는 호출(목록에 없는 모델)까지 0으로 접으면
+// 모든 실행이 공짜로 읽히므로, 한 호출이라도 값을 모르면 총합을 undefined 로 둔다.
 export interface TokenTotals {
   readonly calls: number;
   readonly inputTokens: number;
   readonly outputTokens: number;
   readonly cacheReadInputTokens: number;
   readonly byTask: Readonly<Partial<Record<AiTaskName, TaskUsage>>>;
-  readonly costReportedUsd: number | undefined;
-  readonly costRefUsd: number;
+  readonly costUsd: number | undefined;
   readonly unpricedCallCount: number;
   // 귀속이 없는 호출은 사용량 이벤트를 아예 내지 않는다. 0 이 아니면 토큰이 새고 있다는 뜻이다.
   readonly unattributedCallCount: number;
 }
 
-export interface ReferencePrice {
-  readonly input: number;
-  readonly output: number;
-}
-
-export function referencePriceFor(model: string | undefined): ReferencePrice | undefined {
-  return model === undefined ? undefined : simDefaults.referencePricePerMillion[model];
-}
-
-export function summarizeUsage(
-  records: readonly UsageRecord[],
-  fallbackModel?: string,
-): TokenTotals {
+export function summarizeUsage(records: readonly UsageRecord[]): TokenTotals {
   const byTask: Partial<Record<AiTaskName, TaskUsage>> = {};
   let inputTokens = 0;
   let outputTokens = 0;
   let cacheReadInputTokens = 0;
-  let costRefUsd = 0;
-  let reportedTotal = 0;
+  let costTotal = 0;
   let unpricedCallCount = 0;
   let unattributedCallCount = 0;
 
@@ -62,19 +46,19 @@ export function summarizeUsage(
       outputTokens: (previous?.outputTokens ?? 0) + output,
     };
 
-    if (record.costUsd === undefined) {
+    // 프로바이더가 금액을 실어 보냈으면 그걸 쓰고, 없으면 토큰과 모델 요금으로 센다.
+    const cost =
+      record.costUsd ??
+      computeCostUsd({ providerId: record.providerId, model: record.model, usage: record.usage });
+
+    if (cost === undefined) {
       unpricedCallCount += 1;
     } else {
-      reportedTotal += record.costUsd;
+      costTotal += cost;
     }
 
     if (record.attribution.primary === undefined) {
       unattributedCallCount += 1;
-    }
-
-    const price = referencePriceFor(record.model ?? fallbackModel);
-    if (price !== undefined) {
-      costRefUsd += (input / 1_000_000) * price.input + (output / 1_000_000) * price.output;
     }
   }
 
@@ -84,20 +68,16 @@ export function summarizeUsage(
     outputTokens,
     cacheReadInputTokens,
     byTask,
-    costReportedUsd: unpricedCallCount > 0 ? undefined : reportedTotal,
-    costRefUsd,
+    costUsd: unpricedCallCount > 0 ? undefined : costTotal,
     unpricedCallCount,
     unattributedCallCount,
   };
 }
 
-// 리포트 한 줄. 실제 청구액과 환산값을 한 줄에 쓰되 어느 쪽인지 늘 밝힌다.
 export function describeCost(totals: TokenTotals): string {
-  const reference = `$${totals.costRefUsd.toFixed(4)} (ref)`;
-
-  if (totals.costReportedUsd === undefined) {
-    return `${reference} · 보고된 금액 없음 (${totals.unpricedCallCount}/${totals.calls} 호출)`;
+  if (totals.costUsd === undefined) {
+    return `금액 불명 — 요금을 모르는 호출 ${totals.unpricedCallCount}/${totals.calls}건`;
   }
 
-  return `$${totals.costReportedUsd.toFixed(4)} · ${reference}`;
+  return `$${totals.costUsd.toFixed(4)}`;
 }

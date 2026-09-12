@@ -56,7 +56,7 @@ describe('overlay', () => {
   it('builds the tuning object a valid overlay asks for', () => {
     const { tuning, refusals } = applyOverlay(
       { knobs: { 'skeleton.lengthRatio': 0.5, 'section.retryLimit': 3, 'violationWeights.cast': 5 } },
-      'claude-code',
+      'claude',
     );
 
     expect(refusals).toEqual([]);
@@ -68,14 +68,14 @@ describe('overlay', () => {
   });
 
   it('refuses an unknown knob', () => {
-    const { refusals } = applyOverlay({ knobs: { 'skeleton.nope': 1 } }, 'claude-code');
+    const { refusals } = applyOverlay({ knobs: { 'skeleton.nope': 1 } }, 'claude');
 
     expect(refusals).toHaveLength(1);
     expect(refusals[0]).toContain('모르는 손잡이');
   });
 
   it('refuses a value outside the bounds', () => {
-    const { refusals } = applyOverlay({ knobs: { 'skeleton.lengthRatio': 9 } }, 'claude-code');
+    const { refusals } = applyOverlay({ knobs: { 'skeleton.lengthRatio': 9 } }, 'claude');
 
     expect(refusals).toHaveLength(1);
     expect(refusals[0]).toContain('범위 밖');
@@ -88,7 +88,7 @@ describe('overlay', () => {
 
     const { refusals, tuning } = applyOverlay(
       { knobs: { [base.id]: base.defaultValue } },
-      'claude-code',
+      'claude',
       registry,
     );
 
@@ -111,21 +111,13 @@ describe('overlay', () => {
   });
 
   it('leaves the tuning empty when every knob was refused', () => {
-    const { tuning } = applyOverlay({ knobs: { 'skeleton.nope': 1 } }, 'claude-code');
+    const { tuning } = applyOverlay({ knobs: { 'skeleton.nope': 1 } }, 'claude');
 
     expect(tuning).toEqual({});
   });
 });
 
 describe('sim defaults', () => {
-  it('prices every model the sweep can select', () => {
-    expect(Object.keys(simDefaults.referencePricePerMillion).sort()).toEqual([
-      'haiku',
-      'opus',
-      'sonnet',
-    ]);
-  });
-
   it('keeps the panel and repeat counts positive', () => {
     expect(simDefaults.panel.commonReaderCount).toBeGreaterThan(0);
     expect(simDefaults.run.repeats).toBeGreaterThan(0);

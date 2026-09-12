@@ -6,11 +6,6 @@ import defaultsData from './simDefaults.params.json';
 
 const positiveInt = z.number().int().positive();
 
-const pricePerMillion = z.object({
-  input: z.number().nonnegative(),
-  output: z.number().nonnegative(),
-});
-
 const simDefaultsSchema = z.object({
   panel: z.object({
     // AUC 를 내는 공통 독자 수. 장르 독자는 여기 포함되지 않는다.
@@ -26,10 +21,6 @@ const simDefaultsSchema = z.object({
     // 트랙 한 벌의 씬 수. 원장의 회수 칸 수와 함께 리포트의 분모가 된다.
     sceneCount: positiveInt,
   }),
-  // NOTE: 구독형 CLI 는 토큰당 과금이 아니라서 제품의 가격표가 비어 있다. 지점끼리 비교할 공통
-  // 잣대가 필요하므로 여기서 참조 단가를 갖되, 출력할 때는 반드시 (ref) 를 붙여 실제 청구액과
-  // 구분한다. 제품의 storyboardModelPricing 과는 목적이 달라 합치지 않는다.
-  referencePricePerMillion: z.record(z.string(), pricePerMillion),
 });
 
 export type SimDefaults = z.infer<typeof simDefaultsSchema>;
