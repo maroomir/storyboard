@@ -15,9 +15,10 @@ import { createHarnessProvider, defaultHarnessModel, resolveHarnessProviderId } 
 // NOTE: 진단 — 뼈대 비율과 살붙임 구간 상한을 조건별로 흔들어 목표 분량 대비 실제 초안 분량(도달률)을
 // 잰다. 파이프라인을 직접 세우므로 ConfigBridge·모델 프로필을 거치지 않는다. 서술자·이전 씬 맥락·
 // 캐넌은 조건 간 비교를 위해 넣지 않으므로, 절대 도달률은 실사용 값과 다를 수 있다.
+// 프로바이더는 API 키를 쓰는 세 곳뿐이다 — 여기서 잰 값은 모델 프로필에 그대로 들어간다.
 const workspace = process.env.SWEEP_WS ?? `${process.env.HOME ?? ""}/Git/webfic/level-zero`
 const sceneFileName = process.env.SWEEP_SCENE ?? "10-scene-3-2.card"
-const providerId = resolveHarnessProviderId(process.env.SWEEP_PROVIDER ?? "claude-code")
+const providerId = resolveHarnessProviderId(process.env.SWEEP_PROVIDER)
 const model = process.env.SWEEP_MODEL ?? defaultHarnessModel(providerId)
 const runsPerCondition = Number(process.env.SWEEP_RUNS ?? "2")
 // 한 프로세스가 1회만 돌 때도 회차 번호가 이어지도록 시작 번호를 밖에서 준다.
@@ -184,14 +185,12 @@ afterAll(async () => {
   const previousRows = await readPreviousRows()
   await nodeFs.writeFile(
     resultFile,
-    // NOTE: 구독 CLI 로 잰 값은 API 모델과 같다는 보증이 없어 모델 프로필에 기록하지 않는다.
     JSON.stringify(
       {
         workspace,
         sceneFileName,
         providerId,
         model,
-        profileEligible: providerId !== "claude-code",
         rows: [...previousRows, ...rows]
       },
       null,
