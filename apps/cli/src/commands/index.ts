@@ -77,6 +77,7 @@ import {
   removeNarrator,
   showNarrator,
 } from './narrators';
+import { applySim, reportSim, runSim, screenSim, sweepSim } from './sim';
 import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
 
@@ -1894,4 +1895,9 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'draft format': applyDraftFormat,
   'draft augment': augmentDraft,
   'manuscript export': exportManuscript,
+  'sim run': runSim,
+  'sim screen': screenSim,
+  'sim sweep': sweepSim,
+  'sim report': reportSim,
+  'sim apply': applySim,
 };

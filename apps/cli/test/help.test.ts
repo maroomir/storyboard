@@ -63,6 +63,7 @@ describe('renderUsage', () => {
       '카드와 정전',
       '검사',
       '원고',
+      '측정',
       '유지보수',
     ]) {
       expect(usage).toContain(`\n${group}\n`);
