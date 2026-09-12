@@ -1,0 +1,309 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { SceneSkeletonPrompt, type UsageRecord } from '@storyboard/story-ai';
+import {
+  appendRun,
+  completedKeys,
+  measureScene,
+  readRuns,
+  runKey,
+  runTrack,
+  summarizeScenes,
+  weighWarnings,
+  type ISimWorkspaceFactory,
+  type RunRecord,
+  type SimSceneGenerator,
+} from '@storyboard/story-sim';
+
+// 실행기는 돈이 드는 유일한 경로지만, 무엇을 세고 무엇을 건너뛰는지는 전부 결정론적으로 잴 수 있다.
+
+function usageRecord(): UsageRecord {
+  return {
+    taskName: 'sceneSkeleton',
+    providerId: 'claude',
+    model: 'claude-sonnet-5',
+    usage: { inputTokens: 1000, outputTokens: 500 },
+    attribution: { primary: { kind: 'scene', id: '01' } },
+  };
+}
+
+function fakeFactory(options: {
+  readonly draft?: (stem: string) => string;
+  readonly fail?: ReadonlySet<string>;
+  readonly onOpen?: (input: unknown) => void;
+}): ISimWorkspaceFactory {
+  return {
+    open: async (input) => {
+      options.onOpen?.(input);
+      let pending: UsageRecord[] = [];
+
+      const generator: SimSceneGenerator = {
+        workspacePath: input.workspacePath,
+        generate: async (stem) => {
+          pending = [usageRecord()];
+          return options.fail?.has(stem) === true
+            ? { ok: false, kind: 'failed', message: '프로바이더 오류', warnings: [] }
+            : { ok: true, kind: 'generated', warnings: ['1구간: too-short 목표에 못 미칩니다'] };
+        },
+        drainUsage: () => {
+          const drained = pending;
+          pending = [];
+          return drained;
+        },
+        readDraft: async (stem) => options.draft?.(stem) ?? `${stem} 본문`.repeat(50),
+      };
+
+      return generator;
+    },
+  };
+}
+
+const scenes = [
+  { sceneStem: '01-a', targetLength: 1000 },
+  { sceneStem: '02-b', targetLength: 1000 },
+];
+
+describe('warning weight', () => {
+  // 개수만 세면 «인물이 새로 등장» 과 «조금 짧다» 가 같은 무게가 된다.
+  it('weighs a cast violation heavier than a length one', () => {
+    expect(weighWarnings(['1구간: cast 뼈대에 없는 인물'])).toBeGreaterThan(
+      weighWarnings(['1구간: too-short 짧습니다']),
+    );
+  });
+
+  it('gives an unrecognised warning the lightest weight rather than ignoring it', () => {
+    expect(weighWarnings(['알 수 없는 경고'])).toBe(1);
+  });
+});
+
+describe('scene metrics', () => {
+  it('computes reach against the target', () => {
+    const metrics = measureScene({
+      sceneStem: '01-a',
+      targetLength: 1000,
+      draft: '가'.repeat(640),
+      warnings: [],
+    });
+
+    expect(metrics.reach).toBeCloseTo(0.64);
+  });
+
+  it('reports zero reach rather than dividing by a zero target', () => {
+    expect(
+      measureScene({ sceneStem: '01-a', targetLength: 0, draft: '가', warnings: [] }).reach,
+    ).toBe(0);
+  });
+
+  it('averages reach over the scenes that produced a draft', () => {
+    const summary = summarizeScenes([
+      measureScene({ sceneStem: '01', targetLength: 100, draft: '가'.repeat(50), warnings: [] }),
+      measureScene({ sceneStem: '02', targetLength: 100, draft: '가'.repeat(70), warnings: [] }),
+    ]);
+
+    expect(summary.meanReach).toBeCloseTo(0.6);
+  });
+});
+
+describe('track run', () => {
+  it('generates the scenes in order and collects their tokens', async () => {
+    const seen: string[] = [];
+    const result = await runTrack({
+      factory: fakeFactory({}),
+      workspacePath: '/tmp/ws',
+      scenes,
+      tuning: {},
+      promptOverrides: {},
+      onProgress: (stem) => seen.push(stem),
+    });
+
+    expect(seen).toEqual(['01-a', '02-b']);
+    expect(result.tokens.calls).toBe(2);
+    expect(result.drafts.size).toBe(2);
+    expect(result.failures).toEqual([]);
+  });
+
+  // 생성이 실패한 씬은 원고가 없다. 그 씬을 0점으로 세면 손잡이 탓으로 읽히므로 따로 남긴다.
+  it('records a failed scene instead of scoring it as a zero', async () => {
+    const result = await runTrack({
+      factory: fakeFactory({ fail: new Set(['02-b']) }),
+      workspacePath: '/tmp/ws',
+      scenes,
+      tuning: {},
+      promptOverrides: {},
+    });
+
+    expect(result.failures).toHaveLength(1);
+    expect(result.metrics.scenes).toHaveLength(1);
+    expect(result.drafts.has('02-b')).toBe(false);
+  });
+
+  it('passes the tuning through to the workspace it opens', async () => {
+    const onOpen = vi.fn();
+
+    await runTrack({
+      factory: fakeFactory({ onOpen }),
+      workspacePath: '/tmp/ws',
+      scenes: scenes.slice(0, 1),
+      tuning: { skeletonRatio: 0.8 },
+      promptOverrides: {},
+      sectionOutputLimit: 1000,
+    });
+
+    expect(onOpen).toHaveBeenCalledWith(
+      expect.objectContaining({ tuning: { skeletonRatio: 0.8 }, sectionOutputLimit: 1000 }),
+    );
+  });
+
+  // 프롬프트 덮개는 전역이다. 실행이 끝나고 안 되돌리면 다음 지점이 앞 지점의 온도로 돌아간다.
+  it('puts the prompt overrides back when the run ends', async () => {
+    const before = SceneSkeletonPrompt.config.temperature;
+
+    await runTrack({
+      factory: fakeFactory({}),
+      workspacePath: '/tmp/ws',
+      scenes: scenes.slice(0, 1),
+      tuning: {},
+      promptOverrides: { sceneSkeleton: { temperature: 1.7 } },
+    });
+
+    expect(SceneSkeletonPrompt.config.temperature).toBe(before);
+  });
+
+  it('puts them back even when a scene throws', async () => {
+    const before = SceneSkeletonPrompt.config.temperature;
+    const exploding: ISimWorkspaceFactory = {
+      open: async () => {
+        throw new Error('열 수 없습니다');
+      },
+    };
+
+    await expect(
+      runTrack({
+        factory: exploding,
+        workspacePath: '/tmp/ws',
+        scenes,
+        tuning: {},
+        promptOverrides: { sceneSkeleton: { temperature: 1.7 } },
+      }),
+    ).rejects.toThrow();
+
+    expect(SceneSkeletonPrompt.config.temperature).toBe(before);
+  });
+
+  it('stops when the caller cancels', async () => {
+    const result = runTrack({
+      factory: fakeFactory({}),
+      workspacePath: '/tmp/ws',
+      scenes,
+      tuning: {},
+      promptOverrides: {},
+      shouldCancel: () => true,
+    });
+
+    await expect(result).rejects.toThrow(/취소/);
+  });
+});
+
+describe('run store', () => {
+  let directory: string | undefined;
+
+  afterEach(() => {
+    if (directory !== undefined) {
+      rmSync(directory, { recursive: true, force: true });
+      directory = undefined;
+    }
+  });
+
+  function record(overrides: Partial<RunRecord> = {}): RunRecord {
+    return {
+      runId: 'r1',
+      pointLabel: 'baseline',
+      repeat: 1,
+      engineCommit: 'engine1',
+      trackCommit: 'track1',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'claude', model: 'claude-sonnet-5' },
+      scenes: [],
+      tokens: {
+        calls: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+        cacheReadInputTokens: 0,
+        byTask: {},
+        costUsd: 0,
+        unpricedCallCount: 0,
+        unattributedCallCount: 0,
+      },
+      startedAt: new Date().toISOString(),
+      wallClockMs: 1,
+      ...overrides,
+    };
+  }
+
+  function file(): string {
+    directory = mkdtempSync(join(tmpdir(), 'sim-runs-'));
+    return join(directory, 'nested', 'runs.jsonl');
+  }
+
+  it('returns nothing for a file that does not exist yet', async () => {
+    expect(await readRuns(join(tmpdir(), 'absent', 'runs.jsonl'))).toEqual([]);
+  });
+
+  it('appends one line per run and reads them all back', async () => {
+    const path = file();
+
+    await appendRun(path, record());
+    await appendRun(path, record({ repeat: 2 }));
+
+    expect(await readRuns(path)).toHaveLength(2);
+  });
+
+  // 죽는 순간 반쯤 쓰인 줄이 남는다. 그 한 줄 때문에 앞서 몇 시간 돌린 결과를 잃으면 안 된다.
+  it('keeps the intact lines when the last one was cut off', async () => {
+    const path = file();
+
+    await appendRun(path, record());
+    const { appendFileSync } = await import('node:fs');
+    appendFileSync(path, '{"runId":"r2","pointLa');
+
+    expect(await readRuns(path)).toHaveLength(1);
+  });
+
+  it('skips the runs already finished for this engine and track', async () => {
+    const path = file();
+
+    await appendRun(path, record({ pointLabel: 'grid:0000', repeat: 1 }));
+
+    const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
+
+    expect(done.has(runKey('grid:0000', 1))).toBe(true);
+    expect(done.has(runKey('grid:0000', 2))).toBe(false);
+  });
+
+  // 엔진이나 트랙이 바뀐 뒤의 기록은 다른 것을 잰 값이다. 이어 쓰면 서로 다른 것을 섞게 된다.
+  it('does not reuse a run recorded against a different engine or track', async () => {
+    const path = file();
+
+    await appendRun(path, record({ engineCommit: 'engine0' }));
+    await appendRun(path, record({ pointLabel: 'other', trackCommit: 'track0' }));
+
+    const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
+
+    expect(done.size).toBe(0);
+  });
+
+  it('does not reuse a run whose track was dirty', async () => {
+    const path = file();
+
+    await appendRun(path, record({ trackDirty: true }));
+
+    const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
+
+    expect(done.size).toBe(0);
+  });
+});
