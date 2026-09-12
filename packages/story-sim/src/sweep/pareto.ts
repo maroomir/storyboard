@@ -2,11 +2,25 @@ export interface ScoredPoint {
   readonly label: string;
   // 클수록 좋다.
   readonly auc: number;
-  // 작을수록 좋다.
-  readonly tokens: number;
+  // 작을수록 좋다. 비용 축의 실제 값이며, 아래 costAxis 가 그것이 무엇인지 말한다.
+  readonly cost: number;
   readonly recalled: number;
   readonly contradicted: number;
 }
+
+// NOTE: 로컬 모델은 요금이 0이라 금액으로 재면 모든 지점이 같아진다. 그때 실제로 아까운 것은
+// 돈이 아니라 시간과 토큰이므로, 무엇을 x축으로 삼았는지 리포트가 늘 밝힌다.
+export type CostAxis = 'usd' | 'tokens' | 'seconds';
+
+export function chooseCostAxis(totalUsd: number | undefined): CostAxis {
+  return totalUsd === undefined || totalUsd === 0 ? 'tokens' : 'usd';
+}
+
+export const costAxisLabels: Readonly<Record<CostAxis, string>> = {
+  usd: '비용(달러)',
+  tokens: '토큰',
+  seconds: '시간(초)',
+};
 
 // NOTE: 회수율은 파레토 축이 아니다. 거래할 수 있는 값이 아니라 정확성 관문이다 — 기준선보다
 // 사실을 더 많이 놓치는 지점은 AUC 가 아무리 높아도 채택할 수 없다.
@@ -18,8 +32,8 @@ export function excludeBelowBaselineRecall(
 }
 
 function dominates(left: ScoredPoint, right: ScoredPoint): boolean {
-  const noWorse = left.auc >= right.auc && left.tokens <= right.tokens;
-  const strictlyBetter = left.auc > right.auc || left.tokens < right.tokens;
+  const noWorse = left.auc >= right.auc && left.cost <= right.cost;
+  const strictlyBetter = left.auc > right.auc || left.cost < right.cost;
 
   return noWorse && strictlyBetter;
 }

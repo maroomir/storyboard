@@ -139,9 +139,29 @@ export const providerCatalog = {
     displayName: 'Ollama',
     transport: 'http',
     requiresApiKey: false,
-    defaultModel: 'llama3.3',
+    // NOTE: 로컬은 받아 둔 모델이 기계마다 다르므로 이 목록은 고정 목록이 아니라 제안이다.
+    // 목록에 없는 이름도 그대로 받는다 — 진짜 목록은 ollama 가 갖고 있다.
+    defaultModel: 'qwen3:8b',
     defaultBaseUrl: 'http://localhost:11434',
     models: [
+      {
+        id: 'qwen3:8b',
+        displayName: 'Qwen 3 8B (12GB에서 긴 문맥까지)',
+        inputPricePerMillion: 0,
+        outputPricePerMillion: 0,
+      },
+      {
+        id: 'qwen3:14b',
+        displayName: 'Qwen 3 14B (한국어 산문 우선)',
+        inputPricePerMillion: 0,
+        outputPricePerMillion: 0,
+      },
+      {
+        id: 'gemma3:12b',
+        displayName: 'Gemma 3 12B (심판용, 생성과 다른 계열)',
+        inputPricePerMillion: 0,
+        outputPricePerMillion: 0,
+      },
       {
         id: 'llama3.3',
         displayName: 'Llama 3.3',

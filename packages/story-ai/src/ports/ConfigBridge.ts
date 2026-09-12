@@ -36,6 +36,8 @@ export type SceneGenerationTuningLike = Omit<ModelProfile, 'measured' | 'section
 export interface ProviderModelConfig {
   readonly model?: string;
   readonly baseUrl?: string;
+  // 로컬 런타임이 실제로 쓸 문맥 창. 기계마다 VRAM 이 달라 코드가 정할 수 없다.
+  readonly contextTokens?: number;
 }
 
 export interface TaskAiStoredEntry {
@@ -106,9 +108,15 @@ export class ConfigBridge {
     const configuration = this.dependencies.getConfiguration();
 
     if (providerId === 'ollama') {
+      const contextTokens = configuration.get<number | undefined>(
+        'providers.ollama.contextTokens',
+        undefined,
+      );
+
       return {
         baseUrl: configuration.get('providers.ollama.baseUrl', providerCatalog.ollama.defaultBaseUrl),
         model: configuration.get('providers.ollama.model', providerCatalog.ollama.defaultModel),
+        ...(typeof contextTokens === 'number' && contextTokens > 0 ? { contextTokens } : {}),
       };
     }
 
@@ -159,6 +167,10 @@ export class ConfigBridge {
 
   public async setProviderModel(providerId: AiProviderId, model: string): Promise<void> {
     await this.configurationUpdate(`providers.${providerId}.model`, model);
+  }
+
+  public async setProviderContextTokens(contextTokens: number): Promise<void> {
+    await this.configurationUpdate('providers.ollama.contextTokens', contextTokens);
   }
 
   public async setProviderBaseUrl(baseUrl: string): Promise<void> {

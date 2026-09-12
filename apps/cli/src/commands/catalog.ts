@@ -41,9 +41,9 @@ export const initLanguages = ['ko', 'en', 'ja'] as const;
 
 // `config show` 가 프로바이더마다 보여 주는 칸과, `config set` 이 실제로 쓸 수 있는 칸. 두 목록이
 // 다른 것은 뜻이 있어서다 — 보여 주기만 하는 값이 있다.
-export const displayedProviderKeys = ['model', 'baseUrl'] as const;
+export const displayedProviderKeys = ['model', 'baseUrl', 'contextTokens'] as const;
 
-export const settableProviderKeys = ['model', 'baseUrl'] as const;
+export const settableProviderKeys = ['model', 'baseUrl', 'contextTokens'] as const;
 
 export type SettableProviderKey = (typeof settableProviderKeys)[number];
 

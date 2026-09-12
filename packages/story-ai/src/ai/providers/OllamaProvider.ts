@@ -20,6 +20,9 @@ export interface OllamaClientLike {
 export interface OllamaProviderOptions {
   readonly baseUrl: string | undefined;
   readonly model: string | undefined;
+  // NOTE: 지정하지 않으면 ollama 가 모델 기본 문맥(보통 2~4천 토큰)을 쓰고, 넘치는 앞부분을
+  // 오류 없이 버린다. 긴 원고를 이어 읽는 쪽에서는 그것이 «앞을 못 읽은 판정» 으로 조용히 나온다.
+  readonly contextTokens?: number;
   readonly createClient?: (baseUrl: string) => OllamaClientLike;
 }
 
@@ -30,6 +33,7 @@ interface OllamaChatRequest {
   readonly options?: {
     readonly temperature?: number;
     readonly num_predict?: number;
+    readonly num_ctx?: number;
   };
 }
 
@@ -46,6 +50,7 @@ export class OllamaProvider implements AiProvider {
   public readonly displayName: string;
   private readonly client: OllamaClientLike;
   private readonly model: string;
+  private readonly contextTokens: number | undefined;
 
   public constructor(options: OllamaProviderOptions) {
     const baseUrl = options.baseUrl?.trim();
@@ -65,6 +70,7 @@ export class OllamaProvider implements AiProvider {
 
     this.model = model;
     this.displayName = `Ollama (${model})`;
+    this.contextTokens = options.contextTokens;
     this.client = options.createClient?.(baseUrl) ?? createDefaultOllamaClient(baseUrl);
   }
 
@@ -91,6 +97,7 @@ export class OllamaProvider implements AiProvider {
         options: {
           temperature: request.temperature,
           num_predict: request.maxTokens,
+          ...(this.contextTokens === undefined ? {} : { num_ctx: this.contextTokens }),
         },
       });
 
