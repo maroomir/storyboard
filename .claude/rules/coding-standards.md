@@ -123,6 +123,7 @@ behaviour it changes.
 | `packages/story-ai/src/contracts/modelProfiles.params.json` | story-ai | Per-model measured overrides, with the `measured` block recording where each number came from |
 | `packages/story-ai/src/ai/prompts/promptTuning.params.json` | story-ai | `temperature` and `maxTokens` for every prompt, keyed by prompt module name |
 | `packages/story-pipeline/src/pipelineDefaults.params.json` | story-pipeline | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
+| `packages/story-sim/src/simDefaults.params.json` | story-sim | Measurement-side knobs: reader-panel size, repeat count, and the reference token prices the cost axis converts with |
 
 Identifier tables stay TypeScript (`as const`) and live with their owner:
 `providerCatalog.ts` and `settingCatalog.ts` (story-ai), `project.ts` / `paths.ts` / `narrator.ts`
@@ -134,7 +135,7 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
   ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
-  `format ← ai ← pipeline ← engine`, `ai ← config`.
+  `format ← ai ← pipeline ← engine ← sim`, `ai ← config`.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`

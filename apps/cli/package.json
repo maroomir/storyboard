@@ -25,6 +25,7 @@
     "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",
     "@storyboard/story-pipeline": "*",
+    "@storyboard/story-sim": "*",
     "ink": "^5.2.1",
     "react": "^18.3.1",
     "zod": "^4.4.2"

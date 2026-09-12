@@ -25,6 +25,9 @@
       "@storyboard/story-pipeline": [
         "../../packages/story-pipeline/src/index.ts"
       ],
+      "@storyboard/story-sim": [
+        "../../packages/story-sim/src/index.ts"
+      ],
       "@storyboard/story-format/contracts": [
         "../../packages/story-format/src/contracts.ts"
       ],
