@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
-import { applyOverlay, findKnob, knobRegistry, simDefaults } from '@storyboard/story-sim';
+import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import { applyOverlay, findKnob, isPromptKnob, knobRegistry, simDefaults } from '@storyboard/story-sim';
 
 // 레지스트리가 데이터 파일과 어긋나면 스윕이 존재하지 않는 손잡이를 흔들거나, 있는 손잡이를
 // 빠뜨린 채 «영향 없음»으로 보고한다. 둘 다 조용히 틀린 결론이 된다.
@@ -17,24 +18,38 @@ function leavesOf(value: unknown, path = ''): string[] {
 
 describe('knob registry', () => {
   const excluded = 'context.maxSceneBreakNewlines';
+  const pipelineKnobs = knobRegistry.filter((knob) => !isPromptKnob(knob));
+  const promptKnobs = knobRegistry.filter(isPromptKnob);
 
   it('has one row per pipeline default, except the one the pipeline never reads', () => {
     const expected = leavesOf(pipelineDefaults).filter((leaf) => leaf !== excluded);
-    const registered = knobRegistry.map((knob) => knob.id);
 
-    expect([...registered].sort()).toEqual([...expected].sort());
+    expect(pipelineKnobs.map((knob) => knob.id).sort()).toEqual([...expected].sort());
+  });
+
+  it('has a temperature and a token row for every prompt', () => {
+    expect(promptKnobs).toHaveLength(promptTuningKeys().length * 2);
   });
 
   it('never registers the excluded knob', () => {
     expect(findKnob(excluded)).toBeUndefined();
   });
 
-  it('takes every default from the data file, not a second copy', () => {
-    for (const knob of knobRegistry) {
+  it('takes every pipeline default from the data file, not a second copy', () => {
+    for (const knob of pipelineKnobs) {
       const [group, leaf] = knob.id.split('.') as [string, string];
       const source = (pipelineDefaults as unknown as Record<string, Record<string, number>>)[group];
 
       expect(knob.defaultValue, knob.id).toBe(source?.[leaf]);
+    }
+  });
+
+  it('takes every prompt default from the prompt table, not a second copy', () => {
+    for (const knob of promptKnobs) {
+      const source = promptTuning(knob.promptKey as ReturnType<typeof promptTuningKeys>[number]);
+      const field = knob.promptField as 'temperature' | 'maxTokens';
+
+      expect(knob.defaultValue, knob.id).toBe(source[field]);
     }
   });
 

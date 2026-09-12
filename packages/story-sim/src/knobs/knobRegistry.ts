@@ -1,4 +1,5 @@
-import type { AiProviderId } from '@storyboard/story-ai';
+import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import type { AiProviderId, PromptTuningKey } from '@storyboard/story-ai';
 import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
 import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
 
@@ -7,14 +8,17 @@ import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
 
 export type KnobId = string;
 
-export type KnobKind = 'ratio' | 'count' | 'chars' | 'weight';
+export type KnobKind = 'ratio' | 'count' | 'chars' | 'weight' | 'temperature' | 'tokens';
 
 // 되쓰기 대상. 한 모델에서만 잰 값은 공유 기본값이 아니라 모델 프로필로 가야 한다.
-export type KnobApplyTarget = 'modelProfile' | 'pipelineDefault';
+export type KnobApplyTarget = 'modelProfile' | 'pipelineDefault' | 'promptTuning';
 
 export interface KnobSpec {
   readonly id: KnobId;
-  readonly tuningKey: keyof SceneGenerationTuning;
+  // 파이프라인 손잡이면 tuningKey, 프롬프트 손잡이면 promptKey 가 채워진다. 둘은 배타적이다.
+  readonly tuningKey?: keyof SceneGenerationTuning;
+  readonly promptKey?: PromptTuningKey;
+  readonly promptField?: 'temperature' | 'maxTokens';
   // violationWeights.* 만 채운다. 저울은 손잡이 하나가 아니라 여덟 칸이라 키를 따로 든다.
   readonly weightKind?: (typeof sectionViolationKinds)[number];
   readonly kind: KnobKind;
@@ -85,6 +89,41 @@ const weightKnobs: readonly KnobSpec[] = sectionViolationKinds.map((kind) => ({
   honouredBy: 'all' as const,
   applyTarget: 'modelProfile' as const,
 }));
+
+// NOTE: 온도와 출력 상한은 프롬프트마다 따로 있다. 값의 출처는 promptTuning.params.json 하나뿐이라
+// 여기서 기본값을 다시 적지 않는다. 씬 생성이 부르지 않는 프롬프트의 손잡이는 돌려도 아무것도
+// 안 바뀌므로, 도달성 사전 조사가 그것을 걸러낸다.
+const promptKnobs: readonly KnobSpec[] = promptTuningKeys().flatMap((promptKey) => {
+  const config = promptTuning(promptKey);
+
+  return [
+    {
+      id: `prompt.${promptKey}.temperature`,
+      promptKey,
+      promptField: 'temperature' as const,
+      kind: 'temperature' as const,
+      defaultValue: config.temperature,
+      bounds: { min: 0, max: 2 },
+      honouredBy: 'all' as const,
+      applyTarget: 'promptTuning' as const,
+    },
+    {
+      id: `prompt.${promptKey}.maxTokens`,
+      promptKey,
+      promptField: 'maxTokens' as const,
+      kind: 'tokens' as const,
+      defaultValue: config.maxTokens,
+      // 상한은 프롬프트마다 120에서 12,000까지 벌어져 있다. 한 가지 절대 범위를 씌우면 짧은
+      // 프롬프트는 못 내리고 긴 프롬프트는 못 올리므로, 기본값을 기준으로 잡는다.
+      bounds: {
+        min: Math.max(32, Math.round(config.maxTokens / 4)),
+        max: Math.min(64_000, config.maxTokens * 4),
+      },
+      honouredBy: 'all' as const,
+      applyTarget: 'promptTuning' as const,
+    },
+  ];
+});
 
 export const knobRegistry: readonly KnobSpec[] = [
   count('section.retryLimit', 'sectionRetryLimit', pipelineDefaults.section.retryLimit, {
@@ -184,8 +223,13 @@ export const knobRegistry: readonly KnobSpec[] = [
     { min: 200, max: 8000 },
   ),
   ...weightKnobs,
+  ...promptKnobs,
 ];
 
 export function findKnob(id: KnobId): KnobSpec | undefined {
   return knobRegistry.find((knob) => knob.id === id);
+}
+
+export function isPromptKnob(knob: KnobSpec): boolean {
+  return knob.promptKey !== undefined;
 }
