@@ -3,3 +3,8 @@ export * from './knobs/knobRegistry';
 export * from './knobs/overlay';
 export * from './ports/tunedConfigBridge';
 export * from './run/usageLedger';
+export * from './score/factRecall';
+export * from './track/factLedger';
+export * from './judge/auc';
+export * from './judge/floorAnchor';
+export * from './judge/quoteCheck';
