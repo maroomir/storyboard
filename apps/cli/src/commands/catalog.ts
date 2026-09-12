@@ -14,6 +14,7 @@ export type CommandGroup =
   | '카드와 정전'
   | '검사'
   | '원고'
+  | '측정'
   | '유지보수';
 
 // 어느 verb 에나 붙는 옵션. 최상위 도움말·verb 도움말·자동완성이 같은 목록을 봐야 «있다고 적혀
@@ -53,6 +54,7 @@ export const commandGroups: readonly CommandGroup[] = [
   '카드와 정전',
   '검사',
   '원고',
+  '측정',
   '유지보수',
 ];
 
@@ -83,6 +85,17 @@ export const flagCatalog: readonly FlagSpec[] = [
     summary: '이번 실행에만 쓸 프로바이더 (claude, openai, google …)',
   },
   { name: 'model', valueLabel: '<name>', summary: '그 프로바이더의 모델' },
+  { name: 'track', valueLabel: '<path>', summary: 'sim: 트랙 저장소 경로' },
+  { name: 'genre', valueLabel: '<name>', summary: 'sim: 연쇄 트랙의 장르 디렉터리' },
+  { name: 'overlay', valueLabel: '<file>', summary: 'sim: 손잡이 값을 덮는 JSON 한 장' },
+  { name: 'knobs', valueLabel: '<a,b,c>', summary: 'sim: 흔들 손잡이 목록 (쉼표로 구분)' },
+  { name: 'repeats', valueLabel: '<n>', summary: 'sim: 같은 지점을 몇 번 돌릴지 (기본 3)' },
+  { name: 'judge', valueLabel: '<provider>', summary: 'sim: 심판 프로바이더 (생성과 달라야 합니다)' },
+  { name: 'judge-model', valueLabel: '<name>', summary: 'sim: 심판 모델' },
+  { name: 'max-runs', valueLabel: '<n>', summary: 'sim: 실행 횟수 상한' },
+  { name: 'out', valueLabel: '<path>', summary: 'sim: 결과를 쌓을 JSONL 경로' },
+  { name: 'point', valueLabel: '<label>', summary: 'sim: 되쓰기할 지점의 이름' },
+  { name: 'yes', summary: 'sim: 견적을 묻지 않고 바로 시작합니다' },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
   {
@@ -547,6 +560,56 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '원고',
     usage: 'manuscript summaries',
     summary: '장별 요약을 만듭니다',
+  },
+  {
+    verb: 'sim run',
+    group: '측정',
+    usage: 'sim run --track <path> [--genre <name>]',
+    summary: '트랙 한 벌을 한 지점으로 돌리고 품질·비용을 잽니다',
+    flags: ['track', 'genre', 'overlay', 'repeats', 'judge', 'judge-model', 'out', 'provider', 'model', 'yes'],
+    examples: [
+      'storyboard sim run --track ~/storyboard-workspace --genre thriller',
+      'storyboard sim run --track ~/storyboard-workspace --overlay point.json --yes',
+    ],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'sim screen',
+    group: '측정',
+    usage: 'sim screen --track <path> [--knobs <a,b,c>]',
+    summary: '손잡이를 하나씩 흔들어 영향이 큰 것을 고릅니다 (심판 없이)',
+    flags: ['track', 'genre', 'knobs', 'repeats', 'max-runs', 'out', 'provider', 'model', 'yes'],
+    examples: ['storyboard sim screen --track ~/storyboard-workspace'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'sim sweep',
+    group: '측정',
+    usage: 'sim sweep --track <path> --knobs <a,b,c,d>',
+    summary: '고른 손잡이 넷으로 격자를 돌고 파레토 표를 냅니다',
+    flags: ['track', 'genre', 'knobs', 'repeats', 'max-runs', 'judge', 'judge-model', 'out', 'provider', 'model', 'yes'],
+    examples: [
+      'storyboard sim sweep --track ~/storyboard-workspace --knobs skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio',
+    ],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'sim report',
+    group: '측정',
+    usage: 'sim report --out <path>',
+    summary: '쌓인 결과를 표로 다시 그립니다 (AI 호출 없음)',
+    flags: ['out'],
+    examples: ['storyboard sim report --out runs.jsonl'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'sim apply',
+    group: '측정',
+    usage: 'sim apply --out <path> --point <label> [--dry-run]',
+    summary: '고른 지점을 모델 프로필에 적습니다',
+    flags: ['out', 'point', 'dry-run', 'force'],
+    examples: ['storyboard sim apply --out runs.jsonl --point grid:0120 --dry-run'],
+    needsWorkspace: false,
   },
   {
     verb: 'manuscript export',

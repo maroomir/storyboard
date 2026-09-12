@@ -79,6 +79,8 @@ export interface CliContainer {
   readonly fileSystem: NodeFileSystem;
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
+  // 측정 결과가 «무엇으로 쟀는지» 를 적으려면 실행한 버전을 되돌려 줘야 한다.
+  readonly version: string;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
@@ -241,6 +243,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   return {
     workspaceRoot,
+    version: options.version,
     canPrompt: options.canPrompt,
     homePaths: resolveStoryboardHomePaths(),
     workspaceConfigFile,
