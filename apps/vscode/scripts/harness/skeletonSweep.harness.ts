@@ -162,16 +162,39 @@ for (const skeletonRatio of skeletonRatios) {
   }
 }
 
+async function readPreviousRows(): Promise<readonly SweepRow[]> {
+  try {
+    const raw = await nodeFs.readFile(resultFile, "utf8")
+    return (JSON.parse(raw) as { readonly rows?: readonly SweepRow[] }).rows ?? []
+  } catch {
+    return []
+  }
+}
+
 afterAll(async () => {
   if (rows.length === 0) {
     return
   }
 
   await nodeFs.mkdir(path.dirname(resultFile), { recursive: true })
+  // 조건을 여러 프로세스로 나눠 돌리므로 이미 적힌 행 뒤에 이어 쓴다. 한 번에 다 돌리면
+  // 중간에 죽었을 때 앞서 몇 시간 돌린 결과까지 함께 사라진다.
+  const previousRows = await readPreviousRows()
   await nodeFs.writeFile(
     resultFile,
     // NOTE: 구독 CLI 로 잰 값은 API 모델과 같다는 보증이 없어 모델 프로필에 기록하지 않는다.
-    JSON.stringify({ workspace, sceneFileName, providerId, model, profileEligible: providerId !== "claude-code", rows }, null, 2),
+    JSON.stringify(
+      {
+        workspace,
+        sceneFileName,
+        providerId,
+        model,
+        profileEligible: providerId !== "claude-code",
+        rows: [...previousRows, ...rows]
+      },
+      null,
+      2
+    ),
     "utf8"
   )
 
