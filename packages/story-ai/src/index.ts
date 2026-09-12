@@ -27,6 +27,7 @@ export * from './ai/prompts/inlineCompletion';
 export * from './ai/prompts/outlineSynopsis';
 export * from './ai/prompts/personaDialogue';
 export * from './ai/prompts/personaGeneration';
+export * from './ai/prompts/promptTuning';
 export * from './ai/prompts/sceneCoverage';
 export * from './ai/prompts/sceneBeats';
 export * from './ai/prompts/sceneGrounding';

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { AiProviderId } from '@storyboard/story-ai';
+import type { AiProviderId, PromptTuningOverrides } from '@storyboard/story-ai';
 import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
 import { sectionViolationKinds } from '@storyboard/story-pipeline';
 
@@ -15,6 +15,8 @@ export type Overlay = z.infer<typeof overlaySchema>;
 
 export interface OverlayApplication {
   readonly tuning: SceneGenerationTuning;
+  // 프롬프트 손잡이는 파이프라인 인자가 아니라 promptTuning 덮개로 간다.
+  readonly promptOverrides: PromptTuningOverrides;
   // 비어 있지 않으면 첫 AI 호출 전에 멈춘다. 아무것도 못 재는 실행에 예산을 쓰지 않기 위해서다.
   readonly refusals: readonly string[];
 }
@@ -36,6 +38,7 @@ export function applyOverlay(
   const refusals: string[] = [];
   const tuning: Record<string, unknown> = {};
   const weights: Record<string, number> = {};
+  const promptOverrides: Record<string, { temperature?: number; maxTokens?: number }> = {};
 
   for (const [id, value] of Object.entries(overlay.knobs)) {
     const knob = registry.find((candidate) => candidate.id === id);
@@ -58,19 +61,29 @@ export function applyOverlay(
       continue;
     }
 
-    if (knob.weightKind === undefined) {
-      tuning[knob.tuningKey] = value;
+    if (knob.promptKey !== undefined && knob.promptField !== undefined) {
+      promptOverrides[knob.promptKey] = {
+        ...promptOverrides[knob.promptKey],
+        [knob.promptField]: value,
+      };
       continue;
     }
 
-    weights[knob.weightKind] = value;
+    if (knob.weightKind !== undefined) {
+      weights[knob.weightKind] = value;
+      continue;
+    }
+
+    if (knob.tuningKey !== undefined) {
+      tuning[knob.tuningKey] = value;
+    }
   }
 
   if (Object.keys(weights).length > 0) {
     tuning['violationWeights'] = weights;
   }
 
-  return { tuning: tuning as SceneGenerationTuning, refusals };
+  return { tuning: tuning as SceneGenerationTuning, promptOverrides, refusals };
 }
 
 export function parseOverlay(raw: unknown): Overlay {
