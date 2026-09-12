@@ -20,6 +20,8 @@ const sceneFileName = process.env.SWEEP_SCENE ?? "10-scene-3-2.card"
 const providerId = resolveHarnessProviderId(process.env.SWEEP_PROVIDER ?? "claude-code")
 const model = process.env.SWEEP_MODEL ?? defaultHarnessModel(providerId)
 const runsPerCondition = Number(process.env.SWEEP_RUNS ?? "2")
+// 한 프로세스가 1회만 돌 때도 회차 번호가 이어지도록 시작 번호를 밖에서 준다.
+const firstRunNumber = Number(process.env.SWEEP_RUN_START ?? "1")
 const runTimeoutMs = Number(process.env.SWEEP_TIMEOUT_MS ?? String(60 * 60 * 1000))
 const resultFile =
   process.env.SWEEP_OUT ?? path.join(workspace, ".storyboard", "cache", "skeleton-sweep.json")
@@ -94,7 +96,7 @@ async function readProjectFile(): Promise<ProjectFile> {
 
 for (const skeletonRatio of skeletonRatios) {
   for (const sectionOutputLimit of sectionOutputLimits) {
-    for (let run = 1; run <= runsPerCondition; run += 1) {
+    for (let run = firstRunNumber; run < firstRunNumber + runsPerCondition; run += 1) {
       const label = `skeletonRatio=${skeletonRatio} sectionOutputLimit=${sectionOutputLimit} run=${run}`
 
       test(
