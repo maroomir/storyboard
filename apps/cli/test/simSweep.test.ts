@@ -91,8 +91,8 @@ describe('fractional grid', () => {
 });
 
 describe('pareto frontier', () => {
-  function point(label: string, auc: number, tokens: number, recalled = 13): ScoredPoint {
-    return { label, auc, tokens, recalled, contradicted: 0 };
+  function point(label: string, auc: number, cost: number, recalled = 13): ScoredPoint {
+    return { label, auc, cost, recalled, contradicted: 0 };
   }
 
   it('drops a point that is worse on both axes', () => {

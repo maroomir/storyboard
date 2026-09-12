@@ -106,7 +106,8 @@ function validateProvider(
 
   const catalog = storyboardModelCatalog[provider as AiProviderId];
 
-  if (model !== undefined && !catalog.some((entry) => entry.id === model)) {
+  // 로컬 런타임의 모델 목록은 기계마다 다르다. 카탈로그는 제안이고 진짜 목록은 ollama 가 갖는다.
+  if (provider !== 'ollama' && model !== undefined && !catalog.some((entry) => entry.id === model)) {
     return (
       `${provider} 에 없는 모델: ${model}\n` +
       `쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`

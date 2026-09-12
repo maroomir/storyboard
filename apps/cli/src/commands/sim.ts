@@ -15,6 +15,8 @@ import {
   findKnob,
   knobRegistry,
   median,
+  chooseCostAxis,
+  costAxisLabels,
   paretoFrontier,
   planFractionalGrid,
   planScreening,
@@ -384,18 +386,28 @@ export const sweepSim: CommandHandler = async (context) => {
   return await executePoints(context, { ...prepared, points });
 };
 
-function scorePoints(runs: readonly RunRecord[]): readonly ScoredPoint[] {
+function scorePoints(
+  runs: readonly RunRecord[],
+  axis: ReturnType<typeof chooseCostAxis>,
+): readonly ScoredPoint[] {
   const byLabel = new Map<string, RunRecord[]>();
 
   for (const run of runs) {
     byLabel.set(run.pointLabel, [...(byLabel.get(run.pointLabel) ?? []), run]);
   }
 
+  const costOf = (run: RunRecord): number => {
+    if (axis === 'usd') {
+      return run.tokens.costUsd ?? 0;
+    }
+    return run.tokens.inputTokens + run.tokens.outputTokens;
+  };
+
   return [...byLabel.entries()].map(([label, points]) => ({
     label,
     // 씨앗이 없어 회차마다 흔들리므로 최고값이 아니라 중앙값을 쓴다.
     auc: median(points.map((run) => run.auc ?? 0)),
-    tokens: median(points.map((run) => run.tokens.inputTokens + run.tokens.outputTokens)),
+    cost: median(points.map(costOf)),
     recalled: median(points.map((run) => run.recalled ?? 0)),
     contradicted: median(points.map((run) => run.contradicted ?? 0)),
   }));
@@ -414,24 +426,32 @@ export const reportSim: CommandHandler = async (context) => {
     return { ok: true, message: '아직 기록된 실행이 없습니다.', data: { runs: [] } };
   }
 
-  const scored = scorePoints(runs);
+  // 요금이 0인 모델로 돌았으면 금액으로는 지점을 가를 수 없다. 그때는 토큰이 x축이 된다.
+  const totalUsd = runs.reduce<number | undefined>(
+    (total, run) => (total === undefined || run.tokens.costUsd === undefined ? undefined : total + run.tokens.costUsd),
+    0,
+  );
+  const axis = chooseCostAxis(totalUsd);
+  const scored = scorePoints(runs, axis);
   const frontier = paretoFrontier(scored);
   const frontierLabels = new Set(frontier.map((point) => point.label));
 
   const lines = scored.map((point) => {
     const mark = frontierLabels.has(point.label) ? '*' : ' ';
-    return `${mark} ${point.label}\tAUC ${point.auc.toFixed(3)}\t토큰 ${point.tokens.toLocaleString()}\t회수 ${point.recalled}`;
+    const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
+    return `${mark} ${point.label}\tAUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
   });
 
   return {
     ok: true,
     message: [
       `실행 ${runs.length}회 · 지점 ${scored.length}개 (* 는 파레토 경계)`,
+      `비용 축: ${costAxisLabels[axis]}`,
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
       ...lines,
     ].join('\n'),
-    data: { runs: runs.length, points: scored, frontier },
+    data: { runs: runs.length, costAxis: axis, points: scored, frontier },
   };
 };
 

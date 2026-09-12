@@ -810,25 +810,38 @@ function describeSaved(container: CliContainer, key: string, value: unknown): Co
 async function setProviderField(
   container: CliContainer,
   providerId: AiProviderId,
-  field: 'model' | 'baseUrl',
+  field: SettableProviderKey,
   raw: string,
 ): Promise<CommandOutcome> {
   const { configBridge } = container;
 
   if (field === 'model') {
     const catalog = storyboardModelCatalog[providerId];
-    if (!catalog.some((entry) => entry.id === raw)) {
+    // NOTE: 로컬 런타임은 기계마다 받아 둔 모델이 다르다. 카탈로그를 고정 목록으로 강제하면
+    // 사용자가 이미 가진 모델을 쓸 수 없으므로, ollama 에서는 목록을 제안으로만 쓴다.
+    if (providerId !== 'ollama' && !catalog.some((entry) => entry.id === raw)) {
       return {
         ok: false,
         message: `${providerId} 에 없는 모델: ${raw}\n쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`,
       };
     }
     await configBridge.setProviderModel(providerId, raw);
-  } else {
+  } else if (field === 'baseUrl') {
     if (providerId !== 'ollama') {
       return { ok: false, message: 'baseUrl 은 ollama 에만 있습니다.' };
     }
     await configBridge.setProviderBaseUrl(raw);
+  } else {
+    if (providerId !== 'ollama') {
+      return { ok: false, message: 'contextTokens 는 ollama 에만 있습니다.' };
+    }
+
+    const tokens = Number(raw);
+    if (!Number.isInteger(tokens) || tokens <= 0) {
+      return { ok: false, message: `contextTokens 는 양의 정수여야 합니다: ${raw}` };
+    }
+
+    await configBridge.setProviderContextTokens(tokens);
   }
 
   return describeSaved(container, `providers.${providerId}.${field}`, raw);

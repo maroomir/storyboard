@@ -163,6 +163,7 @@ export class AiProviderRegistry {
     return new OllamaProvider({
       baseUrl: config.baseUrl,
       model: modelOverride ?? config.model,
+      ...(config.contextTokens === undefined ? {} : { contextTokens: config.contextTokens }),
       createClient: this.options.createOllamaClient,
     });
   }

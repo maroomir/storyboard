@@ -48,22 +48,33 @@ function floorCandidates() {
 }
 
 describe('judge selection', () => {
-  it('refuses a judge on the same provider as the generator', () => {
+  it('refuses a judge running the same weights as the generator', () => {
     expect(() =>
       createSimJudge({
         registry: {} as never,
         judge: { providerId: 'claude', model: 'claude-sonnet-5' },
-        generationProvider: 'claude',
+        generation: { providerId: 'claude', model: 'claude-sonnet-5' },
       }),
     ).toThrow(SelfJudgingError);
   });
 
-  it('allows it only when the caller says so out loud', () => {
+  // 로컬 런타임 하나에 qwen 과 gemma 를 올려 두는 것은 자기채점이 아니다.
+  it('allows two different models on one local runtime', () => {
+    expect(() =>
+      createSimJudge({
+        registry: {} as never,
+        judge: { providerId: 'ollama', model: 'gemma3:12b' },
+        generation: { providerId: 'ollama', model: 'qwen3:14b' },
+      }),
+    ).not.toThrow();
+  });
+
+  it('allows the same model only when the caller says so out loud', () => {
     expect(() =>
       createSimJudge({
         registry: {} as never,
         judge: { providerId: 'claude', model: 'claude-sonnet-5' },
-        generationProvider: 'claude',
+        generation: { providerId: 'claude', model: 'claude-sonnet-5' },
         allowSelfJudging: true,
       }),
     ).not.toThrow();

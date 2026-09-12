@@ -22,9 +22,9 @@ export interface JudgeSelection {
 export class SelfJudgingError extends Error {
   public readonly code = 'self-judging';
 
-  public constructor(providerId: AiProviderId) {
+  public constructor(providerId: AiProviderId, model: string) {
     super(
-      `심판과 생성이 같은 프로바이더(${providerId})입니다. 자기 글을 자기가 채점하면 그 지점만 점수가 들뜹니다.`,
+      `심판과 생성이 같은 모델(${providerId}:${model})입니다. 자기 글을 자기가 채점하면 그 지점만 점수가 들뜹니다.`,
     );
     this.name = 'SelfJudgingError';
   }
@@ -34,14 +34,20 @@ export class SelfJudgingError extends Error {
 // 한다 — 씨앗이 없으므로 이것이 재현성에 가장 가까운 수단이다.
 const judgeTemperature = 0;
 
+// NOTE: 프로바이더 이름만 보면 로컬 런타임에서 qwen 으로 쓰고 llama 로 채점하는 것까지 거부한다.
+// 같은 것은 프로바이더가 아니라 «같은 가중치» 이므로 모델까지 함께 본다.
 export function createSimJudge(input: {
   readonly registry: AiProviderRegistry;
   readonly judge: JudgeSelection;
-  readonly generationProvider: AiProviderId;
+  readonly generation: JudgeSelection;
   readonly allowSelfJudging?: boolean;
 }): SimJudge {
-  if (input.judge.providerId === input.generationProvider && input.allowSelfJudging !== true) {
-    throw new SelfJudgingError(input.judge.providerId);
+  const sameModel =
+    input.judge.providerId === input.generation.providerId &&
+    input.judge.model === input.generation.model;
+
+  if (sameModel && input.allowSelfJudging !== true) {
+    throw new SelfJudgingError(input.judge.providerId, input.judge.model);
   }
 
   const responses: AiGenerateResponse[] = [];
