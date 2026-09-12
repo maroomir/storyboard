@@ -7,5 +7,6 @@ export * from './reviseLoop';
 export * from './sceneGenerationPipeline';
 export * from './sceneGenerationPolicies';
 export * from './sceneGenerationStages';
+export * from './sceneGenerationTuning';
 export * from './sceneGenerationTypes';
 export * from './sceneSectionPlan';
