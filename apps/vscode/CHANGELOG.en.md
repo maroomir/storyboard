@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-09-12
+
 ### Removed
 
 - **The subscription CLI providers (Claude Code, Codex, Gemini CLI) are gone.** Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API keys. Storyboard's long-form generation — and the unattended CLI runs it is built for — is the latter, so the path is now API keys only. Gone with them: the CLI command, timeout, and reasoning-effort settings, the settings panel's "executable" field and "CLI not installed" state, and the usage-limit fallback (`--fallback`).
