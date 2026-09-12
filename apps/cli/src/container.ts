@@ -44,6 +44,7 @@ import {
 } from '@storyboard/story-engine';
 import {
   ConfigBridge,
+  type ConfigBridgeDependencies,
   createAiProviderRegistry,
   SecretStore,
   type AiProviderRegistry,
@@ -112,6 +113,16 @@ export interface CliContainerOptions {
   // Which config file `setup`/`config set` write to. Decided from the run's location and
   // `--global` before the container exists, so every writer here agrees on one answer.
   readonly configWriteTarget?: ConfigurationTarget;
+  // A caller that must account for every token brings its own ledger. A terminal run keeps the
+  // no-op: there is no usage panel to feed.
+  readonly usageSink?: IUsageSink;
+  // Lets a measurement harness layer fixed generation knobs over the configured ones without the
+  // engine learning that a harness exists.
+  readonly createConfigBridge?: (dependencies: ConfigBridgeDependencies) => ConfigBridge;
+  // Post-generation card updates rewrite the workspace's cards in unawaited background jobs. A
+  // measurement run must leave its fixture byte-identical and must not have those tokens land
+  // after the run is scored.
+  readonly postGenerationUpdates?: boolean;
 }
 
 // `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
@@ -155,10 +166,13 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     workspaceConfigFile,
     overrides: configOverrides(options),
   });
-  const configBridge = new ConfigBridge({
+  const configBridgeDependencies: ConfigBridgeDependencies = {
     getConfiguration: () => configuration,
     ...(options.configWriteTarget === undefined ? {} : { writeTarget: options.configWriteTarget }),
-  });
+  };
+  const configBridge =
+    options.createConfigBridge?.(configBridgeDependencies) ??
+    new ConfigBridge(configBridgeDependencies);
   const aiProviderRegistry = createAiProviderRegistry({
     secretStore,
     configBridge,
@@ -167,7 +181,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.
-  const usageSink: IUsageSink = { record: async (): Promise<void> => undefined };
+  const usageSink: IUsageSink = options.usageSink ?? { record: async (): Promise<void> => undefined };
   const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
   const generator = `storyboard@${options.version}`;
 
@@ -203,7 +217,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     fileSystem,
     generator,
     logger,
-    postGenerationUpdates,
+    ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
     projectRepository,
     sceneCacheRepository,
     sceneRepository,
