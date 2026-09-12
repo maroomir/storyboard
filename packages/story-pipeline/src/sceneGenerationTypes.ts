@@ -10,6 +10,7 @@ import type {
   ISceneDialogueStore,
 } from './memoryStore';
 import type { AiProviderId, StoryboardAiService, StyleDirective } from '@storyboard/story-ai';
+import type { SceneGenerationTuning } from './sceneGenerationTuning';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAiService,
   | 'createCharacterPersona'
@@ -47,16 +48,7 @@ export class SceneGenerationPipelineCancelledError extends Error {
   }
 }
 
-// NOTE: 값은 호스트가 모델 프로필에서 꺼내 넣는다. 파이프라인은 어느 모델인지 알 필요가 없고,
-// 테스트는 이 손잡이만 흔들어 재시도·임계 동작을 결정론적으로 확인할 수 있다.
-export interface SceneGenerationTuning {
-  readonly skeletonRatio?: number;
-  readonly skeletonRetryLimit?: number;
-  readonly sectionRetryLimit?: number;
-  readonly polishLengthLimitRatio?: number;
-  readonly dialoguePreservedRatio?: number;
-  readonly paddingParagraphRatio?: number;
-}
+export type { SceneGenerationTuning } from './sceneGenerationTuning';
 
 export interface RunSceneGenerationPipelineInput {
   readonly context: SceneContext;

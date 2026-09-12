@@ -22,7 +22,7 @@ import {
 import {
   planSectionCount,
   planSectionTargetLengths,
-  quotedDialoguePattern,
+  quotedDialoguePatternFor,
   splitSkeletonIntoSections,
   validateExpandedSection,
   validatePolishedSkeleton,
@@ -36,7 +36,6 @@ import {
   type RunSceneGenerationPipelineResult,
   type SceneGenerationPipelineAiService,
   type SceneGenerationPipelineTaskProviders,
-  type SceneGenerationTuning,
 } from './sceneGenerationTypes';
 
 export type {
@@ -50,9 +49,8 @@ export type {
 } from './sceneGenerationTypes';
 export { SceneGenerationPipelineCancelledError } from './sceneGenerationTypes';
 
-import { pipelineDefaults } from './pipelineDefaults';
-
-const SECTION_RETRY_LIMIT = pipelineDefaults.section.retryLimit;
+import { resolveSceneGenerationTuning } from './sceneGenerationTuning';
+import type { ResolvedSceneGenerationTuning } from './sceneGenerationTuning';
 
 interface ResolvedExecutionContext {
   readonly context: SceneContext;
@@ -64,7 +62,7 @@ interface ResolvedExecutionContext {
   readonly shouldCancel?: () => boolean;
   readonly narrativeSource: string;
   readonly design: string;
-  readonly tuning: SceneGenerationTuning;
+  readonly tuning: ResolvedSceneGenerationTuning;
   readonly condensedPreviousContext: string | undefined;
   readonly sceneRef: EntityRef;
   readonly detectedCharacters: string[];
@@ -110,10 +108,11 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
     // 실린다 — 대신 뼈대에 «설계»로 따로 넘긴다.
     narrativeSource: narrativeParts.narrative,
     design: narrativeParts.design,
-    tuning: input.tuning ?? {},
+    tuning: resolveSceneGenerationTuning(input.tuning),
     condensedPreviousContext: condensePreviousContext(
       previousContext,
       input.useContextCondense === true,
+      resolveSceneGenerationTuning(input.tuning).contextCondensedMaxChars,
     ),
     sceneRef: { kind: 'scene', id: sceneStem },
     detectedCharacters,
@@ -121,8 +120,7 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
 }
 
 // NOTE: 뼈대가 얇으면 살붙임이 감당 못 할 배율(15배)을 요구받아 분량이 미달한다. 최종 목표의
-// 1/3을 뼈대에 배분해 확장이 3배 남짓이 되게 한다.
-const SKELETON_LENGTH_RATIO = pipelineDefaults.skeleton.lengthRatio;
+// 1/3을 뼈대에 배분해 확장이 3배 남짓이 되게 한다 — 비율은 skeletonRatio 손잡이가 갖는다.
 
 function skeletonTargetLength(
   styleDirective: StyleDirective | undefined,
@@ -160,13 +158,13 @@ function buildSkeletonContext(
 // 뼈대는 씬에서 가장 비싼 호출이라 한 번만 다시 부른다. 두 판 다 위반이면 가벼운 쪽을, 같은
 // 무게면 목표 분량에 가까운 쪽을 남긴다 — 사건이 빠진 판보다는 겹친 판이 고치기 쉽고, 되풀이 없이
 // 더 두꺼운 판이 살붙임의 부담을 덜어 준다.
-const SKELETON_RETRY_LIMIT = pipelineDefaults.skeleton.retryLimit;
 
 async function draftSkeletonWithRetries(
   aiService: Pick<SceneGenerationPipelineAiService, 'draftSceneSkeleton'>,
   input: Parameters<SceneGenerationPipelineAiService['draftSceneSkeleton']>[0],
   options: GenerateTextOptions,
   retryLimit: number,
+  tuning: ResolvedSceneGenerationTuning,
 ): Promise<string> {
   let reasons: string[] = [];
   let best: { text: string; weight: number; distance: number } | undefined;
@@ -176,13 +174,13 @@ async function draftSkeletonWithRetries(
       { ...input, ...(reasons.length > 0 ? { retryReasons: reasons } : {}) },
       options,
     );
-    const violations = validateSceneSkeleton(skeleton, input.targetLength);
+    const violations = validateSceneSkeleton(skeleton, input.targetLength, tuning);
 
     if (violations.length === 0) {
       return skeleton;
     }
 
-    const weight = weighViolations(violations);
+    const weight = weighViolations(violations, tuning.violationWeights);
     const distance =
       input.targetLength === undefined ? 0 : Math.abs(skeleton.length - input.targetLength);
     if (
@@ -207,9 +205,7 @@ async function expandSectionWithRetries(input: {
   readonly targetLength: number;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
-  readonly retryLimit?: number;
-  readonly dialoguePreservedRatio?: number;
-  readonly paddingParagraphRatio?: number;
+  readonly tuning: ResolvedSceneGenerationTuning;
 }): Promise<{ readonly text: string; readonly violations: readonly SectionViolation[] }> {
   let reasons: string[] = [];
   let best: {
@@ -224,7 +220,7 @@ async function expandSectionWithRetries(input: {
     distance: Number.POSITIVE_INFINITY,
   };
 
-  for (let attempt = 0; attempt <= (input.retryLimit ?? SECTION_RETRY_LIMIT); attempt += 1) {
+  for (let attempt = 0; attempt <= input.tuning.sectionRetryLimit; attempt += 1) {
     const expanded = await input.aiService.expandSceneSection(
       {
         skeleton: input.skeleton,
@@ -243,12 +239,7 @@ async function expandSectionWithRetries(input: {
       characters: input.characters,
       targetLength: input.targetLength,
       ...(input.previousSection === undefined ? {} : { previousSection: input.previousSection }),
-      ...(input.dialoguePreservedRatio === undefined
-        ? {}
-        : { dialoguePreservedRatio: input.dialoguePreservedRatio }),
-      ...(input.paddingParagraphRatio === undefined
-        ? {}
-        : { paddingParagraphRatio: input.paddingParagraphRatio }),
+      tuning: input.tuning,
     });
 
     if (violations.length === 0) {
@@ -257,7 +248,7 @@ async function expandSectionWithRetries(input: {
 
     // 같은 무게라면 목표 분량에 가까운 판이 낫다. 재시도는 대개 분량을 더 쓰라는 지시를 받고 도는데,
     // 무조건 첫 판을 남기면 그 개선분을 버리게 된다.
-    const weight = weighViolations(violations);
+    const weight = weighViolations(violations, input.tuning.violationWeights);
     const distance = Math.abs(expanded.length - input.targetLength);
     if (weight < best.weight || (weight === best.weight && distance < best.distance)) {
       best = { text: expanded, violations, weight, distance };
@@ -272,16 +263,15 @@ async function expandSectionWithRetries(input: {
 
 // NOTE: 마지막 판이 가장 나은 판이라는 보장이 없다. 새 인물이나 문자 오염은 원고를 못 쓰게 만들고
 // 분량 미달은 읽는 데 지장이 없으므로, 같은 개수라도 가벼운 쪽을 남긴다.
-const violationWeights: Readonly<Record<SectionViolation['kind'], number>> =
-  pipelineDefaults.violationWeights;
-
-function weighViolations(violations: readonly SectionViolation[]): number {
-  return violations.reduce((total, violation) => total + violationWeights[violation.kind], 0);
+function weighViolations(
+  violations: readonly SectionViolation[],
+  weights: ResolvedSceneGenerationTuning['violationWeights'],
+): number {
+  return violations.reduce((total, violation) => total + weights[violation.kind], 0);
 }
 
 // NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
 // 대사 개성은 덜해도 사건은 안전하고, 되돌린 사실은 헤더 경고로 알린다.
-const POLISH_LENGTH_LIMIT_RATIO = pipelineDefaults.polish.lengthLimitRatio;
 
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
@@ -290,11 +280,13 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly voiceSamples: ReadonlyMap<string, readonly string[]>;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
-  readonly polishLengthLimitRatio?: number;
+  readonly tuning: ResolvedSceneGenerationTuning;
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
   let lastViolations: readonly SectionViolation[] = [];
 
-  for (let attempt = 0; attempt < pipelineDefaults.polish.retryLimit; attempt += 1) {
+  // NOTE: 뼈대·구간은 attempt <= retryLimit 로 돌고 다듬기만 < 로 돈다. 같은 값이 호출 수를 하나
+  // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다.
+  for (let attempt = 0; attempt < input.tuning.polishRetryLimit; attempt += 1) {
     const polished = await input.aiService.polishSceneDialogue(
       { skeleton: input.skeleton, personas: input.personas, voiceSamples: input.voiceSamples },
       input.options,
@@ -304,7 +296,8 @@ async function polishDialogueOrKeepSkeleton(input: {
       skeleton: input.skeleton,
       polished,
       characters: input.characters,
-      lengthLimit: input.skeleton.length * (input.polishLengthLimitRatio ?? POLISH_LENGTH_LIMIT_RATIO),
+      lengthLimit: input.skeleton.length * input.tuning.polishLengthLimitRatio,
+      tuning: input.tuning,
     });
 
     if (violations.length === 0) {
@@ -320,8 +313,10 @@ async function polishDialogueOrKeepSkeleton(input: {
   };
 }
 
-function extractDialogueLines(text: string): string[] {
-  return [...text.matchAll(quotedDialoguePattern)].map((match) => (match[1] ?? '').trim());
+function extractDialogueLines(text: string, tuning: ResolvedSceneGenerationTuning): string[] {
+  return [...text.matchAll(quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength))].map(
+    (match) => (match[1] ?? '').trim(),
+  );
 }
 
 // NOTE: 페르소나 맵은 인물 이름으로 묶여 있고 사이드카는 카드 id로 묶여 있다. 다듬기 프롬프트가
@@ -330,6 +325,7 @@ async function buildVoiceSamples(
   characters: readonly CharacterCard[],
   dialogueCorpus: RunSceneGenerationPipelineInput['dialogueCorpus'],
   sceneStem: string | undefined,
+  tuning: ResolvedSceneGenerationTuning,
 ): Promise<Map<string, readonly string[]>> {
   const voiceSamples = new Map<string, readonly string[]>();
 
@@ -340,7 +336,16 @@ async function buildVoiceSamples(
   const corpus = await dialogueCorpus.loadCorpus();
 
   for (const character of characters) {
-    const samples = selectRepresentativeDialogue(corpus, character.id, sceneStem ?? '');
+    const samples = selectRepresentativeDialogue(
+      corpus,
+      character.id,
+      sceneStem ?? '',
+      tuning.voiceSampleLimit,
+      {
+        minimumLength: tuning.voiceSampleMinimumLength,
+        maximumLength: tuning.voiceSampleMaximumLength,
+      },
+    );
     if (samples.length > 0) {
       voiceSamples.set(character.name, samples);
     }
@@ -361,6 +366,7 @@ async function buildDialogueRecord(input: {
   readonly sceneStem: string | undefined;
   readonly options: GenerateTextOptions;
   readonly onProgress: RunSceneGenerationPipelineInput['onProgress'];
+  readonly tuning: ResolvedSceneGenerationTuning;
 }): Promise<SceneDialogueRecord | undefined> {
   const { sceneStem } = input;
 
@@ -368,7 +374,7 @@ async function buildDialogueRecord(input: {
     return undefined;
   }
 
-  const lines = extractDialogueLines(input.draftBody);
+  const lines = extractDialogueLines(input.draftBody, input.tuning);
   const candidates = input.characters.map((character) => ({
     id: character.id,
     name: character.name,
@@ -446,6 +452,7 @@ async function executeSceneGenerationPipeline(
     context.characters,
     input.dialogueCorpus,
     input.sceneStem,
+    tuning,
   );
 
   // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
@@ -460,13 +467,14 @@ async function executeSceneGenerationPipeline(
       previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),
       endState: context.scene.card?.endState,
       grounding: context.scene.frontmatter.grounding,
-      targetLength: skeletonTargetLength(styleDirective, tuning.skeletonRatio ?? SKELETON_LENGTH_RATIO),
+      targetLength: skeletonTargetLength(styleDirective, tuning.skeletonRatio),
     },
     withAttribution(
       { ...buildGenerateOptions(providers, 'sceneSkeleton'), styleDirective },
       { primary: sceneRef },
     ),
-    tuning.skeletonRetryLimit ?? SKELETON_RETRY_LIMIT,
+    tuning.skeletonRetryLimit,
+    tuning,
   );
   assertNotCancelled(shouldCancel);
 
@@ -482,9 +490,7 @@ async function executeSceneGenerationPipeline(
       { ...buildGenerateOptions(providers, 'sceneDialoguePolish'), styleDirective },
       { primary: sceneRef },
     ),
-    ...(tuning.polishLengthLimitRatio === undefined
-      ? {}
-      : { polishLengthLimitRatio: tuning.polishLengthLimitRatio }),
+    tuning,
   });
   assertNotCancelled(shouldCancel);
 
@@ -512,15 +518,7 @@ async function executeSceneGenerationPipeline(
         { ...buildGenerateOptions(providers, 'sceneSectionExpansion'), styleDirective },
         { primary: sceneRef },
       ),
-      ...(tuning.sectionRetryLimit === undefined
-        ? {}
-        : { retryLimit: tuning.sectionRetryLimit }),
-      ...(tuning.dialoguePreservedRatio === undefined
-        ? {}
-        : { dialoguePreservedRatio: tuning.dialoguePreservedRatio }),
-      ...(tuning.paddingParagraphRatio === undefined
-        ? {}
-        : { paddingParagraphRatio: tuning.paddingParagraphRatio }),
+      tuning,
     });
 
     expandedSections.push(outcome.text);
@@ -543,6 +541,7 @@ async function executeSceneGenerationPipeline(
       primary: sceneRef,
     }),
     onProgress,
+    tuning,
   });
 
   return {

@@ -4,6 +4,12 @@ import { findForeignScriptSpans } from '@storyboard/story-format';
 import { integerSettingDefault } from '@storyboard/story-ai';
 
 import { pipelineDefaults } from './pipelineDefaults';
+import { resolveSceneGenerationTuning } from './sceneGenerationTuning';
+import type {
+  ResolvedSceneGenerationTuning,
+  SceneGenerationTuning,
+  SectionViolationKind,
+} from './sceneGenerationTuning';
 
 // 한 번의 살붙임 호출이 낼 수 있는 최대 분량. 출력 한도에 걸려 뒷부분이 잘리는 것을 막는다.
 // 창작자가 고칠 수 있는 값이므로 기본값은 설정 카탈로그가 갖는다.
@@ -121,27 +127,33 @@ function detectCanonicalCast(text: string, characters: readonly CharacterCard[])
 }
 
 export interface SectionViolation {
-  readonly kind:
-    | 'cast'
-    | 'foreign-script'
-    | 'lost-dialogue'
-    | 'too-short'
-    | 'too-long'
-    | 'repeats-previous'
-    | 'repetition'
-    | 'dialogue-count';
+  readonly kind: SectionViolationKind;
   readonly detail: string;
 }
 
-export const quotedDialoguePattern = new RegExp(
-  `[“"]([^”"\\n]{${pipelineDefaults.dialogue.minimumQuotedLength},})[”"]`,
-  'g',
+// NOTE: 따옴표 최소 길이가 손잡이라 정규식을 미리 컴파일해 둘 수 없다. dialogueLinesOf 가 O(n²)
+// 비교 안에서 불리므로 호출마다 새로 만들면 실측 가능한 성능 저하가 된다 — 길이별로 하나만 만든다.
+const quotedDialoguePatterns = new Map<number, RegExp>();
+
+export function quotedDialoguePatternFor(minimumQuotedLength: number): RegExp {
+  const cached = quotedDialoguePatterns.get(minimumQuotedLength);
+  if (cached) {
+    return cached;
+  }
+
+  const pattern = new RegExp(`[“"]([^”"\\n]{${minimumQuotedLength},})[”"]`, 'g');
+  quotedDialoguePatterns.set(minimumQuotedLength, pattern);
+  return pattern;
+}
+
+/** @deprecated 손잡이를 받는 quotedDialoguePatternFor 를 쓴다. */
+export const quotedDialoguePattern = quotedDialoguePatternFor(
+  pipelineDefaults.dialogue.minimumQuotedLength,
 );
 
 // NOTE: 하한이 목표의 절반이면 그 사이 분량이 그대로 채택돼 원고가 목표에 상시 미달한다. 재시도가
 // 실제로 걸리도록 목표에 가깝게 잡고, 재시도로도 못 채우면 헤더 경고로 남긴다.
-const minimumLengthRatio = pipelineDefaults.section.minimumLengthRatio;
-
+//
 // NOTE: 살붙임은 문맥에 맞춰 조사나 군더더기를 정리한다. 완전 일치로 보면 그런 재작성이 전부
 // 누락으로 잡히고, 재시도할 때마다 표현이 또 달라져 수렴하지도 않는다. 실측상 재작성은 87%,
 // 앞부분만 남기고 잘린 대사는 42%, 다른 대사로 대체된 경우는 18%라 그 사이에서 끊는다.
@@ -149,17 +161,16 @@ export const DIALOGUE_PRESERVED_RATIO = pipelineDefaults.dialogue.preservedRatio
 
 // NOTE: 살붙임은 긴 한 턴을 두세 문장으로 쪼개 호흡을 만든다. 조각 하나씩 원문과 비교하면 각각이
 // 임계값에 못 미쳐 사라진 것으로 잡히므로, 이어진 조각을 합친 것과도 비교한다.
-const DIALOGUE_SPLIT_LIMIT = pipelineDefaults.dialogue.splitLimit;
-
 function isDialoguePreserved(
   line: string,
   candidates: readonly string[],
   preservedRatio: number,
+  splitLimit: number,
 ): boolean {
   for (let start = 0; start < candidates.length; start += 1) {
     let joined = '';
 
-    for (let width = 0; width < DIALOGUE_SPLIT_LIMIT && start + width < candidates.length; width += 1) {
+    for (let width = 0; width < splitLimit && start + width < candidates.length; width += 1) {
       joined = width === 0 ? (candidates[start] as string) : `${joined} ${candidates[start + width]}`;
 
       if (similarityRatio(line, joined) >= preservedRatio) {
@@ -202,14 +213,15 @@ function matchedLength(left: string, right: string): number {
 // NOTE: 살붙임이 직전 구간을 다시 써 내면 원고 후반이 전반의 복사본이 된다. 구간마다 따로
 // 검사하면 각 구간은 멀쩡해 보이므로 여기서 겹침을 직접 본다. 길이만으로는 판별할 수 없다 —
 // 길게 쓴 구간과 앞 구간을 삼킨 구간의 글자 수가 같을 수 있다.
-const repeatedRunWindow = pipelineDefaults.section.repeatedRunWindow;
-const repeatedRunLimit = pipelineDefaults.section.repeatedRunLimit;
-
 function withoutWhitespace(text: string): string {
   return text.replace(/\s/g, '');
 }
 
-function repeatedFromPrevious(previousSection: string | undefined, expanded: string): number {
+function repeatedFromPrevious(
+  previousSection: string | undefined,
+  expanded: string,
+  window: number,
+): number {
   if (previousSection === undefined) {
     return 0;
   }
@@ -218,9 +230,9 @@ function repeatedFromPrevious(previousSection: string | undefined, expanded: str
   const written = withoutWhitespace(expanded);
   let repeated = 0;
 
-  for (let start = 0; start + repeatedRunWindow <= previous.length; start += repeatedRunWindow) {
-    if (written.includes(previous.slice(start, start + repeatedRunWindow))) {
-      repeated += repeatedRunWindow;
+  for (let start = 0; start + window <= previous.length; start += window) {
+    if (written.includes(previous.slice(start, start + window))) {
+      repeated += window;
     }
   }
 
@@ -231,19 +243,22 @@ function repeatedFromPrevious(previousSection: string | undefined, expanded: str
 // 후반이 전반을 되풀이한다. 살붙임 결과만 비교하면 주변 서술이 달라 눈치챌 수 없다 — 뼈대에서
 // 잡아야 한다. 인물이 한 마디를 되뇌는 것과 구분하려고 "연속된 여러 대사가 순서까지 같게"
 // 다시 나오는 경우만 센다.
-const repeatedDialogueRunLimit = pipelineDefaults.dialogue.repeatedRunLimit;
-
-function dialogueLinesOf(text: string): string[] {
-  return [...text.matchAll(quotedDialoguePattern)]
+function dialogueLinesOf(text: string, tuning: ResolvedSceneGenerationTuning): string[] {
+  return [...text.matchAll(quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength))]
     .map((match) => (match[1] ?? '').replace(/\s/g, ''))
-    .filter((line) => line.length >= pipelineDefaults.dialogue.minimumLineLength);
+    .filter((line) => line.length >= tuning.dialogueMinimumLineLength);
 }
 
 // 살붙임은 구간마다 문장을 새로 쓰므로 두 구간이 같은 사건을 다뤄도 서술이 겹치지 않는다.
 // 같은 것은 뼈대에서 온 대사뿐이라, 겹침은 대사로 재야 보인다.
-export function findRepeatedDialogueRunBetween(first: string, second: string): number {
-  const left = dialogueLinesOf(first);
-  const right = dialogueLinesOf(second);
+export function findRepeatedDialogueRunBetween(
+  first: string,
+  second: string,
+  tuning?: SceneGenerationTuning,
+): number {
+  const resolved = resolveSceneGenerationTuning(tuning);
+  const left = dialogueLinesOf(first, resolved);
+  const right = dialogueLinesOf(second, resolved);
   let longest = 0;
 
   for (let i = 0; i < left.length; i += 1) {
@@ -261,8 +276,8 @@ export function findRepeatedDialogueRunBetween(first: string, second: string): n
   return longest;
 }
 
-export function findRepeatedDialogueRun(text: string): number {
-  const lines = dialogueLinesOf(text);
+export function findRepeatedDialogueRun(text: string, tuning?: SceneGenerationTuning): number {
+  const lines = dialogueLinesOf(text, resolveSceneGenerationTuning(tuning));
   let longest = 0;
 
   for (let first = 0; first < lines.length; first += 1) {
@@ -286,20 +301,26 @@ export function findRepeatedDialogueRun(text: string): number {
 
 // NOTE: 뼈대는 일부러 얇게 쓰는 단계라 살붙임(0.85)만큼 죄지 않는다. 실측에서 뼈대가 목표의 1/3만
 // 나오면 살붙임이 9배 확장을 떠안아 분량이 목표 절반에도 못 미쳤다. 절반 아래면 한 번 더 부른다.
-const skeletonMinimumLengthRatio = pipelineDefaults.skeleton.minimumLengthRatio;
-
-export function validateSceneSkeleton(skeleton: string, targetLength?: number): SectionViolation[] {
+export function validateSceneSkeleton(
+  skeleton: string,
+  targetLength?: number,
+  tuning?: SceneGenerationTuning,
+): SectionViolation[] {
+  const resolved = resolveSceneGenerationTuning(tuning);
   const violations: SectionViolation[] = [];
-  const run = findRepeatedDialogueRun(skeleton);
+  const run = findRepeatedDialogueRun(skeleton, tuning);
 
-  if (run >= repeatedDialogueRunLimit) {
+  if (run >= resolved.dialogueRepeatedRunLimit) {
     violations.push({
       kind: 'repeats-previous',
       detail: `같은 대사 ${run}개가 순서까지 같게 두 번 나옵니다. 각 사건은 한 번만 쓰세요`,
     });
   }
 
-  if (targetLength !== undefined && skeleton.length < targetLength * skeletonMinimumLengthRatio) {
+  if (
+    targetLength !== undefined &&
+    skeleton.length < targetLength * resolved.skeletonMinimumLengthRatio
+  ) {
     violations.push({
       kind: 'too-short',
       detail: `뼈대가 목표 ${targetLength.toLocaleString()}자의 절반에도 못 미칩니다 (${skeleton.length.toLocaleString()}자). 묘사를 더하지 말고 사건을 단계로 쪼개고 주고받는 말을 여러 턴으로 늘리세요`,
@@ -317,9 +338,14 @@ export function validateExpandedSection(input: {
   readonly targetLength: number;
   readonly previousSection?: string;
   // 모델 문체에 따라 같은 대사를 옮겨 적는 방식이 달라 임계가 고정이면 오탐이 난다.
+  // NOTE: 아래 두 필드는 tuning 이 생기기 전의 이름이다. 둘 다 주면 개별 필드가 이긴다.
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
+  readonly tuning?: SceneGenerationTuning;
 }): SectionViolation[] {
+  const resolved = resolveSceneGenerationTuning(input.tuning);
+  const preservedRatio = input.dialoguePreservedRatio ?? resolved.dialoguePreservedRatio;
+  const paddingRatio = input.paddingParagraphRatio ?? resolved.paddingParagraphRatio;
   const violations: SectionViolation[] = [];
 
   // 출연진은 씬 전체가 정한다. 구간만 보면 대명사로 가리킨 인물을 살붙임이 이름으로 부를 때마다 오탐이 난다.
@@ -343,19 +369,16 @@ export function validateExpandedSection(input: {
     });
   }
 
-  const expandedLines = [...input.expanded.matchAll(quotedDialoguePattern)].map((match) =>
+  const quoted = quotedDialoguePatternFor(resolved.dialogueMinimumQuotedLength);
+  const expandedLines = [...input.expanded.matchAll(quoted)].map((match) =>
     (match[1] ?? '').trim(),
   );
-  const lost = [...input.section.matchAll(quotedDialoguePattern)]
+  const lost = [...input.section.matchAll(quoted)]
     .map((match) => (match[1] ?? '').trim())
     .filter(
       (line) =>
-        line.length >= pipelineDefaults.dialogue.minimumLineLength &&
-        !isDialoguePreserved(
-          line,
-          expandedLines,
-          input.dialoguePreservedRatio ?? DIALOGUE_PRESERVED_RATIO,
-        ),
+        line.length >= resolved.dialogueMinimumLineLength &&
+        !isDialoguePreserved(line, expandedLines, preservedRatio, resolved.dialogueSplitLimit),
     );
 
   if (lost.length > 0) {
@@ -365,15 +388,19 @@ export function validateExpandedSection(input: {
     });
   }
 
-  if (input.expanded.length < input.targetLength * minimumLengthRatio) {
+  if (input.expanded.length < input.targetLength * resolved.sectionMinimumLengthRatio) {
     violations.push({
       kind: 'too-short',
       detail: `목표 ${input.targetLength.toLocaleString()}자에 크게 못 미칩니다 (${input.expanded.length.toLocaleString()}자). 사건 사이의 감각·행동·내면을 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요`,
     });
   }
 
-  const repeated = repeatedFromPrevious(input.previousSection, input.expanded);
-  if (repeated >= repeatedRunLimit) {
+  const repeated = repeatedFromPrevious(
+    input.previousSection,
+    input.expanded,
+    resolved.sectionRepeatedRunWindow,
+  );
+  if (repeated >= resolved.sectionRepeatedRunLimit) {
     violations.push({
       kind: 'repeats-previous',
       detail: `직전 구간을 약 ${repeated.toLocaleString()}자 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
@@ -384,9 +411,9 @@ export function validateExpandedSection(input: {
   const repeatedDialogue =
     input.previousSection === undefined
       ? 0
-      : findRepeatedDialogueRunBetween(input.previousSection, input.expanded);
+      : findRepeatedDialogueRunBetween(input.previousSection, input.expanded, input.tuning);
 
-  if (repeatedDialogue >= repeatedDialogueRunLimit) {
+  if (repeatedDialogue >= resolved.dialogueRepeatedRunLimit) {
     violations.push({
       kind: 'repeats-previous',
       detail: `직전 구간의 대사 ${repeatedDialogue}개를 순서까지 같게 다시 썼습니다. 이번 구간의 사건만 쓰세요`,
@@ -397,7 +424,8 @@ export function validateExpandedSection(input: {
     input.section,
     input.expanded,
     input.previousSection,
-    input.paddingParagraphRatio ?? PADDING_PARAGRAPH_RATIO,
+    paddingRatio,
+    resolved,
   );
   if (padding !== undefined) {
     violations.push({ kind: 'repetition', detail: padding });
@@ -410,7 +438,6 @@ export function validateExpandedSection(input: {
 // 실측에서 앞 구간이 쪼개 쓴 대사 턴을 다음 구간이 통째로 다시 쓰고, 마무리 동작을 두 번 넣었다.
 // 되풀이는 위 검사들이 보는 "구간 전체를 다시 씀"보다 작은 단위라 따로 잡는다. 대사는 정확히,
 // 지문은 문단 유사도로 본다.
-const PADDING_PARAGRAPH_MIN_LENGTH = pipelineDefaults.padding.paragraphMinimumLength;
 export const PADDING_PARAGRAPH_RATIO = pipelineDefaults.padding.paragraphRatio;
 
 function findPaddingRepetition(
@@ -418,13 +445,19 @@ function findPaddingRepetition(
   expanded: string,
   previousSection: string | undefined,
   paddingRatio: number,
+  tuning: ResolvedSceneGenerationTuning,
 ): string | undefined {
-  const repeatedLine = findRepeatedDialogueLine(section, expanded, previousSection);
+  const repeatedLine = findRepeatedDialogueLine(section, expanded, previousSection, tuning);
   if (repeatedLine !== undefined) {
     return `같은 대사를 두 번 썼습니다 ("${repeatedLine}"). 분량이 모자라도 이미 쓴 대사를 되풀이하지 마세요`;
   }
 
-  const repeatedParagraph = findNearDuplicateParagraph(expanded, previousSection, paddingRatio);
+  const repeatedParagraph = findNearDuplicateParagraph(
+    expanded,
+    previousSection,
+    paddingRatio,
+    tuning,
+  );
   if (repeatedParagraph !== undefined) {
     return `같은 내용의 문단을 되풀이했습니다 ("${repeatedParagraph.slice(0, 30)}…"). 채울 재료가 없으면 짧게 끝내세요`;
   }
@@ -448,11 +481,14 @@ function findRepeatedDialogueLine(
   section: string,
   expanded: string,
   previousSection: string | undefined,
+  tuning: ResolvedSceneGenerationTuning,
 ): string | undefined {
-  const allowed = countOccurrences(dialogueLinesOf(section));
-  const written = dialogueLinesOf(expanded);
+  const allowed = countOccurrences(dialogueLinesOf(section, tuning));
+  const written = dialogueLinesOf(expanded, tuning);
   const writtenCounts = countOccurrences(written);
-  const previous = new Set(previousSection === undefined ? [] : dialogueLinesOf(previousSection));
+  const previous = new Set(
+    previousSection === undefined ? [] : dialogueLinesOf(previousSection, tuning),
+  );
 
   for (const line of written) {
     const count = writtenCounts.get(line) ?? 0;
@@ -466,20 +502,24 @@ function findRepeatedDialogueLine(
   return undefined;
 }
 
-function narrationParagraphsOf(text: string): string[] {
+function narrationParagraphsOf(text: string, tuning: ResolvedSceneGenerationTuning): string[] {
+  const quoted = quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength);
+
   return text
     .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.replace(quotedDialoguePattern, '').replace(/\s+/g, ' ').trim())
-    .filter((paragraph) => paragraph.length >= PADDING_PARAGRAPH_MIN_LENGTH);
+    .map((paragraph) => paragraph.replace(quoted, '').replace(/\s+/g, ' ').trim())
+    .filter((paragraph) => paragraph.length >= tuning.paddingParagraphMinimumLength);
 }
 
 function findNearDuplicateParagraph(
   expanded: string,
   previousSection: string | undefined,
   paddingRatio: number,
+  tuning: ResolvedSceneGenerationTuning,
 ): string | undefined {
-  const paragraphs = narrationParagraphsOf(expanded);
-  const earlier = previousSection === undefined ? [] : narrationParagraphsOf(previousSection);
+  const paragraphs = narrationParagraphsOf(expanded, tuning);
+  const earlier =
+    previousSection === undefined ? [] : narrationParagraphsOf(previousSection, tuning);
 
   for (let index = 0; index < paragraphs.length; index += 1) {
     const paragraph = paragraphs[index] as string;
@@ -493,8 +533,8 @@ function findNearDuplicateParagraph(
   return undefined;
 }
 
-function countDialogueTurns(text: string): number {
-  return [...text.matchAll(quotedDialoguePattern)].length;
+function countDialogueTurns(text: string, tuning: ResolvedSceneGenerationTuning): number {
+  return [...text.matchAll(quotedDialoguePatternFor(tuning.dialogueMinimumQuotedLength))].length;
 }
 
 // NOTE: 다듬기는 대사 문장을 바꾸는 작업이라 대사 보존은 검사할 수 없다. 대신 턴 수를 센다. 개수와
@@ -505,7 +545,9 @@ export function validatePolishedSkeleton(input: {
   readonly polished: string;
   readonly characters: readonly CharacterCard[];
   readonly lengthLimit: number;
+  readonly tuning?: SceneGenerationTuning;
 }): SectionViolation[] {
+  const resolved = resolveSceneGenerationTuning(input.tuning);
   const violations: SectionViolation[] = [];
 
   const before = detectCanonicalCast(input.skeleton, input.characters);
@@ -525,7 +567,8 @@ export function validatePolishedSkeleton(input: {
     });
   }
 
-  const turnDelta = countDialogueTurns(input.polished) - countDialogueTurns(input.skeleton);
+  const turnDelta =
+    countDialogueTurns(input.polished, resolved) - countDialogueTurns(input.skeleton, resolved);
   if (turnDelta !== 0) {
     violations.push({
       kind: 'dialogue-count',

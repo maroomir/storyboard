@@ -31,9 +31,6 @@ const modelProfileSchema = z.object({
   sectionOutputLimit: z.number().int().positive().optional(),
   // 최종 목표 중 뼈대에 배분할 비율. 살붙임 배율이 낮은 모델일수록 뼈대를 두껍게 잡아야 한다.
   skeletonRatio: z.number().positive().max(1).optional(),
-  // 뼈대·살붙임 호출의 출력 천장. sectionOutputLimit 을 이보다 크게 잡아도 그만큼 나오지 않는다.
-  skeletonMaxTokens: z.number().int().positive().optional(),
-  sectionMaxTokens: z.number().int().positive().optional(),
   // 살붙임이 뼈대의 대사를 지웠는지 판정하는 유사도 임계. 문체가 다른 모델은 같은 대사를 다르게
   // 옮기므로 임계가 맞지 않으면 오탐으로 재시도를 태운다.
   dialoguePreservedRatio: z.number().positive().max(1).optional(),
@@ -43,6 +40,35 @@ const modelProfileSchema = z.object({
   polishLengthLimitRatio: z.number().positive().optional(),
   skeletonRetryLimit: z.number().int().nonnegative().optional(),
   sectionRetryLimit: z.number().int().nonnegative().optional(),
+  // 아래는 파이프라인 기본값과 이름이 1:1로 맞는 나머지 손잡이다. 이름을 바꾸면
+  // SceneGenerationTuning 과 어긋나 프로필 값이 조용히 무시된다.
+  sectionMinimumLengthRatio: z.number().positive().max(1).optional(),
+  sectionRepeatedRunWindow: z.number().int().positive().optional(),
+  sectionRepeatedRunLimit: z.number().int().positive().optional(),
+  skeletonMinimumLengthRatio: z.number().positive().max(1).optional(),
+  dialogueSplitLimit: z.number().int().positive().optional(),
+  dialogueRepeatedRunLimit: z.number().int().positive().optional(),
+  dialogueMinimumLineLength: z.number().int().positive().optional(),
+  dialogueMinimumQuotedLength: z.number().int().positive().optional(),
+  polishRetryLimit: z.number().int().positive().optional(),
+  paddingParagraphMinimumLength: z.number().int().positive().optional(),
+  voiceSampleLimit: z.number().int().positive().optional(),
+  voiceSampleMinimumLength: z.number().int().positive().optional(),
+  voiceSampleMaximumLength: z.number().int().positive().optional(),
+  contextCondensedMaxChars: z.number().int().positive().optional(),
+  violationWeights: z
+    .object({
+      cast: z.number().int().positive(),
+      'foreign-script': z.number().int().positive(),
+      'dialogue-count': z.number().int().positive(),
+      'lost-dialogue': z.number().int().positive(),
+      'repeats-previous': z.number().int().positive(),
+      repetition: z.number().int().positive(),
+      'too-long': z.number().int().positive(),
+      'too-short': z.number().int().positive(),
+    })
+    .partial()
+    .optional(),
   measured: measurementSchema.optional(),
 });
 

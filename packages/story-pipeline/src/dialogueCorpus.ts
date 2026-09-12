@@ -4,8 +4,10 @@ import { pipelineDefaults } from './pipelineDefaults';
 
 export const VOICE_SAMPLE_LIMIT = pipelineDefaults.voiceSamples.limit;
 
-const minimumSampleLength = pipelineDefaults.voiceSamples.minimumLength;
-const maximumSampleLength = pipelineDefaults.voiceSamples.maximumLength;
+export interface VoiceSampleBounds {
+  readonly minimumLength: number;
+  readonly maximumLength: number;
+}
 
 // NOTE: 말투 기준점이라 매 생성마다 같은 입력에서 같은 표본이 나와야 한다. AI를 쓰지 않고 씬 순서와
 // 길이만으로 고르며, 작품 전체에 고르게 걸치도록 후보를 등분해 각 구간의 첫 대사를 뽑는다.
@@ -14,8 +16,9 @@ export function selectRepresentativeDialogue(
   characterId: string,
   currentSceneStem: string,
   limit: number = VOICE_SAMPLE_LIMIT,
+  bounds: VoiceSampleBounds = pipelineDefaults.voiceSamples,
 ): string[] {
-  const candidates = collectCandidates(records, characterId, currentSceneStem);
+  const candidates = collectCandidates(records, characterId, currentSceneStem, bounds);
 
   if (candidates.length <= limit) {
     return candidates;
@@ -34,6 +37,7 @@ function collectCandidates(
   records: readonly SceneDialogueRecord[],
   characterId: string,
   currentSceneStem: string,
+  bounds: VoiceSampleBounds,
 ): string[] {
   const currentOrder = resolveSceneOrder(currentSceneStem) ?? Number.MAX_SAFE_INTEGER;
   const ordered = records
@@ -52,7 +56,7 @@ function collectCandidates(
       }
 
       const text = turn.text.trim();
-      if (text.length < minimumSampleLength || text.length > maximumSampleLength) {
+      if (text.length < bounds.minimumLength || text.length > bounds.maximumLength) {
         continue;
       }
 

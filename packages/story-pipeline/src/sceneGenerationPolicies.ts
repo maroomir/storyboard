@@ -121,7 +121,6 @@ export function looksLikeFormatMetaLeak(text: string): boolean {
   return hasLengthExcuse && offersOptions;
 }
 
-const MAX_CONDENSED_CONTEXT_CHARS = pipelineDefaults.context.condensedMaxChars;
 
 // NOTE: 앞서 이 압축은 콜론이 있는 줄(= '캐릭터명: 대사')만 남겨 지문을 통째로 버렸다. 그래서 뒤
 // 비트가 "인물이 이미 그 자리에 들어와 있다"는 사실을 알 수 없어 매번 무대를 다시 세우고 같은
@@ -129,6 +128,7 @@ const MAX_CONDENSED_CONTEXT_CHARS = pipelineDefaults.context.condensedMaxChars;
 export function condensePreviousContext(
   previousContext: string | undefined,
   enabled: boolean,
+  maxChars: number = pipelineDefaults.context.condensedMaxChars,
 ): string | undefined {
   if (!previousContext) {
     return undefined;
@@ -138,7 +138,7 @@ export function condensePreviousContext(
     return previousContext;
   }
 
-  if (previousContext.length <= MAX_CONDENSED_CONTEXT_CHARS) {
+  if (previousContext.length <= maxChars) {
     return previousContext;
   }
 
@@ -148,7 +148,7 @@ export function condensePreviousContext(
     .filter((line) => line.length > 0)
     .join('\n');
 
-  return condensed.length <= MAX_CONDENSED_CONTEXT_CHARS
+  return condensed.length <= maxChars
     ? condensed
-    : condensed.slice(-MAX_CONDENSED_CONTEXT_CHARS);
+    : condensed.slice(-maxChars);
 }
