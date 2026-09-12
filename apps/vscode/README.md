@@ -107,7 +107,8 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 0.9.2에서 Claude Code·Codex·Gemini CLI 구독 provider를 제외했습니다. Anthropic·OpenAI·Google 모두 구독과 계정
 로그인을 대화형 개인 사용으로 한정하고, 프로그램적·대량 호출에는 API 키를 쓰도록 안내합니다. Storyboard의
 장편 생성은 후자에 해당하므로 API 키 경로 하나로 정리했습니다. 기존 설정에 `claude-code`·`codex`·`gemini-cli`가
-남아 있으면 각각 `claude`·`openai`·`google`로 읽습니다. 모델은 `providers.<id>.model`로 바꿉니다.
+남아 있으면 «고르지 않음»으로 읽혀 생성이 거부됩니다. 대신 골라 주지 않는 것은 모델도 요금도
+다르기 때문입니다. 설정 패널에서 다시 고르고, 모델은 `providers.<id>.model`로 바꿉니다.
 
 ## 개발
 

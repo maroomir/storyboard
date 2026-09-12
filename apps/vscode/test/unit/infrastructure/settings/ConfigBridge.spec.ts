@@ -210,9 +210,9 @@ describe("ConfigBridge", () => {
     expect(values.get("providers.ollama.baseUrl")).toBe("http://127.0.0.1:11434")
   })
 
-  // A config file written before the subscription CLIs left still names one. Reading it must land
-  // on a provider that exists, or the workspace reports "no provider chosen" and refuses to run.
-  it("resolves a retired subscription-CLI provider onto its metered replacement", () => {
+  // A config file written before the subscription CLIs left still names one. It now reads as no
+  // choice at all rather than as a different provider — the author picks again knowingly.
+  it("reads a retired subscription-CLI provider as unconfigured", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
         ["defaultProvider", "claude-code"],
@@ -220,13 +220,8 @@ describe("ConfigBridge", () => {
       ])
     )
 
-    expect(configBridge.isDefaultProviderConfigured()).toBe(true)
-    expect(configBridge.getDefaultProvider()).toBe("claude")
-    expect(configBridge.getTaskAiConfig("sceneDraft")).toEqual({
-      providerId: "claude",
-      model: "claude-sonnet-5"
-    })
-    expect(configBridge.getTaskProviderOverride("grammarCheck")).toBe("google")
+    expect(configBridge.isDefaultProviderConfigured()).toBe(false)
+    expect(configBridge.getTaskProviderOverride("grammarCheck")).toBeNull()
   })
 
   it("still reports an unknown provider as unconfigured", () => {

@@ -75,7 +75,7 @@ Pick a provider before generating: nothing is chosen on a fresh install, and gen
 
 ### Why every provider takes an API key
 
-The Claude Code, Codex, and Gemini CLI providers were removed in 0.9.2. Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API-key authentication — and long-form generation is bulk work. A config file that still names `claude-code`, `codex`, or `gemini-cli` is read as `claude`, `openai`, or `google`. Set the model with `providers.<id>.model`. Only `ollama` runs without a key, locally.
+The Claude Code, Codex, and Gemini CLI providers were removed in 0.9.2. Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API-key authentication — and long-form generation is bulk work. A config file that still names `claude-code`, `codex`, or `gemini-cli` reads as no provider at all and generation refuses until you choose one — the metered replacement bills at a different rate, so the choice stays yours. Set the model with `providers.<id>.model`. Only `ollama` runs without a key, locally.
 
 ## Development
 

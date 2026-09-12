@@ -26,7 +26,7 @@ export interface ParseFailure {
   readonly message: string;
 }
 
-// `storyboard scene generate 01-a --provider codex --json` splits into a verb path, positionals and
+// `storyboard scene generate 01-a --provider claude --json` splits into a verb path, positionals and
 // flags. Flags may appear anywhere, including before the verb. Deliberately hand-rolled: the
 // surface is small and the command catalog already describes every flag it accepts.
 export function parseArguments(argv: readonly string[]): RawArguments | ParseFailure {

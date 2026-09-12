@@ -20,8 +20,6 @@ export {
   getProviderDisplayName,
   isModelInCatalogForProvider,
   providerCatalog,
-  replaceRetiredProviderId,
-  retiredProviderReplacements,
   storyboardModelCatalog,
   storyboardModelPricing,
 } from './providerCatalog';

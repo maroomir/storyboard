@@ -315,7 +315,7 @@ function collectSceneLengthReachChecks(
         `실측상 그런 씬에서 목표의 ${Math.round(reach * 100)}% 정도까지만 씁니다` +
         ` (${measured.date} · ${measured.workspace} · ${measured.runs}회). ` +
         '구간 상한을 1000 근처로 낮추면 실측상 40% 남짓 늘지만, 그래도 목표에는 못 미칩니다.',
-      fix: 'storyboard config set providers.claude-code.model opus',
+      fix: 'storyboard config set draft.sectionOutputLimit 1000',
     },
   ];
 }
