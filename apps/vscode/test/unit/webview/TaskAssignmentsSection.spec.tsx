@@ -40,7 +40,34 @@ afterEach(() => {
   cleanup()
 })
 
+function listProviderOptionValues(taskLabel: string): string[] {
+  const select = screen.getByLabelText(`${taskLabel} 제공자`) as HTMLSelectElement
+  return Array.from(select.options).map((option) => option.value)
+}
+
 describe("TaskAssignmentsSection", () => {
+  it("leaves the developer-only mock provider out of the provider choices", () => {
+    renderSection(buildSnapshot())
+
+    const optionValues = listProviderOptionValues("씬 드래프트")
+    expect(optionValues).toContain("claude")
+    expect(optionValues).not.toContain("mock")
+  })
+
+  it("keeps mock selectable for a task that already uses it", () => {
+    renderSection(
+      buildSnapshot({
+        taskAssignments: {
+          sceneDraft: { providerId: "mock", model: "mock-model" },
+          grammarCheck: { providerId: null, model: null },
+          continuityCheck: { providerId: null, model: null }
+        }
+      })
+    )
+
+    expect(listProviderOptionValues("씬 드래프트")).toContain("mock")
+  })
+
   it("lists only overridden tasks", () => {
     renderSection(buildSnapshot())
 

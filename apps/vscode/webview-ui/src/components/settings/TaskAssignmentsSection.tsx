@@ -5,7 +5,7 @@ import { IconButton } from '../ui/IconButton';
 import { SectionHeader } from '../ui/SectionHeader';
 import { StatusPill } from './SettingsPrimitives';
 import {
-  AI_PROVIDER_IDS,
+  listSelectableProviderIds,
   formatDefaultProviderSummary,
   formatResolvedTaskAi,
   getProviderStatus,
@@ -210,7 +210,7 @@ function OverrideRow({
             );
           }}
         >
-          {AI_PROVIDER_IDS.map((id) => (
+          {listSelectableProviderIds(providerId).map((id) => (
             <option key={`${task.name}-${id}`} value={id}>
               {getProviderStatus(snapshot, id)?.displayName ?? id}
             </option>

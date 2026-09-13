@@ -19,6 +19,7 @@ export {
   getDefaultModelId,
   getProviderDisplayName,
   isModelInCatalogForProvider,
+  listSelectableProviderIds,
   providerCatalog,
   storyboardModelCatalog,
   storyboardModelPricing,

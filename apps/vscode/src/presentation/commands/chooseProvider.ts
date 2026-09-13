@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { aiProviderIds, requiresApiKey } from '@storyboard/story-ai';
+import { listSelectableProviderIds, requiresApiKey } from '@storyboard/story-ai';
 import type {
   AiProviderId,
   AiProviderRegistry,
@@ -30,7 +30,7 @@ export async function chooseDefaultProvider(
     ? deps.configBridge.getDefaultProvider()
     : undefined;
 
-  const items: ProviderPickItem[] = aiProviderIds.map((providerId) => {
+  const items: ProviderPickItem[] = listSelectableProviderIds(current).map((providerId) => {
     const status = statuses.find((entry) => entry.providerId === providerId);
     const notes: string[] = [];
 
