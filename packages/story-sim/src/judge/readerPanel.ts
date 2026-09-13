@@ -5,6 +5,7 @@ import { simDefaults } from '#sim/simDefaults';
 import { panelAuc, type PanelAuc, type ReaderCurve, type ReaderTurn } from '#sim/judge/auc';
 import { evaluateFloorGate, type FloorRanking, type FloorCandidateKind } from '#sim/judge/floorAnchor';
 import {
+  buildAxisVerdict,
   buildFactRecall,
   buildFloorRanking,
   buildReaderTurn,
@@ -231,4 +232,93 @@ export function createFactRecallJudge(judge: SimJudge): JudgeRecall {
 
     return { status: 'unverified', evidence: '본문에 없는 근거를 들었습니다.' };
   };
+}
+
+const axisVerdictSchema = z.object({
+  verdict: z.enum(['pass', 'partial', 'fail']),
+  reason: z.string().min(1),
+  quote: z.string(),
+});
+
+export interface AxisScene {
+  readonly sceneStem: string;
+  readonly axis: string;
+  readonly question: string;
+  readonly draft: string;
+  // 그 씬의 축을 일부러 깨뜨린 원고. 심판이 이것을 fail 로 못 밀면 그 씬의 판정은 버린다.
+  readonly floorDraft?: string;
+}
+
+export interface AxisVerdict {
+  readonly sceneStem: string;
+  readonly axis: string;
+  readonly verdict: 'pass' | 'partial' | 'fail' | 'unverified';
+  readonly reason: string;
+  readonly quote: string;
+  readonly discarded: boolean;
+  readonly discardReason?: string;
+}
+
+async function askAxis(
+  judge: SimJudge,
+  scene: Pick<AxisScene, 'axis' | 'question'>,
+  draft: string,
+): Promise<z.infer<typeof axisVerdictSchema> | undefined> {
+  for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const response = await judge.ask(
+      buildAxisVerdict({ axis: scene.axis, question: scene.question, draft }),
+    );
+    const parsed = axisVerdictSchema.safeParse(readJsonObject(response.text));
+
+    if (parsed.success && isQuoteGrounded(parsed.data.quote, draft)) {
+      return parsed.data;
+    }
+  }
+
+  return undefined;
+}
+
+// 축 트랙은 곡선이 없다. 씬마다 새 대화로 독립해 읽고 그 씬의 축 하나만 본다.
+export async function judgeAxis(input: {
+  readonly judge: SimJudge;
+  readonly scenes: readonly AxisScene[];
+}): Promise<readonly AxisVerdict[]> {
+  const verdicts: AxisVerdict[] = [];
+
+  for (const scene of input.scenes) {
+    // 씬마다 하한선. 훼손본이 fail 이 아니면 이 씬의 눈금을 믿을 수 없다.
+    if (scene.floorDraft !== undefined) {
+      const floor = await askAxis(input.judge, scene, scene.floorDraft);
+      if (floor?.verdict !== 'fail') {
+        verdicts.push({
+          sceneStem: scene.sceneStem,
+          axis: scene.axis,
+          verdict: 'unverified',
+          reason: '',
+          quote: '',
+          discarded: true,
+          discardReason: `훼손본을 fail 로 판정하지 못했습니다 (${floor?.verdict ?? '판정 불가'}).`,
+        });
+        continue;
+      }
+    }
+
+    const answer = await askAxis(input.judge, scene, scene.draft);
+
+    verdicts.push(
+      answer === undefined
+        ? {
+            sceneStem: scene.sceneStem,
+            axis: scene.axis,
+            verdict: 'unverified',
+            reason: '',
+            quote: '',
+            discarded: true,
+            discardReason: '본문에 없는 근거를 들었습니다.',
+          }
+        : { sceneStem: scene.sceneStem, axis: scene.axis, ...answer, discarded: false },
+    );
+  }
+
+  return verdicts;
 }

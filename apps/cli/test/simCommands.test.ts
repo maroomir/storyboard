@@ -110,6 +110,40 @@ describe('track reading', () => {
   });
 });
 
+describe('axis track', () => {
+  function axisFixture(withFloors: boolean): void {
+    const axis = join(track, 'track', 'axis');
+    mkdirSync(join(axis, 'scene'), { recursive: true });
+    mkdirSync(join(axis, 'floor'), { recursive: true });
+    writeFileSync(
+      join(axis, 'scene', '01-baseline.card'),
+      'type: scene\nid: 01-baseline\ntitle: 표지\npurpose: 기준선\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
+    );
+    if (withFloors) {
+      writeFileSync(join(axis, 'floor', '01-baseline.md'), '망가진 원고');
+    }
+  }
+
+  it('reaches track/axis through --genre axis', async () => {
+    axisFixture(true);
+
+    const outcome = await run('sim run', { track, genre: 'axis' });
+
+    expect(outcome?.ok).toBe(true);
+    expect(outcome?.message).toContain('--yes');
+  });
+
+  // 축 트랙은 씬마다 훼손본이 있어야 씬마다 눈금을 확인할 수 있다.
+  it('refuses to judge the axis track when a scene has no corrupted draft', async () => {
+    axisFixture(false);
+
+    const outcome = await run('sim run', { track, genre: 'axis', judge: 'openai' });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('씬마다 훼손 원고');
+  });
+});
+
 describe('sim sweep', () => {
   it('refuses a grid that is not four knobs wide', async () => {
     const outcome = await run('sim sweep', {
@@ -195,6 +229,7 @@ describe('sim report', () => {
   it('marks the frontier and admits there is no ceiling yet', async () => {
     const out = join(home, 'runs.jsonl');
     const base = {
+      genre: 'thriller',
       engineCommit: '9.9.9',
       trackCommit: 'abc',
       trackDirty: false,
@@ -216,8 +251,8 @@ describe('sim report', () => {
     const outcome = await run('sim report', { out });
 
     expect(outcome?.message).toContain('ceiling: n/a');
-    expect(outcome?.message).toContain('* cheap');
-    expect(outcome?.message).toContain('* rich');
+    expect(outcome?.message).toContain('* thriller/cheap');
+    expect(outcome?.message).toContain('* thriller/rich');
   });
 });
 
@@ -239,6 +274,7 @@ describe('sim apply', () => {
       out,
       JSON.stringify({
         runId: 'a',
+        genre: 'thriller',
         pointLabel: 'grid:0000',
         repeat: 1,
         engineCommit: '9.9.9',

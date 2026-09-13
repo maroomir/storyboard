@@ -91,7 +91,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'overlay', valueLabel: '<file>', summary: 'sim: 손잡이 값을 덮는 JSON 한 장' },
   { name: 'knobs', valueLabel: '<a,b,c>', summary: 'sim: 흔들 손잡이 목록 (쉼표로 구분)' },
   { name: 'repeats', valueLabel: '<n>', summary: 'sim: 같은 지점을 몇 번 돌릴지 (기본 3)' },
-  { name: 'judge', valueLabel: '<provider>', summary: 'sim: 심판 프로바이더 (생성과 달라야 합니다)' },
+  { name: 'judge', valueLabel: '<provider|none>', summary: 'sim: 심판 프로바이더 (생성과 다른 모델이어야 합니다. none 이면 생성만)' },
   { name: 'judge-model', valueLabel: '<name>', summary: 'sim: 심판 모델' },
   { name: 'max-runs', valueLabel: '<n>', summary: 'sim: 실행 횟수 상한' },
   { name: 'out', valueLabel: '<path>', summary: 'sim: 결과를 쌓을 JSONL 경로' },

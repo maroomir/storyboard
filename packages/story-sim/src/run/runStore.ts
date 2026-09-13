@@ -11,7 +11,9 @@ import type { SceneMetrics } from '#sim/score/deterministic';
 
 export interface RunRecord {
   readonly runId: string;
-  // 지점과 회차. 이어서 돌릴 때 이미 끝난 것을 건너뛰는 열쇠다.
+  // 트랙 단위(장르)·지점·회차. 이어서 돌릴 때 이미 끝난 것을 건너뛰는 열쇠다. 장르가 빠지면
+  // 한 결과 파일에 두 장르를 쌓을 때 둘째 장르가 «이미 끝남» 으로 읽힌다.
+  readonly genre: string;
   readonly pointLabel: string;
   readonly repeat: number;
   // 무엇을 쟀는지 못박는 두 해시. 하나라도 다르면 비교하지 않는다.
@@ -27,24 +29,34 @@ export interface RunRecord {
   readonly recallTotal?: number;
   readonly contradicted?: number;
   readonly discarded?: boolean;
+  // 축 트랙만 채운다. 진단표이지 성능이 아니므로 파레토에 들어가지 않는다.
+  readonly axisVerdicts?: readonly {
+    readonly sceneStem: string;
+    readonly axis: string;
+    readonly verdict: string;
+    readonly discarded: boolean;
+  }[];
   readonly startedAt: string;
   readonly wallClockMs: number;
 }
 
-const runRecordSchema = z.object({
-  runId: z.string().min(1),
-  pointLabel: z.string().min(1),
-  repeat: z.number().int().positive(),
-  engineCommit: z.string(),
-  trackCommit: z.string(),
-  trackDirty: z.boolean(),
-  knobs: z.record(z.string(), z.number()),
-  startedAt: z.string(),
-  wallClockMs: z.number(),
-}).passthrough();
+const runRecordSchema = z
+  .object({
+    runId: z.string().min(1),
+    genre: z.string().min(1),
+    pointLabel: z.string().min(1),
+    repeat: z.number().int().positive(),
+    engineCommit: z.string(),
+    trackCommit: z.string(),
+    trackDirty: z.boolean(),
+    knobs: z.record(z.string(), z.number()),
+    startedAt: z.string(),
+    wallClockMs: z.number(),
+  })
+  .passthrough();
 
-export function runKey(pointLabel: string, repeat: number): string {
-  return `${pointLabel}#${repeat}`;
+export function runKey(genre: string, pointLabel: string, repeat: number): string {
+  return `${genre}/${pointLabel}#${repeat}`;
 }
 
 export async function appendRun(filePath: string, record: RunRecord): Promise<void> {
@@ -97,6 +109,6 @@ export async function completedKeys(
           run.trackCommit === scope.trackCommit &&
           run.trackDirty === false,
       )
-      .map((run) => runKey(run.pointLabel, run.repeat)),
+      .map((run) => runKey(run.genre, run.pointLabel, run.repeat)),
   );
 }

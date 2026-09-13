@@ -225,6 +225,7 @@ describe('run store', () => {
   function record(overrides: Partial<RunRecord> = {}): RunRecord {
     return {
       runId: 'r1',
+      genre: 'thriller',
       pointLabel: 'baseline',
       repeat: 1,
       engineCommit: 'engine1',
@@ -285,8 +286,8 @@ describe('run store', () => {
 
     const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
 
-    expect(done.has(runKey('grid:0000', 1))).toBe(true);
-    expect(done.has(runKey('grid:0000', 2))).toBe(false);
+    expect(done.has(runKey('thriller', 'grid:0000', 1))).toBe(true);
+    expect(done.has(runKey('thriller', 'grid:0000', 2))).toBe(false);
   });
 
   // 엔진이나 트랙이 바뀐 뒤의 기록은 다른 것을 잰 값이다. 이어 쓰면 서로 다른 것을 섞게 된다.
@@ -299,6 +300,18 @@ describe('run store', () => {
     const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
 
     expect(done.size).toBe(0);
+  });
+
+  // 한 결과 파일에 장르를 이어 쌓는다. 장르가 열쇠에 없으면 둘째 장르가 «이미 끝남» 으로 읽힌다.
+  it('does not mistake another genre at the same point for a finished run', async () => {
+    const path = file();
+
+    await appendRun(path, record({ genre: 'thriller', pointLabel: 'point', repeat: 1 }));
+
+    const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
+
+    expect(done.has(runKey('thriller', 'point', 1))).toBe(true);
+    expect(done.has(runKey('wuxia', 'point', 1))).toBe(false);
   });
 
   it('does not reuse a run whose track was dirty', async () => {

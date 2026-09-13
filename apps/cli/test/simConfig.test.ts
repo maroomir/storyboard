@@ -129,6 +129,28 @@ describe('precedence', () => {
     expect((await run('sim run', { track, genre: 'thriller', repeats: '5' }))?.message).toContain('× 5회');
   });
 
+  // 기계 프로필이 심판을 이름 짓고 있어도, 배선만 볼 때는 심판 없이 돌 수 있어야 한다.
+  it('runs generation only with --judge none even when the profile names a judge', async () => {
+    writeProfile({
+      generation: { provider: 'ollama', model: 'qwen3:14b' },
+      judge: { provider: 'ollama', model: 'gemma3:12b' },
+    });
+
+    const outcome = await run('sim run', { track, genre: 'thriller', judge: 'none' });
+
+    expect(outcome?.ok).toBe(true);
+    expect(outcome?.message).toContain('심판 호출 0');
+  });
+
+  it('never lets a sweep run without a judge', async () => {
+    writeProfile({ generation: { provider: 'ollama', model: 'qwen3:14b' } });
+
+    const outcome = await run('sim sweep', { track, genre: 'thriller', knobs: fourKnobs, judge: 'none' });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('심판 없이');
+  });
+
   it('refuses a profile provider the catalog does not know', async () => {
     writeProfile({ generation: { provider: 'nope', model: 'x' } });
 
