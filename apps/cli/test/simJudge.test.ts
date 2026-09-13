@@ -118,4 +118,28 @@ describe('quote grounding', () => {
   it('rejects an empty quote', () => {
     expect(isQuoteGrounded('   ', '그는 문을 열었다.')).toBe(false);
   });
+
+  // 실측에서 회차를 통째로 버리게 만든 경우다. 생성은 굽은 따옴표로 쓰고 심판은 곧은 따옴표로
+  // 옮겨 답하는데, 글자는 하나도 다르지 않았다.
+  it('accepts a quote that differs only in the shape of its quotation marks', () => {
+    expect(
+      isQuoteGrounded(
+        '"그건… 제가 해결해야 할 일입니다." 도경은 말했다.',
+        '도경은 고개를 돌리지 않았다. \u201C그건… 제가 해결해야 할 일입니다.\u201D 도경은 말했다.',
+      ),
+    ).toBe(true);
+  });
+
+  it('accepts the fold in the other direction', () => {
+    expect(isQuoteGrounded('\u201C문을 열었다\u201D', '그는 "문을 열었다" 고 적었다.')).toBe(true);
+  });
+
+  it('folds single quotation marks too', () => {
+    expect(isQuoteGrounded("'열쇠'", '그는 \u2018열쇠\u2019 라고 불렀다.')).toBe(true);
+  });
+
+  // 표기를 접는 것이 검사를 무르게 만들면 안 된다. 지어낸 근거는 따옴표를 맞춰도 걸려야 한다.
+  it('still rejects a quote whose words the draft never contained', () => {
+    expect(isQuoteGrounded('"창문을 닫았다"', '그는 \u201C문을 열었다\u201D.')).toBe(false);
+  });
 });
