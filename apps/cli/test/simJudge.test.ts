@@ -134,6 +134,11 @@ describe('quote grounding', () => {
     expect(isQuoteGrounded('\u201C문을 열었다\u201D', '그는 "문을 열었다" 고 적었다.')).toBe(true);
   });
 
+  it('folds corner brackets too', () => {
+    expect(isQuoteGrounded('"그날은"', '「그날은」 도경이 말한다.')).toBe(true);
+    expect(isQuoteGrounded('"그날은"', '『그날은』 도경이 말한다.')).toBe(true);
+  });
+
   it('folds single quotation marks too', () => {
     expect(isQuoteGrounded("'열쇠'", '그는 \u2018열쇠\u2019 라고 불렀다.')).toBe(true);
   });
