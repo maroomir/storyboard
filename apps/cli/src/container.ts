@@ -125,6 +125,9 @@ export interface CliContainerOptions {
   // measurement run must leave its fixture byte-identical and must not have those tokens land
   // after the run is scored.
   readonly postGenerationUpdates?: boolean;
+  // A local runtime's address and usable context window. Machine properties, so a measurement
+  // profile hands them in per run instead of writing them into the fixture's own config.
+  readonly localRuntime?: { readonly baseUrl?: string; readonly contextTokens?: number };
 }
 
 // `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
@@ -146,6 +149,14 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 
   if (options.reviseMaxIterations !== undefined) {
     overrides['draft.reviseMaxIterations'] = options.reviseMaxIterations;
+  }
+
+  if (options.localRuntime?.baseUrl !== undefined) {
+    overrides['providers.ollama.baseUrl'] = options.localRuntime.baseUrl;
+  }
+
+  if (options.localRuntime?.contextTokens !== undefined) {
+    overrides['providers.ollama.contextTokens'] = options.localRuntime.contextTokens;
   }
 
   return overrides;

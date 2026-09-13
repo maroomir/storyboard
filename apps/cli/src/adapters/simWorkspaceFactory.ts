@@ -12,6 +12,7 @@ export interface SimWorkspaceFactoryOptions {
   readonly version: string;
   readonly provider?: string;
   readonly model?: string;
+  readonly localRuntime?: CliContainerOptions['localRuntime'];
 }
 
 export function createSimWorkspaceFactory(
@@ -28,6 +29,7 @@ export function createSimWorkspaceFactory(
         version: options.version,
         ...(options.provider === undefined ? {} : { provider: options.provider }),
         ...(options.model === undefined ? {} : { model: options.model }),
+        ...(options.localRuntime === undefined ? {} : { localRuntime: options.localRuntime }),
         usageSink: {
           record: async (_root, usage): Promise<void> => {
             pending.push(usage);
