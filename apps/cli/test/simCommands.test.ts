@@ -102,8 +102,9 @@ describe('sim sweep', () => {
     expect(outcome?.message).toContain('--judge');
   });
 
-  // 심판이 생성과 같으면 그 지점만 점수가 들뜬다.
-  it('refuses a judge on the generation provider', async () => {
+  // 심판이 생성과 같은 가중치면 그 지점만 점수가 들뜬다. --judge claude 는 모델을 안 주면
+  // 카탈로그 첫 모델로 떨어지고, 그것이 곧 생성 모델이다.
+  it('refuses a judge that lands on the generation model', async () => {
     const outcome = await run('sim sweep', {
       track,
       genre: 'thriller',
@@ -112,7 +113,19 @@ describe('sim sweep', () => {
     });
 
     expect(outcome?.ok).toBe(false);
-    expect(outcome?.message).toContain('같은 프로바이더');
+    expect(outcome?.message).toContain('같은 모델');
+  });
+
+  it('accepts a different model on the same provider', async () => {
+    const outcome = await run('sim sweep', {
+      track,
+      genre: 'thriller',
+      knobs: fourKnobs,
+      judge: 'claude',
+      'judge-model': 'claude-haiku-4-5',
+    });
+
+    expect(outcome?.ok).toBe(true);
   });
 
   it('reaches the estimate once the judge sits elsewhere', async () => {

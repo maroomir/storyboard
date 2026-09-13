@@ -1,3 +1,4 @@
+export * from './simConfig';
 export * from './simDefaults';
 export * from './knobs/knobRegistry';
 export * from './knobs/overlay';

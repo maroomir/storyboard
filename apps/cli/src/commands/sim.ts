@@ -25,11 +25,14 @@ import {
   removeScratch,
   runKey,
   runTrack,
+  readSimConfig,
+  simConfigFileName,
   simDefaults,
   withinCap,
   type DesignedPoint,
   type RunRecord,
   type ScoredPoint,
+  type SimConfig,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -82,36 +85,78 @@ async function loadOverlayPoint(
   return { knobs: overlay.knobs, refusals };
 }
 
-function generationProviderOf(context: CommandContext): AiProviderId {
-  return context.container.configBridge.getTaskProvider('sceneDraft');
+interface Selection {
+  readonly providerId: AiProviderId;
+  readonly model: string;
+}
+
+function isProviderId(value: string): value is AiProviderId {
+  return aiProviderIds.includes(value as AiProviderId);
+}
+
+// 명령줄 > 트랙 저장소의 sim.config.json > 워크스페이스 자체 설정. 기계 프로필은 파일에 두고,
+// 한 번만 바꿔 볼 값은 플래그로 준다.
+function generationSelection(context: CommandContext, config: SimConfig): Selection | string {
+  const flagProvider = requireFlag(context, 'provider');
+  const flagModel = requireFlag(context, 'model');
+
+  if (flagProvider !== undefined) {
+    if (!isProviderId(flagProvider)) {
+      return `알 수 없는 프로바이더: ${flagProvider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+    }
+    const model = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
+    return model === undefined ? `${flagProvider} 에 쓸 모델을 --model 로 주세요.` : { providerId: flagProvider, model };
+  }
+
+  if (config.generation !== undefined) {
+    if (!isProviderId(config.generation.provider)) {
+      return `${simConfigFileName} 의 generation.provider 를 모릅니다: ${config.generation.provider}`;
+    }
+    return { providerId: config.generation.provider, model: flagModel ?? config.generation.model };
+  }
+
+  const providerId = context.container.configBridge.getTaskProvider('sceneDraft');
+  return {
+    providerId,
+    model: flagModel ?? context.container.configBridge.getTaskAiConfig('sceneDraft').model,
+  };
 }
 
 function judgeSelection(
   context: CommandContext,
-  generationProvider: AiProviderId,
-): { readonly providerId: AiProviderId; readonly model: string } | string {
-  const raw = requireFlag(context, 'judge');
+  config: SimConfig,
+  generation: Selection,
+): Selection | string {
+  const rawProvider = requireFlag(context, 'judge') ?? config.judge?.provider;
 
-  if (raw === undefined) {
-    return '--judge 로 심판 프로바이더를 정해 주세요. 생성과 같으면 자기 글을 자기가 채점하게 됩니다.';
+  if (rawProvider === undefined) {
+    return `--judge 로 심판을 정하거나 ${simConfigFileName} 에 judge 를 적어 주세요. 생성과 같은 모델이면 자기 글을 자기가 채점하게 됩니다.`;
   }
 
-  if (!aiProviderIds.includes(raw as AiProviderId)) {
-    return `알 수 없는 심판 프로바이더: ${raw}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
-  }
-
-  const providerId = raw as AiProviderId;
-
-  if (providerId === generationProvider) {
-    return `심판과 생성이 같은 프로바이더(${providerId})입니다. 다른 곳을 골라 주세요.`;
+  if (!isProviderId(rawProvider)) {
+    return `알 수 없는 심판 프로바이더: ${rawProvider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
   }
 
   const model =
-    requireFlag(context, 'judge-model') ?? storyboardModelCatalog[providerId][0]?.id;
+    requireFlag(context, 'judge-model') ??
+    (rawProvider === config.judge?.provider ? config.judge.model : undefined) ??
+    storyboardModelCatalog[rawProvider][0]?.id;
 
-  return model === undefined
-    ? `${providerId} 에 쓸 수 있는 모델이 없습니다.`
-    : { providerId, model };
+  if (model === undefined) {
+    return `${rawProvider} 에 쓸 심판 모델을 --judge-model 로 주세요.`;
+  }
+
+  // 같은 것은 프로바이더가 아니라 가중치다. 한 런타임의 다른 두 모델은 자기채점이 아니다.
+  if (rawProvider === generation.providerId && model === generation.model) {
+    return `심판과 생성이 같은 모델(${rawProvider}:${model})입니다. 다른 모델을 골라 주세요.`;
+  }
+
+  return { providerId: rawProvider, model };
+}
+
+function repeatsOf(context: CommandContext, config: SimConfig): number {
+  const flag = requireFlag(context, 'repeats');
+  return flag === undefined ? (config.repeats ?? simDefaults.run.repeats) : Number(flag);
 }
 
 // 견적을 찍고 멈춘다. --yes 가 없으면 한 호출도 하지 않는다.
@@ -119,10 +164,10 @@ function reportEstimate(
   context: CommandContext,
   points: readonly DesignedPoint[],
   judgeCallsPerRun: number,
-  generation: { readonly providerId: AiProviderId; readonly model: string },
+  generation: Selection,
   sceneCount: number,
+  repeats: number,
 ): CommandOutcome | undefined {
-  const repeats = Number(requireFlag(context, 'repeats') ?? simDefaults.run.repeats);
   const maxRuns = requireFlag(context, 'max-runs');
 
   const estimate = estimateBudget({
@@ -179,8 +224,10 @@ async function executePoints(
     readonly trackRoot: string;
     readonly genreRoot: string;
     readonly scenes: readonly TrackScene[];
-    readonly generation: { readonly providerId: AiProviderId; readonly model: string };
+    readonly generation: Selection;
     readonly outPath: string;
+    readonly repeats: number;
+    readonly localRuntime: SimConfig['ollama'];
   },
 ): Promise<CommandOutcome> {
   const track = await describeTrack(input.trackRoot);
@@ -192,13 +239,14 @@ async function executePoints(
   }
 
   const engineCommit = context.container.version;
-  const repeats = Number(requireFlag(context, 'repeats') ?? simDefaults.run.repeats);
+  const { repeats } = input;
   const done = await completedKeys(input.outPath, { engineCommit, trackCommit: track.commit });
   const factory = createSimWorkspaceFactory({
     logger: context.container.logger,
     version: context.container.version,
     provider: input.generation.providerId,
     model: input.generation.model,
+    ...(input.localRuntime === undefined ? {} : { localRuntime: input.localRuntime }),
   });
 
   let ran = 0;
@@ -276,8 +324,11 @@ async function prepare(
       readonly trackRoot: string;
       readonly genreRoot: string;
       readonly scenes: readonly TrackScene[];
-      readonly generation: { readonly providerId: AiProviderId; readonly model: string };
+      readonly generation: Selection;
       readonly outPath: string;
+      readonly config: SimConfig;
+      readonly repeats: number;
+      readonly localRuntime: SimConfig['ollama'];
     }
 > {
   const trackRoot = requireFlag(context, 'track');
@@ -286,17 +337,24 @@ async function prepare(
     return '--track 으로 트랙 저장소를 지정해 주세요.';
   }
 
+  const config = await readSimConfig(requireFlag(context, 'config') ?? join(trackRoot, simConfigFileName));
   const genreRoot = resolveGenreRoot(trackRoot, requireFlag(context, 'genre'));
   const scenes = await readTrackScenes(genreRoot);
-  const providerId = generationProviderOf(context);
-  const model = context.container.configBridge.getTaskAiConfig('sceneDraft').model;
+  const generation = generationSelection(context, config);
+
+  if (typeof generation === 'string') {
+    return generation;
+  }
 
   return {
     trackRoot,
     genreRoot,
     scenes,
-    generation: { providerId, model },
+    generation,
     outPath: requireFlag(context, 'out') ?? join(trackRoot, 'results', 'runs.jsonl'),
+    config,
+    repeats: repeatsOf(context, config),
+    localRuntime: config.ollama,
   };
 }
 
@@ -315,7 +373,7 @@ export const runSim: CommandHandler = async (context) => {
   }
 
   const points: readonly DesignedPoint[] = [{ label: 'point', knobs: overlay.knobs }];
-  const estimate = reportEstimate(context, points, 0, prepared.generation, prepared.scenes.length);
+  const estimate = reportEstimate(context, points, 0, prepared.generation, prepared.scenes.length, prepared.repeats);
   if (estimate !== undefined) {
     return estimate;
   }
@@ -337,7 +395,7 @@ export const screenSim: CommandHandler = async (context) => {
   }
 
   const points = planScreening(selected as typeof knobRegistry);
-  const estimate = reportEstimate(context, points, 0, prepared.generation, prepared.scenes.length);
+  const estimate = reportEstimate(context, points, 0, prepared.generation, prepared.scenes.length, prepared.repeats);
   if (estimate !== undefined) {
     return estimate;
   }
@@ -366,7 +424,7 @@ export const sweepSim: CommandHandler = async (context) => {
   const levels = new Map(knobs.map((knob) => [knob.id, defaultGridLevels(knob)]));
   const points = planFractionalGrid(knobs, levels);
 
-  const judge = judgeSelection(context, prepared.generation.providerId);
+  const judge = judgeSelection(context, prepared.config, prepared.generation);
   if (typeof judge === 'string') {
     return refuse(judge);
   }
@@ -378,6 +436,7 @@ export const sweepSim: CommandHandler = async (context) => {
     judgeCallsPerRun,
     prepared.generation,
     prepared.scenes.length,
+    prepared.repeats,
   );
   if (estimate !== undefined) {
     return estimate;
