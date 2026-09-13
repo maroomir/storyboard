@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,7 +8,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SceneSkeletonPrompt, type UsageRecord } from '@storyboard/story-ai';
 import {
   appendRun,
+  assertTrackUnchanged,
   completedKeys,
+  describeTrack,
+  simResultsDirectory,
   measureScene,
   readRuns,
   runKey,
@@ -305,5 +309,48 @@ describe('run store', () => {
     const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
 
     expect(done.size).toBe(0);
+  });
+});
+
+describe('track fingerprint', () => {
+  let root: string | undefined;
+
+  afterEach(() => {
+    if (root !== undefined) {
+      rmSync(root, { recursive: true, force: true });
+      root = undefined;
+    }
+  });
+
+  function repo(): string {
+    root = mkdtempSync(join(tmpdir(), 'sim-track-'));
+    const git = (...args: string[]): void => {
+      execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...args], { cwd: root });
+    };
+    writeFileSync(join(root, 'card.txt'), '시험체');
+    git('init', '-q');
+    git('add', '-A');
+    git('commit', '-qm', 'fixture');
+    return root;
+  }
+
+  // 결과는 트랙 안에 쌓인다. 그것을 «시험체가 바뀌었다» 로 읽으면 첫 실행이 두 번째를 막는다.
+  it('does not count the results directory as a dirty fixture', async () => {
+    const track = repo();
+    mkdirSync(join(track, simResultsDirectory));
+    writeFileSync(join(track, simResultsDirectory, 'runs.jsonl'), '{}\n');
+
+    const ref = await describeTrack(track);
+
+    expect(ref.dirty).toBe(false);
+    await expect(assertTrackUnchanged(ref)).resolves.toBeUndefined();
+  });
+
+  it('still catches a card that changed under a run', async () => {
+    const track = repo();
+    const ref = await describeTrack(track);
+    writeFileSync(join(track, 'card.txt'), '바뀐 시험체');
+
+    await expect(assertTrackUnchanged(ref)).rejects.toThrow(/트랙이 바뀌었습니다/);
   });
 });

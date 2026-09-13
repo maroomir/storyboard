@@ -16,6 +16,12 @@ export interface TrackRef {
   readonly dirty: boolean;
 }
 
+// 결과는 트랙 저장소 안에 쌓이지만 시험체가 아니다. 더러움 검사가 결과까지 보면 첫 실행이
+// 두 번째 실행을 막는다. 이 디렉터리만 검사에서 뺀다.
+export const simResultsDirectory = 'results';
+
+const fixturePathspec: readonly string[] = ['--', '.', `:(exclude)${simResultsDirectory}`];
+
 async function git(cwd: string, args: readonly string[]): Promise<string> {
   const { stdout } = await run('git', [...args], { cwd });
   return stdout.trim();
@@ -23,7 +29,7 @@ async function git(cwd: string, args: readonly string[]): Promise<string> {
 
 export async function describeTrack(root: string): Promise<TrackRef> {
   const commit = await git(root, ['rev-parse', 'HEAD']);
-  const status = await git(root, ['status', '--porcelain']);
+  const status = await git(root, ['status', '--porcelain', ...fixturePathspec]);
 
   return { root, commit, dirty: status.length > 0 };
 }
@@ -53,7 +59,7 @@ export class TrackMutatedError extends Error {
 
 // 사본에서 돌렸는데도 원본이 움직였다면 어딘가 원본을 직접 쓰고 있다는 뜻이다.
 export async function assertTrackUnchanged(track: TrackRef): Promise<void> {
-  const changed = await git(track.root, ['status', '--porcelain']);
+  const changed = await git(track.root, ['status', '--porcelain', ...fixturePathspec]);
 
   if (!track.dirty && changed.length > 0) {
     throw new TrackMutatedError(track.root, changed);

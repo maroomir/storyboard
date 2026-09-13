@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AiGenerateResponse, AiMessage } from '@storyboard/story-ai';
 import {
   SelfJudgingError,
+  createFactRecallJudge,
   createSimJudge,
   judgeChain,
+  parseFactLedger,
   type SimJudge,
 } from '@storyboard/story-sim';
 
@@ -202,5 +204,44 @@ describe('quote grounding', () => {
     });
 
     expect(verdict.discarded).toBe(false);
+  });
+});
+
+describe('fact recall judge', () => {
+  const fact = parseFactLedger(`
+facts:
+  - id: F1
+    kind: attribute
+    statement: 왼손에 흉터가 있다
+    plant: "01"
+    recall: ["03"]
+    check: 왼손 흉터가 나온다
+`).facts[0] as NonNullable<ReturnType<typeof parseFactLedger>['facts'][number]>;
+  const draft = '도경이 왼손을 내밀었다. 화상 자국이 보였다.';
+
+  it('accepts a recall whose quote is in the draft', async () => {
+    const judge = scriptedJudge(() => JSON.stringify({ status: 'recalled', quote: '왼손을 내밀었다' }));
+
+    await expect(createFactRecallJudge(judge)({ fact, sceneStem: '03', draft })).resolves.toEqual({
+      status: 'recalled',
+      evidence: '왼손을 내밀었다',
+    });
+  });
+
+  it('takes missing at its word without demanding a quote', async () => {
+    const judge = scriptedJudge(() => JSON.stringify({ status: 'missing', quote: '' }));
+
+    await expect(createFactRecallJudge(judge)({ fact, sceneStem: '03', draft })).resolves.toEqual({
+      status: 'missing',
+    });
+  });
+
+  // 뒤집혔다는 판정도 근거가 있어야 한다. 없으면 되묻고, 그래도 없으면 모른다고 적는다.
+  it('marks a contradiction unverified when its quote is invented', async () => {
+    const judge = scriptedJudge(() => JSON.stringify({ status: 'contradicted', quote: '오른손 흉터' }));
+
+    const result = await createFactRecallJudge(judge)({ fact, sceneStem: '03', draft });
+
+    expect(result.status).toBe('unverified');
   });
 });

@@ -42,11 +42,14 @@ beforeEach(() => {
   writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'claude' }));
 
   track = mkdtempSync(join(tmpdir(), 'sim-cmd-track-'));
-  mkdirSync(join(track, 'track', 'chain', 'thriller'), { recursive: true });
+  const genre = join(track, 'track', 'chain', 'thriller');
+  mkdirSync(join(genre, 'scene'), { recursive: true });
+  mkdirSync(join(genre, 'floor'), { recursive: true });
   writeFileSync(
-    join(track, 'track', 'chain', 'thriller', 'scenes.json'),
-    JSON.stringify({ scenes: [{ sceneStem: '01-a', targetLength: 3000 }] }),
+    join(genre, 'scene', '01-a.card'),
+    'type: scene\nid: 01-a\ntitle: 첫 씬\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
   );
+  writeFileSync(join(genre, 'floor', '01-a.md'), '망가진 원고');
 });
 
 afterEach(() => {
@@ -77,6 +80,33 @@ describe('sim run', () => {
 
     expect(outcome?.ok).toBe(false);
     expect(outcome?.message).toContain('모르는 손잡이');
+  });
+});
+
+describe('track reading', () => {
+  // 목표 분량은 카드가 갖는다. 없으면 도달률의 분모가 없으므로 시작하지 않는다.
+  it('refuses a scene card that carries no target length', async () => {
+    writeFileSync(
+      join(track, 'track', 'chain', 'thriller', 'scene', '02-b.card'),
+      'type: scene\nid: 02-b\ntitle: 둘\nsummary: 비가 온다.\n',
+    );
+
+    await expect(run('sim run', { track, genre: 'thriller' })).rejects.toThrow(/targetWordCount/);
+  });
+
+  // 하한선 관문이 없으면 심판이 쓰레기를 거르는지 알 수 없다. 돈을 쓰기 전에 막는다.
+  it('refuses to judge a genre that has no corrupted draft', async () => {
+    rmSync(join(track, 'track', 'chain', 'thriller', 'floor'), { recursive: true, force: true });
+
+    const outcome = await run('sim sweep', {
+      track,
+      genre: 'thriller',
+      knobs: 'skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio',
+      judge: 'openai',
+    });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('훼손 원고');
   });
 });
 

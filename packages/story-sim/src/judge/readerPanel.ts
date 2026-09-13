@@ -5,6 +5,7 @@ import { simDefaults } from '#sim/simDefaults';
 import { panelAuc, type PanelAuc, type ReaderCurve, type ReaderTurn } from '#sim/judge/auc';
 import { evaluateFloorGate, type FloorRanking, type FloorCandidateKind } from '#sim/judge/floorAnchor';
 import {
+  buildFactRecall,
   buildFloorRanking,
   buildReaderTurn,
   commonReaders,
@@ -13,6 +14,7 @@ import {
 } from '#sim/judge/panelPrompts';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';
 import type { SimJudge } from '#sim/ports/judge';
+import type { JudgeRecall } from '#sim/score/factRecall';
 
 // 프로바이더가 본문 없이 돌아오는 경우가 있다. 그때 파서가 던지면 회차 전체가 예외로 끝나므로,
 // 읽을 수 없는 답은 «판정 실패» 로 다루고 되묻기 흐름에 태운다.
@@ -196,5 +198,37 @@ export async function judgeChain(input: {
     floor: { passed: true, failures: [] },
     discarded: discardReasons.length > 0,
     discardReasons,
+  };
+}
+
+const factRecallSchema = z.object({
+  status: z.enum(['recalled', 'missing', 'contradicted']),
+  quote: z.string(),
+});
+
+// 원장 채점기가 요구하는 모양으로 심판을 감싼다. recalled·contradicted 는 근거가 본문에 있어야
+// 인정하고, 없으면 한 번 되묻고 그래도 안 되면 unverified 다.
+export function createFactRecallJudge(judge: SimJudge): JudgeRecall {
+  return async ({ fact, draft }) => {
+    for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+      const response = await judge.ask(
+        buildFactRecall({ statement: fact.statement, check: fact.check, draft }),
+      );
+      const parsed = factRecallSchema.safeParse(readJsonObject(response.text));
+
+      if (!parsed.success) {
+        continue;
+      }
+
+      if (parsed.data.status === 'missing') {
+        return { status: 'missing' };
+      }
+
+      if (isQuoteGrounded(parsed.data.quote, draft)) {
+        return { status: parsed.data.status, evidence: parsed.data.quote };
+      }
+    }
+
+    return { status: 'unverified', evidence: '본문에 없는 근거를 들었습니다.' };
   };
 }

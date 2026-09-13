@@ -42,11 +42,14 @@ beforeEach(() => {
   process.env.STORYBOARD_HOME = home;
   writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'claude' }));
   track = mkdtempSync(join(tmpdir(), 'sim-cfg-track-'));
-  mkdirSync(join(track, 'track', 'chain', 'thriller'), { recursive: true });
+  const genre = join(track, 'track', 'chain', 'thriller');
+  mkdirSync(join(genre, 'scene'), { recursive: true });
+  mkdirSync(join(genre, 'floor'), { recursive: true });
   writeFileSync(
-    join(track, 'track', 'chain', 'thriller', 'scenes.json'),
-    JSON.stringify({ scenes: [{ sceneStem: '01-a', targetLength: 3000 }] }),
+    join(genre, 'scene', '01-a.card'),
+    'type: scene\nid: 01-a\ntitle: 첫 씬\ntargetWordCount: 3000\nsummary: 문을 연다.\n',
   );
+  writeFileSync(join(genre, 'floor', '01-a.md'), '망가진 원고');
 });
 
 afterEach(() => {
