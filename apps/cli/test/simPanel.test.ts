@@ -5,6 +5,7 @@ import {
   SelfJudgingError,
   createFactRecallJudge,
   createSimJudge,
+  judgeAxis,
   judgeChain,
   parseFactLedger,
   type SimJudge,
@@ -243,5 +244,70 @@ facts:
     const result = await createFactRecallJudge(judge)({ fact, sceneStem: '03', draft });
 
     expect(result.status).toBe('unverified');
+  });
+});
+
+describe('axis judge', () => {
+  const scene = {
+    sceneStem: '05-knowledge',
+    axis: '지식 경계',
+    question: '초점 인물이 모르는 사실이 서술에 새지 않았는가',
+    draft: '지운이 다음 호 계획을 말했다. 선우와 미르가 눈빛을 주고받았다.',
+    floorDraft: '선우는 폐간일이 당겨진 것을 알고 속으로 한숨을 쉬었다.',
+  };
+
+  function verdictJudge(reply: (draft: string) => string): SimJudge {
+    return scriptedJudge((messages) => {
+      const body = messages.at(-1)?.content ?? '';
+      return reply(body);
+    });
+  }
+
+  // 훼손본을 fail 로 못 밀면 그 씬의 눈금을 믿을 수 없다. 원고 판정 전에 확인한다.
+  it('discards the scene when the judge does not fail the corrupted draft', async () => {
+    const judge = verdictJudge(() => JSON.stringify({ verdict: 'pass', reason: '이유', quote: '눈빛을 주고받았다' }));
+
+    const [verdict] = await judgeAxis({ judge, scenes: [scene] });
+
+    expect(verdict?.discarded).toBe(true);
+    expect(verdict?.discardReason).toContain('훼손본');
+  });
+
+  it('judges the draft once the floor was failed', async () => {
+    const judge = verdictJudge((body) =>
+      body.includes('한숨을 쉬었다')
+        ? JSON.stringify({ verdict: 'fail', reason: '새었다', quote: '속으로 한숨을 쉬었다' })
+        : JSON.stringify({ verdict: 'pass', reason: '본 것만 적었다', quote: '눈빛을 주고받았다' }),
+    );
+
+    const [verdict] = await judgeAxis({ judge, scenes: [scene] });
+
+    expect(verdict).toMatchObject({ sceneStem: '05-knowledge', verdict: 'pass', discarded: false });
+  });
+
+  it('marks a verdict unverified when its quote is invented', async () => {
+    const judge = verdictJudge((body) =>
+      body.includes('한숨을 쉬었다')
+        ? JSON.stringify({ verdict: 'fail', reason: '새었다', quote: '속으로 한숨을 쉬었다' })
+        : JSON.stringify({ verdict: 'pass', reason: '이유', quote: '본문에 없는 구절' }),
+    );
+
+    const [verdict] = await judgeAxis({ judge, scenes: [scene] });
+
+    expect(verdict?.verdict).toBe('unverified');
+    expect(verdict?.discarded).toBe(true);
+  });
+
+  it('reads each scene in a fresh conversation, never carrying the last one', async () => {
+    const seen: number[] = [];
+    const judge = scriptedJudge((messages) => {
+      seen.push(messages.length);
+      return JSON.stringify({ verdict: 'fail', reason: '이유', quote: '' });
+    });
+
+    await judgeAxis({ judge, scenes: [{ ...scene, floorDraft: undefined }, { ...scene, sceneStem: '06', floorDraft: undefined }] });
+
+    // system + user 두 개뿐. 앞 씬의 대화가 실리지 않는다.
+    expect(seen.every((count) => count === 2)).toBe(true);
   });
 });
