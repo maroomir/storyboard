@@ -10,15 +10,27 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-09-14
+
+### Added
+
+- **Narrator cards get their own form.** Opening `narrator/*.card` in the card editor rendered the background card form (Aliases, Weather, collection tab), with no way to edit person, knowledge scope or tense. It now shows narrator-specific fields and a preview.
+- **Every scene draft is kept beside the results.** Measurement runs on a copy that was deleted when the round ended, so when the floor gate ranked a generated draft below a corrupted one there was no way to tell whether the judge was wrong or the prose really was bad.
+
 ### Changed (breaking)
 
 - **The model list and prices are current as of 2026-09-13.** Newly selectable: GPT-6 Astra, GPT-5.6 Sol/Terra/Luna, GPT-5.5; Claude Opus 5, Fable 5.1, Opus 4.8; Gemini 3.8 Flash, 3.1 Pro (Preview), 3.5 Flash-Lite; Grok 4.20 (reasoning and non-reasoning); Ollama `gemma4`, `qwen3.5`, `exaone3.5`, `gpt-oss`. Wrong prices (GPT-5.4 mini, Gemini 2.5 Flash and Flash-Lite) now match the official rates.
 - **Default models change.** If you never picked a model, OpenAI now generates with `gpt-5.6-terra`, Gemini with `gemini-3.8-flash`, and Ollama with `gemma4:12b` (Claude and Grok are unchanged).
 - **Retired and retiring models are gone.** `gpt-5-mini` and `gpt-5-nano` (shut down 2026-12-11), `claude-sonnet-4-5` (may retire from 2026-09-29), and the old Ollama suggestions (`qwen3`, `gemma3`, `llama3.x`, `qwen2.5`). A setting that still names one generates with the provider's default model, so pick again in settings. Ollama still accepts any tag you have pulled.
+- **The mock provider is hidden from the settings pickers.** The development-only provider sat alongside real ones in the default-provider and per-task dropdowns, the connection tab, and the provider picker command. A value already saved as mock still shows.
 
 ### Fixed
 
 - **Generation could fail on models that reject `temperature`.** Claude 4.7 and later (including Sonnet 5), Gemini 3.x and GPT-6 Astra are no longer sent `temperature`.
+- **Measurement results no longer read as 0 instead of the real score.** `sim report` showed "AUC 0.000" even when valid rounds had produced scores, because discarded rounds were averaged in as zeros. Records from different engines or tracks were also being merged into one point, and `sim apply` counted discarded rounds toward its round total.
+- **The judge now goes to the runtime the profile names.** The ollama address and context window in `sim.config.json` reached generation but not judging, so on a machine at the same address the judging ran with no context window — and a cumulative eight-episode prompt past the model's default context is silently truncated at the front.
+- **Quote checking no longer trips over quotation marks.** Supporting quotes were compared including their quote characters and corner brackets, so a quote that was present could be judged missing. Two related faults are fixed with it: one genre reader losing its grounding discarded the whole round, and floor candidates went to every reader in the same order, letting the gate grade its own labels.
+- **The engine is recorded by git commit rather than package version.** Five builds in a day all recorded as "0.9.3", leaving no way to tell which fix a number came after.
 
 ## [0.9.3] - 2026-09-13
 
