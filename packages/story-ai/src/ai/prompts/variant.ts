@@ -50,8 +50,11 @@ function shouldUseRichVariant(input: PromptVariantSelectionInput): boolean {
   return (
     model.includes('opus') ||
     model.includes('sonnet') ||
+    model.includes('fable') ||
+    model.includes('gpt-6') ||
     model.includes('gpt-5') ||
     model.includes('gpt-4.1') ||
-    model.includes('gemini-2.5-pro')
+    model.includes('gemini-2.5-pro') ||
+    model.includes('gemini-3.1-pro')
   );
 }

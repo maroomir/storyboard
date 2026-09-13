@@ -11,6 +11,7 @@ import {
   type AiUsage,
 } from '#ai/contracts/aiTypes';
 import {
+  acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
@@ -103,7 +104,7 @@ export class OpenAiProvider implements AiProvider {
       const response = await this.client.chat.completions.create({
         model: this.model,
         messages: request.messages,
-        temperature: request.temperature,
+        temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         max_tokens: request.maxTokens,
       });
 

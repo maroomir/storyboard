@@ -10,6 +10,7 @@ import {
   type AiUsage,
 } from '#ai/contracts/aiTypes';
 import {
+  acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
@@ -102,7 +103,7 @@ export class GoogleProvider implements AiProvider {
         model: this.model,
         ...(systemInstruction.length > 0 ? { systemInstruction } : {}),
         generationConfig: {
-          temperature: request.temperature,
+          temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
           maxOutputTokens: request.maxTokens,
         },
       });

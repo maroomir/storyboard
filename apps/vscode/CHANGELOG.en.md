@@ -10,6 +10,16 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **The model list and prices are current as of 2026-09-13.** Newly selectable: GPT-6 Astra, GPT-5.6 Sol/Terra/Luna, GPT-5.5; Claude Opus 5, Fable 5.1, Opus 4.8; Gemini 3.8 Flash, 3.1 Pro (Preview), 3.5 Flash-Lite; Grok 4.20 (reasoning and non-reasoning); Ollama `gemma4`, `qwen3.5`, `exaone3.5`, `gpt-oss`. Wrong prices (GPT-5.4 mini, Gemini 2.5 Flash and Flash-Lite) now match the official rates.
+- **Default models change.** If you never picked a model, OpenAI now generates with `gpt-5.6-terra`, Gemini with `gemini-3.8-flash`, and Ollama with `gemma4:12b` (Claude and Grok are unchanged).
+- **Retired and retiring models are gone.** `gpt-5-mini` and `gpt-5-nano` (shut down 2026-12-11), `claude-sonnet-4-5` (may retire from 2026-09-29), and the old Ollama suggestions (`qwen3`, `gemma3`, `llama3.x`, `qwen2.5`). A setting that still names one generates with the provider's default model, so pick again in settings. Ollama still accepts any tag you have pulled.
+
+### Fixed
+
+- **Generation could fail on models that reject `temperature`.** Claude 4.7 and later (including Sonnet 5), Gemini 3.x and GPT-6 Astra are no longer sent `temperature`.
+
 ## [0.9.3] - 2026-09-13
 
 ### Changed (breaking)

@@ -38,4 +38,14 @@ describe("selectPromptVariant", () => {
       })
     ).toBe("rich")
   })
+
+  it.each([
+    ["claude", "claude-fable-5-1"],
+    ["openai", "gpt-6-astra"],
+    ["google", "gemini-3.1-pro-preview"]
+  ] as const)("returns rich for the top-tier %s model %s", (providerId, model) => {
+    expect(
+      selectPromptVariant({ providerId, taskName: "grammarCheck", model, maxTokens: 500 })
+    ).toBe("rich")
+  })
 })

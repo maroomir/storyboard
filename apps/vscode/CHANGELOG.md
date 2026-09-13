@@ -9,6 +9,16 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 변경 (호환성 주의)
+
+- **모델 목록과 요금을 2026-09-13 기준으로 갱신했습니다.** 새로 고를 수 있는 모델: GPT-6 Astra·GPT-5.6 Sol/Terra/Luna·GPT-5.5, Claude Opus 5·Fable 5.1·Opus 4.8, Gemini 3.8 Flash·3.1 Pro(Preview)·3.5 Flash-Lite, Grok 4.20(추론·비추론), Ollama `gemma4`·`qwen3.5`·`exaone3.5`·`gpt-oss`. 틀렸던 요금(GPT-5.4 mini, Gemini 2.5 Flash·Flash-Lite)도 공식 요금으로 고쳤습니다.
+- **기본 모델이 바뀝니다.** 모델을 직접 고른 적이 없다면 OpenAI는 `gpt-5.6-terra`, Gemini는 `gemini-3.8-flash`, Ollama는 `gemma4:12b`로 생성합니다(Claude·Grok은 그대로).
+- **종료됐거나 종료 예정인 모델을 뺐습니다.** `gpt-5-mini`·`gpt-5-nano`(2026-12-11 종료), `claude-sonnet-4-5`(2026-09-29 종료 가능), 그리고 옛 Ollama 제안 태그(`qwen3`·`gemma3`·`llama3.x`·`qwen2.5`)입니다. 이 모델을 설정해 두었다면 제공자 기본 모델로 생성되니 설정에서 다시 골라 주세요. Ollama는 목록에 없는 태그도 그대로 씁니다.
+
+### 고침
+
+- **`temperature`를 거부하는 모델로 생성이 실패할 수 있던 문제를 고쳤습니다.** Claude 4.7 이후 모델(Sonnet 5 포함)·Gemini 3.x·GPT-6 Astra에는 `temperature`를 보내지 않습니다.
+
 ## [0.9.3] - 2026-09-13
 
 ### 변경 (호환성 주의)
