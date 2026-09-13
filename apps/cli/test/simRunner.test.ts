@@ -10,6 +10,7 @@ import {
   appendRun,
   assertTrackUnchanged,
   completedKeys,
+  describeEngine,
   describeTrack,
   draftsDirectoryFor,
   keepDrafts,
@@ -394,6 +395,26 @@ describe('track fingerprint', () => {
 
     expect(ref.dirty).toBe(false);
     await expect(assertTrackUnchanged(ref)).resolves.toBeUndefined();
+  });
+
+  // 패키지 버전은 릴리스 사이의 빌드를 가르지 못한다. 하루 다섯 빌드가 전부 «0.9.3» 으로 남았다.
+  it('names the engine by its commit when run inside a repository', async () => {
+    const engine = await describeEngine(repo(), '9.9.9');
+
+    expect(engine).toMatch(/^[0-9a-f]{40}$/);
+  });
+
+  it('marks an engine with uncommitted changes as dirty', async () => {
+    const track = repo();
+    writeFileSync(join(track, 'card.txt'), '바뀐 시험체');
+
+    expect(await describeEngine(track, '9.9.9')).toMatch(/-dirty$/);
+  });
+
+  it('falls back to the version outside a repository', async () => {
+    root = mkdtempSync(join(tmpdir(), 'sim-noengine-'));
+
+    expect(await describeEngine(root, '9.9.9')).toBe('9.9.9');
   });
 
   it('still catches a card that changed under a run', async () => {

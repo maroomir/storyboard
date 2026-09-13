@@ -34,6 +34,19 @@ export async function describeTrack(root: string): Promise<TrackRef> {
   return { root, commit, dirty: status.length > 0 };
 }
 
+// 엔진 저장소 안에서 돌면 HEAD 해시를, 아니면 (설치된 패키지처럼 git 이 없으면) 넘겨받은 이름을 쓴다.
+// 커밋하지 않은 변경 위에서 돈 기록은 -dirty 를 붙여 그 해시의 코드가 아니었음을 남긴다.
+export async function describeEngine(fromDirectory: string, fallback: string): Promise<string> {
+  try {
+    const commit = await git(fromDirectory, ['rev-parse', 'HEAD']);
+    const status = await git(fromDirectory, ['status', '--porcelain', '--untracked-files=no']);
+
+    return status.length > 0 ? `${commit}-dirty` : commit;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function copyToScratch(sourceDirectory: string): Promise<string> {
   const scratch = await mkdtemp(join(tmpdir(), 'storyboard-sim-'));
   const destination = join(scratch, 'workspace');
