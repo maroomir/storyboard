@@ -15,7 +15,9 @@ import { CharacterRelationPreview } from '../character/CharacterRelationPreview'
 import { BackgroundFields } from './fields/BackgroundFields';
 import { CharacterFields } from './fields/CharacterFields';
 import { ListField } from './fields/ListField';
+import { NarratorFields } from './fields/NarratorFields';
 import { SceneFields } from './fields/SceneFields';
+import { NarratorPreviewPanel } from './NarratorPreviewPanel';
 import { ScenePreviewPanel } from './ScenePreviewPanel';
 import { SceneStructurePanel } from './SceneStructurePanel';
 
@@ -144,6 +146,34 @@ export function CardEditor({
                 updateCard={updateCard}
                 narratorRoster={documentState.narratorRoster}
               />
+            </div>
+          ),
+        },
+        { id: 'yaml', label: 'YAML', panel: yamlPanel },
+      ];
+    }
+
+    if (card.type === 'narrator') {
+      return [
+        {
+          id: 'overview',
+          label: '편집',
+          panel: (
+            <div className={overviewBoxClass}>
+              <SectionHeader title="서술자 정보" eyebrow="Narrator" />
+              <label className="flex flex-col gap-[0.35rem]">
+                <span className="text-sm text-sb-fg-muted">ID</span>
+                <input className={sbInputClass} value={card.id} readOnly />
+              </label>
+              <label className="flex flex-col gap-[0.35rem]">
+                <span className="text-sm text-sb-fg-muted">Name</span>
+                <input
+                  className={sbInputClass}
+                  value={card.name}
+                  onChange={(event) => updateCard({ ...card, name: event.target.value })}
+                />
+              </label>
+              <NarratorFields card={card} updateCard={updateCard} />
             </div>
           ),
         },
@@ -302,6 +332,8 @@ export function CardEditor({
 
       {card.type === 'scene' ? (
         <ScenePreviewPanel card={card} />
+      ) : card.type === 'narrator' ? (
+        <NarratorPreviewPanel card={card} />
       ) : (
         <PreviewPanel card={card} imageUri={documentState.imageUri} />
       )}
@@ -309,7 +341,13 @@ export function CardEditor({
       <section className={`${panelClass} min-h-0`} aria-label="카드 편집 폼">
         <SectionHeader
           eyebrow={
-            card.type === 'scene' ? 'Scene' : card.type === 'character' ? 'Character' : 'Background'
+            card.type === 'scene'
+              ? 'Scene'
+              : card.type === 'narrator'
+                ? 'Narrator'
+                : card.type === 'character'
+                  ? 'Character'
+                  : 'Background'
           }
           title={card.type === 'scene' ? (card.title ?? card.id) : card.name}
           description="탭으로 섹션을 전환해 편집할 수 있습니다."

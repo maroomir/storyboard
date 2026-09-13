@@ -24,6 +24,7 @@ import type {
   StudioTarget,
   StudioValidation,
 } from '@storyboard/story-engine/contracts';
+import type { NarratorCard } from '@storyboard/story-format/contracts';
 
 export type {
   CardCollectProposal,
@@ -121,7 +122,9 @@ export interface SceneCard {
   readonly summary?: string;
 }
 
-export type EditorCard = StoryboardCard | SceneCard;
+export type { NarratorCard };
+
+export type EditorCard = StoryboardCard | SceneCard | NarratorCard;
 
 export interface NarratorRosterEntry {
   readonly id: string;

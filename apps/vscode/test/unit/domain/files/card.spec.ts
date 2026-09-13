@@ -4,7 +4,13 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { CardParseError, parseCard, serializeCard } from '@storyboard/story-format';
+import {
+  CardParseError,
+  parseCard,
+  parseWorkspaceCard,
+  serializeCard,
+  serializeWorkspaceCard,
+} from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 const cardsFixtureDirectory = fileURLToPath(
   new URL('../../../../../../packages/story-format/test/fixtures/cards/', import.meta.url),
@@ -172,6 +178,27 @@ describe('card file codec', () => {
     if (reparsed.type === 'character') {
       expect(reparsed.voice).toEqual(['1인칭 허세 만연체', '자칭 세기의 철학자']);
     }
+  });
+
+  it('reads a narrator card through the workspace card parser the card editor uses', () => {
+    const rawCard = [
+      'type: narrator',
+      'id: jiwoon-limited',
+      'name: 지운의 시선',
+      'person: third',
+      'knowledge: witnessed',
+      'tense: past',
+      'focal: jiwoon',
+      'voice:',
+      '  - 짧은 단문',
+      '  - 본 것만 적는다',
+      '',
+    ].join('\n');
+
+    const card = parseWorkspaceCard(rawCard);
+
+    expect(card).toMatchObject({ type: 'narrator', id: 'jiwoon-limited', focal: 'jiwoon' });
+    expect(serializeWorkspaceCard(card)).toBe(rawCard);
   });
 });
 
