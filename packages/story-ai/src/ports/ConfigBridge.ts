@@ -499,6 +499,13 @@ function resolveEffectiveModelForTask(
     return trimmed;
   }
 
+  // NOTE: 로컬 런타임의 모델은 사용자가 내려받은 태그다. 카탈로그는 추천 목록이지 허용 목록이 아니다.
+  // 카탈로그 갱신으로 태그가 빠졌다고 설정한 모델을 기본 모델로 바꿔치기하면, 기계에 없는 모델을
+  // 부르다 404 로 죽거나 — 더 나쁘게는 — 다른 모델로 조용히 잰다. 0.9.4 갱신 때 실측이 그렇게 죽었다.
+  if (providerId === 'ollama') {
+    return trimmed;
+  }
+
   if (isModelInCatalogForProvider(providerId, trimmed)) {
     return trimmed;
   }

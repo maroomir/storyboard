@@ -120,6 +120,21 @@ describe("ConfigBridge", () => {
     expect(providerOnly.getTaskAiConfig("sceneDraft")).toEqual({ providerId: "claude", model: "claude-sonnet-4-6" })
   })
 
+  // 로컬 태그는 사용자가 내려받은 것이다. 카탈로그에서 빠졌다고 다른 모델로 바꿔 부르면 안 된다.
+  it("keeps a configured ollama model even when the catalog does not list it", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([
+        ["defaultProvider", "ollama"],
+        ["providers.ollama.model", "qwen3:14b"]
+      ])
+    )
+
+    expect(configBridge.getTaskAiConfig("backgroundDescription")).toEqual({
+      providerId: "ollama",
+      model: "qwen3:14b"
+    })
+  })
+
   it("falls back to mock for invalid provider values", () => {
     const configBridge = createConfigBridge(new Map<string, unknown>([["defaultProvider", "unknown"]]))
 
