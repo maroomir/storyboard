@@ -3,6 +3,7 @@ export * from './simDefaults';
 export * from './knobs/knobRegistry';
 export * from './knobs/overlay';
 export * from './ports/tunedConfigBridge';
+export * from './run/draftStore';
 export * from './run/runStore';
 export * from './run/trackRun';
 export * from './run/usageLedger';

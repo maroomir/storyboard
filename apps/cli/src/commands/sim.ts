@@ -13,6 +13,7 @@ import {
   createSimJudge,
   judgeAxis,
   judgeChain,
+  keepDrafts,
   parseFactLedger,
   scoreFactRecall,
   defaultGridLevels,
@@ -421,6 +422,14 @@ async function executePoints(
             ),
         });
 
+        // 사본은 회차가 끝나면 지워진다. 심판이 회차를 버려도 무엇을 읽고 버렸는지 되짚을 수 있도록
+        // 심판을 부르기 전에 원고부터 결과 곁에 남긴다.
+        const draftsDir = await keepDrafts(
+          input.outPath,
+          { genre: input.genre, pointLabel: point.label, repeat },
+          result.drafts,
+        );
+
         let verdictFields: Partial<RunRecord> = {};
 
         // 생성이 끝난 뒤에 심판을 부른다. 심판 사용량은 생성 원장에 섞이지 않는다.
@@ -504,7 +513,7 @@ async function executePoints(
 
             if (verdict.discarded) {
               context.container.logger.warn(
-                `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')}`,
+                `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${draftsDir}`,
               );
             }
           }
@@ -529,6 +538,7 @@ async function executePoints(
           scenes: result.metrics.scenes,
           tokens: result.tokens,
           ...verdictFields,
+          draftsDir,
           startedAt: started,
           wallClockMs: result.wallClockMs,
         };

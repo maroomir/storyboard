@@ -36,6 +36,8 @@ export interface RunRecord {
     readonly verdict: string;
     readonly discarded: boolean;
   }[];
+  // 씬 원고를 남긴 곳. 결과 파일이 있는 디렉터리 기준의 상대 경로다. 폐기된 회차를 되짚을 때 본다.
+  readonly draftsDir?: string;
   readonly startedAt: string;
   readonly wallClockMs: number;
 }

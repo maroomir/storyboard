@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -11,6 +11,8 @@ import {
   assertTrackUnchanged,
   completedKeys,
   describeTrack,
+  draftsDirectoryFor,
+  keepDrafts,
   simResultsDirectory,
   measureScene,
   readRuns,
@@ -322,6 +324,41 @@ describe('run store', () => {
     const done = await completedKeys(path, { engineCommit: 'engine1', trackCommit: 'track1' });
 
     expect(done.size).toBe(0);
+  });
+});
+
+describe('draft store', () => {
+  let directory: string | undefined;
+
+  afterEach(() => {
+    if (directory !== undefined) {
+      rmSync(directory, { recursive: true, force: true });
+      directory = undefined;
+    }
+  });
+
+  // 사본은 회차가 끝나면 지워진다. 심판이 회차를 버렸을 때 무엇을 읽고 버렸는지 되짚으려면 원고가
+  // 결과 곁에 남아 있어야 한다.
+  it('keeps every scene draft beside the results file and records where', async () => {
+    directory = mkdtempSync(join(tmpdir(), 'sim-drafts-'));
+    const outPath = join(directory, 'results', 'runs.jsonl');
+    const drafts = new Map([
+      ['01-demolition', '첫 원고'],
+      ['05-nine', '다섯째 원고'],
+    ]);
+
+    const kept = await keepDrafts(outPath, { genre: 'thriller', pointLabel: 'point', repeat: 2 }, drafts);
+
+    expect(kept).toBe(join('drafts', 'thriller', 'point', '2'));
+    expect(readFileSync(join(directory, 'results', kept, '05-nine.md'), 'utf8')).toBe('다섯째 원고');
+    expect(existsSync(join(directory, 'results', kept, '01-demolition.md'))).toBe(true);
+  });
+
+  // 격자 지점 이름에는 경로에 못 쓰는 글자가 있다.
+  it('turns a point label into a path segment without losing the point', () => {
+    expect(draftsDirectoryFor({ genre: 'thriller', pointLabel: 'grid:0120', repeat: 1 })).toBe(
+      join('drafts', 'thriller', 'grid_0120', '1'),
+    );
   });
 });
 
