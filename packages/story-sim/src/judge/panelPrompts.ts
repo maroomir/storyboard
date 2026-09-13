@@ -151,3 +151,34 @@ export function buildAxisVerdict(input: {
     },
   ];
 }
+
+// 사실 원장의 attribute·knowledge·object·relation 은 문자열로 셀 수 없어 심판이 본다.
+// 사실 하나, 씬 하나, 판정 하나. 다른 것은 보지 않는다.
+export function buildFactRecall(input: {
+  readonly statement: string;
+  readonly check: string;
+  readonly draft: string;
+}): readonly AiMessage[] {
+  return [
+    {
+      role: 'system',
+      content: [
+        '당신은 원고 한 편이 앞서 정해진 사실 하나를 지키는지만 판정한다.',
+        '사실이 그대로 나오면 recalled, 언급이 없으면 missing, 뒤집혀 나오면 contradicted 다.',
+        '근거로 드는 인용은 반드시 본문에 그대로 있는 구절이어야 한다. missing 이면 인용은 빈 문자열이다.',
+        '답은 JSON 한 덩어리로만 낸다.',
+      ].join('\n'),
+    },
+    {
+      role: 'user',
+      content: [
+        `사실: ${input.statement}`,
+        `판정 기준: ${input.check}`,
+        '',
+        input.draft,
+        '',
+        '{ "status": "recalled" | "missing" | "contradicted", "quote": "본문에서 그대로 옮긴 한 구절 또는 빈 문자열" }',
+      ].join('\n'),
+    },
+  ];
+}

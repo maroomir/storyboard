@@ -1,13 +1,19 @@
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-ai';
+import { parseSceneCard, parseSceneFileName } from '@storyboard/story-format';
 import {
   appendRun,
   applyOverlay,
   completedKeys,
   copyToScratch,
+  createFactRecallJudge,
+  createSimJudge,
+  judgeChain,
+  parseFactLedger,
+  scoreFactRecall,
   defaultGridLevels,
   describeCost,
   describeTrack,
@@ -28,6 +34,7 @@ import {
   readSimConfig,
   simConfigFileName,
   simDefaults,
+  simResultsDirectory,
   withinCap,
   type DesignedPoint,
   type RunRecord,
@@ -47,6 +54,12 @@ interface TrackScene {
   readonly targetLength: number;
 }
 
+interface JudgeMaterials {
+  readonly genre: string;
+  readonly floorDraft: { readonly sceneStem: string; readonly text: string };
+  readonly ledger: ReturnType<typeof parseFactLedger> | undefined;
+}
+
 function requireFlag(context: CommandContext, name: string): string | undefined {
   return flagString(context.args.flags, name);
 }
@@ -55,16 +68,64 @@ function refuse(message: string): CommandOutcome {
   return { ok: false, message };
 }
 
+// 씬 목록과 목표 분량은 카드가 갖는다. 따로 적은 목록은 카드와 어긋나는 순간 다른 것을 잰다.
 async function readTrackScenes(genreRoot: string): Promise<readonly TrackScene[]> {
-  const manifestPath = join(genreRoot, 'scenes.json');
-  const raw = await readFile(manifestPath, 'utf8');
-  const parsed = JSON.parse(raw) as { readonly scenes?: readonly TrackScene[] };
+  const sceneDirectory = join(genreRoot, 'scene');
+  const names = (await readdir(sceneDirectory)).filter((name) => parseSceneFileName(name));
+  const scenes: TrackScene[] = [];
 
-  if (!parsed.scenes || parsed.scenes.length === 0) {
-    throw new Error(`${manifestPath} 에 씬 목록이 없습니다.`);
+  for (const name of names.sort()) {
+    const parts = parseSceneFileName(name);
+    const card = parseSceneCard(await readFile(join(sceneDirectory, name), 'utf8'));
+
+    if (parts === undefined) {
+      continue;
+    }
+
+    if (card.targetWordCount === undefined) {
+      throw new Error(`${name} 에 targetWordCount 가 없습니다. 트랙 카드는 목표 분량을 적어야 합니다.`);
+    }
+
+    scenes.push({ sceneStem: parts.stem, targetLength: card.targetWordCount });
   }
 
-  return parsed.scenes;
+  if (scenes.length === 0) {
+    throw new Error(`${sceneDirectory} 에 씬 카드가 없습니다.`);
+  }
+
+  return scenes;
+}
+
+// 심판이 쓸 재료. 훼손 원고는 관문에 반드시 필요하므로 없으면 돈을 쓰기 전에 거부한다.
+async function readJudgeMaterials(
+  genreRoot: string,
+  genre: string,
+  scenes: readonly TrackScene[],
+): Promise<JudgeMaterials | string> {
+  let floorDraft: JudgeMaterials['floorDraft'] | undefined;
+
+  for (const scene of scenes) {
+    try {
+      const text = await readFile(join(genreRoot, 'floor', `${scene.sceneStem}.md`), 'utf8');
+      floorDraft = { sceneStem: scene.sceneStem, text };
+      break;
+    } catch {
+      continue;
+    }
+  }
+
+  if (floorDraft === undefined) {
+    return `${join(genreRoot, 'floor')} 에 훼손 원고가 없습니다. 하한선 관문 없이는 심판을 믿을 수 없어 시작하지 않습니다.`;
+  }
+
+  let ledger: JudgeMaterials['ledger'];
+  try {
+    ledger = parseFactLedger(await readFile(join(genreRoot, 'facts.yaml'), 'utf8'));
+  } catch {
+    ledger = undefined;
+  }
+
+  return { genre, floorDraft, ledger };
 }
 
 function resolveGenreRoot(trackRoot: string, genre: string | undefined): string {
@@ -228,6 +289,8 @@ async function executePoints(
     readonly outPath: string;
     readonly repeats: number;
     readonly localRuntime: SimConfig['ollama'];
+    readonly judge?: Selection;
+    readonly materials?: JudgeMaterials;
   },
 ): Promise<CommandOutcome> {
   const track = await describeTrack(input.trackRoot);
@@ -283,6 +346,56 @@ async function executePoints(
             context.container.logger.info(`${point.label} ${repeat}회 · ${current}/${total} ${stem}`),
         });
 
+        let verdictFields: Partial<RunRecord> = {};
+
+        // 생성이 끝난 뒤에 심판을 부른다. 심판 사용량은 생성 원장에 섞이지 않는다.
+        if (input.judge !== undefined && input.materials !== undefined) {
+          const judge = createSimJudge({
+            registry: context.container.aiProviderRegistry,
+            judge: input.judge,
+            generation: input.generation,
+          });
+          const orderedDrafts = input.scenes
+            .map((scene) => ({ sceneStem: scene.sceneStem, draft: result.drafts.get(scene.sceneStem) }))
+            .filter((scene): scene is { sceneStem: string; draft: string } => scene.draft !== undefined);
+          const generatedForFloor = result.drafts.get(input.materials.floorDraft.sceneStem);
+
+          const verdict = await judgeChain({
+            judge,
+            scenes: orderedDrafts,
+            genre: input.materials.genre,
+            floorCandidates: [
+              { kind: 'generated', draft: generatedForFloor ?? '' },
+              { kind: 'floor', draft: input.materials.floorDraft.text },
+            ],
+          });
+
+          verdictFields = {
+            auc: verdict.discarded ? undefined : verdict.auc.auc,
+            discarded: verdict.discarded,
+          };
+
+          if (input.materials.ledger !== undefined && !verdict.discarded) {
+            const recall = await scoreFactRecall({
+              ledger: input.materials.ledger,
+              draftsByScene: result.drafts,
+              judge: createFactRecallJudge(judge),
+            });
+            verdictFields = {
+              ...verdictFields,
+              recalled: recall.recalled,
+              recallTotal: recall.total,
+              contradicted: recall.contradicted,
+            };
+          }
+
+          if (verdict.discarded) {
+            context.container.logger.warn(
+              `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')}`,
+            );
+          }
+        }
+
         const record: RunRecord = {
           runId: `${point.label}#${repeat}`,
           pointLabel: point.label,
@@ -294,6 +407,7 @@ async function executePoints(
           generation: input.generation,
           scenes: result.metrics.scenes,
           tokens: result.tokens,
+          ...verdictFields,
           startedAt: started,
           wallClockMs: result.wallClockMs,
         };
@@ -301,7 +415,9 @@ async function executePoints(
         await appendRun(input.outPath, record);
         ran += 1;
         context.container.logger.info(
-          `${point.label} ${repeat}회 · 도달률 ${result.metrics.meanReach.toFixed(3)} · ${describeCost(result.tokens)}`,
+          `${point.label} ${repeat}회 · 도달률 ${result.metrics.meanReach.toFixed(3)} · ${describeCost(result.tokens)}` +
+            (record.auc === undefined ? '' : ` · AUC ${record.auc.toFixed(3)}`) +
+            (record.recalled === undefined ? '' : ` · 회수 ${record.recalled}/${record.recallTotal}`),
         );
       } finally {
         await removeScratch(scratch);
@@ -351,7 +467,7 @@ async function prepare(
     genreRoot,
     scenes,
     generation,
-    outPath: requireFlag(context, 'out') ?? join(trackRoot, 'results', 'runs.jsonl'),
+    outPath: requireFlag(context, 'out') ?? join(trackRoot, simResultsDirectory, 'runs.jsonl'),
     config,
     repeats: repeatsOf(context, config),
     localRuntime: config.ollama,
@@ -373,12 +489,36 @@ export const runSim: CommandHandler = async (context) => {
   }
 
   const points: readonly DesignedPoint[] = [{ label: 'point', knobs: overlay.knobs }];
-  const estimate = reportEstimate(context, points, 0, prepared.generation, prepared.scenes.length, prepared.repeats);
+  const wantsJudge = requireFlag(context, 'judge') !== undefined || prepared.config.judge !== undefined;
+  let judge: Selection | undefined;
+  let materials: JudgeMaterials | undefined;
+  let judgeCallsPerRun = 0;
+
+  if (wantsJudge) {
+    const selected = judgeSelection(context, prepared.config, prepared.generation);
+    if (typeof selected === 'string') {
+      return refuse(selected);
+    }
+    const loaded = await readJudgeMaterials(prepared.genreRoot, requireFlag(context, 'genre') ?? 'unknown', prepared.scenes);
+    if (typeof loaded === 'string') {
+      return refuse(loaded);
+    }
+    judge = selected;
+    materials = loaded;
+    judgeCallsPerRun = simDefaults.panel.commonReaderCount * (prepared.scenes.length + 1);
+  }
+
+  const estimate = reportEstimate(context, points, judgeCallsPerRun, prepared.generation, prepared.scenes.length, prepared.repeats);
   if (estimate !== undefined) {
     return estimate;
   }
 
-  return await executePoints(context, { ...prepared, points });
+  return await executePoints(context, {
+    ...prepared,
+    points,
+    ...(judge === undefined ? {} : { judge }),
+    ...(materials === undefined ? {} : { materials }),
+  });
 };
 
 export const screenSim: CommandHandler = async (context) => {
@@ -429,6 +569,11 @@ export const sweepSim: CommandHandler = async (context) => {
     return refuse(judge);
   }
 
+  const materials = await readJudgeMaterials(prepared.genreRoot, requireFlag(context, 'genre') ?? 'unknown', prepared.scenes);
+  if (typeof materials === 'string') {
+    return refuse(materials);
+  }
+
   const judgeCallsPerRun = simDefaults.panel.commonReaderCount * (prepared.scenes.length + 1);
   const estimate = reportEstimate(
     context,
@@ -442,7 +587,7 @@ export const sweepSim: CommandHandler = async (context) => {
     return estimate;
   }
 
-  return await executePoints(context, { ...prepared, points });
+  return await executePoints(context, { ...prepared, points, judge, materials });
 };
 
 function scorePoints(
