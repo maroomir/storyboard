@@ -7,7 +7,9 @@ import {
   createSimJudge,
   judgeAxis,
   judgeChain,
+  labelFloorCandidates,
   parseFactLedger,
+  resolveFloorRanking,
   type SimJudge,
 } from '@storyboard/story-sim';
 
@@ -41,7 +43,9 @@ function turn(engagement: number, continueReading: boolean, quote = '문을 열�
   return JSON.stringify({ engagement, continueReading, reason: '이유', quote });
 }
 
-const goodRanking = JSON.stringify({ ranking: ['generated', 'floor'] });
+// 심판은 후보의 정체를 모른 채 기호로만 답한다. 보여 준 차례가 generated · floor 이므로
+// 「가」가 생성본, 「나」가 훼손본이다.
+const goodRanking = JSON.stringify({ ranking: ['가', '나'] });
 
 function floorCandidates() {
   return [
@@ -89,7 +93,7 @@ describe('floor gate runs first', () => {
   it('stops after the ranking round when a reader ranks the floor above the draft', async () => {
     const ask = vi.fn(
       async () =>
-        ({ text: JSON.stringify({ ranking: ['floor', 'generated'] }) }) as AiGenerateResponse,
+        ({ text: JSON.stringify({ ranking: ['나', '가'] }) }) as AiGenerateResponse,
     );
     const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
 
@@ -119,6 +123,96 @@ describe('floor gate runs first', () => {
     expect(verdict.floor.passed).toBe(true);
     expect(verdict.auc.auc).toBe(1);
     expect(verdict.discarded).toBe(false);
+  });
+});
+
+describe('the floor gate measures the judge, not the labels', () => {
+  // 후보에 «훼손본» 이라고 써 붙여 주면 심판은 원고를 읽지 않고도 답을 맞힌다. 그러면 관문은
+  // 아무것도 걸러내지 못하면서 언제나 통과한다.
+  it('never tells the judge which candidate is the floor', async () => {
+    const prompts: string[] = [];
+    const judge = scriptedJudge((messages, call) => {
+      prompts.push(messages.map((message) => message.content).join('\n'));
+      return call <= 4 ? goodRanking : turn(5, true);
+    });
+
+    await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    const rankingPrompts = prompts.filter((prompt) => prompt.includes('줄을 세워라'));
+
+    expect(rankingPrompts).toHaveLength(4);
+    for (const prompt of rankingPrompts) {
+      expect(prompt).not.toContain('floor');
+      expect(prompt).not.toContain('generated');
+    }
+  });
+
+  // 작은 심판은 기호를 줘도 자리를 세어 답하는 일이 잦다. 그 답을 못 읽으면 관문이 심판의 눈이
+  // 아니라 형식을 재게 되어 모든 회차가 폐기된다.
+  it('reads a ranking the judge answered by position', async () => {
+    const judge = scriptedJudge((_messages, call) =>
+      call <= 4 ? JSON.stringify({ ranking: ['1번', '2번'] }) : turn(5, true),
+    );
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(2),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.floor.passed).toBe(true);
+    expect(verdict.discarded).toBe(false);
+  });
+
+  it('still fails the gate when the position the judge named is the floor', async () => {
+    const ask = vi.fn(
+      async () => ({ text: JSON.stringify({ ranking: ['2', '1'] }) }) as AiGenerateResponse,
+    );
+    const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(8),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.floor.passed).toBe(false);
+    expect(ask).toHaveBeenCalledTimes(4);
+  });
+
+  // 되돌릴 수 없는 답을 통과로 세면 그 회차의 눈금이 조용히 틀어진다.
+  it('discards the round when no answer maps onto the candidates', async () => {
+    const ask = vi.fn(
+      async () => ({ text: JSON.stringify({ ranking: ['첫째', '둘째'] }) }) as AiGenerateResponse,
+    );
+    const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(8),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.discarded).toBe(true);
+    expect(verdict.floor.passed).toBe(false);
+    expect(verdict.discardReasons.join(' ')).toContain('되돌릴 수 없습니다');
+    expect(ask).toHaveBeenCalledTimes(4);
+  });
+
+  it('refuses a ranking that leaves a candidate out or names one twice', () => {
+    const labelled = labelFloorCandidates(floorCandidates());
+
+    expect(resolveFloorRanking(['가', '나'], labelled)).toEqual(['generated', 'floor']);
+    expect(resolveFloorRanking(['가', '가'], labelled)).toBeUndefined();
+    expect(resolveFloorRanking(['가'], labelled)).toBeUndefined();
   });
 });
 

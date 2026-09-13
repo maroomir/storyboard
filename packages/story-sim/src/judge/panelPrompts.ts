@@ -99,13 +99,16 @@ export function buildReaderTurn(input: {
 }
 
 // 하한선 관문. 훼손본을 꼴찌로 못 밀면 그 회차의 눈금을 믿을 수 없다.
+// NOTE: 후보는 뜻 없는 기호로만 부른다. 어느 쪽이 훼손본인지 라벨로 알려 주면 관문이 심판의
+// 눈이 아니라 독해력을 재게 된다. 기호를 후보로 되돌리는 일은 floorAnchor 가 한다.
 export function buildFloorRanking(input: {
   readonly persona: ReaderPersona;
   readonly candidates: readonly { readonly label: string; readonly draft: string }[];
 }): readonly AiMessage[] {
   const body = input.candidates
-    .map((candidate, index) => `### ${index + 1}번 (${candidate.label})\n\n${candidate.draft}`)
+    .map((candidate) => `### 원고 ${candidate.label}\n\n${candidate.draft}`)
     .join('\n\n');
+  const labels = input.candidates.map((candidate) => candidate.label);
 
   return [
     { role: 'system', content: personaSystem(input.persona) },
@@ -116,8 +119,9 @@ export function buildFloorRanking(input: {
         '',
         body,
         '',
+        `기호는 ${labels.join(' · ')} 뿐이다. 이 기호를 그대로 쓰고 번호로 바꾸지 마라.`,
         '답은 JSON 한 덩어리로만 낸다.',
-        '{ "ranking": ["가장 좋은 것의 라벨", "…", "가장 나쁜 것의 라벨"] }',
+        '{ "ranking": ["가장 좋은 원고의 기호", "…", "가장 나쁜 원고의 기호"] }',
       ].join('\n'),
     },
   ];

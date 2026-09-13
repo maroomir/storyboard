@@ -3,7 +3,13 @@ import { z } from 'zod';
 
 import { simDefaults } from '#sim/simDefaults';
 import { panelAuc, type PanelAuc, type ReaderCurve, type ReaderTurn } from '#sim/judge/auc';
-import { evaluateFloorGate, type FloorRanking, type FloorCandidateKind } from '#sim/judge/floorAnchor';
+import {
+  evaluateFloorGate,
+  labelFloorCandidates,
+  resolveFloorRanking,
+  type FloorRanking,
+  type FloorCandidateKind,
+} from '#sim/judge/floorAnchor';
 import {
   buildAxisVerdict,
   buildFactRecall,
@@ -129,13 +135,14 @@ async function runFloorGate(
 ): Promise<{ readonly rankings: readonly FloorRanking[]; readonly problems: readonly string[] }> {
   const rankings: FloorRanking[] = [];
   const problems: string[] = [];
+  const labelled = labelFloorCandidates(candidates);
 
   for (const persona of readers) {
     const response = await judge.ask(
       buildFloorRanking({
         persona,
-        candidates: candidates.map((candidate) => ({
-          label: candidate.kind,
+        candidates: labelled.map((candidate) => ({
+          label: candidate.label,
           draft: candidate.draft,
         })),
       }),
@@ -148,10 +155,18 @@ async function runFloorGate(
       continue;
     }
 
-    rankings.push({
-      readerId: persona.id,
-      ranking: parsed.data.ranking as readonly FloorCandidateKind[],
-    });
+    const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
+
+    // 후보로 되돌릴 수 없는 답은 판정이 아니다. 관문을 그냥 통과시키지도, 실패로 세지도 않고
+    // 폐기 사유로 남긴다 — 하나도 되돌리지 못하면 rankings 가 비어 관문이 막는다.
+    if (ranking === undefined) {
+      problems.push(
+        `${persona.id} 의 순위 판정을 후보로 되돌릴 수 없습니다 (${parsed.data.ranking.join(' > ')}).`,
+      );
+      continue;
+    }
+
+    rankings.push({ readerId: persona.id, ranking });
   }
 
   return { rankings, problems };
