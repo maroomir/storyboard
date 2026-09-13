@@ -4,7 +4,7 @@ import type { AiProviderId, PromptTuningOverrides } from '@storyboard/story-ai';
 import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
 import { sectionViolationKinds } from '@storyboard/story-pipeline';
 
-import { knobRegistry, type KnobSpec } from '#sim/knobs/knobRegistry';
+import { isSectionOutputLimitKnob, knobRegistry, type KnobSpec } from '#sim/knobs/knobRegistry';
 
 export const overlaySchema = z.object({
   note: z.string().optional(),
@@ -15,6 +15,8 @@ export type Overlay = z.infer<typeof overlaySchema>;
 
 export interface OverlayApplication {
   readonly tuning: SceneGenerationTuning;
+  // tuning 이 아니라 파이프라인 입력의 별도 칸으로 들어간다.
+  readonly sectionOutputLimit?: number;
   // 프롬프트 손잡이는 파이프라인 인자가 아니라 promptTuning 덮개로 간다.
   readonly promptOverrides: PromptTuningOverrides;
   // 비어 있지 않으면 첫 AI 호출 전에 멈춘다. 아무것도 못 재는 실행에 예산을 쓰지 않기 위해서다.
@@ -39,6 +41,7 @@ export function applyOverlay(
   const tuning: Record<string, unknown> = {};
   const weights: Record<string, number> = {};
   const promptOverrides: Record<string, { temperature?: number; maxTokens?: number }> = {};
+  let sectionOutputLimit: number | undefined;
 
   for (const [id, value] of Object.entries(overlay.knobs)) {
     const knob = registry.find((candidate) => candidate.id === id);
@@ -49,15 +52,18 @@ export function applyOverlay(
     }
 
     if (value < knob.bounds.min || value > knob.bounds.max) {
-      refusals.push(
-        `${id} = ${value} 는 범위 밖입니다 (${knob.bounds.min}~${knob.bounds.max}).`,
-      );
+      refusals.push(`${id} = ${value} 는 범위 밖입니다 (${knob.bounds.min}~${knob.bounds.max}).`);
       continue;
     }
 
     const inert = refuseInertKnob(knob, providerId);
     if (inert !== undefined) {
       refusals.push(inert);
+      continue;
+    }
+
+    if (isSectionOutputLimitKnob(knob)) {
+      sectionOutputLimit = value;
       continue;
     }
 
@@ -83,7 +89,12 @@ export function applyOverlay(
     tuning['violationWeights'] = weights;
   }
 
-  return { tuning: tuning as SceneGenerationTuning, promptOverrides, refusals };
+  return {
+    tuning: tuning as SceneGenerationTuning,
+    ...(sectionOutputLimit === undefined ? {} : { sectionOutputLimit }),
+    promptOverrides,
+    refusals,
+  };
 }
 
 export function parseOverlay(raw: unknown): Overlay {

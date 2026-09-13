@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
-import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
-import { applyOverlay, findKnob, isPromptKnob, knobRegistry, simDefaults } from '@storyboard/story-sim';
+import { integerSettingDefault, promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import {
+  applyOverlay,
+  findKnob,
+  isPromptKnob,
+  knobRegistry,
+  sectionOutputLimitKnobId,
+  simDefaults,
+} from '@storyboard/story-sim';
 
 // 레지스트리가 데이터 파일과 어긋나면 스윕이 존재하지 않는 손잡이를 흔들거나, 있는 손잡이를
 // 빠뜨린 채 «영향 없음»으로 보고한다. 둘 다 조용히 틀린 결론이 된다.
@@ -18,7 +25,9 @@ function leavesOf(value: unknown, path = ''): string[] {
 
 describe('knob registry', () => {
   const excluded = 'context.maxSceneBreakNewlines';
-  const pipelineKnobs = knobRegistry.filter((knob) => !isPromptKnob(knob));
+  const pipelineKnobs = knobRegistry.filter(
+    (knob) => !isPromptKnob(knob) && knob.id !== sectionOutputLimitKnobId,
+  );
   const promptKnobs = knobRegistry.filter(isPromptKnob);
 
   it('has one row per pipeline default, except the one the pipeline never reads', () => {
@@ -33,6 +42,23 @@ describe('knob registry', () => {
 
   it('never registers the excluded knob', () => {
     expect(findKnob(excluded)).toBeUndefined();
+  });
+
+  // 이 손잡이만 pipelineDefaults 가 아니라 설정 카탈로그에서 온다. tuning 이 아니라 파이프라인
+  // 입력의 별도 칸으로 들어가므로 오버레이도 따로 실어 보낸다.
+  it('carries the section output limit even though it is not a pipeline default', () => {
+    const knob = findKnob(sectionOutputLimitKnobId);
+
+    expect(knob?.defaultValue).toBe(integerSettingDefault(sectionOutputLimitKnobId));
+
+    const applied = applyOverlay(
+      { knobs: { [sectionOutputLimitKnobId]: 1000, 'skeleton.lengthRatio': 0.8 } },
+      'ollama',
+    );
+
+    expect(applied.refusals).toEqual([]);
+    expect(applied.sectionOutputLimit).toBe(1000);
+    expect(applied.tuning).toEqual({ skeletonRatio: 0.8 });
   });
 
   it('takes every pipeline default from the data file, not a second copy', () => {

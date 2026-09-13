@@ -377,7 +377,7 @@ async function executePoints(
         continue;
       }
 
-      const { tuning, promptOverrides, refusals } = applyOverlay(
+      const { tuning, promptOverrides, sectionOutputLimit, refusals } = applyOverlay(
         { knobs: point.knobs },
         input.generation.providerId,
       );
@@ -397,6 +397,7 @@ async function executePoints(
           scenes: input.scenes,
           tuning,
           promptOverrides,
+          ...(sectionOutputLimit === undefined ? {} : { sectionOutputLimit }),
           onProgress: (stem, current, total) =>
             context.container.logger.info(
               `${point.label} ${repeat}회 · ${current}/${total} ${stem}`,
