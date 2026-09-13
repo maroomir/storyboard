@@ -14,6 +14,8 @@ import {
   describeTrack,
   draftsDirectoryFor,
   keepDrafts,
+  listLocalModels,
+  missingLocalModels,
   simResultsDirectory,
   measureScene,
   readRuns,
@@ -423,5 +425,31 @@ describe('track fingerprint', () => {
     writeFileSync(join(track, 'card.txt'), '바뀐 시험체');
 
     await expect(assertTrackUnchanged(ref)).rejects.toThrow(/트랙이 바뀌었습니다/);
+  });
+});
+
+describe('local model check', () => {
+  // 없는 모델은 호출마다 404 다. 실행기는 씬마다 실패를 적으며 끝까지 가므로 11지점 선별이 빈 기록으로 끝난다.
+  it('names the models the runtime does not have', () => {
+    expect(missingLocalModels(['qwen3:14b', 'gemma3:12b'], ['qwen3:14b', 'gemma4:12b'])).toEqual([
+      'gemma4:12b',
+    ]);
+  });
+
+  it('treats a bare name as its latest tag', () => {
+    expect(missingLocalModels(['qwen3:latest'], ['qwen3'])).toEqual([]);
+  });
+
+  it('reads the tag list from the runtime', async () => {
+    const fetchImpl = (async () =>
+      ({ ok: true, json: async () => ({ models: [{ name: 'qwen3:14b' }] }) }) as Response) as typeof fetch;
+
+    expect(await listLocalModels('http://127.0.0.1:11434/', fetchImpl)).toEqual(['qwen3:14b']);
+  });
+
+  it('fails loudly when the runtime does not answer', async () => {
+    const fetchImpl = (async () => ({ ok: false, status: 502 }) as Response) as typeof fetch;
+
+    await expect(listLocalModels('http://127.0.0.1:11434', fetchImpl)).rejects.toThrow('502');
   });
 });

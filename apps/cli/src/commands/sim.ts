@@ -23,6 +23,8 @@ import {
   estimateBudget,
   findKnob,
   knobRegistry,
+  listLocalModels,
+  missingLocalModels,
   chooseCostAxis,
   costAxisLabels,
   paretoFrontier,
@@ -360,6 +362,11 @@ async function executePoints(
     );
   }
 
+  const localRefusal = await refuseMissingLocalModels(input);
+  if (localRefusal !== undefined) {
+    return refuse(localRefusal);
+  }
+
   // NOTE: 패키지 버전은 릴리스 사이의 엔진 빌드를 가르지 못한다. 하루에 다섯 빌드로 잰 기록이 전부
   // «0.9.3» 으로 남았다. 저장소 안에서 돌면 git 해시를, 아니면 버전을 적는다.
   const engineVersion = context.container.version;
@@ -588,6 +595,36 @@ async function executePoints(
     message: `실행 ${ran}회 완료${skipped > 0 ? ` (이미 끝난 ${skipped}회는 건너뜀)` : ''} → ${input.outPath}`,
     data: { ran, skipped, out: input.outPath, trackCommit: track.commit },
   };
+}
+
+// 로컬 런타임에 없는 모델은 호출마다 404 로 죽고 실행기는 빈 기록을 쌓으며 끝까지 간다. 첫 호출 전에 본다.
+async function refuseMissingLocalModels(input: {
+  readonly generation: Selection;
+  readonly judge?: Selection;
+  readonly localRuntime: SimConfig['ollama'];
+}): Promise<string | undefined> {
+  const wanted = [input.generation, input.judge]
+    .filter((selection): selection is Selection => selection?.providerId === 'ollama')
+    .map((selection) => selection.model);
+
+  if (wanted.length === 0) {
+    return undefined;
+  }
+
+  const baseUrl = input.localRuntime?.baseUrl ?? 'http://127.0.0.1:11434';
+  let available: readonly string[];
+
+  try {
+    available = await listLocalModels(baseUrl);
+  } catch (error) {
+    return `ollama 에 닿지 못했습니다 (${baseUrl}): ${error instanceof Error ? error.message : String(error)}`;
+  }
+
+  const missing = missingLocalModels(available, wanted);
+
+  return missing.length === 0
+    ? undefined
+    : `ollama 에 없는 모델입니다: ${missing.join(', ')} (있는 것: ${available.join(', ') || '없음'}). ollama pull 로 받거나 sim.config 의 모델을 고치세요.`;
 }
 
 async function prepare(context: CommandContext): Promise<

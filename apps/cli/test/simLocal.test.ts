@@ -197,6 +197,12 @@ describe('the judge runs on the measured machine', () => {
   async function startStub(): Promise<string> {
     bodies = [];
     stub = createServer((request, response) => {
+      // 실행기는 첫 호출 전에 태그 목록을 본다. 심판 모델이 있다고 답한다.
+      if (request.method === 'GET' && request.url === '/api/tags') {
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ models: [{ name: 'gemma3:12b' }] }));
+        return;
+      }
       const chunks: Buffer[] = [];
       request.on('data', (chunk: Buffer) => chunks.push(chunk));
       request.on('end', () => {
@@ -241,6 +247,38 @@ describe('the judge runs on the measured machine', () => {
 
     return track;
   }
+
+  // 없는 모델은 호출마다 404 다. 실행기는 씬마다 실패를 적으며 끝까지 가므로 첫 호출 전에 막는다.
+  it('refuses before the first call when the runtime lacks the model', async () => {
+    const baseUrl = await startStub();
+    const root = trackRepo(baseUrl);
+
+    const outcome = await commands['sim run']?.({
+      container: createCliContainer({
+        workspacePath: root,
+        logger: silentLogger,
+        canPrompt: false,
+        version: '9.9.9',
+      }),
+      args: {
+        path: ['sim', 'run'],
+        flags: {
+          track: root,
+          genre: 'thriller',
+          provider: 'mock',
+          judge: 'ollama',
+          'judge-model': 'gemma4:12b',
+          repeats: '1',
+          yes: true,
+        },
+        positionals: [],
+      },
+    });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('gemma4:12b');
+    expect(bodies).toHaveLength(0);
+  });
 
   it('sends the judge to the address and window the sim profile named', async () => {
     const baseUrl = await startStub();

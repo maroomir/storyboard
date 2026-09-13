@@ -18,6 +18,7 @@ export * from './judge/panelPrompts';
 export * from './judge/quoteCheck';
 export * from './judge/readerPanel';
 export * from './ports/judge';
+export * from './ports/localModels';
 export * from './sweep/budget';
 export * from './sweep/design';
 export * from './sweep/pareto';
