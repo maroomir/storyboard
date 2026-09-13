@@ -45,6 +45,7 @@ import {
 
 import { flagBoolean, flagString } from '@/cliArguments';
 import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
+import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
 // NOTE: 시뮬레이터는 트랙 저장소를 대상으로 돌고 제품 워크스페이스를 요구하지 않는다. 그래서
@@ -367,6 +368,22 @@ async function executePoints(
     ...(input.localRuntime === undefined ? {} : { localRuntime: input.localRuntime }),
   });
 
+  // NOTE: 심판도 생성과 같은 로컬 런타임에서 돈다. 명령을 띄운 컨테이너는 sim.config.json 을 읽지
+  // 않으므로 주소와 문맥 창이 빠진 채로 심판을 부른다. 주소가 다른 기계에서는 연결이 끊겨 시끄럽게
+  // 죽지만, 주소가 같은 기계에서는 num_ctx 없이 조용히 판정한다 — 8화 누적이 모델 기본 문맥을
+  // 넘기면 뒤 독자가 앞을 못 읽은 채 점수를 낸다. 조용히 틀리는 쪽이 위험하므로 심판 레지스트리도
+  // 같은 프로필로 세운다.
+  const judgeRegistry =
+    input.localRuntime === undefined
+      ? context.container.aiProviderRegistry
+      : createCliContainer({
+          workspacePath: context.container.workspaceRoot.fsPath,
+          logger: context.container.logger,
+          canPrompt: false,
+          version: context.container.version,
+          localRuntime: input.localRuntime,
+        }).aiProviderRegistry;
+
   let ran = 0;
   let skipped = 0;
 
@@ -411,7 +428,7 @@ async function executePoints(
         try {
           if (input.judge !== undefined && input.materials?.axisFloors !== undefined) {
             const judge = createSimJudge({
-              registry: context.container.aiProviderRegistry,
+              registry: judgeRegistry,
               judge: input.judge,
               generation: input.generation,
             });
@@ -442,7 +459,7 @@ async function executePoints(
             }
           } else if (input.judge !== undefined && input.materials !== undefined) {
             const judge = createSimJudge({
-              registry: context.container.aiProviderRegistry,
+              registry: judgeRegistry,
               judge: input.judge,
               generation: input.generation,
             });
