@@ -91,8 +91,8 @@ describe('fractional grid', () => {
 });
 
 describe('pareto frontier', () => {
-  function point(label: string, auc: number, cost: number, recalled = 13): ScoredPoint {
-    return { label, auc, cost, recalled, contradicted: 0 };
+  function point(label: string, auc: number, cost: number, recalled = 13, genre = 'thriller'): ScoredPoint {
+    return { label, genre, auc, cost, recalled, contradicted: 0 };
   }
 
   it('drops a point that is worse on both axes', () => {
@@ -109,6 +109,18 @@ describe('pareto frontier', () => {
     const frontier = paretoFrontier([point('rich', 0.9, 500), point('cheap', 0.5, 10)]);
 
     expect(frontier).toHaveLength(2);
+  });
+
+  // 스릴러 8씬과 무협 8씬은 다른 것을 잰 값이다. 한 평면에 올리면 싼 장르가 이긴 손잡이로 읽힌다.
+  it('draws a separate frontier for each fixture', () => {
+    const frontier = paretoFrontier([
+      point('thriller/a', 0.9, 500),
+      point('thriller/b', 0.5, 900),
+      point('wuxia/a', 0.4, 10, 13, 'wuxia'),
+    ]);
+
+    // 무협의 유일한 지점은 스릴러에 밀리지 않는다. 애초에 겨루지 않기 때문이다.
+    expect(frontier.map((entry) => entry.label).sort()).toEqual(['thriller/a', 'wuxia/a']);
   });
 
   // 사실을 더 놓치는 지점은 거래 대상이 아니라 탈락이다.

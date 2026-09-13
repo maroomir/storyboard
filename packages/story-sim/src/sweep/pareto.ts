@@ -1,5 +1,7 @@
 export interface ScoredPoint {
   readonly label: string;
+  // 어느 시험체에서 나온 값인지. 장르가 다르면 서로 다른 것을 잰 값이라 함께 줄 세우지 않는다.
+  readonly genre: string;
   // 클수록 좋다.
   readonly auc: number;
   // 작을수록 좋다. 비용 축의 실제 값이며, 아래 costAxis 가 그것이 무엇인지 말한다.
@@ -38,10 +40,17 @@ function dominates(left: ScoredPoint, right: ScoredPoint): boolean {
   return noWorse && strictlyBetter;
 }
 
-// 품질이 더 높으면서 토큰이 더 적은 지점이 없는 것들. 고를 값어치가 있는 후보만 남는다.
+// 품질이 더 높으면서 비용이 더 적은 지점이 없는 것들. 고를 값어치가 있는 후보만 남는다.
+// NOTE: 경계는 시험체마다 따로 낸다. 스릴러 8씬과 무협 8씬은 다른 것을 잰 값이라, 한 평면에
+// 올리면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
 export function paretoFrontier(points: readonly ScoredPoint[]): readonly ScoredPoint[] {
-  return points
-    .filter((candidate) => !points.some((other) => dominates(other, candidate)))
+  const genres = [...new Set(points.map((point) => point.genre))];
+
+  return genres
+    .flatMap((genre) => {
+      const inGenre = points.filter((point) => point.genre === genre);
+      return inGenre.filter((candidate) => !inGenre.some((other) => dominates(other, candidate)));
+    })
     .sort((left, right) => right.auc - left.auc);
 }
 
