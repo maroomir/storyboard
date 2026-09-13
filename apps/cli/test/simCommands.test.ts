@@ -251,8 +251,9 @@ describe('sim report', () => {
     const outcome = await run('sim report', { out });
 
     expect(outcome?.message).toContain('ceiling: n/a');
-    expect(outcome?.message).toContain('* thriller/cheap');
-    expect(outcome?.message).toContain('* thriller/rich');
+    expect(outcome?.message).toContain('[thriller]');
+    expect(outcome?.message).toContain('* cheap');
+    expect(outcome?.message).toContain('* rich');
   });
 });
 

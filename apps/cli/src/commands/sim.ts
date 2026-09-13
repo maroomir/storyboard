@@ -751,6 +751,7 @@ function scorePoints(
 
   return [...byLabel.entries()].map(([label, points]) => ({
     label,
+    genre: (points[0] as RunRecord).genre,
     // 씨앗이 없어 회차마다 흔들리므로 최고값이 아니라 중앙값을 쓴다.
     auc: median(points.map((run) => run.auc ?? 0)),
     cost: median(points.map(costOf)),
@@ -785,16 +786,25 @@ export const reportSim: CommandHandler = async (context) => {
   const frontier = paretoFrontier(scored);
   const frontierLabels = new Set(frontier.map((point) => point.label));
 
-  const lines = scored.map((point) => {
-    const mark = frontierLabels.has(point.label) ? '*' : ' ';
-    const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
-    return `${mark} ${point.label}\tAUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
-  });
+  // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
+  const genres = [...new Set(scored.map((point) => point.genre))].sort();
+  const lines = genres.flatMap((genre) => [
+    '',
+    `[${genre}]`,
+    ...scored
+      .filter((point) => point.genre === genre)
+      .map((point) => {
+        const mark = frontierLabels.has(point.label) ? '*' : ' ';
+        const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
+        const name = point.label.slice(genre.length + 1);
+        return `${mark} ${name}\tAUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
+      }),
+  ]);
 
   return {
     ok: true,
     message: [
-      `실행 ${runs.length}회 · 지점 ${scored.length}개 (* 는 파레토 경계)`,
+      `실행 ${runs.length}회 · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
       `비용 축: ${costAxisLabels[axis]}`,
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
