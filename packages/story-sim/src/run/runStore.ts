@@ -18,6 +18,8 @@ export interface RunRecord {
   readonly repeat: number;
   // 무엇을 쟀는지 못박는 두 해시. 하나라도 다르면 비교하지 않는다.
   readonly engineCommit: string;
+  // 엔진의 패키지 버전. engineCommit 이 git 해시가 된 뒤에도 사람이 읽을 이름은 남긴다.
+  readonly engineVersion?: string;
   readonly trackCommit: string;
   readonly trackDirty: boolean;
   readonly knobs: Readonly<Record<string, number>>;
@@ -29,6 +31,23 @@ export interface RunRecord {
   readonly recallTotal?: number;
   readonly contradicted?: number;
   readonly discarded?: boolean;
+  // 회차를 버린 이유. AUC 가 없는 줄을 되짚을 때 본다.
+  readonly discardReasons?: readonly string[];
+  // 공통 독자 4인의 곡선. AUC 하나로는 «넷 다 미지근» 과 «셋은 좋고 하나가 일찍 덮음» 이 안 갈린다.
+  readonly panel?: {
+    readonly byReader: Readonly<Record<string, number>>;
+    readonly curves: Readonly<Record<string, readonly number[]>>;
+    readonly dropOffScene: Readonly<Record<string, string | undefined>>;
+  };
+  // 장르 독자의 말. AUC 에 안 들어가지만 사람이 읽을 값어치가 있다.
+  readonly genreNotes?: readonly {
+    readonly sceneStem: string;
+    readonly engagement: number;
+    readonly continueReading: boolean;
+    readonly reason: string;
+    readonly quote: string;
+  }[];
+  readonly genreProblems?: readonly string[];
   // 축 트랙만 채운다. 진단표이지 성능이 아니므로 파레토에 들어가지 않는다.
   readonly axisVerdicts?: readonly {
     readonly sceneStem: string;

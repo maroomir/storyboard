@@ -255,6 +255,66 @@ describe('sim report', () => {
     expect(outcome?.message).toContain('* cheap');
     expect(outcome?.message).toContain('* rich');
   });
+
+  // 폐기 회차를 0 으로 세면 셋 중 둘이 폐기된 지점이 AUC 0 으로 읽힌다.
+  it('leaves discarded runs out of the quality median and counts them', async () => {
+    const out = join(home, 'runs.jsonl');
+    const base = {
+      genre: 'thriller',
+      pointLabel: 'point',
+      engineCommit: '9.9.9',
+      trackCommit: 'abc',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'ollama', model: 'qwen3:14b' },
+      scenes: [],
+      tokens: { calls: 0, inputTokens: 100, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      startedAt: '2026-09-14T00:00:00.000Z',
+      wallClockMs: 1,
+    };
+    writeFileSync(
+      out,
+      [
+        JSON.stringify({ ...base, runId: 'a', repeat: 1, auc: 0.125, recalled: 4 }),
+        JSON.stringify({ ...base, runId: 'b', repeat: 2, discarded: true }),
+        JSON.stringify({ ...base, runId: 'c', repeat: 3, discarded: true }),
+      ].join('\n') + '\n',
+    );
+
+    const outcome = await run('sim report', { out });
+
+    expect(outcome?.message).toContain('실행 3회 (유효 1회)');
+    expect(outcome?.message).toContain('AUC 0.125');
+    expect(outcome?.message).toContain('유효 1/3');
+  });
+
+  it('names the engine and track when a file mixes them', async () => {
+    const out = join(home, 'runs.jsonl');
+    const base = {
+      genre: 'thriller',
+      pointLabel: 'point',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'ollama', model: 'qwen3:14b' },
+      scenes: [],
+      tokens: { calls: 0, inputTokens: 100, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      startedAt: '2026-09-14T00:00:00.000Z',
+      wallClockMs: 1,
+    };
+    writeFileSync(
+      out,
+      [
+        JSON.stringify({ ...base, runId: 'a', repeat: 1, engineCommit: '0.9.3', trackCommit: 'b3a08d34', discarded: true }),
+        JSON.stringify({ ...base, runId: 'b', repeat: 1, engineCommit: '9ac9ab8f', trackCommit: 'e7d15960', auc: 0.125 }),
+      ].join('\n') + '\n',
+    );
+
+    const outcome = await run('sim report', { out });
+
+    expect(outcome?.message).toContain('따로 셉니다');
+    expect(outcome?.message).toContain('point @9ac9ab8/e7d1596');
+    expect(outcome?.message).toContain('AUC n/a');
+  });
 });
 
 describe('sim apply', () => {

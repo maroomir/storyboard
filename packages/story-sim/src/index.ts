@@ -21,3 +21,4 @@ export * from './ports/judge';
 export * from './sweep/budget';
 export * from './sweep/design';
 export * from './sweep/pareto';
+export * from './sweep/score';

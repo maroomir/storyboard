@@ -1,5 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-ai';
@@ -18,19 +18,21 @@ import {
   scoreFactRecall,
   defaultGridLevels,
   describeCost,
+  describeEngine,
   describeTrack,
   estimateBudget,
   findKnob,
   knobRegistry,
-  median,
   chooseCostAxis,
   costAxisLabels,
   paretoFrontier,
   planFractionalGrid,
   planScreening,
   parseOverlay,
+  isJudged,
   readRuns,
   removeScratch,
+  scoreRuns,
   runKey,
   runTrack,
   readSimConfig,
@@ -39,8 +41,8 @@ import {
   simResultsDirectory,
   withinCap,
   type DesignedPoint,
+  type PointScore,
   type RunRecord,
-  type ScoredPoint,
   type SimConfig,
 } from '@storyboard/story-sim';
 
@@ -358,7 +360,14 @@ async function executePoints(
     );
   }
 
-  const engineCommit = context.container.version;
+  // NOTE: 패키지 버전은 릴리스 사이의 엔진 빌드를 가르지 못한다. 하루에 다섯 빌드로 잰 기록이 전부
+  // «0.9.3» 으로 남았다. 저장소 안에서 돌면 git 해시를, 아니면 버전을 적는다.
+  const engineVersion = context.container.version;
+  // 번들은 CommonJS 로 형검사되어 import.meta 를 못 쓴다. 실행 파일의 자리(dist/index.mjs)에서 찾는다.
+  const engineCommit = await describeEngine(
+    dirname(process.argv[1] ?? process.cwd()),
+    engineVersion,
+  );
   const { repeats } = input;
   const done = await completedKeys(input.outPath, { engineCommit, trackCommit: track.commit });
   const factory = createSimWorkspaceFactory({
@@ -495,6 +504,15 @@ async function executePoints(
             verdictFields = {
               auc: verdict.discarded ? undefined : verdict.auc.auc,
               discarded: verdict.discarded,
+              ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
+              // 곡선은 폐기 여부와 무관하게 남긴다. 어디서 덮었는지가 곧 되짚을 단서다.
+              panel: {
+                byReader: verdict.auc.byReader,
+                curves: verdict.auc.curves,
+                dropOffScene: verdict.auc.dropOffScene,
+              },
+              genreNotes: verdict.genreNotes,
+              ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
             };
 
             if (input.materials.ledger !== undefined && !verdict.discarded) {
@@ -528,7 +546,7 @@ async function executePoints(
           context.container.logger.warn(
             `${point.label} ${repeat}회 · 심판 실패, 생성 결과만 남깁니다: ${message}`,
           );
-          verdictFields = { discarded: true };
+          verdictFields = { discarded: true, discardReasons: [`심판 실패: ${message}`] };
         }
 
         const record: RunRecord = {
@@ -537,6 +555,7 @@ async function executePoints(
           pointLabel: point.label,
           repeat,
           engineCommit,
+          engineVersion,
           trackCommit: track.commit,
           trackDirty: false,
           knobs: point.knobs,
@@ -765,33 +784,8 @@ export const sweepSim: CommandHandler = async (context) => {
   return await executePoints(context, { ...prepared, points, judge, materials });
 };
 
-function scorePoints(
-  runs: readonly RunRecord[],
-  axis: ReturnType<typeof chooseCostAxis>,
-): readonly ScoredPoint[] {
-  const byLabel = new Map<string, RunRecord[]>();
-
-  for (const run of runs) {
-    const label = `${run.genre}/${run.pointLabel}`;
-    byLabel.set(label, [...(byLabel.get(label) ?? []), run]);
-  }
-
-  const costOf = (run: RunRecord): number => {
-    if (axis === 'usd') {
-      return run.tokens.costUsd ?? 0;
-    }
-    return run.tokens.inputTokens + run.tokens.outputTokens;
-  };
-
-  return [...byLabel.entries()].map(([label, points]) => ({
-    label,
-    genre: (points[0] as RunRecord).genre,
-    // 씨앗이 없어 회차마다 흔들리므로 최고값이 아니라 중앙값을 쓴다.
-    auc: median(points.map((run) => run.auc ?? 0)),
-    cost: median(points.map(costOf)),
-    recalled: median(points.map((run) => run.recalled ?? 0)),
-    contradicted: median(points.map((run) => run.contradicted ?? 0)),
-  }));
+function scoreKey(point: PointScore): string {
+  return [point.genre, point.pointLabel, point.engineCommit, point.trackCommit].join('\u0000');
 }
 
 export const reportSim: CommandHandler = async (context) => {
@@ -816,9 +810,15 @@ export const reportSim: CommandHandler = async (context) => {
     0,
   );
   const axis = chooseCostAxis(totalUsd);
-  const scored = scorePoints(runs, axis);
-  const frontier = paretoFrontier(scored);
-  const frontierLabels = new Set(frontier.map((point) => point.label));
+  const scored = scoreRuns(runs, axis);
+  // 유효 회차가 없는 지점은 품질을 모른다. 경계에 올리면 AUC 0 인 지점으로 읽힌다.
+  const frontier = paretoFrontier(scored.filter((point) => point.judged > 0));
+  const frontierKeys = new Set(frontier.map((point) => scoreKey(point as PointScore)));
+  const judgedRuns = scored.reduce((total, point) => total + point.judged, 0);
+
+  // 엔진이나 트랙이 다른 기록이 한 파일에 섞이면 같은 지점 이름이 여러 줄 나온다. 어느 것인지 밝힌다.
+  const fingerprints = new Set(scored.map((point) => `${point.engineCommit}@${point.trackCommit}`));
+  const mixed = fingerprints.size > 1;
 
   // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
   const genres = [...new Set(scored.map((point) => point.genre))].sort();
@@ -828,18 +828,27 @@ export const reportSim: CommandHandler = async (context) => {
     ...scored
       .filter((point) => point.genre === genre)
       .map((point) => {
-        const mark = frontierLabels.has(point.label) ? '*' : ' ';
+        const mark = frontierKeys.has(scoreKey(point)) ? '*' : ' ';
         const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
-        const name = point.label.slice(genre.length + 1);
-        return `${mark} ${name}\tAUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
+        const name = mixed
+          ? `${point.pointLabel} @${point.engineCommit.slice(0, 7)}/${point.trackCommit.slice(0, 7)}`
+          : point.pointLabel;
+        const quality =
+          point.judged === 0
+            ? `AUC n/a\t${cost}\t회수 n/a`
+            : `AUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
+        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}`;
       }),
   ]);
 
   return {
     ok: true,
     message: [
-      `실행 ${runs.length}회 · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
+      `실행 ${runs.length}회 (유효 ${judgedRuns}회) · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
       `비용 축: ${costAxisLabels[axis]}`,
+      // 폐기 회차는 품질 축에서 뺀다. 0 으로 넣으면 셋 중 둘이 폐기된 지점이 «AUC 0» 으로 읽힌다.
+      '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값',
+      ...(mixed ? ['엔진·트랙이 다른 기록은 따로 셉니다 (@엔진/트랙)'] : []),
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
       ...lines,
@@ -857,14 +866,16 @@ export const applySim: CommandHandler = async (context) => {
   }
 
   const runs = (await readRuns(outPath)).filter((run) => run.pointLabel === point);
+  const judged = runs.filter(isJudged);
 
   if (runs.length === 0) {
     return refuse(`${point} 의 실행 기록이 없습니다.`);
   }
 
-  if (runs.length < simDefaults.run.repeats) {
+  // 폐기된 회차는 값이 없다. 돌았다고 세면 폐기 둘에 유효 하나인 지점이 프로필에 들어간다.
+  if (judged.length < simDefaults.run.repeats) {
     return refuse(
-      `${point} 은 ${runs.length}회만 돌았습니다. 씨앗이 없어 회차마다 흔들리므로 ${simDefaults.run.repeats}회 이상의 중앙값이 필요합니다.`,
+      `${point} 은 유효 회차가 ${judged.length}회뿐입니다 (${runs.length}회 실행). 씨앗이 없어 회차마다 흔들리므로 ${simDefaults.run.repeats}회 이상의 중앙값이 필요합니다.`,
     );
   }
 

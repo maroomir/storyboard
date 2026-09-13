@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { RunRecord } from '@storyboard/story-sim';
+
 import {
   defaultGridLevels,
   estimateBudget,
@@ -12,6 +14,7 @@ import {
   planScreening,
   withinCap,
   type ScoredPoint,
+  scoreRuns,
 } from '@storyboard/story-sim';
 
 // 스윕 계획은 돈을 쓰기 전에 전부 결정된다. 여기가 틀리면 수천 번의 호출이 헛돈다.
@@ -233,5 +236,75 @@ describe('budget estimate', () => {
     expect(withinCap(estimate, 20)).toBe(false);
     expect(withinCap(estimate, 36)).toBe(true);
     expect(withinCap(estimate, undefined)).toBe(true);
+  });
+});
+
+describe('point score', () => {
+  function run(overrides: Partial<RunRecord>): RunRecord {
+    return {
+      runId: 'r',
+      genre: 'thriller',
+      pointLabel: 'point',
+      repeat: 1,
+      engineCommit: 'e1',
+      trackCommit: 't1',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'ollama', model: 'qwen3:14b' },
+      scenes: [],
+      tokens: {
+        calls: 0,
+        inputTokens: 100,
+        outputTokens: 0,
+        cacheReadInputTokens: 0,
+        byTask: {},
+        costUsd: 0,
+        unpricedCallCount: 0,
+        unattributedCallCount: 0,
+      },
+      startedAt: '2026-09-14T00:00:00.000Z',
+      wallClockMs: 1,
+      ...overrides,
+    };
+  }
+
+  // 실측에서 유효 회차 둘이 0.12 를 냈는데 리포트가 0.000 을 찍었다. 폐기 셋을 0 으로 세었기 때문이다.
+  it('takes the quality median over judged runs only', () => {
+    const [point] = scoreRuns(
+      [
+        run({ repeat: 1, auc: 0.125, recalled: 4 }),
+        run({ repeat: 2, discarded: true }),
+        run({ repeat: 3, auc: 0.119, recalled: 6 }),
+        run({ repeat: 4, discarded: true, tokens: { ...run({}).tokens, inputTokens: 900 } }),
+        run({ repeat: 5, discarded: true, tokens: { ...run({}).tokens, inputTokens: 700 } }),
+      ],
+      'tokens',
+    );
+
+    expect(point?.auc).toBeCloseTo(0.122);
+    expect(point?.recalled).toBe(5);
+    expect(point?.judged).toBe(2);
+    expect(point?.runs).toBe(5);
+    // 비용은 폐기 회차도 실제로 썼다. [100, 100, 100, 700, 900] 의 중앙값.
+    expect(point?.cost).toBe(100);
+    expect(point?.judged).toBe(2);
+  });
+
+  it('keeps a point with no judged run but says so', () => {
+    const [point] = scoreRuns([run({ discarded: true })], 'tokens');
+
+    expect(point?.judged).toBe(0);
+    expect(point?.auc).toBe(0);
+  });
+
+  // 엔진이나 트랙이 다르면 같은 지점 이름이라도 다른 것을 잰 값이다.
+  it('scores runs from a different engine or track separately', () => {
+    const scored = scoreRuns(
+      [run({ auc: 0.1 }), run({ auc: 0.9, trackCommit: 't2' }), run({ auc: 0.5, engineCommit: 'e2' })],
+      'tokens',
+    );
+
+    expect(scored).toHaveLength(3);
+    expect(scored.map((point) => point.auc).sort()).toEqual([0.1, 0.5, 0.9]);
   });
 });
