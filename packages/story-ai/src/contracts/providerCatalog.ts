@@ -210,6 +210,15 @@ export const aiProviderIds = Object.keys(providerCatalog) as unknown as readonly
 // 한 번 넓혀서 읽는다.
 const catalogRows: Readonly<Record<AiProviderId, ProviderCatalogEntry>> = providerCatalog;
 
+// 작가가 고르는 목록. mock 은 개발용이라 빼되, 이미 mock 으로 설정된 값은 선택 상태가 사라지지
+// 않도록 목록에 남긴다.
+export function listSelectableProviderIds(currentProviderId?: AiProviderId): AiProviderId[] {
+  return aiProviderIds.filter(
+    (providerId) =>
+      catalogRows[providerId].transport !== 'mock' || providerId === currentProviderId,
+  );
+}
+
 export interface ProviderModelOption {
   readonly id: string;
   readonly displayName: string;

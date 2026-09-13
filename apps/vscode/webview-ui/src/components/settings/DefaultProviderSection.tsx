@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { SectionHeader } from '../ui/SectionHeader';
 import { OriginPill, StatusPill } from './SettingsPrimitives';
 import {
-  AI_PROVIDER_IDS,
   getProviderStatus,
   getValueOrigin,
   isAiProviderId,
+  listSelectableProviderIds,
   parseSaveTarget,
   pickModelForTaskProvider,
   type SaveTarget,
@@ -91,7 +91,9 @@ export function DefaultProviderSection({
                 제공자를 선택하세요
               </option>
             )}
-            {AI_PROVIDER_IDS.map((id) => (
+            {listSelectableProviderIds(
+              snapshot.isDefaultProviderConfigured ? defaultProviderId : undefined,
+            ).map((id) => (
               <option key={id} value={id}>
                 {getProviderStatus(snapshot, id)?.displayName ?? id}
               </option>

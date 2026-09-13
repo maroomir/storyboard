@@ -80,6 +80,26 @@ describe("chooseDefaultProvider", () => {
     expect(cancelled).toBeUndefined()
     expect(untouched.size).toBe(0)
   })
+
+  it("hides the mock provider unless it is already the default", async () => {
+    const offeredIds: string[][] = []
+    vi.spyOn(vscode.window, "showQuickPick").mockImplementation(async (items: unknown) => {
+      offeredIds.push((items as Array<{ providerId: string }>).map((item) => item.providerId))
+      return undefined
+    })
+    const secretStore = createSecretStore()
+
+    await chooseDefaultProvider({ configBridge: createConfigBridge(new Map()), registry, secretStore })
+    await chooseDefaultProvider({
+      configBridge: createConfigBridge(new Map([["defaultProvider", "mock"]])),
+      registry,
+      secretStore
+    })
+
+    expect(offeredIds[0]).not.toContain("mock")
+    expect(offeredIds[0]).toContain("openai")
+    expect(offeredIds[1]).toContain("mock")
+  })
 })
 
 describe("nudgeToChooseProvider", () => {
@@ -99,11 +119,11 @@ describe("nudgeToChooseProvider", () => {
     const values = new Map<string, unknown>()
     vi.spyOn(vscode.window, "showInformationMessage").mockResolvedValue("제공자 선택")
     vi.spyOn(vscode.window, "showQuickPick").mockImplementation(async (items: unknown) =>
-      (items as Array<{ providerId: string }>).find((item) => item.providerId === "mock")
+      (items as Array<{ providerId: string }>).find((item) => item.providerId === "ollama")
     )
 
     await nudgeToChooseProvider({ configBridge: createConfigBridge(values), registry, secretStore: createSecretStore() })
 
-    expect(values.get("defaultProvider")).toBe("mock")
+    expect(values.get("defaultProvider")).toBe("ollama")
   })
 })

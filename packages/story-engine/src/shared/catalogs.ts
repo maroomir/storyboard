@@ -4,6 +4,7 @@ export {
   aiProviderIds,
   getProviderDisplayName,
   isSpanRequiredTool,
+  listSelectableProviderIds,
   providerCatalog,
   requiresApiKey,
   storyboardModelCatalog,
