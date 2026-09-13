@@ -9,6 +9,31 @@ describe("ClaudeProvider", () => {
     )
   })
 
+  it.each([
+    ["claude-sonnet-5", undefined],
+    ["claude-sonnet-4-6", 0.7]
+  ] as const)("sends temperature to %s only when the model accepts it", async (model, expectedTemperature) => {
+    let capturedRequest: Parameters<ClaudeClientLike["messages"]["create"]>[0] | undefined
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model,
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedRequest = request
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "장면을 써줘." }],
+      temperature: 0.7
+    })
+
+    expect(capturedRequest?.temperature).toBe(expectedTemperature)
+  })
+
   it("checks connection through Claude messages.create", async () => {
     let didCreateMessage = false
     const provider = new ClaudeProvider({

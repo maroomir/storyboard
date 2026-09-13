@@ -78,8 +78,8 @@ describe('local model names', () => {
   it('suggests models that fit a desktop card', () => {
     const ids = storyboardModelCatalog.ollama.map((entry) => entry.id);
 
-    expect(ids).toContain('qwen3:8b');
-    expect(ids).toContain('gemma3:12b');
+    expect(ids).toContain('qwen3.5:9b');
+    expect(ids).toContain('gemma4:12b');
   });
 });
 

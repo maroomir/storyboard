@@ -13,6 +13,7 @@ import {
   type AiUsage,
 } from '#ai/contracts/aiTypes';
 import {
+  acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
@@ -113,7 +114,7 @@ export class ClaudeProvider implements AiProvider {
       const response = await this.client.messages.create({
         model: this.model,
         max_tokens: request.maxTokens ?? 4096,
-        temperature: request.temperature,
+        temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         ...(systemPrompt
           ? {
               system: [

@@ -10,6 +10,7 @@ import {
 } from '#ai/contracts/aiTypes';
 import { type OpenAiClientLike } from './OpenAiProvider';
 import {
+  acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
@@ -69,7 +70,7 @@ export class GrokProvider implements AiProvider {
       const response = await this.client.chat.completions.create({
         model: this.model,
         messages: request.messages,
-        temperature: request.temperature,
+        temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         max_tokens: request.maxTokens,
       });
 

@@ -9,6 +9,32 @@ describe("GoogleProvider", () => {
     )
   })
 
+  it.each([
+    ["gemini-3.8-flash", undefined],
+    ["gemini-2.5-flash", 0.7]
+  ] as const)("sends temperature to %s only when the model accepts it", async (model, expectedTemperature) => {
+    let capturedTemperature: number | undefined
+    const provider = new GoogleProvider({
+      apiKey: "google-test",
+      model,
+      createClient: (): GoogleClientLike =>
+        createFakeGoogleClient({
+          completionText: "응답",
+          onGetGenerativeModel: (options): void => {
+            capturedTemperature = options.generationConfig?.temperature
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "sceneDraft",
+      messages: [{ role: "user", content: "장면을 써줘." }],
+      temperature: 0.7
+    })
+
+    expect(capturedTemperature).toBe(expectedTemperature)
+  })
+
   it("checks connection with a generated test prompt", async () => {
     let capturedPrompt = ""
     let capturedSystemInstruction: string | undefined

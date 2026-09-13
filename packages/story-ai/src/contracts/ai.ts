@@ -10,6 +10,7 @@ export type {
   ProviderTransport,
 } from './providerCatalog';
 export {
+  acceptsTemperature,
   aiProviderIds,
   connectionCheckFailedMessage,
   generationFailedMessage,

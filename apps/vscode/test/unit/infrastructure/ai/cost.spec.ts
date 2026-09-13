@@ -31,7 +31,7 @@ describe("computeCostUsd", () => {
         model: "gpt-5.4-mini",
         usage
       })
-    ).toBeCloseTo(0.25 * 1 + 2.0 * 0.5, 10)
+    ).toBeCloseTo(0.75 * 1 + 4.5 * 0.5, 10)
   })
 
   it("computes Claude tier costs", () => {
@@ -53,14 +53,14 @@ describe("computeCostUsd", () => {
         model: "gemini-2.5-flash",
         usage
       })
-    ).toBeCloseTo(4 * 0.075 + 2 * 0.3, 10)
+    ).toBeCloseTo(4 * 0.3 + 2 * 2.5, 10)
   })
 
   it("treats local Ollama usage as zero dollars", () => {
     expect(
       computeCostUsd({
         providerId: "ollama",
-        model: "llama3.3",
+        model: "gemma4:12b",
         usage: { inputTokens: 9_000_000, outputTokens: 9_000_000 }
       })
     ).toBe(0)
@@ -103,16 +103,16 @@ describe("aiGenerateResponseWithUsage", () => {
     expect(
       aiGenerateResponseWithUsage({
         providerId: "openai",
-        model: "gpt-5-nano",
+        model: "gpt-5.6-luna",
         text: "out",
         usage
       })
     ).toEqual({
       providerId: "openai",
-      model: "gpt-5-nano",
+      model: "gpt-5.6-luna",
       text: "out",
       usage,
-      costUsd: 0.05
+      costUsd: 0.2
     })
   })
 })

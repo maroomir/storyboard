@@ -28,7 +28,7 @@ describe("OllamaProvider", () => {
     const usage = { inputTokens: 30, outputTokens: 70 }
     const providerWithUsage = new OllamaProvider({
       baseUrl: "http://localhost:11434",
-      model: "llama3.3",
+      model: "gemma4:12b",
       createClient: (): OllamaClientLike =>
         createFakeOllamaClient({
           completionText: "올라마 응답",
@@ -48,7 +48,7 @@ describe("OllamaProvider", () => {
     expect(capturedPath).toBe("/api/chat")
     expect(response).toEqual({
       providerId: "ollama",
-      model: "llama3.3",
+      model: "gemma4:12b",
       text: "올라마 응답",
       usage,
       costUsd: 0

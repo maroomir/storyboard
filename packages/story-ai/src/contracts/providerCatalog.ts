@@ -8,6 +8,8 @@ export interface ProviderModelEntry {
   readonly displayName: string;
   readonly inputPricePerMillion: number;
   readonly outputPricePerMillion: number;
+  // 생략하면 true. 기본값이 아닌 temperature 를 400 으로 거부하거나 지원 중단한 모델만 false 로 적는다.
+  readonly acceptsTemperature?: boolean;
 }
 
 export interface ProviderCatalogEntry {
@@ -19,31 +21,53 @@ export interface ProviderCatalogEntry {
   readonly models: readonly ProviderModelEntry[];
 }
 
+// NOTE: 모델·요금은 각 사의 공식 모델·요금 문서 2026-09-13 기준이다. 요금은 표준 등급, 긴 프롬프트
+// 할증이 있는 모델은 할증 전 구간 값이다.
 export const providerCatalog = {
   openai: {
     displayName: 'OpenAI',
     transport: 'http',
     requiresApiKey: true,
-    defaultModel: 'gpt-5.4-mini',
+    defaultModel: 'gpt-5.6-terra',
     defaultBaseUrl: undefined,
     models: [
       {
+        id: 'gpt-5.6-terra',
+        displayName: 'GPT-5.6 Terra',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 12.0,
+      },
+      {
+        id: 'gpt-6-astra',
+        displayName: 'GPT-6 Astra',
+        inputPricePerMillion: 10.0,
+        outputPricePerMillion: 50.0,
+        // NOTE: OpenAI 최신 모델 안내가 temperature·top_p 를 빼라고 명시한다. 5.x 는 확인된 문구가 없다.
+        acceptsTemperature: false,
+      },
+      {
+        id: 'gpt-5.6-sol',
+        displayName: 'GPT-5.6 Sol',
+        inputPricePerMillion: 4.0,
+        outputPricePerMillion: 20.0,
+      },
+      {
+        id: 'gpt-5.5',
+        displayName: 'GPT-5.5',
+        inputPricePerMillion: 5.0,
+        outputPricePerMillion: 30.0,
+      },
+      {
+        id: 'gpt-5.6-luna',
+        displayName: 'GPT-5.6 Luna',
+        inputPricePerMillion: 0.2,
+        outputPricePerMillion: 1.2,
+      },
+      {
         id: 'gpt-5.4-mini',
         displayName: 'GPT-5.4 mini',
-        inputPricePerMillion: 0.25,
-        outputPricePerMillion: 2.0,
-      },
-      {
-        id: 'gpt-5-mini',
-        displayName: 'GPT-5 mini',
-        inputPricePerMillion: 0.15,
-        outputPricePerMillion: 0.6,
-      },
-      {
-        id: 'gpt-5-nano',
-        displayName: 'GPT-5 nano',
-        inputPricePerMillion: 0.05,
-        outputPricePerMillion: 0.2,
+        inputPricePerMillion: 0.75,
+        outputPricePerMillion: 4.5,
       },
     ],
   },
@@ -53,22 +77,39 @@ export const providerCatalog = {
     requiresApiKey: true,
     defaultModel: 'claude-sonnet-5',
     defaultBaseUrl: undefined,
+    // NOTE: Claude 4.7 이후 모델은 기본값이 아닌 temperature·top_p·top_k 를 400 으로 거부한다.
     models: [
       {
         id: 'claude-sonnet-5',
         displayName: 'Claude Sonnet 5',
         inputPricePerMillion: 2.0,
         outputPricePerMillion: 10.0,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'claude-opus-5',
+        displayName: 'Claude Opus 5',
+        inputPricePerMillion: 5.0,
+        outputPricePerMillion: 25.0,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'claude-fable-5-1',
+        displayName: 'Claude Fable 5.1',
+        inputPricePerMillion: 10.0,
+        outputPricePerMillion: 50.0,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'claude-opus-4-8',
+        displayName: 'Claude Opus 4.8',
+        inputPricePerMillion: 5.0,
+        outputPricePerMillion: 25.0,
+        acceptsTemperature: false,
       },
       {
         id: 'claude-sonnet-4-6',
         displayName: 'Claude Sonnet 4.6',
-        inputPricePerMillion: 3.0,
-        outputPricePerMillion: 15.0,
-      },
-      {
-        id: 'claude-sonnet-4-5',
-        displayName: 'Claude Sonnet 4.5',
         inputPricePerMillion: 3.0,
         outputPricePerMillion: 15.0,
       },
@@ -84,14 +125,24 @@ export const providerCatalog = {
     displayName: 'Google Gemini',
     transport: 'http',
     requiresApiKey: true,
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-3.8-flash',
     defaultBaseUrl: undefined,
+    // NOTE: 3.x 세대는 temperature 를 지원 중단했다. 3.8 Flash 요금은 2026-12-31까지의 도입가이며
+    // 2027-01-01부터 두 배($1.50/$7.50)가 된다.
     models: [
       {
-        id: 'gemini-2.5-flash',
-        displayName: 'Gemini 2.5 Flash',
-        inputPricePerMillion: 0.075,
-        outputPricePerMillion: 0.3,
+        id: 'gemini-3.8-flash',
+        displayName: 'Gemini 3.8 Flash',
+        inputPricePerMillion: 0.75,
+        outputPricePerMillion: 3.75,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'gemini-3.1-pro-preview',
+        displayName: 'Gemini 3.1 Pro (Preview)',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 12.0,
+        acceptsTemperature: false,
       },
       {
         id: 'gemini-2.5-pro',
@@ -100,10 +151,23 @@ export const providerCatalog = {
         outputPricePerMillion: 10.0,
       },
       {
+        id: 'gemini-3.5-flash-lite',
+        displayName: 'Gemini 3.5 Flash-Lite',
+        inputPricePerMillion: 0.3,
+        outputPricePerMillion: 2.5,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'gemini-2.5-flash',
+        displayName: 'Gemini 2.5 Flash',
+        inputPricePerMillion: 0.3,
+        outputPricePerMillion: 2.5,
+      },
+      {
         id: 'gemini-2.5-flash-lite',
         displayName: 'Gemini 2.5 Flash-Lite',
-        inputPricePerMillion: 0.05,
-        outputPricePerMillion: 0.2,
+        inputPricePerMillion: 0.1,
+        outputPricePerMillion: 0.4,
       },
     ],
   },
@@ -133,6 +197,18 @@ export const providerCatalog = {
         inputPricePerMillion: 1.25,
         outputPricePerMillion: 2.5,
       },
+      {
+        id: 'grok-4.20-0309-reasoning',
+        displayName: 'Grok 4.20 (추론)',
+        inputPricePerMillion: 1.25,
+        outputPricePerMillion: 2.5,
+      },
+      {
+        id: 'grok-4.20-0309-non-reasoning',
+        displayName: 'Grok 4.20 (비추론)',
+        inputPricePerMillion: 1.25,
+        outputPricePerMillion: 2.5,
+      },
     ],
   },
   ollama: {
@@ -141,42 +217,42 @@ export const providerCatalog = {
     requiresApiKey: false,
     // NOTE: 로컬은 받아 둔 모델이 기계마다 다르므로 이 목록은 고정 목록이 아니라 제안이다.
     // 목록에 없는 이름도 그대로 받는다 — 진짜 목록은 ollama 가 갖고 있다.
-    defaultModel: 'qwen3:8b',
+    defaultModel: 'gemma4:12b',
     defaultBaseUrl: 'http://localhost:11434',
     models: [
       {
-        id: 'qwen3:8b',
-        displayName: 'Qwen 3 8B (12GB에서 긴 문맥까지)',
+        id: 'gemma4:12b',
+        displayName: 'Gemma 4 12B (12GB GPU 기본)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
       {
-        id: 'qwen3:14b',
-        displayName: 'Qwen 3 14B (한국어 산문 우선)',
+        id: 'qwen3.5:9b',
+        displayName: 'Qwen 3.5 9B (8GB GPU)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
       {
-        id: 'gemma3:12b',
-        displayName: 'Gemma 3 12B (심판용, 생성과 다른 계열)',
+        id: 'exaone3.5:7.8b',
+        displayName: 'EXAONE 3.5 7.8B (한국어 명시, 문맥 32K)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
       {
-        id: 'llama3.3',
-        displayName: 'Llama 3.3',
+        id: 'gpt-oss:20b',
+        displayName: 'gpt-oss 20B (16GB GPU)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
       {
-        id: 'llama3.2',
-        displayName: 'Llama 3.2',
+        id: 'qwen3.5:27b',
+        displayName: 'Qwen 3.5 27B (24GB GPU)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
       {
-        id: 'qwen2.5',
-        displayName: 'Qwen 2.5',
+        id: 'gemma4:26b',
+        displayName: 'Gemma 4 26B (24GB GPU, MoE)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },
@@ -268,6 +344,12 @@ export function getDefaultModelId(providerId: AiProviderId): string | undefined 
 
 export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: string): boolean {
   return catalogRows[providerId].models.some((model) => model.id === modelId);
+}
+
+// 카탈로그에 없는 모델(로컬 ollama 태그 등)은 temperature 를 받는다고 본다 — 거부가 확인된 모델만 뺀다.
+export function acceptsTemperature(providerId: AiProviderId, modelId: string): boolean {
+  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  return model?.acceptsTemperature !== false;
 }
 
 // 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,
