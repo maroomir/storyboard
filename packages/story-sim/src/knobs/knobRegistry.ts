@@ -1,4 +1,4 @@
-import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import { integerSettingDefault, promptTuning, promptTuningKeys } from '@storyboard/story-ai';
 import type { AiProviderId, PromptTuningKey } from '@storyboard/story-ai';
 import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
 import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
@@ -12,6 +12,10 @@ export type KnobKind = 'ratio' | 'count' | 'chars' | 'weight' | 'temperature' | 
 
 // 되쓰기 대상. 한 모델에서만 잰 값은 공유 기본값이 아니라 모델 프로필로 가야 한다.
 export type KnobApplyTarget = 'modelProfile' | 'pipelineDefault' | 'promptTuning';
+
+// 구간 상한만 pipelineDefaults 가 아니라 설정 카탈로그가 갖는다. 파이프라인 인자로도 tuning 이
+// 아니라 따로 들어가므로, 손잡이 표에서도 한 칸을 따로 쓴다.
+export const sectionOutputLimitKnobId = 'draft.sectionOutputLimit';
 
 export interface KnobSpec {
   readonly id: KnobId;
@@ -30,7 +34,12 @@ export interface KnobSpec {
   readonly note?: string;
 }
 
-function ratio(id: KnobId, tuningKey: keyof SceneGenerationTuning, defaultValue: number, note?: string): KnobSpec {
+function ratio(
+  id: KnobId,
+  tuningKey: keyof SceneGenerationTuning,
+  defaultValue: number,
+  note?: string,
+): KnobSpec {
   return {
     id,
     tuningKey,
@@ -157,7 +166,11 @@ export const knobRegistry: readonly KnobSpec[] = [
     'skeletonMinimumLengthRatio',
     pipelineDefaults.skeleton.minimumLengthRatio,
   ),
-  ratio('dialogue.preservedRatio', 'dialoguePreservedRatio', pipelineDefaults.dialogue.preservedRatio),
+  ratio(
+    'dialogue.preservedRatio',
+    'dialoguePreservedRatio',
+    pipelineDefaults.dialogue.preservedRatio,
+  ),
   count('dialogue.splitLimit', 'dialogueSplitLimit', pipelineDefaults.dialogue.splitLimit, {
     min: 1,
     max: 6,
@@ -181,10 +194,15 @@ export const knobRegistry: readonly KnobSpec[] = [
     { min: 2, max: 30 },
   ),
   {
-    ...count('polish.lengthLimitRatio', 'polishLengthLimitRatio', pipelineDefaults.polish.lengthLimitRatio, {
-      min: 1,
-      max: 5,
-    }),
+    ...count(
+      'polish.lengthLimitRatio',
+      'polishLengthLimitRatio',
+      pipelineDefaults.polish.lengthLimitRatio,
+      {
+        min: 1,
+        max: 5,
+      },
+    ),
     kind: 'ratio',
   },
   count('polish.retryLimit', 'polishRetryLimit', pipelineDefaults.polish.retryLimit, {
@@ -223,8 +241,21 @@ export const knobRegistry: readonly KnobSpec[] = [
     { min: 200, max: 8000 },
   ),
   ...weightKnobs,
+  {
+    id: sectionOutputLimitKnobId,
+    kind: 'chars',
+    defaultValue: integerSettingDefault(sectionOutputLimitKnobId),
+    // 실측상 7000 에서 1000 으로 내리면 도달률이 46% 오른다. 그 사이가 아직 공백이다.
+    bounds: { min: 500, max: 20_000 },
+    honouredBy: 'all',
+    applyTarget: 'modelProfile',
+  },
   ...promptKnobs,
 ];
+
+export function isSectionOutputLimitKnob(knob: KnobSpec): boolean {
+  return knob.id === sectionOutputLimitKnobId;
+}
 
 export function findKnob(id: KnobId): KnobSpec | undefined {
   return knobRegistry.find((knob) => knob.id === id);
