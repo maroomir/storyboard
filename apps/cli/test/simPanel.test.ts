@@ -43,14 +43,23 @@ function turn(engagement: number, continueReading: boolean, quote = '문을 열�
   return JSON.stringify({ engagement, continueReading, reason: '이유', quote });
 }
 
-// 심판은 후보의 정체를 모른 채 기호로만 답한다. 보여 준 차례가 generated · floor 이므로
-// 「가」가 생성본, 「나」가 훼손본이다.
-const goodRanking = JSON.stringify({ ranking: ['가', '나'] });
+const floorText = '망가진 원고';
+
+// 심판은 후보의 정체를 모른 채 기호로만 답한다. 보여 준 차례는 독자마다 뒤집히므로, 제대로 읽는
+// 심판은 어느 기호 아래에 훼손본이 있는지 본문으로 찾아 그 기호를 꼴찌에 둔다.
+function floorShownFirst(messages: readonly AiMessage[]): boolean {
+  const prompt = messages.at(-1)?.content ?? '';
+  return prompt.indexOf(floorText) < prompt.indexOf(sceneText);
+}
+
+function rankFloorLast(messages: readonly AiMessage[]): string {
+  return JSON.stringify({ ranking: floorShownFirst(messages) ? ['나', '가'] : ['가', '나'] });
+}
 
 function floorCandidates() {
   return [
     { kind: 'generated' as const, draft: sceneText },
-    { kind: 'floor' as const, draft: '망가진 원고' },
+    { kind: 'floor' as const, draft: floorText },
   ];
 }
 
@@ -111,7 +120,7 @@ describe('floor gate runs first', () => {
   });
 
   it('reads the scenes once the floor was ranked last', async () => {
-    const judge = scriptedJudge((_messages, call) => (call <= 4 ? goodRanking : turn(5, true)));
+    const judge = scriptedJudge((messages, call) => (call <= 4 ? rankFloorLast(messages) : turn(5, true)));
 
     const verdict = await judgeChain({
       judge,
@@ -133,7 +142,7 @@ describe('the floor gate measures the judge, not the labels', () => {
     const prompts: string[] = [];
     const judge = scriptedJudge((messages, call) => {
       prompts.push(messages.map((message) => message.content).join('\n'));
-      return call <= 4 ? goodRanking : turn(5, true);
+      return call <= 4 ? rankFloorLast(messages) : turn(5, true);
     });
 
     await judgeChain({
@@ -152,11 +161,50 @@ describe('the floor gate measures the judge, not the labels', () => {
     }
   });
 
+  // 실측에서 관문이 독자 셋을 한꺼번에 막았는데, 후보가 늘 생성본·훼손본 차례로 보였다. 첫 자리를
+  // 고르는 버릇이라면 그 회차는 심판이 아니라 자리를 잰 것이다. 차례를 독자마다 뒤집으면 그 버릇은
+  // 반드시 독자 둘에서 드러난다.
+  it('shows the candidates to every other reader in the opposite order', async () => {
+    const prompts: readonly AiMessage[][] = [];
+    const judge = scriptedJudge((messages, call) => {
+      prompts.push(messages);
+      return call <= 4 ? rankFloorLast(messages) : turn(5, true);
+    });
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.floor.passed).toBe(true);
+    expect(prompts.slice(0, 4).map(floorShownFirst)).toEqual([false, true, false, true]);
+  });
+
+  it('catches a judge that always prefers the first candidate', async () => {
+    const judge = scriptedJudge((_messages, call) =>
+      call <= 4 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
+    );
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.floor.passed).toBe(false);
+    expect(verdict.floor.failures).toHaveLength(2);
+  });
+
   // 작은 심판은 기호를 줘도 자리를 세어 답하는 일이 잦다. 그 답을 못 읽으면 관문이 심판의 눈이
   // 아니라 형식을 재게 되어 모든 회차가 폐기된다.
   it('reads a ranking the judge answered by position', async () => {
-    const judge = scriptedJudge((_messages, call) =>
-      call <= 4 ? JSON.stringify({ ranking: ['1번', '2번'] }) : turn(5, true),
+    const judge = scriptedJudge((messages, call) =>
+      call <= 4
+        ? JSON.stringify({ ranking: floorShownFirst(messages) ? ['2번', '1번'] : ['1번', '2번'] })
+        : turn(5, true),
     );
 
     const verdict = await judgeChain({
@@ -221,7 +269,7 @@ describe('reading in order', () => {
     const ask = vi.fn(async (messages: readonly AiMessage[]) => {
       const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
       if (isRanking) {
-        return { text: goodRanking } as AiGenerateResponse;
+        return { text: rankFloorLast(messages) } as AiGenerateResponse;
       }
       const isSecondScene = messages.some((message) => message.content.startsWith('2화입니다'));
       return { text: isSecondScene ? turn(1, false) : turn(4, true) } as AiGenerateResponse;
@@ -243,7 +291,7 @@ describe('reading in order', () => {
   it('keeps the genre reader out of the AUC', async () => {
     const judge = scriptedJudge((messages, call) => {
       if (call <= 4) {
-        return goodRanking;
+        return rankFloorLast(messages);
       }
       const isGenre = messages[0]?.content.includes('스릴러 독자') === true;
       return turn(isGenre ? 0 : 5, true);
@@ -268,7 +316,7 @@ describe('quote grounding', () => {
     const ask = vi.fn(async (messages: readonly AiMessage[]) => {
       const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
       return {
-        text: isRanking ? goodRanking : turn(5, true, '본문에 없는 구절'),
+        text: isRanking ? rankFloorLast(messages) : turn(5, true, '본문에 없는 구절'),
       } as AiGenerateResponse;
     });
     const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
@@ -287,8 +335,8 @@ describe('quote grounding', () => {
   });
 
   it('accepts a quote whose whitespace the judge changed', async () => {
-    const judge = scriptedJudge((_messages, call) =>
-      call <= 4 ? goodRanking : turn(5, true, '문을  열었다'),
+    const judge = scriptedJudge((messages, call) =>
+      call <= 4 ? rankFloorLast(messages) : turn(5, true, '문을  열었다'),
     );
 
     const verdict = await judgeChain({

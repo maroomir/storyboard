@@ -135,9 +135,13 @@ async function runFloorGate(
 ): Promise<{ readonly rankings: readonly FloorRanking[]; readonly problems: readonly string[] }> {
   const rankings: FloorRanking[] = [];
   const problems: string[] = [];
-  const labelled = labelFloorCandidates(candidates);
 
-  for (const persona of readers) {
+  // NOTE: 후보를 늘 같은 자리에 보여 주면 첫 자리를 고르는 버릇을 가진 심판이 관문을 늘 통과하거나
+  // 늘 막힌다. 독자마다 차례를 뒤집어 보여 주면 그 버릇은 독자 넷 중 둘에서 반드시 드러난다.
+  // 기호는 보여 준 차례에 따라 붙으므로, 되돌릴 때 기호가 어느 후보였는지는 labelled 가 안다.
+  for (const [index, persona] of readers.entries()) {
+    const shown = index % 2 === 0 ? candidates : [...candidates].reverse();
+    const labelled = labelFloorCandidates(shown);
     const response = await judge.ask(
       buildFloorRanking({
         persona,
