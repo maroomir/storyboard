@@ -334,6 +334,47 @@ describe('quote grounding', () => {
     expect(ask).toHaveBeenCalledTimes(4 + 5 * 2);
   });
 
+  // 장르 독자는 AUC 에 안 들어간다. 그 독자가 근거를 지어냈다고 공통 독자 넷의 곡선까지 버리면
+  // 8화 판정 한 회차가 통째로 사라진다. 실측에서 그 일이 있었다.
+  it('keeps the round when only the genre reader loses its grounding', async () => {
+    const judge = scriptedJudge((messages, call) => {
+      if (call <= 4) {
+        return rankFloorLast(messages);
+      }
+      const isGenre = messages[0]?.content.includes('스릴러 독자') === true;
+      return turn(5, true, isGenre ? '본문에 없는 구절' : '문을 열었다');
+    });
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(2),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.discarded).toBe(false);
+    expect(verdict.auc.auc).toBe(1);
+    expect(verdict.genreNotes).toHaveLength(0);
+    expect(verdict.genreProblems).toHaveLength(1);
+    expect(verdict.genreProblems[0]).toContain('genre');
+  });
+
+  // «본문에 없는 근거» 만 남으면 심판이 무엇을 지어냈는지 되짚을 수 없다.
+  it('names the rejected quote in the reason', async () => {
+    const judge = scriptedJudge((messages, call) =>
+      call <= 4 ? rankFloorLast(messages) : turn(5, true, '본문에 없는 구절'),
+    );
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.discardReasons[0]).toContain('«본문에 없는 구절»');
+  });
+
   it('accepts a quote whose whitespace the judge changed', async () => {
     const judge = scriptedJudge((messages, call) =>
       call <= 4 ? rankFloorLast(messages) : turn(5, true, '문을  열었다'),

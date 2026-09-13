@@ -51,9 +51,11 @@ export interface PanelVerdict {
   // 장르 독자의 말. AUC 에 들어가지 않는다.
   readonly genreNotes: readonly ReaderTurn[];
   readonly floor: { readonly passed: boolean; readonly failures: readonly string[] };
-  // 회차를 버려야 하는지. 하한선 관문 실패나 검증 못 한 인용이 이유다.
+  // 회차를 버려야 하는지. 하한선 관문 실패나 공통 독자가 검증 못 한 인용이 이유다.
   readonly discarded: boolean;
   readonly discardReasons: readonly string[];
+  // 장르 독자가 중간에 끊긴 사유. AUC 에 안 들어가는 독자이므로 회차를 버리지 않고 적어만 둔다.
+  readonly genreProblems: readonly string[];
 }
 
 // 인용이 본문에 없으면 한 번 다시 묻고, 그래도 안 되면 그 회차를 버린다.
@@ -65,6 +67,9 @@ async function askTurn(
   sceneCount: number,
   priorTurns: { sceneNumber: number; answer: string }[],
 ): Promise<{ readonly turn?: ReaderTurn; readonly raw?: string; readonly problem?: string }> {
+  // 마지막으로 퇴짜 맞은 인용. 사유에 남겨야 심판이 무엇을 지어냈는지 되짚을 수 있다.
+  let rejectedQuote: string | undefined;
+
   for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
     const messages = buildReaderTurn({
       persona,
@@ -82,6 +87,7 @@ async function askTurn(
     }
 
     if (!isQuoteGrounded(parsed.data.quote, scene.draft)) {
+      rejectedQuote = parsed.data.quote;
       continue;
     }
 
@@ -91,7 +97,17 @@ async function askTurn(
     };
   }
 
-  return { problem: `${persona.id} 가 ${scene.sceneStem} 에서 본문에 없는 근거를 들었습니다.` };
+  return {
+    problem:
+      rejectedQuote === undefined
+        ? `${persona.id} 가 ${scene.sceneStem} 에서 읽을 수 있는 답을 주지 않았습니다.`
+        : `${persona.id} 가 ${scene.sceneStem} 에서 본문에 없는 근거를 들었습니다: «${clip(rejectedQuote)}»`,
+  };
+}
+
+function clip(text: string, limit = 80): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length <= limit ? flat : `${flat.slice(0, limit)}…`;
 }
 
 async function readInOrder(
@@ -197,6 +213,7 @@ export async function judgeChain(input: {
       floor: { passed: false, failures: gate.failures },
       discarded: true,
       discardReasons,
+      genreProblems: [],
     };
   }
 
@@ -208,8 +225,9 @@ export async function judgeChain(input: {
     discardReasons.push(...outcome.problems);
   }
 
+  // NOTE: 장르 독자의 말은 기록만 하고 AUC 에 넣지 않는다. 그 독자가 근거를 지어냈다고 회차를
+  // 버리면 공통 독자 넷이 8화를 다 읽고 낸 곡선까지 함께 버려진다. 실측에서 그 일이 있었다.
   const genre = await readInOrder(input.judge, genreReader(input.genre), input.scenes);
-  discardReasons.push(...genre.problems);
 
   return {
     auc: panelAuc(curves, input.scenes.length),
@@ -218,6 +236,7 @@ export async function judgeChain(input: {
     floor: { passed: true, failures: [] },
     discarded: discardReasons.length > 0,
     discardReasons,
+    genreProblems: genre.problems,
   };
 }
 

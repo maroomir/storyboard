@@ -516,6 +516,12 @@ async function executePoints(
                 `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${draftsDir}`,
               );
             }
+
+            if (verdict.genreProblems.length > 0) {
+              context.container.logger.warn(
+                `${point.label} ${repeat}회 · 장르 독자 중단 (회차는 유지): ${verdict.genreProblems.join(' / ')}`,
+              );
+            }
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
