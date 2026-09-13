@@ -10,6 +10,22 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-09-13
+
+### Changed (breaking)
+
+- **Stored legacy provider names are no longer migrated automatically.** 0.9.2 rewrote a stored `claude-code`, `codex` or `gemini-cli` to `claude`, `openai` or `google` at read time — which can bill you for a model and a rate you never chose. A legacy name now reads as "not chosen", generation is refused, and you pick a provider again. One pass through `storyboard setup` or the settings panel is enough.
+
+### Added
+
+- **Measurement commands.** `storyboard sim run|screen|sweep|report|apply` measure the generation knobs (prompt temperature and output limit, skeleton ratio, section limit — 98 of them) against real manuscripts, screen them, sweep an L9 grid, plot a Pareto frontier, and write the winning combination back. Verbs that cost money print an estimate and stop; nothing is called without `--yes`. Judging only runs on a **different** provider from generation — a model scoring its own prose inflates that point alone. Write-back is a separate verb for the same reason: a run lasting hours must not change the source while nobody is watching.
+- **A local runtime (ollama) can carry the whole thing.** `providers.ollama.contextTokens` sets the context window and is sent with the call — previously a prompt longer than the model's default context was silently truncated at the front, which is especially dangerous for judging that reads eight episodes cumulatively. There is no default, since VRAM differs per machine. Because the models pulled locally differ per machine, the model list became a suggestion rather than a fixed set and accepts names outside the catalog (metered providers are still validated). The default is `qwen3:8b`.
+
+### Fixed
+
+- **Help no longer offers providers that have been removed.** The `--provider` summary and the `setup` / `config set` examples still showed `codex` and `claude-code`, so following them verbatim got you refused.
+- **`doctor`'s short-length warning no longer suggests a model that no longer exists.** It now points at lowering the section limit, which the same paragraph already recommended.
+
 ## [0.9.2] - 2026-09-12
 
 ### Removed
