@@ -14,6 +14,7 @@ import {
   buildAxisVerdict,
   buildFactRecall,
   buildFloorRanking,
+  buildQuoteRepair,
   buildReaderTurn,
   commonReaders,
   genreReader,
@@ -63,7 +64,9 @@ export interface PanelVerdict {
   readonly genreProblems: readonly string[];
 }
 
-// 인용이 본문에 없으면 한 번 다시 묻고, 그래도 안 되면 그 회차를 버린다.
+const repairSchema = z.object({ quote: z.string() });
+
+// 인용이 본문에 없으면 판정은 두고 근거만 다시 받는다. 그래도 안 되면 그 회차를 버린다.
 async function askTurn(
   judge: SimJudge,
   persona: ReaderPersona,
@@ -72,42 +75,53 @@ async function askTurn(
   sceneCount: number,
   priorTurns: { sceneNumber: number; answer: string }[],
 ): Promise<{ readonly turn?: ReaderTurn; readonly raw?: string; readonly problem?: string }> {
+  const response = await judge.ask(
+    buildReaderTurn({ persona, sceneNumber, sceneCount, draft: scene.draft, priorTurns }),
+  );
+  const parsed = turnSchema.safeParse(readJsonObject(response.text));
+
+  if (!parsed.success) {
+    return { problem: `${persona.id} 가 ${scene.sceneStem} 에서 읽을 수 있는 답을 주지 않았습니다.` };
+  }
+
+  // 이력에는 인용을 남기지 않는다. 심판이 다음 화에서 앞 화의 인용을 기억에서 꺼내 쓰는 일이 있었다.
+  const raw = JSON.stringify({
+    engagement: parsed.data.engagement,
+    continueReading: parsed.data.continueReading,
+    reason: parsed.data.reason,
+  });
+
+  if (isQuoteGrounded(parsed.data.quote, scene.draft)) {
+    return { turn: { sceneStem: scene.sceneStem, ...parsed.data }, raw };
+  }
+
   // 마지막으로 퇴짜 맞은 인용. 사유에 남겨야 심판이 무엇을 지어냈는지 되짚을 수 있다.
-  let rejectedQuote: string | undefined;
+  let rejectedQuote = parsed.data.quote;
 
-  for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
-    const messages = buildReaderTurn({
-      persona,
-      sceneNumber,
-      sceneCount,
-      draft: scene.draft,
-      priorTurns,
-      ...(rejectedQuote === undefined ? {} : { rejectedQuote }),
-    });
+  for (let attempt = 0; attempt < simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const repair = await judge.ask(
+      buildQuoteRepair({
+        persona,
+        draft: scene.draft,
+        reason: parsed.data.reason,
+        rejectedQuote,
+      }),
+    );
+    const repaired = repairSchema.safeParse(readJsonObject(repair.text));
 
-    const response = await judge.ask(messages);
-    const parsed = turnSchema.safeParse(readJsonObject(response.text));
-
-    if (!parsed.success) {
+    if (!repaired.success) {
       continue;
     }
 
-    if (!isQuoteGrounded(parsed.data.quote, scene.draft)) {
-      rejectedQuote = parsed.data.quote;
-      continue;
+    if (isQuoteGrounded(repaired.data.quote, scene.draft)) {
+      return { turn: { sceneStem: scene.sceneStem, ...parsed.data, quote: repaired.data.quote }, raw };
     }
 
-    return {
-      turn: { sceneStem: scene.sceneStem, ...parsed.data },
-      raw: response.text,
-    };
+    rejectedQuote = repaired.data.quote;
   }
 
   return {
-    problem:
-      rejectedQuote === undefined
-        ? `${persona.id} 가 ${scene.sceneStem} 에서 읽을 수 있는 답을 주지 않았습니다.`
-        : `${persona.id} 가 ${scene.sceneStem} 에서 본문에 없는 근거를 들었습니다: «${clip(rejectedQuote)}»`,
+    problem: `${persona.id} 가 ${scene.sceneStem} 에서 본문에 없는 근거를 들었습니다: «${clip(rejectedQuote)}»`,
   };
 }
 

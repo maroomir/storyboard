@@ -422,8 +422,8 @@ describe('quote grounding', () => {
     expect(verdict.discardReasons[0]).toContain('«본문에 없는 구절»');
   });
 
-  // 온도 0 에서 같은 프롬프트를 다시 보내면 같은 답이 온다. 되묻기는 무엇이 틀렸는지 말해야 한다.
-  it('tells the judge which quote was rejected when it asks again', async () => {
+  // 되묻기는 판정을 두고 근거만 다시 받는 좁은 일이다. 이력 없이 본문과 이유만 준다.
+  it('repairs only the quote, without the history, when it asks again', async () => {
     const prompts: string[] = [];
     let turnCalls = 0;
     const judge = scriptedJudge((messages, call) => {
@@ -444,8 +444,27 @@ describe('quote grounding', () => {
     });
 
     expect(verdict.discarded).toBe(false);
-    expect(prompts[0]).not.toContain('앞선 답의 인용');
+    expect(prompts[0]).not.toContain('글자 그대로 복사');
+    expect(prompts[1]).toContain('글자 그대로 복사');
     expect(prompts[1]).toContain('«본문에 없는 구절»');
+    expect(verdict.curves[0]?.turns[0]?.quote).toBe('문을 열었다');
+  });
+
+  // 심판이 다음 화에서 앞 화의 인용을 기억에서 꺼내 쓴 일이 있었다. 이력에는 인용을 남기지 않는다.
+  it('keeps the quote out of the history it hands back to the judge', async () => {
+    const prompts: readonly AiMessage[][] = [];
+    const judge = scriptedJudge((messages, call) => {
+      prompts.push(messages);
+      return call <= 8 ? rankFloorLast(messages) : turn(5, true);
+    });
+
+    await judgeChain({ judge, scenes: scenes(2), genre: '스릴러', floorCandidates: floorCandidates() });
+
+    const secondScene = prompts.find((messages) => messages.at(-1)?.content.startsWith('2화입니다'));
+    const history = secondScene?.find((message) => message.role === 'assistant')?.content ?? '';
+
+    expect(history).toContain('"reason"');
+    expect(history).not.toContain('"quote"');
   });
 
   it('accepts a quote whose whitespace the judge changed', async () => {

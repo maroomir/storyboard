@@ -75,24 +75,11 @@ export function buildReaderTurn(input: {
   readonly sceneCount: number;
   readonly draft: string;
   readonly priorTurns: readonly { readonly sceneNumber: number; readonly answer: string }[];
-  // 앞선 답에서 퇴짜 맞은 인용. 있으면 되묻는 차례다.
-  readonly rejectedQuote?: string;
 }): readonly AiMessage[] {
   const history = input.priorTurns.flatMap((turn): AiMessage[] => [
     { role: 'user', content: `${turn.sceneNumber}화입니다.` },
     { role: 'assistant', content: turn.answer },
   ]);
-
-  // NOTE: 심판 온도가 0 이라 같은 프롬프트를 다시 보내면 같은 답이 온다. 되묻기가 무엇이 틀렸는지
-  // 말해 주지 않으면 그 한 번은 돈만 쓰는 헛걸음이고, 회차는 첫 답에서 이미 정해진 셈이다.
-  const retryNotice =
-    input.rejectedQuote === undefined
-      ? []
-      : [
-          `앞선 답의 인용 «${input.rejectedQuote}» 은 본문에 그대로 있는 구절이 아니었다.`,
-          '본문에서 한 구절을 글자 그대로 복사해 quote 에 넣고 다시 답하라. 바꿔 쓰거나 줄이지 마라.',
-          '',
-        ];
 
   return [
     { role: 'system', content: personaSystem(input.persona) },
@@ -104,9 +91,36 @@ export function buildReaderTurn(input: {
         '',
         input.draft,
         '',
-        ...retryNotice,
         '읽고 아래 형식으로 답하라.',
         turnSchema,
+      ].join('\n'),
+    },
+  ];
+}
+
+// 인용 고치기. 판정은 그대로 두고 근거만 다시 받는다.
+// NOTE: 같은 프롬프트로 되물으면 온도 0 심판은 같은 답을 내고, 사유를 붙여 되물어도 앞 화에서 든
+// 인용을 기억에서 꺼내 다시 썼다 — 이력에 앞 답이 들어 있기 때문이다. 그래서 이력 없이, 본문과 방금
+// 든 이유만 주고 «한 문장을 글자 그대로 복사하라» 는 좁은 일 하나만 시킨다.
+export function buildQuoteRepair(input: {
+  readonly persona: ReaderPersona;
+  readonly draft: string;
+  readonly reason: string;
+  readonly rejectedQuote: string;
+}): readonly AiMessage[] {
+  return [
+    { role: 'system', content: personaSystem(input.persona) },
+    {
+      role: 'user',
+      content: [
+        '아래 본문을 읽고 방금 든 이유를 뒷받침하는 문장 하나를 본문에서 글자 그대로 복사하라.',
+        `이유: ${input.reason}`,
+        `앞서 든 인용 «${input.rejectedQuote}» 은 본문에 그대로 있는 구절이 아니었다. 바꿔 쓰거나 줄이거나 이어 붙이지 마라.`,
+        '',
+        input.draft,
+        '',
+        '답은 JSON 한 덩어리로만 낸다.',
+        '{ "quote": "본문에서 그대로 복사한 한 문장" }',
       ].join('\n'),
     },
   ];
