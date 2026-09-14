@@ -28,12 +28,36 @@ function unwrapped(needle: string): string {
   return match === null ? needle : (match[2] as string);
 }
 
+// NOTE: 심판은 가까운 문장 셋을 하나로 이어 인용하기도 한다. 조각마다 본문에 그대로 있는데 이어진
+// 순서만 본문과 다른 경우다. 실측에서 그런 인용으로 회차가 버려졌다. 문장 단위 조각이 전부 본문에
+// 있으면 근거로 본다 — 조각 하나라도 없으면(지어낸 문장이 섞이면) 여전히 걸린다. 조각은 되묻기 안내와
+// 같은 기준으로 짧은 것(4자 미만)은 세지 않되, 그런 조각만 남는 인용은 근거가 아니다.
+const pieceBoundary = /(?<=[.!?…"])\s*/u;
+const minimumPieceLength = 4;
+
+function piecesOf(quote: string): readonly string[] {
+  return quote
+    .split(pieceBoundary)
+    .map((piece) => piece.trim())
+    .filter((piece) => piece.length > 0);
+}
+
 export function isQuoteGrounded(quote: string, draft: string): boolean {
   const needle = normalize(quote);
   const haystack = normalize(draft);
   const inner = unwrapped(needle);
 
-  return (
-    needle.length > 0 && (haystack.includes(needle) || (inner.length > 0 && haystack.includes(inner)))
-  );
+  if (needle.length === 0) {
+    return false;
+  }
+
+  if (haystack.includes(needle) || (inner.length > 0 && haystack.includes(inner))) {
+    return true;
+  }
+
+  const pieces = piecesOf(quote)
+    .map((piece) => unwrapped(normalize(piece)))
+    .filter((piece) => piece.length >= minimumPieceLength);
+
+  return pieces.length > 1 && pieces.every((piece) => haystack.includes(piece));
 }

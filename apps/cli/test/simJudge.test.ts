@@ -191,6 +191,27 @@ describe('quote grounding', () => {
     expect(isQuoteGrounded('"열쇠', '그는 열쇠를 들었다.')).toBe(false);
   });
 
+  // 심판이 가까운 문장 셋을 하나로 이어 인용했다. 조각은 전부 본문에 있었는데 이어진 순서만 달랐다.
+  it('accepts a quote stitched from sentences that each exist in the draft', () => {
+    const draft =
+      '"안전 규정상 들어갈 수… 없어요." 도경이 웃었다. 한도경은 펜스를 향해 몸을 돌리며 말했다. 비가 왔다. "철거는 오늘부터 시작됩니다."';
+    const quote =
+      '"안전 규정상 들어갈 수… 없어요." 한도경은 펜스를 향해 몸을 돌리며 말했다. "철거는 오늘부터 시작됩니다."';
+
+    expect(isQuoteGrounded(quote, draft)).toBe(true);
+  });
+
+  it('still rejects a stitched quote when one sentence was invented', () => {
+    const draft = '"안전 규정상 들어갈 수 없어요." 한도경은 펜스를 향해 몸을 돌리며 말했다.';
+    const quote = '"안전 규정상 들어갈 수 없어요." 한도경은 창문을 닫았다.';
+
+    expect(isQuoteGrounded(quote, draft)).toBe(false);
+  });
+
+  it('does not let tiny fragments pass as grounding', () => {
+    expect(isQuoteGrounded('비. 눈. 창문을 닫았다.', '비가 왔다. 눈이 왔다. 그는 문을 열었다.')).toBe(false);
+  });
+
   // 표기를 접는 것이 검사를 무르게 만들면 안 된다. 지어낸 근거는 따옴표를 맞춰도 걸려야 한다.
   it('still rejects a quote whose words the draft never contained', () => {
     expect(isQuoteGrounded('"창문을 닫았다"', '그는 \u201C문을 열었다\u201D.')).toBe(false);
