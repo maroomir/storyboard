@@ -118,6 +118,8 @@ export function buildReaderTurn(input: {
 export function buildFloorRanking(input: {
   readonly persona: ReaderPersona;
   readonly candidates: readonly { readonly label: string; readonly draft: string }[];
+  // 앞선 답을 읽지 못해 되묻는 차례면 그 사유. 온도 0 이라 같은 프롬프트로는 같은 답이 온다.
+  readonly retryNotice?: string;
 }): readonly AiMessage[] {
   const body = input.candidates
     .map((candidate) => `### 원고 ${candidate.label}\n\n${candidate.draft}`)
@@ -136,7 +138,10 @@ export function buildFloorRanking(input: {
         '',
         body,
         '',
+        ...(input.retryNotice === undefined ? [] : [input.retryNotice, '']),
         `기호는 ${labels.join(' · ')} 뿐이다. 이 기호를 그대로 쓰고 번호로 바꾸지 마라.`,
+        // NOTE: 결함 문장에 본문을 따옴표로 인용하면 JSON 문자열이 깨진다. 실측에서 그렇게 읽지 못한 답이 있었다.
+        '결함 문장에는 따옴표를 쓰지 말고 본문을 인용하지 마라.',
         '답은 JSON 한 덩어리로만 낸다.',
         `{ "notes": { ${labels.map((label) => `"${label}": "결함 한 문장"`).join(', ')} }, "ranking": ["가장 좋은 원고의 기호", "…", "가장 나쁜 원고의 기호"] }`,
       ].join('\n'),

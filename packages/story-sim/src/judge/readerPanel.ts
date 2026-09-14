@@ -167,35 +167,16 @@ async function runFloorGate(
 
     for (const shown of orders) {
       const labelled = labelFloorCandidates(shown);
-      const response = await judge.ask(
-        buildFloorRanking({
-          persona,
-          candidates: labelled.map((candidate) => ({
-            label: candidate.label,
-            draft: candidate.draft,
-          })),
-        }),
-      );
-
-      const parsed = rankingSchema.safeParse(readJsonObject(response.text));
-
-      if (!parsed.success) {
-        problems.push(`${persona.id} 의 순위 판정을 읽을 수 없습니다.`);
-        continue;
-      }
-
-      const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
+      const outcome = await askRanking(judge, persona, labelled);
 
       // 후보로 되돌릴 수 없는 답은 판정이 아니다. 관문을 그냥 통과시키지도, 실패로 세지도 않고
       // 폐기 사유로 남긴다 — 하나도 되돌리지 못하면 rankings 가 비어 관문이 막는다.
-      if (ranking === undefined) {
-        problems.push(
-          `${persona.id} 의 순위 판정을 후보로 되돌릴 수 없습니다 (${parsed.data.ranking.join(' > ')}).`,
-        );
+      if (outcome.ranking === undefined) {
+        problems.push(outcome.problem as string);
         continue;
       }
 
-      answers.push(ranking);
+      answers.push(outcome.ranking);
     }
 
     if (answers.length > 0) {
@@ -204,6 +185,49 @@ async function runFloorGate(
   }
 
   return { rankings, problems };
+}
+
+// 읽을 수 없거나 후보로 되돌릴 수 없는 순위 답은 한 번 되묻는다. 온도 0 이라 무엇이 틀렸는지 말해야
+// 다른 답이 온다. 실측에서 결함 문장에 본문을 따옴표로 인용해 JSON 이 깨진 답이 있었다.
+async function askRanking(
+  judge: SimJudge,
+  persona: ReaderPersona,
+  labelled: ReturnType<typeof labelFloorCandidates<FloorCandidate>>,
+): Promise<{ readonly ranking?: readonly FloorCandidateKind[]; readonly problem?: string }> {
+  let problem = `${persona.id} 의 순위 판정을 읽을 수 없습니다.`;
+  let retryNotice: string | undefined;
+
+  for (let attempt = 0; attempt <= simDefaults.panel.quoteRetryLimit; attempt += 1) {
+    const response = await judge.ask(
+      buildFloorRanking({
+        persona,
+        candidates: labelled.map((candidate) => ({
+          label: candidate.label,
+          draft: candidate.draft,
+        })),
+        ...(retryNotice === undefined ? {} : { retryNotice }),
+      }),
+    );
+
+    const parsed = rankingSchema.safeParse(readJsonObject(response.text));
+
+    if (!parsed.success) {
+      problem = `${persona.id} 의 순위 판정을 읽을 수 없습니다.`;
+      retryNotice = '앞선 답은 JSON 으로 읽을 수 없었다. 결함 문장에 따옴표를 넣지 말고 JSON 한 덩어리로만 다시 답하라.';
+      continue;
+    }
+
+    const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
+
+    if (ranking !== undefined) {
+      return { ranking };
+    }
+
+    problem = `${persona.id} 의 순위 판정을 후보로 되돌릴 수 없습니다 (${parsed.data.ranking.join(' > ')}).`;
+    retryNotice = `앞선 답의 순위 «${parsed.data.ranking.join(' > ')}» 는 기호로 되돌릴 수 없었다. 기호 ${labelled.map((candidate) => candidate.label).join(' · ')} 를 하나씩 빠짐없이 써서 다시 답하라.`;
+  }
+
+  return { problem };
 }
 
 export async function judgeChain(input: {

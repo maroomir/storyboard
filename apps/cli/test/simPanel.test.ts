@@ -271,7 +271,36 @@ describe('the floor gate measures the judge, not the labels', () => {
     expect(verdict.discarded).toBe(true);
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.discardReasons.join(' ')).toContain('되돌릴 수 없습니다');
-    expect(ask).toHaveBeenCalledTimes(8);
+    // 독자 4인 × 차례 둘 × (원답 + 되묻기).
+    expect(ask).toHaveBeenCalledTimes(16);
+  });
+
+  // 결함 문장에 본문을 따옴표로 인용해 JSON 이 깨진 답이 실측에 있었다. 한 번은 되묻는다.
+  it('asks again when the ranking could not be read, saying why', async () => {
+    const prompts: string[] = [];
+    let rankingCalls = 0;
+    const judge = scriptedJudge((messages, call) => {
+      const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
+      if (!isRanking) {
+        return turn(5, true);
+      }
+      rankingCalls += 1;
+      prompts.push(messages.at(-1)?.content ?? '');
+      // 홀수 번째는 깨진 JSON, 되물으면 제대로 답한다.
+      return rankingCalls % 2 === 1 ? '{ "notes": { "가": "그는 "문"을 열었다" }, "ranking": ["가", "나"] }' : rankFloorLast(messages);
+    });
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.floor.passed).toBe(true);
+    expect(prompts[0]).not.toContain('읽을 수 없었다');
+    expect(prompts[1]).toContain('JSON 으로 읽을 수 없었다');
+    expect(prompts[0]).toContain('따옴표를 쓰지 말고');
   });
 
   it('refuses a ranking that leaves a candidate out or names one twice', () => {
