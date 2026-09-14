@@ -77,6 +77,7 @@ async function askTurn(
       sceneCount,
       draft: scene.draft,
       priorTurns,
+      ...(rejectedQuote === undefined ? {} : { rejectedQuote }),
     });
 
     const response = await judge.ask(messages);

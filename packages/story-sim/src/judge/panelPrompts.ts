@@ -75,11 +75,24 @@ export function buildReaderTurn(input: {
   readonly sceneCount: number;
   readonly draft: string;
   readonly priorTurns: readonly { readonly sceneNumber: number; readonly answer: string }[];
+  // 앞선 답에서 퇴짜 맞은 인용. 있으면 되묻는 차례다.
+  readonly rejectedQuote?: string;
 }): readonly AiMessage[] {
   const history = input.priorTurns.flatMap((turn): AiMessage[] => [
     { role: 'user', content: `${turn.sceneNumber}화입니다.` },
     { role: 'assistant', content: turn.answer },
   ]);
+
+  // NOTE: 심판 온도가 0 이라 같은 프롬프트를 다시 보내면 같은 답이 온다. 되묻기가 무엇이 틀렸는지
+  // 말해 주지 않으면 그 한 번은 돈만 쓰는 헛걸음이고, 회차는 첫 답에서 이미 정해진 셈이다.
+  const retryNotice =
+    input.rejectedQuote === undefined
+      ? []
+      : [
+          `앞선 답의 인용 «${input.rejectedQuote}» 은 본문에 그대로 있는 구절이 아니었다.`,
+          '본문에서 한 구절을 글자 그대로 복사해 quote 에 넣고 다시 답하라. 바꿔 쓰거나 줄이지 마라.',
+          '',
+        ];
 
   return [
     { role: 'system', content: personaSystem(input.persona) },
@@ -91,6 +104,7 @@ export function buildReaderTurn(input: {
         '',
         input.draft,
         '',
+        ...retryNotice,
         '읽고 아래 형식으로 답하라.',
         turnSchema,
       ].join('\n'),

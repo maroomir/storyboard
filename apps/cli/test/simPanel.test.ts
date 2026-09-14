@@ -375,6 +375,32 @@ describe('quote grounding', () => {
     expect(verdict.discardReasons[0]).toContain('«본문에 없는 구절»');
   });
 
+  // 온도 0 에서 같은 프롬프트를 다시 보내면 같은 답이 온다. 되묻기는 무엇이 틀렸는지 말해야 한다.
+  it('tells the judge which quote was rejected when it asks again', async () => {
+    const prompts: string[] = [];
+    let turnCalls = 0;
+    const judge = scriptedJudge((messages, call) => {
+      if (call <= 4) {
+        return rankFloorLast(messages);
+      }
+      turnCalls += 1;
+      prompts.push(messages.at(-1)?.content ?? '');
+      // 첫 답은 지어낸 인용, 되물으면 본문 구절.
+      return turn(5, true, turnCalls % 2 === 1 ? '본문에 없는 구절' : '문을 열었다');
+    });
+
+    const verdict = await judgeChain({
+      judge,
+      scenes: scenes(1),
+      genre: '스릴러',
+      floorCandidates: floorCandidates(),
+    });
+
+    expect(verdict.discarded).toBe(false);
+    expect(prompts[0]).not.toContain('앞선 답의 인용');
+    expect(prompts[1]).toContain('«본문에 없는 구절»');
+  });
+
   it('accepts a quote whose whitespace the judge changed', async () => {
     const judge = scriptedJudge((messages, call) =>
       call <= 4 ? rankFloorLast(messages) : turn(5, true, '문을  열었다'),
