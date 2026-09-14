@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   evaluateFloorGate,
   isQuoteGrounded,
+  readQuoteLeniently,
+  readRankingLeniently,
+  readTurnLeniently,
   panelAuc,
   readerAuc,
   weightsOf,
@@ -215,5 +218,39 @@ describe('quote grounding', () => {
   // 표기를 접는 것이 검사를 무르게 만들면 안 된다. 지어낸 근거는 따옴표를 맞춰도 걸려야 한다.
   it('still rejects a quote whose words the draft never contained', () => {
     expect(isQuoteGrounded('"창문을 닫았다"', '그는 \u201C문을 열었다\u201D.')).toBe(false);
+  });
+});
+
+describe('lenient judge answers', () => {
+  // 실측 그대로다. 인용 안에 본문의 따옴표가 들어가 JSON 이 깨졌고, 2화에서 덮는다는 판정이 사라졌다.
+  const broken = [
+    '```json',
+    '{',
+    '  "engagement": 2,',
+    '  "continueReading": false,',
+    '  "reason": "규정 제7조에 대한 정보가 앞뒤로 바뀌는 설정 충돌이 너무 컸다.",',
+    '  "quote": "\\"유하람이 고개를 끄덕이며 "보존 기한이 지난 파일은 폐기됐다"고 대답한다.\\""',
+    '}',
+    '```',
+  ].join('\n');
+
+  it('recovers a turn whose quote carried unescaped quotation marks', () => {
+    const turn = readTurnLeniently(broken);
+
+    expect(turn?.engagement).toBe(2);
+    expect(turn?.continueReading).toBe(false);
+    expect(turn?.reason).toContain('설정 충돌');
+    expect(turn?.quote).toBe('"유하람이 고개를 끄덕이며 "보존 기한이 지난 파일은 폐기됐다"고 대답한다."');
+  });
+
+  it('does not invent a field that is missing', () => {
+    expect(readTurnLeniently('{ "engagement": 3, "reason": "x" }')).toBeNull();
+  });
+
+  it('recovers a repair answer and a ranking with broken notes', () => {
+    expect(readQuoteLeniently('{ "quote": "그는 "문"을 열었다" }')?.quote).toBe('그는 "문"을 열었다');
+    expect(
+      readRankingLeniently('{ "notes": { "가": "그는 "문"을 열었다" }, "ranking": ["나", "가"] }')?.ranking,
+    ).toEqual(['나', '가']);
   });
 });

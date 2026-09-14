@@ -285,8 +285,8 @@ describe('the floor gate measures the judge, not the labels', () => {
       }
       rankingCalls += 1;
       prompts.push(messages.at(-1)?.content ?? '');
-      // 홀수 번째는 깨진 JSON, 되물으면 제대로 답한다.
-      return rankingCalls % 2 === 1 ? '{ "notes": { "가": "그는 "문"을 열었다" }, "ranking": ["가", "나"] }' : rankFloorLast(messages);
+      // 홀수 번째는 JSON 이 아닌 답, 되물으면 제대로 답한다. (따옴표만 깨진 답은 이제 관대하게 읽는다.)
+      return rankingCalls % 2 === 1 ? '순위: 가 > 나. 결함은 되풀이.' : rankFloorLast(messages);
     });
 
     const verdict = await judgeChain({

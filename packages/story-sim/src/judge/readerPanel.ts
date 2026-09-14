@@ -20,6 +20,11 @@ import {
   genreReader,
   type ReaderPersona,
 } from '#sim/judge/panelPrompts';
+import {
+  readQuoteLeniently,
+  readRankingLeniently,
+  readTurnLeniently,
+} from '#sim/judge/lenientAnswer';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';
 import type { SimJudge } from '#sim/ports/judge';
 import type { JudgeRecall } from '#sim/score/factRecall';
@@ -78,7 +83,9 @@ async function askTurn(
   const response = await judge.ask(
     buildReaderTurn({ persona, sceneNumber, sceneCount, draft: scene.draft, priorTurns }),
   );
-  const parsed = turnSchema.safeParse(readJsonObject(response.text));
+  const parsed = turnSchema.safeParse(
+    readJsonObject(response.text) ?? readTurnLeniently(response.text ?? ''),
+  );
 
   if (!parsed.success) {
     return { problem: `${persona.id} 가 ${scene.sceneStem} 에서 읽을 수 있는 답을 주지 않았습니다.` };
@@ -102,7 +109,9 @@ async function askTurn(
     const repair = await judge.ask(
       buildQuoteRepair({ persona, draft: scene.draft, reason: parsed.data.reason }),
     );
-    const repaired = repairSchema.safeParse(readJsonObject(repair.text));
+    const repaired = repairSchema.safeParse(
+      readJsonObject(repair.text) ?? readQuoteLeniently(repair.text ?? ''),
+    );
 
     if (!repaired.success) {
       continue;
@@ -219,7 +228,9 @@ async function askRanking(
       }),
     );
 
-    const parsed = rankingSchema.safeParse(readJsonObject(response.text));
+    const parsed = rankingSchema.safeParse(
+      readJsonObject(response.text) ?? readRankingLeniently(response.text ?? ''),
+    );
 
     if (!parsed.success) {
       problem = `${persona.id} 의 순위 판정을 읽을 수 없습니다.`;

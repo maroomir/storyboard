@@ -15,6 +15,7 @@ export * from './track/scratch';
 export * from './judge/auc';
 export * from './judge/floorAnchor';
 export * from './judge/panelPrompts';
+export * from './judge/lenientAnswer';
 export * from './judge/quoteCheck';
 export * from './judge/readerPanel';
 export * from './ports/judge';

@@ -1,0 +1,69 @@
+// NOTE: 심판은 인용 안에 본문의 따옴표를 그대로 넣어 JSON 을 깨뜨린다 — «"유하람이 "폐기됐다"고 대답한다"».
+// 실측에서 그렇게 깨진 답 하나가 독자의 판정(2화에서 덮음)을 통째로 잃게 했다. 답의 모양은 우리가
+// 정한 고정된 틀이므로, 엄격한 JSON 이 실패하면 틀에 맞춰 필드를 잘라내어 살린다. 지어내지는 않는다:
+// 필드가 하나라도 없으면 그대로 실패다.
+
+function unescapeJsonString(text: string): string {
+  return text.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+}
+
+// `"key": "` 뒤부터 다음 필드(`",\s*"nextKey"`) 또는 닫는 `"\s*}` 앞까지가 값이다.
+function stringField(text: string, key: string, nextKey: string | undefined): string | undefined {
+  const start = new RegExp(`"${key}"\\s*:\\s*"`, 'u').exec(text);
+
+  if (start === null) {
+    return undefined;
+  }
+
+  const from = start.index + start[0].length;
+  const terminator =
+    nextKey === undefined
+      ? /"\s*\}\s*(```)?\s*$/u
+      : new RegExp(`"\\s*,\\s*"${nextKey}"\\s*:`, 'u');
+  const rest = text.slice(from);
+  const end = terminator.exec(rest);
+
+  return end === null ? undefined : unescapeJsonString(rest.slice(0, end.index));
+}
+
+export interface LenientTurn {
+  readonly engagement: number;
+  readonly continueReading: boolean;
+  readonly reason: string;
+  readonly quote: string;
+}
+
+export function readTurnLeniently(text: string): LenientTurn | null {
+  const engagement = /"engagement"\s*:\s*(-?\d+(?:\.\d+)?)/u.exec(text);
+  const continueReading = /"continueReading"\s*:\s*(true|false)/u.exec(text);
+  const reason = stringField(text, 'reason', 'quote');
+  const quote = stringField(text, 'quote', undefined);
+
+  if (engagement === null || continueReading === null || reason === undefined || quote === undefined) {
+    return null;
+  }
+
+  return {
+    engagement: Number(engagement[1]),
+    continueReading: continueReading[1] === 'true',
+    reason,
+    quote,
+  };
+}
+
+export function readQuoteLeniently(text: string): { readonly quote: string } | null {
+  const quote = stringField(text, 'quote', undefined);
+  return quote === undefined ? null : { quote };
+}
+
+// 순위 답은 결함 문장(notes) 이 깨져도 ranking 배열만 온전하면 읽는다.
+export function readRankingLeniently(text: string): { readonly ranking: readonly string[] } | null {
+  const match = /"ranking"\s*:\s*\[([^\]]*)\]/u.exec(text);
+
+  if (match === null) {
+    return null;
+  }
+
+  const ranking = [...(match[1] as string).matchAll(/"([^"]*)"/gu)].map((entry) => entry[1] as string);
+  return ranking.length === 0 ? null : { ranking };
+}
