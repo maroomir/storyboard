@@ -102,11 +102,13 @@ export function buildReaderTurn(input: {
 // NOTE: 같은 프롬프트로 되물으면 온도 0 심판은 같은 답을 내고, 사유를 붙여 되물어도 앞 화에서 든
 // 인용을 기억에서 꺼내 다시 썼다 — 이력에 앞 답이 들어 있기 때문이다. 그래서 이력 없이, 본문과 방금
 // 든 이유만 주고 «한 문장을 글자 그대로 복사하라» 는 좁은 일 하나만 시킨다.
+// NOTE: 퇴짜 맞은 인용을 프롬프트에 보여 주면 심판은 그 문장을 그대로 다시 낸다. 실측의 같은 사례에서
+// 인용을 보여 주면 100% 되풀이했고, 감추면 세 가지 물음 모두 본문의 문장을 복사했다. 사유에는 남기되
+// 심판에게는 보여 주지 않는다.
 export function buildQuoteRepair(input: {
   readonly persona: ReaderPersona;
   readonly draft: string;
   readonly reason: string;
-  readonly rejectedQuote: string;
 }): readonly AiMessage[] {
   return [
     { role: 'system', content: personaSystem(input.persona) },
@@ -115,7 +117,7 @@ export function buildQuoteRepair(input: {
       content: [
         '아래 본문을 읽고 방금 든 이유를 뒷받침하는 문장 하나를 본문에서 글자 그대로 복사하라.',
         `이유: ${input.reason}`,
-        `앞서 든 인용 «${input.rejectedQuote}» 은 본문에 그대로 있는 구절이 아니었다. 바꿔 쓰거나 줄이거나 이어 붙이지 마라.`,
+        '바꿔 쓰거나 줄이거나 이어 붙이지 마라. 본문에 없는 문장은 무효다.',
         '',
         input.draft,
         '',

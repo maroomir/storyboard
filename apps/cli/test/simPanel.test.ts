@@ -446,7 +446,8 @@ describe('quote grounding', () => {
     expect(verdict.discarded).toBe(false);
     expect(prompts[0]).not.toContain('글자 그대로 복사');
     expect(prompts[1]).toContain('글자 그대로 복사');
-    expect(prompts[1]).toContain('«본문에 없는 구절»');
+    // 퇴짜 맞은 인용을 보여 주면 심판이 그 문장을 그대로 다시 낸다. 사유에만 남기고 프롬프트엔 안 넣는다.
+    expect(prompts[1]).not.toContain('본문에 없는 구절');
     expect(verdict.curves[0]?.turns[0]?.quote).toBe('문을 열었다');
   });
 

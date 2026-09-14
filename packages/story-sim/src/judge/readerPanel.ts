@@ -100,12 +100,7 @@ async function askTurn(
 
   for (let attempt = 0; attempt < simDefaults.panel.quoteRetryLimit; attempt += 1) {
     const repair = await judge.ask(
-      buildQuoteRepair({
-        persona,
-        draft: scene.draft,
-        reason: parsed.data.reason,
-        rejectedQuote,
-      }),
+      buildQuoteRepair({ persona, draft: scene.draft, reason: parsed.data.reason }),
     );
     const repaired = repairSchema.safeParse(readJsonObject(repair.text));
 
