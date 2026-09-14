@@ -272,7 +272,7 @@ describe('point score', () => {
   it('takes the quality median over judged runs only', () => {
     const [point] = scoreRuns(
       [
-        run({ repeat: 1, auc: 0.125, recalled: 4 }),
+        run({ repeat: 1, auc: 0.125, recalled: 4, floorGate: { passed: true, failures: [], abstained: [] } }),
         run({ repeat: 2, discarded: true }),
         run({ repeat: 3, auc: 0.119, recalled: 6 }),
         run({ repeat: 4, discarded: true, tokens: { ...run({}).tokens, inputTokens: 900 } }),
@@ -284,6 +284,7 @@ describe('point score', () => {
     expect(point?.auc).toBeCloseTo(0.122);
     expect(point?.recalled).toBe(5);
     expect(point?.judged).toBe(2);
+    expect(point?.gatePassed).toBe(1);
     expect(point?.runs).toBe(5);
     // 비용은 폐기 회차도 실제로 썼다. [100, 100, 100, 700, 900] 의 중앙값.
     expect(point?.cost).toBe(100);

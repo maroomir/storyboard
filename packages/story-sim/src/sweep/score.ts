@@ -15,6 +15,8 @@ export interface PointScore extends ScoredPoint {
   readonly runs: number;
   // 심판이 끝까지 보고 AUC 를 낸 회차 수. 0 이면 품질 축의 값은 뜻이 없다.
   readonly judged: number;
+  // 유효 회차 중 하한선 관문을 지난 수. judged 보다 훨씬 작으면 그 AUC 는 심판을 못 믿은 채 낸 값이다.
+  readonly gatePassed: number;
 }
 
 export function isJudged(run: RunRecord): boolean {
@@ -49,6 +51,7 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       trackCommit: first.trackCommit,
       runs: group.length,
       judged: judged.length,
+      gatePassed: judged.filter((run) => run.floorGate?.passed === true).length,
       // 씨앗이 없어 회차마다 흔들리므로 최고값이 아니라 중앙값을 쓴다.
       auc: median(judged.map((run) => run.auc as number)),
       cost: median(group.map((run) => costOfRun(run, axis))),

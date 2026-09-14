@@ -98,25 +98,23 @@ describe('judge selection', () => {
 });
 
 describe('floor gate runs first', () => {
-  // 망가진 심판이 패널 전체가 아니라 네 번만 축내야 한다.
-  it('stops after the ranking round when a reader ranks the floor above the draft', async () => {
-    const ask = vi.fn(
-      async () =>
-        ({ text: JSON.stringify({ ranking: ['나', '가'] }) }) as AiGenerateResponse,
+  // 관문 실패는 표시다. 곡선은 남기고 리포트가 따로 센다. 버리면 «관문 통과만» 과 «전체» 를 나란히 못 본다.
+  it('keeps reading and records the failure when a reader ranks the floor above the draft', async () => {
+    const judge = scriptedJudge((messages, call) =>
+      call <= 8 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
     );
-    const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
 
     const verdict = await judgeChain({
       judge,
-      scenes: scenes(8),
+      scenes: scenes(2),
       genre: '스릴러',
       floorCandidates: floorCandidates(),
     });
 
-    expect(verdict.discarded).toBe(true);
     expect(verdict.floor.passed).toBe(false);
-    // 공통 독자 4인 × 양쪽 차례의 순위 판정만. 8화 읽기는 시작하지 않았다.
-    expect(ask).toHaveBeenCalledTimes(8);
+    expect(verdict.discarded).toBe(false);
+    expect(verdict.auc.auc).toBe(1);
+    expect(verdict.curves).toHaveLength(4);
   });
 
   it('reads the scenes once the floor was ranked last', async () => {
@@ -214,7 +212,8 @@ describe('the floor gate measures the judge, not the labels', () => {
     // 넷 다 자리를 답했다. 실패도 통과도 아니고, 판정이 없으니 관문은 막힌다.
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.floor.abstained).toHaveLength(4);
-    expect(verdict.discardReasons.join(' ')).toContain('자리와 무관하게');
+    expect(verdict.floor.failures.join(' ')).toContain('자리와 무관하게');
+    expect(verdict.discarded).toBe(false);
   });
 
   // 작은 심판은 기호를 줘도 자리를 세어 답하는 일이 잦다. 그 답을 못 읽으면 관문이 심판의 눈이
@@ -238,20 +237,20 @@ describe('the floor gate measures the judge, not the labels', () => {
   });
 
   it('still fails the gate when the position the judge named is the floor', async () => {
-    const ask = vi.fn(
-      async () => ({ text: JSON.stringify({ ranking: ['2', '1'] }) }) as AiGenerateResponse,
+    const judge = scriptedJudge((messages, call) =>
+      call <= 8 ? JSON.stringify({ ranking: ['2', '1'] }) : turn(5, true),
     );
-    const judge: SimJudge = { providerId: 'openai', model: 'gpt-5-mini', ask, usage: () => [] };
 
     const verdict = await judgeChain({
       judge,
-      scenes: scenes(8),
+      scenes: scenes(1),
       genre: '스릴러',
       floorCandidates: floorCandidates(),
     });
 
+    // 양쪽 차례에서 늘 «2 > 1» 이면 독자마다 답이 뒤집힌 것이다. 판정이 없으니 관문은 막힌다.
     expect(verdict.floor.passed).toBe(false);
-    expect(ask).toHaveBeenCalledTimes(8);
+    expect(verdict.floor.failures[0]).toContain('자리와 무관하게');
   });
 
   // 되돌릴 수 없는 답을 통과로 세면 그 회차의 눈금이 조용히 틀어진다.

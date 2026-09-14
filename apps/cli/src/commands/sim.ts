@@ -512,6 +512,7 @@ async function executePoints(
               auc: verdict.discarded ? undefined : verdict.auc.auc,
               discarded: verdict.discarded,
               ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
+              floorGate: verdict.floor,
               // 곡선은 폐기 여부와 무관하게 남긴다. 어디서 덮었는지가 곧 되짚을 단서다.
               panel: {
                 byReader: verdict.auc.byReader,
@@ -539,6 +540,12 @@ async function executePoints(
             if (verdict.discarded) {
               context.container.logger.warn(
                 `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${draftsDir}`,
+              );
+            }
+
+            if (!verdict.floor.passed) {
+              context.container.logger.warn(
+                `${point.label} ${repeat}회 · 하한선 관문 실패 (회차는 유지): ${[...verdict.floor.failures, ...verdict.floor.abstained].join(' / ')}`,
               );
             }
 
@@ -874,7 +881,7 @@ export const reportSim: CommandHandler = async (context) => {
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
             : `AUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
-        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}`;
+        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}`;
       }),
   ]);
 
@@ -884,7 +891,7 @@ export const reportSim: CommandHandler = async (context) => {
       `실행 ${runs.length}회 (유효 ${judgedRuns}회) · 지점 ${scored.length}개 · 시험체 ${genres.length}개 (* 는 그 시험체의 파레토 경계)`,
       `비용 축: ${costAxisLabels[axis]}`,
       // 폐기 회차는 품질 축에서 뺀다. 0 으로 넣으면 셋 중 둘이 폐기된 지점이 «AUC 0» 으로 읽힌다.
-      '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값',
+      '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값 · 관문은 유효 회차 중 심판이 훼손본을 가려낸 수',
       ...(mixed ? ['엔진·트랙이 다른 기록은 따로 셉니다 (@엔진/트랙)'] : []),
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',

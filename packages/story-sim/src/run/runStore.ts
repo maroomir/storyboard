@@ -33,6 +33,12 @@ export interface RunRecord {
   readonly discarded?: boolean;
   // 회차를 버린 이유. AUC 가 없는 줄을 되짚을 때 본다.
   readonly discardReasons?: readonly string[];
+  // 하한선 관문 결과. 실패해도 회차는 남지만, 그 AUC 는 심판이 훼손본을 못 가려낸 채 낸 값이다.
+  readonly floorGate?: {
+    readonly passed: boolean;
+    readonly failures: readonly string[];
+    readonly abstained: readonly string[];
+  };
   // 공통 독자 4인의 곡선. AUC 하나로는 «넷 다 미지근» 과 «셋은 좋고 하나가 일찍 덮음» 이 안 갈린다.
   readonly panel?: {
     readonly byReader: Readonly<Record<string, number>>;

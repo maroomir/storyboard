@@ -55,7 +55,8 @@ export interface PanelVerdict {
     readonly failures: readonly string[];
     readonly abstained: readonly string[];
   };
-  // 회차를 버려야 하는지. 하한선 관문 실패나 공통 독자가 검증 못 한 인용이 이유다.
+  // 회차를 버려야 하는지. 공통 독자가 검증 못 한 인용이나 읽을 수 없는 관문 답이 이유다. 관문의
+  // 실패 자체는 floor 에 표시로만 남는다.
   readonly discarded: boolean;
   readonly discardReasons: readonly string[];
   // 장르 독자가 중간에 끊긴 사유. AUC 에 안 들어가는 독자이므로 회차를 버리지 않고 적어만 둔다.
@@ -237,18 +238,22 @@ export async function judgeChain(input: {
   // 하한선 관문에 쓸 후보. 훼손본이 반드시 들어 있어야 한다.
   readonly floorCandidates: readonly FloorCandidate[];
 }): Promise<PanelVerdict> {
-  // 망가진 심판이 패널 전체가 아니라 네 번만 축내도록 관문을 맨 먼저 돌린다.
+  // NOTE: 관문은 회차를 버리는 조건이 아니라 표시다. 심판이 훼손본을 못 가려낸 회차의 AUC 는 믿을
+  // 수 없지만, 버리면 «관문 통과 회차만» 과 «전체» 를 나란히 볼 길이 없다. 실측에서 작은 심판이 보통
+  // 원고와 훼손본을 일관되게 가르지 못해 회차 대부분이 사라졌다. 이제 곡선은 늘 남기고, 관문 결과는
+  // floor 에 적어 리포트가 따로 센다. 되돌릴 수 없는 답(problems)은 여전히 폐기 사유다.
   const floor = await runFloorGate(input.judge, commonReaders, input.floorCandidates);
   const gate = evaluateFloorGate(floor.rankings);
 
-  const discardReasons = [...gate.failures, ...floor.problems];
+  const discardReasons = [...floor.problems];
 
-  if (!gate.passed) {
+  // 읽을 수 없는 관문 답은 폐기 사유다. 이미 버릴 회차의 8화 읽기에 돈을 쓰지 않는다.
+  if (discardReasons.length > 0) {
     return {
       auc: panelAuc([], input.scenes.length),
       curves: [],
       genreNotes: [],
-      floor: { passed: false, failures: gate.failures, abstained: gate.abstained },
+      floor: { passed: gate.passed, failures: gate.failures, abstained: gate.abstained },
       discarded: true,
       discardReasons,
       genreProblems: [],
@@ -271,7 +276,7 @@ export async function judgeChain(input: {
     auc: panelAuc(curves, input.scenes.length),
     curves,
     genreNotes: genre.curve.turns,
-    floor: { passed: true, failures: [], abstained: gate.abstained },
+    floor: { passed: gate.passed, failures: gate.failures, abstained: gate.abstained },
     discarded: discardReasons.length > 0,
     discardReasons,
     genreProblems: genre.problems,
