@@ -5,13 +5,17 @@ export type FloorCandidateKind = 'generated' | 'floor' | 'ceiling';
 
 export interface FloorRanking {
   readonly readerId: string;
-  // 좋은 순. 마지막 자리가 꼴찌다.
-  readonly ranking: readonly FloorCandidateKind[];
+  // 같은 후보를 차례를 바꿔 보여 준 답들. 각각 좋은 순이고 마지막 자리가 꼴찌다.
+  // NOTE: 한 차례만 물으면 자리 버릇과 판정을 가를 수 없다. gemma3:12b 는 같은 두 원고를 양쪽 차례로
+  // 물었을 때 여덟 번 모두 뒤에 보인 쪽을 골랐다. 양쪽에서 같은 답을 낸 독자만 판정으로 센다.
+  readonly rankings: readonly (readonly FloorCandidateKind[])[];
 }
 
 export interface FloorGateResult {
   readonly passed: boolean;
   readonly failures: readonly string[];
+  // 차례에 따라 답이 바뀐 독자. 판정이 아니므로 통과에도 실패에도 세지 않고 적어만 둔다.
+  readonly abstained: readonly string[];
 }
 
 // NOTE: 후보에 'generated'·'floor' 라고 써 붙여 보여 주면 심판은 원고를 읽지 않고도 답을 맞힌다.
@@ -77,15 +81,32 @@ function resolveCandidate(
 
 export function evaluateFloorGate(rankings: readonly FloorRanking[]): FloorGateResult {
   if (rankings.length === 0) {
-    return { passed: false, failures: ['하한선 판정이 하나도 없습니다.'] };
+    return { passed: false, failures: ['하한선 판정이 하나도 없습니다.'], abstained: [] };
   }
 
-  const failures = rankings
-    .filter((entry) => entry.ranking.at(-1) !== 'floor')
-    .map(
-      (entry) =>
-        `${entry.readerId} 가 훼손본을 꼴찌에 두지 않았습니다 (${entry.ranking.join(' > ')}).`,
-    );
+  const floorLast = (ranking: readonly FloorCandidateKind[]): boolean => ranking.at(-1) === 'floor';
+  const failures: string[] = [];
+  const abstained: string[] = [];
+  let consistentPasses = 0;
 
-  return { passed: failures.length === 0, failures };
+  for (const entry of rankings) {
+    const verdicts = entry.rankings.map(floorLast);
+
+    if (verdicts.length > 0 && verdicts.every((passed) => passed)) {
+      consistentPasses += 1;
+    } else if (verdicts.length > 0 && verdicts.every((passed) => !passed)) {
+      failures.push(
+        `${entry.readerId} 가 훼손본을 꼴찌에 두지 않았습니다 (${entry.rankings.map((ranking) => ranking.join(' > ')).join(' / ')}).`,
+      );
+    } else {
+      abstained.push(`${entry.readerId} 의 답이 보여 준 차례에 따라 바뀌었습니다.`);
+    }
+  }
+
+  // 일관된 판정이 하나도 없으면 관문이 아무것도 재지 못한 것이다. 통과로 세면 안 된다.
+  if (failures.length === 0 && consistentPasses === 0) {
+    return { passed: false, failures: ['자리와 무관하게 답한 독자가 없습니다.'], abstained };
+  }
+
+  return { passed: failures.length === 0, failures, abstained };
 }

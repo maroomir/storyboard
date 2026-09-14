@@ -50,7 +50,11 @@ export interface PanelVerdict {
   readonly curves: readonly ReaderCurve[];
   // 장르 독자의 말. AUC 에 들어가지 않는다.
   readonly genreNotes: readonly ReaderTurn[];
-  readonly floor: { readonly passed: boolean; readonly failures: readonly string[] };
+  readonly floor: {
+    readonly passed: boolean;
+    readonly failures: readonly string[];
+    readonly abstained: readonly string[];
+  };
   // 회차를 버려야 하는지. 하한선 관문 실패나 공통 독자가 검증 못 한 인용이 이유다.
   readonly discarded: boolean;
   readonly discardReasons: readonly string[];
@@ -153,41 +157,50 @@ async function runFloorGate(
   const rankings: FloorRanking[] = [];
   const problems: string[] = [];
 
-  // NOTE: 후보를 늘 같은 자리에 보여 주면 첫 자리를 고르는 버릇을 가진 심판이 관문을 늘 통과하거나
-  // 늘 막힌다. 독자마다 차례를 뒤집어 보여 주면 그 버릇은 독자 넷 중 둘에서 반드시 드러난다.
-  // 기호는 보여 준 차례에 따라 붙으므로, 되돌릴 때 기호가 어느 후보였는지는 labelled 가 안다.
-  for (const [index, persona] of readers.entries()) {
-    const shown = index % 2 === 0 ? candidates : [...candidates].reverse();
-    const labelled = labelFloorCandidates(shown);
-    const response = await judge.ask(
-      buildFloorRanking({
-        persona,
-        candidates: labelled.map((candidate) => ({
-          label: candidate.label,
-          draft: candidate.draft,
-        })),
-      }),
-    );
+  // NOTE: 독자마다 양쪽 차례로 두 번 묻는다. 한 차례만 물으면 자리 버릇과 판정을 가를 수 없고,
+  // 차례를 독자마다 번갈아 보여 주는 것으로는 버릇 있는 심판이 독자 둘을 늘 막는다. 양쪽에서 같은
+  // 답을 낸 독자만 판정으로 세고, 바뀐 독자는 floorAnchor 가 «자리에 따라 바뀜» 으로 적는다.
+  const orders: readonly (readonly FloorCandidate[])[] = [candidates, [...candidates].reverse()];
 
-    const parsed = rankingSchema.safeParse(readJsonObject(response.text));
+  for (const persona of readers) {
+    const answers: (readonly FloorCandidateKind[])[] = [];
 
-    if (!parsed.success) {
-      problems.push(`${persona.id} 의 순위 판정을 읽을 수 없습니다.`);
-      continue;
-    }
-
-    const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
-
-    // 후보로 되돌릴 수 없는 답은 판정이 아니다. 관문을 그냥 통과시키지도, 실패로 세지도 않고
-    // 폐기 사유로 남긴다 — 하나도 되돌리지 못하면 rankings 가 비어 관문이 막는다.
-    if (ranking === undefined) {
-      problems.push(
-        `${persona.id} 의 순위 판정을 후보로 되돌릴 수 없습니다 (${parsed.data.ranking.join(' > ')}).`,
+    for (const shown of orders) {
+      const labelled = labelFloorCandidates(shown);
+      const response = await judge.ask(
+        buildFloorRanking({
+          persona,
+          candidates: labelled.map((candidate) => ({
+            label: candidate.label,
+            draft: candidate.draft,
+          })),
+        }),
       );
-      continue;
+
+      const parsed = rankingSchema.safeParse(readJsonObject(response.text));
+
+      if (!parsed.success) {
+        problems.push(`${persona.id} 의 순위 판정을 읽을 수 없습니다.`);
+        continue;
+      }
+
+      const ranking = resolveFloorRanking(parsed.data.ranking, labelled);
+
+      // 후보로 되돌릴 수 없는 답은 판정이 아니다. 관문을 그냥 통과시키지도, 실패로 세지도 않고
+      // 폐기 사유로 남긴다 — 하나도 되돌리지 못하면 rankings 가 비어 관문이 막는다.
+      if (ranking === undefined) {
+        problems.push(
+          `${persona.id} 의 순위 판정을 후보로 되돌릴 수 없습니다 (${parsed.data.ranking.join(' > ')}).`,
+        );
+        continue;
+      }
+
+      answers.push(ranking);
     }
 
-    rankings.push({ readerId: persona.id, ranking });
+    if (answers.length > 0) {
+      rankings.push({ readerId: persona.id, rankings: answers });
+    }
   }
 
   return { rankings, problems };
@@ -211,7 +224,7 @@ export async function judgeChain(input: {
       auc: panelAuc([], input.scenes.length),
       curves: [],
       genreNotes: [],
-      floor: { passed: false, failures: gate.failures },
+      floor: { passed: false, failures: gate.failures, abstained: gate.abstained },
       discarded: true,
       discardReasons,
       genreProblems: [],
@@ -234,7 +247,7 @@ export async function judgeChain(input: {
     auc: panelAuc(curves, input.scenes.length),
     curves,
     genreNotes: genre.curve.turns,
-    floor: { passed: true, failures: [] },
+    floor: { passed: true, failures: [], abstained: gate.abstained },
     discarded: discardReasons.length > 0,
     discardReasons,
     genreProblems: genre.problems,

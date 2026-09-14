@@ -80,25 +80,50 @@ describe('panel AUC', () => {
 });
 
 describe('floor gate', () => {
-  it('passes when every reader put the corrupted draft last', () => {
+  const good = ['generated', 'floor'] as const;
+  const bad = ['floor', 'generated'] as const;
+
+  it('passes when every reader put the corrupted draft last in both orders', () => {
     const result = evaluateFloorGate([
-      { readerId: 'a', ranking: ['generated', 'floor'] },
-      { readerId: 'b', ranking: ['generated', 'floor'] },
+      { readerId: 'a', rankings: [good, good] },
+      { readerId: 'b', rankings: [good, good] },
     ]);
 
     expect(result.passed).toBe(true);
     expect(result.failures).toEqual([]);
+    expect(result.abstained).toEqual([]);
   });
 
-  // 한 명이라도 훼손본을 위로 올리면 그 회차의 눈금을 믿을 수 없다.
-  it('fails and names the reader who did not', () => {
+  // 한 명이라도 양쪽 차례에서 훼손본을 위로 올리면 그 회차의 눈금을 믿을 수 없다.
+  it('fails and names the reader who consistently did not', () => {
     const result = evaluateFloorGate([
-      { readerId: 'a', ranking: ['generated', 'floor'] },
-      { readerId: 'b', ranking: ['floor', 'generated'] },
+      { readerId: 'a', rankings: [good, good] },
+      { readerId: 'b', rankings: [bad, bad] },
     ]);
 
     expect(result.passed).toBe(false);
     expect(result.failures[0]).toContain('b');
+  });
+
+  // 차례에 따라 답이 바뀐 독자는 자리를 답한 것이다. 판정이 아니므로 어느 쪽에도 세지 않는다.
+  it('sets aside a reader whose answer followed the order shown', () => {
+    const result = evaluateFloorGate([
+      { readerId: 'a', rankings: [good, good] },
+      { readerId: 'b', rankings: [good, bad] },
+    ]);
+
+    expect(result.passed).toBe(true);
+    expect(result.abstained[0]).toContain('b');
+  });
+
+  it('does not pass on abstentions alone', () => {
+    const result = evaluateFloorGate([
+      { readerId: 'a', rankings: [good, bad] },
+      { readerId: 'b', rankings: [bad, good] },
+    ]);
+
+    expect(result.passed).toBe(false);
+    expect(result.failures[0]).toContain('자리와 무관하게');
   });
 
   it('fails when no ranking arrived at all', () => {
