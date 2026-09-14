@@ -12,15 +12,27 @@ const quoteFolding: readonly (readonly [RegExp, string])[] = [
   [/[‘’‚‛‹›]/g, "'"],
 ];
 
+// NOTE: 생성 모델은 문장을 굵게(**…**) 감싸 쓰기도 한다. 심판은 그 표시를 옮기지 않으므로 비교에서 뺀다.
 function normalize(text: string): string {
   return quoteFolding.reduce(
     (folded, [pattern, replacement]) => folded.replace(pattern, replacement),
-    text.replace(/\s/g, ''),
+    text.replace(/\s/g, '').replace(/\*/g, ''),
   );
+}
+
+// 심판은 서술문을 인용할 때도 따옴표로 감싸 답한다("그 흉터는 …"). 본문에는 그 따옴표가 없으니
+// 감싼 한 겹만 벗기고도 찾아본다. 실측에서 독자 셋이 같은 문장으로 한꺼번에 막혔다.
+function unwrapped(needle: string): string {
+  const match = /^(["'])(.*)\1$/.exec(needle);
+  return match === null ? needle : (match[2] as string);
 }
 
 export function isQuoteGrounded(quote: string, draft: string): boolean {
   const needle = normalize(quote);
+  const haystack = normalize(draft);
+  const inner = unwrapped(needle);
 
-  return needle.length > 0 && normalize(draft).includes(needle);
+  return (
+    needle.length > 0 && (haystack.includes(needle) || (inner.length > 0 && haystack.includes(inner)))
+  );
 }

@@ -143,6 +143,22 @@ describe('quote grounding', () => {
     expect(isQuoteGrounded("'열쇠'", '그는 \u2018열쇠\u2019 라고 불렀다.')).toBe(true);
   });
 
+  // 실측에서 독자 셋이 같은 서술문으로 한꺼번에 막혔다. 심판이 서술문을 따옴표로 감싸 답했고
+  // 본문은 그 문장을 굵게(**) 감싸 두고 있었다.
+  it('accepts a narrative sentence the judge wrapped in quotation marks', () => {
+    expect(
+      isQuoteGrounded('"그 흉터는 자국을 남겼다."', '도경은 손을 들었다. **그 흉터는 자국을 남겼다.** 그는 웃었다.'),
+    ).toBe(true);
+  });
+
+  it('ignores bold markers the generator left in the draft', () => {
+    expect(isQuoteGrounded('그 흉터는 자국을 남겼다', '**그 흉터는** 자국을 남겼다.')).toBe(true);
+  });
+
+  it('unwraps only a matching outer pair', () => {
+    expect(isQuoteGrounded('"열쇠', '그는 열쇠를 들었다.')).toBe(false);
+  });
+
   // 표기를 접는 것이 검사를 무르게 만들면 안 된다. 지어낸 근거는 따옴표를 맞춰도 걸려야 한다.
   it('still rejects a quote whose words the draft never contained', () => {
     expect(isQuoteGrounded('"창문을 닫았다"', '그는 \u201C문을 열었다\u201D.')).toBe(false);
