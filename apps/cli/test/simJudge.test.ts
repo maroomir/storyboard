@@ -155,6 +155,13 @@ describe('quote grounding', () => {
     expect(isQuoteGrounded('그 흉터는 자국을 남겼다', '**그 흉터는** 자국을 남겼다.')).toBe(true);
   });
 
+  // 본문이 '신문의 생존' 이라 쓴 것을 심판이 "신문의 생존" 으로 옮겼다. 따옴표 종류는 속살이 아니다.
+  it('treats single and double quotation marks as the same mark', () => {
+    expect(isQuoteGrounded('"신문의 생존" 그림이 서 있었다.', "그 위의 '신문의 생존' 그림이 서 있었다.")).toBe(
+      true,
+    );
+  });
+
   it('unwraps only a matching outer pair', () => {
     expect(isQuoteGrounded('"열쇠', '그는 열쇠를 들었다.')).toBe(false);
   });
