@@ -127,9 +127,15 @@ export async function readRuns(filePath: string): Promise<readonly RunRecord[]> 
 }
 
 // 이어서 돌릴 때 건너뛸 것들. 엔진이나 트랙이 바뀐 뒤의 기록은 이어 쓸 수 없으므로 세지 않는다.
+// 생성 모델·프롬프트 변형·생각 여부가 다른 기록도 다른 실험이다 — 같은 지점 이름으로 다른 모델을
+// 돌릴 때 앞 모델의 회차를 «이미 끝남» 으로 읽으면 두 번째 모델은 한 번도 돌지 않는다.
 export async function completedKeys(
   filePath: string,
-  scope: { readonly engineCommit: string; readonly trackCommit: string },
+  scope: {
+    readonly engineCommit: string;
+    readonly trackCommit: string;
+    readonly generation?: RunRecord['generation'];
+  },
 ): Promise<ReadonlySet<string>> {
   const runs = await readRuns(filePath);
 
@@ -139,8 +145,18 @@ export async function completedKeys(
         (run) =>
           run.engineCommit === scope.engineCommit &&
           run.trackCommit === scope.trackCommit &&
-          run.trackDirty === false,
+          run.trackDirty === false &&
+          (scope.generation === undefined || sameGeneration(run.generation, scope.generation)),
       )
       .map((run) => runKey(run.genre, run.pointLabel, run.repeat)),
+  );
+}
+
+function sameGeneration(left: RunRecord['generation'], right: RunRecord['generation']): boolean {
+  return (
+    left.providerId === right.providerId &&
+    left.model === right.model &&
+    left.promptVariant === right.promptVariant &&
+    left.think === right.think
   );
 }

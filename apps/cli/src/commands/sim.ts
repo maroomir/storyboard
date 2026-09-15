@@ -408,7 +408,11 @@ async function executePoints(
     engineVersion,
   );
   const { repeats } = input;
-  const done = await completedKeys(input.outPath, { engineCommit, trackCommit: track.commit });
+  const done = await completedKeys(input.outPath, {
+    engineCommit,
+    trackCommit: track.commit,
+    generation: generationRecord(input.generation, input.localRuntime),
+  });
   const factory = createSimWorkspaceFactory({
     logger: context.container.logger,
     version: context.container.version,

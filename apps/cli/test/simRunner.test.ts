@@ -319,6 +319,26 @@ describe('run store', () => {
     expect(done.has(runKey('wuxia', 'point', 1))).toBe(false);
   });
 
+  // 같은 지점 이름으로 다른 생성 모델을 돌릴 때 앞 모델의 회차를 끝난 것으로 읽으면 안 된다.
+  it('does not reuse a run made with a different generator or prompt variant', async () => {
+    const out = file();
+    await appendRun(out, record({ generation: { providerId: 'ollama', model: 'qwen3:14b' } }));
+    const scope = { engineCommit: 'engine1', trackCommit: 'track1' };
+
+    expect(
+      await completedKeys(out, { ...scope, generation: { providerId: 'ollama', model: 'qwen3:14b' } }),
+    ).toEqual(new Set(['thriller/baseline#1']));
+    expect(
+      await completedKeys(out, { ...scope, generation: { providerId: 'ollama', model: 'gemma4:12b' } }),
+    ).toEqual(new Set());
+    expect(
+      await completedKeys(out, {
+        ...scope,
+        generation: { providerId: 'ollama', model: 'qwen3:14b', promptVariant: 'rich' },
+      }),
+    ).toEqual(new Set());
+  });
+
   it('does not reuse a run whose track was dirty', async () => {
     const path = file();
 
