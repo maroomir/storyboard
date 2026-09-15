@@ -23,7 +23,12 @@ export interface RunRecord {
   readonly trackCommit: string;
   readonly trackDirty: boolean;
   readonly knobs: Readonly<Record<string, number>>;
-  readonly generation: { readonly providerId: string; readonly model: string };
+  readonly generation: {
+    readonly providerId: string;
+    readonly model: string;
+    readonly promptVariant?: string;
+    readonly think?: boolean;
+  };
   readonly scenes: readonly SceneMetrics[];
   readonly tokens: TokenTotals;
   readonly auc?: number;

@@ -12,11 +12,22 @@ export interface PointScore extends ScoredPoint {
   readonly pointLabel: string;
   readonly engineCommit: string;
   readonly trackCommit: string;
+  // 무엇으로 썼는지. 같은 지점이라도 생성 모델·프롬프트 변형이 다르면 다른 것을 잰 값이다.
+  readonly generation: string;
   readonly runs: number;
   // 심판이 끝까지 보고 AUC 를 낸 회차 수. 0 이면 품질 축의 값은 뜻이 없다.
   readonly judged: number;
   // 유효 회차 중 하한선 관문을 지난 수. judged 보다 훨씬 작으면 그 AUC 는 심판을 못 믿은 채 낸 값이다.
   readonly gatePassed: number;
+}
+
+export function describeGeneration(run: RunRecord): string {
+  const { providerId, model, promptVariant, think } = run.generation;
+  const suffix = [promptVariant, think === undefined ? undefined : think ? 'think' : 'nothink']
+    .filter((part): part is string => part !== undefined)
+    .join('/');
+
+  return `${providerId}:${model}${suffix.length === 0 ? '' : `/${suffix}`}`;
 }
 
 export function isJudged(run: RunRecord): boolean {
@@ -35,7 +46,13 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
   const groups = new Map<string, RunRecord[]>();
 
   for (const run of runs) {
-    const key = [run.genre, run.pointLabel, run.engineCommit, run.trackCommit].join('\u0000');
+    const key = [
+      run.genre,
+      run.pointLabel,
+      run.engineCommit,
+      run.trackCommit,
+      describeGeneration(run),
+    ].join('\u0000');
     groups.set(key, [...(groups.get(key) ?? []), run]);
   }
 
@@ -49,6 +66,7 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       genre: first.genre,
       engineCommit: first.engineCommit,
       trackCommit: first.trackCommit,
+      generation: describeGeneration(first),
       runs: group.length,
       judged: judged.length,
       gatePassed: judged.filter((run) => run.floorGate?.passed === true).length,

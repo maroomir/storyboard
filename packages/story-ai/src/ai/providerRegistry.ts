@@ -20,6 +20,7 @@ import {
 } from '#ai/contracts/aiTypes';
 import { SecretStore } from '#ai/ports/SecretStore';
 import { ConfigBridge } from '#ai/ports/ConfigBridge';
+import type { PromptVariantId } from './prompts/types';
 
 export interface AiProviderRegistryOptions {
   readonly secretStore: SecretStore;
@@ -71,6 +72,10 @@ export class AiProviderRegistry {
   } {
     this.assertTaskProviderConfigured(taskName);
     return this.options.configBridge.getTaskAiConfig(taskName);
+  }
+
+  public getPromptVariantOverride(): PromptVariantId | undefined {
+    return this.options.configBridge.getPromptVariantOverride();
   }
 
   public isTaskProviderConfigured(taskName: AiTaskName): boolean {
@@ -164,6 +169,7 @@ export class AiProviderRegistry {
       baseUrl: config.baseUrl,
       model: modelOverride ?? config.model,
       ...(config.contextTokens === undefined ? {} : { contextTokens: config.contextTokens }),
+      ...(config.think === undefined ? {} : { think: config.think }),
       createClient: this.options.createOllamaClient,
     });
   }

@@ -78,11 +78,13 @@ export class AiTextGateway {
     options: GenerateTextOptions,
   ): PromptVariantId {
     const resolved = this.registry.getTaskAiConfig(taskName);
+    const override = this.registry.getPromptVariantOverride();
     return selectPromptVariant({
       providerId: options.providerId ?? resolved.providerId,
       taskName,
       model: resolved.model,
       maxTokens: options.maxTokens,
+      ...(override === undefined ? {} : { override }),
     });
   }
 

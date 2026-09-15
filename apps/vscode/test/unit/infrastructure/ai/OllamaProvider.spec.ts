@@ -23,6 +23,25 @@ describe("OllamaProvider", () => {
     expect(capturedPath).toBe("/api/tags")
   })
 
+  // 생각하는 모델은 상한 없이 생각하면 한 호출이 수십 분이 된다. 켜고 끄는 값이 그대로 가야 한다.
+  it("passes the think flag through when one is set, and omits it otherwise", async () => {
+    const bodies: Record<string, unknown>[] = []
+    const client: OllamaClientLike = {
+      get: async (): Promise<Record<string, unknown>> => ({}),
+      post: async (_path, body): Promise<Record<string, unknown>> => {
+        bodies.push(body as unknown as Record<string, unknown>)
+        return { message: { content: "답" } }
+      }
+    }
+    const request = { taskName: "sceneDraft" as const, messages: [{ role: "user" as const, content: "장면" }] }
+
+    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", think: false, createClient: () => client }).generate(request)
+    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", createClient: () => client }).generate(request)
+
+    expect(bodies[0]?.["think"]).toBe(false)
+    expect("think" in (bodies[1] ?? {})).toBe(false)
+  })
+
   it("generates text through /api/chat", async () => {
     let capturedPath = ""
     const usage = { inputTokens: 30, outputTokens: 70 }

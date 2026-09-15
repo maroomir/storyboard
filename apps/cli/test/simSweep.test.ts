@@ -298,6 +298,24 @@ describe('point score', () => {
     expect(point?.auc).toBe(0);
   });
 
+  // 같은 지점이라도 생성 모델이나 프롬프트 변형이 다르면 다른 것을 잰 값이다.
+  it('scores runs from a different generator or prompt variant separately', () => {
+    const scored = scoreRuns(
+      [
+        run({ auc: 0.1 }),
+        run({ auc: 0.5, generation: { providerId: 'ollama', model: 'gemma4:12b', think: false } }),
+        run({ auc: 0.9, generation: { providerId: 'ollama', model: 'qwen3:14b', promptVariant: 'rich' } }),
+      ],
+      'tokens',
+    );
+
+    expect(scored.map((point) => point.generation).sort()).toEqual([
+      'ollama:gemma4:12b/nothink',
+      'ollama:qwen3:14b',
+      'ollama:qwen3:14b/rich',
+    ]);
+  });
+
   // 엔진이나 트랙이 다르면 같은 지점 이름이라도 다른 것을 잰 값이다.
   it('scores runs from a different engine or track separately', () => {
     const scored = scoreRuns(

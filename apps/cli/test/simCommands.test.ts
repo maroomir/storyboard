@@ -1,8 +1,11 @@
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { readRuns } from '@storyboard/story-sim';
 
 import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';
@@ -70,6 +73,39 @@ describe('sim run', () => {
     expect(outcome?.ok).toBe(true);
     expect(outcome?.message).toContain('--yes');
     expect(outcome?.message).toContain('예상 비용');
+  });
+
+  it('refuses a prompt variant it does not know', async () => {
+    const outcome = await run('sim run', { track, genre: 'thriller', 'prompt-variant': 'huge' });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('프롬프트 변형');
+  });
+
+  // 같은 지점이라도 무엇으로 썼는지가 기록에 없으면 다른 실험이 한 줄로 합쳐진다.
+  it('records the forced prompt variant with the run', async () => {
+    const out = join(home, 'runs.jsonl');
+    // 실행은 트랙의 커밋 해시를 적으므로 시험체가 git 저장소여야 한다.
+    const git = (...gitArgs: string[]): void => {
+      execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...gitArgs], { cwd: track });
+    };
+    git('init', '-q');
+    git('add', '-A');
+    git('commit', '-qm', 'fixture');
+    const outcome = await run('sim run', {
+      track,
+      genre: 'thriller',
+      provider: 'mock',
+      judge: 'none',
+      repeats: '1',
+      'prompt-variant': 'generic',
+      out,
+      yes: true,
+    });
+
+    expect(outcome?.ok).toBe(true);
+    const [record] = await readRuns(out);
+    expect(record?.generation.promptVariant).toBe('generic');
   });
 
   it('refuses an overlay knob the registry does not know', async () => {

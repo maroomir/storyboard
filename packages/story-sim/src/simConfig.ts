@@ -6,9 +6,15 @@ import { z } from 'zod';
 // 답을 갖는다. 그래서 이 값은 시험체(트랙 디렉터리)의 .storyboard/config.json 이 아니라 트랙
 // 저장소 루트의 파일 하나에 둔다 — 시험체는 기계가 바뀌어도 그대로여야 한다.
 
+export const promptVariantSchema = z.enum(['generic', 'xs', 'rich']);
+export type SimPromptVariant = z.infer<typeof promptVariantSchema>;
+
 const selectionSchema = z.object({
   provider: z.string().min(1),
   model: z.string().min(1),
+  // 생성에만 뜻이 있다. 로컬 모델은 이름 규칙으로 압축형(xs) 프롬프트를 받으므로, 상한이 모델인지
+  // 프롬프트인지 가르려면 같은 모델에 다른 변형을 강제로 물려 본다.
+  promptVariant: promptVariantSchema.optional(),
 });
 
 export const simConfigSchema = z.object({
@@ -18,6 +24,8 @@ export const simConfigSchema = z.object({
     .object({
       baseUrl: z.string().min(1).optional(),
       contextTokens: z.number().int().positive().optional(),
+      // 생각하는 모델(gemma4 등)은 상한 없이 생각하면 한 호출이 수십 분이 된다. 측정은 명시한다.
+      think: z.boolean().optional(),
     })
     .optional(),
   repeats: z.number().int().positive().optional(),

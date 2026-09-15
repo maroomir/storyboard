@@ -23,6 +23,8 @@ export interface OllamaProviderOptions {
   // NOTE: 지정하지 않으면 ollama 가 모델 기본 문맥(보통 2~4천 토큰)을 쓰고, 넘치는 앞부분을
   // 오류 없이 버린다. 긴 원고를 이어 읽는 쪽에서는 그것이 «앞을 못 읽은 판정» 으로 조용히 나온다.
   readonly contextTokens?: number;
+  // 생각(thinking) 켜기/끄기. 안 주면 ollama 의 모델 기본값이다.
+  readonly think?: boolean;
   readonly createClient?: (baseUrl: string) => OllamaClientLike;
 }
 
@@ -30,6 +32,7 @@ interface OllamaChatRequest {
   readonly model: string;
   readonly messages: readonly AiMessage[];
   readonly stream: false;
+  readonly think?: boolean;
   readonly options?: {
     readonly temperature?: number;
     readonly num_predict?: number;
@@ -51,6 +54,7 @@ export class OllamaProvider implements AiProvider {
   private readonly client: OllamaClientLike;
   private readonly model: string;
   private readonly contextTokens: number | undefined;
+  private readonly think: boolean | undefined;
 
   public constructor(options: OllamaProviderOptions) {
     const baseUrl = options.baseUrl?.trim();
@@ -71,6 +75,7 @@ export class OllamaProvider implements AiProvider {
     this.model = model;
     this.displayName = `Ollama (${model})`;
     this.contextTokens = options.contextTokens;
+    this.think = options.think;
     this.client = options.createClient?.(baseUrl) ?? createDefaultOllamaClient(baseUrl);
   }
 
@@ -94,6 +99,7 @@ export class OllamaProvider implements AiProvider {
         model: this.model,
         messages: request.messages,
         stream: false,
+        ...(this.think === undefined ? {} : { think: this.think }),
         options: {
           temperature: request.temperature,
           num_predict: request.maxTokens,

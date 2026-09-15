@@ -38,7 +38,13 @@ export interface ProviderModelConfig {
   readonly baseUrl?: string;
   // 로컬 런타임이 실제로 쓸 문맥 창. 기계마다 VRAM 이 달라 코드가 정할 수 없다.
   readonly contextTokens?: number;
+  // 생각(thinking)을 켤지. 안 주면 ollama 가 모델 기본값을 쓴다. 생각하는 모델은 상한 없이 생각하면
+  // 한 호출이 수십 분이 될 수 있어, 측정에서는 명시적으로 끄거나 켜서 잰다.
+  readonly think?: boolean;
 }
+
+export const promptVariantIds = ['generic', 'xs', 'rich'] as const;
+export type PromptVariantOverride = (typeof promptVariantIds)[number];
 
 export interface TaskAiStoredEntry {
   readonly provider: AiProviderId;
@@ -112,17 +118,30 @@ export class ConfigBridge {
         'providers.ollama.contextTokens',
         undefined,
       );
+      const think = configuration.get<boolean | undefined>('providers.ollama.think', undefined);
 
       return {
         baseUrl: configuration.get('providers.ollama.baseUrl', providerCatalog.ollama.defaultBaseUrl),
         model: configuration.get('providers.ollama.model', providerCatalog.ollama.defaultModel),
         ...(typeof contextTokens === 'number' && contextTokens > 0 ? { contextTokens } : {}),
+        ...(typeof think === 'boolean' ? { think } : {}),
       };
     }
 
     return {
       model: configuration.get(`providers.${providerId}.model`, getDefaultModelId(providerId)),
     };
+  }
+
+  // NOTE: 프롬프트 변형은 모델 이름으로 자동으로 정해진다 — 로컬의 qwen·gemma 계열은 전부 압축형(xs)
+  // 이다. 무엇이 상한을 정하는지 재려면 같은 모델에 다른 변형을 강제로 물려 봐야 하므로, 설정으로
+  // 덮어쓸 수 있게 한다. 모르는 값은 «지정 안 함» 으로 본다.
+  public getPromptVariantOverride(): PromptVariantOverride | undefined {
+    const value = this.dependencies.getConfiguration().get<unknown>('promptVariant', undefined);
+
+    return typeof value === 'string' && (promptVariantIds as readonly string[]).includes(value)
+      ? (value as PromptVariantOverride)
+      : undefined;
   }
 
   public getTaskProvider(taskName: AiTaskName): AiProviderId {

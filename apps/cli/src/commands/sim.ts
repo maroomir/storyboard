@@ -31,6 +31,7 @@ import {
   planFractionalGrid,
   planScreening,
   parseOverlay,
+  promptVariantSchema,
   isJudged,
   readRuns,
   removeScratch,
@@ -46,6 +47,7 @@ import {
   type PointScore,
   type RunRecord,
   type SimConfig,
+  type SimPromptVariant,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -203,6 +205,22 @@ async function loadOverlayPoint(
 interface Selection {
   readonly providerId: AiProviderId;
   readonly model: string;
+  readonly promptVariant?: SimPromptVariant;
+}
+
+// 기록에 남길 «무엇으로 썼는가». 프롬프트 변형과 생각 여부까지 적어야 같은 지점의 다른 실험을 가른다.
+function generationRecord(
+  selection: Selection,
+  localRuntime: SimConfig['ollama'],
+): RunRecord['generation'] {
+  return {
+    providerId: selection.providerId,
+    model: selection.model,
+    ...(selection.promptVariant === undefined ? {} : { promptVariant: selection.promptVariant }),
+    ...(selection.providerId === 'ollama' && localRuntime?.think !== undefined
+      ? { think: localRuntime.think }
+      : {}),
+  };
 }
 
 function isProviderId(value: string): value is AiProviderId {
@@ -214,6 +232,17 @@ function isProviderId(value: string): value is AiProviderId {
 function generationSelection(context: CommandContext, config: SimConfig): Selection | string {
   const flagProvider = requireFlag(context, 'provider');
   const flagModel = requireFlag(context, 'model');
+  const rawVariant = requireFlag(context, 'prompt-variant') ?? config.generation?.promptVariant;
+  const variant = rawVariant === undefined ? undefined : promptVariantSchema.safeParse(rawVariant);
+
+  if (variant !== undefined && !variant.success) {
+    return `프롬프트 변형을 모릅니다: ${rawVariant}\n쓸 수 있는 값: ${promptVariantSchema.options.join(', ')}`;
+  }
+
+  const withVariant = (selection: Omit<Selection, 'promptVariant'>): Selection => ({
+    ...selection,
+    ...(variant === undefined ? {} : { promptVariant: variant.data }),
+  });
 
   if (flagProvider !== undefined) {
     if (!isProviderId(flagProvider)) {
@@ -222,21 +251,24 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
     const model = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
     return model === undefined
       ? `${flagProvider} 에 쓸 모델을 --model 로 주세요.`
-      : { providerId: flagProvider, model };
+      : withVariant({ providerId: flagProvider, model });
   }
 
   if (config.generation !== undefined) {
     if (!isProviderId(config.generation.provider)) {
       return `${simConfigFileName} 의 generation.provider 를 모릅니다: ${config.generation.provider}`;
     }
-    return { providerId: config.generation.provider, model: flagModel ?? config.generation.model };
+    return withVariant({
+      providerId: config.generation.provider,
+      model: flagModel ?? config.generation.model,
+    });
   }
 
   const providerId = context.container.configBridge.getTaskProvider('sceneDraft');
-  return {
+  return withVariant({
     providerId,
     model: flagModel ?? context.container.configBridge.getTaskAiConfig('sceneDraft').model,
-  };
+  });
 }
 
 const noJudge = 'none';
@@ -383,6 +415,9 @@ async function executePoints(
     provider: input.generation.providerId,
     model: input.generation.model,
     ...(input.localRuntime === undefined ? {} : { localRuntime: input.localRuntime }),
+    ...(input.generation.promptVariant === undefined
+      ? {}
+      : { promptVariant: input.generation.promptVariant }),
   });
 
   // NOTE: 심판도 생성과 같은 로컬 런타임에서 돈다. 명령을 띄운 컨테이너는 sim.config.json 을 읽지
@@ -398,7 +433,13 @@ async function executePoints(
           logger: context.container.logger,
           canPrompt: false,
           version: context.container.version,
-          localRuntime: input.localRuntime,
+          // 생각 켜기/끄기는 생성 쪽 실험 변수다. 심판 모델이 생각을 지원하지 않으면 ollama 가 거부한다.
+          localRuntime: {
+            ...(input.localRuntime.baseUrl === undefined ? {} : { baseUrl: input.localRuntime.baseUrl }),
+            ...(input.localRuntime.contextTokens === undefined
+              ? {}
+              : { contextTokens: input.localRuntime.contextTokens }),
+          },
         }).aiProviderRegistry;
 
   let ran = 0;
@@ -573,7 +614,7 @@ async function executePoints(
           trackCommit: track.commit,
           trackDirty: false,
           knobs: point.knobs,
-          generation: input.generation,
+          generation: generationRecord(input.generation, input.localRuntime),
           scenes: result.metrics.scenes,
           tokens: result.tokens,
           ...verdictFields,
@@ -863,6 +904,8 @@ export const reportSim: CommandHandler = async (context) => {
   // 엔진이나 트랙이 다른 기록이 한 파일에 섞이면 같은 지점 이름이 여러 줄 나온다. 어느 것인지 밝힌다.
   const fingerprints = new Set(scored.map((point) => `${point.engineCommit}@${point.trackCommit}`));
   const mixed = fingerprints.size > 1;
+  const generations = new Set(scored.map((point) => point.generation));
+  const mixedGeneration = generations.size > 1;
 
   // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
   const genres = [...new Set(scored.map((point) => point.genre))].sort();
@@ -874,9 +917,10 @@ export const reportSim: CommandHandler = async (context) => {
       .map((point) => {
         const mark = frontierKeys.has(scoreKey(point)) ? '*' : ' ';
         const cost = axis === 'usd' ? `$${point.cost.toFixed(4)}` : point.cost.toLocaleString();
-        const name = mixed
-          ? `${point.pointLabel} @${point.engineCommit.slice(0, 7)}/${point.trackCommit.slice(0, 7)}`
-          : point.pointLabel;
+        const name =
+          (mixed
+            ? `${point.pointLabel} @${point.engineCommit.slice(0, 7)}/${point.trackCommit.slice(0, 7)}`
+            : point.pointLabel) + (mixedGeneration ? ` [${point.generation}]` : '');
         const quality =
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
@@ -893,6 +937,9 @@ export const reportSim: CommandHandler = async (context) => {
       // 폐기 회차는 품질 축에서 뺀다. 0 으로 넣으면 셋 중 둘이 폐기된 지점이 «AUC 0» 으로 읽힌다.
       '품질 축은 유효 회차의 중앙값, 비용 축은 전체 회차의 중앙값 · 관문은 유효 회차 중 심판이 훼손본을 가려낸 수',
       ...(mixed ? ['엔진·트랙이 다른 기록은 따로 셉니다 (@엔진/트랙)'] : []),
+      ...(mixedGeneration
+        ? ['생성 모델·프롬프트 변형이 다른 기록은 따로 셉니다 ([프로바이더:모델/변형])']
+        : []),
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
       ...lines,

@@ -127,7 +127,14 @@ export interface CliContainerOptions {
   readonly postGenerationUpdates?: boolean;
   // A local runtime's address and usable context window. Machine properties, so a measurement
   // profile hands them in per run instead of writing them into the fixture's own config.
-  readonly localRuntime?: { readonly baseUrl?: string; readonly contextTokens?: number };
+  readonly localRuntime?: {
+    readonly baseUrl?: string;
+    readonly contextTokens?: number;
+    readonly think?: boolean;
+  };
+  // Forces one prompt variant for every task. A measurement harness uses it to separate the
+  // model's own ceiling from the compact prompt local models are routed to by name.
+  readonly promptVariant?: 'generic' | 'xs' | 'rich';
 }
 
 // `--provider`/`--model` are the terminal's form of the settings the extension keeps in its UI, so
@@ -157,6 +164,14 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 
   if (options.localRuntime?.contextTokens !== undefined) {
     overrides['providers.ollama.contextTokens'] = options.localRuntime.contextTokens;
+  }
+
+  if (options.localRuntime?.think !== undefined) {
+    overrides['providers.ollama.think'] = options.localRuntime.think;
+  }
+
+  if (options.promptVariant !== undefined) {
+    overrides['promptVariant'] = options.promptVariant;
   }
 
   return overrides;

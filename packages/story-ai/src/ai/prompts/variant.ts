@@ -7,9 +7,15 @@ export interface PromptVariantSelectionInput {
   readonly taskName: AiTaskName;
   readonly model?: string;
   readonly maxTokens?: number;
+  // 설정이 강제한 변형. 있으면 모델 이름 규칙보다 앞선다.
+  readonly override?: PromptVariantId;
 }
 
 export function selectPromptVariant(input: PromptVariantSelectionInput): PromptVariantId {
+  if (input.override !== undefined) {
+    return input.override;
+  }
+
   if (shouldUseXsVariant(input)) {
     return 'xs';
   }

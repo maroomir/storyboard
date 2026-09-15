@@ -3,6 +3,21 @@ import { describe, expect, it } from "vitest"
 import { selectPromptVariant } from '@storyboard/story-ai';
 
 describe("selectPromptVariant", () => {
+  // 로컬의 qwen·gemma 계열은 이름만으로 압축형이 된다. 상한이 모델인지 프롬프트인지 가르려면 강제해야 한다.
+  it("lets a configured override beat the model-name rule", () => {
+    expect(
+      selectPromptVariant({
+        providerId: "ollama",
+        taskName: "sceneDraft",
+        model: "qwen3:14b",
+        override: "rich"
+      })
+    ).toBe("rich")
+    expect(
+      selectPromptVariant({ providerId: "ollama", taskName: "sceneDraft", model: "qwen3:14b" })
+    ).toBe("xs")
+  })
+
   it("returns xs for compact ollama tasks", () => {
     expect(
       selectPromptVariant({

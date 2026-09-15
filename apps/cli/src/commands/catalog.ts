@@ -93,6 +93,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'repeats', valueLabel: '<n>', summary: 'sim: 같은 지점을 몇 번 돌릴지 (기본 3)' },
   { name: 'judge', valueLabel: '<provider|none>', summary: 'sim: 심판 프로바이더 (생성과 다른 모델이어야 합니다. none 이면 생성만)' },
   { name: 'judge-model', valueLabel: '<name>', summary: 'sim: 심판 모델' },
+  { name: 'prompt-variant', valueLabel: '<generic|xs|rich>', summary: 'sim: 생성 프롬프트 변형을 강제 (로컬 모델은 기본 xs)' },
   { name: 'max-runs', valueLabel: '<n>', summary: 'sim: 실행 횟수 상한' },
   { name: 'out', valueLabel: '<path>', summary: 'sim: 결과를 쌓을 JSONL 경로' },
   { name: 'point', valueLabel: '<label>', summary: 'sim: 되쓰기할 지점의 이름' },
@@ -567,7 +568,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '측정',
     usage: 'sim run --track <path> [--genre <name>]',
     summary: '트랙 한 벌을 한 지점으로 돌리고 품질·비용을 잽니다',
-    flags: ['track', 'config', 'genre', 'overlay', 'repeats', 'judge', 'judge-model', 'out', 'provider', 'model', 'yes'],
+    flags: ['track', 'config', 'genre', 'overlay', 'repeats', 'judge', 'judge-model', 'out', 'provider', 'model', 'prompt-variant', 'yes'],
     examples: [
       'storyboard sim run --track ~/storyboard-workspace --genre thriller',
       'storyboard sim run --track ~/storyboard-workspace --overlay point.json --yes',
@@ -588,7 +589,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '측정',
     usage: 'sim sweep --track <path> --knobs <a,b,c,d>',
     summary: '고른 손잡이 넷으로 격자를 돌고 파레토 표를 냅니다',
-    flags: ['track', 'config', 'genre', 'knobs', 'repeats', 'max-runs', 'judge', 'judge-model', 'out', 'provider', 'model', 'yes'],
+    flags: ['track', 'config', 'genre', 'knobs', 'repeats', 'max-runs', 'judge', 'judge-model', 'out', 'provider', 'model', 'prompt-variant', 'yes'],
     examples: [
       'storyboard sim sweep --track ~/storyboard-workspace --knobs skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio',
     ],

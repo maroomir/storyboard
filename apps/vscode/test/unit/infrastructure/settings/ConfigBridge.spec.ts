@@ -135,6 +135,25 @@ describe("ConfigBridge", () => {
     })
   })
 
+  it("reads the ollama think flag and the prompt variant override", () => {
+    const configBridge = createConfigBridge(
+      new Map<string, unknown>([
+        ["providers.ollama.think", false],
+        ["promptVariant", "rich"]
+      ])
+    )
+
+    expect(configBridge.getProviderConfig("ollama").think).toBe(false)
+    expect(configBridge.getPromptVariantOverride()).toBe("rich")
+  })
+
+  it("ignores a prompt variant it does not know", () => {
+    const configBridge = createConfigBridge(new Map<string, unknown>([["promptVariant", "huge"]]))
+
+    expect(configBridge.getPromptVariantOverride()).toBeUndefined()
+    expect(configBridge.getProviderConfig("ollama").think).toBeUndefined()
+  })
+
   it("falls back to mock for invalid provider values", () => {
     const configBridge = createConfigBridge(new Map<string, unknown>([["defaultProvider", "unknown"]]))
 
