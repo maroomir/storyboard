@@ -10,6 +10,22 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-09-16
+
+### Fixed
+
+- **A configured ollama model is no longer silently replaced by the default.** 0.9.4 dropped `qwen3:14b` and `gemma3:12b` from the catalog, and a model absent from the catalog was swapped for the provider default (`gemma4:12b`) on every task. If that model was not on the machine every call died with a 404; if it was, generation quietly ran on a model nobody chose. This is the behaviour 0.9.4 described as "names outside the list are still used", which in practice did not hold.
+- **Several ways a judge's answer went unread — costing the whole round — are fixed.** Supporting quotes were compared including their quotation marks and corner brackets, so a quote present in the draft read as missing; a quote containing a quotation mark broke the JSON; and a quote stitched from sentences that all exist in the draft was rejected. The re-ask now says which quote was rejected and why, and requests just that quote.
+- **The floor gate's verdicts are trustworthy again.** Candidates went to every reader in the same order, letting the gate grade its own labels; answers that flipped when the order was reversed were still counted; and the gate ranked without being asked for its reasoning.
+
+### Changed
+
+- **The floor gate records a flag instead of discarding the round.** A small judge cannot reliably separate ordinary prose from a corrupted version, so most rounds vanished at the gate — a 45-minute eight-episode judgement thrown away by one check. The gate result is now recorded and the curve is still read, so "passed the gate" and "all rounds" can be compared side by side. Only an unreadable answer discards the round.
+
+### Added
+
+- **A run is refused up front when the local runtime lacks the chosen model.** Calling a model ollama does not have returns a 404 per call, and the runner logged a failure per scene and moved on, so hours away from the desk vanished into empty records. Installed models are now checked before the first call, and the run stops naming what is missing and what is available.
+
 ## [0.9.4] - 2026-09-14
 
 ### Added
