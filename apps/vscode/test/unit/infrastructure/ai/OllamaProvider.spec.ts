@@ -35,8 +35,8 @@ describe("OllamaProvider", () => {
     }
     const request = { taskName: "sceneDraft" as const, messages: [{ role: "user" as const, content: "장면" }] }
 
-    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", think: false, createClient: () => client }).generate(request)
-    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", createClient: () => client }).generate(request)
+    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", think: false, createClient: (): OllamaClientLike => client }).generate(request)
+    await new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", createClient: (): OllamaClientLike => client }).generate(request)
 
     expect(bodies[0]?.["think"]).toBe(false)
     expect("think" in (bodies[1] ?? {})).toBe(false)
