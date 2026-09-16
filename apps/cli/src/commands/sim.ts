@@ -70,6 +70,8 @@ interface TrackScene {
 
 interface JudgeMaterials {
   readonly genre: string;
+  // 비평가의 훼손본을 만들 때 뒤바꿀 인물 이름. 카드의 name 순서다.
+  readonly characterNames: readonly string[];
   readonly floorDraft: { readonly sceneStem: string; readonly text: string };
   readonly ledger: ReturnType<typeof parseFactLedger> | undefined;
   readonly axisFloors?: ReadonlyMap<string, string>;
@@ -137,6 +139,29 @@ async function readAxisFloors(
   return floors;
 }
 
+// 훼손본은 인물 이름을 뒤바꿔 만든다. 카드의 name 한 줄이면 충분하다.
+async function readCharacterNames(genreRoot: string): Promise<readonly string[]> {
+  const directory = join(genreRoot, 'character');
+  let files: string[];
+
+  try {
+    files = (await readdir(directory)).filter((name) => name.endsWith('.card')).sort();
+  } catch {
+    return [];
+  }
+
+  const names: string[] = [];
+  for (const file of files) {
+    const text = await readFile(join(directory, file), 'utf8');
+    const match = /^name:\s*(.+)$/mu.exec(text);
+    if (match !== null) {
+      names.push((match[1] as string).trim());
+    }
+  }
+
+  return names;
+}
+
 async function readJudgeMaterials(
   genreRoot: string,
   genre: string,
@@ -149,6 +174,7 @@ async function readJudgeMaterials(
     }
     return {
       genre,
+      characterNames: [],
       floorDraft: { sceneStem: '', text: '' },
       ledger: undefined,
       axisFloors: floors,
@@ -171,6 +197,8 @@ async function readJudgeMaterials(
     return `${join(genreRoot, 'floor')} 에 훼손 원고가 없습니다. 하한선 관문 없이는 심판을 믿을 수 없어 시작하지 않습니다.`;
   }
 
+  const characterNames = await readCharacterNames(genreRoot);
+
   let ledger: JudgeMaterials['ledger'];
   try {
     ledger = parseFactLedger(await readFile(join(genreRoot, 'facts.yaml'), 'utf8'));
@@ -178,7 +206,7 @@ async function readJudgeMaterials(
     ledger = undefined;
   }
 
-  return { genre, floorDraft, ledger };
+  return { genre, characterNames, floorDraft, ledger };
 }
 
 // 축 트랙은 장르가 아니라 진단표라 chain/ 아래가 아니다. 결과도 성능으로 보고하지 않는다.
@@ -558,6 +586,7 @@ async function executePoints(
                 { kind: 'generated', draft: generatedForFloor ?? '' },
                 { kind: 'floor', draft: input.materials.floorDraft.text },
               ],
+              critic: { names: input.materials.characterNames },
             });
 
             verdictFields = {
@@ -573,7 +602,25 @@ async function executePoints(
               },
               genreNotes: verdict.genreNotes,
               ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
+              ...(verdict.critic === undefined
+                ? {}
+                : {
+                    critic: {
+                      groundedTotal: verdict.critic.groundedTotal,
+                      opinionTotal: verdict.critic.opinionTotal,
+                      gatePassed: verdict.critic.gate.passed,
+                      scores: verdict.critic.scores,
+                      gateReason: verdict.critic.gate.reason,
+                      problems: verdict.critic.problems,
+                    },
+                  }),
             };
+
+            if (verdict.critic !== undefined && !verdict.critic.gate.passed) {
+              context.container.logger.warn(
+                `${point.label} ${repeat}회 · 비평 관문 실패 (회차는 유지): ${verdict.critic.gate.reason}`,
+              );
+            }
 
             if (input.materials.ledger !== undefined && !verdict.discarded) {
               const recall = await scoreFactRecall({
@@ -939,7 +986,11 @@ export const reportSim: CommandHandler = async (context) => {
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
             : `AUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
-        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}`;
+        const critic =
+          point.critic === undefined
+            ? ''
+            : `\t비평 ${point.critic.grounded}/20 의견 ${point.critic.opinion}/10 비평관문 ${point.critic.gatePassed}/${point.critic.runs}`;
+        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}${critic}`;
       }),
   ]);
 

@@ -69,6 +69,22 @@ export function readTurnLeniently(raw: string): LenientTurn | null {
   };
 }
 
+export function readCritiqueLeniently(
+  raw: string,
+): { readonly score: number; readonly reason: string; readonly quote?: string } | null {
+  const text = foldQuotes(raw);
+  const score = /"score"\s*:\s*(\d+(?:\.\d+)?)/u.exec(text);
+  const hasQuote = /"quote"\s*:/u.test(text);
+  const reason = stringField(text, 'reason', hasQuote ? 'quote' : undefined);
+  const quote = hasQuote ? stringField(text, 'quote', undefined) : undefined;
+
+  if (score === null || reason === undefined) {
+    return null;
+  }
+
+  return { score: Number(score[1]), reason, ...(quote === undefined ? {} : { quote }) };
+}
+
 export function readQuoteLeniently(raw: string): { readonly quote: string } | null {
   const quote = stringField(foldQuotes(raw), 'quote', undefined);
   return quote === undefined ? null : { quote };

@@ -101,7 +101,7 @@ describe('floor gate runs first', () => {
   // 관문 실패는 표시다. 곡선은 남기고 리포트가 따로 센다. 버리면 «관문 통과만» 과 «전체» 를 나란히 못 본다.
   it('keeps reading and records the failure when a reader ranks the floor above the draft', async () => {
     const judge = scriptedJudge((messages, call) =>
-      call <= 8 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
+      call <= 16 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
     );
 
     const verdict = await judgeChain({
@@ -114,11 +114,11 @@ describe('floor gate runs first', () => {
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.discarded).toBe(false);
     expect(verdict.auc.auc).toBe(1);
-    expect(verdict.curves).toHaveLength(4);
+    expect(verdict.curves).toHaveLength(8);
   });
 
   it('reads the scenes once the floor was ranked last', async () => {
-    const judge = scriptedJudge((messages, call) => (call <= 8 ? rankFloorLast(messages) : turn(5, true)));
+    const judge = scriptedJudge((messages, call) => (call <= 16 ? rankFloorLast(messages) : turn(5, true)));
 
     const verdict = await judgeChain({
       judge,
@@ -140,7 +140,7 @@ describe('the floor gate measures the judge, not the labels', () => {
     const prompts: string[] = [];
     const judge = scriptedJudge((messages, call) => {
       prompts.push(messages.map((message) => message.content).join('\n'));
-      return call <= 8 ? rankFloorLast(messages) : turn(5, true);
+      return call <= 16 ? rankFloorLast(messages) : turn(5, true);
     });
 
     await judgeChain({
@@ -152,7 +152,7 @@ describe('the floor gate measures the judge, not the labels', () => {
 
     const rankingPrompts = prompts.filter((prompt) => prompt.includes('줄을 세워라'));
 
-    expect(rankingPrompts).toHaveLength(8);
+    expect(rankingPrompts).toHaveLength(16);
     for (const prompt of rankingPrompts) {
       expect(prompt).not.toContain('floor');
       expect(prompt).not.toContain('generated');
@@ -166,7 +166,7 @@ describe('the floor gate measures the judge, not the labels', () => {
     const prompts: readonly AiMessage[][] = [];
     const judge = scriptedJudge((messages, call) => {
       prompts.push(messages);
-      return call <= 8 ? rankFloorLast(messages) : turn(5, true);
+      return call <= 16 ? rankFloorLast(messages) : turn(5, true);
     });
 
     const verdict = await judgeChain({
@@ -177,9 +177,9 @@ describe('the floor gate measures the judge, not the labels', () => {
     });
 
     expect(verdict.floor.passed).toBe(true);
-    expect(prompts.slice(0, 8).map(floorShownFirst)).toEqual([
-      false, true, false, true, false, true, false, true,
-    ]);
+    expect(prompts.slice(0, 16).map(floorShownFirst)).toEqual(
+      Array.from({ length: 16 }, (_, index) => index % 2 === 1),
+    );
   });
 
   // 순위만 물으면 작은 심판은 자리를 답한다. 결함을 먼저 적게 해야 읽는다.
@@ -187,7 +187,7 @@ describe('the floor gate measures the judge, not the labels', () => {
     const prompts: string[] = [];
     const judge = scriptedJudge((messages, call) => {
       prompts.push(messages.at(-1)?.content ?? '');
-      return call <= 8 ? rankFloorLast(messages) : turn(5, true);
+      return call <= 16 ? rankFloorLast(messages) : turn(5, true);
     });
 
     await judgeChain({ judge, scenes: scenes(1), genre: '스릴러', floorCandidates: floorCandidates() });
@@ -199,7 +199,7 @@ describe('the floor gate measures the judge, not the labels', () => {
 
   it('catches a judge that always prefers the first candidate', async () => {
     const judge = scriptedJudge((_messages, call) =>
-      call <= 8 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
+      call <= 16 ? JSON.stringify({ ranking: ['가', '나'] }) : turn(5, true),
     );
 
     const verdict = await judgeChain({
@@ -211,7 +211,7 @@ describe('the floor gate measures the judge, not the labels', () => {
 
     // 넷 다 자리를 답했다. 실패도 통과도 아니고, 판정이 없으니 관문은 막힌다.
     expect(verdict.floor.passed).toBe(false);
-    expect(verdict.floor.abstained).toHaveLength(4);
+    expect(verdict.floor.abstained).toHaveLength(8);
     expect(verdict.floor.failures.join(' ')).toContain('자리와 무관하게');
     expect(verdict.discarded).toBe(false);
   });
@@ -220,7 +220,7 @@ describe('the floor gate measures the judge, not the labels', () => {
   // 아니라 형식을 재게 되어 모든 회차가 폐기된다.
   it('reads a ranking the judge answered by position', async () => {
     const judge = scriptedJudge((messages, call) =>
-      call <= 8
+      call <= 16
         ? JSON.stringify({ ranking: floorShownFirst(messages) ? ['2번', '1번'] : ['1번', '2번'] })
         : turn(5, true),
     );
@@ -238,7 +238,7 @@ describe('the floor gate measures the judge, not the labels', () => {
 
   it('still fails the gate when the position the judge named is the floor', async () => {
     const judge = scriptedJudge((messages, call) =>
-      call <= 8 ? JSON.stringify({ ranking: ['2', '1'] }) : turn(5, true),
+      call <= 16 ? JSON.stringify({ ranking: ['2', '1'] }) : turn(5, true),
     );
 
     const verdict = await judgeChain({
@@ -270,8 +270,8 @@ describe('the floor gate measures the judge, not the labels', () => {
     expect(verdict.discarded).toBe(true);
     expect(verdict.floor.passed).toBe(false);
     expect(verdict.discardReasons.join(' ')).toContain('되돌릴 수 없습니다');
-    // 독자 4인 × 차례 둘 × (원답 + 되묻기).
-    expect(ask).toHaveBeenCalledTimes(16);
+    // 독자 8인 × 차례 둘 × (원답 + 되묻기).
+    expect(ask).toHaveBeenCalledTimes(32);
   });
 
   // 결함 문장에 본문을 따옴표로 인용해 JSON 이 깨진 답이 실측에 있었다. 한 번은 되묻는다.
@@ -330,14 +330,14 @@ describe('reading in order', () => {
       floorCandidates: floorCandidates(),
     });
 
-    // 하한선 8회 + 독자 5인이 각각 2화까지만 = 18회. 8화를 끝까지 읽었다면 48회였다.
-    expect(ask).toHaveBeenCalledTimes(8 + 5 * 2);
+    // 하한선 16회 + 독자 9인이 각각 2화까지만 = 34회. 8화를 끝까지 읽었다면 88회였다.
+    expect(ask).toHaveBeenCalledTimes(16 + 9 * 2);
     expect(verdict.curves[0]?.turns).toHaveLength(2);
   });
 
   it('keeps the genre reader out of the AUC', async () => {
     const judge = scriptedJudge((messages, call) => {
-      if (call <= 8) {
+      if (call <= 16) {
         return rankFloorLast(messages);
       }
       const isGenre = messages[0]?.content.includes('스릴러 독자') === true;
@@ -378,14 +378,14 @@ describe('quote grounding', () => {
     expect(verdict.discarded).toBe(true);
     expect(verdict.discardReasons.join(' ')).toContain('본문에 없는 근거');
     // 독자마다 1화에서 두 번(원답 + 되묻기) 만에 포기한다.
-    expect(ask).toHaveBeenCalledTimes(8 + 5 * 2);
+    expect(ask).toHaveBeenCalledTimes(16 + 9 * 2);
   });
 
   // 장르 독자는 AUC 에 안 들어간다. 그 독자가 근거를 지어냈다고 공통 독자 넷의 곡선까지 버리면
   // 8화 판정 한 회차가 통째로 사라진다. 실측에서 그 일이 있었다.
   it('keeps the round when only the genre reader loses its grounding', async () => {
     const judge = scriptedJudge((messages, call) => {
-      if (call <= 8) {
+      if (call <= 16) {
         return rankFloorLast(messages);
       }
       const isGenre = messages[0]?.content.includes('스릴러 독자') === true;
@@ -409,7 +409,7 @@ describe('quote grounding', () => {
   // «본문에 없는 근거» 만 남으면 심판이 무엇을 지어냈는지 되짚을 수 없다.
   it('names the rejected quote in the reason', async () => {
     const judge = scriptedJudge((messages, call) =>
-      call <= 8 ? rankFloorLast(messages) : turn(5, true, '본문에 없는 구절'),
+      call <= 16 ? rankFloorLast(messages) : turn(5, true, '본문에 없는 구절'),
     );
 
     const verdict = await judgeChain({
@@ -427,7 +427,7 @@ describe('quote grounding', () => {
     const prompts: string[] = [];
     let turnCalls = 0;
     const judge = scriptedJudge((messages, call) => {
-      if (call <= 8) {
+      if (call <= 16) {
         return rankFloorLast(messages);
       }
       turnCalls += 1;
@@ -456,7 +456,7 @@ describe('quote grounding', () => {
     const prompts: readonly AiMessage[][] = [];
     const judge = scriptedJudge((messages, call) => {
       prompts.push(messages);
-      return call <= 8 ? rankFloorLast(messages) : turn(5, true);
+      return call <= 16 ? rankFloorLast(messages) : turn(5, true);
     });
 
     await judgeChain({ judge, scenes: scenes(2), genre: '스릴러', floorCandidates: floorCandidates() });
@@ -470,7 +470,7 @@ describe('quote grounding', () => {
 
   it('accepts a quote whose whitespace the judge changed', async () => {
     const judge = scriptedJudge((messages, call) =>
-      call <= 8 ? rankFloorLast(messages) : turn(5, true, '문을  열었다'),
+      call <= 16 ? rankFloorLast(messages) : turn(5, true, '문을  열었다'),
     );
 
     const verdict = await judgeChain({

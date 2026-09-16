@@ -25,6 +25,7 @@ import {
   readRankingLeniently,
   readTurnLeniently,
 } from '#sim/judge/lenientAnswer';
+import { judgeManuscript, type CriticVerdict } from '#sim/judge/manuscriptCritic';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';
 import type { SimJudge } from '#sim/ports/judge';
 import type { JudgeRecall } from '#sim/score/factRecall';
@@ -67,6 +68,8 @@ export interface PanelVerdict {
   readonly discardReasons: readonly string[];
   // 장르 독자가 중간에 끊긴 사유. AUC 에 안 들어가는 독자이므로 회차를 버리지 않고 적어만 둔다.
   readonly genreProblems: readonly string[];
+  // 원고 전체를 읽은 비평가의 점수. AUC 와 다른 눈금이라 따로 둔다. 비평가를 안 부르면 없다.
+  readonly critic?: CriticVerdict;
 }
 
 const repairSchema = z.object({ quote: z.string() });
@@ -257,6 +260,8 @@ export async function judgeChain(input: {
   readonly genre: string;
   // 하한선 관문에 쓸 후보. 훼손본이 반드시 들어 있어야 한다.
   readonly floorCandidates: readonly FloorCandidate[];
+  // 있으면 8화를 다 읽은 뒤 비평가를 부른다. names 는 훼손본을 만들 때 뒤바꿀 인물 이름이다.
+  readonly critic?: { readonly names: readonly string[] };
 }): Promise<PanelVerdict> {
   // NOTE: 관문은 회차를 버리는 조건이 아니라 표시다. 심판이 훼손본을 못 가려낸 회차의 AUC 는 믿을
   // 수 없지만, 버리면 «관문 통과 회차만» 과 «전체» 를 나란히 볼 길이 없다. 실측에서 작은 심판이 보통
@@ -292,6 +297,17 @@ export async function judgeChain(input: {
   // 버리면 공통 독자 넷이 8화를 다 읽고 낸 곡선까지 함께 버려진다. 실측에서 그 일이 있었다.
   const genre = await readInOrder(input.judge, genreReader(input.genre), input.scenes);
 
+  // 비평가는 회차를 버리지 않는다. 답을 못 읽은 기준은 빠진 채 남고, 문제는 사유로만 적힌다.
+  const critic =
+    input.critic === undefined
+      ? undefined
+      : await judgeManuscript({
+          judge: input.judge,
+          genre: input.genre,
+          scenes: input.scenes,
+          names: input.critic.names,
+        });
+
   return {
     auc: panelAuc(curves, input.scenes.length),
     curves,
@@ -300,6 +316,7 @@ export async function judgeChain(input: {
     discarded: discardReasons.length > 0,
     discardReasons,
     genreProblems: genre.problems,
+    ...(critic === undefined ? {} : { critic }),
   };
 }
 

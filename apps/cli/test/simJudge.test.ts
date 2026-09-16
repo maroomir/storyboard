@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildCritique,
+  commonReaders,
+  corruptManuscript,
+  criticCriteria,
   evaluateFloorGate,
+  joinManuscript,
+  judgeManuscript,
+  readCritiqueLeniently,
   isQuoteGrounded,
   readQuoteLeniently,
   readRankingLeniently,
@@ -287,5 +294,107 @@ describe('lenient judge answers', () => {
     expect(
       readRankingLeniently('{ "notes": { "가": "그는 "문"을 열었다" }, "ranking": ["나", "가"] }')?.ranking,
     ).toEqual(['나', '가']);
+  });
+});
+
+describe('reader panel makeup', () => {
+  // 2026-09 에 개연성·핍진성·감정·동기 독자를 더했다. AUC 는 여덟 독자의 평균이다.
+  it('has eight common readers, each watching one thing', () => {
+    expect(commonReaders.map((reader) => reader.id)).toEqual([
+      'pace', 'prose', 'canon', 'pov', 'cause', 'world', 'feeling', 'motive',
+    ]);
+    expect(new Set(commonReaders.map((reader) => reader.watches)).size).toBe(8);
+  });
+});
+
+describe('manuscript critic', () => {
+  const scenes = [
+    { sceneStem: '01-a', draft: '---\nsceneStem: 01-a\n---\n서지운은 문을 열었다.\n\n한도경이 웃었다.' },
+    { sceneStem: '02-b', draft: '서지운이 물었다.\n\n한도경은 답하지 않았다.' },
+  ];
+
+  it('joins the scenes into one manuscript without their front matter', () => {
+    const manuscript = joinManuscript(scenes);
+
+    expect(manuscript).toContain('## 1화 (01-a)');
+    expect(manuscript).not.toContain('sceneStem:');
+    expect(manuscript).toContain('서지운은 문을 열었다.');
+  });
+
+  // 비평가의 눈금을 믿으려면 망가진 원고를 낮게 주는지 봐야 한다. 훼손본은 사람이 새로 쓰지 않고 기계가 부순다.
+  it('corrupts the manuscript deterministically with swapped names and leftover notes', () => {
+    const once = corruptManuscript(scenes, ['서지운', '한도경']);
+    const twice = corruptManuscript(scenes, ['서지운', '한도경']);
+
+    expect(once).toBe(twice);
+    expect(once).toContain('한도경은 문을 열었다.');
+    expect(once).toContain('서지운이 웃었다.');
+    expect(once).toContain('[작가 메모');
+    expect(once).not.toBe(joinManuscript(scenes));
+  });
+
+  it('asks for a quote only on criteria a sentence can prove', () => {
+    const grounded = criticCriteria.find((criterion) => criterion.id === 'payoff');
+    const opinion = criticCriteria.find((criterion) => criterion.id === 'theme');
+    const withQuote = buildCritique({ genre: '스릴러', manuscript: '본문', criterion: grounded! });
+    const withoutQuote = buildCritique({ genre: '스릴러', manuscript: '본문', criterion: opinion! });
+
+    expect(withQuote.at(-1)?.content).toContain('"quote"');
+    expect(withoutQuote.at(-1)?.content).not.toContain('"quote"');
+    expect(withoutQuote[0]?.content).toContain('인용 없이');
+  });
+
+  it('scores the six criteria, marks opinions, and gates on the corrupted manuscript', async () => {
+    let call = 0;
+    const judge = {
+      providerId: 'ollama' as const,
+      model: 'gemma3:12b',
+      ask: async (messages: readonly { content: string }[]) => {
+        call += 1;
+        const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+        const score = isCorrupted ? 1 : 4;
+        return {
+          providerId: 'ollama' as const,
+          model: 'gemma3:12b',
+          text: JSON.stringify({ score, reason: '이유', quote: '서지운은 문을 열었다.' }),
+        } as never;
+      },
+      usage: () => [],
+    };
+
+    const verdict = await judgeManuscript({ judge, genre: '스릴러', scenes, names: ['서지운', '한도경'] });
+
+    expect(call).toBe(12);
+    expect(verdict.scores).toHaveLength(6);
+    expect(verdict.groundedTotal).toBe(16);
+    expect(verdict.opinionTotal).toBe(8);
+    expect(verdict.scores.filter((entry) => entry.opinion).map((entry) => entry.criterion)).toEqual([
+      'theme',
+      'originality',
+    ]);
+    expect(verdict.gate.passed).toBe(true);
+    expect(verdict.gate.corruptedGroundedTotal).toBe(4);
+  });
+
+  it('marks a grounded criterion as opinion when its quote is not in the manuscript', async () => {
+    const judge = {
+      providerId: 'ollama' as const,
+      model: 'gemma3:12b',
+      ask: async () =>
+        ({ providerId: 'ollama', model: 'gemma3:12b', text: '{ "score": 3, "reason": "이유", "quote": "없는 문장" }' }) as never,
+      usage: () => [],
+    };
+
+    const verdict = await judgeManuscript({ judge, genre: '스릴러', scenes, names: [] });
+
+    expect(verdict.scores.find((entry) => entry.criterion === 'arc')?.ungrounded).toBe(true);
+    expect(verdict.gate.passed).toBe(false);
+  });
+
+  it('reads a critique whose JSON broke', () => {
+    expect(readCritiqueLeniently('```json\n{ "score": 4, "reason": "그는 "문"을 열었다" }\n```')).toEqual({
+      score: 4,
+      reason: '그는 "문"을 열었다',
+    });
   });
 });

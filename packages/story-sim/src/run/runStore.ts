@@ -61,6 +61,22 @@ export interface RunRecord {
     readonly quote: string;
   }[];
   readonly genreProblems?: readonly string[];
+  // 원고 전체를 읽은 비평가. 인용으로 지킨 넷(최대 20)과 의견 둘(최대 10)을 따로 더한다.
+  readonly critic?: {
+    readonly groundedTotal: number;
+    readonly opinionTotal: number;
+    readonly gatePassed: boolean;
+    readonly scores: readonly {
+      readonly criterion: string;
+      readonly score: number;
+      readonly reason: string;
+      readonly quote?: string;
+      readonly opinion: boolean;
+      readonly ungrounded?: boolean;
+    }[];
+    readonly gateReason: string;
+    readonly problems: readonly string[];
+  };
   // 축 트랙만 채운다. 진단표이지 성능이 아니므로 파레토에 들어가지 않는다.
   readonly axisVerdicts?: readonly {
     readonly sceneStem: string;

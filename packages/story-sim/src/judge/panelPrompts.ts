@@ -36,6 +36,32 @@ export const commonReaders: readonly ReaderPersona[] = [
     watches: '초점 인물이 모를 것을 서술이 알고 있는지. 새면 덮는다.',
     scope: 'common',
   },
+  // NOTE: 아래 넷은 2026-09 에 더한 독자다. 그 전의 AUC 는 위 넷의 평균이라 눈금이 다르다 — 리포트는
+  // 엔진 커밋으로 묶으므로 섞이지 않지만, 옛 값과 나란히 읽을 때는 그 점을 안다.
+  {
+    id: 'cause',
+    name: '개연성을 보는 독자',
+    watches: '사건의 원인과 결과가 맞물리는지. 이유 없이 일이 벌어지면 덮는다.',
+    scope: 'common',
+  },
+  {
+    id: 'world',
+    name: '핍진성을 보는 독자',
+    watches: '이야기가 세운 규칙(장소·시간·물건·제도)을 스스로 지키는지. 규칙이 편의대로 바뀌면 덮는다.',
+    scope: 'common',
+  },
+  {
+    id: 'feeling',
+    name: '감정의 개연성을 보는 독자',
+    watches: '인물의 감정과 반응이 닥친 일에 맞는지. 이유 없이 울고 웃으면 덮는다.',
+    scope: 'common',
+  },
+  {
+    id: 'motive',
+    name: '동기를 보는 독자',
+    watches: '인물이 왜 그 선택을 하는지 보이는지. 이유 없이 움직이면 덮는다.',
+    scope: 'common',
+  },
 ];
 
 export function genreReader(genre: string): ReaderPersona {

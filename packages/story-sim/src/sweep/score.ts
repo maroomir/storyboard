@@ -19,6 +19,30 @@ export interface PointScore extends ScoredPoint {
   readonly judged: number;
   // 유효 회차 중 하한선 관문을 지난 수. judged 보다 훨씬 작으면 그 AUC 는 심판을 못 믿은 채 낸 값이다.
   readonly gatePassed: number;
+  // 비평가 점수의 중앙값(인용 기준 합 /20, 의견 합 /10)과 비평 관문을 지난 회차 수. 비평가를 안 부른 지점은 없다.
+  readonly critic?: {
+    readonly grounded: number;
+    readonly opinion: number;
+    readonly gatePassed: number;
+    readonly runs: number;
+  };
+}
+
+function criticSummary(judged: readonly RunRecord[]): { readonly critic?: PointScore['critic'] } {
+  const scored = judged.filter((run) => run.critic !== undefined);
+
+  if (scored.length === 0) {
+    return {};
+  }
+
+  return {
+    critic: {
+      grounded: median(scored.map((run) => run.critic?.groundedTotal ?? 0)),
+      opinion: median(scored.map((run) => run.critic?.opinionTotal ?? 0)),
+      gatePassed: scored.filter((run) => run.critic?.gatePassed === true).length,
+      runs: scored.length,
+    },
+  };
 }
 
 export function describeGeneration(run: RunRecord): string {
@@ -70,6 +94,7 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       runs: group.length,
       judged: judged.length,
       gatePassed: judged.filter((run) => run.floorGate?.passed === true).length,
+      ...criticSummary(judged),
       // 씨앗이 없어 회차마다 흔들리므로 최고값이 아니라 중앙값을 쓴다.
       auc: median(judged.map((run) => run.auc as number)),
       cost: median(group.map((run) => costOfRun(run, axis))),
