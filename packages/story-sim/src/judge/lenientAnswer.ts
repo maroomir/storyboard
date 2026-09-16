@@ -3,6 +3,12 @@
 // 정한 고정된 틀이므로, 엄격한 JSON 이 실패하면 틀에 맞춰 필드를 잘라내어 살린다. 지어내지는 않는다:
 // 필드가 하나라도 없으면 그대로 실패다.
 
+// 심판은 JSON 문자열을 곧은 따옴표 대신 굽은 따옴표(”)로 닫기도 한다 — «"…\\"”». 틀을 자르기 전에
+// 굽은 겹따옴표를 곧은 것으로 접는다. 값 안의 따옴표 모양은 인용 검사가 어차피 접는다.
+function foldQuotes(text: string): string {
+  return text.replace(/[“”]/g, '"');
+}
+
 function unescapeJsonString(text: string): string {
   return text.replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
 }
@@ -33,7 +39,8 @@ export interface LenientTurn {
   readonly quote: string;
 }
 
-export function readTurnLeniently(text: string): LenientTurn | null {
+export function readTurnLeniently(raw: string): LenientTurn | null {
+  const text = foldQuotes(raw);
   const engagement = /"engagement"\s*:\s*(-?\d+(?:\.\d+)?)/u.exec(text);
   const continueReading = /"continueReading"\s*:\s*(true|false)/u.exec(text);
   const reason = stringField(text, 'reason', 'quote');
@@ -51,13 +58,14 @@ export function readTurnLeniently(text: string): LenientTurn | null {
   };
 }
 
-export function readQuoteLeniently(text: string): { readonly quote: string } | null {
-  const quote = stringField(text, 'quote', undefined);
+export function readQuoteLeniently(raw: string): { readonly quote: string } | null {
+  const quote = stringField(foldQuotes(raw), 'quote', undefined);
   return quote === undefined ? null : { quote };
 }
 
 // 순위 답은 결함 문장(notes) 이 깨져도 ranking 배열만 온전하면 읽는다.
-export function readRankingLeniently(text: string): { readonly ranking: readonly string[] } | null {
+export function readRankingLeniently(raw: string): { readonly ranking: readonly string[] } | null {
+  const text = foldQuotes(raw);
   const match = /"ranking"\s*:\s*\[([^\]]*)\]/u.exec(text);
 
   if (match === null) {

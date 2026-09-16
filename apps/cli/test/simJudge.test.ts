@@ -243,6 +243,25 @@ describe('lenient judge answers', () => {
     expect(turn?.quote).toBe('"유하람이 고개를 끄덕이며 "보존 기한이 지난 파일은 폐기됐다"고 대답한다."');
   });
 
+  // 실측 그대로다. 심판이 문자열을 곧은 따옴표 대신 굽은 따옴표로 닫아 어느 파서도 끝을 못 찾았다.
+  it('recovers a turn whose string was closed with a curly quotation mark', () => {
+    const raw = [
+      '```json',
+      '{',
+      '  "engagement": 4,',
+      '  "continueReading": true,',
+      '  "reason": "사건의 진실을 파헤치려는 지운과 방해하려는 주변 인물들의 대립이 흥미롭다.",',
+      '  "quote": "\\"관련 규정 조항에 의거하여 처리되었습니다.\\"”',
+      '}',
+      '```',
+    ].join('\n');
+    const turn = readTurnLeniently(raw);
+
+    expect(turn?.engagement).toBe(4);
+    expect(turn?.continueReading).toBe(true);
+    expect(turn?.quote).toContain('관련 규정 조항에 의거하여 처리되었습니다.');
+  });
+
   it('does not invent a field that is missing', () => {
     expect(readTurnLeniently('{ "engagement": 3, "reason": "x" }')).toBeNull();
   });
