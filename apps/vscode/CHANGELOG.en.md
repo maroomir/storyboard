@@ -10,6 +10,20 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-09-16
+
+### Fixed
+
+- **An empty draft is no longer saved when a local model spends its budget thinking.** `gemma4:12b` wrote 19,000 characters of reasoning against the skeleton prompt, exhausted the output limit, and returned with empty content — which was accepted as a valid answer, so a single line reading "no content was entered" was saved as the manuscript. Two of eight episodes ended at 121 characters that way, with no error. Empty content alongside reasoning is now a generation failure that names the reasoning length and what to do about it (turn thinking off, raise the output limit), and no fake manuscript is left behind.
+- **Judge answers that were cut off mid-quote, or closed with a curly quotation mark, are now read.**
+
+### Added
+
+- **The prompt variant and the local "thinking" switch are selectable.** `promptVariant` (`generic`, `xs`, `rich`) takes precedence over the model-name rule — local qwen and gemma models previously got the smallest prompt on the strength of their name alone, so every measurement so far was taken with that prompt. `providers.ollama.think` turns reasoning on and off (with a reasoning model, one call can take tens of minutes).
+- **`sim apply` actually writes the model profile.** The last step of moving measured values into a profile was missing, so it was done by hand — and six months later nobody knows which run a number came from. Knobs are now written to the engine's profile file under a "provider:model" key, along with the date, track, valid rounds, length attainment, AUC, recall and judge. An existing profile is not overwritten without `--force`.
+- **A measured `gemma4:12b` profile ships.** The local default model changed but the pipeline still ran on the generic defaults (section limit 7,000), so this model's habit of writing to a third of the target went uncorrected. The section limit is recorded as 1,000 (thriller chain track, 3 valid rounds, 0.70 length attainment).
+- **Measurement points can be named, and resume works per generator.** Different experiments at the same point were collapsing into one row, and resume was not accounting for a change of generator.
+
 ## [0.9.5] - 2026-09-16
 
 ### Fixed
