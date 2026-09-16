@@ -23,6 +23,10 @@ const measurementSchema = z.object({
   sections: z.number().int().positive().optional(),
   // 후보값을 왜 떨어뜨렸는지. 같은 스윕을 다시 돌리지 않게 근거를 남긴다.
   skeletonRatioCandidates: z.string().optional(),
+  // sim apply 가 함께 적는 심판 지표. 독자 이탈 곡선 면적과 사실 회수, 그리고 누가 채점했는지.
+  auc: z.number().min(0).max(1).optional(),
+  recalled: z.number().nonnegative().optional(),
+  judge: z.string().optional(),
 });
 
 // 파이프라인이 모델마다 달리 잡을 수 있는 손잡이. 전부 선택이며, 없으면 파이프라인 기본값을 쓴다.

@@ -29,6 +29,8 @@ export interface RunRecord {
     readonly promptVariant?: string;
     readonly think?: boolean;
   };
+  // 누가 채점했는지. 심판이 바뀌면 AUC 는 다른 눈금이다.
+  readonly judge?: { readonly providerId: string; readonly model: string };
   readonly scenes: readonly SceneMetrics[];
   readonly tokens: TokenTotals;
   readonly auc?: number;

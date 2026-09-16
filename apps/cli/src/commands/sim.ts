@@ -14,6 +14,9 @@ import {
   judgeAxis,
   judgeChain,
   keepDrafts,
+  measurementFor,
+  profileFieldsFor,
+  writeModelProfile,
   parseFactLedger,
   scoreFactRecall,
   defaultGridLevels,
@@ -623,6 +626,9 @@ async function executePoints(
           trackDirty: false,
           knobs: point.knobs,
           generation: generationRecord(input.generation, input.localRuntime),
+          ...(input.judge === undefined
+            ? {}
+            : { judge: { providerId: input.judge.providerId, model: input.judge.model } }),
           scenes: result.metrics.scenes,
           tokens: result.tokens,
           ...verdictFields,
@@ -993,15 +999,74 @@ export const applySim: CommandHandler = async (context) => {
     );
   }
 
+  const { fields, unsupported } = profileFieldsFor(knobs);
+
+  if (unsupported.length > 0) {
+    return refuse(`프로필 칸으로 옮길 수 없는 손잡이가 있습니다: ${unsupported.join(', ')}`);
+  }
+
+  const generation = runs[0]?.generation as RunRecord['generation'];
+  const key = `${generation.providerId}:${generation.model}`;
+  const judge = judged[0]?.judge;
+  const measured = measurementFor(judged, {
+    date: new Date().toISOString().slice(0, 10),
+    ...(judge === undefined ? {} : { judge: `${judge.providerId}:${judge.model}` }),
+  });
+  const plan = [
+    `${point} 를 ${key} 프로필에 적습니다.`,
+    ...Object.entries(fields).map(([id, value]) => `  ${id} = ${JSON.stringify(value)}`),
+    `  measured = ${JSON.stringify(measured)}`,
+  ];
+
+  if (flagBoolean(context.args.flags, 'dry-run')) {
+    return {
+      ok: true,
+      message: ['적지 않고 계획만 보여 줍니다.', ...plan].join('\n'),
+      data: { point, key, fields, measured, runs: runs.length, judged: judged.length },
+    };
+  }
+
+  const profilesPath = requireFlag(context, 'profiles') ?? (await findModelProfilesFile());
+
+  if (profilesPath === undefined) {
+    return refuse(
+      '엔진의 modelProfiles.params.json 을 찾지 못했습니다. 저장소 안에서 돌리거나 --profiles 로 경로를 주세요.',
+    );
+  }
+
+  const result = await writeModelProfile(profilesPath, key, fields, measured, {
+    force: flagBoolean(context.args.flags, 'force'),
+  });
+
+  if (!result.written) {
+    return refuse(
+      [
+        `${key} 프로필이 이미 있습니다. 덮어쓰려면 --force 를 붙이세요.`,
+        `  지금 값: ${JSON.stringify(result.previous)}`,
+      ].join('\n'),
+    );
+  }
+
   return {
     ok: true,
-    message: [
-      flagBoolean(context.args.flags, 'dry-run') ? '적지 않고 계획만 보여 줍니다.' : '',
-      `${point} 를 ${runs[0]?.generation.providerId}:${runs[0]?.generation.model} 프로필에 적습니다.`,
-      ...Object.entries(knobs).map(([id, value]) => `  ${id} = ${value}`),
-    ]
-      .filter((line) => line.length > 0)
-      .join('\n'),
-    data: { point, knobs, runs: runs.length },
+    message: [...plan, `적었습니다: ${profilesPath}`, '검토 후 커밋하세요. 이 파일은 엔진 소스입니다.'].join('\n'),
+    data: { point, key, fields, measured, file: profilesPath, runs: runs.length, judged: judged.length },
   };
 };
+
+// 실행 파일(dist/index.mjs) 자리에서 위로 올라가며 엔진 저장소의 프로필 파일을 찾는다.
+async function findModelProfilesFile(): Promise<string | undefined> {
+  let directory = dirname(process.argv[1] ?? process.cwd());
+
+  for (let depth = 0; depth < 6; depth += 1) {
+    const candidate = join(directory, 'packages', 'story-ai', 'src', 'contracts', 'modelProfiles.params.json');
+    try {
+      await readFile(candidate, 'utf8');
+      return candidate;
+    } catch {
+      directory = dirname(directory);
+    }
+  }
+
+  return undefined;
+}

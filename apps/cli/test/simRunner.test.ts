@@ -15,6 +15,9 @@ import {
   draftsDirectoryFor,
   keepDrafts,
   listLocalModels,
+  measurementFor,
+  profileFieldsFor,
+  writeModelProfile,
   missingLocalModels,
   simResultsDirectory,
   measureScene,
@@ -382,6 +385,99 @@ describe('draft store', () => {
     expect(draftsDirectoryFor({ genre: 'thriller', pointLabel: 'grid:0120', repeat: 1 })).toBe(
       join('drafts', 'thriller', 'grid_0120', '1'),
     );
+  });
+});
+
+describe('profile apply', () => {
+  let directory: string | undefined;
+
+  afterEach(() => {
+    if (directory !== undefined) {
+      rmSync(directory, { recursive: true, force: true });
+      directory = undefined;
+    }
+  });
+
+  function judgedRun(overrides: Partial<RunRecord> = {}): RunRecord {
+    return {
+      runId: 'r',
+      genre: 'thriller',
+      pointLabel: 'len-sec1000',
+      repeat: 1,
+      engineCommit: 'e',
+      trackCommit: '1034a9c0deadbeef',
+      trackDirty: false,
+      knobs: { 'draft.sectionOutputLimit': 1000 },
+      generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
+      judge: { providerId: 'ollama', model: 'gemma3:12b' },
+      scenes: [
+        { sceneStem: '01', targetLength: 3000, draftLength: 2100, reach: 0.7, warnings: [], warningWeight: 0 },
+        { sceneStem: '02', targetLength: 3000, draftLength: 2400, reach: 0.8, warnings: [], warningWeight: 0 },
+      ],
+      tokens: { calls: 0, inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      auc: 0.325,
+      recalled: 8,
+      startedAt: '2026-09-16T00:00:00.000Z',
+      wallClockMs: 1,
+      ...overrides,
+    };
+  }
+
+  // 손잡이 이름과 프로필 칸 이름이 다르다. 손으로 옮기면 어긋난다.
+  it('maps knobs onto profile fields by their tuning keys', () => {
+    const { fields, unsupported } = profileFieldsFor({
+      'draft.sectionOutputLimit': 1000,
+      'skeleton.lengthRatio': 0.8,
+      'violationWeights.repetition': 3,
+      'prompt.sceneSkeleton.temperature': 0.5,
+    });
+
+    expect(fields).toEqual({
+      sectionOutputLimit: 1000,
+      skeletonRatio: 0.8,
+      violationWeights: { repetition: 3 },
+    });
+    expect(unsupported).toEqual(['prompt.sceneSkeleton.temperature']);
+  });
+
+  it('records where the numbers came from', () => {
+    const measured = measurementFor([judgedRun(), judgedRun({ repeat: 2, auc: 0.3, recalled: 9 })], {
+      date: '2026-09-16',
+      judge: 'ollama:gemma3:12b',
+    });
+
+    expect(measured).toEqual({
+      date: '2026-09-16',
+      workspace: 'thriller@1034a9c',
+      sceneTarget: 3000,
+      runs: 2,
+      reach: 0.75,
+      auc: 0.313,
+      recalled: 8.5,
+      judge: 'ollama:gemma3:12b',
+    });
+  });
+
+  // 몇 시간짜리 실행 끝에 사람이 자리를 비운 사이 나쁜 숫자가 검토 없이 들어가면 안 된다.
+  it('writes a new profile and refuses to overwrite one without force', async () => {
+    directory = mkdtempSync(join(tmpdir(), 'sim-profiles-'));
+    const file = join(directory, 'modelProfiles.params.json');
+    writeFileSync(file, '{}\n');
+    const measured = measurementFor([judgedRun()], { date: '2026-09-16' });
+
+    const first = await writeModelProfile(file, 'ollama:gemma4:12b', { sectionOutputLimit: 1000 }, measured);
+    expect(first.written).toBe(true);
+    expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({
+      'ollama:gemma4:12b': { sectionOutputLimit: 1000, measured },
+    });
+
+    const second = await writeModelProfile(file, 'ollama:gemma4:12b', { sectionOutputLimit: 700 }, measured);
+    expect(second.written).toBe(false);
+    expect(JSON.parse(readFileSync(file, 'utf8'))['ollama:gemma4:12b'].sectionOutputLimit).toBe(1000);
+
+    const forced = await writeModelProfile(file, 'ollama:gemma4:12b', { sectionOutputLimit: 700 }, measured, { force: true });
+    expect(forced.written).toBe(true);
+    expect(JSON.parse(readFileSync(file, 'utf8'))['ollama:gemma4:12b'].sectionOutputLimit).toBe(700);
   });
 });
 

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -383,6 +383,42 @@ describe('sim report', () => {
 });
 
 describe('sim apply', () => {
+  // 적는 곳은 엔진 소스의 프로필 파일이다. 시험에서는 --profiles 로 임시 파일을 준다.
+  it('writes the point into the profile file with its provenance', async () => {
+    const out = join(home, 'runs.jsonl');
+    const profiles = join(home, 'modelProfiles.params.json');
+    writeFileSync(profiles, '{}\n');
+    const base = {
+      genre: 'thriller',
+      pointLabel: 'len-sec1000',
+      engineCommit: 'e',
+      trackCommit: '1034a9c0deadbeef',
+      trackDirty: false,
+      knobs: { 'draft.sectionOutputLimit': 1000 },
+      generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
+      judge: { providerId: 'ollama', model: 'gemma3:12b' },
+      scenes: [{ sceneStem: '01', targetLength: 3000, draftLength: 2100, reach: 0.7, warnings: [], warningWeight: 0 }],
+      tokens: { calls: 0, inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      startedAt: '2026-09-16T00:00:00.000Z',
+      wallClockMs: 1,
+    };
+    writeFileSync(
+      out,
+      [1, 2, 3].map((repeat) => JSON.stringify({ ...base, runId: `r${repeat}`, repeat, auc: 0.3 + repeat / 100, recalled: 8 })).join('\n') + '\n',
+    );
+
+    const outcome = await run('sim apply', { out, point: 'len-sec1000', profiles });
+
+    expect(outcome?.ok).toBe(true);
+    const written = JSON.parse(readFileSync(profiles, 'utf8'))['ollama:gemma4:12b'];
+    expect(written.sectionOutputLimit).toBe(1000);
+    expect(written.measured).toMatchObject({ workspace: 'thriller@1034a9c', runs: 3, auc: 0.32, recalled: 8, judge: 'ollama:gemma3:12b' });
+
+    const again = await run('sim apply', { out, point: 'len-sec1000', profiles });
+    expect(again?.ok).toBe(false);
+    expect(again?.message).toContain('--force');
+  });
+
   it('refuses a point with no runs', async () => {
     const out = join(home, 'runs.jsonl');
     writeFileSync(out, '');
