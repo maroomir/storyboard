@@ -43,6 +43,8 @@ interface OllamaChatRequest {
 interface OllamaChatResponse {
   readonly message?: {
     readonly content?: string;
+    // 생각하는 모델의 생각. 본문(content)과 따로 온다.
+    readonly thinking?: string;
   };
   readonly prompt_eval_count?: number;
   readonly eval_count?: number;
@@ -108,16 +110,34 @@ export class OllamaProvider implements AiProvider {
       });
 
       const text = response.message?.content ?? '';
+      const thinking = response.message?.thinking ?? '';
+
+      // NOTE: 생각하는 모델은 num_predict 를 생각으로 다 쓰면 본문 없이 돌아온다. 그것을 빈 본문으로
+      // 넘기면 뼈대가 비고, 그 빈 뼈대를 «내용이 입력되지 않았습니다» 라는 한 줄로 확장한 원고가
+      // 조용히 저장된다. 실측에서 gemma4 가 뼈대 프롬프트에 생각 19,000자를 쓰고 그렇게 됐다.
+      if (text.trim().length === 0 && thinking.trim().length > 0) {
+        throw new ThinkingExhaustedOutputError(this.model, thinking.length);
+      }
+
       const usage = usageFromOllamaResponse(response);
       return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        generationFailedMessage(this.id),
+        error instanceof ThinkingExhaustedOutputError ? error.message : generationFailedMessage(this.id),
         error,
       );
     }
+  }
+}
+
+export class ThinkingExhaustedOutputError extends Error {
+  public constructor(model: string, thinkingLength: number) {
+    super(
+      `${model} 가 생각(thinking)으로 출력 상한을 다 써서 본문이 비었습니다 (생각 ${thinkingLength.toLocaleString()}자). think 를 끄거나 출력 상한을 올리세요.`,
+    );
+    this.name = 'ThinkingExhaustedOutputError';
   }
 }
 

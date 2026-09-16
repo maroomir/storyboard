@@ -42,6 +42,22 @@ describe("OllamaProvider", () => {
     expect("think" in (bodies[1] ?? {})).toBe(false)
   })
 
+  // 생각으로 출력 상한을 다 쓰면 본문이 빈 채 돌아온다. 빈 본문을 넘기면 빈 뼈대가 조용히 저장된다.
+  it("fails loudly when thinking used up the output and no content came back", async () => {
+    const client: OllamaClientLike = {
+      get: async (): Promise<Record<string, unknown>> => ({}),
+      post: async (): Promise<Record<string, unknown>> => ({
+        message: { content: "", thinking: "생각 생각 생각" },
+        eval_count: 8000
+      })
+    }
+    const provider = new OllamaProvider({ baseUrl: "http://localhost:11434", model: "gemma4:12b", createClient: (): OllamaClientLike => client })
+
+    await expect(
+      provider.generate({ taskName: "sceneSkeleton", messages: [{ role: "user", content: "장면" }] })
+    ).rejects.toMatchObject({ code: "generation-failed", message: expect.stringContaining("생각") })
+  })
+
   it("generates text through /api/chat", async () => {
     let capturedPath = ""
     const usage = { inputTokens: 30, outputTokens: 70 }
