@@ -1,1 +1,14 @@
-{}
+{
+  "ollama:gemma4:12b": {
+    "sectionOutputLimit": 1000,
+    "measured": {
+      "date": "2026-09-16",
+      "workspace": "thriller@1034a9c",
+      "sceneTarget": 3000,
+      "runs": 3,
+      "reach": 0.7,
+      "auc": 0.325,
+      "recalled": 8
+    }
+  }
+}
