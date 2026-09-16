@@ -331,6 +331,9 @@ describe('manuscript critic', () => {
     expect(once).toContain('서지운이 웃었다.');
     expect(once).toContain('[작가 메모');
     expect(once).not.toBe(joinManuscript(scenes));
+    // 마지막 화는 첫 문단만 남아 결말이 사라진다.
+    const lastScene = once.split('## 2화')[1] ?? '';
+    expect(lastScene.split(/\n{2,}/u).filter((line) => line.trim().length > 0)).toHaveLength(2);
   });
 
   it('asks for a quote only on criteria a sentence can prove', () => {
@@ -342,6 +345,9 @@ describe('manuscript critic', () => {
     expect(withQuote.at(-1)?.content).toContain('"quote"');
     expect(withoutQuote.at(-1)?.content).not.toContain('"quote"');
     expect(withoutQuote[0]?.content).toContain('인용 없이');
+    // 점수의 뜻이 앞에 못박혀 있다. 없으면 작은 심판은 무엇이든 2~3점을 준다.
+    expect(withQuote[0]?.content).toContain('0: 원고로 읽을 수 없다');
+    expect(withQuote[0]?.content).toContain('1을 넘을 수 없다');
   });
 
   it('scores the six criteria, marks opinions, and gates on the corrupted manuscript', async () => {
@@ -372,8 +378,48 @@ describe('manuscript critic', () => {
       'theme',
       'originality',
     ]);
+    // 16 - 4 = 12 ≥ 최소 격차 4.
     expect(verdict.gate.passed).toBe(true);
     expect(verdict.gate.corruptedGroundedTotal).toBe(4);
+  });
+
+  // 훼손본이 늘 8점을 받아 2~4점 차이로 관문을 넘던 일이 있었다. 인용 기준 넷에서 한 점씩은 벌어져야 한다.
+  it('fails the gate when the corrupted manuscript scores within the margin', async () => {
+    const judge = {
+      providerId: 'ollama' as const,
+      model: 'gemma3:12b',
+      ask: async (messages: readonly { content: string }[]) => {
+        const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+        return {
+          providerId: 'ollama' as const,
+          model: 'gemma3:12b',
+          text: JSON.stringify({ score: isCorrupted ? 2 : 3, reason: '이유', quote: '서지운은 문을 열었다.' }),
+        } as never;
+      },
+      usage: () => [],
+    };
+
+    const verdict = await judgeManuscript({ judge, genre: '스릴러', scenes, names: ['서지운', '한도경'] });
+
+    expect(verdict.groundedTotal - verdict.gate.corruptedGroundedTotal).toBe(4);
+    expect(verdict.gate.passed).toBe(true);
+    // 격차 3 이면 막힌다: 훼손본의 첫 기준(인물 아크)만 3점을 받는다.
+    let corruptedCalls = 0;
+    const narrow = await judgeManuscript({
+      judge: {
+        ...judge,
+        ask: async (messages: readonly { content: string }[]) => {
+          const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+          if (isCorrupted) corruptedCalls += 1;
+          const score = isCorrupted ? (corruptedCalls === 1 ? 3 : 2) : 3;
+          return { providerId: 'ollama', model: 'gemma3:12b', text: JSON.stringify({ score, reason: '이유', quote: '서지운은 문을 열었다.' }) } as never;
+        },
+      },
+      genre: '스릴러',
+      scenes,
+      names: ['서지운', '한도경'],
+    });
+    expect(narrow.gate.passed).toBe(false);
   });
 
   it('marks a grounded criterion as opinion when its quote is not in the manuscript', async () => {

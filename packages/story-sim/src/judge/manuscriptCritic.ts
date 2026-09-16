@@ -59,6 +59,20 @@ export const criticCriteria: readonly CriticCriterion[] = [
 ];
 
 export const criticScoreMax = 5;
+// 관문의 최소 격차. 인용 기준 넷에서 한 점씩은 벌어져야 «훼손본을 가려냈다» 고 본다. 실측에서 훼손본이
+// 늘 정확히 8점(기준마다 2점)을 받아, 격차 없이 «더 높으면 통과» 로는 2~4점 차이로 넘어갔다.
+export const criticGateMargin = 4;
+
+// 점수의 뜻을 앞에 못박는다. 없으면 작은 심판은 무엇이든 2~3점으로 준다.
+const scoreRubric = [
+  '0: 원고로 읽을 수 없다 — 작가 메모나 지시문이 남아 있거나, 인물 이름이 뒤바뀌거나, 화 순서가 어긋난다.',
+  '1: 기준을 거의 못 지켰고 결함이 여럿이다.',
+  '2: 결함이 눈에 띈다.',
+  '3: 지켜지되 평범하다.',
+  '4: 잘 지켰다.',
+  '5: 흠잡을 데 없다.',
+  '편집되지 않은 흔적(작가 메모, 뒤바뀐 이름, 어긋난 순서, 같은 문단의 되풀이)이 하나라도 보이면 그 기준은 1을 넘을 수 없다.',
+];
 
 export interface CriticScore {
   readonly criterion: string;
@@ -95,8 +109,9 @@ function stripFrontMatter(draft: string): string {
 }
 
 // NOTE: 비평가의 눈금을 믿으려면 «망가진 원고를 낮게 주는가» 를 봐야 한다. 훼손본은 사람이 8화를 새로
-// 쓰는 대신 생성본을 기계적으로 부순다 — 이름 뒤바꾸기, 문단 순서 뒤집기, 화 순서 바꾸기, 작가 메모
-// 남기기, 문단 되풀이. 씨앗 없이 결정적이라 같은 원고에는 같은 훼손본이 나온다.
+// 쓰는 대신 생성본을 기계적으로 부순다 — 이름 뒤바꾸기, 문단 순서 뒤집기, 화 순서 바꾸기, 다른 화의
+// 문단 끼워 넣기, 작가 메모 남기기, 문단 되풀이, 마지막 화 잘라내기(완결을 없앤다). 씨앗 없이
+// 결정적이라 같은 원고에는 같은 훼손본이 나온다. 처음 판본은 이보다 약해서 심판이 늘 8/20 을 줬다.
 export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly string[]): string {
   const swapped = swapNames(scenes.map((scene) => stripFrontMatter(scene.draft)), names);
   const reordered = [...swapped];
@@ -104,20 +119,33 @@ export function corruptManuscript(scenes: readonly SceneDraft[], names: readonly
   if (reordered.length >= 6) {
     [reordered[2], reordered[5]] = [reordered[5] as string, reordered[2] as string];
   }
+  if (reordered.length >= 4) {
+    [reordered[0], reordered[3]] = [reordered[3] as string, reordered[0] as string];
+  }
 
   const notes = [
     '[작가 메모: 이 장면은 뼈대만 있음. 나중에 다시 씀]',
     '[여기서 회상 장면을 추가할 것. 감각 묘사 3문장 이상]',
     '[TODO: 이 화의 장소가 어디인지 카드 확인]',
+    '[편집자: 앞 화와 시각이 안 맞음. 9시인지 10시인지 정할 것]',
   ];
+  const paragraphsOf = (draft: string): string[] =>
+    draft.split(/\n{2,}/u).filter((paragraph) => paragraph.trim().length > 0);
+  const all = reordered.map(paragraphsOf);
 
-  return reordered
-    .map((draft, index) => {
-      const paragraphs = draft.split(/\n{2,}/u).filter((paragraph) => paragraph.trim().length > 0);
-      const shuffled = index % 2 === 0 ? [...paragraphs].reverse() : paragraphs;
-      const withNote = index % 3 === 1 ? [notes[(index / 3) | 0] ?? notes[0], ...shuffled] : shuffled;
+  return all
+    .map((paragraphs, index) => {
+      const shuffled = index % 2 === 0 ? [...paragraphs].reverse() : [...paragraphs];
+      // 다른 화의 문단을 한가운데에 끼운다. 통일성·복선이 같이 무너진다.
+      const foreign = all[(index + 3) % all.length]?.[0];
+      if (foreign !== undefined && shuffled.length > 1) {
+        shuffled.splice(Math.floor(shuffled.length / 2), 0, foreign);
+      }
+      const withNote = [notes[index % notes.length] as string, ...shuffled];
       const repeated = shuffled.length > 0 ? [...withNote, shuffled[0] as string] : withNote;
-      return `## ${index + 1}화\n\n${repeated.join('\n\n')}`;
+      // 마지막 화는 첫 문단만 남긴다. 결말이 사라진다.
+      const body = index === all.length - 1 ? repeated.slice(0, 2) : repeated;
+      return `## ${index + 1}화\n\n${body.join('\n\n')}`;
     })
     .join('\n\n');
 }
@@ -153,7 +181,8 @@ export function buildCritique(input: {
       role: 'system',
       content: [
         `당신은 ${input.genre} 소설 원고 한 편을 끝까지 읽고 기준 하나만 채점하는 비평가다.`,
-        '점수는 0에서 5 사이 정수다. 0은 기준을 전혀 못 지킨 것, 5는 흠잡을 데 없는 것이다.',
+        '점수는 0에서 5 사이 정수다.',
+        ...scoreRubric,
         ...(criterion.grounded
           ? ['근거로 드는 인용은 반드시 본문에 그대로 있는 구절이어야 한다. 지어내지 마라.']
           : ['이 기준은 한 구절로 증명되지 않는다. 인용 없이 이유만 적어라.']),
@@ -256,7 +285,7 @@ export async function judgeManuscript(input: {
 
   const generatedGrounded = groundedTotal(generated.scores);
   const corruptedGrounded = groundedTotal(corrupted.scores);
-  const passed = generatedGrounded > corruptedGrounded;
+  const passed = generatedGrounded - corruptedGrounded >= criticGateMargin;
 
   return {
     scores: generated.scores,
@@ -266,8 +295,8 @@ export async function judgeManuscript(input: {
       passed,
       corruptedGroundedTotal: corruptedGrounded,
       reason: passed
-        ? `생성본 ${generatedGrounded} > 훼손본 ${corruptedGrounded}`
-        : `훼손본 ${corruptedGrounded} 이 생성본 ${generatedGrounded} 보다 낮지 않습니다`,
+        ? `생성본 ${generatedGrounded} ≥ 훼손본 ${corruptedGrounded} + ${criticGateMargin}`
+        : `생성본 ${generatedGrounded} 과 훼손본 ${corruptedGrounded} 의 차이가 ${criticGateMargin} 미만입니다`,
     },
     problems: [...generated.problems, ...corrupted.problems.map((problem) => `(훼손본) ${problem}`)],
   };
