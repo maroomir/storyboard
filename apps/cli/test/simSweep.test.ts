@@ -14,6 +14,7 @@ import {
   planScreening,
   withinCap,
   type ScoredPoint,
+  regressionRows,
   scoreRuns,
 } from '@storyboard/story-sim';
 
@@ -325,5 +326,65 @@ describe('point score', () => {
 
     expect(scored).toHaveLength(3);
     expect(scored.map((point) => point.auc).sort()).toEqual([0.1, 0.5, 0.9]);
+  });
+});
+
+describe('regression view', () => {
+  function run(overrides: Partial<RunRecord>): RunRecord {
+    return {
+      runId: 'r',
+      genre: 'thriller',
+      pointLabel: 'point',
+      repeat: 1,
+      engineCommit: 'e1',
+      trackCommit: 't1',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
+      scenes: [],
+      tokens: { calls: 0, inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      startedAt: '2026-09-16T00:00:00.000Z',
+      wallClockMs: 1,
+      ...overrides,
+    };
+  }
+
+  // 릴리즈마다 같은 지점을 돌려 앞 엔진과 견준다. 잡음 폭 안이면 움직인 것이 아니다.
+  it('compares the latest engine with the previous one inside the noise floor', () => {
+    const rows = regressionRows([
+      run({ auc: 0.4, recalled: 8 }),
+      run({ auc: 0.5, recalled: 8, repeat: 2 }),
+      run({ auc: 0.45, recalled: 7, repeat: 3 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.48, recalled: 8 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T01:00:00.000Z', auc: 0.42, recalled: 9, repeat: 2 }),
+    ]);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ previousEngine: 'e1', latestEngine: 'e2', latestRuns: 2, previousRuns: 3, verdict: 'within-noise' });
+    expect(rows[0]?.aucDelta).toBeCloseTo(0);
+  });
+
+  it('flags a move larger than the noise floor and refuses to judge a single run', () => {
+    const outside = regressionRows([
+      run({ auc: 0.4 }),
+      run({ auc: 0.42, repeat: 2 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.2 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T01:00:00.000Z', auc: 0.22, repeat: 2 }),
+    ]);
+    expect(outside[0]?.verdict).toBe('outside-noise');
+
+    const single = regressionRows([
+      run({ auc: 0.4 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.2 }),
+    ]);
+    expect(single[0]?.verdict).toBe('undecidable');
+  });
+
+  it('never compares runs made with different generators', () => {
+    const rows = regressionRows([
+      run({ auc: 0.4 }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.2, generation: { providerId: 'ollama', model: 'qwen3:14b' } }),
+    ]);
+    expect(rows).toHaveLength(0);
   });
 });

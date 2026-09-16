@@ -39,6 +39,8 @@ import {
   readRuns,
   removeScratch,
   scoreRuns,
+  regressionRows,
+  describeRegression,
   runKey,
   runTrack,
   readSimConfig,
@@ -930,6 +932,15 @@ export const sweepSim: CommandHandler = async (context) => {
   return await executePoints(context, { ...prepared, points, judge, materials });
 };
 
+// 같은 지점·같은 생성을 두 엔진 이상으로 돌렸으면 앞 엔진 대비 움직임을 잡음 폭과 함께 보인다.
+function regressionLines(runs: readonly RunRecord[]): readonly string[] {
+  const rows = regressionRows(runs);
+
+  return rows.length === 0
+    ? []
+    : ['', '[회귀: 앞 엔진 대비]', ...rows.map((row) => `  ${describeRegression(row)}`)];
+}
+
 function scoreKey(point: PointScore): string {
   return [point.genre, point.pointLabel, point.engineCommit, point.trackCommit].join('\u0000');
 }
@@ -1008,6 +1019,7 @@ export const reportSim: CommandHandler = async (context) => {
       // NOTE: 사람이 쓴 gt 가 아직 없어 상한선을 모른다. 점수를 «사람 글의 몇 퍼센트» 로 읽으면 안 된다.
       'ceiling: n/a',
       ...lines,
+      ...regressionLines(runs),
     ].join('\n'),
     data: { runs: runs.length, costAxis: axis, points: scored, frontier },
   };
