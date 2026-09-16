@@ -345,9 +345,9 @@ describe('manuscript critic', () => {
     expect(withQuote.at(-1)?.content).toContain('"quote"');
     expect(withoutQuote.at(-1)?.content).not.toContain('"quote"');
     expect(withoutQuote[0]?.content).toContain('인용 없이');
-    // 점수의 뜻이 앞에 못박혀 있다. 없으면 작은 심판은 무엇이든 2~3점을 준다.
-    expect(withQuote[0]?.content).toContain('0: 원고로 읽을 수 없다');
-    expect(withQuote[0]?.content).toContain('1을 넘을 수 없다');
+    // 점수의 뜻이 앞에 못박혀 있되, 훼손의 종류는 적지 않는다. 적으면 심판이 멀쩡한 원고에서도 그것을 찾아낸다.
+    expect(withQuote[0]?.content).toContain('0: 기준을 전혀 못 지켰다');
+    expect(withQuote[0]?.content).not.toContain('작가 메모');
   });
 
   it('scores the six criteria, marks opinions, and gates on the corrupted manuscript', async () => {
