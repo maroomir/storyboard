@@ -191,15 +191,19 @@ function resolveGenreRoot(trackRoot: string, genre: string | undefined): string 
 async function loadOverlayPoint(
   overlayPath: string | undefined,
   provider: AiProviderId,
-): Promise<{ readonly knobs: Record<string, number>; readonly refusals: readonly string[] }> {
+): Promise<{
+  readonly label: string;
+  readonly knobs: Record<string, number>;
+  readonly refusals: readonly string[];
+}> {
   if (overlayPath === undefined) {
-    return { knobs: {}, refusals: [] };
+    return { label: 'point', knobs: {}, refusals: [] };
   }
 
   const overlay = parseOverlay(JSON.parse(await readFile(overlayPath, 'utf8')));
   const { refusals } = applyOverlay(overlay, provider);
 
-  return { knobs: overlay.knobs, refusals };
+  return { label: overlay.label ?? 'point', knobs: overlay.knobs, refusals };
 }
 
 interface Selection {
@@ -737,7 +741,7 @@ export const runSim: CommandHandler = async (context) => {
     return refuse(overlay.refusals.join('\n'));
   }
 
-  const points: readonly DesignedPoint[] = [{ label: 'point', knobs: overlay.knobs }];
+  const points: readonly DesignedPoint[] = [{ label: overlay.label, knobs: overlay.knobs }];
   const wantsJudge =
     !judgeDisabled(context) &&
     (requireFlag(context, 'judge') !== undefined || prepared.config.judge !== undefined);

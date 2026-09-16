@@ -8,6 +8,9 @@ import { isSectionOutputLimitKnob, knobRegistry, type KnobSpec } from '#sim/knob
 
 export const overlaySchema = z.object({
   note: z.string().optional(),
+  // 기록과 리포트에 쓸 지점 이름. 없으면 «point» 다. 오버레이 여러 장을 한 결과 파일에 쌓을 때
+  // 이름이 같으면 다른 손잡이 값이 한 지점으로 합쳐진다.
+  label: z.string().min(1).optional(),
   knobs: z.record(z.string(), z.number()),
 });
 

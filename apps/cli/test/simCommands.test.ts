@@ -108,6 +108,35 @@ describe('sim run', () => {
     expect(record?.generation.promptVariant).toBe('generic');
   });
 
+  // 오버레이 여러 장을 한 파일에 쌓을 때 이름이 같으면 다른 손잡이 값이 한 지점으로 합쳐진다.
+  it('records the overlay label as the point name', async () => {
+    const out = join(home, 'runs.jsonl');
+    const overlay = join(home, 'overlay.json');
+    writeFileSync(overlay, JSON.stringify({ label: 'len-skel08', knobs: { 'skeleton.lengthRatio': 0.8 } }));
+    const git = (...gitArgs: string[]): void => {
+      execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...gitArgs], { cwd: track });
+    };
+    git('init', '-q');
+    git('add', '-A');
+    git('commit', '-qm', 'fixture');
+
+    const outcome = await run('sim run', {
+      track,
+      genre: 'thriller',
+      provider: 'mock',
+      judge: 'none',
+      repeats: '1',
+      overlay,
+      out,
+      yes: true,
+    });
+
+    expect(outcome?.ok).toBe(true);
+    const [record] = await readRuns(out);
+    expect(record?.pointLabel).toBe('len-skel08');
+    expect(record?.knobs).toEqual({ 'skeleton.lengthRatio': 0.8 });
+  });
+
   it('refuses an overlay knob the registry does not know', async () => {
     const overlay = join(home, 'overlay.json');
     writeFileSync(overlay, JSON.stringify({ knobs: { 'skeleton.nope': 1 } }));
