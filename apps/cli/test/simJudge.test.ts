@@ -262,6 +262,22 @@ describe('lenient judge answers', () => {
     expect(turn?.quote).toContain('관련 규정 조항에 의거하여 처리되었습니다.');
   });
 
+  // 실측 그대로다. 인용 중간에 답이 끊겨 닫는 따옴표도 괄호도 없었다.
+  it('takes a trailing quote to the end when the answer was cut off', () => {
+    const raw = [
+      '```json',
+      '{',
+      '  "engagement": 3,',
+      '  "continueReading": true,',
+      '  "reason": "도경의 숨겨진 과거와 지운의 결정 사이의 미묘한 긴장감이 흥미롭다.",',
+      '  "quote": "[도경] "아무도 기억하지 않는 게 낫죠."',
+    ].join('\n');
+    const turn = readTurnLeniently(raw);
+
+    expect(turn?.engagement).toBe(3);
+    expect(turn?.quote).toBe('[도경] "아무도 기억하지 않는 게 낫죠."');
+  });
+
   it('does not invent a field that is missing', () => {
     expect(readTurnLeniently('{ "engagement": 3, "reason": "x" }')).toBeNull();
   });

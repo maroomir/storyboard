@@ -29,7 +29,18 @@ function stringField(text: string, key: string, nextKey: string | undefined): st
   const rest = text.slice(from);
   const end = terminator.exec(rest);
 
-  return end === null ? undefined : unescapeJsonString(rest.slice(0, end.index));
+  if (end !== null) {
+    return unescapeJsonString(rest.slice(0, end.index));
+  }
+
+  // 마지막 필드는 답이 끊겨 닫는 따옴표와 괄호가 없을 수 있다 — 실측에서 인용 중간에 끊긴 답이 있었다.
+  // 남은 글 전부를 값으로 본다. 인용은 어차피 본문 대조를 거치므로 지어낸 값이 들어올 길은 없다.
+  if (nextKey === undefined) {
+    const tail = unescapeJsonString(rest.replace(/```\s*$/u, '').trim());
+    return tail.length === 0 ? undefined : tail;
+  }
+
+  return undefined;
 }
 
 export interface LenientTurn {
