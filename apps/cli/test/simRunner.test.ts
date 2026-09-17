@@ -17,6 +17,8 @@ import {
   listLocalModels,
   measurementFor,
   profileFieldsFor,
+  rejudgeSources,
+  rejudgedRecord,
   writeModelProfile,
   missingLocalModels,
   simResultsDirectory,
@@ -567,5 +569,69 @@ describe('local model check', () => {
     const fetchImpl = (async () => ({ ok: false, status: 502 }) as Response) as typeof fetch;
 
     await expect(listLocalModels('http://127.0.0.1:11434', fetchImpl)).rejects.toThrow('502');
+  });
+});
+
+describe('rejudge', () => {
+  function run(overrides: Partial<RunRecord>): RunRecord {
+    return {
+      runId: 'thriller/point#1',
+      genre: 'thriller',
+      pointLabel: 'point',
+      repeat: 1,
+      engineCommit: 'aaaa111',
+      trackCommit: 't1',
+      trackDirty: false,
+      knobs: {},
+      generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
+      judge: { providerId: 'ollama', model: 'gemma3:12b' },
+      scenes: [],
+      tokens: { calls: 1, inputTokens: 10, outputTokens: 5, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },
+      auc: 0.4,
+      recalled: 7,
+      floorGate: { passed: true, failures: [], abstained: [] },
+      draftsDir: 'drafts/thriller/point/1',
+      startedAt: '2026-09-17T00:00:00.000Z',
+      wallClockMs: 1,
+      ...overrides,
+    };
+  }
+  const claude = { providerId: 'claude', model: 'claude-sonnet-5' };
+
+  // 심판을 바꿀 때 생성을 다시 돌릴 이유가 없다. 원고가 있는 기록만, 같은 심판으로 아직 안 본 것만 고른다.
+  it('picks runs with kept drafts that this judge has not scored yet', () => {
+    const sources = rejudgeSources(
+      [
+        run({}),
+        run({ runId: 'thriller/point#2', repeat: 2, draftsDir: undefined }),
+        run({ runId: 'thriller/point#3', repeat: 3, engineCommit: 'bbbb222' }),
+        run({ runId: 'thriller/point#1~claude:claude-sonnet-5', rejudgedFrom: 'thriller/point#1', judge: claude }),
+        run({ runId: 'thriller/len#1', pointLabel: 'len' }),
+      ],
+      { pointLabel: 'point', judge: claude },
+    );
+
+    expect(sources.map((source) => source.run.runId)).toEqual(['thriller/point#3']);
+    expect(rejudgeSources([run({})], { pointLabel: 'point', judge: claude, enginePrefix: 'bbbb' })).toHaveLength(0);
+  });
+
+  it('keeps the generation side and replaces only the verdict', () => {
+    const record = rejudgedRecord(run({}), {
+      engineCommit: 'cccc333',
+      engineVersion: '0.9.7',
+      judge: claude,
+      verdict: { auc: 0.7, recalled: 9, discarded: false },
+      startedAt: '2026-09-18T00:00:00.000Z',
+    });
+
+    expect(record.runId).toBe('thriller/point#1~claude:claude-sonnet-5');
+    expect(record.rejudgedFrom).toBe('thriller/point#1');
+    expect(record.judge).toEqual(claude);
+    expect(record.engineCommit).toBe('cccc333');
+    expect(record.auc).toBe(0.7);
+    expect(record.recalled).toBe(9);
+    expect(record.floorGate).toBeUndefined();
+    expect(record.tokens.inputTokens).toBe(10);
+    expect(record.generation.model).toBe('gemma4:12b');
   });
 });

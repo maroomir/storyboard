@@ -32,7 +32,12 @@ export interface RunRecord {
   // 누가 채점했는지. 심판이 바뀌면 AUC 는 다른 눈금이다.
   readonly judge?: { readonly providerId: string; readonly model: string };
   readonly scenes: readonly SceneMetrics[];
+  // 생성 원장. 심판 사용량은 섞지 않는다.
   readonly tokens: TokenTotals;
+  // 심판 원장. 로컬 심판이면 금액 0, API 심판이면 실제 달러가 여기 남는다.
+  readonly judgeTokens?: TokenTotals;
+  // 다른 심판으로 다시 채점한 기록이면 원본 runId. 생성은 원본 그대로이고 판정만 새것이다.
+  readonly rejudgedFrom?: string;
   readonly auc?: number;
   readonly recalled?: number;
   readonly recallTotal?: number;
@@ -153,6 +158,7 @@ export async function completedKeys(
     readonly engineCommit: string;
     readonly trackCommit: string;
     readonly generation?: RunRecord['generation'];
+    readonly judge?: RunRecord['judge'];
   },
 ): Promise<ReadonlySet<string>> {
   const runs = await readRuns(filePath);
@@ -164,10 +170,15 @@ export async function completedKeys(
           run.engineCommit === scope.engineCommit &&
           run.trackCommit === scope.trackCommit &&
           run.trackDirty === false &&
-          (scope.generation === undefined || sameGeneration(run.generation, scope.generation)),
+          (scope.generation === undefined || sameGeneration(run.generation, scope.generation)) &&
+          (scope.judge === undefined || describeJudgeOf(run.judge) === describeJudgeOf(scope.judge)),
       )
       .map((run) => runKey(run.genre, run.pointLabel, run.repeat)),
   );
+}
+
+function describeJudgeOf(judge: RunRecord['judge']): string {
+  return judge === undefined ? '' : `${judge.providerId}:${judge.model}`;
 }
 
 function sameGeneration(left: RunRecord['generation'], right: RunRecord['generation']): boolean {

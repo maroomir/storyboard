@@ -14,6 +14,10 @@ export interface PointScore extends ScoredPoint {
   readonly trackCommit: string;
   // 무엇으로 썼는지. 같은 지점이라도 생성 모델·프롬프트 변형이 다르면 다른 것을 잰 값이다.
   readonly generation: string;
+  // 누가 채점했는지. 심판이 다르면 AUC 는 다른 눈금이다. 심판 없는 실행은 빈 문자열.
+  readonly judge: string;
+  // 유효 회차의 심판 금액 중앙값. 로컬 심판은 0, 금액을 모르면 없다.
+  readonly judgeCostUsd?: number;
   readonly runs: number;
   // 심판이 끝까지 보고 AUC 를 낸 회차 수. 0 이면 품질 축의 값은 뜻이 없다.
   readonly judged: number;
@@ -43,6 +47,18 @@ function criticSummary(judged: readonly RunRecord[]): { readonly critic?: PointS
       runs: scored.length,
     },
   };
+}
+
+export function describeJudge(run: RunRecord): string {
+  return run.judge === undefined ? '' : `${run.judge.providerId}:${run.judge.model}`;
+}
+
+function judgeCost(judged: readonly RunRecord[]): { readonly judgeCostUsd?: number } {
+  const costs = judged
+    .map((run) => run.judgeTokens?.costUsd)
+    .filter((cost): cost is number => cost !== undefined);
+
+  return costs.length === 0 ? {} : { judgeCostUsd: median(costs) };
 }
 
 export function describeGeneration(run: RunRecord): string {
@@ -76,6 +92,7 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       run.engineCommit,
       run.trackCommit,
       describeGeneration(run),
+      describeJudge(run),
     ].join('\u0000');
     groups.set(key, [...(groups.get(key) ?? []), run]);
   }
@@ -91,6 +108,8 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       engineCommit: first.engineCommit,
       trackCommit: first.trackCommit,
       generation: describeGeneration(first),
+      judge: describeJudge(first),
+      ...judgeCost(judged),
       runs: group.length,
       judged: judged.length,
       gatePassed: judged.filter((run) => run.floorGate?.passed === true).length,

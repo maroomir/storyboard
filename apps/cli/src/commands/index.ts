@@ -77,7 +77,7 @@ import {
   removeNarrator,
   showNarrator,
 } from './narrators';
-import { applySim, reportSim, runSim, screenSim, sweepSim } from './sim';
+import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
 import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
 
@@ -1900,4 +1900,5 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'sim sweep': sweepSim,
   'sim report': reportSim,
   'sim apply': applySim,
+  'sim rejudge': rejudgeSim,
 };

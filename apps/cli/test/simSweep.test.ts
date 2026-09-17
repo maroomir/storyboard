@@ -317,6 +317,25 @@ describe('point score', () => {
     ]);
   });
 
+  // 심판이 다르면 AUC 는 다른 눈금이다. 같은 지점·같은 생성이라도 따로 센다.
+  it('scores runs judged by different judges separately and keeps the judge cost', () => {
+    const scored = scoreRuns(
+      [
+        run({ auc: 0.4, judge: { providerId: 'ollama', model: 'gemma3:12b' } }),
+        run({
+          auc: 0.7,
+          judge: { providerId: 'claude', model: 'claude-sonnet-5' },
+          judgeTokens: { calls: 100, inputTokens: 390000, outputTokens: 10000, cacheReadInputTokens: 0, byTask: {}, costUsd: 0.88, unpricedCallCount: 0, unattributedCallCount: 0 },
+        }),
+      ],
+      'tokens',
+    );
+
+    expect(scored).toHaveLength(2);
+    expect(scored.find((point) => point.judge === 'claude:claude-sonnet-5')?.judgeCostUsd).toBeCloseTo(0.88);
+    expect(scored.find((point) => point.judge === 'ollama:gemma3:12b')?.judgeCostUsd).toBeUndefined();
+  });
+
   // 엔진이나 트랙이 다르면 같은 지점 이름이라도 다른 것을 잰 값이다.
   it('scores runs from a different engine or track separately', () => {
     const scored = scoreRuns(

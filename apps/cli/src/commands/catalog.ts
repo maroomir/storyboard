@@ -98,6 +98,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'out', valueLabel: '<path>', summary: 'sim: 결과를 쌓을 JSONL 경로' },
   { name: 'point', valueLabel: '<label>', summary: 'sim: 되쓰기할 지점의 이름' },
   { name: 'profiles', valueLabel: '<path>', summary: 'sim: 적을 modelProfiles.params.json 경로 (기본: 엔진 저장소의 파일)' },
+  { name: 'source', valueLabel: '<engine>', summary: 'sim: 다시 채점할 원본 기록의 엔진 커밋 접두어 (기본: 전부)' },
   { name: 'yes', summary: 'sim: 견적을 묻지 않고 바로 시작합니다' },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
@@ -603,6 +604,15 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary: '쌓인 결과를 표로 다시 그립니다 (AI 호출 없음)',
     flags: ['out'],
     examples: ['storyboard sim report --out runs.jsonl'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'sim rejudge',
+    group: '측정',
+    usage: 'sim rejudge --track <path> --genre <name> --judge <provider> --judge-model <name> [--point <label>] [--source <engine>] [--yes]',
+    summary: '저장된 원고를 다른 심판으로 다시 채점합니다 (생성은 하지 않습니다)',
+    flags: ['track', 'config', 'genre', 'point', 'source', 'judge', 'judge-model', 'out', 'yes'],
+    examples: ['storyboard sim rejudge --track . --genre thriller --judge claude --judge-model claude-sonnet-5 --yes'],
     needsWorkspace: false,
   },
   {

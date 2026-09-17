@@ -382,6 +382,18 @@ describe('sim report', () => {
   });
 });
 
+describe('sim rejudge', () => {
+  it('refuses when nothing at the point has kept drafts', async () => {
+    const out = join(home, 'runs.jsonl');
+    writeFileSync(out, '');
+
+    const outcome = await run('sim rejudge', { track, genre: 'thriller', judge: 'openai', 'judge-model': 'gpt-5.6-terra', out });
+
+    expect(outcome?.ok).toBe(false);
+    expect(outcome?.message).toContain('다시 채점할 기록이 없습니다');
+  });
+});
+
 describe('sim apply', () => {
   // 적는 곳은 엔진 소스의 프로필 파일이다. 시험에서는 --profiles 로 임시 파일을 준다.
   it('writes the point into the profile file with its provenance', async () => {

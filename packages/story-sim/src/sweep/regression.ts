@@ -1,6 +1,6 @@
 import type { RunRecord } from '#sim/run/runStore';
 import { median, noiseFloor } from '#sim/sweep/pareto';
-import { describeGeneration, isJudged } from '#sim/sweep/score';
+import { describeGeneration, describeJudge, isJudged } from '#sim/sweep/score';
 
 // NOTE: 릴리즈마다 같은 지점을 돌려 앞 엔진과 견주는 회귀 검사다. 손잡이 실험이 아니라 «엔진이 바뀌었는데
 // 독자·회수가 잡음 밖으로 움직였나» 만 본다. 잡음 폭은 씨앗이 없는 실행의 회차 간 최대·최소 차이이며,
@@ -10,6 +10,7 @@ export interface RegressionRow {
   readonly genre: string;
   readonly pointLabel: string;
   readonly generation: string;
+  readonly judge: string;
   readonly latestEngine: string;
   readonly previousEngine: string;
   readonly latestRuns: number;
@@ -29,7 +30,7 @@ export function regressionRows(runs: readonly RunRecord[]): readonly RegressionR
   const groups = new Map<string, RunRecord[]>();
 
   for (const run of judged) {
-    const key = [run.genre, run.pointLabel, describeGeneration(run)].join('|');
+    const key = [run.genre, run.pointLabel, describeGeneration(run), describeJudge(run)].join('|');
     groups.set(key, [...(groups.get(key) ?? []), run]);
   }
 
@@ -60,6 +61,7 @@ export function regressionRows(runs: readonly RunRecord[]): readonly RegressionR
       genre: first.genre,
       pointLabel: first.pointLabel,
       generation: describeGeneration(first),
+      judge: describeJudge(first),
       latestEngine,
       previousEngine,
       latestRuns: latest.length,
@@ -89,5 +91,7 @@ export function describeRegression(row: RegressionRow): string {
         : '잡음 안';
   const noise = Number.isFinite(row.noise) ? row.noise.toFixed(3) : '무한';
 
-  return `${row.pointLabel} [${row.generation}] ${row.previousEngine.slice(0, 7)}(${row.previousRuns}회) 대비 ${row.latestEngine.slice(0, 7)}(${row.latestRuns}회): AUC ${sign(row.aucDelta, 3)} · 회수 ${sign(row.recallDelta, 1)} · 잡음 폭 ${noise} · ${verdict}`;
+  const judge = row.judge.length === 0 ? '' : ` 심판 ${row.judge}`;
+
+  return `${row.pointLabel} [${row.generation}${judge}] ${row.previousEngine.slice(0, 7)}(${row.previousRuns}회) 대비 ${row.latestEngine.slice(0, 7)}(${row.latestRuns}회): AUC ${sign(row.aucDelta, 3)} · 회수 ${sign(row.recallDelta, 1)} · 잡음 폭 ${noise} · ${verdict}`;
 }

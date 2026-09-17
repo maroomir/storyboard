@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
-import type { AiProviderId } from '@storyboard/story-ai';
+import type { AiProviderId, AiProviderRegistry } from '@storyboard/story-ai';
 import { parseSceneCard, parseSceneFileName } from '@storyboard/story-format';
 import {
   appendRun,
@@ -37,6 +37,9 @@ import {
   promptVariantSchema,
   isJudged,
   readRuns,
+  rejudgeSources,
+  rejudgedRecord,
+  summarizeUsage,
   removeScratch,
   scoreRuns,
   regressionRows,
@@ -53,6 +56,8 @@ import {
   type RunRecord,
   type SimConfig,
   type SimPromptVariant,
+  type SimJudge,
+  type TokenTotals,
 } from '@storyboard/story-sim';
 
 import { flagBoolean, flagString } from '@/cliArguments';
@@ -449,6 +454,7 @@ async function executePoints(
     engineCommit,
     trackCommit: track.commit,
     generation: generationRecord(input.generation, input.localRuntime),
+    ...(input.judge === undefined ? {} : { judge: { providerId: input.judge.providerId, model: input.judge.model } }),
   });
   const factory = createSimWorkspaceFactory({
     logger: context.container.logger,
@@ -565,96 +571,16 @@ async function executePoints(
               );
             }
           } else if (input.judge !== undefined && input.materials !== undefined) {
-            const judge = createSimJudge({
-              registry: judgeRegistry,
+            verdictFields = await judgeChainDrafts(context, {
+              judgeRegistry,
               judge: input.judge,
               generation: input.generation,
+              materials: input.materials,
+              scenes: input.scenes,
+              drafts: result.drafts,
+              label: `${point.label} ${repeat}회`,
+              draftsDir,
             });
-            const orderedDrafts = input.scenes
-              .map((scene) => ({
-                sceneStem: scene.sceneStem,
-                draft: result.drafts.get(scene.sceneStem),
-              }))
-              .filter(
-                (scene): scene is { sceneStem: string; draft: string } => scene.draft !== undefined,
-              );
-            const generatedForFloor = result.drafts.get(input.materials.floorDraft.sceneStem);
-
-            const verdict = await judgeChain({
-              judge,
-              scenes: orderedDrafts,
-              genre: input.materials.genre,
-              floorCandidates: [
-                { kind: 'generated', draft: generatedForFloor ?? '' },
-                { kind: 'floor', draft: input.materials.floorDraft.text },
-              ],
-              critic: { names: input.materials.characterNames },
-            });
-
-            verdictFields = {
-              auc: verdict.discarded ? undefined : verdict.auc.auc,
-              discarded: verdict.discarded,
-              ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
-              floorGate: verdict.floor,
-              // 곡선은 폐기 여부와 무관하게 남긴다. 어디서 덮었는지가 곧 되짚을 단서다.
-              panel: {
-                byReader: verdict.auc.byReader,
-                curves: verdict.auc.curves,
-                dropOffScene: verdict.auc.dropOffScene,
-              },
-              genreNotes: verdict.genreNotes,
-              ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
-              ...(verdict.critic === undefined
-                ? {}
-                : {
-                    critic: {
-                      groundedTotal: verdict.critic.groundedTotal,
-                      opinionTotal: verdict.critic.opinionTotal,
-                      gatePassed: verdict.critic.gate.passed,
-                      scores: verdict.critic.scores,
-                      gateReason: verdict.critic.gate.reason,
-                      problems: verdict.critic.problems,
-                    },
-                  }),
-            };
-
-            if (verdict.critic !== undefined && !verdict.critic.gate.passed) {
-              context.container.logger.warn(
-                `${point.label} ${repeat}회 · 비평 관문 실패 (회차는 유지): ${verdict.critic.gate.reason}`,
-              );
-            }
-
-            if (input.materials.ledger !== undefined && !verdict.discarded) {
-              const recall = await scoreFactRecall({
-                ledger: input.materials.ledger,
-                draftsByScene: result.drafts,
-                judge: createFactRecallJudge(judge),
-              });
-              verdictFields = {
-                ...verdictFields,
-                recalled: recall.recalled,
-                recallTotal: recall.total,
-                contradicted: recall.contradicted,
-              };
-            }
-
-            if (verdict.discarded) {
-              context.container.logger.warn(
-                `${point.label} ${repeat}회 · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${draftsDir}`,
-              );
-            }
-
-            if (!verdict.floor.passed) {
-              context.container.logger.warn(
-                `${point.label} ${repeat}회 · 하한선 관문 실패 (회차는 유지): ${[...verdict.floor.failures, ...verdict.floor.abstained].join(' / ')}`,
-              );
-            }
-
-            if (verdict.genreProblems.length > 0) {
-              context.container.logger.warn(
-                `${point.label} ${repeat}회 · 장르 독자 중단 (회차는 유지): ${verdict.genreProblems.join(' / ')}`,
-              );
-            }
           }
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
@@ -736,6 +662,125 @@ async function refuseMissingLocalModels(input: {
   return missing.length === 0
     ? undefined
     : `ollama 에 없는 모델입니다: ${missing.join(', ')} (있는 것: ${available.join(', ') || '없음'}). ollama pull 로 받거나 sim.config 의 모델을 고치세요.`;
+}
+
+
+// 연쇄 트랙의 심판 한 벌: 하한선 관문 → 독자 패널 → 비평가 → 사실 회수. 새로 생성한 원고와
+// 저장된 원고를 다시 채점할 때(sim rejudge) 같은 길을 쓴다. 심판 사용량은 judgeTokens 로 따로 남긴다.
+async function judgeChainDrafts(
+  context: CommandContext,
+  input: {
+    readonly judgeRegistry: AiProviderRegistry;
+    readonly judge: Selection;
+    readonly generation: Selection;
+    readonly materials: JudgeMaterials;
+    readonly scenes: readonly TrackScene[];
+    readonly drafts: ReadonlyMap<string, string>;
+    readonly label: string;
+    readonly draftsDir: string;
+  },
+): Promise<Partial<RunRecord>> {
+  const judge = createSimJudge({
+    registry: input.judgeRegistry,
+    judge: input.judge,
+    generation: input.generation,
+  });
+  const orderedDrafts = input.scenes
+    .map((scene) => ({ sceneStem: scene.sceneStem, draft: input.drafts.get(scene.sceneStem) }))
+    .filter((scene): scene is { sceneStem: string; draft: string } => scene.draft !== undefined);
+  const generatedForFloor = input.drafts.get(input.materials.floorDraft.sceneStem);
+
+  const verdict = await judgeChain({
+    judge,
+    scenes: orderedDrafts,
+    genre: input.materials.genre,
+    floorCandidates: [
+      { kind: 'generated', draft: generatedForFloor ?? '' },
+      { kind: 'floor', draft: input.materials.floorDraft.text },
+    ],
+    critic: { names: input.materials.characterNames },
+  });
+
+  let fields: Partial<RunRecord> = {
+    auc: verdict.discarded ? undefined : verdict.auc.auc,
+    discarded: verdict.discarded,
+    ...(verdict.discarded ? { discardReasons: verdict.discardReasons } : {}),
+    floorGate: verdict.floor,
+    // 곡선은 폐기 여부와 무관하게 남긴다. 어디서 덮었는지가 곧 되짚을 단서다.
+    panel: {
+      byReader: verdict.auc.byReader,
+      curves: verdict.auc.curves,
+      dropOffScene: verdict.auc.dropOffScene,
+    },
+    genreNotes: verdict.genreNotes,
+    ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
+    ...(verdict.critic === undefined
+      ? {}
+      : {
+          critic: {
+            groundedTotal: verdict.critic.groundedTotal,
+            opinionTotal: verdict.critic.opinionTotal,
+            gatePassed: verdict.critic.gate.passed,
+            scores: verdict.critic.scores,
+            gateReason: verdict.critic.gate.reason,
+            problems: verdict.critic.problems,
+          },
+        }),
+  };
+
+  if (verdict.critic !== undefined && !verdict.critic.gate.passed) {
+    context.container.logger.warn(
+      `${input.label} · 비평 관문 실패 (회차는 유지): ${verdict.critic.gate.reason}`,
+    );
+  }
+
+  if (input.materials.ledger !== undefined && !verdict.discarded) {
+    const recall = await scoreFactRecall({
+      ledger: input.materials.ledger,
+      draftsByScene: input.drafts,
+      judge: createFactRecallJudge(judge),
+    });
+    fields = {
+      ...fields,
+      recalled: recall.recalled,
+      recallTotal: recall.total,
+      contradicted: recall.contradicted,
+    };
+  }
+
+  if (verdict.discarded) {
+    context.container.logger.warn(
+      `${input.label} · 심판 회차 폐기: ${verdict.discardReasons.join(' / ')} · 원고: ${input.draftsDir}`,
+    );
+  }
+
+  if (!verdict.floor.passed) {
+    context.container.logger.warn(
+      `${input.label} · 하한선 관문 실패 (회차는 유지): ${[...verdict.floor.failures, ...verdict.floor.abstained].join(' / ')}`,
+    );
+  }
+
+  if (verdict.genreProblems.length > 0) {
+    context.container.logger.warn(
+      `${input.label} · 장르 독자 중단 (회차는 유지): ${verdict.genreProblems.join(' / ')}`,
+    );
+  }
+
+  return { ...fields, judgeTokens: judgeUsageTotals(judge) };
+}
+
+// 심판 응답의 사용량을 원장 모양으로 접는다. 로컬은 0달러, API 는 실제 금액이 여기 남는다.
+function judgeUsageTotals(judge: SimJudge): TokenTotals {
+  return summarizeUsage(
+    judge.usage().map((response) => ({
+      taskName: 'draftCritique' as const,
+      providerId: response.providerId,
+      model: response.model,
+      ...(response.usage === undefined ? {} : { usage: response.usage }),
+      ...(response.costUsd === undefined ? {} : { costUsd: response.costUsd }),
+      attribution: { primary: { kind: 'scene', id: 'sim-judge' } },
+    })),
+  );
 }
 
 async function prepare(context: CommandContext): Promise<
@@ -978,6 +1023,8 @@ export const reportSim: CommandHandler = async (context) => {
   const mixed = fingerprints.size > 1;
   const generations = new Set(scored.map((point) => point.generation));
   const mixedGeneration = generations.size > 1;
+  const judges = new Set(scored.map((point) => point.judge));
+  const mixedJudge = judges.size > 1;
 
   // 시험체마다 따로 줄을 세운다. 장르를 섞으면 «싼 장르» 가 «이긴 손잡이» 로 읽힌다.
   const genres = [...new Set(scored.map((point) => point.genre))].sort();
@@ -992,7 +1039,9 @@ export const reportSim: CommandHandler = async (context) => {
         const name =
           (mixed
             ? `${point.pointLabel} @${point.engineCommit.slice(0, 7)}/${point.trackCommit.slice(0, 7)}`
-            : point.pointLabel) + (mixedGeneration ? ` [${point.generation}]` : '');
+            : point.pointLabel) +
+          (mixedGeneration ? ` [${point.generation}]` : '') +
+          (mixedJudge && point.judge.length > 0 ? ` 심판:${point.judge}` : '');
         const quality =
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
@@ -1001,7 +1050,11 @@ export const reportSim: CommandHandler = async (context) => {
           point.critic === undefined
             ? ''
             : `\t비평 ${point.critic.grounded}/20 의견 ${point.critic.opinion}/10 비평관문 ${point.critic.gatePassed}/${point.critic.runs}`;
-        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}${critic}`;
+        const judgeCost =
+          point.judgeCostUsd === undefined || point.judgeCostUsd === 0
+            ? ''
+            : `\t심판 $${point.judgeCostUsd.toFixed(2)}`;
+        return `${mark} ${name}\t${quality}\t유효 ${point.judged}/${point.runs}\t관문 ${point.gatePassed}/${point.judged}${critic}${judgeCost}`;
       }),
   ]);
 
@@ -1024,6 +1077,147 @@ export const reportSim: CommandHandler = async (context) => {
     data: { runs: runs.length, costAxis: axis, points: scored, frontier },
   };
 };
+
+
+// 저장된 원고를 다른 심판으로 다시 채점한다. 생성은 다시 돌리지 않는다.
+export const rejudgeSim: CommandHandler = async (context) => {
+  const prepared = await prepare(context);
+  if (typeof prepared === 'string') {
+    return refuse(prepared);
+  }
+
+  const point = requireFlag(context, 'point') ?? 'point';
+  const selected = judgeSelection(context, prepared.config, prepared.generation);
+  if (typeof selected === 'string') {
+    return refuse(selected);
+  }
+
+  const materials = await readJudgeMaterials(prepared.genreRoot, prepared.genre, prepared.scenes);
+  if (typeof materials === 'string') {
+    return refuse(materials);
+  }
+  if (materials.axisFloors !== undefined) {
+    return refuse('축 트랙은 다시 채점하지 않습니다. 연쇄 트랙의 장르를 주세요.');
+  }
+
+  const runs = await readRuns(prepared.outPath);
+  const judge = { providerId: selected.providerId, model: selected.model };
+  const sources = rejudgeSources(runs, {
+    pointLabel: point,
+    ...(requireFlag(context, 'source') === undefined ? {} : { enginePrefix: requireFlag(context, 'source') }),
+    judge,
+  });
+
+  if (sources.length === 0) {
+    return refuse(`${point} 에 다시 채점할 기록이 없습니다 (원고 자리가 있고 이 심판으로 아직 안 본 것).`);
+  }
+
+  const localRefusal = await refuseMissingLocalModels({
+    generation: selected,
+    localRuntime: prepared.localRuntime,
+  });
+  if (localRefusal !== undefined) {
+    return refuse(localRefusal);
+  }
+
+  const judgeCalls = sources.length * (simDefaults.panel.commonReaderCount + 1) * (prepared.scenes.length + 2);
+  const plan = [
+    `${point} 의 ${sources.length}회를 ${judge.providerId}:${judge.model} 으로 다시 채점합니다.`,
+    ...sources.map((source) => `  ${source.run.runId} (${source.run.engineCommit.slice(0, 7)}, 원고 ${source.draftsDir})`),
+    `심판 호출 약 ${judgeCalls.toLocaleString()}회. 생성은 하지 않습니다.`,
+  ];
+
+  if (!flagBoolean(context.args.flags, 'yes')) {
+    return { ok: true, message: [...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'), data: { point, sources: sources.length } };
+  }
+
+  const engineVersion = context.container.version;
+  const engineCommit = await describeEngine(dirname(process.argv[1] ?? process.cwd()), engineVersion);
+  const judgeRegistry =
+    prepared.localRuntime === undefined
+      ? context.container.aiProviderRegistry
+      : createCliContainer({
+          workspacePath: context.container.workspaceRoot.fsPath,
+          logger: context.container.logger,
+          canPrompt: false,
+          version: context.container.version,
+          localRuntime: {
+            ...(prepared.localRuntime.baseUrl === undefined ? {} : { baseUrl: prepared.localRuntime.baseUrl }),
+            ...(prepared.localRuntime.contextTokens === undefined
+              ? {}
+              : { contextTokens: prepared.localRuntime.contextTokens }),
+          },
+        }).aiProviderRegistry;
+
+  let done = 0;
+  for (const source of sources) {
+    const drafts = await readKeptDrafts(join(dirname(prepared.outPath), source.draftsDir), prepared.scenes);
+    if (drafts.size === 0) {
+      context.container.logger.warn(`${source.run.runId} · 원고를 찾지 못했습니다: ${source.draftsDir}`);
+      continue;
+    }
+
+    const generation: Selection = {
+      providerId: source.run.generation.providerId as AiProviderId,
+      model: source.run.generation.model,
+    };
+    let verdict: Partial<RunRecord>;
+    try {
+      verdict = await judgeChainDrafts(context, {
+        judgeRegistry,
+        judge: selected,
+        generation,
+        materials,
+        scenes: prepared.scenes,
+        drafts,
+        label: `${source.run.runId} 재채점`,
+        draftsDir: source.draftsDir,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      context.container.logger.warn(`${source.run.runId} · 심판 실패: ${message}`);
+      verdict = { discarded: true, discardReasons: [`심판 실패: ${message}`] };
+    }
+
+    const record = rejudgedRecord(source.run, {
+      engineCommit,
+      engineVersion,
+      judge,
+      verdict,
+      startedAt: new Date().toISOString(),
+    });
+    await appendRun(prepared.outPath, record);
+    done += 1;
+    context.container.logger.info(
+      `${record.runId}` +
+        (record.auc === undefined ? ' · 폐기' : ` · AUC ${record.auc.toFixed(3)}`) +
+        (record.recalled === undefined ? '' : ` · 회수 ${record.recalled}/${record.recallTotal}`) +
+        (record.judgeTokens?.costUsd === undefined ? '' : ` · 심판 $${record.judgeTokens.costUsd.toFixed(2)}`),
+    );
+  }
+
+  return {
+    ok: true,
+    message: `다시 채점 ${done}회 완료 → ${prepared.outPath}`,
+    data: { point, done, out: prepared.outPath },
+  };
+};
+
+// results/drafts/<장르>/<지점>/<회차>/<씬>.md 를 씬 순서대로 읽는다. 심판이 받았던 그대로(머리말 포함)다.
+async function readKeptDrafts(
+  directory: string,
+  scenes: readonly TrackScene[],
+): Promise<Map<string, string>> {
+  const drafts = new Map<string, string>();
+  for (const scene of scenes) {
+    try {
+      drafts.set(scene.sceneStem, await readFile(join(directory, `${scene.sceneStem}.md`), 'utf8'));
+    } catch {
+      continue;
+    }
+  }
+  return drafts;
+}
 
 export const applySim: CommandHandler = async (context) => {
   const outPath = requireFlag(context, 'out');
