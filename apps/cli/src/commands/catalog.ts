@@ -238,9 +238,18 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'apikey set',
     group: '시작하기',
-    usage: 'apikey set <provider>',
-    summary: 'API 키를 stdin 으로 받아 저장합니다 (빈 입력이면 삭제)',
-    examples: ['echo "$OPENAI_API_KEY" | storyboard apikey set openai'],
+    usage: 'apikey set [<provider>]',
+    summary:
+      'API 키를 저장합니다. 터미널이면 프로바이더를 고르고 키를 가려진 입력으로 받아 바로 연결을 확인하고, 파이프면 stdin 에서 읽습니다 (빈 입력이면 삭제)',
+    examples: ['storyboard apikey set', 'storyboard apikey set claude', 'echo "$OPENAI_API_KEY" | storyboard apikey set openai'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'apikey show',
+    group: '시작하기',
+    usage: 'apikey show',
+    summary: '어느 프로바이더의 API 키가 저장돼 있는지 보여 줍니다 (값은 보이지 않습니다)',
+    examples: ['storyboard apikey show'],
     needsWorkspace: false,
   },
   {

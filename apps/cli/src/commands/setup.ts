@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
-import { createInterface } from 'node:readline/promises';
 
 import {
   aiProviderIds,
@@ -34,6 +33,7 @@ import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
 import type { CommandContext, CommandOutcome } from './outcome';
+import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import {
   displayedProviderKeys,
@@ -41,8 +41,6 @@ import {
   type SettableProviderKey,
 } from './catalog';
 
-const endOfText = '\u0003';
-const deleteChar = '\u007f';
 
 function isProviderId(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId);
@@ -56,59 +54,6 @@ function describeProvider(providerId: AiProviderId): string {
     return '가짜 텍스트 · 흐름 확인용';
   }
   return 'API 키 필요';
-}
-
-async function askLine(prompt: string): Promise<string> {
-  const readline = createInterface({ input: process.stdin, output: process.stderr });
-
-  try {
-    return (await readline.question(prompt)).trim();
-  } finally {
-    readline.close();
-  }
-}
-
-// Echo is switched off while the key is typed so it never lands in the scrollback.
-async function askSecret(prompt: string): Promise<string> {
-  process.stderr.write(prompt);
-  const stdin = process.stdin;
-  const wasRaw = stdin.isRaw;
-  stdin.setRawMode(true);
-  stdin.resume();
-  stdin.setEncoding('utf8');
-
-  return new Promise((resolve) => {
-    let value = '';
-
-    const cleanup = (): void => {
-      stdin.off('data', onData);
-      stdin.setRawMode(wasRaw ?? false);
-      stdin.pause();
-    };
-
-    const onData = (chunk: string): void => {
-      for (const char of chunk) {
-        if (char === endOfText) {
-          cleanup();
-          process.stderr.write('\n');
-          process.exit(130);
-        }
-        if (char === '\r' || char === '\n') {
-          cleanup();
-          process.stderr.write('\n');
-          resolve(value);
-          return;
-        }
-        if (char === deleteChar || char === '\b') {
-          value = value.slice(0, -1);
-          continue;
-        }
-        value += char;
-      }
-    };
-
-    stdin.on('data', onData);
-  });
 }
 
 async function chooseProviderInteractively(

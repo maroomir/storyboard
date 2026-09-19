@@ -30,7 +30,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-engine';
 
-import { aiProviderIds, integerSettingDefault, type AiProviderId } from '@storyboard/story-ai';
+import { aiProviderIds, integerSettingDefault, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 import {
   compositionKinds,
   formatSceneOrderRanges,
@@ -70,6 +70,7 @@ import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
+import { askLine, askSecret } from './prompt';
 import {
   addNarrator,
   describeSceneNarration,
@@ -1807,34 +1808,100 @@ async function loadCanonFactLines(
   }
 }
 
-// SECURITY: the key is read from stdin, never from argv — an API key on a command line lands in
-// the shell history and in the process list for every user on the machine.
+// SECURITY: the key is read from stdin or a hidden prompt, never from argv — an API key on a
+// command line lands in the shell history and in the process list for every user on the machine.
 const setApiKey: CommandHandler = async ({ container, args }) => {
-  const provider = args.positionals[0];
+  const provider = await resolveApiKeyProvider(container, args.positionals[0]);
 
-  if (provider === undefined || !aiProviderIds.includes(provider as AiProviderId)) {
-    return {
-      ok: false,
-      message: `프로바이더를 지정해 주세요: ${aiProviderIds.join(', ')}`,
-    };
+  if (typeof provider === 'string' && !aiProviderIds.includes(provider as AiProviderId)) {
+    return { ok: false, message: provider };
+  }
+  if (provider === undefined) {
+    return { ok: false, message: `프로바이더를 지정해 주세요: ${aiProviderIds.join(', ')}` };
   }
 
-  const key = (await readStdin()).trim();
+  const providerId = provider as AiProviderId;
+  const key = (
+    process.stdin.isTTY && container.canPrompt
+      ? await askSecret(`${providerId} API 키를 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): `)
+      : await readStdin()
+  ).trim();
 
   if (key.length === 0) {
-    await container.secretStore.deleteApiKey(provider as AiProviderId);
-    return { ok: true, message: `${provider} API 키를 지웠습니다.` };
+    await container.secretStore.deleteApiKey(providerId);
+    return { ok: true, message: `${providerId} API 키를 지웠습니다.` };
   }
 
-  await container.secretStore.setApiKey(provider as AiProviderId, key);
-  return { ok: true, message: `${provider} API 키를 저장했습니다.` };
+  await container.secretStore.setApiKey(providerId, key);
+
+  // 저장하자마자 한 번 불러 본다. 키를 잘못 붙여 넣은 것을 첫 실제 호출에서 알게 되면 늦다.
+  try {
+    await container.aiProviderRegistry.checkConnection(providerId);
+    return {
+      ok: true,
+      message: `${providerId} API 키를 저장하고 연결을 확인했습니다: ${container.homePaths.secretsFile}`,
+      data: { providerId, verified: true },
+    };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return {
+      ok: true,
+      message: [
+        `${providerId} API 키를 저장했지만 연결 확인에 실패했습니다: ${reason}`,
+        '키가 맞는지, 네트워크가 닿는지 보고 다시 apikey set 을 실행하세요.',
+      ].join('\n'),
+      data: { providerId, verified: false },
+    };
+  }
 };
 
-async function readStdin(): Promise<string> {
-  if (process.stdin.isTTY) {
-    process.stderr.write('키를 입력하고 Ctrl-D 를 누르세요: ');
+// 어느 키가 들어 있는지만 보여 준다. 값은 절대 찍지 않는다.
+const showApiKeys: CommandHandler = async ({ container }) => {
+  const rows: { readonly providerId: AiProviderId; readonly stored: boolean }[] = [];
+
+  for (const providerId of aiProviderIds) {
+    if (!requiresApiKey(providerId)) {
+      continue;
+    }
+    rows.push({ providerId, stored: await container.secretStore.hasApiKey(providerId) });
   }
 
+  return {
+    ok: true,
+    message: [
+      `API 키 (${container.homePaths.secretsFile})`,
+      ...rows.map((row) => `  ${row.stored ? '✅' : '  '} ${row.providerId}${row.stored ? '  저장됨' : '  없음'}`),
+    ].join('\n'),
+    data: { keys: rows },
+  };
+};
+
+// 프로바이더를 안 적었으면 터미널에서 번호로 고르게 한다. 파이프에서는 물을 수 없으니 그대로 거절한다.
+async function resolveApiKeyProvider(
+  container: CliContainer,
+  given: string | undefined,
+): Promise<string | undefined> {
+  if (given !== undefined) {
+    return aiProviderIds.includes(given as AiProviderId)
+      ? given
+      : `모르는 프로바이더입니다: ${given}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+  }
+  if (!process.stdin.isTTY || !container.canPrompt) {
+    return undefined;
+  }
+
+  const candidates = aiProviderIds.filter((providerId) => requiresApiKey(providerId));
+  process.stderr.write('어느 프로바이더의 API 키입니까?\n');
+  candidates.forEach((providerId, index) => {
+    process.stderr.write(`  ${index + 1}. ${providerId}\n`);
+  });
+  const answer = await askLine('번호 또는 이름: ');
+  const byIndex = candidates[Number(answer) - 1];
+
+  return byIndex ?? (candidates.includes(answer as AiProviderId) ? answer : undefined);
+}
+
+async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
 
   for await (const chunk of process.stdin) {
@@ -1867,6 +1934,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card promote': promoteCards,
   'bible promote': promoteBible,
   'apikey set': setApiKey,
+  'apikey show': showApiKeys,
   'check grammar': checkDraft,
   'check continuity': checkDraft,
   'check slop': checkDraft,

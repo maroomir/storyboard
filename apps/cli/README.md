@@ -141,7 +141,7 @@ and run `cards build` again.
 
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
 forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
-→ `storyboard setup`, no key → `storyboard apikey set <provider>`.
+→ `storyboard setup`, no key → `storyboard apikey set` (asks for the provider, hides the key as you paste it, and checks the connection; `apikey show` lists which providers have a key).
 
 A draft is only as long as the events its scene card carries, so `scene generate` first expands
 the card's `beats` when it has none — from the structured fields, the grounding facts and the
