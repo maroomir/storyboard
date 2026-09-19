@@ -54,6 +54,17 @@ export interface PanelAuc {
   // 스칼라 하나로는 «넷 다 미지근»과 «셋은 좋고 하나가 3씬에서 덮음»이 구분되지 않는다.
   readonly curves: Readonly<Record<string, readonly number[]>>;
   readonly dropOffScene: Readonly<Record<string, string | undefined>>;
+  // 8화 전부에 대한 몰입도 평균(0~1). 덮음과 무관한 둘째 눈금이다.
+  readonly engagement: number;
+  readonly engagementByReader: Readonly<Record<string, number>>;
+}
+
+// 덮음을 무시하고 읽은 화 전부의 몰입도를 평균한다. 안 읽힌 화(폐기 등)는 세지 않는다.
+export function readerEngagement(curve: ReaderCurve): number {
+  const scale = simDefaults.panel.engagementScaleMax;
+  const values = curve.turns.map((turn) => Math.min(Math.max(turn.engagement, 0), scale) / scale);
+
+  return values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 // AUC 는 공통 독자만으로 낸다. 장르 독자의 말은 따로 기록하고 여기 섞지 않는다.
@@ -61,15 +72,24 @@ export function panelAuc(curves: readonly ReaderCurve[], sceneCount: number): Pa
   const byReader: Record<string, number> = {};
   const weights: Record<string, readonly number[]> = {};
   const dropOffScene: Record<string, string | undefined> = {};
+  const engagementByReader: Record<string, number> = {};
 
   for (const curve of curves) {
     byReader[curve.readerId] = readerAuc(curve, sceneCount);
     weights[curve.readerId] = weightsOf(curve, sceneCount);
     dropOffScene[curve.readerId] = curve.turns.find((turn) => !turn.continueReading)?.sceneStem;
+    engagementByReader[curve.readerId] = readerEngagement(curve);
   }
 
-  const values = Object.values(byReader);
-  const auc = values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
+  const mean = (values: readonly number[]): number =>
+    values.length === 0 ? 0 : values.reduce((sum, value) => sum + value, 0) / values.length;
 
-  return { auc, byReader, curves: weights, dropOffScene };
+  return {
+    auc: mean(Object.values(byReader)),
+    byReader,
+    curves: weights,
+    dropOffScene,
+    engagement: mean(Object.values(engagementByReader)),
+    engagementByReader,
+  };
 }

@@ -18,6 +18,8 @@ export interface PointScore extends ScoredPoint {
   readonly judge: string;
   // 유효 회차의 심판 금액 중앙값. 로컬 심판은 0, 금액을 모르면 없다.
   readonly judgeCostUsd?: number;
+  // 유효 회차의 몰입도 평균(0~1) 중앙값. 덮음과 무관한 둘째 눈금. 옛 기록에는 없다.
+  readonly engagement?: number;
   readonly runs: number;
   // 심판이 끝까지 보고 AUC 를 낸 회차 수. 0 이면 품질 축의 값은 뜻이 없다.
   readonly judged: number;
@@ -51,6 +53,14 @@ function criticSummary(judged: readonly RunRecord[]): { readonly critic?: PointS
 
 export function describeJudge(run: RunRecord): string {
   return run.judge === undefined ? '' : `${run.judge.providerId}:${run.judge.model}`;
+}
+
+function engagementOf(judged: readonly RunRecord[]): { readonly engagement?: number } {
+  const values = judged
+    .map((run) => run.panel?.engagement)
+    .filter((value): value is number => value !== undefined);
+
+  return values.length === 0 ? {} : { engagement: median(values) };
 }
 
 function judgeCost(judged: readonly RunRecord[]): { readonly judgeCostUsd?: number } {
@@ -110,6 +120,7 @@ export function scoreRuns(runs: readonly RunRecord[], axis: CostAxis): readonly 
       generation: describeGeneration(first),
       judge: describeJudge(first),
       ...judgeCost(judged),
+      ...engagementOf(judged),
       runs: group.length,
       judged: judged.length,
       gatePassed: judged.filter((run) => run.floorGate?.passed === true).length,

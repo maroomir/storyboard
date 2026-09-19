@@ -56,6 +56,9 @@ export interface RunRecord {
     readonly byReader: Readonly<Record<string, number>>;
     readonly curves: Readonly<Record<string, readonly number[]>>;
     readonly dropOffScene: Readonly<Record<string, string | undefined>>;
+    // 8화 전부에 대한 몰입도 평균(0~1). 옛 기록에는 없다.
+    readonly engagement?: number;
+    readonly engagementByReader?: Readonly<Record<string, number>>;
   };
   // 장르 독자의 말. AUC 에 안 들어가지만 사람이 읽을 값어치가 있다.
   readonly genreNotes?: readonly {

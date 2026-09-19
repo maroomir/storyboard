@@ -312,7 +312,8 @@ describe('the floor gate measures the judge, not the labels', () => {
 });
 
 describe('reading in order', () => {
-  it('stops calling a reader who closed the book', async () => {
+  // 덮겠다는 답은 의향으로 남고 읽기는 계속된다. 이탈 AUC 는 첫 덮음부터 0, 몰입도는 8화 전부.
+  it('keeps reading after a reader says it would close the book', async () => {
     const ask = vi.fn(async (messages: readonly AiMessage[]) => {
       const isRanking = messages.some((message) => message.content.includes('줄을 세워라'));
       if (isRanking) {
@@ -330,9 +331,13 @@ describe('reading in order', () => {
       floorCandidates: floorCandidates(),
     });
 
-    // 하한선 16회 + 독자 9인이 각각 2화까지만 = 34회. 8화를 끝까지 읽었다면 88회였다.
-    expect(ask).toHaveBeenCalledTimes(16 + 9 * 2);
-    expect(verdict.curves[0]?.turns).toHaveLength(2);
+    // 하한선 16회 + 독자 9인이 8화 전부 = 88회.
+    expect(ask).toHaveBeenCalledTimes(16 + 9 * 8);
+    expect(verdict.curves[0]?.turns).toHaveLength(8);
+    // 2화에서 덮겠다고 했으니 이탈 AUC 는 (0.8 + 0.2) / 8, 몰입도 평균은 (4 + 1×7) / 5 / 8.
+    expect(verdict.auc.byReader['pace']).toBeCloseTo((0.8 + 0.2) / 8);
+    expect(verdict.auc.dropOffScene['pace']).toBe('02-scene');
+    expect(verdict.auc.engagementByReader['pace']).toBeCloseTo((4 + 7) / 5 / 8);
   });
 
   it('keeps the genre reader out of the AUC', async () => {

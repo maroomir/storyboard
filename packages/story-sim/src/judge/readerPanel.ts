@@ -156,11 +156,9 @@ async function readInOrder(
 
     turns.push(outcome.turn);
     priorTurns.push({ sceneNumber: index + 1, answer: outcome.raw as string });
-
-    // 덮은 독자는 더 부르지 않는다. 계속 부르면 돈도 들고 되살아나기도 한다.
-    if (!outcome.turn.continueReading) {
-      break;
-    }
+    // NOTE: 덮겠다는 답은 의향으로만 남기고 다음 화도 읽힌다. 실제로 멈추면 설정·시점 독자가 2화를
+    // 못 봐 연속성을 아예 못 재고, 심판이 짤수록 AUC 가 0 에 뭉친다. 이탈 AUC 는 첫 «덮음» 부터 0 으로
+    // 세어 뜻이 그대로이고, 몰입도 평균이 8화 전부에 대한 둘째 눈금이 된다.
   }
 
   return { curve: { readerId: persona.id, turns }, problems };

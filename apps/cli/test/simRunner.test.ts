@@ -613,6 +613,15 @@ describe('rejudge', () => {
 
     expect(sources.map((source) => source.run.runId)).toEqual(['thriller/point#3']);
     expect(rejudgeSources([run({})], { pointLabel: 'point', judge: claude, enginePrefix: 'bbbb' })).toHaveLength(0);
+    // 같은 심판이라도 심판 쪽 코드가 바뀌었으면(지금 엔진과 다른 커밋의 재채점이면) 다시 본다.
+    const again = rejudgeSources(
+      [
+        run({}),
+        run({ runId: 'thriller/point#1~claude:claude-sonnet-5', rejudgedFrom: 'thriller/point#1', judge: claude, engineCommit: 'old0000' }),
+      ],
+      { pointLabel: 'point', judge: claude, engineCommit: 'new1111' },
+    );
+    expect(again.map((source) => source.run.runId)).toEqual(['thriller/point#1']);
   });
 
   it('keeps the generation side and replaces only the verdict', () => {

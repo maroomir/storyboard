@@ -711,6 +711,8 @@ async function judgeChainDrafts(
       byReader: verdict.auc.byReader,
       curves: verdict.auc.curves,
       dropOffScene: verdict.auc.dropOffScene,
+      engagement: verdict.auc.engagement,
+      engagementByReader: verdict.auc.engagementByReader,
     },
     genreNotes: verdict.genreNotes,
     ...(verdict.genreProblems.length > 0 ? { genreProblems: verdict.genreProblems } : {}),
@@ -1042,10 +1044,11 @@ export const reportSim: CommandHandler = async (context) => {
             : point.pointLabel) +
           (mixedGeneration ? ` [${point.generation}]` : '') +
           (mixedJudge && point.judge.length > 0 ? ` 심판:${point.judge}` : '');
+        const engagement = point.engagement === undefined ? '' : ` 몰입 ${point.engagement.toFixed(2)}`;
         const quality =
           point.judged === 0
             ? `AUC n/a\t${cost}\t회수 n/a`
-            : `AUC ${point.auc.toFixed(3)}\t${cost}\t회수 ${point.recalled}`;
+            : `AUC ${point.auc.toFixed(3)}${engagement}\t${cost}\t회수 ${point.recalled}`;
         const critic =
           point.critic === undefined
             ? ''
@@ -1102,8 +1105,11 @@ export const rejudgeSim: CommandHandler = async (context) => {
 
   const runs = await readRuns(prepared.outPath);
   const judge = { providerId: selected.providerId, model: selected.model };
+  const engineVersion = context.container.version;
+  const engineCommit = await describeEngine(dirname(process.argv[1] ?? process.cwd()), engineVersion);
   const sources = rejudgeSources(runs, {
     pointLabel: point,
+    engineCommit,
     ...(requireFlag(context, 'source') === undefined ? {} : { enginePrefix: requireFlag(context, 'source') }),
     judge,
   });
@@ -1131,8 +1137,6 @@ export const rejudgeSim: CommandHandler = async (context) => {
     return { ok: true, message: [...plan, '이대로 돌리려면 --yes 를 붙이세요.'].join('\n'), data: { point, sources: sources.length } };
   }
 
-  const engineVersion = context.container.version;
-  const engineCommit = await describeEngine(dirname(process.argv[1] ?? process.cwd()), engineVersion);
   const judgeRegistry =
     prepared.localRuntime === undefined
       ? context.container.aiProviderRegistry

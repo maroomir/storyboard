@@ -16,6 +16,8 @@ export function rejudgeSources(
     readonly pointLabel: string;
     readonly enginePrefix?: string;
     readonly judge: NonNullable<RunRecord['judge']>;
+    // 지금 엔진. 같은 심판이라도 심판 쪽 코드가 바뀌었으면(엔진 커밋이 다르면) 다시 본다.
+    readonly engineCommit?: string;
   },
 ): readonly RejudgeSource[] {
   const judgeKey = `${input.judge.providerId}:${input.judge.model}`;
@@ -23,6 +25,7 @@ export function rejudgeSources(
     runs
       .filter((run) => run.rejudgedFrom !== undefined && run.judge !== undefined)
       .filter((run) => `${run.judge?.providerId}:${run.judge?.model}` === judgeKey)
+      .filter((run) => input.engineCommit === undefined || run.engineCommit === input.engineCommit)
       .map((run) => run.rejudgedFrom as string),
   );
 

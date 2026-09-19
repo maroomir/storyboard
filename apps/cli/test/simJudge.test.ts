@@ -89,6 +89,18 @@ describe('panel AUC', () => {
   });
 });
 
+describe('engagement mean', () => {
+  // 덮음과 무관한 둘째 눈금. 심판이 짤수록 AUC 는 0 에 뭉치지만 몰입도 평균은 남는다.
+  it('averages engagement over every scene read, ignoring the intention to quit', () => {
+    const turns = [turn('01', 3, false), turn('02', 2), turn('03', 4)];
+    const result = panelAuc([curve('r1', turns)], 3);
+
+    expect(result.byReader['r1']).toBeCloseTo(0.6 / 3);
+    expect(result.engagementByReader['r1']).toBeCloseTo((3 + 2 + 4) / 5 / 3);
+    expect(result.engagement).toBeCloseTo((3 + 2 + 4) / 5 / 3);
+  });
+});
+
 describe('floor gate', () => {
   const good = ['generated', 'floor'] as const;
   const bad = ['floor', 'generated'] as const;
