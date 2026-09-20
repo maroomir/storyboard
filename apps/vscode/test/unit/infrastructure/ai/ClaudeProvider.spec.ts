@@ -50,9 +50,45 @@ describe("ClaudeProvider", () => {
     expect(didCreateMessage).toBe(true)
   })
 
+  // 같은 역할이 이어지면 블록으로 합치고, 캐시 경계 메시지의 블록에만 cache_control 을 단다.
+  it("merges consecutive same-role messages into blocks and marks the cache boundary", async () => {
+    let capturedMessages: Parameters<ClaudeClientLike["messages"]["create"]>[0]["messages"] = []
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model: "claude-sonnet-4-6",
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedMessages = request.messages
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "draftCritique",
+      messages: [
+        { role: "system", content: "비평가다." },
+        { role: "user", content: "원고 전문", cacheBoundary: true },
+        { role: "user", content: "기준: 결말" },
+        { role: "assistant", content: "{}" }
+      ]
+    })
+
+    expect(capturedMessages).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "원고 전문", cache_control: { type: "ephemeral" } },
+          { type: "text", text: "기준: 결말" }
+        ]
+      },
+      { role: "assistant", content: "{}" }
+    ])
+  })
+
   it("generates text and separates system prompts from conversation messages", async () => {
     let capturedSystem: Parameters<ClaudeClientLike["messages"]["create"]>[0]["system"]
-    const usage = { inputTokens: 80, outputTokens: 40 }
+    const usage = { inputTokens: 80, outputTokens: 40, cacheReadInputTokens: 10, cacheCreationInputTokens: 5 }
     const provider = new ClaudeProvider({
       apiKey: "sk-ant-test",
       model: "claude-sonnet-4-6",
@@ -62,8 +98,8 @@ describe("ClaudeProvider", () => {
           usage: {
             input_tokens: usage.inputTokens,
             output_tokens: usage.outputTokens,
-            cache_read_input_tokens: 10,
-            cache_creation_input_tokens: 5
+            cache_read_input_tokens: usage.cacheReadInputTokens,
+            cache_creation_input_tokens: usage.cacheCreationInputTokens
           },
           onCreateMessage: (request): void => {
             capturedSystem = request.system

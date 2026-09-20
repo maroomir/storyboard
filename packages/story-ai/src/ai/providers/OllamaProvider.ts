@@ -99,7 +99,7 @@ export class OllamaProvider implements AiProvider {
     try {
       const response = await this.client.post('/api/chat', {
         model: this.model,
-        messages: request.messages,
+        messages: request.messages.map(({ role, content }) => ({ role, content })),
         stream: false,
         ...(this.think === undefined ? {} : { think: this.think }),
         options: {

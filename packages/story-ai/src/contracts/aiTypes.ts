@@ -23,6 +23,9 @@ export type AiMessageRole = 'system' | 'user' | 'assistant';
 export interface AiMessage {
   readonly role: AiMessageRole;
   readonly content: string;
+  // NOTE: 여기까지의 접두를 캐시해도 된다는 표시. 접두 캐싱을 지원하는 프로바이더(Claude)만 읽고
+  // 나머지는 무시한다. 같은 접두가 여러 호출에 되풀이될 때만 붙인다.
+  readonly cacheBoundary?: boolean;
 }
 
 export interface AiGenerateRequest {

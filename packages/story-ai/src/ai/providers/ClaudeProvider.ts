@@ -25,7 +25,7 @@ type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 
 interface ClaudeConversationMessage {
   readonly role: ClaudeMessageRole;
-  readonly content: string;
+  readonly content: string | ReadonlyArray<TextBlockParam>;
 }
 
 interface ClaudeMessagesLike {
@@ -151,14 +151,54 @@ function splitClaudeMessages(messages: readonly AiMessage[]): {
     .filter((message) => message.role === 'system')
     .map((message) => message.content)
     .join('\n\n');
-  const conversationMessages = messages
-    .filter(isClaudeConversationMessage)
-    .map((message) => ({ role: message.role, content: message.content }));
+  const conversationMessages = groupConsecutiveRoles(
+    messages.filter(isClaudeConversationMessage),
+  ).map(toClaudeConversationMessage);
 
   return {
     systemPrompt: systemPrompt.length > 0 ? systemPrompt : undefined,
     messages:
       conversationMessages.length > 0 ? conversationMessages : [{ role: 'user', content: '' }],
+  };
+}
+
+// NOTE: 같은 역할이 이어지면 한 메시지의 블록 여러 개로 합친다. 캐시 경계가 있는 메시지는 블록에
+// cache_control 을 달아 그 앞까지를 접두 캐시로 삼는다. 경계도 없고 하나뿐이면 예전처럼 문자열이다.
+function groupConsecutiveRoles(
+  messages: ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>,
+): ReadonlyArray<ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>> {
+  const groups: (AiMessage & { readonly role: ClaudeMessageRole })[][] = [];
+
+  for (const message of messages) {
+    const last = groups.at(-1);
+    if (last !== undefined && last[0]?.role === message.role) {
+      last.push(message);
+    } else {
+      groups.push([message]);
+    }
+  }
+
+  return groups;
+}
+
+function toClaudeConversationMessage(
+  group: ReadonlyArray<AiMessage & { readonly role: ClaudeMessageRole }>,
+): ClaudeConversationMessage {
+  const [first] = group;
+  const role = first?.role ?? 'user';
+  if (group.length === 1 && first !== undefined && first.cacheBoundary !== true) {
+    return { role, content: first.content };
+  }
+
+  return {
+    role,
+    content: group.map(
+      (message): TextBlockParam => ({
+        type: 'text',
+        text: message.content,
+        ...(message.cacheBoundary === true ? { cache_control: { type: 'ephemeral' } } : {}),
+      }),
+    ),
   };
 }
 

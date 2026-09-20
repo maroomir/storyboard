@@ -356,7 +356,10 @@ describe('manuscript critic', () => {
 
     expect(withQuote.at(-1)?.content).toContain('"quote"');
     expect(withoutQuote.at(-1)?.content).not.toContain('"quote"');
-    expect(withoutQuote[0]?.content).toContain('인용 없이');
+    expect(withoutQuote.at(-1)?.content).toContain('인용 없이');
+    // 원고까지는 기준 여섯 개에 똑같아야 접두 캐시가 맞는다. 기준은 원고 뒤에만 나온다.
+    expect(withQuote.slice(0, 2)).toEqual(withoutQuote.slice(0, 2));
+    expect(withQuote[1]).toEqual({ role: 'user', content: '본문', cacheBoundary: true });
     // 점수의 뜻이 앞에 못박혀 있되, 훼손의 종류는 적지 않는다. 적으면 심판이 멀쩡한 원고에서도 그것을 찾아낸다.
     expect(withQuote[0]?.content).toContain('0: 기준을 전혀 못 지켰다');
     expect(withQuote[0]?.content).not.toContain('작가 메모');
@@ -369,7 +372,7 @@ describe('manuscript critic', () => {
       model: 'gemma3:12b',
       ask: async (messages: readonly { content: string }[]) => {
         call += 1;
-        const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+        const isCorrupted = messages.some((message) => message.content.includes('[작가 메모'));
         const score = isCorrupted ? 1 : 4;
         return {
           providerId: 'ollama' as const,
@@ -401,7 +404,7 @@ describe('manuscript critic', () => {
       providerId: 'ollama' as const,
       model: 'gemma3:12b',
       ask: async (messages: readonly { content: string }[]) => {
-        const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+        const isCorrupted = messages.some((message) => message.content.includes('[작가 메모'));
         return {
           providerId: 'ollama' as const,
           model: 'gemma3:12b',
@@ -421,7 +424,7 @@ describe('manuscript critic', () => {
       judge: {
         ...judge,
         ask: async (messages: readonly { content: string }[]) => {
-          const isCorrupted = messages.at(-1)?.content.includes('[작가 메모') === true;
+          const isCorrupted = messages.some((message) => message.content.includes('[작가 메모'));
           if (isCorrupted) corruptedCalls += 1;
           const score = isCorrupted ? (corruptedCalls === 1 ? 3 : 2) : 3;
           return { providerId: 'ollama', model: 'gemma3:12b', text: JSON.stringify({ score, reason: '이유', quote: '서지운은 문을 열었다.' }) } as never;

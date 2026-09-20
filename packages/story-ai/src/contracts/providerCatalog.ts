@@ -8,8 +8,22 @@ export interface ProviderModelEntry {
   readonly displayName: string;
   readonly inputPricePerMillion: number;
   readonly outputPricePerMillion: number;
+  // 접두 캐시 요금. 프로바이더가 캐시 토큰을 입력과 따로 세는 경우에만 적는다(Claude).
+  readonly cacheWritePricePerMillion?: number;
+  readonly cacheReadPricePerMillion?: number;
   // 생략하면 true. 기본값이 아닌 temperature 를 400 으로 거부하거나 지원 중단한 모델만 false 로 적는다.
   readonly acceptsTemperature?: boolean;
+}
+
+// Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준).
+function claudeCachePrices(inputPricePerMillion: number): {
+  readonly cacheWritePricePerMillion: number;
+  readonly cacheReadPricePerMillion: number;
+} {
+  return {
+    cacheWritePricePerMillion: inputPricePerMillion * 1.25,
+    cacheReadPricePerMillion: inputPricePerMillion * 0.1,
+  };
 }
 
 export interface ProviderCatalogEntry {
@@ -84,6 +98,7 @@ export const providerCatalog = {
         displayName: 'Claude Sonnet 5',
         inputPricePerMillion: 2.0,
         outputPricePerMillion: 10.0,
+        ...claudeCachePrices(2.0),
         acceptsTemperature: false,
       },
       {
@@ -91,6 +106,7 @@ export const providerCatalog = {
         displayName: 'Claude Opus 5',
         inputPricePerMillion: 5.0,
         outputPricePerMillion: 25.0,
+        ...claudeCachePrices(5.0),
         acceptsTemperature: false,
       },
       {
@@ -112,12 +128,14 @@ export const providerCatalog = {
         displayName: 'Claude Sonnet 4.6',
         inputPricePerMillion: 3.0,
         outputPricePerMillion: 15.0,
+        ...claudeCachePrices(3.0),
       },
       {
         id: 'claude-haiku-4-5',
         displayName: 'Claude Haiku 4.5',
         inputPricePerMillion: 1.0,
         outputPricePerMillion: 5.0,
+        ...claudeCachePrices(1.0),
       },
     ],
   },
@@ -307,6 +325,8 @@ export type ProviderModelOptions = readonly [ProviderModelOption, ...ProviderMod
 export interface ModelPricePerMillion {
   readonly inputPricePerMillion: number;
   readonly outputPricePerMillion: number;
+  readonly cacheWritePricePerMillion?: number;
+  readonly cacheReadPricePerMillion?: number;
 }
 
 export const storyboardModelCatalog = Object.fromEntries(
@@ -328,6 +348,12 @@ export const storyboardModelPricing = Object.fromEntries(
         {
           inputPricePerMillion: model.inputPricePerMillion,
           outputPricePerMillion: model.outputPricePerMillion,
+          ...(model.cacheWritePricePerMillion === undefined
+            ? {}
+            : { cacheWritePricePerMillion: model.cacheWritePricePerMillion }),
+          ...(model.cacheReadPricePerMillion === undefined
+            ? {}
+            : { cacheReadPricePerMillion: model.cacheReadPricePerMillion }),
         },
       ]),
     ),

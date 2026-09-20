@@ -66,7 +66,8 @@ describe("computeCostUsd", () => {
     ).toBe(0)
   })
 
-  it("bills only billed input and output token fields (cache breakdown ignored in v1)", () => {
+  // Claude 는 캐시 토큰을 input_tokens 밖에서 센다. 쓰기 1.25배, 읽기 0.1배로 더해야 실제 청구액이다.
+  it("bills Claude cache writes and reads on top of the billed input tokens", () => {
     expect(
       computeCostUsd({
         providerId: "claude",
@@ -78,7 +79,7 @@ describe("computeCostUsd", () => {
           cacheCreationInputTokens: 1_000_000
         }
       })
-    ).toBeCloseTo((100 / 1_000_000) * 3.0, 12)
+    ).toBeCloseTo((100 / 1_000_000) * 3.0 + 3.0 * 1.25 + 3.0 * 0.1, 12)
   })
 })
 

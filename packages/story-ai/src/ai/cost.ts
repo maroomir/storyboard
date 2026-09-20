@@ -45,6 +45,15 @@ export function computeCostUsd(params: {
 
   const inputMillions = params.usage.inputTokens / 1_000_000;
   const outputMillions = params.usage.outputTokens / 1_000_000;
+  // NOTE: Claude 는 캐시에 쓰거나 캐시에서 읽은 토큰을 input_tokens 밖에서 따로 센다. 더하지 않으면
+  // 캐시를 켠 실행이 실제보다 싸게 읽힌다. 캐시 요금이 없는 모델은 입력 요금으로 센다.
+  const cacheWriteMillions = (params.usage.cacheCreationInputTokens ?? 0) / 1_000_000;
+  const cacheReadMillions = (params.usage.cacheReadInputTokens ?? 0) / 1_000_000;
 
-  return inputMillions * row.inputPricePerMillion + outputMillions * row.outputPricePerMillion;
+  return (
+    inputMillions * row.inputPricePerMillion +
+    outputMillions * row.outputPricePerMillion +
+    cacheWriteMillions * (row.cacheWritePricePerMillion ?? row.inputPricePerMillion) +
+    cacheReadMillions * (row.cacheReadPricePerMillion ?? row.inputPricePerMillion)
+  );
 }

@@ -177,6 +177,8 @@ export function buildCritique(input: {
   readonly criterion: CriticCriterion;
 }): readonly AiMessage[] {
   const { criterion } = input;
+  // NOTE: 원고 전문이 기준 여섯 개 호출에 그대로 되풀이된다. 기준에 따라 달라지는 말은 전부 원고
+  // 뒤에 두고 원고까지를 캐시 경계로 표시해야, Claude 가 둘째 호출부터 원고를 캐시에서 읽는다.
   return [
     {
       role: 'system',
@@ -184,19 +186,18 @@ export function buildCritique(input: {
         `당신은 ${input.genre} 소설 원고 한 편을 끝까지 읽고 기준 하나만 채점하는 비평가다.`,
         '점수는 0에서 5 사이 정수다.',
         ...scoreRubric,
-        ...(criterion.grounded
-          ? ['근거로 드는 인용은 반드시 본문에 그대로 있는 구절이어야 한다. 지어내지 마라.']
-          : ['이 기준은 한 구절로 증명되지 않는다. 인용 없이 이유만 적어라.']),
         '답은 JSON 한 덩어리로만 낸다. 다른 말을 덧붙이지 마라.',
       ].join('\n'),
     },
+    { role: 'user', content: input.manuscript, cacheBoundary: true },
     {
       role: 'user',
       content: [
         `기준: ${criterion.name}`,
         `판정 질문: ${criterion.question}`,
-        '',
-        input.manuscript,
+        criterion.grounded
+          ? '근거로 드는 인용은 반드시 본문에 그대로 있는 구절이어야 한다. 지어내지 마라.'
+          : '이 기준은 한 구절로 증명되지 않는다. 인용 없이 이유만 적어라.',
         '',
         criterion.grounded
           ? '{ "score": 0에서 5 사이 정수, "reason": "한 문장", "quote": "본문에서 그대로 옮긴 한 구절" }'

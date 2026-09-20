@@ -103,7 +103,7 @@ export class OpenAiProvider implements AiProvider {
     try {
       const response = await this.client.chat.completions.create({
         model: this.model,
-        messages: request.messages,
+        messages: request.messages.map(({ role, content }) => ({ role, content })),
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         max_tokens: request.maxTokens,
       });
