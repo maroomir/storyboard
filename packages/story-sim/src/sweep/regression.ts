@@ -18,7 +18,30 @@ export interface RegressionRow {
   readonly aucDelta: number;
   readonly recallDelta: number;
   readonly noise: number;
+  // 몰입도와 비평 근거 점수의 중앙값 차이. 양쪽 엔진 모두에 기록이 있을 때만 있다(옛 기록엔 없다).
+  readonly engagementDelta?: number;
+  readonly engagementNoise?: number;
+  readonly criticDelta?: number;
   readonly verdict: 'outside-noise' | 'within-noise' | 'undecidable';
+}
+
+function definedMedianDelta(
+  latest: readonly RunRecord[],
+  previous: readonly RunRecord[],
+  pick: (run: RunRecord) => number | undefined,
+): { readonly delta: number; readonly noise: number } | undefined {
+  const values = (list: readonly RunRecord[]): number[] =>
+    list.map(pick).filter((value): value is number => value !== undefined);
+  const latestValues = values(latest);
+  const previousValues = values(previous);
+  if (latestValues.length === 0 || previousValues.length === 0) {
+    return undefined;
+  }
+
+  return {
+    delta: median(latestValues) - median(previousValues),
+    noise: Math.max(noiseFloor(latestValues), noiseFloor(previousValues)),
+  };
 }
 
 function latestStart(runs: readonly RunRecord[]): string {
@@ -56,6 +79,12 @@ export function regressionRows(runs: readonly RunRecord[]): readonly RegressionR
     const recallOf = (list: readonly RunRecord[]): number[] => list.map((run) => run.recalled ?? 0);
     const noise = Math.max(noiseFloor(aucOf(latest)), noiseFloor(aucOf(previous)));
     const aucDelta = median(aucOf(latest)) - median(aucOf(previous));
+    const engagement = definedMedianDelta(latest, previous, (run) => run.panel?.engagement);
+    const critic = definedMedianDelta(latest, previous, (run) => run.critic?.groundedTotal);
+    // 짠 심판은 AUC 가 0 근처에 뭉치므로 몰입도가 자기 잡음 폭을 넘어도 «움직였다» 고 본다.
+    const moved =
+      Math.abs(aucDelta) > noise ||
+      (engagement !== undefined && Math.abs(engagement.delta) > engagement.noise);
 
     rows.push({
       genre: first.genre,
@@ -69,11 +98,11 @@ export function regressionRows(runs: readonly RunRecord[]): readonly RegressionR
       aucDelta,
       recallDelta: median(recallOf(latest)) - median(recallOf(previous)),
       noise,
-      verdict: !Number.isFinite(noise)
-        ? 'undecidable'
-        : Math.abs(aucDelta) > noise
-          ? 'outside-noise'
-          : 'within-noise',
+      ...(engagement === undefined
+        ? {}
+        : { engagementDelta: engagement.delta, engagementNoise: engagement.noise }),
+      ...(critic === undefined ? {} : { criticDelta: critic.delta }),
+      verdict: !Number.isFinite(noise) ? 'undecidable' : moved ? 'outside-noise' : 'within-noise',
     });
   }
 
@@ -92,6 +121,11 @@ export function describeRegression(row: RegressionRow): string {
   const noise = Number.isFinite(row.noise) ? row.noise.toFixed(3) : '무한';
 
   const judge = row.judge.length === 0 ? '' : ` 심판 ${row.judge}`;
+  const engagement =
+    row.engagementDelta === undefined || row.engagementNoise === undefined
+      ? ''
+      : ` · 몰입 ${sign(row.engagementDelta, 3)} (폭 ${Number.isFinite(row.engagementNoise) ? row.engagementNoise.toFixed(3) : '무한'})`;
+  const critic = row.criticDelta === undefined ? '' : ` · 비평 ${sign(row.criticDelta, 0)}`;
 
-  return `${row.pointLabel} [${row.generation}${judge}] ${row.previousEngine.slice(0, 7)}(${row.previousRuns}회) 대비 ${row.latestEngine.slice(0, 7)}(${row.latestRuns}회): AUC ${sign(row.aucDelta, 3)} · 회수 ${sign(row.recallDelta, 1)} · 잡음 폭 ${noise} · ${verdict}`;
+  return `${row.pointLabel} [${row.generation}${judge}] ${row.previousEngine.slice(0, 7)}(${row.previousRuns}회) 대비 ${row.latestEngine.slice(0, 7)}(${row.latestRuns}회): AUC ${sign(row.aucDelta, 3)} · 회수 ${sign(row.recallDelta, 1)}${engagement}${critic} · 잡음 폭 ${noise} · ${verdict}`;
 }

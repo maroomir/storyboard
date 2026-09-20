@@ -14,6 +14,7 @@ import {
   planScreening,
   withinCap,
   type ScoredPoint,
+  describeRegression,
   regressionRows,
   scoreRuns,
 } from '@storyboard/story-sim';
@@ -397,6 +398,31 @@ describe('regression view', () => {
       run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.2 }),
     ]);
     expect(single[0]?.verdict).toBe('undecidable');
+  });
+
+  // 짠 심판은 AUC 가 0 근처에 뭉친다. 몰입도가 자기 잡음 폭을 넘으면 AUC 가 잡음 안이어도 «움직였다» 다.
+  it('reports engagement and critic deltas and lets engagement alone flag a move', () => {
+    const panel = (engagement: number) => ({ byReader: {}, curves: {}, dropOffScene: {}, engagement });
+    const critic = (groundedTotal: number) => ({
+      groundedTotal,
+      opinionTotal: 3,
+      gatePassed: true,
+      scores: [],
+      gateReason: '',
+      problems: [],
+    });
+    const rows = regressionRows([
+      run({ auc: 0.05, panel: panel(0.3), critic: critic(7) }),
+      run({ auc: 0.06, repeat: 2, panel: panel(0.32), critic: critic(6) }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T00:00:00.000Z', auc: 0.05, panel: panel(0.2), critic: critic(5) }),
+      run({ engineCommit: 'e2', startedAt: '2026-09-17T01:00:00.000Z', auc: 0.07, repeat: 2, panel: panel(0.21), critic: critic(4) }),
+    ]);
+
+    expect(rows[0]?.engagementDelta).toBeCloseTo(-0.105);
+    expect(rows[0]?.criticDelta).toBeCloseTo(-2);
+    expect(rows[0]?.verdict).toBe('outside-noise');
+    expect(describeRegression(rows[0]!)).toContain('몰입 -0.105');
+    expect(describeRegression(rows[0]!)).toContain('비평 -2');
   });
 
   it('never compares runs made with different generators', () => {
