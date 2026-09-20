@@ -393,7 +393,7 @@ describe('manuscript critic', () => {
       'theme',
       'originality',
     ]);
-    // 16 - 4 = 12 ≥ 최소 격차 4.
+    // 16 - 4 = 12 ≥ 최소 격차 2.
     expect(verdict.gate.passed).toBe(true);
     expect(verdict.gate.corruptedGroundedTotal).toBe(4);
   });
@@ -418,7 +418,7 @@ describe('manuscript critic', () => {
 
     expect(verdict.groundedTotal - verdict.gate.corruptedGroundedTotal).toBe(4);
     expect(verdict.gate.passed).toBe(true);
-    // 격차 3 이면 막힌다: 훼손본의 첫 기준(인물 아크)만 3점을 받는다.
+    // 격차 1 이면 막힌다: 훼손본의 첫 기준(인물 아크)만 2점, 나머지는 생성본과 같은 3점을 받는다.
     let corruptedCalls = 0;
     const narrow = await judgeManuscript({
       judge: {
@@ -426,7 +426,7 @@ describe('manuscript critic', () => {
         ask: async (messages: readonly { content: string }[]) => {
           const isCorrupted = messages.some((message) => message.content.includes('[작가 메모'));
           if (isCorrupted) corruptedCalls += 1;
-          const score = isCorrupted ? (corruptedCalls === 1 ? 3 : 2) : 3;
+          const score = isCorrupted ? (corruptedCalls === 1 ? 2 : 3) : 3;
           return { providerId: 'ollama', model: 'gemma3:12b', text: JSON.stringify({ score, reason: '이유', quote: '서지운은 문을 열었다.' }) } as never;
         },
       },
