@@ -10,6 +10,20 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-09-22
+
+### Added
+
+- **`apikey set` takes the key as hidden input and verifies it immediately.** It used to read stdin directly, so a typed key stayed in the scrollback, and a mispaste only surfaced on the first real call. At a terminal it now picks the provider by number, takes the key as hidden input, and checks the connection right after saving so success or failure is reported at once. Piped input still reads stdin as before. `apikey show` reports only whether each provider has a key, never the value itself. (`setup` also changes the default provider, so this is the right command when you only want to add a key.)
+- **Claude calls now use prefix caching.** Asking about a long manuscript under several criteria resent the same manuscript every time, and the cache was attached to the system block only, so it was never actually read. The repeated prefix now carries a cache boundary and is reused, and cost accounting counts cache tokens at 1.25× for writes and 0.1× for reads — previously cache tokens were left out of the cost entirely. The markers are not sent to OpenAI or ollama.
+- **Kept drafts can be rejudged with a different judge.** Trying another judge no longer means regenerating, and the judge's usage is recorded in its own ledger.
+
+### Changed
+
+- **The measurement report shows each point's move against the previous engine.** Engagement and critic score now appear with their direction and size on one line, so whether a change actually improved things is readable from the table.
+- **Readers now read to the end rather than stopping partway, and an engagement mean is reported.**
+- **The critic gate has teeth, and its rubric is neutral.** The gate was filtering essentially nothing, and the rubric presupposed particular ways a manuscript could be broken. The gate margin is lowered to two points.
+
 ## [0.9.6] - 2026-09-16
 
 ### Fixed
