@@ -1,6 +1,15 @@
-import { mergeStoryboardGitignore, type StoryUri } from '@storyboard/story-format';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import {
+  joinStoryPath,
+  mergeStoryboardGitignore,
+  serializeNarratorCard,
+  type NarratorCard,
+  type ProjectSetting,
+  type StoryboardProject,
+  type StoryUri,
+} from '@storyboard/story-format';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import { createDefaultProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 
 export async function createStoryboardDirectories(
   fs: IFileSystem,
@@ -44,4 +53,72 @@ Storyboard 프로젝트 노트입니다.
 - \`draft/\`: AI가 생성하는 원고 산출물
 - \`.storyboard/memory/\`: 재생성할 수 없는 AI 기억 (이야기 상태, 페르소나, 챕터 요약)
 `;
+}
+
+export interface CreateWorkspaceRequest {
+  readonly fileSystem: IFileSystem;
+  readonly workspaceRoot: StoryUri;
+  readonly name: string;
+  readonly language?: string;
+  readonly setting?: ProjectSetting;
+  // Narrator cards a composition preset asked for alongside the contract.
+  readonly narratorCards?: readonly NarratorCard[];
+}
+
+export interface CreateWorkspaceResult {
+  readonly project: StoryboardProject;
+  readonly createdNarrators: readonly string[];
+}
+
+// Everything a new workspace needs on disk, in the order that keeps a first commit clean: the
+// ignore block exists before any generated file could. Creating the git repository is the host's
+// business, because only the host knows whether git is there and how to run it.
+export async function createWorkspace(request: CreateWorkspaceRequest): Promise<CreateWorkspaceResult> {
+  const { fileSystem } = request;
+  const paths = getStoryboardProjectPaths(request.workspaceRoot);
+  const base = createDefaultProjectJson({
+    name: request.name,
+    ...(request.language === undefined ? {} : { language: request.language }),
+  });
+  const project = request.setting === undefined ? base : { ...base, setting: request.setting };
+
+  await fileSystem.createDirectory(paths.metadataDirectory);
+  await createStoryboardDirectories(fileSystem, paths);
+  await writeProjectJson(fileSystem, paths.projectJson, project);
+  await ensureWorkspaceGitignore(fileSystem, paths.gitignore);
+  await fileSystem.writeFile(paths.readme, new TextEncoder().encode(createWorkspaceReadme(project.name)));
+  const createdNarrators = await writeNarratorCardsIfMissing(
+    fileSystem,
+    paths,
+    request.narratorCards ?? [],
+  );
+
+  return { project, createdNarrators };
+}
+
+// 이미 있는 서술자는 손대지 않는다. 프리셋을 다시 돌렸다고 작가가 고친 목소리를 잃으면 안 된다.
+export async function writeNarratorCardsIfMissing(
+  fileSystem: IFileSystem,
+  paths: StoryboardProjectPaths,
+  cards: readonly NarratorCard[],
+): Promise<string[]> {
+  if (cards.length === 0) {
+    return [];
+  }
+
+  await fileSystem.createDirectory(paths.narratorDirectory);
+
+  const written: string[] = [];
+  for (const card of cards) {
+    const uri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
+
+    if (await fileSystem.exists(uri)) {
+      continue;
+    }
+
+    await fileSystem.writeFile(uri, new TextEncoder().encode(serializeNarratorCard(card)));
+    written.push(card.id);
+  }
+
+  return written;
 }

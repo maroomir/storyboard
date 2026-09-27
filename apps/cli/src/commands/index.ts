@@ -10,14 +10,14 @@ import {
   analyzeSlop,
   buildCompositionPreset,
   buildSceneSeeds,
-  createDefaultProjectJson,
   diffCandidatesAgainstCanon,
   isIgnoredSampleCardFileName,
   isRunBudgetExceeded,
   joinStoryPath,
   migrateCardTextFieldsToList,
+  writeNarratorCardsIfMissing,
   createStoryboardDirectories,
-  createWorkspaceReadme,
+  createWorkspace,
   ensureWorkspaceGitignore,
   getStoryboardProjectPaths,
   NodeUri,
@@ -37,7 +37,6 @@ import {
   formatSceneOrderRanges,
   mainThreadId,
   pointOfViews,
-  serializeNarratorCard,
   type CompositionKind,
   type NarratorCard,
   type PointOfView,
@@ -1474,28 +1473,17 @@ const initProject: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: contract.message };
   }
 
-  const base = createDefaultProjectJson({
-    name,
-    ...(flagString(args.flags, 'language') === undefined
-      ? {}
-      : { language: flagString(args.flags, 'language') }),
-  });
+  const language = flagString(args.flags, 'language');
   const setting = mergeSetting(undefined, contract.setting);
-  const project = setting === undefined ? base : { ...base, setting };
-
-  await container.fileSystem.createDirectory(paths.metadataDirectory);
-  await createStoryboardDirectories(container.fileSystem, paths);
-  await writeProjectJson(container.fileSystem, paths.projectJson, project);
-  await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
-  await container.fileSystem.writeFile(
-    paths.readme,
-    new TextEncoder().encode(createWorkspaceReadme(project.name)),
-  );
+  const { project, createdNarrators } = await createWorkspace({
+    fileSystem: container.fileSystem,
+    workspaceRoot: container.workspaceRoot,
+    name,
+    ...(language === undefined ? {} : { language }),
+    ...(setting === undefined ? {} : { setting }),
+    narratorCards: contract.narratorCards ?? [],
+  });
   const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
-  const createdNarrators = await writePresetNarratorCards(
-    container,
-    contract.narratorCards ?? [],
-  );
 
   return {
     ok: true,
@@ -1554,7 +1542,7 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
   const setting = mergeSetting(project.setting, contract.setting);
 
   await writeProjectJson(container.fileSystem, paths.projectJson, { ...project, setting });
-  await writePresetNarratorCards(container, contract.narratorCards ?? []);
+  await writeNarratorCardsIfMissing(container.fileSystem, paths, contract.narratorCards ?? []);
 
   return { ok: true, message: '작품 계약을 갱신했습니다.', data: setting };
 };
@@ -1566,36 +1554,6 @@ type ContractInput =
       readonly narratorCards?: readonly NarratorCard[];
     }
   | { readonly message: string };
-
-async function writePresetNarratorCards(
-  container: CliContainer,
-  cards: readonly NarratorCard[],
-): Promise<string[]> {
-  if (cards.length === 0) {
-    return [];
-  }
-
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  await container.fileSystem.createDirectory(paths.narratorDirectory);
-
-  const written: string[] = [];
-  for (const card of cards) {
-    const uri = joinStoryPath(paths.narratorDirectory, `${card.id}.card`);
-
-    // 이미 있는 서술자는 손대지 않는다. 프리셋을 다시 돌렸다고 작가가 고친 목소리를 잃으면 안 된다.
-    if (await container.fileSystem.exists(uri)) {
-      continue;
-    }
-
-    await container.fileSystem.writeFile(
-      uri,
-      new TextEncoder().encode(serializeNarratorCard(card)),
-    );
-    written.push(card.id);
-  }
-
-  return written;
-}
 
 async function readContractInput(
   container: CliContainer,
