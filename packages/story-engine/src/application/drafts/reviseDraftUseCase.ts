@@ -18,10 +18,12 @@ import {
   resolveNarration,
   writeDraftFile,
 } from '@storyboard/story-format';
-import type { ProjectSetting } from '@storyboard/story-format';
+import type { NarrationDirective, StoryboardProject } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/ports/repositories';
 import { readProjectJson } from '#engine/persistence/projectJson';
+import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
+import { resolveSceneThread } from './resolveSceneThread';
 import { buildStyleDirective, formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
@@ -33,24 +35,46 @@ import {
   type ReviseSeedIssues,
 } from '@storyboard/story-pipeline';
 
-async function readContractGuidance(
+async function readProjectIfPresent(
   fs: IFileSystem,
   projectJsonUri: StoryUri,
-): Promise<{
-  styleConstraints: readonly string[];
-  qualityCriteria: readonly string[];
-  setting?: ProjectSetting;
-}> {
+): Promise<StoryboardProject | undefined> {
   try {
-    const project = await readProjectJson(fs, projectJsonUri);
-    return {
-      styleConstraints: project.setting?.styleConstraints ?? [],
-      qualityCriteria: project.setting?.qualityCriteria ?? [],
-      setting: project.setting,
-    };
+    return await readProjectJson(fs, projectJsonUri);
   } catch {
-    return { styleConstraints: [], qualityCriteria: [] };
+    return undefined;
   }
+}
+
+// NOTE: 생성과 같은 규칙으로 줄기와 시점을 해석한다. 메인 원장과 `setting.pov`만 보면 옴니버스의
+// 다른 줄기 씬을 다른 줄기의 사실과 다른 서술자 기준으로 검수하게 된다.
+async function resolveReviseNarration(
+  fs: IFileSystem,
+  paths: StoryboardProjectPaths,
+  scene: Awaited<ReturnType<typeof readSceneFile>>,
+  project: StoryboardProject | undefined,
+): Promise<{
+  readonly threadPaths: StoryboardProjectPaths;
+  readonly previousSceneOrder: number | undefined;
+  readonly narration: NarrationDirective | undefined;
+}> {
+  if (project === undefined) {
+    return {
+      threadPaths: paths,
+      previousSceneOrder: undefined,
+      narration: resolveNarration({ focalFallback: scene.frontmatter.povCharacter }),
+    };
+  }
+
+  const chapterDefaults = await readChapterNarrationDefaults(paths, scene.order, fs);
+  const thread = await resolveSceneThread(paths, scene, project, fs, chapterDefaults.thread);
+  const narration = await resolveSceneNarration(paths, scene, project, chapterDefaults, fs);
+
+  return {
+    threadPaths: thread.threadPaths,
+    previousSceneOrder: thread.previousSceneOrder,
+    narration,
+  };
 }
 
 export interface ReviseDraftUseCaseDependencies {
@@ -111,20 +135,28 @@ async function prepareReviseDraftContext(
     fs,
     sceneFileName,
   );
-  const ctxPaths = sceneContextPaths(paths);
-  const context = await buildSceneContext(ctxPaths, scene, fs);
-  const narrative = await buildNarrativeContext(ctxPaths, context, fs);
+  const context = await buildSceneContext(sceneContextPaths(paths), scene, fs);
+  const project = await readProjectIfPresent(fs, paths.projectJson);
+  const setting = project?.setting;
+  const { threadPaths, previousSceneOrder, narration } = await resolveReviseNarration(
+    fs,
+    paths,
+    scene,
+    project,
+  );
+  const narrative = await buildNarrativeContext(sceneContextPaths(threadPaths), context, fs, {
+    ...(previousSceneOrder === undefined ? {} : { previousSceneOrder }),
+    ...(narration?.knowledge === 'witnessed' && narration.focal
+      ? { focalFilter: { focal: narration.focal } }
+      : {}),
+  });
   const canonFactLines = formatBibleFactLines(context, narrative.bibleFacts);
   // NOTE: 앞 씬이 확립한 사실·이미 공개된 정보와의 모순도 캐넌과 같은 기준으로 검사한다.
-  const priorState = await readStoryState(paths.storyState, fs);
+  const priorState = await readStoryState(threadPaths.storyState, fs);
   const factLines = [
     ...canonFactLines,
     ...storyStateFactLines(priorState, scene.order, scene.body),
   ];
-  const { styleConstraints, qualityCriteria, setting } = await readContractGuidance(
-    fs,
-    paths.projectJson,
-  );
 
   const draft = parseDraft(await readDraftFile(draftUri, fs));
 
@@ -136,17 +168,14 @@ async function prepareReviseDraftContext(
       factLines,
       characterNames: context.characters.map((character) => character.name),
       characterCards: formatAugmentCards(context.characters, undefined),
-      styleConstraints,
-      qualityCriteria,
+      styleConstraints: setting?.styleConstraints ?? [],
+      qualityCriteria: setting?.qualityCriteria ?? [],
       styleDirective: buildStyleDirective(
         setting,
         scene.frontmatter.relationStage,
         scene.frontmatter.targetWordCount,
         scene.body,
-        resolveNarration({
-          pov: setting?.pov,
-          focalFallback: scene.frontmatter.povCharacter,
-        }),
+        narration,
       ),
       characters: context.characters,
       targetLength: resolveSceneTargetLength(scene.frontmatter.targetWordCount, scene.body),
