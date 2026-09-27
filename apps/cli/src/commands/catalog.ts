@@ -67,6 +67,9 @@ export interface CommandSpec {
   readonly examples?: readonly string[];
   // `init` creates the workspace and the setup verbs are machine-wide, so they cannot demand one.
   readonly needsWorkspace?: false;
+  // Changes the workspace, so it takes the workspace run lock for its duration and refuses while
+  // another app (the desktop, the extension, another CLI) holds it.
+  readonly writesWorkspace?: true;
 }
 
 export interface FlagSpec {
@@ -283,6 +286,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'state reseal',
+    writesWorkspace: true,
     group: '유지보수',
     usage: 'state reseal [<씬 범위>]',
     summary:
@@ -313,6 +317,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'project set',
+    writesWorkspace: true,
     group: '기획',
     usage: 'project set [--genre …]',
     summary: '작품 계약을 고칩니다 (적지 않은 항목은 그대로 둡니다)',
@@ -350,6 +355,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'narrator add',
+    writesWorkspace: true,
     group: '기획',
     usage: 'narrator add <id> [--person …]',
     summary: '이름 붙인 서술자 카드를 만듭니다 (씬·장이 골라 쓰는 시점)',
@@ -361,12 +367,14 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'narrator remove',
+    writesWorkspace: true,
     group: '기획',
     usage: 'narrator remove <id>',
     summary: '서술자 카드를 지웁니다',
   },
   {
     verb: 'outline generate',
+    writesWorkspace: true,
     group: '기획',
     usage: 'outline generate',
     summary: '작품 계약에서 시놉시스와 챕터 계획을 만듭니다',
@@ -374,6 +382,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene seeds',
+    writesWorkspace: true,
     group: '기획',
     usage: 'scene seeds',
     summary: '아웃라인에서 씬 시드를 만듭니다',
@@ -381,6 +390,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene complete',
+    writesWorkspace: true,
     group: '기획',
     usage: 'scene complete',
     summary: '끝번호 뒤에 붙일 완결 씬을 만듭니다 (--dry-run 은 제안만)',
@@ -388,6 +398,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'novel generate',
+    writesWorkspace: true,
     group: '기획',
     usage: 'novel generate',
     summary: '기획부터 원고 조립까지 한 번에 돌립니다 (모든 승인 자동)',
@@ -402,6 +413,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene create',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'scene create --name <text>',
     summary: '다음 번호로 씬 카드를 만듭니다',
@@ -409,6 +421,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene generate',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'scene generate <stem> | --all',
     summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
@@ -417,6 +430,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene beats',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'scene beats <stem> | --all',
     summary: '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
@@ -425,6 +439,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene revise',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'scene revise <stem>',
     summary: '기존 초안을 검수하고 재작성합니다',
@@ -439,6 +454,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'draft edit',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'draft edit <stem> --instruction <text>',
     summary: '지시대로 고칩니다 (--lines 로 구간 지정)',
@@ -446,6 +462,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'draft augment',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'draft augment <stem>',
     summary: '갱신된 카드·정전을 기존 초안에 녹입니다',
@@ -453,6 +470,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'draft condense',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'draft condense <stem>',
     summary: '초안을 압축합니다',
@@ -460,6 +478,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'draft expand',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'draft expand <stem>',
     summary: '초안을 늘립니다',
@@ -467,12 +486,14 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'draft format',
+    writesWorkspace: true,
     group: '씬과 초안',
     usage: 'draft format <stem>',
     summary: '초안을 프로젝트 형식으로 다시 씁니다',
   },
   {
     verb: 'card create character',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card create character --name <text>',
     summary: '빈 인물 카드를 만듭니다',
@@ -480,6 +501,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'card create background',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card create background --name <text>',
     summary: '빈 배경 카드를 만듭니다',
@@ -487,6 +509,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'card rename character',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card rename character <id> --to <id>',
     summary: '인물 카드 id 를 바꾸고 참조를 함께 고칩니다',
@@ -494,6 +517,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'card rename background',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card rename background <id> --to <id>',
     summary: '배경 카드 id 를 바꾸고 참조를 함께 고칩니다',
@@ -513,6 +537,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'cards build',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'cards build',
     summary: '씬만 읽어 카드를 만듭니다 (--dry-run 은 제안만)',
@@ -520,6 +545,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'card promote',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card promote',
     summary: '초안에서 추출한 카드 후보를 반영합니다',
@@ -527,6 +553,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'bible promote',
+    writesWorkspace: true,
     group: '카드와 정전',
     usage: 'bible promote',
     summary: '초안에서 추출한 설정 후보를 정전에 반영합니다',
@@ -558,18 +585,21 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'manuscript assemble',
+    writesWorkspace: true,
     group: '원고',
     usage: 'manuscript assemble',
     summary: 'draft/ 를 원고로 조립합니다',
   },
   {
     verb: 'manuscript review',
+    writesWorkspace: true,
     group: '원고',
     usage: 'manuscript review',
     summary: '조립 원고를 검사합니다',
   },
   {
     verb: 'manuscript summaries',
+    writesWorkspace: true,
     group: '원고',
     usage: 'manuscript summaries',
     summary: '장별 요약을 만듭니다',
@@ -642,12 +672,14 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'cards migrate',
+    writesWorkspace: true,
     group: '유지보수',
     usage: 'cards migrate',
     summary: '낡은 산문형 카드 필드를 목록 형식으로 옮깁니다',
   },
   {
     verb: 'scene migrate',
+    writesWorkspace: true,
     group: '유지보수',
     usage: 'scene migrate',
     summary: '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',

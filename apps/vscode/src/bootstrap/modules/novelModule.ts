@@ -24,6 +24,7 @@ export class NovelModule implements IApplicationModule {
       completeStoryScenesUseCase,
       configBridge,
       exportManuscriptUseCase,
+      fileSystem,
       generateOutlineUseCase,
       logger,
       novelPipeline,
@@ -44,7 +45,12 @@ export class NovelModule implements IApplicationModule {
       registerAssembleManuscriptCommand({ assembleManuscriptUseCase, logger }),
       registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
       registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),
-      registerGenerateNovelCommand({ configBridge, novelPipeline, novelRunStateRepository }),
+      registerGenerateNovelCommand({
+        configBridge,
+        fileSystem,
+        novelPipeline,
+        novelRunStateRepository,
+      }),
       registerExportManuscriptCommand({ exportManuscriptUseCase, logger }),
     );
   }

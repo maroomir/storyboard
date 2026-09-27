@@ -1,11 +1,16 @@
 import * as vscode from 'vscode';
 
-import { type GenerateDraftUseCase, type GenerateDraftResult } from '@storyboard/story-engine';
+import {
+  type GenerateDraftUseCase,
+  type GenerateDraftResult,
+  type IFileSystem,
+} from '@storyboard/story-engine';
 import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
+import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
 const GENERATE_DRAFT_COMMAND = 'storyboard.draft.generate';
 const REGENERATE_DRAFT_COMMAND = 'storyboard.draft.regenerate';
@@ -14,6 +19,7 @@ const REGENERATE_SUCCESS_MESSAGE = '초안을 다시 생성해 저장했습니�
 const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
+  readonly fileSystem: IFileSystem;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
 }
@@ -139,7 +145,19 @@ async function runCommand(
     return;
   }
 
-  await runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies);
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(sceneUri);
+
+  if (!workspaceFolder) {
+    await runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies);
+    return;
+  }
+
+  await runHoldingWorkspaceLock(
+    dependencies.fileSystem,
+    workspaceFolder.uri,
+    force ? '초안 다시 생성' : '초안 생성',
+    () => runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies),
+  );
 }
 
 export function registerGenerateDraftCommands(

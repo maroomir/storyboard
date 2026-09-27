@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Two apps no longer rewrite one workspace at once.** Work that changes a workspace, such as novel or draft generation, now holds a run lock (`.storyboard/cache/run.lock`). While another app holds it, a new run refuses to start and says who is doing what, for example «CLI이(가) «storyboard novel generate» 작업 중입니다». Every CLI verb that changes the workspace takes the lock, and so do the extension's novel, draft and generate-all commands. Read-only verbs never wait. A lock left by an app that died frees itself after 45 seconds.
+
 ## [0.9.7] - 2026-09-22
 
 ### Added

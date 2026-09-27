@@ -30,6 +30,7 @@ export interface StoryboardProjectPaths {
   readonly threadMemoryDirectory: StoryUri;
   readonly usageLedger: StoryUri;
   readonly novelRunState: StoryUri;
+  readonly runLock: StoryUri;
   readonly sceneCacheDirectory: StoryUri;
   readonly storyState: StoryUri;
   readonly chapterSummaries: StoryUri;
@@ -78,6 +79,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     threadMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.threadMemoryDirectory),
     usageLedger: resolve(STORYBOARD_RELATIVE_PATHS.usageLedger),
     novelRunState: resolve(STORYBOARD_RELATIVE_PATHS.novelRunState),
+    runLock: resolve(STORYBOARD_RELATIVE_PATHS.runLock),
     sceneCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.sceneCacheDirectory),
     storyState: resolve(STORYBOARD_RELATIVE_PATHS.storyState),
     chapterSummaries: resolve(STORYBOARD_RELATIVE_PATHS.chapterSummaries),

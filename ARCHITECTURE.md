@@ -75,7 +75,8 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │       │   └── 01-prologue.json
 │       ├── scenes/               # 씬별 생성 컨텍스트 스냅샷
 │       │   └── 01-prologue.json
-│       └── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
+│       ├── novel-run.json        # 원클릭 장편 생성 진행/재개 상태
+│       └── run.lock              # 작업 잠금: 지금 이 작품을 고치고 있는 앱 (10초마다 갱신, 45초 끊기면 버려진 잠금)
 │
 ├── character/
 │   ├── elia.card                 # YAML, 커스텀 에디터로 렌더

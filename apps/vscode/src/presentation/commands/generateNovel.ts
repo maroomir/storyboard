@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import {
+  type IFileSystem,
   type INovelRunStateRepository,
   type NovelApprovalKind,
   type NovelPipeline,
@@ -15,6 +16,7 @@ import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine'
 import type { ContractFieldKey } from '@storyboard/story-format';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
+import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
 const generateNovelCommand = 'storyboard.novel.generate';
 
@@ -34,6 +36,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
 
 export interface RegisterGenerateNovelCommandDependencies {
   readonly configBridge: ConfigBridge;
+  readonly fileSystem: IFileSystem;
   readonly novelPipeline: NovelPipeline;
   readonly novelRunStateRepository: INovelRunStateRepository;
 }
@@ -78,26 +81,28 @@ async function runGenerateNovel(
     return;
   }
 
-  await vscode.window.withProgress(
-    {
-      location: vscode.ProgressLocation.Notification,
-      title: 'Storyboard 장편 생성',
-      cancellable: true,
-    },
-    async (progress, token) => {
-      const result = await dependencies.novelPipeline.run({
-        workspaceUri: workspaceRoot,
-        project,
-        runMode: decision.runMode,
-        resumeState: decision.resumeState,
-        reviseMaxIterations: dependencies.configBridge.getReviseMaxIterations(),
-        onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
-        requestApproval: (kind, info) => requestApproval(kind, info),
-        shouldCancel: () => token.isCancellationRequested,
-      });
+  await runHoldingWorkspaceLock(dependencies.fileSystem, workspaceRoot, '장편 생성', () =>
+    vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: 'Storyboard 장편 생성',
+        cancellable: true,
+      },
+      async (progress, token) => {
+        const result = await dependencies.novelPipeline.run({
+          workspaceUri: workspaceRoot,
+          project,
+          runMode: decision.runMode,
+          resumeState: decision.resumeState,
+          reviseMaxIterations: dependencies.configBridge.getReviseMaxIterations(),
+          onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
+          requestApproval: (kind, info) => requestApproval(kind, info),
+          shouldCancel: () => token.isCancellationRequested,
+        });
 
-      await reportResult(result, paths.manuscriptVolume);
-    },
+        await reportResult(result, paths.manuscriptVolume);
+      },
+    ),
   );
 }
 
