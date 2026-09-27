@@ -25,6 +25,7 @@ const SHARED_PACKAGES = [
   'story-ai',
   'story-pipeline',
   'story-config',
+  'story-node',
   'story-sim',
 ];
 // Each package addresses its own files through a Node subpath import declared in its package.json.
@@ -36,6 +37,7 @@ const PACKAGE_INTERNAL_PREFIXES = {
   'story-ai': '#ai/',
   'story-pipeline': '#pipeline/',
   'story-config': '#config/',
+  'story-node': '#node/',
   'story-sim': '#sim/',
 };
 const ENGINE_SHARED_ROOT = path.join(PACKAGES_ROOT, 'story-engine', 'src', 'shared');

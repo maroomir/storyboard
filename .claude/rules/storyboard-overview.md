@@ -18,6 +18,7 @@ The two apps share `packages/story-engine` and know nothing about each other. On
 | `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
 | `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-config` | `@storyboard/story-config` | The shared home `~/.storyboard`: `config.json` layers (home ← workspace `.storyboard/config.json`), the 0600 `secrets.json`, and file watchers. Every app reads settings through it. |
+| `packages/story-node` | `@storyboard/story-node` | Node host adapters shared by every app that runs on Node: `NodeFileSystem` (temp-file-then-rename writes) and `NodeWorkspaceLocator` (one workspace, containment test). |
 
 Packages expose TypeScript **source** (no build step); each app resolves them through its own
 tsconfig `paths`, esbuild `alias`, and vitest `alias` — three places, all of which must agree.

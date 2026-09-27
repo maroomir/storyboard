@@ -31,7 +31,8 @@ Only six files differ from what the extension supplies, which is the whole point
 boundary: `NodeFileSystem` (temp-file-then-rename writes), `NodeUri` (posix `path`, OS `fsPath`),
 `NodeWorkspaceLocator` (one workspace, containment test), `ConsoleLogger` (stderr), the
 file-backed `SecretStore`/`ConfigBridge`, and `gitRepository` (probe and `git init` through
-`execFileSync`, used by `init` and `doctor` only).
+`execFileSync`, used by `init` and `doctor` only). `NodeFileSystem` and `NodeWorkspaceLocator` live
+in `@storyboard/story-node` because every Node host needs the same two.
 
 ## Config
 
