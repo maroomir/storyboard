@@ -24,6 +24,7 @@
     "@storyboard/story-config": "*",
     "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",
+    "@storyboard/story-node": "*",
     "@storyboard/story-pipeline": "*",
     "@storyboard/story-sim": "*",
     "ink": "^5.2.1",

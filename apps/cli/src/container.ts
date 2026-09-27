@@ -52,8 +52,7 @@ import {
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
-import { NodeFileSystem } from './adapters/nodeFileSystem';
-import { NodeWorkspaceLocator } from './adapters/nodeWorkspaceLocator';
+import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 import { resolveCliPaths } from './adapters/paths';
 import {
   configurationTargets,

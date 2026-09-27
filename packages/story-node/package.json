@@ -1,0 +1,29 @@
+{
+  "name": "@storyboard/story-node",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Node host adapters shared by the apps that run on Node: the atomic file system and the single-workspace locator",
+  "license": "Apache-2.0",
+  "main": "src/index.ts",
+  "imports": {
+    "#node/*": "./src/*.ts"
+  },
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "dependencies": {
+    "@storyboard/story-engine": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "npm run typecheck"
+  }
+}

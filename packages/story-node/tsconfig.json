@@ -1,0 +1,32 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@storyboard/story-engine": [
+        "../story-engine/src/index.ts"
+      ],
+      "@storyboard/story-format": [
+        "../story-format/src/index.ts"
+      ],
+      "@storyboard/story-ai": [
+        "../story-ai/src/index.ts"
+      ],
+      "@storyboard/story-pipeline": [
+        "../story-pipeline/src/index.ts"
+      ],
+      "@storyboard/story-format/contracts": [
+        "../story-format/src/contracts.ts"
+      ],
+      "@storyboard/story-ai/contracts": [
+        "../story-ai/src/contracts.ts"
+      ]
+    }
+  },
+  "include": [
+    "src/**/*.ts"
+  ]
+}

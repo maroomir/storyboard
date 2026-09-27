@@ -135,7 +135,7 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
   ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
-  `format ← ai ← pipeline ← engine ← sim`, `ai ← config`.
+  `format ← ai ← pipeline ← engine ← sim`, `engine ← node`, `ai ← config`.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`

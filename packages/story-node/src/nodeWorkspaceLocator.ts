@@ -1,6 +1,6 @@
 import type { StoryUri, StoryWorkspaceFolder, IWorkspaceLocator } from '@storyboard/story-engine';
 
-// The CLI runs against exactly one workspace — the directory it was pointed at — so locating a
+// A Node host runs against exactly one workspace — the directory it was pointed at — so locating a
 // file's workspace is a containment test rather than a lookup.
 export class NodeWorkspaceLocator implements IWorkspaceLocator {
   public constructor(private readonly root: StoryWorkspaceFolder) {}
