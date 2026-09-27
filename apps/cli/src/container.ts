@@ -1,55 +1,11 @@
 import {
-  AiGateway,
-  ApplyDraftFormatUseCase,
-  AugmentDraftUseCase,
-  AssembleManuscriptUseCase,
-  BibleCandidateRepository,
-  BuildStoryCardsUseCase,
-  CardCandidateRepository,
-  CardRecommendationRepository,
-  CardWriterRepository,
-  CondenseDraftUseCase,
-  CompleteStoryScenesUseCase,
-  CreateCardUseCase,
-  ExpandDraftUseCase,
-  ExportManuscriptUseCase,
-  GenerateAllDraftsUseCase,
-  GenerateDraftUseCase,
-  GenerateSceneBeatsUseCase,
-  GenerateOutlineUseCase,
-  ManuscriptAssemblyRepository,
-  NovelPipeline,
-  NovelReviewRepository,
-  NovelRunStateRepository,
-  OutlineRepository,
-  PostGenerationUpdateManager,
-  PromoteBibleCandidatesUseCase,
-  PromoteCardCandidatesUseCase,
-  RecommendCardsUseCase,
-  ReviewManuscriptUseCase,
-  ReviseAfterGenerateGate,
-  ReviseDraftUseCase,
-  SceneBatchRepository,
-  SceneCacheRepository,
-  SceneRepository,
-  SceneSeedRepository,
-  StoryFeatureRepository,
-  SummarizeChaptersUseCase,
-  UsageMeter,
-  DraftRepository,
-  ProjectRepository,
   NodeUri,
   type StoryUri,
   type StoryWorkspaceFolder,
   type IUsageSink,
 } from '@storyboard/story-engine';
-import {
-  ConfigBridge,
-  type ConfigBridgeDependencies,
-  createAiProviderRegistry,
-  SecretStore,
-  type AiProviderRegistry,
-} from '@storyboard/story-ai';
+import { StoryboardApplication, type StoryboardServices } from '@storyboard/story-app';
+import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
@@ -65,45 +21,17 @@ import {
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
-export interface CliContainer {
+export interface CliContainer extends StoryboardServices {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
   readonly workspaceConfigFile: string | undefined;
   // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
-  readonly aiGateway: AiGateway;
-  readonly aiProviderRegistry: AiProviderRegistry;
-  readonly logger: IStoryboardLogger;
   // False inside the TUI, where stdin belongs to the screen and a readline prompt would fight it.
   readonly canPrompt: boolean;
   readonly fileSystem: NodeFileSystem;
-  readonly secretStore: SecretStore;
-  readonly configBridge: ConfigBridge;
   // 측정 결과가 «무엇으로 쟀는지» 를 적으려면 실행한 버전을 되돌려 줘야 한다.
   readonly version: string;
-  readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
-  readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
-  readonly generateOutlineUseCase: GenerateOutlineUseCase;
-  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
-  readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
-  readonly augmentDraftUseCase: AugmentDraftUseCase;
-  readonly condenseDraftUseCase: CondenseDraftUseCase;
-  readonly expandDraftUseCase: ExpandDraftUseCase;
-  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
-  readonly exportManuscriptUseCase: ExportManuscriptUseCase;
-  readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
-  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
-  readonly createCardUseCase: CreateCardUseCase;
-  readonly recommendCardsUseCase: RecommendCardsUseCase;
-  readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
-  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
-  readonly bibleCandidateRepository: BibleCandidateRepository;
-  readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
-  readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
-  readonly novelPipeline: NovelPipeline;
-  // What a run has spent so far, for the per-run budget. Every AI call passes through it.
-  readonly usageMeter: UsageMeter;
 }
 
 export interface CliContainerOptions {
@@ -179,16 +107,14 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   return overrides;
 }
 
-// The CLI's service graph. It mirrors the extension's platform module one-for-one: only the four
-// host adapters differ, which is the whole point of the engine boundary.
+// The CLI's side of the composition: only the host adapters are built here. The engine graph they
+// feed is assembled once, for every app, by StoryboardApplication.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
   const paths = resolveCliPaths(process.env);
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
-  const logger = options.logger;
   const fileSystem = new NodeFileSystem();
-  const workspaceLocator = new NodeWorkspaceLocator(folder);
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
   const workspaceConfigFile = resolveWorkspaceConfigFile(workspaceRoot.fsPath);
   const configuration = createFileConfiguration({
@@ -203,76 +129,29 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const configBridge =
     options.createConfigBridge?.(configBridgeDependencies) ??
     new ConfigBridge(configBridgeDependencies);
-  const aiProviderRegistry = createAiProviderRegistry({
-    secretStore,
-    configBridge,
-    requireConfiguredProvider: true,
-  });
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.
-  const usageMeter = new UsageMeter();
-  const usageSink: IUsageSink = usageMeter.wrap(
-    options.usageSink ?? { record: async (): Promise<void> => undefined },
-  );
-  const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
-  const generator = `storyboard@${options.version}`;
-
-  const draftRepository = new DraftRepository(fileSystem);
-  const projectRepository = new ProjectRepository(fileSystem);
-  const sceneRepository = new SceneRepository(fileSystem);
-  const sceneCacheRepository = new SceneCacheRepository(fileSystem);
-  const sceneSeedRepository = new SceneSeedRepository(fileSystem);
-  const sceneBatchRepository = new SceneBatchRepository(fileSystem, workspaceLocator);
-  const outlineRepository = new OutlineRepository(fileSystem);
-  const novelRunStateRepository = new NovelRunStateRepository(fileSystem);
-  const novelReviewRepository = new NovelReviewRepository(fileSystem);
-  const manuscriptAssemblyRepository = new ManuscriptAssemblyRepository(fileSystem);
-  const cardWriterRepository = new CardWriterRepository(fileSystem);
-  const cardCandidateRepository = new CardCandidateRepository(fileSystem, logger);
-  const cardRecommendationRepository = new CardRecommendationRepository(fileSystem);
-  const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
-  const storyFeatureRepository = new StoryFeatureRepository(fileSystem);
-  const postGenerationUpdates = new PostGenerationUpdateManager();
-
-  const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
-    logger,
-    manuscriptAssemblyRepository,
-  );
-  const summarizeChaptersUseCase = new SummarizeChaptersUseCase(
-    aiGateway,
-    manuscriptAssemblyRepository,
-  );
-  const generateDraftUseCase = new GenerateDraftUseCase({
-    aiGateway,
-    configBridge,
-    draftRepository,
-    fileSystem,
-    generator,
-    logger,
-    ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
-    projectRepository,
-    sceneCacheRepository,
-    sceneRepository,
-    workspaceLocator,
-  });
-  const reviseDraftUseCase = new ReviseDraftUseCase({
-    aiProviderRegistry,
-    usageSink,
-    fileSystem,
-    logger,
-    generator,
-    sceneCacheRepository,
-  });
-  const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
-    fileSystem,
-    workspaceLocator,
-    configBridge,
-    logger,
-    reviseDraftUseCase,
+  const application = new StoryboardApplication(
+    {
+      fileSystem,
+      workspaceLocator: new NodeWorkspaceLocator(folder),
+      logger: options.logger,
+      secretStore,
+      configBridge,
+      ...(options.usageSink === undefined ? {} : { usageLedger: options.usageSink }),
+    },
+    {
+      generator: `storyboard@${options.version}`,
+      ...(options.postGenerationUpdates === undefined
+        ? {}
+        : { postGenerationUpdates: options.postGenerationUpdates }),
+    },
   );
 
   return {
+    ...application.services,
+    fileSystem,
     workspaceRoot,
     version: options.version,
     canPrompt: options.canPrompt,
@@ -281,67 +160,5 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     configWriteFile:
       configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??
       paths.configFile,
-    aiGateway,
-    aiProviderRegistry,
-    logger,
-    fileSystem,
-    secretStore,
-    configBridge,
-    generateDraftUseCase,
-    generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase({
-      aiGateway,
-      configBridge,
-      fileSystem,
-      logger,
-      sceneRepository,
-    }),
-    generateAllDraftsUseCase: new GenerateAllDraftsUseCase(
-      generateDraftUseCase,
-      logger,
-      reviseAfterGenerateGate,
-      sceneBatchRepository,
-    ),
-    generateOutlineUseCase: new GenerateOutlineUseCase(aiGateway, outlineRepository),
-    reviseAfterGenerateGate,
-    applyDraftFormatUseCase: new ApplyDraftFormatUseCase(fileSystem, aiGateway, logger, generator),
-    augmentDraftUseCase: new AugmentDraftUseCase(fileSystem, aiGateway, logger, configBridge),
-    condenseDraftUseCase: new CondenseDraftUseCase(aiGateway, logger),
-    expandDraftUseCase: new ExpandDraftUseCase(aiGateway, logger),
-    assembleManuscriptUseCase,
-    exportManuscriptUseCase: new ExportManuscriptUseCase(manuscriptAssemblyRepository),
-    reviewManuscriptUseCase: new ReviewManuscriptUseCase(
-      aiGateway,
-      manuscriptAssemblyRepository,
-      logger,
-    ),
-    summarizeChaptersUseCase,
-    createCardUseCase: new CreateCardUseCase(cardWriterRepository),
-    recommendCardsUseCase: new RecommendCardsUseCase(
-      aiGateway,
-      logger,
-      cardRecommendationRepository,
-    ),
-    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(cardCandidateRepository),
-    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(bibleCandidateRepository),
-    bibleCandidateRepository,
-    buildStoryCardsUseCase: new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository),
-    completeStoryScenesUseCase: new CompleteStoryScenesUseCase(aiGateway, storyFeatureRepository),
-    usageMeter,
-    novelPipeline: new NovelPipeline({
-      aiGateway,
-      aiProviderRegistry,
-      assembleManuscriptUseCase,
-      configBridge,
-      generateDraftUseCase,
-      logger,
-      novelReviewRepository,
-      novelRunStateRepository,
-      outlineRepository,
-      reviseDraftUseCase,
-      sceneSeedRepository,
-      summarizeChaptersUseCase,
-      usageSink,
-      fileSystem,
-    }),
   };
 }
