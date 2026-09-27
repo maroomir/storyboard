@@ -7,6 +7,7 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
 } from '@storyboard/story-engine';
+import { isRunBudgetExceeded, type UsageMeter } from '@storyboard/story-engine';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
@@ -39,6 +40,7 @@ export interface RegisterGenerateNovelCommandDependencies {
   readonly fileSystem: IFileSystem;
   readonly novelPipeline: NovelPipeline;
   readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly usageMeter: UsageMeter;
 }
 
 export function registerGenerateNovelCommand(
@@ -89,6 +91,8 @@ async function runGenerateNovel(
         cancellable: true,
       },
       async (progress, token) => {
+        const budgetUsd = dependencies.configBridge.getRunBudgetUsd();
+        const spending = dependencies.usageMeter.startSession();
         const result = await dependencies.novelPipeline.run({
           workspaceUri: workspaceRoot,
           project,
@@ -98,9 +102,17 @@ async function runGenerateNovel(
           onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
           requestApproval: (kind, info) => requestApproval(kind, info),
           shouldCancel: () => token.isCancellationRequested,
+          shouldPause: () => isRunBudgetExceeded(spending.reading(), budgetUsd),
         });
+        spending.stop();
 
-        await reportResult(result, paths.manuscriptVolume);
+        const isOverBudget = isRunBudgetExceeded(spending.reading(), budgetUsd);
+        await reportResult(
+          isOverBudget && result.outcome === 'paused'
+            ? { ...result, message: `이번 실행 예산 $${budgetUsd}에 닿아 멈췄습니다.` }
+            : result,
+          paths.manuscriptVolume,
+        );
       },
     ),
   );

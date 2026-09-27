@@ -355,6 +355,31 @@ describe("NovelPipeline", () => {
     expect(harness.persistedStates.at(-1)?.status).toBe("paused")
   })
 
+  it("pauses before the next scene without advancing past the unfinished chapter", async () => {
+    const harness = createHarness({
+      shouldPause: (): boolean => generateDraftMock.mock.calls.length >= 1
+    })
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("paused")
+    expect(generateDraftMock).toHaveBeenCalledTimes(1)
+    expect(summarizeChaptersMock).not.toHaveBeenCalled()
+    expect(harness.persistedStates.at(-1)).toMatchObject({ status: "paused", nextChapterIndex: 0 })
+  })
+
+  it("pauses between chapters with the finished chapter recorded", async () => {
+    const harness = createHarness({
+      shouldPause: (): boolean => generateDraftMock.mock.calls.length >= 2
+    })
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("paused")
+    expect(generateDraftMock).toHaveBeenCalledTimes(2)
+    expect(harness.persistedStates.at(-1)).toMatchObject({ status: "paused", nextChapterIndex: 1 })
+  })
+
   it("pauses at outline approval when the user declines in non-auto mode", async () => {
     const harness = createHarness({
       runMode: "outline-approval",

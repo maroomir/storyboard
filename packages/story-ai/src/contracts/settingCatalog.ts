@@ -70,6 +70,17 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     group: '생성',
   },
   {
+    key: 'budget.runLimitUsd',
+    label: '장편 생성 1회 예산(USD)',
+    description:
+      '장편 생성을 한 번 실행할 때 쓸 AI 비용의 상한입니다. 넘으면 진행 중인 씬까지 마치고 멈추며, 다시 실행하면 이어서 진행합니다. 0이면 제한하지 않습니다.',
+    kind: 'integer',
+    defaultValue: 0,
+    minimum: 0,
+    maximum: 10000,
+    group: '생성',
+  },
+  {
     key: 'grounding.autoApprove',
     label: '씬 사실 시트 자동 승인',
     description: '생성 직전 AI가 채운 사건·장소·관계·시점을 묻지 않고 받아들입니다.',

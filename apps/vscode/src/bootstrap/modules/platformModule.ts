@@ -44,6 +44,7 @@ import {
   StoryFeatureRepository,
   StudioChatUseCase,
   SummarizeChaptersUseCase,
+  UsageMeter,
 } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
@@ -102,6 +103,7 @@ export interface IPlatformServices {
   readonly secretStore: SecretStore;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
   readonly usageRecorder: UsageRecorder;
+  readonly usageMeter: UsageMeter;
   readonly proposalReviewService: ProposalReviewService;
 }
 
@@ -136,7 +138,8 @@ export class PlatformModule implements IApplicationModule {
     const usageRecorder = new UsageRecorder(createVscodeUsageLedgerFileSystem(), (message): void =>
       logger.warn(message),
     );
-    const usageSink = createUsageSink(usageRecorder, logger);
+    const usageMeter = new UsageMeter();
+    const usageSink = usageMeter.wrap(createUsageSink(usageRecorder, logger));
     const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
     const generator = `storyboard@${context.extension.packageJSON.version}`;
     const applyDraftFormatUseCase = new ApplyDraftFormatUseCase(
@@ -301,6 +304,7 @@ export class PlatformModule implements IApplicationModule {
       secretStore,
       summarizeChaptersUseCase,
       usageRecorder,
+      usageMeter,
       proposalReviewService,
     };
     this.disposables.add(

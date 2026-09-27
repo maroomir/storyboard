@@ -41,6 +41,23 @@ export async function cancel(
   return { outcome: 'cancelled', message: '실행을 취소했습니다. 다시 실행하면 이어서 진행합니다.' };
 }
 
+async function pause(
+  persist: (patch: Partial<NovelRunState>) => Promise<void>,
+): Promise<NovelPipelineResult> {
+  await persist({ status: 'paused' });
+  return {
+    outcome: 'paused',
+    message: '진행 중이던 씬까지 마치고 멈췄습니다. 다시 실행하면 이어서 진행합니다.',
+  };
+}
+
+export async function pauseIfRequested(
+  options: NovelPipelineOptions,
+  persist: (patch: Partial<NovelRunState>) => Promise<void>,
+): Promise<NovelPipelineResult | undefined> {
+  return options.shouldPause?.() ? await pause(persist) : undefined;
+}
+
 interface ApprovalRequest {
   readonly kind: NovelApprovalKind;
   readonly info: string;
@@ -87,10 +104,14 @@ async function runChapterDraftsAndRevise(
   group: ChapterGroup,
   paths: StoryboardProjectPaths,
   options: NovelPipelineOptions,
-): Promise<void> {
+): Promise<'finished' | 'paused'> {
   for (const stem of group.stems) {
     if (options.shouldCancel()) {
-      return;
+      return 'finished';
+    }
+
+    if (options.shouldPause?.()) {
+      return 'paused';
     }
 
     const sceneUri = scenePath(options.workspaceUri, stem);
@@ -102,7 +123,7 @@ async function runChapterDraftsAndRevise(
 
     if (!draftResult.ok) {
       if (draftResult.kind === 'cancelled') {
-        return;
+        return 'finished';
       }
       throw new Error(`초안 생성 실패(${stem}): ${draftResult.message}`);
     }
@@ -128,6 +149,8 @@ async function runChapterDraftsAndRevise(
       rejection: reviseResult.rejection,
     });
   }
+
+  return 'finished';
 }
 
 interface ChapterStageContext {
@@ -157,7 +180,11 @@ export async function runChapterStages(
       `${chapterIndex + 1}/${groups.length}장 «${group.title}» 초안·검수 중…`,
     );
 
-    await runChapterDraftsAndRevise(group, paths, options);
+    // NOTE: 장 도중에 멈추면 nextChapterIndex 를 올리지 않는다. 재개가 같은 장을 다시 돌면 끝난 씬은
+    // 캐시로 건너뛰고 남은 씬부터 이어 쓴다.
+    if ((await runChapterDraftsAndRevise(group, paths, options)) === 'paused') {
+      return await pause(persist);
+    }
 
     await refreshChapterSummary(options, chapterIndex);
 
@@ -165,6 +192,11 @@ export async function runChapterStages(
 
     if (options.shouldCancel()) {
       return await cancel(persist);
+    }
+
+    const pausedAfterChapter = await pauseIfRequested(options, persist);
+    if (pausedAfterChapter) {
+      return pausedAfterChapter;
     }
 
     const isLastChapter = chapterIndex === groups.length - 1;

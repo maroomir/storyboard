@@ -32,6 +32,7 @@ export class NovelModule implements IApplicationModule {
       reviewManuscriptUseCase,
       proposalReviewService,
       summarizeChaptersUseCase,
+      usageMeter,
     } = this.platform;
 
     this.disposables.add(
@@ -50,6 +51,7 @@ export class NovelModule implements IApplicationModule {
         fileSystem,
         novelPipeline,
         novelRunStateRepository,
+        usageMeter,
       }),
       registerExportManuscriptCommand({ exportManuscriptUseCase, logger }),
     );
