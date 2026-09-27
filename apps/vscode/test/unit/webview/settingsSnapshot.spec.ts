@@ -31,7 +31,7 @@ function buildValidSnapshot(): SettingsReadSnapshot {
     providerConfigs,
     taskAssignments: { sceneDialogue: { providerId: null, model: null } },
     modelCatalog,
-    taskCatalog: [{ name: "sceneDialogue", label: "장면 대사", status: "wired" }],
+    taskCatalog: [{ name: "sceneDialogue", label: "장면 대사" }],
     origins: { defaultProvider: "user" },
     configFiles: { user: "/home/me/.storyboard/config.json" },
     settingCatalog: [

@@ -134,12 +134,6 @@ export class AiProviderRegistry {
         return this.createApiKeyProvider(providerId, modelOverride);
       case 'ollama':
         return this.createOllamaProvider(modelOverride);
-      default:
-        throw new AiProviderError(
-          'provider-not-registered',
-          providerId,
-          `${providerId} provider는 아직 PR-3b에서 등록되지 않았습니다.`,
-        );
     }
   }
 

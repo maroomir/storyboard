@@ -21,7 +21,7 @@ import {
 import { FactExtractionPrompt } from './prompts/factExtraction';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, UsageAttribution, WiredAiTaskName } from '#ai/contracts/aiTypes';
+import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '#ai/contracts/aiTypes';
 import { parseBulletList, parseJsonArray, parseJsonObject } from '#ai/contracts/aiResponseParser';
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {
@@ -216,7 +216,7 @@ export class CardAiService {
   }
 
   private async generateWithDefaults(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     prompt: PromptArtifact,
     config: PromptConfig,
     options: GenerateTextOptions,

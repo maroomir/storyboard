@@ -4,7 +4,7 @@ import type {
   AiStreamChunk,
   UsageAttribution,
   UsageRecord,
-  WiredAiTaskName,
+  AiTaskName,
 } from '#ai/contracts/aiTypes';
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/variant';
@@ -18,7 +18,7 @@ export class AiTextGateway {
   ) {}
 
   public async generate(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     messages: ReadonlyArray<{
       readonly role: 'system' | 'user' | 'assistant';
       readonly content: string;
@@ -44,7 +44,7 @@ export class AiTextGateway {
   }
 
   public async *generateStream(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     messages: ReadonlyArray<{
       readonly role: 'system' | 'user' | 'assistant';
       readonly content: string;
@@ -73,10 +73,7 @@ export class AiTextGateway {
     }
   }
 
-  public resolvePromptVariant(
-    taskName: WiredAiTaskName,
-    options: GenerateTextOptions,
-  ): PromptVariantId {
+  public resolvePromptVariant(taskName: AiTaskName, options: GenerateTextOptions): PromptVariantId {
     const resolved = this.registry.getTaskAiConfig(taskName);
     const override = this.registry.getPromptVariantOverride();
     return selectPromptVariant({

@@ -2,7 +2,6 @@ import { type AiProviderId } from './aiTypes';
 
 export type AiProviderErrorCode =
   | 'missing-provider'
-  | 'provider-not-registered'
   | 'missing-api-key'
   | 'missing-model'
   | 'connection-failed'

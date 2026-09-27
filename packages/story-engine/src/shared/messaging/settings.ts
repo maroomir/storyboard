@@ -40,11 +40,9 @@ const taskAssignmentReadSchema = z
   });
 
 const taskAssignmentsPayloadSchema = z.record(aiTaskNameSchema, taskAssignmentReadSchema);
-const aiTaskStatusSchema = z.enum(['wired', 'planned']);
 const taskCatalogEntrySchema = z.object({
   name: aiTaskNameSchema,
   label: z.string().trim().min(1),
-  status: aiTaskStatusSchema,
 });
 
 export const configValueOriginSchema = z.enum(['default', 'user', 'workspace']);

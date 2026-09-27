@@ -147,7 +147,6 @@ async function buildSettingsReadSnapshot(
     taskCatalog: aiTaskCatalog.map((task) => ({
       name: task.name,
       label: task.label,
-      status: task.status,
     })),
     origins: Object.fromEntries(
       originTrackedKeys.map((key) => [key, configBridge.getValueOrigin(key)]),

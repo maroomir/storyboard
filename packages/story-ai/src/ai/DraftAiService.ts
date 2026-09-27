@@ -24,7 +24,7 @@ import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, WiredAiTaskName } from '#ai/contracts/aiTypes';
+import type { AiGenerateResponse, AiTaskName } from '#ai/contracts/aiTypes';
 import { coerceCritiqueIssues, type DraftCritiqueIssue } from '#ai/contracts/draftReview';
 import { coerceSceneCoverage, type SceneCoverageIssue } from '#ai/contracts/sceneCoverage';
 import { coerceStoryStateUpdate, type StoryStateUpdateItem } from '#ai/contracts/storyStateUpdate';
@@ -215,7 +215,7 @@ export class DraftAiService {
   }
 
   private async generateWithDefaults(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     prompt: PromptArtifact,
     config: PromptConfig,
     options: GenerateTextOptions,
