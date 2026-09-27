@@ -332,6 +332,10 @@ export class ConfigBridge {
     return this.readBooleanSetting('draft.verifyCardCandidates');
   }
 
+  public getRunBudgetUsd(): number {
+    return this.readIntegerSetting('budget.runLimitUsd');
+  }
+
   public isSceneGroundingAutoApproveEnabled(): boolean {
     return this.readBooleanSetting('grounding.autoApprove');
   }

@@ -6,6 +6,7 @@ import {
   cancel,
   groupChapterStems,
   pauseForApproval,
+  pauseIfRequested,
   runAssembleStage,
   runChapterStages,
   runOutlineStage,
@@ -211,6 +212,10 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     if (options.shouldCancel()) {
       return await cancel(persist);
     }
+    const pausedAfterOutline = await pauseIfRequested(options, persist);
+    if (pausedAfterOutline) {
+      return pausedAfterOutline;
+    }
 
     const plan = await options.deps.outlineRepository.loadChapterPlan(options.workspaceUri);
     const digitCount = resolveScenePrefixDigitCount(
@@ -224,6 +229,10 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     );
     if (options.shouldCancel()) {
       return await cancel(persist);
+    }
+    const pausedAfterSeeds = await pauseIfRequested(options, persist);
+    if (pausedAfterSeeds) {
+      return pausedAfterSeeds;
     }
 
     const chapterResult = await runChapterStages({
@@ -239,6 +248,10 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
     }
     if (options.shouldCancel()) {
       return await cancel(persist);
+    }
+    const pausedAfterChapters = await pauseIfRequested(options, persist);
+    if (pausedAfterChapters) {
+      return pausedAfterChapters;
     }
 
     await runStageOnce('assemble', '원고 조립 중…', () =>

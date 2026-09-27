@@ -12,6 +12,8 @@ after the first public release.
 
 ### Added
 
+- **A novel run can have a budget.** Set `budget.runLimitUsd` (default 0, meaning no limit) to a dollar amount and novel generation stops once it has spent that much, after finishing the scene in progress. The scene is not thrown away, so nothing already paid for is lost, and running again resumes where it stopped. CLI `novel generate` and the extension's novel command follow the same setting. Unpriced local models never hit the limit.
+
 - **Two apps no longer rewrite one workspace at once.** Work that changes a workspace, such as novel or draft generation, now holds a run lock (`.storyboard/cache/run.lock`). While another app holds it, a new run refuses to start and says who is doing what, for example «CLI이(가) «storyboard novel generate» 작업 중입니다». Every CLI verb that changes the workspace takes the lock, and so do the extension's novel, draft and generate-all commands. Read-only verbs never wait. A lock left by an app that died frees itself after 45 seconds.
 
 ## [0.9.7] - 2026-09-22

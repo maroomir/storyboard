@@ -17,7 +17,7 @@ function createMemoryFileSystem(): IFileSystem & { readonly files: Map<string, U
 
   return {
     files,
-    readFile: async (uri) => {
+    readFile: async (uri): Promise<Uint8Array> => {
       const content = files.get(uri.fsPath)
       if (!content) throw new Error(`missing ${uri.fsPath}`)
       return content

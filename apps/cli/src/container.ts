@@ -35,6 +35,7 @@ import {
   SceneSeedRepository,
   StoryFeatureRepository,
   SummarizeChaptersUseCase,
+  UsageMeter,
   DraftRepository,
   ProjectRepository,
   NodeUri,
@@ -101,6 +102,8 @@ export interface CliContainer {
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly novelPipeline: NovelPipeline;
+  // What a run has spent so far, for the per-run budget. Every AI call passes through it.
+  readonly usageMeter: UsageMeter;
 }
 
 export interface CliContainerOptions {
@@ -208,7 +211,10 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   // The CLI has no usage panel; the ledger the extension keeps is not worth a file write here, so
   // cost is reported per run instead of persisted.
-  const usageSink: IUsageSink = options.usageSink ?? { record: async (): Promise<void> => undefined };
+  const usageMeter = new UsageMeter();
+  const usageSink: IUsageSink = usageMeter.wrap(
+    options.usageSink ?? { record: async (): Promise<void> => undefined },
+  );
   const aiGateway = new AiGateway(aiProviderRegistry, usageSink, logger);
   const generator = `storyboard@${options.version}`;
 
@@ -320,6 +326,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     bibleCandidateRepository,
     buildStoryCardsUseCase: new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository),
     completeStoryScenesUseCase: new CompleteStoryScenesUseCase(aiGateway, storyFeatureRepository),
+    usageMeter,
     novelPipeline: new NovelPipeline({
       aiGateway,
       aiProviderRegistry,

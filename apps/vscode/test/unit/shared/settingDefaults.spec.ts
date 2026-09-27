@@ -17,6 +17,7 @@ const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | numbe
   "draft.maxCompressionPercent": (bridge) => bridge.getMaxCompressionPercent(),
   "draft.updateCardsAfterGenerate": (bridge) => bridge.isUpdateCardsAfterGenerateEnabled(),
   "draft.verifyCardCandidates": (bridge) => bridge.isVerifyCardCandidatesEnabled(),
+  "budget.runLimitUsd": (bridge) => bridge.getRunBudgetUsd(),
   "grounding.autoApprove": (bridge) => bridge.isSceneGroundingAutoApproveEnabled(),
   "draft.autoBeats": (bridge) => bridge.isAutoBeatsEnabled(),
   "draft.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),

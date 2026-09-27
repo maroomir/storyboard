@@ -13,6 +13,7 @@ import {
   createDefaultProjectJson,
   diffCandidatesAgainstCanon,
   isIgnoredSampleCardFileName,
+  isRunBudgetExceeded,
   joinStoryPath,
   migrateCardTextFieldsToList,
   createStoryboardDirectories,
@@ -346,6 +347,9 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 const generateNovel: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
   const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const budgetUsd = container.configBridge.getRunBudgetUsd();
+  const spending = container.usageMeter.startSession();
+  const isOverBudget = (): boolean => isRunBudgetExceeded(spending.reading(), budgetUsd);
   const result = await container.novelPipeline.run({
     workspaceUri: container.workspaceRoot,
     project,
@@ -358,11 +362,19 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     onProgress: (stage, message) => container.logger.info(`${stage}: ${message}`),
     requestApproval: async () => true,
     shouldCancel: () => false,
+    shouldPause: isOverBudget,
   });
+  spending.stop();
+
+  const budgetNote =
+    result.outcome === 'paused' && isOverBudget()
+      ? ` 이번 실행 예산 $${budgetUsd}에 닿았습니다 (쓴 비용 $${spending.reading().costUsd.toFixed(2)}).`
+      : '';
+
   return {
     ok: result.outcome === 'completed',
-    message: `장편 생성 ${result.outcome}: ${result.message}`,
-    data: result,
+    message: `장편 생성 ${result.outcome}: ${result.message}${budgetNote}`,
+    data: { ...result, costUsd: spending.reading().costUsd },
   };
 };
 
