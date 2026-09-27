@@ -23,6 +23,10 @@ after the first public release.
 - **The model list and prices are current as of 2026-09-27.** Newly selectable: GPT-6 Sol and Luna, Claude Opus 5.5, Grok 4.7, Ollama `qwen3.8:27b`. Cache reads on Claude Opus 5.5 and Fable 5.1 are billed at their official multipliers (0.05x and 0.025x); Fable 5.1 cache tokens used to be counted at the input rate.
 - **Default models change.** If you never picked a model, OpenAI now generates with `gpt-6-sol` (same input price as GPT-5.6 Terra, cheaper output) and Grok with `grok-4.7` (Claude, Gemini and Ollama are unchanged). Like Astra, the GPT-6 generation (Sol, Luna) is called without `temperature`. Every earlier model is still listed, so no setting needs to change.
 
+### Documentation
+
+- **The READMEs now carry the output notice and the provider content policies.** Drafts, review notes and story-bible suggestions are model output, so factual claims in them are unverified until you check them yourself; and `openai`, `claude`, `google` and `grok` each apply their own usage policy to what the manuscript contains (`ollama` does not). The same section appears in the CLI, extension and desktop READMEs, and anyone who passes the app on to other writers should pass the notice on too.
+
 ## [0.9.7] - 2026-09-22
 
 ### Added

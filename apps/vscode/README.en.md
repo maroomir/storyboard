@@ -77,6 +77,18 @@ Pick a provider before generating: nothing is chosen on a fresh install, and gen
 
 The Claude Code, Codex, and Gemini CLI providers were removed in 0.9.2. Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API-key authentication — and long-form generation is bulk work. A config file that still names `claude-code`, `codex`, or `gemini-cli` reads as no provider at all and generation refuses until you choose one — the metered replacement bills at a different rate, so the choice stays yours. Set the model with `providers.<id>.model`. Only `ollama` runs without a key, locally.
 
+## Generated text and provider policies
+
+- **Check what the AI asserts.** Drafts, revisions, review notes and story-bible suggestions are
+  model output. Treat any factual claim in them (history, geography, medicine, law, real people or
+  places) as unverified until you have checked it yourself. If you hand this app to other writers,
+  pass this notice on to them.
+- **The provider's usage policy applies to the manuscript.** `openai`, `claude`, `google` and `grok`
+  each apply their own content rules to what you generate (for example sexually explicit scenes,
+  sexual content involving minors, or material that promotes violence). A request that crosses the
+  line is refused by the provider, and repeated violations can restrict the API key or the account.
+  `ollama` runs on your machine and no such policy applies.
+
 ## Development
 
 | Command | Purpose |
