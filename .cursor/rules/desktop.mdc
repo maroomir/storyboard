@@ -65,6 +65,14 @@ Engine messages (errors, progress) stay Korean in both languages.
   (`budget.runLimitUsd`) goes to the workspace's `.storyboard/config.json`. Keys: `secrets.json`.
 - App-only state (recent works, language) is `~/.storyboard/desktop.json`.
 
+## Packaging
+
+`electron-builder.config.cjs` packages `dist/` alone (everything is bundled, so no `node_modules`
+ships): dmg + zip for macOS arm64/x64, NSIS for Windows x64, update feed on the public
+`webfic/storyboard` releases. The release workflow's `desktop` job builds them on macOS and Windows
+runners; signing turns on when its secrets exist (see `RELEASE.md`). The icon source is
+`build/icon.svg`; `build/icon.png` is rendered from it (`rsvg-convert -w 1024 -h 1024`).
+
 ## Verification
 
 From `apps/desktop`: `npm run lint`, `npm test`, `npm run build`. Tests run the main side through the

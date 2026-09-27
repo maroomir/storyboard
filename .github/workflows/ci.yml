@@ -17,6 +17,9 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # The desktop tests drive main without Electron, so the ~100 MB binary is not needed here.
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
     steps:
       - name: Checkout

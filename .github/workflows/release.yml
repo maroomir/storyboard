@@ -9,8 +9,80 @@ permissions:
   contents: write
 
 jobs:
+  # Installers are built on the platform they are for. Signing and notarization switch on only when
+  # their secrets exist; without them the installers are unsigned but still ship.
+  desktop:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: mac
+          - os: windows-latest
+            target: win
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure signing
+        shell: bash
+        env:
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if [ "${{ matrix.target }}" = "mac" ]; then
+            if [ -n "$MAC_CSC_LINK" ]; then
+              echo "CSC_LINK=$MAC_CSC_LINK" >> "$GITHUB_ENV"
+              echo "CSC_KEY_PASSWORD=$MAC_CSC_KEY_PASSWORD" >> "$GITHUB_ENV"
+            else
+              echo "::warning::MAC_CSC_LINK is not set; the macOS app is unsigned and cannot auto-update."
+              echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
+            fi
+            if [ -n "$APPLE_API_KEY_P8" ]; then
+              printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/apple-api-key.p8"
+              echo "APPLE_API_KEY=$RUNNER_TEMP/apple-api-key.p8" >> "$GITHUB_ENV"
+              echo "APPLE_API_KEY_ID=$APPLE_API_KEY_ID" >> "$GITHUB_ENV"
+              echo "APPLE_API_ISSUER=$APPLE_API_ISSUER" >> "$GITHUB_ENV"
+            fi
+          elif [ -n "$WIN_CSC_LINK" ]; then
+            echo "WIN_CSC_LINK=$WIN_CSC_LINK" >> "$GITHUB_ENV"
+            echo "WIN_CSC_KEY_PASSWORD=$WIN_CSC_KEY_PASSWORD" >> "$GITHUB_ENV"
+          else
+            echo "::warning::WIN_CSC_LINK is not set; the Windows installer is unsigned."
+          fi
+
+      - name: Package the installers
+        run: npm run package:${{ matrix.target }} --workspace @storyboard/desktop
+
+      - name: Keep the installers and the update feed
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.target }}
+          path: |
+            apps/desktop/release/storyboard-desktop-*
+            apps/desktop/release/latest*.yml
+          if-no-files-found: error
+
   release:
+    needs: desktop
     runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
 
     steps:
       - name: Checkout
@@ -38,7 +110,7 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Package the two artifacts
+      - name: Package the extension and the CLI
         run: |
           version="${GITHUB_REF_NAME#v}"
           mkdir -p release
@@ -46,6 +118,13 @@ jobs:
           npm run build --workspace @storyboard/cli
           scripts/package-tarballs.sh "$version" release
           cp scripts/install.sh release/install.sh
+
+      - name: Collect the desktop installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release
+          merge-multiple: true
 
       - name: Create checksum
         working-directory: release
@@ -81,6 +160,8 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             release/storyboard-vscode-*.vsix \
             release/storyboard-cli-*.tar.gz \
+            release/storyboard-desktop-* \
+            release/latest*.yml \
             release/install.sh \
             release/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
@@ -114,6 +195,8 @@ jobs:
           gh release create "$GITHUB_REF_NAME" --repo webfic/storyboard \
             ../release/storyboard-vscode-*.vsix \
             ../release/storyboard-cli-*.tar.gz \
+            ../release/storyboard-desktop-* \
+            ../release/latest*.yml \
             ../release/install.sh \
             ../release/SHA256SUMS \
             --title "$GITHUB_REF_NAME" \
