@@ -12,7 +12,7 @@ describe("storyboardModelCatalog vs package.json defaults", () => {
     const claudeModelIds = storyboardModelCatalog.claude.map((option) => option.id)
 
     expect(claudeModelIds).toEqual(
-      expect.arrayContaining(["claude-sonnet-5", "claude-sonnet-4-6", "claude-haiku-4-5"])
+      expect.arrayContaining(["claude-sonnet-5", "claude-opus-5-5", "claude-sonnet-4-6", "claude-haiku-4-5"])
     )
   })
 
