@@ -1,26 +1,16 @@
 import type { StoryUri } from '@storyboard/story-format';
 import { z } from 'zod';
 
+import {
+  novelRunModes,
+  novelStageNames,
+  type NovelRunMode,
+  type NovelStageName,
+} from '#engine/shared/novelRun';
+
 const novelRunStateVersion = '1.0.0';
 
-const novelRunModes = [
-  'auto',
-  'outline-approval',
-  'chapter-approval',
-  'review-approval',
-] as const;
-export type NovelRunMode = (typeof novelRunModes)[number];
-
-export const novelStageNames = [
-  'outline',
-  'seeds',
-  'chapters',
-  'assemble',
-  'review',
-  'revise-from-review',
-  'summaries',
-] as const;
-export type NovelStageName = (typeof novelStageNames)[number];
+export { novelStageNames, type NovelRunMode, type NovelStageName };
 
 const novelRunStatuses = ['running', 'paused', 'done', 'failed'] as const;
 type NovelRunStatus = (typeof novelRunStatuses)[number];
