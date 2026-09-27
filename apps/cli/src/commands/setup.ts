@@ -3,6 +3,7 @@ import { basename } from 'node:path';
 
 import {
   aiProviderIds,
+  listSelectableProviderIds,
   requiresApiKey,
   storyboardModelCatalog,
   storyboardSettingCatalog,
@@ -59,8 +60,10 @@ function describeProvider(providerId: AiProviderId): string {
 async function chooseProviderInteractively(
   current: AiProviderId | undefined,
 ): Promise<AiProviderId | undefined> {
+  const selectableProviderIds = listSelectableProviderIds(current);
+
   process.stderr.write('Storyboard 가 기본으로 쓸 AI 프로바이더를 고르세요.\n');
-  aiProviderIds.forEach((providerId, index) => {
+  selectableProviderIds.forEach((providerId, index) => {
     const marker = providerId === current ? ' (현재)' : '';
     process.stderr.write(
       `  ${index + 1}. ${providerId.padEnd(12)} ${describeProvider(providerId)}${marker}\n`,
@@ -73,13 +76,13 @@ async function chooseProviderInteractively(
     return undefined;
   }
 
-  const byIndex = aiProviderIds[Number(answer) - 1];
+  const byIndex = selectableProviderIds[Number(answer) - 1];
 
   if (byIndex !== undefined) {
     return byIndex;
   }
 
-  return isProviderId(answer) ? answer : undefined;
+  return selectableProviderIds.find((providerId) => providerId === answer);
 }
 
 // `storyboard setup` — the terminal's version of the extension's provider picker. Interactive
