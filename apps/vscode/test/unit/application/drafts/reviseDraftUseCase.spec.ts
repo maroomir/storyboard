@@ -22,7 +22,6 @@ vi.mock("@storyboard/story-ai", async (importOriginal) => ({
     reviseDraft = (input: unknown): Promise<string> => reviseDraftMock(input)
   }
 }))
-vi.mock("@/infrastructure/ai/recordUsageSafely", () => ({ recordUsageSafely: (): void => undefined }))
 vi.mock("@storyboard/story-format", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@storyboard/story-format")>()),
   readSceneFile: async (): Promise<unknown> => ({
@@ -51,11 +50,6 @@ vi.mock("@storyboard/story-format", async (importOriginal) => ({
   }),
   buildNarrativeContext: async (): Promise<unknown> => ({ bibleFacts: [] }),
   formatBibleFactLines: (): unknown[] => []
-}))
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
-  readProjectJson: async (): Promise<unknown> => ({
-    setting: { styleConstraints: [], qualityCriteria: [] }
-  })
 }))
 import {
   ReviseDraftUseCase,
