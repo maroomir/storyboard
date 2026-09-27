@@ -49,10 +49,12 @@ export class DraftModule implements IApplicationModule {
 
     this.disposables.add(
       registerGenerateDraftCommands({
+        fileSystem,
         generateDraftUseCase,
         reviseAfterGenerateGate,
       }),
       registerGenerateAllDraftsCommand({
+        fileSystem,
         generateAllDraftsUseCase,
         logger,
       }),

@@ -25,6 +25,10 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   extension. `init` (and `init --repair`) does run `git init` when the directory is not a
   repository yet — the ignore block is written first, so a fresh workspace is born tracked with
   nothing generated in reach of the first commit — but that first commit is still the user's.
+- **One writer per workspace.** A verb whose catalog entry says `writesWorkspace: true` takes
+  `.storyboard/cache/run.lock` for its duration and refuses (exit 1) while the desktop app, the
+  extension or another CLI holds it. Read-only verbs never wait on it. `apps/cli/test/runLock.test.ts`
+  fails when a verb is added without saying which kind it is.
 
 ## Layering
 

@@ -5,13 +5,16 @@ import type {
   GenerateAllDraftsSummary,
   GenerateAllDraftsUseCase,
 } from '@storyboard/story-engine';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import type { IFileSystem, IStoryboardLogger } from '@storyboard/story-engine';
+import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { stageProgressLabel } from './generateDraft';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
+import { runHoldingWorkspaceLock } from './workspaceRunLock';
 
 const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
 
 export type RegisterGenerateAllDraftsCommandDependencies = {
+  readonly fileSystem: IFileSystem;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
   readonly logger: IStoryboardLogger;
 };
@@ -25,6 +28,21 @@ export function registerGenerateAllDraftsCommand(
 }
 
 async function runGenerateAllDrafts(
+  dependencies: RegisterGenerateAllDraftsCommandDependencies,
+): Promise<void> {
+  const workspaceRoot = await resolveStoryboardWorkspaceRoot();
+
+  if (!workspaceRoot) {
+    await vscode.window.showErrorMessage(storyboardMessages.missingWorkspaceFolder);
+    return;
+  }
+
+  await runHoldingWorkspaceLock(dependencies.fileSystem, workspaceRoot, '전체 초안 생성', () =>
+    generateAllDraftsWithProgress(dependencies),
+  );
+}
+
+async function generateAllDraftsWithProgress(
   dependencies: RegisterGenerateAllDraftsCommandDependencies,
 ): Promise<void> {
   const result = await vscode.window.withProgress(

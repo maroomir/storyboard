@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { hostname } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import {
@@ -8,6 +9,8 @@ import {
 } from '@storyboard/story-ai';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import {
+  acquireWorkspaceRunLock,
+  describeWorkspaceRunLockHolder,
   getStoryboardProjectPaths,
   migrateLegacyMemory,
   type IStoryboardLogger,
@@ -252,7 +255,10 @@ export async function dispatch(
     );
   }
 
-  const outcome = await handler({ container, args });
+  const outcome =
+    spec?.writesWorkspace === true
+      ? await runHoldingWorkspaceLock(container, verb, () => handler({ container, args }))
+      : await handler({ container, args });
 
   return {
     exitCode: outcome.ok ? 0 : 1,
@@ -260,4 +266,30 @@ export async function dispatch(
     stderr: '',
     outcome,
   };
+}
+
+async function runHoldingWorkspaceLock(
+  container: ReturnType<typeof createCliContainer>,
+  verb: string,
+  run: () => Promise<CommandOutcome>,
+): Promise<CommandOutcome> {
+  const acquired = await acquireWorkspaceRunLock({
+    fileSystem: container.fileSystem,
+    workspaceRoot: container.workspaceRoot,
+    holder: { owner: 'cli', label: `storyboard ${verb}`, pid: process.pid, hostname: hostname() },
+  });
+
+  if (!acquired.ok) {
+    return {
+      ok: false,
+      message: `${describeWorkspaceRunLockHolder(acquired.heldBy)}. 끝난 뒤 다시 실행하세요.`,
+      data: { heldBy: acquired.heldBy },
+    };
+  }
+
+  try {
+    return await run();
+  } finally {
+    await acquired.lock.release();
+  }
 }
