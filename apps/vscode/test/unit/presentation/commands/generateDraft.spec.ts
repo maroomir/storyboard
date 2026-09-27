@@ -19,9 +19,6 @@ vi.mock("@/infrastructure/vscode/workspace", () => ({
   hasStoryboardProject: async (): Promise<boolean> => true,
   uriExists: async (): Promise<boolean> => false
 }))
-vi.mock("@/infrastructure/persistence/projectJson", () => ({
-  readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
-}))
 import {
   GenerateDraftUseCase,
   type GenerateDraftResult,
