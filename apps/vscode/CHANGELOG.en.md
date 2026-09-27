@@ -18,6 +18,11 @@ after the first public release.
 
 - **Two apps no longer rewrite one workspace at once.** Work that changes a workspace, such as novel or draft generation, now holds a run lock (`.storyboard/cache/run.lock`). While another app holds it, a new run refuses to start and says who is doing what, for example «CLI이(가) «storyboard novel generate» 작업 중입니다». Every CLI verb that changes the workspace takes the lock, and so do the extension's novel, draft and generate-all commands. Read-only verbs never wait. A lock left by an app that died frees itself after 45 seconds.
 
+### Changed (breaking)
+
+- **The model list and prices are current as of 2026-09-27.** Newly selectable: GPT-6 Sol and Luna, Claude Opus 5.5, Grok 4.7, Ollama `qwen3.8:27b`. Cache reads on Claude Opus 5.5 and Fable 5.1 are billed at their official multipliers (0.05x and 0.025x); Fable 5.1 cache tokens used to be counted at the input rate.
+- **Default models change.** If you never picked a model, OpenAI now generates with `gpt-6-sol` (same input price as GPT-5.6 Terra, cheaper output) and Grok with `grok-4.7` (Claude, Gemini and Ollama are unchanged). Like Astra, the GPT-6 generation (Sol, Luna) is called without `temperature`. Every earlier model is still listed, so no setting needs to change.
+
 ## [0.9.7] - 2026-09-22
 
 ### Added

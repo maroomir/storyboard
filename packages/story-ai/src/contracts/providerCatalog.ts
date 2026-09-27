@@ -15,14 +15,18 @@ export interface ProviderModelEntry {
   readonly acceptsTemperature?: boolean;
 }
 
-// Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준).
-function claudeCachePrices(inputPricePerMillion: number): {
+// Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준). Opus 5.5(0.05배)와
+// Fable 5.1(0.025배)은 읽기 배율이 다르므로 행에 직접 적는다.
+function claudeCachePrices(
+  inputPricePerMillion: number,
+  cacheReadMultiplier = 0.1,
+): {
   readonly cacheWritePricePerMillion: number;
   readonly cacheReadPricePerMillion: number;
 } {
   return {
     cacheWritePricePerMillion: inputPricePerMillion * 1.25,
-    cacheReadPricePerMillion: inputPricePerMillion * 0.1,
+    cacheReadPricePerMillion: inputPricePerMillion * cacheReadMultiplier,
   };
 }
 
@@ -35,29 +39,44 @@ export interface ProviderCatalogEntry {
   readonly models: readonly ProviderModelEntry[];
 }
 
-// NOTE: 모델·요금은 각 사의 공식 모델·요금 문서 2026-09-13 기준이다. 요금은 표준 등급, 긴 프롬프트
+// NOTE: 모델·요금은 각 사의 공식 모델·요금 문서 2026-09-27 기준이다. 요금은 표준 등급, 긴 프롬프트
 // 할증이 있는 모델은 할증 전 구간 값이다.
 export const providerCatalog = {
   openai: {
     displayName: 'OpenAI',
     transport: 'http',
     requiresApiKey: true,
-    defaultModel: 'gpt-5.6-terra',
+    defaultModel: 'gpt-6-sol',
     defaultBaseUrl: undefined,
+    // NOTE: OpenAI 최신 모델 안내가 GPT-6 세대(Astra·Sol·Luna)는 temperature·top_p 를 빼라고 명시한다.
+    // 5.x 는 확인된 문구가 없다.
     models: [
       {
-        id: 'gpt-5.6-terra',
-        displayName: 'GPT-5.6 Terra',
+        id: 'gpt-6-sol',
+        displayName: 'GPT-6 Sol',
         inputPricePerMillion: 2.0,
-        outputPricePerMillion: 12.0,
+        outputPricePerMillion: 10.0,
+        acceptsTemperature: false,
       },
       {
         id: 'gpt-6-astra',
         displayName: 'GPT-6 Astra',
         inputPricePerMillion: 10.0,
         outputPricePerMillion: 50.0,
-        // NOTE: OpenAI 최신 모델 안내가 temperature·top_p 를 빼라고 명시한다. 5.x 는 확인된 문구가 없다.
         acceptsTemperature: false,
+      },
+      {
+        id: 'gpt-6-luna',
+        displayName: 'GPT-6 Luna',
+        inputPricePerMillion: 0.1,
+        outputPricePerMillion: 0.5,
+        acceptsTemperature: false,
+      },
+      {
+        id: 'gpt-5.6-terra',
+        displayName: 'GPT-5.6 Terra',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 12.0,
       },
       {
         id: 'gpt-5.6-sol',
@@ -102,6 +121,14 @@ export const providerCatalog = {
         acceptsTemperature: false,
       },
       {
+        id: 'claude-opus-5-5',
+        displayName: 'Claude Opus 5.5',
+        inputPricePerMillion: 4.0,
+        outputPricePerMillion: 20.0,
+        ...claudeCachePrices(4.0, 0.05),
+        acceptsTemperature: false,
+      },
+      {
         id: 'claude-opus-5',
         displayName: 'Claude Opus 5',
         inputPricePerMillion: 5.0,
@@ -114,6 +141,7 @@ export const providerCatalog = {
         displayName: 'Claude Fable 5.1',
         inputPricePerMillion: 10.0,
         outputPricePerMillion: 50.0,
+        ...claudeCachePrices(10.0, 0.025),
         acceptsTemperature: false,
       },
       {
@@ -193,10 +221,16 @@ export const providerCatalog = {
     displayName: 'xAI Grok',
     transport: 'http',
     requiresApiKey: true,
-    defaultModel: 'grok-4.6',
+    defaultModel: 'grok-4.7',
     defaultBaseUrl: 'https://api.x.ai/v1',
-    // NOTE: docs.x.ai/docs/models 2026-09 기준, 프롬프트 200k 토큰 미만 요금.
+    // NOTE: docs.x.ai/developers/models 2026-09-27 기준, 프롬프트 200k 토큰 미만 요금.
     models: [
+      {
+        id: 'grok-4.7',
+        displayName: 'Grok 4.7',
+        inputPricePerMillion: 2.0,
+        outputPricePerMillion: 6.0,
+      },
       {
         id: 'grok-4.6',
         displayName: 'Grok 4.6',
@@ -263,8 +297,8 @@ export const providerCatalog = {
         outputPricePerMillion: 0,
       },
       {
-        id: 'qwen3.5:27b',
-        displayName: 'Qwen 3.5 27B (24GB GPU)',
+        id: 'qwen3.8:27b',
+        displayName: 'Qwen 3.8 27B (24GB GPU)',
         inputPricePerMillion: 0,
         outputPricePerMillion: 0,
       },

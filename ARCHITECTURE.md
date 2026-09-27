@@ -744,15 +744,15 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 `storyboard.` 접두사를 뺀 형태다(예: `defaultProvider`, `providers.claude.model`).
 
 - `defaultProvider`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 카탈로그에 없으므로 «고르지 않음»으로 떨어져 생성이 거부된다 — 요금이 다른 provider 를 대신 골라 주지 않는다.
-- `providers.openai.model`: 기본 `gpt-5.6-terra`
+- `providers.openai.model`: 기본 `gpt-6-sol`
 - `providers.claude.model`: 기본 `claude-sonnet-5`
 - `providers.google.model`: 기본 `gemini-3.8-flash`
-- `providers.grok.model`: xAI OpenAI 호환 API(`https://api.x.ai/v1`), 기본 `grok-4.6`
+- `providers.grok.model`: xAI OpenAI 호환 API(`https://api.x.ai/v1`), 기본 `grok-4.7`
 - `providers.ollama.baseUrl`
 - `providers.ollama.model`: 기본 `gemma4:12b`(카탈로그는 제안일 뿐, 받아 둔 어떤 태그든 받는다)
 
 모델 목록·요금·기본 모델은 `packages/story-ai/src/contracts/providerCatalog.ts` 한 곳이 갖는다. 기본값이 아닌
-`temperature`를 거부하는 모델(Claude 4.7 이후, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
+`temperature`를 거부하는 모델(Claude 4.7 이후, GPT-6, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
 프로바이더는 그 모델에 `temperature`를 보내지 않는다.
 - `tasks.<taskName>.provider`: 작업별 provider 오버라이드
 - `storyboard.draft.reviseAfterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
