@@ -374,6 +374,7 @@
     "@fontsource-variable/cormorant-garamond": "^5.2.6",
     "@fontsource-variable/inter": "^5.2.8",
     "@storyboard/story-ai": "*",
+    "@storyboard/story-app": "*",
     "@storyboard/story-config": "*",
     "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",

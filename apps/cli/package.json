@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@storyboard/story-ai": "*",
+    "@storyboard/story-app": "*",
     "@storyboard/story-config": "*",
     "@storyboard/story-engine": "*",
     "@storyboard/story-format": "*",
