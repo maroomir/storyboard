@@ -1,70 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { z } from 'zod';
-
-import {
-  compositionKinds,
-  pointOfViews,
-  projectFormats,
-  storyboardProjectVersion,
-} from '@storyboard/story-format';
+import { storyboardProjectSchema, storyboardProjectVersion } from '@storyboard/story-format';
 import type { ProjectFormat, StoryboardProject } from '@storyboard/story-format';
-
-const projectEditorSchema = z.object({
-  scenePrefixDigits: z.number().int().positive(),
-  trackDraft: z.boolean().optional(),
-});
-
-const craftContractOverrideSchema = z.object({
-  banTelling: z.boolean().optional(),
-  motifRepeatLimit: z.number().int().positive().optional(),
-  stockGestureBlacklist: z.array(z.string()).optional(),
-  requireCharacterInterior: z.boolean().optional(),
-  actionClarity: z.boolean().optional(),
-  modulateDensity: z.boolean().optional(),
-  sceneLengthMultiplier: z.number().nonnegative().optional(),
-});
-
-const storyThreadSchema = z.object({
-  title: z.string().trim().min(1),
-  wraps: z.array(z.string().trim().min(1)).optional(),
-});
-
-const projectNarrationSchema = z.object({
-  defaultNarrator: z.string().trim().min(1).optional(),
-});
-
-const projectSettingSchema = z.object({
-  genre: z.string().trim().min(1).optional(),
-  country: z.string().trim().min(1).optional(),
-  concept: z.string().trim().min(1).optional(),
-  tags: z.array(z.string()).default([]),
-  description: z.string().optional(),
-  audience: z.string().trim().min(1).optional(),
-  targetWordCount: z.number().int().positive().optional(),
-  pov: z.enum(pointOfViews).optional(),
-  narration: projectNarrationSchema.optional(),
-  composition: z.enum(compositionKinds).optional(),
-  threads: z.record(z.string().trim().min(1), storyThreadSchema).optional(),
-  chapterCount: z.number().int().positive().optional(),
-  scenesPerChapter: z.number().int().positive().optional(),
-  prohibitions: z.array(z.string()).default([]),
-  styleConstraints: z.array(z.string()).default([]),
-  qualityCriteria: z.array(z.string()).default([]),
-  craftContract: craftContractOverrideSchema.optional(),
-});
-
-const storyboardProjectSchema = z.object({
-  version: z.literal(storyboardProjectVersion),
-  id: z.string().min(1),
-  name: z.string().trim().min(1),
-  format: z.enum(projectFormats),
-  language: z.string().trim().min(1),
-  createdAt: z.string().datetime(),
-  editor: projectEditorSchema,
-  setting: projectSettingSchema.optional(),
-});
 
 export interface CreateProjectJsonInput {
   readonly name: string;

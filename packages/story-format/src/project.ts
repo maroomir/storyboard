@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const storyboardProjectVersion = '1.0.0';
 
 export const projectFormats = ['novel', 'screenplay', 'play', 'essay', 'poem'] as const;
@@ -49,10 +51,12 @@ export const contractFieldLabels: Record<ContractFieldKey, string> = {
   targetWordCount: '목표 분량',
 };
 
-export interface ProjectEditor {
-  readonly scenePrefixDigits: number;
-  readonly trackDraft?: boolean;
-}
+export const projectEditorSchema = z.object({
+  scenePrefixDigits: z.number().int().positive(),
+  trackDraft: z.boolean().optional(),
+});
+
+export type ProjectEditor = z.infer<typeof projectEditorSchema>;
 
 // 생성 프롬프트에 항상 주입되는 작법 규칙. 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸린다.
 export interface CraftContract {
@@ -66,7 +70,17 @@ export interface CraftContract {
   readonly sceneLengthMultiplier: number;
 }
 
-export type CraftContractOverride = Partial<CraftContract>;
+export const craftContractOverrideSchema = z.object({
+  banTelling: z.boolean().optional(),
+  motifRepeatLimit: z.number().int().positive().optional(),
+  stockGestureBlacklist: z.array(z.string()).readonly().optional(),
+  requireCharacterInterior: z.boolean().optional(),
+  actionClarity: z.boolean().optional(),
+  modulateDensity: z.boolean().optional(),
+  sceneLengthMultiplier: z.number().nonnegative().optional(),
+});
+
+export type CraftContractOverride = z.infer<typeof craftContractOverrideSchema>;
 
 export const defaultCraftContract: CraftContract = {
   banTelling: true,
@@ -122,11 +136,13 @@ export const compositionKindLabels: Record<CompositionKind, string> = Object.fro
 ) as Record<CompositionKind, string>;
 
 // 연속성 줄기. 이야기 상태·장 요약·직전 씬 맥락은 스레드 안에서만 이어지고, 캐넌만 전역이다.
-export interface StoryThread {
-  readonly title: string;
+export const storyThreadSchema = z.object({
+  title: z.string().trim().min(1),
   // 액자식에서 이 스레드가 감싸는 내부 스레드. 조립할 때 외화를 앞뒤에 두는 근거가 된다.
-  readonly wraps?: readonly string[];
-}
+  wraps: z.array(z.string().trim().min(1)).readonly().optional(),
+});
+
+export type StoryThread = z.infer<typeof storyThreadSchema>;
 
 export const mainThreadId = 'main';
 
@@ -144,39 +160,45 @@ export const compositionPresetDefaults = {
   mainThreadTitle: '본편',
 } as const;
 
-export interface ProjectNarration {
+export const projectNarrationSchema = z.object({
   // 이름 붙인 기본 서술자(`narrator/<id>.card`). 없으면 `pov`에서 암묵 서술자를 파생한다.
-  readonly defaultNarrator?: string;
-}
+  defaultNarrator: z.string().trim().min(1).optional(),
+});
 
-export interface ProjectSetting {
-  readonly genre?: string;
-  readonly country?: string;
-  readonly concept?: string;
-  readonly tags: string[];
-  readonly description?: string;
-  readonly audience?: string;
-  readonly targetWordCount?: number;
-  readonly pov?: PointOfView;
-  readonly narration?: ProjectNarration;
-  readonly composition?: CompositionKind;
-  readonly threads?: Readonly<Record<string, StoryThread>>;
+export type ProjectNarration = z.infer<typeof projectNarrationSchema>;
+
+export const projectSettingSchema = z.object({
+  genre: z.string().trim().min(1).optional(),
+  country: z.string().trim().min(1).optional(),
+  concept: z.string().trim().min(1).optional(),
+  tags: z.array(z.string()).default([]),
+  description: z.string().optional(),
+  audience: z.string().trim().min(1).optional(),
+  targetWordCount: z.number().int().positive().optional(),
+  pov: z.enum(pointOfViews).optional(),
+  narration: projectNarrationSchema.optional(),
+  composition: z.enum(compositionKinds).optional(),
+  threads: z.record(z.string().trim().min(1), storyThreadSchema).readonly().optional(),
   // 아웃라인이 만들 장·씬 개수. 작품마다 한 번 정하는 값이라 계약에 둔다.
-  readonly chapterCount?: number;
-  readonly scenesPerChapter?: number;
-  readonly prohibitions: string[];
-  readonly styleConstraints: string[];
-  readonly qualityCriteria: string[];
-  readonly craftContract?: CraftContractOverride;
-}
+  chapterCount: z.number().int().positive().optional(),
+  scenesPerChapter: z.number().int().positive().optional(),
+  prohibitions: z.array(z.string()).default([]),
+  styleConstraints: z.array(z.string()).default([]),
+  qualityCriteria: z.array(z.string()).default([]),
+  craftContract: craftContractOverrideSchema.optional(),
+});
 
-export interface StoryboardProject {
-  readonly version: typeof storyboardProjectVersion;
-  readonly id: string;
-  readonly name: string;
-  readonly format: ProjectFormat;
-  readonly language: string;
-  readonly createdAt: string;
-  readonly editor: ProjectEditor;
-  readonly setting?: ProjectSetting;
-}
+export type ProjectSetting = z.infer<typeof projectSettingSchema>;
+
+export const storyboardProjectSchema = z.object({
+  version: z.literal(storyboardProjectVersion),
+  id: z.string().min(1),
+  name: z.string().trim().min(1),
+  format: z.enum(projectFormats),
+  language: z.string().trim().min(1),
+  createdAt: z.string().datetime(),
+  editor: projectEditorSchema,
+  setting: projectSettingSchema.optional(),
+});
+
+export type StoryboardProject = z.infer<typeof storyboardProjectSchema>;
