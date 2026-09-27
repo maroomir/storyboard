@@ -37,10 +37,7 @@ export function TaskAssignmentsSection({
 
   const overrides = useMemo(() => listTaskOverrides(snapshot), [snapshot]);
   const addableTasks = useMemo(
-    () =>
-      snapshot.taskCatalog.filter(
-        (task) => !hasTaskOverride(snapshot, task.name) && task.status === 'wired',
-      ),
+    () => snapshot.taskCatalog.filter((task) => !hasTaskOverride(snapshot, task.name)),
     [snapshot],
   );
   const matchedTasks = useMemo(
@@ -48,7 +45,6 @@ export function TaskAssignmentsSection({
     [addableTasks, pickerQuery],
   );
 
-  const plannedCount = snapshot.taskCatalog.filter((task) => task.status === 'planned').length;
   const defaultSummary = formatDefaultProviderSummary(snapshot);
 
   const saveTaskAi = (
@@ -153,12 +149,6 @@ export function TaskAssignmentsSection({
           ＋ 태스크 오버라이드 추가
         </Button>
       )}
-
-      {plannedCount > 0 ? (
-        <p className="m-0 text-xs text-sb-fg-muted">
-          Phase 6 예정 {plannedCount}개는 아직 오버라이드할 수 없습니다.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -177,7 +167,6 @@ function OverrideRow({
   ) => void;
 }): React.ReactElement {
   const { task, providerId, model } = override;
-  const isPlanned = task.status === 'planned';
   const modelValue = pickModelForTaskProvider(snapshot, providerId, model);
 
   return (
@@ -185,7 +174,6 @@ function OverrideRow({
       <div className="flex min-w-0 flex-col gap-0.5">
         <div className="flex items-center gap-2 text-sm font-medium text-sb-fg">
           <span>{task.label}</span>
-          {isPlanned ? <StatusPill tone="warning">Phase 6 예정</StatusPill> : null}
         </div>
         <p className="m-0 text-xs text-sb-fg-muted">
           기본값: {formatDefaultProviderSummary(snapshot)}
@@ -196,7 +184,6 @@ function OverrideRow({
           className={sbInlineSelectClass}
           aria-label={`${task.label} 제공자`}
           value={providerId}
-          disabled={isPlanned}
           onChange={(event) => {
             const nextProviderId = event.target.value;
             if (!isAiProviderId(nextProviderId)) {
@@ -220,7 +207,6 @@ function OverrideRow({
           className={sbInlineSelectClass}
           aria-label={`${task.label} 모델`}
           value={modelValue}
-          disabled={isPlanned}
           onChange={(event) => {
             const model = event.target.value;
             if (model.length === 0) {

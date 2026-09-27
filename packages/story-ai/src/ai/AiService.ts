@@ -33,7 +33,7 @@ import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import type { StudioCardSeed } from '#ai/contracts/studioCardSeed';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
-import type { AiGenerateResponse, AiStreamChunk, WiredAiTaskName } from '#ai/contracts/aiTypes';
+import type { AiGenerateResponse, AiStreamChunk, AiTaskName } from '#ai/contracts/aiTypes';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';
@@ -406,7 +406,7 @@ export class StoryboardAiService {
   }
 
   private async generateWithDefaults(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     prompt: PromptArtifact,
     config: PromptConfig,
     options: GenerateTextOptions,
@@ -419,7 +419,7 @@ export class StoryboardAiService {
   }
 
   public async *generateTextStream(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     messages: ReadonlyArray<{
       readonly role: 'system' | 'user' | 'assistant';
       readonly content: string;
@@ -430,7 +430,7 @@ export class StoryboardAiService {
   }
 
   public async generateText(
-    taskName: WiredAiTaskName,
+    taskName: AiTaskName,
     messages: ReadonlyArray<{
       readonly role: 'system' | 'user' | 'assistant';
       readonly content: string;

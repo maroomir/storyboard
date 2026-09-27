@@ -27,8 +27,8 @@ function buildSnapshot(): SettingsReadSnapshot {
       grammarCheck: { providerId: null, model: null }
     },
     taskCatalog: [
-      { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
-      { name: "grammarCheck", label: "문법 검사", status: "wired" }
+      { name: "sceneDraft", label: "씬 드래프트" },
+      { name: "grammarCheck", label: "문법 검사" }
     ]
   } as SettingsReadSnapshot
 }

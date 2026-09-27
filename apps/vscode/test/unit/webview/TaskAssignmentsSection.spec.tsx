@@ -22,9 +22,9 @@ function buildSnapshot(overrides: Partial<SettingsReadSnapshot> = {}): SettingsR
       continuityCheck: { providerId: null, model: null }
     },
     taskCatalog: [
-      { name: "sceneDraft", label: "씬 드래프트", status: "wired" },
-      { name: "grammarCheck", label: "문법 검사", status: "wired" },
-      { name: "continuityCheck", label: "연속성 검사", status: "planned" }
+      { name: "sceneDraft", label: "씬 드래프트" },
+      { name: "grammarCheck", label: "문법 검사" },
+      { name: "continuityCheck", label: "연속성 검사" }
     ],
     ...overrides
   } as SettingsReadSnapshot
@@ -112,15 +112,6 @@ describe("TaskAssignmentsSection", () => {
       providerId: "claude",
       model: "claude-model"
     })
-  })
-
-  it("keeps planned tasks out of the picker", () => {
-    renderSection(buildSnapshot())
-
-    fireEvent.click(screen.getByRole("button", { name: "＋ 태스크 오버라이드 추가" }))
-
-    expect(screen.queryByRole("button", { name: /연속성 검사/ })).toBeNull()
-    expect(screen.getByText("Phase 6 예정 1개는 아직 오버라이드할 수 없습니다.")).toBeTruthy()
   })
 
   it("filters the picker by the search query", () => {

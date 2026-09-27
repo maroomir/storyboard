@@ -9,7 +9,6 @@ export { listSelectableProviderIds } from '@storyboard/story-engine/contracts';
 export type { AiProviderId };
 
 export type AiTaskName = string;
-type AiTaskStatus = 'wired' | 'planned';
 
 export type ConnectionTestState = 'idle' | 'loading' | 'ok' | 'error';
 
@@ -39,7 +38,6 @@ interface TaskAiAssignment {
 export interface TaskCatalogItem {
   readonly name: AiTaskName;
   readonly label: string;
-  readonly status: AiTaskStatus;
 }
 
 export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
@@ -179,9 +177,6 @@ export function parseSettingsReadSnapshot(value: unknown): SettingsReadSnapshot 
       return undefined;
     }
     if (typeof task.label !== 'string' || task.label.trim().length === 0) {
-      return undefined;
-    }
-    if (task.status !== 'wired' && task.status !== 'planned') {
       return undefined;
     }
 

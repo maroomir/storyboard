@@ -12,10 +12,8 @@ export type {
   AiProviderId,
   AiTaskCatalogEntry,
   AiTaskName,
-  AiTaskStatus,
   UsageAmount,
   UsageSummaryByEntity,
-  WiredAiTaskName,
 } from './ai';
 
 export type AiMessageRole = 'system' | 'user' | 'assistant';
