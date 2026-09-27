@@ -256,7 +256,7 @@ export const koMessages = {
   'settings.apiKey': 'API 키',
   'settings.keyStored': '저장됨',
   'settings.keyMissing': '없음',
-  'settings.replaceKey': '키 넣기',
+  'settings.replaceKey': '적용',
   'settings.language': '화면 언어',
   'settings.basic': '기본',
   'settings.advanced': '고급 설정',
@@ -266,7 +266,7 @@ export const koMessages = {
 
   'history.title': '버전 기록',
   'history.intro': '앱이 원고를 바꿀 때마다 자동으로 남긴 버전입니다. 되돌려도 지금 상태가 버전으로 남습니다.',
-  'history.restore': '이 버전으로 되돌리기',
+  'history.restore': '되돌리기',
   'history.restoreConfirm': '«{message}» 시점으로 되돌릴까요?',
   'history.empty': '아직 남은 버전이 없습니다.',
 

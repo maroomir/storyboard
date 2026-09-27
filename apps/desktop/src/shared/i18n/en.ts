@@ -255,7 +255,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
   'settings.apiKey': 'API key',
   'settings.keyStored': 'Stored',
   'settings.keyMissing': 'None',
-  'settings.replaceKey': 'Enter key',
+  'settings.replaceKey': 'Apply',
   'settings.language': 'Display language',
   'settings.basic': 'Basics',
   'settings.advanced': 'Advanced',
@@ -265,7 +265,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
 
   'history.title': 'Version history',
   'history.intro': 'Versions the app saved each time it changed your work. Restoring keeps the current state as a version too.',
-  'history.restore': 'Restore this version',
+  'history.restore': 'Restore',
   'history.restoreConfirm': 'Go back to «{message}»?',
   'history.empty': 'No versions yet.',
 

@@ -86,7 +86,8 @@ export class SnapshotService {
         const commits = await git.log({ fs, dir: this.location.repositoryRoot, depth: listLimit });
         return commits.map((entry) => ({
           id: entry.oid,
-          message: entry.commit.message.trim(),
+          // A commit made outside the app may carry a long body; the history shows its subject only.
+          message: entry.commit.message.trim().split('\n')[0] ?? '',
           time: new Date(entry.commit.author.timestamp * 1000).toISOString(),
         }));
       } catch {

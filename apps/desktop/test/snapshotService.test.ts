@@ -119,4 +119,19 @@ describe('SnapshotService', () => {
 
     expect((await service.list()).map((entry) => entry.message)).toEqual(['둘', '하나']);
   });
+
+  it('shows only the subject of a commit made outside the app', async () => {
+    write('a.md', '1');
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: workspace });
+    execFileSync('git', ['add', '.'], { cwd: workspace });
+    execFileSync(
+      'git',
+      ['-c', 'user.name=작가', '-c', 'user.email=writer@example.com', 'commit', '-q', '-m', 'feat: 원고 추가\n\n[Problem] 긴 본문\nSigned-off-by: 작가'],
+      { cwd: workspace },
+    );
+
+    const service = new SnapshotService(await locateSnapshotRepository(workspace));
+
+    expect((await service.list())[0]?.message).toBe('feat: 원고 추가');
+  });
 });
