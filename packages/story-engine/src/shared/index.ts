@@ -5,5 +5,6 @@ export * from './catalogs';
 export * from './cardCollect';
 export * from './jsonRepair';
 export * from './messaging';
+export * from './novelRun';
 export * from './slop';
 export * from './slopPhrases';
