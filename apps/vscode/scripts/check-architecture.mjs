@@ -159,7 +159,7 @@ const REPO_ROOT = path.resolve(PACKAGE_ROOT, '..', '..');
 function checkOwnedLiterals(_report, failures) {
   const roots = [SOURCE_ROOT, path.join(PACKAGE_ROOT, 'webview-ui', 'src')].concat(
     SHARED_PACKAGES.map((name) => path.join(PACKAGES_ROOT, name, 'src')),
-    [path.join(REPO_ROOT, 'apps', 'cli', 'src')],
+    [path.join(REPO_ROOT, 'apps', 'cli', 'src'), path.join(REPO_ROOT, 'apps', 'desktop', 'src')],
   );
 
   for (const root of roots) {

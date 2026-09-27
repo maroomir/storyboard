@@ -1,0 +1,36 @@
+{
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "vite/client"
+    ],
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "../*"
+      ],
+      "@storyboard/story-engine/contracts": [
+        "../../../../packages/story-engine/src/shared/index.ts"
+      ],
+      "@storyboard/story-format/contracts": [
+        "../../../../packages/story-format/src/contracts.ts"
+      ],
+      "@storyboard/story-ai/contracts": [
+        "../../../../packages/story-ai/src/contracts.ts"
+      ]
+    }
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "../shared/**/*.ts"
+  ]
+}
