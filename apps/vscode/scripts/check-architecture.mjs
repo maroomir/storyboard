@@ -21,6 +21,7 @@ const BOOTSTRAP_ROOT = path.join(SOURCE_ROOT, 'bootstrap');
 const PACKAGES_ROOT = path.resolve(PACKAGE_ROOT, '..', '..', 'packages');
 const SHARED_PACKAGES = [
   'story-engine',
+  'story-app',
   'story-format',
   'story-ai',
   'story-pipeline',
@@ -33,6 +34,7 @@ const SHARED_PACKAGES = [
 // a path instead of through the entry point that is their actual contract.
 const PACKAGE_INTERNAL_PREFIXES = {
   'story-engine': '#engine/',
+  'story-app': '#app/',
   'story-format': '#format/',
   'story-ai': '#ai/',
   'story-pipeline': '#pipeline/',

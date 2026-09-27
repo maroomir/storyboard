@@ -10,6 +10,9 @@
       "@/*": [
         "src/*"
       ],
+      "@storyboard/story-app": [
+        "../../packages/story-app/src/index.ts"
+      ],
       "@storyboard/story-engine": [
         "../../packages/story-engine/src/index.ts"
       ],

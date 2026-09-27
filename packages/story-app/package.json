@@ -1,0 +1,34 @@
+{
+  "name": "@storyboard/story-app",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The composition root every Storyboard app shares: builds the engine's object graph once from a host's adapters",
+  "license": "Apache-2.0",
+  "main": "src/index.ts",
+  "imports": {
+    "#app/*": "./src/*.ts"
+  },
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint \"src/**/*.ts\" && npm run typecheck"
+  },
+  "dependencies": {
+    "@storyboard/story-ai": "*",
+    "@storyboard/story-engine": "*",
+    "@storyboard/story-format": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "eslint": "^8.57.1",
+    "typescript": "^5.6.3"
+  }
+}
