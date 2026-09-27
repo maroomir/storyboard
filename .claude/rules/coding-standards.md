@@ -1,6 +1,6 @@
 # Monorepo Coding Standards
 
-Cross-cutting standards for how both apps and the shared packages are structured, named, and
+Cross-cutting standards for how the apps and the shared packages are structured, named, and
 typed. The reference module is **`apps/cli`** — its rules are enforced end to end by its own
 architecture check; on the package side, **`packages/story-format`** is the reference
 for schema-first types and the error-class template. Generic readability and verb rules live in
@@ -12,7 +12,7 @@ for schema-first types and the error-class template. Generic readability and ver
   The CLI's single `LAYER_ORDER` line (`adapters → commands → tui`) is the model: every source file
   lives in exactly one layer, and a layer imports only itself and layers to its left.
 - Each app has exactly one composition root that builds the object graph once:
-  `createCliContainer()` (cli) and `PlatformModule.initialize()` (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
+  `createCliContainer()` (cli), `createDesktopContainer()` (desktop) and `PlatformModule.initialize()` (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
   or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
   contract. Inside a package, organize by role — `story-ai`'s `ai/` (services), `contracts/`

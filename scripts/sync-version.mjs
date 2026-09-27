@@ -4,7 +4,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 // One version for the whole monorepo: the root manifest owns it and every app mirrors it, so a
-// single `v*` tag releases the extension and the CLI as one set. Run this after editing
+// single `v*` tag releases the extension, the CLI and the desktop app as one set. Run this after editing
 // the root version, then `npm install` to refresh the lockfile.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const rootManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
@@ -15,7 +15,7 @@ if (typeof version !== 'string' || version.length === 0) {
   process.exit(1);
 }
 
-const apps = ['apps/vscode', 'apps/cli'];
+const apps = ['apps/vscode', 'apps/cli', 'apps/desktop'];
 const checkOnly = process.argv.includes('--check');
 let drifted = false;
 

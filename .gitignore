@@ -6,6 +6,9 @@ out/
 dist/
 *.vsix
 
+# Desktop installers (electron-builder output)
+apps/desktop/release/
+
 # VSCode extension test artifacts
 .vscode-test/
 

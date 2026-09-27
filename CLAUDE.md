@@ -3,6 +3,7 @@
 @.claude/rules/architecture.md
 @.claude/rules/storyboard-overview.md
 @.claude/rules/cli.md
+@.claude/rules/desktop.md
 @.claude/rules/vscode-extension.md
 @.claude/rules/webview.md
 @.claude/rules/testing.md
