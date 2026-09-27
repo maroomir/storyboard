@@ -120,6 +120,55 @@ Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 An unsigned macOS app opens only after right-click → Open and cannot auto-update; an unsigned
 Windows installer shows a SmartScreen warning. Both still work.
 
+#### Issuing the macOS secrets
+
+Everything below needs an [Apple Developer Program](https://developer.apple.com/programs/)
+membership (paid yearly; an individual account is enough). The certificate and notarization
+themselves cost nothing beyond that. `gh secret set` writes to this repository; run it from the
+repo root.
+
+1. **Developer ID Application certificate** (`MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD`).
+   1. Keychain Access → Certificate Assistant → *Request a Certificate From a Certificate
+      Authority…*, saved to disk. This creates the private key in the login keychain.
+   2. developer.apple.com → Certificates → **+** → *Developer ID Application*, upload the request,
+      download the `.cer` and double-click it into the login keychain.
+   3. In Keychain Access, expand the certificate so its private key shows, select **both**, then
+      File → *Export Items…* as `.p12` with a password of your choice.
+   4. Register the file base64-encoded and its password:
+
+      ```bash
+      base64 -i developer-id.p12 | gh secret set MAC_CSC_LINK
+      gh secret set MAC_CSC_KEY_PASSWORD   # the .p12 password, when prompted
+      ```
+
+2. **App Store Connect API key for notarization** (`APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`,
+   `APPLE_API_ISSUER`). Without these three the app is signed but not notarized, and Gatekeeper may
+   still block the first launch.
+   1. appstoreconnect.apple.com → Users and Access → Integrations → *App Store Connect API* →
+      *Team Keys* → **+**, role **Developer**. Download the `AuthKey_<KEY_ID>.p8` once — Apple does
+      not offer it again.
+   2. The **Key ID** and **Issuer ID** are on the same page.
+   3. Register the `.p8` as-is (not base64; the workflow writes it back to a file) with the two ids:
+
+      ```bash
+      gh secret set APPLE_API_KEY_P8 < AuthKey_<KEY_ID>.p8
+      gh secret set APPLE_API_KEY_ID
+      gh secret set APPLE_API_ISSUER
+      ```
+
+3. **Check**: on the next tag the `desktop` job's *Configure signing* step no longer warns
+   `MAC_CSC_LINK is not set`. To verify locally, export the same variables in a shell
+   (`CSC_LINK` may be a path to the `.p12`), run `npm run package:mac --workspace @storyboard/desktop`
+   and inspect the result:
+
+   ```bash
+   codesign -dv --verbose=2 apps/desktop/release/mac-arm64/Storyboard.app
+   spctl -a -vv apps/desktop/release/mac-arm64/Storyboard.app   # "source=Notarized Developer ID"
+   ```
+
+The certificate expires after five years and the membership every year; a lapsed membership stops
+new builds from being signed and notarized but leaves the already shipped ones working.
+
 ## The public repository
 
 `webfic/storyboard` is the user-facing side of the product: README, changelogs, `install.sh`,
