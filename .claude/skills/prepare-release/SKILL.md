@@ -49,7 +49,7 @@ npm run build
 
 ## 4. Package
 
-One tag ships two artifacts. Reproduce them locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers all three.
+One tag ships three apps. Reproduce the extension and CLI artifacts locally exactly as [`RELEASE.md`](RELEASE.md) describes: the VSIX from `storyboard-vscode` and `storyboard-cli-<version>.tar.gz`. `scripts/install.sh` rides along and `SHA256SUMS` covers everything. The desktop installers (`storyboard-desktop-<version>-mac-*.dmg/.zip`, `-win-x64-setup.exe`, and the `latest*.yml` update feed) are built by the release workflow on macOS and Windows runners; locally you can only check your own platform with `npm run desktop:package`. Run the release scenario in `apps/desktop/DESKTOP_QA.md` on both platforms before tagging.
 
 Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
 

@@ -1,7 +1,7 @@
 # Release Guide
 
-This guide describes how to publish a Storyboard release to GitHub Releases. One tag ships both
-apps: the VSCode extension and the CLI.
+This guide describes how to publish a Storyboard release to GitHub Releases. One tag ships every
+app: the VSCode extension, the CLI and the desktop app.
 
 ## Prerequisites
 
@@ -49,6 +49,16 @@ dependencies (the source manifest's `@storyboard/*` workspace entries are inline
 would make `npm install` in an unpacked tarball fail). `package-tarballs.sh` ships that manifest at
 the tarball root, never the source one.
 
+The desktop installers are built by the workflow on macOS and Windows runners. On your own machine
+you can build the ones for your platform (unsigned unless the signing variables below are set):
+
+```bash
+CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac --workspace @storyboard/desktop   # on macOS
+npm run package:win --workspace @storyboard/desktop                                  # on Windows
+```
+
+Run the release scenario in `apps/desktop/DESKTOP_QA.md` on both platforms before tagging.
+
 ## Version commit
 
 The version commit should include at least:
@@ -79,20 +89,36 @@ be synced to it — the workflow checks both and refuses otherwise.
 
 Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 
-1. Installs dependencies with `npm ci`.
-2. Verifies the tag matches the root version and that both apps are synced to it.
-3. Runs lint and tests from the repository root.
-4. Packages two artifacts: `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`.
-5. Copies `scripts/install.sh` alongside them and creates `SHA256SUMS` over everything.
+1. Builds the desktop installers in a `desktop` job on `macos-latest` and `windows-latest` (Node 22):
+   `storyboard-desktop-<version>-mac-{arm64,x64}.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
+   their `.blockmap` files and the update feed `latest-mac.yml` / `latest.yml`. Signing is used when
+   its secrets exist (below); otherwise the job warns and ships unsigned installers.
+2. Installs dependencies with `npm ci` in the `release` job.
+3. Verifies the tag matches the root version and that every app is synced to it.
+4. Runs lint and tests from the repository root.
+5. Packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`, collects the
+   desktop installers, copies `scripts/install.sh` alongside and creates `SHA256SUMS` over everything.
 6. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
-7. Creates a GitHub Release with all three assets and the checksum attached.
+7. Creates a GitHub Release with every asset and the checksum attached.
 8. Publishes the same notes and assets to the public repository, `webfic/storyboard`: it copies
    both changelogs and `scripts/install.sh` there, commits, tags and pushes, then creates the
    matching GitHub Release. The step needs the `WEBFIC_RELEASE_TOKEN` secret (a fine-grained PAT
    with `contents: write` on `webfic/storyboard`); without it the step logs a warning and the
-   release stays private only.
+   release stays private only. The desktop app's auto-update reads this public release (the
+   `latest*.yml` feed), so a release that is not published there never reaches installed apps.
+
+### Desktop signing secrets
+
+| Secret | For |
+|---|---|
+| `MAC_CSC_LINK`, `MAC_CSC_KEY_PASSWORD` | Developer ID Application certificate (.p12, base64) and its password |
+| `APPLE_API_KEY_P8`, `APPLE_API_KEY_ID`, `APPLE_API_ISSUER` | App Store Connect API key for notarization |
+| `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD` | Windows code-signing certificate (.pfx, base64) and its password |
+
+An unsigned macOS app opens only after right-click → Open and cannot auto-update; an unsigned
+Windows installer shows a SmartScreen warning. Both still work.
 
 ## The public repository
 
@@ -108,6 +134,9 @@ issue templates, the wiki, and the releases. It holds **no source** — the sour
 ## How users install
 
 - **Extension** — download the `.vsix` and install it from VS Code.
+- **Desktop** — download the `.dmg` (Apple silicon `arm64` or Intel `x64`) or the Windows
+  `-setup.exe` from the release and install it. Later releases arrive through the app's own update
+  banner.
 - **CLI** — `curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/install.sh | bash`.
   The script resolves the latest release, verifies the checksum, unpacks the CLI into
   `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
