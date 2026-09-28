@@ -10,3 +10,4 @@ export * from './sceneGenerationStages';
 export * from './sceneGenerationTuning';
 export * from './sceneGenerationTypes';
 export * from './sceneSectionPlan';
+export * from './sceneStageCatalog';

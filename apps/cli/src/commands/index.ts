@@ -26,6 +26,7 @@ import {
   scenePath,
   readProjectJson,
   resealStoryMemory,
+  sceneStageCatalog,
   writeProjectJson,
   type StoryUri,
 } from '@storyboard/story-engine';
@@ -97,15 +98,11 @@ function sceneUriFor(root: StoryUri, stem: string): StoryUri {
 }
 
 // 한 씬이 10~25분 걸리는데 --verbose 로도 아무 것도 찍히지 않아, 멈춘 것인지 도는 것인지
-// 구분할 수 없었다. 엔진은 이미 단계와 구간 번호를 알려 준다.
-// CLI 는 story-pipeline 을 직접 import 할 수 없어(아키텍처 검사) 단계 이름을 문자열로 받는다.
-const sceneStageLabels: Record<string, string> = {
-  buildPersonas: '인물 기억',
-  draftSkeleton: '뼈대',
-  polishDialogue: '대사 다듬기',
-  expandSection: '살붙임',
-  attributeDialogue: '화자 붙이기',
-};
+// 구분할 수 없었다. 엔진은 이미 단계와 구간 번호를 알려 준다. 단계 이름표는 파이프라인의
+// 단계 카탈로그가 갖고, 엔진이 그것을 재노출한다.
+const sceneStageLabels: Record<string, string> = Object.fromEntries(
+  sceneStageCatalog.map((definition) => [definition.id, definition.label]),
+);
 
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {

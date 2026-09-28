@@ -134,4 +134,10 @@ export * from './shared/slopPhrases';
 
 // The pipeline's knob defaults, so a host can show the value in force without importing the
 // pipeline (which the app architecture checks forbid).
-export { defaultGenerationKnobs, generationParameterDefault } from '@storyboard/story-pipeline';
+export {
+  defaultGenerationKnobs,
+  generationParameterDefault,
+  sceneStageCatalog,
+  sceneStageLabel,
+  type SceneStageId,
+} from '@storyboard/story-pipeline';

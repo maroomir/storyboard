@@ -11,6 +11,7 @@ import type {
 } from './memoryStore';
 import type { AiProviderId, StoryboardAiService, StyleDirective } from '@storyboard/story-ai';
 import type { SceneGenerationTuning } from './sceneGenerationTuning';
+import type { SceneStageId } from './sceneStageCatalog';
 export type SceneGenerationPipelineAiService = Pick<
   StoryboardAiService,
   | 'createCharacterPersona'
@@ -76,6 +77,9 @@ export interface RunSceneGenerationPipelineInput {
   readonly dialogueCorpus?: SceneDialogueCorpus;
   // 같은 장소가 다시 나올 때 직전 등장 씬에서 뽑은 발췌. 있으면 배경 묘사를 캐시 대신 갱신한다.
   readonly backgroundRecentExcerpt?: string;
+  // The stages to run, in order. Left out, the plan in force (the author's pipelines/scene.yaml
+  // over the bundled order) applies.
+  readonly stages?: readonly SceneStageId[];
 }
 
 export interface RunSceneGenerationPipelineResult {
