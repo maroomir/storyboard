@@ -251,8 +251,8 @@ export async function dispatch(
       getStoryboardProjectPaths(container.workspaceRoot),
     );
 
-    const prompts = await container.loadPromptOverrides();
-    for (const problem of prompts.problems) {
+    const resources = await container.loadResourceOverrides();
+    for (const problem of resources.problems) {
       container.logger.warn(problem.message);
     }
   }

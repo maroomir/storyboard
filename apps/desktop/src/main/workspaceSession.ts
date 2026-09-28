@@ -115,8 +115,8 @@ export class WorkspaceSession {
       version: options.version,
       onInvalidConfigFile: options.onInvalidConfigFile,
     });
-    const prompts = await container.loadPromptOverrides();
-    for (const problem of prompts.problems) {
+    const resources = await container.loadResourceOverrides();
+    for (const problem of resources.problems) {
       options.logger.warn(problem.message);
     }
     const snapshots = new SnapshotService(await locateSnapshotRepository(options.workspacePath));

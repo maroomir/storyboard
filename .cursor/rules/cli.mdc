@@ -58,10 +58,12 @@ read at all. **Writes follow git's rule**: `setup` and `config set` write the wo
 inside a workspace, `--global` writes the home file, and outside a workspace they refuse rather than
 guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
 command picks a file on its own. Secrets are exempt — always the one 0600 home file.
-**Prompt wording is data too**: a `<key>.md` in `~/.storyboard/prompts/` or the workspace's
-`.storyboard/prompts/` (workspace wins) replaces the bundled resource of that prompt; the bundled
-texts live in `packages/story-ai/src/ai/prompts/resources/`, and `dispatch.ts` loads the overrides
-before a workspace verb runs, warning about files it cannot use.
+**Author resources are data too**: the home `~/.storyboard` and the workspace's `.storyboard` are
+two resource roots (workspace wins), and `packages/story-app/src/resourceOverrides.ts` owns what a
+root may hold — `prompts/<key>.md` replaces the bundled resource of that prompt (bundled texts in
+`packages/story-ai/src/ai/prompts/resources/`), `craftContract.json` lays over the bundled craft
+contract (`packages/story-format/src/craftContract.params.json`). `dispatch.ts` loads them before a
+workspace verb runs, warning about files it cannot use.
 `setup` / `doctor` / `config show|set` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and

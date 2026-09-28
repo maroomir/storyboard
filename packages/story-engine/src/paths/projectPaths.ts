@@ -40,7 +40,6 @@ export interface StoryboardProjectPaths {
   readonly bibleCacheDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
   readonly studioSessionDirectory: StoryUri;
-  readonly promptDirectory: StoryUri;
   readonly bibleDirectory: StoryUri;
   readonly bibleCanon: StoryUri;
   readonly outlineDirectory: StoryUri;
@@ -90,7 +89,6 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
-    promptDirectory: resolve(STORYBOARD_RELATIVE_PATHS.promptDirectory),
     bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
     bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),
     outlineDirectory: resolve(STORYBOARD_RELATIVE_PATHS.outlineDirectory),

@@ -1,0 +1,16 @@
+{
+  "banTelling": true,
+  "motifRepeatLimit": 3,
+  "stockGestureBlacklist": [
+    "어깨가 떨렸다",
+    "눈물이 뺨을 타고 흘렀다",
+    "이를 악물었다",
+    "눈썹이 떨렸다",
+    "입술을 깨물었다",
+    "심장이 내려앉았다"
+  ],
+  "requireCharacterInterior": true,
+  "actionClarity": true,
+  "modulateDensity": true,
+  "sceneLengthMultiplier": 12
+}

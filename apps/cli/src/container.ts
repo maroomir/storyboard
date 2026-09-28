@@ -5,7 +5,7 @@ import {
   type StoryWorkspaceFolder,
   type IUsageSink,
 } from '@storyboard/story-engine';
-import { StoryboardApplication, type PromptOverrideReport } from '@storyboard/story-app';
+import { StoryboardApplication, type ResourceOverrideReport } from '@storyboard/story-app';
 import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -40,8 +40,8 @@ export interface CliContainer extends Pick<
 > {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
-  // Lays the author's prompt files (home, then this workspace) over the bundled prompts.
-  readonly loadPromptOverrides: () => Promise<PromptOverrideReport>;
+  // Lays the author's resource files (home, then this workspace) over the bundled defaults.
+  readonly loadResourceOverrides: () => Promise<ResourceOverrideReport>;
   readonly workspaceConfigFile: string | undefined;
   // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
@@ -160,9 +160,9 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       secretStore,
       configBridge,
       ...(options.usageSink === undefined ? {} : { usageLedger: options.usageSink }),
-      promptOverrideDirectories: [
-        NodeUri.file(homePaths.promptsDirectory),
-        getStoryboardProjectPaths(workspaceRoot).promptDirectory,
+      resourceRoots: [
+        NodeUri.file(homePaths.home),
+        getStoryboardProjectPaths(workspaceRoot).metadataDirectory,
       ],
     },
     {
@@ -192,7 +192,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     version: options.version,
     canPrompt: options.canPrompt,
     homePaths,
-    loadPromptOverrides: () => application.loadPromptOverrides(),
+    loadResourceOverrides: () => application.loadResourceOverrides(),
     workspaceConfigFile,
     configWriteFile:
       configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??

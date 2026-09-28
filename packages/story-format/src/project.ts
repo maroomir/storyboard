@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import craftContractData from './craftContract.params.json';
+
 export const storyboardProjectVersion = '1.0.0';
 
 export const projectFormats = ['novel', 'screenplay', 'play', 'essay', 'poem'] as const;
@@ -59,63 +61,52 @@ export const projectEditorSchema = z.object({
 export type ProjectEditor = z.infer<typeof projectEditorSchema>;
 
 // 생성 프롬프트에 항상 주입되는 작법 규칙. 프로젝트가 아무 설정도 하지 않아도 기본 계약이 걸린다.
-export interface CraftContract {
-  readonly banTelling: boolean;
-  readonly motifRepeatLimit: number;
-  readonly stockGestureBlacklist: readonly string[];
-  readonly requireCharacterInterior: boolean;
-  readonly actionClarity: boolean;
-  readonly modulateDensity: boolean;
+// 기본값은 craftContract.params.json 에 있고, 작가는 같은 꼴의 파일을 홈·작품에 두어 그 위에 덮는다.
+export const craftContractSchema = z.object({
+  banTelling: z.boolean(),
+  motifRepeatLimit: z.number().int().positive(),
+  stockGestureBlacklist: z.array(z.string()).readonly(),
+  requireCharacterInterior: z.boolean(),
+  actionClarity: z.boolean(),
+  modulateDensity: z.boolean(),
   // 목표 분량이 없는 씬의 기본 예산을 씬 시드 길이의 배수로 정한다. 0이면 제한을 걸지 않는다.
-  readonly sceneLengthMultiplier: number;
-}
-
-export const craftContractOverrideSchema = z.object({
-  banTelling: z.boolean().optional(),
-  motifRepeatLimit: z.number().int().positive().optional(),
-  stockGestureBlacklist: z.array(z.string()).readonly().optional(),
-  requireCharacterInterior: z.boolean().optional(),
-  actionClarity: z.boolean().optional(),
-  modulateDensity: z.boolean().optional(),
-  sceneLengthMultiplier: z.number().nonnegative().optional(),
+  sceneLengthMultiplier: z.number().nonnegative(),
 });
+
+export type CraftContract = z.infer<typeof craftContractSchema>;
+
+export const craftContractOverrideSchema = craftContractSchema.partial();
 
 export type CraftContractOverride = z.infer<typeof craftContractOverrideSchema>;
 
-export const defaultCraftContract: CraftContract = {
-  banTelling: true,
-  motifRepeatLimit: 3,
-  stockGestureBlacklist: [
-    '어깨가 떨렸다',
-    '눈물이 뺨을 타고 흘렀다',
-    '이를 악물었다',
-    '눈썹이 떨렸다',
-    '입술을 깨물었다',
-    '심장이 내려앉았다',
-  ],
-  requireCharacterInterior: true,
-  actionClarity: true,
-  modulateDensity: true,
-  sceneLengthMultiplier: 12,
-};
+export const defaultCraftContract: CraftContract = craftContractSchema.parse(craftContractData);
+
+function mergeCraftContract(base: CraftContract, override: CraftContractOverride): CraftContract {
+  return {
+    banTelling: override.banTelling ?? base.banTelling,
+    motifRepeatLimit: override.motifRepeatLimit ?? base.motifRepeatLimit,
+    stockGestureBlacklist: override.stockGestureBlacklist ?? base.stockGestureBlacklist,
+    requireCharacterInterior: override.requireCharacterInterior ?? base.requireCharacterInterior,
+    actionClarity: override.actionClarity ?? base.actionClarity,
+    modulateDensity: override.modulateDensity ?? base.modulateDensity,
+    sceneLengthMultiplier: override.sceneLengthMultiplier ?? base.sceneLengthMultiplier,
+  };
+}
+
+// The defaults in force: the bundled contract with the author's home and workspace files laid over
+// it. A project's own `setting.craftContract` still resolves on top of these.
+let craftContractDefaults: CraftContract = defaultCraftContract;
+
+export function overrideCraftContractDefaults(override: CraftContractOverride): void {
+  craftContractDefaults = mergeCraftContract(craftContractDefaults, override);
+}
+
+export function resetCraftContractDefaults(): void {
+  craftContractDefaults = defaultCraftContract;
+}
 
 export function resolveCraftContract(override: CraftContractOverride | undefined): CraftContract {
-  if (!override) {
-    return defaultCraftContract;
-  }
-
-  return {
-    banTelling: override.banTelling ?? defaultCraftContract.banTelling,
-    motifRepeatLimit: override.motifRepeatLimit ?? defaultCraftContract.motifRepeatLimit,
-    stockGestureBlacklist:
-      override.stockGestureBlacklist ?? defaultCraftContract.stockGestureBlacklist,
-    requireCharacterInterior:
-      override.requireCharacterInterior ?? defaultCraftContract.requireCharacterInterior,
-    actionClarity: override.actionClarity ?? defaultCraftContract.actionClarity,
-    modulateDensity: override.modulateDensity ?? defaultCraftContract.modulateDensity,
-    sceneLengthMultiplier:
-      override.sceneLengthMultiplier ?? defaultCraftContract.sceneLengthMultiplier,
-  };
+  return override ? mergeCraftContract(craftContractDefaults, override) : craftContractDefaults;
 }
 
 // 구성. 스레드와 서술자를 어떻게 배치할지 정하는 프리셋이며, 실제 배치는 프리셋이 threads와

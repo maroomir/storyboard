@@ -19,8 +19,10 @@ export {
 export { StudioManager, type StudioManagerDependencies } from './managers/studioManager';
 export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from './runGate';
 export {
-  loadPromptOverrides,
-  type PromptOverrideApplied,
-  type PromptOverrideProblem,
-  type PromptOverrideReport,
-} from './promptOverrides';
+  loadResourceOverrides,
+  resourceLayout,
+  type ResourceOverrideApplied,
+  type ResourceOverrideKind,
+  type ResourceOverrideProblem,
+  type ResourceOverrideReport,
+} from './resourceOverrides';
