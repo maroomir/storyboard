@@ -137,6 +137,7 @@ behaviour it changes.
 |---|---|---|
 | `packages/story-ai/src/contracts/modelProfiles.params.json` | story-ai | Per-model measured overrides keyed by their `generation.*` parameter id, with the `measured` block recording where each number came from |
 | `packages/story-format/src/craftContract.params.json` | story-format | The craft contract every generation prompt carries by default: telling ban, motif repeat limit, stock-gesture blacklist, interior/action/density rules, scene length multiplier |
+| `packages/story-ai/src/ai/prompts/promptVariants.params.json` | story-ai | When a call gets the `xs` or `rich` prompt variant instead of the generic one: compact providers, model name pattern and tasks for `xs`; output floor, long-form tasks and top-tier model keywords for `rich` |
 | `packages/story-pipeline/src/pipelineDefaults.params.json` | story-pipeline | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
 | `packages/story-sim/src/simDefaults.params.json` | story-sim | Measurement-side knobs: reader-panel size, repeat count, and the reference token prices the cost axis converts with |
 

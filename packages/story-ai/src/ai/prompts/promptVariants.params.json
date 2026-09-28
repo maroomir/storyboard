@@ -1,0 +1,21 @@
+{
+  "xs": {
+    "providers": ["ollama"],
+    "modelPattern": "qwen|phi|gemma|mistral|tiny|mini|small|1b|2b|3b|7b",
+    "tasks": ["inlineCompletion", "grammarCheck"]
+  },
+  "rich": {
+    "minimumMaxTokens": 4000,
+    "tasks": ["personaDialogue", "sceneDraft", "draftExpansion"],
+    "modelKeywords": [
+      "opus",
+      "sonnet",
+      "fable",
+      "gpt-6",
+      "gpt-5",
+      "gpt-4.1",
+      "gemini-2.5-pro",
+      "gemini-3.1-pro"
+    ]
+  }
+}
