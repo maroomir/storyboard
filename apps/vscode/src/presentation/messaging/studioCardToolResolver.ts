@@ -5,7 +5,7 @@ import { parseCard, parseSceneCard, isBackgroundCard } from '@storyboard/story-f
 import type { StoryboardCard } from '@storyboard/story-format';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import type { CardCollectProposal } from '@storyboard/story-engine';
 import type { StudioEntity } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -17,7 +17,7 @@ import {
 
 export interface StudioCardToolResolverDependencies {
   readonly aiGateway: AiGateway;
-  readonly collectUseCase: CollectCardProposalsUseCase;
+  readonly cards: Pick<CardManager, 'collectProposals'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -70,7 +70,7 @@ async function runCollect(
     return '[도구 실패: collectFromDrafts] 카드를 읽지 못해 수집할 수 없었다.';
   }
 
-  const proposals = await deps.collectUseCase.execute({ workspaceRoot: input.workspaceRoot, card });
+  const proposals = await deps.cards.collectProposals({ workspaceRoot: input.workspaceRoot, card });
 
   if (proposals.length === 0) {
     return '[도구 결과: collectFromDrafts] 초안에서 카드에 더할 새 정보를 찾지 못했다.';

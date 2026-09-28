@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteCardCandidatesUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { CardCandidateItem } from '@storyboard/story-engine';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
@@ -24,7 +24,7 @@ function describeItem(item: CardCandidateItem): string {
 
 async function runPromote(
   logger: IStoryboardLogger,
-  useCase: PromoteCardCandidatesUseCase,
+  cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>,
 ): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
 
@@ -38,7 +38,7 @@ async function runPromote(
     return;
   }
 
-  const preparation = await useCase.prepare(folder.uri);
+  const preparation = await cards.prepareCandidatePromotion(folder.uri);
 
   if (preparation.kind === 'no_candidates') {
     await vscode.window.showInformationMessage(
@@ -73,7 +73,7 @@ async function runPromote(
   const result = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '카드에 반영 중…' },
     () =>
-      useCase.promote(
+      cards.promoteCandidates(
         folder.uri,
         picked.map((entry) => entry.item),
       ),
@@ -92,9 +92,9 @@ async function runPromote(
 
 export function registerPromoteCardCandidatesCommand(dependencies: {
   readonly logger: IStoryboardLogger;
-  readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
+  readonly cards: Pick<CardManager, 'prepareCandidatePromotion' | 'promoteCandidates'>;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(promoteCommand, () =>
-    runPromote(dependencies.logger, dependencies.promoteCardCandidatesUseCase),
+    runPromote(dependencies.logger, dependencies.cards),
   );
 }

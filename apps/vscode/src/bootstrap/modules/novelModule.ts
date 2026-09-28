@@ -20,40 +20,24 @@ export class NovelModule implements IApplicationModule {
 
   public initialize(context: vscode.ExtensionContext): void {
     const {
-      assembleManuscriptUseCase,
-      completeStoryScenesUseCase,
       configBridge,
-      exportManuscriptUseCase,
       fileSystem,
-      generateOutlineUseCase,
       logger,
-      novelPipeline,
-      novelRunStateRepository,
-      reviewManuscriptUseCase,
+      manuscript,
+      novel,
       proposalReviewService,
-      summarizeChaptersUseCase,
       usageMeter,
     } = this.platform;
 
     this.disposables.add(
-      registerGenerateOutlineCommand({ generateOutlineUseCase, logger }),
+      registerGenerateOutlineCommand({ novel, logger }),
       registerGenerateSceneSeedsCommand({ configBridge }),
-      registerCompleteStoryScenesCommand(
-        context,
-        completeStoryScenesUseCase,
-        proposalReviewService,
-      ),
-      registerAssembleManuscriptCommand({ assembleManuscriptUseCase, logger }),
-      registerReviewManuscriptCommand({ logger, reviewManuscriptUseCase }),
-      registerSummarizeChaptersCommand({ logger, summarizeChaptersUseCase }),
-      registerGenerateNovelCommand({
-        configBridge,
-        fileSystem,
-        novelPipeline,
-        novelRunStateRepository,
-        usageMeter,
-      }),
-      registerExportManuscriptCommand({ exportManuscriptUseCase, logger }),
+      registerCompleteStoryScenesCommand(context, novel, proposalReviewService),
+      registerAssembleManuscriptCommand({ manuscript, logger }),
+      registerReviewManuscriptCommand({ logger, manuscript }),
+      registerSummarizeChaptersCommand({ logger, manuscript }),
+      registerGenerateNovelCommand({ configBridge, fileSystem, novel, usageMeter }),
+      registerExportManuscriptCommand({ manuscript, logger }),
     );
   }
 

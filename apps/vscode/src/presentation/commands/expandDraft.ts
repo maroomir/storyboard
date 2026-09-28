@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { ExpandDraftResult, ExpandDraftUseCase } from '@storyboard/story-engine';
+import type { ExpandDraftResult } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
@@ -11,7 +12,7 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 const expandDraftCommand = 'storyboard.draft.expand';
 
 export interface RegisterExpandDraftCommandDependencies {
-  readonly expandDraftUseCase: ExpandDraftUseCase;
+  readonly drafts: Pick<DraftManager, 'expand'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -133,7 +134,7 @@ async function runExpandDraftCommand(
         cancellable: false,
       },
       async () => {
-        const result = await dependencies.expandDraftUseCase.execute({
+        const result = await dependencies.drafts.expand({
           workspaceRoot: target.workspaceFolder.uri,
           selectedText: target.selectedText,
           sceneStem: target.sceneStem,

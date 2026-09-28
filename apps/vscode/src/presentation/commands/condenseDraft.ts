@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { CondenseDraftResult, CondenseDraftUseCase } from '@storyboard/story-engine';
+import type { CondenseDraftResult } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -34,7 +35,7 @@ const CONDENSE_DRAFT_COMMAND = 'storyboard.draft.condense';
 const CONDENSE_PREVIEW_SCHEME = 'storyboard-condense';
 
 export interface RegisterCondenseDraftCommandDependencies {
-  readonly condenseDraftUseCase: CondenseDraftUseCase;
+  readonly drafts: Pick<DraftManager, 'condense'>;
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
@@ -228,7 +229,7 @@ async function runCondenseDraft(
       cancellable: false,
     },
     async () =>
-      await dependencies.condenseDraftUseCase.execute({
+      await dependencies.drafts.condense({
         workspaceRoot: target.workspaceFolder.uri,
         sceneStem: target.draft.sceneStem,
         format: target.draft.format,

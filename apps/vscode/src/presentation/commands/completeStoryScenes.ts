@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { CompleteStoryScenesUseCase } from '@storyboard/story-engine';
+import type { NovelManager } from '@storyboard/story-app';
 import { parseScene } from '@storyboard/story-format';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
@@ -8,7 +8,7 @@ const completeStoryCommand = 'storyboard.scene.completeStory';
 
 export function registerCompleteStoryScenesCommand(
   context: vscode.ExtensionContext,
-  useCase: CompleteStoryScenesUseCase,
+  novel: Pick<NovelManager, 'completeScenes' | 'hasCurrentCompletionSources'>,
   reviewService: ProposalReviewService,
 ): vscode.Disposable {
   return vscode.commands.registerCommand(completeStoryCommand, async (): Promise<void> => {
@@ -26,7 +26,7 @@ export function registerCompleteStoryScenesCommand(
           cancellable: true,
         },
         async (_progress, token) => {
-          const result = await useCase.execute({ workspaceRoot });
+          const result = await novel.completeScenes({ workspaceRoot });
           if (token.isCancellationRequested) {
             throw new StoryCompletionCancelledError();
           }
@@ -66,7 +66,7 @@ export function registerCompleteStoryScenesCommand(
       if (confirmation !== '적용') {
         return;
       }
-      if (!(await useCase.hasCurrentSources(proposal.snapshots))) {
+      if (!(await novel.hasCurrentCompletionSources(proposal.snapshots))) {
         await vscode.window.showWarningMessage(
           '검토 중 소스가 변경되었습니다. Regenerate로 다시 제안해주세요.',
         );

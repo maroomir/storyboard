@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
-import type { ReviseDraftUseCase } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
@@ -14,8 +13,7 @@ const reviseDraftCommand = 'storyboard.draft.reviseLoop';
 export interface RegisterReviseDraftCommandDependencies {
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
-  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
-  readonly reviseDraftUseCase: ReviseDraftUseCase;
+  readonly drafts: Pick<DraftManager, 'reviseScene'>;
 }
 
 export function registerReviseDraftCommand(
@@ -74,14 +72,10 @@ async function runReviseDraft(
     },
     async (progress, token) => {
       try {
-        const result = await dependencies.reviseAfterGenerateGate.runForScene(
-          workspaceFolder.uri,
-          sceneStem,
-          {
-            onProgress: (message) => progress.report({ message }),
-            shouldCancel: () => token.isCancellationRequested,
-          },
-        );
+        const result = await dependencies.drafts.reviseScene(workspaceFolder.uri, sceneStem, {
+          onProgress: (message) => progress.report({ message }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
 
         if (!result) {
           await vscode.window.showInformationMessage(

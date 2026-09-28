@@ -80,7 +80,7 @@ function fakeDeps(): FakeDeps {
       createService: () => ({ auditStudioEntity: audit }),
       getTaskProvider: () => 'mock',
     },
-    collectUseCase: { execute: collect },
+    cards: { collectProposals: collect },
     logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn() },
   } as unknown as StudioCardToolResolverDependencies;
 

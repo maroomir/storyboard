@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
-import {
-  applyStoryCardChanges,
-  type BuildStoryCardsUseCase,
-  type StoryCardTarget,
-} from '@storyboard/story-engine';
+import { applyStoryCardChanges, type StoryCardTarget } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import { parseCard, serializeCard } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';
@@ -30,7 +27,7 @@ interface StoryChangePick extends vscode.QuickPickItem {
 
 export function registerBuildStoryCardsFromScenesCommand(
   context: vscode.ExtensionContext,
-  useCase: BuildStoryCardsUseCase,
+  cards: Pick<CardManager, 'buildFromScenes' | 'hasCurrentBuildSources'>,
   reviewService: ProposalReviewService,
 ): vscode.Disposable {
   return vscode.commands.registerCommand(buildStoryCardsCommand, async (): Promise<void> => {
@@ -48,7 +45,7 @@ export function registerBuildStoryCardsFromScenesCommand(
           cancellable: true,
         },
         async (_progress, token) => {
-          const result = await useCase.execute({ workspaceRoot });
+          const result = await cards.buildFromScenes({ workspaceRoot });
           if (token.isCancellationRequested) {
             throw new StoryCardBuildCancelledError();
           }
@@ -79,7 +76,7 @@ export function registerBuildStoryCardsFromScenesCommand(
       if (confirmation !== '적용') {
         return;
       }
-      if (!(await useCase.hasCurrentSources(proposal.snapshots))) {
+      if (!(await cards.hasCurrentBuildSources(proposal.snapshots))) {
         await vscode.window.showWarningMessage(
           '검토 중 소스 또는 카드 구성이 변경되었습니다. Regenerate로 다시 제안해주세요.',
         );

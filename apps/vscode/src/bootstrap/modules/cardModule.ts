@@ -23,46 +23,30 @@ export class CardModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const {
-      aiGateway,
-      aiProviderRegistry,
-      buildStoryCardsUseCase,
-      collectCardProposalsUseCase,
-      createCardUseCase,
-      cardSidebarRepository,
-      logger,
-      promoteBibleCandidatesUseCase,
-      promoteCardCandidatesUseCase,
-      recommendCardsUseCase,
-      proposalReviewService,
-      usageRecorder,
-    } = this.platform;
+    const { aiGateway, aiProviderRegistry, cards, logger, proposalReviewService, usageRecorder } =
+      this.platform;
 
     this.disposables.add(
-      registerCreateCardCommands({ createCardUseCase }),
-      registerRecommendCardCommands({ createCardUseCase, recommendCardsUseCase }),
-      registerBuildStoryCardsFromScenesCommand(
-        context,
-        buildStoryCardsUseCase,
-        proposalReviewService,
-      ),
+      registerCreateCardCommands({ cards }),
+      registerRecommendCardCommands({ cards }),
+      registerBuildStoryCardsFromScenesCommand(context, cards, proposalReviewService),
       registerRenameCardCommands(),
       registerMigrateCardTextCommand({ logger }),
       registerCardRenameParticipant({ logger }),
-      registerPromoteBibleCandidatesCommand({ logger, promoteBibleCandidatesUseCase }),
-      registerPromoteCardCandidatesCommand({ logger, promoteCardCandidatesUseCase }),
+      registerPromoteBibleCandidatesCommand({ logger, cards }),
+      registerPromoteCardCandidatesCommand({ logger, cards }),
       registerCanonDiffCommand({ logger }),
       registerCardDiagnosticsProvider({ logger }),
       registerCardCustomEditorProvider(context, {
         aiGateway,
         aiProviderRegistry,
-        collectCardProposalsUseCase,
+        cards,
         usageRecorder,
         logger,
       }),
       registerSidebarCardsProviders(context, {
         aiProviderRegistry,
-        cardSidebarRepository,
+        cardSidebarRepository: cards.sidebar,
         usageRecorder,
       }),
     );

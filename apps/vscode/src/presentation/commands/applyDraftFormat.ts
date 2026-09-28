@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { ApplyDraftFormatResult, ApplyDraftFormatUseCase } from '@storyboard/story-engine';
+import type { ApplyDraftFormatResult } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
@@ -25,7 +26,7 @@ function resolveSceneUri(invokedUri?: vscode.Uri): vscode.Uri | undefined {
 }
 
 export interface RegisterApplyDraftFormatCommandDependencies {
-  readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
+  readonly drafts: Pick<DraftManager, 'applyFormat'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -101,7 +102,7 @@ async function runApplyDraftFormatForScene(
       async (progress, token) => {
         progress.report({ message: '장르 포맷 적용 중…' });
 
-        const result = await dependencies.applyDraftFormatUseCase.execute({
+        const result = await dependencies.drafts.applyFormat({
           workspaceRoot: workspaceFolder.uri,
           sceneStem: nameParts.stem,
           onSaving: () => progress.report({ message: '저장 중…' }),

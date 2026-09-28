@@ -1,21 +1,20 @@
 import * as vscode from 'vscode';
 
-import { type RecommendCardsUseCase, type RecommendCardsResult } from '@storyboard/story-engine';
+import { type RecommendCardsResult } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import type { StoryboardCard } from '@storyboard/story-format';
 import type { RecommendedCard } from '@storyboard/story-engine';
 import { needsCardIdPrompt, suggestCardId, validateCardId } from './createCard';
-import type { CreateCardUseCase } from '@storyboard/story-engine';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const recommendCharacterCommand = 'storyboard.character.recommend';
 const recommendBackgroundCommand = 'storyboard.background.recommend';
 
 export interface RecommendCardDependencies {
-  readonly createCardUseCase: CreateCardUseCase;
-  readonly recommendCardsUseCase: RecommendCardsUseCase;
+  readonly cards: Pick<CardManager, 'recommend' | 'deriveUniqueId' | 'write'>;
 }
 
 export function registerRecommendCardCommands(
@@ -42,7 +41,7 @@ async function recommendCards(
     return;
   }
 
-  const result = await runRecommendationUseCase(category, workspaceRoot, dependencies);
+  const result = await runCardRecommendation(category, workspaceRoot, dependencies);
 
   if (!result || result.kind === 'cancelled') {
     return;
@@ -79,14 +78,14 @@ async function recommendCards(
     workspaceRoot,
     category,
     picked,
-    dependencies.createCardUseCase,
+    dependencies.cards,
   );
   await vscode.window.showInformationMessage(
     `${created}개의 ${category === 'character' ? '캐릭터' : '배경'} 카드를 추가했습니다.`,
   );
 }
 
-async function runRecommendationUseCase(
+async function runCardRecommendation(
   category: RecommendationCategory,
   workspaceRoot: vscode.Uri,
   dependencies: RecommendCardDependencies,
@@ -98,7 +97,7 @@ async function runRecommendationUseCase(
       cancellable: true,
     },
     async (_progress, token) => {
-      return await dependencies.recommendCardsUseCase.execute({
+      return await dependencies.cards.recommend({
         category,
         shouldCancel: (): boolean => token.isCancellationRequested,
         workspaceRoot,
@@ -150,7 +149,7 @@ async function createCardsFromRecommendations(
   workspaceRoot: vscode.Uri,
   category: RecommendationCategory,
   recommendations: readonly RecommendedCard[],
-  createCardUseCase: CreateCardUseCase,
+  cards: Pick<CardManager, 'deriveUniqueId' | 'write'>,
 ): Promise<number> {
   const cardType: StoryboardCard['type'] = category === 'character' ? 'character' : 'location';
   let created = 0;
@@ -162,16 +161,13 @@ async function createCardsFromRecommendations(
       continue;
     }
 
-    const id = await createCardUseCase.deriveUniqueId(
+    const id = await cards.deriveUniqueId(
       workspaceRoot,
       cardType,
       base ?? suggestCardId(recommendation.name),
       cardType === 'character' ? 'character' : 'background',
     );
-    await createCardUseCase.write(
-      workspaceRoot,
-      buildCardFromRecommendation(category, id, recommendation),
-    );
+    await cards.write(workspaceRoot, buildCardFromRecommendation(category, id, recommendation));
     created += 1;
   }
 

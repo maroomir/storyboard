@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { CreateCardUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import { getTargetWorkspaceFolder } from '@/infrastructure/vscode/workspace';
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
 import { cardIdPattern } from '@storyboard/story-format';
@@ -10,21 +10,21 @@ import { cardEditorViewType } from '@/contributionIds';
 const createCharacterCommand = 'storyboard.character.create';
 const createBackgroundCommand = 'storyboard.background.create';
 export function registerCreateCardCommands(dependencies: {
-  readonly createCardUseCase: CreateCardUseCase;
+  readonly cards: Pick<CardManager, 'exists' | 'write'>;
 }): vscode.Disposable {
   return vscode.Disposable.from(
     vscode.commands.registerCommand(createCharacterCommand, () =>
-      createCard('character', dependencies.createCardUseCase),
+      createCard('character', dependencies.cards),
     ),
     vscode.commands.registerCommand(createBackgroundCommand, () =>
-      createCard('location', dependencies.createCardUseCase),
+      createCard('location', dependencies.cards),
     ),
   );
 }
 
 async function createCard(
   cardType: StoryboardCard['type'],
-  createCardUseCase: CreateCardUseCase,
+  cards: Pick<CardManager, 'exists' | 'write'>,
 ): Promise<void> {
   const workspaceFolder = await getTargetWorkspaceFolder();
 
@@ -57,12 +57,12 @@ async function createCard(
   }
 
   const card = createEmptyCard(cardType, id, name);
-  if (await createCardUseCase.exists(workspaceFolder.uri, card.type, card.id)) {
+  if (await cards.exists(workspaceFolder.uri, card.type, card.id)) {
     await vscode.window.showWarningMessage(`이미 존재하는 카드입니다: ${id}`);
     return;
   }
 
-  const cardUri = await createCardUseCase.write(workspaceFolder.uri, card);
+  const cardUri = await cards.write(workspaceFolder.uri, card);
   await vscode.commands.executeCommand('vscode.openWith', cardUri, cardEditorViewType);
 }
 

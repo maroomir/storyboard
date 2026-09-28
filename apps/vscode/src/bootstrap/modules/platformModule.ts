@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { StoryboardApplication, type StoryboardServices } from '@storyboard/story-app';
+import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { migrateVscodeSettingsToHome } from '@/infrastructure/settings/migrateVscodeSettings';
@@ -21,7 +21,21 @@ import { ProposalReviewService } from '@/presentation/providers/proposalReviewSe
 import { DisposableStore } from '@/bootstrap/lifecycle/disposableStore';
 import type { IApplicationModule } from '@/bootstrap/lifecycle/applicationModule';
 
-export interface IPlatformServices extends StoryboardServices {
+export interface IPlatformServices extends Pick<
+  StoryboardApplication,
+  | 'drafts'
+  | 'manuscript'
+  | 'cards'
+  | 'novel'
+  | 'studio'
+  | 'aiGateway'
+  | 'aiProviderRegistry'
+  | 'configBridge'
+  | 'secretStore'
+  | 'logger'
+  | 'usageMeter'
+  | 'postGenerationUpdates'
+> {
   readonly fileSystem: VscodeFileSystem;
   readonly homeStores: StoryboardHomeStores;
   readonly usageRecorder: UsageRecorder;
@@ -69,7 +83,18 @@ export class PlatformModule implements IApplicationModule {
     );
 
     this.services = {
-      ...application.services,
+      drafts: application.drafts,
+      manuscript: application.manuscript,
+      cards: application.cards,
+      novel: application.novel,
+      studio: application.studio,
+      aiGateway: application.aiGateway,
+      aiProviderRegistry: application.aiProviderRegistry,
+      configBridge: application.configBridge,
+      secretStore: application.secretStore,
+      logger: application.logger,
+      usageMeter: application.usageMeter,
+      postGenerationUpdates: application.postGenerationUpdates,
       fileSystem,
       homeStores,
       usageRecorder,

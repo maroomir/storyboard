@@ -25,14 +25,13 @@ export class WorkbenchModule implements IApplicationModule {
     const {
       aiGateway,
       aiProviderRegistry,
-      collectCardProposalsUseCase,
-      createCardUseCase,
+      cards,
       configBridge,
       homeStores,
       logger,
       proposalReviewService,
       secretStore,
-      studioChatUseCase,
+      studio,
     } = this.platform;
     const configFiles = (): { readonly user: string; readonly workspace?: string } => ({
       user: homeStores.paths.configFile,
@@ -51,10 +50,9 @@ export class WorkbenchModule implements IApplicationModule {
     this.disposables.add(
       registerSidebarStudioProvider(
         context,
-        studioChatUseCase,
+        studio,
         aiGateway,
-        collectCardProposalsUseCase,
-        createCardUseCase,
+        cards,
         proposalReviewService,
         configBridge,
         logger,

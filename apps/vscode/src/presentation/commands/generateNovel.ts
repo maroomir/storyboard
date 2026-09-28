@@ -4,9 +4,9 @@ import {
   type IFileSystem,
   type INovelRunStateRepository,
   type NovelApprovalKind,
-  type NovelPipeline,
   type NovelPipelineResult,
 } from '@storyboard/story-engine';
+import type { NovelManager } from '@storyboard/story-app';
 import { isRunBudgetExceeded, type UsageMeter } from '@storyboard/story-engine';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
@@ -38,8 +38,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
 export interface RegisterGenerateNovelCommandDependencies {
   readonly configBridge: ConfigBridge;
   readonly fileSystem: IFileSystem;
-  readonly novelPipeline: NovelPipeline;
-  readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly novel: Pick<NovelManager, 'run' | 'runState'>;
   readonly usageMeter: UsageMeter;
 }
 
@@ -62,7 +61,7 @@ async function runGenerateNovel(
   }
 
   const paths = getStoryboardProjectPaths(workspaceRoot);
-  const project = await dependencies.novelRunStateRepository.loadProject(workspaceRoot);
+  const project = await dependencies.novel.runState.loadProject(workspaceRoot);
 
   const readiness = validateGenerationContract(project.setting);
   if (readiness.missing.length > 0) {
@@ -78,7 +77,7 @@ async function runGenerateNovel(
     return;
   }
 
-  const decision = await decideRun(dependencies.novelRunStateRepository, workspaceRoot);
+  const decision = await decideRun(dependencies.novel.runState, workspaceRoot);
   if (!decision) {
     return;
   }
@@ -93,7 +92,7 @@ async function runGenerateNovel(
       async (progress, token) => {
         const budgetUsd = dependencies.configBridge.getRunBudgetUsd();
         const spending = dependencies.usageMeter.startSession();
-        const result = await dependencies.novelPipeline.run({
+        const result = await dependencies.novel.run({
           workspaceUri: workspaceRoot,
           project,
           runMode: decision.runMode,

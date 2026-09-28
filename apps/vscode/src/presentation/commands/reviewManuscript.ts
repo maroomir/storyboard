@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { ReviewManuscriptUseCase } from '@storyboard/story-engine';
+import type { ReviewManuscriptResult } from '@storyboard/story-engine';
+import type { ManuscriptManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -10,7 +11,7 @@ const reviewManuscriptCommand = 'storyboard.manuscript.review';
 
 export interface RegisterReviewManuscriptCommandDependencies {
   readonly logger: IStoryboardLogger;
-  readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
+  readonly manuscript: Pick<ManuscriptManager, 'review'>;
 }
 
 export function registerReviewManuscriptCommand(
@@ -38,7 +39,7 @@ async function runReviewManuscript(
     },
     async (progress) => {
       progress.report({ message: '연속성·비평 검사 중…' });
-      return await dependencies.reviewManuscriptUseCase.execute({ workspaceRoot });
+      return await dependencies.manuscript.review({ workspaceRoot });
     },
   );
 
@@ -59,7 +60,7 @@ async function runReviewManuscript(
 }
 
 async function reportFailure(
-  result: Exclude<Awaited<ReturnType<ReviewManuscriptUseCase['execute']>>, { readonly ok: true }>,
+  result: Exclude<ReviewManuscriptResult, { readonly ok: true }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'missing_outline') {

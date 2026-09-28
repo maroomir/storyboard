@@ -1,7 +1,8 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import type { StudioChatStage, StudioChatUseCase } from '@storyboard/story-engine';
+import type { StudioChatRequest, StudioChatStage } from '@storyboard/story-engine';
+import type { CardManager, StudioManager } from '@storyboard/story-app';
 import { extractDraftBody } from '@storyboard/story-format';
 
 import {
@@ -12,7 +13,6 @@ import {
   type StudioSceneFocus,
 } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
-import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
@@ -27,9 +27,9 @@ import type {
 } from '@storyboard/story-engine';
 
 export interface StudioChatRpcHandlersDependencies {
-  readonly useCase: StudioChatUseCase;
+  readonly studio: Pick<StudioManager, 'chat'>;
   readonly aiGateway: AiGateway;
-  readonly collectUseCase: CollectCardProposalsUseCase;
+  readonly cards: Pick<CardManager, 'collectProposals'>;
   readonly logger: IStoryboardLogger;
   readonly toolDiagnostics: StudioToolDiagnostics;
   readonly configBridge: ConfigBridge;
@@ -75,7 +75,7 @@ export function createStudioChatRpcHandlers(
       const startedGeneration = generation;
 
       try {
-        const turns = await deps.useCase.execute({
+        const turns = await deps.studio.chat({
           workspaceRoot: root,
           entityContext: { ...entityContext, context: contextWithSelection },
           history: payload.history,
@@ -108,9 +108,7 @@ export function createStudioChatRpcHandlers(
 
 // NOTE: without this the Studio's spend never reached the ledger, so the sidebar badges read as
 // if chatting were free.
-function usageAttributionFor(
-  entity: StudioEntity,
-): Pick<Parameters<StudioChatUseCase['execute']>[0], 'attribution'> {
+function usageAttributionFor(entity: StudioEntity): Pick<StudioChatRequest, 'attribution'> {
   if (entity.kind === 'project') {
     return {};
   }
@@ -126,7 +124,7 @@ function toolResolverFor(
   root: vscode.Uri,
   entity: StudioEntity,
   entityContext: StudioEntityContext,
-): Pick<Parameters<StudioChatUseCase['execute']>[0], 'resolveInvoke'> {
+): Pick<StudioChatRequest, 'resolveInvoke'> {
   if (entityContext.baseline === undefined || entityContext.targetUri === undefined) {
     return {};
   }
@@ -153,7 +151,7 @@ function toolResolverFor(
     resolveInvoke: createStudioCardInvokeResolver(
       {
         aiGateway: deps.aiGateway,
-        collectUseCase: deps.collectUseCase,
+        cards: deps.cards,
         logger: deps.logger,
       },
       {
