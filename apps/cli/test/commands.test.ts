@@ -74,6 +74,14 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true });
 });
 
+// A manager keeps its verbs on the prototype, so spreading one drops them. Overriding through a
+// proxy keeps every other verb live on the real instance.
+function stubManager<T extends object>(manager: T, overrides: Partial<T>): T {
+  return new Proxy(manager, {
+    get: (target, key) => (key in overrides ? overrides[key as keyof T] : Reflect.get(target, key)),
+  });
+}
+
 describe('project contract', () => {
   function settingOf(): Record<string, unknown> {
     const project = JSON.parse(
@@ -203,7 +211,9 @@ describe('cards build', () => {
     const real = container();
     return {
       ...real,
-      buildStoryCardsUseCase: { execute: async () => ({ targets, snapshots: [] }) },
+      cards: stubManager(real.cards, {
+        buildFromScenes: async () => ({ targets, snapshots: [] }),
+      }),
     } as unknown as Parameters<(typeof commands)['cards build']>[0]['container'];
   }
 
@@ -275,8 +285,8 @@ describe('scene complete', () => {
     const real = container();
     return {
       ...real,
-      completeStoryScenesUseCase: {
-        execute: async () => ({
+      novel: stubManager(real.novel, {
+        completeScenes: async () => ({
           scenes: [
             {
               fileName,
@@ -288,7 +298,7 @@ describe('scene complete', () => {
           ],
           snapshots: [],
         }),
-      },
+      }),
     } as unknown as Parameters<(typeof commands)['scene complete']>[0]['container'];
   }
 
@@ -629,14 +639,14 @@ describe('scene generate progress', () => {
     const stubbed = {
       ...real,
       logger: { ...silentLogger, info: (message: string) => logged.push(message) },
-      generateDraftUseCase: {
-        execute: async (request: {
+      drafts: stubManager(real.drafts, {
+        generate: async (request: {
           onPipelineProgress?: (stage: string, current: number, total: number) => void;
         }) => {
           request.onPipelineProgress?.('expandSection', 2, 3);
           return { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] };
         },
-      },
+      } as never),
     } as unknown as Parameters<(typeof commands)['scene generate']>[0]['container'];
 
     await commands['scene generate']({
@@ -660,17 +670,14 @@ describe('scene generate warnings', () => {
         warn: (message: string) => warned.push(message),
         info: (message: string) => warned.push(message),
       },
-      generateDraftUseCase: {
-        execute: async () => ({
+      drafts: stubManager(real.drafts, {
+        generate: async () => ({
           ok: true,
           kind: 'generated',
           draftUri: real.workspaceRoot,
           warnings: ['1구간: 목표 3,000자에 크게 못 미칩니다 (1,650자)'],
         }),
-      },
-      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
-      reviseAfterGenerateGate: {
-        runForScene: async (
+        reviseScene: async (
           _root: unknown,
           _stem: string,
           options: { onProgress: (m: string) => void },
@@ -678,7 +685,8 @@ describe('scene generate warnings', () => {
           options.onProgress('검사 중 (1/1)');
           return undefined;
         },
-      },
+      } as never),
+      configBridge: { ...real.configBridge, isReviseAfterGenerateEnabled: () => true },
     } as unknown as Parameters<(typeof commands)['scene generate']>[0]['container'];
 
     const outcome = await commands['scene generate']({

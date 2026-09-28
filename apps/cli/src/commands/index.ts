@@ -115,7 +115,7 @@ const sceneStageLabels: Record<string, string> = {
 
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
-    const result = await container.generateAllDraftsUseCase.execute({
+    const result = await container.drafts.generateAll({
       onProgress: (progress) =>
         container.logger.info(`${progress.current}/${progress.total} ${progress.label}`),
     });
@@ -145,7 +145,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result = await container.generateDraftUseCase.execute({
+  const result = await container.drafts.generate({
     sceneUri: sceneUriFor(container.workspaceRoot, stem),
     force: flagBoolean(args.flags, 'force'),
     onPipelineProgress: (stage, current, total) =>
@@ -170,7 +170,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
   if (result.kind === 'generated' && reviseRequested) {
-    const revised = await container.reviseAfterGenerateGate.runForScene(
+    const revised = await container.drafts.reviseScene(
       container.workspaceRoot,
       stem,
       { onProgress: (message) => container.logger.info(message) },
@@ -269,8 +269,8 @@ function runSceneBeats(
   stem: string,
   force: boolean,
   dryRun: boolean,
-): ReturnType<CliContainer['generateSceneBeatsUseCase']['execute']> {
-  return container.generateSceneBeatsUseCase.execute({
+): ReturnType<CliContainer['drafts']['generateBeats']> {
+  return container.drafts.generateBeats({
     workspaceRoot: container.workspaceRoot,
     sceneUri: sceneUriFor(container.workspaceRoot, stem),
     fileName: `${stem}.card`,
@@ -285,14 +285,14 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem을 지정해 주세요.' };
   }
 
-  const result = await container.reviseAfterGenerateGate.runForScene(container.workspaceRoot, stem);
+  const result = await container.drafts.reviseScene(container.workspaceRoot, stem);
   return result === undefined
     ? { ok: false, message: '초안이 없어 검수를 건너뛰었습니다.' }
     : { ok: true, message: '검수와 재작성을 마쳤습니다.', data: result };
 };
 
 const generateOutline: CommandHandler = async ({ container, args }) => {
-  const result = await container.generateOutlineUseCase.execute({
+  const result = await container.novel.generateOutline({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
     onProgress: (message: string) => container.logger.info(message),
@@ -321,7 +321,7 @@ function describeOutlineResult(kind: string): string {
 }
 
 const assembleManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.assembleManuscriptUseCase.execute({
+  const result = await container.manuscript.assemble({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -332,7 +332,7 @@ const assembleManuscript: CommandHandler = async ({ container }) => {
 };
 
 const reviewManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.reviewManuscriptUseCase.execute({
+  const result = await container.manuscript.review({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -343,7 +343,7 @@ const reviewManuscript: CommandHandler = async ({ container }) => {
 };
 
 const summarizeChapters: CommandHandler = async ({ container }) => {
-  const result = await container.summarizeChaptersUseCase.execute({
+  const result = await container.manuscript.summarizeChapters({
     workspaceRoot: container.workspaceRoot,
   });
   return {
@@ -359,7 +359,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   const budgetUsd = container.configBridge.getRunBudgetUsd();
   const spending = container.usageMeter.startSession();
   const isOverBudget = (): boolean => isRunBudgetExceeded(spending.reading(), budgetUsd);
-  const result = await container.novelPipeline.run({
+  const result = await container.novel.run({
     workspaceUri: container.workspaceRoot,
     project,
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
@@ -449,7 +449,7 @@ const showScene: CommandHandler = async ({ container, args }) => {
 // An unattended run has nobody to pick from a list, so promotion applies everything the prepare
 // step judged new. `--dry-run` is how an agent inspects first.
 const promoteCards: CommandHandler = async ({ container, args }) => {
-  const prepared = await container.promoteCardCandidatesUseCase.prepare(container.workspaceRoot);
+  const prepared = await container.cards.prepareCandidatePromotion(container.workspaceRoot);
 
   if (prepared.kind !== 'ready') {
     return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
@@ -459,7 +459,7 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `승격 후보 ${prepared.items.length}건`, data: prepared.items };
   }
 
-  const result = await container.promoteCardCandidatesUseCase.promote(
+  const result = await container.cards.promoteCandidates(
     container.workspaceRoot,
     prepared.items,
   );
@@ -475,7 +475,7 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
 };
 
 const promoteBible: CommandHandler = async ({ container, args }) => {
-  const prepared = await container.promoteBibleCandidatesUseCase.prepare(container.workspaceRoot);
+  const prepared = await container.cards.prepareBiblePromotion(container.workspaceRoot);
 
   if (prepared.kind !== 'ready') {
     return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
@@ -485,7 +485,7 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `승격 후보 ${prepared.facts.length}건`, data: prepared.facts };
   }
 
-  await container.promoteBibleCandidatesUseCase.promote(container.workspaceRoot, prepared.facts);
+  await container.cards.promoteBibleFacts(container.workspaceRoot, prepared.facts);
   return {
     ok: true,
     message: `정전에 ${prepared.facts.length}건을 반영했습니다.`,
@@ -501,7 +501,7 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
   }
 
-  const result = await container.recommendCardsUseCase.execute({
+  const result = await container.cards.recommend({
     category,
     workspaceRoot: container.workspaceRoot,
   });
@@ -729,7 +729,7 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
   const project = await readProjectJson(container.fileSystem, paths.projectJson);
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result = await container.condenseDraftUseCase.execute({
+    const result = await container.drafts.condense({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       format: project.format,
@@ -756,7 +756,7 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   }
 
   return rewriteDraft(container, stem, range, async (target) => {
-    const result = await container.expandDraftUseCase.execute({
+    const result = await container.drafts.expand({
       workspaceRoot: container.workspaceRoot,
       sceneStem: stem,
       selectedText: target,
@@ -993,7 +993,7 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
 // 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
 // 제안 전체를 적용하고, 미리 보려면 --dry-run 을 쓴다 — card promote 와 같은 관례다.
 const completeStory: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.completeStoryScenesUseCase.execute({
+  const proposal = await container.novel.completeScenes({
     workspaceRoot: container.workspaceRoot,
   });
 
@@ -1036,7 +1036,7 @@ const completeStory: CommandHandler = async ({ container, args }) => {
 };
 
 const buildStoryCards: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.buildStoryCardsUseCase.execute({
+  const proposal = await container.cards.buildFromScenes({
     workspaceRoot: container.workspaceRoot,
   });
 
@@ -1087,8 +1087,8 @@ function describeCardBuild(writtenCount: number, needsId: readonly string[]): st
 }
 
 const canonDiff: CommandHandler = async ({ container }) => {
-  const canon = await container.bibleCandidateRepository.loadCanon(container.workspaceRoot);
-  const candidates = await container.bibleCandidateRepository.loadRecords(container.workspaceRoot);
+  const canon = await container.cards.bibleCandidates.loadCanon(container.workspaceRoot);
+  const candidates = await container.cards.bibleCandidates.loadRecords(container.workspaceRoot);
   const { pending } = diffCandidatesAgainstCanon(canon, candidates);
 
   return {
@@ -1133,7 +1133,7 @@ const createCard: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const id = await container.createCardUseCase.deriveUniqueId(
+  const id = await container.cards.deriveUniqueId(
     container.workspaceRoot,
     cardType,
     suggested,
@@ -1143,7 +1143,7 @@ const createCard: CommandHandler = async ({ container, args }) => {
     kind === 'character'
       ? createEmptyCharacter(id, name.trim())
       : createEmptyBackground(id, name.trim());
-  const uri = await container.createCardUseCase.write(container.workspaceRoot, card);
+  const uri = await container.cards.write(container.workspaceRoot, card);
 
   return {
     ok: true,
@@ -1214,7 +1214,7 @@ const applyDraftFormat: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const result = await container.applyDraftFormatUseCase.execute({
+  const result = await container.drafts.applyFormat({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
   });
@@ -1251,7 +1251,7 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
   }
 
   const instruction = flagString(args.flags, 'instruction');
-  const prepared = await container.augmentDraftUseCase.prepareAugmentedDraft({
+  const prepared = await container.drafts.prepareAugmentation({
     draftSceneStem: stem,
     sceneUri: scenePath(container.workspaceRoot, stem),
     scope: range === undefined ? 'draft' : 'selection',
@@ -1268,7 +1268,7 @@ const augmentDraft: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: '보충안을 만들었습니다 (적용하지 않음).', data: prepared };
   }
 
-  await container.augmentDraftUseCase.applyAugmentedDraft({
+  await container.drafts.applyAugmentation({
     draftUri,
     sceneStem: stem,
     workspaceRoot: container.workspaceRoot,
@@ -1302,7 +1302,7 @@ const editDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  const prepared = await container.augmentDraftUseCase.prepareAugmentedDraft({
+  const prepared = await container.drafts.prepareAugmentation({
     draftSceneStem: stem,
     sceneUri: scenePath(container.workspaceRoot, stem),
     scope: 'selection',
@@ -1319,7 +1319,7 @@ const editDraft: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: '수정안을 만들었습니다 (적용하지 않음).', data: prepared };
   }
 
-  await container.augmentDraftUseCase.applyAugmentedDraft({
+  await container.drafts.applyAugmentation({
     draftUri: draftPath(container.workspaceRoot, stem),
     sceneStem: stem,
     workspaceRoot: container.workspaceRoot,
@@ -1329,7 +1329,7 @@ const editDraft: CommandHandler = async ({ container, args }) => {
 };
 
 const exportManuscript: CommandHandler = async ({ container, args }) => {
-  const source = await container.exportManuscriptUseCase.loadSource(container.workspaceRoot);
+  const source = await container.manuscript.loadExportSource(container.workspaceRoot);
 
   if (!source.ok) {
     return { ok: false, message: `내보낼 원고가 없습니다 (${source.kind}).`, data: source };

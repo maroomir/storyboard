@@ -4,7 +4,7 @@ import {
   type StoryWorkspaceFolder,
   type IUsageSink,
 } from '@storyboard/story-engine';
-import { StoryboardApplication, type StoryboardServices } from '@storyboard/story-app';
+import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -21,7 +21,21 @@ import {
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
-export interface CliContainer extends StoryboardServices {
+// The managers and infrastructure handles a verb may reach, plus what only a terminal run knows.
+export interface CliContainer extends Pick<
+  StoryboardApplication,
+  | 'drafts'
+  | 'manuscript'
+  | 'cards'
+  | 'novel'
+  | 'studio'
+  | 'aiGateway'
+  | 'aiProviderRegistry'
+  | 'configBridge'
+  | 'secretStore'
+  | 'logger'
+  | 'usageMeter'
+> {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
   readonly workspaceConfigFile: string | undefined;
@@ -150,7 +164,17 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   );
 
   return {
-    ...application.services,
+    drafts: application.drafts,
+    manuscript: application.manuscript,
+    cards: application.cards,
+    novel: application.novel,
+    studio: application.studio,
+    aiGateway: application.aiGateway,
+    aiProviderRegistry: application.aiProviderRegistry,
+    configBridge: application.configBridge,
+    secretStore: application.secretStore,
+    logger: application.logger,
+    usageMeter: application.usageMeter,
     fileSystem,
     workspaceRoot,
     version: options.version,
