@@ -40,14 +40,14 @@ function repository(hasChapterPlan: boolean, draftCount: number): IManuscriptAss
 }
 
 function useCase(repository: IManuscriptAssemblyRepository): AssembleManuscriptUseCase {
-  return new AssembleManuscriptUseCase({ warn: vi.fn() } as never, repository)
+  return new AssembleManuscriptUseCase({ logger: { warn: vi.fn() } as never, repository })
 }
 
 describe("AssembleManuscriptUseCase", () => {
   it("reports a missing chapter plan before loading source files", async () => {
     const storage = repository(false, 1)
 
-    await expect(useCase(storage).execute(vscode.Uri.file("/workspace"))).resolves.toEqual({
+    await expect(useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })).resolves.toEqual({
       kind: "missing_outline",
       ok: false
     })
@@ -57,7 +57,7 @@ describe("AssembleManuscriptUseCase", () => {
   it("assembles drafts and persists chapter, volume, and foreshadowing output together", async () => {
     const storage = repository(true, 1)
 
-    const result = await useCase(storage).execute(vscode.Uri.file("/workspace"))
+    const result = await useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(result).toEqual(
       expect.objectContaining({

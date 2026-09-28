@@ -1,4 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
+import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
@@ -48,53 +49,65 @@ export type AssembleManuscriptResult =
       };
     };
 
-export class AssembleManuscriptUseCase {
-  public constructor(
-    private readonly logger: IStoryboardLogger,
-    private readonly repository: IManuscriptAssemblyRepository,
-  ) {}
+export interface AssembleManuscriptUseCaseDependencies {
+  readonly logger: IStoryboardLogger;
+  readonly repository: IManuscriptAssemblyRepository;
+}
 
-  public async execute(workspaceRoot: StoryUri): Promise<AssembleManuscriptResult> {
-    try {
-      if (!(await this.repository.hasChapterPlan(workspaceRoot))) {
-        return { kind: 'missing_outline', ok: false };
-      }
+export interface AssembleManuscriptRequest {
+  readonly workspaceRoot: StoryUri;
+}
 
-      const source = await this.repository.loadAssemblySource(workspaceRoot, this.logger);
-      if (source.draftsByOrder.size === 0) {
-        return { kind: 'missing_drafts', ok: false };
-      }
+export class AssembleManuscriptUseCase implements IUseCase<
+  AssembleManuscriptRequest,
+  AssembleManuscriptResult
+> {
+  public constructor(private readonly deps: AssembleManuscriptUseCaseDependencies) {}
 
-      const manuscript = assembleManuscript({
-        draftsByOrder: source.draftsByOrder,
-        plan: source.plan,
-        projectName: source.projectName,
-      });
-      const foreshadowing = collectForeshadowing(source.plan);
-      const volumeUri = await this.repository.saveAssembly(
-        workspaceRoot,
-        manuscript,
-        buildForeshadowingMarkdown(source.projectName, foreshadowing),
-      );
+  public async execute(request: AssembleManuscriptRequest): Promise<AssembleManuscriptResult> {
+    const { workspaceRoot } = request;
 
-      return {
-        kind: 'assembled',
-        ok: true,
-        result: {
-          chapterCount: manuscript.chapters.length,
-          extraCount: manuscript.extraCount,
-          foreshadowingCount: countForeshadowing(foreshadowing),
-          includedCount: manuscript.includedCount,
-          missingCount: manuscript.missingCount,
-          volumeUri,
-        },
-      };
-    } catch (error) {
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
-    }
+    return await runUseCase<AssembleManuscriptResult>(
+      this.deps.logger,
+      'Assemble manuscript failed',
+      async () => {
+        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+          return { kind: 'missing_outline', ok: false };
+        }
+
+        const source = await this.deps.repository.loadAssemblySource(
+          workspaceRoot,
+          this.deps.logger,
+        );
+        if (source.draftsByOrder.size === 0) {
+          return { kind: 'missing_drafts', ok: false };
+        }
+
+        const manuscript = assembleManuscript({
+          draftsByOrder: source.draftsByOrder,
+          plan: source.plan,
+          projectName: source.projectName,
+        });
+        const foreshadowing = collectForeshadowing(source.plan);
+        const volumeUri = await this.deps.repository.saveAssembly(
+          workspaceRoot,
+          manuscript,
+          buildForeshadowingMarkdown(source.projectName, foreshadowing),
+        );
+
+        return {
+          kind: 'assembled',
+          ok: true,
+          result: {
+            chapterCount: manuscript.chapters.length,
+            extraCount: manuscript.extraCount,
+            foreshadowingCount: countForeshadowing(foreshadowing),
+            includedCount: manuscript.includedCount,
+            missingCount: manuscript.missingCount,
+            volumeUri,
+          },
+        };
+      },
+    );
   }
 }

@@ -43,10 +43,11 @@ describe("GenerateOutlineUseCase", () => {
       )
     }
     const gateway = { createService: vi.fn() }
-    const result = await new GenerateOutlineUseCase(gateway as never, repository).execute(
-      {} as never,
-      { overwrite: false }
-    )
+    const result = await new GenerateOutlineUseCase({
+      aiGateway: gateway as never,
+      repository,
+      logger: { error: () => undefined } as never
+    }).execute({ workspaceRoot: {} as never, overwrite: false })
     expect(result).toEqual(expect.objectContaining({ kind: "missing_contract", ok: false }))
     expect(gateway.createService).not.toHaveBeenCalled()
   })
@@ -63,10 +64,11 @@ describe("GenerateOutlineUseCase", () => {
       generateOutlineSynopsis: vi.fn(async () => ({})),
       generateChapterPlan: vi.fn(async () => ({}))
     }
-    const result = await new GenerateOutlineUseCase(
-      { createService: () => service } as never,
-      repository
-    ).execute({} as never, { overwrite: false })
+    const result = await new GenerateOutlineUseCase({
+      aiGateway: { createService: () => service } as never,
+      repository,
+      logger: { error: () => undefined } as never
+    }).execute({ workspaceRoot: {} as never, overwrite: false })
     expect(result).toEqual(expect.objectContaining({ kind: "generated", ok: true }))
     expect(repository.save).toHaveBeenCalledOnce()
   })

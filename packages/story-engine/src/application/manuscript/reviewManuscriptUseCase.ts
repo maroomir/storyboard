@@ -1,4 +1,5 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
+import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { StoryUri } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { assembleManuscript } from '@storyboard/story-format';
@@ -39,71 +40,80 @@ export type ReviewManuscriptResult =
       readonly reportUri: StoryUri;
     };
 
-export class ReviewManuscriptUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly repository: IManuscriptReviewRepository,
-    private readonly logger: IStoryboardLogger,
-  ) {}
+export interface ReviewManuscriptUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly repository: IManuscriptReviewRepository;
+  readonly logger: IStoryboardLogger;
+}
 
-  public async execute(workspaceRoot: StoryUri): Promise<ReviewManuscriptResult> {
-    try {
-      if (!(await this.repository.hasChapterPlan(workspaceRoot))) {
-        return { kind: 'missing_outline', ok: false };
-      }
+export interface ReviewManuscriptRequest {
+  readonly workspaceRoot: StoryUri;
+}
 
-      const { source, styleConstraints, qualityCriteria, canonFactLines, chapterSummaries } =
-        await this.repository.loadReviewSource(workspaceRoot, this.logger);
-      if (source.draftsByOrder.size === 0) {
-        return { kind: 'missing_drafts', ok: false };
-      }
+export class ReviewManuscriptUseCase implements IUseCase<
+  ReviewManuscriptRequest,
+  ReviewManuscriptResult
+> {
+  public constructor(private readonly deps: ReviewManuscriptUseCaseDependencies) {}
 
-      // 이슈가 어느 씬에서 나왔는지 짚어야 보고서에서 초안으로 되짚을 수 있다.
-      const manuscript = assembleManuscript({
-        draftsByOrder: source.draftsByOrder,
-        plan: source.plan,
-        projectName: source.projectName,
-        annotateSceneStems: true,
-      });
-      const characters = collectCharacterIds(source.plan);
-      const aiService = this.aiGateway.createService(workspaceRoot);
+  public async execute(request: ReviewManuscriptRequest): Promise<ReviewManuscriptResult> {
+    const { workspaceRoot } = request;
 
-      const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
-        aiService,
-        manuscript,
-        storySoFar: chapterSummaries,
-        canonFactLines,
-        characters,
-        styleConstraints,
-        qualityCriteria,
-        hasSceneMarkers: true,
-        continuityProviderId: this.aiGateway.getTaskProvider('continuityCheck'),
-        critiqueProviderId: this.aiGateway.getTaskProvider('draftCritique'),
-      });
+    return await runUseCase<ReviewManuscriptResult>(
+      this.deps.logger,
+      'Review manuscript failed',
+      async () => {
+        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+          return { kind: 'missing_outline', ok: false };
+        }
 
-      const reportMarkdown = buildManuscriptReviewMarkdown({
-        projectName: source.projectName,
-        sceneCount: manuscript.includedCount,
-        generatedAt: new Date().toISOString(),
-        continuityIssues,
-        critiqueIssues,
-      });
-      const reportUri = await this.repository.saveReview(workspaceRoot, reportMarkdown);
+        const { source, styleConstraints, qualityCriteria, canonFactLines, chapterSummaries } =
+          await this.deps.repository.loadReviewSource(workspaceRoot, this.deps.logger);
+        if (source.draftsByOrder.size === 0) {
+          return { kind: 'missing_drafts', ok: false };
+        }
 
-      return {
-        kind: 'reviewed',
-        ok: true,
-        continuityCount: continuityIssues.length,
-        critiqueCount: critiqueIssues.length,
-        reportUri,
-      };
-    } catch (error) {
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
-    }
+        // 이슈가 어느 씬에서 나왔는지 짚어야 보고서에서 초안으로 되짚을 수 있다.
+        const manuscript = assembleManuscript({
+          draftsByOrder: source.draftsByOrder,
+          plan: source.plan,
+          projectName: source.projectName,
+          annotateSceneStems: true,
+        });
+        const characters = collectCharacterIds(source.plan);
+        const aiService = this.deps.aiGateway.createService(workspaceRoot);
+
+        const { continuityIssues, critiqueIssues } = await reviewChapterWindows({
+          aiService,
+          manuscript,
+          storySoFar: chapterSummaries,
+          canonFactLines,
+          characters,
+          styleConstraints,
+          qualityCriteria,
+          hasSceneMarkers: true,
+          continuityProviderId: this.deps.aiGateway.getTaskProvider('continuityCheck'),
+          critiqueProviderId: this.deps.aiGateway.getTaskProvider('draftCritique'),
+        });
+
+        const reportMarkdown = buildManuscriptReviewMarkdown({
+          projectName: source.projectName,
+          sceneCount: manuscript.includedCount,
+          generatedAt: new Date().toISOString(),
+          continuityIssues,
+          critiqueIssues,
+        });
+        const reportUri = await this.deps.repository.saveReview(workspaceRoot, reportMarkdown);
+
+        return {
+          kind: 'reviewed',
+          ok: true,
+          continuityCount: continuityIssues.length,
+          critiqueCount: critiqueIssues.length,
+          reportUri,
+        };
+      },
+    );
   }
 }
 

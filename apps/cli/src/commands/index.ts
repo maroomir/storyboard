@@ -292,7 +292,8 @@ const reviseScene: CommandHandler = async ({ container, args }) => {
 };
 
 const generateOutline: CommandHandler = async ({ container, args }) => {
-  const result = await container.generateOutlineUseCase.execute(container.workspaceRoot, {
+  const result = await container.generateOutlineUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
     onProgress: (message: string) => container.logger.info(message),
   });
@@ -320,7 +321,9 @@ function describeOutlineResult(kind: string): string {
 }
 
 const assembleManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.assembleManuscriptUseCase.execute(container.workspaceRoot);
+  const result = await container.assembleManuscriptUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+  });
   return {
     ok: result.ok,
     message: result.ok ? '원고를 조립했습니다.' : '조립하지 못했습니다.',
@@ -329,7 +332,9 @@ const assembleManuscript: CommandHandler = async ({ container }) => {
 };
 
 const reviewManuscript: CommandHandler = async ({ container }) => {
-  const result = await container.reviewManuscriptUseCase.execute(container.workspaceRoot);
+  const result = await container.reviewManuscriptUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+  });
   return {
     ok: result.ok,
     message: result.ok ? '원고 검사를 마쳤습니다.' : '검사하지 못했습니다.',
@@ -338,7 +343,9 @@ const reviewManuscript: CommandHandler = async ({ container }) => {
 };
 
 const summarizeChapters: CommandHandler = async ({ container }) => {
-  const result = await container.summarizeChaptersUseCase.execute(container.workspaceRoot);
+  const result = await container.summarizeChaptersUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+  });
   return {
     ok: result.ok,
     message: result.ok ? '장별 요약을 만들었습니다.' : '요약하지 못했습니다.',

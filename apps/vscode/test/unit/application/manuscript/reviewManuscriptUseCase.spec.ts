@@ -86,21 +86,21 @@ function useCase(
 ): ReviewManuscriptUseCase {
   const checkContinuity = ai.checkContinuity ?? vi.fn(async () => [])
   const critiqueDraft = ai.critiqueDraft ?? vi.fn(async () => [])
-  return new ReviewManuscriptUseCase(
-    {
+  return new ReviewManuscriptUseCase({
+    aiGateway: {
       createService: () => ({ checkContinuity, critiqueDraft }),
       getTaskProvider: () => "mock"
     } as never,
-    storage,
-    { warn: vi.fn() } as never
-  )
+    repository: storage,
+    logger: { warn: vi.fn(), error: vi.fn() } as never
+  })
 }
 
 describe("ReviewManuscriptUseCase", () => {
   it("reports a missing outline before loading source", async () => {
     const storage = repository({ hasChapterPlan: vi.fn(async () => false) })
 
-    await expect(useCase(storage).execute(vscode.Uri.file("/workspace"))).resolves.toEqual({
+    await expect(useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })).resolves.toEqual({
       kind: "missing_outline",
       ok: false
     })
@@ -110,7 +110,7 @@ describe("ReviewManuscriptUseCase", () => {
   it("reports missing drafts when no draft was collected", async () => {
     const storage = repository({ loadReviewSource: vi.fn(async () => reviewSource(0)) })
 
-    await expect(useCase(storage).execute(vscode.Uri.file("/workspace"))).resolves.toEqual({
+    await expect(useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })).resolves.toEqual({
       kind: "missing_drafts",
       ok: false
     })
@@ -126,9 +126,7 @@ describe("ReviewManuscriptUseCase", () => {
     ])
     const storage = repository()
 
-    const result = await useCase(storage, { checkContinuity, critiqueDraft }).execute(
-      vscode.Uri.file("/workspace")
-    )
+    const result = await useCase(storage, { checkContinuity, critiqueDraft }).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(result).toEqual(
       expect.objectContaining({
@@ -160,7 +158,7 @@ describe("ReviewManuscriptUseCase", () => {
       }))
     })
 
-    await useCase(storage, { checkContinuity }).execute(vscode.Uri.file("/workspace"))
+    await useCase(storage, { checkContinuity }).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(checkContinuity).toHaveBeenCalledTimes(2)
     const [firstBody, firstFacts] = checkContinuity.mock.calls[0] as [string, string[]]
@@ -191,7 +189,7 @@ describe("ReviewManuscriptUseCase", () => {
       }))
     })
 
-    await useCase(storage, { checkContinuity }).execute(vscode.Uri.file("/workspace"))
+    await useCase(storage, { checkContinuity }).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     const [, secondFacts] = checkContinuity.mock.calls[1] as [string, string[]]
     expect(secondFacts).toEqual(["hero — 이름: 홍길동"])
@@ -202,9 +200,7 @@ describe("ReviewManuscriptUseCase", () => {
       throw new Error("provider down")
     })
 
-    const result = await useCase(repository(), { checkContinuity }).execute(
-      vscode.Uri.file("/workspace")
-    )
+    const result = await useCase(repository(), { checkContinuity }).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(result).toEqual({ kind: "failed", message: "provider down", ok: false })
   })
@@ -216,7 +212,7 @@ describe("ReviewManuscriptUseCase", () => {
       })
     })
 
-    const result = await useCase(storage).execute(vscode.Uri.file("/workspace"))
+    const result = await useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(result).toEqual({ kind: "failed", message: "disk full", ok: false })
   })
@@ -224,7 +220,7 @@ describe("ReviewManuscriptUseCase", () => {
   it("passes style constraints and quality criteria into the critique", async () => {
     const critiqueDraft = vi.fn(async () => [])
 
-    await useCase(repository(), { critiqueDraft }).execute(vscode.Uri.file("/workspace"))
+    await useCase(repository(), { critiqueDraft }).execute({ workspaceRoot: vscode.Uri.file("/workspace") })
 
     expect(critiqueDraft).toHaveBeenCalledWith(
       expect.objectContaining({

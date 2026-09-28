@@ -64,7 +64,8 @@ async function runWithProgress(
       cancellable: false,
     },
     async (progress) =>
-      await dependencies.generateOutlineUseCase.execute(workspaceRoot, {
+      await dependencies.generateOutlineUseCase.execute({
+        workspaceRoot,
         overwrite,
         onProgress: (message) => progress.report({ message }),
       }),

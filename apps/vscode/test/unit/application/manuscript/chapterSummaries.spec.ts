@@ -93,13 +93,17 @@ describe('SummarizeChaptersUseCase', () => {
       },
     } as never;
 
-    return { useCase: new SummarizeChaptersUseCase(aiGateway, repository), saved, summarized };
+    return { useCase: new SummarizeChaptersUseCase({
+      aiGateway,
+      repository,
+      logger: { error: () => undefined } as never,
+    }), saved, summarized };
   }
 
   it('summarizes every chapter when no index is given', async () => {
     const { useCase, summarized } = createUseCase();
 
-    const result = await useCase.execute(workspaceUri);
+    const result = await useCase.execute({ workspaceRoot: workspaceUri });
 
     expect(result).toMatchObject({ ok: true, summaryCount: 2 });
     expect(summarized).toEqual(['1장', '2장']);
@@ -111,7 +115,7 @@ describe('SummarizeChaptersUseCase', () => {
     ]);
     const { useCase, saved, summarized } = createUseCase(existing);
 
-    const result = await useCase.execute(workspaceUri, { chapterIndex: 1 });
+    const result = await useCase.execute({ workspaceRoot: workspaceUri, chapterIndex: 1 });
 
     expect(result).toMatchObject({ ok: true, summaryCount: 2 });
     expect(summarized).toEqual(['2장']);
@@ -127,7 +131,7 @@ describe('SummarizeChaptersUseCase', () => {
     ]);
     const { useCase, saved } = createUseCase(existing);
 
-    await useCase.execute(workspaceUri, { chapterIndex: 0 });
+    await useCase.execute({ workspaceRoot: workspaceUri, chapterIndex: 0 });
 
     expect(parseChapterSummariesMarkdown(saved[0] ?? '')).toMatchObject([
       { chapterTitle: '1장', summary: '1장 요약', isStale: false },
@@ -137,7 +141,7 @@ describe('SummarizeChaptersUseCase', () => {
   it('reports a chapter index that names no chapter', async () => {
     const { useCase } = createUseCase();
 
-    expect(await useCase.execute(workspaceUri, { chapterIndex: 9 })).toMatchObject({
+    expect(await useCase.execute({ workspaceRoot: workspaceUri, chapterIndex: 9 })).toMatchObject({
       ok: false,
       kind: 'missing_drafts',
     });
@@ -146,7 +150,7 @@ describe('SummarizeChaptersUseCase', () => {
   it('stops on cancellation without saving', async () => {
     const { useCase, saved } = createUseCase();
 
-    const result = await useCase.execute(workspaceUri, { shouldCancel: () => true });
+    const result = await useCase.execute({ workspaceRoot: workspaceUri, shouldCancel: () => true });
 
     expect(result).toMatchObject({ ok: false, kind: 'cancelled' });
     expect(saved).toEqual([]);

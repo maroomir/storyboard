@@ -42,20 +42,21 @@ function useCase(
   repository: IChapterSummaryRepository,
   summarizeChapter = vi.fn(async () => "요약")
 ): SummarizeChaptersUseCase {
-  return new SummarizeChaptersUseCase(
-    {
+  return new SummarizeChaptersUseCase({
+    aiGateway: {
       createService: () => ({ summarizeChapter }),
       getTaskProvider: () => "mock"
     } as never,
-    repository
-  )
+    repository,
+    logger: { error: vi.fn() } as never
+  })
 }
 
 describe("SummarizeChaptersUseCase", () => {
   it("reports a missing outline before calling AI", async () => {
     const storage = repository(false)
 
-    await expect(useCase(storage).execute(vscode.Uri.file("/workspace"))).resolves.toEqual({
+    await expect(useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace") })).resolves.toEqual({
       kind: "missing_outline",
       ok: false
     })
@@ -65,7 +66,7 @@ describe("SummarizeChaptersUseCase", () => {
     const storage = repository(true)
     const onProgress = vi.fn()
 
-    const result = await useCase(storage).execute(vscode.Uri.file("/workspace"), { onProgress })
+    const result = await useCase(storage).execute({ workspaceRoot: vscode.Uri.file("/workspace"), onProgress })
 
     expect(result).toEqual(
       expect.objectContaining({ kind: "summarized", ok: true, summaryCount: 1 })
