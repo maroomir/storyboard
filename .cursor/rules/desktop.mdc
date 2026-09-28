@@ -12,8 +12,9 @@ extension; only its host adapters and screens are its own.
 
 ## Non-negotiable invariants
 
-- **The desktop owns no orchestration.** It calls engine use cases (`NovelPipeline`,
-  `GenerateDraftUseCase`, `SaveDraftEditUseCase`, …) and never assembles pipeline stages.
+- **The desktop owns no orchestration.** It calls the manager verbs of the shared
+  `StoryboardApplication` (`drafts.generate`, `drafts.saveEdit`, `novel.run`, …) and never assembles
+  pipeline stages.
   `apps/desktop/scripts/check-architecture.mjs` fails on a direct `@storyboard/story-pipeline` import.
 - **One process folder per Electron process.** `src/main` (Node), `src/preload`, `src/renderer`
   (browser) meet only through `src/shared` (the IPC contract, DTOs, messages). The architecture check
