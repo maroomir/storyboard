@@ -47,7 +47,7 @@ export function createSimWorkspaceFactory(
       return {
         workspacePath: input.workspacePath,
         generate: async (sceneStem) => {
-          const result = await container.generateDraftUseCase.execute({
+          const result = await container.drafts.generate({
             sceneUri: scenePath(container.workspaceRoot, sceneStem),
             // 캐시를 맞으면 AI 호출이 0회라 회차가 아무것도 재지 못한다.
             force: true,
