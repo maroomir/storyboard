@@ -1,4 +1,5 @@
 import { describeNarration, type StyleDirective } from '#ai/contracts/styleDirective';
+import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
 
@@ -19,79 +20,23 @@ export interface DraftCritiqueInput {
 export const DraftCritiquePrompt = {
   config: promptTuning('draftCritique'),
   build(input: DraftCritiqueInput, variant: PromptVariantId = 'generic'): PromptArtifact {
-    return variant === 'xs' ? buildXs(input) : buildGeneric(input);
+    const narration = input.styleDirective?.narration;
+
+    return renderPrompt('draftCritique', variant, {
+      view: {
+        hasSceneMarkers: input.hasSceneMarkers === true,
+        intent: input.intent.trim().length > 0 ? input.intent : undefined,
+        characters: input.characters.join(', '),
+        facts: input.facts.join('\n'),
+        styleConstraints: input.styleConstraints?.join('\n'),
+        narration: narration ? describeNarration(narration) : undefined,
+        narratorVoice: narration?.voice?.join('\n'),
+        genre: input.styleDirective?.genre,
+        relationStage: input.styleDirective?.relationStage,
+        qualityCriteria: input.qualityCriteria?.join('\n'),
+        characterCards: input.characterCards?.join('\n\n'),
+        body: input.body,
+      },
+    });
   },
 } as const;
-
-function buildGeneric(input: DraftCritiqueInput): PromptArtifact {
-  return {
-    system: [
-      '한국어 장편 소설 초안을 비평하는 도우미다.',
-      '다음 세 관점만 검토한다: 캐릭터 보이스(voice), 장면 목적 달성(purpose), 불필요한 반복(repetition).',
-      '[문체 제약]·[시점]·[서술자 목소리]·[장르·톤]·[관계 단계]를 위반한 서술·대사는 voice로, [품질 기준] 미달은 purpose로 보고한다.',
-      '[시점]에 목격 범위가 적혀 있으면, 시점 인물이 보거나 듣지 못한 사건과 다른 인물의 속마음을 단정한 서술을 시점 이탈로 보고하라.',
-      '[서술자 목소리]가 있으면 서술 문장이 그 목소리를 벗어난 대목을 보고하라. 인물 대사는 이 기준이 아니라 [캐릭터 카드]로 판단한다.',
-      '[캐릭터 카드]의 말투·보이스는 캐릭터 판단의 최우선 기준이다. [품질 기준]과 충돌하면 캐릭터 카드를 따르고, 그 충돌을 본문 문제로 보고하지 마라.',
-      '문법·맞춤법은 보지 않는다. 명백한 문제만 보고하고, 사소하면 severity를 low로 둔다.',
-      '설명 없이 JSON 배열만 출력하라.',
-      '[{"category":"voice","severity":"high","excerpt":"","comment":""}]',
-      'category는 voice|purpose|repetition, severity는 high|low. comment에는 무엇을 어떻게 고칠지 적어라.',
-      '문제가 없으면 빈 배열 []을 출력하라.',
-      ...(input.hasSceneMarkers === true ? [sceneMarkerLine] : []),
-    ].join('\n'),
-    user: buildUserBlock(input),
-  };
-}
-
-const sceneMarkerLine =
-  '본문에는 `<!-- scene: <stem> -->` 주석이 장면마다 있다. 각 이슈의 "sceneStem"에 그 구간 직전 주석의 stem을 그대로 적어라.';
-
-function buildXs(input: DraftCritiqueInput): PromptArtifact {
-  return {
-    system: [
-      '초안의 voice/purpose/repetition 문제만 JSON 배열로 반환하라. 캐릭터 보이스는 [캐릭터 카드]를 최우선으로 따른다: [{"category":"voice","severity":"high","excerpt":"","comment":""}] (없으면 []).',
-      ...(input.hasSceneMarkers === true ? [sceneMarkerLine] : []),
-    ].join('\n'),
-    user: buildUserBlock(input),
-  };
-}
-
-function buildUserBlock(input: DraftCritiqueInput): string {
-  const sections: string[] = [];
-
-  if (input.intent.trim().length > 0) {
-    sections.push(`[장면 의도]\n${input.intent}`);
-  }
-  if (input.characters.length > 0) {
-    sections.push(`[등장 인물]\n${input.characters.join(', ')}`);
-  }
-  if (input.facts.length > 0) {
-    sections.push(`[설정]\n${input.facts.join('\n')}`);
-  }
-  if (input.styleConstraints && input.styleConstraints.length > 0) {
-    sections.push(`[문체 제약]\n${input.styleConstraints.join('\n')}`);
-  }
-  const narration = input.styleDirective?.narration;
-  if (narration) {
-    sections.push(`[시점]\n${describeNarration(narration)}`);
-  }
-  if (narration?.voice && narration.voice.length > 0) {
-    sections.push(`[서술자 목소리]\n${narration.voice.join('\n')}`);
-  }
-  if (input.styleDirective?.genre) {
-    sections.push(`[장르·톤]\n${input.styleDirective.genre}`);
-  }
-  if (input.styleDirective?.relationStage) {
-    sections.push(`[관계 단계]\n${input.styleDirective.relationStage}`);
-  }
-  if (input.qualityCriteria && input.qualityCriteria.length > 0) {
-    sections.push(`[품질 기준]\n${input.qualityCriteria.join('\n')}`);
-  }
-  if (input.characterCards && input.characterCards.length > 0) {
-    sections.push(`[캐릭터 카드]\n${input.characterCards.join('\n\n')}`);
-  }
-
-  sections.push(`[본문]\n${input.body}`);
-
-  return sections.join('\n\n');
-}
