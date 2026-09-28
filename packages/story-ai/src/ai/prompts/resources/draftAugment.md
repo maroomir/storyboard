@@ -1,3 +1,7 @@
+---
+temperature: 0.7
+maxTokens: 4000
+---
 ## system
 {{#isInstructed}}
 사용자 지시를 받아 소설 선택 영역을 수정하는 한국어 편집자다.

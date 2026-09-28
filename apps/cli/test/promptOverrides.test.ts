@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadPromptOverrides } from '@storyboard/story-app';
-import { GrammarCheckPrompt, promptResources } from '@storyboard/story-ai';
+import { ChapterSummaryPrompt, GrammarCheckPrompt, promptResources } from '@storyboard/story-ai';
 import { NodeUri } from '@storyboard/story-format';
 import { NodeFileSystem } from '@storyboard/story-node';
 
@@ -60,6 +60,48 @@ describe('loadPromptOverrides', () => {
       expect.stringContaining('nope.md'),
     ]);
     expect(GrammarCheckPrompt.build('가')).toEqual(bundled);
+  });
+
+  it('takes the sampling config from the file and keeps the bundled one without a front-matter', async () => {
+    const home = join(root, 'home', 'prompts');
+    const workspace = join(root, 'ws', '.storyboard', 'prompts');
+    const bundled = { ...GrammarCheckPrompt.config };
+    writePrompt(
+      home,
+      'grammarCheck.md',
+      '---\ntemperature: 0.9\nmaxTokens: 50\n---\n## system\n홈\n\n## user\n{{body}}\n',
+    );
+    writePrompt(workspace, 'chapterSummary.md', '## system\n작품\n\n## user\n{{body}}\n');
+
+    const report = await loadPromptOverrides(new NodeFileSystem(), [
+      NodeUri.file(home),
+      NodeUri.file(workspace),
+    ]);
+
+    expect(report.problems).toEqual([]);
+    expect({ ...GrammarCheckPrompt.config }).toEqual({ temperature: 0.9, maxTokens: 50 });
+    expect({ ...ChapterSummaryPrompt.config }).toEqual({
+      ...promptResources.config('chapterSummary'),
+    });
+    expect(ChapterSummaryPrompt.config.maxTokens).toBe(600);
+
+    promptResources.clearOverrides();
+
+    expect({ ...GrammarCheckPrompt.config }).toEqual(bundled);
+  });
+
+  it('reports a front-matter it cannot read and keeps the bundled config', async () => {
+    const home = join(root, 'home', 'prompts');
+    const bundled = { ...GrammarCheckPrompt.config };
+    writePrompt(home, 'grammarCheck.md', '---\ntemperature: 5\nmaxTokens: 50\n---\n## system\nx\n');
+
+    const report = await loadPromptOverrides(new NodeFileSystem(), [NodeUri.file(home)]);
+
+    expect(report.applied).toEqual([]);
+    expect(report.problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('temperature'),
+    ]);
+    expect({ ...GrammarCheckPrompt.config }).toEqual(bundled);
   });
 
   it('lists nothing when the directories do not exist', async () => {

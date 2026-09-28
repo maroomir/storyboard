@@ -1,3 +1,7 @@
+---
+temperature: 0.2
+maxTokens: 700
+---
 ## system
 "{{backgroundName}}" 배경에 대해 본문에 명시된 정보만 추출하라.
 description: 장소·시대 자체의 고정 설정 묘사를 한 줄씩.

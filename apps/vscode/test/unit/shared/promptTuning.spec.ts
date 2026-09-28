@@ -1,51 +1,58 @@
-import { readdirSync, readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import promptTuningTable from "../../../../../packages/story-ai/src/ai/prompts/promptTuning.params.json"
+import { parsePromptResource, promptResourceKeys, promptResources } from "@storyboard/story-ai"
 
 const promptsDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../../../../packages/story-ai/src/ai/prompts"
 )
 
-const promptModules = readdirSync(promptsDirectory)
-  .filter((name) => name.endsWith(".ts") && name !== "types.ts" && name !== "promptTuning.ts")
-  .map((name) => ({
-    stem: name.replace(/\.ts$/, ""),
-    source: readFileSync(path.join(promptsDirectory, name), "utf8")
-  }))
+const modulePath = (key: string): string => path.join(promptsDirectory, `${key}.ts`)
 
-// temperature 와 maxTokens 가 프롬프트 파일마다 흩어져 있으면 «검사류는 낮게, 창작류는 높게»라는
-// 결이 지켜지는지 볼 곳이 없다. 표와 파일이 따로 놀기 시작하는 순간을 여기서 잡는다.
-describe("prompt tuning table", () => {
-  it("names a real prompt module for every entry", () => {
-    const stems = new Set(promptModules.map((module) => module.stem))
-
-    for (const key of Object.keys(promptTuningTable)) {
-      expect(stems.has(key), `${key} has no prompt module`).toBe(true)
+// temperature 와 maxTokens 는 프롬프트 리소스 파일의 머리말에 있다. 머리말이 없거나 모듈이 값을
+// 직접 적기 시작하는 순간, 그리고 «검사류는 낮게, 창작류는 높게»의 범위를 벗어나는 순간을 잡는다.
+describe("prompt tuning front-matter", () => {
+  it("names a real prompt module for every resource", () => {
+    for (const key of promptResourceKeys()) {
+      expect(existsSync(modulePath(key)), `${key} has no prompt module`).toBe(true)
     }
   })
 
-  it("keeps every prompt reading its own entry, not a literal", () => {
-    for (const module of promptModules) {
-      if (!module.source.includes("config:")) {
+  it("keeps every prompt reading its own front-matter, not a literal", () => {
+    for (const key of promptResourceKeys()) {
+      const source = readFileSync(modulePath(key), "utf8")
+
+      if (!source.includes("config:")) {
         continue
       }
 
-      expect(module.source, `${module.stem} still spells its config out`).toContain(
-        `config: promptTuning('${module.stem}')`
+      expect(source, `${key} still spells its config out`).toContain(
+        `config: promptTuning('${key}')`
       )
     }
   })
 
-  it("keeps every entry inside a usable range", () => {
-    for (const [key, config] of Object.entries(promptTuningTable)) {
+  it("keeps every resource's config inside a usable range", () => {
+    for (const key of promptResourceKeys()) {
+      const config = promptResources.config(key)
+
       expect(config.temperature, `${key} temperature`).toBeGreaterThanOrEqual(0)
       expect(config.temperature, `${key} temperature`).toBeLessThanOrEqual(1)
       expect(config.maxTokens, `${key} maxTokens`).toBeGreaterThan(0)
     }
+  })
+
+  it("rejects a front-matter it cannot read", () => {
+    expect(() => parsePromptResource("x", "---\ntemperature: 0.5\n")).toThrow("닫히지 않았습니다")
+    expect(() => parsePromptResource("x", "---\nheat: 0.5\nmaxTokens: 10\n---\n")).toThrow(
+      "잘못되었습니다"
+    )
+    expect(() => parsePromptResource("x", "---\ntemperature: warm\n---\n")).toThrow(
+      "이해할 수 없습니다"
+    )
   })
 })

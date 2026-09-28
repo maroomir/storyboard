@@ -1,3 +1,7 @@
+---
+temperature: 0.3
+maxTokens: 800
+---
 ## system
 "{{characterName}}"의 행동/특성/성격만 추출하라.
 다른 캐릭터 이름 또는 특성이 포함된 문장은 제외하라.

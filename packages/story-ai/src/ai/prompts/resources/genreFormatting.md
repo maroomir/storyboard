@@ -1,3 +1,7 @@
+---
+temperature: 0.5
+maxTokens: 12000
+---
 ## system
 전문 작가처럼 장면을 {{format}} 형식으로 작성하라.
 {{#formatIs.novel}}

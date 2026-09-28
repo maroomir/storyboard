@@ -1,22 +1,9 @@
-import { z } from 'zod';
-
-import tuningData from './promptTuning.params.json';
+import { promptResourceKeys, promptResources } from './promptResource';
 import type { PromptConfig } from './types';
 
-// 프롬프트마다 «얼마나 흔들리게 쓸지(temperature)»와 «한 번에 얼마나 낼지(maxTokens)»를 정한다.
-// 값이 프롬프트 파일마다 흩어져 있으면 «검사류는 낮게, 창작류는 높게» 같은 결이 유지되는지 한눈에
-// 볼 수 없고, 분량 조정 때 파일을 서른 개 넘게 열어야 한다.
-// 모델을 가리지 않는 값이다. 한 모델에서만 관찰한 값은 modelProfiles.params.json 에 적는다.
-const promptConfigSchema = z.object({
-  temperature: z.number().min(0).max(2),
-  maxTokens: z.number().int().positive(),
-});
-
-const promptTuningSchema = z.record(z.string(), promptConfigSchema);
-
-export type PromptTuningKey = keyof typeof tuningData;
-
-const promptTuningTable = promptTuningSchema.parse(tuningData);
+// 프롬프트마다 «얼마나 흔들리게 쓸지(temperature)»와 «한 번에 얼마나 낼지(maxTokens)»는 그
+// 프롬프트의 리소스 파일 머리말에 있다. 이 모듈은 그 값을 읽는 창구이자 측정 하니스의 덮개다.
+export type PromptTuningKey = string;
 
 export type PromptTuningOverrides = Readonly<Partial<Record<string, Partial<PromptConfig>>>>;
 
@@ -35,22 +22,19 @@ export function resetPromptTuningOverrides(): void {
 }
 
 export function promptTuningKeys(): readonly PromptTuningKey[] {
-  return Object.keys(promptTuningTable) as readonly PromptTuningKey[];
+  return promptResourceKeys();
 }
 
+// The same live read also follows an author's prompt file laid over the bundled one.
 export function promptTuning(key: PromptTuningKey): PromptConfig {
-  const config = promptTuningTable[key];
-
-  if (config === undefined) {
-    throw new Error(`프롬프트 튜닝 값이 없습니다: ${key}`);
-  }
+  promptResources.config(key);
 
   return {
     get temperature(): number {
-      return promptTuningOverrides[key]?.temperature ?? config.temperature;
+      return promptTuningOverrides[key]?.temperature ?? promptResources.config(key).temperature;
     },
     get maxTokens(): number {
-      return promptTuningOverrides[key]?.maxTokens ?? config.maxTokens;
+      return promptTuningOverrides[key]?.maxTokens ?? promptResources.config(key).maxTokens;
     },
   };
 }
