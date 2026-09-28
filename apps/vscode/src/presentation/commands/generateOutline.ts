@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { GenerateOutlineResult, GenerateOutlineUseCase } from '@storyboard/story-engine';
+import type { GenerateOutlineResult } from '@storyboard/story-engine';
+import type { NovelManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { contractFieldLabels } from '@storyboard/story-format';
@@ -11,7 +12,7 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 const GENERATE_OUTLINE_COMMAND = 'storyboard.outline.generate';
 
 export type RegisterGenerateOutlineCommandDependencies = {
-  readonly generateOutlineUseCase: GenerateOutlineUseCase;
+  readonly novel: Pick<NovelManager, 'generateOutline'>;
   readonly logger: IStoryboardLogger;
 };
 
@@ -64,7 +65,7 @@ async function runWithProgress(
       cancellable: false,
     },
     async (progress) =>
-      await dependencies.generateOutlineUseCase.execute({
+      await dependencies.novel.generateOutline({
         workspaceRoot,
         overwrite,
         onProgress: (message) => progress.report({ message }),

@@ -3,7 +3,7 @@ import { uriExists } from '@/infrastructure/vscode/workspace';
 import * as vscode from 'vscode';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import {
   CardParseError,
   isInlineSceneSummary,
@@ -37,7 +37,7 @@ import { cardEditorViewType } from '@/contributionIds';
 export interface CardCustomEditorDependencies {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
-  readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
+  readonly cards: Pick<CardManager, 'collectProposals'>;
   readonly usageRecorder: UsageRecorder;
   readonly logger: IStoryboardLogger;
 }
@@ -221,7 +221,7 @@ function createCardEditorHandlers(
     'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
       const card = parseCard(document.getText());
       const workspaceRoot = getDocumentWorkspaceRoot(document);
-      const proposals = await dependencies.collectCardProposalsUseCase.execute({
+      const proposals = await dependencies.cards.collectProposals({
         workspaceRoot,
         card,
       });

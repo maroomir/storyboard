@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
-import type {
-  GenerateAllDraftsProgress,
-  GenerateAllDraftsSummary,
-  GenerateAllDraftsUseCase,
-} from '@storyboard/story-engine';
+import type { GenerateAllDraftsProgress, GenerateAllDraftsSummary } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IFileSystem, IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { stageProgressLabel } from './generateDraft';
@@ -15,7 +12,7 @@ const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
 
 export type RegisterGenerateAllDraftsCommandDependencies = {
   readonly fileSystem: IFileSystem;
-  readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
+  readonly drafts: Pick<DraftManager, 'generateAll'>;
   readonly logger: IStoryboardLogger;
 };
 
@@ -52,7 +49,7 @@ async function generateAllDraftsWithProgress(
       cancellable: true,
     },
     async (progress, token) =>
-      await dependencies.generateAllDraftsUseCase.execute({
+      await dependencies.drafts.generateAll({
         onProgress: (event) => progress.report({ message: formatProgress(event) }),
         shouldCancel: () => token.isCancellationRequested,
       }),

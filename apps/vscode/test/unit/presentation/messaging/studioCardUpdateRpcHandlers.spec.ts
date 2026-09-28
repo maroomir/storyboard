@@ -41,7 +41,7 @@ function harness(): Harness {
       createService: () => ({ extractStudioCardSeed: seed }),
       getTaskProvider: () => 'mock',
     },
-    createCardUseCase: {
+    cards: {
       exists,
       write: vi.fn(async (_root: unknown, card: unknown) => {
         written.push(card);

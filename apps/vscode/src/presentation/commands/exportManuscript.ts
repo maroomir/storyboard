@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { ExportManuscriptUseCase } from '@storyboard/story-engine';
+import type { ManuscriptManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ManuscriptExportFormat } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
@@ -19,7 +19,7 @@ const exportFormatItems: ExportFormatItem[] = [
 ];
 
 export interface RegisterExportManuscriptCommandDependencies {
-  readonly exportManuscriptUseCase: ExportManuscriptUseCase;
+  readonly manuscript: Pick<ManuscriptManager, 'loadExportSource' | 'writeExport'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -41,7 +41,7 @@ async function runExportManuscript(
     return;
   }
 
-  const source = await dependencies.exportManuscriptUseCase.loadSource(workspaceRoot);
+  const source = await dependencies.manuscript.loadExportSource(workspaceRoot);
 
   if (source.kind === 'missing_volume') {
     await vscode.window.showInformationMessage(
@@ -71,8 +71,7 @@ async function runExportManuscript(
 
   const result = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '원고 내보내는 중…' },
-    () =>
-      dependencies.exportManuscriptUseCase.writeExport(targetUri, source.markdown, picked.format),
+    () => dependencies.manuscript.writeExport(targetUri, source.markdown, picked.format),
   );
   if (!result.ok) {
     await reportFailure(result.message, dependencies.logger);

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { PromoteBibleCandidatesUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { BibleFact } from '@storyboard/story-format';
@@ -12,7 +12,7 @@ interface CandidateQuickPickItem extends vscode.QuickPickItem {
 }
 async function runPromote(
   logger: IStoryboardLogger,
-  useCase: PromoteBibleCandidatesUseCase,
+  cards: Pick<CardManager, 'prepareBiblePromotion' | 'promoteBibleFacts'>,
 ): Promise<void> {
   const folder = await getTargetWorkspaceFolder();
 
@@ -26,7 +26,7 @@ async function runPromote(
     return;
   }
 
-  const preparation = await useCase.prepare(folder.uri);
+  const preparation = await cards.prepareBiblePromotion(folder.uri);
 
   if (preparation.kind === 'no_candidates') {
     await vscode.window.showInformationMessage(
@@ -62,7 +62,7 @@ async function runPromote(
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: 'canon 승격 중…' },
       () =>
-        useCase.promote(
+        cards.promoteBibleFacts(
           folder.uri,
           picked.map((item) => item.fact),
         ),
@@ -81,9 +81,9 @@ async function runPromote(
 
 export function registerPromoteBibleCandidatesCommand(dependencies: {
   readonly logger: IStoryboardLogger;
-  readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
+  readonly cards: Pick<CardManager, 'prepareBiblePromotion' | 'promoteBibleFacts'>;
 }): vscode.Disposable {
   return vscode.commands.registerCommand(promoteCommand, () =>
-    runPromote(dependencies.logger, dependencies.promoteBibleCandidatesUseCase),
+    runPromote(dependencies.logger, dependencies.cards),
   );
 }

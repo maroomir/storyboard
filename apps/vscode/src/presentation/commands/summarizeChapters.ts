@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { SummarizeChaptersUseCase } from '@storyboard/story-engine';
+import type { SummarizeChaptersResult } from '@storyboard/story-engine';
+import type { ManuscriptManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -10,7 +11,7 @@ const SUMMARIZE_CHAPTERS_COMMAND = 'storyboard.manuscript.summaries';
 
 export type RegisterSummarizeChaptersCommandDependencies = {
   readonly logger: IStoryboardLogger;
-  readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
+  readonly manuscript: Pick<ManuscriptManager, 'summarizeChapters'>;
 };
 
 export function registerSummarizeChaptersCommand(
@@ -37,7 +38,7 @@ async function runSummarizeChapters(
       title: 'Storyboard 장별 요약',
     },
     async (progress, token) =>
-      await dependencies.summarizeChaptersUseCase.execute({
+      await dependencies.manuscript.summarizeChapters({
         workspaceRoot,
         onProgress: (current, total) =>
           progress.report({ message: `요약 중 (${current}/${total})…` }),
@@ -56,7 +57,7 @@ async function runSummarizeChapters(
 }
 
 async function reportFailure(
-  result: Exclude<Awaited<ReturnType<SummarizeChaptersUseCase['execute']>>, { readonly ok: true }>,
+  result: Exclude<SummarizeChaptersResult, { readonly ok: true }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'cancelled') return;

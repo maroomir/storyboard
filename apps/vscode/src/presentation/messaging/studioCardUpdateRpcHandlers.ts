@@ -4,14 +4,14 @@ import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-f
 import type { StudioCardSeed } from '@storyboard/story-ai';
 
 import type { AiGateway } from '@storyboard/story-engine';
-import type { CreateCardUseCase } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 
 export interface StudioCardUpdateRpcHandlersDependencies {
   readonly aiGateway: AiGateway;
-  readonly createCardUseCase: CreateCardUseCase;
+  readonly cards: Pick<CardManager, 'exists' | 'write'>;
   readonly logger: IStoryboardLogger;
   readonly getProjectRoot: () => Promise<vscode.Uri | undefined>;
 }
@@ -52,7 +52,7 @@ export function createStudioCardUpdateRpcHandlers(
 
       // NOTE: describing a card that already exists opens the existing file for an update
       // conversation instead of quietly minting a "-2" duplicate.
-      if (await deps.createCardUseCase.exists(root, cardType, seed.id)) {
+      if (await deps.cards.exists(root, cardType, seed.id)) {
         await openCard(root, seed);
         return {
           ok: true,
@@ -67,7 +67,7 @@ export function createStudioCardUpdateRpcHandlers(
           : createEmptyBackground(seed.id, seed.name);
 
       try {
-        const uri = await deps.createCardUseCase.write(root, card);
+        const uri = await deps.cards.write(root, card);
         await vscode.window.showTextDocument(uri, { preview: true });
       } catch (error) {
         deps.logger.warn(`Studio 카드 생성 실패: ${String(error)}`);

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { GenerateSceneBeatsUseCase } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import { isDirectSceneCardFile } from '@storyboard/story-engine';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
@@ -8,7 +8,7 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 const GENERATE_SCENE_BEATS_COMMAND = 'storyboard.scene.beats';
 
 export interface RegisterGenerateSceneBeatsCommandDependencies {
-  readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
+  readonly drafts: Pick<DraftManager, 'generateBeats'>;
 }
 
 function resolveSceneUriFromInvocation(invokedUri?: vscode.Uri): vscode.Uri | undefined {
@@ -38,7 +38,7 @@ async function runCommand(
     sceneUri,
     fileName,
   };
-  const kept = await dependencies.generateSceneBeatsUseCase.execute(request);
+  const kept = await dependencies.drafts.generateBeats(request);
   if (!kept.ok) {
     void showStoryboardFailure(kept.message);
     return;
@@ -59,7 +59,7 @@ async function runCommand(
     return;
   }
 
-  const forced = await dependencies.generateSceneBeatsUseCase.execute({ ...request, force: true });
+  const forced = await dependencies.drafts.generateBeats({ ...request, force: true });
   if (!forced.ok) {
     void showStoryboardFailure(forced.message);
     return;

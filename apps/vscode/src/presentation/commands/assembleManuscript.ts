@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { AssembleManuscriptUseCase } from '@storyboard/story-engine';
+import type { AssembleManuscriptResult } from '@storyboard/story-engine';
+import type { ManuscriptManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -9,7 +10,7 @@ import { storyboardMessages } from '@/presentation/notifications/storyboardMessa
 const ASSEMBLE_MANUSCRIPT_COMMAND = 'storyboard.manuscript.assemble';
 
 export type RegisterAssembleManuscriptCommandDependencies = {
-  readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
+  readonly manuscript: Pick<ManuscriptManager, 'assemble'>;
   readonly logger: IStoryboardLogger;
 };
 
@@ -32,7 +33,7 @@ async function runAssembleManuscript(
 
   const result = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
-    () => dependencies.assembleManuscriptUseCase.execute({ workspaceRoot }),
+    () => dependencies.manuscript.assemble({ workspaceRoot }),
   );
   if (!result.ok) {
     await reportFailure(result, dependencies.logger);
@@ -47,7 +48,7 @@ async function runAssembleManuscript(
 }
 
 async function reportFailure(
-  result: Exclude<Awaited<ReturnType<AssembleManuscriptUseCase['execute']>>, { readonly ok: true }>,
+  result: Exclude<AssembleManuscriptResult, { readonly ok: true }>,
   logger: IStoryboardLogger,
 ): Promise<void> {
   if (result.kind === 'missing_outline') {

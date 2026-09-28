@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
-import type {
-  AugmentDraftRequest,
-  AugmentDraftResult,
-  AugmentDraftUseCase,
-} from '@storyboard/story-engine';
+import type { AugmentDraftRequest, AugmentDraftResult } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
@@ -23,7 +20,7 @@ const editSelectionCommand = 'storyboard.draft.editSelection';
 const augmentPreviewScheme = 'storyboard-augment';
 
 export interface RegisterAugmentDraftCommandDependencies {
-  readonly augmentDraftUseCase: AugmentDraftUseCase;
+  readonly drafts: Pick<DraftManager, 'prepareAugmentation' | 'applyAugmentation'>;
   readonly logger: IStoryboardLogger;
 }
 
@@ -259,7 +256,7 @@ export function buildAugmentLabels(
 }
 
 async function runAugmentation(
-  useCase: AugmentDraftUseCase,
+  drafts: Pick<DraftManager, 'prepareAugmentation'>,
   progressTitle: string,
   request: AugmentDraftRequest,
 ): Promise<AugmentDraftResult> {
@@ -269,7 +266,7 @@ async function runAugmentation(
       title: progressTitle,
       cancellable: false,
     },
-    async () => await useCase.prepareAugmentedDraft(request),
+    async () => await drafts.prepareAugmentation(request),
   );
 }
 
@@ -292,12 +289,12 @@ async function presentAugmentDiff(
 }
 
 async function applyAugmentation(
-  useCase: AugmentDraftUseCase,
+  drafts: Pick<DraftManager, 'applyAugmentation'>,
   target: AugmentTarget,
   replacement: AugmentReplacement,
   successMessage: string,
 ): Promise<void> {
-  await useCase.applyAugmentedDraft({
+  await drafts.applyAugmentation({
     draftUri: target.editor.document.uri,
     sceneStem: target.draft.sceneStem,
     workspaceRoot: target.workspaceFolder.uri,
@@ -353,7 +350,7 @@ async function runAugmentDraft(
   const { editor, workspaceFolder, documentText, draft, selectionRange } = target;
   const labels = buildAugmentLabels(scope, instruction);
 
-  const result = await runAugmentation(dependencies.augmentDraftUseCase, labels.progressTitle, {
+  const result = await runAugmentation(dependencies.drafts, labels.progressTitle, {
     draftSceneStem: draft.sceneStem,
     instruction,
     sceneUri: target.sceneUri,
@@ -384,12 +381,7 @@ async function runAugmentDraft(
     return;
   }
 
-  await applyAugmentation(
-    dependencies.augmentDraftUseCase,
-    target,
-    replacement,
-    labels.successMessage,
-  );
+  await applyAugmentation(dependencies.drafts, target, replacement, labels.successMessage);
 }
 
 export function registerAugmentDraftCommands(

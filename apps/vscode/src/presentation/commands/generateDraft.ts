@@ -1,11 +1,7 @@
 import * as vscode from 'vscode';
 
-import {
-  type GenerateDraftUseCase,
-  type GenerateDraftResult,
-  type IFileSystem,
-} from '@storyboard/story-engine';
-import type { ReviseAfterGenerateGate } from '@storyboard/story-engine';
+import { type GenerateDraftResult, type IFileSystem } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -20,8 +16,7 @@ const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
   readonly fileSystem: IFileSystem;
-  readonly generateDraftUseCase: GenerateDraftUseCase;
-  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
+  readonly drafts: Pick<DraftManager, 'generate' | 'reviseAfterGenerate'>;
 }
 
 export function stageProgressLabel(stage: SceneGenerationPipelineStage): string {
@@ -69,7 +64,7 @@ async function runGenerateDraftForWorkspaceScene(
     async (progress, token) => {
       progress.report({ message: '준비 중…' });
 
-      const result = await dependencies.generateDraftUseCase.execute({
+      const result = await dependencies.drafts.generate({
         sceneUri,
         force,
         confirmSceneGrounding,
@@ -106,13 +101,10 @@ async function runGenerateDraftForWorkspaceScene(
       await openDraftResult(result);
 
       if (result.kind === 'generated') {
-        const reviseResult = await dependencies.reviseAfterGenerateGate.maybeRunAfterGenerate(
-          sceneUri,
-          {
-            onProgress: (message) => progress.report({ message }),
-            shouldCancel: () => token.isCancellationRequested,
-          },
-        );
+        const reviseResult = await dependencies.drafts.reviseAfterGenerate(sceneUri, {
+          onProgress: (message) => progress.report({ message }),
+          shouldCancel: () => token.isCancellationRequested,
+        });
         if (reviseResult?.preservedOriginal && reviseResult.rejection) {
           await vscode.window.showWarningMessage(
             `검수 재작성 결과가 안전 기준을 통과하지 않아 원본을 유지했습니다 (${reviseResult.rejection.candidateLength}자 / 원본 ${reviseResult.rejection.originalLength}자). Studio에서 '원본 축소'를 실행해 검토할 수 있습니다.`,

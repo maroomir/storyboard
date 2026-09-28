@@ -16,10 +16,9 @@ import type {
   StudioSessionSnapshot,
   StudioTarget,
 } from '@storyboard/story-engine';
-import type { StudioChatStage, StudioChatUseCase } from '@storyboard/story-engine';
+import type { StudioChatStage } from '@storyboard/story-engine';
+import type { CardManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';
-import type { CollectCardProposalsUseCase } from '@storyboard/story-engine';
-import type { CreateCardUseCase } from '@storyboard/story-engine';
 import { StudioToolDiagnostics } from './studioToolDiagnostics';
 import { createStudioCardUpdateRpcHandlers } from '@/presentation/messaging/studioCardUpdateRpcHandlers';
 import { createStudioChatRpcHandlers } from '@/presentation/messaging/studioChatRpcHandlers';
@@ -44,10 +43,9 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
   public constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly sessionRepository: IStudioSessionRepository,
-    private readonly chatUseCase: StudioChatUseCase,
+    private readonly studio: Pick<StudioManager, 'chat'>,
     private readonly aiGateway: AiGateway,
-    private readonly collectUseCase: CollectCardProposalsUseCase,
-    private readonly createCardUseCase: CreateCardUseCase,
+    private readonly cards: Pick<CardManager, 'collectProposals' | 'exists' | 'write'>,
     private readonly toolDiagnostics: StudioToolDiagnostics,
     private readonly reviewService: ProposalReviewService,
     private readonly followUpRepository: IStudioFollowUpRepository,
@@ -125,9 +123,9 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
         return { stage: await readStudioStage(vscodeFileSystem, root, target) };
       },
       ...createStudioChatRpcHandlers({
-        useCase: this.chatUseCase,
+        studio: this.studio,
         aiGateway: this.aiGateway,
-        collectUseCase: this.collectUseCase,
+        cards: this.cards,
         logger: this.logger,
         toolDiagnostics: this.toolDiagnostics,
         configBridge: this.configBridge,
@@ -137,7 +135,7 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
       }),
       ...createStudioCardUpdateRpcHandlers({
         aiGateway: this.aiGateway,
-        createCardUseCase: this.createCardUseCase,
+        cards: this.cards,
         logger: this.logger,
         getProjectRoot: () => resolveStoryboardWorkspaceRoot(),
       }),
@@ -188,10 +186,9 @@ export class SidebarStudioProvider implements vscode.WebviewViewProvider, vscode
 
 export function registerSidebarStudioProvider(
   context: vscode.ExtensionContext,
-  chatUseCase: StudioChatUseCase,
+  studio: Pick<StudioManager, 'chat'>,
   aiGateway: AiGateway,
-  collectUseCase: CollectCardProposalsUseCase,
-  createCardUseCase: CreateCardUseCase,
+  cards: Pick<CardManager, 'collectProposals' | 'exists' | 'write'>,
   reviewService: ProposalReviewService,
   configBridge: ConfigBridge,
   logger: IStoryboardLogger,
@@ -200,10 +197,9 @@ export function registerSidebarStudioProvider(
   const provider = new SidebarStudioProvider(
     context.extensionUri,
     new StudioSessionRepository(vscodeFileSystem),
-    chatUseCase,
+    studio,
     aiGateway,
-    collectUseCase,
-    createCardUseCase,
+    cards,
     toolDiagnostics,
     reviewService,
     new StudioFollowUpRepository(vscodeFileSystem),
