@@ -5,7 +5,7 @@ import {
   type NarratorCard,
 } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { joinStoryPath } from '#engine/paths/storyUri';
+import { loadTextFile, readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 
 // NOTE: 서술자 카드를 만들지 않은 작품이 대부분이라 디렉터리가 없는 것은 오류가 아니다. 읽을 수
@@ -15,32 +15,11 @@ export async function loadNarratorCards(
   paths: StoryboardProjectPaths,
   fileSystem: IFileSystem,
 ): Promise<ReadonlyMap<string, NarratorCard>> {
-  let entries;
-  try {
-    entries = await fileSystem.readDirectory(paths.narratorDirectory);
-  } catch {
-    return new Map();
-  }
+  const cards = await readDirectoryFiles(fileSystem, paths.narratorDirectory, {
+    isEligible: (fileName) =>
+      !isHiddenSceneFileName(fileName) && parseCardIdFromFileName(fileName) !== undefined,
+    read: async (uri) => parseNarratorCard(await loadTextFile(fileSystem, uri)),
+  });
 
-  const narrators = new Map<string, NarratorCard>();
-
-  for (const [fileName, entry] of entries) {
-    if (entry.type !== 'file' || isHiddenSceneFileName(fileName)) {
-      continue;
-    }
-
-    if (parseCardIdFromFileName(fileName) === undefined) {
-      continue;
-    }
-
-    try {
-      const bytes = await fileSystem.readFile(joinStoryPath(paths.narratorDirectory, fileName));
-      const card = parseNarratorCard(new TextDecoder().decode(bytes));
-      narrators.set(card.id, card);
-    } catch {
-      continue;
-    }
-  }
-
-  return narrators;
+  return new Map(cards.map((card) => [card.id, card]));
 }

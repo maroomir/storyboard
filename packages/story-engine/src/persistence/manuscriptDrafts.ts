@@ -1,5 +1,6 @@
 import { joinStoryPath } from '#engine/paths/storyUri';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ManuscriptDraftEntry } from '@storyboard/story-format';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
@@ -13,18 +14,11 @@ export async function collectDraftsByOrder(
 ): Promise<Map<number, ManuscriptDraftEntry>> {
   const draftsByOrder = new Map<number, ManuscriptDraftEntry>();
 
-  let entries: FileSystemDirectoryEntry[];
-  try {
-    entries = await fs.readDirectory(paths.draftDirectory);
-  } catch {
-    return draftsByOrder;
-  }
+  const names = await listDirectoryFileNames(fs, paths.draftDirectory, (name) =>
+    name.endsWith('.md'),
+  );
 
-  for (const [name, fileType] of entries) {
-    if (fileType.type !== 'file' || !name.endsWith('.md')) {
-      continue;
-    }
-
+  for (const name of names) {
     const stem = name.slice(0, -'.md'.length);
     const parts = parseSceneStem(stem);
     if (!parts) {

@@ -1,5 +1,6 @@
 import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyboard/story-format';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { createHash } from 'node:crypto';
 
 import { parseCard, parseScene } from '@storyboard/story-format';
@@ -149,22 +150,16 @@ async function readCardFiles(
 ): Promise<TextFile[]> {
   const files = await Promise.all(
     directories.map(async (directory) => {
-      try {
-        const entries = await fs.readDirectory(directory);
-        return await Promise.all(
-          entries
-            .filter(
-              ([name, entry]) =>
-                entry.type === 'file' &&
-                name.endsWith('.card') &&
-                !isIgnoredSampleCardFileName(name),
-            )
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([name]) => readTextFile(fs, joinStoryPath(directory, name))),
-        );
-      } catch {
-        return [];
-      }
+      const names = await listDirectoryFileNames(
+        fs,
+        directory,
+        (name) => name.endsWith('.card') && !isIgnoredSampleCardFileName(name),
+      );
+      return await Promise.all(
+        [...names]
+          .sort((left, right) => left.localeCompare(right))
+          .map((name) => readTextFile(fs, joinStoryPath(directory, name))),
+      );
     }),
   );
   return files.flat();

@@ -7,7 +7,7 @@ import type {
   IProjectRepository,
   ISceneCacheRepository,
   ISceneRepository,
-} from '#engine/ports/repositories';
+} from '#engine/application/drafts/draftRepositories';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';

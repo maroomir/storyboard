@@ -7,7 +7,7 @@ import {
 } from '@storyboard/story-format';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ISceneRepository } from '#engine/ports/repositories';
+import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import type { ConfigBridge } from '@storyboard/story-ai';
 
 export interface SceneBeatsOptions {

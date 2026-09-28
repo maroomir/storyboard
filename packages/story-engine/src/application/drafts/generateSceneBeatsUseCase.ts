@@ -4,7 +4,7 @@ import { buildSceneContext, SceneParseError } from '@storyboard/story-format';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ISceneRepository } from '#engine/ports/repositories';
+import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { hasSceneBeats, proposeSceneBeats } from './resolveSceneBeats';

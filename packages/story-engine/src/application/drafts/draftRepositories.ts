@@ -1,3 +1,4 @@
+// The repository ports the draft use cases consume; persistence implements them.
 import type { StoryUri } from '@storyboard/story-format';
 import type { Draft, SceneFile, SceneGrounding, StoryboardProject } from '@storyboard/story-format';
 import type { SceneCacheRecord } from '#engine/domain/files/sceneCache';

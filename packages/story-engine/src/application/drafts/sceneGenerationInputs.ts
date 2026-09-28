@@ -1,6 +1,6 @@
 import { hasStoryboardProjectAt } from '#engine/paths/projectDetection';
 import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-format';
-import type { IProjectRepository, ISceneRepository } from '#engine/ports/repositories';
+import type { IProjectRepository, ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import {
   buildNarrativeContext,
