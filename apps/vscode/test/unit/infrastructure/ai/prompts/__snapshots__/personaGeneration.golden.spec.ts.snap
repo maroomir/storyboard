@@ -1,0 +1,235 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PersonaGenerationPrompt golden > renders a bare character for the generic variant 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders a bare character for the rich variant 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders a bare character for the xs variant 1`] = `
+{
+  "system": "1인칭 페르소나 생성. '나는 ...' 형식, 200자 내외, 한국어.",
+  "user": "이름: 엘리아",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders a style without voice-relevant fields 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+목소리·말투: 짧은 존댓말
+단정한 어조
+설명: 도서부원
+안경을 쓴다
+목표: 진짜 친구를 만들고 싶다
+역할: main
+속성: age=17, mbti=ENFJ, sex=female
+특징: 침착함, 호기심, 고집",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders a style without voice-relevant fields 2`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.
+장르·톤: 로맨스",
+  "user": "이름: 엘리아
+목소리·말투: 짧은 존댓말
+단정한 어조
+설명: 도서부원
+안경을 쓴다
+목표: 진짜 친구를 만들고 싶다
+역할: main
+속성: age=17, mbti=ENFJ, sex=female
+특징: 침착함, 호기심, 고집",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+목소리·말투: 허세",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 2`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+설명: 설명",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 3`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+목표: 목표",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 4`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+역할: side",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 5`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+속성: age=30",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders each optional line alone 6`] = `
+{
+  "system": "1인칭 페르소나 생성. '나는 ...' 형식, 200자 내외, 한국어.",
+  "user": "이름: 엘리아
+특징: 용감함",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders empty and oversized collections 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders empty and oversized collections 2`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+특징: t1, t2, t3, t4, t5, t6, t7, t8, t9, t10",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders empty and oversized collections 3`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.",
+  "user": "이름: 엘리아
+특징: ",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders every line for the generic variant 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.
+장르·톤: 청춘
+문체 제약: 간결체
+작품 금지 규칙 — 어떤 장면에서도 위반하지 마라: 무근거 부활 금지
+이 장면의 시점 인물: 엘리아 — 이 인물의 지각과 내면만 서술하고, 다른 인물의 속마음은 겉으로 드러난 행동·표정으로만 전하라.
+이 장면의 인물 관계 단계: 경계 — 이 단계에 맞는 태도와 거리감으로 표현하라.",
+  "user": "이름: 엘리아
+목소리·말투: 짧은 존댓말
+단정한 어조
+설명: 도서부원
+안경을 쓴다
+목표: 진짜 친구를 만들고 싶다
+역할: main
+속성: age=17, mbti=ENFJ, sex=female
+특징: 침착함, 호기심, 고집",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders every line for the rich variant 1`] = `
+{
+  "system": "캐릭터 정보를 바탕으로 1인칭 페르소나를 작성하라.
+'나는 ...' 형식의 한국어로 간결하게 작성하라.
+목소리·말투가 주어지면 그 화법과 어조를 페르소나에 그대로 반영하라.
+목표가 주어지면 인물이 무엇을 원하고 무엇을 향해 움직이는지 페르소나에 드러내라.
+성격과 행동 패턴이 드러나야 한다.
+장르·톤: 청춘
+문체 제약: 간결체
+작품 금지 규칙 — 어떤 장면에서도 위반하지 마라: 무근거 부활 금지
+이 장면의 시점 인물: 엘리아 — 이 인물의 지각과 내면만 서술하고, 다른 인물의 속마음은 겉으로 드러난 행동·표정으로만 전하라.
+이 장면의 인물 관계 단계: 경계 — 이 단계에 맞는 태도와 거리감으로 표현하라.",
+  "user": "이름: 엘리아
+목소리·말투: 짧은 존댓말
+단정한 어조
+설명: 도서부원
+안경을 쓴다
+목표: 진짜 친구를 만들고 싶다
+역할: main
+속성: age=17, mbti=ENFJ, sex=female
+특징: 침착함, 호기심, 고집",
+}
+`;
+
+exports[`PersonaGenerationPrompt golden > renders every line for the xs variant 1`] = `
+{
+  "system": "1인칭 페르소나 생성. '나는 ...' 형식, 200자 내외, 한국어.",
+  "user": "이름: 엘리아
+목소리·말투: 짧은 존댓말
+단정한 어조
+설명: 도서부원
+안경을 쓴다
+목표: 진짜 친구를 만들고 싶다
+역할: main
+속성: age=17, mbti=ENFJ, sex=female
+특징: 침착함, 호기심, 고집",
+}
+`;
