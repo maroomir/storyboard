@@ -8,6 +8,7 @@ import {
   type AiUsage,
 } from '#ai/contracts/aiTypes';
 import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory } from '#ai/ai/providerFactory';
 
 const mockCatalogModelId = 'mock-default';
 
@@ -201,3 +202,5 @@ function extractLastContentLine(prompt: string, fallback: string): string {
 
   return line ?? fallback;
 }
+
+registerProviderFactory('mock', () => new MockAiProvider());

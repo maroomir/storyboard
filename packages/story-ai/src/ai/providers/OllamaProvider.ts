@@ -11,6 +11,7 @@ import {
   type AiUsage,
 } from '#ai/contracts/aiTypes';
 import { connectionCheckFailedMessage, generationFailedMessage, missingModelMessage } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory } from '#ai/ai/providerFactory';
 
 export interface OllamaClientLike {
   readonly get: (path: string) => Promise<unknown>;
@@ -161,3 +162,15 @@ function createDefaultOllamaClient(baseUrl: string): OllamaClientLike {
       (await client.post(path, body)).data as OllamaChatResponse,
   };
 }
+
+registerProviderFactory('ollama', (context) => {
+  const config = context.configBridge.getProviderConfig('ollama');
+
+  return new OllamaProvider({
+    baseUrl: config.baseUrl,
+    model: context.modelOverride ?? config.model,
+    ...(config.contextTokens === undefined ? {} : { contextTokens: config.contextTokens }),
+    ...(config.think === undefined ? {} : { think: config.think }),
+    createClient: context.clients.createOllamaClient,
+  });
+});

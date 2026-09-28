@@ -20,6 +20,7 @@ import {
   missingApiKeyMessage,
   missingModelMessage,
 } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;
 
@@ -247,3 +248,12 @@ function createDefaultClaudeClient(apiKey: string): ClaudeClientLike {
     },
   };
 }
+
+registerProviderFactory(
+  'claude',
+  async (context) =>
+    new ClaudeProvider({
+      ...(await resolveApiKeyProviderOptions('claude', context)),
+      createClient: context.clients.createClaudeClient,
+    }),
+);

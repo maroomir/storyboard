@@ -45,6 +45,7 @@ export * from './ai/prompts/studioValidation';
 export * from './ai/prompts/traitsExtraction';
 export * from './ai/prompts/types';
 export * from './ai/prompts/variant';
+export * from './ai/providerFactory';
 export * from './ai/providerRegistry';
 export * from './ai/providers/ClaudeProvider';
 export * from './ai/providers/GoogleProvider';

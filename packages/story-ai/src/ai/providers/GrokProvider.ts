@@ -18,6 +18,7 @@ import {
   missingModelMessage,
   providerCatalog,
 } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 // xAI serves Grok through an OpenAI-compatible chat completions endpoint, so the client shape is
 // the OpenAI one; only the base URL and the key differ.
@@ -113,3 +114,12 @@ function createDefaultGrokClient(apiKey: string): OpenAiClientLike {
     },
   };
 }
+
+registerProviderFactory(
+  'grok',
+  async (context) =>
+    new GrokProvider({
+      ...(await resolveApiKeyProviderOptions('grok', context)),
+      createClient: context.clients.createGrokClient,
+    }),
+);

@@ -1,11 +1,7 @@
 import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
 import { AiProviderError } from '#ai/contracts/aiProviderError';
-import { ClaudeProvider, type ClaudeClientLike } from './providers/ClaudeProvider';
-import { GoogleProvider, type GoogleClientLike } from './providers/GoogleProvider';
-import { GrokProvider } from './providers/GrokProvider';
-import { MockAiProvider } from './providers/MockAiProvider';
-import { OllamaProvider, type OllamaClientLike } from './providers/OllamaProvider';
-import { OpenAiProvider, type OpenAiClientLike } from './providers/OpenAiProvider';
+import './providers';
+import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
 import {
   type AiConnectionResult,
   type AiStreamChunk,
@@ -22,14 +18,9 @@ import { SecretStore } from '#ai/ports/SecretStore';
 import { ConfigBridge } from '#ai/ports/ConfigBridge';
 import type { PromptVariantId } from './prompts/types';
 
-export interface AiProviderRegistryOptions {
+export interface AiProviderRegistryOptions extends ProviderClientFactories {
   readonly secretStore: SecretStore;
   readonly configBridge: ConfigBridge;
-  readonly createClaudeClient?: (apiKey: string) => ClaudeClientLike;
-  readonly createGoogleClient?: (apiKey: string) => GoogleClientLike;
-  readonly createGrokClient?: (apiKey: string) => OpenAiClientLike;
-  readonly createOllamaClient?: (baseUrl: string) => OllamaClientLike;
-  readonly createOpenAiClient?: (apiKey: string) => OpenAiClientLike;
   // A fresh install has no `defaultProvider`, and silently generating with `mock` there writes a
   // fake draft that exits clean. With this on, a task that resolves to no configured provider is
   // refused with `missing-provider` so the host can ask the author to choose one.
@@ -124,47 +115,18 @@ export class AiProviderRegistry {
     providerId: AiProviderId,
     modelOverride?: string,
   ): Promise<AiProvider> {
-    switch (providerId) {
-      case 'mock':
-        return new MockAiProvider();
-      case 'openai':
-      case 'claude':
-      case 'google':
-      case 'grok':
-        return this.createApiKeyProvider(providerId, modelOverride);
-      case 'ollama':
-        return this.createOllamaProvider(modelOverride);
-    }
-  }
+    const {
+      secretStore,
+      configBridge,
+      requireConfiguredProvider: _guard,
+      ...clients
+    } = this.options;
 
-  private async createApiKeyProvider(
-    providerId: 'openai' | 'claude' | 'google' | 'grok',
-    modelOverride?: string,
-  ): Promise<AiProvider> {
-    const config = this.options.configBridge.getProviderConfig(providerId);
-    const apiKey = await this.options.secretStore.getApiKey(providerId);
-    const model = modelOverride ?? config.model;
-
-    switch (providerId) {
-      case 'openai':
-        return new OpenAiProvider({ apiKey, model, createClient: this.options.createOpenAiClient });
-      case 'claude':
-        return new ClaudeProvider({ apiKey, model, createClient: this.options.createClaudeClient });
-      case 'google':
-        return new GoogleProvider({ apiKey, model, createClient: this.options.createGoogleClient });
-      case 'grok':
-        return new GrokProvider({ apiKey, model, createClient: this.options.createGrokClient });
-    }
-  }
-
-  private createOllamaProvider(modelOverride?: string): AiProvider {
-    const config = this.options.configBridge.getProviderConfig('ollama');
-    return new OllamaProvider({
-      baseUrl: config.baseUrl,
-      model: modelOverride ?? config.model,
-      ...(config.contextTokens === undefined ? {} : { contextTokens: config.contextTokens }),
-      ...(config.think === undefined ? {} : { think: config.think }),
-      createClient: this.options.createOllamaClient,
+    return await createRegisteredProvider(providerId, {
+      configBridge,
+      secretStore,
+      clients,
+      ...(modelOverride === undefined ? {} : { modelOverride }),
     });
   }
 
