@@ -62,6 +62,8 @@ import { ManuscriptManager } from './managers/manuscriptManager';
 import { NovelManager } from './managers/novelManager';
 import { StudioManager } from './managers/studioManager';
 import { RunGate } from './runGate';
+import { loadPromptOverrides, type PromptOverrideReport } from './promptOverrides';
+import type { StoryUri } from '@storyboard/story-format';
 
 // What a host must supply before the engine can run: the six adapters that differ between the
 // extension, the CLI and the desktop app. Everything else is built here, once, the same way.
@@ -74,6 +76,9 @@ export interface StoryboardApplicationDependencies {
   // Where a paid call's token cost is persisted. A host without a usage panel leaves it out and
   // only the per-run meter sees the cost.
   readonly usageLedger?: IUsageSink;
+  // Directories holding the author's own prompt files, lowest precedence first (home, then the
+  // workspace). `loadPromptOverrides` reads them; a host without any leaves this out.
+  readonly promptOverrideDirectories?: readonly StoryUri[];
 }
 
 export interface StoryboardApplicationOptions {
@@ -136,6 +141,7 @@ export class StoryboardApplication {
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
   public readonly runGate: RunGate;
+  private readonly promptOverrideDirectories: readonly StoryUri[];
   public readonly aiGateway: AiGateway;
   public readonly aiProviderRegistry: AiProviderRegistry;
   public readonly configBridge: ConfigBridge;
@@ -156,6 +162,7 @@ export class StoryboardApplication {
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
+    this.promptOverrideDirectories = dependencies.promptOverrideDirectories ?? [];
     this.aiGateway = services.aiGateway;
     this.aiProviderRegistry = services.aiProviderRegistry;
     this.configBridge = services.configBridge;
@@ -164,6 +171,12 @@ export class StoryboardApplication {
     this.fileSystem = services.fileSystem;
     this.usageMeter = services.usageMeter;
     this.postGenerationUpdates = services.postGenerationUpdates;
+  }
+
+  // Applies the author's prompt files over the bundled text. Call it before the first generation;
+  // the report says which prompts were replaced and which files could not be used.
+  public loadPromptOverrides(): Promise<PromptOverrideReport> {
+    return loadPromptOverrides(this.fileSystem, this.promptOverrideDirectories);
   }
 
   public dispose(): void {

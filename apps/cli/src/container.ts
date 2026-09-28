@@ -1,10 +1,11 @@
 import {
+  getStoryboardProjectPaths,
   NodeUri,
   type StoryUri,
   type StoryWorkspaceFolder,
   type IUsageSink,
 } from '@storyboard/story-engine';
-import { StoryboardApplication } from '@storyboard/story-app';
+import { StoryboardApplication, type PromptOverrideReport } from '@storyboard/story-app';
 import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -39,6 +40,8 @@ export interface CliContainer extends Pick<
 > {
   readonly workspaceRoot: StoryUri;
   readonly homePaths: StoryboardHomePaths;
+  // Lays the author's prompt files (home, then this workspace) over the bundled prompts.
+  readonly loadPromptOverrides: () => Promise<PromptOverrideReport>;
   readonly workspaceConfigFile: string | undefined;
   // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
@@ -126,6 +129,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
 // feed is assembled once, for every app, by StoryboardApplication.
 export function createCliContainer(options: CliContainerOptions): CliContainer {
   const paths = resolveCliPaths(process.env);
+  const homePaths = resolveStoryboardHomePaths();
   const workspaceRoot = NodeUri.file(options.workspacePath);
   const folder: StoryWorkspaceFolder = { uri: workspaceRoot, name: 'workspace' };
 
@@ -156,6 +160,10 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
       secretStore,
       configBridge,
       ...(options.usageSink === undefined ? {} : { usageLedger: options.usageSink }),
+      promptOverrideDirectories: [
+        NodeUri.file(homePaths.promptsDirectory),
+        getStoryboardProjectPaths(workspaceRoot).promptDirectory,
+      ],
     },
     {
       generator: `storyboard@${options.version}`,
@@ -183,7 +191,8 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     workspaceRoot,
     version: options.version,
     canPrompt: options.canPrompt,
-    homePaths: resolveStoryboardHomePaths(),
+    homePaths,
+    loadPromptOverrides: () => application.loadPromptOverrides(),
     workspaceConfigFile,
     configWriteFile:
       configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??

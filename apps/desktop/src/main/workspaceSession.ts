@@ -115,6 +115,10 @@ export class WorkspaceSession {
       version: options.version,
       onInvalidConfigFile: options.onInvalidConfigFile,
     });
+    const prompts = await container.loadPromptOverrides();
+    for (const problem of prompts.problems) {
+      options.logger.warn(problem.message);
+    }
     const snapshots = new SnapshotService(await locateSnapshotRepository(options.workspacePath));
     const takeSnapshot = async (message: string): Promise<void> => {
       // NOTE: 버전 기록이 실패해도 작가의 글은 이미 디스크에 있다. 기록 실패로 작업을 막지 않는다.

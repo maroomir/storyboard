@@ -7,6 +7,8 @@ export interface StoryboardHomePaths {
   readonly secretsFile: string;
   readonly usageDirectory: string;
   readonly cacheDirectory: string;
+  // The author's own prompt wording for every workspace; a workspace's `.storyboard/prompts` wins.
+  readonly promptsDirectory: string;
 }
 
 export const workspaceConfigRelativePath = '.storyboard/config.json';
@@ -44,6 +46,7 @@ export function resolveStoryboardHomePaths(
     secretsFile: join(home, 'secrets.json'),
     usageDirectory: join(home, 'usage'),
     cacheDirectory: join(home, 'cache'),
+    promptsDirectory: join(home, 'prompts'),
   };
 }
 

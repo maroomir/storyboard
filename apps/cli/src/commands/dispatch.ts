@@ -250,6 +250,11 @@ export async function dispatch(
       container.fileSystem,
       getStoryboardProjectPaths(container.workspaceRoot),
     );
+
+    const prompts = await container.loadPromptOverrides();
+    for (const problem of prompts.problems) {
+      container.logger.warn(problem.message);
+    }
   }
 
   const outcome =

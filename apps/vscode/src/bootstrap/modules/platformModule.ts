@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { IStoryboardLogger } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, type IStoryboardLogger } from '@storyboard/story-engine';
 import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
@@ -55,8 +55,9 @@ export class PlatformModule implements IApplicationModule {
     }
 
     const logger = new OutputChannelLogger();
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     const homeStores = createStoryboardHomeStores({
-      workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
+      workspaceRoot: workspaceFolder?.uri.fsPath,
       onInvalidFile: (error): void => reportInvalidConfigFile(error.file, error.message, logger),
       onUnknownKey: (warning): void => logger.warn(warning.message),
     });
@@ -80,12 +81,24 @@ export class PlatformModule implements IApplicationModule {
         secretStore,
         configBridge,
         usageLedger: usageRecorder,
+        promptOverrideDirectories: [
+          vscode.Uri.file(homeStores.paths.promptsDirectory),
+          ...(workspaceFolder === undefined
+            ? []
+            : [getStoryboardProjectPaths(workspaceFolder.uri).promptDirectory]),
+        ],
       },
       {
         generator: `storyboard@${context.extension.packageJSON.version}`,
         lockOwner: 'vscode',
       },
     );
+
+    void application.loadPromptOverrides().then((report) => {
+      for (const problem of report.problems) {
+        logger.warn(problem.message);
+      }
+    });
 
     this.services = {
       drafts: application.drafts,

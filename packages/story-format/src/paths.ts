@@ -22,6 +22,8 @@ export interface StoryboardRelativePaths {
   readonly bibleCacheDirectory: string;
   readonly cardCacheDirectory: string;
   readonly studioSessionDirectory: string;
+  // The author's own prompt wording, one Markdown file per prompt, laid over the bundled text.
+  readonly promptDirectory: string;
   readonly bibleDirectory: string;
   readonly bibleCanon: string;
   readonly outlineDirectory: string;
@@ -62,6 +64,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   bibleCacheDirectory: '.storyboard/cache/bible',
   cardCacheDirectory: '.storyboard/cache/cards',
   studioSessionDirectory: '.storyboard/cache/studio-sessions',
+  promptDirectory: '.storyboard/prompts',
   bibleDirectory: '.storyboard/bible',
   bibleCanon: '.storyboard/bible/canon.yaml',
   outlineDirectory: '.storyboard/outline',

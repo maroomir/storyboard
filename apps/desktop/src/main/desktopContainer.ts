@@ -1,11 +1,12 @@
 import {
+  getStoryboardProjectPaths,
   NodeUri,
   UsageLedgerRecorder,
   type IStoryboardLogger,
   type StoryUri,
   type StoryWorkspaceFolder,
 } from '@storyboard/story-engine';
-import { StoryboardApplication } from '@storyboard/story-app';
+import { StoryboardApplication, type PromptOverrideReport } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import {
   configurationTargets,
@@ -38,6 +39,7 @@ export interface DesktopContainer extends Pick<
   readonly workspaceRoot: StoryUri;
   readonly fileSystem: NodeFileSystem;
   readonly configuration: FileConfiguration;
+  readonly loadPromptOverrides: () => Promise<PromptOverrideReport>;
   readonly usageLedger: UsageLedgerRecorder;
 }
 
@@ -82,6 +84,10 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
       secretStore,
       configBridge,
       usageLedger,
+      promptOverrideDirectories: [
+        NodeUri.file(options.homePaths.promptsDirectory),
+        getStoryboardProjectPaths(workspaceRoot).promptDirectory,
+      ],
     },
     { generator: `storyboard-desktop@${options.version}`, lockOwner: 'desktop' },
   );
@@ -104,5 +110,6 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     workspaceRoot,
     configuration,
     usageLedger,
+    loadPromptOverrides: () => application.loadPromptOverrides(),
   };
 }
