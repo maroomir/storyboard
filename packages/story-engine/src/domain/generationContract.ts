@@ -1,7 +1,7 @@
 import {
-  compositionPresetDefaults,
   contractFieldKeys,
   mainThreadId,
+  resolveCompositionPresetDefaults,
 } from '@storyboard/story-format';
 import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-format';
 
@@ -95,12 +95,11 @@ function findCompositionWarnings(setting: ProjectSetting): string[] {
     }
   }
 
-  if (
-    setting.composition === 'omnibus' &&
-    Object.keys(threads).length < compositionPresetDefaults.minimumOmnibusEpisodes
-  ) {
+  const minimumOmnibusEpisodes = resolveCompositionPresetDefaults().minimumOmnibusEpisodes;
+
+  if (setting.composition === 'omnibus' && Object.keys(threads).length < minimumOmnibusEpisodes) {
     warnings.push(
-      `옴니버스는 편을 ${compositionPresetDefaults.minimumOmnibusEpisodes}개 이상 두어야 합니다. threads에 편을 추가해 주세요.`,
+      `옴니버스는 편을 ${minimumOmnibusEpisodes}개 이상 두어야 합니다. threads에 편을 추가해 주세요.`,
     );
   }
 

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadResourceOverrides } from '@storyboard/story-app';
+import { buildCompositionPreset } from '@storyboard/story-engine';
 import {
   ChapterSummaryPrompt,
   GrammarCheckPrompt,
@@ -204,6 +205,32 @@ describe('loadResourceOverrides', () => {
     expect(report.problems.map((problem) => problem.message)).toEqual([
       expect.stringContaining('xs.providers'),
     ]);
+  });
+
+  it('lays compositionPresets.json over the preset defaults', async () => {
+    const home = join(root, 'home');
+    writePrompt(
+      home,
+      'compositionPresets.json',
+      '{ "frameThreadTitle": "겉이야기", "omnibusEpisodeCount": 4 }',
+    );
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [NodeUri.file(home)]);
+
+    expect(report.problems).toEqual([]);
+    expect(report.applied.map((entry) => entry.kind)).toEqual(['compositionPresets']);
+    expect(buildCompositionPreset({ composition: 'frame' }).setting.threads?.frame?.title).toBe(
+      '겉이야기',
+    );
+    expect(
+      Object.keys(buildCompositionPreset({ composition: 'omnibus' }).setting.threads ?? {}),
+    ).toHaveLength(4);
+
+    await loadResourceOverrides(new NodeFileSystem(), []);
+
+    expect(buildCompositionPreset({ composition: 'frame' }).setting.threads?.frame?.title).toBe(
+      '외화',
+    );
   });
 
   it('lists nothing when the directories do not exist', async () => {

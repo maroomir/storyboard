@@ -8,9 +8,12 @@ import {
   resetPromptVariantRules,
 } from '@storyboard/story-ai';
 import {
+  compositionPresetOverrideSchema,
   craftContractOverrideSchema,
   joinStoryPath,
+  overrideCompositionPresetDefaults,
   overrideCraftContractDefaults,
+  resetCompositionPresetDefaults,
   resetCraftContractDefaults,
   type StoryUri,
 } from '@storyboard/story-format';
@@ -21,9 +24,14 @@ export const resourceLayout = {
   promptDirectory: 'prompts',
   craftContractFile: 'craftContract.json',
   promptVariantsFile: 'promptVariants.json',
+  compositionPresetsFile: 'compositionPresets.json',
 } as const;
 
-export type ResourceOverrideKind = 'prompt' | 'craftContract' | 'promptVariants';
+export type ResourceOverrideKind =
+  | 'prompt'
+  | 'craftContract'
+  | 'promptVariants'
+  | 'compositionPresets';
 
 export interface ResourceOverrideApplied {
   readonly kind: ResourceOverrideKind;
@@ -56,6 +64,7 @@ export async function loadResourceOverrides(
   promptResources.clearOverrides();
   resetCraftContractDefaults();
   resetPromptVariantRules();
+  resetCompositionPresetDefaults();
 
   for (const root of roots) {
     await loadPromptFiles(fileSystem, joinStoryPath(root, resourceLayout.promptDirectory), report);
@@ -71,6 +80,17 @@ export async function loadResourceOverrides(
       schema: promptVariantRulesOverrideSchema.strict(),
       apply: overridePromptVariantRules,
     });
+    await loadJsonFile(
+      fileSystem,
+      joinStoryPath(root, resourceLayout.compositionPresetsFile),
+      report,
+      {
+        kind: 'compositionPresets',
+        label: '구성 프리셋 파일',
+        schema: compositionPresetOverrideSchema.strict(),
+        apply: overrideCompositionPresetDefaults,
+      },
+    );
   }
 
   return report;

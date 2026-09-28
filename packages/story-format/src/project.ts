@@ -88,20 +88,6 @@ export type StoryThread = z.infer<typeof storyThreadSchema>;
 
 export const mainThreadId = 'main';
 
-// 구성 프리셋이 만들 줄기의 이름과 개수. 프리셋·계약 검사·CLI 도움말이 같은 값을 봐야 «편 두 개
-// 이상»이라는 경고와 실제로 만들어지는 편 수가 어긋나지 않는다.
-export const compositionPresetDefaults = {
-  omnibusEpisodeCount: 3,
-  minimumOmnibusEpisodes: 2,
-  episodeThreadIdPrefix: 'ep',
-  episodeTitleSuffix: '편',
-  frameThreadId: 'frame',
-  frameThreadTitle: '외화',
-  innerThreadId: 'inner',
-  innerThreadTitle: '내화',
-  mainThreadTitle: '본편',
-} as const;
-
 export const projectNarrationSchema = z.object({
   // 이름 붙인 기본 서술자(`narrator/<id>.card`). 없으면 `pov`에서 암묵 서술자를 파생한다.
   defaultNarrator: z.string().trim().min(1).optional(),

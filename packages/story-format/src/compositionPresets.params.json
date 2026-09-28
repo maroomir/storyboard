@@ -1,0 +1,11 @@
+{
+  "omnibusEpisodeCount": 3,
+  "minimumOmnibusEpisodes": 2,
+  "episodeThreadIdPrefix": "ep",
+  "episodeTitleSuffix": "편",
+  "frameThreadId": "frame",
+  "frameThreadTitle": "외화",
+  "innerThreadId": "inner",
+  "innerThreadTitle": "내화",
+  "mainThreadTitle": "본편"
+}
