@@ -274,7 +274,7 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `default
 
 #### A. 키 없이 스모크 (`mock`)
 
-1. 아래 **「기본 provider 바꾸기」** 절차를 따라 `storyboard.defaultProvider`를 **`mock`** 으로 둔다.
+1. 아래 **「기본 provider 바꾸기」** 절차를 따라 `ai.provider.default`를 **`mock`** 으로 둔다.
 2. **6. 드래프트 생성**까지 키 없이 진행할 수 있어야 한다.
 
 #### B. 실제 provider (원격 API: OpenAI / Claude / Google)
@@ -286,7 +286,7 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `default
    - 키는 **VS Code SecretStorage**에만 들어가며, 일반 `settings.json`에는 저장되지 않는다.  
    - `mock`은 키가 없으므로 이 명령 목록에 나오지 않을 수 있다.
 
-2. **기본 provider를 그 provider로 맞추기** (`storyboard.defaultProvider`)  
+2. **기본 provider를 그 provider로 맞추기** (`~/.storyboard/config.json`의 `ai.provider.default`)  
    아래 둘 중 편한 방법 하나만 하면 된다.
 
    **방법 1 — 설정 UI (추천)**
@@ -302,7 +302,7 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `default
    2. JSON에 한 줄 추가(예: OpenAI):
 
    ```json
-   "storyboard.defaultProvider": "openai"
+   "ai.provider.default": "openai"
    ```
 
    저장 후 별도 재시작은 보통 필요 없다. 그다음 **6. 드래프트 생성**을 다시 실행한다.
@@ -315,15 +315,15 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `default
 
 `ollama`는 보통 **API 키가 아니라** 설정으로 서버 주소와 모델을 쓴다.
 
-- `storyboard.providers.ollama.baseUrl` (기본값 예: `http://localhost:11434`)
-- `storyboard.providers.ollama.model`
+- `providers.ollama.baseUrl` (기본값 예: `http://localhost:11434`)
+- `providers.ollama.model`
 
-위를 맞춘 뒤 `storyboard.defaultProvider`를 **`ollama`** 로 바꾸고 6번을 실행한다. Ollama 데몬이 떠 있는지도 확인한다.
+위를 맞춘 뒤 `ai.provider.default`를 **`ollama`** 로 바꾸고 6번을 실행한다. Ollama 데몬이 떠 있는지도 확인한다.
 
 #### D. 작업별로만 다른 provider 쓰기 (선택)
 
-`storyboard.tasks`에 작업별 `provider` override를 줄 수 있다.  
-기본은 `storyboard.defaultProvider`를 따른다. QA에서는 우선 **기본값만** 맞춰도 된다.
+`tasks.<작업>.provider`에 작업별 override를 줄 수 있다.  
+기본은 `ai.provider.default`를 따른다. QA에서는 우선 **기본값만** 맞춰도 된다.
 
 **성공 기준**
 

@@ -311,9 +311,9 @@ description:
   - `traits`·`recentDialogues`는 `apps/vscode/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
   - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
   - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
-  - 적재 전 자기검증: `storyboard.draft.verifyCardCandidates` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
+  - 적재 전 자기검증: `cards.candidates.verify` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
   - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-engine/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
-  - 위 후처리는 모두 `storyboard.draft.updateCardsAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
+  - 위 후처리는 모두 `cards.candidates.updateAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.2a `.card` (서술자 카드, `narrator/`)
 
@@ -741,9 +741,12 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 
 설정은 VSCode `contributes.configuration`이 아니라 두 앱이 함께 쓰는 파일에 있다. 공통값은
 `~/.storyboard/config.json`, 작품별 재정의는 `<워크스페이스>/.storyboard/config.json`이며, 키 이름은 아래에서
-`storyboard.` 접두사를 뺀 형태다(예: `defaultProvider`, `providers.claude.model`).
+`영역.대상.속성` 세 단이다(예: `ai.provider.default`, `providers.claude.model`, `revise.loop.maxIterations`).
+두 파일은 읽을 때마다 `packages/story-config/src/configSchema.ts`의 스키마로 검증한다 — 스키마가 거부하는 값은
+`ConfigFileError('invalid-value')`로 실행이 멈추고, 아무도 읽지 않는 키(옛 이름 포함)는 경고만 남기고 무시된다.
+옛 이름을 대신 읽어 주는 표는 두지 않는다.
 
-- `defaultProvider`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 카탈로그에 없으므로 «고르지 않음»으로 떨어져 생성이 거부된다 — 요금이 다른 provider 를 대신 골라 주지 않는다.
+- `ai.provider.default`: `"openai" | "claude" | "google" | "grok" | "ollama" | "mock"`. 설치 직후에는 비어 있고, 고르기 전까지 생성은 `missing-provider`로 거부된다. 0.9.2 이전의 `claude-code`·`codex`·`gemini-cli`는 카탈로그에 없으므로 «고르지 않음»으로 떨어져 생성이 거부된다 — 요금이 다른 provider 를 대신 골라 주지 않는다.
 - `providers.openai.model`: 기본 `gpt-6-sol`
 - `providers.claude.model`: 기본 `claude-sonnet-5`
 - `providers.google.model`: 기본 `gemini-3.8-flash`
@@ -759,10 +762,31 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `editor.grammar.realtime`: 기본 `false`
 - `editor.scene.prefixDigits`: 기본 `2`
 - `revise.loop.maxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
-- `storyboard.budget.runLimitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
+- `budget.run.limitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
 - `generation.section.outputLimit`: 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수, 기본 `7000`. 목표 분량을 이 값으로 나눠 구간 수가 정해지므로, **낮추면 호출이 늘고 분량이 늘어난다.** 프롬프트의 목표 글자 수 지시는 실측에서 무력했고(비단조), 분량을 실제로 움직이는 손잡이는 호출 수다. 모델·목표 분량에 따라 최적값이 다르므로 설정으로 열어 둔다.
 - `revise.loop.scoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
+
+### 6.1 작가 리소스 계층
+
+설정 값 말고도 작가가 고칠 수 있는 것이 넷 있고, 모두 **번들 기본값 → `~/.storyboard/` → `<워크스페이스>/.storyboard/`**
+세 계층으로 덮인다(나중 계층이 이긴다). 두 루트 안의 배치는 `packages/story-app/src/resourceOverrides.ts`가 소유하고,
+`StoryboardApplication.loadResourceOverrides()`가 작품 명령이 돌기 전에 읽어 못 쓰는 파일을 경고로 보고한다.
+
+| 루트 안 경로 | 덮는 것 | 번들 원본 |
+|---|---|---|
+| `prompts/<key>.md` | 프롬프트 문구(`## system`·`## user`, 변형은 `## system:xs`)와 머리말(`---` 사이 `temperature`·`maxTokens`) | `packages/story-ai/src/ai/prompts/resources/<key>.md` |
+| `craftContract.json` | 모든 생성 프롬프트에 붙는 작법 계약 기본값(적은 항목만 덮임; `project.json`의 `setting.craftContract`가 그 위에 마지막으로 적용) | `packages/story-format/src/craftContract.params.json` |
+| `promptVariants.json` | xs·rich 변형 선택 규칙(압축 프로바이더·모델 패턴·작업, 출력 하한·장문 작업·상위 모델 키워드) | `packages/story-ai/src/ai/prompts/promptVariants.params.json` |
+| `compositionPresets.json` | 구성 프리셋이 만드는 줄기 이름·편 수 | `packages/story-format/src/compositionPresets.params.json` |
+
+프롬프트 문구는 Mustache 부분집합(`{{name}}`·`{{#name}}…{{/name}}`·`{{^name}}`·`{{> partial}}`·`{{! }}`)으로 쓰고,
+복합 블록(작법 계약·목소리·시점 지시)은 TS partial로 넘긴다. 번들 문구는 `scripts/build-prompt-resources.mjs`가
+`resources.generated.ts`로 접어 앱이 번들하며, 골든 스냅샷 테스트가 이식 전후 바이트 동일을 지킨다.
+
+작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 그 출처는 `packages/story-app/src/parameterRegistry.ts`의
+`describeParameters`가 한 목록으로 만들고, CLI `storyboard params show`가 그것을 보인다. 조정 가능한 숫자 파일은
+`*.params.json` 접미로 통일했으며 목록은 `.claude/rules/coding-standards.md`의 파라미터 맵에 있다.
 
 API 키는 설정 파일이 아니라 `~/.storyboard/secrets.json`(모드 0600)에만 저장하며, 두 앱이 같은 파일을 읽는다.
 키가 필요한 provider는 `openai`·`claude`·`google`·`grok`이고, `mock`·`ollama`는 키가 없다.
@@ -1010,6 +1034,10 @@ packages/story-engine/src/
 
 packages/story-app/src/
   storyboardApplication.ts   # 호스트 어댑터 6개 → 엔진 객체 그래프를 한 번 조립하는 컴포지션 루트
+  managers/                  # drafts·manuscript·cards·novel·studio 파사드 — 앱이 부르는 동사
+  runGate.ts                 # 작품 실행 잠금
+  resourceOverrides.ts       # 작가 리소스 계층(prompts/·craftContract·promptVariants·compositionPresets) 로더
+  parameterRegistry.ts       # 설정·생성 손잡이·프롬프트 온도를 출처와 함께 한 목록으로
 
 apps/vscode/src/extension.ts
   -> bootstrap/                 # StoryboardApplication, lifecycle, DI 그래프
