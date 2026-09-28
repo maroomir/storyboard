@@ -1,0 +1,677 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ChapterPlanPrompt golden > demands a zero chapter count 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 0개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 0장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > demands both counts 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 8개, 각 장의 씬(scene)은 정확히 4개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 8장, 장당 4씬
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > demands the chapter count 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 12개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 12장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > demands the scene count 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+각 장의 씬(scene)은 정확히 3개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 장당 3씬
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders a linear plan for the generic variant 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders a linear plan for the rich variant 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders a linear plan for the xs variant 1`] = `
+{
+  "system": "act/chapter/scene 구조를 JSON 객체로 반환: {"acts":[{"id":"","title":"","chapters":[{"id":"","title":"","scenes":[{"id":"","title":"","purpose":"","characters":[],"foreshadowing":[]}]}]}]} (characters는 인물 id).",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders alternating-pov with narrators 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+이 작품은 시점 교차다. 장(chapter)마다 서술자를 번갈아 배정하고 그 장의 narrator에 id를 적어라: hana, jun.
+한 장 안에서는 서술자를 바꾸지 마라. 같은 사건을 두 서술자가 각각 서술하는 장은 두지 마라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders alternating-pov without narrators 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+로그라인: 로그라인만
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 2`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+주요 갈등: 
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 3`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+결말: 결말만
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 4`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+주제: 주제만
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders empty material for the generic variant 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+(시놉시스 정보 없음)
+
+[등장 인물]
+(등록된 인물 없음)",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders empty material for the xs variant 1`] = `
+{
+  "system": "act/chapter/scene 구조를 JSON 객체로 반환: {"acts":[{"id":"","title":"","chapters":[{"id":"","title":"","scenes":[{"id":"","title":"","purpose":"","characters":[],"foreshadowing":[]}]}]}]} (characters는 인물 id).",
+  "user": "[작품 계약]
+제목: 무제
+형식: screenplay
+언어: ko
+
+[시놉시스]
+(시놉시스 정보 없음)
+
+[등장 인물]
+(등록된 인물 없음)",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders frame with threads 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+이 작품은 액자식이다. 줄기는 다음과 같다: main(본편), past(과거).
+외화(다른 줄기를 감싸는 줄기)는 첫 장과 마지막 장에만 두고, 그 장의 thread에 외화 줄기의 id를 적어라.
+가운데 장들은 내화 줄기의 id를 적고, 외화가 내화를 여는 이유와 닫는 결말이 서로 맞물리게 하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders frame without threads or narrators 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders linear with threads 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders omnibus with narrators only 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
+
+exports[`ChapterPlanPrompt golden > renders omnibus with threads 1`] = `
+{
+  "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
+시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
+각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
+characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+{"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
+전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
+장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
+이 작품은 옴니버스다. 편은 2개이며 각 편은 자기 사건과 결말을 스스로 닫는다: main(본편), past(과거).
+한 편은 막(act) 하나에 대응시키고, 그 막에 속한 모든 장(chapter)의 thread에 그 편의 id를 적어라.
+편끼리는 세계와 인물만 공유하고 사건은 이어지지 않는다. 앞 편을 읽지 않아도 읽히게 하라.
+id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
+  "user": "[작품 계약]
+제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 80000자
+구성: 6장
+컨셉: 사라진 배
+설명: 항구 도시의 실종 사건
+태그: 항구, 실종
+금지 조건: 과도한 폭력
+문체 제약: 단문 위주
+품질 기준: 복선 회수
+
+[시놉시스]
+로그라인: 의사가 실종된 배를 쫓는다.
+주요 갈등: 선주와의 대립, 과거의 죄
+결말: 배가 돌아온다
+주제: 속죄
+
+[등장 인물]
+- elia: 엘리아 (main)
+- jun: 준
+- ha: 하",
+}
+`;
