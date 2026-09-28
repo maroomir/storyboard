@@ -70,7 +70,7 @@ async function runCollect(
     return '[도구 실패: collectFromDrafts] 카드를 읽지 못해 수집할 수 없었다.';
   }
 
-  const proposals = await deps.collectUseCase.execute(input.workspaceRoot, card);
+  const proposals = await deps.collectUseCase.execute({ workspaceRoot: input.workspaceRoot, card });
 
   if (proposals.length === 0) {
     return '[도구 결과: collectFromDrafts] 초안에서 카드에 더할 새 정보를 찾지 못했다.';

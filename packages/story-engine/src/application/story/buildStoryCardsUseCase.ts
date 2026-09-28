@@ -1,4 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
+import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -88,21 +89,28 @@ export interface BuildStoryCardsProposal {
   readonly snapshots: readonly StoryFileSnapshot[];
 }
 
-export class BuildStoryCardsUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly repository: IStoryFeatureRepository,
-  ) {}
+export interface BuildStoryCardsUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly repository: IStoryFeatureRepository;
+}
 
-  public async execute(workspaceRoot: StoryUri): Promise<BuildStoryCardsProposal> {
-    const source = await this.repository.load(workspaceRoot);
+export interface BuildStoryCardsRequest {
+  readonly workspaceRoot: StoryUri;
+}
+
+export class BuildStoryCardsUseCase implements IUseCase<BuildStoryCardsRequest, BuildStoryCardsProposal> {
+  public constructor(private readonly deps: BuildStoryCardsUseCaseDependencies) {}
+
+  public async execute(request: BuildStoryCardsRequest): Promise<BuildStoryCardsProposal> {
+    const { workspaceRoot } = request;
+    const source = await this.deps.repository.load(workspaceRoot);
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '카드를 구성할 유효한 씬이 없습니다.');
     }
 
     const sceneStems = new Set(source.scenes.map((scene) => scene.stem));
     const chunks = groupScenes(source.scenes);
-    const aiService = this.aiGateway.createService(workspaceRoot);
+    const aiService = this.deps.aiGateway.createService(workspaceRoot);
     const responses = await mapWithConcurrency(chunks, MAX_PARALLEL_REQUESTS, async (chunk) => {
       const response = await aiService.generateText(
         'storyCardBuild',
@@ -178,7 +186,7 @@ export class BuildStoryCardsUseCase {
   }
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
-    return await this.repository.hasCurrentSnapshots(snapshots);
+    return await this.deps.repository.hasCurrentSnapshots(snapshots);
   }
 }
 

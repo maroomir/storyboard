@@ -12,7 +12,7 @@ describe("PromoteBibleCandidatesUseCase", () => {
       loadRecords: vi.fn(async () => []),
       saveCanon: vi.fn()
     }
-    const useCase = new PromoteBibleCandidatesUseCase(repository)
+    const useCase = new PromoteBibleCandidatesUseCase({ repository })
 
     const result = await useCase.prepare({} as never)
 
@@ -26,7 +26,7 @@ describe("PromoteBibleCandidatesUseCase", () => {
       loadRecords: vi.fn(),
       saveCanon: vi.fn(async () => undefined)
     }
-    const useCase = new PromoteBibleCandidatesUseCase(repository)
+    const useCase = new PromoteBibleCandidatesUseCase({ repository })
     const fact = {
       id: "character:elia:occupation",
       key: "occupation",

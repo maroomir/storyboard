@@ -27,12 +27,11 @@ describe("CollectCardProposalsUseCase", () => {
       extractTraitsByCharacter: vi.fn(async () => ({ 엘리아: [] }))
     }
     const gateway = { createService: vi.fn(() => service) }
-    const useCase = new CollectCardProposalsUseCase(gateway as never, repository)
+    const useCase = new CollectCardProposalsUseCase({ aiGateway: gateway as never, repository })
 
-    const result = await useCase.execute({} as never, {
-      id: "elia",
-      name: "엘리아",
-      type: "character"
+    const result = await useCase.execute({
+      workspaceRoot: {} as never,
+      card: { id: "elia", name: "엘리아", type: "character" }
     })
 
     expect(result).toEqual([
@@ -55,12 +54,11 @@ describe("CollectCardProposalsUseCase", () => {
       loadDrafts: vi.fn(async () => [{ body: "다른 인물만 등장한다.", sceneStem: "01-arrival" }])
     }
     const gateway = { createService: vi.fn(() => ({})) }
-    const useCase = new CollectCardProposalsUseCase(gateway as never, repository)
+    const useCase = new CollectCardProposalsUseCase({ aiGateway: gateway as never, repository })
 
-    const result = await useCase.execute({} as never, {
-      id: "elia",
-      name: "엘리아",
-      type: "character"
+    const result = await useCase.execute({
+      workspaceRoot: {} as never,
+      card: { id: "elia", name: "엘리아", type: "character" }
     })
 
     expect(result).toEqual([])

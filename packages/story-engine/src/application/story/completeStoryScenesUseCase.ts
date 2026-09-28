@@ -1,4 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
+import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -48,21 +49,28 @@ export interface CompleteStoryScenesProposal {
   readonly snapshots: readonly StoryFileSnapshot[];
 }
 
-export class CompleteStoryScenesUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly repository: IStoryFeatureRepository,
-  ) {}
+export interface CompleteStoryScenesUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly repository: IStoryFeatureRepository;
+}
 
-  public async execute(workspaceRoot: StoryUri): Promise<CompleteStoryScenesProposal> {
-    const source = await this.repository.load(workspaceRoot);
+export interface CompleteStoryScenesRequest {
+  readonly workspaceRoot: StoryUri;
+}
+
+export class CompleteStoryScenesUseCase implements IUseCase<CompleteStoryScenesRequest, CompleteStoryScenesProposal> {
+  public constructor(private readonly deps: CompleteStoryScenesUseCaseDependencies) {}
+
+  public async execute(request: CompleteStoryScenesRequest): Promise<CompleteStoryScenesProposal> {
+    const { workspaceRoot } = request;
+    const source = await this.deps.repository.load(workspaceRoot);
 
     if (source.scenes.length === 0) {
       throw new StoryFeatureSourceError('no-valid-scenes', '완결할 유효한 씬이 없습니다.');
     }
 
     const sceneContext = await this.buildSceneContext(workspaceRoot, source.scenes);
-    const response = await this.aiGateway.createService(workspaceRoot).generateText(
+    const response = await this.deps.aiGateway.createService(workspaceRoot).generateText(
       'storyCompletion',
       [
         {
@@ -162,7 +170,7 @@ export class CompleteStoryScenesUseCase {
   }
 
   public async hasCurrentSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
-    return await this.repository.hasCurrentSnapshots(snapshots);
+    return await this.deps.repository.hasCurrentSnapshots(snapshots);
   }
 
   private async buildSceneContext(
@@ -179,7 +187,7 @@ export class CompleteStoryScenesUseCase {
     const tail = fullScenes.slice(-5);
     const previousText = JSON.stringify(fullScenes.slice(0, -5));
     const chunks = splitText(previousText, SUMMARY_CHUNK_SIZE);
-    const aiService = this.aiGateway.createService(workspaceRoot);
+    const aiService = this.deps.aiGateway.createService(workspaceRoot);
     const summaries = await Promise.all(
       chunks.map(async (chunk) => {
         const response = await aiService.generateText(

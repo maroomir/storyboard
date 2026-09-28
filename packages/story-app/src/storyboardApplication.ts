@@ -231,11 +231,20 @@ function buildServices(
     }),
     assembleManuscriptUseCase,
     augmentDraftUseCase: new AugmentDraftUseCase({ fileSystem, aiGateway, logger, configBridge }),
-    buildStoryCardsUseCase: new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository),
-    collectCardProposalsUseCase: new CollectCardProposalsUseCase(aiGateway, cardCollectRepository),
-    completeStoryScenesUseCase: new CompleteStoryScenesUseCase(aiGateway, storyFeatureRepository),
+    buildStoryCardsUseCase: new BuildStoryCardsUseCase({
+      aiGateway,
+      repository: storyFeatureRepository,
+    }),
+    collectCardProposalsUseCase: new CollectCardProposalsUseCase({
+      aiGateway,
+      repository: cardCollectRepository,
+    }),
+    completeStoryScenesUseCase: new CompleteStoryScenesUseCase({
+      aiGateway,
+      repository: storyFeatureRepository,
+    }),
     condenseDraftUseCase: new CondenseDraftUseCase({ aiGateway, logger }),
-    createCardUseCase: new CreateCardUseCase(cardWriterRepository),
+    createCardUseCase: new CreateCardUseCase({ repository: cardWriterRepository }),
     expandDraftUseCase: new ExpandDraftUseCase({ aiGateway, logger }),
     exportManuscriptUseCase: new ExportManuscriptUseCase({
       repository: manuscriptAssemblyRepository,
@@ -275,13 +284,17 @@ function buildServices(
       usageSink,
       fileSystem,
     }),
-    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase(bibleCandidateRepository),
-    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase(cardCandidateRepository),
-    recommendCardsUseCase: new RecommendCardsUseCase(
+    promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase({
+      repository: bibleCandidateRepository,
+    }),
+    promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase({
+      repository: cardCandidateRepository,
+    }),
+    recommendCardsUseCase: new RecommendCardsUseCase({
       aiGateway,
       logger,
-      cardRecommendationRepository,
-    ),
+      repository: cardRecommendationRepository,
+    }),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase({
       aiGateway,
       logger,
@@ -290,7 +303,7 @@ function buildServices(
     reviseAfterGenerateGate,
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase({ fileSystem }),
-    studioChatUseCase: new StudioChatUseCase(aiGateway, logger),
+    studioChatUseCase: new StudioChatUseCase({ aiGateway, logger }),
     summarizeChaptersUseCase,
   };
 }

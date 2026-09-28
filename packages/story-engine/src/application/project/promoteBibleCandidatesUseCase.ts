@@ -19,25 +19,34 @@ export type PrepareBibleCandidatePromotionResult =
   | { readonly kind: 'no_candidates' }
   | { readonly kind: 'no_new_candidates' };
 
+export interface PromoteBibleCandidatesUseCaseDependencies {
+  readonly repository: IBibleCandidateRepository;
+}
+
 export class PromoteBibleCandidatesUseCase {
-  public constructor(private readonly repository: IBibleCandidateRepository) {}
+  public constructor(private readonly deps: PromoteBibleCandidatesUseCaseDependencies) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareBibleCandidatePromotionResult> {
-    const candidates = aggregateCandidateFacts(await this.repository.loadRecords(workspaceRoot));
+    const candidates = aggregateCandidateFacts(
+      await this.deps.repository.loadRecords(workspaceRoot),
+    );
 
     if (candidates.length === 0) {
       return { kind: 'no_candidates' };
     }
 
-    const facts = selectNewCandidates(candidates, await this.repository.loadCanon(workspaceRoot));
+    const facts = selectNewCandidates(
+      candidates,
+      await this.deps.repository.loadCanon(workspaceRoot),
+    );
 
     return facts.length === 0 ? { kind: 'no_new_candidates' } : { facts, kind: 'ready' };
   }
 
   public async promote(workspaceRoot: StoryUri, facts: readonly BibleFact[]): Promise<void> {
-    const canon = await this.repository.loadCanon(workspaceRoot);
+    const canon = await this.deps.repository.loadCanon(workspaceRoot);
     const nextCanon = mergeCanonFacts(canon, facts.map(seedPromotedFact));
 
-    await this.repository.saveCanon(workspaceRoot, nextCanon);
+    await this.deps.repository.saveCanon(workspaceRoot, nextCanon);
   }
 }

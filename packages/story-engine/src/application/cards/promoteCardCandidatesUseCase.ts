@@ -27,17 +27,21 @@ export type PromoteCardCandidatesResult =
   | { readonly kind: 'save_failed'; readonly updatedCardCount: 0 }
   | { readonly kind: 'promoted'; readonly updatedCardCount: number };
 
+export interface PromoteCardCandidatesUseCaseDependencies {
+  readonly repository: ICardCandidateRepository;
+}
+
 export class PromoteCardCandidatesUseCase {
-  public constructor(private readonly repository: ICardCandidateRepository) {}
+  public constructor(private readonly deps: PromoteCardCandidatesUseCaseDependencies) {}
 
   public async prepare(workspaceRoot: StoryUri): Promise<PrepareCardCandidatePromotionResult> {
-    const items = collectCardCandidateItems(await this.repository.loadRecords(workspaceRoot));
+    const items = collectCardCandidateItems(await this.deps.repository.loadRecords(workspaceRoot));
 
     if (items.length === 0) {
       return { kind: 'no_candidates' };
     }
 
-    const cards = await this.repository.loadCards(
+    const cards = await this.deps.repository.loadCards(
       workspaceRoot,
       new Set(items.map((item) => item.cardId)),
     );
@@ -52,13 +56,13 @@ export class PromoteCardCandidatesUseCase {
     workspaceRoot: StoryUri,
     items: readonly CardCandidateItem[],
   ): Promise<PromoteCardCandidatesResult> {
-    const updatedCardCount = await this.repository.apply(workspaceRoot, items);
+    const updatedCardCount = await this.deps.repository.apply(workspaceRoot, items);
 
     if (updatedCardCount === 0) {
       return { kind: 'save_failed', updatedCardCount };
     }
 
-    await this.repository.prune(workspaceRoot, new Set(items.map(cardCandidateItemKey)));
+    await this.deps.repository.prune(workspaceRoot, new Set(items.map(cardCandidateItemKey)));
 
     return { kind: 'promoted', updatedCardCount };
   }

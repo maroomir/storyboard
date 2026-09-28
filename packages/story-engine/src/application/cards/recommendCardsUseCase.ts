@@ -1,4 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
+import type { IUseCase } from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   buildCardRecommendations,
@@ -37,12 +38,17 @@ export type RecommendCardsResult =
       readonly recommendations: readonly RecommendedCard[];
     };
 
-export class RecommendCardsUseCase {
-  public constructor(
-    private readonly aiGateway: ICardRecommendationAiGateway,
-    private readonly logger: IStoryboardLogger,
-    private readonly repository: ICardRecommendationRepository,
-  ) {}
+export interface RecommendCardsUseCaseDependencies {
+  readonly aiGateway: ICardRecommendationAiGateway;
+  readonly logger: IStoryboardLogger;
+  readonly repository: ICardRecommendationRepository;
+}
+
+export class RecommendCardsUseCase implements IUseCase<
+  RecommendCardsRequest,
+  RecommendCardsResult
+> {
+  public constructor(private readonly deps: RecommendCardsUseCaseDependencies) {}
 
   public async execute(request: RecommendCardsRequest): Promise<RecommendCardsResult> {
     if (request.shouldCancel?.()) {
@@ -50,7 +56,7 @@ export class RecommendCardsUseCase {
     }
 
     try {
-      const input = await this.repository.load(request.workspaceRoot, request.category);
+      const input = await this.deps.repository.load(request.workspaceRoot, request.category);
 
       if (input.sources.length === 0) {
         return { kind: 'no_sources', ok: true };
@@ -60,7 +66,7 @@ export class RecommendCardsUseCase {
         category: request.category,
         sources: input.sources,
         existingNames: input.existingNames,
-        aiService: this.aiGateway.createService(request.workspaceRoot),
+        aiService: this.deps.aiGateway.createService(request.workspaceRoot),
       });
 
       if (request.shouldCancel?.()) {
@@ -69,7 +75,7 @@ export class RecommendCardsUseCase {
 
       return { kind: 'recommended', ok: true, recommendations };
     } catch (error) {
-      this.logger.error('Card recommendation failed', error);
+      this.deps.logger.error('Card recommendation failed', error);
 
       return {
         kind: 'failed',

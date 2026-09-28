@@ -27,7 +27,7 @@ describe("PromoteCardCandidatesUseCase", () => {
       loadRecords: vi.fn(async () => [candidateRecord] as never),
       prune: vi.fn()
     }
-    const useCase = new PromoteCardCandidatesUseCase(repository)
+    const useCase = new PromoteCardCandidatesUseCase({ repository })
 
     const result = await useCase.prepare({} as never)
 
@@ -41,7 +41,7 @@ describe("PromoteCardCandidatesUseCase", () => {
       loadRecords: vi.fn(),
       prune: vi.fn(async () => undefined)
     }
-    const useCase = new PromoteCardCandidatesUseCase(repository)
+    const useCase = new PromoteCardCandidatesUseCase({ repository })
     const item = {
       cardId: "minseo",
       key: "occupation",
@@ -66,7 +66,7 @@ describe("PromoteCardCandidatesUseCase", () => {
       loadRecords: vi.fn(),
       prune: vi.fn()
     }
-    const useCase = new PromoteCardCandidatesUseCase(repository)
+    const useCase = new PromoteCardCandidatesUseCase({ repository })
 
     const result = await useCase.promote({} as never, [])
 
