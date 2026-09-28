@@ -13,6 +13,7 @@ export * from './manuscriptAssembly';
 export * from './narrator';
 export * from './outline';
 export * from './paths';
+export * from './craftContract';
 export * from './project';
 export * from './sampleCard';
 export * from './scene';

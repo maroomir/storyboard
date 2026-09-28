@@ -5,7 +5,12 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadResourceOverrides } from '@storyboard/story-app';
-import { ChapterSummaryPrompt, GrammarCheckPrompt, promptResources } from '@storyboard/story-ai';
+import {
+  ChapterSummaryPrompt,
+  GrammarCheckPrompt,
+  promptResources,
+  selectPromptVariant,
+} from '@storyboard/story-ai';
 import { NodeUri, resolveCraftContract, defaultCraftContract } from '@storyboard/story-format';
 import { NodeFileSystem } from '@storyboard/story-node';
 
@@ -159,6 +164,46 @@ describe('loadResourceOverrides', () => {
       expect.stringContaining('broken'),
     ]);
     expect(resolveCraftContract(undefined)).toEqual(defaultCraftContract);
+  });
+
+  it('lays promptVariants.json over the bundled variant rules', async () => {
+    const home = join(root, 'home');
+    const workspace = join(root, 'ws', '.storyboard');
+    const claudeGrammar = {
+      providerId: 'claude',
+      taskName: 'grammarCheck',
+      model: 'claude-x',
+    } as const;
+    writePrompt(home, 'promptVariants.json', '{ "xs": { "providers": ["claude"] } }');
+    writePrompt(workspace, 'promptVariants.json', '{ "xs": { "tasks": ["grammarCheck"] } }');
+
+    expect(selectPromptVariant(claudeGrammar)).toBe('generic');
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [
+      NodeUri.file(home),
+      NodeUri.file(workspace),
+    ]);
+
+    expect(report.problems).toEqual([]);
+    expect(report.applied.map((entry) => entry.kind)).toEqual(['promptVariants', 'promptVariants']);
+    expect(selectPromptVariant(claudeGrammar)).toBe('xs');
+    expect(selectPromptVariant({ ...claudeGrammar, model: 'claude-opus-5-5' })).toBe('xs');
+
+    await loadResourceOverrides(new NodeFileSystem(), []);
+
+    expect(selectPromptVariant(claudeGrammar)).toBe('generic');
+  });
+
+  it('reports a variant rule it cannot use', async () => {
+    const home = join(root, 'home');
+    writePrompt(home, 'promptVariants.json', '{ "xs": { "providers": ["nope"] } }');
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [NodeUri.file(home)]);
+
+    expect(report.applied).toEqual([]);
+    expect(report.problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('xs.providers'),
+    ]);
   });
 
   it('lists nothing when the directories do not exist', async () => {

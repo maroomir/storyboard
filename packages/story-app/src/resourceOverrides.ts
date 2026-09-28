@@ -1,5 +1,12 @@
 import { listDirectoryFileNames, type IFileSystem } from '@storyboard/story-engine';
-import { PromptResourceError, promptResourceKeys, promptResources } from '@storyboard/story-ai';
+import {
+  PromptResourceError,
+  overridePromptVariantRules,
+  promptResourceKeys,
+  promptResources,
+  promptVariantRulesOverrideSchema,
+  resetPromptVariantRules,
+} from '@storyboard/story-ai';
 import {
   craftContractOverrideSchema,
   joinStoryPath,
@@ -13,9 +20,10 @@ import {
 export const resourceLayout = {
   promptDirectory: 'prompts',
   craftContractFile: 'craftContract.json',
+  promptVariantsFile: 'promptVariants.json',
 } as const;
 
-export type ResourceOverrideKind = 'prompt' | 'craftContract';
+export type ResourceOverrideKind = 'prompt' | 'craftContract' | 'promptVariants';
 
 export interface ResourceOverrideApplied {
   readonly kind: ResourceOverrideKind;
@@ -47,14 +55,22 @@ export async function loadResourceOverrides(
 
   promptResources.clearOverrides();
   resetCraftContractDefaults();
+  resetPromptVariantRules();
 
   for (const root of roots) {
     await loadPromptFiles(fileSystem, joinStoryPath(root, resourceLayout.promptDirectory), report);
-    await loadCraftContractFile(
-      fileSystem,
-      joinStoryPath(root, resourceLayout.craftContractFile),
-      report,
-    );
+    await loadJsonFile(fileSystem, joinStoryPath(root, resourceLayout.craftContractFile), report, {
+      kind: 'craftContract',
+      label: '작법 계약 파일',
+      schema: craftContractOverrideSchema.strict(),
+      apply: overrideCraftContractDefaults,
+    });
+    await loadJsonFile(fileSystem, joinStoryPath(root, resourceLayout.promptVariantsFile), report, {
+      kind: 'promptVariants',
+      label: '프롬프트 변형 규칙 파일',
+      schema: promptVariantRulesOverrideSchema.strict(),
+      apply: overridePromptVariantRules,
+    });
   }
 
   return report;
@@ -95,32 +111,52 @@ async function loadPromptFiles(
   }
 }
 
-async function loadCraftContractFile(
+// The shape of a zod schema's safeParse, so this package needs no zod of its own.
+interface SchemaLike<T> {
+  safeParse(value: unknown):
+    | { readonly success: true; readonly data: T }
+    | {
+        readonly success: false;
+        readonly error: {
+          readonly issues: readonly {
+            readonly path: readonly PropertyKey[];
+            readonly message: string;
+          }[];
+        };
+      };
+}
+
+interface JsonResource<T> {
+  readonly kind: ResourceOverrideKind;
+  readonly label: string;
+  readonly schema: SchemaLike<T>;
+  readonly apply: (value: T) => void;
+}
+
+async function loadJsonFile<T>(
   fileSystem: IFileSystem,
   file: StoryUri,
   report: MutableReport,
+  resource: JsonResource<T>,
 ): Promise<void> {
   if (!(await fileSystem.exists(file))) {
     return;
   }
 
-  const parsed = craftContractOverrideSchema.strict().safeParse(await readJson(fileSystem, file));
+  const parsed = resource.schema.safeParse(await readJson(fileSystem, file));
 
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
+    const detail = [issue?.path.map(String).join('.'), issue?.message].filter(Boolean).join(' ');
     report.problems.push({
       file,
-      message:
-        `작법 계약 파일이 잘못되었습니다: ${file.fsPath} (${issue?.path.join('.') ?? ''} ${issue?.message ?? ''})`.replace(
-          '( ',
-          '(',
-        ),
+      message: `${resource.label}이 잘못되었습니다: ${file.fsPath} (${detail})`,
     });
     return;
   }
 
-  overrideCraftContractDefaults(parsed.data);
-  report.applied.push({ kind: 'craftContract', file });
+  resource.apply(parsed.data);
+  report.applied.push({ kind: resource.kind, file });
 }
 
 async function readText(fileSystem: IFileSystem, file: StoryUri): Promise<string> {
