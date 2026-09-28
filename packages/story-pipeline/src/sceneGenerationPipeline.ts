@@ -1,4 +1,5 @@
 import type {
+  Background,
   CharacterCard,
   ProjectFormat,
   SceneContext,
@@ -51,6 +52,7 @@ export { SceneGenerationPipelineCancelledError } from './sceneGenerationTypes';
 
 import { resolveSceneGenerationTuning } from './sceneGenerationTuning';
 import type { ResolvedSceneGenerationTuning } from './sceneGenerationTuning';
+import { resolveScenePipelinePlan, type SceneStageId } from './sceneStageCatalog';
 
 interface ResolvedExecutionContext {
   readonly context: SceneContext;
@@ -410,148 +412,242 @@ async function buildDialogueRecord(input: {
   };
 }
 
+// The run state every stage reads and writes. A stage that is switched off leaves its slot at the
+// value below, which is what the later stages then see: no polish means the skeleton goes to
+// expansion as it is, no voice samples means an empty map.
+interface SceneRunState {
+  readonly input: RunSceneGenerationPipelineInput;
+  readonly ctx: ResolvedExecutionContext;
+  personasUsed: Map<string, string>;
+  background: Background;
+  voiceSamples: Map<string, readonly string[]>;
+  skeleton: string;
+  polishedText: string;
+  readonly warnings: string[];
+  draftBody: string;
+  dialogueRecord: SceneDialogueRecord | undefined;
+}
+
+export interface ISceneStage {
+  readonly id: SceneStageId;
+  run(state: SceneRunState): Promise<void>;
+}
+
+const buildPersonasStage: ISceneStage = {
+  id: 'buildPersonas',
+  async run(state) {
+    const { ctx, input } = state;
+    state.personasUsed = await buildScenePersonas(
+      ctx.context.characters,
+      {
+        ...buildGenerateOptions(ctx.providers, 'personaGeneration'),
+        styleDirective: ctx.styleDirective,
+      },
+      ctx.aiService,
+      input.personaStore,
+      ctx.sceneRef,
+      ctx.onProgress,
+      ctx.shouldCancel,
+    );
+  },
+};
+
+const describeBackgroundStage: ISceneStage = {
+  id: 'describeBackground',
+  async run(state) {
+    const { ctx, input } = state;
+
+    if (ctx.context.background) {
+      state.background = await describeBackgroundForScene(
+        ctx.context.background,
+        ctx.aiService,
+        input.backgroundStore,
+        input.backgroundRecentExcerpt,
+      );
+    }
+    assertNotCancelled(ctx.shouldCancel);
+  },
+};
+
+const collectVoiceSamplesStage: ISceneStage = {
+  id: 'collectVoiceSamples',
+  async run(state) {
+    const { ctx, input } = state;
+    state.voiceSamples = await buildVoiceSamples(
+      ctx.context.characters,
+      input.dialogueCorpus,
+      input.sceneStem,
+      ctx.tuning,
+    );
+  },
+};
+
+// 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
+const draftSkeletonStage: ISceneStage = {
+  id: 'draftSkeleton',
+  async run(state) {
+    const { ctx, input } = state;
+    ctx.onProgress?.('draftSkeleton', 1, 1);
+    state.skeleton = await draftSkeletonWithRetries(
+      ctx.aiService,
+      {
+        narrativeSource: ctx.narrativeSource,
+        ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
+        personas: state.personasUsed,
+        background: state.background,
+        previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
+        endState: ctx.context.scene.card?.endState,
+        grounding: ctx.context.scene.frontmatter.grounding,
+        targetLength: skeletonTargetLength(ctx.styleDirective, ctx.tuning.skeletonRatio),
+      },
+      withAttribution(
+        {
+          ...buildGenerateOptions(ctx.providers, 'sceneSkeleton'),
+          styleDirective: ctx.styleDirective,
+        },
+        { primary: ctx.sceneRef },
+      ),
+      ctx.tuning.skeletonRetryLimit,
+      ctx.tuning,
+    );
+    state.polishedText = state.skeleton;
+    assertNotCancelled(ctx.shouldCancel);
+  },
+};
+
+// 2단계. 대사의 말투만 손본다. 턴을 늘리지는 않는다. 대화 밀도는 뼈대가 정한 대로 간다.
+const polishDialogueStage: ISceneStage = {
+  id: 'polishDialogue',
+  async run(state) {
+    const { ctx } = state;
+    ctx.onProgress?.('polishDialogue', 1, 1);
+    const polished = await polishDialogueOrKeepSkeleton({
+      aiService: ctx.aiService,
+      skeleton: state.skeleton,
+      personas: state.personasUsed,
+      voiceSamples: state.voiceSamples,
+      characters: ctx.context.characters,
+      options: withAttribution(
+        {
+          ...buildGenerateOptions(ctx.providers, 'sceneDialoguePolish'),
+          styleDirective: ctx.styleDirective,
+        },
+        { primary: ctx.sceneRef },
+      ),
+      tuning: ctx.tuning,
+    });
+    state.polishedText = polished.text;
+    state.warnings.push(...polished.warnings);
+    assertNotCancelled(ctx.shouldCancel);
+  },
+};
+
+// 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
+const expandSectionStage: ISceneStage = {
+  id: 'expandSection',
+  async run(state) {
+    const { ctx, input } = state;
+    const outputLimit = input.sectionOutputLimit ?? SECTION_OUTPUT_LIMIT;
+    const sections = splitSkeletonIntoSections(
+      state.polishedText,
+      planSectionCount(ctx.styleDirective?.targetWordCount ?? 0, outputLimit),
+    );
+    const targetLengths = sectionTargetLengths(ctx.styleDirective, sections, outputLimit);
+    const expandedSections: string[] = [];
+
+    for (let index = 0; index < sections.length; index += 1) {
+      ctx.onProgress?.('expandSection', index + 1, sections.length);
+
+      const outcome = await expandSectionWithRetries({
+        aiService: ctx.aiService,
+        section: sections[index] as string,
+        skeleton: state.polishedText,
+        previousSection: expandedSections.at(-1),
+        targetLength: targetLengths[index] as number,
+        characters: ctx.context.characters,
+        options: withAttribution(
+          {
+            ...buildGenerateOptions(ctx.providers, 'sceneSectionExpansion'),
+            styleDirective: ctx.styleDirective,
+          },
+          { primary: ctx.sceneRef },
+        ),
+        tuning: ctx.tuning,
+      });
+
+      expandedSections.push(outcome.text);
+      state.warnings.push(
+        ...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
+      );
+      assertNotCancelled(ctx.shouldCancel);
+    }
+
+    state.draftBody = expandedSections.join('\n\n');
+  },
+};
+
+// 완성된 본문의 대사에 화자를 붙여 인물별 말투 코퍼스의 재료를 만든다. 저장은 호출자가 초안을
+// 쓴 뒤에 한다.
+const attributeDialogueStage: ISceneStage = {
+  id: 'attributeDialogue',
+  async run(state) {
+    const { ctx, input } = state;
+    state.dialogueRecord = await buildDialogueRecord({
+      aiService: ctx.aiService,
+      draftBody: state.draftBody,
+      characters: ctx.context.characters,
+      sceneStem: input.sceneStem,
+      options: withAttribution(buildGenerateOptions(ctx.providers, 'sceneDialogueAttribution'), {
+        primary: ctx.sceneRef,
+      }),
+      onProgress: ctx.onProgress,
+      tuning: ctx.tuning,
+    });
+  },
+};
+
+export const sceneStages: Readonly<Record<SceneStageId, ISceneStage>> = {
+  buildPersonas: buildPersonasStage,
+  describeBackground: describeBackgroundStage,
+  collectVoiceSamples: collectVoiceSamplesStage,
+  draftSkeleton: draftSkeletonStage,
+  polishDialogue: polishDialogueStage,
+  expandSection: expandSectionStage,
+  attributeDialogue: attributeDialogueStage,
+};
+
+// Runs the stages the plan names, in its order, over one run state. The plan is the author's
+// `pipelines/scene.yaml` when one is in force, otherwise the bundled catalog order.
 async function executeSceneGenerationPipeline(
   input: RunSceneGenerationPipelineInput,
 ): Promise<RunSceneGenerationPipelineResult> {
-  const {
-    context,
-    aiService,
-    styleDirective,
-    providers,
-    onProgress,
-    shouldCancel,
-    narrativeSource,
-    design,
-    tuning,
-    condensedPreviousContext,
-    sceneRef,
-    detectedCharacters,
-  } = resolveExecutionContext(input);
+  const ctx = resolveExecutionContext(input);
+  const plan = input.stages ?? resolveScenePipelinePlan();
+  const state: SceneRunState = {
+    input,
+    ctx,
+    personasUsed: new Map(),
+    background: createEmptyBackground('scene-default', '미정'),
+    voiceSamples: new Map(),
+    skeleton: '',
+    polishedText: '',
+    warnings: [],
+    draftBody: '',
+    dialogueRecord: undefined,
+  };
 
-  const personasUsed = await buildScenePersonas(
-    context.characters,
-    { ...buildGenerateOptions(providers, 'personaGeneration'), styleDirective },
-    aiService,
-    input.personaStore,
-    sceneRef,
-    onProgress,
-    shouldCancel,
-  );
-
-  const background = context.background
-    ? await describeBackgroundForScene(
-        context.background,
-        aiService,
-        input.backgroundStore,
-        input.backgroundRecentExcerpt,
-      )
-    : createEmptyBackground('scene-default', '미정');
-  assertNotCancelled(shouldCancel);
-
-  const voiceSamples = await buildVoiceSamples(
-    context.characters,
-    input.dialogueCorpus,
-    input.sceneStem,
-    tuning,
-  );
-
-  // 1단계. 사건·등장·종료 지점을 한 문맥에서 확정한다. 이후 단계는 문장만 다듬으므로 연속성이 깨지지 않는다.
-  onProgress?.('draftSkeleton', 1, 1);
-  const skeleton = await draftSkeletonWithRetries(
-    aiService,
-    {
-      narrativeSource,
-      ...(design.length > 0 ? { design } : {}),
-      personas: personasUsed,
-      background,
-      previousContext: buildSkeletonContext(condensedPreviousContext, input.canonFactLines),
-      endState: context.scene.card?.endState,
-      grounding: context.scene.frontmatter.grounding,
-      targetLength: skeletonTargetLength(styleDirective, tuning.skeletonRatio),
-    },
-    withAttribution(
-      { ...buildGenerateOptions(providers, 'sceneSkeleton'), styleDirective },
-      { primary: sceneRef },
-    ),
-    tuning.skeletonRetryLimit,
-    tuning,
-  );
-  assertNotCancelled(shouldCancel);
-
-  // 2단계. 대사의 말투만 손본다. 턴을 늘리지는 않는다. 대화 밀도는 뼈대가 정한 대로 간다.
-  onProgress?.('polishDialogue', 1, 1);
-  const polished = await polishDialogueOrKeepSkeleton({
-    aiService,
-    skeleton,
-    personas: personasUsed,
-    voiceSamples,
-    characters: context.characters,
-    options: withAttribution(
-      { ...buildGenerateOptions(providers, 'sceneDialoguePolish'), styleDirective },
-      { primary: sceneRef },
-    ),
-    tuning,
-  });
-  assertNotCancelled(shouldCancel);
-
-  // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
-  const outputLimit = input.sectionOutputLimit ?? SECTION_OUTPUT_LIMIT;
-  const sections = splitSkeletonIntoSections(
-    polished.text,
-    planSectionCount(styleDirective?.targetWordCount ?? 0, outputLimit),
-  );
-  const targetLengths = sectionTargetLengths(styleDirective, sections, outputLimit);
-  const expandedSections: string[] = [];
-  const warnings: string[] = [...polished.warnings];
-
-  for (let index = 0; index < sections.length; index += 1) {
-    onProgress?.('expandSection', index + 1, sections.length);
-
-    const outcome = await expandSectionWithRetries({
-      aiService,
-      section: sections[index] as string,
-      skeleton: polished.text,
-      previousSection: expandedSections.at(-1),
-      targetLength: targetLengths[index] as number,
-      characters: context.characters,
-      options: withAttribution(
-        { ...buildGenerateOptions(providers, 'sceneSectionExpansion'), styleDirective },
-        { primary: sceneRef },
-      ),
-      tuning,
-    });
-
-    expandedSections.push(outcome.text);
-    warnings.push(
-      ...outcome.violations.map((violation) => `${index + 1}구간: ${violation.detail}`),
-    );
-    assertNotCancelled(shouldCancel);
+  for (const id of plan) {
+    await sceneStages[id].run(state);
   }
 
-  const draftBody = expandedSections.join('\n\n');
-
-  // 완성된 본문의 대사에 화자를 붙여 인물별 말투 코퍼스의 재료를 만든다. 저장은 호출자가 초안을
-  // 쓴 뒤에 한다.
-  const dialogueRecord = await buildDialogueRecord({
-    aiService,
-    draftBody,
-    characters: context.characters,
-    sceneStem: input.sceneStem,
-    options: withAttribution(buildGenerateOptions(providers, 'sceneDialogueAttribution'), {
-      primary: sceneRef,
-    }),
-    onProgress,
-    tuning,
-  });
-
   return {
-    draftBody,
-    skeleton: polished.text,
-    warnings,
-    detectedCharacters,
-    personasUsed,
-    providers,
-    ...(dialogueRecord === undefined ? {} : { dialogueRecord }),
+    draftBody: state.draftBody,
+    skeleton: state.polishedText,
+    warnings: state.warnings,
+    detectedCharacters: ctx.detectedCharacters,
+    personasUsed: state.personasUsed,
+    providers: ctx.providers,
+    ...(state.dialogueRecord === undefined ? {} : { dialogueRecord: state.dialogueRecord }),
   };
 }
 

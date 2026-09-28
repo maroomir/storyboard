@@ -9,6 +9,12 @@ import type {
 } from '@storyboard/story-format';
 import { computeDraftBodyHash } from '@storyboard/story-format';
 import {
+  overrideScenePipelinePlan,
+  resetScenePipelinePlan,
+  resolveScenePipelinePlan,
+  sceneStageIds
+} from '@storyboard/story-pipeline';
+import {
   runSceneGenerationPipeline,
   planSectionCount,
   planSectionTargetLengths,
@@ -1181,5 +1187,66 @@ describe("출연진은 씬 전체 기준으로 판정한다", () => {
     })
 
     expect(violations.map((violation) => violation.kind)).toContain("cast")
+  })
+})
+
+describe("runSceneGenerationPipeline — 단계 계획", () => {
+  it("runs the bundled stage order when nothing is laid over it", () => {
+    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds)
+  })
+
+  it("skips a stage the plan leaves out and hands the skeleton straight to expansion", async () => {
+    const progress: SceneGenerationPipelineStage[] = []
+    const ai = createRecordingAiService()
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "엘리아와 지훈이 학교에 있다."),
+      aiService: ai,
+      format: "novel",
+      onProgress: (stage) => progress.push(stage),
+      stages: ["buildPersonas", "describeBackground", "draftSkeleton", "expandSection"]
+    })
+
+    expect(progress).toEqual(["buildPersonas", "buildPersonas", "draftSkeleton", "expandSection"])
+    expect(ai.polishSceneDialogue).not.toHaveBeenCalled()
+    expect(ai.attributeSceneDialogue).not.toHaveBeenCalled()
+    expect(result.skeleton).toBe("뼈대 본문")
+    expect(result.dialogueRecord).toBeUndefined()
+  })
+
+  it("takes the order from a spec laid over the bundled one, and refuses a spec that drops the skeleton", async () => {
+    try {
+      overrideScenePipelinePlan({
+        version: 1,
+        stages: [
+          "buildPersonas",
+          "describeBackground",
+          "draftSkeleton",
+          { id: "polishDialogue", enabled: false },
+          "expandSection"
+        ]
+      })
+      const ai = createRecordingAiService()
+
+      await runSceneGenerationPipeline({
+        sceneStem: "01-opening",
+        context: contextFor([eliaCard, jihoonCard], "엘리아와 지훈이 학교에 있다."),
+        aiService: ai,
+        format: "novel"
+      })
+
+      expect(ai.polishSceneDialogue).not.toHaveBeenCalled()
+      expect(() =>
+        overrideScenePipelinePlan({
+          version: 1,
+          stages: ["buildPersonas", "describeBackground", "expandSection"]
+        })
+      ).toThrow("draftSkeleton")
+    } finally {
+      resetScenePipelinePlan()
+    }
+
+    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds)
   })
 })
