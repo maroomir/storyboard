@@ -54,8 +54,15 @@ for schema-first types and the error-class template. Generic readability and ver
   `PromiseLike`, or a hand-rolled `{ readonly dispose: () => void }`. Package code never imports
   `vscode`, even type-only (`import('vscode').X` in a type position counts as a violation).
 - Dependency injection is constructor + a single `readonly` deps interface
-  (`GenerateDraftUseCaseDependencies` pattern). Declare a port next to its consumer (in the
-  use-case file or the package's `ports/`), but pick one convention per package.
+  (`GenerateDraftUseCaseDependencies` pattern). Repository ports are declared next to the use case
+  that consumes them (`application/drafts/draftRepositories.ts` is the shared one for the draft
+  use cases); `ports/` holds only host ports.
+- **Use cases implement `IUseCase<Request, Result>`** (`story-engine/src/application/useCase.ts`):
+  one `execute(request)` taking a single request object, expected failures returned through
+  `runUseCase` / `failedResult`, never positional arguments. Apps do not call a use case: they call
+  a manager verb on `StoryboardApplication` (`app.drafts.generate(…)`, `app.cards.promoteCandidates(…)`,
+  `app.novel.run(…)`), and a new verb is added to the manager that owns its domain
+  (`packages/story-app/src/managers/`).
 
 ## Error Handling and State
 
@@ -69,9 +76,15 @@ for schema-first types and the error-class template. Generic readability and ver
   the exit code). A deliberately swallowed side-effect failure carries a comment
   saying why (usageSink: accounting must never fail a paid generation). No silent mid-layer
   catches — a corrupt config file must fail loudly as a typed `ConfigError`, never fall back to
-  `{}`.
+  `{}`. `config.json` is validated against `story-config/src/configSchema.ts` on every read: a value
+  its schema rejects is `ConfigFileError('invalid-value')`, a key nothing reads is reported through
+  `onUnknownKey` and kept.
 - Prefer explicit refusal over silent fallback: an unknown provider is rejected pre-flight, not
   downgraded to `mock` (which would overwrite a real draft and still exit 0).
+- **Providers register themselves**: a provider module calls `registerProviderFactory` when it is
+  loaded and `AiProviderRegistry` only looks the id up (`story-ai/src/ai/providerFactory.ts`).
+  Adding a provider is its catalog row plus its module, imported from `providers/index.ts`; the
+  registry is not edited.
 - Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
   warnings go to stderr.
 - State: story content lives in the git workspace only. Engine settings live in the shared

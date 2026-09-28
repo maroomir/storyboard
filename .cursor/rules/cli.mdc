@@ -11,7 +11,8 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
 
 ## Non-negotiable invariants
 
-- **The CLI owns no orchestration.** Every verb calls an engine use case. Assembling pipeline
+- **The CLI owns no orchestration.** Every verb calls a manager verb on the shared
+  `StoryboardApplication` (`container.drafts.generate(…)`, `container.novel.run(…)`). Assembling pipeline
   stages by hand here would be the third copy of the generation loop (after the extension and the
   harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
   `@storyboard/story-pipeline` directly.
@@ -50,7 +51,9 @@ in `@storyboard/story-node` because every Node host needs the same two.
 `.storyboard/config.json`, overridable wholesale
 with `STORYBOARD_HOME`. Keys are the `storyboard.*` setting names minus the prefix, so a config file
 reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.json` at 0600. Both
-files come from `@storyboard/story-config`; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
+files come from `@storyboard/story-config` and are validated against its config schema when read: a
+value the schema rejects fails the run with `ConfigFileError('invalid-value')`, a key nothing reads is
+logged as a warning and kept; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
 read at all. **Writes follow git's rule**: `setup` and `config set` write the workspace file when run
 inside a workspace, `--global` writes the home file, and outside a workspace they refuse rather than
 guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
