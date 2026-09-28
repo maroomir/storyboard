@@ -23,10 +23,10 @@ afterEach(() => {
 
 describe("createStoryboardHomeStores", () => {
   it("layers the workspace file over the home file and reports the origin", () => {
-    writeFileSync(join(home, "config.json"), JSON.stringify({ defaultProvider: "codex", draft: { keepHistory: true } }))
+    writeFileSync(join(home, "config.json"), JSON.stringify({ defaultProvider: "openai", draft: { keepHistory: true } }))
     const stores = createStoryboardHomeStores({ workspaceRoot: workspace, onInvalidFile: () => undefined })
 
-    expect(stores.configuration.get("defaultProvider", "mock")).toBe("codex")
+    expect(stores.configuration.get("defaultProvider", "mock")).toBe("openai")
     expect(stores.configuration.inspect?.("draft.keepHistory")).toEqual({ globalValue: true, workspaceValue: undefined })
     expect(stores.workspaceConfigFile).toBe(join(workspace, ".storyboard", "config.json"))
 
@@ -40,11 +40,11 @@ describe("createStoryboardHomeStores", () => {
     const listener = vi.fn()
     stores.onDidChangeConfiguration(listener)
 
-    await stores.configuration.update?.("defaultProvider", "claude-code")
+    await stores.configuration.update?.("defaultProvider", "claude")
 
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(readFileSync(join(home, "config.json"), "utf8"))).toEqual({ defaultProvider: "claude-code" })
-    expect(stores.configuration.get("defaultProvider", "mock")).toBe("claude-code")
+    expect(JSON.parse(readFileSync(join(home, "config.json"), "utf8"))).toEqual({ defaultProvider: "claude" })
+    expect(stores.configuration.get("defaultProvider", "mock")).toBe("claude")
 
     stores.dispose()
   })
