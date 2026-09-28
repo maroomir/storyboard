@@ -47,6 +47,7 @@ export * from './application/novel/generateOutlineUseCase';
 export * from './application/novel/novelPipeline';
 export * from './application/novel/novelPipelinePorts';
 export * from './application/novel/novelPipelineTypes';
+export * from './application/novel/novelStageCatalog';
 export * from './application/novel/novelStages';
 export * from './application/project/promoteBibleCandidatesUseCase';
 export * from './application/story/buildStoryCardsUseCase';
@@ -137,7 +138,11 @@ export * from './shared/slopPhrases';
 export {
   defaultGenerationKnobs,
   generationParameterDefault,
+  overrideScenePipelinePlan,
+  resetScenePipelinePlan,
+  resolveScenePipelinePlan,
   sceneStageCatalog,
+  sceneStageIds,
   sceneStageLabel,
   type SceneStageId,
 } from '@storyboard/story-pipeline';

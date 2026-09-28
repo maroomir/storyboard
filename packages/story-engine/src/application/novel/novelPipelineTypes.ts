@@ -6,7 +6,11 @@ import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/a
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type { StoryUri } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { NovelRunMode, NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
+import type {
+  NovelRunMode,
+  NovelRunState,
+  NovelStageName,
+} from '#engine/domain/files/novelRunState';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 import type { StoryboardProject } from '@storyboard/story-format';
@@ -51,6 +55,9 @@ export interface NovelPipelineRunOptions {
   // budget stop or a pause button never throws away tokens already spent. The run resumes where
   // it stopped.
   readonly shouldPause?: () => boolean;
+  // The stages to run, in order. Left out, the plan in force (the author's pipelines/novel.yaml
+  // over the bundled order) applies.
+  readonly stages?: readonly NovelStageName[];
 }
 
 export type NovelPipelineOptions = NovelPipelineRunOptions & {
