@@ -31,7 +31,9 @@ describe('knob registry', () => {
   const promptKnobs = knobRegistry.filter(isPromptKnob);
 
   it('has one row per pipeline default, except the one the pipeline never reads', () => {
-    const expected = leavesOf(pipelineDefaults).filter((leaf) => leaf !== excluded);
+    const expected = leavesOf(pipelineDefaults)
+      .filter((leaf) => leaf !== excluded)
+      .map((leaf) => `generation.${leaf}`);
 
     expect(pipelineKnobs.map((knob) => knob.id).sort()).toEqual([...expected].sort());
   });
@@ -41,7 +43,7 @@ describe('knob registry', () => {
   });
 
   it('never registers the excluded knob', () => {
-    expect(findKnob(excluded)).toBeUndefined();
+    expect(findKnob(`generation.${excluded}`)).toBeUndefined();
   });
 
   // 이 손잡이만 pipelineDefaults 가 아니라 설정 카탈로그에서 온다. tuning 이 아니라 파이프라인
@@ -52,18 +54,18 @@ describe('knob registry', () => {
     expect(knob?.defaultValue).toBe(integerSettingDefault(sectionOutputLimitKnobId));
 
     const applied = applyOverlay(
-      { knobs: { [sectionOutputLimitKnobId]: 1000, 'skeleton.lengthRatio': 0.8 } },
+      { knobs: { [sectionOutputLimitKnobId]: 1000, 'generation.skeleton.lengthRatio': 0.8 } },
       'ollama',
     );
 
     expect(applied.refusals).toEqual([]);
     expect(applied.sectionOutputLimit).toBe(1000);
-    expect(applied.tuning).toEqual({ skeletonRatio: 0.8 });
+    expect(applied.tuning).toEqual({ 'generation.skeleton.lengthRatio': 0.8 });
   });
 
   it('takes every pipeline default from the data file, not a second copy', () => {
     for (const knob of pipelineKnobs) {
-      const [group, leaf] = knob.id.split('.') as [string, string];
+      const [, group, leaf] = knob.id.split('.') as [string, string, string];
       const source = (pipelineDefaults as unknown as Record<string, Record<string, number>>)[group];
 
       expect(knob.defaultValue, knob.id).toBe(source?.[leaf]);
@@ -87,24 +89,27 @@ describe('knob registry', () => {
   });
 
   it('covers the whole violation scale', () => {
-    const weights = knobRegistry.filter((knob) => knob.weightKind !== undefined);
+    const prefix = 'generation.violationWeights.';
+    const weights = knobRegistry.filter((knob) => knob.kind === 'weight');
 
-    expect(weights.map((knob) => knob.weightKind).sort()).toEqual([...sectionViolationKinds].sort());
+    expect(weights.map((knob) => knob.id.slice(prefix.length)).sort()).toEqual(
+      [...sectionViolationKinds].sort(),
+    );
   });
 });
 
 describe('overlay', () => {
   it('builds the tuning object a valid overlay asks for', () => {
     const { tuning, refusals } = applyOverlay(
-      { knobs: { 'skeleton.lengthRatio': 0.5, 'section.retryLimit': 3, 'violationWeights.cast': 5 } },
+      { knobs: { 'generation.skeleton.lengthRatio': 0.5, 'generation.section.retryLimit': 3, 'generation.violationWeights.cast': 5 } },
       'claude',
     );
 
     expect(refusals).toEqual([]);
     expect(tuning).toEqual({
-      skeletonRatio: 0.5,
-      sectionRetryLimit: 3,
-      violationWeights: { cast: 5 },
+      'generation.skeleton.lengthRatio': 0.5,
+      'generation.section.retryLimit': 3,
+      'generation.violationWeights.cast': 5,
     });
   });
 
@@ -116,7 +121,7 @@ describe('overlay', () => {
   });
 
   it('refuses a value outside the bounds', () => {
-    const { refusals } = applyOverlay({ knobs: { 'skeleton.lengthRatio': 9 } }, 'claude');
+    const { refusals } = applyOverlay({ knobs: { 'generation.skeleton.lengthRatio': 9 } }, 'claude');
 
     expect(refusals).toHaveLength(1);
     expect(refusals[0]).toContain('범위 밖');

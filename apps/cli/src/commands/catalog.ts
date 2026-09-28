@@ -632,7 +632,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary: '고른 손잡이 넷으로 격자를 돌고 파레토 표를 냅니다',
     flags: ['track', 'config', 'genre', 'knobs', 'repeats', 'max-runs', 'judge', 'judge-model', 'out', 'provider', 'model', 'prompt-variant', 'yes'],
     examples: [
-      'storyboard sim sweep --track ~/storyboard-workspace --knobs skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio',
+      'storyboard sim sweep --track ~/storyboard-workspace --knobs skeleton.lengthRatio,generation.section.retryLimit,generation.dialogue.preservedRatio,generation.padding.paragraphRatio',
     ],
     needsWorkspace: false,
   },

@@ -62,12 +62,12 @@ describe('prompt tuning override', () => {
 describe('overlay routing', () => {
   it('sends a prompt knob to the prompt overrides, not to the pipeline tuning', () => {
     const { tuning, promptOverrides, refusals } = applyOverlay(
-      { knobs: { 'prompt.sceneSkeleton.temperature': 0.9, 'skeleton.lengthRatio': 0.8 } },
+      { knobs: { 'prompt.sceneSkeleton.temperature': 0.9, 'generation.skeleton.lengthRatio': 0.8 } },
       'claude',
     );
 
     expect(refusals).toEqual([]);
-    expect(tuning).toEqual({ skeletonRatio: 0.8 });
+    expect(tuning).toEqual({ 'generation.skeleton.lengthRatio': 0.8 });
     expect(promptOverrides).toEqual({ sceneSkeleton: { temperature: 0.9 } });
   });
 

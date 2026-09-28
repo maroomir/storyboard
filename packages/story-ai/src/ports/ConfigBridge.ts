@@ -13,6 +13,10 @@ import {
 } from '#ai/contracts/providerCatalog';
 import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
 import {
+  sectionOutputLimitParameterId,
+  type GenerationKnobs,
+} from '#ai/contracts/generationParameters';
+import {
   booleanSettingDefault,
   clampIntegerSetting,
   findStoryboardSetting,
@@ -29,9 +33,6 @@ const workspaceConfigurationTarget = 2;
 
 export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
 
-// 파이프라인의 SceneGenerationTuning 과 구조적으로 같다. story-ai 는 story-pipeline 을 의존하지
-// 않으므로(의존 방향이 반대다) 타입을 가져오지 않고 같은 모양을 선언한다.
-export type SceneGenerationTuningLike = Omit<ModelProfile, 'measured' | 'sectionOutputLimit'>;
 
 export interface ProviderModelConfig {
   readonly model?: string;
@@ -249,7 +250,7 @@ export class ConfigBridge {
 
   // 설정 키와 모델 프로필 항목이 같은 값을 가리키는 경우. 지금은 구간 상한 하나뿐이다.
   public getModelProfileDefault(key: string): number | undefined {
-    return key === 'generation.section.outputLimit' ? this.getModelProfile()?.sectionOutputLimit : undefined;
+    return key === sectionOutputLimitParameterId ? this.getModelProfile()?.knobs[key] : undefined;
   }
 
   public async setSettingValue(key: string, value: boolean | number | string): Promise<void> {
@@ -360,16 +361,16 @@ export class ConfigBridge {
   }
 
   // 사용자 설정 → 모델 프로필 → 코드 기본값 순. 사용자가 적은 값이 언제나 이긴다.
-  public getSceneGenerationTuning(): SceneGenerationTuningLike {
+  public getSceneGenerationTuning(): GenerationKnobs {
     const profile = this.getModelProfile();
 
     if (profile === undefined) {
       return {};
     }
 
-    const { measured: _measured, sectionOutputLimit: _limit, ...tuning } = profile;
+    const { [sectionOutputLimitParameterId]: _limit, ...knobs } = profile.knobs;
 
-    return tuning;
+    return knobs;
   }
 
   // 사용자 설정 → 모델 실측 프로필 → 카탈로그 기본값 순.

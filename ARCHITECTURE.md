@@ -475,7 +475,7 @@ grounding:
 
 - 비어 있는 필드만 AI가 제안하고, **사용자가 적어 둔 값은 절대 덮어쓰지 않는다.**
 - 4개가 모두 차 있으면 제안 호출 자체를 건너뛴다(추가 비용 없음).
-- 기본값은 제안을 보여 주고 승인·수정을 받는 것이다. `storyboard.grounding.autoApprove`를 켜면
+- 기본값은 제안을 보여 주고 승인·수정을 받는 것이다. `generation.grounding.autoApprove`를 켜면
   제안을 자동 수락해 원클릭 생성을 유지한다.
 - 확정된 사실은 대사 생성 프롬프트에 주입되고 `inputHash`에도 반영되므로, 사실 시트를 고치면 캐시가
   무효화되어 다음 생성에 그대로 반영된다.
@@ -529,7 +529,7 @@ warnings:                     # 생성 검증이 잡았으나 재시도로 못 �
 
 #### 이전 초안 히스토리 (`.draft/`)
 
-`storyboard.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 초고에서 다시 만들 수 있는 산출물이라 `.gitignore`로 제외한다(`draft/` 자체는 읽는 결과물이라 추적한다). 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
+`editor.draft.keepHistory`를 켜면, Generate/Regenerate가 `draft/<scene>.md`를 덮어쓰기 직전에 기존 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 보관한다. 시간값은 보관 시점의 로컬 시간이고 `rev-NN`은 해당 씬 폴더에서 1부터 증가한다. 기본값은 꺼짐이며, `.draft/`는 초고에서 다시 만들 수 있는 산출물이라 `.gitignore`로 제외한다(`draft/` 자체는 읽는 결과물이라 추적한다). 보관 실패는 비치명적이라 생성 자체를 막지 않는다(경고 로그만 남김).
 
 ### 4.6 `.storyboard/cache/scenes/<scene>.json` (씬별 컨텍스트)
 
@@ -755,13 +755,13 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 `temperature`를 거부하는 모델(Claude 4.7 이후, GPT-6, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
 프로바이더는 그 모델에 `temperature`를 보내지 않는다.
 - `tasks.<taskName>.provider`: 작업별 provider 오버라이드
-- `storyboard.draft.reviseAfterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
-- `storyboard.grammar.realtimeEnabled`: 기본 `false`
-- `storyboard.scene.prefixDigits`: 기본 `2`
-- `storyboard.draft.reviseMaxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
+- `revise.loop.afterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
+- `editor.grammar.realtime`: 기본 `false`
+- `editor.scene.prefixDigits`: 기본 `2`
+- `revise.loop.maxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
 - `storyboard.budget.runLimitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
-- `storyboard.draft.sectionOutputLimit`: 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수, 기본 `7000`. 목표 분량을 이 값으로 나눠 구간 수가 정해지므로, **낮추면 호출이 늘고 분량이 늘어난다.** 프롬프트의 목표 글자 수 지시는 실측에서 무력했고(비단조), 분량을 실제로 움직이는 손잡이는 호출 수다. 모델·목표 분량에 따라 최적값이 다르므로 설정으로 열어 둔다.
-- `storyboard.draft.reviseScoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
+- `generation.section.outputLimit`: 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수, 기본 `7000`. 목표 분량을 이 값으로 나눠 구간 수가 정해지므로, **낮추면 호출이 늘고 분량이 늘어난다.** 프롬프트의 목표 글자 수 지시는 실측에서 무력했고(비단조), 분량을 실제로 움직이는 손잡이는 호출 수다. 모델·목표 분량에 따라 최적값이 다르므로 설정으로 열어 둔다.
+- `revise.loop.scoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.
 
 API 키는 설정 파일이 아니라 `~/.storyboard/secrets.json`(모드 0600)에만 저장하며, 두 앱이 같은 파일을 읽는다.

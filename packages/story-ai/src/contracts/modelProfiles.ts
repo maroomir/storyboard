@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import profileData from './modelProfiles.params.json';
 
+import { modelProfileKnobIds } from './generationParameters';
+
 // NOTE: 모델마다 «한 번 호출에 쓰는 양»과 «같은 말을 되풀이하는 성향»이 다르다. 그 차이를 코드
 // 상수로 두면 모델을 바꿀 때마다 파이프라인을 고쳐야 하므로, 실측으로 정한 값만 여기 모은다.
 // 재보지 않은 모델은 **키 자체가 없다** — 그러면 파이프라인의 일반 기본값이 그대로 쓰이고,
@@ -29,55 +31,36 @@ const measurementSchema = z.object({
   judge: z.string().optional(),
 });
 
-// 파이프라인이 모델마다 달리 잡을 수 있는 손잡이. 전부 선택이며, 없으면 파이프라인 기본값을 쓴다.
-const modelProfileSchema = z.object({
-  // 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수. 목표를 이 값으로 나눠 구간 수가 정해진다.
-  sectionOutputLimit: z.number().int().positive().optional(),
-  // 최종 목표 중 뼈대에 배분할 비율. 살붙임 배율이 낮은 모델일수록 뼈대를 두껍게 잡아야 한다.
-  skeletonRatio: z.number().positive().max(1).optional(),
-  // 살붙임이 뼈대의 대사를 지웠는지 판정하는 유사도 임계. 문체가 다른 모델은 같은 대사를 다르게
-  // 옮기므로 임계가 맞지 않으면 오탐으로 재시도를 태운다.
-  dialoguePreservedRatio: z.number().positive().max(1).optional(),
-  // 같은 문단을 되풀이한 것으로 보는 유사도 임계.
-  paddingParagraphRatio: z.number().positive().max(1).optional(),
-  // 대사 다듬기가 뼈대의 몇 배를 넘으면 거부할지.
-  polishLengthLimitRatio: z.number().positive().optional(),
-  skeletonRetryLimit: z.number().int().nonnegative().optional(),
-  sectionRetryLimit: z.number().int().nonnegative().optional(),
-  // 아래는 파이프라인 기본값과 이름이 1:1로 맞는 나머지 손잡이다. 이름을 바꾸면
-  // SceneGenerationTuning 과 어긋나 프로필 값이 조용히 무시된다.
-  sectionMinimumLengthRatio: z.number().positive().max(1).optional(),
-  sectionRepeatedRunWindow: z.number().int().positive().optional(),
-  sectionRepeatedRunLimit: z.number().int().positive().optional(),
-  skeletonMinimumLengthRatio: z.number().positive().max(1).optional(),
-  dialogueSplitLimit: z.number().int().positive().optional(),
-  dialogueRepeatedRunLimit: z.number().int().positive().optional(),
-  dialogueMinimumLineLength: z.number().int().positive().optional(),
-  dialogueMinimumQuotedLength: z.number().int().positive().optional(),
-  polishRetryLimit: z.number().int().positive().optional(),
-  paddingParagraphMinimumLength: z.number().int().positive().optional(),
-  voiceSampleLimit: z.number().int().positive().optional(),
-  voiceSampleMinimumLength: z.number().int().positive().optional(),
-  voiceSampleMaximumLength: z.number().int().positive().optional(),
-  contextCondensedMaxChars: z.number().int().positive().optional(),
-  violationWeights: z
-    .object({
-      cast: z.number().int().positive(),
-      'foreign-script': z.number().int().positive(),
-      'dialogue-count': z.number().int().positive(),
-      'lost-dialogue': z.number().int().positive(),
-      'repeats-previous': z.number().int().positive(),
-      repetition: z.number().int().positive(),
-      'too-long': z.number().int().positive(),
-      'too-short': z.number().int().positive(),
-    })
-    .partial()
-    .optional(),
-  measured: measurementSchema.optional(),
-});
-
-export type ModelProfile = z.infer<typeof modelProfileSchema>;
 export type ModelMeasurement = z.infer<typeof measurementSchema>;
+
+// A profile is the measured knobs, keyed by their public `generation.*` id, plus where the numbers
+// came from. Every knob is optional; a missing one means the pipeline default. A key the generation
+// catalog does not know is refused, so a renamed knob cannot linger as a silently ignored value.
+export interface ModelProfile {
+  readonly knobs: Readonly<Record<string, number>>;
+  readonly measured?: ModelMeasurement;
+}
+
+const modelProfileSchema = z
+  .object({ measured: measurementSchema.optional() })
+  .catchall(z.number())
+  .superRefine((profile, context) => {
+    for (const key of Object.keys(profile)) {
+      if (key !== 'measured' && !modelProfileKnobIds.includes(key)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `모델 프로필이 모르는 손잡이를 담고 있습니다: ${key}`,
+        });
+      }
+    }
+  })
+  .transform(
+    ({ measured, ...knobs }): ModelProfile => ({
+      knobs: knobs as Record<string, number>,
+      ...(measured === undefined ? {} : { measured }),
+    }),
+  );
 
 const modelProfilesSchema = z.record(z.string(), modelProfileSchema);
 

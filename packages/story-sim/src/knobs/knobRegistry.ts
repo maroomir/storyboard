@@ -1,10 +1,15 @@
-import { integerSettingDefault, promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import {
+  generationParameterCatalog,
+  integerSettingDefault,
+  promptTuning,
+  promptTuningKeys,
+  sectionOutputLimitParameterId,
+} from '@storyboard/story-ai';
 import type { AiProviderId, PromptTuningKey } from '@storyboard/story-ai';
-import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
-import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
+import { generationParameterDefault } from '@storyboard/story-pipeline';
 
-// 스윕이 흔들 수 있는 손잡이 목록. 한 행이 하나이고, 값의 출처는 언제나 pipelineDefaults 다 —
-// 기본값을 여기 다시 적으면 두 곳이 갈라진다.
+// 스윕이 흔들 수 있는 손잡이 목록. 이름·단위·범위는 story-ai 의 생성 카탈로그가, 기본값은
+// pipelineDefaults 가 갖는다 — 여기 다시 적으면 두 곳이 갈라진다.
 
 export type KnobId = string;
 
@@ -15,16 +20,13 @@ export type KnobApplyTarget = 'modelProfile' | 'pipelineDefault' | 'promptTuning
 
 // 구간 상한만 pipelineDefaults 가 아니라 설정 카탈로그가 갖는다. 파이프라인 인자로도 tuning 이
 // 아니라 따로 들어가므로, 손잡이 표에서도 한 칸을 따로 쓴다.
-export const sectionOutputLimitKnobId = 'generation.section.outputLimit';
+export const sectionOutputLimitKnobId = sectionOutputLimitParameterId;
 
 export interface KnobSpec {
   readonly id: KnobId;
-  // 파이프라인 손잡이면 tuningKey, 프롬프트 손잡이면 promptKey 가 채워진다. 둘은 배타적이다.
-  readonly tuningKey?: keyof SceneGenerationTuning;
+  // 프롬프트 손잡이만 채운다. 나머지는 id 그대로 파이프라인 tuning 에 들어간다.
   readonly promptKey?: PromptTuningKey;
   readonly promptField?: 'temperature' | 'maxTokens';
-  // violationWeights.* 만 채운다. 저울은 손잡이 하나가 아니라 여덟 칸이라 키를 따로 든다.
-  readonly weightKind?: (typeof sectionViolationKinds)[number];
   readonly kind: KnobKind;
   readonly defaultValue: number;
   readonly bounds: { readonly min: number; readonly max: number };
@@ -34,69 +36,13 @@ export interface KnobSpec {
   readonly note?: string;
 }
 
-function ratio(
-  id: KnobId,
-  tuningKey: keyof SceneGenerationTuning,
-  defaultValue: number,
-  note?: string,
-): KnobSpec {
-  return {
-    id,
-    tuningKey,
-    kind: 'ratio',
-    defaultValue,
-    bounds: { min: 0.05, max: 1 },
-    honouredBy: 'all',
-    applyTarget: 'modelProfile',
-    ...(note === undefined ? {} : { note }),
-  };
-}
-
-function count(
-  id: KnobId,
-  tuningKey: keyof SceneGenerationTuning,
-  defaultValue: number,
-  bounds: { readonly min: number; readonly max: number },
-  note?: string,
-): KnobSpec {
-  return {
-    id,
-    tuningKey,
-    kind: 'count',
-    defaultValue,
-    bounds,
-    honouredBy: 'all',
-    applyTarget: 'modelProfile',
-    ...(note === undefined ? {} : { note }),
-  };
-}
-
-function chars(
-  id: KnobId,
-  tuningKey: keyof SceneGenerationTuning,
-  defaultValue: number,
-  bounds: { readonly min: number; readonly max: number },
-): KnobSpec {
-  return {
-    id,
-    tuningKey,
-    kind: 'chars',
-    defaultValue,
-    bounds,
-    honouredBy: 'all',
-    applyTarget: 'modelProfile',
-  };
-}
-
-const weightKnobs: readonly KnobSpec[] = sectionViolationKinds.map((kind) => ({
-  id: `violationWeights.${kind}`,
-  tuningKey: 'violationWeights' as const,
-  weightKind: kind,
-  kind: 'weight' as const,
-  defaultValue: pipelineDefaults.violationWeights[kind],
-  bounds: { min: 1, max: 10 },
-  honouredBy: 'all' as const,
-  applyTarget: 'modelProfile' as const,
+const generationKnobs: readonly KnobSpec[] = generationParameterCatalog.map((definition) => ({
+  id: definition.id,
+  kind: definition.kind,
+  defaultValue: generationParameterDefault(definition.id),
+  bounds: definition.bounds,
+  honouredBy: 'all',
+  applyTarget: 'modelProfile',
 }));
 
 // NOTE: 온도와 출력 상한은 프롬프트마다 따로 있다. 값의 출처는 promptTuning.params.json 하나뿐이라
@@ -135,112 +81,7 @@ const promptKnobs: readonly KnobSpec[] = promptTuningKeys().flatMap((promptKey) 
 });
 
 export const knobRegistry: readonly KnobSpec[] = [
-  count('section.retryLimit', 'sectionRetryLimit', pipelineDefaults.section.retryLimit, {
-    min: 0,
-    max: 4,
-  }),
-  ratio(
-    'section.minimumLengthRatio',
-    'sectionMinimumLengthRatio',
-    pipelineDefaults.section.minimumLengthRatio,
-  ),
-  chars(
-    'section.repeatedRunWindow',
-    'sectionRepeatedRunWindow',
-    pipelineDefaults.section.repeatedRunWindow,
-    { min: 20, max: 400 },
-  ),
-  chars(
-    'section.repeatedRunLimit',
-    'sectionRepeatedRunLimit',
-    pipelineDefaults.section.repeatedRunLimit,
-    { min: 50, max: 1200 },
-  ),
-  ratio('skeleton.lengthRatio', 'skeletonRatio', pipelineDefaults.skeleton.lengthRatio),
-  count('skeleton.retryLimit', 'skeletonRetryLimit', pipelineDefaults.skeleton.retryLimit, {
-    min: 0,
-    max: 3,
-  }),
-  ratio(
-    'skeleton.minimumLengthRatio',
-    'skeletonMinimumLengthRatio',
-    pipelineDefaults.skeleton.minimumLengthRatio,
-  ),
-  ratio(
-    'dialogue.preservedRatio',
-    'dialoguePreservedRatio',
-    pipelineDefaults.dialogue.preservedRatio,
-  ),
-  count('dialogue.splitLimit', 'dialogueSplitLimit', pipelineDefaults.dialogue.splitLimit, {
-    min: 1,
-    max: 6,
-  }),
-  count(
-    'dialogue.repeatedRunLimit',
-    'dialogueRepeatedRunLimit',
-    pipelineDefaults.dialogue.repeatedRunLimit,
-    { min: 2, max: 8 },
-  ),
-  chars(
-    'dialogue.minimumLineLength',
-    'dialogueMinimumLineLength',
-    pipelineDefaults.dialogue.minimumLineLength,
-    { min: 2, max: 30 },
-  ),
-  chars(
-    'dialogue.minimumQuotedLength',
-    'dialogueMinimumQuotedLength',
-    pipelineDefaults.dialogue.minimumQuotedLength,
-    { min: 2, max: 30 },
-  ),
-  {
-    ...count(
-      'polish.lengthLimitRatio',
-      'polishLengthLimitRatio',
-      pipelineDefaults.polish.lengthLimitRatio,
-      {
-        min: 1,
-        max: 5,
-      },
-    ),
-    kind: 'ratio',
-  },
-  count('polish.retryLimit', 'polishRetryLimit', pipelineDefaults.polish.retryLimit, {
-    min: 1,
-    max: 4,
-    // NOTE: 뼈대·구간은 attempt <= retryLimit 로 돌고 다듬기만 < 로 돈다. 같은 숫자가 호출을
-    // 하나 덜 부르므로 두 계열의 재시도 한도를 나란히 비교하지 않는다.
-  }),
-  ratio('padding.paragraphRatio', 'paddingParagraphRatio', pipelineDefaults.padding.paragraphRatio),
-  chars(
-    'padding.paragraphMinimumLength',
-    'paddingParagraphMinimumLength',
-    pipelineDefaults.padding.paragraphMinimumLength,
-    { min: 10, max: 200 },
-  ),
-  count('voiceSamples.limit', 'voiceSampleLimit', pipelineDefaults.voiceSamples.limit, {
-    min: 1,
-    max: 12,
-  }),
-  chars(
-    'voiceSamples.minimumLength',
-    'voiceSampleMinimumLength',
-    pipelineDefaults.voiceSamples.minimumLength,
-    { min: 2, max: 40 },
-  ),
-  chars(
-    'voiceSamples.maximumLength',
-    'voiceSampleMaximumLength',
-    pipelineDefaults.voiceSamples.maximumLength,
-    { min: 20, max: 200 },
-  ),
-  chars(
-    'context.condensedMaxChars',
-    'contextCondensedMaxChars',
-    pipelineDefaults.context.condensedMaxChars,
-    { min: 200, max: 8000 },
-  ),
-  ...weightKnobs,
+  ...generationKnobs,
   {
     id: sectionOutputLimitKnobId,
     kind: 'chars',
@@ -257,10 +98,10 @@ export function isSectionOutputLimitKnob(knob: KnobSpec): boolean {
   return knob.id === sectionOutputLimitKnobId;
 }
 
-export function findKnob(id: KnobId): KnobSpec | undefined {
-  return knobRegistry.find((knob) => knob.id === id);
-}
-
 export function isPromptKnob(knob: KnobSpec): boolean {
   return knob.promptKey !== undefined;
+}
+
+export function findKnob(id: KnobId): KnobSpec | undefined {
+  return knobRegistry.find((knob) => knob.id === id);
 }

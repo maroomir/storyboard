@@ -112,7 +112,7 @@ describe('sim run', () => {
   it('records the overlay label as the point name', async () => {
     const out = join(home, 'runs.jsonl');
     const overlay = join(home, 'overlay.json');
-    writeFileSync(overlay, JSON.stringify({ label: 'len-skel08', knobs: { 'skeleton.lengthRatio': 0.8 } }));
+    writeFileSync(overlay, JSON.stringify({ label: 'len-skel08', knobs: { 'generation.skeleton.lengthRatio': 0.8 } }));
     const git = (...gitArgs: string[]): void => {
       execFileSync('git', ['-c', 'user.email=t@t', '-c', 'user.name=t', ...gitArgs], { cwd: track });
     };
@@ -134,7 +134,7 @@ describe('sim run', () => {
     expect(outcome?.ok).toBe(true);
     const [record] = await readRuns(out);
     expect(record?.pointLabel).toBe('len-skel08');
-    expect(record?.knobs).toEqual({ 'skeleton.lengthRatio': 0.8 });
+    expect(record?.knobs).toEqual({ 'generation.skeleton.lengthRatio': 0.8 });
   });
 
   it('refuses an overlay knob the registry does not know', async () => {
@@ -166,7 +166,7 @@ describe('track reading', () => {
     const outcome = await run('sim sweep', {
       track,
       genre: 'thriller',
-      knobs: 'skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio',
+      knobs: 'generation.skeleton.lengthRatio,generation.section.retryLimit,generation.dialogue.preservedRatio,generation.padding.paragraphRatio',
       judge: 'openai',
     });
 
@@ -214,7 +214,7 @@ describe('sim sweep', () => {
     const outcome = await run('sim sweep', {
       track,
       genre: 'thriller',
-      knobs: 'skeleton.lengthRatio,section.retryLimit',
+      knobs: 'generation.skeleton.lengthRatio,generation.section.retryLimit',
     });
 
     expect(outcome?.ok).toBe(false);
@@ -222,7 +222,7 @@ describe('sim sweep', () => {
   });
 
   const fourKnobs =
-    'skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio';
+    'generation.skeleton.lengthRatio,generation.section.retryLimit,generation.dialogue.preservedRatio,generation.padding.paragraphRatio';
 
   it('refuses without a judge', async () => {
     const outcome = await run('sim sweep', { track, genre: 'thriller', knobs: fourKnobs });
@@ -423,7 +423,7 @@ describe('sim apply', () => {
 
     expect(outcome?.ok).toBe(true);
     const written = JSON.parse(readFileSync(profiles, 'utf8'))['ollama:gemma4:12b'];
-    expect(written.sectionOutputLimit).toBe(1000);
+    expect(written['generation.section.outputLimit']).toBe(1000);
     expect(written.measured).toMatchObject({ workspace: 'thriller@1034a9c', runs: 3, auc: 0.32, recalled: 8, judge: 'ollama:gemma3:12b' });
 
     const again = await run('sim apply', { out, point: 'len-sec1000', profiles });
@@ -454,7 +454,7 @@ describe('sim apply', () => {
         engineCommit: '9.9.9',
         trackCommit: 'abc',
         trackDirty: false,
-        knobs: { 'skeleton.lengthRatio': 0.8 },
+        knobs: { 'generation.skeleton.lengthRatio': 0.8 },
         generation: { providerId: 'claude', model: 'claude-sonnet-5' },
         scenes: [],
         tokens: { calls: 0, inputTokens: 0, outputTokens: 0, cacheReadInputTokens: 0, byTask: {}, costUsd: 0, unpricedCallCount: 0, unattributedCallCount: 0 },

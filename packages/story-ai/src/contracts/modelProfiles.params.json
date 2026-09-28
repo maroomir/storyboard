@@ -1,6 +1,6 @@
 {
   "ollama:gemma4:12b": {
-    "sectionOutputLimit": 1000,
+    "generation.section.outputLimit": 1000,
     "measured": {
       "date": "2026-09-16",
       "workspace": "thriller@1034a9c",

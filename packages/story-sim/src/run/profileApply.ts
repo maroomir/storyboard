@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 
-import { findKnob, sectionOutputLimitKnobId } from '#sim/knobs/knobRegistry';
+import { findKnob } from '#sim/knobs/knobRegistry';
 import type { RunRecord } from '#sim/run/runStore';
 import { median } from '#sim/sweep/pareto';
 
@@ -16,30 +16,16 @@ export interface ProfileFields {
 
 export function profileFieldsFor(knobs: Readonly<Record<string, number>>): ProfileFields {
   const fields: Record<string, unknown> = {};
-  const weights: Record<string, number> = {};
   const unsupported: string[] = [];
 
+  // 프로필 칸의 이름이 손잡이 id 그대로라 옮겨 적을 것이 없다.
   for (const [id, value] of Object.entries(knobs)) {
-    const knob = findKnob(id);
-
-    if (knob === undefined || knob.applyTarget !== 'modelProfile') {
+    if (findKnob(id)?.applyTarget !== 'modelProfile') {
       unsupported.push(id);
       continue;
     }
 
-    if (id === sectionOutputLimitKnobId) {
-      fields['sectionOutputLimit'] = value;
-    } else if (knob.weightKind !== undefined) {
-      weights[knob.weightKind] = value;
-    } else if (knob.tuningKey !== undefined) {
-      fields[knob.tuningKey] = value;
-    } else {
-      unsupported.push(id);
-    }
-  }
-
-  if (Object.keys(weights).length > 0) {
-    fields['violationWeights'] = weights;
+    fields[id] = value;
   }
 
   return { fields, unsupported };

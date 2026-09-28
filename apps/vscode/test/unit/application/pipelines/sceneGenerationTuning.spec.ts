@@ -83,7 +83,7 @@ describe("resolveSceneGenerationTuning", () => {
   })
 
   it("fills only the omitted weights when some are overridden", () => {
-    const resolved = resolveSceneGenerationTuning({ violationWeights: { cast: 99 } })
+    const resolved = resolveSceneGenerationTuning({ "generation.violationWeights.cast": 99 })
 
     expect(resolved.violationWeights.cast).toBe(99)
     expect(resolved.violationWeights.repetition).toBe(pipelineDefaults.violationWeights.repetition)

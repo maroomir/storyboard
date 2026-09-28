@@ -60,6 +60,8 @@ export * from './contracts/aiResponseParser';
 export * from './contracts/aiTypes';
 export * from './contracts/draftReview';
 export * from './contracts/sceneCoverage';
+export * from './contracts/generationParameters';
+export * from './contracts/sectionViolationKinds';
 export * from './contracts/settingCatalog';
 export * from './contracts/sceneDialogueAttribution';
 export * from './contracts/studioAgent';
