@@ -1,0 +1,157 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OutlineSynopsisPrompt golden > defaults to the generic variant 1`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 120000자
+구성: 12장, 장당 4씬
+컨셉: 사라진 등대지기
+설명: 항구 도시의 연쇄 실종
+태그: 항구, 실종
+금지 조건: 초자연 해결 금지
+문체 제약: 건조체, 짧은 문장
+품질 기준: 복선 회수",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > leaves missing fields out for the generic variant 1`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 무제
+형식: screenplay
+언어: ko",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > leaves missing fields out for the xs variant 1`] = `
+{
+  "system": "작품 계약으로 시놉시스를 JSON 객체로 반환: {"logline":"","genrePromise":"","mainConflicts":[],"ending":"","theme":"","tone":"","styleRules":[]}",
+  "user": "제목: 무제
+형식: screenplay
+언어: ko",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders every field for the generic variant 1`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 120000자
+구성: 12장, 장당 4씬
+컨셉: 사라진 등대지기
+설명: 항구 도시의 연쇄 실종
+태그: 항구, 실종
+금지 조건: 초자연 해결 금지
+문체 제약: 건조체, 짧은 문장
+품질 기준: 복선 회수",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders every field for the rich variant 1`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 120000자
+구성: 12장, 장당 4씬
+컨셉: 사라진 등대지기
+설명: 항구 도시의 연쇄 실종
+태그: 항구, 실종
+금지 조건: 초자연 해결 금지
+문체 제약: 건조체, 짧은 문장
+품질 기준: 복선 회수",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders every field for the xs variant 1`] = `
+{
+  "system": "작품 계약으로 시놉시스를 JSON 객체로 반환: {"logline":"","genrePromise":"","mainConflicts":[],"ending":"","theme":"","tone":"","styleRules":[]}",
+  "user": "제목: 항구의 밤
+형식: novel
+언어: ko
+장르: 미스터리
+독자층: 성인
+시점: 3인칭 제한적
+목표 분량: 120000자
+구성: 12장, 장당 4씬
+컨셉: 사라진 등대지기
+설명: 항구 도시의 연쇄 실종
+태그: 항구, 실종
+금지 조건: 초자연 해결 금지
+문체 제약: 건조체, 짧은 문장
+품질 기준: 복선 회수",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders partial composition and blank fields 1`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 무제
+형식: screenplay
+언어: ko
+구성: 8장",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders partial composition and blank fields 2`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 무제
+형식: screenplay
+언어: ko
+시점: 1인칭
+구성: 장당 3씬",
+}
+`;
+
+exports[`OutlineSynopsisPrompt golden > renders partial composition and blank fields 3`] = `
+{
+  "system": "장편 소설의 시놉시스를 설계하는 도우미다.
+작품 생성 계약을 바탕으로 로그라인, 장르 약속, 주요 갈등, 결말, 주제, 톤, 문체 규칙을 정한다.
+설명 없이 JSON 객체 하나만 출력하라.
+{"logline":"","genrePromise":"","mainConflicts":[""],"ending":"","theme":"","tone":"","styleRules":[""]}
+logline은 한 문장, mainConflicts와 styleRules는 짧은 항목 배열이다. 계약과 모순되지 않게 작성하라.",
+  "user": "제목: 무제
+형식: screenplay
+언어: ko",
+}
+`;
