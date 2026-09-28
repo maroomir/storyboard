@@ -136,12 +136,12 @@ describe('config bridge seam', () => {
   // 파이프라인까지 실제로 닿았다는 증거다.
   it('layers a tuning override onto the pipeline', async () => {
     await generateScene({
-      createConfigBridge: (dependencies) => new TunedConfigBridge(dependencies, { skeletonRatio: 0.2 }),
+      createConfigBridge: (dependencies) => new TunedConfigBridge(dependencies, { 'generation.skeleton.lengthRatio': 0.2 }),
     });
     const thin = draftBody();
 
     await generateScene({
-      createConfigBridge: (dependencies) => new TunedConfigBridge(dependencies, { skeletonRatio: 0.9 }),
+      createConfigBridge: (dependencies) => new TunedConfigBridge(dependencies, { 'generation.skeleton.lengthRatio': 0.9 }),
     });
 
     expect(draftBody()).not.toBe(thin);

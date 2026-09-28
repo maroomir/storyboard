@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-import type { AiProviderId, PromptTuningOverrides } from '@storyboard/story-ai';
-import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
+import type { AiProviderId, GenerationKnobs, PromptTuningOverrides } from '@storyboard/story-ai';
 import { sectionViolationKinds } from '@storyboard/story-pipeline';
 
 import { isSectionOutputLimitKnob, knobRegistry, type KnobSpec } from '#sim/knobs/knobRegistry';
@@ -17,7 +16,7 @@ export const overlaySchema = z.object({
 export type Overlay = z.infer<typeof overlaySchema>;
 
 export interface OverlayApplication {
-  readonly tuning: SceneGenerationTuning;
+  readonly tuning: GenerationKnobs;
   // tuning 이 아니라 파이프라인 입력의 별도 칸으로 들어간다.
   readonly sectionOutputLimit?: number;
   // 프롬프트 손잡이는 파이프라인 인자가 아니라 promptTuning 덮개로 간다.
@@ -41,8 +40,7 @@ export function applyOverlay(
   registry: readonly KnobSpec[] = knobRegistry,
 ): OverlayApplication {
   const refusals: string[] = [];
-  const tuning: Record<string, unknown> = {};
-  const weights: Record<string, number> = {};
+  const tuning: Record<string, number> = {};
   const promptOverrides: Record<string, { temperature?: number; maxTokens?: number }> = {};
   let sectionOutputLimit: number | undefined;
 
@@ -78,22 +76,11 @@ export function applyOverlay(
       continue;
     }
 
-    if (knob.weightKind !== undefined) {
-      weights[knob.weightKind] = value;
-      continue;
-    }
-
-    if (knob.tuningKey !== undefined) {
-      tuning[knob.tuningKey] = value;
-    }
-  }
-
-  if (Object.keys(weights).length > 0) {
-    tuning['violationWeights'] = weights;
+    tuning[id] = value;
   }
 
   return {
-    tuning: tuning as SceneGenerationTuning,
+    tuning,
     ...(sectionOutputLimit === undefined ? {} : { sectionOutputLimit }),
     promptOverrides,
     refusals,

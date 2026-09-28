@@ -162,13 +162,13 @@ describe('track run', () => {
       factory: fakeFactory({ onOpen }),
       workspacePath: '/tmp/ws',
       scenes: scenes.slice(0, 1),
-      tuning: { skeletonRatio: 0.8 },
+      tuning: { 'generation.skeleton.lengthRatio': 0.8 },
       promptOverrides: {},
       sectionOutputLimit: 1000,
     });
 
     expect(onOpen).toHaveBeenCalledWith(
-      expect.objectContaining({ tuning: { skeletonRatio: 0.8 }, sectionOutputLimit: 1000 }),
+      expect.objectContaining({ tuning: { 'generation.skeleton.lengthRatio': 0.8 }, sectionOutputLimit: 1000 }),
     );
   });
 
@@ -425,19 +425,19 @@ describe('profile apply', () => {
     };
   }
 
-  // 손잡이 이름과 프로필 칸 이름이 다르다. 손으로 옮기면 어긋난다.
-  it('maps knobs onto profile fields by their tuning keys', () => {
+  // 프로필 칸의 이름은 손잡이 id 그대로다. 프롬프트 손잡이만 프로필로 가지 않는다.
+  it('keeps model-profile knobs and refuses prompt knobs', () => {
     const { fields, unsupported } = profileFieldsFor({
       'generation.section.outputLimit': 1000,
-      'skeleton.lengthRatio': 0.8,
-      'violationWeights.repetition': 3,
+      'generation.skeleton.lengthRatio': 0.8,
+      'generation.violationWeights.repetition': 3,
       'prompt.sceneSkeleton.temperature': 0.5,
     });
 
     expect(fields).toEqual({
-      sectionOutputLimit: 1000,
-      skeletonRatio: 0.8,
-      violationWeights: { repetition: 3 },
+      'generation.section.outputLimit': 1000,
+      'generation.skeleton.lengthRatio': 0.8,
+      'generation.violationWeights.repetition': 3,
     });
     expect(unsupported).toEqual(['prompt.sceneSkeleton.temperature']);
   });

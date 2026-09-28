@@ -7,7 +7,7 @@ import { pipelineDefaults } from './pipelineDefaults';
 import { resolveSceneGenerationTuning } from './sceneGenerationTuning';
 import type {
   ResolvedSceneGenerationTuning,
-  SceneGenerationTuning,
+  SceneGenerationTuningInput,
   SectionViolationKind,
 } from './sceneGenerationTuning';
 
@@ -254,7 +254,7 @@ function dialogueLinesOf(text: string, tuning: ResolvedSceneGenerationTuning): s
 export function findRepeatedDialogueRunBetween(
   first: string,
   second: string,
-  tuning?: SceneGenerationTuning,
+  tuning?: SceneGenerationTuningInput,
 ): number {
   const resolved = resolveSceneGenerationTuning(tuning);
   const left = dialogueLinesOf(first, resolved);
@@ -276,7 +276,7 @@ export function findRepeatedDialogueRunBetween(
   return longest;
 }
 
-export function findRepeatedDialogueRun(text: string, tuning?: SceneGenerationTuning): number {
+export function findRepeatedDialogueRun(text: string, tuning?: SceneGenerationTuningInput): number {
   const lines = dialogueLinesOf(text, resolveSceneGenerationTuning(tuning));
   let longest = 0;
 
@@ -304,7 +304,7 @@ export function findRepeatedDialogueRun(text: string, tuning?: SceneGenerationTu
 export function validateSceneSkeleton(
   skeleton: string,
   targetLength?: number,
-  tuning?: SceneGenerationTuning,
+  tuning?: SceneGenerationTuningInput,
 ): SectionViolation[] {
   const resolved = resolveSceneGenerationTuning(tuning);
   const violations: SectionViolation[] = [];
@@ -341,7 +341,7 @@ export function validateExpandedSection(input: {
   // NOTE: 아래 두 필드는 tuning 이 생기기 전의 이름이다. 둘 다 주면 개별 필드가 이긴다.
   readonly dialoguePreservedRatio?: number;
   readonly paddingParagraphRatio?: number;
-  readonly tuning?: SceneGenerationTuning;
+  readonly tuning?: SceneGenerationTuningInput;
 }): SectionViolation[] {
   const resolved = resolveSceneGenerationTuning(input.tuning);
   const preservedRatio = input.dialoguePreservedRatio ?? resolved.dialoguePreservedRatio;
@@ -545,7 +545,7 @@ export function validatePolishedSkeleton(input: {
   readonly polished: string;
   readonly characters: readonly CharacterCard[];
   readonly lengthLimit: number;
-  readonly tuning?: SceneGenerationTuning;
+  readonly tuning?: SceneGenerationTuningInput;
 }): SectionViolation[] {
   const resolved = resolveSceneGenerationTuning(input.tuning);
   const violations: SectionViolation[] = [];

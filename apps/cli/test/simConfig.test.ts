@@ -35,7 +35,7 @@ function writeProfile(profile: unknown): void {
   writeFileSync(join(track, simConfigFileName), JSON.stringify(profile));
 }
 
-const fourKnobs = 'skeleton.lengthRatio,section.retryLimit,dialogue.preservedRatio,padding.paragraphRatio';
+const fourKnobs = 'generation.skeleton.lengthRatio,generation.section.retryLimit,generation.dialogue.preservedRatio,generation.padding.paragraphRatio';
 
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'sim-cfg-home-'));
