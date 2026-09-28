@@ -225,7 +225,8 @@ async function refreshChapterSummary(
   options: NovelPipelineOptions,
   chapterIndex: number,
 ): Promise<void> {
-  const result = await options.deps.summarizeChaptersUseCase.execute(options.workspaceUri, {
+  const result = await options.deps.summarizeChaptersUseCase.execute({
+    workspaceRoot: options.workspaceUri,
     chapterIndex,
   });
 
@@ -241,7 +242,7 @@ export async function runAssembleStage(
   workspaceUri: StoryUri,
   assembleManuscriptUseCase: AssembleManuscriptUseCase,
 ): Promise<void> {
-  const result = await assembleManuscriptUseCase.execute(workspaceUri);
+  const result = await assembleManuscriptUseCase.execute({ workspaceRoot: workspaceUri });
   if (!result.ok) {
     throw new Error(
       result.kind === 'failed' ? result.message : `원고를 조립할 수 없습니다: ${result.kind}`,
@@ -435,7 +436,7 @@ export async function runSummariesStage(
   workspaceUri: StoryUri,
   summarizeChaptersUseCase: SummarizeChaptersUseCase,
 ): Promise<void> {
-  const result = await summarizeChaptersUseCase.execute(workspaceUri);
+  const result = await summarizeChaptersUseCase.execute({ workspaceRoot: workspaceUri });
   if (!result.ok) {
     throw new Error(
       result.kind === 'failed' ? result.message : `장별 요약을 완료할 수 없습니다: ${result.kind}`,

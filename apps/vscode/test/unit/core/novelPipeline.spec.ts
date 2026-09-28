@@ -279,12 +279,12 @@ describe("NovelPipeline", () => {
     await new NovelPipeline(harness.dependencies).run(harness.options)
 
     const chapterIndexes = summarizeChaptersMock.mock.calls
-      .map((call) => (call[1] as { chapterIndex?: number } | undefined)?.chapterIndex)
+      .map((call) => (call[0] as { chapterIndex?: number }).chapterIndex)
       .filter((chapterIndex) => chapterIndex !== undefined)
     expect(chapterIndexes).toEqual([0, 1])
 
     // The final summaries stage still runs, resummarizing the whole manuscript.
-    expect(summarizeChaptersMock.mock.calls.at(-1)?.[1]).toBeUndefined()
+    expect((summarizeChaptersMock.mock.calls.at(-1)?.[0] as { chapterIndex?: number }).chapterIndex).toBeUndefined()
   })
 
   it("drafts and revises every scene of every chapter in order", async () => {

@@ -1,4 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
+import { failedResult } from '#engine/application/useCase';
 import { renderManuscriptExport, type ManuscriptExportFormat } from '#engine/domain/manuscriptExport';
 
 export type ManuscriptExportSource = {
@@ -26,23 +27,23 @@ export type ExportManuscriptResult =
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false }
   | { readonly kind: 'exported'; readonly ok: true; readonly targetUri: StoryUri };
 
+export interface ExportManuscriptUseCaseDependencies {
+  readonly repository: IManuscriptExportRepository;
+}
+
 export class ExportManuscriptUseCase {
-  public constructor(private readonly repository: IManuscriptExportRepository) {}
+  public constructor(private readonly deps: ExportManuscriptUseCaseDependencies) {}
 
   public async loadSource(workspaceRoot: StoryUri): Promise<LoadExportSourceResult> {
     try {
-      if (!(await this.repository.hasManuscriptVolume(workspaceRoot))) {
+      if (!(await this.deps.repository.hasManuscriptVolume(workspaceRoot))) {
         return { kind: 'missing_volume', ok: false };
       }
 
-      const { markdown, projectName } = await this.repository.loadVolume(workspaceRoot);
+      const { markdown, projectName } = await this.deps.repository.loadVolume(workspaceRoot);
       return { kind: 'ready', ok: true, markdown, projectName };
     } catch (error) {
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
+      return failedResult(error);
     }
   }
 
@@ -53,15 +54,11 @@ export class ExportManuscriptUseCase {
   ): Promise<ExportManuscriptResult> {
     try {
       const content = renderManuscriptExport(markdown, format);
-      await this.repository.saveExport(targetUri, content);
+      await this.deps.repository.saveExport(targetUri, content);
 
       return { kind: 'exported', ok: true, targetUri };
     } catch (error) {
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
+      return failedResult(error);
     }
   }
 }

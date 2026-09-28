@@ -171,14 +171,15 @@ function buildServices(
   const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
   const storyFeatureRepository = new StoryFeatureRepository(fileSystem);
 
-  const assembleManuscriptUseCase = new AssembleManuscriptUseCase(
+  const assembleManuscriptUseCase = new AssembleManuscriptUseCase({
     logger,
-    manuscriptAssemblyRepository,
-  );
-  const summarizeChaptersUseCase = new SummarizeChaptersUseCase(
+    repository: manuscriptAssemblyRepository,
+  });
+  const summarizeChaptersUseCase = new SummarizeChaptersUseCase({
     aiGateway,
-    manuscriptAssemblyRepository,
-  );
+    logger,
+    repository: manuscriptAssemblyRepository,
+  });
   const generateDraftUseCase = new GenerateDraftUseCase({
     aiGateway,
     configBridge,
@@ -236,7 +237,9 @@ function buildServices(
     condenseDraftUseCase: new CondenseDraftUseCase({ aiGateway, logger }),
     createCardUseCase: new CreateCardUseCase(cardWriterRepository),
     expandDraftUseCase: new ExpandDraftUseCase({ aiGateway, logger }),
-    exportManuscriptUseCase: new ExportManuscriptUseCase(manuscriptAssemblyRepository),
+    exportManuscriptUseCase: new ExportManuscriptUseCase({
+      repository: manuscriptAssemblyRepository,
+    }),
     generateAllDraftsUseCase: new GenerateAllDraftsUseCase({
       generateDraftUseCase,
       logger,
@@ -244,7 +247,11 @@ function buildServices(
       sceneRepository: sceneBatchRepository,
     }),
     generateDraftUseCase,
-    generateOutlineUseCase: new GenerateOutlineUseCase(aiGateway, outlineRepository),
+    generateOutlineUseCase: new GenerateOutlineUseCase({
+      aiGateway,
+      logger,
+      repository: outlineRepository,
+    }),
     generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase({
       aiGateway,
       configBridge,
@@ -275,11 +282,11 @@ function buildServices(
       logger,
       cardRecommendationRepository,
     ),
-    reviewManuscriptUseCase: new ReviewManuscriptUseCase(
+    reviewManuscriptUseCase: new ReviewManuscriptUseCase({
       aiGateway,
-      manuscriptAssemblyRepository,
       logger,
-    ),
+      repository: manuscriptAssemblyRepository,
+    }),
     reviseAfterGenerateGate,
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase({ fileSystem }),

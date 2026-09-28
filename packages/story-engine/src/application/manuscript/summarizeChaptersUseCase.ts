@@ -1,4 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
+import type { IStoryboardLogger } from '#engine/ports/logger';
+import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import {
   auditChapterSummaries,
@@ -38,90 +40,97 @@ export type SummarizeChaptersResult =
       readonly summaryUri: StoryUri;
     };
 
-export class SummarizeChaptersUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly repository: IChapterSummaryRepository,
-  ) {}
+export interface SummarizeChaptersUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly repository: IChapterSummaryRepository;
+  readonly logger: IStoryboardLogger;
+}
 
-  public async execute(
-    workspaceRoot: StoryUri,
-    options: SummarizeChaptersOptions = {},
-  ): Promise<SummarizeChaptersResult> {
-    try {
-      if (!(await this.repository.hasChapterPlan(workspaceRoot))) {
-        return { kind: 'missing_outline', ok: false };
-      }
+export type SummarizeChaptersRequest = SummarizeChaptersOptions & {
+  readonly workspaceRoot: StoryUri;
+};
 
-      const source = await this.repository.loadAssemblySource(workspaceRoot);
-      if (source.draftsByOrder.size === 0) {
-        return { kind: 'missing_drafts', ok: false };
-      }
+export class SummarizeChaptersUseCase implements IUseCase<
+  SummarizeChaptersRequest,
+  SummarizeChaptersResult
+> {
+  public constructor(private readonly deps: SummarizeChaptersUseCaseDependencies) {}
 
-      const manuscript = assembleManuscript({
-        draftsByOrder: source.draftsByOrder,
-        plan: source.plan,
-        projectName: source.projectName,
-      });
-      const targeted =
-        options.chapterIndex === undefined
-          ? manuscript.chapters
-          : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
+  public async execute(request: SummarizeChaptersRequest): Promise<SummarizeChaptersResult> {
+    const { workspaceRoot, ...options } = request;
 
-      if (targeted.length === 0) {
-        return { kind: 'missing_drafts', ok: false };
-      }
-
-      const aiService = this.aiGateway.createService(workspaceRoot);
-      const providerId = this.aiGateway.getTaskProvider('chapterSummary');
-      const sourceHashes = new Map(
-        manuscript.chapters.map((chapter) => [
-          chapter.chapterTitle,
-          computeDraftBodyHash(chapter.markdown),
-        ]),
-      );
-      // 한 장만 다시 요약할 때도 나머지 장의 낡음 표시를 다시 매긴다. 이 실행이 요약 파일을
-      // 어차피 쓰므로, 표시가 실제와 어긋난 채로 남는 창이 생기지 않는다.
-      let summaries: readonly ChapterSummary[] =
-        options.chapterIndex === undefined
-          ? []
-          : auditChapterSummaries(await this.readExisting(workspaceRoot), sourceHashes).summaries;
-
-      for (const [index, chapter] of targeted.entries()) {
-        if (options.shouldCancel?.()) {
-          return { kind: 'cancelled', ok: false };
+    return await runUseCase<SummarizeChaptersResult>(
+      this.deps.logger,
+      'Summarize chapters failed',
+      async () => {
+        if (!(await this.deps.repository.hasChapterPlan(workspaceRoot))) {
+          return { kind: 'missing_outline', ok: false };
         }
 
-        options.onProgress?.(index + 1, targeted.length);
-        const summary = await aiService.summarizeChapter(
-          { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
-          { providerId },
-        );
-        summaries = mergeChapterSummary(summaries, {
-          chapterTitle: chapter.chapterTitle,
-          summary,
-          sourceHash: computeDraftBodyHash(chapter.markdown),
-          isStale: false,
+        const source = await this.deps.repository.loadAssemblySource(workspaceRoot);
+        if (source.draftsByOrder.size === 0) {
+          return { kind: 'missing_drafts', ok: false };
+        }
+
+        const manuscript = assembleManuscript({
+          draftsByOrder: source.draftsByOrder,
+          plan: source.plan,
+          projectName: source.projectName,
         });
-      }
+        const targeted =
+          options.chapterIndex === undefined
+            ? manuscript.chapters
+            : manuscript.chapters.slice(options.chapterIndex, options.chapterIndex + 1);
 
-      const summaryUri = await this.repository.saveChapterSummaries(
-        workspaceRoot,
-        buildChapterSummariesMarkdown(source.projectName, summaries),
-      );
+        if (targeted.length === 0) {
+          return { kind: 'missing_drafts', ok: false };
+        }
 
-      return { kind: 'summarized', ok: true, summaryCount: summaries.length, summaryUri };
-    } catch (error) {
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
-    }
+        const aiService = this.deps.aiGateway.createService(workspaceRoot);
+        const providerId = this.deps.aiGateway.getTaskProvider('chapterSummary');
+        const sourceHashes = new Map(
+          manuscript.chapters.map((chapter) => [
+            chapter.chapterTitle,
+            computeDraftBodyHash(chapter.markdown),
+          ]),
+        );
+        // 한 장만 다시 요약할 때도 나머지 장의 낡음 표시를 다시 매긴다. 이 실행이 요약 파일을
+        // 어차피 쓰므로, 표시가 실제와 어긋난 채로 남는 창이 생기지 않는다.
+        let summaries: readonly ChapterSummary[] =
+          options.chapterIndex === undefined
+            ? []
+            : auditChapterSummaries(await this.readExisting(workspaceRoot), sourceHashes).summaries;
+
+        for (const [index, chapter] of targeted.entries()) {
+          if (options.shouldCancel?.()) {
+            return { kind: 'cancelled', ok: false };
+          }
+
+          options.onProgress?.(index + 1, targeted.length);
+          const summary = await aiService.summarizeChapter(
+            { body: chapter.markdown, chapterTitle: chapter.chapterTitle },
+            { providerId },
+          );
+          summaries = mergeChapterSummary(summaries, {
+            chapterTitle: chapter.chapterTitle,
+            summary,
+            sourceHash: computeDraftBodyHash(chapter.markdown),
+            isStale: false,
+          });
+        }
+
+        const summaryUri = await this.deps.repository.saveChapterSummaries(
+          workspaceRoot,
+          buildChapterSummariesMarkdown(source.projectName, summaries),
+        );
+
+        return { kind: 'summarized', ok: true, summaryCount: summaries.length, summaryUri };
+      },
+    );
   }
 
   private async readExisting(workspaceRoot: StoryUri): Promise<ChapterSummary[]> {
-    const markdown = await this.repository.readChapterSummaries(workspaceRoot);
+    const markdown = await this.deps.repository.readChapterSummaries(workspaceRoot);
     return markdown === undefined ? [] : parseChapterSummariesMarkdown(markdown);
   }
 }

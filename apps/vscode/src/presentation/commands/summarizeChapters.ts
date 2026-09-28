@@ -37,7 +37,8 @@ async function runSummarizeChapters(
       title: 'Storyboard 장별 요약',
     },
     async (progress, token) =>
-      await dependencies.summarizeChaptersUseCase.execute(workspaceRoot, {
+      await dependencies.summarizeChaptersUseCase.execute({
+        workspaceRoot,
         onProgress: (current, total) =>
           progress.report({ message: `요약 중 (${current}/${total})…` }),
         shouldCancel: () => token.isCancellationRequested,

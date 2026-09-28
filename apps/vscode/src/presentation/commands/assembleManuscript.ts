@@ -32,7 +32,7 @@ async function runAssembleManuscript(
 
   const result = await vscode.window.withProgress(
     { location: vscode.ProgressLocation.Notification, title: '원고 조립 중…' },
-    () => dependencies.assembleManuscriptUseCase.execute(workspaceRoot),
+    () => dependencies.assembleManuscriptUseCase.execute({ workspaceRoot }),
   );
   if (!result.ok) {
     await reportFailure(result, dependencies.logger);

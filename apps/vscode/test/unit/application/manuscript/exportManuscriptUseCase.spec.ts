@@ -26,7 +26,7 @@ function repository(
 }
 
 function useCase(storage: IManuscriptExportRepository): ExportManuscriptUseCase {
-  return new ExportManuscriptUseCase(storage)
+  return new ExportManuscriptUseCase({ repository: storage })
 }
 
 describe("ExportManuscriptUseCase", () => {

@@ -38,7 +38,7 @@ async function runReviewManuscript(
     },
     async (progress) => {
       progress.report({ message: '연속성·비평 검사 중…' });
-      return await dependencies.reviewManuscriptUseCase.execute(workspaceRoot);
+      return await dependencies.reviewManuscriptUseCase.execute({ workspaceRoot });
     },
   );
 
