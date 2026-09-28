@@ -27,5 +27,9 @@
   "devDependencies": {
     "@types/node": "^20.12.12",
     "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "build:prompts": "node ../../scripts/build-prompt-resources.mjs",
+    "check:prompts": "node ../../scripts/build-prompt-resources.mjs --check"
   }
 }
