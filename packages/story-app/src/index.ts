@@ -2,7 +2,6 @@ export {
   StoryboardApplication,
   type StoryboardApplicationDependencies,
   type StoryboardApplicationOptions,
-  type StoryboardServices,
 } from './storyboardApplication';
 export { CardManager, type CardManagerDependencies } from './managers/cardManager';
 export { DraftManager, type DraftManagerDependencies } from './managers/draftManager';
