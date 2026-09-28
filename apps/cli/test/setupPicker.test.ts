@@ -67,7 +67,7 @@ describe('storyboard setup picker', () => {
   });
 
   it('keeps mock listed while it is the current provider', async () => {
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
     await runPicker('');
 
