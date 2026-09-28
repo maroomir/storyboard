@@ -48,6 +48,7 @@ import {
   type IStoryboardLogger,
   type IUsageSink,
   type IWorkspaceLocator,
+  type WorkspaceRunLockOwner,
 } from '@storyboard/story-engine';
 import {
   createAiProviderRegistry,
@@ -60,6 +61,7 @@ import { DraftManager } from './managers/draftManager';
 import { ManuscriptManager } from './managers/manuscriptManager';
 import { NovelManager } from './managers/novelManager';
 import { StudioManager } from './managers/studioManager';
+import { RunGate } from './runGate';
 
 // What a host must supply before the engine can run: the six adapters that differ between the
 // extension, the CLI and the desktop app. Everything else is built here, once, the same way.
@@ -77,6 +79,8 @@ export interface StoryboardApplicationDependencies {
 export interface StoryboardApplicationOptions {
   // Stamped into every file the engine writes, so a draft says which app and version produced it.
   readonly generator: string;
+  // How the workspace run lock names this app to the others.
+  readonly lockOwner: WorkspaceRunLockOwner;
   // Post-generation card updates rewrite the workspace's cards in unawaited background jobs. A
   // measurement run must leave its fixture byte-identical, so it turns them off.
   readonly postGenerationUpdates?: boolean;
@@ -131,6 +135,7 @@ export class StoryboardApplication {
   public readonly cards: CardManager;
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
+  public readonly runGate: RunGate;
   public readonly aiGateway: AiGateway;
   public readonly aiProviderRegistry: AiProviderRegistry;
   public readonly configBridge: ConfigBridge;
@@ -150,6 +155,7 @@ export class StoryboardApplication {
     this.cards = new CardManager(services);
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
+    this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
     this.aiGateway = services.aiGateway;
     this.aiProviderRegistry = services.aiProviderRegistry;
     this.configBridge = services.configBridge;

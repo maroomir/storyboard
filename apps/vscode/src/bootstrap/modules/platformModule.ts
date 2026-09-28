@@ -28,6 +28,7 @@ export interface IPlatformServices extends Pick<
   | 'cards'
   | 'novel'
   | 'studio'
+  | 'runGate'
   | 'aiGateway'
   | 'aiProviderRegistry'
   | 'configBridge'
@@ -80,7 +81,10 @@ export class PlatformModule implements IApplicationModule {
         configBridge,
         usageLedger: usageRecorder,
       },
-      { generator: `storyboard@${context.extension.packageJSON.version}` },
+      {
+        generator: `storyboard@${context.extension.packageJSON.version}`,
+        lockOwner: 'vscode',
+      },
     );
 
     this.services = {
@@ -89,6 +93,7 @@ export class PlatformModule implements IApplicationModule {
       cards: application.cards,
       novel: application.novel,
       studio: application.studio,
+      runGate: application.runGate,
       aiGateway: application.aiGateway,
       aiProviderRegistry: application.aiProviderRegistry,
       configBridge: application.configBridge,

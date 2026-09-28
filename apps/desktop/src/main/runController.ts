@@ -1,7 +1,4 @@
-import { hostname } from 'node:os';
-
 import {
-  acquireWorkspaceRunLock,
   describeWorkspaceRunLockHolder,
   getStoryboardProjectPaths,
   isResumable,
@@ -256,11 +253,7 @@ export class RunController {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const acquired = await acquireWorkspaceRunLock({
-      fileSystem: container.fileSystem,
-      workspaceRoot: container.workspaceRoot,
-      holder: { owner: 'desktop', label: request.label, pid: process.pid, hostname: hostname() },
-    });
+    const acquired = await container.runGate.acquire(container.workspaceRoot, request.label);
 
     if (!acquired.ok) {
       return fail('workspace-locked', describeWorkspaceRunLockHolder(acquired.heldBy));

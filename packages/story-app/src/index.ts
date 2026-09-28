@@ -11,3 +11,4 @@ export {
 } from './managers/manuscriptManager';
 export { NovelManager, type NovelManagerDependencies } from './managers/novelManager';
 export { StudioManager, type StudioManagerDependencies } from './managers/studioManager';
+export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from './runGate';

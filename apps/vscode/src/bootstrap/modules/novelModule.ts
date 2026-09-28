@@ -19,15 +19,8 @@ export class NovelModule implements IApplicationModule {
   public constructor(private readonly platform: IPlatformServices) {}
 
   public initialize(context: vscode.ExtensionContext): void {
-    const {
-      configBridge,
-      fileSystem,
-      logger,
-      manuscript,
-      novel,
-      proposalReviewService,
-      usageMeter,
-    } = this.platform;
+    const { configBridge, runGate, logger, manuscript, novel, proposalReviewService, usageMeter } =
+      this.platform;
 
     this.disposables.add(
       registerGenerateOutlineCommand({ novel, logger }),
@@ -36,7 +29,7 @@ export class NovelModule implements IApplicationModule {
       registerAssembleManuscriptCommand({ manuscript, logger }),
       registerReviewManuscriptCommand({ logger, manuscript }),
       registerSummarizeChaptersCommand({ logger, manuscript }),
-      registerGenerateNovelCommand({ configBridge, fileSystem, novel, usageMeter }),
+      registerGenerateNovelCommand({ configBridge, novel, runGate, usageMeter }),
       registerExportManuscriptCommand({ manuscript, logger }),
     );
   }
