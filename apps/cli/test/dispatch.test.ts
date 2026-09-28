@@ -97,7 +97,7 @@ describe('dispatch', () => {
     mkdirSync(join(cwd, '.storyboard'), { recursive: true });
     writeFileSync(join(cwd, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
 
-    const local = await dispatch(['config', 'set', 'draft.charsPerBeat', '300'], deps());
+    const local = await dispatch(['config', 'set', 'generation.beats.charsPerBeat', '300'], deps());
 
     expect(local.exitCode).toBe(0);
     expect(local.outcome?.data).toMatchObject({
@@ -106,7 +106,7 @@ describe('dispatch', () => {
     });
 
     const global = await dispatch(
-      ['config', 'set', 'draft.charsPerBeat', '900', '--global'],
+      ['config', 'set', 'generation.beats.charsPerBeat', '900', '--global'],
       deps(),
     );
 

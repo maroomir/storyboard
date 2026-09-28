@@ -76,7 +76,7 @@ function parseConfigFile(file: string): Record<string, unknown> {
 }
 
 // Keys are the dotted `storyboard.*` names minus the prefix, so a config file reads like the
-// settings UI. A file may spell a key flat ("draft.reviseMaxIterations") or nested; both resolve.
+// settings UI. A file may spell a key flat ("revise.loop.maxIterations") or nested; both resolve.
 function lookup(settings: Record<string, unknown>, section: string): unknown {
   if (section in settings) {
     return settings[section];
@@ -119,6 +119,7 @@ function assignNested(settings: Record<string, unknown>, section: string, value:
 
   const parts = section.split('.');
   const leaf = parts.pop() as string;
+  const ancestors: Record<string, unknown>[] = [settings];
   let current = settings;
 
   for (const part of parts) {
@@ -133,12 +134,27 @@ function assignNested(settings: Record<string, unknown>, section: string, value:
     }
 
     current = current[part] as Record<string, unknown>;
+    ancestors.push(current);
   }
 
-  if (value === undefined) {
-    delete current[leaf];
-  } else {
+  if (value !== undefined) {
     current[leaf] = value;
+    return;
+  }
+
+  delete current[leaf];
+
+  // Removing the last key of a section removes the section too, so a cleared setting does not
+  // leave `{ "ai": { "provider": {} } }` behind in the file.
+  for (let depth = parts.length; depth > 0; depth -= 1) {
+    const parent = ancestors[depth - 1] as Record<string, unknown>;
+    const child = ancestors[depth] as Record<string, unknown>;
+
+    if (Object.keys(child).length > 0) {
+      break;
+    }
+
+    delete parent[parts[depth - 1] as string];
   }
 }
 

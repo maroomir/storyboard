@@ -27,11 +27,11 @@ import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
 import { fail, succeed, type ServiceResult } from './serviceResult';
 
 // Shown on the settings screen's first section; the rest of the catalog sits under "advanced".
-const basicSettingKeys = new Set(['budget.runLimitUsd', 'draft.reviseAfterGenerate', 'draft.keepHistory']);
+const basicSettingKeys = new Set(['budget.run.limitUsd', 'revise.loop.afterGenerate', 'editor.draft.keepHistory']);
 
 // A value one work needs differently from another. Everything else is the writer's habit and follows
 // them into every work, like the provider and the model.
-const workspaceScopedSettingKeys = new Set(['budget.runLimitUsd']);
+const workspaceScopedSettingKeys = new Set(['budget.run.limitUsd']);
 
 export interface SettingsStores {
   readonly configuration: FileConfiguration;

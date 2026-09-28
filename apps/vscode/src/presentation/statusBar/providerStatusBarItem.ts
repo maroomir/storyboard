@@ -32,7 +32,7 @@ export function describeProviderStatus(deps: ProviderStatusBarDependencies): {
 
   const providerId = deps.configBridge.getDefaultProvider();
   const model = deps.configBridge.getProviderConfig(providerId).model ?? '';
-  const origin = deps.configBridge.getValueOrigin('defaultProvider');
+  const origin = deps.configBridge.getValueOrigin('ai.provider.default');
   const files = deps.configFiles();
   const file = origin === 'workspace' ? (files.workspace ?? files.user) : files.user;
 

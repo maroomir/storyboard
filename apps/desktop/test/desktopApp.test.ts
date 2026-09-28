@@ -255,9 +255,9 @@ describe('with a work open', () => {
     await expectOk('run.setBudget', { budgetUsd: 7 });
 
     const workspaceConfig = JSON.parse(readFileSync(join(workspacePath(), '.storyboard', 'config.json'), 'utf8')) as {
-      budget?: { runLimitUsd?: number };
+      budget?: { run?: { limitUsd?: number } };
     };
-    expect(workspaceConfig.budget?.runLimitUsd).toBe(7);
+    expect(workspaceConfig.budget?.run?.limitUsd).toBe(7);
     expect(existsSync(join(home, 'config.json'))).toBe(false);
   });
 
@@ -277,7 +277,7 @@ describe('with a work open', () => {
 
 describe('generating with the mock provider', () => {
   beforeEach(async () => {
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock', draft: { reviseAfterGenerate: false } }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock', revise: { loop: { afterGenerate: false } } }));
     await expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
     await expectOk('bible.create', { kind: 'character', id: 'hana', name: '하나' });
     writeScene('01-harbor', '밤의 방파제');

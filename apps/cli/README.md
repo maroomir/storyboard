@@ -149,8 +149,8 @@ summary in `scene/<stem>.summary.md` (staying inside that summary when there is 
 them to the card before drafting. `scene beats <stem> | --all` runs that step on its own so you can
 read the beats before spending a generation: `--dry-run` only prints the proposal, `--all` picks the
 scenes without beats, and existing beats are regenerated only with `--force`. The count is
-`max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))` (defaults 5 and 1,500);
-`draft.autoBeats: false` turns the automatic step off.
+`max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))` (defaults 5 and 1,500);
+`generation.beats.auto: false` turns the automatic step off.
 
 `scene generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
 `--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
@@ -180,7 +180,7 @@ says so instead of looking like it did nothing. API keys ignore all of this: the
 the one 0600 home file.
 
 ```json
-{ "defaultProvider": "claude", "tasks": { "sceneDraft": { "provider": "claude", "model": "claude-sonnet-5" } } }
+{ "ai.provider.default": "claude", "tasks": { "sceneDraft": { "provider": "claude", "model": "claude-sonnet-5" } } }
 ```
 
 Every provider Storyboard speaks to is reached with an API key (or runs locally, for `ollama`).

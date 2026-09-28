@@ -13,7 +13,7 @@ import type {
 
 // 한 번의 살붙임 호출이 낼 수 있는 최대 분량. 출력 한도에 걸려 뒷부분이 잘리는 것을 막는다.
 // 창작자가 고칠 수 있는 값이므로 기본값은 설정 카탈로그가 갖는다.
-export const SECTION_OUTPUT_LIMIT = integerSettingDefault('draft.sectionOutputLimit');
+export const SECTION_OUTPUT_LIMIT = integerSettingDefault('generation.section.outputLimit');
 
 // NOTE: 뼈대를 문단 경계에서 끊어 구간으로 나눈다. 구간 수는 목표 분량이 상한을 넘지 않는 최소값이라,
 // 짧은 씬은 사실상 단일 패스로 돌고 긴 씬만 쪼개진다.

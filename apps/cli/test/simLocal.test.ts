@@ -49,7 +49,7 @@ function storedModel(): string | undefined {
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'sim-local-home-'));
   process.env.STORYBOARD_HOME = home;
-  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'ollama' }));
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'ollama' }));
   workspace = mkdtempSync(join(tmpdir(), 'sim-local-ws-'));
 });
 

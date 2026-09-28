@@ -162,7 +162,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     container.logger.warn(warning);
   }
 
-  // `--no-revise` overrides the setting; without it the workspace's `draft.reviseAfterGenerate`
+  // `--no-revise` overrides the setting; without it the workspace's `revise.loop.afterGenerate`
   // decides, exactly as it does in the extension.
   const reviseRequested =
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();

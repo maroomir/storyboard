@@ -139,7 +139,7 @@ function createTestRegistry(configuration: Map<string, unknown>, secretValues: M
 describe("createSettingsRpcHandlers", () => {
   it("implements settings.read with catalog, provider list, and task assignments", async () => {
     const configuration = new Map<string, unknown>([
-      ["defaultProvider", "mock"],
+      ["ai.provider.default", "mock"],
       ["tasks", { sceneDraft: { provider: "claude" } }]
     ])
     const secretValues = new Map<string, string>([
@@ -171,7 +171,7 @@ describe("createSettingsRpcHandlers", () => {
 
   it("settings.read returns stored task model alongside provider when both are set", async () => {
     const configuration = new Map<string, unknown>([
-      ["defaultProvider", "mock"],
+      ["ai.provider.default", "mock"],
       ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
     ])
     const secretValues = new Map<string, string>([
@@ -195,7 +195,7 @@ describe("createSettingsRpcHandlers", () => {
   })
 
   it("updates default provider, model, base URL, and task provider via RPC", async () => {
-    const configuration = new Map<string, unknown>([["defaultProvider", "mock"]])
+    const configuration = new Map<string, unknown>([["ai.provider.default", "mock"]])
     const secretValues = new Map<string, string>([
       ["storyboard.apiKey.openai", "sk-test"],
       ["storyboard.apiKey.claude", "sk-ant-test"],
@@ -209,7 +209,7 @@ describe("createSettingsRpcHandlers", () => {
     const handlers = createSettingsRpcHandlers({ configBridge, secretStore, registry, configFiles })
 
     await handlers["settings.updateDefaultProvider"]!({ providerId: "openai" }, {} as never)
-    expect(configuration.get("defaultProvider")).toBe("openai")
+    expect(configuration.get("ai.provider.default")).toBe("openai")
 
     await handlers["settings.updateProviderModel"]!({ providerId: "google", model: "gemini-2.5-pro" }, {} as never)
     expect(configuration.get("providers.google.model")).toBe("gemini-2.5-pro")
@@ -234,7 +234,7 @@ describe("createSettingsRpcHandlers", () => {
   })
 
   it("reports where each value came from and where a write landed", async () => {
-    const configuration = new Map<string, unknown>([["defaultProvider", "codex"], ["draft.keepHistory", true]])
+    const configuration = new Map<string, unknown>([["ai.provider.default", "codex"], ["editor.draft.keepHistory", true]])
     const registry = createTestRegistry(configuration, new Map())
     const secretStore = new SecretStore(new FakeSecretStorage(new Map()))
     const configBridge = new ConfigBridge({
@@ -242,7 +242,7 @@ describe("createSettingsRpcHandlers", () => {
         get: <T>(section: string, defaultValue: T): T =>
           (configuration.has(section) ? configuration.get(section) : defaultValue) as T,
         inspect: <T>(section: string): { globalValue?: T; workspaceValue?: T } =>
-          section === "draft.keepHistory"
+          section === "editor.draft.keepHistory"
             ? { workspaceValue: configuration.get(section) as T }
             : { globalValue: configuration.get(section) as T | undefined },
         update: async (section, value): Promise<void> => {
@@ -254,17 +254,17 @@ describe("createSettingsRpcHandlers", () => {
 
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
-    expect(snapshot.origins["defaultProvider"]).toBe("user")
-    expect(snapshot.origins["draft.keepHistory"]).toBe("workspace")
-    expect(snapshot.origins["draft.reviseMaxIterations"]).toBe("default")
+    expect(snapshot.origins["ai.provider.default"]).toBe("user")
+    expect(snapshot.origins["editor.draft.keepHistory"]).toBe("workspace")
+    expect(snapshot.origins["revise.loop.maxIterations"]).toBe("default")
     expect(snapshot.configFiles).toEqual(configFiles())
-    expect(snapshot.settingValues["draft.keepHistory"]).toBe(true)
-    expect(snapshot.settingValues["draft.reviseMaxIterations"]).toBe(2)
-    expect(snapshot.settingCatalog.map((entry) => entry.key)).toContain("studio.validation")
+    expect(snapshot.settingValues["editor.draft.keepHistory"]).toBe(true)
+    expect(snapshot.settingValues["revise.loop.maxIterations"]).toBe(2)
+    expect(snapshot.settingCatalog.map((entry) => entry.key)).toContain("editor.studio.validation")
 
-    const saved = await handlers["settings.updateSettingValue"]!({ key: "draft.keepHistory", value: false }, {} as never)
+    const saved = await handlers["settings.updateSettingValue"]!({ key: "editor.draft.keepHistory", value: false }, {} as never)
     expect(saved).toEqual({ origin: "workspace", file: "/work/novel/.storyboard/config.json" })
-    expect(configuration.get("draft.keepHistory")).toBe(false)
+    expect(configuration.get("editor.draft.keepHistory")).toBe(false)
 
     const savedDefault = await handlers["settings.updateDefaultProvider"]!({ providerId: "mock" }, {} as never)
     expect(savedDefault).toEqual({ origin: "user", file: "/home/me/.storyboard/config.json" })
@@ -273,12 +273,12 @@ describe("createSettingsRpcHandlers", () => {
   it("rejects settings.updateSettingValue outside the catalog or its bounds (zod)", () => {
     expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "nope", value: true }).success).toBe(false)
     expect(
-      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.reviseMaxIterations", value: 9 }).success
+      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "revise.loop.maxIterations", value: 9 }).success
     ).toBe(false)
     expect(
-      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.reviseMaxIterations", value: 3 }).success
+      settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "revise.loop.maxIterations", value: 3 }).success
     ).toBe(true)
-    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "draft.keepHistory", value: "yes" }).success).toBe(false)
+    expect(settingsUpdateSettingValueRequestPayloadSchema.safeParse({ key: "editor.draft.keepHistory", value: "yes" }).success).toBe(false)
   })
 
   it("writes and deletes API keys via secrets RPC", async () => {

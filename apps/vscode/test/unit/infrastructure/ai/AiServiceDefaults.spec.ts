@@ -12,7 +12,7 @@ function createRegistry(): AiProviderRegistry {
     getConfiguration: (): StoryboardConfigurationLike =>
       new FakeConfiguration(
         new Map<string, unknown>([
-          ["defaultProvider", "openai"],
+          ["ai.provider.default", "openai"],
           ["providers.openai.model", "gpt-5.4-mini"]
         ])
       )

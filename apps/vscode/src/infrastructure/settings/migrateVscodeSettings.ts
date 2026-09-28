@@ -5,32 +5,41 @@ import type {
 } from '@storyboard/story-ai';
 import { configurationTargets } from '@storyboard/story-config';
 
-// Every `storyboard.*` key the extension used to contribute to VSCode settings. They keep their
-// names in `config.json`, minus the prefix, so the list doubles as the migration manifest.
-export const legacyVscodeSettingKeys = [
-  'defaultProvider',
-  'providers.openai.model',
-  'providers.claude.model',
-  'providers.google.model',
-  'providers.ollama.baseUrl',
-  'providers.ollama.model',
-  'tasks',
-  'grammar.realtimeEnabled',
-  'slop.realtimeEnabled',
-  'ai.contextCondenseEnabled',
-  'scene.prefixDigits',
-  'draft.reviseMaxIterations',
-  'draft.reviseAfterGenerate',
-  'draft.reviseScoreThreshold',
-  'draft.maxCompressionPercent',
-  'draft.updateCardsAfterGenerate',
-  'draft.verifyCardCandidates',
-  'grounding.autoApprove',
-  'studio.validation',
-  'draft.keepHistory',
-  'draft.sceneBreakEnabled',
-  'draft.sceneBreakSeparator',
-] as const;
+// Every `storyboard.*` key the extension used to contribute to VSCode settings, and the
+// `config.json` key it lands on now. The list doubles as the migration manifest.
+interface LegacySettingMigration {
+  readonly legacy: string;
+  readonly home: string;
+}
+
+const legacySettingMigrations: readonly LegacySettingMigration[] = [
+  { legacy: 'defaultProvider', home: 'ai.provider.default' },
+  { legacy: 'providers.openai.model', home: 'providers.openai.model' },
+  { legacy: 'providers.claude.model', home: 'providers.claude.model' },
+  { legacy: 'providers.google.model', home: 'providers.google.model' },
+  { legacy: 'providers.ollama.baseUrl', home: 'providers.ollama.baseUrl' },
+  { legacy: 'providers.ollama.model', home: 'providers.ollama.model' },
+  { legacy: 'tasks', home: 'tasks' },
+  { legacy: 'grammar.realtimeEnabled', home: 'editor.grammar.realtime' },
+  { legacy: 'slop.realtimeEnabled', home: 'editor.slop.realtime' },
+  { legacy: 'ai.contextCondenseEnabled', home: 'generation.context.condense' },
+  { legacy: 'scene.prefixDigits', home: 'editor.scene.prefixDigits' },
+  { legacy: 'draft.reviseMaxIterations', home: 'revise.loop.maxIterations' },
+  { legacy: 'draft.reviseAfterGenerate', home: 'revise.loop.afterGenerate' },
+  { legacy: 'draft.reviseScoreThreshold', home: 'revise.loop.scoreThreshold' },
+  { legacy: 'draft.maxCompressionPercent', home: 'revise.length.maxCompressionPercent' },
+  { legacy: 'draft.updateCardsAfterGenerate', home: 'cards.candidates.updateAfterGenerate' },
+  { legacy: 'draft.verifyCardCandidates', home: 'cards.candidates.verify' },
+  { legacy: 'grounding.autoApprove', home: 'generation.grounding.autoApprove' },
+  { legacy: 'studio.validation', home: 'editor.studio.validation' },
+  { legacy: 'draft.keepHistory', home: 'editor.draft.keepHistory' },
+  { legacy: 'draft.sceneBreakEnabled', home: 'generation.sceneBreak.enabled' },
+  { legacy: 'draft.sceneBreakSeparator', home: 'generation.sceneBreak.separator' },
+];
+
+export const legacyVscodeSettingKeys: readonly string[] = legacySettingMigrations.map(
+  (entry) => entry.legacy,
+);
 
 export interface LegacyVscodeConfigurationLike {
   readonly inspect: <T>(
@@ -61,35 +70,39 @@ export async function migrateVscodeSettingsToHome(
 ): Promise<MigrateVscodeSettingsResult> {
   const movedSettings: string[] = [];
 
-  for (const key of legacyVscodeSettingKeys) {
-    const legacy = deps.vscodeConfiguration.inspect<unknown>(key);
+  for (const { legacy: legacyKey, home: homeKey } of legacySettingMigrations) {
+    const legacy = deps.vscodeConfiguration.inspect<unknown>(legacyKey);
 
     if (!legacy) {
       continue;
     }
 
-    const home = deps.homeConfiguration.inspect?.<unknown>(key);
+    const home = deps.homeConfiguration.inspect?.<unknown>(homeKey);
 
     if (legacy.globalValue !== undefined) {
       if (home?.globalValue === undefined) {
-        await deps.homeConfiguration.update?.(key, legacy.globalValue, configurationTargets.user);
+        await deps.homeConfiguration.update?.(
+          homeKey,
+          legacy.globalValue,
+          configurationTargets.user,
+        );
       }
 
-      await deps.vscodeConfiguration.update(key, undefined, configurationTargets.user);
-      movedSettings.push(key);
+      await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.user);
+      movedSettings.push(homeKey);
     }
 
     if (legacy.workspaceValue !== undefined && deps.hasWorkspaceConfigFile) {
       if (home?.workspaceValue === undefined) {
         await deps.homeConfiguration.update?.(
-          key,
+          homeKey,
           legacy.workspaceValue,
           configurationTargets.workspace,
         );
       }
 
-      await deps.vscodeConfiguration.update(key, undefined, configurationTargets.workspace);
-      movedSettings.push(key);
+      await deps.vscodeConfiguration.update(legacyKey, undefined, configurationTargets.workspace);
+      movedSettings.push(homeKey);
     }
   }
 

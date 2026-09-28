@@ -99,7 +99,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   ├── 02-chapter-01.md
 │   └── 03-chapter-02.md
 │
-├── .draft/                       # 이전 초안 히스토리 (draft.keepHistory, .gitignore)
+├── .draft/                       # 이전 초안 히스토리 (editor.draft.keepHistory, .gitignore)
 │   └── 01-prologue/
 │       └── 2026-06-07-09-03-rev-01.md
 │
@@ -124,7 +124,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `background/` | 배경 카드 | 추적 |
 | `scene/` | 사용자가 작성하는 시드 텍스트 | 추적 |
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
-| `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
+| `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`editor.draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
 | `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
 
 ## 4. 파일 포맷 명세
@@ -408,8 +408,8 @@ summary: 01-arrival.summary.md
   수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
 - `beats`는 초안이 따라갈 시간 순 사건 목록이다. 초안 분량의 실질 상한은 씬의 사건 밀도이므로,
   `scene generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
-  `max(draft.minBeats, ceil(targetWordCount / draft.charsPerBeat))`개를 뽑아 카드에 쓴다
-  (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `draft.autoBeats`로 끔).
+  `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))`개를 뽑아 카드에 쓴다
+  (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `generation.beats.auto`로 끔).
   `scene beats` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
   비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
   우선한다.
@@ -823,7 +823,7 @@ buildPersonas
 인물은 금지이며, 위반이 남으면 **다듬기 이전 뼈대로 되돌리고** 그 사실을 경고로 남긴다(대사 개성보다
 사건 보존이 우선).
 
-**3. 구간 살붙임(`sceneSectionExpansion`)** — 구간 수는 목표 분량이 출력 상한(`draft.sectionOutputLimit`,
+**3. 구간 살붙임(`sceneSectionExpansion`)** — 구간 수는 목표 분량이 출력 상한(`generation.section.outputLimit`,
 기본 7,000자)을 넘지 않는 최소값이라, 짧은 씬은 사실상 단일 패스로 돈다. 목표가 상한보다 작으면
 살붙임이 한 번뿐이고 분량이 뼈대 목표(1/3)에 갇히므로, 분량이 모자라면 이 상한을 낮춰 구간을 늘린다. 매 호출이 **뼈대 전문과 직전 구간 완성문**을 함께 본다.
 절단은 뼈대가 남긴 `---` 장면 전환 자리를 우선 쓰고(예산의 절반만 채워도 자른다), 없을 때만 문단

@@ -55,7 +55,7 @@ beforeEach(async () => {
   home = mkdtempSync(join(tmpdir(), 'storyboard-sim-home-'));
   process.env.STORYBOARD_HOME = home;
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-sim-ws-'));
-  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
   await commands['init']({
     container: containerWith(),

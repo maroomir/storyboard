@@ -40,7 +40,7 @@ const fourKnobs = 'skeleton.lengthRatio,section.retryLimit,dialogue.preservedRat
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'sim-cfg-home-'));
   process.env.STORYBOARD_HOME = home;
-  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'claude' }));
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'claude' }));
   track = mkdtempSync(join(tmpdir(), 'sim-cfg-track-'));
   const genre = join(track, 'track', 'chain', 'thriller');
   mkdirSync(join(genre, 'scene'), { recursive: true });

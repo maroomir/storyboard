@@ -60,7 +60,7 @@ beforeEach(async () => {
   workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
   // Generation verbs refuse an unconfigured provider, so the temp home names one the way
   // `storyboard setup` would.
-  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   await run('init', args(['init'], { title: '시그널' }));
 });
 

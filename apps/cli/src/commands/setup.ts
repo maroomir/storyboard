@@ -191,7 +191,7 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
   const providerId = configBridge.getDefaultProvider();
   const runtime = configBridge.getProviderConfig(providerId);
   const origin =
-    configBridge.getValueOrigin('defaultProvider') === 'workspace' ? '이 작품' : '공통';
+    configBridge.getValueOrigin('ai.provider.default') === 'workspace' ? '이 작품' : '공통';
   const checks: DoctorCheck[] = [
     {
       status: 'ok',
@@ -263,7 +263,7 @@ function collectSceneLengthReachChecks(
         `실측상 그런 씬에서 목표의 ${Math.round(reach * 100)}% 정도까지만 씁니다` +
         ` (${measured.date} · ${measured.workspace} · ${measured.runs}회). ` +
         '구간 상한을 1000 근처로 낮추면 실측상 40% 남짓 늘지만, 그래도 목표에는 못 미칩니다.',
-      fix: 'storyboard config set draft.sectionOutputLimit 1000',
+      fix: 'storyboard config set generation.section.outputLimit 1000',
     },
   ];
 }
@@ -686,9 +686,9 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
   const { configBridge } = container;
   const rows: Array<{ key: string; value: unknown; origin: string }> = [
     {
-      key: 'defaultProvider',
+      key: 'ai.provider.default',
       value: configBridge.isDefaultProviderConfigured() ? configBridge.getDefaultProvider() : null,
-      origin: describeOrigin(configBridge, 'defaultProvider'),
+      origin: describeOrigin(configBridge, 'ai.provider.default'),
     },
   ];
 
@@ -806,7 +806,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return { ok: false, message: '사용법: storyboard config set <key> <value>' };
   }
 
-  if (key === 'defaultProvider') {
+  if (key === 'ai.provider.default') {
     if (!isProviderId(raw)) {
       return {
         ok: false,

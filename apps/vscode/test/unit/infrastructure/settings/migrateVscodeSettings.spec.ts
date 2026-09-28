@@ -70,10 +70,10 @@ describe("migrateVscodeSettingsToHome", () => {
       hasWorkspaceConfigFile: true
     })
 
-    expect(result.movedSettings).toEqual(["defaultProvider", "tasks", "draft.keepHistory"])
-    expect(home.user.get("defaultProvider")).toBe("codex")
+    expect(result.movedSettings).toEqual(["ai.provider.default", "tasks", "editor.draft.keepHistory"])
+    expect(home.user.get("ai.provider.default")).toBe("codex")
     expect(home.user.get("tasks")).toEqual({ sceneDraft: { provider: "codex" } })
-    expect(home.workspace.get("draft.keepHistory")).toBe(true)
+    expect(home.workspace.get("editor.draft.keepHistory")).toBe(true)
     expect(legacy.user.size).toBe(0)
     expect(legacy.workspace.size).toBe(0)
   })
@@ -82,7 +82,7 @@ describe("migrateVscodeSettingsToHome", () => {
   // VSCode copy is still cleared so it cannot resurface.
   it("keeps an existing config.json value over the legacy one", async () => {
     const legacy: Layers = { user: new Map([["defaultProvider", "mock"]]), workspace: new Map() }
-    const home: Layers = { user: new Map([["defaultProvider", "claude-code"]]), workspace: new Map() }
+    const home: Layers = { user: new Map([["ai.provider.default", "claude-code"]]), workspace: new Map() }
 
     await migrateVscodeSettingsToHome({
       vscodeConfiguration: createLegacyConfiguration(legacy),
@@ -92,7 +92,7 @@ describe("migrateVscodeSettingsToHome", () => {
       hasWorkspaceConfigFile: false
     })
 
-    expect(home.user.get("defaultProvider")).toBe("claude-code")
+    expect(home.user.get("ai.provider.default")).toBe("claude-code")
     expect(legacy.user.has("defaultProvider")).toBe(false)
   })
 

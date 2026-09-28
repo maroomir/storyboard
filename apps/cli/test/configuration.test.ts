@@ -45,16 +45,16 @@ describe('CLI configuration precedence', () => {
   });
 
   it('lets the workspace file win key by key', () => {
-    const user = write('user.json', { defaultProvider: 'openai', draft: { keepHistory: true } });
-    const workspace = write('workspace.json', { defaultProvider: 'mock' });
+    const user = write('user.json', { 'ai.provider.default': 'openai', editor: { draft: { keepHistory: true } } });
+    const workspace = write('workspace.json', { 'ai.provider.default': 'mock' });
 
     const configuration = createFileConfiguration({
       userConfigFile: user,
       workspaceConfigFile: workspace,
     });
 
-    expect(configuration.get('defaultProvider', undefined)).toBe('mock');
-    expect(configuration.get('draft.keepHistory', undefined)).toBe(true);
+    expect(configuration.get('ai.provider.default', undefined)).toBe('mock');
+    expect(configuration.get('editor.draft.keepHistory', undefined)).toBe(true);
   });
 
   // Naming a provider on the command line means "this run, everything" — otherwise task-level
@@ -66,15 +66,15 @@ describe('CLI configuration precedence', () => {
     const configuration = createFileConfiguration({
       userConfigFile: user,
       workspaceConfigFile: workspace,
-      overrides: { defaultProvider: 'mock', tasks: {} },
+      overrides: { 'ai.provider.default': 'mock', tasks: {} },
     });
 
     expect(configuration.get('tasks', { sceneDraft: {} })).toEqual({});
-    expect(configuration.get('defaultProvider', undefined)).toBe('mock');
+    expect(configuration.get('ai.provider.default', undefined)).toBe('mock');
   });
 
   it('reports which layer a value came from', () => {
-    const user = write('user.json', { defaultProvider: 'openai' });
+    const user = write('user.json', { 'ai.provider.default': 'openai' });
     const workspace = write('workspace.json', { providers: { openai: { model: 'gpt-5.5' } } });
 
     const configuration = createFileConfiguration({
@@ -82,7 +82,7 @@ describe('CLI configuration precedence', () => {
       workspaceConfigFile: workspace,
     });
 
-    expect(configuration.inspect('defaultProvider')).toEqual({
+    expect(configuration.inspect('ai.provider.default')).toEqual({
       globalValue: 'openai',
       workspaceValue: undefined,
     });
@@ -96,10 +96,10 @@ describe('CLI configuration precedence', () => {
   // editor gets to report it and carry on.
   it('refuses an unparsable file unless a reporter takes it', () => {
     const user = join(home, 'user.json');
-    writeFileSync(user, '{ "defaultProvider": ');
+    writeFileSync(user, '{ "ai.provider.default": ');
 
     expect(() =>
-      createFileConfiguration({ userConfigFile: user }).get('defaultProvider', 'x'),
+      createFileConfiguration({ userConfigFile: user }).get('ai.provider.default', 'x'),
     ).toThrow(ConfigFileError);
 
     const reported: ConfigFileError[] = [];
@@ -108,38 +108,38 @@ describe('CLI configuration precedence', () => {
       onInvalidFile: (error) => reported.push(error),
     });
 
-    expect(tolerant.get('defaultProvider', 'x')).toBe('x');
+    expect(tolerant.get('ai.provider.default', 'x')).toBe('x');
     expect(reported.map((error) => error.code)).toEqual(['invalid-json']);
   });
 });
 
 describe('CLI configuration validation', () => {
   it('refuses a value the setting catalog rejects, naming the key', () => {
-    const user = write('user.json', { draft: { reviseMaxIterations: 99 } });
+    const user = write('user.json', { revise: { loop: { maxIterations: 99 } } });
 
     let thrown: unknown;
     try {
-      createFileConfiguration({ userConfigFile: user }).get('draft.reviseMaxIterations', 1);
+      createFileConfiguration({ userConfigFile: user }).get('revise.loop.maxIterations', 1);
     } catch (error) {
       thrown = error;
     }
 
     expect(thrown).toBeInstanceOf(ConfigFileError);
     expect((thrown as ConfigFileError).code).toBe('invalid-value');
-    expect((thrown as ConfigFileError).message).toContain('draft.reviseMaxIterations');
+    expect((thrown as ConfigFileError).message).toContain('revise.loop.maxIterations');
   });
 
   it('refuses an unknown provider or a flat key with the wrong type', () => {
-    const user = write('user.json', { defaultProvider: 'codex', 'draft.minBeats': 'three' });
+    const user = write('user.json', { 'ai.provider.default': 'codex', 'generation.beats.minimum': 'three' });
 
     expect(() =>
-      createFileConfiguration({ userConfigFile: user }).get('defaultProvider', 'x'),
+      createFileConfiguration({ userConfigFile: user }).get('ai.provider.default', 'x'),
     ).toThrow(ConfigFileError);
   });
 
   it('reports an unknown key once per read but still returns it', () => {
     const user = write('user.json', {
-      defaultProvider: 'claude',
+      'ai.provider.default': 'claude',
       providers: { claude: { model: 'claude-sonnet-5', color: 'blue' } },
       experiment: true,
     });
@@ -151,19 +151,19 @@ describe('CLI configuration validation', () => {
 
     expect(configuration.get('experiment', false)).toBe(true);
     expect(configuration.get('providers.claude.model', '')).toBe('claude-sonnet-5');
-    configuration.get('defaultProvider', 'x');
+    configuration.get('ai.provider.default', 'x');
     expect(unknown).toEqual(['providers.claude.color', 'experiment']);
   });
 
   it('lets a tolerant host fall back to defaults for a file with a bad value', () => {
-    const user = write('user.json', { budget: { runLimitUsd: -1 } });
+    const user = write('user.json', { budget: { run: { limitUsd: -1 } } });
     const reported: ConfigFileError[] = [];
     const tolerant = createFileConfiguration({
       userConfigFile: user,
       onInvalidFile: (error) => reported.push(error),
     });
 
-    expect(tolerant.get('budget.runLimitUsd', 0)).toBe(0);
+    expect(tolerant.get('budget.run.limitUsd', 0)).toBe(0);
     expect(reported.map((error) => error.code)).toEqual(['invalid-value']);
   });
 });
@@ -172,7 +172,7 @@ describe('CLI configuration updates', () => {
   it('writes nested keys to the chosen layer and drops a flat spelling of the same key', async () => {
     const user = write('user.json', {
       'providers.openai.model': 'old',
-      draft: { reviseMaxIterations: 3 },
+      revise: { loop: { maxIterations: 3 } },
     });
     const workspace = write('workspace.json', {});
     const configuration = createFileConfiguration({
@@ -181,23 +181,23 @@ describe('CLI configuration updates', () => {
     });
 
     await configuration.update('providers.openai.model', 'gpt-5-mini');
-    await configuration.update('defaultProvider', 'openai', configurationTargets.workspace);
+    await configuration.update('ai.provider.default', 'openai', configurationTargets.workspace);
 
     expect(JSON.parse(readFileSync(user, 'utf8'))).toEqual({
       providers: { openai: { model: 'gpt-5-mini' } },
-      draft: { reviseMaxIterations: 3 },
+      revise: { loop: { maxIterations: 3 } },
     });
-    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({ defaultProvider: 'openai' });
+    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({ ai: { provider: { default: 'openai' } } });
     expect(configuration.get('providers.openai.model', undefined)).toBe('gpt-5-mini');
-    expect(configuration.get('defaultProvider', undefined)).toBe('openai');
+    expect(configuration.get('ai.provider.default', undefined)).toBe('openai');
   });
 
   it('removes a key when the value is undefined and creates a missing file', async () => {
     const user = join(home, 'fresh', 'config.json');
     const configuration = createFileConfiguration({ userConfigFile: user });
 
-    await configuration.update('defaultProvider', 'codex');
-    await configuration.update('defaultProvider', undefined);
+    await configuration.update('ai.provider.default', 'codex');
+    await configuration.update('ai.provider.default', undefined);
 
     expect(JSON.parse(readFileSync(user, 'utf8'))).toEqual({});
   });

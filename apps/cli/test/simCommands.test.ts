@@ -42,7 +42,7 @@ async function run(verb: string, flags: Record<string, string | boolean>) {
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'sim-cmd-home-'));
   process.env.STORYBOARD_HOME = home;
-  writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'claude' }));
+  writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'claude' }));
 
   track = mkdtempSync(join(tmpdir(), 'sim-cmd-track-'));
   const genre = join(track, 'track', 'chain', 'thriller');
@@ -406,7 +406,7 @@ describe('sim apply', () => {
       engineCommit: 'e',
       trackCommit: '1034a9c0deadbeef',
       trackDirty: false,
-      knobs: { 'draft.sectionOutputLimit': 1000 },
+      knobs: { 'generation.section.outputLimit': 1000 },
       generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
       judge: { providerId: 'ollama', model: 'gemma3:12b' },
       scenes: [{ sceneStem: '01', targetLength: 3000, draftLength: 2100, reach: 0.7, warnings: [], warningWeight: 0 }],

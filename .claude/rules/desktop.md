@@ -57,7 +57,7 @@ Engine messages (errors, progress) stay Korean in both languages.
 
 - Workspace content and the version history live in the workspace (its git repository).
 - Settings: provider, model and generation options go to `~/.storyboard/config.json`; the run budget
-  (`budget.runLimitUsd`) goes to the workspace's `.storyboard/config.json`. Keys: `secrets.json`.
+  (`budget.run.limitUsd`) goes to the workspace's `.storyboard/config.json`. Keys: `secrets.json`.
 - App-only state (recent works, language) is `~/.storyboard/desktop.json`.
 
 ## Packaging

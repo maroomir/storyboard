@@ -23,11 +23,11 @@ English README: [`README.en.md`](README.en.md)
 - 씬 카드의 종료 지점(`endState`)·시점 인물(`povCharacter`): 한 씬이 다음 씬 영역까지 진행해 같은 사건이 두 번 결말나는 것과, 한 씬 안에서 여러 인물의 내면이 교차하는 것을 막음
 - **Storyboard · Studio** 패널(항상 보이는 사이드바)에서 인물·배경 카드나 씬·초안을 열고 자연어로 수정을 지시 → 에이전트가 모호하면 되묻고 → 정합성 검사를 거친 수정 제안을 diff로 확인 → 승인해야 반영. 대화는 대상별로 저장되어 이어집니다
 - 재생성 없이 카드 기반 보충: **카드 기반 보충**(본문 전체)·**선택 영역 보충**(선택 영역) 명령으로 갱신된 카드·정전을 기존 초안에 녹이고, 적용 전 diff로 확인
-- 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `grounding.autoApprove`를 켜면 자동 수락
+- 씬 사실 시트(grounding): 생성 직전에 사건·장소·관계·시점을 확정해 씬 frontmatter에 남기고 대사 생성에 주입. 비어 있는 항목만 AI가 제안하며 사용자가 적은 값은 유지. 기본은 제안 검토 후 승인, `generation.grounding.autoApprove`를 켜면 자동 수락
 - 작법 계약(`setting.craftContract`): 해설 지문 금지·모티프/후렴 반복 상한·상투 표현 블랙리스트·인물 내면 요구·동작 명료성(`actionClarity`)·밀도 완급(`modulateDensity`)·기본 분량 예산을 생성 프롬프트에 항상 주입(기본 계약 내장, 프로젝트별 덮어쓰기). 목표 분량이 없는 씬은 씬 시드 길이 × `sceneLengthMultiplier`(기본 12, 2,000–20,000자)로 예산을 잡는다
 - 고정 산문 규약: 서술은 과거형, 대사는 곡선 큰따옴표(`“ ”`). 한 작품 안에서 갈리면 안 되는 규약이라 계약이 아니라 세 생성 프롬프트에 고정으로 주입한다
-- 이전 초안 히스토리 보관(`draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
-- 장면 전환 구분자 삽입(`draft.sceneBreakEnabled`/`draft.sceneBreakSeparator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
+- 이전 초안 히스토리 보관(`editor.draft.keepHistory`): 덮어쓰기 직전 초안을 `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md`로 적재(기본 꺼짐)
+- 장면 전환 구분자 삽입(`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): 초안 생성 시 장면 사이에 `---` 구분선 또는 줄바꿈 n회를 삽입(기본 꺼짐)
 - `.storyboard/bible/canon.yaml` 정전 설정 주입과 초안 연속성 검사
 - 초안에서 설정 사실 후보 자동 추출 후 canon 승격(`Promote Bible Candidates to Canon`)
 - 초안에서 카드 필드 자동 갱신(`updateCardsAfterGenerate`): 배경 등장 인물 직접 기록 + 관계·아크·속성 후보 추출 후 `Promote Card Candidates`로 카드 승격
@@ -91,14 +91,14 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 공통값을 덮어씁니다. API 키는 `~/.storyboard/secrets.json`(권한 0600)에 있습니다. `STORYBOARD_HOME` 환경
 변수로 홈 위치를 옮길 수 있습니다.
 
-키 이름은 아래 문서의 `draft.keepHistory` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
+키 이름은 아래 문서의 `editor.draft.keepHistory` 같은 점 표기 그대로이며, 설정 패널(`Storyboard: Open Settings`)이 이
 파일을 편집합니다. 패널은 값마다 출처(공통 / 이 작품 / 기본값)를 표시하고, 저장할 때마다 어느 파일에 저장됐는지
 알려 줍니다. 생성·검수·편집기 스위치는 **옵션** 탭에 모여 있습니다. 상태바의 `✦ provider · model` 항목이 현재
 기본 AI를 보여 주며, 누르면 설정 패널이 열립니다. 예전 버전에서 VSCode `settings.json` 에 두었던 `storyboard.*` 값은 처음 활성화될 때 한 번
 자동으로 옮겨집니다.
 
 ```json
-{ "defaultProvider": "claude", "draft": { "keepHistory": true } }
+{ "ai.provider.default": "claude", "draft": { "keepHistory": true } }
 ```
 
 생성은 모두 API 키로 이루어집니다. 설정 패널의 **연결** 탭에서 제공자를 고르고 키를 넣으면 되고, 키는

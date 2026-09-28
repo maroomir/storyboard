@@ -21,7 +21,7 @@ describe("AiProviderRegistry", () => {
   it("uses the configured task provider when generate is called without explicit provider", async () => {
     const registry = createRegistry(
       new Map<string, unknown>([
-        ["defaultProvider", "mock"],
+        ["ai.provider.default", "mock"],
         ["tasks.sceneDraft.provider", "mock"]
       ])
     )
@@ -37,7 +37,7 @@ describe("AiProviderRegistry", () => {
   // A config still naming a subscription CLI is not quietly moved onto a metered provider: it
   // reads as no choice at all, because the replacement would bill the author at a different rate.
   it("treats a retired subscription-CLI default as no choice, not as claude", async () => {
-    const registry = createRegistry(new Map<string, unknown>([["defaultProvider", "claude-code"]]))
+    const registry = createRegistry(new Map<string, unknown>([["ai.provider.default", "claude-code"]]))
 
     const response = await registry.generate({
       taskName: "sceneDraft",
@@ -51,7 +51,7 @@ describe("AiProviderRegistry", () => {
   it("uses per-task model override for generate when stored in workspace tasks", async () => {
     const registry = createRegistry(
       new Map<string, unknown>([
-        ["defaultProvider", "mock"],
+        ["ai.provider.default", "mock"],
         ["providers.claude.model", "claude-sonnet-4-6"],
         ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
       ])
@@ -69,7 +69,7 @@ describe("AiProviderRegistry", () => {
   it("uses the provider global model when the task overrides provider only", async () => {
     const registry = createRegistry(
       new Map<string, unknown>([
-        ["defaultProvider", "mock"],
+        ["ai.provider.default", "mock"],
         ["providers.claude.model", "claude-sonnet-4-6"],
         ["tasks", { sceneDraft: { provider: "claude" } }]
       ])
@@ -87,7 +87,7 @@ describe("AiProviderRegistry", () => {
   it("exposes the resolved task provider for cache metadata", () => {
     const registry = createRegistry(
       new Map<string, unknown>([
-        ["defaultProvider", "mock"],
+        ["ai.provider.default", "mock"],
         ["tasks.situationExtraction.provider", "claude"],
         ["tasks.personaGeneration.provider", "openai"],
         ["tasks.personaDialogue.provider", "google"],
