@@ -26,6 +26,7 @@ export interface DesktopContainer extends Pick<
   | 'cards'
   | 'novel'
   | 'studio'
+  | 'runGate'
   | 'aiGateway'
   | 'aiProviderRegistry'
   | 'configBridge'
@@ -82,7 +83,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
       configBridge,
       usageLedger,
     },
-    { generator: `storyboard-desktop@${options.version}` },
+    { generator: `storyboard-desktop@${options.version}`, lockOwner: 'desktop' },
   );
 
   return {
@@ -91,6 +92,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     cards: application.cards,
     novel: application.novel,
     studio: application.studio,
+    runGate: application.runGate,
     aiGateway: application.aiGateway,
     aiProviderRegistry: application.aiProviderRegistry,
     configBridge: application.configBridge,

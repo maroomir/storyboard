@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
-import { type GenerateDraftResult, type IFileSystem } from '@storyboard/story-engine';
-import type { DraftManager } from '@storyboard/story-app';
+import type { GenerateDraftResult } from '@storyboard/story-engine';
+import type { DraftManager, RunGate } from '@storyboard/story-app';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
@@ -15,7 +15,7 @@ const REGENERATE_SUCCESS_MESSAGE = '초안을 다시 생성해 저장했습니�
 const GENERATE_SUCCESS_MESSAGE = '초안을 생성해 저장했습니다.';
 
 export interface RegisterGenerateDraftCommandDependencies {
-  readonly fileSystem: IFileSystem;
+  readonly runGate: Pick<RunGate, 'hold'>;
   readonly drafts: Pick<DraftManager, 'generate' | 'reviseAfterGenerate'>;
 }
 
@@ -146,7 +146,7 @@ async function runCommand(
   }
 
   await runHoldingWorkspaceLock(
-    dependencies.fileSystem,
+    dependencies.runGate,
     workspaceFolder.uri,
     force ? '초안 다시 생성' : '초안 생성',
     () => runGenerateDraftForWorkspaceScene(sceneUri, force, dependencies),

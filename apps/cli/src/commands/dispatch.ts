@@ -1,16 +1,9 @@
 import { existsSync } from 'node:fs';
-import { hostname } from 'node:os';
 import { join, resolve } from 'node:path';
 
-import {
-  aiProviderIds,
-  storyboardModelCatalog,
-  type AiProviderId,
-} from '@storyboard/story-ai';
+import { aiProviderIds, storyboardModelCatalog, type AiProviderId } from '@storyboard/story-ai';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
 import {
-  acquireWorkspaceRunLock,
-  describeWorkspaceRunLockHolder,
   getStoryboardProjectPaths,
   migrateLegacyMemory,
   type IStoryboardLogger,
@@ -110,7 +103,11 @@ function validateProvider(
   const catalog = storyboardModelCatalog[provider as AiProviderId];
 
   // 로컬 런타임의 모델 목록은 기계마다 다르다. 카탈로그는 제안이고 진짜 목록은 ollama 가 갖는다.
-  if (provider !== 'ollama' && model !== undefined && !catalog.some((entry) => entry.id === model)) {
+  if (
+    provider !== 'ollama' &&
+    model !== undefined &&
+    !catalog.some((entry) => entry.id === model)
+  ) {
     return (
       `${provider} 에 없는 모델: ${model}\n` +
       `쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`
@@ -273,23 +270,15 @@ async function runHoldingWorkspaceLock(
   verb: string,
   run: () => Promise<CommandOutcome>,
 ): Promise<CommandOutcome> {
-  const acquired = await acquireWorkspaceRunLock({
-    fileSystem: container.fileSystem,
-    workspaceRoot: container.workspaceRoot,
-    holder: { owner: 'cli', label: `storyboard ${verb}`, pid: process.pid, hostname: hostname() },
-  });
+  const held = await container.runGate.hold(container.workspaceRoot, `storyboard ${verb}`, run);
 
-  if (!acquired.ok) {
+  if (!held.ok) {
     return {
       ok: false,
-      message: `${describeWorkspaceRunLockHolder(acquired.heldBy)}. 끝난 뒤 다시 실행하세요.`,
-      data: { heldBy: acquired.heldBy },
+      message: `${held.message}. 끝난 뒤 다시 실행하세요.`,
+      data: { heldBy: held.heldBy },
     };
   }
 
-  try {
-    return await run();
-  } finally {
-    await acquired.lock.release();
-  }
+  return held.value;
 }

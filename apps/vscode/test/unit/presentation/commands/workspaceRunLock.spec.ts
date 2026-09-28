@@ -7,6 +7,7 @@ import {
   serializeWorkspaceRunLock,
   type IFileSystem
 } from "@storyboard/story-engine"
+import { RunGate } from "@storyboard/story-app"
 import { runHoldingWorkspaceLock } from "@/presentation/commands/workspaceRunLock"
 
 const workspaceRoot = vscode.Uri.file("/ws")
@@ -41,7 +42,7 @@ describe("runHoldingWorkspaceLock", () => {
     const fileSystem = createMemoryFileSystem()
     let wasHeldDuringRun = false
 
-    await runHoldingWorkspaceLock(fileSystem, workspaceRoot, "장편 생성", async () => {
+    await runHoldingWorkspaceLock(new RunGate({ fileSystem, owner: "vscode" }), workspaceRoot, "장편 생성", async () => {
       wasHeldDuringRun = fileSystem.files.has(lockPath)
     })
 
@@ -60,7 +61,7 @@ describe("runHoldingWorkspaceLock", () => {
     const warn = vi.spyOn(vscode.window, "showWarningMessage")
     const run = vi.fn(async () => undefined)
 
-    await runHoldingWorkspaceLock(fileSystem, workspaceRoot, "초안 생성", run)
+    await runHoldingWorkspaceLock(new RunGate({ fileSystem, owner: "vscode" }), workspaceRoot, "초안 생성", run)
 
     expect(run).not.toHaveBeenCalled()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("데스크톱 앱이(가) «장편 생성»"))

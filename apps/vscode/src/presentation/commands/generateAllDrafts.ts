@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 
 import type { GenerateAllDraftsProgress, GenerateAllDraftsSummary } from '@storyboard/story-engine';
-import type { DraftManager } from '@storyboard/story-app';
-import type { IFileSystem, IStoryboardLogger } from '@storyboard/story-engine';
+import type { DraftManager, RunGate } from '@storyboard/story-app';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { stageProgressLabel } from './generateDraft';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
@@ -11,7 +11,7 @@ import { runHoldingWorkspaceLock } from './workspaceRunLock';
 const GENERATE_ALL_DRAFTS_COMMAND = 'storyboard.draft.generateAll';
 
 export type RegisterGenerateAllDraftsCommandDependencies = {
-  readonly fileSystem: IFileSystem;
+  readonly runGate: Pick<RunGate, 'hold'>;
   readonly drafts: Pick<DraftManager, 'generateAll'>;
   readonly logger: IStoryboardLogger;
 };
@@ -34,7 +34,7 @@ async function runGenerateAllDrafts(
     return;
   }
 
-  await runHoldingWorkspaceLock(dependencies.fileSystem, workspaceRoot, '전체 초안 생성', () =>
+  await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '전체 초안 생성', () =>
     generateAllDraftsWithProgress(dependencies),
   );
 }

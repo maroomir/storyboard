@@ -34,13 +34,14 @@ export class DraftModule implements IApplicationModule {
       configBridge,
       drafts,
       fileSystem,
+      runGate,
       logger,
       usageRecorder,
     } = this.platform;
 
     this.disposables.add(
-      registerGenerateDraftCommands({ drafts, fileSystem }),
-      registerGenerateAllDraftsCommand({ drafts, fileSystem, logger }),
+      registerGenerateDraftCommands({ drafts, runGate }),
+      registerGenerateAllDraftsCommand({ drafts, logger, runGate }),
       registerGenerateSceneBeatsCommand({ drafts }),
       registerApplyDraftFormatCommand({ drafts, logger }),
       registerReviseDraftCommand({ configBridge, drafts, logger }),

@@ -1,12 +1,11 @@
 import * as vscode from 'vscode';
 
 import {
-  type IFileSystem,
   type INovelRunStateRepository,
   type NovelApprovalKind,
   type NovelPipelineResult,
 } from '@storyboard/story-engine';
-import type { NovelManager } from '@storyboard/story-app';
+import type { NovelManager, RunGate } from '@storyboard/story-app';
 import { isRunBudgetExceeded, type UsageMeter } from '@storyboard/story-engine';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
@@ -37,7 +36,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
 
 export interface RegisterGenerateNovelCommandDependencies {
   readonly configBridge: ConfigBridge;
-  readonly fileSystem: IFileSystem;
+  readonly runGate: Pick<RunGate, 'hold'>;
   readonly novel: Pick<NovelManager, 'run' | 'runState'>;
   readonly usageMeter: UsageMeter;
 }
@@ -82,7 +81,7 @@ async function runGenerateNovel(
     return;
   }
 
-  await runHoldingWorkspaceLock(dependencies.fileSystem, workspaceRoot, '장편 생성', () =>
+  await runHoldingWorkspaceLock(dependencies.runGate, workspaceRoot, '장편 생성', () =>
     vscode.window.withProgress(
       {
         location: vscode.ProgressLocation.Notification,
