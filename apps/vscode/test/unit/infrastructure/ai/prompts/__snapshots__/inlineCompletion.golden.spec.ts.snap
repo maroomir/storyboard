@@ -1,0 +1,333 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`InlineCompletionPrompt golden > defaults to the generic variant without context 1`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 1`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 2`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 3`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "활성 캐릭터: 엘리아
+[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 4`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "배경: 교실
+[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 5`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+배경: 교실
+[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 6`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+활성 캐릭터: 엘리아
+배경: 교실
+[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the generic variant 7`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[커서 직전 텍스트]",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 1`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 2`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 3`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "활성 캐릭터: 엘리아",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 4`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "배경: 교실",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 5`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "배경: 교실",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 6`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "활성 캐릭터: 엘리아
+배경: 교실",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops an empty prefix for the xs variant 7`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 1`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 2`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 3`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "활성 캐릭터: 엘리아
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 4`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "배경: 교실
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 5`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+배경: 교실
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 6`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+활성 캐릭터: 엘리아
+배경: 교실
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the generic variant 7`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 1`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 2`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 3`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "활성 캐릭터: 엘리아
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 4`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "배경: 교실
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 5`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "배경: 교실
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 6`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "활성 캐릭터: 엘리아
+배경: 교실
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > drops each missing context line for the xs variant 7`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > renders every block for the generic variant 1`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+활성 캐릭터: 엘리아
+배경: 교실
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > renders every block for the rich variant 1`] = `
+{
+  "system": "소설/시나리오 공동 집필 도우미다.
+커서 직전 문맥을 이어 한 줄~두 줄의 짧은 텍스트만 제안하라.
+설명/따옴표/코드블록 없이 완성 문장만 출력하라.",
+  "user": "[씬 의도]
+첫 만남의 긴장
+
+활성 캐릭터: 엘리아
+배경: 교실
+[커서 직전 텍스트]
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
+
+exports[`InlineCompletionPrompt golden > renders every block for the xs variant 1`] = `
+{
+  "system": "문맥 이어쓰기 1~2줄. 설명 없이 결과 문장만 출력.",
+  "user": "활성 캐릭터: 엘리아
+배경: 교실
+그는 창밖을 봤다.
+비가 내렸다.",
+}
+`;
