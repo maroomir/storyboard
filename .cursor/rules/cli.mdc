@@ -67,7 +67,7 @@ variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params
 `compositionPresets.json` over what the composition presets build
 (`packages/story-format/src/compositionPresets.params.json`). `dispatch.ts` loads them before a
 workspace verb runs, warning about files it cannot use.
-`setup` / `doctor` / `config show|set` are the onboarding
+`setup` / `doctor` / `config show|set` / `params show` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
 `apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.

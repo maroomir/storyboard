@@ -81,7 +81,10 @@ export interface FlagSpec {
 // One table drives the parser (which flags take a value), `--help`, per-verb help and the README.
 export const flagCatalog: readonly FlagSpec[] = [
   { name: 'workspace', valueLabel: '<path>', summary: '대상 워크스페이스 (기본: 현재 디렉터리)' },
-  { name: 'global', summary: '설정을 이 작품이 아니라 모든 작품(~/.storyboard/config.json)에 저장' },
+  {
+    name: 'global',
+    summary: '설정을 이 작품이 아니라 모든 작품(~/.storyboard/config.json)에 저장',
+  },
   {
     name: 'provider',
     valueLabel: '<id>',
@@ -89,29 +92,51 @@ export const flagCatalog: readonly FlagSpec[] = [
   },
   { name: 'model', valueLabel: '<name>', summary: '그 프로바이더의 모델' },
   { name: 'track', valueLabel: '<path>', summary: 'sim: 트랙 저장소 경로' },
-  { name: 'config', valueLabel: '<file>', summary: 'sim: 기계 프로필 (기본: <track>/sim.config.json)' },
+  {
+    name: 'config',
+    valueLabel: '<file>',
+    summary: 'sim: 기계 프로필 (기본: <track>/sim.config.json)',
+  },
   { name: 'genre', valueLabel: '<name>', summary: 'sim: 연쇄 트랙의 장르 디렉터리' },
   { name: 'overlay', valueLabel: '<file>', summary: 'sim: 손잡이 값을 덮는 JSON 한 장' },
   { name: 'knobs', valueLabel: '<a,b,c>', summary: 'sim: 흔들 손잡이 목록 (쉼표로 구분)' },
   { name: 'repeats', valueLabel: '<n>', summary: 'sim: 같은 지점을 몇 번 돌릴지 (기본 3)' },
-  { name: 'judge', valueLabel: '<provider|none>', summary: 'sim: 심판 프로바이더 (생성과 다른 모델이어야 합니다. none 이면 생성만)' },
+  {
+    name: 'judge',
+    valueLabel: '<provider|none>',
+    summary: 'sim: 심판 프로바이더 (생성과 다른 모델이어야 합니다. none 이면 생성만)',
+  },
   { name: 'judge-model', valueLabel: '<name>', summary: 'sim: 심판 모델' },
-  { name: 'prompt-variant', valueLabel: '<generic|xs|rich>', summary: 'sim: 생성 프롬프트 변형을 강제 (로컬 모델은 기본 xs)' },
+  {
+    name: 'prompt-variant',
+    valueLabel: '<generic|xs|rich>',
+    summary: 'sim: 생성 프롬프트 변형을 강제 (로컬 모델은 기본 xs)',
+  },
   { name: 'max-runs', valueLabel: '<n>', summary: 'sim: 실행 횟수 상한' },
   { name: 'out', valueLabel: '<path>', summary: 'sim: 결과를 쌓을 JSONL 경로' },
   { name: 'point', valueLabel: '<label>', summary: 'sim: 되쓰기할 지점의 이름' },
-  { name: 'profiles', valueLabel: '<path>', summary: 'sim: 적을 modelProfiles.params.json 경로 (기본: 엔진 저장소의 파일)' },
-  { name: 'source', valueLabel: '<engine>', summary: 'sim: 다시 채점할 원본 기록의 엔진 커밋 접두어 (기본: 전부)' },
+  {
+    name: 'profiles',
+    valueLabel: '<path>',
+    summary: 'sim: 적을 modelProfiles.params.json 경로 (기본: 엔진 저장소의 파일)',
+  },
+  {
+    name: 'source',
+    valueLabel: '<engine>',
+    summary: 'sim: 다시 채점할 원본 기록의 엔진 커밋 접두어 (기본: 전부)',
+  },
   { name: 'yes', summary: 'sim: 견적을 묻지 않고 바로 시작합니다' },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
   {
     name: 'all',
-    summary: 'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene beats: 비트 없는 씬을 모두',
+    summary:
+      'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene beats: 비트 없는 씬을 모두',
   },
   {
     name: 'force',
-    summary: '이미 있는 결과를 덮어씁니다 (scene generate, scene beats, scene seeds, outline generate)',
+    summary:
+      '이미 있는 결과를 덮어씁니다 (scene generate, scene beats, scene seeds, outline generate)',
   },
   { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
   { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
@@ -122,7 +147,8 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
   {
     name: 'repair',
-    summary: 'init: 이미 있는 워크스페이스의 디렉터리·.gitignore·git 저장소만 보수합니다 (계약은 그대로)',
+    summary:
+      'init: 이미 있는 워크스페이스의 디렉터리·.gitignore·git 저장소만 보수합니다 (계약은 그대로)',
   },
   {
     name: 'language',
@@ -245,7 +271,11 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'apikey set [<provider>]',
     summary:
       'API 키를 저장합니다. 터미널이면 프로바이더를 고르고 키를 가려진 입력으로 받아 바로 연결을 확인하고, 파이프면 stdin 에서 읽습니다 (빈 입력이면 삭제)',
-    examples: ['storyboard apikey set', 'storyboard apikey set claude', 'echo "$OPENAI_API_KEY" | storyboard apikey set openai'],
+    examples: [
+      'storyboard apikey set',
+      'storyboard apikey set claude',
+      'echo "$OPENAI_API_KEY" | storyboard apikey set openai',
+    ],
     needsWorkspace: false,
   },
   {
@@ -270,6 +300,15 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '시작하기',
     usage: 'config show',
     summary: '적용 중인 설정과 출처(공통/이 작품/기본값)를 보여 줍니다',
+    needsWorkspace: false,
+  },
+  {
+    verb: 'params show',
+    group: '시작하기',
+    usage: 'params show',
+    summary:
+      '작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 출처, 적용된 리소스 파일을 보여 줍니다',
+    examples: ['storyboard params show', 'storyboard params show --json'],
     needsWorkspace: false,
   },
   {
@@ -434,7 +473,8 @@ export const commandCatalog: readonly CommandSpec[] = [
     writesWorkspace: true,
     group: '씬과 초안',
     usage: 'scene beats <stem> | --all',
-    summary: '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
+    summary:
+      '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
     flags: ['all', 'force', 'dry-run'],
     examples: ['storyboard scene beats 01-scene-1-1', 'storyboard scene beats --all --dry-run'],
   },
@@ -610,7 +650,20 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '측정',
     usage: 'sim run --track <path> [--genre <name>]',
     summary: '트랙 한 벌을 한 지점으로 돌리고 품질·비용을 잽니다',
-    flags: ['track', 'config', 'genre', 'overlay', 'repeats', 'judge', 'judge-model', 'out', 'provider', 'model', 'prompt-variant', 'yes'],
+    flags: [
+      'track',
+      'config',
+      'genre',
+      'overlay',
+      'repeats',
+      'judge',
+      'judge-model',
+      'out',
+      'provider',
+      'model',
+      'prompt-variant',
+      'yes',
+    ],
     examples: [
       'storyboard sim run --track ~/storyboard-workspace --genre thriller',
       'storyboard sim run --track ~/storyboard-workspace --overlay point.json --yes',
@@ -622,7 +675,18 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '측정',
     usage: 'sim screen --track <path> [--knobs <a,b,c>]',
     summary: '손잡이를 하나씩 흔들어 영향이 큰 것을 고릅니다 (심판 없이)',
-    flags: ['track', 'config', 'genre', 'knobs', 'repeats', 'max-runs', 'out', 'provider', 'model', 'yes'],
+    flags: [
+      'track',
+      'config',
+      'genre',
+      'knobs',
+      'repeats',
+      'max-runs',
+      'out',
+      'provider',
+      'model',
+      'yes',
+    ],
     examples: ['storyboard sim screen --track ~/storyboard-workspace'],
     needsWorkspace: false,
   },
@@ -631,7 +695,21 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '측정',
     usage: 'sim sweep --track <path> --knobs <a,b,c,d>',
     summary: '고른 손잡이 넷으로 격자를 돌고 파레토 표를 냅니다',
-    flags: ['track', 'config', 'genre', 'knobs', 'repeats', 'max-runs', 'judge', 'judge-model', 'out', 'provider', 'model', 'prompt-variant', 'yes'],
+    flags: [
+      'track',
+      'config',
+      'genre',
+      'knobs',
+      'repeats',
+      'max-runs',
+      'judge',
+      'judge-model',
+      'out',
+      'provider',
+      'model',
+      'prompt-variant',
+      'yes',
+    ],
     examples: [
       'storyboard sim sweep --track ~/storyboard-workspace --knobs skeleton.lengthRatio,generation.section.retryLimit,generation.dialogue.preservedRatio,generation.padding.paragraphRatio',
     ],
@@ -649,10 +727,13 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'sim rejudge',
     group: '측정',
-    usage: 'sim rejudge --track <path> --genre <name> --judge <provider> --judge-model <name> [--point <label>] [--source <engine>] [--yes]',
+    usage:
+      'sim rejudge --track <path> --genre <name> --judge <provider> --judge-model <name> [--point <label>] [--source <engine>] [--yes]',
     summary: '저장된 원고를 다른 심판으로 다시 채점합니다 (생성은 하지 않습니다)',
     flags: ['track', 'config', 'genre', 'point', 'source', 'judge', 'judge-model', 'out', 'yes'],
-    examples: ['storyboard sim rejudge --track . --genre thriller --judge claude --judge-model claude-sonnet-5 --yes'],
+    examples: [
+      'storyboard sim rejudge --track . --genre thriller --judge claude --judge-model claude-sonnet-5 --yes',
+    ],
     needsWorkspace: false,
   },
   {
@@ -683,7 +764,8 @@ export const commandCatalog: readonly CommandSpec[] = [
     writesWorkspace: true,
     group: '유지보수',
     usage: 'scene migrate',
-    summary: '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
+    summary:
+      '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
   },
 ];
 

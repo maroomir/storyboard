@@ -62,6 +62,7 @@ import { ManuscriptManager } from './managers/manuscriptManager';
 import { NovelManager } from './managers/novelManager';
 import { StudioManager } from './managers/studioManager';
 import { RunGate } from './runGate';
+import { describeParameters, type ParameterReport } from './parameterRegistry';
 import { loadResourceOverrides, type ResourceOverrideReport } from './resourceOverrides';
 import type { StoryUri } from '@storyboard/story-format';
 
@@ -178,6 +179,18 @@ export class StoryboardApplication {
   // generation; the report says what was replaced and which files could not be used.
   public loadResourceOverrides(): Promise<ResourceOverrideReport> {
     return loadResourceOverrides(this.fileSystem, this.resourceRoots);
+  }
+
+  // Every value an author can move, with where its current value comes from. Reloads the
+  // resource files first so the report matches what the next generation would use.
+  public async describeParameters(): Promise<ParameterReport> {
+    const resources = await this.loadResourceOverrides();
+
+    return describeParameters({
+      configBridge: this.configBridge,
+      resources,
+      roots: this.resourceRoots,
+    });
   }
 
   public dispose(): void {

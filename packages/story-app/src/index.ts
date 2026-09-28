@@ -19,6 +19,14 @@ export {
 export { StudioManager, type StudioManagerDependencies } from './managers/studioManager';
 export { RunGate, type RunGateDependencies, type WorkspaceHoldResult } from './runGate';
 export {
+  describeParameters,
+  type DescribeParametersInput,
+  type ParameterEntry,
+  type ParameterKind,
+  type ParameterOrigin,
+  type ParameterReport,
+} from './parameterRegistry';
+export {
   loadResourceOverrides,
   resourceLayout,
   type ResourceOverrideApplied,

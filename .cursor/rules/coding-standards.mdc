@@ -132,6 +132,11 @@ exactly one file; everything else derives from it.
   `exports` and in every consumer's tsconfig `paths`; `scripts/aliases.mjs` orders aliases
   longest-first so `pkg/contracts` is not shadowed by `pkg`.
 
+- **One registry reads them all**: `describeParameters` in `packages/story-app/src/parameterRegistry.ts`
+  lists every setting, generation knob and prompt sampling value with its origin (workspace, home,
+  model profile, default); `storyboard params show` prints it. A new tunable value belongs in one of
+  those three catalogs so it shows up there, never in a fourth list.
+
 ### The parameter map
 
 Every tunable data file carries the `*.params.json` suffix, so `git ls-files '*.params.json'` lists
