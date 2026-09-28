@@ -1,22 +1,46 @@
-import type {
-  CompleteStoryScenesProposal,
-  CompleteStoryScenesRequest,
-  CompleteStoryScenesUseCase,
-  GenerateOutlineRequest,
-  GenerateOutlineResult,
-  GenerateOutlineUseCase,
-  INovelRunStateRepository,
-  NovelPipeline,
-  NovelPipelineResult,
-  NovelPipelineRunOptions,
-  StoryFileSnapshot,
+import {
+  isRunBudgetExceeded,
+  type CompleteStoryScenesProposal,
+  type CompleteStoryScenesRequest,
+  type CompleteStoryScenesUseCase,
+  type GenerateOutlineRequest,
+  type GenerateOutlineResult,
+  type GenerateOutlineUseCase,
+  type INovelRunStateRepository,
+  type NovelPipeline,
+  type NovelPipelineResult,
+  type NovelPipelineRunOptions,
+  type StoryFileSnapshot,
+  type UsageMeter,
 } from '@storyboard/story-engine';
+import type { ConfigBridge, UsageAmount } from '@storyboard/story-ai';
 
 export interface NovelManagerDependencies {
   readonly novelPipeline: NovelPipeline;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly configBridge: ConfigBridge;
+  readonly usageMeter: UsageMeter;
+}
+
+export interface NovelRunRequest extends Omit<NovelPipelineRunOptions, 'reviseMaxIterations'> {
+  // Defaults to the configured revise loop limit.
+  readonly reviseMaxIterations?: number;
+  // What the run has spent so far, after every metered call; a host shows it live.
+  readonly onSpendingChange?: (reading: UsageAmount) => void;
+  // Fired once, when the run first reaches its budget and starts stopping at the scene boundary.
+  readonly onBudgetReached?: () => void;
+}
+
+export interface NovelRunSpending {
+  readonly costUsd: number;
+  readonly budgetUsd: number;
+  readonly isOverBudget: boolean;
+}
+
+export interface NovelRunResult extends NovelPipelineResult {
+  readonly spending: NovelRunSpending;
 }
 
 // The book-level verbs: plan the outline, run the whole novel pipeline, complete a story's scenes.
@@ -27,8 +51,40 @@ export class NovelManager {
     this.runState = deps.novelRunStateRepository;
   }
 
-  public run(options: NovelPipelineRunOptions): Promise<NovelPipelineResult> {
-    return this.deps.novelPipeline.run(options);
+  // Runs the pipeline under the configured per-run budget: the run pauses at the next scene
+  // boundary once the budget is reached, and the result says what it spent, so no host meters it.
+  public async run(request: NovelRunRequest): Promise<NovelRunResult> {
+    const { configBridge, usageMeter, novelPipeline } = this.deps;
+    const budgetUsd = configBridge.getRunBudgetUsd();
+    const spending = usageMeter.startSession(request.onSpendingChange);
+    const isOverBudget = (): boolean => isRunBudgetExceeded(spending.reading(), budgetUsd);
+    let hasReportedBudget = false;
+
+    try {
+      const result = await novelPipeline.run({
+        ...request,
+        reviseMaxIterations: request.reviseMaxIterations ?? configBridge.getReviseMaxIterations(),
+        shouldPause: (): boolean => {
+          if (isOverBudget()) {
+            if (!hasReportedBudget) {
+              hasReportedBudget = true;
+              request.onBudgetReached?.();
+            }
+
+            return true;
+          }
+
+          return request.shouldPause?.() ?? false;
+        },
+      });
+
+      return {
+        ...result,
+        spending: { costUsd: spending.reading().costUsd, budgetUsd, isOverBudget: isOverBudget() },
+      };
+    } finally {
+      spending.stop();
+    }
   }
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {

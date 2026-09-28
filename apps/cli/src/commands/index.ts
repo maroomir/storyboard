@@ -12,7 +12,6 @@ import {
   buildSceneSeeds,
   diffCandidatesAgainstCanon,
   isIgnoredSampleCardFileName,
-  isRunBudgetExceeded,
   joinStoryPath,
   migrateCardTextFieldsToList,
   writeNarratorCardsIfMissing,
@@ -33,7 +32,6 @@ import {
 
 import {
   aiProviderIds,
-  integerSettingDefault,
   requiresApiKey,
   type AiProviderId,
 } from '@storyboard/story-ai';
@@ -170,11 +168,9 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     !flagBoolean(args.flags, 'no-revise') && container.configBridge.isReviseAfterGenerateEnabled();
 
   if (result.kind === 'generated' && reviseRequested) {
-    const revised = await container.drafts.reviseScene(
-      container.workspaceRoot,
-      stem,
-      { onProgress: (message) => container.logger.info(message) },
-    );
+    const revised = await container.drafts.reviseScene(container.workspaceRoot, stem, {
+      onProgress: (message) => container.logger.info(message),
+    });
 
     // A rejected candidate means the original was kept. Saying nothing would let an unattended run
     // record a revision that never happened.
@@ -356,34 +352,28 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 const generateNovel: CommandHandler = async ({ container, args }) => {
   const paths = getStoryboardProjectPaths(container.workspaceRoot);
   const project = await readProjectJson(container.fileSystem, paths.projectJson);
-  const budgetUsd = container.configBridge.getRunBudgetUsd();
-  const spending = container.usageMeter.startSession();
-  const isOverBudget = (): boolean => isRunBudgetExceeded(spending.reading(), budgetUsd);
+  const reviseIterations = flagString(args.flags, 'revise-iterations');
   const result = await container.novel.run({
     workspaceUri: container.workspaceRoot,
     project,
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
     runMode: 'auto',
-    reviseMaxIterations: Number(
-      flagString(args.flags, 'revise-iterations') ??
-        integerSettingDefault('draft.reviseMaxIterations'),
-    ),
+    ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
     onProgress: (stage, message) => container.logger.info(`${stage}: ${message}`),
     requestApproval: async () => true,
     shouldCancel: () => false,
-    shouldPause: isOverBudget,
   });
-  spending.stop();
 
+  const { spending } = result;
   const budgetNote =
-    result.outcome === 'paused' && isOverBudget()
-      ? ` 이번 실행 예산 $${budgetUsd}에 닿았습니다 (쓴 비용 $${spending.reading().costUsd.toFixed(2)}).`
+    result.outcome === 'paused' && spending.isOverBudget
+      ? ` 이번 실행 예산 $${spending.budgetUsd}에 닿았습니다 (쓴 비용 $${spending.costUsd.toFixed(2)}).`
       : '';
 
   return {
     ok: result.outcome === 'completed',
     message: `장편 생성 ${result.outcome}: ${result.message}${budgetNote}`,
-    data: { ...result, costUsd: spending.reading().costUsd },
+    data: { ...result, costUsd: spending.costUsd },
   };
 };
 
@@ -459,10 +449,7 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `승격 후보 ${prepared.items.length}건`, data: prepared.items };
   }
 
-  const result = await container.cards.promoteCandidates(
-    container.workspaceRoot,
-    prepared.items,
-  );
+  const result = await container.cards.promoteCandidates(container.workspaceRoot, prepared.items);
 
   return {
     ok: result.kind === 'promoted',

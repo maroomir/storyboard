@@ -2,7 +2,6 @@ import {
   describeWorkspaceRunLockHolder,
   getStoryboardProjectPaths,
   isResumable,
-  isRunBudgetExceeded,
   novelStageNames,
   readProjectJson,
   readWorkspaceRunLock,
@@ -53,7 +52,6 @@ interface ActiveRun {
   currentStage?: NovelStageName;
   furthestStageIndex: number;
   isPauseRequested: boolean;
-  hasLoggedBudgetStop: boolean;
   approval?: RunApprovalRequest & { readonly resolve: (approved: boolean) => void };
   lastProgressMessage?: string;
   readonly finished: Promise<void>;
@@ -154,19 +152,19 @@ export class RunController {
           project,
           runMode,
           ...(resumeState === undefined ? {} : { resumeState }),
-          reviseMaxIterations: container.configBridge.getReviseMaxIterations(),
           onProgress: (stage, message) => this.recordProgress(run, stage, message),
           requestApproval: (kind, info) => this.askApproval(run, kind, info),
           // NOTE: 데스크톱은 취소를 쓰지 않는다. 멈춤은 모두 씬 경계에서 끝나는 shouldPause 로 간다.
           shouldCancel: () => false,
-          shouldPause: () => this.shouldPause(run),
+          shouldPause: () => run.isPauseRequested,
+          onBudgetReached: () => this.noteBudgetReached(run),
         })
         .then((result) => {
           const outcome: RunOutcome =
-            result.outcome === 'paused' && this.isOverBudget(run) ? 'budget' : result.outcome;
+            result.outcome === 'paused' && result.spending.isOverBudget ? 'budget' : result.outcome;
           const message =
             outcome === 'budget'
-              ? translate('run.outcome.budget', { budget: run.budgetUsd })
+              ? translate('run.outcome.budget', { budget: result.spending.budgetUsd })
               : outcome === 'completed'
                 ? translate('run.outcome.completed')
                 : result.message;
@@ -273,7 +271,6 @@ export class RunController {
       status: 'running',
       furthestStageIndex: 0,
       isPauseRequested: false,
-      hasLoggedBudgetStop: false,
       finished,
       markFinished,
     };
@@ -407,26 +404,9 @@ export class RunController {
     });
   }
 
-  private shouldPause(run: ActiveRun): boolean {
-    if (run.isPauseRequested) {
-      return true;
-    }
-
-    if (!this.isOverBudget(run)) {
-      return false;
-    }
-
-    if (!run.hasLoggedBudgetStop) {
-      run.hasLoggedBudgetStop = true;
-      run.status = 'pausing';
-      this.appendLog(this.dependencies.translate('log.budgetReached', { budget: run.budgetUsd }), 'warn');
-    }
-
-    return true;
-  }
-
-  private isOverBudget(run: ActiveRun): boolean {
-    return isRunBudgetExceeded(run.spending.reading(), run.budgetUsd);
+  private noteBudgetReached(run: ActiveRun): void {
+    run.status = 'pausing';
+    this.appendLog(this.dependencies.translate('log.budgetReached', { budget: run.budgetUsd }), 'warn');
   }
 
   private async readResumable(): Promise<RunSnapshot['resumable']> {
