@@ -258,7 +258,7 @@ async function execute(
   dependencies: GenerateDraftUseCaseDependencies,
   request: GenerateDraftRequest
 ): Promise<GenerateDraftResult> {
-  return await new GenerateDraftUseCase(dependencies).execute(sceneUri, request)
+  return await new GenerateDraftUseCase(dependencies).execute({ ...request, sceneUri })
 }
 
 describe("GenerateDraftUseCase", () => {

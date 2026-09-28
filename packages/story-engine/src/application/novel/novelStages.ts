@@ -115,7 +115,8 @@ async function runChapterDraftsAndRevise(
     }
 
     const sceneUri = scenePath(options.workspaceUri, stem);
-    const draftResult = await options.deps.generateDraftUseCase.execute(sceneUri, {
+    const draftResult = await options.deps.generateDraftUseCase.execute({
+      sceneUri,
       force: false,
       suppressLoggerPanel: true,
       shouldCancel: options.shouldCancel,

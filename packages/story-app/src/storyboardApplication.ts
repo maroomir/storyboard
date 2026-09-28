@@ -200,13 +200,13 @@ function buildServices(
     generator,
     sceneCacheRepository,
   });
-  const reviseAfterGenerateGate = new ReviseAfterGenerateGate(
+  const reviseAfterGenerateGate = new ReviseAfterGenerateGate({
     fileSystem,
     workspaceLocator,
     configBridge,
     logger,
     reviseDraftUseCase,
-  );
+  });
 
   return {
     aiGateway,
@@ -222,22 +222,27 @@ function buildServices(
     novelRunStateRepository,
     outlineRepository,
     sceneSidebarRepository,
-    applyDraftFormatUseCase: new ApplyDraftFormatUseCase(fileSystem, aiGateway, logger, generator),
+    applyDraftFormatUseCase: new ApplyDraftFormatUseCase({
+      fileSystem,
+      aiGateway,
+      logger,
+      generator,
+    }),
     assembleManuscriptUseCase,
-    augmentDraftUseCase: new AugmentDraftUseCase(fileSystem, aiGateway, logger, configBridge),
+    augmentDraftUseCase: new AugmentDraftUseCase({ fileSystem, aiGateway, logger, configBridge }),
     buildStoryCardsUseCase: new BuildStoryCardsUseCase(aiGateway, storyFeatureRepository),
     collectCardProposalsUseCase: new CollectCardProposalsUseCase(aiGateway, cardCollectRepository),
     completeStoryScenesUseCase: new CompleteStoryScenesUseCase(aiGateway, storyFeatureRepository),
-    condenseDraftUseCase: new CondenseDraftUseCase(aiGateway, logger),
+    condenseDraftUseCase: new CondenseDraftUseCase({ aiGateway, logger }),
     createCardUseCase: new CreateCardUseCase(cardWriterRepository),
-    expandDraftUseCase: new ExpandDraftUseCase(aiGateway, logger),
+    expandDraftUseCase: new ExpandDraftUseCase({ aiGateway, logger }),
     exportManuscriptUseCase: new ExportManuscriptUseCase(manuscriptAssemblyRepository),
-    generateAllDraftsUseCase: new GenerateAllDraftsUseCase(
+    generateAllDraftsUseCase: new GenerateAllDraftsUseCase({
       generateDraftUseCase,
       logger,
       reviseAfterGenerateGate,
-      sceneBatchRepository,
-    ),
+      sceneRepository: sceneBatchRepository,
+    }),
     generateDraftUseCase,
     generateOutlineUseCase: new GenerateOutlineUseCase(aiGateway, outlineRepository),
     generateSceneBeatsUseCase: new GenerateSceneBeatsUseCase({
@@ -277,7 +282,7 @@ function buildServices(
     ),
     reviseAfterGenerateGate,
     reviseDraftUseCase,
-    saveDraftEditUseCase: new SaveDraftEditUseCase(fileSystem),
+    saveDraftEditUseCase: new SaveDraftEditUseCase({ fileSystem }),
     studioChatUseCase: new StudioChatUseCase(aiGateway, logger),
     summarizeChaptersUseCase,
   };

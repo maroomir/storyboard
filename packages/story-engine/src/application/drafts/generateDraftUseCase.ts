@@ -35,6 +35,7 @@ import {
   reportWorkflowFailure,
   type SceneGenerationInputs,
 } from './sceneGenerationInputs';
+import type { IUseCase } from '#engine/application/useCase';
 import { schedulePostGenerationUpdates } from './postGenerationScheduling';
 import { updateStoryStateAfterGeneration } from './updateStoryState';
 
@@ -318,14 +319,11 @@ async function generateDraftForWorkspaceSceneWorkflow(
   return await runAndPersistDraft(inputs, options);
 }
 
-export class GenerateDraftUseCase {
+export class GenerateDraftUseCase implements IUseCase<GenerateDraftRequest, GenerateDraftResult> {
   public constructor(private readonly dependencies: GenerateDraftUseCaseDependencies) {}
 
-  public async execute(
-    sceneUri: StoryUri,
-    request: GenerateDraftRequest,
-  ): Promise<GenerateDraftResult> {
-    return await generateDraftForWorkspaceSceneWorkflow(sceneUri, {
+  public async execute(request: GenerateDraftRequest): Promise<GenerateDraftResult> {
+    return await generateDraftForWorkspaceSceneWorkflow(request.sceneUri, {
       ...this.dependencies,
       ...request,
     });

@@ -341,7 +341,8 @@ export class RunController {
   ): Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
-    const result = await container.generateDraftUseCase.execute(sceneUri, {
+    const result = await container.generateDraftUseCase.execute({
+      sceneUri,
       force,
       // A writer is not asked to approve a fact sheet: the proposal is taken as written, like the
       // extension's auto-approve setting. The sheet stays in the scene card for later edits.
