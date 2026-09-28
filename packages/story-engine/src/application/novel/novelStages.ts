@@ -135,7 +135,7 @@ async function runChapterDraftsAndRevise(
       draftUri: draftPath(options.workspaceUri, stem),
       sceneStem: stem,
       maxIterations: options.reviseMaxIterations,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('draft.maxCompressionPercent'),
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('revise.length.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       shouldCancel: options.shouldCancel,
     });
@@ -408,7 +408,7 @@ export async function runReviseFromReviewStage(
       draftUri: draftPath(options.workspaceUri, target.sceneStem),
       sceneStem: target.sceneStem,
       maxIterations: 1,
-      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('draft.maxCompressionPercent'),
+      maxCompressionPercent: options.deps.configBridge.getMaxCompressionPercent?.() ?? integerSettingDefault('revise.length.maxCompressionPercent'),
       reviseScoreThreshold: 0,
       seedIssues: target.seedIssues,
       shouldCancel: options.shouldCancel,

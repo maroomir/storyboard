@@ -58,7 +58,7 @@ describe("chooseDefaultProvider", () => {
     const picked = await chooseDefaultProvider({ configBridge, registry, secretStore })
 
     expect(picked).toBe("openai")
-    expect(values.get("defaultProvider")).toBe("openai")
+    expect(values.get("ai.provider.default")).toBe("openai")
     expect(secretStore.values.get("storyboard.apiKey.openai")).toBe("sk-new")
   })
 
@@ -71,7 +71,7 @@ describe("chooseDefaultProvider", () => {
     )
 
     await chooseDefaultProvider({ configBridge: createConfigBridge(values), registry, secretStore })
-    expect(values.get("defaultProvider")).toBe("ollama")
+    expect(values.get("ai.provider.default")).toBe("ollama")
     expect(inputBox).not.toHaveBeenCalled()
 
     vi.spyOn(vscode.window, "showQuickPick").mockResolvedValue(undefined)
@@ -91,7 +91,7 @@ describe("chooseDefaultProvider", () => {
 
     await chooseDefaultProvider({ configBridge: createConfigBridge(new Map()), registry, secretStore })
     await chooseDefaultProvider({
-      configBridge: createConfigBridge(new Map([["defaultProvider", "mock"]])),
+      configBridge: createConfigBridge(new Map([["ai.provider.default", "mock"]])),
       registry,
       secretStore
     })
@@ -107,7 +107,7 @@ describe("nudgeToChooseProvider", () => {
     const info = vi.spyOn(vscode.window, "showInformationMessage")
 
     await nudgeToChooseProvider({
-      configBridge: createConfigBridge(new Map([["defaultProvider", "mock"]])),
+      configBridge: createConfigBridge(new Map([["ai.provider.default", "mock"]])),
       registry,
       secretStore: createSecretStore()
     })
@@ -124,6 +124,6 @@ describe("nudgeToChooseProvider", () => {
 
     await nudgeToChooseProvider({ configBridge: createConfigBridge(values), registry, secretStore: createSecretStore() })
 
-    expect(values.get("defaultProvider")).toBe("ollama")
+    expect(values.get("ai.provider.default")).toBe("ollama")
   })
 })

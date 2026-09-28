@@ -64,8 +64,8 @@ describe('computeCompletions', () => {
     expect(texts(['scene', 'generate', '--a'])).toEqual(['--all']);
     expect(texts(['setup', '--provider', 'c'])).toEqual(['claude']);
     expect(texts(['setup', '--provider', 'openai', '--model', ''])).toContain('gpt-5.6-terra');
-    expect(texts(['config', 'set', 'draft.'])).toEqual(
-      expect.arrayContaining(['draft.keepHistory']),
+    expect(texts(['config', 'set', 'editor.'])).toEqual(
+      expect.arrayContaining(['editor.draft.keepHistory']),
     );
     expect(texts(['completion', ''])).toEqual(['zsh', 'bash', 'fish']);
   });

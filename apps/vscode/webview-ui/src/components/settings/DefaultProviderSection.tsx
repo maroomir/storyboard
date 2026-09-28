@@ -59,8 +59,8 @@ export function DefaultProviderSection({
           <span className="flex items-center gap-2 text-sm font-medium text-sb-fg">
             기본 제공자
             <OriginPill
-              origin={getValueOrigin(snapshot, 'defaultProvider')}
-              file={originFileOf('defaultProvider')}
+              origin={getValueOrigin(snapshot, 'ai.provider.default')}
+              file={originFileOf('ai.provider.default')}
             />
           </span>
           <select

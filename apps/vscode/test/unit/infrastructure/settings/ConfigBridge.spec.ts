@@ -68,7 +68,7 @@ describe("ConfigBridge", () => {
   it("uses task provider override before the default provider", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "openai"],
+        ["ai.provider.default", "openai"],
         ["tasks.sceneDraft.provider", "claude"]
       ])
     )
@@ -81,7 +81,7 @@ describe("ConfigBridge", () => {
   it("reads legacy flat tasks.<task>.provider without a merged tasks object", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "openai"],
+        ["ai.provider.default", "openai"],
         ["providers.claude.model", "claude-sonnet-4-6"],
         ["tasks.sceneDraft.provider", "claude"]
       ])
@@ -97,7 +97,7 @@ describe("ConfigBridge", () => {
   it("uses per-task model override when stored and falls back to provider global for provider-only tasks", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "openai"],
+        ["ai.provider.default", "openai"],
         ["providers.claude.model", "claude-sonnet-4-6"],
         ["tasks", { sceneDraft: { provider: "claude", model: "claude-haiku-4-5" } }]
       ])
@@ -110,7 +110,7 @@ describe("ConfigBridge", () => {
 
     const providerOnly = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "openai"],
+        ["ai.provider.default", "openai"],
         ["providers.claude.model", "claude-sonnet-4-6"],
         ["tasks", { sceneDraft: { provider: "claude" } }]
       ])
@@ -124,7 +124,7 @@ describe("ConfigBridge", () => {
   it("keeps a configured ollama model even when the catalog does not list it", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "ollama"],
+        ["ai.provider.default", "ollama"],
         ["providers.ollama.model", "qwen3:14b"]
       ])
     )
@@ -139,7 +139,7 @@ describe("ConfigBridge", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
         ["providers.ollama.think", false],
-        ["promptVariant", "rich"]
+        ["ai.prompt.variant", "rich"]
       ])
     )
 
@@ -148,14 +148,14 @@ describe("ConfigBridge", () => {
   })
 
   it("ignores a prompt variant it does not know", () => {
-    const configBridge = createConfigBridge(new Map<string, unknown>([["promptVariant", "huge"]]))
+    const configBridge = createConfigBridge(new Map<string, unknown>([["ai.prompt.variant", "huge"]]))
 
     expect(configBridge.getPromptVariantOverride()).toBeUndefined()
     expect(configBridge.getProviderConfig("ollama").think).toBeUndefined()
   })
 
   it("falls back to mock for invalid provider values", () => {
-    const configBridge = createConfigBridge(new Map<string, unknown>([["defaultProvider", "unknown"]]))
+    const configBridge = createConfigBridge(new Map<string, unknown>([["ai.provider.default", "unknown"]]))
 
     expect(configBridge.getDefaultProvider()).toBe("mock")
   })
@@ -200,7 +200,7 @@ describe("ConfigBridge", () => {
 
   it("writes default provider and merges task overrides into the tasks object", async () => {
     const values = new Map<string, unknown>([
-      ["defaultProvider", "mock"],
+      ["ai.provider.default", "mock"],
       ["tasks", { sceneDraft: { provider: "claude" } }]
     ])
     const configuration = new MutableFakeConfiguration(values)
@@ -209,7 +209,7 @@ describe("ConfigBridge", () => {
     })
 
     await configBridge.setDefaultProvider("openai")
-    expect(values.get("defaultProvider")).toBe("openai")
+    expect(values.get("ai.provider.default")).toBe("openai")
 
     await configBridge.setTaskAiConfig("grammarCheck", { providerId: "google", model: "gemini-2.5-flash" })
     const tasksAfterAdd = values.get("tasks") as Record<string, { provider: string; model?: string }>
@@ -249,7 +249,7 @@ describe("ConfigBridge", () => {
   it("reads a retired subscription-CLI provider as unconfigured", () => {
     const configBridge = createConfigBridge(
       new Map<string, unknown>([
-        ["defaultProvider", "claude-code"],
+        ["ai.provider.default", "claude-code"],
         ["tasks", { grammarCheck: { provider: "gemini-cli" } }]
       ])
     )
@@ -259,7 +259,7 @@ describe("ConfigBridge", () => {
   })
 
   it("still reports an unknown provider as unconfigured", () => {
-    const configBridge = createConfigBridge(new Map<string, unknown>([["defaultProvider", "nope"]]))
+    const configBridge = createConfigBridge(new Map<string, unknown>([["ai.provider.default", "nope"]]))
 
     expect(configBridge.isDefaultProviderConfigured()).toBe(false)
     expect(configBridge.getDefaultProvider()).toBe("mock")
@@ -274,57 +274,57 @@ describe("ConfigBridge", () => {
   it("enables revise-after-generate by default and reads the configured value", () => {
     expect(createConfigBridge(new Map()).isReviseAfterGenerateEnabled()).toBe(true)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseAfterGenerate", false]])).isReviseAfterGenerateEnabled()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.afterGenerate", false]])).isReviseAfterGenerateEnabled()
     ).toBe(false)
   })
 
   it("clamps revise max iterations to [1, 5] with a default of 2", () => {
     expect(createConfigBridge(new Map()).getReviseMaxIterations()).toBe(2)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 0]])).getReviseMaxIterations()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.maxIterations", 0]])).getReviseMaxIterations()
     ).toBe(1)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 9]])).getReviseMaxIterations()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.maxIterations", 9]])).getReviseMaxIterations()
     ).toBe(5)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseMaxIterations", 3]])).getReviseMaxIterations()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.maxIterations", 3]])).getReviseMaxIterations()
     ).toBe(3)
   })
 
   it("reads the scene beats switches with clamped defaults", () => {
     expect(createConfigBridge(new Map()).isAutoBeatsEnabled()).toBe(true)
-    expect(createConfigBridge(new Map<string, unknown>([["draft.autoBeats", false]])).isAutoBeatsEnabled()).toBe(false)
+    expect(createConfigBridge(new Map<string, unknown>([["generation.beats.auto", false]])).isAutoBeatsEnabled()).toBe(false)
     expect(createConfigBridge(new Map()).getCharsPerBeat()).toBe(1500)
-    expect(createConfigBridge(new Map<string, unknown>([["draft.charsPerBeat", 10]])).getCharsPerBeat()).toBe(300)
-    expect(createConfigBridge(new Map<string, unknown>([["draft.charsPerBeat", 2000]])).getCharsPerBeat()).toBe(2000)
+    expect(createConfigBridge(new Map<string, unknown>([["generation.beats.charsPerBeat", 10]])).getCharsPerBeat()).toBe(300)
+    expect(createConfigBridge(new Map<string, unknown>([["generation.beats.charsPerBeat", 2000]])).getCharsPerBeat()).toBe(2000)
     expect(createConfigBridge(new Map()).getMinBeats()).toBe(5)
-    expect(createConfigBridge(new Map<string, unknown>([["draft.minBeats", 0]])).getMinBeats()).toBe(1)
-    expect(createConfigBridge(new Map<string, unknown>([["draft.minBeats", 8]])).getMinBeats()).toBe(8)
+    expect(createConfigBridge(new Map<string, unknown>([["generation.beats.minimum", 0]])).getMinBeats()).toBe(1)
+    expect(createConfigBridge(new Map<string, unknown>([["generation.beats.minimum", 8]])).getMinBeats()).toBe(8)
   })
 
   it("clamps revise score threshold to [0, 100] with a default of 0", () => {
     expect(createConfigBridge(new Map()).getReviseScoreThreshold()).toBe(0)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", -5]])).getReviseScoreThreshold()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.scoreThreshold", -5]])).getReviseScoreThreshold()
     ).toBe(0)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", 150]])).getReviseScoreThreshold()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.scoreThreshold", 150]])).getReviseScoreThreshold()
     ).toBe(100)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.reviseScoreThreshold", 42]])).getReviseScoreThreshold()
+      createConfigBridge(new Map<string, unknown>([["revise.loop.scoreThreshold", 42]])).getReviseScoreThreshold()
     ).toBe(42)
   })
 
   it("clamps max compression percent to [0, 90] with a default of 50", () => {
     expect(createConfigBridge(new Map()).getMaxCompressionPercent()).toBe(50)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", -5]])).getMaxCompressionPercent()
+      createConfigBridge(new Map<string, unknown>([["revise.length.maxCompressionPercent", -5]])).getMaxCompressionPercent()
     ).toBe(0)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", 100]])).getMaxCompressionPercent()
+      createConfigBridge(new Map<string, unknown>([["revise.length.maxCompressionPercent", 100]])).getMaxCompressionPercent()
     ).toBe(90)
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.maxCompressionPercent", 42]])).getMaxCompressionPercent()
+      createConfigBridge(new Map<string, unknown>([["revise.length.maxCompressionPercent", 42]])).getMaxCompressionPercent()
     ).toBe(42)
   })
 
@@ -332,7 +332,7 @@ describe("ConfigBridge", () => {
     expect(createConfigBridge(new Map()).isUpdateCardsAfterGenerateEnabled()).toBe(false)
     expect(
       createConfigBridge(
-        new Map<string, unknown>([["draft.updateCardsAfterGenerate", true]])
+        new Map<string, unknown>([["cards.candidates.updateAfterGenerate", true]])
       ).isUpdateCardsAfterGenerateEnabled()
     ).toBe(true)
   })
@@ -340,16 +340,16 @@ describe("ConfigBridge", () => {
   it("returns the scene break separator only when the scene break is enabled", () => {
     expect(createConfigBridge(new Map()).getDraftSceneBreakSeparator()).toBeUndefined()
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.sceneBreakEnabled", false]])).getDraftSceneBreakSeparator()
+      createConfigBridge(new Map<string, unknown>([["generation.sceneBreak.enabled", false]])).getDraftSceneBreakSeparator()
     ).toBeUndefined()
     expect(
-      createConfigBridge(new Map<string, unknown>([["draft.sceneBreakEnabled", true]])).getDraftSceneBreakSeparator()
+      createConfigBridge(new Map<string, unknown>([["generation.sceneBreak.enabled", true]])).getDraftSceneBreakSeparator()
     ).toBe("---")
     expect(
       createConfigBridge(
         new Map<string, unknown>([
-          ["draft.sceneBreakEnabled", true],
-          ["draft.sceneBreakSeparator", "3"]
+          ["generation.sceneBreak.enabled", true],
+          ["generation.sceneBreak.separator", "3"]
         ])
       ).getDraftSceneBreakSeparator()
     ).toBe("3")
@@ -357,8 +357,8 @@ describe("ConfigBridge", () => {
 
   it("tells a configured default provider apart from the mock fallback", () => {
     expect(createConfigBridge(new Map()).isDefaultProviderConfigured()).toBe(false)
-    expect(createConfigBridge(new Map([["defaultProvider", "nope"]])).isDefaultProviderConfigured()).toBe(false)
-    expect(createConfigBridge(new Map([["defaultProvider", "mock"]])).isDefaultProviderConfigured()).toBe(true)
+    expect(createConfigBridge(new Map([["ai.provider.default", "nope"]])).isDefaultProviderConfigured()).toBe(false)
+    expect(createConfigBridge(new Map([["ai.provider.default", "mock"]])).isDefaultProviderConfigured()).toBe(true)
   })
 
   it("exposes realtime and studio validation switches with their defaults", () => {
@@ -367,7 +367,7 @@ describe("ConfigBridge", () => {
     expect(configBridge.isSlopRealtimeEnabled()).toBe(false)
     expect(configBridge.isStudioValidationEnabled()).toBe(true)
     expect(
-      createConfigBridge(new Map([["slop.realtimeEnabled", true], ["studio.validation", false]])).isSlopRealtimeEnabled()
+      createConfigBridge(new Map([["editor.slop.realtime", true], ["editor.studio.validation", false]])).isSlopRealtimeEnabled()
     ).toBe(true)
   })
 
@@ -380,7 +380,7 @@ describe("ConfigBridge", () => {
       inspect: <T>(section: string): { globalValue?: T; workspaceValue?: T } =>
         section === "providers.openai.model"
           ? { workspaceValue: "gpt-5-mini" as T }
-          : section === "defaultProvider"
+          : section === "ai.provider.default"
             ? { globalValue: "codex" as T }
             : {},
       update: async (section, _value, target): Promise<void> => {
@@ -394,10 +394,10 @@ describe("ConfigBridge", () => {
     await configBridge.setProviderModel("openai", "gpt-5-nano")
     await configBridge.setDefaultProvider("openai")
 
-    expect(targets).toEqual([["providers.openai.model", 2], ["defaultProvider", 1]])
+    expect(targets).toEqual([["providers.openai.model", 2], ["ai.provider.default", 1]])
     expect(configBridge.getValueOrigin("providers.openai.model")).toBe("workspace")
-    expect(configBridge.getValueOrigin("defaultProvider")).toBe("user")
-    expect(configBridge.getValueOrigin("draft.keepHistory")).toBe("default")
+    expect(configBridge.getValueOrigin("ai.provider.default")).toBe("user")
+    expect(configBridge.getValueOrigin("editor.draft.keepHistory")).toBe("default")
   })
 })
 

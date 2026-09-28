@@ -155,7 +155,7 @@ function configKeyCompletions(): Completion[] {
   ]);
 
   return [
-    { text: 'defaultProvider', description: '기본 AI 프로바이더' },
+    { text: 'ai.provider.default', description: '기본 AI 프로바이더' },
     ...providerKeys,
     ...storyboardSettingCatalog.map((entry) => ({ text: entry.key, description: entry.label })),
   ];

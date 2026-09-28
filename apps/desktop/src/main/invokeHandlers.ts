@@ -75,7 +75,7 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       await withSession(app, async (session) => succeed(session.runs.answerApproval(approved))),
     'run.setBudget': async ({ budgetUsd }) =>
       await withSession(app, async (session) => {
-        const saved = await app.settings.setValue('budget.runLimitUsd', budgetUsd);
+        const saved = await app.settings.setValue('budget.run.limitUsd', budgetUsd);
         return saved.ok ? succeed(await session.runs.refresh()) : saved;
       }),
 

@@ -35,9 +35,9 @@ function buildValidSnapshot(): SettingsReadSnapshot {
     origins: { defaultProvider: "user" },
     configFiles: { user: "/home/me/.storyboard/config.json" },
     settingCatalog: [
-      { key: "draft.keepHistory", label: "이전 초안 보관", description: "", kind: "boolean", defaultValue: false, group: "생성" }
+      { key: "editor.draft.keepHistory", label: "이전 초안 보관", description: "", kind: "boolean", defaultValue: false, group: "생성" }
     ],
-    settingValues: { "draft.keepHistory": false }
+    settingValues: { "editor.draft.keepHistory": false }
   } as SettingsReadSnapshot
 }
 

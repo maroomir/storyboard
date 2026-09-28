@@ -10,15 +10,15 @@ import { useI18n } from '@/renderer/lib/i18n';
 // The catalog names its settings in Korean. The few on the basic list are translated here; the rest
 // say in the advanced section that they are Korean only.
 const englishBasicSettings: Readonly<Record<string, { readonly label: string; readonly description: string }>> = {
-  'budget.runLimitUsd': {
+  'budget.run.limitUsd': {
     label: 'Budget per novel run (USD)',
     description: 'The most one novel run may spend on AI. Past it, the run finishes the scene in progress and pauses. 0 means no limit.',
   },
-  'draft.reviseAfterGenerate': {
+  'revise.loop.afterGenerate': {
     label: 'Review and revise right after drafting',
     description: 'Runs the review-and-revise loop on every new draft.',
   },
-  'draft.keepHistory': {
+  'editor.draft.keepHistory': {
     label: 'Keep earlier drafts',
     description: 'Keeps the previous draft in .draft/ whenever a draft is replaced.',
   },

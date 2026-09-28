@@ -99,13 +99,13 @@ export class ConfigBridge {
   // settings snapshot) always have a value to show. Hosts that must not generate against an
   // unchosen provider check `isDefaultProviderConfigured` (or the registry's guard) instead.
   public getDefaultProvider(): AiProviderId {
-    return this.getProviderId('defaultProvider', 'mock');
+    return this.getProviderId('ai.provider.default', 'mock');
   }
 
   public isDefaultProviderConfigured(): boolean {
     const configured = this.dependencies
       .getConfiguration()
-      .get<unknown>('defaultProvider', undefined);
+      .get<unknown>('ai.provider.default', undefined);
 
     return typeof configured === 'string' && resolveStoredProviderId(configured) !== undefined;
   }
@@ -137,7 +137,7 @@ export class ConfigBridge {
   // 이다. 무엇이 상한을 정하는지 재려면 같은 모델에 다른 변형을 강제로 물려 봐야 하므로, 설정으로
   // 덮어쓸 수 있게 한다. 모르는 값은 «지정 안 함» 으로 본다.
   public getPromptVariantOverride(): PromptVariantOverride | undefined {
-    const value = this.dependencies.getConfiguration().get<unknown>('promptVariant', undefined);
+    const value = this.dependencies.getConfiguration().get<unknown>('ai.prompt.variant', undefined);
 
     return typeof value === 'string' && (promptVariantIds as readonly string[]).includes(value)
       ? (value as PromptVariantOverride)
@@ -181,7 +181,7 @@ export class ConfigBridge {
   }
 
   public async setDefaultProvider(providerId: AiProviderId): Promise<void> {
-    await this.configurationUpdate('defaultProvider', providerId);
+    await this.configurationUpdate('ai.provider.default', providerId);
   }
 
   public async setProviderModel(providerId: AiProviderId, model: string): Promise<void> {
@@ -249,7 +249,7 @@ export class ConfigBridge {
 
   // 설정 키와 모델 프로필 항목이 같은 값을 가리키는 경우. 지금은 구간 상한 하나뿐이다.
   public getModelProfileDefault(key: string): number | undefined {
-    return key === 'draft.sectionOutputLimit' ? this.getModelProfile()?.sectionOutputLimit : undefined;
+    return key === 'generation.section.outputLimit' ? this.getModelProfile()?.sectionOutputLimit : undefined;
   }
 
   public async setSettingValue(key: string, value: boolean | number | string): Promise<void> {
@@ -285,71 +285,71 @@ export class ConfigBridge {
   }
 
   public isGrammarRealtimeEnabled(): boolean {
-    return this.readBooleanSetting('grammar.realtimeEnabled');
+    return this.readBooleanSetting('editor.grammar.realtime');
   }
 
   public isSlopRealtimeEnabled(): boolean {
-    return this.readBooleanSetting('slop.realtimeEnabled');
+    return this.readBooleanSetting('editor.slop.realtime');
   }
 
   public isStudioValidationEnabled(): boolean {
-    return this.readBooleanSetting('studio.validation');
+    return this.readBooleanSetting('editor.studio.validation');
   }
 
   public getScenePrefixDigits(): number {
-    return this.readIntegerSetting('scene.prefixDigits');
+    return this.readIntegerSetting('editor.scene.prefixDigits');
   }
 
   public inspectScenePrefixDigits(): ScenePrefixDigitsInspectLike | undefined {
-    return this.dependencies.getConfiguration().inspect?.<number>('scene.prefixDigits');
+    return this.dependencies.getConfiguration().inspect?.<number>('editor.scene.prefixDigits');
   }
 
   public isAiContextCondenseEnabled(): boolean {
-    return this.readBooleanSetting('ai.contextCondenseEnabled');
+    return this.readBooleanSetting('generation.context.condense');
   }
 
   public isReviseAfterGenerateEnabled(): boolean {
-    return this.readBooleanSetting('draft.reviseAfterGenerate');
+    return this.readBooleanSetting('revise.loop.afterGenerate');
   }
 
   public getReviseMaxIterations(): number {
-    return this.readIntegerSetting('draft.reviseMaxIterations');
+    return this.readIntegerSetting('revise.loop.maxIterations');
   }
 
   public getReviseScoreThreshold(): number {
-    return this.readIntegerSetting('draft.reviseScoreThreshold');
+    return this.readIntegerSetting('revise.loop.scoreThreshold');
   }
 
   public getMaxCompressionPercent(): number {
-    return this.readIntegerSetting('draft.maxCompressionPercent');
+    return this.readIntegerSetting('revise.length.maxCompressionPercent');
   }
 
   public isUpdateCardsAfterGenerateEnabled(): boolean {
-    return this.readBooleanSetting('draft.updateCardsAfterGenerate');
+    return this.readBooleanSetting('cards.candidates.updateAfterGenerate');
   }
 
   public isVerifyCardCandidatesEnabled(): boolean {
-    return this.readBooleanSetting('draft.verifyCardCandidates');
+    return this.readBooleanSetting('cards.candidates.verify');
   }
 
   public getRunBudgetUsd(): number {
-    return this.readIntegerSetting('budget.runLimitUsd');
+    return this.readIntegerSetting('budget.run.limitUsd');
   }
 
   public isSceneGroundingAutoApproveEnabled(): boolean {
-    return this.readBooleanSetting('grounding.autoApprove');
+    return this.readBooleanSetting('generation.grounding.autoApprove');
   }
 
   public isAutoBeatsEnabled(): boolean {
-    return this.readBooleanSetting('draft.autoBeats');
+    return this.readBooleanSetting('generation.beats.auto');
   }
 
   public getCharsPerBeat(): number {
-    return this.readIntegerSetting('draft.charsPerBeat');
+    return this.readIntegerSetting('generation.beats.charsPerBeat');
   }
 
   public getMinBeats(): number {
-    return this.readIntegerSetting('draft.minBeats');
+    return this.readIntegerSetting('generation.beats.minimum');
   }
 
   // 실측으로 정한 모델별 손잡이. 재보지 않은 모델이면 undefined 이고, 호출자는 자기 기본값을 쓴다.
@@ -375,26 +375,26 @@ export class ConfigBridge {
   // 사용자 설정 → 모델 실측 프로필 → 카탈로그 기본값 순.
   public getSectionOutputLimit(): number {
     const profileLimit =
-      this.getModelProfileDefault('draft.sectionOutputLimit') ??
-      integerSettingDefault('draft.sectionOutputLimit');
+      this.getModelProfileDefault('generation.section.outputLimit') ??
+      integerSettingDefault('generation.section.outputLimit');
 
-    return this.readIntegerSetting('draft.sectionOutputLimit', profileLimit);
+    return this.readIntegerSetting('generation.section.outputLimit', profileLimit);
   }
 
   public isKeepDraftHistoryEnabled(): boolean {
-    return this.readBooleanSetting('draft.keepHistory');
+    return this.readBooleanSetting('editor.draft.keepHistory');
   }
 
   public getDraftSceneBreakSeparator(): string | undefined {
     const configuration = this.dependencies.getConfiguration();
 
-    if (!this.readBooleanSetting('draft.sceneBreakEnabled')) {
+    if (!this.readBooleanSetting('generation.sceneBreak.enabled')) {
       return undefined;
     }
 
     return configuration.get(
-      'draft.sceneBreakSeparator',
-      stringSettingDefault('draft.sceneBreakSeparator'),
+      'generation.sceneBreak.separator',
+      stringSettingDefault('generation.sceneBreak.separator'),
     );
   }
 

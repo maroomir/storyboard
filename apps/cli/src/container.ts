@@ -88,7 +88,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   const overrides: Record<string, unknown> = {};
 
   if (options.provider !== undefined) {
-    overrides['defaultProvider'] = options.provider;
+    overrides['ai.provider.default'] = options.provider;
     // Task-level routing in the config file beats `defaultProvider`, so a `--provider` that only
     // set the default would silently lose to a `tasks.sceneDraft.provider` the user configured.
     // Naming a provider on the command line means "this run, everything".
@@ -100,7 +100,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   }
 
   if (options.reviseMaxIterations !== undefined) {
-    overrides['draft.reviseMaxIterations'] = options.reviseMaxIterations;
+    overrides['revise.loop.maxIterations'] = options.reviseMaxIterations;
   }
 
   if (options.localRuntime?.baseUrl !== undefined) {
@@ -116,7 +116,7 @@ function configOverrides(options: CliContainerOptions): Record<string, unknown> 
   }
 
   if (options.promptVariant !== undefined) {
-    overrides['promptVariant'] = options.promptVariant;
+    overrides['ai.prompt.variant'] = options.promptVariant;
   }
 
   return overrides;

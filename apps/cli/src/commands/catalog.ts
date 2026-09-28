@@ -280,7 +280,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     flags: ['global'],
     examples: [
       'storyboard config set defaultProvider claude',
-      'storyboard config set draft.reviseMaxIterations 3',
+      'storyboard config set revise.loop.maxIterations 3',
     ],
     needsWorkspace: false,
   },

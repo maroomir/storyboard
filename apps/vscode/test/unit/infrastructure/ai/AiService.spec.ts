@@ -291,7 +291,7 @@ function createAiService(options: {
     getConfiguration: (): StoryboardConfigurationLike =>
       new FakeConfiguration(
         new Map<string, unknown>([
-          ["defaultProvider", options.defaultProvider ?? "openai"],
+          ["ai.provider.default", options.defaultProvider ?? "openai"],
           ["providers.openai.model", "gpt-5.4-mini"],
           ["providers.ollama.baseUrl", "http://localhost:11434"],
           ["providers.ollama.model", "llama3.3"]

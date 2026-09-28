@@ -50,8 +50,8 @@ function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
     schemas.set(definition.key, settingSchema(definition));
   }
 
-  schemas.set('defaultProvider', providerIdSchema);
-  schemas.set('promptVariant', z.enum(promptVariantIds));
+  schemas.set('ai.provider.default', providerIdSchema);
+  schemas.set('ai.prompt.variant', z.enum(promptVariantIds));
   schemas.set('providers.ollama.baseUrl', nonEmptyString);
   schemas.set('providers.ollama.contextTokens', z.number().int().positive());
   schemas.set('providers.ollama.think', z.boolean());
@@ -74,7 +74,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-// Walks one file's settings. A key may be spelled flat ("draft.minBeats") or nested, so the walk
+// Walks one file's settings. A key may be spelled flat ("generation.beats.minimum") or nested, so the walk
 // joins path segments and checks the joined key at every level: a known key is validated, an
 // object under an unknown key is descended into, anything else is an unknown key.
 export function validateConfigSettings(

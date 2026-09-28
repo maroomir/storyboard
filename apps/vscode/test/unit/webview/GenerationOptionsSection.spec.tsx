@@ -18,11 +18,11 @@ function createSnapshot(): SettingsReadSnapshot {
     taskAssignments: {},
     modelCatalog: {} as SettingsReadSnapshot["modelCatalog"],
     taskCatalog: [],
-    origins: { "draft.keepHistory": "workspace" },
+    origins: { "editor.draft.keepHistory": "workspace" },
     configFiles: { user: "/home/me/.storyboard/config.json", workspace: "/work/novel/.storyboard/config.json" },
     settingCatalog: [
       {
-        key: "draft.keepHistory",
+        key: "editor.draft.keepHistory",
         label: "이전 초안 보관",
         description: "덮어쓰기 전에 남깁니다.",
         kind: "boolean",
@@ -30,7 +30,7 @@ function createSnapshot(): SettingsReadSnapshot {
         group: "생성"
       },
       {
-        key: "draft.reviseMaxIterations",
+        key: "revise.loop.maxIterations",
         label: "자동 검수 최대 반복",
         description: "몇 번까지.",
         kind: "integer",
@@ -40,7 +40,7 @@ function createSnapshot(): SettingsReadSnapshot {
         group: "검수"
       }
     ],
-    settingValues: { "draft.keepHistory": true, "draft.reviseMaxIterations": 2 }
+    settingValues: { "editor.draft.keepHistory": true, "revise.loop.maxIterations": 2 }
   }
 }
 
@@ -60,7 +60,7 @@ describe("GenerationOptionsSection", () => {
     expect(toggle.checked).toBe(true)
     fireEvent.click(toggle)
 
-    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "draft.keepHistory", value: false })
+    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "editor.draft.keepHistory", value: false })
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalledWith("이전 초안 보관", {
         origin: "workspace",
@@ -83,6 +83,6 @@ describe("GenerationOptionsSection", () => {
 
     fireEvent.change(input, { target: { value: "4" } })
     fireEvent.keyDown(input, { key: "Enter" })
-    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "draft.reviseMaxIterations", value: 4 })
+    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "revise.loop.maxIterations", value: 4 })
   })
 })

@@ -409,7 +409,7 @@ describe('profile apply', () => {
       engineCommit: 'e',
       trackCommit: '1034a9c0deadbeef',
       trackDirty: false,
-      knobs: { 'draft.sectionOutputLimit': 1000 },
+      knobs: { 'generation.section.outputLimit': 1000 },
       generation: { providerId: 'ollama', model: 'gemma4:12b', think: false },
       judge: { providerId: 'ollama', model: 'gemma3:12b' },
       scenes: [
@@ -428,7 +428,7 @@ describe('profile apply', () => {
   // 손잡이 이름과 프로필 칸 이름이 다르다. 손으로 옮기면 어긋난다.
   it('maps knobs onto profile fields by their tuning keys', () => {
     const { fields, unsupported } = profileFieldsFor({
-      'draft.sectionOutputLimit': 1000,
+      'generation.section.outputLimit': 1000,
       'skeleton.lengthRatio': 0.8,
       'violationWeights.repetition': 3,
       'prompt.sceneSkeleton.temperature': 0.5,

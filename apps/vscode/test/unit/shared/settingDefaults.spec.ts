@@ -11,26 +11,26 @@ import {
 // 값을 쓰는 상태로 갈라질 수 있었다. 이 표는 카탈로그의 모든 키를 접근자에 이어 붙여, 새 설정이
 // 들어오면 행을 추가하게 만들고 접근자가 카탈로그를 벗어나면 실패한다.
 const readers: Readonly<Record<string, (bridge: ConfigBridge) => boolean | number | string | undefined>> = {
-  "draft.reviseAfterGenerate": (bridge) => bridge.isReviseAfterGenerateEnabled(),
-  "draft.reviseMaxIterations": (bridge) => bridge.getReviseMaxIterations(),
-  "draft.reviseScoreThreshold": (bridge) => bridge.getReviseScoreThreshold(),
-  "draft.maxCompressionPercent": (bridge) => bridge.getMaxCompressionPercent(),
-  "draft.updateCardsAfterGenerate": (bridge) => bridge.isUpdateCardsAfterGenerateEnabled(),
-  "draft.verifyCardCandidates": (bridge) => bridge.isVerifyCardCandidatesEnabled(),
-  "budget.runLimitUsd": (bridge) => bridge.getRunBudgetUsd(),
-  "grounding.autoApprove": (bridge) => bridge.isSceneGroundingAutoApproveEnabled(),
-  "draft.autoBeats": (bridge) => bridge.isAutoBeatsEnabled(),
-  "draft.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),
-  "draft.sectionOutputLimit": (bridge) => bridge.getSectionOutputLimit(),
-  "draft.minBeats": (bridge) => bridge.getMinBeats(),
-  "draft.keepHistory": (bridge) => bridge.isKeepDraftHistoryEnabled(),
-  "draft.sceneBreakEnabled": (bridge) => bridge.getDraftSceneBreakSeparator() !== undefined,
-  "draft.sceneBreakSeparator": (bridge) => bridge.getDraftSceneBreakSeparator(),
-  "ai.contextCondenseEnabled": (bridge) => bridge.isAiContextCondenseEnabled(),
-  "scene.prefixDigits": (bridge) => bridge.getScenePrefixDigits(),
-  "studio.validation": (bridge) => bridge.isStudioValidationEnabled(),
-  "grammar.realtimeEnabled": (bridge) => bridge.isGrammarRealtimeEnabled(),
-  "slop.realtimeEnabled": (bridge) => bridge.isSlopRealtimeEnabled()
+  "revise.loop.afterGenerate": (bridge) => bridge.isReviseAfterGenerateEnabled(),
+  "revise.loop.maxIterations": (bridge) => bridge.getReviseMaxIterations(),
+  "revise.loop.scoreThreshold": (bridge) => bridge.getReviseScoreThreshold(),
+  "revise.length.maxCompressionPercent": (bridge) => bridge.getMaxCompressionPercent(),
+  "cards.candidates.updateAfterGenerate": (bridge) => bridge.isUpdateCardsAfterGenerateEnabled(),
+  "cards.candidates.verify": (bridge) => bridge.isVerifyCardCandidatesEnabled(),
+  "budget.run.limitUsd": (bridge) => bridge.getRunBudgetUsd(),
+  "generation.grounding.autoApprove": (bridge) => bridge.isSceneGroundingAutoApproveEnabled(),
+  "generation.beats.auto": (bridge) => bridge.isAutoBeatsEnabled(),
+  "generation.beats.charsPerBeat": (bridge) => bridge.getCharsPerBeat(),
+  "generation.section.outputLimit": (bridge) => bridge.getSectionOutputLimit(),
+  "generation.beats.minimum": (bridge) => bridge.getMinBeats(),
+  "editor.draft.keepHistory": (bridge) => bridge.isKeepDraftHistoryEnabled(),
+  "generation.sceneBreak.enabled": (bridge) => bridge.getDraftSceneBreakSeparator() !== undefined,
+  "generation.sceneBreak.separator": (bridge) => bridge.getDraftSceneBreakSeparator(),
+  "generation.context.condense": (bridge) => bridge.isAiContextCondenseEnabled(),
+  "editor.scene.prefixDigits": (bridge) => bridge.getScenePrefixDigits(),
+  "editor.studio.validation": (bridge) => bridge.isStudioValidationEnabled(),
+  "editor.grammar.realtime": (bridge) => bridge.isGrammarRealtimeEnabled(),
+  "editor.slop.realtime": (bridge) => bridge.isSlopRealtimeEnabled()
 }
 
 function bridgeReading(values: Readonly<Record<string, unknown>>): ConfigBridge {
@@ -58,7 +58,7 @@ describe("ConfigBridge against the setting catalog", () => {
 
     for (const definition of storyboardSettingCatalog) {
       // 장면 구분자는 구분자 사용이 꺼져 있으면 undefined 다. 그 조합은 아래에서 따로 본다.
-      if (definition.key === "draft.sceneBreakSeparator") {
+      if (definition.key === "generation.sceneBreak.separator") {
         continue
       }
 
@@ -81,7 +81,7 @@ describe("ConfigBridge against the setting catalog", () => {
   })
 
   it("hands back the catalogued separator once scene breaks are on", () => {
-    const bridge = bridgeReading({ "draft.sceneBreakEnabled": true })
+    const bridge = bridgeReading({ "generation.sceneBreak.enabled": true })
 
     expect(bridge.getDraftSceneBreakSeparator()).toBe("---")
   })

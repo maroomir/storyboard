@@ -731,7 +731,7 @@ describe("GenerateDraftUseCase", () => {
       expect(writeBeats).not.toHaveBeenCalled()
     })
 
-    it("skips beats entirely when draft.autoBeats is off", async () => {
+    it("skips beats entirely when generation.beats.auto is off", async () => {
       const writeBeats = vi.fn(async () => undefined)
       const dependencies = createBeatsDependencies({
         writeBeats,

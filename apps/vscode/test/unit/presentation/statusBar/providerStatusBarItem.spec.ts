@@ -25,7 +25,7 @@ describe("providerStatusBarItem", () => {
   it("names the default provider, its model, and where that choice came from", () => {
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike =>
-        createConfiguration(new Map<string, unknown>([["defaultProvider", "claude"]]), ["defaultProvider"])
+        createConfiguration(new Map<string, unknown>([["ai.provider.default", "claude"]]), ["ai.provider.default"])
     })
 
     const status = describeProviderStatus({ configBridge, configFiles })
@@ -46,7 +46,7 @@ describe("providerStatusBarItem", () => {
   })
 
   it("shows the item, opens settings on click, and refreshes when the configuration changes", () => {
-    const values = new Map<string, unknown>([["defaultProvider", "openai"]])
+    const values = new Map<string, unknown>([["ai.provider.default", "openai"]])
     let notify: (() => void) | undefined
     const configBridge = new ConfigBridge({
       getConfiguration: (): StoryboardConfigurationLike => createConfiguration(values),
@@ -63,7 +63,7 @@ describe("providerStatusBarItem", () => {
     expect(item?.command).toBe("storyboard.settings.open")
     expect(item?.text).toBe("$(sparkle) openai · gpt-6-sol")
 
-    values.delete("defaultProvider")
+    values.delete("ai.provider.default")
     notify?.()
 
     expect(item?.text).toBe("$(warning) AI 제공자 선택")

@@ -16,7 +16,7 @@ describe("pipeline defaults data file", () => {
   })
 
   it("takes the section output limit from the setting catalog, not its own copy", () => {
-    expect(SECTION_OUTPUT_LIMIT).toBe(integerSettingDefault("draft.sectionOutputLimit"))
+    expect(SECTION_OUTPUT_LIMIT).toBe(integerSettingDefault("generation.section.outputLimit"))
   })
 
   it("feeds the exported thresholds from the data file", () => {

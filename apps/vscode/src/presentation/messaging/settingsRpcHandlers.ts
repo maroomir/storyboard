@@ -52,7 +52,7 @@ export function createSettingsRpcHandlers(
       payload,
     ): Promise<StoryboardResponsePayload<'settings.updateDefaultProvider'>> => {
       await configBridge.setDefaultProvider(payload.providerId);
-      return savedTo('defaultProvider');
+      return savedTo('ai.provider.default');
     },
 
     'settings.updateProviderModel': async (
@@ -116,7 +116,7 @@ function describeSaveTarget(
 }
 
 const originTrackedKeys = [
-  'defaultProvider',
+  'ai.provider.default',
   'tasks',
   'providers.ollama.baseUrl',
   ...aiProviderIds.map((id) => `providers.${id}.model`),

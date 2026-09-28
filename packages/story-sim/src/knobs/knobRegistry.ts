@@ -15,7 +15,7 @@ export type KnobApplyTarget = 'modelProfile' | 'pipelineDefault' | 'promptTuning
 
 // 구간 상한만 pipelineDefaults 가 아니라 설정 카탈로그가 갖는다. 파이프라인 인자로도 tuning 이
 // 아니라 따로 들어가므로, 손잡이 표에서도 한 칸을 따로 쓴다.
-export const sectionOutputLimitKnobId = 'draft.sectionOutputLimit';
+export const sectionOutputLimitKnobId = 'generation.section.outputLimit';
 
 export interface KnobSpec {
   readonly id: KnobId;

@@ -23,11 +23,11 @@ afterEach(() => {
 
 describe("createStoryboardHomeStores", () => {
   it("layers the workspace file over the home file and reports the origin", () => {
-    writeFileSync(join(home, "config.json"), JSON.stringify({ defaultProvider: "openai", draft: { keepHistory: true } }))
+    writeFileSync(join(home, "config.json"), JSON.stringify({ ai: { provider: { default: "openai" } }, editor: { draft: { keepHistory: true } } }))
     const stores = createStoryboardHomeStores({ workspaceRoot: workspace, onInvalidFile: () => undefined })
 
-    expect(stores.configuration.get("defaultProvider", "mock")).toBe("openai")
-    expect(stores.configuration.inspect?.("draft.keepHistory")).toEqual({ globalValue: true, workspaceValue: undefined })
+    expect(stores.configuration.get("ai.provider.default", "mock")).toBe("openai")
+    expect(stores.configuration.inspect?.("editor.draft.keepHistory")).toEqual({ globalValue: true, workspaceValue: undefined })
     expect(stores.workspaceConfigFile).toBe(join(workspace, ".storyboard", "config.json"))
 
     stores.dispose()
@@ -40,11 +40,11 @@ describe("createStoryboardHomeStores", () => {
     const listener = vi.fn()
     stores.onDidChangeConfiguration(listener)
 
-    await stores.configuration.update?.("defaultProvider", "claude")
+    await stores.configuration.update?.("ai.provider.default", "claude")
 
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(readFileSync(join(home, "config.json"), "utf8"))).toEqual({ defaultProvider: "claude" })
-    expect(stores.configuration.get("defaultProvider", "mock")).toBe("claude")
+    expect(JSON.parse(readFileSync(join(home, "config.json"), "utf8"))).toEqual({ ai: { provider: { default: "claude" } } })
+    expect(stores.configuration.get("ai.provider.default", "mock")).toBe("claude")
 
     stores.dispose()
   })
@@ -54,7 +54,7 @@ describe("createStoryboardHomeStores", () => {
     const onInvalidFile = vi.fn()
     const stores = createStoryboardHomeStores({ workspaceRoot: undefined, onInvalidFile })
 
-    expect(stores.configuration.get("defaultProvider", "mock")).toBe("mock")
+    expect(stores.configuration.get("ai.provider.default", "mock")).toBe("mock")
     expect(onInvalidFile).toHaveBeenCalledTimes(1)
     expect(onInvalidFile.mock.calls[0]?.[0]).toMatchObject({ code: "invalid-json" })
 

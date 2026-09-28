@@ -53,7 +53,7 @@ describe('storyboard setup', () => {
 
     expect(outcome.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
-      defaultProvider: 'claude',
+      ai: { provider: { default: 'claude' } },
     });
     expect(outcome.message).toContain(join(home, 'config.json'));
   });
@@ -76,7 +76,7 @@ describe('storyboard doctor', () => {
   });
 
   it('passes for a configured mock provider and reports the workspace state', async () => {
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
 
     const outcome = await runDoctor({ container: container(), args: args() });
 
@@ -96,7 +96,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
   }
 
   it('reports missing directories and legacy scene files instead of throwing', async () => {
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
     mkdirSync(join(workspace, '.storyboard'));
     writeFileSync(join(workspace, '.storyboard', 'project.json'), '{}');
     mkdirSync(join(workspace, 'scene'));
@@ -132,7 +132,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
       'type: scene\nid: 01-first\nsummary: 첫 방송을 마친다.\n',
     );
     writeFileSync(join(workspace, '.storyboard', 'memory', 'storyState.md'), ledger);
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
   const unsealedLedger = '# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1] 1화 사실\n';
@@ -263,7 +263,7 @@ describe('storyboard doctor chapter summaries', () => {
       join(workspace, '.storyboard', 'memory', 'summaries.md'),
       `# 장별 요약\n\n> 대상: 테스트\n\n## 1장\n\n<!-- chapter-input: ${recordedHash} -->\n\n1장 요약\n`,
     );
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ defaultProvider: 'mock' }));
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
   }
 
   it('reports a summary that no longer matches its chapter drafts', async () => {
@@ -298,7 +298,7 @@ describe('storyboard config', () => {
   it('sets a catalog key with type validation and shows it with its origin', async () => {
     const bad = await runConfigSet({
       container: container(),
-      args: args({}, ['draft.reviseMaxIterations', 'nine']),
+      args: args({}, ['revise.loop.maxIterations', 'nine']),
     });
     expect(bad.ok).toBe(false);
 
@@ -311,16 +311,16 @@ describe('storyboard config', () => {
 
     const good = await runConfigSet({
       container: container(),
-      args: args({}, ['draft.reviseMaxIterations', '3']),
+      args: args({}, ['revise.loop.maxIterations', '3']),
     });
     expect(good.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
-      draft: { reviseMaxIterations: 3 },
+      revise: { loop: { maxIterations: 3 } },
     });
 
     const shown = await runConfigShow({ container: container(), args: args() });
-    expect(shown.message).toMatch(/draft\.reviseMaxIterations\s+3\s+공통/);
-    expect(shown.message).toMatch(/defaultProvider\s+\(없음\)\s+기본값/);
+    expect(shown.message).toMatch(/revise\.loop\.maxIterations\s+3\s+공통/);
+    expect(shown.message).toMatch(/ai\.provider\.default\s+\(없음\)\s+기본값/);
   });
 
   it('validates provider fields against the catalog', async () => {
@@ -338,12 +338,12 @@ describe('storyboard config', () => {
 
     const provider = await runConfigSet({
       container: container(),
-      args: args({}, ['defaultProvider', 'claude']),
+      args: args({}, ['ai.provider.default', 'claude']),
     });
     expect(provider.ok).toBe(true);
     expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
       providers: { claude: { model: 'claude-haiku-4-5' } },
-      defaultProvider: 'claude',
+      ai: { provider: { default: 'claude' } },
     });
   });
 });
