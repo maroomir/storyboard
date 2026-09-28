@@ -4,7 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type { NovelRunState, NovelStageName } from "@storyboard/story-engine"
-import { parseNovelRunState, serializeNovelRunState } from "@storyboard/story-engine"
+import {
+  novelStageNames,
+  overrideNovelPipelinePlan,
+  parseNovelRunState,
+  resetNovelPipelinePlan,
+  resolveNovelPipelinePlan,
+  serializeNovelRunState
+} from "@storyboard/story-engine"
 
 const generatedResult = {
   ok: true,
@@ -511,5 +518,48 @@ describe("NovelPipeline", () => {
         )
       ).toHaveLength(0)
     })
+  })
+})
+
+describe("NovelPipeline — 단계 계획", () => {
+  afterEach(() => {
+    resetNovelPipelinePlan()
+  })
+
+  it("runs the bundled stage order when nothing is laid over it", () => {
+    expect(resolveNovelPipelinePlan()).toEqual(novelStageNames)
+  })
+
+  it("runs only the stages the plan names and records only those as completed", async () => {
+    const harness = createHarness({ stages: ["outline", "seeds", "chapters", "summaries"] })
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("completed")
+    expect(harness.progressStages).not.toContain("assemble")
+    expect(harness.progressStages).not.toContain("review")
+    expect(saveReviewMock).not.toHaveBeenCalled()
+    expect(harness.persistedStates.at(-1)?.completedStages).toEqual([
+      "outline",
+      "seeds",
+      "chapters",
+      "summaries"
+    ])
+  })
+
+  it("takes the order from a spec laid over the bundled one and refuses one that drops the chapters", async () => {
+    overrideNovelPipelinePlan({
+      version: 1,
+      stages: ["outline", "seeds", "chapters", { id: "assemble", enabled: false }, "summaries"]
+    })
+    const harness = createHarness()
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("completed")
+    expect(harness.progressStages).toEqual(["outline", "seeds", "chapters", "chapters", "summaries"])
+    expect(() =>
+      overrideNovelPipelinePlan({ version: 1, stages: ["outline", "seeds", "summaries"] })
+    ).toThrow("chapters")
   })
 })

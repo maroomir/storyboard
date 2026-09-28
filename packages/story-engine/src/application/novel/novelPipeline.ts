@@ -14,7 +14,10 @@ import {
   runReviseFromReviewStage,
   runSeedsStage,
   runSummariesStage,
+  type ChapterGroup,
+  type ReviewStageResult,
 } from './novelStages';
+import { resolveNovelPipelinePlan } from './novelStageCatalog';
 import type {
   NovelAiService,
   NovelPipelineDependencies,
@@ -39,7 +42,10 @@ export type {
   NovelPipelineRunOptions,
 } from './novelPipelineTypes';
 
+// The run state every stage shares: what is persisted, what a stage finished, and the chapter plan
+// once the outline exists. A stage returns a result only to stop the run (paused, cancelled).
 interface NovelRunContext {
+  readonly options: NovelPipelineOptions;
   readonly paths: StoryboardProjectPaths;
   readonly state: NovelRunState;
   readonly completed: Set<NovelStageName>;
@@ -50,6 +56,15 @@ interface NovelRunContext {
     run: () => Promise<void>,
   ) => Promise<void>;
   readonly newAiService: () => NovelAiService;
+  readonly chapterPlan: () => Promise<ChapterPlan>;
+  readonly chapterGroups: () => Promise<readonly ChapterGroup[]>;
+  // What the review stage found on this run, for the rewrite stage that follows it.
+  review: ReviewStageResult | undefined;
+}
+
+export interface INovelStage {
+  readonly id: NovelStageName;
+  run(ctx: NovelRunContext): Promise<NovelPipelineResult | undefined>;
 }
 
 function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
@@ -90,117 +105,64 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
     await persist({});
   };
 
-  return { paths, state, completed, persist, runStageOnce, newAiService };
-}
+  let loadedPlan: Promise<ChapterPlan> | undefined;
+  const chapterPlan = (): Promise<ChapterPlan> => {
+    loadedPlan ??= options.deps.outlineRepository.loadChapterPlan(options.workspaceUri);
+    return loadedPlan;
+  };
 
-interface ReviewStageContext {
-  readonly options: NovelPipelineOptions;
-  readonly paths: StoryboardProjectPaths;
-  readonly plan: ChapterPlan;
-  readonly completed: Set<NovelStageName>;
-  readonly persist: (patch: Partial<NovelRunState>) => Promise<void>;
-  readonly runStageOnce: (
-    stage: NovelStageName,
-    label: string,
-    run: () => Promise<void>,
-  ) => Promise<void>;
-  readonly newAiService: () => NovelAiService;
-}
-
-// The final review reads the whole assembled volume, so it sees contradictions no per-scene check
-// can. Its high-severity findings are rewritten once, then the volume is reviewed again so the
-// report on disk describes the text that actually shipped.
-async function runReviewAndReviseStages(
-  ctx: ReviewStageContext,
-): Promise<NovelPipelineResult | undefined> {
-  const { options, paths, plan, completed, persist, runStageOnce, newAiService } = ctx;
-
-  if (completed.has('revise-from-review')) {
-    await runStageOnce('review', '원고 최종 검사 중…', async () => {
-      await runReviewStage(
-        options.workspaceUri,
-        options.project,
-        plan,
-        newAiService(),
-        options.deps.aiProviderRegistry,
-        options.deps.novelReviewRepository,
+  let loadedGroups: Promise<readonly ChapterGroup[]> | undefined;
+  const chapterGroups = (): Promise<readonly ChapterGroup[]> => {
+    loadedGroups ??= chapterPlan().then((plan) => {
+      const digitCount = resolveScenePrefixDigitCount(
+        options.project.editor.scenePrefixDigits,
+        options.deps.configBridge.inspectScenePrefixDigits(),
       );
+      return groupChapterStems(plan, digitCount);
     });
-    return undefined;
-  }
+    return loadedGroups;
+  };
 
-  options.onProgress('review', '원고 최종 검사 중…');
-  const review = await runReviewStage(
-    options.workspaceUri,
-    options.project,
-    plan,
-    newAiService(),
-    options.deps.aiProviderRegistry,
-    options.deps.novelReviewRepository,
-  );
-  completed.add('review');
-  await persist({});
-
-  if (review.targets.length === 0) {
-    completed.add('revise-from-review');
-    await persist({});
-    return undefined;
-  }
-
-  if (options.runMode === 'review-approval') {
-    const stems = review.targets.map((target) => target.sceneStem).join(', ');
-    const paused = await pauseForApproval(options, persist, {
-      kind: 'review',
-      info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
-      pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
-    });
-    if (paused) {
-      return paused;
-    }
-  }
-
-  options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
-  const revisedStems = await runReviseFromReviewStage(options, paths, review.targets);
-  completed.add('revise-from-review');
-  await persist({});
-
-  if (options.shouldCancel()) {
-    return await cancel(persist);
-  }
-
-  options.onProgress('review', '재작성분 재검사 중…');
-  await runReviewStage(
-    options.workspaceUri,
-    options.project,
-    plan,
-    newAiService(),
-    options.deps.aiProviderRegistry,
-    options.deps.novelReviewRepository,
-    revisedStems,
-  );
-
-  return undefined;
+  return {
+    options,
+    paths,
+    state,
+    completed,
+    persist,
+    runStageOnce,
+    newAiService,
+    chapterPlan,
+    chapterGroups,
+    review: undefined,
+  };
 }
 
-async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
-  const { paths, state, completed, persist, runStageOnce, newAiService } =
-    createNovelRunContext(options);
+// A stage boundary where a cancel or a pause request takes effect.
+async function checkpoint(ctx: NovelRunContext): Promise<NovelPipelineResult | undefined> {
+  if (ctx.options.shouldCancel()) {
+    return await cancel(ctx.persist);
+  }
 
-  try {
-    await persist({ status: 'running' });
+  return await pauseIfRequested(ctx.options, ctx.persist);
+}
 
-    const outlineWasCompleted = completed.has('outline');
-    await runStageOnce('outline', '아웃라인 생성 중…', () =>
+const outlineStage: INovelStage = {
+  id: 'outline',
+  async run(ctx) {
+    const { options } = ctx;
+    const wasCompleted = ctx.completed.has('outline');
+
+    await ctx.runStageOnce('outline', '아웃라인 생성 중…', () =>
       runOutlineStage(
         options.workspaceUri,
         options.project,
-        newAiService(),
+        ctx.newAiService(),
         options.deps.outlineRepository,
       ),
     );
 
-    if (!outlineWasCompleted && options.runMode !== 'auto') {
-      const paused = await pauseForApproval(options, persist, {
+    if (!wasCompleted && options.runMode !== 'auto') {
+      const paused = await pauseForApproval(options, ctx.persist, {
         kind: 'outline',
         info: '아웃라인(synopsis.md, chapters.yaml)을 검토하세요. 계속할까요?',
         pausedMessage: '아웃라인 승인 대기에서 멈췄습니다.',
@@ -209,78 +171,192 @@ async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPip
         return paused;
       }
     }
-    if (options.shouldCancel()) {
-      return await cancel(persist);
-    }
-    const pausedAfterOutline = await pauseIfRequested(options, persist);
-    if (pausedAfterOutline) {
-      return pausedAfterOutline;
-    }
 
-    const plan = await options.deps.outlineRepository.loadChapterPlan(options.workspaceUri);
+    return await checkpoint(ctx);
+  },
+};
+
+const seedsStage: INovelStage = {
+  id: 'seeds',
+  async run(ctx) {
+    const { options } = ctx;
+    const plan = await ctx.chapterPlan();
     const digitCount = resolveScenePrefixDigitCount(
       options.project.editor.scenePrefixDigits,
       options.deps.configBridge.inspectScenePrefixDigits(),
     );
-    const groups = groupChapterStems(plan, digitCount);
 
-    await runStageOnce('seeds', '씬 시드 생성 중…', () =>
+    await ctx.runStageOnce('seeds', '씬 시드 생성 중…', () =>
       runSeedsStage(options.workspaceUri, plan, digitCount, options.deps.sceneSeedRepository),
     );
-    if (options.shouldCancel()) {
-      return await cancel(persist);
-    }
-    const pausedAfterSeeds = await pauseIfRequested(options, persist);
-    if (pausedAfterSeeds) {
-      return pausedAfterSeeds;
-    }
 
+    return await checkpoint(ctx);
+  },
+};
+
+const chaptersStage: INovelStage = {
+  id: 'chapters',
+  async run(ctx) {
     const chapterResult = await runChapterStages({
-      options,
-      paths,
-      groups,
-      state,
-      completed,
-      persist,
+      options: ctx.options,
+      paths: ctx.paths,
+      groups: await ctx.chapterGroups(),
+      state: ctx.state,
+      completed: ctx.completed,
+      persist: ctx.persist,
     });
     if (chapterResult) {
       return chapterResult;
     }
+
+    return await checkpoint(ctx);
+  },
+};
+
+const assembleStage: INovelStage = {
+  id: 'assemble',
+  async run(ctx) {
+    await ctx.runStageOnce('assemble', '원고 조립 중…', () =>
+      runAssembleStage(ctx.options.workspaceUri, ctx.options.deps.assembleManuscriptUseCase),
+    );
+    return undefined;
+  },
+};
+
+async function reviewVolume(
+  ctx: NovelRunContext,
+  revisedStems: readonly string[] = [],
+): Promise<ReviewStageResult> {
+  const { options } = ctx;
+
+  return await runReviewStage(
+    options.workspaceUri,
+    options.project,
+    await ctx.chapterPlan(),
+    ctx.newAiService(),
+    options.deps.aiProviderRegistry,
+    options.deps.novelReviewRepository,
+    revisedStems,
+  );
+}
+
+// The final review reads the whole assembled volume, so it sees contradictions no per-scene check
+// can. Its findings feed the rewrite stage; when that stage is already done (a resume after it),
+// the review only runs if it never finished itself.
+const reviewStage: INovelStage = {
+  id: 'review',
+  async run(ctx) {
+    if (ctx.completed.has('revise-from-review')) {
+      await ctx.runStageOnce('review', '원고 최종 검사 중…', async () => {
+        await reviewVolume(ctx);
+      });
+      return undefined;
+    }
+
+    ctx.options.onProgress('review', '원고 최종 검사 중…');
+    const review = await reviewVolume(ctx);
+    ctx.completed.add('review');
+    await ctx.persist({});
+    ctx.review = review;
+
+    if (review.targets.length === 0) {
+      ctx.completed.add('revise-from-review');
+      await ctx.persist({});
+    }
+
+    return undefined;
+  },
+};
+
+// The high-severity findings are rewritten once, then the volume is reviewed again so the report
+// on disk describes the text that actually shipped.
+const reviseFromReviewStage: INovelStage = {
+  id: 'revise-from-review',
+  async run(ctx) {
+    const { options } = ctx;
+
+    if (ctx.completed.has('revise-from-review')) {
+      return undefined;
+    }
+
+    const review = ctx.review ?? (await reviewVolume(ctx));
+    const { targets } = review;
+
+    if (targets.length === 0) {
+      ctx.completed.add('revise-from-review');
+      await ctx.persist({});
+      return undefined;
+    }
+
+    if (options.runMode === 'review-approval') {
+      const stems = targets.map((target) => target.sceneStem).join(', ');
+      const paused = await pauseForApproval(options, ctx.persist, {
+        kind: 'review',
+        info: `최종 검사에서 high 이슈 ${review.highCount}건을 찾았습니다. 다음 씬을 재작성할까요? ${stems}`,
+        pausedMessage: '최종 검사 승인 대기에서 멈췄습니다.',
+      });
+      if (paused) {
+        return paused;
+      }
+    }
+
+    options.onProgress('revise-from-review', '검수 결과로 재작성 중…');
+    const revisedStems = await runReviseFromReviewStage(options, ctx.paths, targets);
+    ctx.completed.add('revise-from-review');
+    await ctx.persist({});
+
     if (options.shouldCancel()) {
-      return await cancel(persist);
-    }
-    const pausedAfterChapters = await pauseIfRequested(options, persist);
-    if (pausedAfterChapters) {
-      return pausedAfterChapters;
+      return await cancel(ctx.persist);
     }
 
-    await runStageOnce('assemble', '원고 조립 중…', () =>
-      runAssembleStage(options.workspaceUri, options.deps.assembleManuscriptUseCase),
+    options.onProgress('review', '재작성분 재검사 중…');
+    await reviewVolume(ctx, revisedStems);
+
+    return undefined;
+  },
+};
+
+const summariesStage: INovelStage = {
+  id: 'summaries',
+  async run(ctx) {
+    await ctx.runStageOnce('summaries', '장별 요약 중…', () =>
+      runSummariesStage(ctx.options.workspaceUri, ctx.options.deps.summarizeChaptersUseCase),
     );
+    return undefined;
+  },
+};
 
-    const reviewFeedback = await runReviewAndReviseStages({
-      options,
-      paths,
-      plan,
-      completed,
-      persist,
-      runStageOnce,
-      newAiService,
-    });
-    if (reviewFeedback) {
-      return reviewFeedback;
+export const novelStages: Readonly<Record<NovelStageName, INovelStage>> = {
+  outline: outlineStage,
+  seeds: seedsStage,
+  chapters: chaptersStage,
+  assemble: assembleStage,
+  review: reviewStage,
+  'revise-from-review': reviseFromReviewStage,
+  summaries: summariesStage,
+};
+
+// Runs the stages the plan names, in its order, over one run context. The plan is the author's
+// `pipelines/novel.yaml` when one is in force, otherwise the bundled order.
+async function runNovelPipeline(options: NovelPipelineOptions): Promise<NovelPipelineResult> {
+  const ctx = createNovelRunContext(options);
+
+  try {
+    await ctx.persist({ status: 'running' });
+
+    for (const id of options.stages ?? resolveNovelPipelinePlan()) {
+      const stop = await novelStages[id].run(ctx);
+      if (stop) {
+        return stop;
+      }
     }
 
-    await runStageOnce('summaries', '장별 요약 중…', () =>
-      runSummariesStage(options.workspaceUri, options.deps.summarizeChaptersUseCase),
-    );
-
-    await persist({ status: 'done' });
+    await ctx.persist({ status: 'done' });
     return { outcome: 'completed', message: '장편 생성을 완료했습니다.' };
   } catch (error) {
     options.deps.logger.error('Novel pipeline failed', error);
     const message = error instanceof Error ? error.message : String(error);
-    await persist({ status: 'failed', lastError: message }).catch(() => undefined);
+    await ctx.persist({ status: 'failed', lastError: message }).catch(() => undefined);
     return { outcome: 'failed', message };
   }
 }
