@@ -45,8 +45,8 @@ const generationKnobs: readonly KnobSpec[] = generationParameterCatalog.map((def
   applyTarget: 'modelProfile',
 }));
 
-// NOTE: 온도와 출력 상한은 프롬프트마다 따로 있다. 값의 출처는 promptTuning.params.json 하나뿐이라
-// 여기서 기본값을 다시 적지 않는다. 씬 생성이 부르지 않는 프롬프트의 손잡이는 돌려도 아무것도
+// NOTE: 온도와 출력 상한은 프롬프트마다 따로 있다. 값의 출처는 프롬프트 리소스 파일의 머리말
+// 하나뿐이라 여기서 기본값을 다시 적지 않는다. 씬 생성이 부르지 않는 프롬프트의 손잡이는 돌려도 아무것도
 // 안 바뀌므로, 도달성 사전 조사가 그것을 걸러낸다.
 const promptKnobs: readonly KnobSpec[] = promptTuningKeys().flatMap((promptKey) => {
   const config = promptTuning(promptKey);

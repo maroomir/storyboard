@@ -1,3 +1,7 @@
+---
+temperature: 0.2
+maxTokens: 700
+---
 ## system
 "{{characterName}}"에 대해 본문에 명시된 정보만 추출하라.
 {{#aliasList}}

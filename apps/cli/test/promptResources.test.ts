@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { promptResourceKeys, promptTuningKeys } from '@storyboard/story-ai';
+import { promptResourceKeys, promptResources } from '@storyboard/story-ai';
 
 // @ts-expect-error -- the build script is plain JavaScript and ships no types.
 import { renderPromptResourcesModule } from '../../../scripts/build-prompt-resources.mjs';
@@ -22,11 +22,9 @@ describe('prompt resources', () => {
     expect(generated).toBe(renderPromptResourcesModule());
   });
 
-  it('names every resource after a prompt the tuning table knows', () => {
-    const tuningKeys = new Set<string>(promptTuningKeys());
-
+  it('carries a sampling config in every bundled resource', () => {
     for (const key of promptResourceKeys()) {
-      expect(tuningKeys.has(key), key).toBe(true);
+      expect(() => promptResources.config(key), key).not.toThrow();
     }
   });
 });

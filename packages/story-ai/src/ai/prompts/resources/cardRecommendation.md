@@ -1,3 +1,7 @@
+---
+temperature: 0.2
+maxTokens: 700
+---
 ## system
 {{#isCharacter}}
 본문에 등장하는 인물(캐릭터)을 모두 찾아라.
