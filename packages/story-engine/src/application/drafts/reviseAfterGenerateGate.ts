@@ -17,24 +17,26 @@ export type ReviseAfterGenerateHooks = ReviseGateHooks & {
   readonly onWillRun?: () => void;
 };
 
+export interface ReviseAfterGenerateGateDependencies {
+  readonly fileSystem: IFileSystem;
+  readonly workspaceLocator: IWorkspaceLocator;
+  readonly configBridge: ConfigBridge;
+  readonly logger: IStoryboardLogger;
+  readonly reviseDraftUseCase: ReviseDraftUseCase;
+}
+
 export class ReviseAfterGenerateGate {
-  public constructor(
-    private readonly fileSystem: IFileSystem,
-    private readonly workspaceLocator: IWorkspaceLocator,
-    private readonly configBridge: ConfigBridge,
-    private readonly logger: IStoryboardLogger,
-    private readonly reviseDraftUseCase: ReviseDraftUseCase,
-  ) {}
+  public constructor(private readonly deps: ReviseAfterGenerateGateDependencies) {}
 
   public async maybeRunAfterGenerate(
     sceneUri: StoryUri,
     hooks: ReviseAfterGenerateHooks = {},
   ): Promise<ReviseDraftWorkflowResult | undefined> {
-    if (!this.configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
+    if (!this.deps.configBridge.isReviseAfterGenerateEnabled() || hooks.shouldCancel?.()) {
       return undefined;
     }
 
-    const folder = this.workspaceLocator.folderFor(sceneUri);
+    const folder = this.deps.workspaceLocator.folderFor(sceneUri);
     const sceneStem = parseSceneFileName(sceneUri.path.split('/').at(-1) ?? '')?.stem;
 
     if (!folder || !sceneStem) {
@@ -53,24 +55,24 @@ export class ReviseAfterGenerateGate {
     const paths = getStoryboardProjectPaths(workspaceUri);
     const draftUri = draftPath(workspaceUri, sceneStem);
 
-    if (!(await this.fileSystem.exists(draftUri))) {
+    if (!(await this.deps.fileSystem.exists(draftUri))) {
       return undefined;
     }
 
-    const result = await this.reviseDraftUseCase.execute({
+    const result = await this.deps.reviseDraftUseCase.execute({
       workspaceUri,
       paths,
       draftUri,
       sceneStem,
-      maxIterations: this.configBridge.getReviseMaxIterations(),
-      maxCompressionPercent: this.configBridge.getMaxCompressionPercent(),
-      reviseScoreThreshold: this.configBridge.getReviseScoreThreshold(),
+      maxIterations: this.deps.configBridge.getReviseMaxIterations(),
+      maxCompressionPercent: this.deps.configBridge.getMaxCompressionPercent(),
+      reviseScoreThreshold: this.deps.configBridge.getReviseScoreThreshold(),
       onProgress: hooks.onProgress,
       shouldCancel: hooks.shouldCancel,
     });
 
     try {
-      await recordRevisionEntry(this.fileSystem, paths, {
+      await recordRevisionEntry(this.deps.fileSystem, paths, {
         sceneStem,
         checkedAt: new Date().toISOString(),
         revisionCount: result.revisionCount,
@@ -80,7 +82,7 @@ export class ReviseAfterGenerateGate {
         rejection: result.rejection,
       });
     } catch (error) {
-      this.logger.warn(
+      this.deps.logger.warn(
         `revision-plan.yaml 기록에 실패했습니다: ${error instanceof Error ? error.message : String(error)}`,
       );
     }

@@ -37,6 +37,7 @@ export interface GenerateDraftUseCaseDependencies {
 }
 
 export interface GenerateDraftRequest {
+  readonly sceneUri: StoryUri;
   readonly force: boolean;
   readonly onPipelineProgress?: (
     stage: SceneGenerationPipelineStage,

@@ -24,7 +24,7 @@ function historyFiles(): string[] {
 }
 
 function save(body: string, archivePrevious: boolean): ReturnType<SaveDraftEditUseCase['execute']> {
-  return new SaveDraftEditUseCase(new NodeFileSystem()).execute({
+  return new SaveDraftEditUseCase({ fileSystem: new NodeFileSystem() }).execute({
     workspaceRoot: NodeUri.file(workspace),
     sceneStem: stem,
     body,

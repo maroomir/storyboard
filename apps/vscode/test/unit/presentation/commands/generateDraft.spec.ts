@@ -81,7 +81,7 @@ async function generateDraftForWorkspaceSceneWorkflow(
   sceneUri: vscode.Uri,
   options: GenerateDraftUseCaseDependencies & GenerateDraftRequest
 ): Promise<GenerateDraftResult> {
-  return await new GenerateDraftUseCase(options).execute(sceneUri, options)
+  return await new GenerateDraftUseCase(options).execute({ ...options, sceneUri })
 }
 
 const fakeScene = {

@@ -17,7 +17,7 @@ function createUseCase(): {
   return {
     gateway,
     logger,
-    useCase: new ExpandDraftUseCase(gateway as never, logger as never)
+    useCase: new ExpandDraftUseCase({ aiGateway: gateway as never, logger: logger as never })
   }
 }
 

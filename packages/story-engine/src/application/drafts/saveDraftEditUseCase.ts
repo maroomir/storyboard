@@ -3,6 +3,7 @@ import { parseDraft, serializeDraft, type StoryUri } from '@storyboard/story-for
 import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
 import { draftHistorySceneDirectory, draftPath, joinUri } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { IUseCase } from '#engine/application/useCase';
 
 export interface SaveDraftEditRequest {
   readonly workspaceRoot: StoryUri;
@@ -21,17 +22,23 @@ export type SaveDraftEditResult =
 // A person's edit to a generated draft. The frontmatter stays as generated; only the body changes.
 // A later regeneration sees that the body no longer matches its cache record and archives the
 // edited version before writing, so a hand edit is never overwritten without a copy.
-export class SaveDraftEditUseCase {
-  public constructor(private readonly fileSystem: IFileSystem) {}
+export interface SaveDraftEditUseCaseDependencies {
+  readonly fileSystem: IFileSystem;
+}
+
+export class SaveDraftEditUseCase implements IUseCase<SaveDraftEditRequest, SaveDraftEditResult> {
+  public constructor(private readonly deps: SaveDraftEditUseCaseDependencies) {}
 
   public async execute(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
     const draftUri = draftPath(request.workspaceRoot, request.sceneStem);
 
-    if (!(await this.fileSystem.exists(draftUri))) {
+    if (!(await this.deps.fileSystem.exists(draftUri))) {
       return { ok: false, kind: 'missing' };
     }
 
-    const existing = parseDraft(new TextDecoder().decode(await this.fileSystem.readFile(draftUri)));
+    const existing = parseDraft(
+      new TextDecoder().decode(await this.deps.fileSystem.readFile(draftUri)),
+    );
 
     if (existing.body === request.body) {
       return { ok: true, kind: 'unchanged' };
@@ -41,7 +48,7 @@ export class SaveDraftEditUseCase {
       ? await this.archive(request.workspaceRoot, request.sceneStem, draftUri)
       : undefined;
 
-    await this.fileSystem.writeFile(
+    await this.deps.fileSystem.writeFile(
       draftUri,
       new TextEncoder().encode(serializeDraft({ ...existing, body: request.body })),
     );
@@ -62,7 +69,7 @@ export class SaveDraftEditUseCase {
       draftUri,
       historyDirectory,
       resolveArchiveUri: (fileName) => joinUri(historyDirectory, fileName),
-      fileSystem: this.fileSystem,
+      fileSystem: this.deps.fileSystem,
     });
   }
 }

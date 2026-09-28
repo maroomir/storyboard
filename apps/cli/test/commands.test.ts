@@ -630,12 +630,9 @@ describe('scene generate progress', () => {
       ...real,
       logger: { ...silentLogger, info: (message: string) => logged.push(message) },
       generateDraftUseCase: {
-        execute: async (
-          _uri: unknown,
-          request: {
-            onPipelineProgress?: (stage: string, current: number, total: number) => void;
-          },
-        ) => {
+        execute: async (request: {
+          onPipelineProgress?: (stage: string, current: number, total: number) => void;
+        }) => {
           request.onPipelineProgress?.('expandSection', 2, 3);
           return { ok: true, kind: 'generated', draftUri: real.workspaceRoot, warnings: [] };
         },

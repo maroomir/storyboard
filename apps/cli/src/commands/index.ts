@@ -31,7 +31,12 @@ import {
   type StoryUri,
 } from '@storyboard/story-engine';
 
-import { aiProviderIds, integerSettingDefault, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
+import {
+  aiProviderIds,
+  integerSettingDefault,
+  requiresApiKey,
+  type AiProviderId,
+} from '@storyboard/story-ai';
 import {
   compositionKinds,
   formatSceneOrderRanges,
@@ -140,14 +145,12 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const result = await container.generateDraftUseCase.execute(
-    sceneUriFor(container.workspaceRoot, stem),
-    {
-      force: flagBoolean(args.flags, 'force'),
-      onPipelineProgress: (stage, current, total) =>
-        container.logger.info(`${sceneStageLabels[stage] ?? stage} ${current}/${total}`),
-    },
-  );
+  const result = await container.generateDraftUseCase.execute({
+    sceneUri: sceneUriFor(container.workspaceRoot, stem),
+    force: flagBoolean(args.flags, 'force'),
+    onPipelineProgress: (stage, current, total) =>
+      container.logger.info(`${sceneStageLabels[stage] ?? stage} ${current}/${total}`),
+  });
 
   if (!result.ok) {
     return { ok: false, message: result.kind === 'failed' ? result.message : '취소했습니다.' };
@@ -1793,7 +1796,9 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
   const providerId = provider as AiProviderId;
   const key = (
     process.stdin.isTTY && container.canPrompt
-      ? await askSecret(`${providerId} API 키를 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): `)
+      ? await askSecret(
+          `${providerId} API 키를 붙여 넣고 Enter (입력은 화면에 보이지 않습니다. 비워 두면 삭제): `,
+        )
       : await readStdin()
   ).trim();
 
@@ -1840,7 +1845,10 @@ const showApiKeys: CommandHandler = async ({ container }) => {
     ok: true,
     message: [
       `API 키 (${container.homePaths.secretsFile})`,
-      ...rows.map((row) => `  ${row.stored ? '✅' : '  '} ${row.providerId}${row.stored ? '  저장됨' : '  없음'}`),
+      ...rows.map(
+        (row) =>
+          `  ${row.stored ? '✅' : '  '} ${row.providerId}${row.stored ? '  저장됨' : '  없음'}`,
+      ),
     ].join('\n'),
     data: { keys: rows },
   };

@@ -3,6 +3,7 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
+import type { IUseCase } from '#engine/application/useCase';
 
 export interface ISceneBatchRepository {
   listStoryboardScenes(): Promise<BatchSceneList>;
@@ -41,16 +42,21 @@ export type GenerateAllDraftsOptions = {
   readonly shouldCancel?: () => boolean;
 };
 
-export class GenerateAllDraftsUseCase {
-  public constructor(
-    private readonly generateDraftUseCase: GenerateDraftUseCase,
-    private readonly logger: IStoryboardLogger,
-    private readonly reviseAfterGenerateGate: ReviseAfterGenerateGate,
-    private readonly sceneRepository: ISceneBatchRepository,
-  ) {}
+export interface GenerateAllDraftsUseCaseDependencies {
+  readonly generateDraftUseCase: GenerateDraftUseCase;
+  readonly logger: IStoryboardLogger;
+  readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
+  readonly sceneRepository: ISceneBatchRepository;
+}
+
+export class GenerateAllDraftsUseCase implements IUseCase<
+  GenerateAllDraftsOptions,
+  GenerateAllDraftsResult
+> {
+  public constructor(private readonly deps: GenerateAllDraftsUseCaseDependencies) {}
 
   public async execute(options: GenerateAllDraftsOptions = {}): Promise<GenerateAllDraftsResult> {
-    const scenes = await this.sceneRepository.listStoryboardScenes();
+    const scenes = await this.deps.sceneRepository.listStoryboardScenes();
 
     if (scenes.projectCount === 0) {
       return { kind: 'no_projects', ok: false };
@@ -73,7 +79,8 @@ export class GenerateAllDraftsUseCase {
       const current = index + 1;
       const label = sceneUri.path.split('/').at(-1) ?? sceneUri.fsPath;
       options.onProgress?.({ current, kind: 'prepared', label, total });
-      const result = await this.generateDraftUseCase.execute(sceneUri, {
+      const result = await this.deps.generateDraftUseCase.execute({
+        sceneUri,
         force: false,
         suppressLoggerPanel: true,
         onPipelineProgress: (stage, stageCurrent, stageTotal) => {
@@ -102,9 +109,9 @@ export class GenerateAllDraftsUseCase {
           generated += 1;
           // 배치는 무인 실행이라 초안 앞머리의 warnings를 아무도 보지 않는다. 여기서 한 번 알린다.
           if (result.warnings.length > 0) {
-            this.logger.warn(`${label}: ${result.warnings.join(' / ')}`);
+            this.deps.logger.warn(`${label}: ${result.warnings.join(' / ')}`);
           }
-          await this.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+          await this.deps.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
             onWillRun: () => options.onProgress?.({ current, kind: 'revising', label, total }),
             shouldCancel: options.shouldCancel,
           });
@@ -115,7 +122,7 @@ export class GenerateAllDraftsUseCase {
       if (result.kind === 'cancelled') break;
       failures += 1;
       if (failureLabels.length < 5) failureLabels.push(`${label}: ${result.message}`);
-      this.logger.error(`Draft generation failed for ${label}`, new Error(result.message));
+      this.deps.logger.error(`Draft generation failed for ${label}`, new Error(result.message));
     }
 
     return {

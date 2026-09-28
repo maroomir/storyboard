@@ -69,7 +69,8 @@ async function runGenerateDraftForWorkspaceScene(
     async (progress, token) => {
       progress.report({ message: '준비 중…' });
 
-      const result = await dependencies.generateDraftUseCase.execute(sceneUri, {
+      const result = await dependencies.generateDraftUseCase.execute({
+        sceneUri,
         force,
         confirmSceneGrounding,
         onTraitsUpdateComplete: (summary) => {

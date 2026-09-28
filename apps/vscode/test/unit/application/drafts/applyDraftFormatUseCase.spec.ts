@@ -36,7 +36,12 @@ function createUseCase(): {
   return {
     gateway,
     logger,
-    useCase: new ApplyDraftFormatUseCase(stubFileSystem, gateway as never, logger as never, "storyboard@0.0.0-test")
+    useCase: new ApplyDraftFormatUseCase({
+      fileSystem: stubFileSystem,
+      aiGateway: gateway as never,
+      logger: logger as never,
+      generator: "storyboard@0.0.0-test"
+    })
   }
 }
 

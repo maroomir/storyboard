@@ -2,6 +2,7 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '#engine/ports/logger';
+import { failedResult, type IUseCase } from '#engine/application/useCase';
 import { draftPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-format';
 import { readProjectJson } from '#engine/persistence/projectJson';
@@ -21,13 +22,18 @@ export type ApplyDraftFormatResult =
   | { readonly kind: 'draft_invalid'; readonly ok: false }
   | { readonly kind: 'failed'; readonly message: string; readonly ok: false };
 
-export class ApplyDraftFormatUseCase {
-  public constructor(
-    private readonly fileSystem: IFileSystem,
-    private readonly aiGateway: AiGateway,
-    private readonly logger: IStoryboardLogger,
-    private readonly generator: string,
-  ) {}
+export interface ApplyDraftFormatUseCaseDependencies {
+  readonly fileSystem: IFileSystem;
+  readonly aiGateway: AiGateway;
+  readonly logger: IStoryboardLogger;
+  readonly generator: string;
+}
+
+export class ApplyDraftFormatUseCase implements IUseCase<
+  ApplyDraftFormatRequest,
+  ApplyDraftFormatResult
+> {
+  public constructor(private readonly deps: ApplyDraftFormatUseCaseDependencies) {}
 
   public async execute(request: ApplyDraftFormatRequest): Promise<ApplyDraftFormatResult> {
     const paths = getStoryboardProjectPaths(request.workspaceRoot);
@@ -35,15 +41,15 @@ export class ApplyDraftFormatUseCase {
 
     let project;
     try {
-      project = await readProjectJson(this.fileSystem, paths.projectJson);
+      project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
     } catch (error) {
-      this.logger.error('Failed to read project.json', error);
+      this.deps.logger.error('Failed to read project.json', error);
       return { kind: 'project_unreadable', ok: false };
     }
 
     let rawDraft: string;
     try {
-      rawDraft = await readDraftFile(draftUri, this.fileSystem);
+      rawDraft = await readDraftFile(draftUri, this.deps.fileSystem);
     } catch {
       return { kind: 'draft_missing', ok: false };
     }
@@ -52,7 +58,7 @@ export class ApplyDraftFormatUseCase {
     try {
       existing = parseDraft(rawDraft);
     } catch (error) {
-      this.logger.error('Failed to parse draft', error);
+      this.deps.logger.error('Failed to parse draft', error);
       return { kind: 'draft_invalid', ok: false };
     }
 
@@ -61,10 +67,10 @@ export class ApplyDraftFormatUseCase {
         return { kind: 'cancelled', ok: false };
       }
 
-      const formattedBody = await this.aiGateway
+      const formattedBody = await this.deps.aiGateway
         .createService(request.workspaceRoot)
         .applyGenreFormat(existing.body, project.format, {
-          providerId: this.aiGateway.getTaskProvider('sceneDraft'),
+          providerId: this.deps.aiGateway.getTaskProvider('sceneDraft'),
           attribution: { primary: { kind: 'scene', id: request.sceneStem } },
         });
 
@@ -72,28 +78,24 @@ export class ApplyDraftFormatUseCase {
         return { kind: 'cancelled', ok: false };
       }
 
-      const sceneDraftConfig = this.aiGateway.getTaskAiConfig('sceneDraft');
+      const sceneDraftConfig = this.deps.aiGateway.getTaskAiConfig('sceneDraft');
       const draft = createDraft({
         sceneStem: existing.sceneStem,
         format: project.format,
         body: formattedBody,
         generatedAt: existing.generatedAt,
-        generator: this.generator,
+        generator: this.deps.generator,
         providerId: sceneDraftConfig.providerId,
         model: sceneDraftConfig.model,
       });
 
       request.onSaving?.();
-      await writeDraftFile(draftUri, this.fileSystem, draft);
+      await writeDraftFile(draftUri, this.deps.fileSystem, draft);
 
       return { kind: 'formatted', ok: true, draftUri };
     } catch (error) {
-      this.logger.error('Apply draft format failed', error);
-      return {
-        kind: 'failed',
-        message: error instanceof Error ? error.message : String(error),
-        ok: false,
-      };
+      this.deps.logger.error('Apply draft format failed', error);
+      return failedResult(error);
     }
   }
 }

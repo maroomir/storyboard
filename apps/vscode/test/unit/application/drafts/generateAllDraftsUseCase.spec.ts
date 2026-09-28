@@ -22,12 +22,12 @@ describe("GenerateAllDraftsUseCase", () => {
   it("reports when no Storyboard project is available", async () => {
     const generateDraftUseCase = { execute: vi.fn() }
 
-    const result = await new GenerateAllDraftsUseCase(
-      generateDraftUseCase as never,
-      logger(),
-      {} as never,
-      repository(0, [])
-    ).execute()
+    const result = await new GenerateAllDraftsUseCase({
+      generateDraftUseCase: generateDraftUseCase as never,
+      logger: logger(),
+      reviseAfterGenerateGate: {} as never,
+      sceneRepository: repository(0, [])
+    }).execute()
 
     expect(result).toEqual({ kind: "no_projects", ok: false })
     expect(generateDraftUseCase.execute).not.toHaveBeenCalled()
@@ -44,12 +44,12 @@ describe("GenerateAllDraftsUseCase", () => {
     const reviseAfterGenerateGate = { maybeRunAfterGenerate: vi.fn(async () => undefined) }
     const currentLogger = logger() as { error: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn> }
 
-    const result = await new GenerateAllDraftsUseCase(
-      generateDraftUseCase as never,
-      currentLogger as never,
-      reviseAfterGenerateGate as never,
-      repository(1, [firstScene, secondScene, thirdScene])
-    ).execute()
+    const result = await new GenerateAllDraftsUseCase({
+      generateDraftUseCase: generateDraftUseCase as never,
+      logger: currentLogger as never,
+      reviseAfterGenerateGate: reviseAfterGenerateGate as never,
+      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
+    }).execute()
 
     // 무인 배치에서는 초안 앞머리의 경고를 아무도 열어보지 않는다.
     expect(currentLogger.warn).toHaveBeenCalledWith(
@@ -78,12 +78,12 @@ describe("GenerateAllDraftsUseCase", () => {
       execute: vi.fn(async () => ({ kind: "cancelled", ok: false }))
     }
 
-    const result = await new GenerateAllDraftsUseCase(
-      generateDraftUseCase as never,
-      logger(),
-      {} as never,
-      repository(1, [firstScene, secondScene])
-    ).execute()
+    const result = await new GenerateAllDraftsUseCase({
+      generateDraftUseCase: generateDraftUseCase as never,
+      logger: logger(),
+      reviseAfterGenerateGate: {} as never,
+      sceneRepository: repository(1, [firstScene, secondScene])
+    }).execute()
 
     expect(result).toEqual({
       kind: "completed",

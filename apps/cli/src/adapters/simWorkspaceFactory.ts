@@ -47,11 +47,11 @@ export function createSimWorkspaceFactory(
       return {
         workspacePath: input.workspacePath,
         generate: async (sceneStem) => {
-          const result = await container.generateDraftUseCase.execute(
-            scenePath(container.workspaceRoot, sceneStem),
+          const result = await container.generateDraftUseCase.execute({
+            sceneUri: scenePath(container.workspaceRoot, sceneStem),
             // 캐시를 맞으면 AI 호출이 0회라 회차가 아무것도 재지 못한다.
-            { force: true },
-          );
+            force: true,
+          });
 
           if (!result.ok) {
             return {

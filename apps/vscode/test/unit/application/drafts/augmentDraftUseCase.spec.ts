@@ -32,11 +32,12 @@ function createUseCase(): {
 
   return {
     gateway,
-    useCase: new AugmentDraftUseCase(stubFileSystem, 
-      gateway as never,
-      { error: vi.fn(), warn: vi.fn() } as never,
-      { isKeepDraftHistoryEnabled: () => false } as never
-    )
+    useCase: new AugmentDraftUseCase({
+      fileSystem: stubFileSystem,
+      aiGateway: gateway as never,
+      logger: { error: vi.fn(), warn: vi.fn() } as never,
+      configBridge: { isKeepDraftHistoryEnabled: () => false } as never
+    })
   }
 }
 

@@ -1,6 +1,7 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-format';
 import type { IStoryboardLogger } from '#engine/ports/logger';
+import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { ProjectFormat } from '@storyboard/story-format';
 import {
   resolveMinimumDraftLength,
@@ -37,11 +38,13 @@ export type CondenseDraftResult =
     }
   | { readonly kind: 'failed'; readonly ok: false; readonly message: string };
 
-export class CondenseDraftUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly logger: IStoryboardLogger,
-  ) {}
+export interface CondenseDraftUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly logger: IStoryboardLogger;
+}
+
+export class CondenseDraftUseCase implements IUseCase<CondenseDraftRequest, CondenseDraftResult> {
+  public constructor(private readonly deps: CondenseDraftUseCaseDependencies) {}
 
   public async execute(request: CondenseDraftRequest): Promise<CondenseDraftResult> {
     // NOTE: 압축은 원고를 원본보다 짧게 만드는 작업이라 씬 목표를 하한으로 쓰면 안 된다. 목표에
@@ -49,53 +52,50 @@ export class CondenseDraftUseCase {
     const lengthPolicy = { maxCompressionPercent: request.maxCompressionPercent };
     const minimumLength = resolveMinimumDraftLength(request.body.length, lengthPolicy);
 
-    try {
-      const text = await this.aiGateway.createService(request.workspaceRoot).condenseDraft(
-        {
-          body: request.body,
-          format: request.format,
-          targetLength: minimumLength,
-          intent: request.intent,
-          facts: request.facts,
-          characterCards: request.characterCards,
-        },
-        {
-          providerId: this.aiGateway.getTaskProvider('draftRevision'),
-          attribution: { primary: { kind: 'scene', id: request.sceneStem } },
-        },
-      );
-      const validation = validateDraftCandidate(request.body, text, lengthPolicy, {
-        requireShorter: true,
-      });
+    return await runUseCase<CondenseDraftResult>(
+      this.deps.logger,
+      'Condense draft failed',
+      async () => {
+        const text = await this.deps.aiGateway.createService(request.workspaceRoot).condenseDraft(
+          {
+            body: request.body,
+            format: request.format,
+            targetLength: minimumLength,
+            intent: request.intent,
+            facts: request.facts,
+            characterCards: request.characterCards,
+          },
+          {
+            providerId: this.deps.aiGateway.getTaskProvider('draftRevision'),
+            attribution: { primary: { kind: 'scene', id: request.sceneStem } },
+          },
+        );
+        const validation = validateDraftCandidate(request.body, text, lengthPolicy, {
+          requireShorter: true,
+        });
 
-      if (!validation.accepted) {
-        if (validation.reason === 'too-short') {
+        if (!validation.accepted) {
+          if (validation.reason === 'too-short') {
+            return {
+              kind: 'review-required',
+              ok: true,
+              text,
+              candidateLength: validation.candidateLength,
+              minimumLength: validation.minimumLength,
+            };
+          }
+
           return {
-            kind: 'review-required',
-            ok: true,
-            text,
+            kind: 'rejected',
+            ok: false,
+            reason: validation.reason ?? 'empty',
             candidateLength: validation.candidateLength,
             minimumLength: validation.minimumLength,
           };
         }
 
-        return {
-          kind: 'rejected',
-          ok: false,
-          reason: validation.reason ?? 'empty',
-          candidateLength: validation.candidateLength,
-          minimumLength: validation.minimumLength,
-        };
-      }
-
-      return { kind: 'condensed', ok: true, text };
-    } catch (error) {
-      this.logger.error('Condense draft failed', error);
-      return {
-        kind: 'failed',
-        ok: false,
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
+        return { kind: 'condensed', ok: true, text };
+      },
+    );
   }
 }

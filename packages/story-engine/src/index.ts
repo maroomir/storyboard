@@ -7,6 +7,7 @@ export * from './ai/cardCandidateUpdater';
 export * from './ai/cardCollectBuilder';
 export * from './ai/cardRecommendationBuilder';
 export * from './ai/traitsUpdater';
+export * from './application/useCase';
 export * from './application/ai/aiGateway';
 export * from './application/ai/usageMeter';
 export * from './application/cards/cardSidebarRepository';

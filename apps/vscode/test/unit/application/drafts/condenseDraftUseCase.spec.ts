@@ -14,7 +14,7 @@ function createUseCase(result: string): {
   };
   const logger = { error: vi.fn() };
 
-  return { condenseDraft, useCase: new CondenseDraftUseCase(aiGateway as never, logger as never) };
+  return { condenseDraft, useCase: new CondenseDraftUseCase({ aiGateway: aiGateway as never, logger: logger as never }) };
 }
 
 const body = '가'.repeat(600);
