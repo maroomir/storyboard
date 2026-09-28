@@ -151,7 +151,7 @@ export class RunController {
 
     void this.finishWhenDone(
       run,
-      container.novelPipeline
+      container.novel
         .run({
           workspaceUri: container.workspaceRoot,
           project,
@@ -341,7 +341,7 @@ export class RunController {
   ): Promise<{ outcome: RunOutcome; message: string; snapshotMessage: string }> {
     const { container, translate } = this.dependencies;
     const shouldCancel = (): boolean => run.isPauseRequested;
-    const result = await container.generateDraftUseCase.execute({
+    const result = await container.drafts.generate({
       sceneUri,
       force,
       // A writer is not asked to approve a fact sheet: the proposal is taken as written, like the
@@ -363,7 +363,7 @@ export class RunController {
       return { outcome: 'completed', message: translate('log.sceneCached', { title }), snapshotMessage };
     }
 
-    await container.reviseAfterGenerateGate.maybeRunAfterGenerate(sceneUri, {
+    await container.drafts.reviseAfterGenerate(sceneUri, {
       onProgress: (message) => this.appendLog(translate('log.sceneRevising', { title, message })),
       shouldCancel,
     });
@@ -446,7 +446,7 @@ export class RunController {
   // 그것을 새 실행으로 다루면 아웃라인부터 다시 만든다. 쥔 앱이 없는 running 은 끊긴 실행이다.
   private async readResumableState(): Promise<NovelRunState | undefined> {
     const { container } = this.dependencies;
-    const state = await container.novelRunStateRepository.readExisting(container.workspaceRoot);
+    const state = await container.novel.runState.readExisting(container.workspaceRoot);
 
     if (state === undefined || state.status !== 'running') {
       return isResumable(state) ? state : undefined;

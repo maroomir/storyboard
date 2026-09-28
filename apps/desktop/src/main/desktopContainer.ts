@@ -5,7 +5,7 @@ import {
   type StoryUri,
   type StoryWorkspaceFolder,
 } from '@storyboard/story-engine';
-import { StoryboardApplication, type StoryboardServices } from '@storyboard/story-app';
+import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import {
   configurationTargets,
@@ -18,7 +18,22 @@ import {
 } from '@storyboard/story-config';
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 
-export interface DesktopContainer extends StoryboardServices {
+// The managers and infrastructure handles a screen may reach, plus what only the desktop knows.
+export interface DesktopContainer extends Pick<
+  StoryboardApplication,
+  | 'drafts'
+  | 'manuscript'
+  | 'cards'
+  | 'novel'
+  | 'studio'
+  | 'aiGateway'
+  | 'aiProviderRegistry'
+  | 'configBridge'
+  | 'secretStore'
+  | 'logger'
+  | 'usageMeter'
+  | 'postGenerationUpdates'
+> {
   readonly workspaceRoot: StoryUri;
   readonly fileSystem: NodeFileSystem;
   readonly configuration: FileConfiguration;
@@ -70,7 +85,18 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
   );
 
   return {
-    ...application.services,
+    drafts: application.drafts,
+    manuscript: application.manuscript,
+    cards: application.cards,
+    novel: application.novel,
+    studio: application.studio,
+    aiGateway: application.aiGateway,
+    aiProviderRegistry: application.aiProviderRegistry,
+    configBridge: application.configBridge,
+    secretStore: application.secretStore,
+    logger: application.logger,
+    usageMeter: application.usageMeter,
+    postGenerationUpdates: application.postGenerationUpdates,
     fileSystem,
     workspaceRoot,
     configuration,

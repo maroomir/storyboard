@@ -206,7 +206,7 @@ export class WorkspaceSession {
     }
 
     const archivePrevious = reason === 'ai-edit' || !this.archivedStems.has(stem);
-    const result = await this.container.saveDraftEditUseCase.execute({
+    const result = await this.container.drafts.saveEdit({
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
       body,
@@ -263,7 +263,7 @@ export class WorkspaceSession {
       return fail('provider-missing', translate('error.providerMissing'));
     }
 
-    const result = await container.augmentDraftUseCase.prepareAugmentedDraft({
+    const result = await container.drafts.prepareAugmentation({
       draftSceneStem: stem,
       sceneUri: scenePath(container.workspaceRoot, stem),
       scope: 'selection',
