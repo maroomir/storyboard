@@ -633,6 +633,27 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
   ];
 }
 
+// The author's resource files (prompts, the craft contract, the pipeline specs, …) are read at every
+// workspace run; a file that cannot be used is reported here with the reason, so a typo in a
+// pipeline spec is caught before a paid run rather than by it.
+async function collectResourceChecks(container: CliContainer): Promise<DoctorCheck[]> {
+  const report = await container.loadResourceOverrides();
+
+  return [
+    ...report.applied.map((entry) => ({
+      status: 'ok' as const,
+      label: `리소스 파일 (${entry.kind})`,
+      detail: entry.file.fsPath,
+    })),
+    ...report.problems.map((problem) => ({
+      status: 'fail' as const,
+      label: '리소스 파일',
+      detail: problem.message,
+      fix: '파일을 고치거나 지우세요. 고칠 때까지 번들 기본값이 쓰입니다.',
+    })),
+  ];
+}
+
 export async function runDoctor({ container }: CommandContext): Promise<CommandOutcome> {
   const home = container.homePaths;
   const hasUserConfig = existsSync(home.configFile);
@@ -648,6 +669,7 @@ export async function runDoctor({ container }: CommandContext): Promise<CommandO
       ? [{ status: 'ok' as const, label: '이 작품 설정', detail: workspaceConfig }]
       : []),
     ...(await collectProviderChecks(container)),
+    ...(await collectResourceChecks(container)),
     ...(await collectWorkspaceChecks(container)),
     { status: 'info', label: 'Node', detail: process.version },
   ];

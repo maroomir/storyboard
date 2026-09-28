@@ -86,6 +86,24 @@ describe('storyboard doctor', () => {
     expect((outcome.data as { checks: unknown[] }).checks.length).toBeGreaterThan(3);
   });
 
+  it('reports the author resource files in force and fails on one it cannot use', async () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
+    mkdirSync(join(home, 'pipelines'), { recursive: true });
+    writeFileSync(join(home, 'craftContract.json'), '{ "motifRepeatLimit": 4 }');
+    writeFileSync(
+      join(home, 'pipelines', 'scene.yaml'),
+      'version: 1\nstages:\n  - expandSection\n',
+    );
+
+    const outcome = await runDoctor({ container: container(), args: args() });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain(
+      `리소스 파일 (craftContract): ${join(home, 'craftContract.json')}`,
+    );
+    expect(outcome.message).toContain('씬 파이프라인 명세를 쓸 수 없습니다');
+    expect(outcome.message).toContain('buildPersonas');
+  });
 });
 
 describe('storyboard doctor on a pre-0.8 workspace', () => {
