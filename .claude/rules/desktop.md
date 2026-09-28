@@ -61,7 +61,8 @@ Engine messages (errors, progress) stay Korean in both languages.
 - App-only state (recent works, language) is `~/.storyboard/desktop.json`.
 - Author resources: `~/.storyboard` and the work's `.storyboard` (work wins) are laid over the
   bundled defaults when a work opens — `prompts/<key>.md` for prompt wording, `craftContract.json`
-  for the craft contract, `promptVariants.json` for the variant selection rules.
+  for the craft contract, `promptVariants.json` for the variant selection rules,
+  `compositionPresets.json` for the thread names and counts the composition presets build.
 
 ## Packaging
 

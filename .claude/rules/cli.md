@@ -57,7 +57,9 @@ two resource roots (workspace wins), and `packages/story-app/src/resourceOverrid
 root may hold — `prompts/<key>.md` replaces the bundled resource of that prompt (bundled texts in
 `packages/story-ai/src/ai/prompts/resources/`), `craftContract.json` lays over the bundled craft
 contract (`packages/story-format/src/craftContract.params.json`), `promptVariants.json` over the
-variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params.json`). `dispatch.ts` loads them before a
+variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params.json`), and
+`compositionPresets.json` over what the composition presets build
+(`packages/story-format/src/compositionPresets.params.json`). `dispatch.ts` loads them before a
 workspace verb runs, warning about files it cannot use.
 `setup` / `doctor` / `config show|set` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`

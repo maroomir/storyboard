@@ -149,6 +149,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'episodes',
     valueLabel: '<n>',
+    // NOTE: 도움말은 번들 기본값을 보인다. 작가의 compositionPresets.json 은 작품 명령이 돌 때 덮인다.
     summary: `옴니버스 구성이 만들 편 수 (기본 ${compositionPresetDefaults.omnibusEpisodeCount})`,
   },
   {

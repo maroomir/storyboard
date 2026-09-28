@@ -7,7 +7,7 @@ import type {
   AiTaskName,
 } from '#ai/contracts/aiTypes';
 import { isAttributed } from './aiResponseCoercion';
-import { selectPromptVariant } from './prompts/variant';
+import { selectPromptVariant } from './prompts/promptVariants';
 import type { PromptVariantId } from './prompts/types';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 

@@ -1,7 +1,7 @@
 import {
-  compositionPresetDefaults,
   deriveNarrationFromPointOfView,
   mainThreadId,
+  resolveCompositionPresetDefaults,
 } from '@storyboard/story-format';
 import type {
   CompositionKind,
@@ -48,30 +48,33 @@ export function buildCompositionPreset(request: CompositionPresetRequest): Compo
 }
 
 function buildOmnibusSetting(request: CompositionPresetRequest): CompositionPresetSetting {
+  const defaults = resolveCompositionPresetDefaults();
   const episodeCount = Math.max(
-    compositionPresetDefaults.minimumOmnibusEpisodes,
-    request.episodeCount ?? compositionPresetDefaults.omnibusEpisodeCount,
+    defaults.minimumOmnibusEpisodes,
+    request.episodeCount ?? defaults.omnibusEpisodeCount,
   );
   const threads: Record<string, StoryThread> = {};
 
   for (let episode = 1; episode <= episodeCount; episode += 1) {
-    const threadId = `${compositionPresetDefaults.episodeThreadIdPrefix}${episode}`;
-    threads[threadId] = { title: `${episode}${compositionPresetDefaults.episodeTitleSuffix}` };
+    const threadId = `${defaults.episodeThreadIdPrefix}${episode}`;
+    threads[threadId] = { title: `${episode}${defaults.episodeTitleSuffix}` };
   }
 
   return { composition: 'omnibus', threads };
 }
 
 function buildFrameSetting(): CompositionPresetSetting {
+  const defaults = resolveCompositionPresetDefaults();
+
   return {
     composition: 'frame',
     threads: {
-      [compositionPresetDefaults.frameThreadId]: {
-        title: compositionPresetDefaults.frameThreadTitle,
-        wraps: [compositionPresetDefaults.innerThreadId],
+      [defaults.frameThreadId]: {
+        title: defaults.frameThreadTitle,
+        wraps: [defaults.innerThreadId],
       },
-      [compositionPresetDefaults.innerThreadId]: {
-        title: compositionPresetDefaults.innerThreadTitle,
+      [defaults.innerThreadId]: {
+        title: defaults.innerThreadTitle,
       },
     },
   };
@@ -86,7 +89,9 @@ function buildAlternatingPovPreset(request: CompositionPresetRequest): Compositi
   return {
     setting: {
       composition: 'alternating-pov',
-      threads: { [mainThreadId]: { title: compositionPresetDefaults.mainThreadTitle } },
+      threads: {
+        [mainThreadId]: { title: resolveCompositionPresetDefaults().mainThreadTitle },
+      },
       ...(firstNarrator ? { narration: { defaultNarrator: firstNarrator.id } } : {}),
     },
     narratorCards,
