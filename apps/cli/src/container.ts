@@ -135,6 +135,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     userConfigFile: paths.configFile,
     workspaceConfigFile,
     overrides: configOverrides(options),
+    onUnknownKey: (warning) => options.logger.warn(warning.message),
   });
   const configBridgeDependencies: ConfigBridgeDependencies = {
     getConfiguration: () => configuration,

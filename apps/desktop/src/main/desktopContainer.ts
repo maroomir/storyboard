@@ -63,6 +63,7 @@ export function createDesktopContainer(options: DesktopContainerOptions): Deskto
     userConfigFile: options.homePaths.configFile,
     workspaceConfigFile: resolveWorkspaceConfigFile(workspaceRoot.fsPath),
     onInvalidFile: options.onInvalidConfigFile,
+    onUnknownKey: (warning) => logger.warn(warning.message),
   });
   // NOTE: 프로바이더·모델·키처럼 작가가 한 번 고르는 값은 모든 작품에 걸린다(홈 파일). 작품마다
   // 다른 값(예산)은 호출하는 쪽이 작품 파일을 지정해 쓴다.

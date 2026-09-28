@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 
 import { ConfigFileError } from '#config/configFileError';
+import { validateConfigSettings, type ConfigKeyWarning } from '#config/configSchema';
 
 // The numbers match VSCode's ConfigurationTarget so a ConfigBridge written against the editor's
 // enum addresses the same layer here: 1 = the user's home file, 2 = the workspace file.
@@ -22,6 +23,9 @@ export interface FileConfigurationOptions {
   // An unreadable file throws by default so a typo cannot silently turn into "all defaults". A
   // host that must keep running (the editor) passes a reporter and gets `{}` for that file instead.
   readonly onInvalidFile?: (error: ConfigFileError) => void;
+  // A key nothing reads is kept but reported once per file read, so a misspelled setting is seen
+  // instead of silently leaving the default in force.
+  readonly onUnknownKey?: (warning: ConfigKeyWarning) => void;
 }
 
 interface CachedFile {
@@ -179,6 +183,9 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
 
     try {
       value = parseConfigFile(file);
+      for (const warning of validateConfigSettings(file, value)) {
+        options.onUnknownKey?.(warning);
+      }
     } catch (error) {
       if (!options.onInvalidFile || !(error instanceof ConfigFileError)) {
         throw error;
