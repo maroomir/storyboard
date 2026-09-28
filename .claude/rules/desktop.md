@@ -37,7 +37,7 @@ extension; only its host adapters and screens are its own.
 | `src/shared/i18n/` | `ko.ts` (source), `en.ts` (typed against it), `translate.ts` — used by main and renderer |
 | `src/main/index.ts` | Electron entry: window, IPC wiring, quit flow, auto-update |
 | `src/main/desktopApp.ts` | App state without Electron (ports injected): open/create/close, language, settings |
-| `src/main/desktopContainer.ts` | The composition root for one open workspace |
+| `src/main/desktopContainer.ts` | Builds the desktop's host adapters for one open workspace and hands them to `StoryboardApplication` |
 | `src/main/workspaceSession.ts` | One open work: container, snapshots, run controller, bible, edit sessions |
 | `src/main/runController.ts` | The one run at a time: novel or scene, lock, budget, approvals, pause |
 | `src/main/invokeHandlers.ts` | Channel → service table |

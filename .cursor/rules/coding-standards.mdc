@@ -16,9 +16,11 @@ for schema-first types and the error-class template. Generic readability and ver
 - Apps are ordered one-way layer stacks enforced by each app's `scripts/check-architecture.mjs`.
   The CLI's single `LAYER_ORDER` line (`adapters → commands → tui`) is the model: every source file
   lives in exactly one layer, and a layer imports only itself and layers to its left.
-- Each app has exactly one composition root that builds the object graph once:
-  `createCliContainer()` (cli), `createDesktopContainer()` (desktop) and `PlatformModule.initialize()` (vscode). Do not construct engine use cases anywhere else — and do not construct ones no command
-  or handler calls.
+- The engine's object graph is built once, for every app, by `StoryboardApplication` in
+  `packages/story-app`. Each app keeps one thin root of its own — `createCliContainer()` (cli),
+  `createDesktopContainer()` (desktop), `PlatformModule.initialize()` (vscode) — that builds only
+  its host adapters and hands them in. Do not construct engine use cases anywhere else — and do not
+  construct ones no command or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
   contract. Inside a package, organize by role — `story-ai`'s `ai/` (services), `contracts/`
   (DTOs), `ports/` (host adapters) split is the model.
@@ -140,7 +142,7 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
   ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
-  `format ← ai ← pipeline ← engine ← sim`, `engine ← node`, `ai ← config`.
+  `format ← ai ← pipeline ← engine ← sim`, `engine ← node`, `engine, ai ← app`, `ai ← config`.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
 - App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`
