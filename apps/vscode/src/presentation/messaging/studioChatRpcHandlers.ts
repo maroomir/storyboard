@@ -75,7 +75,7 @@ export function createStudioChatRpcHandlers(
       const startedGeneration = generation;
 
       try {
-        const turns = await deps.useCase.send({
+        const turns = await deps.useCase.execute({
           workspaceRoot: root,
           entityContext: { ...entityContext, context: contextWithSelection },
           history: payload.history,
@@ -110,7 +110,7 @@ export function createStudioChatRpcHandlers(
 // if chatting were free.
 function usageAttributionFor(
   entity: StudioEntity,
-): Pick<Parameters<StudioChatUseCase['send']>[0], 'attribution'> {
+): Pick<Parameters<StudioChatUseCase['execute']>[0], 'attribution'> {
   if (entity.kind === 'project') {
     return {};
   }
@@ -126,7 +126,7 @@ function toolResolverFor(
   root: vscode.Uri,
   entity: StudioEntity,
   entityContext: StudioEntityContext,
-): Pick<Parameters<StudioChatUseCase['send']>[0], 'resolveInvoke'> {
+): Pick<Parameters<StudioChatUseCase['execute']>[0], 'resolveInvoke'> {
   if (entityContext.baseline === undefined || entityContext.targetUri === undefined) {
     return {};
   }

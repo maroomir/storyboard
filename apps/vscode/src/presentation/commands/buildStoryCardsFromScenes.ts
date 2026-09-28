@@ -48,7 +48,7 @@ export function registerBuildStoryCardsFromScenesCommand(
           cancellable: true,
         },
         async (_progress, token) => {
-          const result = await useCase.execute(workspaceRoot);
+          const result = await useCase.execute({ workspaceRoot });
           if (token.isCancellationRequested) {
             throw new StoryCardBuildCancelledError();
           }

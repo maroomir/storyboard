@@ -65,7 +65,7 @@ function useCase(response: object): CompleteStoryScenesUseCase {
       generateText: vi.fn(async () => ({ text: JSON.stringify(response) })),
     })),
   };
-  return new CompleteStoryScenesUseCase(gateway as never, repository);
+  return new CompleteStoryScenesUseCase({ aiGateway: gateway as never, repository });
 }
 
 describe('CompleteStoryScenesUseCase', () => {
@@ -82,7 +82,7 @@ describe('CompleteStoryScenesUseCase', () => {
         { slug: 'ending', title: '결말', characterIds: ['aria'], body: '돌려준다.' },
       ],
       centralQuestion: '무엇을 남길 것인가?',
-    }).execute(workspaceRoot);
+    }).execute({ workspaceRoot });
 
     expect(proposal.scenes.map((scene) => scene.fileName)).toEqual([
       '04-choice.card',
@@ -96,7 +96,7 @@ describe('CompleteStoryScenesUseCase', () => {
     await expect(
       useCase({
         scenes: [{ slug: 'ending', title: '결말', characterIds: ['unknown'], body: '끝.' }],
-      }).execute(workspaceRoot),
+      }).execute({ workspaceRoot }),
     ).rejects.toThrow('존재하지 않는 캐릭터 ID');
   });
 });

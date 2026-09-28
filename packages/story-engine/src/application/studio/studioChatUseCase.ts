@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { IUseCase } from '#engine/application/useCase';
 
 import type {
   StudioAgentAction,
@@ -54,14 +55,16 @@ export type StudioChatStage = 'thinking' | 'looking-up' | 'invoking' | 'validati
 
 export const maxStudioQuestions = 5;
 
-export class StudioChatUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly logger: IStoryboardLogger,
-  ) {}
+export interface StudioChatUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly logger: IStoryboardLogger;
+}
 
-  public async send(request: StudioChatRequest): Promise<readonly StudioChatTurn[]> {
-    const service = this.aiGateway.createService(request.workspaceRoot);
+export class StudioChatUseCase implements IUseCase<StudioChatRequest, readonly StudioChatTurn[]> {
+  public constructor(private readonly deps: StudioChatUseCaseDependencies) {}
+
+  public async execute(request: StudioChatRequest): Promise<readonly StudioChatTurn[]> {
+    const service = this.deps.aiGateway.createService(request.workspaceRoot);
 
     const action = await service.runStudioAgent(
       {
@@ -129,7 +132,7 @@ export class StudioChatUseCase {
     request.onStage?.('validating');
 
     try {
-      const verdict = await this.aiGateway
+      const verdict = await this.deps.aiGateway
         .createService(request.workspaceRoot)
         .validateStudioProposal(
           {
@@ -147,7 +150,7 @@ export class StudioChatUseCase {
       };
     } catch (error) {
       // NOTE: a failed check must not block the author, so it degrades to 'skipped' and says so.
-      this.logger.warn(`Studio 정합성 검사 실패: ${String(error)}`);
+      this.deps.logger.warn(`Studio 정합성 검사 실패: ${String(error)}`);
       return { state: 'skipped', warnings: [] };
     }
   }

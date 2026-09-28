@@ -221,7 +221,10 @@ function createCardEditorHandlers(
     'cards.collect': async (): Promise<StoryboardResponsePayload<'cards.collect'>> => {
       const card = parseCard(document.getText());
       const workspaceRoot = getDocumentWorkspaceRoot(document);
-      const proposals = await dependencies.collectCardProposalsUseCase.execute(workspaceRoot, card);
+      const proposals = await dependencies.collectCardProposalsUseCase.execute({
+        workspaceRoot,
+        card,
+      });
 
       return { proposals };
     },

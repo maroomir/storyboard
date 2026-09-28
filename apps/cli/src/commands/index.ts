@@ -993,7 +993,9 @@ const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
 // 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
 // 제안 전체를 적용하고, 미리 보려면 --dry-run 을 쓴다 — card promote 와 같은 관례다.
 const completeStory: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.completeStoryScenesUseCase.execute(container.workspaceRoot);
+  const proposal = await container.completeStoryScenesUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+  });
 
   if (flagBoolean(args.flags, 'dry-run')) {
     return { ok: true, message: `완결 씬 제안 ${proposal.scenes.length}건`, data: proposal };
@@ -1034,7 +1036,9 @@ const completeStory: CommandHandler = async ({ container, args }) => {
 };
 
 const buildStoryCards: CommandHandler = async ({ container, args }) => {
-  const proposal = await container.buildStoryCardsUseCase.execute(container.workspaceRoot);
+  const proposal = await container.buildStoryCardsUseCase.execute({
+    workspaceRoot: container.workspaceRoot,
+  });
 
   if (flagBoolean(args.flags, 'dry-run')) {
     return { ok: true, message: `카드 구성안 ${proposal.targets.length}건`, data: proposal };

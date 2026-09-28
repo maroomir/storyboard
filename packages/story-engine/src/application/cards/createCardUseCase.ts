@@ -6,8 +6,12 @@ export interface ICardWriterRepository {
   write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri>;
 }
 
+export interface CreateCardUseCaseDependencies {
+  readonly repository: ICardWriterRepository;
+}
+
 export class CreateCardUseCase {
-  public constructor(private readonly repository: ICardWriterRepository) {}
+  public constructor(private readonly deps: CreateCardUseCaseDependencies) {}
 
   public async deriveUniqueId(
     workspaceRoot: StoryUri,
@@ -19,7 +23,7 @@ export class CreateCardUseCase {
     let candidate = base;
     let suffix = 2;
 
-    while (await this.repository.exists(workspaceRoot, cardType, candidate)) {
+    while (await this.deps.repository.exists(workspaceRoot, cardType, candidate)) {
       candidate = `${base}-${suffix}`;
       suffix += 1;
     }
@@ -32,10 +36,10 @@ export class CreateCardUseCase {
     cardType: StoryboardCard['type'],
     id: string,
   ): Promise<boolean> {
-    return await this.repository.exists(workspaceRoot, cardType, id);
+    return await this.deps.repository.exists(workspaceRoot, cardType, id);
   }
 
   public async write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
-    return await this.repository.write(workspaceRoot, card);
+    return await this.deps.repository.write(workspaceRoot, card);
   }
 }

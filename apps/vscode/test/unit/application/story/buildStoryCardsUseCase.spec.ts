@@ -57,7 +57,7 @@ function useCase(response: object): BuildStoryCardsUseCase {
       generateText: vi.fn(async () => ({ text: JSON.stringify(response) })),
     })),
   };
-  return new BuildStoryCardsUseCase(gateway as never, repository);
+  return new BuildStoryCardsUseCase({ aiGateway: gateway as never, repository });
 }
 
 describe('tolerating empty optional fields', () => {
@@ -76,7 +76,7 @@ describe('tolerating empty optional fields', () => {
           sourceScenes: ['01-opening'],
         },
       ],
-    }).execute(workspaceRoot);
+    }).execute({ workspaceRoot });
 
     expect(proposal.targets).toHaveLength(1);
     const card = proposal.targets[0]?.card as { tags?: string[] };
@@ -97,7 +97,7 @@ describe('BuildStoryCardsUseCase', () => {
           sourceScenes: ['01-opening'],
         },
       ],
-    }).execute(workspaceRoot);
+    }).execute({ workspaceRoot });
     const target = proposal.targets[0];
     if (!target) {
       throw new Error('Expected target');
@@ -120,7 +120,7 @@ describe('BuildStoryCardsUseCase', () => {
         entities: [
           { type: 'character', existingId: 'aria', name: '아리아', sourceScenes: ['99-unknown'] },
         ],
-      }).execute(workspaceRoot),
+      }).execute({ workspaceRoot }),
     ).rejects.toThrow('알 수 없는 근거 씬');
   });
 });

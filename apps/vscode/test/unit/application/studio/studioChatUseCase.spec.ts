@@ -93,7 +93,7 @@ describe("StudioChatUseCase", () => {
   it("turns a remark into a say turn", async () => {
     const { gateway } = gatewayWith({ action: { kind: "say", message: "아직 없습니다." } })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns).toEqual([
       { id: "turn-1", role: "assistant", kind: "say", message: "아직 없습니다." }
@@ -105,7 +105,7 @@ describe("StudioChatUseCase", () => {
       action: { kind: "ask", question: "어느 축인가요?", options: ["성격"] }
     })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toEqual({
       id: "turn-1",
@@ -119,7 +119,7 @@ describe("StudioChatUseCase", () => {
   it("stamps the proposal with the baseline hash and the verdict", async () => {
     const { gateway } = gatewayWith({ action: proposeAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toMatchObject({
       kind: "proposal",
@@ -136,7 +136,7 @@ describe("StudioChatUseCase", () => {
       verdict: { state: "warn", warnings: [{ message: "씬 3과 어긋납니다" }] }
     })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toMatchObject({
       validation: { state: "warn", warnings: [{ message: "씬 3과 어긋납니다" }] }
@@ -146,7 +146,7 @@ describe("StudioChatUseCase", () => {
   it("skips the validation pass when the setting is off", async () => {
     const { gateway, validateInputs } = gatewayWith({ action: proposeAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(
       requestWith(gateway, { isValidationEnabled: false })
     )
 
@@ -157,7 +157,7 @@ describe("StudioChatUseCase", () => {
   it("degrades to skipped rather than failing when validation errors", async () => {
     const { gateway } = gatewayWith({ action: proposeAction, validateThrows: true })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toMatchObject({ validation: { state: "skipped", warnings: [] } })
   })
@@ -165,7 +165,7 @@ describe("StudioChatUseCase", () => {
   it("refuses to propose against a file that does not exist", async () => {
     const { gateway } = gatewayWith({ action: proposeAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(
       requestWith(gateway, {
         entityContext: {
           agentEntityKind: "scene",
@@ -194,7 +194,7 @@ describe("StudioChatUseCase", () => {
       { id: "a2", role: "assistant", kind: "ask", question: "2?", options: [] }
     ]
 
-    await new StudioChatUseCase(gateway, logger).send(requestWith(gateway, { history }))
+    await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway, { history }))
 
     expect((runInputs[0] as { remainingQuestions: number }).remainingQuestions).toBe(3)
   })
@@ -210,7 +210,7 @@ describe("StudioChatUseCase", () => {
       options: []
     }))
 
-    await new StudioChatUseCase(gateway, logger).send(requestWith(gateway, { history }))
+    await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway, { history }))
 
     expect((runInputs[0] as { remainingQuestions: number }).remainingQuestions).toBe(0)
   })
@@ -218,7 +218,7 @@ describe("StudioChatUseCase", () => {
   it("stamps the proposal with the file it was built against", async () => {
     const { gateway, runInputs } = gatewayWith({ action: proposeAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(
       requestWith(gateway, {
         entityContext: {
           agentEntityKind: "scene",
@@ -254,7 +254,7 @@ describe("StudioChatUseCase", () => {
       }
     ]
 
-    await new StudioChatUseCase(gateway, logger).send(requestWith(gateway, { history }))
+    await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway, { history }))
 
     expect((runInputs[0] as { history: unknown }).history).toEqual([
       { role: "user", text: "보강해줘" },
@@ -281,7 +281,7 @@ describe("StudioChatUseCase follow-ups", () => {
   it("carries verified follow-ups onto a say turn", async () => {
     const { gateway } = gatewayWith({ action: followUpAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toMatchObject({
       kind: "say",
@@ -306,7 +306,7 @@ describe("StudioChatUseCase follow-ups", () => {
       }
     })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(requestWith(gateway))
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(requestWith(gateway))
 
     expect(turns[0]).toMatchObject({
       kind: "proposal",
@@ -317,7 +317,7 @@ describe("StudioChatUseCase follow-ups", () => {
   it("leaves the turn without a follow-up list when the resolver drops them all", async () => {
     const { gateway } = gatewayWith({ action: followUpAction })
 
-    const turns = await new StudioChatUseCase(gateway, logger).send(
+    const turns = await new StudioChatUseCase({ aiGateway: gateway, logger }).execute(
       requestWith(gateway, { resolveFollowUps: async () => [] })
     )
 

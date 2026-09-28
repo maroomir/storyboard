@@ -12,7 +12,7 @@ describe("RecommendCardsUseCase", () => {
       load: vi.fn(async () => ({ existingNames: [], sources: [] }))
     }
     const gateway: ICardRecommendationAiGateway = { createService: vi.fn() }
-    const useCase = new RecommendCardsUseCase(gateway, { error: vi.fn() } as never, repository)
+    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
 
     const result = await useCase.execute({
       category: "character",
@@ -36,7 +36,7 @@ describe("RecommendCardsUseCase", () => {
     const gateway: ICardRecommendationAiGateway = {
       createService: vi.fn(() => ({ extractCardRecommendations }))
     }
-    const useCase = new RecommendCardsUseCase(gateway, { error: vi.fn() } as never, repository)
+    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
 
     const result = await useCase.execute({
       category: "character",
@@ -60,7 +60,7 @@ describe("RecommendCardsUseCase", () => {
   it("preserves cancellation before repository access", async () => {
     const repository: ICardRecommendationRepository = { load: vi.fn() }
     const gateway: ICardRecommendationAiGateway = { createService: vi.fn() }
-    const useCase = new RecommendCardsUseCase(gateway, { error: vi.fn() } as never, repository)
+    const useCase = new RecommendCardsUseCase({ aiGateway: gateway, logger: { error: vi.fn() } as never, repository })
 
     const result = await useCase.execute({
       category: "background",

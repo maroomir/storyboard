@@ -1,4 +1,5 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { IUseCase } from '#engine/application/useCase';
 import {
   buildCardCollectProposals,
   type CollectDraft,
@@ -13,23 +14,31 @@ export interface ICardCollectRepository {
   loadDrafts(workspaceRoot: StoryUri): Promise<readonly CollectDraft[]>;
 }
 
-export class CollectCardProposalsUseCase {
-  public constructor(
-    private readonly aiGateway: AiGateway,
-    private readonly repository: ICardCollectRepository,
-  ) {}
+export interface CollectCardProposalsUseCaseDependencies {
+  readonly aiGateway: AiGateway;
+  readonly repository: ICardCollectRepository;
+}
 
-  public async execute(
-    workspaceRoot: StoryUri,
-    card: StoryboardCard,
-  ): Promise<CardCollectProposal[]> {
+export interface CollectCardProposalsRequest {
+  readonly workspaceRoot: StoryUri;
+  readonly card: StoryboardCard;
+}
+
+export class CollectCardProposalsUseCase implements IUseCase<
+  CollectCardProposalsRequest,
+  CardCollectProposal[]
+> {
+  public constructor(private readonly deps: CollectCardProposalsUseCaseDependencies) {}
+
+  public async execute(request: CollectCardProposalsRequest): Promise<CardCollectProposal[]> {
+    const { workspaceRoot, card } = request;
     const [drafts, characterRoster] = await Promise.all([
-      this.repository.loadDrafts(workspaceRoot),
-      this.repository.loadCharacterRoster(workspaceRoot),
+      this.deps.repository.loadDrafts(workspaceRoot),
+      this.deps.repository.loadCharacterRoster(workspaceRoot),
     ]);
 
     return await buildCardCollectProposals({
-      aiService: this.aiGateway.createService(workspaceRoot),
+      aiService: this.deps.aiGateway.createService(workspaceRoot),
       card,
       characterRoster,
       drafts,
