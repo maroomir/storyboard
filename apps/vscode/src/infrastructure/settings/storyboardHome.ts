@@ -12,6 +12,7 @@ import {
   resolveWorkspaceConfigFile,
   watchFiles,
   type ConfigFileError,
+  type ConfigKeyWarning,
   type StoryboardHomePaths,
 } from '@storyboard/story-config';
 
@@ -28,6 +29,7 @@ export interface StoryboardHomeStores extends vscode.Disposable {
 export interface StoryboardHomeStoresOptions {
   readonly workspaceRoot: string | undefined;
   readonly onInvalidFile: (error: ConfigFileError) => void;
+  readonly onUnknownKey?: (warning: ConfigKeyWarning) => void;
 }
 
 // The extension reads the same `~/.storyboard/config.json` (and `<workspace>/.storyboard/config.json`)
@@ -49,6 +51,7 @@ export function createStoryboardHomeStores(
     userConfigFile: paths.configFile,
     workspaceConfigFile,
     onInvalidFile: options.onInvalidFile,
+    ...(options.onUnknownKey === undefined ? {} : { onUnknownKey: options.onUnknownKey }),
   });
 
   const configuration: StoryboardConfigurationLike = {

@@ -57,6 +57,7 @@ export class PlatformModule implements IApplicationModule {
     const homeStores = createStoryboardHomeStores({
       workspaceRoot: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
       onInvalidFile: (error): void => reportInvalidConfigFile(error.file, error.message, logger),
+      onUnknownKey: (warning): void => logger.warn(warning.message),
     });
     const secretStore = new SecretStore(homeStores.secretStorage);
     const configBridge = new ConfigBridge({
