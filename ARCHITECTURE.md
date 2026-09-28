@@ -779,10 +779,15 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 | `craftContract.json` | 모든 생성 프롬프트에 붙는 작법 계약 기본값(적은 항목만 덮임; `project.json`의 `setting.craftContract`가 그 위에 마지막으로 적용) | `packages/story-format/src/craftContract.params.json` |
 | `promptVariants.json` | xs·rich 변형 선택 규칙(압축 프로바이더·모델 패턴·작업, 출력 하한·장문 작업·상위 모델 키워드) | `packages/story-ai/src/ai/prompts/promptVariants.params.json` |
 | `compositionPresets.json` | 구성 프리셋이 만드는 줄기 이름·편 수 | `packages/story-format/src/compositionPresets.params.json` |
+| `pipelines/scene.yaml` | 씬 초안 파이프라인의 단계 순서(`version: 1` + `stages` 목록, `{id, enabled: false}` 로 끄기) — 필수 단계는 뺄 수 없고 앞선 단계가 있어야 하는 단계는 순서를 검사 | `sceneStageCatalog`(`packages/story-pipeline/src/sceneStageCatalog.ts`)의 순서 |
+| `pipelines/novel.yaml` | 장편 파이프라인의 단계 순서 | `novelStageCatalog`(`packages/story-engine/src/application/novel/novelStageCatalog.ts`)의 순서 |
 
 프롬프트 문구는 Mustache 부분집합(`{{name}}`·`{{#name}}…{{/name}}`·`{{^name}}`·`{{> partial}}`·`{{! }}`)으로 쓰고,
 복합 블록(작법 계약·목소리·시점 지시)은 TS partial로 넘긴다. 번들 문구는 `scripts/build-prompt-resources.mjs`가
 `resources.generated.ts`로 접어 앱이 번들하며, 골든 스냅샷 테스트가 이식 전후 바이트 동일을 지킨다.
+
+두 파이프라인은 단계 객체(`ISceneStage`·`INovelStage`)의 목록이고, 실행기는 계획이 이름한 순서대로 단계를 부른다.
+명세 파일은 이 계획을 바꿀 뿐 단계 자체는 코드다. `storyboard doctor`가 적용 중인 리소스 파일과 쓸 수 없는 파일을 보고한다.
 
 작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 그 출처는 `packages/story-app/src/parameterRegistry.ts`의
 `describeParameters`가 한 목록으로 만들고, CLI `storyboard params show`가 그것을 보인다. 조정 가능한 숫자 파일은

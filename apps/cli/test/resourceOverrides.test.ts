@@ -5,7 +5,13 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { loadResourceOverrides } from '@storyboard/story-app';
-import { buildCompositionPreset } from '@storyboard/story-engine';
+import {
+  buildCompositionPreset,
+  novelStageNames,
+  resolveNovelPipelinePlan,
+  resolveScenePipelinePlan,
+  sceneStageIds,
+} from '@storyboard/story-engine';
 import {
   ChapterSummaryPrompt,
   GrammarCheckPrompt,
@@ -231,6 +237,56 @@ describe('loadResourceOverrides', () => {
     expect(buildCompositionPreset({ composition: 'frame' }).setting.threads?.frame?.title).toBe(
       '외화',
     );
+  });
+
+  it('lays pipelines/*.yaml over the bundled stage order, workspace last', async () => {
+    const home = join(root, 'home');
+    const workspace = join(root, 'ws', '.storyboard');
+    writePrompt(
+      join(home, 'pipelines'),
+      'scene.yaml',
+      'version: 1\nstages:\n  - buildPersonas\n  - describeBackground\n  - draftSkeleton\n  - expandSection\n',
+    );
+    writePrompt(
+      join(workspace, 'pipelines'),
+      'novel.yaml',
+      'version: 1\nstages:\n  - outline\n  - seeds\n  - chapters\n  - id: review\n    enabled: false\n  - summaries\n',
+    );
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [
+      NodeUri.file(home),
+      NodeUri.file(workspace),
+    ]);
+
+    expect(report.problems).toEqual([]);
+    expect(report.applied.map((entry) => entry.kind)).toEqual(['scenePipeline', 'novelPipeline']);
+    expect(resolveScenePipelinePlan()).toEqual([
+      'buildPersonas',
+      'describeBackground',
+      'draftSkeleton',
+      'expandSection',
+    ]);
+    expect(resolveNovelPipelinePlan()).toEqual(['outline', 'seeds', 'chapters', 'summaries']);
+
+    await loadResourceOverrides(new NodeFileSystem(), []);
+
+    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds);
+    expect(resolveNovelPipelinePlan()).toEqual(novelStageNames);
+  });
+
+  it('reports a pipeline spec that drops a required stage and keeps the bundled order', async () => {
+    const home = join(root, 'home');
+    writePrompt(join(home, 'pipelines'), 'scene.yaml', 'version: 1\nstages:\n  - expandSection\n');
+    writePrompt(join(home, 'pipelines'), 'novel.yaml', 'stages: [');
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [NodeUri.file(home)]);
+
+    expect(report.applied).toEqual([]);
+    expect(report.problems.map((problem) => problem.message)).toEqual([
+      expect.stringContaining('buildPersonas'),
+      expect.stringContaining('YAML'),
+    ]);
+    expect(resolveScenePipelinePlan()).toEqual(sceneStageIds);
   });
 
   it('lists nothing when the directories do not exist', async () => {

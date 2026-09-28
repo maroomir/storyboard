@@ -1,4 +1,11 @@
-import { listDirectoryFileNames, type IFileSystem } from '@storyboard/story-engine';
+import {
+  listDirectoryFileNames,
+  overrideNovelPipelinePlan,
+  overrideScenePipelinePlan,
+  resetNovelPipelinePlan,
+  resetScenePipelinePlan,
+  type IFileSystem,
+} from '@storyboard/story-engine';
 import {
   PromptResourceError,
   overridePromptVariantRules,
@@ -12,9 +19,12 @@ import {
   craftContractOverrideSchema,
   joinStoryPath,
   overrideCompositionPresetDefaults,
+  parsePipelineSpec,
+  PipelineSpecError,
   overrideCraftContractDefaults,
   resetCompositionPresetDefaults,
   resetCraftContractDefaults,
+  type PipelineSpec,
   type StoryUri,
 } from '@storyboard/story-format';
 
@@ -25,13 +35,17 @@ export const resourceLayout = {
   craftContractFile: 'craftContract.json',
   promptVariantsFile: 'promptVariants.json',
   compositionPresetsFile: 'compositionPresets.json',
+  scenePipelineFile: 'pipelines/scene.yaml',
+  novelPipelineFile: 'pipelines/novel.yaml',
 } as const;
 
 export type ResourceOverrideKind =
   | 'prompt'
   | 'craftContract'
   | 'promptVariants'
-  | 'compositionPresets';
+  | 'compositionPresets'
+  | 'scenePipeline'
+  | 'novelPipeline';
 
 export interface ResourceOverrideApplied {
   readonly kind: ResourceOverrideKind;
@@ -66,6 +80,8 @@ export async function loadResourceOverrides(
   resetCraftContractDefaults();
   resetPromptVariantRules();
   resetCompositionPresetDefaults();
+  resetScenePipelinePlan();
+  resetNovelPipelinePlan();
 
   for (const root of roots) {
     await loadPromptFiles(
@@ -108,6 +124,28 @@ export async function loadResourceOverrides(
         label: '구성 프리셋 파일',
         schema: compositionPresetOverrideSchema.strict(),
         apply: overrideCompositionPresetDefaults,
+      },
+    );
+    await loadPipelineFile(
+      fileSystem,
+      root,
+      joinStoryPath(root, resourceLayout.scenePipelineFile),
+      report,
+      {
+        kind: 'scenePipeline',
+        label: '씬 파이프라인 명세',
+        apply: overrideScenePipelinePlan,
+      },
+    );
+    await loadPipelineFile(
+      fileSystem,
+      root,
+      joinStoryPath(root, resourceLayout.novelPipelineFile),
+      report,
+      {
+        kind: 'novelPipeline',
+        label: '장편 파이프라인 명세',
+        apply: overrideNovelPipelinePlan,
       },
     );
   }
@@ -198,6 +236,37 @@ async function loadJsonFile<T>(
 
   resource.apply(parsed.data);
   report.applied.push({ kind: resource.kind, file, root });
+}
+
+interface PipelineResource {
+  readonly kind: ResourceOverrideKind;
+  readonly label: string;
+  readonly apply: (spec: PipelineSpec) => unknown;
+}
+
+// A pipeline spec is YAML and is checked against its stage catalog, so the reason a file cannot
+// drive a run (an unknown stage, a required one left out) is reported in the author's terms.
+async function loadPipelineFile(
+  fileSystem: IFileSystem,
+  root: StoryUri,
+  file: StoryUri,
+  report: MutableReport,
+  resource: PipelineResource,
+): Promise<void> {
+  if (!(await fileSystem.exists(file))) {
+    return;
+  }
+
+  try {
+    resource.apply(parsePipelineSpec(await readText(fileSystem, file)));
+    report.applied.push({ kind: resource.kind, file, root });
+  } catch (error) {
+    const detail = error instanceof PipelineSpecError ? error.message : String(error);
+    report.problems.push({
+      file,
+      message: `${resource.label}를 쓸 수 없습니다: ${file.fsPath} (${detail})`,
+    });
+  }
 }
 
 async function readText(fileSystem: IFileSystem, file: StoryUri): Promise<string> {
