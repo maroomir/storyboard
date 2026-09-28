@@ -25,14 +25,12 @@ function createApplication(): StoryboardApplication {
 }
 
 describe('StoryboardApplication', () => {
-  it('builds every shared service from the host adapters alone', () => {
-    const { services } = createApplication();
+  it('builds every manager and infrastructure handle from the host adapters alone', () => {
+    const app = createApplication();
 
-    for (const [name, service] of Object.entries(services)) {
-      expect(service, name).toBeDefined();
+    for (const [name, value] of Object.entries(app)) {
+      expect(value, name).toBeDefined();
     }
-    expect(services.generateAllDraftsUseCase).toBeInstanceOf(Object);
-    expect(services.novelPipeline).toBeInstanceOf(Object);
   });
 
   it('exposes one manager per domain over the same graph', () => {
@@ -43,7 +41,7 @@ describe('StoryboardApplication', () => {
     expect(typeof app.cards.recommend).toBe('function');
     expect(typeof app.novel.run).toBe('function');
     expect(typeof app.studio.chat).toBe('function');
-    expect(app.novel.runState).toBe(app.services.novelRunStateRepository);
+    expect(typeof app.novel.runState.readExisting).toBe('function');
   });
 
   it('can be disposed twice without throwing', () => {

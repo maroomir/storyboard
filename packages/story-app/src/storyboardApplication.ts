@@ -82,7 +82,7 @@ export interface StoryboardApplicationOptions {
   readonly postGenerationUpdates?: boolean;
 }
 
-export interface StoryboardServices {
+interface EngineGraph {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly configBridge: ConfigBridge;
@@ -139,16 +139,12 @@ export class StoryboardApplication {
   public readonly fileSystem: IFileSystem;
   public readonly usageMeter: UsageMeter;
   public readonly postGenerationUpdates: PostGenerationUpdateManager;
-  // The flat graph the apps are being moved off of; the managers above are the contract.
-  public readonly services: StoryboardServices;
-
   public constructor(
     dependencies: StoryboardApplicationDependencies,
     options: StoryboardApplicationOptions,
   ) {
     const services = buildServices(dependencies, options);
 
-    this.services = services;
     this.drafts = new DraftManager(services);
     this.manuscript = new ManuscriptManager(services);
     this.cards = new CardManager(services);
@@ -165,14 +161,14 @@ export class StoryboardApplication {
   }
 
   public dispose(): void {
-    this.services.postGenerationUpdates.dispose();
+    this.postGenerationUpdates.dispose();
   }
 }
 
 function buildServices(
   dependencies: StoryboardApplicationDependencies,
   options: StoryboardApplicationOptions,
-): StoryboardServices {
+): EngineGraph {
   const { fileSystem, workspaceLocator, logger, secretStore, configBridge } = dependencies;
   const { generator } = options;
 
