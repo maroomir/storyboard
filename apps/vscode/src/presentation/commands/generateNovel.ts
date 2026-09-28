@@ -6,12 +6,10 @@ import {
   type NovelPipelineResult,
 } from '@storyboard/story-engine';
 import type { NovelManager, RunGate } from '@storyboard/story-app';
-import { isRunBudgetExceeded, type UsageMeter } from '@storyboard/story-engine';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import { isResumable } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import type { ConfigBridge } from '@storyboard/story-ai';
 import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine';
 import type { ContractFieldKey } from '@storyboard/story-format';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
@@ -35,10 +33,8 @@ const runModeLabels: Record<NovelRunMode, string> = {
 };
 
 export interface RegisterGenerateNovelCommandDependencies {
-  readonly configBridge: ConfigBridge;
   readonly runGate: Pick<RunGate, 'hold'>;
   readonly novel: Pick<NovelManager, 'run' | 'runState'>;
-  readonly usageMeter: UsageMeter;
 }
 
 export function registerGenerateNovelCommand(
@@ -89,25 +85,22 @@ async function runGenerateNovel(
         cancellable: true,
       },
       async (progress, token) => {
-        const budgetUsd = dependencies.configBridge.getRunBudgetUsd();
-        const spending = dependencies.usageMeter.startSession();
         const result = await dependencies.novel.run({
           workspaceUri: workspaceRoot,
           project,
           runMode: decision.runMode,
           resumeState: decision.resumeState,
-          reviseMaxIterations: dependencies.configBridge.getReviseMaxIterations(),
           onProgress: (stage, message) => progress.report({ message: `[${stage}] ${message}` }),
           requestApproval: (kind, info) => requestApproval(kind, info),
           shouldCancel: () => token.isCancellationRequested,
-          shouldPause: () => isRunBudgetExceeded(spending.reading(), budgetUsd),
         });
-        spending.stop();
 
-        const isOverBudget = isRunBudgetExceeded(spending.reading(), budgetUsd);
         await reportResult(
-          isOverBudget && result.outcome === 'paused'
-            ? { ...result, message: `이번 실행 예산 $${budgetUsd}에 닿아 멈췄습니다.` }
+          result.spending.isOverBudget && result.outcome === 'paused'
+            ? {
+                ...result,
+                message: `이번 실행 예산 $${result.spending.budgetUsd}에 닿아 멈췄습니다.`,
+              }
             : result,
           paths.manuscriptVolume,
         );
