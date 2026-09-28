@@ -81,11 +81,11 @@ export class PlatformModule implements IApplicationModule {
         secretStore,
         configBridge,
         usageLedger: usageRecorder,
-        promptOverrideDirectories: [
-          vscode.Uri.file(homeStores.paths.promptsDirectory),
+        resourceRoots: [
+          vscode.Uri.file(homeStores.paths.home),
           ...(workspaceFolder === undefined
             ? []
-            : [getStoryboardProjectPaths(workspaceFolder.uri).promptDirectory]),
+            : [getStoryboardProjectPaths(workspaceFolder.uri).metadataDirectory]),
         ],
       },
       {
@@ -94,7 +94,7 @@ export class PlatformModule implements IApplicationModule {
       },
     );
 
-    void application.loadPromptOverrides().then((report) => {
+    void application.loadResourceOverrides().then((report) => {
       for (const problem of report.problems) {
         logger.warn(problem.message);
       }

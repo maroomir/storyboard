@@ -62,7 +62,7 @@ import { ManuscriptManager } from './managers/manuscriptManager';
 import { NovelManager } from './managers/novelManager';
 import { StudioManager } from './managers/studioManager';
 import { RunGate } from './runGate';
-import { loadPromptOverrides, type PromptOverrideReport } from './promptOverrides';
+import { loadResourceOverrides, type ResourceOverrideReport } from './resourceOverrides';
 import type { StoryUri } from '@storyboard/story-format';
 
 // What a host must supply before the engine can run: the six adapters that differ between the
@@ -76,9 +76,10 @@ export interface StoryboardApplicationDependencies {
   // Where a paid call's token cost is persisted. A host without a usage panel leaves it out and
   // only the per-run meter sees the cost.
   readonly usageLedger?: IUsageSink;
-  // Directories holding the author's own prompt files, lowest precedence first (home, then the
-  // workspace). `loadPromptOverrides` reads them; a host without any leaves this out.
-  readonly promptOverrideDirectories?: readonly StoryUri[];
+  // The roots holding the author's own resource files (prompts, the craft contract), lowest
+  // precedence first: the home `~/.storyboard`, then the workspace's `.storyboard`.
+  // `loadResourceOverrides` reads them; a host without any leaves this out.
+  readonly resourceRoots?: readonly StoryUri[];
 }
 
 export interface StoryboardApplicationOptions {
@@ -141,7 +142,7 @@ export class StoryboardApplication {
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
   public readonly runGate: RunGate;
-  private readonly promptOverrideDirectories: readonly StoryUri[];
+  private readonly resourceRoots: readonly StoryUri[];
   public readonly aiGateway: AiGateway;
   public readonly aiProviderRegistry: AiProviderRegistry;
   public readonly configBridge: ConfigBridge;
@@ -162,7 +163,7 @@ export class StoryboardApplication {
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
-    this.promptOverrideDirectories = dependencies.promptOverrideDirectories ?? [];
+    this.resourceRoots = dependencies.resourceRoots ?? [];
     this.aiGateway = services.aiGateway;
     this.aiProviderRegistry = services.aiProviderRegistry;
     this.configBridge = services.configBridge;
@@ -173,10 +174,10 @@ export class StoryboardApplication {
     this.postGenerationUpdates = services.postGenerationUpdates;
   }
 
-  // Applies the author's prompt files over the bundled text. Call it before the first generation;
-  // the report says which prompts were replaced and which files could not be used.
-  public loadPromptOverrides(): Promise<PromptOverrideReport> {
-    return loadPromptOverrides(this.fileSystem, this.promptOverrideDirectories);
+  // Applies the author's resource files over the bundled defaults. Call it before the first
+  // generation; the report says what was replaced and which files could not be used.
+  public loadResourceOverrides(): Promise<ResourceOverrideReport> {
+    return loadResourceOverrides(this.fileSystem, this.resourceRoots);
   }
 
   public dispose(): void {
