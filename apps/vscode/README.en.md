@@ -71,11 +71,20 @@ npm run build
 4. Run `Storyboard: Initialize Project`.
 5. Fill the **Generation Contract** in `Storyboard: Open Settings`, then run `Storyboard: Generate Novel`, or manually create cards and scenes from the Characters / Backgrounds / Scenes views.
 
-Pick a provider before generating: nothing is chosen on a fresh install, and generation is refused until you choose one. Run `Storyboard: Choose AI Provider`, or set `defaultProvider` in `~/.storyboard/config.json`. Providers that authenticate with a key (`openai`, `claude`, `google`, `grok`) take one through `Storyboard: Set API Key...`, stored in `~/.storyboard/secrets.json` (mode 0600) and shared with the CLI. `mock` invents text for flow checks and needs nothing.
+Pick a provider before generating: nothing is chosen on a fresh install, and generation is refused until you choose one. Run `Storyboard: Choose AI Provider`, or set `ai.provider.default` in `~/.storyboard/config.json`. Providers that authenticate with a key (`openai`, `claude`, `google`, `grok`) take one through `Storyboard: Set API Key...`, stored in `~/.storyboard/secrets.json` (mode 0600) and shared with the CLI. `mock` invents text for flow checks and needs nothing.
 
 ### Why every provider takes an API key
 
 The Claude Code, Codex, and Gemini CLI providers were removed in 0.9.2. Anthropic, OpenAI, and Google all limit a subscription or account login to interactive personal use and direct programmatic or bulk work to API-key authentication — and long-form generation is bulk work. A config file that still names `claude-code`, `codex`, or `gemini-cli` reads as no provider at all and generation refuses until you choose one — the metered replacement bills at a different rate, so the choice stays yours. Set the model with `providers.<id>.model`. Only `ollama` runs without a key, locally.
+
+## Author resource files
+
+Beyond the settings, four things can be edited as files: prompt wording, the craft contract defaults,
+the prompt variant rules and what the composition presets build. Put `prompts/<name>.md`,
+`craftContract.json`, `promptVariants.json` or `compositionPresets.json` under `~/.storyboard/` (every
+work) or a work's `.storyboard/` (that work only, taking precedence) and all three apps generate on top
+of them. The bundled originals live in `packages/story-ai/src/ai/prompts/resources/` and each
+package's `*.params.json`; CLI `storyboard params show` lists every value in force with its origin.
 
 ## Generated text and provider policies
 
