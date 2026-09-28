@@ -1,5 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
   buildSceneContext,
   characterMatchTokens,
@@ -121,17 +122,13 @@ async function findScenesFeaturingCard(
   sceneDirectory: StoryUri,
   card: StoryboardCard,
 ): Promise<string[]> {
-  let entries: FileSystemDirectoryEntry[];
-
-  try {
-    entries = await fs.readDirectory(sceneDirectory);
-  } catch {
-    return [];
-  }
-
-  const stems = entries
-    .filter(([name]) => !isIgnoredSampleCardFileName(name))
-    .map(([name]) => parseSceneFileName(name)?.stem)
+  const names = await listDirectoryFileNames(
+    fs,
+    sceneDirectory,
+    (name) => !isIgnoredSampleCardFileName(name),
+  );
+  const stems = names
+    .map((name) => parseSceneFileName(name)?.stem)
     .filter((stem): stem is string => stem !== undefined)
     .sort();
 

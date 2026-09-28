@@ -20,7 +20,7 @@ import {
 } from '@storyboard/story-format';
 import type { NarrationDirective, StoryboardProject } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { ISceneCacheRepository } from '#engine/ports/repositories';
+import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';

@@ -1,5 +1,6 @@
 import { joinStoryPath } from '#engine/paths/storyUri';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { isHiddenSceneFileName } from '#engine/paths/projectPaths';
 import {
@@ -58,16 +59,14 @@ async function listEarlierScenes(
   paths: StoryboardProjectPaths,
   currentOrder: number,
 ): Promise<EarlierScene[]> {
-  let entries: FileSystemDirectoryEntry[];
-  try {
-    entries = await fs.readDirectory(paths.sceneDirectory);
-  } catch {
-    return [];
-  }
+  const names = await listDirectoryFileNames(
+    fs,
+    paths.sceneDirectory,
+    (name) => !isHiddenSceneFileName(name),
+  );
 
-  return entries
-    .filter(([name, fileType]) => fileType.type === 'file' && !isHiddenSceneFileName(name))
-    .flatMap(([name]) => {
+  return names
+    .flatMap((name) => {
       const parts = parseSceneFileName(name);
       return parts && parts.order < currentOrder
         ? [{ fileName: name, stem: parts.stem, order: parts.order }]

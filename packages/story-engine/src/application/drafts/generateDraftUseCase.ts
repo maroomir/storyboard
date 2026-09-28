@@ -1,6 +1,6 @@
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryUri } from '@storyboard/story-format';
-import type { ISceneCacheRepository } from '#engine/ports/repositories';
+import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { draftHistorySceneDirectory, joinUri } from '#engine/paths/projectPaths';
 import {
   computeDraftBodyHash,

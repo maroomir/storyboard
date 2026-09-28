@@ -1,5 +1,6 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import { type StoryUri } from '@storyboard/story-format';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { IBibleCandidateRepository } from '#engine/application/project/promoteBibleCandidatesUseCase';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
@@ -23,31 +24,12 @@ export class BibleCandidateRepository implements IBibleCandidateRepository {
 
   public async loadRecords(workspaceRoot: StoryUri): Promise<readonly BibleCandidateRecord[]> {
     const { bibleCacheDirectory } = getStoryboardProjectPaths(workspaceRoot);
-    let entries: FileSystemDirectoryEntry[];
 
-    try {
-      entries = await this.fileSystem.readDirectory(bibleCacheDirectory);
-    } catch {
-      return [];
-    }
-
-    const records: BibleCandidateRecord[] = [];
-
-    for (const [name, fileType] of entries) {
-      if (fileType.type !== 'file' || !name.endsWith('.json')) {
-        continue;
-      }
-
-      try {
-        records.push(
-          await readBibleCandidateFile(joinStoryPath(bibleCacheDirectory, name), this.fileSystem),
-        );
-      } catch {
-        // NOTE: Invalid cache records are excluded from candidate promotion.
-      }
-    }
-
-    return records;
+    // NOTE: Invalid cache records are excluded from candidate promotion.
+    return await readDirectoryFiles(this.fileSystem, bibleCacheDirectory, {
+      isEligible: (name) => name.endsWith('.json'),
+      read: (uri) => readBibleCandidateFile(uri, this.fileSystem),
+    });
   }
 
   public async saveCanon(workspaceRoot: StoryUri, canon: StoryBible): Promise<void> {

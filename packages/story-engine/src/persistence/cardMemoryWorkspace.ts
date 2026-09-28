@@ -1,5 +1,6 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from '@storyboard/story-format';
 import type {
@@ -140,33 +141,11 @@ export function createSceneDialogueStore(
       await writeSceneDialogueFile(sceneDialogueFilePath(paths, record.sceneStem), fs, record);
     },
     async loadCorpus(): Promise<readonly SceneDialogueRecord[]> {
-      let entries: FileSystemDirectoryEntry[];
-      try {
-        entries = await fs.readDirectory(paths.sceneDialogueDirectory);
-      } catch {
-        return [];
-      }
-
-      const records: SceneDialogueRecord[] = [];
-      for (const [name, fileType] of entries) {
-        if (fileType.type !== 'file' || !name.endsWith('.json')) {
-          continue;
-        }
-
-        try {
-          const record = await readSceneDialogueFile(
-            joinStoryPath(paths.sceneDialogueDirectory, name),
-            fs,
-          );
-
-          const reconciled = await reconcileWithDraft(fs, paths, record);
-          if (reconciled) {
-            records.push(reconciled);
-          }
-        } catch {
-          continue;
-        }
-      }
+      const records = await readDirectoryFiles(fs, paths.sceneDialogueDirectory, {
+        isEligible: (name) => name.endsWith('.json'),
+        read: async (uri) =>
+          await reconcileWithDraft(fs, paths, await readSceneDialogueFile(uri, fs)),
+      });
 
       return records;
     },

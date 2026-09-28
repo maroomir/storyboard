@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-format';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { ISceneCacheRepository } from '#engine/ports/repositories';
+import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import {
   readSceneCacheFile,
   type SceneCacheRecord,

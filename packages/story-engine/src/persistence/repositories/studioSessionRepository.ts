@@ -1,5 +1,6 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
   deriveStudioSessionTitle,
   parseStudioSession,
@@ -129,18 +130,11 @@ export class StudioSessionRepository implements IStudioSessionRepository {
       return [];
     }
 
-    let entries: FileSystemDirectoryEntry[];
-
-    try {
-      entries = await this.fileSystem.readDirectory(directory);
-    } catch {
-      return [];
-    }
-
+    const names = await listDirectoryFileNames(this.fileSystem, directory, (name) =>
+      name.endsWith('.json'),
+    );
     const sessions = await Promise.all(
-      entries
-        .filter(([name]) => name.endsWith('.json'))
-        .map(([name]) => this.readSession(joinStoryPath(directory, name))),
+      names.map((name) => this.readSession(joinStoryPath(directory, name))),
     );
 
     return sessions.filter((session): session is StudioSession => session !== undefined);

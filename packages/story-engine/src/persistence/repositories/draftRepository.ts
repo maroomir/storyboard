@@ -1,5 +1,5 @@
 import type { StoryUri } from '@storyboard/story-format';
-import type { IDraftRepository } from '#engine/ports/repositories';
+import type { IDraftRepository } from '#engine/application/drafts/draftRepositories';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { writeDraftFile } from '@storyboard/story-format';
 import type { Draft } from '@storyboard/story-format';
