@@ -35,6 +35,17 @@ describe('StoryboardApplication', () => {
     expect(services.novelPipeline).toBeInstanceOf(Object);
   });
 
+  it('exposes one manager per domain over the same graph', () => {
+    const app = createApplication();
+
+    expect(typeof app.drafts.generate).toBe('function');
+    expect(typeof app.manuscript.assemble).toBe('function');
+    expect(typeof app.cards.recommend).toBe('function');
+    expect(typeof app.novel.run).toBe('function');
+    expect(typeof app.studio.chat).toBe('function');
+    expect(app.novel.runState).toBe(app.services.novelRunStateRepository);
+  });
+
   it('can be disposed twice without throwing', () => {
     const app = createApplication();
 

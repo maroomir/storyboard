@@ -55,6 +55,11 @@ import {
   type ConfigBridge,
   type SecretStore,
 } from '@storyboard/story-ai';
+import { CardManager } from './managers/cardManager';
+import { DraftManager } from './managers/draftManager';
+import { ManuscriptManager } from './managers/manuscriptManager';
+import { NovelManager } from './managers/novelManager';
+import { StudioManager } from './managers/studioManager';
 
 // What a host must supply before the engine can run: the six adapters that differ between the
 // extension, the CLI and the desktop app. Everything else is built here, once, the same way.
@@ -119,15 +124,44 @@ export interface StoryboardServices {
 }
 
 // The one place the engine's object graph is assembled. Each app builds its adapters, hands them
-// in, and reads the finished services; none of them wires a use case on its own.
+// in, and drives the engine through the managers; none of them wires a use case on its own.
 export class StoryboardApplication {
+  public readonly drafts: DraftManager;
+  public readonly manuscript: ManuscriptManager;
+  public readonly cards: CardManager;
+  public readonly novel: NovelManager;
+  public readonly studio: StudioManager;
+  public readonly aiGateway: AiGateway;
+  public readonly aiProviderRegistry: AiProviderRegistry;
+  public readonly configBridge: ConfigBridge;
+  public readonly secretStore: SecretStore;
+  public readonly logger: IStoryboardLogger;
+  public readonly fileSystem: IFileSystem;
+  public readonly usageMeter: UsageMeter;
+  public readonly postGenerationUpdates: PostGenerationUpdateManager;
+  // The flat graph the apps are being moved off of; the managers above are the contract.
   public readonly services: StoryboardServices;
 
   public constructor(
     dependencies: StoryboardApplicationDependencies,
     options: StoryboardApplicationOptions,
   ) {
-    this.services = buildServices(dependencies, options);
+    const services = buildServices(dependencies, options);
+
+    this.services = services;
+    this.drafts = new DraftManager(services);
+    this.manuscript = new ManuscriptManager(services);
+    this.cards = new CardManager(services);
+    this.novel = new NovelManager(services);
+    this.studio = new StudioManager(services);
+    this.aiGateway = services.aiGateway;
+    this.aiProviderRegistry = services.aiProviderRegistry;
+    this.configBridge = services.configBridge;
+    this.secretStore = services.secretStore;
+    this.logger = services.logger;
+    this.fileSystem = services.fileSystem;
+    this.usageMeter = services.usageMeter;
+    this.postGenerationUpdates = services.postGenerationUpdates;
   }
 
   public dispose(): void {
