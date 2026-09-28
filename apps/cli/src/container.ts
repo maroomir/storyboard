@@ -5,7 +5,11 @@ import {
   type StoryWorkspaceFolder,
   type IUsageSink,
 } from '@storyboard/story-engine';
-import { StoryboardApplication, type ResourceOverrideReport } from '@storyboard/story-app';
+import {
+  StoryboardApplication,
+  type ParameterReport,
+  type ResourceOverrideReport,
+} from '@storyboard/story-app';
 import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
@@ -42,6 +46,8 @@ export interface CliContainer extends Pick<
   readonly homePaths: StoryboardHomePaths;
   // Lays the author's resource files (home, then this workspace) over the bundled defaults.
   readonly loadResourceOverrides: () => Promise<ResourceOverrideReport>;
+  // Every value an author can move, with its origin, for `params show`.
+  readonly describeParameters: () => Promise<ParameterReport>;
   readonly workspaceConfigFile: string | undefined;
   // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
@@ -193,6 +199,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     canPrompt: options.canPrompt,
     homePaths,
     loadResourceOverrides: () => application.loadResourceOverrides(),
+    describeParameters: () => application.describeParameters(),
     workspaceConfigFile,
     configWriteFile:
       configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??

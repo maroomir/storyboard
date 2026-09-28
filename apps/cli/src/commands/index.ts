@@ -30,11 +30,7 @@ import {
   type StoryUri,
 } from '@storyboard/story-engine';
 
-import {
-  aiProviderIds,
-  requiresApiKey,
-  type AiProviderId,
-} from '@storyboard/story-ai';
+import { aiProviderIds, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 import {
   compositionKinds,
   formatSceneOrderRanges,
@@ -83,7 +79,7 @@ import {
 } from './narrators';
 import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
 import { readSceneCards } from './sceneCards';
-import { runConfigSet, runConfigShow, runDoctor, runSetup } from './setup';
+import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
@@ -1896,6 +1892,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   doctor: runDoctor,
   'config show': runConfigShow,
   'config set': runConfigSet,
+  'params show': runParamsShow,
   'scene generate': generateScene,
   'scene beats': generateSceneBeats,
   'scene revise': reviseScene,

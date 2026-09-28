@@ -33,15 +33,11 @@ import {
 import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
+import type { ParameterEntry } from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
-import {
-  displayedProviderKeys,
-  settableProviderKeys,
-  type SettableProviderKey,
-} from './catalog';
-
+import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
 
 function isProviderId(value: string): value is AiProviderId {
   return aiProviderIds.includes(value as AiProviderId);
@@ -721,6 +717,53 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
   ];
 
   return { ok: true, message: [...files, '', ...lines].join('\n'), data: { rows, files } };
+}
+
+const parameterKindLabels: Record<ParameterEntry['kind'], string> = {
+  setting: '설정 (config.json)',
+  generation: '생성 손잡이 (모델 실측 → 파이프라인 기본값)',
+  prompt: '프롬프트 온도·출력 상한 (프롬프트 파일 머리말)',
+};
+
+const parameterOriginLabels: Record<ParameterEntry['origin'], string> = {
+  workspace: '이 작품',
+  user: '공통',
+  model: '모델 실측',
+  default: '기본값',
+};
+
+// 작가가 움직일 수 있는 값 전부를 한 목록으로: 어떤 값이 지금 어디서 오는지 한눈에 보인다.
+export async function runParamsShow({ container }: CommandContext): Promise<CommandOutcome> {
+  const report = await container.describeParameters();
+  const width = Math.max(...report.parameters.map((entry) => entry.id.length));
+  const lines: string[] = [];
+
+  for (const kind of Object.keys(parameterKindLabels) as ParameterEntry['kind'][]) {
+    const entries = report.parameters.filter((entry) => entry.kind === kind);
+    lines.push(`[${parameterKindLabels[kind]}]`);
+
+    for (const entry of entries) {
+      const shown = String(entry.value).padEnd(12);
+      const origin = parameterOriginLabels[entry.origin];
+      const note = entry.origin === 'default' ? '' : `  (기본값 ${String(entry.defaultValue)})`;
+      lines.push(`${entry.id.padEnd(width)}  ${shown}  ${origin}${note}`);
+    }
+
+    lines.push('');
+  }
+
+  lines.push('[적용된 리소스 파일]');
+  if (report.resources.applied.length === 0) {
+    lines.push('(없음)');
+  }
+  for (const applied of report.resources.applied) {
+    lines.push(`${applied.kind.padEnd(18)}  ${applied.file.fsPath}`);
+  }
+  for (const problem of report.resources.problems) {
+    lines.push(`! ${problem.message}`);
+  }
+
+  return { ok: true, message: lines.join('\n'), data: report };
 }
 
 function parseSettingValue(

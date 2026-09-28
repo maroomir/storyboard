@@ -171,6 +171,11 @@ storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
 `.storyboard/config.json`. Keys are the extension's setting names without the `storyboard.` prefix.
 `storyboard config show` prints the effective values with their origin (공통 / 이 작품 / 기본값) and
 `storyboard config set <key> <value>` edits them with the same validation the settings panel uses.
+`storyboard params show` goes wider: every value an author can move — the settings, the generation
+knobs (a measured model profile over the pipeline default) and each prompt's temperature and output
+limit — with where its current value comes from, plus the author resource files in force
+(`prompts/<key>.md`, `craftContract.json`, `promptVariants.json`, `compositionPresets.json` under
+`~/.storyboard/` or the workspace's `.storyboard/`).
 
 Writes follow git's rule: run inside a workspace and the value lands in that workspace's
 `.storyboard/config.json`; add `--global` to write `~/.storyboard/config.json` instead. Outside a

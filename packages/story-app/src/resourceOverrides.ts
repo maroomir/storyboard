@@ -37,6 +37,7 @@ export interface ResourceOverrideApplied {
   readonly kind: ResourceOverrideKind;
   readonly key?: string;
   readonly file: StoryUri;
+  readonly root: StoryUri;
 }
 
 export interface ResourceOverrideProblem {
@@ -67,21 +68,39 @@ export async function loadResourceOverrides(
   resetCompositionPresetDefaults();
 
   for (const root of roots) {
-    await loadPromptFiles(fileSystem, joinStoryPath(root, resourceLayout.promptDirectory), report);
-    await loadJsonFile(fileSystem, joinStoryPath(root, resourceLayout.craftContractFile), report, {
-      kind: 'craftContract',
-      label: '작법 계약 파일',
-      schema: craftContractOverrideSchema.strict(),
-      apply: overrideCraftContractDefaults,
-    });
-    await loadJsonFile(fileSystem, joinStoryPath(root, resourceLayout.promptVariantsFile), report, {
-      kind: 'promptVariants',
-      label: '프롬프트 변형 규칙 파일',
-      schema: promptVariantRulesOverrideSchema.strict(),
-      apply: overridePromptVariantRules,
-    });
+    await loadPromptFiles(
+      fileSystem,
+      root,
+      joinStoryPath(root, resourceLayout.promptDirectory),
+      report,
+    );
     await loadJsonFile(
       fileSystem,
+      root,
+      joinStoryPath(root, resourceLayout.craftContractFile),
+      report,
+      {
+        kind: 'craftContract',
+        label: '작법 계약 파일',
+        schema: craftContractOverrideSchema.strict(),
+        apply: overrideCraftContractDefaults,
+      },
+    );
+    await loadJsonFile(
+      fileSystem,
+      root,
+      joinStoryPath(root, resourceLayout.promptVariantsFile),
+      report,
+      {
+        kind: 'promptVariants',
+        label: '프롬프트 변형 규칙 파일',
+        schema: promptVariantRulesOverrideSchema.strict(),
+        apply: overridePromptVariantRules,
+      },
+    );
+    await loadJsonFile(
+      fileSystem,
+      root,
       joinStoryPath(root, resourceLayout.compositionPresetsFile),
       report,
       {
@@ -103,6 +122,7 @@ interface MutableReport {
 
 async function loadPromptFiles(
   fileSystem: IFileSystem,
+  root: StoryUri,
   directory: StoryUri,
   report: MutableReport,
 ): Promise<void> {
@@ -120,7 +140,7 @@ async function loadPromptFiles(
 
     try {
       promptResources.override(key, await readText(fileSystem, file));
-      report.applied.push({ kind: 'prompt', key, file });
+      report.applied.push({ kind: 'prompt', key, file, root });
     } catch (error) {
       const detail = error instanceof PromptResourceError ? error.message : String(error);
       report.problems.push({
@@ -155,6 +175,7 @@ interface JsonResource<T> {
 
 async function loadJsonFile<T>(
   fileSystem: IFileSystem,
+  root: StoryUri,
   file: StoryUri,
   report: MutableReport,
   resource: JsonResource<T>,
@@ -176,7 +197,7 @@ async function loadJsonFile<T>(
   }
 
   resource.apply(parsed.data);
-  report.applied.push({ kind: resource.kind, file });
+  report.applied.push({ kind: resource.kind, file, root });
 }
 
 async function readText(fileSystem: IFileSystem, file: StoryUri): Promise<string> {

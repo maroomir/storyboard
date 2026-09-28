@@ -170,7 +170,11 @@ class PromptResourceStore {
 
   // An author's file may leave the front-matter out and keep the bundled sampling config.
   public config(key: string): PromptConfig {
-    const config = this.overrides.get(key)?.config ?? this.bundled(key).config;
+    return this.overrides.get(key)?.config ?? this.bundledConfig(key);
+  }
+
+  public bundledConfig(key: string): PromptConfig {
+    const config = this.bundled(key).config;
 
     if (config === undefined) {
       throw new PromptResourceError(
