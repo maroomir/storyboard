@@ -18,6 +18,7 @@ import {
   missingApiKeyMessage,
   missingModelMessage,
 } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 interface OpenAiModelsLike {
   readonly list: () => Promise<unknown>;
@@ -154,3 +155,12 @@ function createDefaultOpenAiClient(apiKey: string): OpenAiClientLike {
     },
   };
 }
+
+registerProviderFactory(
+  'openai',
+  async (context) =>
+    new OpenAiProvider({
+      ...(await resolveApiKeyProviderOptions('openai', context)),
+      createClient: context.clients.createOpenAiClient,
+    }),
+);

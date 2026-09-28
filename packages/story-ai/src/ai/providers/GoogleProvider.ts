@@ -17,6 +17,7 @@ import {
   missingApiKeyMessage,
   missingModelMessage,
 } from '#ai/contracts/providerCatalog';
+import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 interface GoogleGenerativeModelLike {
   readonly generateContent: (prompt: string) => Promise<GoogleGenerateContentResultLike>;
@@ -149,3 +150,12 @@ function createDefaultGoogleClient(apiKey: string): GoogleClientLike {
     getGenerativeModel: (options): GoogleGenerativeModelLike => client.getGenerativeModel(options),
   };
 }
+
+registerProviderFactory(
+  'google',
+  async (context) =>
+    new GoogleProvider({
+      ...(await resolveApiKeyProviderOptions('google', context)),
+      createClient: context.clients.createGoogleClient,
+    }),
+);
