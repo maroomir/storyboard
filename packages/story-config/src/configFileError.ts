@@ -1,4 +1,4 @@
-export type ConfigFileErrorCode = 'invalid-json' | 'not-an-object' | 'write-failed';
+export type ConfigFileErrorCode = 'invalid-json' | 'not-an-object' | 'invalid-value' | 'write-failed';
 
 export class ConfigFileError extends Error {
   public constructor(

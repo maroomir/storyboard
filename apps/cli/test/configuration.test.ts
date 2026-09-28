@@ -45,7 +45,7 @@ describe('CLI configuration precedence', () => {
   });
 
   it('lets the workspace file win key by key', () => {
-    const user = write('user.json', { defaultProvider: 'codex', draft: { keepHistory: true } });
+    const user = write('user.json', { defaultProvider: 'openai', draft: { keepHistory: true } });
     const workspace = write('workspace.json', { defaultProvider: 'mock' });
 
     const configuration = createFileConfiguration({
@@ -60,7 +60,7 @@ describe('CLI configuration precedence', () => {
   // Naming a provider on the command line means "this run, everything" — otherwise task-level
   // routing in the file silently wins and the flag looks broken.
   it('replaces a section outright when a flag overrides it', () => {
-    const user = write('user.json', { tasks: { sceneDraft: { provider: 'codex' } } });
+    const user = write('user.json', { tasks: { sceneDraft: { provider: 'openai' } } });
     const workspace = write('workspace.json', {});
 
     const configuration = createFileConfiguration({
@@ -74,8 +74,8 @@ describe('CLI configuration precedence', () => {
   });
 
   it('reports which layer a value came from', () => {
-    const user = write('user.json', { defaultProvider: 'codex' });
-    const workspace = write('workspace.json', { providers: { codex: { model: 'gpt-5.5' } } });
+    const user = write('user.json', { defaultProvider: 'openai' });
+    const workspace = write('workspace.json', { providers: { openai: { model: 'gpt-5.5' } } });
 
     const configuration = createFileConfiguration({
       userConfigFile: user,
@@ -83,10 +83,10 @@ describe('CLI configuration precedence', () => {
     });
 
     expect(configuration.inspect('defaultProvider')).toEqual({
-      globalValue: 'codex',
+      globalValue: 'openai',
       workspaceValue: undefined,
     });
-    expect(configuration.inspect('providers.codex.model')).toEqual({
+    expect(configuration.inspect('providers.openai.model')).toEqual({
       globalValue: undefined,
       workspaceValue: 'gpt-5.5',
     });
@@ -110,6 +110,61 @@ describe('CLI configuration precedence', () => {
 
     expect(tolerant.get('defaultProvider', 'x')).toBe('x');
     expect(reported.map((error) => error.code)).toEqual(['invalid-json']);
+  });
+});
+
+describe('CLI configuration validation', () => {
+  it('refuses a value the setting catalog rejects, naming the key', () => {
+    const user = write('user.json', { draft: { reviseMaxIterations: 99 } });
+
+    let thrown: unknown;
+    try {
+      createFileConfiguration({ userConfigFile: user }).get('draft.reviseMaxIterations', 1);
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(ConfigFileError);
+    expect((thrown as ConfigFileError).code).toBe('invalid-value');
+    expect((thrown as ConfigFileError).message).toContain('draft.reviseMaxIterations');
+  });
+
+  it('refuses an unknown provider or a flat key with the wrong type', () => {
+    const user = write('user.json', { defaultProvider: 'codex', 'draft.minBeats': 'three' });
+
+    expect(() =>
+      createFileConfiguration({ userConfigFile: user }).get('defaultProvider', 'x'),
+    ).toThrow(ConfigFileError);
+  });
+
+  it('reports an unknown key once per read but still returns it', () => {
+    const user = write('user.json', {
+      defaultProvider: 'claude',
+      providers: { claude: { model: 'claude-sonnet-5', color: 'blue' } },
+      experiment: true,
+    });
+    const unknown: string[] = [];
+    const configuration = createFileConfiguration({
+      userConfigFile: user,
+      onUnknownKey: (warning) => unknown.push(warning.key),
+    });
+
+    expect(configuration.get('experiment', false)).toBe(true);
+    expect(configuration.get('providers.claude.model', '')).toBe('claude-sonnet-5');
+    configuration.get('defaultProvider', 'x');
+    expect(unknown).toEqual(['providers.claude.color', 'experiment']);
+  });
+
+  it('lets a tolerant host fall back to defaults for a file with a bad value', () => {
+    const user = write('user.json', { budget: { runLimitUsd: -1 } });
+    const reported: ConfigFileError[] = [];
+    const tolerant = createFileConfiguration({
+      userConfigFile: user,
+      onInvalidFile: (error) => reported.push(error),
+    });
+
+    expect(tolerant.get('budget.runLimitUsd', 0)).toBe(0);
+    expect(reported.map((error) => error.code)).toEqual(['invalid-value']);
   });
 });
 

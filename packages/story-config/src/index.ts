@@ -1,4 +1,5 @@
 export { ConfigFileError, type ConfigFileErrorCode } from '#config/configFileError';
+export { validateConfigSettings, type ConfigKeyWarning } from '#config/configSchema';
 export {
   configurationTargets,
   createFileConfiguration,
