@@ -92,6 +92,7 @@ export * from './persistence/characterBriefs';
 export * from './persistence/manuscriptDrafts';
 export * from './persistence/memoryMigration';
 export * from './persistence/projectInitializer';
+export * from './persistence/directoryFiles';
 export * from './persistence/projectJson';
 export * from './persistence/relationGraphData';
 export * from './persistence/repositories/bibleCandidateRepository';
