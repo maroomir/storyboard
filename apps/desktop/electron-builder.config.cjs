@@ -32,8 +32,8 @@ module.exports = {
     notarize: canNotarize,
     // Auto-update on macOS reads the zip; the dmg is what a person downloads.
     target: [
-      { target: 'dmg', arch: ['arm64', 'x64'] },
-      { target: 'zip', arch: ['arm64', 'x64'] },
+      { target: 'dmg', arch: ['arm64'] },
+      { target: 'zip', arch: ['arm64'] },
     ],
   },
   dmg: {

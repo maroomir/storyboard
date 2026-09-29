@@ -53,7 +53,7 @@ The desktop installers are built by the workflow on macOS and Windows runners. O
 you can build the ones for your platform (unsigned unless the signing variables below are set):
 
 ```bash
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac --workspace @storyboard/desktop   # on macOS
+CSC_IDENTITY_AUTO_DISCOVERY=false npm run package:mac --workspace @storyboard/desktop   # on macOS (arm64)
 npm run package:win --workspace @storyboard/desktop                                  # on Windows
 ```
 
