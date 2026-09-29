@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-09-29
+
 ### Added
 
 - **Storyboard now has a desktop app for writers (macOS and Windows).** The manuscript fills the middle of the screen; the scene's cards, the facts established so far and the review notes sit in the margin. The novel run lives in a drawer below with its stages, a scene grid, the progress log and the cost, and offers per-chapter checks, pause, a budget and resume. A new work starts in three steps (title, genre, readers; point of view, structure, length; one paragraph), and characters, settings, narrators and canon are edited as forms in the story bible. Drafts can be edited by hand or by selecting a passage and asking the AI, and the app saves a version every time it changes the work, so any version can be restored (git need not be installed). The UI is in Korean and English, and settings and API keys are shared with the CLI and the extension through `~/.storyboard/`.
@@ -18,10 +20,16 @@ after the first public release.
 
 - **Two apps no longer rewrite one workspace at once.** Work that changes a workspace, such as novel or draft generation, now holds a run lock (`.storyboard/cache/run.lock`). While another app holds it, a new run refuses to start and says who is doing what, for example «CLI이(가) «storyboard novel generate» 작업 중입니다». Every CLI verb that changes the workspace takes the lock, and so do the extension's novel, draft and generate-all commands. Read-only verbs never wait. A lock left by an app that died frees itself after 45 seconds.
 
+- **A hand edit to a draft keeps the version before it.** Editing the manuscript by hand now archives the previous version to the `.draft/` history on the first save of an editing session, so it can always be rolled back. It archives once per session so autosave does not fill the history.
+
 ### Changed (breaking)
 
 - **The model list and prices are current as of 2026-09-27.** Newly selectable: GPT-6 Sol and Luna, Claude Opus 5.5, Grok 4.7, Ollama `qwen3.8:27b`. Cache reads on Claude Opus 5.5 and Fable 5.1 are billed at their official multipliers (0.05x and 0.025x); Fable 5.1 cache tokens used to be counted at the input rate.
 - **Default models change.** If you never picked a model, OpenAI now generates with `gpt-6-sol` (same input price as GPT-5.6 Terra, cheaper output) and Grok with `grok-4.7` (Claude, Gemini and Ollama are unchanged). Like Astra, the GPT-6 generation (Sol, Luna) is called without `temperature`. Every earlier model is still listed, so no setting needs to change.
+
+### Fixed
+
+- **The mock provider is hidden from `storyboard setup`'s provider list.** 0.9.4 removed it from the extension's pickers, but the CLI's interactive list still offered it. A setup already saved as mock still shows it.
 
 ### Documentation
 
