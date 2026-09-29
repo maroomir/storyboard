@@ -64,7 +64,7 @@ Run the release scenario in `apps/desktop/DESKTOP_QA.md` on both platforms befor
 The version commit should include at least:
 
 - `package.json` (the version) and `package-lock.json`
-- `apps/vscode/package.json`, `apps/cli/package.json`
+- `apps/vscode/package.json`, `apps/cli/package.json`, `apps/desktop/package.json`
 - `apps/cli/src/index.ts` (the printed version)
 - `apps/vscode/CHANGELOG.md`, `apps/vscode/CHANGELOG.en.md`
 
@@ -89,20 +89,27 @@ be synced to it — the workflow checks both and refuses otherwise.
 
 Pushing a `v*.*.*` tag starts `.github/workflows/release.yml`. The workflow:
 
-1. Builds the desktop installers in a `desktop` job on `macos-latest` and `windows-latest` (Node 22):
-   `storyboard-desktop-<version>-mac-{arm64,x64}.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
+Installers go from the platform job to the release directly, never through `actions/upload-artifact`.
+Artifact storage counts against the account's shared quota and release assets do not, so routing
+~600 MB per release through it would fill the quota and block unrelated repositories too.
+
+1. `verify` (ubuntu, Node 20) installs with `npm ci`, checks the tag matches the root version and
+   that every app is synced to it, runs lint and tests from the repository root, then opens the
+   release as a **draft** with no assets.
+2. `desktop` builds the installers on `macos-latest` and `windows-latest` (Node 22):
+   `storyboard-desktop-<version>-mac-arm64.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
    their `.blockmap` files and the update feed `latest-mac.yml` / `latest.yml`. Signing is used when
-   its secrets exist (below); otherwise the job warns and ships unsigned installers.
-2. Installs dependencies with `npm ci` in the `release` job.
-3. Verifies the tag matches the root version and that every app is synced to it.
-4. Runs lint and tests from the repository root.
-5. Packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`, collects the
-   desktop installers, copies `scripts/install.sh` alongside and creates `SHA256SUMS` over everything.
-6. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
+   its secrets exist (below); otherwise the job warns and ships unsigned installers. Each job
+   uploads its own installers straight to the draft release.
+3. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
+   downloads the desktop installers back from the draft, copies `scripts/install.sh` alongside and
+   creates `SHA256SUMS` over everything.
+4. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
-7. Creates a GitHub Release with every asset and the checksum attached.
-8. Publishes the same notes and assets to the public repository, `webfic/storyboard`: it copies
+5. Uploads the remaining assets and takes the release out of draft, so a run that dies partway
+   never leaves a half-built release visible.
+6. Publishes the same notes and assets to the public repository, `webfic/storyboard`: it copies
    both changelogs and `scripts/install.sh` there, commits, tags and pushes, then creates the
    matching GitHub Release. The step needs the `WEBFIC_RELEASE_TOKEN` secret (a fine-grained PAT
    with `contents: write` on `webfic/storyboard`); without it the step logs a warning and the

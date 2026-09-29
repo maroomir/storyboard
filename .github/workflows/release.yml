@@ -8,10 +8,55 @@ on:
 permissions:
   contents: write
 
+# 설치본은 Actions 아티팩트를 거치지 않고 릴리즈에 직접 올라간다. 아티팩트 저장소는 계정 공유
+# 용량에 산입되지만 릴리즈 자산은 그렇지 않아, 회당 수백 MB를 과금 버킷으로 나르지 않으려는 것이다.
+# 그래서 릴리즈를 draft 로 먼저 만들고, 모든 자산이 모인 뒤에야 공개한다.
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check tag matches the monorepo version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          root_version="$(node -p "require('./package.json').version")"
+          test "$tag_version" = "$root_version"
+          node scripts/sync-version.mjs --check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Open the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
+          gh release create "$GITHUB_REF_NAME" \
+            --draft \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Assets are still uploading."
+
   # Installers are built on the platform they are for. Signing and notarization switch on only when
   # their secrets exist; without them the installers are unsigned but still ship.
   desktop:
+    needs: verify
     strategy:
       matrix:
         include:
@@ -69,16 +114,17 @@ jobs:
       - name: Package the installers
         run: npm run package:${{ matrix.target }} --workspace @storyboard/desktop
 
-      - name: Keep the installers and the update feed
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop-${{ matrix.target }}
-          path: |
-            apps/desktop/release/storyboard-desktop-*
-            apps/desktop/release/latest*.yml
-          if-no-files-found: error
+      - name: Upload the installers and the update feed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$GITHUB_REF_NAME" \
+            apps/desktop/release/storyboard-desktop-* \
+            apps/desktop/release/latest*.yml \
+            --clobber
 
-  release:
+  publish:
     needs: desktop
     runs-on: ubuntu-latest
     env:
@@ -97,19 +143,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check tag matches the monorepo version
-        run: |
-          tag_version="${GITHUB_REF_NAME#v}"
-          root_version="$(node -p "require('./package.json').version")"
-          test "$tag_version" = "$root_version"
-          node scripts/sync-version.mjs --check
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Test
-        run: npm test
-
       - name: Package the extension and the CLI
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -120,11 +153,14 @@ jobs:
           cp scripts/install.sh release/install.sh
 
       - name: Collect the desktop installers
-        uses: actions/download-artifact@v4
-        with:
-          pattern: desktop-*
-          path: release
-          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern 'storyboard-desktop-*' \
+            --pattern 'latest*.yml' \
+            --dir release
+          ls -la release
 
       - name: Create checksum
         working-directory: release
@@ -152,19 +188,18 @@ jobs:
           } > release-notes.md
           cat release-notes.md
 
-      - name: Create GitHub Release
+      - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
-          gh release create "$GITHUB_REF_NAME" \
+          gh release upload "$GITHUB_REF_NAME" \
             release/storyboard-vscode-*.vsix \
             release/storyboard-cli-*.tar.gz \
-            release/storyboard-desktop-* \
-            release/latest*.yml \
             release/install.sh \
             release/SHA256SUMS \
-            --title "$GITHUB_REF_NAME" \
+            --clobber
+          gh release edit "$GITHUB_REF_NAME" \
+            --draft=false \
             --notes-file release-notes.md
 
       # 공개 저장소 webfic/storyboard 는 소스 없이 문서·릴리즈만 담는다.
