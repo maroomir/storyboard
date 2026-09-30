@@ -5,7 +5,19 @@ has established and the review notes sit in the margin; the novel pipeline runs 
 shows its stages, every scene, the progress log and what the run costs.
 
 It runs the same engine as the `storyboard` CLI and the VSCode extension and reads the same files,
-so a work can move between them freely. Settings and API keys are shared through `~/.storyboard/`.
+so a work can move between them freely. Settings, API keys and the author resource files (prompt
+wording, the craft contract, pipeline stage order) are shared through `~/.storyboard/`.
+
+## Install
+
+Download the installer from the [latest release](https://github.com/webfic/storyboard/releases/latest):
+
+- **macOS** — `storyboard-desktop-<version>-mac-arm64.dmg`. Apple Silicon (M1 or later) only; there
+  is no Intel build.
+- **Windows** — `storyboard-desktop-<version>-win-x64-setup.exe`.
+
+The installers are not code-signed yet. On macOS, open the app the first time with right-click →
+Open, and it will not update itself; on Windows, SmartScreen shows a warning before installing.
 
 ## What it does
 

@@ -101,10 +101,10 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 { "ai.provider.default": "claude", "editor": { "draft": { "keepHistory": true } } }
 ```
 
-설정 값 말고도 프롬프트 문구, 작법 계약 기본값, 프롬프트 변형 규칙, 구성 프리셋을 파일로 고칠 수 있습니다.
+설정 값 말고도 프롬프트 문구, 작법 계약 기본값, 프롬프트 변형 규칙, 구성 프리셋, 파이프라인 단계 순서를 파일로 고칠 수 있습니다.
 `~/.storyboard/`(모든 작품) 또는 작품의 `.storyboard/`(그 작품만, 우선)에 `prompts/<이름>.md`,
-`craftContract.json`, `promptVariants.json`, `compositionPresets.json` 을 두면 세 앱이 그 위에서 생성합니다. 번들
-원본은 `packages/story-ai/src/ai/prompts/resources/` 와 각 패키지의 `*.params.json` 에 있고, 지금 적용 중인 값 전부와
+`craftContract.json`, `promptVariants.json`, `compositionPresets.json`, `pipelines/{scene,novel}.yaml` 을 두면 세 앱이 그 위에서 생성합니다. 번들
+원본은 `packages/story-ai/src/ai/prompts/resources/` 와 각 패키지의 `*.params.json` 에 있고, 지금 적용 중인 조율 값과
 출처는 CLI `storyboard params show` 로 볼 수 있습니다.
 
 생성은 모두 API 키로 이루어집니다. 설정 패널의 **연결** 탭에서 제공자를 고르고 키를 넣으면 되고, 키는

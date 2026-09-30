@@ -189,8 +189,8 @@ npm run build
 
 1. `draft/*.md`를 활성 에디터로 둔다.
 2. **`Storyboard: Review & Revise Draft (Current Scene)`** 실행.
-3. `storyboard.draft.reviseMaxIterations` 기본값(2)에서 완료 또는 남은 차단 이슈 안내가 표시되는지 확인한다.
-4. `storyboard.draft.reviseScoreThreshold` 기본값(0)에서는 동작이 변하지 않는지, 값을 올렸을 때(예: 90) 점수 기준 충족 시 루프가 더 일찍 통과하는지 확인한다. 최종 검사 보고서에 `비평 점수: NN/100` 줄이 표시되는지 확인한다.
+3. `revise.loop.maxIterations` 기본값(2)에서 완료 또는 남은 차단 이슈 안내가 표시되는지 확인한다.
+4. `revise.loop.scoreThreshold` 기본값(0)에서는 동작이 변하지 않는지, 값을 올렸을 때(예: 90) 점수 기준 충족 시 루프가 더 일찍 통과하는지 확인한다. 최종 검사 보고서에 `비평 점수: NN/100` 줄이 표시되는지 확인한다.
 
 **성공 기준**
 
@@ -200,7 +200,7 @@ npm run build
 
 ### 7c. 이전 초안 히스토리 보관
 
-1. `storyboard.draft.keepHistory`를 `true`로 설정한다.
+1. `editor.draft.keepHistory`를 `true`로 설정한다.
 2. 이미 `draft/<scene>.md`가 있는 씬에서 **Regenerate**(또는 Generate)를 실행한다.
 3. `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-01.md`에 직전 초안이 그대로 보관되는지 확인한다.
 4. 같은 씬을 한 번 더 재생성하면 `rev-02.md`가 추가되는지 확인한다.
@@ -261,9 +261,9 @@ npm run build
 
 동일 씬·동일 설정으로 **Generate**를 다시 실행했을 때, 캐시 hit 메시지 또는 기대한 재사용 동작이 있는지 확인한다. (프로젝트 옵션·입력이 동일해야 함)
 
-### 11. API 키·기본 provider (`defaultProvider`)
+### 11. API 키·기본 provider (`ai.provider.default`)
 
-Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `defaultProvider`로 고릅니다(작품별로 덮어쓰려면
+Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `ai.provider.default`로 고릅니다(작품별로 덮어쓰려면
 `<워크스페이스>/.storyboard/config.json`). VSCode 설정 화면에는 더 이상 `storyboard.*` 항목이 없습니다.
 가능한 값: `mock`, `openai`, `claude`, `google`, `grok`, `ollama`.
 
@@ -309,7 +309,7 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `default
 
 3. **막혔을 때**
    - 설정에 Storyboard 항목이 안 보이면: 확장이 해당 창에 설치·활성화됐는지(F5 호스트 또는 VSIX 설치 창) 확인한다.
-   - `defaultProvider`는 `claude`인데 키는 `openai`에만 넣은 경우: **해당 provider에 맞는 키**를 다시 `Storyboard: Set API Key...`로 넣거나, `defaultProvider`를 키가 있는 쪽으로 맞춘다.
+   - `ai.provider.default`는 `claude`인데 키는 `openai`에만 넣은 경우: **해당 provider에 맞는 키**를 다시 `Storyboard: Set API Key...`로 넣거나, `ai.provider.default`를 키가 있는 쪽으로 맞춘다.
 
 #### C. Ollama (로컬, API 키 대신 URL·모델 설정)
 

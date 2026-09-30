@@ -20,8 +20,8 @@ Korean README: [`README.md`](README.md)
 - Gate canon facts by reveal time (`revealFrom`), separate from when a fact becomes true (`validFrom`), so a third-act twist is not leaked into early scenes.
 - Bound a scene with `endState` and `povCharacter` on the scene card, so one scene does not run into the next scene's territory or cross several characters' interiority.
 - Open a character/background card or a scene/draft and edit it by chatting in the always-visible **Storyboard · Studio** sidebar panel: describe the change, answer a follow-up question when the agent needs one, review the proposed patch with its consistency verdict as a diff, and approve to apply it. Conversations are stored per entity so you can pick one up later.
-- Keep previous-draft history (`storyboard.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
-- Insert scene-break separators (`storyboard.draft.sceneBreakEnabled`/`sceneBreakSeparator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
+- Keep previous-draft history (`editor.draft.keepHistory`): archive a draft to `.draft/<scene>/<yyyy-mm-dd-hh-mm>-rev-NN.md` before it is overwritten (off by default).
+- Insert scene-break separators (`generation.sceneBreak.enabled`/`generation.sceneBreak.separator`): insert a `---` divider or n newlines between scenes when generating a draft (off by default).
 - Inject canon facts from `.storyboard/bible/canon.yaml` and run draft continuity checks.
 - Auto-extract setting fact candidates from drafts and promote them to canon.
 - Update cards from drafts (`updateCardsAfterGenerate`): write detected characters into background cards directly, and extract relation/arc/attribute candidates for review via `Promote Card Candidates`.
@@ -79,12 +79,13 @@ The Claude Code, Codex, and Gemini CLI providers were removed in 0.9.2. Anthropi
 
 ## Author resource files
 
-Beyond the settings, four things can be edited as files: prompt wording, the craft contract defaults,
-the prompt variant rules and what the composition presets build. Put `prompts/<name>.md`,
-`craftContract.json`, `promptVariants.json` or `compositionPresets.json` under `~/.storyboard/` (every
+Beyond the settings, five things can be edited as files: prompt wording, the craft contract defaults,
+the prompt variant rules, what the composition presets build and the order of the pipeline stages. Put
+`prompts/<name>.md`, `craftContract.json`, `promptVariants.json`, `compositionPresets.json` or
+`pipelines/{scene,novel}.yaml` under `~/.storyboard/` (every
 work) or a work's `.storyboard/` (that work only, taking precedence) and all three apps generate on top
 of them. The bundled originals live in `packages/story-ai/src/ai/prompts/resources/` and each
-package's `*.params.json`; CLI `storyboard params show` lists every value in force with its origin.
+package's `*.params.json`; CLI `storyboard params show` lists the tuning values in force with their origin.
 
 ## Generated text and provider policies
 
