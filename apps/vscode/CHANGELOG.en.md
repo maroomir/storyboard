@@ -10,6 +10,51 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Prompt wording can be edited as files.** The prompts used for generation and review now live as `packages/story-ai/src/ai/prompts/resources/<name>.md` (`## system` and `## user`, variants as `## system:xs`), and a file of the same name in `~/.storyboard/prompts/` (every work) or a work's `.storyboard/prompts/` (that work only, taking precedence) makes all three apps generate with that wording. The file's front-matter (`temperature` and `maxTokens` between `---` lines) is that prompt's sampling config, and a file without one keeps the defaults. A file that cannot be used is reported and the bundled text applies.
+
+- **The craft contract defaults can be edited as a file too.** The contract every generation prompt carries (telling ban, motif repeat limit, stock-gesture blacklist, action clarity and so on) now has its defaults in `packages/story-format/src/craftContract.params.json`, and a `craftContract.json` of the same shape in `~/.storyboard/` (every work) or a work's `.storyboard/` (that work only, taking precedence) lays only the fields it names over them. A work's `setting.craftContract` in `project.json` still applies last.
+
+- **The prompt variant (xs, rich) rules are a file too.** Which providers, model names and tasks get the compact `xs` prompt, and which output lengths, tasks and top-tier models get the `rich` one, now live in `packages/story-ai/src/ai/prompts/promptVariants.params.json`, and a `promptVariants.json` of the same shape in `~/.storyboard/` or a work's `.storyboard/` lays only the fields it names over them. A variant forced by the `ai.prompt.variant` setting still wins over the rules.
+
+- **What the composition presets build is a file too.** The default and minimum omnibus episode counts, the episode thread id prefix and title suffix, and the frame, inner and main thread names now live in `packages/story-format/src/compositionPresets.params.json`, and a `compositionPresets.json` of the same shape in `~/.storyboard/` or a work's `.storyboard/` lays only the fields it names over them.
+
+- **The stage order of both pipelines can be set as a file.** The scene pipeline (personas → background → voice samples → skeleton → dialogue polish → expansion → attribution) and the novel pipeline (outline → seeds → chapters → assemble → review → rewrite → summaries) now run as stage lists, and a `scene.yaml` or `novel.yaml` under `~/.storyboard/pipelines/` or a work's `.storyboard/pipelines/` (`version: 1` plus a `stages` list, `{ id, enabled: false }` to switch one off) sets the order. Required stages such as the skeleton and expansion, or the outline, seeds and chapters, cannot be dropped, and a stage that needs an earlier one is checked for order. `storyboard doctor` lists the resource files in force and fails, with the reason, on one it cannot use.
+
+- **`storyboard params show` lists every value an author can move.** Settings (`config.json`), generation knobs (a measured model profile over the pipeline default) and each prompt's temperature and output limit are listed as «current value · origin (this work / shared / measured model / default) · default», together with the author resource files in force and any file that could not be read. `--json` prints the same as JSON.
+
+### Changed (breaking)
+
+- **Setting keys are renamed to three levels, `area.subject.property` (no fallback for the old names).** An old name left in `~/.storyboard/config.json` or a work's `.storyboard/config.json` is ignored with an «unknown setting key» warning and the default applies, so rename them as below. `providers.<id>.*` and `tasks.<task>.*` are unchanged.
+
+  | Old | New |
+  |---|---|
+  | `defaultProvider` | `ai.provider.default` |
+  | `promptVariant` | `ai.prompt.variant` |
+  | `draft.reviseAfterGenerate` | `revise.loop.afterGenerate` |
+  | `draft.reviseMaxIterations` | `revise.loop.maxIterations` |
+  | `draft.reviseScoreThreshold` | `revise.loop.scoreThreshold` |
+  | `draft.maxCompressionPercent` | `revise.length.maxCompressionPercent` |
+  | `draft.updateCardsAfterGenerate` | `cards.candidates.updateAfterGenerate` |
+  | `draft.verifyCardCandidates` | `cards.candidates.verify` |
+  | `budget.runLimitUsd` | `budget.run.limitUsd` |
+  | `grounding.autoApprove` | `generation.grounding.autoApprove` |
+  | `draft.autoBeats` | `generation.beats.auto` |
+  | `draft.charsPerBeat` | `generation.beats.charsPerBeat` |
+  | `draft.minBeats` | `generation.beats.minimum` |
+  | `draft.sectionOutputLimit` | `generation.section.outputLimit` |
+  | `draft.sceneBreakEnabled` | `generation.sceneBreak.enabled` |
+  | `draft.sceneBreakSeparator` | `generation.sceneBreak.separator` |
+  | `ai.contextCondenseEnabled` | `generation.context.condense` |
+  | `draft.keepHistory` | `editor.draft.keepHistory` |
+  | `scene.prefixDigits` | `editor.scene.prefixDigits` |
+  | `studio.validation` | `editor.studio.validation` |
+  | `grammar.realtimeEnabled` | `editor.grammar.realtime` |
+  | `slop.realtimeEnabled` | `editor.slop.realtime` |
+
+- **Config files are validated when read.** A number outside its range or a provider name not in the catalog stops the CLI on the spot (`ConfigFileError`); the extension and the desktop app name the file and key and fall back to defaults. Unknown keys are kept but reported as warnings.
+
 ## [0.10.0] - 2026-09-29
 
 ### Added
