@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-30
+
 ### Added
 
 - **Prompt wording can be edited as files.** The prompts used for generation and review now live as `packages/story-ai/src/ai/prompts/resources/<name>.md` (`## system` and `## user`, variants as `## system:xs`), and a file of the same name in `~/.storyboard/prompts/` (every work) or a work's `.storyboard/prompts/` (that work only, taking precedence) makes all three apps generate with that wording. The file's front-matter (`temperature` and `maxTokens` between `---` lines) is that prompt's sampling config, and a file without one keeps the defaults. A file that cannot be used is reported and the bundled text applies.
@@ -22,7 +24,7 @@ after the first public release.
 
 - **The stage order of both pipelines can be set as a file.** The scene pipeline (personas → background → voice samples → skeleton → dialogue polish → expansion → attribution) and the novel pipeline (outline → seeds → chapters → assemble → review → rewrite → summaries) now run as stage lists, and a `scene.yaml` or `novel.yaml` under `~/.storyboard/pipelines/` or a work's `.storyboard/pipelines/` (`version: 1` plus a `stages` list, `{ id, enabled: false }` to switch one off) sets the order. Required stages such as the skeleton and expansion, or the outline, seeds and chapters, cannot be dropped, and a stage that needs an earlier one is checked for order. `storyboard doctor` lists the resource files in force and fails, with the reason, on one it cannot use.
 
-- **`storyboard params show` lists every value an author can move.** Settings (`config.json`), generation knobs (a measured model profile over the pipeline default) and each prompt's temperature and output limit are listed as «current value · origin (this work / shared / measured model / default) · default», together with the author resource files in force and any file that could not be read. `--json` prints the same as JSON.
+- **`storyboard params show` lists the values that shape generation.** Tuning settings (`config.json`), generation knobs (a measured model profile over the pipeline default) and each prompt's temperature and output limit are listed as «current value · origin (this work / shared / measured model / default) · default», together with the author resource files in force and any file that could not be read. `--json` prints the same as JSON.
 
 ### Changed (breaking)
 
@@ -54,6 +56,14 @@ after the first public release.
   | `slop.realtimeEnabled` | `editor.slop.realtime` |
 
 - **Config files are validated when read.** A number outside its range or a provider name not in the catalog stops the CLI on the spot (`ConfigFileError`); the extension and the desktop app name the file and key and fall back to defaults. Unknown keys are kept but reported as warnings.
+
+### Fixed
+
+- **Revision no longer ignores another thread's facts and its narrator.** Draft revision did not go through the thread and narration resolvers the generation path uses, so it judged a scene against the main ledger's facts and the project's default point of view. It now resolves the thread path, the preceding scene, the witness filter and the narrator's viewpoint exactly as generation does.
+
+### Internal
+
+- The object graph each app assembled for itself is now built once in a shared composition root, `@storyboard/story-app`, with manager facades over it, so the extension, the CLI and the desktop app enter the engine the same way. Use cases are unified behind a single `IUseCase`. Both generation loops became stage lists rather than blocks of branches, so new behaviour arrives as a new stage registered in the catalog instead of an `if` inside an existing one.
 
 ## [0.10.0] - 2026-09-29
 
