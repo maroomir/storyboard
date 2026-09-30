@@ -9,6 +9,51 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- **프롬프트 문구를 파일로 고칠 수 있습니다.** 생성·검수에 쓰는 프롬프트가 `packages/story-ai/src/ai/prompts/resources/<이름>.md`(`## system`·`## user`, 변형은 `## system:xs`처럼) 파일로 나왔고, 같은 이름의 파일을 `~/.storyboard/prompts/`(모든 작품) 또는 작품의 `.storyboard/prompts/`(그 작품만, 우선)에 두면 세 앱이 그 문구로 생성합니다. 파일 머리말(`---` 사이의 `temperature`·`maxTokens`)이 그 프롬프트의 온도와 출력 상한이며, 머리말을 생략한 파일은 기본값을 그대로 씁니다. 읽을 수 없는 파일은 경고로 알리고 기본 문구를 씁니다.
+
+- **작법 계약 기본값도 파일로 고칠 수 있습니다.** 모든 생성 프롬프트에 붙는 작법 계약(설명 금지·심상 반복 한도·상투 표현 목록·동작 명료성 등)의 기본값이 `packages/story-format/src/craftContract.params.json` 파일로 나왔고, 같은 꼴의 `craftContract.json` 을 `~/.storyboard/`(모든 작품) 또는 작품의 `.storyboard/`(그 작품만, 우선)에 두면 적은 항목만 그 위에 덮입니다. 작품 `project.json` 의 `setting.craftContract` 는 여전히 그 위에서 마지막으로 적용됩니다.
+
+- **프롬프트 변형(xs·rich) 선택 규칙도 파일입니다.** 어떤 프로바이더·모델 이름·작업에 압축형(`xs`) 프롬프트를, 어떤 출력 길이·작업·상위 모델에 풍부형(`rich`) 프롬프트를 쓸지가 `packages/story-ai/src/ai/prompts/promptVariants.params.json` 으로 나왔고, 같은 꼴의 `promptVariants.json` 을 `~/.storyboard/` 또는 작품의 `.storyboard/` 에 두면 적은 항목만 덮입니다. 설정 `ai.prompt.variant` 로 강제한 변형은 여전히 규칙보다 앞섭니다.
+
+- **구성 프리셋이 만드는 줄기 이름·편 수도 파일입니다.** 옴니버스 기본 편 수와 최소 편 수, 편 줄기 id 접두·제목 접미, 액자식의 외화·내화와 시점 교차의 본편 줄기 이름이 `packages/story-format/src/compositionPresets.params.json` 으로 나왔고, 같은 꼴의 `compositionPresets.json` 을 `~/.storyboard/` 또는 작품의 `.storyboard/` 에 두면 적은 항목만 덮입니다.
+
+- **파이프라인의 단계 순서를 파일로 정할 수 있습니다.** 씬 초안 파이프라인(인물 기억 → 배경 묘사 → 말투 표본 → 뼈대 → 대사 다듬기 → 살붙임 → 화자 붙이기)과 장편 파이프라인(아웃라인 → 씬 시드 → 장별 초안·검수 → 원고 조립 → 최종 검사 → 재작성 → 장별 요약)이 단계 목록으로 돌며, `~/.storyboard/pipelines/` 또는 작품의 `.storyboard/pipelines/` 에 `scene.yaml`·`novel.yaml`(`version: 1` 과 `stages` 목록, 끌 단계는 `{ id, enabled: false }`)을 두면 그 순서로 돕니다. 뼈대·살붙임이나 아웃라인·시드·장 같은 필수 단계는 뺄 수 없고, 앞선 단계가 있어야 하는 단계의 순서도 검사합니다. `storyboard doctor` 가 적용 중인 리소스 파일을 보이고 쓸 수 없는 파일을 이유와 함께 실패로 보고합니다.
+
+- **`storyboard params show` 가 움직일 수 있는 값 전부를 한 목록으로 보여 줍니다.** 설정(`config.json`), 생성 손잡이(모델 실측 → 파이프라인 기본값), 프롬프트마다의 온도·출력 상한을 «지금 값 · 출처(이 작품/공통/모델 실측/기본값) · 기본값» 으로 나열하고, 적용된 작가 리소스 파일과 읽지 못한 파일을 함께 보입니다. `--json` 이면 같은 내용을 JSON 으로 냅니다.
+
+### 변경 (호환성 주의)
+
+- **설정 키 이름이 `영역.대상.속성` 세 단으로 바뀌었습니다(옛 이름 호환 없음).** `~/.storyboard/config.json`과 작품의 `.storyboard/config.json`에 옛 이름이 남아 있으면 «알 수 없는 설정 키» 경고와 함께 무시되고 기본값으로 동작하므로, 아래 표대로 고쳐 주세요. `providers.<id>.*`와 `tasks.<task>.*`는 그대로입니다.
+
+  | 옛 이름 | 새 이름 |
+  |---|---|
+  | `defaultProvider` | `ai.provider.default` |
+  | `promptVariant` | `ai.prompt.variant` |
+  | `draft.reviseAfterGenerate` | `revise.loop.afterGenerate` |
+  | `draft.reviseMaxIterations` | `revise.loop.maxIterations` |
+  | `draft.reviseScoreThreshold` | `revise.loop.scoreThreshold` |
+  | `draft.maxCompressionPercent` | `revise.length.maxCompressionPercent` |
+  | `draft.updateCardsAfterGenerate` | `cards.candidates.updateAfterGenerate` |
+  | `draft.verifyCardCandidates` | `cards.candidates.verify` |
+  | `budget.runLimitUsd` | `budget.run.limitUsd` |
+  | `grounding.autoApprove` | `generation.grounding.autoApprove` |
+  | `draft.autoBeats` | `generation.beats.auto` |
+  | `draft.charsPerBeat` | `generation.beats.charsPerBeat` |
+  | `draft.minBeats` | `generation.beats.minimum` |
+  | `draft.sectionOutputLimit` | `generation.section.outputLimit` |
+  | `draft.sceneBreakEnabled` | `generation.sceneBreak.enabled` |
+  | `draft.sceneBreakSeparator` | `generation.sceneBreak.separator` |
+  | `ai.contextCondenseEnabled` | `generation.context.condense` |
+  | `draft.keepHistory` | `editor.draft.keepHistory` |
+  | `scene.prefixDigits` | `editor.scene.prefixDigits` |
+  | `studio.validation` | `editor.studio.validation` |
+  | `grammar.realtimeEnabled` | `editor.grammar.realtime` |
+  | `slop.realtimeEnabled` | `editor.slop.realtime` |
+
+- **설정 파일을 읽을 때 값을 검사합니다.** 범위를 벗어난 숫자나 목록에 없는 프로바이더 이름이 있으면 CLI는 그 자리에서 멈추고(`ConfigFileError`), 확장·데스크톱은 어느 파일의 어느 키인지 알리고 기본값으로 동작합니다. 모르는 키는 유지되지만 경고로 알립니다.
+
 ## [0.10.0] - 2026-09-29
 
 ### 추가
