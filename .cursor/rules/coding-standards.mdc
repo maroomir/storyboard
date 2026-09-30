@@ -123,8 +123,8 @@ exactly one file; everything else derives from it.
 - **Two homes that cannot be merged** (`package.json` contributions versus code constants, or the
   webview security allowlist) get a test that fails when they disagree — see
   `apps/vscode/test/unit/presentation/manifest.spec.ts`.
-- **`apps/vscode/scripts/check-architecture.mjs` fails the build** when a literal appears outside the
-  file that owns it. Add the pair to `OWNED_LITERALS` when you give a value a single home.
+- **`scripts/architecture/check-workspace.mjs` (root `npm run lint`) fails the build** when a literal
+  appears outside the file that owns it. Add the pair to `OWNED_LITERALS` when you give a value a single home.
 - **Browser-safe entry points**: a package barrel may export node-only modules, so anything the
   webview bundle reaches value-first must come from the narrow entry — `@storyboard/story-ai/contracts`,
   `@storyboard/story-format/contracts`, `@storyboard/story-engine/contracts`. `story-engine/shared`

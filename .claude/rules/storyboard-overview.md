@@ -12,7 +12,7 @@ The apps share `packages/story-engine` and know nothing about each other. Only t
 
 | Workspace | Name | Role |
 |---|---|---|
-| `apps/vscode` | `storyboard-vscode` | The VSCode extension. Holds the released version and the only `v*` tag. |
+| `apps/vscode` | `storyboard-vscode` | The VSCode extension. Ships in the VSIX; its version is mirrored from the root manifest. |
 | `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
 | `apps/desktop` | `@storyboard/desktop` | Electron app for writers who are not developers: the manuscript desk with the run drawer, the story bible, automatic version history. Rules in `.claude/rules/desktop.md`. |
 | `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: domain policies, file records, and the RPC/contract types every app speaks. Holds what used to be `apps/vscode/src/{domain,shared}`. |
@@ -24,8 +24,8 @@ The apps share `packages/story-engine` and know nothing about each other. Only t
 
 Packages expose TypeScript **source** (no build step); each app resolves them through its own
 tsconfig `paths`, esbuild `alias`, and vitest `alias` — three places, all of which must agree.
-`apps/vscode/scripts/check-architecture.mjs` enforces that no package imports `vscode` or an app
-module.
+The root `scripts/architecture/check-workspace.mjs` (run first by the root `npm run lint`) enforces
+that no package imports `vscode` or an app module.
 
 Both apps write through the same codecs, so a card edited in the editor or from the terminal
 serializes to identical bytes — the shared fixtures in
@@ -63,11 +63,13 @@ graph TB
 
 What each check actually enforces, so a green run is not read as more than it is:
 
+- `scripts/architecture/check-workspace.mjs` (repo root, the first step of the root `npm run lint`)
+  — every shared package stays free of `vscode` (including inline `import('vscode')` types), of app
+  imports (`@/`, `@webview/`) and of another package's `#` internal prefix; and an owned literal
+  (`OWNED_LITERALS`) appears only in its owner file across every app and package.
 - `apps/vscode/scripts/check-architecture.mjs` — the extension entry may import only `vscode` and
-  `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles;
-  and every shared package stays free of `vscode` and of app imports. The inner layers left for the
-  engine, so nothing here validates them any more.
-- `packages/story-engine`'s `shared` may import only itself (checked from the extension script).
+  `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles.
+  The inner layers left for the engine, so nothing here validates them any more.
 - `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
   if it imports `@storyboard/story-pipeline` directly, which would be a second copy of the
   generation loop.
