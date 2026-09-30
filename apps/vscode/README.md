@@ -147,7 +147,7 @@ Storyboard 설정은 VSCode 설정이 아니라 **`~/.storyboard/config.json`** 
 - [`GUIDE.md`](GUIDE.md): draft 편집 기능 사용법
 - [`EXTENSION_QA.md`](EXTENSION_QA.md): 수동 QA 체크리스트
 - [`RELEASE.md`](../../RELEASE.md): 릴리스 절차
-- [`CHANGELOG.md`](CHANGELOG.md): 변경 내역 (한국어)
+- [`CHANGELOG.md`](../../CHANGELOG.md): 변경 내역 (한국어)
 
 ## 라이선스
 

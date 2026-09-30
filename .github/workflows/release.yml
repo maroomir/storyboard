@@ -176,10 +176,10 @@ jobs:
               inside { print }
             ' "$1"
           }
-          korean="$(section apps/vscode/CHANGELOG.md)"
-          english="$(section apps/vscode/CHANGELOG.en.md)"
+          korean="$(section CHANGELOG.md)"
+          english="$(section CHANGELOG.en.md)"
           if [ -z "$(printf '%s' "$korean" | tr -d '[:space:]')" ]; then
-            echo "No [$version] section in apps/vscode/CHANGELOG.md" >&2
+            echo "No [$version] section in CHANGELOG.md" >&2
             exit 1
           fi
           {
@@ -214,7 +214,7 @@ jobs:
           fi
           git clone --depth 1 \
             "https://x-access-token:${GH_TOKEN}@github.com/webfic/storyboard.git" public
-          cp apps/vscode/CHANGELOG.md apps/vscode/CHANGELOG.en.md public/
+          cp CHANGELOG.md CHANGELOG.en.md public/
           cp scripts/install.sh public/install.sh
           cd public
           git config user.name "Maroomir Yoon"

@@ -10,8 +10,9 @@ app: the VSCode extension, the CLI and the desktop app.
   writes the root version into `apps/vscode`, `apps/cli` and the version string the
   CLI prints. Never hand-edit an app's version.
 - The single root `package-lock.json` is refreshed by `npm install` after the sync.
-- `apps/vscode/CHANGELOG.md` and `apps/vscode/CHANGELOG.en.md` carry the target version's section.
-  The changelogs stay in `apps/vscode` because the release notes are built from them.
+- `CHANGELOG.md` and `CHANGELOG.en.md` carry the target version's section.
+  They live at the repo root because one tag ships every app and the notes cover all of them;
+  `package:vsix` copies `CHANGELOG.md` into `apps/vscode` (gitignored) so the VSIX still carries it.
 - The working tree contains only intentional release changes.
 
 ## Cutting a version
@@ -66,11 +67,11 @@ The version commit should include at least:
 - `package.json` (the version) and `package-lock.json`
 - `apps/vscode/package.json`, `apps/cli/package.json`, `apps/desktop/package.json`
 - `apps/cli/src/index.ts` (the printed version)
-- `apps/vscode/CHANGELOG.md`, `apps/vscode/CHANGELOG.en.md`
+- `CHANGELOG.md`, `CHANGELOG.en.md`
 
 ```bash
 git add package.json package-lock.json apps/*/package.json apps/cli/src/index.ts \
-  apps/vscode/CHANGELOG.md apps/vscode/CHANGELOG.en.md
+  CHANGELOG.md CHANGELOG.en.md
 git commit -m "chore: release v0.8.0"
 ```
 
@@ -104,7 +105,7 @@ Artifact storage counts against the account's shared quota and release assets do
 3. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
    downloads the desktop installers back from the draft, copies `scripts/install.sh` alongside and
    creates `SHA256SUMS` over everything.
-4. Builds the release notes from the `## [<version>]` section of `apps/vscode/CHANGELOG.md`
+4. Builds the release notes from the `## [<version>]` section of `CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
 5. Uploads the remaining assets and takes the release out of draft, so a run that dies partway

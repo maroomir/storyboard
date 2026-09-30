@@ -27,7 +27,7 @@ node scripts/sync-version.mjs --check
 
 ## 2. Update release notes
 
-- Update [`apps/vscode/CHANGELOG.md`](apps/vscode/CHANGELOG.md) and [`apps/vscode/CHANGELOG.en.md`](apps/vscode/CHANGELOG.en.md) under `[Unreleased]` (or add a dated section after release).
+- Update [`CHANGELOG.md`](CHANGELOG.md) and [`CHANGELOG.en.md`](CHANGELOG.en.md) under `[Unreleased]` (or add a dated section after release).
 - Keep entries user-facing and concise.
 - Follow [`RELEASE.md`](RELEASE.md) for version commit contents and tagging.
 

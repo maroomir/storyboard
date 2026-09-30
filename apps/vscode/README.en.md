@@ -121,7 +121,7 @@ Public docs live at the repo root as uppercase Markdown files. Extended plans an
 - [`GUIDE.md`](GUIDE.md): draft editor feature guide
 - [`EXTENSION_QA.md`](EXTENSION_QA.md): manual QA checklist
 - [`RELEASE.md`](../../RELEASE.md): release process
-- [`CHANGELOG.en.md`](CHANGELOG.en.md): changelog (English)
+- [`CHANGELOG.en.md`](../../CHANGELOG.en.md): changelog (English)
 
 ## License
 

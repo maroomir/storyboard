@@ -5,6 +5,8 @@ node_modules/
 out/
 dist/
 *.vsix
+# package:vsix copies the root changelog here so the VSIX carries it
+apps/vscode/CHANGELOG.md
 
 # Desktop installers (electron-builder output)
 apps/desktop/release/

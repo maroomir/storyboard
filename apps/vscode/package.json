@@ -342,7 +342,7 @@
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check:src": "prettier --check src",
-    "package:vsix": "mkdir -p dist && npm run build && vsce package --no-dependencies --baseContentUrl https://github.com/maroomir/storyboard/blob/HEAD/apps/vscode/"
+    "package:vsix": "mkdir -p dist && npm run build && cp ../../CHANGELOG.md CHANGELOG.md && vsce package --no-dependencies --baseContentUrl https://github.com/maroomir/storyboard/blob/HEAD/apps/vscode/"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",
