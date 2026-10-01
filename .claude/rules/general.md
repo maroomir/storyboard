@@ -48,7 +48,7 @@ For version bumps, changelog cuts, VSIX packaging, and tags, see **`.claude/rule
 
 ## Reference Project Usage
 
-When using `/Users/maroomir/Git/clien/cline` as reference:
+When using a local Cline checkout as reference:
 
 - Look for architectural patterns, lifecycle handling, message passing, and testing strategy.
 - Avoid importing unrelated domains such as Cline-specific providers, protobuf services, marketplace features, or CLI logic unless the user asks for them.

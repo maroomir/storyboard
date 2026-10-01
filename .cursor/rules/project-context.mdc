@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Identity
 
-- `storyboard` is a VSCode extension. Cline (`/Users/maroomir/Git/clien/cline`) is a **reference for patterns only**—do not copy implementation blindly or treat Cline as a dependency contract.
+- `storyboard` is a VSCode extension. Cline (a local checkout) is a **reference for patterns only**—do not copy implementation blindly or treat Cline as a dependency contract.
 - Prefer **incremental scaffolding**; keep the first version smaller than Cline’s mature stack unless the user asks for more.
 
 ## Source of truth

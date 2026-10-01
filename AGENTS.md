@@ -4,7 +4,7 @@ This document gives AI coding agents the project-specific context needed to work
 
 ## Project Identity
 
-`storyboard` is intended to be a Visual Studio Code extension inspired by the architecture and development practices of Cline (`/Users/maroomir/Git/clien/cline`). Use Cline as a reference for patterns, but do not copy implementation details blindly.
+`storyboard` is intended to be a Visual Studio Code extension inspired by the architecture and development practices of Cline (a local checkout). Use Cline as a reference for patterns, but do not copy implementation details blindly.
 
 ## Current Status
 
@@ -226,7 +226,7 @@ For the full standard, read `.claude/rules/coding-standards.md`.
 
 ## Reference Project Usage
 
-When using `/Users/maroomir/Git/clien/cline` as a reference:
+When using a local Cline checkout as a reference:
 
 - Borrow patterns for extension lifecycle, state persistence, message passing, webview security, and testing strategy.
 - Simplify patterns for this repository's current maturity.
