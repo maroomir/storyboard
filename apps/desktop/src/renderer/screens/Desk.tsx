@@ -1,5 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { parseSceneStem } from '@storyboard/story-format/contracts';
+
 import type { RunSnapshot, SceneNotes, TocScene, WorkspaceOverview } from '@/shared/dto';
 
 import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
@@ -9,6 +11,7 @@ import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
 import { hasSelection, replaceSelection, type TextSelection } from '@/renderer/lib/selectionEdit';
 import { useDraftEditor } from '@/renderer/lib/useDraftEditor';
+import { composeSceneStem } from '@/renderer/lib/sceneRename';
 
 interface DeskProps {
   readonly overview: WorkspaceOverview;
@@ -28,6 +31,7 @@ export function Desk(props: DeskProps): JSX.Element {
   const scenes = allScenes(props.overview);
   const [selectedStem, setSelectedStem] = useState<string | undefined>(props.requestedStem ?? scenes[0]?.stem);
   const [notes, setNotes] = useState<SceneNotes>();
+  const [isRenaming, setRenaming] = useState(false);
   const editor = useDraftEditor(selectedStem, props.change.sequence, props.change.draftStems, props.onError);
   const selectedScene = scenes.find((scene) => scene.stem === selectedStem);
   const isReadOnly = (props.run !== undefined && props.run.status !== 'idle') || props.overview.foreignLock !== undefined;
@@ -43,6 +47,8 @@ export function Desk(props: DeskProps): JSX.Element {
       setSelectedStem(scenes[0].stem);
     }
   }, [scenes.length]);
+
+  useEffect(() => setRenaming(false), [selectedStem]);
 
   useEffect(() => {
     if (selectedStem === undefined) {
@@ -116,10 +122,27 @@ export function Desk(props: DeskProps): JSX.Element {
                 .filter(Boolean)
                 .join(' · ')}
             </span>
-            <button type="button" className="button" disabled={isReadOnly} onClick={() => void writeScene()}>
-              {editor.document?.exists === true ? t('desk.rewriteScene') : t('desk.writeScene')}
-            </button>
+            <span className="row">
+              <button type="button" className="button button-quiet" disabled={isReadOnly} onClick={() => setRenaming(true)}>
+                {t('desk.renameScene')}
+              </button>
+              <button type="button" className="button" disabled={isReadOnly} onClick={() => void writeScene()}>
+                {editor.document?.exists === true ? t('desk.rewriteScene') : t('desk.writeScene')}
+              </button>
+            </span>
           </div>
+          {isRenaming && selectedStem !== undefined && !isReadOnly ? (
+            <SceneRenameForm
+              stem={selectedStem}
+              onBeforeRename={editor.flush}
+              onRenamed={(stem) => {
+                setRenaming(false);
+                setSelectedStem(stem);
+              }}
+              onCancel={() => setRenaming(false)}
+              onError={props.onError}
+            />
+          ) : null}
           <h1 id="manuscript-title" className="page-title">
             {selectedScene?.title ?? t('common.untitled')}
           </h1>
@@ -156,6 +179,69 @@ export function Desk(props: DeskProps): JSX.Element {
       </main>
       <MarginNotes notes={notes} />
     </div>
+  );
+}
+
+interface SceneRenameFormProps {
+  readonly stem: string;
+  readonly onBeforeRename: () => Promise<void>;
+  readonly onRenamed: (stem: string) => void;
+  readonly onCancel: () => void;
+  readonly onError: (message: string) => void;
+}
+
+function SceneRenameForm(props: SceneRenameFormProps): JSX.Element {
+  const { t } = useI18n();
+  const current = parseSceneStem(props.stem);
+  const [orderText, setOrderText] = useState(String(current?.order ?? ''));
+  const [slug, setSlug] = useState(current?.slug ?? '');
+  const [isSaving, setSaving] = useState(false);
+  const nextStem = composeSceneStem(orderText, slug, current?.orderText.length ?? 2);
+
+  const rename = async (): Promise<void> => {
+    if (nextStem === undefined || nextStem === props.stem) {
+      return;
+    }
+    setSaving(true);
+    try {
+      await props.onBeforeRename();
+      const { stem } = await call('scene.rename', { stem: props.stem, to: nextStem });
+      props.onRenamed(stem);
+    } catch (failure) {
+      props.onError(messageOf(failure));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form
+      className="edit-bar"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void rename();
+      }}
+    >
+      <div className="row">
+        <label className="field" style={{ width: 96 }}>
+          <span className="field-label">{t('desk.renameOrder')}</span>
+          <input className="input" inputMode="numeric" value={orderText} onChange={(event) => setOrderText(event.target.value)} autoFocus />
+        </label>
+        <label className="field" style={{ flex: 1 }}>
+          <span className="field-label">{t('desk.renameSlug')}</span>
+          <input className="input" value={slug} onChange={(event) => setSlug(event.target.value)} />
+        </label>
+      </div>
+      <span className="field-hint">{nextStem === undefined ? t('desk.renameInvalid') : t('desk.renameHint')}</span>
+      <div className="spread">
+        <button type="button" className="button button-quiet" onClick={props.onCancel}>
+          {t('common.cancel')}
+        </button>
+        <button type="submit" className="button button-primary" disabled={isSaving || nextStem === undefined || nextStem === props.stem}>
+          {t('desk.renameApply')}
+        </button>
+      </div>
+    </form>
   );
 }
 
