@@ -492,6 +492,7 @@ grounding:
 - 카드의 `id`는 파일명 stem(`NN-<slug>`)과 같아야 한다
 - 잘못된 형식의 파일은 사이드바에 ⚠️ 표시 + 경고 진단 표시
 - `Storyboard: New Scene` 명령은 항상 다음 사용 가능 번호로 자동 생성
+- 이름·번호 변경은 `Storyboard: Rename Scene...` / `storyboard scene rename <stem> --to <stem>`만 지원한다. stem을 이름으로 쓰는 파일(초안, `.draft/` 이력, 요약, 씬·캐넌·카드 후보 캐시, 대사 기억, Studio 세션)을 옮기고, stem이나 번호로 가리키는 참조(이야기 상태 원장, 캐넌의 `sourceScene`·`validFrom`·`validUntil`·`revealFrom`, `revision-plan.yaml`, 사용량 원장, 인물 `arc[].sceneRef`, 페르소나·배경 기억)를 고친다. 다른 씬이 쓰는 번호는 거부한다. 아웃라인은 번호의 위치로 씬과 짝지어지므로 번호가 바뀌면 그 씬의 아웃라인 자리와 장도 바뀐다
 
 #### 구형 `.txt` 씬 마이그레이션
 
@@ -710,6 +711,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.character.create` | `Storyboard: Create Character` | 새 `.card` + 빈 프로필 placeholder |
 | `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` (location 기본) 생성 후 열기 |
 | `storyboard.scene.create` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.card` 생성 후 열기 |
+| `storyboard.scene.rename` | `Storyboard: Rename Scene...` | 씬 stem·번호를 바꾸고 파생 파일과 참조를 함께 옮김 |
 | `storyboard.scene.migrate` | `Storyboard: Migrate Scenes to Cards` | 구형 `scene/*.txt`를 `scene/*.card`로 변환 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |

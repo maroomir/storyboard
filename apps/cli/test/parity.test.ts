@@ -41,6 +41,7 @@ const commandToVerb: Readonly<Record<string, string>> = {
   'storyboard.character.create': 'card create character',
   'storyboard.background.create': 'card create background',
   'storyboard.scene.create': 'scene create',
+  'storyboard.scene.rename': 'scene rename',
   'storyboard.draft.applyFormat': 'draft format',
   'storyboard.draft.augment': 'draft augment',
   'storyboard.draft.export': 'manuscript export',

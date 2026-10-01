@@ -126,6 +126,10 @@
         "icon": "$(add)"
       },
       {
+        "command": "storyboard.scene.rename",
+        "title": "%storyboard.scene.rename.title%"
+      },
+      {
         "command": "storyboard.scene.openDraft",
         "title": "%storyboard.scene.openDraft.title%"
       },
@@ -275,6 +279,11 @@
         {
           "command": "storyboard.background.rename",
           "when": "resourceExtname == .card && resourceFilename != .sample.card",
+          "group": "storyboard@1"
+        },
+        {
+          "command": "storyboard.scene.rename",
+          "when": "resourceExtname == .card && resourceDirname =~ /[\\\\/]scene$/",
           "group": "storyboard@1"
         }
       ],
