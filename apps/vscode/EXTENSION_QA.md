@@ -270,46 +270,51 @@ Storyboard는 **기본 AI 백엔드**를 `~/.storyboard/config.json`의 `ai.prov
 키가 필요한 것은 `openai`·`claude`·`google`·`grok`이며, 키는 `~/.storyboard/secrets.json`(0600)에 저장됩니다.
 `ollama`는 로컬 실행이라 키가 없습니다. 0.9.2 이전 설정에 남은 `claude-code`·`codex`·`gemini-cli`는 어느 것으로도 읽히지 않아
 생성이 거부되므로, 그 값이 보이면 설정 패널에서 다시 골라 저장해 둡니다.
-설치 직후에는 기본 provider가 비어 있어 생성이 거부되므로, 먼저 `Storyboard: Choose AI Provider`로 하나를 고릅니다.
+설치 직후에는 기본 provider가 비어 있어 생성이 거부됩니다. 상태 표시줄의 **`AI 제공자 선택`** 항목이나 활성화 때 뜨는
+안내의 **제공자 선택** 버튼으로 하나를 먼저 고릅니다.
+
+설정 파일 쓰기 규칙: 확장(설정 패널·제공자 선택)은 `~/.storyboard/config.json`에 쓰고, 워크스페이스의
+`.storyboard/config.json`이 이미 그 키를 갖고 있을 때만 그 파일에 씁니다. 상태 표시줄 툴팁과 설정 패널이 값의 출처
+(공통 설정 / 이 작품 설정 / 기본값)를 보여 줍니다.
 
 #### A. 키 없이 스모크 (`mock`)
 
-1. 아래 **「기본 provider 바꾸기」** 절차를 따라 `ai.provider.default`를 **`mock`** 으로 둔다.
+1. 아래 **B-2** 중 한 방법으로 기본 provider를 **`mock`** 으로 둔다.
 2. **6. 드래프트 생성**까지 키 없이 진행할 수 있어야 한다.
 
-#### B. 실제 provider (원격 API: OpenAI / Claude / Google)
+#### B. 실제 provider (원격 API: OpenAI / Claude / Google / Grok)
 
 순서는 **키 등록 → 기본 provider 변경 → 6번 재실행**을 권장한다 (반대로 해도 되지만, provider와 키가 짝이 맞아야 한다).
 
-1. **API 키 저장**  
-   명령 팔레트 → **`Storyboard: Set API Key...`** → 사용할 provider 선택 → 키 입력 → 확인.  
-   - 키는 **VS Code SecretStorage**에만 들어가며, 일반 `settings.json`에는 저장되지 않는다.  
-   - `mock`은 키가 없으므로 이 명령 목록에 나오지 않을 수 있다.
+1. **API 키 저장** — 아래 중 하나.
+   - 명령 팔레트 → **`Storyboard: Set API Key...`** → provider 선택 → 키 입력.
+   - 설정 패널(**`Storyboard: Open Settings`**, 사이드바 뷰의 톱니바퀴)의 API 키 칸.
+   - 터미널에서 **`storyboard setup`** 또는 `echo "$KEY" | storyboard apikey set <provider>` (CLI).
 
-2. **기본 provider를 그 provider로 맞추기** (`~/.storyboard/config.json`의 `ai.provider.default`)  
-   아래 둘 중 편한 방법 하나만 하면 된다.
+   어느 경로든 키는 **`~/.storyboard/secrets.json`(0600)** 한 곳에만 저장되고 CLI·데스크톱 앱과 공유된다.
+   `config.json`에는 들어가지 않는다. `mock`·`ollama`는 키가 없다.
 
-   **방법 1 — 설정 UI (추천)**
+2. **기본 provider를 그 provider로 맞추기** (`ai.provider.default`) — 아래 중 편한 방법 하나.
 
-   1. 명령 팔레트 → **`Preferences: Open Settings (UI)`** (macOS 한글 메뉴: **기본 설정: 설정(UI) 열기**)
-   2. 검색창에 **`storyboard default`** 또는 **`defaultProvider`** 입력
-   3. **Storyboard › Default Provider** 항목에서 방금 키를 넣은 provider와 **같은 값** 선택 (예: OpenAI 키를 넣었다면 `openai`)
+   **방법 1 — 제공자 선택 (추천)**: 상태 표시줄의 provider 항목(미선택이면 `AI 제공자 선택`)을 클릭하거나,
+   설정 패널에서 기본 제공자를 고른다. 키가 필요한데 아직 없는 provider를 고르면 키 입력 창이 바로 이어진다.
 
-   **방법 2 — `settings.json`**
+   **방법 2 — CLI**: `storyboard setup`, 또는 `storyboard config set ai.provider.default openai`
+   (워크스페이스 안에서는 그 작품의 `.storyboard/config.json`에, `--global`을 붙이면 `~/.storyboard/config.json`에 쓴다).
 
-   1. 명령 팔레트 → **`Preferences: Open User Settings (JSON)`**  
-      (이 Storyboard 폴더에만 적용하려면 **`Preferences: Open Workspace Settings (JSON)`**)
-   2. JSON에 한 줄 추가(예: OpenAI):
+   **방법 3 — 파일 직접 편집**: `~/.storyboard/config.json`에 다음을 넣는다.
 
    ```json
-   "ai.provider.default": "openai"
+   { "ai.provider.default": "openai" }
    ```
 
-   저장 후 별도 재시작은 보통 필요 없다. 그다음 **6. 드래프트 생성**을 다시 실행한다.
+   확장은 파일 변경을 감시하므로 재시작은 필요 없다. 상태 표시줄 항목이 새 값으로 바뀌는지 확인한 뒤 **6. 드래프트 생성**을 다시 실행한다.
 
 3. **막혔을 때**
-   - 설정에 Storyboard 항목이 안 보이면: 확장이 해당 창에 설치·활성화됐는지(F5 호스트 또는 VSIX 설치 창) 확인한다.
-   - `ai.provider.default`는 `claude`인데 키는 `openai`에만 넣은 경우: **해당 provider에 맞는 키**를 다시 `Storyboard: Set API Key...`로 넣거나, `ai.provider.default`를 키가 있는 쪽으로 맞춘다.
+   - 바꾼 값이 반영되지 않으면: 상태 표시줄 툴팁의 **출처**를 본다. `이 작품 설정`이면 워크스페이스의 `.storyboard/config.json`이
+     공통 설정을 덮어쓰고 있는 것이다.
+   - `ai.provider.default`는 `claude`인데 키는 `openai`에만 넣은 경우: 해당 provider의 키를 다시 넣거나, 기본 provider를 키가 있는 쪽으로 맞춘다.
+   - 키 저장 여부는 `storyboard apikey show`(값은 찍지 않음)나 `storyboard doctor`로도 확인할 수 있다.
 
 #### C. Ollama (로컬, API 키 대신 URL·모델 설정)
 
