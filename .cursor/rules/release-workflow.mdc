@@ -16,7 +16,7 @@ Use when the user asks to prepare a release, bump the extension version, update 
 
 ## Files to keep in sync
 
-- Bump **`apps/vscode/package.json`** (the only place the extension `version` lives; the root `package.json` has no `version` field) and the single root **`package-lock.json`** (`packages["apps/vscode"].version`) to the same target version.
+- Bump the **root `package.json`** `version` (the one version for the whole repo), run `npm run version:sync` to mirror it into the apps, then `npm install` so the root **`package-lock.json`** follows.
 - Add or finalize **`CHANGELOG.md`** and **`CHANGELOG.en.md`** (dated `## [x.y.z] - YYYY-MM-DD` section; move items out of `[Unreleased]` when cutting). Version update requests must update both changelog files in the same change.
 
 ## After verification
