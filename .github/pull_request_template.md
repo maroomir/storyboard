@@ -1,3 +1,5 @@
+<!-- English or Korean, either is fine. See CONTRIBUTING.md for the checks CI runs and the sign-off rule. -->
+
 ## 요약
 
 <!-- 이 PR이 무엇을 왜 바꾸는지 한두 문장. -->

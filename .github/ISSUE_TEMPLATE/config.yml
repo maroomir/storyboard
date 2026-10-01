@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/maroomir/storyboard/security/advisories/new
+    about: Keys, writes outside the workspace, or anything in SECURITY.md — report privately.
