@@ -38,6 +38,9 @@ Every step must work in order on both platforms.
   draft".
 - **Quit during a run** — close the window mid-run: the dialog offers to finish the scene, close now,
   or cancel. "Close now" and reopening offers Resume.
+- **Change a scene's number or name** — on the desk, "Change number or name" on scene 1 → number 3:
+  the contents move it, its draft opens under the new number, and History shows the change as its
+  own version. A number another scene uses is refused with a message, and nothing moves.
 - **Language** — Settings → English: every screen switches; engine messages stay Korean.
 - **Dark mode** — switch the OS appearance: the app follows and stays readable.
 - **Update (packaged builds only)** — install the previous release, publish a newer one: the banner

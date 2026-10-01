@@ -206,6 +206,33 @@ describe('with a work open', () => {
     expect(gitSubjects()[0]).toBe('직접 고침: 밤의 방파제');
   });
 
+  it('renames a scene with its draft, snapshots it, and refuses a number another scene holds', async () => {
+    writeScene('02-letter', '편지');
+
+    const renamed = await expectOk('scene.rename', { stem: '01-harbor', to: '03-harbor' });
+    const taken = await invoke('scene.rename', { stem: '03-harbor', to: '02-harbor' });
+
+    expect(renamed.stem).toBe('03-harbor');
+    expect((await expectOk('draft.read', { stem: '03-harbor' })).body).toBe('생성된 첫 문단.\n');
+    expect(existsSync(join(workspacePath(), 'draft', '01-harbor.md'))).toBe(false);
+    expect(gitSubjects()[0]).toBe('씬 번호·이름 바꿈: 밤의 방파제 (01-harbor → 03-harbor)');
+    expect(taken.ok ? undefined : taken.error.code).toBe('already-exists');
+  });
+
+  it('refuses to rename while another app holds the work', async () => {
+    const record = createWorkspaceRunLockRecord(
+      { owner: 'cli', label: 'storyboard novel generate', pid: 1, hostname: 'elsewhere' },
+      'cli-token',
+      new Date(),
+    );
+    writeFileSync(join(workspacePath(), STORYBOARD_RELATIVE_PATHS.runLock), serializeWorkspaceRunLock(record));
+
+    const result = await invoke('scene.rename', { stem: '01-harbor', to: '03-harbor' });
+
+    expect(result.ok ? undefined : result.error.code).toBe('workspace-locked');
+    expect(existsSync(join(workspacePath(), 'scene', '01-harbor.card'))).toBe(true);
+  });
+
   it('refuses edits while another app holds the work, and says who', async () => {
     const record = createWorkspaceRunLockRecord(
       { owner: 'cli', label: 'storyboard novel generate', pid: 1, hostname: 'elsewhere' },

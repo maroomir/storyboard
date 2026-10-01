@@ -21,7 +21,8 @@ extension; only its host adapters and screens are its own.
 - **The desktop commits; nothing else does.** It is the one exception to "the app writes files and
   leaves git to the user": `src/main/snapshotService.ts` (isomorphic-git, so no git install is
   needed) records a version on open, on close, per chapter of a run, after a scene run, after an AI
-  edit, when an editing session ends, and after each story-bible save. It never pushes, and a restore
+  edit, when an editing session ends, after each story-bible save, and after a scene is renumbered or
+  renamed. It never pushes, and a restore
   is a new commit that first snapshots the current state — history is never rewritten.
 - **One writer per workspace.** Runs take the engine's run lock; while any app holds it, every
   desktop write is refused (`workspace-locked`) and the editor is read-only.

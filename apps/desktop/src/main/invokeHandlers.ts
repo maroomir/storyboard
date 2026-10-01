@@ -58,6 +58,12 @@ export function createInvokeHandlers(app: DesktopApp): InvokeHandlers {
       ),
     'scene.notes': async ({ stem }) =>
       await withScene(app, stem, async (session) => succeed(await session.notes(stem))),
+    'scene.rename': async ({ stem, to }) =>
+      await withWritableSession(app, async (session) =>
+        (await session.sceneExists(stem))
+          ? await session.renameScene(stem, to)
+          : fail('not-found', app.t('error.notFound')),
+      ),
 
     'run.status': async () => await withSession(app, async (session) => succeed(await session.runs.refresh())),
     'run.startNovel': async ({ mode, resume }) =>

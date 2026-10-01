@@ -22,7 +22,7 @@ import type {
   WorkspaceOverview,
 } from '@/shared/dto';
 import type { MessageKey, MessageParams } from '@/shared/i18n/translate';
-import type { WorkspaceCreateRequest } from '@/shared/ipcContract';
+import type { DesktopErrorCode, WorkspaceCreateRequest } from '@/shared/ipcContract';
 
 import { BibleService } from './bibleService';
 import { createDesktopContainer, type DesktopContainer } from './desktopContainer';
@@ -81,6 +81,13 @@ export function contractSettingFrom(request: WorkspaceCreateRequest): {
     },
   };
 }
+
+const sceneRenameErrorCodes = {
+  'invalid-stem': 'invalid-request',
+  missing: 'not-found',
+  'order-taken': 'already-exists',
+  failed: 'failed',
+} as const satisfies Record<string, DesktopErrorCode>;
 
 // One open work: its engine container, its version history, its run, and the author's editing
 // sessions. Closing it ends every session and records a last snapshot.
@@ -249,6 +256,26 @@ export class WorkspaceSession {
     for (const stem of [...this.editedStems, ...this.archivedStems]) {
       await this.endDraftSession(stem);
     }
+  }
+
+  // The engine moves everything keyed by the stem and refuses a number another scene holds; its
+  // message is shown as it is. The open editing session ends first so its edits are their own version.
+  public async renameScene(from: string, to: string): Promise<ServiceResult<{ readonly stem: string }>> {
+    await this.endDraftSession(from);
+
+    const title = await this.sceneTitle(from);
+    const result = await this.container.drafts.renameScene({
+      workspaceRoot: this.container.workspaceRoot,
+      fromStem: from,
+      toStem: to,
+    });
+
+    if (!result.ok) {
+      return fail(sceneRenameErrorCodes[result.kind], result.message);
+    }
+
+    await this.snapshot('snapshot.sceneRenamed', { title, from: result.fromStem, to: result.toStem });
+    return succeed({ stem: result.toStem });
   }
 
   public async sceneExists(stem: string): Promise<boolean> {

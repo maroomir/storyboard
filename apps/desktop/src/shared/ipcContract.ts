@@ -78,6 +78,7 @@ export const invokeRequestSchemas = {
     instruction: z.string().trim().min(1).max(2_000),
   }),
   'scene.notes': z.object({ stem: sceneStemSchema }),
+  'scene.rename': z.object({ stem: sceneStemSchema, to: sceneStemSchema }),
 
   'run.status': empty,
   'run.startNovel': z.object({ mode: z.enum(novelRunModes), resume: z.boolean() }),
@@ -137,6 +138,7 @@ export interface InvokeResponses {
   'draft.endSession': Record<string, never>;
   'draft.proposeEdit': { readonly text: string };
   'scene.notes': SceneNotes;
+  'scene.rename': { readonly stem: string };
   'run.status': RunSnapshot;
   'run.startNovel': RunSnapshot;
   'run.generateScene': RunSnapshot;

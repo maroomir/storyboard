@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DraftAutosave, type AutosaveState } from '@/renderer/lib/draftAutosave';
 import { budgetProgress, stageRail } from '@/renderer/lib/runView';
+import { composeSceneStem } from '@/renderer/lib/sceneRename';
 import { replaceSelection } from '@/renderer/lib/selectionEdit';
 import { initialWizardForm, isStepComplete, lengthHint } from '@/renderer/lib/wizardForm';
 import type { RunSnapshot } from '@/shared/dto';
@@ -103,5 +104,19 @@ describe('wizard form', () => {
       scenes: 30,
       perScene: 3000,
     });
+  });
+});
+
+describe('composeSceneStem', () => {
+  it('keeps at least the digits the scene had', () => {
+    expect(composeSceneStem('4', 'night-market', 2)).toBe('04-night-market');
+    expect(composeSceneStem(' 120 ', 'night-market', 2)).toBe('120-night-market');
+  });
+
+  it('refuses a number or a name the file name cannot hold', () => {
+    expect(composeSceneStem('0', 'night-market', 2)).toBeUndefined();
+    expect(composeSceneStem('3.5', 'night-market', 2)).toBeUndefined();
+    expect(composeSceneStem('3', '야시장', 2)).toBeUndefined();
+    expect(composeSceneStem('3', '', 2)).toBeUndefined();
   });
 });
