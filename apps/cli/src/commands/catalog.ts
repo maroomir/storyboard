@@ -143,7 +143,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'instruction', valueLabel: '<text>', summary: 'draft augment/edit 에 줄 지시' },
   { name: 'name', valueLabel: '<text>', summary: 'card/scene create 가 쓸 이름' },
   { name: 'id', valueLabel: '<slug>', summary: 'card create 의 파일명 (기본: 이름에서 유도)' },
-  { name: 'to', valueLabel: '<id>', summary: 'card rename 의 새 id' },
+  { name: 'to', valueLabel: '<id>', summary: 'card rename 의 새 id, scene rename 의 새 stem' },
   { name: 'title', valueLabel: '<name>', summary: 'init 이 만들 작품 이름' },
   {
     name: 'repair',
@@ -458,6 +458,15 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'scene create --name <text>',
     summary: '다음 번호로 씬 카드를 만듭니다',
     flags: ['name'],
+  },
+  {
+    verb: 'scene rename',
+    writesWorkspace: true,
+    group: '씬과 초안',
+    usage: 'scene rename <stem> --to <stem>',
+    summary: '씬 이름·번호를 바꾸고 초안·기억·정전의 참조를 함께 옮깁니다',
+    flags: ['to'],
+    examples: ['storyboard scene rename 03-night-market --to 04-night-market'],
   },
   {
     verb: 'scene generate',

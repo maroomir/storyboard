@@ -34,6 +34,7 @@ import {
   ReviewManuscriptUseCase,
   ReviseAfterGenerateGate,
   ReviseDraftUseCase,
+  RenameSceneUseCase,
   SaveDraftEditUseCase,
   SceneBatchRepository,
   SceneCacheRepository,
@@ -126,6 +127,7 @@ interface EngineGraph {
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
+  readonly renameSceneUseCase: RenameSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
@@ -358,6 +360,7 @@ function buildServices(
       logger,
       repository: cardRecommendationRepository,
     }),
+    renameSceneUseCase: new RenameSceneUseCase({ fileSystem, logger }),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase({
       aiGateway,
       logger,

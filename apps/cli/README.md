@@ -139,6 +139,17 @@ storyboard project set --composition alternating-pov --pov-characters hana,jun -
 storyboard scene show 03-night-market
 ```
 
+A scene's file name is its key: the draft, its `.draft/` history, the summary, the caches, the
+dialogue memory and the studio sessions are all named after the stem, and the story-state ledger
+and canon refer to it by stem or by number. `scene rename` moves and rewrites all of them together.
+It refuses a number another scene already holds, so to insert a scene, move the later scenes up
+first, starting from the last one. A new number also gives the scene the outline slot and chapter
+that number maps to.
+
+```bash
+storyboard scene rename 03-night-market --to 04-night-market
+```
+
 `cards build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
 without touching the tree. A new card whose name yields no ascii id is reported rather than filed
 under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
