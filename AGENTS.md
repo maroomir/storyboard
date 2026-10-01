@@ -34,7 +34,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 ## Core Principles
 
 - This is a VSCode extension project.
-- Check `apps/vscode/package.json` scripts before running build, lint, test, or packaging commands; the root `package.json` re-exports only `build`, `compile`, `lint`, `test`, and `package:vsix` to that workspace.
+- Check `apps/vscode/package.json` scripts before running build, lint, test, or packaging commands; from the root, `build`, `lint` and `test` drive every app, `compile` and `package:vsix` are extension-only, and `check:architecture`, `cli:build`, `desktop:dev`, `desktop:package` and `version:sync` are the remaining root scripts.
 - When updating the project version or release notes, update both `CHANGELOG.md` and `CHANGELOG.en.md` in the same change. The version lives in the root `package.json`; `npm run version:sync` mirrors it into the apps.
 - Tracked docs at repo root: `ARCHITECTURE.md`, `RELEASE.md`. Extension-scoped docs live in `apps/vscode/`: `EXTENSION_QA.md`, `GUIDE.md`. Optional local-only `.doc/` (gitignored) for extended plans and ADRs.
 - Inspect nearby files and existing conventions before editing.
