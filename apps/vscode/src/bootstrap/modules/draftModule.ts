@@ -10,6 +10,7 @@ import { registerGenerateSceneBeatsCommand } from '@/presentation/commands/gener
 import { registerMigrateScenesCommand } from '@/presentation/commands/migrateScenes';
 import { registerResealStoryStateCommand } from '@/presentation/commands/resealStoryState';
 import { registerNewSceneCommands } from '@/presentation/commands/newScene';
+import { registerRenameSceneCommand } from '@/presentation/commands/renameScene';
 import { registerReviseDraftCommand } from '@/presentation/commands/reviseDraft';
 import { registerCharacterHoverProvider } from '@/presentation/providers/CharacterHoverProvider';
 import { registerContinuityDiagnosticsProvider } from '@/presentation/providers/ContinuityDiagnosticsProvider';
@@ -49,6 +50,7 @@ export class DraftModule implements IApplicationModule {
       registerCondenseDraftCommand({ drafts, configBridge, logger }),
       registerAugmentDraftCommands({ drafts, logger }),
       registerNewSceneCommands({ configBridge }),
+      registerRenameSceneCommand({ drafts, runGate }),
       registerMigrateScenesCommand({ logger }),
       registerResealStoryStateCommand({ configBridge, fileSystem, logger }),
       registerCharacterHoverProvider(),

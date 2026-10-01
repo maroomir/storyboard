@@ -23,6 +23,7 @@
   "storyboard.manuscript.summaries.title": "Storyboard: Summarize Chapters",
   "storyboard.draft.applyFormat.title": "Storyboard: Apply Format to Draft (Current Scene)",
   "storyboard.scene.create.title": "Storyboard: New Scene",
+  "storyboard.scene.rename.title": "Storyboard: Rename Scene...",
   "storyboard.scene.openDraft.title": "Storyboard: Open Draft for Scene",
   "storyboard.relationGraph.open.title": "Storyboard: Open Character Relation Graph",
   "storyboard.settings.open.title": "Storyboard: Open Settings",

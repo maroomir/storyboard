@@ -358,6 +358,13 @@ npx @vscode/vsce package
 
 ---
 
+## 씬 이름 변경
+
+- [ ] 탐색기에서 `scene/` 의 씬 카드 우클릭 → **Storyboard: Rename Scene...** 이 보이고, 다른 폴더의 `.card` 에는 보이지 않는다.
+- [ ] `03-a` 를 `07-a` 로 바꾸면 `scene/`·`draft/`·`.draft/` 의 파일이 새 이름으로 옮겨지고, 카드 `id`, 초안 frontmatter `sceneStem`, `.storyboard/memory/storyState.md` 의 `[3…]` 태그가 새 이름·번호로 바뀐다.
+- [ ] 다른 씬이 쓰는 번호로 바꾸면 경고가 뜨고 아무 파일도 바뀌지 않는다.
+- [ ] 생성이 도는 중(실행 잠금)에는 거부되고 끝난 뒤 다시 하라는 안내가 뜬다.
+
 ## 카드 ID rename
 
 - [ ] 탐색기 F2, Storyboard 사이드바 카드 컨텍스트 **ID 변경**, 명령 팔레트(`storyboard.character.rename` / `storyboard.background.rename`) 세 경로 모두 본문 `id`, 다른 카드의 `relations.target` / `characterIds`, 캐릭터 `profile/{id}.png`(있을 때)가 함께 갱신된다.
