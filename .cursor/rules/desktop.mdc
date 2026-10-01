@@ -74,8 +74,8 @@ Engine messages (errors, progress) stay Korean in both languages.
 ## Packaging
 
 `electron-builder.config.cjs` packages `dist/` alone (everything is bundled, so no `node_modules`
-ships): dmg + zip for macOS arm64/x64, NSIS for Windows x64, update feed on the public
-`webfic/storyboard` releases. The release workflow's `desktop` job builds them on macOS and Windows
+ships): dmg + zip for macOS arm64/x64, NSIS for Windows x64, update feed on this
+repository's releases. The release workflow's `desktop` job builds them on macOS and Windows
 runners; signing turns on when its secrets exist (see `RELEASE.md`). The icon source is
 `build/icon.svg`; `build/icon.png` is rendered from it (`rsvg-convert -w 1024 -h 1024`).
 

@@ -6,7 +6,7 @@ lets another AI agent drive a Storyboard workspace.
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
 ```
 
 The script resolves the latest release, verifies the checksum, unpacks into

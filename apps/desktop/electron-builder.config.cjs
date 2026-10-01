@@ -49,6 +49,6 @@ module.exports = {
     perMachine: false,
     allowToChangeInstallationDirectory: true,
   },
-  // The update feed is the public repository's releases, where every `v*` tag is published.
-  publish: [{ provider: 'github', owner: 'webfic', repo: 'storyboard', releaseType: 'release' }],
+  // The update feed is this repository's releases, where every `v*` tag is published.
+  publish: [{ provider: 'github', owner: 'maroomir', repo: 'storyboard', releaseType: 'release' }],
 };

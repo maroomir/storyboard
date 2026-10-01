@@ -10,7 +10,7 @@ wording, the craft contract, pipeline stage order) are shared through `~/.storyb
 
 ## Install
 
-Download the installer from the [latest release](https://github.com/webfic/storyboard/releases/latest):
+Download the installer from the [latest release](https://github.com/maroomir/storyboard/releases/latest):
 
 - **macOS** — `storyboard-desktop-<version>-mac-arm64.dmg`. Apple Silicon (M1 or later) only; there
   is no Intel build.

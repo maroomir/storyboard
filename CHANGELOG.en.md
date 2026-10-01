@@ -14,6 +14,10 @@ after the first public release.
 
 - **New works come with a coding-agent guide.** Creating a work in any of the three apps writes `AGENTS.md` and a `CLAUDE.md` that imports it. An agent such as Claude Code or Codex working in the repository drafts and reviews through `storyboard` commands instead of writing the prose itself, and asks before changing the contract, the budget or the model. Existing files are never overwritten; for an existing work, `storyboard init --repair` adds only the missing files. The last section, the work's notes, is the author's to fill in.
 
+### Changed
+
+- **One repository, and the source is public.** Source, changelogs, the install script and the releases all live in `maroomir/storyboard` (Apache-2.0). The public mirror `webfic/storyboard` goes away, so the CLI install command is `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash` and the desktop app's update feed now reads this repository's releases. A desktop app installed from the mirror needs this version installed by hand once; it updates on its own from then on.
+
 ## [0.11.0] - 2026-09-30
 
 ### Added

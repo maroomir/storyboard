@@ -109,13 +109,8 @@ Artifact storage counts against the account's shared quota and release assets do
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
 5. Uploads the remaining assets and takes the release out of draft, so a run that dies partway
-   never leaves a half-built release visible.
-6. Publishes the same notes and assets to the public repository, `webfic/storyboard`: it copies
-   both changelogs and `scripts/install.sh` there, commits, tags and pushes, then creates the
-   matching GitHub Release. The step needs the `WEBFIC_RELEASE_TOKEN` secret (a fine-grained PAT
-   with `contents: write` on `webfic/storyboard`); without it the step logs a warning and the
-   release stays private only. The desktop app's auto-update reads this public release (the
-   `latest*.yml` feed), so a release that is not published there never reaches installed apps.
+   never leaves a half-built release visible. The desktop app's auto-update reads this release
+   (the `latest*.yml` feed), so a draft that never leaves draft never reaches installed apps.
 
 ### Desktop signing secrets
 
@@ -177,16 +172,14 @@ repo root.
 The certificate expires after five years and the membership every year; a lapsed membership stops
 new builds from being signed and notarized but leaves the already shipped ones working.
 
-## The public repository
+## One public repository
 
-`webfic/storyboard` is the user-facing side of the product: README, changelogs, `install.sh`,
-issue templates, the wiki, and the releases. It holds **no source** — the source stays here.
+`maroomir/storyboard` is public and is the whole product: the source under Apache-2.0, the
+changelogs, `scripts/install.sh`, and the releases every app installs and updates from. There is
+no mirror; the former `webfic/storyboard` is gone, and a release is published once, here.
 
-- Every release is published **twice**, here and there, under the same tag.
-- The wiki is not updated by the workflow. When user-facing behavior changes, update the wiki
-  pages by hand (or ask an agent to) — they are at `github.com/webfic/storyboard/wiki`.
-- Users install from the public repository, so `scripts/install.sh` defaults to
-  `STORYBOARD_REPO=webfic/storyboard`. Set that variable to install from a private release instead.
+- `scripts/install.sh` defaults to `STORYBOARD_REPO=maroomir/storyboard`; set the variable to
+  install from a fork's release instead.
 
 ## How users install
 
@@ -194,11 +187,11 @@ issue templates, the wiki, and the releases. It holds **no source** — the sour
 - **Desktop** — download the `.dmg` (Apple silicon `arm64` or Intel `x64`) or the Windows
   `-setup.exe` from the release and install it. Later releases arrive through the app's own update
   banner.
-- **CLI** — `curl -fsSL https://raw.githubusercontent.com/webfic/storyboard/main/install.sh | bash`.
+- **CLI** — `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`.
   The script resolves the latest release, verifies the checksum, unpacks the CLI into
   `~/.local/share/storyboard` and links `~/.local/bin/storyboard`. The tarball is a bundled Node
-  script, so the machine needs Node 20 or newer. With the tarball already downloaded (private
-  repository, offline machine), `./install.sh --from <dir>` installs from that directory instead
+  script, so the machine needs Node 20 or newer. With the tarball already downloaded (an offline
+  machine), `./install.sh --from <dir>` installs from that directory instead
   and verifies `SHA256SUMS` when it is there too.
 
 If the workflow fails, delete the failed tag only after deciding whether the release commit itself

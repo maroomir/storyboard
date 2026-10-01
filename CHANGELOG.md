@@ -13,6 +13,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 - **새 작품에 코딩 에이전트 지침이 함께 생깁니다.** 세 앱의 작품 만들기가 `AGENTS.md`와 그것을 불러오는 `CLAUDE.md`를 씁니다. Claude Code·Codex 같은 에이전트가 작품 저장소에서 본문을 직접 쓰지 않고 `storyboard` 명령으로 생성·검수하게 하고, 계약·예산·모델 변경은 사람에게 묻게 합니다. 이미 있는 파일은 덮어쓰지 않으며, 기존 작품에는 `storyboard init --repair`가 빠진 파일만 채웁니다. 마지막 «작품 메모» 절은 작가가 채웁니다.
 
+### 변경
+
+- **저장소가 하나가 되었고 소스가 공개됩니다.** 소스·체인지로그·설치 스크립트·릴리즈가 모두 `maroomir/storyboard`(Apache-2.0)에 있습니다. 공개 미러 `webfic/storyboard`는 없어지므로, CLI 설치 명령은 `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash`이고, 데스크톱 앱의 업데이트 피드도 이 저장소의 릴리즈를 봅니다. 미러에서 설치한 데스크톱 앱은 이번 버전을 손으로 받아야 그다음부터 자동으로 갱신됩니다.
+
 ## [0.11.0] - 2026-09-30
 
 ### 추가
