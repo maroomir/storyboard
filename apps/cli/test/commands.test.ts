@@ -348,6 +348,30 @@ describe('scene create', () => {
   });
 });
 
+describe('scene rename', () => {
+  it('moves the scene through the shared engine and refuses a taken number', async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'first' }));
+    await run('scene create', args(['scene', 'create'], { name: 'second' }));
+
+    const renamed = await run(
+      'scene rename',
+      args(['scene', 'rename'], { to: '03-opening' }, ['01-first']),
+    );
+    const refused = await run(
+      'scene rename',
+      args(['scene', 'rename'], { to: '02-opening' }, ['03-opening']),
+    );
+
+    expect(renamed.ok).toBe(true);
+    expect(readdirSync(join(workspace, 'scene')).sort()).toEqual([
+      '02-second.card',
+      '03-opening.card',
+    ]);
+    expect(refused).toMatchObject({ ok: false });
+    expect(refused.message).toContain('02-second');
+  });
+});
+
 describe('pre-0.8 workspace migration', () => {
   const placeholderSummary =
     '> 1막 · 1장 — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';

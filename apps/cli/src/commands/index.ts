@@ -1176,6 +1176,37 @@ const createScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
+// The stem is the scene's key: the engine moves every file named after it and rewrites the
+// ledgers, canon and caches that point at it. A number another scene holds is refused.
+const renameScene: CommandHandler = async ({ container, args }) => {
+  const fromStem = args.positionals[0];
+  const toStem = flagString(args.flags, 'to');
+
+  if (fromStem === undefined || toStem === undefined) {
+    return { ok: false, message: '바꿀 씬과 --to <새 이름> 을 지정해 주세요.' };
+  }
+
+  const result = await container.drafts.renameScene({
+    workspaceRoot: container.workspaceRoot,
+    fromStem,
+    toStem,
+  });
+
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
+  const orderNote = result.hasOrderChanged
+    ? ' 번호가 바뀌었으므로 아웃라인의 자리와 장 배정도 새 번호를 따릅니다.'
+    : '';
+
+  return {
+    ok: true,
+    message: `${result.fromStem} → ${result.toStem} (옮긴 파일 ${result.movedFiles.length}개, 고친 파일 ${result.rewrittenFiles.length}개).${orderNote}`,
+    data: result,
+  };
+};
+
 // Card ids are file names, so they stay ascii-safe and lowercase. A name with no ascii yields
 // nothing usable; the caller refuses rather than inventing a name-shaped id.
 function slugify(name: string): string | undefined {
@@ -1930,6 +1961,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card create character': createCard,
   'card create background': createCard,
   'scene create': createScene,
+  'scene rename': renameScene,
   'scene show': showScene,
   'narrator list': listNarrators,
   'narrator show': showNarrator,

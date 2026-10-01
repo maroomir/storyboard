@@ -27,6 +27,9 @@ import type {
   ReviseDraftRequest,
   ReviseDraftUseCase,
   ReviseDraftWorkflowResult,
+  RenameSceneRequest,
+  RenameSceneResult,
+  RenameSceneUseCase,
   ReviseGateHooks,
   SaveDraftEditRequest,
   SaveDraftEditResult,
@@ -45,10 +48,12 @@ export interface DraftManagerDependencies {
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
+  readonly renameSceneUseCase: RenameSceneUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
 }
 
-// Everything an app does to one scene's draft: generate it, revise it, reshape it, save an edit.
+// Everything an app does to one scene's draft: generate it, revise it, reshape it, save an edit,
+// and rename the scene it belongs to.
 export class DraftManager {
   public readonly scenes: ISceneSidebarRepository;
 
@@ -110,5 +115,9 @@ export class DraftManager {
 
   public saveEdit(request: SaveDraftEditRequest): Promise<SaveDraftEditResult> {
     return this.deps.saveDraftEditUseCase.execute(request);
+  }
+
+  public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {
+    return this.deps.renameSceneUseCase.execute(request);
   }
 }

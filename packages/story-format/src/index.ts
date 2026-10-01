@@ -7,6 +7,7 @@ export * from './bible';
 export * from './card';
 export * from './chapterSummaryMarks';
 export * from './cardReferenceRewriter';
+export * from './sceneReferenceRewriter';
 export * from './characterDetector';
 export * from './Draft';
 export * from './manuscriptAssembly';
