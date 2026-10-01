@@ -108,7 +108,9 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 │   └── manuscript.md
 │
 ├── .gitignore                    # .storyboard/cache/, .draft/, manuscript/
-└── README.md                     # 프로젝트 자유 노트
+├── README.md                     # 프로젝트 자유 노트
+├── AGENTS.md                     # 코딩 에이전트 지침 (본문은 CLI로만, 없을 때만 생성)
+└── CLAUDE.md                     # `@AGENTS.md` 한 줄 (Claude Code가 읽는 입구)
 ```
 
 ### 3.1 폴더 역할 요약
@@ -126,6 +128,7 @@ MagicBoy/                         # 사용자가 VSCode로 여는 폴더 (= 1 �
 | `draft/` | AI가 생성한 원고 마크다운 | **제외** (재생성 가능) |
 | `.draft/` | 덮어쓰기 전 이전 초안 히스토리 (`editor.draft.keepHistory` 활성 시) | **제외** (재생성 가능) |
 | `manuscript/` | chapter/volume로 조립한 원고 | **제외** (재생성 가능) |
+| `AGENTS.md`, `CLAUDE.md` | 작품 저장소에서 도는 코딩 에이전트가 본문을 직접 쓰지 않고 `storyboard` CLI를 거치게 하는 지침. 세 앱의 init이 없을 때만 쓰고 `storyboard init --repair`가 빠진 것만 채운다. 작가가 «작품 메모» 절을 채운다 | 추적 |
 
 ## 4. 파일 포맷 명세
 

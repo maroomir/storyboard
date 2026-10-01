@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **New works come with a coding-agent guide.** Creating a work in any of the three apps writes `AGENTS.md` and a `CLAUDE.md` that imports it. An agent such as Claude Code or Codex working in the repository drafts and reviews through `storyboard` commands instead of writing the prose itself, and asks before changing the contract, the budget or the model. Existing files are never overwritten; for an existing work, `storyboard init --repair` adds only the missing files. The last section, the work's notes, is the author's to fill in.
+
 ## [0.11.0] - 2026-09-30
 
 ### Added

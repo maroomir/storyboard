@@ -14,6 +14,7 @@ Primary references: [`ARCHITECTURE.md`](ARCHITECTURE.md). Code: [`packages/story
 
 - One VSCode workspace folder = one novel project.
 - Tracked content: `character/`, `background/`, `scene/`, `.storyboard/project.json` (and optional `.storyboard/settings.json`).
+- Agent guide: `AGENTS.md` plus a one-line `CLAUDE.md` (`@AGENTS.md`), tracked, written by every app's init only when missing (`init --repair` fills gaps). The text lives in `packages/story-engine/src/persistence/workspaceAgentGuide.ts`; name commands as `storyboard <verb>` there, because `apps/cli/test/help.test.ts` checks each one and its flags against the command catalog.
 - Regeneratable: `draft/`, `.storyboard/cache/`—default gitignore targets; do not treat as durable user source.
 - Durable AI memory: `.storyboard/memory/` (story state, persona/background memory, dialogue sidecars, chapter summaries) is tracked—no committed input reproduces it.
 - `storyState.md` entries carry the input hash of the scene that produced them (`<!-- scene-input: N sha256:… -->`). Editing a card or scene without regenerating that scene marks its entries `- [N!] …`: kept in the file, dropped from prompts, reported in generation warnings and `storyboard doctor`.

@@ -15,6 +15,7 @@ import {
   joinStoryPath,
   migrateCardTextFieldsToList,
   writeNarratorCardsIfMissing,
+  writeWorkspaceAgentGuidesIfMissing,
   createStoryboardDirectories,
   createWorkspace,
   ensureWorkspaceGitignore,
@@ -1431,6 +1432,7 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
     await createStoryboardDirectories(container.fileSystem, paths);
     await ensureWorkspaceGitignore(container.fileSystem, paths.gitignore);
+    const addedAgentGuides = await writeWorkspaceAgentGuidesIfMissing(container.fileSystem, paths);
     const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
     const sealedSceneOrders = await sealWorkspaceStoryState(container, paths);
 
@@ -1440,8 +1442,11 @@ const initProject: CommandHandler = async ({ container, args }) => {
         (sealedSceneOrders.length === 0
           ? '디렉터리와 .gitignore 를 최신으로 맞췄습니다. 작품 계약은 그대로입니다.'
           : `디렉터리와 .gitignore 를 최신으로 맞추고, 이야기 상태 원장의 씬 ${formatSceneOrderRanges(sealedSceneOrders)}를 지금의 카드·씬으로 봉인했습니다. 작품 계약은 그대로입니다.`) +
+        (addedAgentGuides.length === 0
+          ? ''
+          : ` 에이전트 지침 ${addedAgentGuides.join(', ')} 를 추가했습니다.`) +
         describeGitRepository(gitRepository),
-      data: { repaired: true, sealedSceneOrders, gitRepository },
+      data: { repaired: true, sealedSceneOrders, addedAgentGuides, gitRepository },
     };
   }
 

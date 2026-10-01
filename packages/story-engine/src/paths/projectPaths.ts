@@ -60,6 +60,8 @@ export interface StoryboardProjectPaths {
   readonly manuscriptVolume: StoryUri;
   readonly gitignore: StoryUri;
   readonly readme: StoryUri;
+  readonly agentGuide: StoryUri;
+  readonly claudeGuide: StoryUri;
 }
 
 function resolveWorkspacePath(workspaceRoot: StoryUri, relativePath: string): StoryUri {
@@ -109,6 +111,8 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     manuscriptVolume: resolve(STORYBOARD_RELATIVE_PATHS.manuscriptVolume),
     gitignore: resolve(STORYBOARD_RELATIVE_PATHS.gitignore),
     readme: resolve(STORYBOARD_RELATIVE_PATHS.readme),
+    agentGuide: resolve(STORYBOARD_RELATIVE_PATHS.agentGuide),
+    claudeGuide: resolve(STORYBOARD_RELATIVE_PATHS.claudeGuide),
   };
 }
 

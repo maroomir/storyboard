@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 
+import { createWorkspaceAgentGuide } from '@storyboard/story-engine';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -35,6 +36,41 @@ describe('command catalog', () => {
         tail !== undefined && catalogVerbs.has(`${head} ${tail}`) ? `${head} ${tail}` : head;
 
       expect(catalogVerbs, `setup.ts tells the user to run "storyboard ${verb}"`).toContain(verb);
+    }
+  });
+
+  // NOTE: 작품 저장소의 AGENTS.md 는 에이전트가 그대로 실행하는 명령표다. 세 단어 verb
+  // (card create character)까지 가장 긴 일치로 찾고, 같은 줄의 플래그가 그 verb 의 것인지도 본다.
+  it('is the only source of the commands the workspace agent guide names', () => {
+    const verbsLongestFirst = commandCatalog
+      .map((spec) => spec.verb)
+      .sort((left, right) => right.split(' ').length - left.split(' ').length);
+    const mentions = createWorkspaceAgentGuide().matchAll(/storyboard((?: [a-z][a-z-]*)+)/g);
+    let checked = 0;
+
+    for (const [mention, words] of mentions) {
+      const spoken = words.trim();
+      const verb = verbsLongestFirst.find((candidate) => `${spoken} `.startsWith(`${candidate} `));
+
+      expect(verb, `AGENTS.md tells the agent to run "${mention}"`).toBeDefined();
+      checked += 1;
+    }
+
+    expect(checked).toBeGreaterThan(20);
+  });
+
+  it('only names flags the guide verbs accept', () => {
+    const guide = createWorkspaceAgentGuide();
+    const known = new Set([...globalFlagNames, ...commandCatalog.flatMap((spec) => spec.flags ?? [])]);
+
+    for (const [, flag] of guide.matchAll(/--([a-z][a-z-]*)/g)) {
+      expect(known, `AGENTS.md names --${flag}`).toContain(flag);
+    }
+
+    for (const [line, words, flag] of guide.matchAll(/storyboard ([a-z][a-z -]*?)(?: <stem>)? --([a-z-]+)/g)) {
+      const spec = commandCatalog.find((candidate) => words.trim() === candidate.verb);
+
+      expect(spec?.flags ?? [], `AGENTS.md: "${line}"`).toContain(flag);
     }
   });
 

@@ -10,6 +10,7 @@ import {
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { createDefaultProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
+import { writeWorkspaceAgentGuidesIfMissing } from '#engine/persistence/workspaceAgentGuide';
 
 export async function createStoryboardDirectories(
   fs: IFileSystem,
@@ -87,6 +88,7 @@ export async function createWorkspace(request: CreateWorkspaceRequest): Promise<
   await writeProjectJson(fileSystem, paths.projectJson, project);
   await ensureWorkspaceGitignore(fileSystem, paths.gitignore);
   await fileSystem.writeFile(paths.readme, new TextEncoder().encode(createWorkspaceReadme(project.name)));
+  await writeWorkspaceAgentGuidesIfMissing(fileSystem, paths);
   const createdNarrators = await writeNarratorCardsIfMissing(
     fileSystem,
     paths,

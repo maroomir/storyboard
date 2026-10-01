@@ -28,6 +28,11 @@ storyboard project set --genre …      # the contract the outline needs (init t
 storyboard doctor                     # what is still missing, with the command that fixes it
 ```
 
+`init` also writes `AGENTS.md` (and a `CLAUDE.md` that imports it) for coding agents working in the
+workspace: draft through `storyboard` verbs instead of writing `draft/*.md` by hand, judge by exit
+code, ask before changing the contract, the budget or the model. Existing files are never
+overwritten; fill in its last section with the work's own notes.
+
 `doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
 `scene seeds`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
 ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
@@ -36,8 +41,8 @@ you regenerate that scene. When the edit was one you do not want redrafted — b
 whose prose still stands — `storyboard state reseal [<scene range>]` records the current cards as the
 ledger's basis instead, which is the only way to clear that mark without regenerating. The chapter summaries (`.storyboard/memory/summaries.md`) are checked the
 same way against the drafts they were written from, and `storyboard manuscript summaries` refreshes
-the ones that no longer match. `storyboard init --repair` restores the directories and `.gitignore` of
-an existing workspace without touching the contract (a plain `init` refuses one) and seals a
+the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
+(`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a
 pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
 stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
 keeping any summary you wrote above it, and moves that inline summary into

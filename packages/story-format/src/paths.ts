@@ -42,6 +42,8 @@ export interface StoryboardRelativePaths {
   readonly manuscriptVolume: string;
   readonly gitignore: string;
   readonly readme: string;
+  readonly agentGuide: string;
+  readonly claudeGuide: string;
 }
 
 export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
@@ -82,6 +84,8 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   manuscriptVolume: 'manuscript/manuscript.md',
   gitignore: '.gitignore',
   readme: 'README.md',
+  agentGuide: 'AGENTS.md',
+  claudeGuide: 'CLAUDE.md',
 };
 
 // 워크스페이스 파일의 확장자. 경로를 만드는 쪽과 판정하는 쪽이 같은 글자를 봐야 «만들 때는

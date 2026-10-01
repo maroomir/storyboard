@@ -457,6 +457,24 @@ describe('pre-0.8 workspace migration', () => {
     ).toBe('시그널');
   });
 
+  it('writes the agent guides on init, with CLAUDE.md importing AGENTS.md', () => {
+    expect(readFileSync(join(workspace, 'AGENTS.md'), 'utf8')).toContain('storyboard doctor');
+    expect(readFileSync(join(workspace, 'CLAUDE.md'), 'utf8')).toBe('@AGENTS.md\n');
+  });
+
+  // «작품 메모»는 작가가 채우는 절이다. 보수가 그 파일을 다시 쓰면 메모가 사라진다.
+  it('restores a missing agent guide on --repair and keeps an edited one', async () => {
+    writeFileSync(join(workspace, 'AGENTS.md'), '# 작가가 고친 지침\n');
+    rmSync(join(workspace, 'CLAUDE.md'));
+
+    const outcome = await run('init', args(['init'], { repair: true }));
+
+    expect(outcome.ok).toBe(true);
+    expect(readFileSync(join(workspace, 'AGENTS.md'), 'utf8')).toBe('# 작가가 고친 지침\n');
+    expect(readFileSync(join(workspace, 'CLAUDE.md'), 'utf8')).toBe('@AGENTS.md\n');
+    expect(outcome.data).toMatchObject({ addedAgentGuides: ['CLAUDE.md'] });
+  });
+
   // 계약 플래그가 조용히 버려진 채 exit 0 이 되면 에이전트는 제목이 바뀌었다고 믿는다.
   it('refuses a plain init on an existing workspace', async () => {
     const outcome = await run('init', args(['init'], { title: '새 제목' }));
