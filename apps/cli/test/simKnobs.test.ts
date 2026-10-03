@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { pipelineDefaults } from '@storyboard/story-pipeline';
+import { pipelineDefaults } from '@storyboard/story-engine';
 import { sectionViolationKinds, integerSettingDefault } from '@storyboard/story-model';
 import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
 import {

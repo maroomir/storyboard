@@ -109,17 +109,4 @@ export * from './ports/fileSystem';
 export * from './ports/logger';
 export * from './ports/usageSink';
 export * from './ports/workspaceLocator';
-
-// The pipeline's knob defaults, so a host can show the value in force without importing the
-// pipeline (which the app architecture checks forbid).
-export {
-  defaultGenerationKnobs,
-  generationParameterDefault,
-  overrideScenePipelinePlan,
-  resetScenePipelinePlan,
-  resolveScenePipelinePlan,
-  sceneStageCatalog,
-  sceneStageIds,
-  sceneStageLabel,
-  type SceneStageId,
-} from '@storyboard/story-pipeline';
+export * from './pipeline/index';

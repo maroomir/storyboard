@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { GenerateDraftResult } from '@storyboard/story-engine';
+import type { GenerateDraftResult, SceneGenerationPipelineStage } from '@storyboard/story-engine';
 import type { DraftManager, RunGate } from '@storyboard/story-app';
-import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
 import { confirmSceneGrounding } from './confirmSceneGrounding';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';

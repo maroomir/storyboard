@@ -6,7 +6,7 @@ import {
 import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-model';
 import type { PromptTuningKey } from '@storyboard/story-ai';
-import { generationParameterDefault } from '@storyboard/story-pipeline';
+import { generationParameterDefault } from '@storyboard/story-engine';
 
 // 스윕이 흔들 수 있는 손잡이 목록. 이름·단위·범위는 story-ai 의 생성 카탈로그가, 기본값은
 // pipelineDefaults 가 갖는다 — 여기 다시 적으면 두 곳이 갈라진다.

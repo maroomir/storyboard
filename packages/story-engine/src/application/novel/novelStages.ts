@@ -23,7 +23,7 @@ import type {
   DraftCritiqueIssue,
 } from '@storyboard/story-model';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { ReviseSeedIssues } from '@storyboard/story-pipeline';
+import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

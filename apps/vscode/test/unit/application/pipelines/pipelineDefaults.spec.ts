@@ -5,7 +5,7 @@ import {
   PADDING_PARAGRAPH_RATIO,
   SECTION_OUTPUT_LIMIT,
   pipelineDefaults
-} from "@storyboard/story-pipeline"
+} from "@storyboard/story-engine"
 import { integerSettingDefault } from "@storyboard/story-model"
 
 describe("pipeline defaults data file", () => {

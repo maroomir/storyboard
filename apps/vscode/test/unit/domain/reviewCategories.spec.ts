@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { critiqueCategories, critiqueCategoryLabels, critiqueScoring } from "@storyboard/story-model"
-import { resolveAgent, reviewCategories } from "@storyboard/story-pipeline"
+import { resolveAgent, reviewCategories } from "@storyboard/story-engine"
 
 // 카테고리 목록·라벨·감점표·라우팅이 네 곳에 따로 있던 시절에는 새 카테고리가 라벨 없이 또는
 // 라우팅 없이 들어올 수 있었다. 네 표가 같은 목록을 덮는지 여기서 본다.

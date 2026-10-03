@@ -28,9 +28,6 @@
       "@storyboard/story-ai": [
         "../../packages/story-ai/src/index.ts"
       ],
-      "@storyboard/story-pipeline": [
-        "../../packages/story-pipeline/src/index.ts"
-      ],
       "@storyboard/story-sim": [
         "../../packages/story-sim/src/index.ts"
       ],

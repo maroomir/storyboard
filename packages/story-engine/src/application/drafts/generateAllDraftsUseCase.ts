@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
+import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 import type { GenerateDraftUseCase } from './generateDraftUseCase';
 import type { ReviseAfterGenerateGate } from './reviseAfterGenerateGate';
 import type { IUseCase } from '#engine/application/useCase';

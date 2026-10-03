@@ -13,7 +13,7 @@ import {
   validatePolishedSkeleton,
   validateSceneSkeleton,
   type SceneGenerationPipelineAiService,
-} from "@storyboard/story-pipeline"
+} from "@storyboard/story-engine"
 import { sectionViolationKinds } from "@storyboard/story-model"
 
 // 손잡이를 넓히면서 기본값이 한 칸이라도 움직였는지 보는 대조 테스트. 파이프라인 동작을 바꾸는

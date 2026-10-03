@@ -3,7 +3,7 @@ import { sectionViolationKinds } from './sectionViolationKinds';
 // The scene generation knobs a model profile or a measurement sweep may move, by their public id.
 // Ids read `generation.<group>.<property>`, the same path the value has in the pipeline's defaults
 // file, so one name serves the config, the model profile, the sweep and the report. The default
-// values themselves live in `story-pipeline/src/pipelineDefaults.params.json`; this table owns the
+// values themselves live in `story-engine/src/pipeline/pipelineDefaults.params.json`; this table owns the
 // identity, the unit and the range.
 export type GenerationParameterKind = 'ratio' | 'count' | 'chars' | 'weight';
 

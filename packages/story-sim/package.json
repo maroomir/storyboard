@@ -19,7 +19,6 @@
     "@storyboard/story-ai": "*",
     "@storyboard/story-engine": "*",
     "@storyboard/story-model": "*",
-    "@storyboard/story-pipeline": "*",
     "js-yaml": "^4.1.1",
     "zod": "^4.4.2"
   },

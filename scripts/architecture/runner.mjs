@@ -31,6 +31,42 @@ export function requireAliasForEscapingImport(sourceRoot, alias) {
   };
 }
 
+// The engine barrel exports the scene pipeline for the measurement harness and the tests. An app
+// that takes these names could assemble or run the generation loop itself, which is the one thing
+// the engine exists to own; apps go through a manager verb on `StoryboardApplication` instead.
+const PIPELINE_ASSEMBLY_SYMBOLS = new Set([
+  'SceneGenerationPipeline',
+  'runSceneGenerationPipeline',
+  'sceneStages',
+  'runReviseLoop',
+]);
+
+export function refusePipelineAssembly(appName) {
+  return (filePath, importPath, statement, report) => {
+    if (importPath !== '@storyboard/story-engine' || !ts.isImportDeclaration(statement)) {
+      return;
+    }
+
+    const bindings = statement.importClause?.namedBindings;
+
+    if (bindings && ts.isNamespaceImport(bindings)) {
+      report(`${appName} takes the whole engine namespace, pipeline assembly included`, filePath);
+      return;
+    }
+
+    for (const element of bindings?.elements ?? []) {
+      const importedName = (element.propertyName ?? element.name).text;
+
+      if (PIPELINE_ASSEMBLY_SYMBOLS.has(importedName)) {
+        report(
+          `${appName} imports ${importedName} instead of calling an engine use case`,
+          filePath,
+        );
+      }
+    }
+  };
+}
+
 export function collectSourceFiles(directoryPath) {
   if (!fs.existsSync(directoryPath)) {
     return [];

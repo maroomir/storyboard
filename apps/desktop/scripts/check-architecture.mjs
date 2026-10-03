@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   allowListRule,
   isWithin,
+  refusePipelineAssembly,
   requireAliasForEscapingImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
@@ -62,11 +63,7 @@ function refusePreloadDependencies(filePath, importPath, _statement, report) {
 
 // Same rule as the CLI: orchestration belongs to the engine, so the desktop drives use cases and
 // never assembles pipeline stages itself.
-function refuseDirectPipelineImport(filePath, importPath, _statement, report) {
-  if (importPath === '@storyboard/story-pipeline') {
-    report('desktop imports the pipeline directly instead of an engine use case', filePath);
-  }
-}
+const refuseDirectPipelineImport = refusePipelineAssembly('desktop');
 
 function refuseUiLibrariesOutsideRenderer(filePath, importPath, _statement, report) {
   if (isWithin(filePath, RENDERER_ROOT)) {

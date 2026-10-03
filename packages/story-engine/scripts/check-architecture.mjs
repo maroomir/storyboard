@@ -14,6 +14,7 @@ const SOURCE_ROOT = path.join(PACKAGE_ROOT, 'src');
 // mutually dependent pair — application declares the repository ports, persistence implements them
 // — so there is no order to enforce between the two. Everything inward of them does have one.
 const ALLOWED_IMPORTS = {
+  pipeline: ['pipeline'],
   ports: ['ports'],
   ai: ['ai'],
 };

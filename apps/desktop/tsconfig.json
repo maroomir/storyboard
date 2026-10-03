@@ -27,9 +27,6 @@
       "@storyboard/story-node": [
         "../../packages/story-node/src/index.ts"
       ],
-      "@storyboard/story-pipeline": [
-        "../../packages/story-pipeline/src/index.ts"
-      ],
       "@storyboard/story-model/contracts": [
         "../../packages/story-model/src/contracts.ts"
       ]

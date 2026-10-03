@@ -6,7 +6,7 @@ import {
   resolveMinimumDraftLength,
   validateDraftCandidate,
   type DraftCandidateRejectionReason,
-} from '@storyboard/story-pipeline';
+} from '#engine/pipeline/draftCandidateValidation';
 
 export interface CondenseDraftRequest {
   readonly workspaceRoot: StoryUri;
