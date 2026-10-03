@@ -1,10 +1,12 @@
-import { joinStoryPath } from '#engine/paths/storyUri';
+import { joinStoryPath, parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ManuscriptDraftEntry, DraftFileSystem } from '@storyboard/story-model';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-model';
+import type {
+  ManuscriptDraftEntry,
+  DraftFileSystem,
+  StoryboardProjectPaths,
+} from '@storyboard/story-model';
 export async function collectDraftsByOrder(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,

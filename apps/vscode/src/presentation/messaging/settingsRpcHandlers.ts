@@ -1,5 +1,5 @@
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
+import type { StoryboardResponsePayload, AiTaskName } from '@storyboard/story-model';
 import {
   aiProviderIds,
   aiTaskCatalog,
@@ -8,7 +8,6 @@ import {
   storyboardSettingCatalog,
 } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
-import type { AiTaskName } from '@storyboard/story-model';
 
 export interface SettingsConfigFiles {
   readonly user: string;

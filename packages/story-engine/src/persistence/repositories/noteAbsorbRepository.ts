@@ -8,22 +8,18 @@ import {
   type StoryUri,
   type StoryboardCard,
   type StoryboardProject,
-} from '@storyboard/story-model';
-
-import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
-import type { NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';
-import {
   backgroundCardPath,
   characterCardPath,
   getStoryboardProjectPaths,
-} from '#engine/paths/projectPaths';
-import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import {
   noteCandidateFileSchema,
   type NoteBundle,
   type NoteCandidateFile,
-} from '#engine/shared/noteAbsorb';
+} from '@storyboard/story-model';
+
+import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
+import type { NoteAbsorbPlan } from '@storyboard/story-model';
+import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
+import type { IFileSystem } from '#engine/ports/fileSystem';
 
 function encodeText(text: string): Uint8Array {
   return new TextEncoder().encode(text);

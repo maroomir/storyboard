@@ -5,7 +5,7 @@ import {
   readSceneCacheFile,
   type SceneCacheRecord,
   writeSceneCacheFile,
-} from '#engine/domain/files/sceneCache';
+} from '@storyboard/story-model';
 
 export class SceneCacheRepository implements ISceneCacheRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

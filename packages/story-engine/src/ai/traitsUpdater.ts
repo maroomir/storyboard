@@ -4,9 +4,13 @@ import type {
   CharacterCard,
   UsageAttribution,
 } from '@storyboard/story-model';
-import { readCardFile, writeCardFile, parseBulletList } from '@storyboard/story-model';
+import {
+  readCardFile,
+  writeCardFile,
+  parseBulletList,
+  reconcileCharacterTraits,
+} from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import { reconcileCharacterTraits } from '#engine/domain/traitsProcessor';
 interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }

@@ -15,8 +15,8 @@ import {
   renderNotionProperties,
   type NotionBlockNode,
   type NotionRecord,
-} from '#engine/domain/notes/notionBlocks';
-import type { NoteDocument, NoteOrigin, SkippedNote } from '#engine/shared/noteAbsorb';
+} from '@storyboard/story-model';
+import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
 
 const notionApiBase = 'https://api.notion.com/v1';
 const notionApiVersion = '2022-06-28';

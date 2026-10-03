@@ -7,8 +7,6 @@ import {
   measureNoteAbsorbWorkload,
   noteChunkCharacterLimit,
   type NoteDocument,
-} from '@storyboard/story-engine';
-import {
   parseScene,
   type SceneFile,
   type StoryboardCard,

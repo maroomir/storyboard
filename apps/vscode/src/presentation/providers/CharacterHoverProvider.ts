@@ -1,15 +1,16 @@
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths, isDraftMarkdownFile } from '@storyboard/story-engine';
-import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
-import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import {
+  getStoryboardProjectPaths,
+  isDraftMarkdownFile,
   STORYBOARD_FILE_EXTENSIONS,
   STORYBOARD_GLOBS,
   detectCharactersInText,
   isIgnoredSampleCardFileName,
   readCardFile,
 } from '@storyboard/story-model';
+import { vscodeFsAdapter } from '@/infrastructure/vscode/workspaceFsAdapters';
+import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { CharacterCard } from '@storyboard/story-model';
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 

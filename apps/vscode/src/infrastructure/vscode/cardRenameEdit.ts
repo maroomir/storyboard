@@ -9,12 +9,10 @@ import {
   serializeCard,
   setCardId,
   isIgnoredSampleCardFileName,
-} from '@storyboard/story-model';
-import {
   characterProfilePath,
   getStoryboardProjectPaths,
   parseCardIdFromPath,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 import { uriExists } from './workspace';
 
 export interface CardRenameCandidate {

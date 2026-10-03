@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { readStudioStage } from "@storyboard/story-engine"
-import type { StudioTarget } from "@storyboard/story-engine"
+import type { StudioTarget } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
 

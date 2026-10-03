@@ -1,6 +1,6 @@
 import type { UsageAmount } from '@storyboard/story-model';
 
-import { addUsageAmount, emptyUsageAmount, usageAmountOfEntry } from '#engine/domain/files/usageLedger';
+import { addUsageAmount, emptyUsageAmount, usageAmountOfEntry } from '@storyboard/story-model';
 import type { IUsageSink } from '#engine/ports/usageSink';
 
 export interface UsageMeterSession {

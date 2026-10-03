@@ -1,18 +1,19 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
+import {
+  joinStoryPath,
+  type StoryUri,
+  extractNoteLinkTargets,
+  extractNoteTitle,
+  normalizeNoteName,
+  stripMarkdownExtension,
+} from '@storyboard/story-model';
 
 import {
   NoteSourceError,
   type CollectedNotes,
   type INoteSource,
 } from '#engine/application/notes/noteSource';
-import {
-  extractNoteLinkTargets,
-  extractNoteTitle,
-  normalizeNoteName,
-  stripMarkdownExtension,
-} from '#engine/domain/notes/noteMarkdown';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { NoteDocument, NoteOrigin, SkippedNote } from '#engine/shared/noteAbsorb';
+import type { NoteDocument, NoteOrigin, SkippedNote } from '@storyboard/story-model';
 
 const vaultMarkerDirectory = '.obsidian';
 const outsideVaultReason = '볼트 밖을 가리키는 링크라 읽지 않았습니다';

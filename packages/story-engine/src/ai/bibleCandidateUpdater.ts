@@ -1,9 +1,9 @@
 import type { StoryUri, BibleFact, CharacterCard, UsageAttribution } from '@storyboard/story-model';
-import { buildCandidateFact } from '@storyboard/story-model';
 import {
+  buildCandidateFact,
   type BibleCandidateFileSystem,
   writeBibleCandidateFile,
-} from '#engine/domain/files/bibleCandidates';
+} from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 interface BibleCandidateUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;

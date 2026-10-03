@@ -3,7 +3,7 @@ import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { StudioSessionRepository } from "@storyboard/story-engine"
-import type { StudioChatTurn, StudioEntity } from "@storyboard/story-engine"
+import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
 const sessionRoot = "/workspace/.storyboard/cache/studio-sessions"

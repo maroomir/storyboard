@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { createStudioSessionRpcHandlers } from "@/presentation/messaging/studioSessionRpcHandlers"
-import { storyboardMessageProtocolVersion } from "@storyboard/story-engine"
+import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
 import type {
   IStudioSessionRepository,
   StudioSessionSaveInput
 } from "@storyboard/story-engine"
-import type { StudioEntity, StudioSessionSnapshot, StudioSessionSummary } from "@storyboard/story-engine"
+import type { StudioEntity, StudioSessionSnapshot, StudioSessionSummary } from "@storyboard/story-model"
 
 const fakeRoot = { toString: () => "file:///workspace" } as never
 

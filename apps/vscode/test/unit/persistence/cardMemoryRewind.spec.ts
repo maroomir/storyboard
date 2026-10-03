@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as vscode from 'vscode';
 
+import { createBackgroundMemoryStore, createPersonaMemoryStore } from '@storyboard/story-engine';
 import {
-  createBackgroundMemoryStore,
-  createPersonaMemoryStore,
   getStoryboardProjectPaths,
-} from '@storyboard/story-engine';
-import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
-import {
   computeBackgroundCardHash,
   computePersonaCardHash,
   type BackgroundCard,
   type CharacterCard,
 } from '@storyboard/story-model';
+import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>();

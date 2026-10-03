@@ -16,8 +16,12 @@ import {
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from '@storyboard/story-model';
+import type {
+  StoryboardProjectPaths,
+  BackgroundCard,
+  CharacterCard,
+  SceneDialogueRecord,
+} from '@storyboard/story-model';
 import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,

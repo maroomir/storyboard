@@ -5,12 +5,10 @@ import {
   assembleManuscript,
   type AssembledManuscript,
   type ManuscriptDraftEntry,
-} from '@storyboard/story-model';
-import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
-} from '#engine/domain/foreshadowingTracker';
+} from '@storyboard/story-model';
 
 export type ManuscriptAssemblySource = {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;

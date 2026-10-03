@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
 
-import { parseScene } from '@storyboard/story-model';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
+  parseScene,
   computeSceneInputHash,
   parseSceneCache,
   sceneNarrationHashInput,
   serializeSceneCache,
-  type SceneCacheRecord
-} from "@storyboard/story-engine"
+  type SceneCacheRecord,
+} from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 
 const sampleCharacter: CharacterCard = {
   type: "character",

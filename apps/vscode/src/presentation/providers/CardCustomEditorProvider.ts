@@ -16,18 +16,14 @@ import {
   serializeCard,
   serializeWorkspaceCard,
   describeNarration,
-} from '@storyboard/story-model';
-import type { SceneCard, WorkspaceCard } from '@storyboard/story-model';
-import type { SceneStructureFieldKey } from '@storyboard/story-ai';
-import { applyCardCollectProposals } from '@storyboard/story-engine';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
-import {
+  applyCardCollectProposals,
   getStoryboardProjectPaths,
-  loadCharacterRoster,
-  loadNarratorCards,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+import type { SceneCard, WorkspaceCard, StoryboardResponsePayload } from '@storyboard/story-model';
+import type { SceneStructureFieldKey } from '@storyboard/story-ai';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+import { loadCharacterRoster, loadNarratorCards } from '@storyboard/story-engine';
 import { VirtualDocumentStore } from './virtualDocumentStore';
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';

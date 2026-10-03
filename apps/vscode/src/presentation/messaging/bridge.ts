@@ -1,14 +1,14 @@
 import { ZodError } from 'zod';
 
-import { AiProviderError } from '@storyboard/story-model';
 import {
+  AiProviderError,
   createStoryboardErrorResponse,
   createStoryboardSuccessResponse,
   parseStoryboardRequestMessage,
   type StoryboardRequestMessage,
   type StoryboardRequestMethod,
   type StoryboardResponsePayload,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 export interface StoryboardWebviewLike {
   readonly postMessage: (message: unknown) => PromiseLike<boolean>;

@@ -6,8 +6,9 @@ import {
   isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
-} from "@storyboard/story-engine"
-import { isHiddenSceneFileName, isIgnoredSampleCardFileName } from "@storyboard/story-model"
+  isHiddenSceneFileName,
+  isIgnoredSampleCardFileName,
+} from "@storyboard/story-model"
 import { Uri, type WorkspaceFolder } from "../../../stubs/vscode"
 
 describe("pathConventions", () => {

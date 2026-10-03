@@ -95,7 +95,7 @@ const OWNED_LITERALS = [
     owner: 'apps/vscode/src/presentation/commands/openSettings.ts',
     // SECURITY: 웹뷰가 부를 수 있는 명령 목록은 익스텐션을 import 할 수 없는 패키지에 있어야 해서
     // 이 id 는 그곳에도 적힌다. 둘이 어긋나는지는 manifest.spec 이 본다.
-    alsoAllowed: ['packages/story-engine/src/shared/messaging/commands.ts'],
+    alsoAllowed: ['packages/story-model/src/shared/messaging/commands.ts'],
   },
   { literal: "'storyboard.card'", owner: 'apps/vscode/src/contributionIds.ts' },
   { literal: "'gpt-5.6-sol'", owner: 'packages/story-model/src/contracts/providerCatalog.ts' },

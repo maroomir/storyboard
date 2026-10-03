@@ -6,9 +6,11 @@ import {
   settingsUpdateProviderModelRequestPayloadSchema,
   settingsUpdateSettingValueRequestPayloadSchema,
   settingsUpdateTaskAiConfigRequestPayloadSchema,
-  storyboardMessageProtocolVersion
-} from "@storyboard/story-engine"
-import { aiProviderIds, aiTaskNames, storyboardModelCatalog } from '@storyboard/story-model';
+  storyboardMessageProtocolVersion,
+  aiProviderIds,
+  aiTaskNames,
+  storyboardModelCatalog,
+} from "@storyboard/story-model"
 import { ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
 import type { AiProviderRegistry, ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 import { createSettingsRpcHandlers } from "@/presentation/messaging/settingsRpcHandlers"

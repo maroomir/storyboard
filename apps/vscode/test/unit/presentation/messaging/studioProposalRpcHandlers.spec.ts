@@ -5,8 +5,8 @@ import { hashBaseline } from "@storyboard/story-engine"
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
 import { createStudioProposalRpcHandlers } from "@/presentation/messaging/studioProposalRpcHandlers"
 import type { ProposalReviewService } from "@/presentation/providers/proposalReviewService"
-import { storyboardMessageProtocolVersion } from "@storyboard/story-engine"
-import type { StudioChatTurn, StudioEntity } from "@storyboard/story-engine"
+import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
+import type { StudioChatTurn, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
 const characterEntity: StudioEntity = { kind: "character", key: "seorin" }

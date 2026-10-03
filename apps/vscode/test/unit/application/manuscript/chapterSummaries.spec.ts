@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import { SummarizeChaptersUseCase } from '@storyboard/story-engine';
 import {
-  SummarizeChaptersUseCase,
   auditChapterSummaries,
   buildChapterSummariesMarkdown,
   formatChapterSummaryStaleWarning,
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 describe('chapter summaries markdown', () => {
   it('round-trips what it renders', () => {

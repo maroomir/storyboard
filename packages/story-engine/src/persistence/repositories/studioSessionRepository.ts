@@ -1,21 +1,22 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
+  joinStoryPath,
+  type StoryUri,
   deriveStudioSessionTitle,
   parseStudioSession,
   selectSessionsToPrune,
   serializeStudioSession,
   studioSessionVersion,
   type StudioSession,
-} from '#engine/domain/files/studioSession';
+  studioSessionEntityDirectory,
+} from '@storyboard/story-model';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type {
   StudioChatTurn,
   StudioEntity,
   StudioSessionSnapshot,
   StudioSessionSummary,
-} from '#engine/shared/messaging/studio';
-import { studioSessionEntityDirectory } from '#engine/paths/projectPaths';
+} from '@storyboard/story-model';
 
 export interface StudioSessionSaveInput {
   readonly id: string;

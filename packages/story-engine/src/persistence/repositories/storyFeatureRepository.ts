@@ -4,6 +4,8 @@ import {
   type StoryUri,
   parseCard,
   parseScene,
+  getStoryboardProjectPaths,
+  isIgnoredSampleCardFileName,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
@@ -17,7 +19,6 @@ import type {
 } from '#engine/application/story/storyFeatureTypes';
 import { StoryFeatureSourceError } from '#engine/application/story/storyFeatureTypes';
 import { parseProjectJson } from '#engine/persistence/projectJson';
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
 export class StoryFeatureRepository implements IStoryFeatureRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

@@ -18,10 +18,8 @@ import {
   serializeStoryState,
   type SceneRename,
   type StoryUri,
-} from '@storyboard/story-model';
-
-import { parseRevisionPlan, serializeRevisionPlan } from '#engine/domain/files/revisionPlan';
-import {
+  parseRevisionPlan,
+  serializeRevisionPlan,
   draftHistorySceneDirectory,
   draftPath,
   getStoryboardProjectPaths,
@@ -29,7 +27,8 @@ import {
   resolveThreadPaths,
   scenePath,
   type StoryboardProjectPaths,
-} from '#engine/paths/projectPaths';
+} from '@storyboard/story-model';
+
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';

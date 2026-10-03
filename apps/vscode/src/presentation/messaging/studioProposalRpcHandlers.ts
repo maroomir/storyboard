@@ -1,23 +1,25 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-model';
-
-import type { ConfigBridge } from '@storyboard/story-ai';
-
-import { hashBaseline } from '@storyboard/story-engine';
-import { archiveExistingDraft } from '@storyboard/story-engine';
-import { applyStudioPatch } from '@storyboard/story-engine';
-import { readStudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
-import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import {
+  extractDraftBody,
+  parseDraft,
+  serializeDraft,
+  archiveExistingDraft,
+  applyStudioPatch,
   backgroundCardPath,
   characterCardPath,
   draftHistorySceneDirectory,
   isSafeStudioEntityKey,
   joinUri,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+
+import type { ConfigBridge } from '@storyboard/story-ai';
+
+import { hashBaseline } from '@storyboard/story-engine';
+import { readStudioEntityContext, type StudioSceneFocus } from '@storyboard/story-engine';
+import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
+import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftHistoryFileSystem } from '@/infrastructure/vscode/workspaceFsAdapters';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
@@ -26,7 +28,7 @@ import type {
   StudioChatTurn,
   StudioEntity,
   StudioProposalTurn,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 export interface StudioProposalRpcHandlersDependencies {
   readonly reviewService: ProposalReviewService;

@@ -2,8 +2,6 @@ import type {
   BuildStoryCardsProposal,
   BuildStoryCardsRequest,
   BuildStoryCardsUseCase,
-  CardCandidateItem,
-  CardCollectProposal,
   CollectCardProposalsRequest,
   CollectCardProposalsUseCase,
   CreateCardUseCase,
@@ -19,7 +17,13 @@ import type {
   RecommendCardsUseCase,
   StoryFileSnapshot,
 } from '@storyboard/story-engine';
-import type { BibleFact, StoryboardCard, StoryUri } from '@storyboard/story-model';
+import type {
+  CardCandidateItem,
+  CardCollectProposal,
+  BibleFact,
+  StoryboardCard,
+  StoryUri,
+} from '@storyboard/story-model';
 
 export interface CardManagerDependencies {
   readonly createCardUseCase: CreateCardUseCase;

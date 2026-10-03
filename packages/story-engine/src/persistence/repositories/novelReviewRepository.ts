@@ -1,15 +1,17 @@
-import { joinStoryPath, type StoryUri, readBibleFile } from '@storyboard/story-model';
+import {
+  joinStoryPath,
+  type StoryUri,
+  readBibleFile,
+  getStoryboardProjectPaths,
+  parseChapterSummariesMarkdown,
+  type ChapterSummary,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   INovelReviewRepository,
   NovelReviewSource,
 } from '#engine/application/novel/novelPipeline';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import {
-  parseChapterSummariesMarkdown,
-  type ChapterSummary,
-} from '#engine/domain/chapterSummaries';
 export class NovelReviewRepository implements INovelReviewRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

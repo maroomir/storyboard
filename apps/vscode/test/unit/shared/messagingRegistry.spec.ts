@@ -4,7 +4,7 @@ import {
   isStoryboardRequestMethod,
   storyboardRequestPayloadSchemas,
   storyboardResponsePayloadSchemas,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 const expectedMethods = [
   'ai.generate',

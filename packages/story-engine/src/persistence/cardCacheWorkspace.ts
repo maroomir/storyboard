@@ -1,6 +1,6 @@
 import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 
 export async function ensureCardCacheDirectory(
   fs: IFileSystem,

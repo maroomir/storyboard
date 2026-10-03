@@ -1,4 +1,4 @@
-import { backgroundCardPath, characterCardPath } from '#engine/paths/projectPaths';
+import { backgroundCardPath, characterCardPath } from '@storyboard/story-model';
 import {
   bibleCandidateFilePath,
   ensureBibleCacheDirectory,

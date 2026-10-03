@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from "@storyboard/story-engine"
-import type { BibleCandidateRecord } from "@storyboard/story-engine"
-import type { BibleFact, StoryBible } from '@storyboard/story-model';
+import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from "@storyboard/story-model"
+import type { BibleCandidateRecord, BibleFact, StoryBible } from "@storyboard/story-model"
 
 const fact = (id: string, key: string, value: string, status: BibleFact["status"]): BibleFact => ({
   id: `character:${id}:${key}`,

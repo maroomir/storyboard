@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { CardCandidateItem } from '@storyboard/story-engine';
+import type { CardCandidateItem } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
 const promoteCommand = 'storyboard.cards.promoteCandidates';

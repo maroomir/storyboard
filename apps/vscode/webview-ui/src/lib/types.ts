@@ -23,8 +23,8 @@ import type {
   StudioStageCard,
   StudioTarget,
   StudioValidation,
-} from '@storyboard/story-engine/contracts';
-import type { NarratorCard } from '@storyboard/story-model/contracts';
+  NarratorCard,
+} from '@storyboard/story-model/contracts';
 
 export type {
   CardCollectProposal,
@@ -150,7 +150,7 @@ export interface CardEditorInitialData {
 
 // SECURITY: 사이드바가 부를 수 있는 명령 목록은 익스텐션 호스트가 검사하는 스키마가 갖는다.
 // 여기서 다시 적으면 웹뷰만 아는 명령이 생겨 그 검사를 지나칠 수 있다.
-export type { SidebarRunnableCommand } from '@storyboard/story-engine/contracts';
+export type { SidebarRunnableCommand } from '@storyboard/story-model/contracts';
 
 export interface UsageAmount {
   readonly costUsd: number;

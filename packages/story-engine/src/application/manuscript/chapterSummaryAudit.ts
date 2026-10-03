@@ -2,17 +2,15 @@ import {
   assembleManuscript,
   computeDraftBodyHash,
   readChapterPlanFile,
-} from '@storyboard/story-model';
-import {
   auditChapterSummaries,
   buildChapterSummariesMarkdown,
   formatChapterSummaryStaleWarning,
   parseChapterSummariesMarkdown,
   type ChapterSummaryAudit,
-} from '#engine/domain/chapterSummaries';
+} from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 export interface ChapterSummaryAuditRequest {

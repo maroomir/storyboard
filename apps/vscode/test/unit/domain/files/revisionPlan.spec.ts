@@ -7,7 +7,7 @@ import {
   serializeRevisionPlan,
   upsertRevisionEntry,
   type RevisionPlanEntry
-} from "@storyboard/story-engine"
+} from "@storyboard/story-model"
 
 const entry = (sceneStem: string, remainingBlocking: number): RevisionPlanEntry => ({
   sceneStem,

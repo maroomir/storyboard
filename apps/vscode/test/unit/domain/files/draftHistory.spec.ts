@@ -7,7 +7,7 @@ import {
   nextDraftHistoryRevision,
   parseDraftHistoryRevision,
   type DraftHistoryFileSystem
-} from "@storyboard/story-engine"
+} from "@storyboard/story-model"
 
 describe("draft history naming", () => {
   it("formats the timestamp as yyyy-mm-dd-hh-mm in local time", () => {

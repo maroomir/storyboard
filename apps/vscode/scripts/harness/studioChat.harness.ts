@@ -5,7 +5,12 @@ import { test } from 'vitest';
 
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { AiGenerateResponse, AiProvider } from '@storyboard/story-model';
+import type {
+  AiGenerateResponse,
+  AiProvider,
+  StudioChatTurn,
+  StudioEntity,
+} from '@storyboard/story-model';
 
 import { StudioChatUseCase, type StudioChatRequest } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';
@@ -20,7 +25,6 @@ import {
   type StudioSceneFocus,
 } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { StudioChatTurn, StudioEntity } from '@storyboard/story-engine';
 
 import { createUsageSummary } from './usageSummary';
 import {

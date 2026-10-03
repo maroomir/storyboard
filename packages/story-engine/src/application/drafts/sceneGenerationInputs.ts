@@ -1,25 +1,21 @@
-import { hasStoryboardProjectAt } from '#engine/paths/projectDetection';
-import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
-import type { IProjectRepository, ISceneRepository } from '#engine/application/drafts/draftRepositories';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import {
+  hasStoryboardProjectAt,
+  sceneContextPaths,
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
   parseSceneFileName,
   SceneParseError,
   type NarrationDirective,
-} from '@storyboard/story-model';
-import {
   draftPath,
   getStoryboardProjectPaths,
   isDirectSceneCardFile,
-} from '#engine/paths/projectPaths';
-
-import {
   computeSceneInputHash,
   sceneNarrationHashInput,
-} from '#engine/domain/files/sceneCache';
+} from '@storyboard/story-model';
+import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
+import type { IProjectRepository, ISceneRepository } from '#engine/application/drafts/draftRepositories';
+
 import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';

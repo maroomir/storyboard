@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { draftPath } from '@storyboard/story-engine';
+import { draftPath, parseSceneStem } from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneStem } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';

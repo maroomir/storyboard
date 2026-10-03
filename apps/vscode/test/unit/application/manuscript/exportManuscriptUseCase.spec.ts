@@ -6,7 +6,7 @@ import {
   type IManuscriptExportRepository,
   type ManuscriptExportSource
 } from "@storyboard/story-engine"
-import { renderManuscriptExport } from "@storyboard/story-engine"
+import { renderManuscriptExport } from "@storyboard/story-model"
 
 const volumeMarkdown = ["# 제목", "", "> 인용", "**굵게** 그리고 `코드`", "- 항목"].join("\n")
 

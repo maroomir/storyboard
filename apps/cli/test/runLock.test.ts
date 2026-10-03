@@ -2,15 +2,15 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { acquireWorkspaceRunLock, readWorkspaceRunLock } from '@storyboard/story-engine';
 import {
-  acquireWorkspaceRunLock,
   createWorkspaceRunLockRecord,
-  readWorkspaceRunLock,
   serializeWorkspaceRunLock,
   workspaceRunLockTiming,
   type WorkspaceRunLockHolder,
-} from '@storyboard/story-engine';
-import { NodeUri, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
+  NodeUri,
+  STORYBOARD_RELATIVE_PATHS,
+} from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

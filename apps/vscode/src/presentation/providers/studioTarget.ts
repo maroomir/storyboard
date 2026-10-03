@@ -5,18 +5,16 @@ import {
   parseCardIdFromFileName,
   parseSceneFileName,
   sceneStemPattern,
-} from '@storyboard/story-model';
-
-import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
-import {
   draftPath,
   isDirectBackgroundCardFile,
   isDirectCharacterCardFile,
   isDirectSceneCardFile,
   isDraftMarkdownFile,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+
+import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
-import type { StudioTarget } from '@storyboard/story-engine';
+import type { StudioTarget } from '@storyboard/story-model';
 
 export const noneStudioTarget: StudioTarget = { kind: 'none', hasSelection: false };
 

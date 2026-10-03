@@ -5,14 +5,17 @@ import {
   flattenChapterPlan,
   toOutlineBrief,
   integerSettingDefault,
+  buildManuscriptReviewMarkdown,
+  draftPath,
+  scenePath,
+  type StoryboardProjectPaths,
+  buildSceneSeeds,
 } from '@storyboard/story-model';
-import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
-import { draftPath, scenePath, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
-import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
-import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import type {
+  NovelRunState,
+  NovelStageName,
   StoryUri,
   ChapterPlan,
   StoryboardProject,

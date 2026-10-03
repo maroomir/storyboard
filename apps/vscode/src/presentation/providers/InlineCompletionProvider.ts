@@ -6,8 +6,6 @@ import {
   isDraftMarkdownFile,
   sceneFilePath,
   sceneContextPaths,
-} from '@storyboard/story-engine';
-import {
   STORYBOARD_GLOBS,
   buildSceneContext,
   parseDraft,

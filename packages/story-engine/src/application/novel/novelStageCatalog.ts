@@ -2,9 +2,10 @@ import {
   resolvePipelinePlan,
   type PipelineSpec,
   type PipelineStageDefinition,
+  novelStageNames,
+  type NovelStageName,
 } from '@storyboard/story-model';
 
-import { novelStageNames, type NovelStageName } from '#engine/shared/novelRun';
 
 // The stages a novel run goes through, in the bundled order. The ids are the contract floor's
 // `novelStageNames` (every host draws its stage rail from them); this catalog adds what a

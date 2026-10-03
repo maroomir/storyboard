@@ -1,6 +1,6 @@
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 
 // NOTE: 작품 저장소에서 도는 코딩 에이전트(Claude Code·Codex·Cursor)가 본문을 직접 쓰지 않고
 // CLI 를 거치게 하는 지침이다. 명령을 적을 때는 늘 `storyboard <verb>` 꼴로 적는다 — CLI 의

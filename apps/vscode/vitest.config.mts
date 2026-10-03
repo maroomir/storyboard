@@ -14,10 +14,6 @@ export default defineConfig({
     alias: {
       // The extension host is never loaded in tests; the stub stands in for the editor API.
       vscode: path.join(packageRoot, "test/stubs/vscode.ts"),
-      "@storyboard/story-engine/contracts": path.join(
-        packageRoot,
-        "../../packages/story-engine/src/shared/index.ts",
-      ),
       ...aliasesFromTsconfig(path.join(packageRoot, "tsconfig.json"))
     }
   },

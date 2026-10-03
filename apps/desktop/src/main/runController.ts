@@ -3,19 +3,22 @@ import {
   getStoryboardProjectPaths,
   isResumable,
   novelStageNames,
-  readProjectJson,
-  readWorkspaceRunLock,
   scenePath,
   validateGenerationContract,
-  type GenerateDraftRequest,
-  type NovelApprovalKind,
   type NovelRunMode,
   type NovelRunState,
   type NovelStageName,
+  contractFieldLabels,
+  readSceneFile,
+} from '@storyboard/story-model';
+import {
+  readProjectJson,
+  readWorkspaceRunLock,
+  type GenerateDraftRequest,
+  type NovelApprovalKind,
   type UsageMeterSession,
   type WorkspaceRunLock,
 } from '@storyboard/story-engine';
-import { contractFieldLabels, readSceneFile } from '@storyboard/story-model';
 
 import type {
   RunApprovalRequest,

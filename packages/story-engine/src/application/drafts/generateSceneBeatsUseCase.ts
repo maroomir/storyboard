@@ -1,12 +1,15 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-model';
-import { buildSceneContext, SceneParseError } from '@storyboard/story-model';
+import {
+  buildSceneContext,
+  SceneParseError,
+  sceneContextPaths,
+  getStoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { hasSceneBeats, proposeSceneBeats } from './resolveSceneBeats';
 
 export interface GenerateSceneBeatsUseCaseDependencies {

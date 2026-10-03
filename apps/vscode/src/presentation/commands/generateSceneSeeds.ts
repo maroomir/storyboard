@@ -2,15 +2,16 @@ import type { StoryUri, OutlineFileSystem } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths } from '@storyboard/story-engine';
-import { buildSceneSeeds, type GeneratedSceneSeed } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import {
+  getStoryboardProjectPaths,
+  buildSceneSeeds,
+  type GeneratedSceneSeed,
   ChapterPlanParseError,
   parseSceneFileName,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
 } from '@storyboard/story-model';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import { readProjectJson } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';

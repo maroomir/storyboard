@@ -1,8 +1,12 @@
-import { type StoryUri, parseDraft, readDraftFile } from '@storyboard/story-model';
+import {
+  type StoryUri,
+  parseDraft,
+  readDraftFile,
+  getStoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { ICardCollectRepository } from '#engine/application/cards/collectCardProposalsUseCase';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { loadCharacterRoster } from '#engine/persistence/relationGraphData';
 import type { CollectDraft, CollectRosterEntry } from '#engine/ai/cardCollectBuilder';
 

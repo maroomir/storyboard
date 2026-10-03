@@ -3,16 +3,14 @@ import {
   createEmptyBible,
   readBibleFile,
   writeBibleFile,
+  getStoryboardProjectPaths,
+  readBibleCandidateFile,
+  type BibleCandidateRecord,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { IBibleCandidateRepository } from '#engine/application/project/promoteBibleCandidatesUseCase';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { StoryBible } from '@storyboard/story-model';
-import {
-  readBibleCandidateFile,
-  type BibleCandidateRecord,
-} from '#engine/domain/files/bibleCandidates';
 export class BibleCandidateRepository implements IBibleCandidateRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

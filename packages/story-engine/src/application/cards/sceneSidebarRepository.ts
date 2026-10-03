@@ -1,5 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
-import type { SceneListItem } from '#engine/shared/messaging/scenes';
+import type { StoryUri, SceneListItem } from '@storyboard/story-model';
 
 export interface ISceneSidebarRepository {
   list(workspaceRoot: StoryUri): Promise<SceneListItem[]>;

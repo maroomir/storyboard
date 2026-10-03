@@ -5,8 +5,8 @@ import {
   createWorkspaceRunLockRecord,
   getStoryboardProjectPaths,
   serializeWorkspaceRunLock,
-  type IFileSystem
-} from "@storyboard/story-engine"
+} from "@storyboard/story-model"
+import { type IFileSystem } from "@storyboard/story-engine"
 import { RunGate } from "@storyboard/story-app"
 import { runHoldingWorkspaceLock } from "@/presentation/commands/workspaceRunLock"
 

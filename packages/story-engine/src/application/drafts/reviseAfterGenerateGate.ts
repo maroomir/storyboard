@@ -1,11 +1,10 @@
 import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import { draftPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { draftPath, getStoryboardProjectPaths, parseSceneFileName } from '@storyboard/story-model';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneFileName } from '@storyboard/story-model';
 import type { ReviseDraftUseCase, ReviseDraftWorkflowResult } from './reviseDraftUseCase';
 
 export type ReviseGateHooks = {

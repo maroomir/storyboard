@@ -3,9 +3,13 @@ import {
   mergeCanonFacts,
   seedPromotedFact,
   selectNewCandidates,
-} from '#engine/domain/biblePromotion';
-import type { BibleCandidateRecord } from '#engine/domain/files/bibleCandidates';
-import type { StoryUri, BibleFact, StoryBible } from '@storyboard/story-model';
+} from '@storyboard/story-model';
+import type {
+  BibleCandidateRecord,
+  StoryUri,
+  BibleFact,
+  StoryBible,
+} from '@storyboard/story-model';
 
 export interface IBibleCandidateRepository {
   loadCanon(workspaceRoot: StoryUri): Promise<StoryBible>;

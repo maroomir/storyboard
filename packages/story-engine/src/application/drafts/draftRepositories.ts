@@ -5,8 +5,8 @@ import type {
   SceneFile,
   SceneGrounding,
   StoryboardProject,
+  SceneCacheRecord,
 } from '@storyboard/story-model';
-import type { SceneCacheRecord } from '#engine/domain/files/sceneCache';
 export interface IProjectRepository {
   read(uri: StoryUri): Promise<StoryboardProject>;
 }

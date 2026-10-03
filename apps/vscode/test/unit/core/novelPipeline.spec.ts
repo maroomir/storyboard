@@ -2,15 +2,21 @@ import { stubFileSystem } from "../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ChapterPlan, StoryboardProject } from '@storyboard/story-model';
-import type { NovelRunState, NovelStageName } from "@storyboard/story-engine"
+import type {
+  ChapterPlan,
+  StoryboardProject,
+  NovelRunState,
+  NovelStageName,
+} from '@storyboard/story-model';
 import {
   novelStageNames,
-  overrideNovelPipelinePlan,
   parseNovelRunState,
+  serializeNovelRunState,
+} from "@storyboard/story-model"
+import {
+  overrideNovelPipelinePlan,
   resetNovelPipelinePlan,
   resolveNovelPipelinePlan,
-  serializeNovelRunState
 } from "@storyboard/story-engine"
 
 const generatedResult = {

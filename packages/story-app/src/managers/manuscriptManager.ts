@@ -5,7 +5,6 @@ import type {
   ExportManuscriptResult,
   ExportManuscriptUseCase,
   LoadExportSourceResult,
-  ManuscriptExportFormat,
   ReviewManuscriptRequest,
   ReviewManuscriptResult,
   ReviewManuscriptUseCase,
@@ -13,7 +12,7 @@ import type {
   SummarizeChaptersResult,
   SummarizeChaptersUseCase,
 } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-model';
+import type { ManuscriptExportFormat, StoryUri } from '@storyboard/story-model';
 
 export interface ManuscriptManagerDependencies {
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;

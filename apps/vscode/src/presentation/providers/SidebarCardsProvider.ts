@@ -4,19 +4,21 @@ import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommand
 
 import type { ICardSidebarRepository, SidebarCardCategory } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '@storyboard/story-engine';
+import { emptyUsageSummary, STORYBOARD_GLOBS } from '@storyboard/story-model';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import {
   createAiRpcHandlers,
   createUsageRpcHandlers,
 } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { UsageSummaryByEntity } from '@storyboard/story-model';
+import type {
+  UsageSummaryByEntity,
+  SidebarCardSummary,
+  StoryboardResponsePayload,
+} from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
-import type { SidebarCardSummary, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
-import { STORYBOARD_GLOBS } from '@storyboard/story-model';
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;

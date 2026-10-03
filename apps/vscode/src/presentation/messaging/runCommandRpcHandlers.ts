@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
+import type { StoryboardResponsePayload } from '@storyboard/story-model';
 
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 

@@ -1,9 +1,6 @@
 import {
   getStoryboardProjectPaths,
-  type IFileSystem,
   type StoryboardProjectPaths,
-} from '@storyboard/story-engine';
-import {
   characterCardSchema,
   createEmptyBible,
   createEmptyCharacter,
@@ -23,6 +20,7 @@ import {
   type BibleFact,
   type StoryUri,
 } from '@storyboard/story-model';
+import { type IFileSystem } from '@storyboard/story-engine';
 import { ZodError, type ZodType } from 'zod';
 
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact } from '@/shared/dto';

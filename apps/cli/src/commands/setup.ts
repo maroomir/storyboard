@@ -20,15 +20,15 @@ import {
   readMissingGitignoreEntries,
   type SceneCard,
   type StoryboardProject,
+  getStoryboardProjectPaths,
+  resolveThreadPaths,
 } from '@storyboard/story-model';
 import { type ConfigBridge } from '@storyboard/story-ai';
 import {
   auditChapterMemory,
   auditStoryMemory,
-  getStoryboardProjectPaths,
   loadNarratorCards,
   readProjectJson,
-  resolveThreadPaths,
 } from '@storyboard/story-engine';
 
 import { isGitRepository } from '@/adapters/gitRepository';

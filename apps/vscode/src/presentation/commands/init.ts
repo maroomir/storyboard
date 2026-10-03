@@ -9,7 +9,7 @@ import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { refreshStoryboardWorkspaceContext } from '@/infrastructure/vscode/storyboardWorkspaceContext';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-model';
 import {
   ensureUriDoesNotExist,
   getTargetWorkspaceFolder,

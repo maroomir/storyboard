@@ -3,6 +3,9 @@ import {
   type StoryUri,
   readBibleFile,
   readChapterPlanFile,
+  getStoryboardProjectPaths,
+  parseChapterSummariesMarkdown,
+  type ChapterSummary,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -21,12 +24,7 @@ import type { IChapterSummaryRepository } from '#engine/application/manuscript/s
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { AssembledManuscript } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import {
-  parseChapterSummariesMarkdown,
-  type ChapterSummary,
-} from '#engine/domain/chapterSummaries';
 
 export class ManuscriptAssemblyRepository
   implements

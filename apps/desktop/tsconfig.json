@@ -30,9 +30,6 @@
       "@storyboard/story-pipeline": [
         "../../packages/story-pipeline/src/index.ts"
       ],
-      "@storyboard/story-engine/contracts": [
-        "../../packages/story-engine/src/shared/index.ts"
-      ],
       "@storyboard/story-model/contracts": [
         "../../packages/story-model/src/contracts.ts"
       ]

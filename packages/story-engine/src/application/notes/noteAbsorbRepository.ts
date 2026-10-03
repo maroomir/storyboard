@@ -4,10 +4,11 @@ import type {
   StoryUri,
   StoryboardCard,
   StoryboardProject,
+  NoteAbsorbPlan,
+  NoteBundle,
+  NoteCandidateFile,
 } from '@storyboard/story-model';
 
-import type { NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';
-import type { NoteBundle, NoteCandidateFile } from '#engine/shared/noteAbsorb';
 
 // What the note import reads and writes. The bundle, the plan and the candidates live in the
 // workspace's cache, which git ignores: the notes stay the author's, and only what they turn into

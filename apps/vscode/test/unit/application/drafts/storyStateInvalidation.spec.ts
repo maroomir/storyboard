@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import * as vscode from "vscode"
 
-import { getStoryboardProjectPaths, resolveThreadPaths } from "@storyboard/story-engine"
-import { formatStoryStateForPrompt, parseStoryState, readStoryState } from "@storyboard/story-model"
+import {
+  getStoryboardProjectPaths,
+  resolveThreadPaths,
+  formatStoryStateForPrompt,
+  parseStoryState,
+  readStoryState,
+} from "@storyboard/story-model"
 import type { FileSystemDirectoryEntry, IFileSystem } from "@storyboard/story-engine"
 import {
   auditStoryMemory,

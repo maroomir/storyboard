@@ -2,13 +2,15 @@ import { resolve } from 'node:path';
 
 import {
   isNotionUrl,
-  type ApplyNoteAbsorbOutcome,
-  type NoteAbsorbEstimate,
   type NoteAbsorbPlan,
   type NoteBundle,
+  NodeUri,
+} from '@storyboard/story-model';
+import {
+  type ApplyNoteAbsorbOutcome,
+  type NoteAbsorbEstimate,
   type NoteLocation,
 } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-model';
 
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { CliContainer } from '@/container';

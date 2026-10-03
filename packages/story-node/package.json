@@ -16,7 +16,8 @@
     "src"
   ],
   "dependencies": {
-    "@storyboard/story-engine": "*"
+    "@storyboard/story-engine": "*",
+    "@storyboard/story-model": "*"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

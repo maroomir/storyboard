@@ -7,8 +7,8 @@ import {
   getStoryboardProjectPaths,
   parseCardIdFromPath,
   studioSessionEntityDirectory,
-} from '@storyboard/story-engine';
-import { isIgnoredSampleCardFileName } from '@storyboard/story-model';
+  isIgnoredSampleCardFileName,
+} from '@storyboard/story-model';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 
 const renameCharacterCommand = 'storyboard.character.rename';

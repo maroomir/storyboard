@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import type { ManuscriptManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { ManuscriptExportFormat } from '@storyboard/story-engine';
+import type { ManuscriptExportFormat } from '@storyboard/story-model';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

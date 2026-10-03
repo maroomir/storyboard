@@ -2,8 +2,15 @@ import { stubFileSystem } from "../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { draftHistorySceneDirectory, draftPath } from "@storyboard/story-engine"
-import { computeSceneInputHash } from "@storyboard/story-engine"
+import {
+  draftHistorySceneDirectory,
+  draftPath,
+  computeSceneInputHash,
+  computeDraftBodyHash,
+  createDraft,
+  parseDraft,
+  serializeDraft,
+} from "@storyboard/story-model"
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const buildSceneContextMock = vi.fn()
@@ -17,11 +24,11 @@ vi.mock("@storyboard/story-model", async (importOriginal) => ({
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
 }))
-vi.mock("../../../../../../packages/story-engine/src/domain/files/draftHistory", async (
+vi.mock("../../../../../../packages/story-model/src/domain/files/draftHistory", async (
   importOriginal
 ) => ({
   ...(await importOriginal<
-    typeof import("../../../../../../packages/story-engine/src/domain/files/draftHistory")
+    typeof import("../../../../../../packages/story-model/src/domain/files/draftHistory")
   >()),
   archiveExistingDraft: (...args: unknown[]): unknown => archiveExistingDraftMock(...args)
 }))
@@ -47,7 +54,6 @@ import {
   type GenerateDraftUseCaseDependencies
 } from "@storyboard/story-engine"
 import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
-import { computeDraftBodyHash, createDraft, parseDraft, serializeDraft } from '@storyboard/story-model'
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")

@@ -2,23 +2,21 @@ import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri, BibleFact, ProjectFormat, SceneContext } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult } from '#engine/application/useCase';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
-import { formatAugmentCards } from '@storyboard/story-ai';
-import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
 import {
+  sceneContextPaths,
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   joinUri,
-} from '#engine/paths/projectPaths';
-import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
   readSceneFile,
   SceneParseError,
+  archiveExistingDraft,
 } from '@storyboard/story-model';
+import { formatAugmentCards } from '@storyboard/story-ai';
+import type { ConfigBridge, DraftAugmentScope } from '@storyboard/story-ai';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
 import { readProjectJson } from '#engine/persistence/projectJson';
 type AugmentContextResult =
   | {

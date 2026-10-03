@@ -16,14 +16,12 @@ import {
   type StoryState,
   type StoryStateAudit,
   type StoryUri,
-} from '@storyboard/story-model';
-import {
   computeSceneInputHash,
   sceneNarrationHashInput,
-} from '#engine/domain/files/sceneCache';
+  sceneContextPaths,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 
 export interface StoryStateAuditRequest {
   readonly fileSystem: IFileSystem;
