@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, OllamaProvider } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import { OllamaProvider } from '@storyboard/story-ai';
 import type { OllamaClientLike } from '@storyboard/story-ai';
 describe("OllamaProvider", () => {
   it("requires a base URL", () => {

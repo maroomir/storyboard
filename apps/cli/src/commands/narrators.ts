@@ -15,8 +15,8 @@ import {
   type NarratorKnowledge,
   type NarratorPerson,
   type NarrativeTense,
+  describeNarration,
 } from '@storyboard/story-model';
-import { describeNarration } from '@storyboard/story-ai';
 
 import { flagString } from '@/cliArguments';
 

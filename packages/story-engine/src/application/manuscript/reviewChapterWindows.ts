@@ -1,9 +1,9 @@
-import type { AssembledManuscript } from '@storyboard/story-model';
 import type {
+  AssembledManuscript,
   AiProviderId,
   ContinuityIssueLike,
   DraftCritiqueIssue,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 import type { ChapterSummary } from '#engine/domain/chapterSummaries';
 
 export interface ChapterWindowReviewAiService {

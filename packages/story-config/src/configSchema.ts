@@ -3,10 +3,10 @@ import { z } from 'zod';
 import {
   aiProviderIds,
   aiTaskNames,
-  promptVariantIds,
   storyboardSettingCatalog,
   type StoryboardSettingDefinition,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
+import { promptVariantIds } from '@storyboard/story-ai';
 
 import { ConfigFileError } from '#config/configFileError';
 

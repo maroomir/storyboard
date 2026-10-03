@@ -2,10 +2,10 @@ import {
   aiProviderIds,
   requiresApiKey as providerRequiresApiKey,
   type AiProviderId,
-} from '@storyboard/story-engine/contracts';
+} from '@storyboard/story-model/contracts';
 
 export const AI_PROVIDER_IDS = aiProviderIds;
-export { listSelectableProviderIds } from '@storyboard/story-engine/contracts';
+export { listSelectableProviderIds } from '@storyboard/story-model/contracts';
 export type { AiProviderId };
 
 export type AiTaskName = string;

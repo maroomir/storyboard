@@ -1,6 +1,5 @@
-import { aiTaskLabels } from "@storyboard/story-ai"
-import type { AiTaskName } from "@storyboard/story-ai"
-import type { UsageRecord } from "@storyboard/story-ai"
+import { aiTaskLabels } from "@storyboard/story-model"
+import type { AiTaskName, UsageRecord } from "@storyboard/story-model"
 
 interface TaskTotals {
   calls: number

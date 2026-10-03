@@ -10,7 +10,8 @@ import {
   createAiRpcHandlers,
   createUsageRpcHandlers,
 } from '@/presentation/messaging/aiRpcHandlers';
-import type { AiProviderRegistry, UsageSummaryByEntity } from '@storyboard/story-ai';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
+import type { UsageSummaryByEntity } from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { SceneListItem } from '@storyboard/story-engine';

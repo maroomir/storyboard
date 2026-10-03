@@ -24,11 +24,16 @@ import { InlineCompletionPrompt } from './prompts/inlineCompletion';
 import { SceneCoveragePrompt } from './prompts/sceneCoverage';
 import { StoryStateUpdatePrompt, type StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, AiTaskName } from '#ai/contracts/aiTypes';
-import { coerceCritiqueIssues, type DraftCritiqueIssue } from '#ai/contracts/draftReview';
-import { coerceSceneCoverage, type SceneCoverageIssue } from '#ai/contracts/sceneCoverage';
-import { coerceStoryStateUpdate, type StoryStateUpdateItem } from '#ai/contracts/storyStateUpdate';
-import { parseJsonArray } from '#ai/contracts/aiResponseParser';
+import type { AiGenerateResponse, AiTaskName } from '@storyboard/story-model';
+import {
+  coerceCritiqueIssues,
+  type DraftCritiqueIssue,
+  coerceSceneCoverage,
+  type SceneCoverageIssue,
+  coerceStoryStateUpdate,
+  type StoryStateUpdateItem,
+  parseJsonArray,
+} from '@storyboard/story-model';
 
 export type InlineCompletionContext = {
   readonly activeCharacter?: string;

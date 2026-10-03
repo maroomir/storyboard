@@ -2,7 +2,7 @@ import {
   isSpanRequiredTool,
   studioToolNamesByShape,
   type StudioAgentToolName,
-} from '@storyboard/story-engine/contracts';
+} from '@storyboard/story-model/contracts';
 
 import type { StudioTarget } from './types';
 

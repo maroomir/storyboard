@@ -5,7 +5,8 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { SceneSkeletonPrompt, type UsageRecord } from '@storyboard/story-ai';
+import { SceneSkeletonPrompt } from '@storyboard/story-ai';
+import { type UsageRecord } from '@storyboard/story-model';
 import {
   appendRun,
   assertTrackUnchanged,

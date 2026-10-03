@@ -1,5 +1,5 @@
 import { isRunBudgetExceeded, UsageMeter } from '@storyboard/story-engine';
-import type { UsageRecord } from '@storyboard/story-ai';
+import type { UsageRecord } from '@storyboard/story-model';
 import { NodeUri } from '@storyboard/story-model';
 import { describe, expect, it, vi } from 'vitest';
 

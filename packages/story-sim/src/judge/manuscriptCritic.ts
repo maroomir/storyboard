@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { AiMessage } from '@storyboard/story-ai';
+import type { AiMessage } from '@storyboard/story-model';
 
 import { readCritiqueLeniently } from '#sim/judge/lenientAnswer';
 import { isQuoteGrounded } from '#sim/judge/quoteCheck';

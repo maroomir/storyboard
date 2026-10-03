@@ -3,7 +3,7 @@ import {
   sectionViolationKinds,
   type GenerationKnobs,
   type ViolationWeights,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 
 import { pipelineDefaults } from './pipelineDefaults';
 
@@ -13,7 +13,7 @@ export {
   sectionViolationKinds,
   type SectionViolationKind,
   type ViolationWeights,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 
 // What a host hands the pipeline over its defaults, keyed by the public `generation.*` id. The
 // values come from the model profile in the host's composition root; the pipeline never learns

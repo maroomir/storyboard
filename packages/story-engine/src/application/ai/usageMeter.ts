@@ -1,4 +1,4 @@
-import type { UsageAmount } from '@storyboard/story-ai';
+import type { UsageAmount } from '@storyboard/story-model';
 
 import { addUsageAmount, emptyUsageAmount, usageAmountOfEntry } from '#engine/domain/files/usageLedger';
 import type { IUsageSink } from '#engine/ports/usageSink';

@@ -2,8 +2,8 @@ import type {
   RecommendationCategory,
   RecommendedEntity,
   StoryboardAiService,
-  UsageAttribution,
 } from '@storyboard/story-ai';
+import type { UsageAttribution } from '@storyboard/story-model';
 export interface RecommendationSource {
   readonly sceneStem: string;
   readonly text: string;

@@ -4,7 +4,7 @@ import {
   isSpanRequiredTool,
   studioAgentToolNames,
   studioToolNamesByShape,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 
 import { findTool, isToolTarget, slashToken, toolCandidates } from '@webview/lib/studioTools';
 import type { StudioTarget } from '@webview/lib/types';

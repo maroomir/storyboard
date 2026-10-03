@@ -3,16 +3,18 @@ import {
   countBlockingIssues,
   scoreCritique,
   shouldPassRevise,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 import type {
   AiProviderRegistry,
-  ContinuityIssueLike,
-  DraftCritiqueIssue,
   DraftRevisionInput,
   StoryboardAiService,
+} from '@storyboard/story-ai';
+import type {
+  ContinuityIssueLike,
+  DraftCritiqueIssue,
   StyleDirective,
   UsageAttribution,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 
 import {
   validateDraftCandidate,

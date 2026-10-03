@@ -6,13 +6,18 @@ import type {
   CharacterCard,
   ProjectFormat,
   SceneGrounding,
+  AiProviderId,
+  AiTaskName,
 } from '@storyboard/story-model';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { formatCardAttributes, joinCardText } from '@storyboard/story-model';
-import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
-import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
+import {
+  formatCardAttributes,
+  joinCardText,
+  aiProviderIds,
+  aiTaskCatalog,
+} from '@storyboard/story-model';
 
 interface SceneCacheBackgroundSnapshot {
   readonly id: string;

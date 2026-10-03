@@ -3,27 +3,22 @@ import {
   aiTaskNames,
   type AiProviderId,
   type AiTaskName,
-} from '#ai/contracts/aiTypes';
-import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-model';
-import {
   getDefaultModelId,
   isModelInCatalogForProvider,
   providerCatalog,
   storyboardModelCatalog,
-} from '#ai/contracts/providerCatalog';
-import { findModelProfile, type ModelProfile } from '#ai/contracts/modelProfiles';
-import {
+  findModelProfile,
+  type ModelProfile,
   sectionOutputLimitParameterId,
   type GenerationKnobs,
-} from '#ai/contracts/generationParameters';
-import {
   booleanSettingDefault,
   clampIntegerSetting,
   findStoryboardSetting,
   integerSettingDefault,
   isValidStoryboardSettingValue,
   stringSettingDefault,
-} from '#ai/contracts/settingCatalog';
+} from '@storyboard/story-model';
+import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-model';
 
 // The same numbers VSCode's ConfigurationTarget uses, which the file-backed configuration honours
 // too: a write lands in the workspace file only when that layer already holds the key, so the value

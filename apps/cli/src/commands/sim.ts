@@ -1,9 +1,14 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
-import type { AiProviderId, AiProviderRegistry } from '@storyboard/story-ai';
-import { parseSceneCard, parseSceneFileName } from '@storyboard/story-model';
+import {
+  aiProviderIds,
+  storyboardModelCatalog,
+  parseSceneCard,
+  parseSceneFileName,
+} from '@storyboard/story-model';
+import type { AiProviderId } from '@storyboard/story-model';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import {
   appendRun,
   applyOverlay,

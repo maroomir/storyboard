@@ -13,7 +13,8 @@ import {
   type StoryFileSnapshot,
   type UsageMeter,
 } from '@storyboard/story-engine';
-import type { ConfigBridge, UsageAmount } from '@storyboard/story-ai';
+import type { ConfigBridge } from '@storyboard/story-ai';
+import type { UsageAmount } from '@storyboard/story-model';
 
 export interface NovelManagerDependencies {
   readonly novelPipeline: NovelPipeline;

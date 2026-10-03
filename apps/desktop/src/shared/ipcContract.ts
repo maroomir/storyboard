@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
-import { aiProviderIds, novelRunModes } from '@storyboard/story-engine/contracts';
 import {
+  aiProviderIds,
   compositionKinds,
   pointOfViews,
   bibleFactSchema,
   cardIdPattern,
   sceneStemPattern,
 } from '@storyboard/story-model/contracts';
+import { novelRunModes } from '@storyboard/story-engine/contracts';
 
 import type {
   AppBootstrap,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, computeCostUsd, GoogleProvider } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import { computeCostUsd, GoogleProvider } from '@storyboard/story-ai';
 import type { GoogleClientLike } from '@storyboard/story-ai';
 describe("GoogleProvider", () => {
   it("requires an API key", () => {

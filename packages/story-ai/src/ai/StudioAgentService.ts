@@ -15,12 +15,11 @@ import {
   type StudioAgentInvokeRequest,
   type StudioAgentLookupRequest,
   type StudioAgentToolName,
-} from '#ai/contracts/studioAgent';
-import { coerceStudioCardSeed, type StudioCardSeed } from '#ai/contracts/studioCardSeed';
-import {
+  coerceStudioCardSeed,
+  type StudioCardSeed,
   coerceStudioValidationVerdict,
   type StudioValidationVerdict,
-} from '#ai/contracts/studioValidation';
+} from '@storyboard/story-model';
 
 export interface StudioAgentMessage {
   readonly role: 'user' | 'assistant';

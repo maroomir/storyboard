@@ -1,4 +1,4 @@
-import type { AiMessage } from '@storyboard/story-ai';
+import type { AiMessage } from '@storyboard/story-model';
 
 // NOTE: 이 프롬프트는 story-sim 소유다. 제품의 promptTuning 카탈로그에 넣으면 계측기가 측정
 // 대상의 일부가 되어, 스윕이 눈금을 함께 흔들게 된다.

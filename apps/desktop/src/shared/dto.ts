@@ -1,9 +1,5 @@
 import type {
   AiProviderId,
-  NovelRunMode,
-  NovelStageName,
-} from '@storyboard/story-engine/contracts';
-import type {
   CompositionKind,
   ContractFieldKey,
   PointOfView,
@@ -15,6 +11,7 @@ import type {
   NarratorKnowledge,
   NarratorPerson,
 } from '@storyboard/story-model/contracts';
+import type { NovelRunMode, NovelStageName } from '@storyboard/story-engine/contracts';
 
 // NOTE: 이 파일은 main 과 렌더러가 함께 보는 응답 모양이다. 렌더러 번들에 들어가므로 값은 없고
 // 타입만 둔다 — 값이 필요한 표는 패키지의 /contracts 진입점에서 직접 가져온다.

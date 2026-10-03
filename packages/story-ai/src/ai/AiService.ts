@@ -7,8 +7,17 @@ import type {
   OutlineCharacterBrief,
   OutlineSynopsis,
   ProjectFormat,
+  StudioCardSeed,
+  AiGenerateResponse,
+  AiStreamChunk,
+  AiTaskName,
+  StudioAgentAction,
+  StudioValidationVerdict,
+  DraftCritiqueIssue,
+  SceneCoverageIssue,
+  StoryStateUpdateItem,
 } from '@storyboard/story-model';
-import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-model';
+import { coerceChapterPlan, coerceOutlineSynopsis, parseJsonObject } from '@storyboard/story-model';
 import { AiTextGateway } from './AiTextGateway';
 import {
   CardAiService,
@@ -30,10 +39,8 @@ import {
   type StudioValidationInput,
 } from './StudioAgentService';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
-import type { StudioCardSeed } from '#ai/contracts/studioCardSeed';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
-import type { AiGenerateResponse, AiStreamChunk, AiTaskName } from '#ai/contracts/aiTypes';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';
@@ -51,12 +58,6 @@ import {
 } from './prompts/noteExtraction';
 import { type NoteSynthesis } from './prompts/noteSynthesis';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
-import { parseJsonObject } from '#ai/contracts/aiResponseParser';
-import type { StudioAgentAction } from '#ai/contracts/studioAgent';
-import type { StudioValidationVerdict } from '#ai/contracts/studioValidation';
-import type { DraftCritiqueIssue } from '#ai/contracts/draftReview';
-import type { SceneCoverageIssue } from '#ai/contracts/sceneCoverage';
-import type { StoryStateUpdateItem } from '#ai/contracts/storyStateUpdate';
 import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
   toPromptMessages,

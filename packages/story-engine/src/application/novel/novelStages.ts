@@ -1,18 +1,25 @@
 import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
-import { assembleManuscript, flattenChapterPlan, toOutlineBrief } from '@storyboard/story-model';
+import {
+  assembleManuscript,
+  flattenChapterPlan,
+  toOutlineBrief,
+  integerSettingDefault,
+} from '@storyboard/story-model';
 import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import { draftPath, scenePath, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
-import type { StoryUri, ChapterPlan, StoryboardProject } from '@storyboard/story-model';
 import type {
-  AiProviderRegistry,
+  StoryUri,
+  ChapterPlan,
+  StoryboardProject,
   ContinuityIssueLike,
   DraftCritiqueIssue,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { ReviseSeedIssues } from '@storyboard/story-pipeline';
 import type {
   INovelOutlineRepository,
@@ -25,7 +32,6 @@ import type {
   NovelPipelineOptions,
   NovelPipelineResult,
 } from './novelPipelineTypes';
-import { integerSettingDefault } from '@storyboard/story-ai';
 
 export interface ChapterGroup {
   readonly title: string;

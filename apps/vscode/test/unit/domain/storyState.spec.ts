@@ -20,8 +20,9 @@ import {
   writeStoryState,
   type StoryState,
   type StoryStateEntry,
+  coerceStoryStateUpdate,
 } from '@storyboard/story-model';
-import { coerceStoryStateUpdate, StoryStateUpdatePrompt } from '@storyboard/story-ai';
+import { StoryStateUpdatePrompt } from '@storyboard/story-ai';
 
 class MemoryFileSystem {
   private content: string | undefined

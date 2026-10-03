@@ -4,8 +4,10 @@ import type {
   ProjectFormat,
   SceneContext,
   SceneDialogueRecord,
+  EntityRef,
+  StyleDirective,
 } from '@storyboard/story-model';
-import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
+import type { GenerateTextOptions } from '@storyboard/story-ai';
 import {
   computeDraftBodyHash,
   createEmptyBackground,

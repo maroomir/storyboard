@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  aiProviderIds,
-  ConfigBridge,
-  providerCatalog,
-  storyboardModelCatalog,
-} from '@storyboard/story-ai';
-import type { AiProviderId, StoryboardConfigurationLike } from '@storyboard/story-ai';
+import { aiProviderIds, providerCatalog, storyboardModelCatalog } from '@storyboard/story-model';
+import { ConfigBridge } from '@storyboard/story-ai';
+import type { AiProviderId } from '@storyboard/story-model';
+import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 describe("storyboardModelCatalog vs package.json defaults", () => {
   it("offers the current Claude models", () => {
     const claudeModelIds = storyboardModelCatalog.claude.map((option) => option.id)

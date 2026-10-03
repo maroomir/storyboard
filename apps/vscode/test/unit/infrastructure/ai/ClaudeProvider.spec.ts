@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, ClaudeProvider, computeCostUsd } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import { ClaudeProvider, computeCostUsd } from '@storyboard/story-ai';
 import type { ClaudeClientLike } from '@storyboard/story-ai';
 describe("ClaudeProvider", () => {
   it("requires an API key", () => {

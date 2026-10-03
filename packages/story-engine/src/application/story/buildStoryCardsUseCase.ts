@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { applyCardCollectProposals, shouldProposeCardCollect } from '#engine/domain/cardCollect';
-import { parseJsonObject } from '@storyboard/story-ai';
+import { parseJsonObject } from '@storyboard/story-model';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

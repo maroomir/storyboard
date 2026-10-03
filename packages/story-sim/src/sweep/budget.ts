@@ -1,5 +1,5 @@
 import { computeCostUsd } from '@storyboard/story-ai';
-import type { AiProviderId } from '@storyboard/story-ai';
+import type { AiProviderId } from '@storyboard/story-model';
 
 import { simDefaults } from '#sim/simDefaults';
 

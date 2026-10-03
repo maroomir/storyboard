@@ -3,8 +3,15 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { buildRevisionInstructions, coerceCritiqueIssues, countBlockingIssues, scoreCritique, shouldPassRevise, toContinuityIssue } from '@storyboard/story-ai';
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-ai';
+import {
+  buildRevisionInstructions,
+  coerceCritiqueIssues,
+  countBlockingIssues,
+  scoreCritique,
+  shouldPassRevise,
+} from '@storyboard/story-model';
+import { toContinuityIssue } from '@storyboard/story-ai';
+import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-model';
 
 describe("coerceCritiqueIssues", () => {
   it("parses a JSON array of valid issues", () => {
@@ -229,7 +236,7 @@ describe("shouldPassRevise", () => {
 
 describe("draftReview module purity", () => {
   it("QAS-C3-08: source has no vscode, AI service, or network imports", () => {
-    const sourcePath = fileURLToPath(new URL("../../../../../packages/story-ai/src/contracts/draftReview.ts", import.meta.url))
+    const sourcePath = fileURLToPath(new URL("../../../../../packages/story-model/src/contracts/draftReview.ts", import.meta.url))
     const source = readFileSync(sourcePath, "utf8")
 
     expect(source.length).toBeGreaterThan(0)

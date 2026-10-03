@@ -1,4 +1,4 @@
-import { clampIntegerSetting, integerSettingDefault } from '@storyboard/story-ai';
+import { clampIntegerSetting, integerSettingDefault } from '@storyboard/story-model';
 
 export { resolveSceneTargetLength } from '@storyboard/story-model';
 

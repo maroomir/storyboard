@@ -6,14 +6,14 @@ import type {
   StudioAgentFollowUp,
   StudioAgentInvokeRequest,
   StudioAgentLookupRequest,
-  StudioAgentMessage,
   StudioAgentToolName,
   UsageAttribution,
-} from '@storyboard/story-ai';
+  StoryUri,
+} from '@storyboard/story-model';
+import type { StudioAgentMessage } from '@storyboard/story-ai';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StudioPatchTarget } from '#engine/domain/studio/studioPatch';
-import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   StudioChatTurn,

@@ -1,10 +1,5 @@
-import {
-  generationParameterCatalog,
-  promptResourceKeys,
-  promptResources,
-  storyboardSettingCatalog,
-  type ConfigBridge,
-} from '@storyboard/story-ai';
+import { generationParameterCatalog, storyboardSettingCatalog } from '@storyboard/story-model';
+import { promptResourceKeys, promptResources, type ConfigBridge } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
 import type { StoryUri } from '@storyboard/story-model';
 

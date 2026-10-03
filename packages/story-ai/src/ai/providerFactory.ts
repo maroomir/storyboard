@@ -1,4 +1,4 @@
-import type { AiProvider, AiProviderId } from '#ai/contracts/aiTypes';
+import type { AiProvider, AiProviderId } from '@storyboard/story-model';
 import type { ConfigBridge } from '#ai/ports/ConfigBridge';
 import type { SecretStore } from '#ai/ports/SecretStore';
 import type { ClaudeClientLike } from './providers/ClaudeProvider';

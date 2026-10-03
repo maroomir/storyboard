@@ -4,9 +4,9 @@ import {
   computeDraftBodyHash,
   parseSceneDialogue,
   serializeSceneDialogue,
-  type SceneDialogueRecord
+  type SceneDialogueRecord,
+  coerceDialogueAttribution,
 } from "@storyboard/story-model"
-import { coerceDialogueAttribution } from "@storyboard/story-ai"
 import { selectRepresentativeDialogue } from "@storyboard/story-pipeline"
 
 function recordOf(sceneStem: string, turns: SceneDialogueRecord["turns"]): SceneDialogueRecord {

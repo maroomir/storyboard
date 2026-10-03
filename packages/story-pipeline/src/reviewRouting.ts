@@ -1,5 +1,5 @@
-import { critiqueCategories } from '@storyboard/story-ai';
-import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from '@storyboard/story-ai';
+import { critiqueCategories } from '@storyboard/story-model';
+import type { ContinuityIssueLike, DraftCritiqueIssue, Severity } from '@storyboard/story-model';
 
 export const reviewAgents = ['canon', 'persona', 'narrator', 'setting'] as const;
 

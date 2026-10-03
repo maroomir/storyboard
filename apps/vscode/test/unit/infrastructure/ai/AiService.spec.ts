@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest"
 
 import { ConfigBridge, createAiProviderRegistry, SecretStore, StoryboardAiService } from '@storyboard/story-ai';
-import type { AiMessage, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
+import type { AiMessage } from '@storyboard/story-model';
+import type {
+  OpenAiClientLike,
+  StoryboardConfigurationLike,
+  StoryboardSecretStorageLike,
+} from '@storyboard/story-ai';
 describe("StoryboardAiService", () => {
   it("extracts situations from JSON-shaped model output", async () => {
     const service = createAiService({

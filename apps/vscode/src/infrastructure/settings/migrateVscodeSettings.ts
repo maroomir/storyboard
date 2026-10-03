@@ -1,4 +1,5 @@
-import { aiProviderIds, createApiKeySecretKey } from '@storyboard/story-ai';
+import { aiProviderIds } from '@storyboard/story-model';
+import { createApiKeySecretKey } from '@storyboard/story-ai';
 import type {
   StoryboardConfigurationLike,
   StoryboardSecretStorageLike,

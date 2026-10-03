@@ -17,6 +17,7 @@
   ],
   "dependencies": {
     "@storyboard/story-ai": "*",
+    "@storyboard/story-model": "*",
     "zod": "^4.4.2"
   },
   "devDependencies": {

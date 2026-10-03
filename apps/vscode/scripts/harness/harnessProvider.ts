@@ -1,12 +1,5 @@
-import {
-  ClaudeProvider,
-  GoogleProvider,
-  OpenAiProvider,
-  SecretStore,
-  getDefaultModelId,
-  type AiProvider,
-  type AiProviderId,
-} from '@storyboard/story-ai';
+import { ClaudeProvider, GoogleProvider, OpenAiProvider, SecretStore } from '@storyboard/story-ai';
+import { getDefaultModelId, type AiProvider, type AiProviderId } from '@storyboard/story-model';
 import { createFileSecretStorage, resolveStoryboardHomePaths } from '@storyboard/story-config';
 
 // NOTE: 하네스는 앱이 아니라 진단 스크립트라 컨테이너를 세우지 않는다. 대신 두 앱이 쓰는 같은

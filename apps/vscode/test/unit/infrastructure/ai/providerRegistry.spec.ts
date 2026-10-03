@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, AiProviderRegistry, ConfigBridge, createAiProviderRegistry, SecretStore } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import {
+  AiProviderRegistry,
+  ConfigBridge,
+  createAiProviderRegistry,
+  SecretStore,
+} from '@storyboard/story-ai';
 import type { ClaudeClientLike, GoogleClientLike, OllamaClientLike, OpenAiClientLike, StoryboardConfigurationLike, StoryboardSecretStorageLike } from '@storyboard/story-ai';
 describe("AiProviderRegistry", () => {
   it("lists all provider statuses and marks every Phase 3 provider as available", async () => {

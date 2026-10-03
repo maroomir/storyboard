@@ -4,7 +4,7 @@ import {
   coerceStudioAgentAction,
   coerceStudioCardSeed,
   coerceStudioValidationVerdict,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 
 describe('coerceStudioAgentAction', () => {
   it('reads a JSON object out of surrounding prose', () => {

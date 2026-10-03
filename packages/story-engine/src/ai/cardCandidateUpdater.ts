@@ -1,4 +1,4 @@
-import type { StoryUri, CharacterCard } from '@storyboard/story-model';
+import type { StoryUri, CharacterCard, UsageAttribution } from '@storyboard/story-model';
 import type {
   CardArcCandidate,
   CardAttributeCandidate,
@@ -9,7 +9,7 @@ import {
   type CardCandidateFileSystem,
   writeCardCandidateFile,
 } from '#engine/domain/files/cardCandidates';
-import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;
   readonly name: string;

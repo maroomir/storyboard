@@ -98,8 +98,8 @@ const OWNED_LITERALS = [
     alsoAllowed: ['packages/story-engine/src/shared/messaging/commands.ts'],
   },
   { literal: "'storyboard.card'", owner: 'apps/vscode/src/contributionIds.ts' },
-  { literal: "'gpt-5.6-sol'", owner: 'packages/story-ai/src/contracts/providerCatalog.ts' },
-  { literal: "'http://localhost:11434'", owner: 'packages/story-ai/src/contracts/providerCatalog.ts' },
+  { literal: "'gpt-5.6-sol'", owner: 'packages/story-model/src/contracts/providerCatalog.ts' },
+  { literal: "'http://localhost:11434'", owner: 'packages/story-model/src/contracts/providerCatalog.ts' },
 ];
 
 const OWNED_LITERAL_ROOTS = [

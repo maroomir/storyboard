@@ -1,15 +1,12 @@
 import OpenAI from 'openai';
 
 import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
-import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
+  AiProviderError,
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
-} from '#ai/contracts/aiTypes';
-import { type OpenAiClientLike } from './OpenAiProvider';
-import {
   acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
@@ -17,7 +14,8 @@ import {
   missingApiKeyMessage,
   missingModelMessage,
   providerCatalog,
-} from '#ai/contracts/providerCatalog';
+} from '@storyboard/story-model';
+import { type OpenAiClientLike } from './OpenAiProvider';
 import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 // xAI serves Grok through an OpenAI-compatible chat completions endpoint, so the client shape is

@@ -1,5 +1,5 @@
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryUri, BackgroundCard } from '@storyboard/story-model';
+import type { StoryUri, BackgroundCard, AiProviderId, AiTaskName } from '@storyboard/story-model';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { draftHistorySceneDirectory, joinUri } from '#engine/paths/projectPaths';
 import {
@@ -8,6 +8,7 @@ import {
   joinCardText,
   parseDraft,
   serializeDraft,
+  buildStyleDirective,
 } from '@storyboard/story-model';
 import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
 import { type SceneCacheRecord } from '#engine/domain/files/sceneCache';
@@ -17,8 +18,7 @@ import {
   createSceneDialogueStore,
 } from '#engine/persistence/cardMemoryWorkspace';
 import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
-import { buildStyleDirective } from '@storyboard/story-ai';
-import type { AiProviderId, AiTaskName, StoryboardAiService } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import {
   SceneGenerationPipeline,
   SceneGenerationPipelineCancelledError,

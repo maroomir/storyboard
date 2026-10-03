@@ -1,23 +1,21 @@
 import OpenAI from 'openai';
 
 import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
-import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
+  AiProviderError,
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '#ai/contracts/aiTypes';
-import {
   acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
   missingApiKeyMessage,
   missingModelMessage,
-} from '#ai/contracts/providerCatalog';
+} from '@storyboard/story-model';
 import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 interface OpenAiModelsLike {

@@ -1,7 +1,11 @@
-import type { StoryUri, CardFileSystem, CharacterCard } from '@storyboard/story-model';
-import { readCardFile, writeCardFile } from '@storyboard/story-model';
-import { parseBulletList } from '@storyboard/story-ai';
-import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
+import type {
+  StoryUri,
+  CardFileSystem,
+  CharacterCard,
+  UsageAttribution,
+} from '@storyboard/story-model';
+import { readCardFile, writeCardFile, parseBulletList } from '@storyboard/story-model';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import { reconcileCharacterTraits } from '#engine/domain/traitsProcessor';
 interface TraitsUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;

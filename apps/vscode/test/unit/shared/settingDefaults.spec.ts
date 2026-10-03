@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  ConfigBridge,
-  storyboardSettingCatalog,
-  type StoryboardConfigurationLike,
-  type StoryboardSettingDefinition
-} from "@storyboard/story-ai"
+import { ConfigBridge, type StoryboardConfigurationLike } from "@storyboard/story-ai"
+import { storyboardSettingCatalog, type StoryboardSettingDefinition } from "@storyboard/story-model"
 
 // 설정을 읽는 접근자마다 기본값과 허용 범위를 다시 적던 시절에는 설정 화면과 실제 생성이 서로 다른
 // 값을 쓰는 상태로 갈라질 수 있었다. 이 표는 카탈로그의 모든 키를 접근자에 이어 붙여, 새 설정이

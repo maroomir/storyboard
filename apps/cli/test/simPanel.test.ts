@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AiGenerateResponse, AiMessage } from '@storyboard/story-ai';
+import type { AiGenerateResponse, AiMessage } from '@storyboard/story-model';
 import {
   SelfJudgingError,
   createFactRecallJudge,

@@ -1,6 +1,10 @@
-import { formatCardAttributes, joinCardText } from '@storyboard/story-model';
+import {
+  formatCardAttributes,
+  joinCardText,
+  craftContractLines,
+  type StyleDirective,
+} from '@storyboard/story-model';
 import type { BackgroundCard, CharacterCard, ProjectFormat } from '@storyboard/story-model';
-import { craftContractLines, type StyleDirective } from '#ai/contracts/styleDirective';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

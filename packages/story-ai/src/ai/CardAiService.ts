@@ -33,8 +33,8 @@ import {
 } from './prompts/noteSynthesis';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '#ai/contracts/aiTypes';
-import { parseBulletList, parseJsonArray, parseJsonObject } from '#ai/contracts/aiResponseParser';
+import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
+import { parseBulletList, parseJsonArray, parseJsonObject } from '@storyboard/story-model';
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {
   readonly aliases?: readonly string[];

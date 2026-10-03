@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
-import { integerSettingDefault, promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import { pipelineDefaults } from '@storyboard/story-pipeline';
+import { sectionViolationKinds, integerSettingDefault } from '@storyboard/story-model';
+import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
 import {
   applyOverlay,
   findKnob,

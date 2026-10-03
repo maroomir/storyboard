@@ -2,12 +2,13 @@ import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type * as vscode from 'vscode';
 
 import { formatAugmentCards } from '@storyboard/story-ai';
+import type { ContinuityIssue, GrammarIssue } from '@storyboard/story-ai';
 import type {
-  ContinuityIssue,
-  GrammarIssue,
   StudioAgentInvokeRequest,
   StudioAgentToolSpan,
-} from '@storyboard/story-ai';
+  ProjectFormat,
+  SceneContext,
+} from '@storyboard/story-model';
 import {
   buildNarrativeContext,
   buildSceneContext,
@@ -15,7 +16,6 @@ import {
   formatBibleFactLines,
   readSceneFile,
 } from '@storyboard/story-model';
-import type { ProjectFormat, SceneContext } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';

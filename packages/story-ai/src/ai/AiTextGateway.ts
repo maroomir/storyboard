@@ -5,7 +5,7 @@ import type {
   UsageAttribution,
   UsageRecord,
   AiTaskName,
-} from '#ai/contracts/aiTypes';
+} from '@storyboard/story-model';
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/promptVariants';
 import type { PromptVariantId } from './prompts/types';

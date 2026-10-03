@@ -1,4 +1,4 @@
-import { type AiProviderId } from '#ai/contracts/aiTypes';
+import { type AiProviderId } from '@storyboard/story-model';
 
 export interface StoryboardSecretStorageChangeEvent {
   readonly key: string;

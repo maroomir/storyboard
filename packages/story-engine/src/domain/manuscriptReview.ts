@@ -1,5 +1,5 @@
-import { critiqueCategoryLabels, scoreCritique } from '@storyboard/story-ai';
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-ai';
+import { critiqueCategoryLabels, scoreCritique } from '@storyboard/story-model';
+import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-model';
 export interface ManuscriptReviewInput {
   readonly projectName: string;
   readonly sceneCount: number;

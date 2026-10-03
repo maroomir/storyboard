@@ -1,15 +1,17 @@
 import {
   aiProviderIds,
-  ConfigBridge,
-  createAiProviderRegistry,
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   providerCatalog,
   requiresApiKey,
-  SecretStore,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
+} from '@storyboard/story-model';
+import {
+  ConfigBridge,
+  createAiProviderRegistry,
+  SecretStore,
   type AiProviderRegistry,
 } from '@storyboard/story-ai';
 import {
