@@ -10,6 +10,21 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-10-04
+
+### Added
+
+- **A scene's number and name can be changed.** Scenes are keyed by the number prefix of their file name, and there was no way to change it, so inserting a scene or reordering meant moving every file by hand. Rename with the CLI `storyboard scene rename <stem> --to <new stem>`, the extension's "Storyboard: Rename Scene" (from the scene card's context menu in the explorer or the command palette), or the scene number and name fields on the desktop. The card, summary, draft and its history, caches, dialogue records and Studio conversations move together, and the scene references held by the story-state ledger, canon validity ranges, character arcs and character memory are rewritten to the new name. A number another scene already uses is refused, and nothing is written until every file has been read and converted.
+- **A rename that was cut off finishes when run again.** A rename leaves a progress record (`.storyboard/cache/scene-rename.json`) before its first write and removes it at the end. If it is interrupted, running it again finishes the job only when that record names the same rename; without the record the target number counts as taken and the rename is refused rather than overwriting anything. `storyboard doctor` reports a record left behind with the old card still present, and names the command that completes it.
+
+### Fixed
+
+- **The English changelog link in the extension's Changelog tab no longer 404s.** After the changelogs moved to the repository root, the packager rewrote the relative link against the extension folder, pointing at a file that does not exist.
+
+### Documentation
+
+- The extension QA guide's provider and API key setup was rewritten for the shared config (`~/.storyboard/config.json` and `secrets.json`); it still described the VS Code settings UI and SecretStorage from before 0.8.2.
+
 ## [0.11.1] - 2026-10-01
 
 ### Added

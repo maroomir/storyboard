@@ -1,6 +1,6 @@
 {
   "name": "@storyboard/cli",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "private": true,
   "description": "Storyboard on the command line: plan, draft, review and assemble a novel from a terminal or an AI agent",
   "license": "Apache-2.0",
