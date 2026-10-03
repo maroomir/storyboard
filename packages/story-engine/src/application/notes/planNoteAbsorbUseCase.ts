@@ -57,7 +57,10 @@ function toKnownCard(card: StoryboardCard): NoteExtractionKnownCard {
 
 // The paid half of the import: the notes are read by the model, and what comes back is merged into
 // one plan. Nothing but the cached plan is written — applying it is a separate verb.
-export class PlanNoteAbsorbUseCase implements IUseCase<PlanNoteAbsorbRequest, PlanNoteAbsorbResult> {
+export class PlanNoteAbsorbUseCase implements IUseCase<
+  PlanNoteAbsorbRequest,
+  PlanNoteAbsorbResult
+> {
   public constructor(private readonly deps: PlanNoteAbsorbUseCaseDependencies) {}
 
   public estimate(bundle: NoteBundle): NoteAbsorbEstimate {

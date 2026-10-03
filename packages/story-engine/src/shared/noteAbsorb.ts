@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { cardCollectProposalSchema } from './cardCollect';
+
 export const noteSourceKinds = ['obsidian', 'notion'] as const;
 
 export type NoteSourceKind = (typeof noteSourceKinds)[number];
@@ -33,3 +35,22 @@ export const noteBundleSchema = z.object({
 export type NoteDocument = z.infer<typeof noteDocumentSchema>;
 export type SkippedNote = z.infer<typeof skippedNoteSchema>;
 export type NoteBundle = z.infer<typeof noteBundleSchema>;
+
+// What a note had to say about a card that already exists. It waits in the cache until
+// `card promote` lays it over the card, the same way facts from a draft wait.
+export const noteCardCandidateSchema = z.object({
+  cardId: z.string().min(1),
+  cardType: z.enum(['character', 'background']),
+  name: z.string().min(1),
+  sourceNotes: z.array(z.string()),
+  changes: z.array(cardCollectProposalSchema),
+});
+
+export const noteCandidateFileSchema = z.object({
+  location: z.string().min(1),
+  absorbedAt: z.string().datetime(),
+  candidates: z.array(noteCardCandidateSchema),
+});
+
+export type NoteCardCandidate = z.infer<typeof noteCardCandidateSchema>;
+export type NoteCandidateFile = z.infer<typeof noteCandidateFileSchema>;
