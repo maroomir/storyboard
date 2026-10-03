@@ -17,7 +17,14 @@ import type {
   SceneCoverageIssue,
   StoryStateUpdateItem,
 } from '@storyboard/story-model';
-import { coerceChapterPlan, coerceOutlineSynopsis, parseJsonObject } from '@storyboard/story-model';
+import {
+  coerceChapterPlan,
+  coerceOutlineSynopsis,
+  parseJsonObject,
+  type NoteExtraction,
+  type NoteExtractionKnownCard,
+  type NoteExtractionNote,
+} from '@storyboard/story-model';
 import { AiTextGateway } from './AiTextGateway';
 import {
   CardAiService,
@@ -51,12 +58,7 @@ import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
-import {
-  type NoteExtraction,
-  type NoteExtractionKnownCard,
-  type NoteExtractionNote,
-} from './prompts/noteExtraction';
-import { type NoteSynthesis } from './prompts/noteSynthesis';
+import { type NoteSynthesis } from '@storyboard/story-model';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {

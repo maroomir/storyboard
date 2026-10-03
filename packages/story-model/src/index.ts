@@ -6,6 +6,8 @@ export * from './contracts/aiTypes';
 export * from './contracts/draftReview';
 export * from './contracts/generationParameters';
 export * from './contracts/modelProfiles';
+export * from './contracts/noteExtraction';
+export * from './contracts/noteSynthesis';
 export * from './contracts/providerCatalog';
 export * from './contracts/sceneCoverage';
 export * from './contracts/sceneDialogueAttribution';

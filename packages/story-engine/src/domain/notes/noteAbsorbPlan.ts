@@ -4,7 +4,7 @@ import type {
   NoteExtractionScene,
   NoteSynthesis,
   NoteSynthesisSetting,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
 import {
   cardIdPattern,
   outlineSynopsisSchema,
