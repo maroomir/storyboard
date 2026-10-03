@@ -145,6 +145,8 @@ and canon refer to it by stem or by number. `scene rename` moves and rewrites al
 It refuses a number another scene already holds, so to insert a scene, move the later scenes up
 first, starting from the last one. A new number also gives the scene the outline slot and chapter
 that number maps to.
+If a rename is cut off partway, `doctor` reports it. When both cards are still there, run the same
+`scene rename` again to finish. Files with the old name and no card can be deleted.
 
 ```bash
 storyboard scene rename 03-night-market --to 04-night-market
