@@ -1,6 +1,6 @@
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { resolveScenePrefixDigitCount } from '@storyboard/story-model';
+import type { ChapterPlan } from '@storyboard/story-model';
 import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
 import {
   cancel,

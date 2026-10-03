@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 
 import { applyStoryCardChanges, type StoryCardTarget } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
-import { parseCard, serializeCard } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import { parseCard, serializeCard } from '@storyboard/story-model';
+import type { StoryboardCard } from '@storyboard/story-model';
 import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 import type { CardCollectProposal } from '@storyboard/story-engine';

@@ -1,5 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import type { StoryUri, StoryboardCard } from '@storyboard/story-model';
 
 export interface ICardWriterRepository {
   exists(workspaceRoot: StoryUri, cardType: StoryboardCard['type'], id: string): Promise<boolean>;

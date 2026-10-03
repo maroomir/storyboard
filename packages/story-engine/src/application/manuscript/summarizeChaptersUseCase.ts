@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
@@ -9,7 +9,7 @@ import {
   parseChapterSummariesMarkdown,
   type ChapterSummary,
 } from '#engine/domain/chapterSummaries';
-import { assembleManuscript, computeDraftBodyHash } from '@storyboard/story-format';
+import { assembleManuscript, computeDraftBodyHash } from '@storyboard/story-model';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {

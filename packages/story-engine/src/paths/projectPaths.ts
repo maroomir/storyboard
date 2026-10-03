@@ -14,12 +14,12 @@ import {
   sceneFileRelativePath,
   sceneRelativePath,
   threadMemoryRelativePath,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { joinStoryPath, type StoryUri, type StoryWorkspaceFolder } from './storyUri';
 
 import type { StudioEntity } from '#engine/shared/messaging/index';
 
-export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-format';
+export { isHiddenSceneFileName, isIgnoredSampleCardFileName } from '@storyboard/story-model';
 
 export interface StoryboardProjectPaths {
   readonly workspaceRoot: StoryUri;

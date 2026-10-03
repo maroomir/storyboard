@@ -1,4 +1,4 @@
-import { parseDraft, serializeDraft, type StoryUri } from '@storyboard/story-format';
+import { parseDraft, serializeDraft, type StoryUri } from '@storyboard/story-model';
 
 import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
 import { draftHistorySceneDirectory, draftPath, joinUri } from '#engine/paths/projectPaths';

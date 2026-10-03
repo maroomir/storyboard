@@ -22,8 +22,8 @@ vi.mock("@storyboard/story-ai", async (importOriginal) => ({
     reviseDraft = (input: unknown): Promise<string> => reviseDraftMock(input)
   }
 }))
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   readSceneFile: async (): Promise<unknown> => ({
     stem: "01-scene",
     order: 1,

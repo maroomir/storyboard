@@ -1,4 +1,4 @@
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import { joinStoryPath, type StoryUri } from '#engine/paths/storyUri';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';

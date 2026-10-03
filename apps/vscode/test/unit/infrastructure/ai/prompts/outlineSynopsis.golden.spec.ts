@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { OutlineBrief } from "@storyboard/story-format"
+import type { OutlineBrief } from "@storyboard/story-model"
 import { OutlineSynopsisPrompt } from "@storyboard/story-ai"
 
 describe("OutlineSynopsisPrompt golden", () => {

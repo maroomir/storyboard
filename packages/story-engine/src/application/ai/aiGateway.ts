@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';

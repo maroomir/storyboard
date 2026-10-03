@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '#format/storyUri';
+import { joinStoryPath, type StoryUri } from '#model/format/storyUri';
 import { posix } from 'node:path';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
@@ -13,7 +13,7 @@ import {
   type SceneCard,
   type SceneFile,
   type SceneFileNameParts,
-} from '#format/scene';
+} from '#model/format/scene';
 
 export type SceneParseErrorCode =
   | 'invalid-scene-file-name'

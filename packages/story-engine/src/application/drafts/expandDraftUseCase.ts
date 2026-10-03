@@ -1,5 +1,5 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 

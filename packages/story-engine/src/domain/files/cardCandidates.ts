@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import { cardCandidateRecordSchema, type CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export interface CardCandidateFileSystem {

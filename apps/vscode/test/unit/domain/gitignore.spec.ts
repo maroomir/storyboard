@@ -4,7 +4,7 @@ import {
   mergeStoryboardGitignore,
   readMissingGitignoreEntries,
   storyboardGitignoreEntries,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 describe('mergeStoryboardGitignore', () => {
   it('writes the whole block into a missing file', () => {

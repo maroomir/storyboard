@@ -15,7 +15,7 @@ import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
 import type { SidebarCardSummary, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType, sidebarViewIds } from '@/contributionIds';
-import { STORYBOARD_GLOBS } from '@storyboard/story-format';
+import { STORYBOARD_GLOBS } from '@storyboard/story-model';
 
 interface SidebarCardsProviderOptions {
   readonly viewType: string;

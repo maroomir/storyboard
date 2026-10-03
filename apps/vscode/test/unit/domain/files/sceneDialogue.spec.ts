@@ -5,7 +5,7 @@ import {
   parseSceneDialogue,
   serializeSceneDialogue,
   type SceneDialogueRecord
-} from "@storyboard/story-format"
+} from "@storyboard/story-model"
 import { coerceDialogueAttribution } from "@storyboard/story-ai"
 import { selectRepresentativeDialogue } from "@storyboard/story-pipeline"
 

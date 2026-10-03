@@ -1,6 +1,5 @@
-import type { Background } from '@storyboard/story-format';
-import { joinCardText } from '@storyboard/story-format';
-import type { SceneGrounding } from '@storyboard/story-format';
+import type { Background, SceneGrounding } from '@storyboard/story-model';
+import { joinCardText } from '@storyboard/story-model';
 import {
   craftContractLines,
   sceneGroundingLines,

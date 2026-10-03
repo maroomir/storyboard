@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 export type FileSystemDirectoryEntry = [string, { type: 'file' | 'directory' }];
 

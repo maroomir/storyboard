@@ -10,7 +10,7 @@ import {
   type NarrativeTense,
   type NarratorKnowledge,
   type NarratorPerson,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 import type { NarratorCard } from '@webview/lib/types';
 import { sbInputClass } from '@webview/components/ui/formClasses';
 import { ListField } from './ListField';

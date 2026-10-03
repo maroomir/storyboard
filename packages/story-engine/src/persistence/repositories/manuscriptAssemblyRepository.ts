@@ -1,4 +1,9 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import {
+  joinStoryPath,
+  type StoryUri,
+  readBibleFile,
+  readChapterPlanFile,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   IManuscriptAssemblyRepository,
@@ -14,10 +19,9 @@ import type {
 } from '#engine/application/manuscript/reviewManuscriptUseCase';
 import type { IChapterSummaryRepository } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { AssembledManuscript } from '@storyboard/story-format';
+import type { AssembledManuscript } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { readBibleFile, readChapterPlanFile } from '@storyboard/story-format';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import {
   parseChapterSummariesMarkdown,

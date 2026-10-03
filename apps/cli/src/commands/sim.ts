@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 
 import { aiProviderIds, storyboardModelCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiProviderRegistry } from '@storyboard/story-ai';
-import { parseSceneCard, parseSceneFileName } from '@storyboard/story-format';
+import { parseSceneCard, parseSceneFileName } from '@storyboard/story-model';
 import {
   appendRun,
   applyOverlay,

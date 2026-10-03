@@ -5,7 +5,7 @@ import {
   narrativeTenseLabels,
   narratorKnowledgeLabels,
   narratorPersonLabels,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 import type { NarratorCard } from '@webview/lib/types';
 import { Pill } from '../ui/Pill';
 

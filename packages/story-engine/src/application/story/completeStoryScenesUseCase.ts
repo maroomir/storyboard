@@ -1,10 +1,9 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, SceneCard, SceneFile, StoryboardCard } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import { sceneFileNamePattern, serializeSceneCard } from '@storyboard/story-format';
-import type { SceneCard, SceneFile, StoryboardCard } from '@storyboard/story-format';
+import { sceneFileNamePattern, serializeSceneCard } from '@storyboard/story-model';
 import { parseJsonObject } from '@storyboard/story-ai';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';

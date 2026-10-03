@@ -8,7 +8,7 @@ import {
   readProjectJson,
   resealStoryMemory,
 } from '@storyboard/story-engine';
-import { formatSceneOrderRanges } from '@storyboard/story-format';
+import { formatSceneOrderRanges } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 

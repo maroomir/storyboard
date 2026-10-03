@@ -6,7 +6,7 @@ import {
   type CardCollectAiService,
   type CollectDraft
 } from "@storyboard/story-engine"
-import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
+import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-model';
 
 const roster = [
   { id: "elia", name: "엘리아" },

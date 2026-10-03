@@ -1,4 +1,4 @@
-import type { SceneGrounding } from '@storyboard/story-format';
+import type { SceneGrounding } from '@storyboard/story-model';
 import type { StyleDirective } from '#ai/contracts/styleDirective';
 import type { AiProviderId, UsageAttribution, UsageRecord } from '#ai/contracts/aiTypes';
 

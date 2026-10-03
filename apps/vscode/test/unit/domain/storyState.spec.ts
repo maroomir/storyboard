@@ -5,9 +5,7 @@ import {
   findUnreadableStoryStateLines,
   hasForeignScript,
   stripForeignScript,
-  storyStateFactLines
-} from '@storyboard/story-format';
-import {
+  storyStateFactLines,
   auditStoryState,
   createEmptyStoryState,
   formatSceneOrderRanges,
@@ -21,8 +19,8 @@ import {
   storyStateSceneOrders,
   writeStoryState,
   type StoryState,
-  type StoryStateEntry
-} from '@storyboard/story-format';
+  type StoryStateEntry,
+} from '@storyboard/story-model';
 import { coerceStoryStateUpdate, StoryStateUpdatePrompt } from '@storyboard/story-ai';
 
 class MemoryFileSystem {

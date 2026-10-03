@@ -1,6 +1,5 @@
-import type { StoryUri } from '@storyboard/story-format';
-import { buildCandidateFact } from '@storyboard/story-format';
-import type { BibleFact, CharacterCard } from '@storyboard/story-format';
+import type { StoryUri, BibleFact, CharacterCard } from '@storyboard/story-model';
+import { buildCandidateFact } from '@storyboard/story-model';
 import {
   type BibleCandidateFileSystem,
   writeBibleCandidateFile,

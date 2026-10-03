@@ -5,7 +5,7 @@ import { DraftRepository } from '@storyboard/story-engine';
 import { ProjectRepository } from '@storyboard/story-engine';
 import { SceneCacheRepository } from '@storyboard/story-engine';
 import { SceneRepository } from '@storyboard/story-engine';
-import { createDraft, parseDraft } from '@storyboard/story-format';
+import { createDraft, parseDraft } from '@storyboard/story-model';
 import { parseSceneCache } from '@storyboard/story-engine';
 
 class InMemoryFileSystem implements IFileSystem {

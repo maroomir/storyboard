@@ -22,7 +22,7 @@
   "dependencies": {
     "@storyboard/story-ai": "*",
     "@storyboard/story-engine": "*",
-    "@storyboard/story-format": "*"
+    "@storyboard/story-model": "*"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

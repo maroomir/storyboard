@@ -8,7 +8,7 @@ import {
   type BackgroundCard,
   type CharacterCard,
   type NarratorCard,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact, RunSnapshot } from '@/shared/dto';
 

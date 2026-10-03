@@ -7,7 +7,7 @@ import {
   sceneSeedSectionLabels,
   type SceneCard,
   type SceneFrontmatter,
-} from '#format/scene';
+} from '#model/format/scene';
 import { SceneParseError, serializeSceneCard } from './scene';
 
 export interface LegacySceneConversion {

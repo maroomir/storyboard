@@ -2,7 +2,7 @@ import {
   sceneGroundingFieldKeys,
   type SceneGrounding,
   type SceneGroundingFieldKey,
-} from '#format/scene';
+} from '#model/format/scene';
 import { parseSceneCard, serializeSceneCard } from './scene';
 
 export function missingSceneGroundingFields(

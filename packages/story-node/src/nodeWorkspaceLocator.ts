@@ -1,4 +1,5 @@
-import type { StoryUri, StoryWorkspaceFolder, IWorkspaceLocator } from '@storyboard/story-engine';
+import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
+import type { IWorkspaceLocator } from '@storyboard/story-engine';
 
 // A Node host runs against exactly one workspace — the directory it was pointed at — so locating a
 // file's workspace is a containment test rather than a lookup.

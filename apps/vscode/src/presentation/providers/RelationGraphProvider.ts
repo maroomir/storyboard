@@ -9,7 +9,7 @@ import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
-import { STORYBOARD_GLOBS } from '@storyboard/story-format';
+import { STORYBOARD_GLOBS } from '@storyboard/story-model';
 
 const panelViewType = 'storyboard.relationGraph';
 

@@ -1,6 +1,4 @@
-import type { Background } from '@storyboard/story-format';
-import type { Character } from '@storyboard/story-format';
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { Background, Character, ProjectFormat } from '@storyboard/story-model';
 import type { GenerateTextOptions } from './aiServiceTypes';
 import {
   toPromptMessages,
@@ -40,7 +38,7 @@ import {
   sceneGroundingFieldLabels,
   type SceneGrounding,
   type SceneGroundingFieldKey,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 export class SceneAiService {
   public constructor(private readonly gateway: AiTextGateway) {}

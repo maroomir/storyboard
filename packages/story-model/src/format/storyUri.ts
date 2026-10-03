@@ -25,7 +25,7 @@ export interface StoryWorkspaceFolder {
   readonly name: string;
 }
 
-// NOTE: node:path 를 쓰지 않는다. story-format 은 브라우저 번들에도 실리는 런타임 중립 패키지라,
+// NOTE: node:path 를 쓰지 않는다. story-model 은 브라우저 번들에도 실리는 런타임 중립 패키지라,
 // 여기서 node 모듈을 하나만 끌어와도 웹뷰 빌드가 통째로 깨진다. 동작은 posix.join 과 같아야 하므로
 // storyUri.spec 이 표준 라이브러리와 결과를 대조한다.
 function joinPosixPath(segments: readonly string[]): string {

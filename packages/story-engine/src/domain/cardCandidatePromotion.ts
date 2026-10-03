@@ -1,4 +1,4 @@
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@storyboard/story-model';
 import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export type CardCandidateItem =

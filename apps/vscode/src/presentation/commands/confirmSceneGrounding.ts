@@ -4,7 +4,7 @@ import {
   sceneGroundingFieldKeys,
   sceneGroundingFieldLabels,
   type SceneGroundingFieldKey,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { ConfirmSceneGrounding } from '@storyboard/story-engine';
 
 type GroundingChoice =

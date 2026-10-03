@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri, OutlineFileSystem } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -9,10 +9,9 @@ import {
   ChapterPlanParseError,
   parseSceneFileName,
   readChapterPlanFile,
-} from '@storyboard/story-format';
-import type { OutlineFileSystem } from '@storyboard/story-format';
+  resolveScenePrefixDigitCount,
+} from '@storyboard/story-model';
 import { readProjectJson } from '@storyboard/story-engine';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

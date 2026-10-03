@@ -2,7 +2,7 @@ import {
   deriveNarrationFromPointOfView,
   mainThreadId,
   resolveCompositionPresetDefaults,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type {
   CompositionKind,
   NarratorCard,
@@ -11,7 +11,7 @@ import type {
   PointOfView,
   ProjectSetting,
   StoryThread,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 // NOTE: 창작자는 구성 하나를 고르고, 줄기와 서술자 카드는 프리셋이 만든다. 스레드·서술자를 손으로
 // 조합할 줄 알아야만 옴니버스를 쓸 수 있게 두면 시점 3택만 알던 사용자가 갈 곳이 없어진다.
@@ -98,7 +98,7 @@ function buildAlternatingPovPreset(request: CompositionPresetRequest): Compositi
   };
 }
 
-// 시점에서 인칭·지식 경계를 뽑는 표는 story-format 이 갖는다. 여기서 다시 계산하던 시절에는
+// 시점에서 인칭·지식 경계를 뽑는 표는 story-model 이 갖는다. 여기서 다시 계산하던 시절에는
 // 2인칭이 3인칭 서술자로, 전지적 시점이 목격 서술자로 만들어졌다.
 const fallbackNarration = { person: 'third', knowledge: 'witnessed' } as const;
 

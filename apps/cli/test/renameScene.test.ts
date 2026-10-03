@@ -13,7 +13,7 @@ import {
   parseStoryState,
   rewriteSceneCardStemText,
   serializeDraft,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

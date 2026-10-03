@@ -2,7 +2,7 @@ import {
   resolvePipelinePlan,
   type PipelineSpec,
   type PipelineStageDefinition,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 // The stages a scene draft runs through, in the bundled order. Each is a unit of work over the run
 // state in sceneGenerationPipeline.ts; the catalog is what a `pipelines/scene.yaml` is checked

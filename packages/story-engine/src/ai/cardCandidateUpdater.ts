@@ -1,5 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+import type { StoryUri, CharacterCard } from '@storyboard/story-model';
 import type {
   CardArcCandidate,
   CardAttributeCandidate,

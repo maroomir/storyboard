@@ -6,8 +6,8 @@ import {
   parseSynopsisMarkdown,
   serializeChapterPlan,
   serializeSynopsisMarkdown,
-} from '@storyboard/story-format';
-import type { ChapterPlan, OutlineSynopsis } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { ChapterPlan, OutlineSynopsis } from '@storyboard/story-model';
 const plan: ChapterPlan = {
   version: '1.0.0',
   acts: [

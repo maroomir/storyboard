@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { PersonaDialoguePrompt, SituationExtractionPrompt } from '@storyboard/story-ai';
 import type { StyleDirective } from '@storyboard/story-ai';
-import type { Background } from '@storyboard/story-format';
+import type { Background } from '@storyboard/story-model';
 const ANTI_DRIFT_LINE = "상황과 페르소나에 주어진 사실만 사용하고, 입력에 없는 새로운 사건·설정·인물·배경을 지어내지 마라."
 const POV_INTERIORITY_LINE = "시점 화자의 내면 독백(생각·판단·자기합리화·감정)을 대사 사이에 충분히 녹여라."
 const PRESERVE_CONFRONTATION_LINE = "상황에 인물의 폭언·별칭·직접 대사가 드러나면 순화하거나 화해로 덮지 말고 그 표현을 그대로 살려 대사로 옮겨라."

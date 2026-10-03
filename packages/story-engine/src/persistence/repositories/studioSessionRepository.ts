@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {

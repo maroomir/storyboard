@@ -12,7 +12,7 @@ import {
   draftRelativePath,
   sceneRelativePath,
   storyboardGitignoreEntries
-} from "@storyboard/story-format"
+} from "@storyboard/story-model"
 
 const manifestPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),

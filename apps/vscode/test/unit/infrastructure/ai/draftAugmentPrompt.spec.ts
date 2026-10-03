@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { DraftAugmentPrompt, formatAugmentCards } from '@storyboard/story-ai';
 import type { DraftAugmentInput } from '@storyboard/story-ai';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 
 const baseInput: DraftAugmentInput = {
   target: "엘리아가 교실로 들어왔다.",

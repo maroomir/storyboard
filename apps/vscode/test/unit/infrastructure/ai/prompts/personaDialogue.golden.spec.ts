@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { PersonaDialoguePrompt, type StyleDirective } from "@storyboard/story-ai"
-import type { Background, SceneGrounding } from "@storyboard/story-format"
+import type { Background, SceneGrounding } from "@storyboard/story-model"
 
 describe("PersonaDialoguePrompt golden", () => {
   const situation = "엘리아가 문을 연다.\n준이 뒤따른다."

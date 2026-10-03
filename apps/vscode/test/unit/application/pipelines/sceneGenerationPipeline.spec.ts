@@ -6,8 +6,8 @@ import type {
   SceneContext,
   SceneDialogueRecord,
   SceneFile
-} from '@storyboard/story-format';
-import { computeDraftBodyHash } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import { computeDraftBodyHash } from '@storyboard/story-model';
 import {
   overrideScenePipelinePlan,
   resetScenePipelinePlan,

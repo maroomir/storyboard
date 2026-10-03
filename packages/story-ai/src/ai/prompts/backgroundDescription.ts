@@ -1,5 +1,5 @@
-import type { Background } from '@storyboard/story-format';
-import { joinCardText } from '@storyboard/story-format';
+import type { Background } from '@storyboard/story-model';
+import { joinCardText } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

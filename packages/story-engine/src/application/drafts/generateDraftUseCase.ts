@@ -1,5 +1,5 @@
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, BackgroundCard } from '@storyboard/story-model';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { draftHistorySceneDirectory, joinUri } from '#engine/paths/projectPaths';
 import {
@@ -8,8 +8,7 @@ import {
   joinCardText,
   parseDraft,
   serializeDraft,
-} from '@storyboard/story-format';
-import type { BackgroundCard } from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
 import { type SceneCacheRecord } from '#engine/domain/files/sceneCache';
 import {

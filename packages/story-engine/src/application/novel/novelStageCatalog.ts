@@ -2,7 +2,7 @@ import {
   resolvePipelinePlan,
   type PipelineSpec,
   type PipelineStageDefinition,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { novelStageNames, type NovelStageName } from '#engine/shared/novelRun';
 

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunGate } from '@storyboard/story-app';
 import { getStoryboardProjectPaths } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 let workspace: string;

@@ -13,7 +13,7 @@ import {
   formatBibleFactLines,
   parseDraft,
   readSceneFile,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,

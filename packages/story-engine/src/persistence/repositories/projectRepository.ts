@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IProjectRepository } from '#engine/application/drafts/draftRepositories';
 import { parseProjectJson } from '#engine/persistence/projectJson';
-import type { StoryboardProject } from '@storyboard/story-format';
 
 export class ProjectRepository implements IProjectRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

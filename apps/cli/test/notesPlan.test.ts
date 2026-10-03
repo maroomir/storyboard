@@ -15,7 +15,7 @@ import {
   noteChunkCharacterLimit,
   type NoteDocument,
 } from '@storyboard/story-engine';
-import { parseScene, type SceneFile, type StoryboardCard } from '@storyboard/story-format';
+import { parseScene, type SceneFile, type StoryboardCard } from '@storyboard/story-model';
 
 function note(id: string, body = '본문', origin: NoteDocument['origin'] = 'tree'): NoteDocument {
   return { id, title: id.replace(/\.md$/, ''), path: [], body, origin };

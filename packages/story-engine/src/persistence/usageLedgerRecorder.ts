@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import type { UsageRecord, UsageSummaryByEntity } from '@storyboard/story-ai';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 import {
   appendLedgerEntryIfNew,

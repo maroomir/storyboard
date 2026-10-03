@@ -2,9 +2,12 @@ import * as vscode from 'vscode';
 
 import type { CardManager } from '@storyboard/story-app';
 import { getTargetWorkspaceFolder } from '@/infrastructure/vscode/workspace';
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
-import { cardIdPattern } from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+import {
+  createEmptyBackground,
+  createEmptyCharacter,
+  cardIdPattern,
+} from '@storyboard/story-model';
+import type { StoryboardCard } from '@storyboard/story-model';
 import { cardEditorViewType } from '@/contributionIds';
 
 const createCharacterCommand = 'storyboard.character.create';

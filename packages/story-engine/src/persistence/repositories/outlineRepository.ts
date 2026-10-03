@@ -1,4 +1,10 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type {
+  StoryUri,
+  ChapterPlan,
+  OutlineCharacterBrief,
+  OutlineSynopsis,
+  StoryboardProject,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IOutlineRepository } from '#engine/application/novel/generateOutlineUseCase';
 import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
@@ -7,13 +13,7 @@ import {
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
-} from '@storyboard/story-format';
-import type {
-  ChapterPlan,
-  OutlineCharacterBrief,
-  OutlineSynopsis,
-  StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { readProjectJson } from '#engine/persistence/projectJson';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
 export class OutlineRepository implements IOutlineRepository {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { PersonaGenerationPrompt, type StyleDirective } from "@storyboard/story-ai"
-import type { Character } from "@storyboard/story-format"
+import type { Character } from "@storyboard/story-model"
 
 describe("PersonaGenerationPrompt golden", () => {
   const bare: Character = { type: "character", id: "elia", name: "엘리아" }

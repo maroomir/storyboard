@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import {
   createWorkspaceRunLockRecord,
   isWorkspaceRunLockStale,

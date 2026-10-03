@@ -5,8 +5,8 @@ import {
   coerceOutlineSynopsis,
   outlineVersion,
   toOutlineBrief,
-} from '@storyboard/story-format';
-import type { OutlineBrief, StoryboardProject } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { OutlineBrief, StoryboardProject } from '@storyboard/story-model';
 const brief: OutlineBrief = {
   projectName: 'MagicBoy',
   format: 'novel',

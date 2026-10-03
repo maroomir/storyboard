@@ -6,7 +6,7 @@ import {
   extractDraftBody,
   parseDraft,
   serializeDraft
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 describe("draft file codec", () => {
   it("serializes and parses a draft with stable frontmatter", () => {

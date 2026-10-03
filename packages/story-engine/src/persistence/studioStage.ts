@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
@@ -12,7 +12,7 @@ import {
   readSceneFile,
   type SceneFile,
   type StoryboardCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { nextDraftHistoryRevision } from '#engine/domain/files/draftHistory';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';

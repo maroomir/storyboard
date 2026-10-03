@@ -6,7 +6,7 @@ import {
   SceneGroundingPrompt,
   sceneGroundingLines
 } from '@storyboard/story-ai';
-import type { Background } from '@storyboard/story-format';
+import type { Background } from '@storyboard/story-model';
 
 const background: Background = {
   type: "location",

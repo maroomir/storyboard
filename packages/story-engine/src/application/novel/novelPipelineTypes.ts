@@ -4,7 +4,7 @@ import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDr
 import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
 import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
   NovelRunMode,
@@ -13,7 +13,6 @@ import type {
 } from '#engine/domain/files/novelRunState';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
-import type { StoryboardProject } from '@storyboard/story-format';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

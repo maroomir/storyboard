@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { renameCardIdInBackgroundCard, renameCardIdInCharacterCard, rewriteCardIdReferences, setCardId } from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import { renameCardIdInBackgroundCard, renameCardIdInCharacterCard, rewriteCardIdReferences, setCardId } from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 const hero: CharacterCard = {
   type: "character",
   id: "hero",

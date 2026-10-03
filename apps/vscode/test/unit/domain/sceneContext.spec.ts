@@ -7,8 +7,8 @@ import {
   resolveSceneBibleFacts,
   serializeBible,
   serializeCard
-} from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard, SceneContext, SceneContextWorkspaceFileSystem, SceneFile, StoryBible } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard, SceneContext, SceneContextWorkspaceFileSystem, SceneFile, StoryBible } from '@storyboard/story-model';
 const eliaCard: CharacterCard = {
   type: "character",
   id: "elia",
@@ -416,7 +416,7 @@ describe("readPreviousSceneContext", () => {
 
   it("returns undefined for the first scene (order 1)", async () => {
     const fileSystem = new MockFileSystem()
-    const context = await import("@storyboard/story-format").then((m) =>
+    const context = await import("@storyboard/story-model").then((m) =>
       m.readPreviousSceneContext(mockPaths, 1, fileSystem)
     )
     expect(context).toBeUndefined()
@@ -432,7 +432,7 @@ describe("readPreviousSceneContext", () => {
     const longText = "A".repeat(2000) + "이전 씬의 마지막 문장입니다."
     fileSystem.setFile("/mock/workspace/draft/01-prologue.md", longText)
 
-    const context = await import("@storyboard/story-format").then((m) =>
+    const context = await import("@storyboard/story-model").then((m) =>
       m.readPreviousSceneContext(mockPaths, 2, fileSystem)
     )
 
@@ -447,7 +447,7 @@ describe("readPreviousSceneContext", () => {
       ["02-chapter-1.md", { type: "file" }]
     ])
 
-    const context = await import("@storyboard/story-format").then((m) =>
+    const context = await import("@storyboard/story-model").then((m) =>
       m.readPreviousSceneContext(mockPaths, 3, fileSystem)
     )
 
@@ -478,7 +478,7 @@ describe("readPreviousSceneContext rolling summary", () => {
     order: number,
     fileSystem: MockFileSystem
   ): Promise<string | undefined> =>
-    import("@storyboard/story-format").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
+    import("@storyboard/story-model").then((m) => m.readPreviousSceneContext(paths, order, fileSystem))
 
   it("QAS-C6-01: prefers the rolling summary over the previous draft tail", async () => {
     const fileSystem = new MockFileSystem()

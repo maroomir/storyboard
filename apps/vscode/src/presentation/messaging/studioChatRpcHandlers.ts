@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 import type { StudioChatRequest, StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, StudioManager } from '@storyboard/story-app';
-import { extractDraftBody } from '@storyboard/story-format';
+import { extractDraftBody } from '@storyboard/story-model';
 
 import {
   readStudioEntityContext,

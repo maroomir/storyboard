@@ -1,16 +1,13 @@
 import { z } from 'zod';
 
+import { aiProviderIds, novelRunModes } from '@storyboard/story-engine/contracts';
 import {
-  aiProviderIds,
   compositionKinds,
-  novelRunModes,
   pointOfViews,
-} from '@storyboard/story-engine/contracts';
-import {
   bibleFactSchema,
   cardIdPattern,
   sceneStemPattern,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 
 import type {
   AppBootstrap,
@@ -89,7 +86,7 @@ export const invokeRequestSchemas = {
 
   'bible.list': z.object({ kind: bibleCardKindSchema }),
   'bible.read': z.object({ kind: bibleCardKindSchema, id: cardIdSchema }),
-  // The card itself is validated against the story-format schema in main, which owns it.
+  // The card itself is validated against the story-model schema in main, which owns it.
   'bible.save': z.object({ kind: bibleCardKindSchema, card: z.record(z.string(), z.unknown()) }),
   'bible.create': z.object({
     kind: bibleCardKindSchema,

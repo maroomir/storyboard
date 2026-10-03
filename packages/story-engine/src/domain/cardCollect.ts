@@ -3,7 +3,7 @@ import type {
   CharacterCard,
   CharacterRelation,
   StoryboardCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { CardCollectProposal } from '#engine/shared/cardCollect';
 
 function addUnique(list: readonly string[], value: string): string[] {

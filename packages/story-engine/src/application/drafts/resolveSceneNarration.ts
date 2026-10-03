@@ -5,7 +5,7 @@ import {
   type NarrationDirective,
   type SceneFile,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';

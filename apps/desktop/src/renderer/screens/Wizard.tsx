@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { compositionKinds, pointOfViews } from '@storyboard/story-engine/contracts';
+import { compositionKinds, pointOfViews } from '@storyboard/story-model/contracts';
 
 import type { WorkspaceOverview } from '@/shared/dto';
 import type { WorkspaceCreateRequest } from '@/shared/ipcContract';

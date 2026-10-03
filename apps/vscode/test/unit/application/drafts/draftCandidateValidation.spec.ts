@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  resolveMinimumDraftLength,
-  resolveSceneTargetLength,
-  validateDraftCandidate,
-} from '@storyboard/story-pipeline';
+import { resolveMinimumDraftLength, validateDraftCandidate } from '@storyboard/story-pipeline';
+import { resolveSceneTargetLength } from '@storyboard/story-model';
 
 describe('draft candidate validation', () => {
   it('uses the configured compression limit when no scene target exists', () => {

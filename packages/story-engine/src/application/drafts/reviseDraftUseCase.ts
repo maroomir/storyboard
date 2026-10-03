@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, NarrationDirective, StoryboardProject } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import { joinUri, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
@@ -17,8 +17,8 @@ import {
   readSceneFile,
   resolveNarration,
   writeDraftFile,
-} from '@storyboard/story-format';
-import type { NarrationDirective, StoryboardProject } from '@storyboard/story-format';
+  resolveSceneTargetLength,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { readProjectJson } from '#engine/persistence/projectJson';
@@ -29,7 +29,6 @@ import type { AiProviderRegistry, UsageAttribution } from '@storyboard/story-ai'
 import type { IUsageSink } from '#engine/ports/usageSink';
 import {
   type DraftCandidateRejectionReason,
-  resolveSceneTargetLength,
   runReviseLoop,
   type ReviseLoopContext,
   type ReviseSeedIssues,

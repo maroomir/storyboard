@@ -1,6 +1,11 @@
 // The repository ports the draft use cases consume; persistence implements them.
-import type { StoryUri } from '@storyboard/story-format';
-import type { Draft, SceneFile, SceneGrounding, StoryboardProject } from '@storyboard/story-format';
+import type {
+  StoryUri,
+  Draft,
+  SceneFile,
+  SceneGrounding,
+  StoryboardProject,
+} from '@storyboard/story-model';
 import type { SceneCacheRecord } from '#engine/domain/files/sceneCache';
 export interface IProjectRepository {
   read(uri: StoryUri): Promise<StoryboardProject>;

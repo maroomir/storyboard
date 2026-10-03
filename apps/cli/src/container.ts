@@ -1,10 +1,5 @@
-import {
-  getStoryboardProjectPaths,
-  NodeUri,
-  type StoryUri,
-  type StoryWorkspaceFolder,
-  type IUsageSink,
-} from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, type IUsageSink } from '@storyboard/story-engine';
+import { NodeUri, type StoryUri, type StoryWorkspaceFolder } from '@storyboard/story-model';
 import {
   StoryboardApplication,
   type ParameterReport,

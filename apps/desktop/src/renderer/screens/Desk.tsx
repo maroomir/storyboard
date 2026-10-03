@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-import { parseSceneStem } from '@storyboard/story-format/contracts';
+import { parseSceneStem } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, SceneNotes, TocScene, WorkspaceOverview } from '@/shared/dto';
 

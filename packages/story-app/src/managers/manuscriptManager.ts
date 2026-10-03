@@ -13,7 +13,7 @@ import type {
   SummarizeChaptersResult,
   SummarizeChaptersUseCase,
 } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 export interface ManuscriptManagerDependencies {
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;

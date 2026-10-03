@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, BibleFact } from '@storyboard/story-model';
 import { z } from 'zod';
 
-import { bibleFactSchema } from '@storyboard/story-format';
-import type { BibleFact } from '@storyboard/story-format';
+import { bibleFactSchema } from '@storyboard/story-model';
 
 export interface BibleCandidateRecord {
   readonly sceneStem: string;

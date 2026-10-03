@@ -7,8 +7,8 @@ const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 const buildNarrativeContextMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   SceneParseError: class SceneParseError extends Error {},
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args),
@@ -19,7 +19,7 @@ vi.mock("../../../../../../packages/story-engine/src/persistence/projectJson", (
   readProjectJson: (...args: unknown[]): unknown => readProjectJsonMock(...args)
 }))
 import { AugmentDraftUseCase } from "@storyboard/story-engine"
-import { SceneParseError } from '@storyboard/story-format';
+import { SceneParseError } from '@storyboard/story-model';
 
 function createUseCase(): {
   gateway: { createService: ReturnType<typeof vi.fn>; getTaskProvider: ReturnType<typeof vi.fn> }

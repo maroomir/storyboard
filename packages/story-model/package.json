@@ -1,12 +1,12 @@
 {
-  "name": "@storyboard/story-format",
+  "name": "@storyboard/story-model",
   "version": "0.0.0",
   "private": true,
   "description": "Storyboard workspace file format: schemas, codecs, and pure narrative helpers shared by every app",
   "license": "Apache-2.0",
   "main": "src/index.ts",
   "imports": {
-    "#format/*": "./src/*.ts"
+    "#model/*": "./src/*.ts"
   },
   "types": "src/index.ts",
   "exports": {

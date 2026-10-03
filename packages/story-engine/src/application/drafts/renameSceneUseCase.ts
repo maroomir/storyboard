@@ -18,7 +18,7 @@ import {
   serializeStoryState,
   type SceneRename,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { parseRevisionPlan, serializeRevisionPlan } from '#engine/domain/files/revisionPlan';
 import {

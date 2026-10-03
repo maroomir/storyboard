@@ -1,14 +1,14 @@
-import type { Background } from '@storyboard/story-format';
-import type { Character } from '@storyboard/story-format';
-import type { SceneGrounding } from '@storyboard/story-format';
-import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-format';
 import type {
+  Background,
+  Character,
+  SceneGrounding,
   ChapterPlan,
   OutlineBrief,
   OutlineCharacterBrief,
   OutlineSynopsis,
   ProjectFormat,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import { coerceChapterPlan, coerceOutlineSynopsis } from '@storyboard/story-model';
 import { AiTextGateway } from './AiTextGateway';
 import {
   CardAiService,

@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 // The plain files in a directory, by name. A directory that is missing or unreadable lists as

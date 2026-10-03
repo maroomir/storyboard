@@ -14,7 +14,7 @@ const PACKAGES_ROOT = path.join(REPO_ROOT, 'packages');
 const SHARED_PACKAGES = [
   'story-engine',
   'story-app',
-  'story-format',
+  'story-model',
   'story-ai',
   'story-pipeline',
   'story-config',
@@ -27,7 +27,7 @@ const SHARED_PACKAGES = [
 const PACKAGE_INTERNAL_PREFIXES = {
   'story-engine': '#engine/',
   'story-app': '#app/',
-  'story-format': '#format/',
+  'story-model': '#model/',
   'story-ai': '#ai/',
   'story-pipeline': '#pipeline/',
   'story-config': '#config/',
@@ -88,8 +88,8 @@ function checkSharedPackages(failures) {
 // 돌아간다. 소유자가 정해진 문자열은 그 파일 밖에서 보이면 실패시킨다 — 테스트와 달리 이 검사는
 // «아직 아무도 쓰지 않는 새 사본»도 잡는다.
 const OWNED_LITERALS = [
-  { literal: "'.storyboard/project.json'", owner: 'packages/story-format/src/paths.ts' },
-  { literal: "'.sample.card'", owner: 'packages/story-format/src/sampleCard.ts' },
+  { literal: "'.storyboard/project.json'", owner: 'packages/story-model/src/format/paths.ts' },
+  { literal: "'.sample.card'", owner: 'packages/story-model/src/format/sampleCard.ts' },
   {
     literal: "'storyboard.settings.open'",
     owner: 'apps/vscode/src/presentation/commands/openSettings.ts',

@@ -1,5 +1,5 @@
-import { flattenChapterPlan, serializeSceneCard } from '@storyboard/story-format';
-import type { ChapterPlan, FlatChapterScene, SceneCard, ScenePlan } from '@storyboard/story-format';
+import { flattenChapterPlan, serializeSceneCard } from '@storyboard/story-model';
+import type { ChapterPlan, FlatChapterScene, SceneCard, ScenePlan } from '@storyboard/story-model';
 
 export interface GeneratedSceneSeed {
   readonly stem: string;

@@ -1,5 +1,5 @@
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { flattenChapterPlan } from '@storyboard/story-model';
+import type { ChapterPlan } from '@storyboard/story-model';
 
 interface ForeshadowingEntry {
   readonly item: string;

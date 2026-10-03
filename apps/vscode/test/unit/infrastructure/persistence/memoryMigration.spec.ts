@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { FileSystemDirectoryEntry, IFileSystem, StoryUri } from '@storyboard/story-engine';
+import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
+import type { StoryUri } from '@storyboard/story-model';
 import { getStoryboardProjectPaths, migrateLegacyMemory } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 
 const workspaceRoot = NodeUri.file('/workspace');
 

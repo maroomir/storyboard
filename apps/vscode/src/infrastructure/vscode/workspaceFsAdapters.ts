@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri, SceneContextWorkspaceFileSystem } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import { writeFileAtomically } from './atomicWrite';
-import type { SceneContextWorkspaceFileSystem } from '@storyboard/story-format';
 
 export const vscodeFsAdapter = {
   readFile: (uri: StoryUri): PromiseLike<Uint8Array> =>

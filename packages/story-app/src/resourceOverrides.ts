@@ -26,7 +26,7 @@ import {
   resetCraftContractDefaults,
   type PipelineSpec,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 // What an author may lay over the bundled defaults, and where inside a resource root (the home
 // `~/.storyboard` or a workspace's `.storyboard`) each piece lives. Later roots win.

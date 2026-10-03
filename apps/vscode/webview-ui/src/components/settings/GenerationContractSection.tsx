@@ -10,7 +10,7 @@ import {
   type CompositionKind,
   type ContractFieldKey,
   type PointOfView,
-} from '@storyboard/story-engine/contracts';
+} from '@storyboard/story-model/contracts';
 
 import { ListField } from '../editor/fields/ListField';
 import { SectionHeader } from '../ui/SectionHeader';

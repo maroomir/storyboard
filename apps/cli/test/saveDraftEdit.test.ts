@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { SaveDraftEditUseCase } from '@storyboard/story-engine';
-import { createDraft, NodeUri, parseDraft, serializeDraft } from '@storyboard/story-format';
+import { createDraft, NodeUri, parseDraft, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

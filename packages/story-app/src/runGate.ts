@@ -8,7 +8,7 @@ import {
   type WorkspaceRunLockOwner,
   type WorkspaceRunLockRecord,
 } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 export interface RunGateDependencies {
   readonly fileSystem: IFileSystem;

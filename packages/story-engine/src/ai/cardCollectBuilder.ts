@@ -1,5 +1,5 @@
 import { shouldProposeCardCollect } from '#engine/domain/cardCollect';
-import type { BackgroundCard, CharacterCard, StoryboardCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard, StoryboardCard } from '@storyboard/story-model';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

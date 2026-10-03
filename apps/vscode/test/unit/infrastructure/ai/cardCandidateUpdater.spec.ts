@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 import { updateCardCandidatesFromDraft } from "@storyboard/story-engine"
 import type { CardCandidateExtraction, StoryboardAiService } from '@storyboard/story-ai';
 import type { CardCandidateFileSystem } from "@storyboard/story-engine"
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@storyboard/story-model';
 const elia: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 
 class CaptureFileSystem implements CardCandidateFileSystem {

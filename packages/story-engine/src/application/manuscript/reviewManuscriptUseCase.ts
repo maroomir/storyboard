@@ -1,11 +1,9 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, ChapterPlan } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript, flattenChapterPlan } from '@storyboard/story-model';
 import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
-import { flattenChapterPlan } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
 import type { ChapterSummary } from '#engine/domain/chapterSummaries';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 import { reviewChapterWindows } from './reviewChapterWindows';

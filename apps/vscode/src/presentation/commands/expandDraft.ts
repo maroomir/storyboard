@@ -5,7 +5,7 @@ import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-format';
+import { parseDraft } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

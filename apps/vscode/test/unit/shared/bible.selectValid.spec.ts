@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { selectBibleFacts, selectInjectedFacts, selectValidBibleFacts } from '@storyboard/story-format';
-import type { BibleFact, BibleFactStatus, BibleFactSubject, StoryBible } from '@storyboard/story-format';
+import { selectBibleFacts, selectInjectedFacts, selectValidBibleFacts } from '@storyboard/story-model';
+import type { BibleFact, BibleFactStatus, BibleFactSubject, StoryBible } from '@storyboard/story-model';
 
 const elia: BibleFactSubject = { kind: "character", id: "elia" }
 
@@ -399,7 +399,7 @@ describe("selectInjectedFacts", () => {
   })
 
   it("QAS-C5-13: source stays vscode-free and AI-free, and calls are deterministic", () => {
-    const sourcePath = fileURLToPath(new URL("../../../../../packages/story-format/src/bible.ts", import.meta.url))
+    const sourcePath = fileURLToPath(new URL("../../../../../packages/story-model/src/format/bible.ts", import.meta.url))
     const source = readFileSync(sourcePath, "utf8")
 
     expect(source.length).toBeGreaterThan(0)

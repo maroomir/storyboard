@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
 
 import { missingApiKeyMarker, missingApiKeyMessage } from "@storyboard/story-ai"
-import { STORYBOARD_RELATIVE_PATHS } from "@storyboard/story-format"
+import { STORYBOARD_RELATIVE_PATHS } from "@storyboard/story-model"
 
 import { storyboardMessages } from "@/presentation/notifications/storyboardMessages"
 

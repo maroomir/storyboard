@@ -1,14 +1,14 @@
-import type { ManuscriptDraftEntry } from '@storyboard/story-format';
-import type { GeneratedSceneSeed } from '#engine/domain/sceneSeedFactory';
-import type { StoryUri } from '@storyboard/story-format';
-import type { ChapterSummary } from '#engine/domain/chapterSummaries';
-import type { NovelRunState } from '#engine/domain/files/novelRunState';
 import type {
+  ManuscriptDraftEntry,
+  StoryUri,
   ChapterPlan,
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { GeneratedSceneSeed } from '#engine/domain/sceneSeedFactory';
+import type { ChapterSummary } from '#engine/domain/chapterSummaries';
+import type { NovelRunState } from '#engine/domain/files/novelRunState';
 export interface INovelRunStateRepository {
   readExisting(workspaceRoot: StoryUri): Promise<NovelRunState | undefined>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyCardCollectProposals, shouldProposeCardCollect } from '@storyboard/story-engine';
-import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-format';
+import type { CharacterCard, LocationBackgroundCard } from '@storyboard/story-model';
 import {
   cardCollectProposalId,
   type CardCollectProposal,

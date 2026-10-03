@@ -15,7 +15,7 @@ import {
   type UsageMeterSession,
   type WorkspaceRunLock,
 } from '@storyboard/story-engine';
-import { contractFieldLabels, readSceneFile } from '@storyboard/story-format';
+import { contractFieldLabels, readSceneFile } from '@storyboard/story-model';
 
 import type {
   RunApprovalRequest,

@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 import type { NoteDocument, NoteSourceKind, SkippedNote } from '#engine/shared/noteAbsorb';
 

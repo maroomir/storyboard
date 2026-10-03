@@ -1,9 +1,9 @@
-import type { StoryUri } from '#format/storyUri';
+import type { StoryUri } from '#model/format/storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 
-import { cardIdPattern, formatCardAttributes, joinCardText } from '#format/card';
-import type { BackgroundCard, CharacterCard } from '#format/card';
+import { cardIdPattern, formatCardAttributes, joinCardText } from '#model/format/card';
+import type { BackgroundCard, CharacterCard } from '#model/format/card';
 export interface PersonaMemoryRecord {
   readonly cardId: string;
   readonly persona: string;

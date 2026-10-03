@@ -13,7 +13,7 @@ import {
   type SceneCard,
   type SceneFile,
   type StoryboardCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { shouldProposeCardCollect } from '#engine/domain/cardCollect';
 import {

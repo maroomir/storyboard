@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { hasForeignScript } from '@storyboard/story-format';
+import { hasForeignScript } from '@storyboard/story-model';
 
 import { parseJsonObject } from './aiResponseParser';
 

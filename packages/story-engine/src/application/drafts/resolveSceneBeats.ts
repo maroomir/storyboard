@@ -1,10 +1,10 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import {
   planSceneBeatCount,
   renderSceneCardBody,
   resolveSceneTargetLength,
   type SceneFile,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';

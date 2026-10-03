@@ -1,14 +1,6 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from '@storyboard/story-format';
-import type {
-  IBackgroundMemoryStore,
-  IPersonaMemoryStore,
-  ISceneDialogueStore,
-} from '@storyboard/story-pipeline';
 import {
+  joinStoryPath,
+  type StoryUri,
   computeBackgroundCardHash,
   computeDraftBodyHash,
   computePersonaCardHash,
@@ -21,7 +13,16 @@ import {
   writeBackgroundMemoryFile,
   writePersonaMemoryFile,
   writeSceneDialogueFile,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
+import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { BackgroundCard, CharacterCard, SceneDialogueRecord } from '@storyboard/story-model';
+import type {
+  IBackgroundMemoryStore,
+  IPersonaMemoryStore,
+  ISceneDialogueStore,
+} from '@storyboard/story-pipeline';
 
 async function ensurePersonaMemoryDirectory(
   fs: IFileSystem,

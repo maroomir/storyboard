@@ -1,4 +1,4 @@
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
 

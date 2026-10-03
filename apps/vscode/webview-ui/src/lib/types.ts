@@ -24,7 +24,7 @@ import type {
   StudioTarget,
   StudioValidation,
 } from '@storyboard/story-engine/contracts';
-import type { NarratorCard } from '@storyboard/story-format/contracts';
+import type { NarratorCard } from '@storyboard/story-model/contracts';
 
 export type {
   CardCollectProposal,

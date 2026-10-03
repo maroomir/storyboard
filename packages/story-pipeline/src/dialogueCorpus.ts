@@ -1,4 +1,4 @@
-import { resolveSceneOrder, type SceneDialogueRecord } from '@storyboard/story-format';
+import { resolveSceneOrder, type SceneDialogueRecord } from '@storyboard/story-model';
 
 import { pipelineDefaults } from './pipelineDefaults';
 

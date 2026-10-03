@@ -10,10 +10,10 @@ import {
   parseWorkspaceCard,
   serializeCard,
   serializeWorkspaceCard,
-} from '@storyboard/story-format';
-import type { StoryboardCard } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { StoryboardCard } from '@storyboard/story-model';
 const cardsFixtureDirectory = fileURLToPath(
-  new URL('../../../../../../packages/story-format/test/fixtures/cards/', import.meta.url),
+  new URL('../../../../../../packages/story-model/test/fixtures/cards/', import.meta.url),
 );
 
 describe('card file codec', () => {

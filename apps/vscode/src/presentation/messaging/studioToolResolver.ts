@@ -14,8 +14,8 @@ import {
   extractDraftBody,
   formatBibleFactLines,
   readSceneFile,
-} from '@storyboard/story-format';
-import type { ProjectFormat, SceneContext } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { ProjectFormat, SceneContext } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';

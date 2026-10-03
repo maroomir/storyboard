@@ -31,7 +31,7 @@ import {
   readMissingGitignoreEntries,
   type SceneCard,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';

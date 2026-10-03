@@ -16,7 +16,7 @@ import {
   type StoryState,
   type StoryStateAudit,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import {
   computeSceneInputHash,
   sceneNarrationHashInput,

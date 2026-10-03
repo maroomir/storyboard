@@ -1,8 +1,12 @@
-import { STORYBOARD_FILE_EXTENSIONS, isIgnoredSampleCardFileName, type StoryUri } from '@storyboard/story-format';
+import {
+  STORYBOARD_FILE_EXTENSIONS,
+  isIgnoredSampleCardFileName,
+  type StoryUri,
+  readCardFile,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
-import { readCardFile } from '@storyboard/story-format';
-import type { OutlineCharacterBrief } from '@storyboard/story-format';
+import type { OutlineCharacterBrief } from '@storyboard/story-model';
 export async function listCharacterBriefs(
   fs: IFileSystem,
   characterDirectory: StoryUri,

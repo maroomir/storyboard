@@ -1,5 +1,5 @@
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-model';
 import type { IWorkspaceLocator } from '#engine/ports/workspaceLocator';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
@@ -13,7 +13,6 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
-import type { SceneGrounding, SceneGroundingFieldKey } from '@storyboard/story-format';
 
 // 승인 UI는 presentation이 구현한다. undefined를 돌려주면 생성을 취소한다.
 export type ConfirmSceneGrounding = (input: {

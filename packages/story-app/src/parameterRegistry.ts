@@ -6,7 +6,7 @@ import {
   type ConfigBridge,
 } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 import type { ResourceOverrideReport } from './resourceOverrides';
 

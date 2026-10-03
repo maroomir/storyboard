@@ -1,19 +1,18 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import type { StoryboardRequestPayload, StoryboardResponsePayload } from '@storyboard/story-engine';
-import { contractFieldKeys, serializeNarratorCard } from '@storyboard/story-format';
+import { contractFieldKeys, serializeNarratorCard, joinStoryPath } from '@storyboard/story-model';
 import type {
   NarratorCard,
   ProjectSetting,
   StoryboardProject,
   StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { describeNarration } from '@storyboard/story-ai';
 import { validateGenerationContract } from '@storyboard/story-engine';
 import {
   buildCompositionPreset,
   getStoryboardProjectPaths,
-  joinStoryPath,
   loadNarratorCards,
   type CompositionPreset,
 } from '@storyboard/story-engine';

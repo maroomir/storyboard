@@ -2,7 +2,7 @@ import { stubFileSystem } from "../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
+import type { ChapterPlan, StoryboardProject } from '@storyboard/story-model';
 import type { NovelRunState, NovelStageName } from "@storyboard/story-engine"
 import {
   novelStageNames,
@@ -38,8 +38,8 @@ vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecord
 }))
 vi.mock("../../../../../packages/story-engine/src/persistence/characterBriefs", () => ({ listCharacterBriefs: async (): Promise<unknown[]> => [] }))
 vi.mock("../../../../../packages/story-engine/src/persistence/manuscriptDrafts", () => ({ collectDraftsByOrder: async (): Promise<unknown[]> => [] }))
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   // 검수는 장을 창으로 삼으므로 조립 결과에 장이 있어야 한다.
   assembleManuscript: (): unknown => ({
     chapters: [

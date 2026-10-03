@@ -2,7 +2,7 @@ import type {
   BackgroundCard,
   CharacterCard,
   SceneDialogueRecord,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 export interface IPersonaMemoryStore {
   load(card: CharacterCard): Promise<string | undefined>;

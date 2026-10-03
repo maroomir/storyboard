@@ -1,10 +1,10 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import {
   mergeSceneGrounding,
   missingSceneGroundingFields,
   type SceneFile,
   type SceneGrounding,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 
 export type SceneGroundingOutcome =

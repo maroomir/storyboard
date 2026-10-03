@@ -4,7 +4,7 @@ import {
   type AiProviderId,
   type AiTaskName,
 } from '#ai/contracts/aiTypes';
-import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-format';
+import type { ScenePrefixDigitsInspectLike } from '@storyboard/story-model';
 import {
   getDefaultModelId,
   isModelInCatalogForProvider,

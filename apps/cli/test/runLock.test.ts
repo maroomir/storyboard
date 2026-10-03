@@ -10,7 +10,7 @@ import {
   workspaceRunLockTiming,
   type WorkspaceRunLockHolder,
 } from '@storyboard/story-engine';
-import { NodeUri, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { NodeUri, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

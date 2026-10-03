@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, ProjectFormat, StoryboardProject } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { storyboardProjectSchema, storyboardProjectVersion } from '@storyboard/story-format';
-import type { ProjectFormat, StoryboardProject } from '@storyboard/story-format';
+import { storyboardProjectSchema, storyboardProjectVersion } from '@storyboard/story-model';
 
 export interface CreateProjectJsonInput {
   readonly name: string;

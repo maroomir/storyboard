@@ -1,4 +1,4 @@
-import type { StoryUri } from '#format/storyUri';
+import type { StoryUri } from '#model/format/storyUri';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
 

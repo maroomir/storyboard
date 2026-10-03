@@ -386,7 +386,7 @@
     "@storyboard/story-app": "*",
     "@storyboard/story-config": "*",
     "@storyboard/story-engine": "*",
-    "@storyboard/story-format": "*",
+    "@storyboard/story-model": "*",
     "@storyboard/story-pipeline": "*",
     "clsx": "^2.1.1",
     "d3-drag": "^3.0.0",

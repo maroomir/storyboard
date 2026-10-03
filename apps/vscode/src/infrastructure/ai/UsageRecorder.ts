@@ -1,10 +1,7 @@
 import * as vscode from 'vscode';
 
-import {
-  UsageLedgerRecorder,
-  type StoryUri,
-  type UsageLedgerFileSystem,
-} from '@storyboard/story-engine';
+import { UsageLedgerRecorder, type UsageLedgerFileSystem } from '@storyboard/story-engine';
+import { type StoryUri } from '@storyboard/story-model';
 
 // The ledger itself lives in the engine so every app records cost the same way; the extension only
 // adds the dispose hook its lifecycle expects.

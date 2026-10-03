@@ -1,14 +1,13 @@
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { listCardFileUris } from '#engine/persistence/cardFiles';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, CardType } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   ICardSidebarRepository,
   SidebarCardCategory,
 } from '#engine/application/cards/cardSidebarRepository';
 import { isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
-import { isCharacterRole, joinCardText, parseCard } from '@storyboard/story-format';
-import type { CardType } from '@storyboard/story-format';
+import { isCharacterRole, joinCardText, parseCard } from '@storyboard/story-model';
 import type { SidebarCardSummary } from '#engine/shared/messaging/cards';
 
 export class CardSidebarRepository implements ICardSidebarRepository {

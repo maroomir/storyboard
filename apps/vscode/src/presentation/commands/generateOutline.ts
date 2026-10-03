@@ -4,7 +4,7 @@ import type { GenerateOutlineResult } from '@storyboard/story-engine';
 import type { NovelManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { contractFieldLabels } from '@storyboard/story-format';
+import { contractFieldLabels } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';

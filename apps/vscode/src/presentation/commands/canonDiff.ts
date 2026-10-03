@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri, BibleFileSystem } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
@@ -6,8 +6,7 @@ import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import { createEmptyBible, readBibleFile } from '@storyboard/story-format';
-import type { BibleFileSystem } from '@storyboard/story-format';
+import { createEmptyBible, readBibleFile } from '@storyboard/story-model';
 import {
   readBibleCandidateFile,
   type BibleCandidateFileSystem,

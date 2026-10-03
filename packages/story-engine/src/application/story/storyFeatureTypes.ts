@@ -1,5 +1,9 @@
-import type { StoryUri } from '@storyboard/story-format';
-import type { SceneFile, StoryboardCard, StoryboardProject } from '@storyboard/story-format';
+import type {
+  StoryUri,
+  SceneFile,
+  StoryboardCard,
+  StoryboardProject,
+} from '@storyboard/story-model';
 export interface StoryFileSnapshot {
   readonly uri: StoryUri;
   readonly sha256: string;

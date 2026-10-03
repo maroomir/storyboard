@@ -1,7 +1,7 @@
-import { STORYBOARD_FILE_EXTENSIONS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_FILE_EXTENSIONS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 // 여러 명령이 똑같이 내는 안내 문구. 파일마다 적어 두면 워크스페이스 규칙이 바뀌었을 때 일부만
-// 고쳐져 사용자가 서로 다른 경로를 안내받는다. 경로와 확장자는 story-format 의 표에서 온다.
+// 고쳐져 사용자가 서로 다른 경로를 안내받는다. 경로와 확장자는 story-model 의 표에서 온다.
 const outlineFileName = STORYBOARD_RELATIVE_PATHS.outlineChapters.split('/').at(-1);
 
 export const storyboardMessages = {

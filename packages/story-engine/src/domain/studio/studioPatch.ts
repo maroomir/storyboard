@@ -4,7 +4,7 @@ import {
   parseSceneCard,
   serializeCard,
   serializeSceneCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import type { StudioPatchPayload } from '#engine/shared/messaging/index';
 

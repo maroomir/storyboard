@@ -1,10 +1,15 @@
-import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import {
+  STORYBOARD_RELATIVE_PATHS,
+  joinStoryPath,
+  type StoryUri,
+  parseCard,
+  parseScene,
+} from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import { createHash } from 'node:crypto';
 
-import { parseCard, parseScene } from '@storyboard/story-format';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
+import type { SceneFile, StoryboardCard } from '@storyboard/story-model';
 import type {
   IStoryFeatureRepository,
   StoryFeatureSource,

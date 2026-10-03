@@ -2,10 +2,9 @@ import { joinStoryPath } from '#engine/paths/storyUri';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { ManuscriptDraftEntry } from '@storyboard/story-format';
+import type { ManuscriptDraftEntry, DraftFileSystem } from '@storyboard/story-model';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-format';
-import type { DraftFileSystem } from '@storyboard/story-format';
+import { parseDraft, parseSceneStem, readDraftFile } from '@storyboard/story-model';
 export async function collectDraftsByOrder(
   fs: IFileSystem,
   paths: StoryboardProjectPaths,

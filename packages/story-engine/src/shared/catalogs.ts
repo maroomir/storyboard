@@ -25,10 +25,10 @@ export {
   pointOfViewCatalog,
   pointOfViewLabels,
   pointOfViews,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 export type {
   CompositionKind,
   ContractFieldKey,
   NarrativeChoiceLabels,
   PointOfView,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';

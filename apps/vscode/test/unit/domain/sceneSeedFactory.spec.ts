@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import { buildSceneSeeds } from "@storyboard/story-engine"
-import { extractSceneNarrativeSource, parseScene } from '@storyboard/story-format';
-import type { ChapterPlan } from '@storyboard/story-format';
+import { extractSceneNarrativeSource, parseScene } from '@storyboard/story-model';
+import type { ChapterPlan } from '@storyboard/story-model';
 const plan: ChapterPlan = {
   version: "1.0.0",
   acts: [

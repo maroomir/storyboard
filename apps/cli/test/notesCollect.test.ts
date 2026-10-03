@@ -12,7 +12,7 @@ import {
   parseNotionPageId,
   type NoteHttpFetch,
 } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault');

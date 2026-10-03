@@ -1,4 +1,9 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import {
+  joinStoryPath,
+  type StoryUri,
+  parseSceneFileName,
+  readSceneFile,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneSidebarRepository } from '#engine/application/cards/sceneSidebarRepository';
 import {
@@ -7,7 +12,6 @@ import {
   isHiddenSceneFileName,
 } from '#engine/paths/projectPaths';
 import { isOutlineStale } from '#engine/domain/sceneStatus';
-import { parseSceneFileName, readSceneFile } from '@storyboard/story-format';
 import type { SceneListItem } from '#engine/shared/messaging/scenes';
 export class SceneSidebarRepository implements ISceneSidebarRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

@@ -1,7 +1,8 @@
 import { promises as fs } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
-import type { FileSystemDirectoryEntry, IFileSystem, StoryUri } from '@storyboard/story-engine';
+import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
+import type { StoryUri } from '@storyboard/story-model';
 
 // NOTE: a truncating write leaves a half-file behind when the process dies mid-draft, and a
 // truncated draft is silently dropped by manuscript assembly. Write to a sibling and rename, the

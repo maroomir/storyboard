@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import { failedResult } from '#engine/application/useCase';
 import { renderManuscriptExport, type ManuscriptExportFormat } from '#engine/domain/manuscriptExport';
 
