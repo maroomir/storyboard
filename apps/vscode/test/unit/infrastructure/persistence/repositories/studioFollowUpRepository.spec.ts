@@ -3,8 +3,7 @@ import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { StudioFollowUpRepository } from "@storyboard/story-engine"
-import type { StudioFollowUp } from "@storyboard/story-engine"
-import type { StudioEntity } from "@storyboard/story-engine"
+import type { StudioFollowUp, StudioEntity } from "@storyboard/story-model"
 
 const workspaceRoot = vscode.Uri.file("/workspace")
 const followUpPath = "/workspace/.storyboard/cache/studio-followups.json"

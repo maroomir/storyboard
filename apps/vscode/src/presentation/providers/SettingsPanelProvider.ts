@@ -10,7 +10,7 @@ import {
   getSettingsReadSnapshot,
   type SettingsConfigFiles,
 } from '@/presentation/messaging/settingsRpcHandlers';
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
+import type { StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 
 const panelViewType = 'storyboard.settings';

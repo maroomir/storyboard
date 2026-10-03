@@ -4,9 +4,13 @@ import type { AugmentDraftRequest, AugmentDraftResult } from '@storyboard/story-
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
-import { isDraftMarkdownFile } from '@storyboard/story-engine';
+import {
+  isDraftMarkdownFile,
+  createDraft,
+  parseDraft,
+  serializeDraft,
+} from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { createDraft, parseDraft, serializeDraft } from '@storyboard/story-model';
 import type { Draft } from '@storyboard/story-model';
 import { VirtualDocumentStore } from '@/presentation/providers/virtualDocumentStore';
 import type { DraftAugmentScope } from '@storyboard/story-ai';

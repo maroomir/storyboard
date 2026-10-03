@@ -4,13 +4,14 @@ import type { GenerateDraftUseCase } from '#engine/application/drafts/generateDr
 import type { ReviseDraftUseCase } from '#engine/application/drafts/reviseDraftUseCase';
 import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
-import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
-import type { IStoryboardLogger } from '#engine/ports/logger';
 import type {
+  StoryUri,
+  StoryboardProject,
   NovelRunMode,
   NovelRunState,
   NovelStageName,
-} from '#engine/domain/files/novelRunState';
+} from '@storyboard/story-model';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 import type {

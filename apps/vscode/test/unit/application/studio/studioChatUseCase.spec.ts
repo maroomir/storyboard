@@ -7,7 +7,7 @@ import {
 } from "@storyboard/story-engine"
 import type { AiGateway } from "@storyboard/story-engine"
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import type { StudioChatTurn } from "@storyboard/story-engine"
+import type { StudioChatTurn } from "@storyboard/story-model"
 
 interface FakeServiceOptions {
   readonly action: unknown

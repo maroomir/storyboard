@@ -1,14 +1,14 @@
-import { joinStoryPath } from '#engine/paths/storyUri';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { isHiddenSceneFileName } from '#engine/paths/projectPaths';
 import {
+  joinStoryPath,
+  isHiddenSceneFileName,
   parseDraft,
   parseSceneFileName,
   readDraftFile,
   readSceneFile,
 } from '@storyboard/story-model';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 
 const EXCERPT_LENGTH_LIMIT = 800;
 

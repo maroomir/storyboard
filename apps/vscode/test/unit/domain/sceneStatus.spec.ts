@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { isOutlineStale } from "@storyboard/story-engine"
+import { isOutlineStale } from "@storyboard/story-model"
 
 describe("isOutlineStale", () => {
   it("is true when the outline is newer than the scene", () => {

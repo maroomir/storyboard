@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCompositionPreset, validateGenerationContract } from '@storyboard/story-engine';
+import { buildCompositionPreset } from '@storyboard/story-engine';
+import {
+  validateGenerationContract,
+  deriveNarrationFromPointOfView,
+  pointOfViews,
+} from '@storyboard/story-model';
 import type { ProjectSetting } from '@storyboard/story-model';
-import { deriveNarrationFromPointOfView, pointOfViews } from "@storyboard/story-model"
 
 function settingWith(preset: ReturnType<typeof buildCompositionPreset>): ProjectSetting {
   return {

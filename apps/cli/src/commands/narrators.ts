@@ -1,9 +1,5 @@
 import {
   getStoryboardProjectPaths,
-  loadNarratorCards,
-  readProjectJson,
-} from '@storyboard/story-engine';
-import {
   joinStoryPath,
   type StoryUri,
   narratorKnowledges,
@@ -17,6 +13,7 @@ import {
   type NarrativeTense,
   describeNarration,
 } from '@storyboard/story-model';
+import { loadNarratorCards, readProjectJson } from '@storyboard/story-engine';
 
 import { flagString } from '@/cliArguments';
 

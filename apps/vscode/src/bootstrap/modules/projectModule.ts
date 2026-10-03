@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import { getStoryboardProjectPaths, migrateLegacyMemory } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths } from '@storyboard/story-model';
+import { migrateLegacyMemory } from '@storyboard/story-engine';
 
 import { registerInitCommand } from '@/presentation/commands/init';
 import { registerSetApiKeyCommand } from '@/presentation/commands/setApiKey';

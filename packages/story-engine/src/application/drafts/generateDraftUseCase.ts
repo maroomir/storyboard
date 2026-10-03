@@ -1,17 +1,18 @@
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryUri, BackgroundCard, AiProviderId, AiTaskName } from '@storyboard/story-model';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
-import { draftHistorySceneDirectory, joinUri } from '#engine/paths/projectPaths';
 import {
+  draftHistorySceneDirectory,
+  joinUri,
   computeDraftBodyHash,
   createDraft,
   joinCardText,
   parseDraft,
   serializeDraft,
   buildStyleDirective,
+  archiveExistingDraft,
+  type SceneCacheRecord,
 } from '@storyboard/story-model';
-import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
-import { type SceneCacheRecord } from '#engine/domain/files/sceneCache';
 import {
   createBackgroundMemoryStore,
   createPersonaMemoryStore,

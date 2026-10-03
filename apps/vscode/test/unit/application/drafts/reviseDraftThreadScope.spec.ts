@@ -8,6 +8,7 @@ import {
   serializeStoryState,
   type StoryState,
   type StoryUri,
+  getStoryboardProjectPaths,
 } from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn(
@@ -34,11 +35,7 @@ vi.mock('@storyboard/story-ai', async (importOriginal) => ({
   },
 }));
 
-import {
-  getStoryboardProjectPaths,
-  ReviseDraftUseCase,
-  type IFileSystem,
-} from '@storyboard/story-engine';
+import { ReviseDraftUseCase, type IFileSystem } from '@storyboard/story-engine';
 
 class InMemoryFileSystem implements IFileSystem {
   private readonly files = new Map<string, Uint8Array>();

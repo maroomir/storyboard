@@ -19,9 +19,6 @@
       "@webview/*": [
         "src/*"
       ],
-      "@storyboard/story-engine/contracts": [
-        "../../../packages/story-engine/src/shared/index.ts"
-      ],
       "@storyboard/story-model/contracts": [
         "../../../packages/story-model/src/contracts.ts"
       ]

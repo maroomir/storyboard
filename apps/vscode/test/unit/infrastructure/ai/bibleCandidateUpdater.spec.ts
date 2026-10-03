@@ -2,8 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { updateBibleCandidatesFromDraft } from "@storyboard/story-engine"
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import type { BibleCandidateFileSystem } from "@storyboard/story-engine"
-import type { CharacterCard } from '@storyboard/story-model';
+import type { BibleCandidateFileSystem, CharacterCard } from "@storyboard/story-model"
 
 const eliaCard: CharacterCard = { type: "character", id: "elia", name: "엘리아" }
 

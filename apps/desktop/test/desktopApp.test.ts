@@ -6,9 +6,9 @@ import { join } from 'node:path';
 import {
   createWorkspaceRunLockRecord,
   serializeWorkspaceRunLock,
-} from '@storyboard/story-engine';
+  STORYBOARD_RELATIVE_PATHS,
+} from '@storyboard/story-model';
 import { resolveStoryboardHomePaths } from '@storyboard/story-config';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { DesktopApp } from '@/main/desktopApp';

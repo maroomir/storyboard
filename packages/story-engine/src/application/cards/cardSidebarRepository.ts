@@ -1,5 +1,4 @@
-import type { StoryUri } from '@storyboard/story-model';
-import type { SidebarCardSummary } from '#engine/shared/messaging/cards';
+import type { StoryUri, SidebarCardSummary } from '@storyboard/story-model';
 
 export type SidebarCardCategory = 'background' | 'character';
 

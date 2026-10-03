@@ -4,20 +4,18 @@ import {
   emptyNoteSynthesis,
   type NoteExtraction,
   type NoteExtractionKnownCard,
+  buildNoteAbsorbPlan,
+  type NoteAbsorbPlan,
+  groupNotesIntoChunks,
+  measureNoteAbsorbWorkload,
+  type NoteAbsorbWorkload,
 } from '@storyboard/story-model';
-import type { StoryUri, StoryboardCard } from '@storyboard/story-model';
+import type { StoryUri, StoryboardCard, NoteBundle } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import { buildNoteAbsorbPlan, type NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';
-import {
-  groupNotesIntoChunks,
-  measureNoteAbsorbWorkload,
-  type NoteAbsorbWorkload,
-} from '#engine/domain/notes/noteChunks';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { NoteBundle } from '#engine/shared/noteAbsorb';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
 export interface NoteAbsorbEstimate extends NoteAbsorbWorkload {

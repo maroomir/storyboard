@@ -1,4 +1,11 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  StudioCardStage,
+  StudioSceneStage,
+  StudioStage,
+  StudioStageCard,
+  StudioTarget,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
@@ -12,19 +19,9 @@ import {
   readSceneFile,
   type SceneFile,
   type StoryboardCard,
-} from '@storyboard/story-model';
-
-import { nextDraftHistoryRevision } from '#engine/domain/files/draftHistory';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
-import { readRevisionPlanFile } from '#engine/domain/files/revisionPlan';
-import type {
-  StudioCardStage,
-  StudioSceneStage,
-  StudioStage,
-  StudioStageCard,
-  StudioTarget,
-} from '#engine/shared/messaging/studio';
-import {
+  nextDraftHistoryRevision,
+  sceneContextPaths,
+  readRevisionPlanFile,
   backgroundCardPath,
   characterCardPath,
   draftHistorySceneDirectory,
@@ -32,7 +29,8 @@ import {
   getStoryboardProjectPaths,
   scenePath,
   type StoryboardProjectPaths,
-} from '#engine/paths/projectPaths';
+} from '@storyboard/story-model';
+
 
 type DraftFacts = Pick<StudioSceneStage, 'draftLength' | 'draftUpdatedAt' | 'draftRevision'>;
 

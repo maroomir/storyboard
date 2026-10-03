@@ -1,6 +1,5 @@
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
-import { joinStoryPath, type StoryUri } from '#engine/paths/storyUri';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import { STORYBOARD_RELATIVE_PATHS, joinStoryPath, type StoryUri } from '@storyboard/story-model';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 // NOTE: `.storyboard/memory/` used to live under `.storyboard/cache/`, which the scaffold

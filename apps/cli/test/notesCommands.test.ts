@@ -4,8 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { buildNoteAbsorbPlan, type PlanNoteAbsorbRequest } from '@storyboard/story-engine';
-import { parseScene, coerceNoteExtraction } from '@storyboard/story-model';
+import { buildNoteAbsorbPlan, parseScene, coerceNoteExtraction } from '@storyboard/story-model';
+import { type PlanNoteAbsorbRequest } from '@storyboard/story-engine';
 
 import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';

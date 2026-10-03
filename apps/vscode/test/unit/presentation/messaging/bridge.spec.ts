@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { createWebviewBridge, type StoryboardWebviewLike } from "@/presentation/messaging/bridge"
-import { storyboardMessageProtocolVersion } from "@storyboard/story-engine"
+import { storyboardMessageProtocolVersion } from "@storyboard/story-model"
 
 class FakeWebview implements StoryboardWebviewLike {
   public readonly postedMessages: unknown[] = []

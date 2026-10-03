@@ -3,8 +3,14 @@ import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { StoryUri } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { failedResult, type IUseCase } from '#engine/application/useCase';
-import { draftPath, getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { createDraft, parseDraft, readDraftFile, writeDraftFile } from '@storyboard/story-model';
+import {
+  draftPath,
+  getStoryboardProjectPaths,
+  createDraft,
+  parseDraft,
+  readDraftFile,
+  writeDraftFile,
+} from '@storyboard/story-model';
 import { readProjectJson } from '#engine/persistence/projectJson';
 
 export type ApplyDraftFormatRequest = {

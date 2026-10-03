@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { workspaceRunCommandRequestPayloadSchema } from "@storyboard/story-engine"
+import { workspaceRunCommandRequestPayloadSchema } from "@storyboard/story-model"
 
 import { createRunCommandRpcHandlers } from "@/presentation/messaging/runCommandRpcHandlers"
 

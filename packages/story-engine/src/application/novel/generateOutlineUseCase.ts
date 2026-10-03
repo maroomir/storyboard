@@ -9,8 +9,7 @@ import type {
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import { validateGenerationContract } from '#engine/domain/generationContract';
-import { toOutlineBrief } from '@storyboard/story-model';
+import { validateGenerationContract, toOutlineBrief } from '@storyboard/story-model';
 export interface IOutlineRepository {
   hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;

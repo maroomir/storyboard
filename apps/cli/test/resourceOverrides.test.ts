@@ -7,18 +7,22 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadResourceOverrides } from '@storyboard/story-app';
 import {
   buildCompositionPreset,
-  novelStageNames,
   resolveNovelPipelinePlan,
   resolveScenePipelinePlan,
   sceneStageIds,
 } from '@storyboard/story-engine';
+import {
+  novelStageNames,
+  NodeUri,
+  resolveCraftContract,
+  defaultCraftContract,
+} from '@storyboard/story-model';
 import {
   ChapterSummaryPrompt,
   GrammarCheckPrompt,
   promptResources,
   selectPromptVariant,
 } from '@storyboard/story-ai';
-import { NodeUri, resolveCraftContract, defaultCraftContract } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 let root: string;

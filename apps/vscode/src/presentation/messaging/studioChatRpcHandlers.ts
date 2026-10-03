@@ -24,7 +24,7 @@ import type {
   StudioChatTurn,
   StudioEntity,
   StudioTarget,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 export interface StudioChatRpcHandlersDependencies {
   readonly studio: Pick<StudioManager, 'chat'>;

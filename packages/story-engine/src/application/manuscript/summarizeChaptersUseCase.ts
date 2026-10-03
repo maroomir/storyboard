@@ -8,8 +8,9 @@ import {
   mergeChapterSummary,
   parseChapterSummariesMarkdown,
   type ChapterSummary,
-} from '#engine/domain/chapterSummaries';
-import { assembleManuscript, computeDraftBodyHash } from '@storyboard/story-model';
+  assembleManuscript,
+  computeDraftBodyHash,
+} from '@storyboard/story-model';
 import type { ManuscriptAssemblySource } from './assembleManuscriptUseCase';
 
 export interface IChapterSummaryRepository {

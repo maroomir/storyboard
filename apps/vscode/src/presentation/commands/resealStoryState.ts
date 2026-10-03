@@ -2,13 +2,8 @@ import * as vscode from 'vscode';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { IFileSystem, IStoryboardLogger } from '@storyboard/story-engine';
-import {
-  auditStoryMemory,
-  getStoryboardProjectPaths,
-  readProjectJson,
-  resealStoryMemory,
-} from '@storyboard/story-engine';
-import { formatSceneOrderRanges } from '@storyboard/story-model';
+import { auditStoryMemory, readProjectJson, resealStoryMemory } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths, formatSceneOrderRanges } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 

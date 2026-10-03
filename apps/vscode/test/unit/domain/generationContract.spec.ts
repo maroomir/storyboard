@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { validateGenerationContract } from "@storyboard/story-engine"
+import { validateGenerationContract, compositionPresetDefaults } from "@storyboard/story-model"
 import type { ProjectSetting } from '@storyboard/story-model';
-import { compositionPresetDefaults } from "@storyboard/story-model"
 
 function buildSetting(overrides: Partial<ProjectSetting> = {}): ProjectSetting {
   return {

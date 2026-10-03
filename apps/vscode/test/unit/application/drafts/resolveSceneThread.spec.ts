@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { getStoryboardProjectPaths, resolveSceneThread } from '@storyboard/story-engine';
-import { NodeUri, parseScene } from '@storyboard/story-model';
+import { getStoryboardProjectPaths, NodeUri, parseScene } from '@storyboard/story-model';
+import { resolveSceneThread } from '@storyboard/story-engine';
 import type { SceneFile, StoryboardProject, StoryUri } from '@storyboard/story-model';
 
 const paths = getStoryboardProjectPaths(NodeUri.file('/w'));

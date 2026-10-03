@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { applyStudioPatch } from "@storyboard/story-engine"
-import type { StudioPatchPayload } from "@storyboard/story-engine"
+import { applyStudioPatch } from "@storyboard/story-model"
+import type { StudioPatchPayload } from "@storyboard/story-model"
 
 const characterCard = [
   "type: character",

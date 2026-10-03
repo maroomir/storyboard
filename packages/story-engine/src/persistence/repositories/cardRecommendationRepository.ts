@@ -6,13 +6,14 @@ import {
   parseDraft,
   readDraftFile,
   readSceneFile,
+  getStoryboardProjectPaths,
+  isIgnoredSampleCardFileName,
 } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type {
   CardRecommendationInput,
   ICardRecommendationRepository,
 } from '#engine/application/cards/recommendCardsUseCase';
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
 import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 

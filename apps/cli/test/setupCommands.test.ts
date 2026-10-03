@@ -4,7 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { collectCurrentChapterHashes, getStoryboardProjectPaths } from '@storyboard/story-engine';
+import { collectCurrentChapterHashes } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths } from '@storyboard/story-model';
 
 import { createCliContainer } from '../src/container';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from '../src/commands/setup';

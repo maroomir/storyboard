@@ -3,9 +3,8 @@ import * as vscode from 'vscode';
 import type { ApplyDraftFormatResult } from '@storyboard/story-engine';
 import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { isDirectSceneCardFile } from '@storyboard/story-engine';
+import { isDirectSceneCardFile, parseSceneFileName } from '@storyboard/story-model';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { parseSceneFileName } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

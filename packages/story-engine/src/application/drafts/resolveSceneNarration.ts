@@ -7,7 +7,7 @@ import {
   type StoryboardProject,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';
+import type { StoryboardProjectPaths } from '@storyboard/story-model';
 import { loadNarratorCards } from '#engine/persistence/narratorCards';
 
 // 장이 씬에 물려주는 값. 씬 카드가 같은 필드를 가지면 씬이 이긴다.

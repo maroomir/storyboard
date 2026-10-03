@@ -6,11 +6,14 @@ import {
   type NovelPipelineResult,
 } from '@storyboard/story-engine';
 import type { NovelManager, RunGate } from '@storyboard/story-app';
-import { validateGenerationContract } from '@storyboard/story-engine';
-import { isResumable } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths } from '@storyboard/story-engine';
+import {
+  validateGenerationContract,
+  isResumable,
+  getStoryboardProjectPaths,
+  type NovelRunMode,
+  type NovelRunState,
+} from '@storyboard/story-model';
 import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import { type NovelRunMode, type NovelRunState } from '@storyboard/story-engine';
 import type { ContractFieldKey } from '@storyboard/story-model';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';

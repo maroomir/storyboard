@@ -6,7 +6,7 @@ import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspac
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-engine';
+import type { RelationListCharacter, StoryboardResponsePayload } from '@storyboard/story-model';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { cardEditorViewType } from '@/contributionIds';
 import { STORYBOARD_GLOBS } from '@storyboard/story-model';

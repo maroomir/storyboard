@@ -26,7 +26,6 @@ const ALLOWED_IMPORTS = {
 // The browser-safe entries the renderer and the contract may reach. Everything else a package
 // exports may pull node-only modules into the page.
 const BROWSER_SAFE_PACKAGES = new Set([
-  '@storyboard/story-engine/contracts',
   '@storyboard/story-model/contracts',
 ]);
 

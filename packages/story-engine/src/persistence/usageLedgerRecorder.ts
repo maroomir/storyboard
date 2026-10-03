@@ -9,8 +9,8 @@ import {
   writeUsageLedgerToUri,
   type UsageLedgerEntry,
   type UsageLedgerFileSystem,
-} from '#engine/domain/files/usageLedger';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
+  getStoryboardProjectPaths,
+} from '@storyboard/story-model';
 
 interface WorkspaceUsageCache {
   entries: UsageLedgerEntry[];

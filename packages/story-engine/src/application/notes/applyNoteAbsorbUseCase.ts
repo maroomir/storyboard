@@ -1,11 +1,16 @@
-import type { ProjectSetting, StoryUri, NoteSynthesisSetting } from '@storyboard/story-model';
+import type {
+  ProjectSetting,
+  StoryUri,
+  NoteSynthesisSetting,
+  NoteAbsorbPlan,
+  NoteLeftOut,
+  NoteCardCandidate,
+} from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import { applyCardCollectProposals } from '#engine/domain/cardCollect';
-import type { NoteAbsorbPlan, NoteLeftOut } from '#engine/domain/notes/noteAbsorbPlan';
+import { applyCardCollectProposals } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import type { NoteCardCandidate } from '#engine/shared/noteAbsorb';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
 export interface ApplyNoteAbsorbRequest {

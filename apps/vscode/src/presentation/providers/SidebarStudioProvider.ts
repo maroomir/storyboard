@@ -15,7 +15,7 @@ import type {
   StoryboardResponsePayload,
   StudioSessionSnapshot,
   StudioTarget,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 import type { StudioChatStage } from '@storyboard/story-engine';
 import type { CardManager, StudioManager } from '@storyboard/story-app';
 import type { AiGateway } from '@storyboard/story-engine';

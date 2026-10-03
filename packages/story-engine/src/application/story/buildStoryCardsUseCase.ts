@@ -3,13 +3,14 @@ import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import { applyCardCollectProposals, shouldProposeCardCollect } from '#engine/domain/cardCollect';
-import { parseJsonObject } from '@storyboard/story-model';
 import {
+  applyCardCollectProposals,
+  shouldProposeCardCollect,
+  parseJsonObject,
   cardCollectProposalId,
   type CardCollectProposal,
   type CardCollectProposalDraft,
-} from '#engine/shared/cardCollect';
+} from '@storyboard/story-model';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 

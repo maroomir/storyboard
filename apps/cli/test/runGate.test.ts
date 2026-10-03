@@ -5,8 +5,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { RunGate } from '@storyboard/story-app';
-import { getStoryboardProjectPaths } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-model';
+import { getStoryboardProjectPaths, NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 let workspace: string;

@@ -3,16 +3,14 @@ import {
   type StoryUri,
   parseSceneFileName,
   readSceneFile,
-} from '@storyboard/story-model';
-import type { IFileSystem } from '#engine/ports/fileSystem';
-import type { ISceneSidebarRepository } from '#engine/application/cards/sceneSidebarRepository';
-import {
   draftPath,
   getStoryboardProjectPaths,
   isHiddenSceneFileName,
-} from '#engine/paths/projectPaths';
-import { isOutlineStale } from '#engine/domain/sceneStatus';
-import type { SceneListItem } from '#engine/shared/messaging/scenes';
+  isOutlineStale,
+} from '@storyboard/story-model';
+import type { IFileSystem } from '#engine/ports/fileSystem';
+import type { ISceneSidebarRepository } from '#engine/application/cards/sceneSidebarRepository';
+import type { SceneListItem } from '@storyboard/story-model';
 export class SceneSidebarRepository implements ISceneSidebarRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

@@ -3,8 +3,8 @@ import type {
   AiProviderId,
   ContinuityIssueLike,
   DraftCritiqueIssue,
+  ChapterSummary,
 } from '@storyboard/story-model';
-import type { ChapterSummary } from '#engine/domain/chapterSummaries';
 
 export interface ChapterWindowReviewAiService {
   checkContinuity(

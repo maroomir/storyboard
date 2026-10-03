@@ -5,13 +5,18 @@ import { join } from 'node:path';
 import {
   buildCompositionPreset,
   createWorkspace,
-  describeWorkspaceRunLockHolder,
-  getStoryboardProjectPaths,
   readProjectJson,
   readWorkspaceRunLock,
-  scenePath,
 } from '@storyboard/story-engine';
-import { NodeUri, STORYBOARD_RELATIVE_PATHS, readSceneFile, type ProjectSetting } from '@storyboard/story-model';
+import {
+  describeWorkspaceRunLockHolder,
+  getStoryboardProjectPaths,
+  scenePath,
+  NodeUri,
+  STORYBOARD_RELATIVE_PATHS,
+  readSceneFile,
+  type ProjectSetting,
+} from '@storyboard/story-model';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 import { NodeFileSystem } from '@storyboard/story-node';
 

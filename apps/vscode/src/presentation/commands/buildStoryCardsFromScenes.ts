@@ -2,11 +2,14 @@ import * as vscode from 'vscode';
 
 import { applyStoryCardChanges, type StoryCardTarget } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
-import { parseCard, serializeCard } from '@storyboard/story-model';
-import type { StoryboardCard } from '@storyboard/story-model';
-import { backgroundCardPath, characterCardPath } from '@storyboard/story-engine';
+import {
+  parseCard,
+  serializeCard,
+  backgroundCardPath,
+  characterCardPath,
+} from '@storyboard/story-model';
+import type { StoryboardCard, CardCollectProposal } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
-import type { CardCollectProposal } from '@storyboard/story-engine';
 const buildStoryCardsCommand = 'storyboard.cards.buildFromScenes';
 
 interface SelectedChange {

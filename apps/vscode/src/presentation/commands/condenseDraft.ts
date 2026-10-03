@@ -10,18 +10,17 @@ import {
   parseDraft,
   readSceneFile,
   serializeDraft,
-} from '@storyboard/story-model';
-import { archiveExistingDraft, sceneContextPaths } from '@storyboard/story-engine';
-import { formatAugmentCards } from '@storyboard/story-ai';
-import type { ConfigBridge } from '@storyboard/story-ai';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
-import {
+  archiveExistingDraft,
+  sceneContextPaths,
   draftHistorySceneDirectory,
   getStoryboardProjectPaths,
   isDraftMarkdownFile,
   joinUri,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+import { formatAugmentCards } from '@storyboard/story-ai';
+import type { ConfigBridge } from '@storyboard/story-ai';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import {
   draftHistoryFileSystem,
   sceneContextFileSystem,

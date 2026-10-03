@@ -15,13 +15,14 @@ import {
   extractDraftBody,
   formatBibleFactLines,
   readSceneFile,
+  sceneContextPaths,
+  getStoryboardProjectPaths,
+  scenePath,
 } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { sceneContextPaths } from '@storyboard/story-engine';
 import { readProjectJson } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,

@@ -9,18 +9,16 @@ import type {
   StudioAgentToolName,
   UsageAttribution,
   StoryUri,
-} from '@storyboard/story-model';
-import type { StudioAgentMessage } from '@storyboard/story-ai';
-
-import type { AiGateway } from '#engine/application/ai/aiGateway';
-import type { StudioPatchTarget } from '#engine/domain/studio/studioPatch';
-import type { IStoryboardLogger } from '#engine/ports/logger';
-import type {
+  StudioPatchTarget,
   StudioChatTurn,
   StudioFollowUpTarget,
   StudioPatchPayload,
   StudioValidation,
-} from '#engine/shared/messaging/studio';
+} from '@storyboard/story-model';
+import type { StudioAgentMessage } from '@storyboard/story-ai';
+
+import type { AiGateway } from '#engine/application/ai/aiGateway';
+import type { IStoryboardLogger } from '#engine/ports/logger';
 
 export interface StudioChatContext {
   readonly agentEntityKind: 'character' | 'background' | 'scene';

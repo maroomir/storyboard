@@ -1,7 +1,6 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { StoryUri, NoteBundle } from '@storyboard/story-model';
 
 import { failedResult, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import type { NoteBundle } from '#engine/shared/noteAbsorb';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 import { NoteSourceError, type INoteSourceProvider, type NoteLocation } from './noteSource';
 

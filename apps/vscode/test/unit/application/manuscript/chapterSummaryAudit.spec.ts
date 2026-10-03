@@ -3,16 +3,19 @@ import * as vscode from 'vscode';
 
 import {
   auditChapterMemory,
-  buildChapterSummariesMarkdown,
   collectCurrentChapterHashes,
   createDefaultProjectJson,
-  getStoryboardProjectPaths,
   markStaleChapterSummaries,
-  parseChapterSummariesMarkdown,
   serializeProjectJson,
 } from '@storyboard/story-engine';
+import {
+  buildChapterSummariesMarkdown,
+  getStoryboardProjectPaths,
+  parseChapterSummariesMarkdown,
+  createDraft,
+  serializeDraft,
+} from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';
-import { createDraft, serializeDraft } from '@storyboard/story-model';
 
 // 감사는 초안을 다시 조립해 해시를 계산한다. 초안 내용을 흉내 내면 그 계산이 무엇에 반응하는지
 // 검증할 수 없으므로 진짜 파일 내용을 담은 메모리 파일 시스템을 쓴다.

@@ -1,14 +1,16 @@
-import type { StoryUri, CharacterCard, UsageAttribution } from '@storyboard/story-model';
 import type {
+  StoryUri,
+  CharacterCard,
+  UsageAttribution,
   CardArcCandidate,
   CardAttributeCandidate,
   CardCandidateCharacter,
   CardRelationCandidate,
-} from '#engine/shared/cardCandidates';
+} from '@storyboard/story-model';
 import {
   type CardCandidateFileSystem,
   writeCardCandidateFile,
-} from '#engine/domain/files/cardCandidates';
+} from '@storyboard/story-model';
 import type { StoryboardAiService } from '@storyboard/story-ai';
 interface CardCandidateRosterEntry {
   readonly id: string;

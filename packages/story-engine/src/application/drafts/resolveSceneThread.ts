@@ -5,10 +5,11 @@ import {
   parseSceneFileName,
   type SceneFile,
   type StoryboardProject,
+  joinStoryPath,
+  resolveThreadPaths,
+  type StoryboardProjectPaths,
 } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { joinStoryPath } from '#engine/paths/storyUri';
-import { resolveThreadPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 
 export interface SceneThreadContext {
   readonly threadId: string;

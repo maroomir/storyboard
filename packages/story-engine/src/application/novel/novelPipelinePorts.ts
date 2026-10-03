@@ -5,10 +5,10 @@ import type {
   OutlineCharacterBrief,
   OutlineSynopsis,
   StoryboardProject,
+  GeneratedSceneSeed,
+  ChapterSummary,
+  NovelRunState,
 } from '@storyboard/story-model';
-import type { GeneratedSceneSeed } from '#engine/domain/sceneSeedFactory';
-import type { ChapterSummary } from '#engine/domain/chapterSummaries';
-import type { NovelRunState } from '#engine/domain/files/novelRunState';
 export interface INovelRunStateRepository {
   readExisting(workspaceRoot: StoryUri): Promise<NovelRunState | undefined>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;

@@ -1,18 +1,20 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { draftPath, getStoryboardProjectPaths, sceneFilePath } from '@storyboard/story-engine';
+import {
+  draftPath,
+  getStoryboardProjectPaths,
+  sceneFilePath,
+  parseSceneFileName,
+  serializeSceneCard,
+  resolveScenePrefixDigitCount,
+} from '@storyboard/story-model';
 import {
   getTargetWorkspaceFolder,
   hasStoryboardProject,
   uriExists,
 } from '@/infrastructure/vscode/workspace';
 import { readProjectJson } from '@storyboard/story-engine';
-import {
-  parseSceneFileName,
-  serializeSceneCard,
-  resolveScenePrefixDigitCount,
-} from '@storyboard/story-model';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,

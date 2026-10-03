@@ -6,8 +6,6 @@ import type {
   CollectNotesResult,
   CollectNotesUseCase,
   NoteAbsorbEstimate,
-  NoteBundle,
-  NoteCardCandidate,
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult,
   PlanNoteAbsorbUseCase,
@@ -15,8 +13,8 @@ import type {
   PromoteNoteCandidatesResult,
   PromoteNoteCandidatesUseCase,
 } from '@storyboard/story-engine';
+import type { NoteBundle, NoteCardCandidate, StoryUri } from '@storyboard/story-model';
 import type { SecretStore } from '@storyboard/story-ai';
-import type { StoryUri } from '@storyboard/story-model';
 
 export interface NoteManagerDependencies {
   readonly collectNotesUseCase: CollectNotesUseCase;

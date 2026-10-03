@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import {
   anyStoryboardProjectInWorkspaceFolders,
   hasStoryboardProjectAt,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 
 export async function getTargetWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
   const workspaceFolders = vscode.workspace.workspaceFolders ?? [];

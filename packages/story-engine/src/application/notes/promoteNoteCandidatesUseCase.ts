@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { StoryUri, NoteCardCandidate } from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
-import { applyCardCollectProposals, shouldProposeCardCollect } from '#engine/domain/cardCollect';
-import type { NoteCardCandidate } from '#engine/shared/noteAbsorb';
+import { applyCardCollectProposals, shouldProposeCardCollect } from '@storyboard/story-model';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
 export type PrepareNoteCandidatePromotionResult =

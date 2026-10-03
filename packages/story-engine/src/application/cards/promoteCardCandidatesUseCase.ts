@@ -3,9 +3,8 @@ import {
   collectCardCandidateItems,
   selectNewCardCandidateItems,
   type CardCandidateItem,
-} from '#engine/domain/cardCandidatePromotion';
-import type { CharacterCard, StoryUri } from '@storyboard/story-model';
-import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
+} from '@storyboard/story-model';
+import type { CharacterCard, StoryUri, CardCandidateRecord } from '@storyboard/story-model';
 
 export interface ICardCandidateRepository {
   apply(workspaceRoot: StoryUri, items: readonly CardCandidateItem[]): Promise<number>;

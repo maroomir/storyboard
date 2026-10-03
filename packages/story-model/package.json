@@ -2,7 +2,7 @@
   "name": "@storyboard/story-model",
   "version": "0.0.0",
   "private": true,
-  "description": "Storyboard workspace file format: schemas, codecs, and pure narrative helpers shared by every app",
+  "description": "Storyboard's model: the workspace file format, path conventions, pure policies, and the contracts every app speaks",
   "license": "Apache-2.0",
   "main": "src/index.ts",
   "imports": {
@@ -22,6 +22,15 @@
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.12.12",
+    "@typescript-eslint/eslint-plugin": "^8.59.1",
+    "@typescript-eslint/parser": "^8.59.1",
+    "eslint": "^8.57.1",
     "typescript": "^5.6.3"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "lint": "eslint \"src/{shared,domain,paths}/**/*.ts\" && npm run typecheck && npm run check:architecture"
   }
 }

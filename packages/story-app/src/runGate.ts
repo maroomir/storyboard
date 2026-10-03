@@ -2,12 +2,14 @@ import { hostname } from 'node:os';
 
 import {
   acquireWorkspaceRunLock,
-  describeWorkspaceRunLockHolder,
   type AcquireWorkspaceRunLockResult,
   type IFileSystem,
+} from '@storyboard/story-engine';
+import {
+  describeWorkspaceRunLockHolder,
   type WorkspaceRunLockOwner,
   type WorkspaceRunLockRecord,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
 import type { StoryUri } from '@storyboard/story-model';
 
 export interface RunGateDependencies {

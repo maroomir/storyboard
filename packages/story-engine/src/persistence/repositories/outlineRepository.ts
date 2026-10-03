@@ -8,8 +8,8 @@ import type {
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IOutlineRepository } from '#engine/application/novel/generateOutlineUseCase';
 import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import {
+  getStoryboardProjectPaths,
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,

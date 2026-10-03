@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { isDraftMarkdownFile } from '@storyboard/story-engine';
+import {
+  isDraftMarkdownFile,
+  parseDraft,
+  analyzeSlop,
+  type SlopFinding,
+} from '@storyboard/story-model';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-model';
 import { LatestRequestGuard } from './latestRequestGuard';
-import { analyzeSlop, type SlopFinding } from '@storyboard/story-engine';
 
 const slopCheckCommand = 'storyboard.draft.slopCheck';
 const slopSource = 'storyboard-slop';

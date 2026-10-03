@@ -5,10 +5,10 @@ import type {
   UsageAttribution,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
-import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
-import { joinUri, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import {
+  sceneContextPaths,
+  joinUri,
+  type StoryboardProjectPaths,
   buildNarrativeContext,
   buildSceneContext,
   createDraft,
@@ -25,6 +25,7 @@ import {
   resolveSceneTargetLength,
   buildStyleDirective,
 } from '@storyboard/story-model';
+import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import { readProjectJson } from '#engine/persistence/projectJson';

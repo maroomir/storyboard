@@ -5,8 +5,7 @@ import {
   type CollectDraft,
   type CollectRosterEntry,
 } from '#engine/ai/cardCollectBuilder';
-import type { StoryboardCard, StoryUri } from '@storyboard/story-model';
-import type { CardCollectProposal } from '#engine/shared/cardCollect';
+import type { StoryboardCard, StoryUri, CardCollectProposal } from '@storyboard/story-model';
 
 export interface ICardCollectRepository {
   loadCharacterRoster(workspaceRoot: StoryUri): Promise<readonly CollectRosterEntry[]>;

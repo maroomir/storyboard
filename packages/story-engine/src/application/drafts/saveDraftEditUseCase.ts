@@ -1,7 +1,13 @@
-import { parseDraft, serializeDraft, type StoryUri } from '@storyboard/story-model';
+import {
+  parseDraft,
+  serializeDraft,
+  type StoryUri,
+  archiveExistingDraft,
+  draftHistorySceneDirectory,
+  draftPath,
+  joinUri,
+} from '@storyboard/story-model';
 
-import { archiveExistingDraft } from '#engine/domain/files/draftHistory';
-import { draftHistorySceneDirectory, draftPath, joinUri } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { IUseCase } from '#engine/application/useCase';
 

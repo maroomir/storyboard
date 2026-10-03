@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { sidebarRunnableCommands } from "@storyboard/story-engine/contracts"
+import { sidebarRunnableCommands } from "@storyboard/story-model/contracts"
 
 import manifest from "../../../package.json"
 import {

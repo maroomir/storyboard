@@ -5,9 +5,10 @@ import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { sceneContextPaths } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, isDraftMarkdownFile } from '@storyboard/story-engine';
 import {
+  sceneContextPaths,
+  getStoryboardProjectPaths,
+  isDraftMarkdownFile,
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,

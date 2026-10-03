@@ -1,4 +1,4 @@
-import { novelStageNames, type NovelStageName } from '@storyboard/story-engine/contracts';
+import { novelStageNames, type NovelStageName } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot } from '@/shared/dto';
 

@@ -9,8 +9,8 @@ import {
   workspaceRunLockTiming,
   type WorkspaceRunLockHolder,
   type WorkspaceRunLockRecord,
-} from '#engine/domain/files/workspaceRunLock';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
+  getStoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 
 export interface WorkspaceRunLock {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-engine/contracts';
+import { novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
 

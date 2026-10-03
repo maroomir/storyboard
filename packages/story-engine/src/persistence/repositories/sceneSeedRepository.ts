@@ -1,8 +1,7 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
+import { joinStoryPath, type StoryUri, getStoryboardProjectPaths } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneSeedRepository } from '#engine/application/novel/novelPipeline';
-import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import type { GeneratedSceneSeed } from '#engine/domain/sceneSeedFactory';
+import type { GeneratedSceneSeed } from '@storyboard/story-model';
 
 export class SceneSeedRepository implements ISceneSeedRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

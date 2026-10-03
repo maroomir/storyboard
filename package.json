@@ -14,7 +14,7 @@
     "build": "npm run build --workspace storyboard-vscode && npm run build --workspace @storyboard/cli && npm run build --workspace @storyboard/desktop",
     "compile": "npm run compile --workspace storyboard-vscode",
     "check:architecture": "node scripts/architecture/check-workspace.mjs",
-    "lint": "npm run check:architecture && npm run lint --workspace @storyboard/story-engine && npm run lint --workspace @storyboard/story-app && npm run lint --workspace @storyboard/story-config && npm run lint --workspace @storyboard/story-node && npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/cli && npm run lint --workspace @storyboard/desktop",
+    "lint": "npm run check:architecture && npm run lint --workspace @storyboard/story-model && npm run lint --workspace @storyboard/story-engine && npm run lint --workspace @storyboard/story-app && npm run lint --workspace @storyboard/story-config && npm run lint --workspace @storyboard/story-node && npm run lint --workspace storyboard-vscode && npm run lint --workspace @storyboard/cli && npm run lint --workspace @storyboard/desktop",
     "test": "npm run test --workspace storyboard-vscode && npm run test --workspace @storyboard/cli && npm run test --workspace @storyboard/desktop",
     "package:vsix": "npm run package:vsix --workspace storyboard-vscode",
     "cli:build": "npm run build --workspace @storyboard/cli",

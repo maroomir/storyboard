@@ -1,6 +1,6 @@
 import type { StoryUri } from '@storyboard/story-model';
 import { failedResult } from '#engine/application/useCase';
-import { renderManuscriptExport, type ManuscriptExportFormat } from '#engine/domain/manuscriptExport';
+import { renderManuscriptExport, type ManuscriptExportFormat } from '@storyboard/story-model';
 
 export type ManuscriptExportSource = {
   readonly markdown: string;

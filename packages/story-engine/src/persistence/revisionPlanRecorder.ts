@@ -1,14 +1,14 @@
 import type { StoryUri } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import {
+  type StoryboardProjectPaths,
   createEmptyRevisionPlan,
   readRevisionPlanFile,
   type RevisionPlan,
   type RevisionPlanEntry,
   upsertRevisionEntry,
   writeRevisionPlanFile,
-} from '#engine/domain/files/revisionPlan';
+} from '@storyboard/story-model';
 
 export async function recordRevisionEntry(
   fs: IFileSystem,

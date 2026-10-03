@@ -6,13 +6,10 @@ import {
   storyboardModelCatalog,
   type AiProviderId,
   STORYBOARD_RELATIVE_PATHS,
+  getStoryboardProjectPaths,
 } from '@storyboard/story-model';
 import { configurationTargets, type ConfigurationTarget } from '@storyboard/story-config';
-import {
-  getStoryboardProjectPaths,
-  migrateLegacyMemory,
-  type IStoryboardLogger,
-} from '@storyboard/story-engine';
+import { migrateLegacyMemory, type IStoryboardLogger } from '@storyboard/story-engine';
 
 import {
   flagBoolean,

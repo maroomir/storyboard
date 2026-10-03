@@ -1,8 +1,5 @@
-import type {
-  StudioChatRequest,
-  StudioChatTurn,
-  StudioChatUseCase,
-} from '@storyboard/story-engine';
+import type { StudioChatRequest, StudioChatUseCase } from '@storyboard/story-engine';
+import type { StudioChatTurn } from '@storyboard/story-model';
 
 export interface StudioManagerDependencies {
   readonly studioChatUseCase: StudioChatUseCase;

@@ -2,8 +2,8 @@ import * as vscode from 'vscode';
 
 import type { IStudioFollowUpRepository } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import { isSafeStudioEntityKey } from '@storyboard/story-engine';
-import type { StoryboardResponsePayload, StudioEntity } from '@storyboard/story-engine';
+import { isSafeStudioEntityKey } from '@storyboard/story-model';
+import type { StoryboardResponsePayload, StudioEntity } from '@storyboard/story-model';
 
 export interface StudioFollowUpRpcHandlersDependencies {
   readonly repository: IStudioFollowUpRepository;

@@ -5,8 +5,7 @@ import { DraftRepository } from '@storyboard/story-engine';
 import { ProjectRepository } from '@storyboard/story-engine';
 import { SceneCacheRepository } from '@storyboard/story-engine';
 import { SceneRepository } from '@storyboard/story-engine';
-import { createDraft, parseDraft } from '@storyboard/story-model';
-import { parseSceneCache } from '@storyboard/story-engine';
+import { createDraft, parseDraft, parseSceneCache } from '@storyboard/story-model';
 
 class InMemoryFileSystem implements IFileSystem {
   public readonly directories: unknown[] = [];

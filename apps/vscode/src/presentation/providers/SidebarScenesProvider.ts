@@ -4,20 +4,25 @@ import { createRunCommandRpcHandlers } from '@/presentation/messaging/runCommand
 
 import type { ISceneSidebarRepository } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
-import { emptyUsageSummary } from '@storyboard/story-engine';
+import {
+  emptyUsageSummary,
+  STORYBOARD_GLOBS,
+  STORYBOARD_RELATIVE_PATHS,
+} from '@storyboard/story-model';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import {
   createAiRpcHandlers,
   createUsageRpcHandlers,
 } from '@/presentation/messaging/aiRpcHandlers';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { UsageSummaryByEntity } from '@storyboard/story-model';
+import type {
+  UsageSummaryByEntity,
+  StoryboardResponsePayload,
+  SceneListItem,
+} from '@storyboard/story-model';
 import type { UsageRecorder } from '@/infrastructure/ai/UsageRecorder';
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
-import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
-import { STORYBOARD_GLOBS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 const generateDraftCommand = 'storyboard.draft.generate';
 

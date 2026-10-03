@@ -1,6 +1,5 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { StoryUri, NoteDocument, NoteSourceKind, SkippedNote } from '@storyboard/story-model';
 
-import type { NoteDocument, NoteSourceKind, SkippedNote } from '#engine/shared/noteAbsorb';
 
 // Where the author keeps their notes. A vault is a folder (or one note) on disk; a Notion page is
 // reached over the network with the integration token from the secret store.

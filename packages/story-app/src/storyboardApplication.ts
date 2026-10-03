@@ -56,8 +56,8 @@ import {
   type IUsageSink,
   type IWorkspaceLocator,
   type NoteHttpFetch,
-  type WorkspaceRunLockOwner,
 } from '@storyboard/story-engine';
+import { type WorkspaceRunLockOwner } from '@storyboard/story-model';
 import {
   createAiProviderRegistry,
   type AiProviderRegistry,

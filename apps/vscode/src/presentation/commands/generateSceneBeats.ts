@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { DraftManager } from '@storyboard/story-app';
-import { isDirectSceneCardFile } from '@storyboard/story-engine';
+import { isDirectSceneCardFile } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 

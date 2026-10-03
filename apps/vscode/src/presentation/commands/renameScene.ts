@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 
 import type { DraftManager, RunGate } from '@storyboard/story-app';
-import { getStoryboardProjectPaths, scenePath } from '@storyboard/story-engine';
-import { parseSceneFileName, parseSceneStem } from '@storyboard/story-model';
+import {
+  getStoryboardProjectPaths,
+  scenePath,
+  parseSceneFileName,
+  parseSceneStem,
+} from '@storyboard/story-model';
 import {
   hasStoryboardProject,
   resolveStoryboardWorkspaceRoot,

@@ -4,19 +4,21 @@ import type {
   StudioAgentInvokeRequest,
   StudioValidationVerdict,
   StoryboardCard,
+  CardCollectProposal,
+  StudioEntity,
 } from '@storyboard/story-model';
-import { parseCard, parseSceneCard, isBackgroundCard } from '@storyboard/story-model';
-
-import type { AiGateway } from '@storyboard/story-engine';
-import type { CardManager } from '@storyboard/story-app';
-import type { CardCollectProposal } from '@storyboard/story-engine';
-import type { StudioEntity } from '@storyboard/story-engine';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
+  parseCard,
+  parseSceneCard,
+  isBackgroundCard,
   backgroundCardPath,
   characterCardPath,
   isSafeStudioEntityKey,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+
+import type { AiGateway } from '@storyboard/story-engine';
+import type { CardManager } from '@storyboard/story-app';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 export interface StudioCardToolResolverDependencies {
   readonly aiGateway: AiGateway;

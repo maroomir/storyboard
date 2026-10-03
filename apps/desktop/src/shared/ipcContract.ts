@@ -7,8 +7,8 @@ import {
   bibleFactSchema,
   cardIdPattern,
   sceneStemPattern,
+  novelRunModes,
 } from '@storyboard/story-model/contracts';
-import { novelRunModes } from '@storyboard/story-engine/contracts';
 
 import type {
   AppBootstrap,

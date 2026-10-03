@@ -1,13 +1,12 @@
 import * as vscode from 'vscode';
 
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
-import type { StudioCardSeed } from '@storyboard/story-model';
+import type { StudioCardSeed, StoryboardResponsePayload } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
-import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 
 export interface StudioCardUpdateRpcHandlersDependencies {
   readonly aiGateway: AiGateway;

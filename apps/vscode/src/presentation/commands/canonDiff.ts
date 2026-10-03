@@ -2,16 +2,19 @@ import type { StoryUri, BibleFileSystem } from '@storyboard/story-model';
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { buildCanonDiffMarkdown, diffCandidatesAgainstCanon } from '@storyboard/story-engine';
-import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '@storyboard/story-engine';
-import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
-import { createEmptyBible, readBibleFile } from '@storyboard/story-model';
 import {
+  buildCanonDiffMarkdown,
+  diffCandidatesAgainstCanon,
+  getStoryboardProjectPaths,
+  type StoryboardProjectPaths,
+  createEmptyBible,
+  readBibleFile,
   readBibleCandidateFile,
   type BibleCandidateFileSystem,
   type BibleCandidateRecord,
-} from '@storyboard/story-engine';
+} from '@storyboard/story-model';
+import type { IStoryboardLogger } from '@storyboard/story-engine';
+import { resolveStoryboardWorkspaceRoot, uriExists } from '@/infrastructure/vscode/workspace';
 import { readProjectJson } from '@storyboard/story-engine';
 import { storyboardMessages } from '@/presentation/notifications/storyboardMessages';
 const canonDiffCommand = 'storyboard.bible.canonDiff';
