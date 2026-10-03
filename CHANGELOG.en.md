@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- **The shared packages are now four layers (no behaviour change).** The direction is one line: `story-model ← story-ai ← story-engine ← story-app`. `story-format` was renamed to `story-model`, which also took in the contracts from `story-ai` and `shared`, `domain` and `paths` from `story-engine`; `story-pipeline` was absorbed into `story-engine`. The bundled craft contract and composition presets now live in `packages/story-model/src/format/`, and the pipeline defaults in `packages/story-engine/src/pipeline/`. Override files in `~/.storyboard` and a work's `.storyboard` keep working as before.
+
 ## [0.11.3] - 2026-10-04
 
 ### Added

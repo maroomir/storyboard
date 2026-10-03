@@ -26,7 +26,7 @@ Apply this priority when instructions conflict:
 - `.claude/rules/agent-behavior.md` applies the Karpathy-inspired agent rules: surface assumptions, prefer simple solutions, make surgical changes, and define verifiable success criteria.
 - `.claude/rules/architecture.md` defines layer boundaries and when object-oriented patterns are justified.
 - `.claude/rules/clean-code.md` (and `.cursor/rules/clean-code.mdc`) define clean-code guidance for agents.
-- `.claude/rules/coding-standards.md` (and `.cursor/rules/coding-standards.mdc`) define the monorepo-wide structure, naming, typing, and error-handling standards; the reference module is `apps/cli`, with `packages/story-format` as the package-side reference.
+- `.claude/rules/coding-standards.md` (and `.cursor/rules/coding-standards.mdc`) define the monorepo-wide structure, naming, typing, and error-handling standards; the reference module is `apps/cli`, with `packages/story-model` as the package-side reference.
 - `.claude/rules/comments.md` defines allowed comment markers (`TODO(<issue>)`, `FIXME(<issue>)`, `NOTE`, `SECURITY`) for TypeScript/TSX and **strongly prefers minimal comments** (add only when truly necessary); Cursor loads the same policy from `.cursor/rules/comments-policy.mdc`.
 
 If documents conflict in a way that could change behavior, investigate and ask before editing.
@@ -51,7 +51,7 @@ If documents conflict in a way that could change behavior, investigate and ask b
 
 - **`@/`** → that app's own `src/` — defined per app in [`apps/vscode`](apps/vscode/tsconfig.json) and [`apps/cli`](apps/cli/tsconfig.json).
 - **`@webview/`** → [`apps/vscode/webview-ui/src/`](apps/vscode/webview-ui/src/) (webview UI only). Do not use `@/` from webview code; keep the extension/webview boundary obvious.
-- **`#engine/`, `#format/`, `#ai/`, `#git/`, `#pipeline/`** → each package's own `src/`, declared as Node subpath imports in that package's `package.json`. Packages must not use `@/`: apps bundle package source through one global alias table, so `@/` inside a package resolves to the *app's* `src/` with no error. A package must not use another package's prefix either.
+- **`#engine/`, `#model/`, `#ai/`, `#git/`** → each package's own `src/`, declared as Node subpath imports in that package's `package.json`. Packages must not use `@/`: apps bundle package source through one global alias table, so `@/` inside a package resolves to the *app's* `src/` with no error. A package must not use another package's prefix either.
 - Any import that climbs out of its own folder uses the alias; `./sibling` is fine and `../` fails the architecture check.
 - Aliases live in each project's `tsconfig.json`; [`scripts/aliases.mjs`](scripts/aliases.mjs) feeds the same table to esbuild, Vite, and Vitest, so no bundler config restates a path.
 
@@ -108,7 +108,7 @@ The webview must not import `vscode` directly. Use message passing through `acqu
 
 ## Current Architecture
 
-The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard-vscode` workspace at `apps/vscode/`; the CLI `@storyboard/cli` lives at `apps/cli/`, the desktop app `@storyboard/desktop` (Electron, for writers; invariants in `.claude/rules/desktop.md`) lives at `apps/desktop/`, and the shared packages are `packages/story-engine` (domain policies and shared contracts), `packages/story-format` (schemas/codecs/paths/fixtures), `packages/story-ai` (AI engine and ports), `packages/story-pipeline` (scene generation orchestration), `packages/story-config` (the shared `~/.storyboard` home: config layers, secrets file, watchers), `packages/story-node` (the Node file system and workspace locator every Node host shares), and `packages/story-app` (`StoryboardApplication`, the composition root that builds the engine's object graph once from a host's adapters and exposes it as six managers — `drafts`, `manuscript`, `cards`, `novel`, `studio`, `notes` — which are the only surface the apps call). Packages expose TypeScript source; the root `scripts/architecture/check-workspace.mjs` (run first by the root `npm run lint`) enforces that no package imports `vscode` or an app module, and each app's `scripts/check-architecture.mjs` enforces its own layer direction. The CLI is the reference implementation: `apps/cli/test/parity.test.ts` fails the build when the extension gains a command the CLI cannot run. CLI invariants live in `.claude/rules/cli.md`.
+The repository is a private npm workspaces monorepo named `storyboard-monorepo`, with workspaces `apps/*` and `packages/*` and a single root `package-lock.json`. The VSCode extension is the `storyboard-vscode` workspace at `apps/vscode/`; the CLI `@storyboard/cli` lives at `apps/cli/`, the desktop app `@storyboard/desktop` (Electron, for writers; invariants in `.claude/rules/desktop.md`) lives at `apps/desktop/`, and the shared packages are `packages/story-model` (the file format, AI and shared contracts, pure policies and path rules; its `/contracts` entry is the one browser-safe entry), `packages/story-ai` (AI engine and ports), `packages/story-engine` (use cases, repositories, host ports and both pipelines), with the direction `story-model ← story-ai ← story-engine ← story-app`, `packages/story-config` (the shared `~/.storyboard` home: config layers, secrets file, watchers), `packages/story-node` (the Node file system and workspace locator every Node host shares), and `packages/story-app` (`StoryboardApplication`, the composition root that builds the engine's object graph once from a host's adapters and exposes it as six managers — `drafts`, `manuscript`, `cards`, `novel`, `studio`, `notes` — which are the only surface the apps call). Packages expose TypeScript source; the root `scripts/architecture/check-workspace.mjs` (run first by the root `npm run lint`) enforces that no package imports `vscode` or an app module, and each app's `scripts/check-architecture.mjs` enforces its own layer direction. The CLI is the reference implementation: `apps/cli/test/parity.test.ts` fails the build when the extension gains a command the CLI cannot run. CLI invariants live in `.claude/rules/cli.md`.
 
 The extension host currently uses this transition shape:
 
@@ -215,7 +215,7 @@ file; everything else derives from it.
   `STORYBOARD_RELATIVE_PATHS`, `pointOfViewCatalog`, `commandCatalog`. Never move an enum to JSON.
 - Generation knobs layer as user setting → model profile → pipeline default. Setting defaults and
   bounds belong to `storyboardSettingCatalog` alone.
-- The webview reads the real tables through `@storyboard/story-engine/contracts`, never a copy.
+- The webview reads the real tables through `@storyboard/story-model/contracts`, never a copy.
 - Where two homes cannot be merged (manifest versus code), a test must fail when they disagree.
 - `scripts/architecture/check-workspace.mjs` (root `npm run lint`) fails the build when an owned
   literal appears outside its owner file; add the pair to `OWNED_LITERALS` when you give a value a single home.

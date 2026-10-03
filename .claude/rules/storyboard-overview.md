@@ -15,10 +15,10 @@ The apps share `packages/story-engine` and know nothing about each other. Only t
 | `apps/vscode` | `storyboard-vscode` | The VSCode extension. Ships in the VSIX; its version is mirrored from the root manifest. |
 | `apps/cli` | `@storyboard/cli` | Command line app (`storyboard`). The headline product and reference implementation; other AI agents drive Storyboard through it. |
 | `apps/desktop` | `@storyboard/desktop` | Electron app for writers who are not developers: the manuscript desk with the run drawer, the story bible, automatic version history. Rules in `.claude/rules/desktop.md`. |
-| `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: domain policies, file records, and the RPC/contract types every app speaks. Holds what used to be `apps/vscode/src/{domain,shared}`. |
+| `packages/story-engine` | `@storyboard/story-engine` | Runtime-agnostic core: use cases, repositories over the host ports, post-generation updaters, and both pipelines (`application/novel`, `pipeline/`). |
 | `packages/story-app` | `@storyboard/story-app` | The shared composition root: `StoryboardApplication` takes a host's six adapters and builds every repository, use case and the novel pipeline once. It exposes one manager per domain — `drafts`, `manuscript`, `cards`, `novel`, `studio`, `notes` — and the apps speak only to those. |
-| `packages/story-format` | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, pure narrative helpers, and the shared round-trip fixtures. |
-| `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, and the `SecretStore`/`ConfigBridge` ports. |
+| `packages/story-model` | `@storyboard/story-model` | Everything the other packages agree on, with no I/O: the workspace file format (`format/`: schemas, codecs, path conventions, the shared round-trip fixtures), the AI contracts and catalogs (`contracts/`), the RPC and card contracts (`shared/`), pure policies and file records (`domain/`) and project path rules (`paths/`). Its `/contracts` entry is the one browser-safe entry. |
+| `packages/story-ai` | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, and the `SecretStore`/`ConfigBridge` ports. |
 | `packages/story-config` | `@storyboard/story-config` | The shared home `~/.storyboard`: `config.json` layers (home ← workspace `.storyboard/config.json`), the 0600 `secrets.json`, and file watchers. Every app reads settings through it. |
 | `packages/story-node` | `@storyboard/story-node` | Node host adapters shared by every app that runs on Node: `NodeFileSystem` (temp-file-then-rename writes) and `NodeWorkspaceLocator` (one workspace, containment test). |
 
@@ -29,7 +29,7 @@ that no package imports `vscode` or an app module.
 
 Both apps write through the same codecs, so a card edited in the editor or from the terminal
 serializes to identical bytes — the shared fixtures in
-`packages/story-format/test/fixtures/` are the round-trip guard for that claim.
+`packages/story-model/test/fixtures/` are the round-trip guard for that claim.
 
 ## Current Architecture
 
@@ -37,10 +37,17 @@ serializes to identical bytes — the shared fixtures in
 graph TB
     subgraph Engine[packages/story-engine]
         Application[application: use cases and the novel pipeline]
+        Pipeline[pipeline: the scene generation stages]
         Persistence[persistence: repositories over IFileSystem]
-        Domain[domain: policies, file records]
-        SharedContracts[shared: RPC and card contracts]
         Ports[ports: IFileSystem, IWorkspaceLocator, IUsageSink, IStoryboardLogger]
+    end
+
+    Ai[packages/story-ai: providers, prompts]
+
+    subgraph Model[packages/story-model]
+        Domain[domain, paths: policies, file records, path rules]
+        SharedContracts[shared, contracts: RPC, card and AI contracts]
+        Format[format: schemas, codecs]
     end
 
     subgraph Apps[Host apps]
@@ -56,10 +63,16 @@ graph TB
     VscodeApp -.implements.-> Ports
     CliApp -.implements.-> Ports
     Application --> Persistence
-    Application --> Domain
+    Application --> Pipeline
     Persistence --> Ports
+    Engine --> Ai
+    Engine --> Model
+    Ai --> Model
     Domain --> SharedContracts
+    SharedContracts --> Format
 ```
+
+The package direction is one line: `story-model ← story-ai ← story-engine ← story-app`.
 
 What each check actually enforces, so a green run is not read as more than it is:
 
@@ -71,12 +84,14 @@ What each check actually enforces, so a green run is not read as more than it is
   `./bootstrap/*`; `infrastructure` may not import `presentation` or `bootstrap`; no import cycles.
   The inner layers left for the engine, so nothing here validates them any more.
 - `apps/cli` enforces its own ordered layer direction and rejects cycles, and additionally fails
-  if it imports `@storyboard/story-pipeline` directly, which would be a second copy of the
-  generation loop.
-
-- `packages/story-engine` — its own layer direction: `shared` may import only itself, `domain` only
-  `domain`/`shared`, `paths` and `ai` only what is inward of them, `ports` only `ports`/`paths`/
-  `domain`; plus no cycles. `persistence` and `application` are a mutually dependent pair by design
+  if it imports the engine's pipeline assembly symbols (`refusePipelineAssembly` in
+  `scripts/architecture/runner.mjs`), which would be a second copy of the generation loop. The
+  desktop applies the same rule.
+- `packages/story-model` — its own layer direction: `format` may import only itself, `contracts`
+  only `contracts`/`format`, then `shared`, `domain` and `paths` each only what is before them; plus
+  no cycles.
+- `packages/story-engine` — `pipeline`, `ports` and `ai` may each import only themselves (and other
+  packages); plus no cycles. `persistence` and `application` are a mutually dependent pair by design
   (application declares the repository ports, persistence implements them), so no order is imposed
   between those two.
 

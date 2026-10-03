@@ -67,4 +67,4 @@ Useful knobs: `SCENE_PROVIDER=openai|google` (switch provider), `SCENE_REVISE=0`
 - Generation: the CLI (`apps/cli`), which runs the same engine as the extension. Coverage probe: `apps/vscode/scripts/harness/coverageCheck.harness.ts`, `apps/vscode/vitest.harness.config.ts`
 - Coverage feature: `AiService.checkSceneCoverage`, `packages/story-model/src/contracts/sceneCoverage.ts`, task `sceneCoverage`
 - Parameter impact: `apps/vscode/docs/card-parameter-impact.md`
-- Pipeline: `packages/story-pipeline/src/sceneGenerationPipeline.ts`, `packages/story-ai/src/ai/prompts/`
+- Pipeline: `packages/story-engine/src/pipeline/sceneGenerationPipeline.ts`, `packages/story-ai/src/ai/prompts/`

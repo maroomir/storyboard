@@ -9,11 +9,12 @@ extension; only its host adapters and screens are its own.
 - **The desktop owns no orchestration.** It calls the manager verbs of the shared
   `StoryboardApplication` (`drafts.generate`, `drafts.saveEdit`, `novel.run`, …) and never assembles
   pipeline stages.
-  `apps/desktop/scripts/check-architecture.mjs` fails on a direct `@storyboard/story-pipeline` import.
+  `apps/desktop/scripts/check-architecture.mjs` fails on an import of the engine's pipeline
+  assembly symbols.
 - **One process folder per Electron process.** `src/main` (Node), `src/preload`, `src/renderer`
   (browser) meet only through `src/shared` (the IPC contract, DTOs, messages). The architecture check
   enforces the allow-list, keeps Node builtins, `electron` and package barrels out of the renderer
-  and `shared` (only `/contracts` entries), and keeps the preload down to `electron` plus `shared`.
+  and `shared` (only `@storyboard/story-model/contracts`), and keeps the preload down to `electron` plus `shared`.
 - **The renderer is untrusted.** Every channel in `src/shared/ipcContract.ts` has a zod request
   schema, and `src/main/ipcRouter.ts` parses before any handler runs. Scenes and cards are addressed
   by pattern-checked ids, never paths. A path from the renderer is accepted only when main offered it
@@ -49,7 +50,7 @@ extension; only its host adapters and screens are its own.
 
 The UI is Korean and English. Add a string to `src/shared/i18n/ko.ts` first; `en.ts` is typed as
 `Record<MessageKey, string>`, so a missing translation fails the typecheck, and
-`test/messages.test.ts` fails when a translation drops a `{placeholder}`. Tables story-format already
+`test/messages.test.ts` fails when a translation drops a `{placeholder}`. Tables story-model already
 names in Korean (point of view, composition, narrator person/knowledge/tense) are not copied: the
 Korean UI reads them, and `src/renderer/lib/narrativeLabels.ts` holds only the English side.
 Engine messages (errors, progress) stay Korean in both languages.

@@ -65,16 +65,21 @@ alwaysApply: true
 
 ## Current layout
 
-The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with three apps over one engine (extension, CLI, desktop). The inner layers live in `packages/story-engine`; each app supplies host adapters and nothing else.
+The repo root is a private npm workspaces monorepo (`apps/*`, `packages/*`) with three apps over one engine (extension, CLI, desktop). The inner layers live in `packages/story-model` and `packages/story-engine`; each app supplies host adapters and nothing else.
 
 ```text
+packages/story-model/src/     # model ← ai ← engine ← app
+  format/         # Workspace file format: schemas, codecs, path conventions
+  contracts/      # AI contracts and catalogs
+  shared/         # RPC and card contracts
+  domain/         # Runtime-agnostic policies and file records (no vscode)
+  paths/          # Project path rules
+
 packages/story-engine/src/
   application/    # Use cases and the novel pipeline
+  pipeline/       # The scene generation stages
   persistence/    # Repositories over the IFileSystem port
-  domain/         # Runtime-agnostic policies, codecs, value types (no vscode)
-  shared/         # RPC and card contracts (imports only itself)
   ports/          # IFileSystem, WorkspaceLocator, UsageSink, StoryboardLogger
-  paths/          # StoryUri, NodeUri, project path conventions
 
 apps/vscode/src/extension.ts       # Thin entry point
 apps/vscode/src/bootstrap/         # Lifecycle and feature modules; the DI graph
@@ -83,7 +88,7 @@ apps/vscode/src/infrastructure/    # VSCode adapters: fs, settings, secrets, usa
 apps/cli/src/                      # adapters/ then commands/ (verb definitions)
 ```
 
-The root `scripts/architecture/check-workspace.mjs` (first step of the root `npm run lint`) enforces: every shared package stays free of `vscode`, app imports and another package's `#` internal prefix, and every owned literal (`OWNED_LITERALS`) stays in its owner file. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles. `packages/story-engine` enforces its own layer direction too (`shared` imports only itself; `domain` only `domain`/`shared`; `ports` only `ports`/`paths`/`domain`), with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
+The root `scripts/architecture/check-workspace.mjs` (first step of the root `npm run lint`) enforces: every shared package stays free of `vscode`, app imports and another package's `#` internal prefix, and every owned literal (`OWNED_LITERALS`) stays in its owner file. `apps/vscode/scripts/check-architecture.mjs` enforces: `extension.ts` imports only `vscode` and `bootstrap`; `infrastructure` imports no `presentation`/`bootstrap`; no cycles. `packages/story-model` enforces its own layer direction (`format` ← `contracts` ← `shared` ← `domain` ← `paths`), and `packages/story-engine` keeps `pipeline`, `ports` and `ai` to themselves, with `persistence`/`application` left unordered because they are a mutually dependent port/implementation pair.
 
 ## Messaging and state
 

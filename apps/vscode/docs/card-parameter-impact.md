@@ -20,9 +20,9 @@
 
 - `packages/story-ai/src/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
 - `packages/story-ai/src/ai/prompts/personaDialogue.ts` — `background.description`, `background.tags`만 사용.
-- `packages/story-format/src/sceneContext.ts` — `name` + `aliases`로 인물 **탐지**.
-- `packages/story-pipeline/src/sceneGenerationPipeline.ts` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
-- `packages/story-format/src/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
+- `packages/story-model/src/format/sceneContext.ts` — `name` + `aliases`로 인물 **탐지**.
+- `packages/story-engine/src/pipeline/sceneGenerationPipeline.ts` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
+- `packages/story-model/src/format/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
 
 ## 영향력 높은 파라미터
 
