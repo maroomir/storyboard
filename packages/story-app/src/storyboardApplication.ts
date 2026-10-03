@@ -1,6 +1,7 @@
 import {
   AiGateway,
   ApplyDraftFormatUseCase,
+  ApplyNoteAbsorbUseCase,
   AssembleManuscriptUseCase,
   AugmentDraftUseCase,
   BibleCandidateRepository,
@@ -11,6 +12,7 @@ import {
   CardSidebarRepository,
   CardWriterRepository,
   CollectCardProposalsUseCase,
+  CollectNotesUseCase,
   CompleteStoryScenesUseCase,
   CondenseDraftUseCase,
   CreateCardUseCase,
@@ -22,14 +24,18 @@ import {
   GenerateOutlineUseCase,
   GenerateSceneBeatsUseCase,
   ManuscriptAssemblyRepository,
+  NoteAbsorbRepository,
+  NoteSourceProvider,
   NovelPipeline,
   NovelReviewRepository,
   NovelRunStateRepository,
   OutlineRepository,
+  PlanNoteAbsorbUseCase,
   PostGenerationUpdateManager,
   ProjectRepository,
   PromoteBibleCandidatesUseCase,
   PromoteCardCandidatesUseCase,
+  PromoteNoteCandidatesUseCase,
   RecommendCardsUseCase,
   ReviewManuscriptUseCase,
   ReviseAfterGenerateGate,
@@ -49,6 +55,7 @@ import {
   type IStoryboardLogger,
   type IUsageSink,
   type IWorkspaceLocator,
+  type NoteHttpFetch,
   type WorkspaceRunLockOwner,
 } from '@storyboard/story-engine';
 import {
@@ -60,6 +67,7 @@ import {
 import { CardManager } from './managers/cardManager';
 import { DraftManager } from './managers/draftManager';
 import { ManuscriptManager } from './managers/manuscriptManager';
+import { NoteManager } from './managers/noteManager';
 import { NovelManager } from './managers/novelManager';
 import { StudioManager } from './managers/studioManager';
 import { RunGate } from './runGate';
@@ -82,6 +90,9 @@ export interface StoryboardApplicationDependencies {
   // precedence first: the home `~/.storyboard`, then the workspace's `.storyboard`.
   // `loadResourceOverrides` reads them; a host without any leaves this out.
   readonly resourceRoots?: readonly StoryUri[];
+  // How the note import reaches Notion. Every host runs on Node 20 or later, whose global `fetch`
+  // is the default; a test hands in recorded responses.
+  readonly fetch?: NoteHttpFetch;
 }
 
 export interface StoryboardApplicationOptions {
@@ -110,10 +121,12 @@ interface EngineGraph {
   readonly outlineRepository: OutlineRepository;
   readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
+  readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
+  readonly collectNotesUseCase: CollectNotesUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly createCardUseCase: CreateCardUseCase;
@@ -124,8 +137,10 @@ interface EngineGraph {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly generateSceneBeatsUseCase: GenerateSceneBeatsUseCase;
   readonly novelPipeline: NovelPipeline;
+  readonly planNoteAbsorbUseCase: PlanNoteAbsorbUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
+  readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
@@ -144,6 +159,7 @@ export class StoryboardApplication {
   public readonly cards: CardManager;
   public readonly novel: NovelManager;
   public readonly studio: StudioManager;
+  public readonly notes: NoteManager;
   public readonly runGate: RunGate;
   private readonly resourceRoots: readonly StoryUri[];
   public readonly aiGateway: AiGateway;
@@ -165,6 +181,7 @@ export class StoryboardApplication {
     this.cards = new CardManager(services);
     this.novel = new NovelManager(services);
     this.studio = new StudioManager(services);
+    this.notes = new NoteManager(services);
     this.runGate = new RunGate({ fileSystem: dependencies.fileSystem, owner: options.lockOwner });
     this.resourceRoots = dependencies.resourceRoots ?? [];
     this.aiGateway = services.aiGateway;
@@ -235,6 +252,7 @@ function buildServices(
   const cardSidebarRepository = new CardSidebarRepository(fileSystem);
   const bibleCandidateRepository = new BibleCandidateRepository(fileSystem);
   const storyFeatureRepository = new StoryFeatureRepository(fileSystem);
+  const noteAbsorbRepository = new NoteAbsorbRepository(fileSystem);
 
   const assembleManuscriptUseCase = new AssembleManuscriptUseCase({
     logger,
@@ -294,6 +312,11 @@ function buildServices(
       logger,
       generator,
     }),
+    applyNoteAbsorbUseCase: new ApplyNoteAbsorbUseCase({
+      logger,
+      noteRepository: noteAbsorbRepository,
+      cardWriter: cardWriterRepository,
+    }),
     assembleManuscriptUseCase,
     augmentDraftUseCase: new AugmentDraftUseCase({ fileSystem, aiGateway, logger, configBridge }),
     buildStoryCardsUseCase: new BuildStoryCardsUseCase({
@@ -303,6 +326,14 @@ function buildServices(
     collectCardProposalsUseCase: new CollectCardProposalsUseCase({
       aiGateway,
       repository: cardCollectRepository,
+    }),
+    collectNotesUseCase: new CollectNotesUseCase({
+      sources: new NoteSourceProvider({
+        fileSystem,
+        secretStore,
+        fetch: dependencies.fetch ?? globalThis.fetch,
+      }),
+      repository: noteAbsorbRepository,
     }),
     completeStoryScenesUseCase: new CompleteStoryScenesUseCase({
       aiGateway,
@@ -349,11 +380,21 @@ function buildServices(
       usageSink,
       fileSystem,
     }),
+    planNoteAbsorbUseCase: new PlanNoteAbsorbUseCase({
+      aiGateway,
+      logger,
+      storyRepository: storyFeatureRepository,
+      noteRepository: noteAbsorbRepository,
+    }),
     promoteBibleCandidatesUseCase: new PromoteBibleCandidatesUseCase({
       repository: bibleCandidateRepository,
     }),
     promoteCardCandidatesUseCase: new PromoteCardCandidatesUseCase({
       repository: cardCandidateRepository,
+    }),
+    promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase({
+      noteRepository: noteAbsorbRepository,
+      cardWriter: cardWriterRepository,
     }),
     recommendCardsUseCase: new RecommendCardsUseCase({
       aiGateway,
