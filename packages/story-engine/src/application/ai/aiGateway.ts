@@ -1,7 +1,7 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type { StoryUri, AiProviderId, AiTaskName } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import { StoryboardAiService } from '@storyboard/story-ai';
-import type { AiProviderId, AiProviderRegistry, AiTaskName } from '@storyboard/story-ai';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
 export class AiGateway {
   public constructor(

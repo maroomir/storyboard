@@ -2,17 +2,14 @@ import {
   narrativeTenseLabels,
   narratorKnowledgeLabels,
   narratorPersonLabels,
-  resolveCraftContract,
-  resolveSceneTargetLength,
-  sceneGroundingFieldLabels,
-} from '@storyboard/story-model';
-import type {
-  CraftContractOverride,
-  NarrationDirective,
-  NarrativeTense,
-  ProjectSetting,
-  SceneGrounding,
-} from '@storyboard/story-model';
+} from '#model/format/narrator';
+import { resolveCraftContract } from '#model/format/craftContract';
+import { resolveSceneTargetLength } from '#model/format/sceneLength';
+import { sceneGroundingFieldLabels } from '#model/format/scene';
+import type { CraftContractOverride } from '#model/format/craftContract';
+import type { NarrationDirective, NarrativeTense } from '#model/format/narrator';
+import type { ProjectSetting } from '#model/format/project';
+import type { SceneGrounding } from '#model/format/scene';
 // NOTE: Shared narrative-style context injected into every scene-generation prompt so point of
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.

@@ -1,11 +1,11 @@
 import {
   generationParameterCatalog,
   integerSettingDefault,
-  promptTuning,
-  promptTuningKeys,
   sectionOutputLimitParameterId,
-} from '@storyboard/story-ai';
-import type { AiProviderId, PromptTuningKey } from '@storyboard/story-ai';
+} from '@storyboard/story-model';
+import { promptTuning, promptTuningKeys } from '@storyboard/story-ai';
+import type { AiProviderId } from '@storyboard/story-model';
+import type { PromptTuningKey } from '@storyboard/story-ai';
 import { generationParameterDefault } from '@storyboard/story-pipeline';
 
 // 스윕이 흔들 수 있는 손잡이 목록. 이름·단위·범위는 story-ai 의 생성 카탈로그가, 기본값은

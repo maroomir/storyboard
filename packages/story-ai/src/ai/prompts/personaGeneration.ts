@@ -1,6 +1,10 @@
 import type { Character } from '@storyboard/story-model';
-import { formatCardAttributes, joinCardText } from '@storyboard/story-model';
-import { voiceStyleLines, type StyleDirective } from '#ai/contracts/styleDirective';
+import {
+  formatCardAttributes,
+  joinCardText,
+  voiceStyleLines,
+  type StyleDirective,
+} from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

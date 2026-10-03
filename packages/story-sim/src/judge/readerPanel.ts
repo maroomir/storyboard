@@ -1,4 +1,4 @@
-import { parseJsonObject } from '@storyboard/story-ai';
+import { parseJsonObject } from '@storyboard/story-model';
 import { z } from 'zod';
 
 import { simDefaults } from '#sim/simDefaults';

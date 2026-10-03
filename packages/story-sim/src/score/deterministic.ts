@@ -1,4 +1,5 @@
-import { pipelineDefaults, sectionViolationKinds } from '@storyboard/story-pipeline';
+import { pipelineDefaults } from '@storyboard/story-pipeline';
+import { sectionViolationKinds } from '@storyboard/story-model';
 
 // 심판을 부르지 않고도 나오는 신호들. 선별 단계는 이것만으로 손잡이 순위를 매긴다 — 온도 낮은
 // 판정이라도 한 지점에 수십 번 부르면 격자보다 심판이 비싸진다.

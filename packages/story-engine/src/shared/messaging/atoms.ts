@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { aiProviderIds, aiTaskNames } from '@storyboard/story-ai/contracts';
+import { aiProviderIds, aiTaskNames } from '@storyboard/story-model/contracts';
 
 export const storyboardMessageProtocolVersion = '1.0.0';
 

@@ -3,8 +3,7 @@ import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
-import { sceneFileNamePattern, serializeSceneCard } from '@storyboard/story-model';
-import { parseJsonObject } from '@storyboard/story-ai';
+import { sceneFileNamePattern, serializeSceneCard, parseJsonObject } from '@storyboard/story-model';
 import type { IStoryFeatureRepository, StoryFileSnapshot } from './storyFeatureTypes';
 import { StoryFeatureSourceError } from './storyFeatureTypes';
 

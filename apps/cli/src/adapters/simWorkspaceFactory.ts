@@ -1,5 +1,5 @@
 import { draftPath, scenePath } from '@storyboard/story-engine';
-import type { UsageRecord } from '@storyboard/story-ai';
+import type { UsageRecord } from '@storyboard/story-model';
 import { TunedConfigBridge } from '@storyboard/story-sim';
 import type { ISimWorkspaceFactory, SimSceneGenerator } from '@storyboard/story-sim';
 

@@ -4,7 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { ConfigBridgeDependencies, SceneGenerationTuningLike, UsageRecord } from '@storyboard/story-ai';
+import type { ConfigBridgeDependencies, SceneGenerationTuningLike } from '@storyboard/story-ai';
+import type { UsageRecord } from '@storyboard/story-model';
 import { ConfigBridge } from '@storyboard/story-ai';
 
 import type { ParsedArguments } from '../src/cliArguments';

@@ -8,9 +8,10 @@ import {
   missingSceneGroundingFields,
   parseScene,
   resolveCraftContract,
-  resolveSceneTargetLength
+  resolveSceneTargetLength,
+  buildStyleDirective,
+  narrativeStyleLines,
 } from '@storyboard/story-model';
-import { buildStyleDirective, narrativeStyleLines } from '@storyboard/story-ai';
 
 const fullGrounding = {
   incident: "임용시험 최종 면접에서 떨어졌다",

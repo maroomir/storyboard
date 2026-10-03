@@ -35,9 +35,6 @@
       ],
       "@storyboard/story-model/contracts": [
         "../../packages/story-model/src/contracts.ts"
-      ],
-      "@storyboard/story-ai/contracts": [
-        "../../packages/story-ai/src/contracts.ts"
       ]
     }
   },

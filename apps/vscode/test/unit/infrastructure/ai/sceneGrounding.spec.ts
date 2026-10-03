@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import {
-  craftContractLines,
-  PersonaDialoguePrompt,
-  SceneGroundingPrompt,
-  sceneGroundingLines
-} from '@storyboard/story-ai';
+import { craftContractLines, sceneGroundingLines } from '@storyboard/story-model';
+import { PersonaDialoguePrompt, SceneGroundingPrompt } from '@storyboard/story-ai';
 import type { Background } from '@storyboard/story-model';
 
 const background: Background = {

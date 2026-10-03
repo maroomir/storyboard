@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { PersonaGenerationPrompt, type StyleDirective } from "@storyboard/story-ai"
+import { PersonaGenerationPrompt } from "@storyboard/story-ai"
+import { type StyleDirective } from "@storyboard/story-model"
 import type { Character } from "@storyboard/story-model"
 
 describe("PersonaGenerationPrompt golden", () => {

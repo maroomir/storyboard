@@ -24,21 +24,20 @@ import {
 import {
   coerceDialogueAttribution,
   type DialogueAttribution,
-} from '#ai/contracts/sceneDialogueAttribution';
+  parseJsonArray,
+  parseJsonObject,
+  sceneGroundingLines,
+  sceneGroundingFieldKeys,
+  sceneGroundingFieldLabels,
+  type SceneGrounding,
+  type SceneGroundingFieldKey,
+} from '@storyboard/story-model';
 import {
   SceneSectionExpansionPrompt,
   type SceneSectionExpansionInput,
 } from './prompts/sceneSectionExpansion';
 import { SceneStructurePrompt, type SceneStructureFieldKey } from './prompts/sceneStructure';
 import { SituationExtractionPrompt } from './prompts/situationExtraction';
-import { parseJsonArray, parseJsonObject } from '#ai/contracts/aiResponseParser';
-import { sceneGroundingLines } from '#ai/contracts/styleDirective';
-import {
-  sceneGroundingFieldKeys,
-  sceneGroundingFieldLabels,
-  type SceneGrounding,
-  type SceneGroundingFieldKey,
-} from '@storyboard/story-model';
 
 export class SceneAiService {
   public constructor(private readonly gateway: AiTextGateway) {}

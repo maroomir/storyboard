@@ -1,6 +1,6 @@
-import { type ModelPricePerMillion, storyboardModelPricing } from '#ai/contracts/providerCatalog';
+import { type ModelPricePerMillion, storyboardModelPricing } from '@storyboard/story-model';
 
-import type { AiGenerateResponse, AiProviderId, AiUsage } from '#ai/contracts/aiTypes';
+import type { AiGenerateResponse, AiProviderId, AiUsage } from '@storyboard/story-model';
 
 export function aiGenerateResponseWithUsage(params: {
   readonly providerId: AiProviderId;

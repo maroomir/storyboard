@@ -1,16 +1,18 @@
 import axios, { type AxiosInstance } from 'axios';
 
 import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
-import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
+  AiProviderError,
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '#ai/contracts/aiTypes';
-import { connectionCheckFailedMessage, generationFailedMessage, missingModelMessage } from '#ai/contracts/providerCatalog';
+  connectionCheckFailedMessage,
+  generationFailedMessage,
+  missingModelMessage,
+} from '@storyboard/story-model';
 import { registerProviderFactory } from '#ai/ai/providerFactory';
 
 export interface OllamaClientLike {

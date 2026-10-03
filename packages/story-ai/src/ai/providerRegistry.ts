@@ -1,8 +1,6 @@
-import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
-import { AiProviderError } from '#ai/contracts/aiProviderError';
-import './providers';
-import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
 import {
+  getProviderDisplayName,
+  AiProviderError,
   type AiConnectionResult,
   type AiStreamChunk,
   aiProviderIds,
@@ -13,7 +11,9 @@ import {
   type AiProviderStatus,
   type AiTaskName,
   requiresApiKey,
-} from '#ai/contracts/aiTypes';
+} from '@storyboard/story-model';
+import './providers';
+import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
 import { SecretStore } from '#ai/ports/SecretStore';
 import { ConfigBridge } from '#ai/ports/ConfigBridge';
 import type { PromptVariantId } from './prompts/types';

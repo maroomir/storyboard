@@ -5,7 +5,7 @@ import { test } from 'vitest';
 
 import { StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
-import type { AiGenerateResponse, AiProvider } from '@storyboard/story-ai';
+import type { AiGenerateResponse, AiProvider } from '@storyboard/story-model';
 
 import { StudioChatUseCase, type StudioChatRequest } from '@storyboard/story-engine';
 import type { AiGateway } from '@storyboard/story-engine';

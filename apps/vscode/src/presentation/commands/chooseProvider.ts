@@ -1,12 +1,8 @@
 import * as vscode from 'vscode';
 
-import { listSelectableProviderIds, requiresApiKey } from '@storyboard/story-ai';
-import type {
-  AiProviderId,
-  AiProviderRegistry,
-  ConfigBridge,
-  SecretStore,
-} from '@storyboard/story-ai';
+import { listSelectableProviderIds, requiresApiKey } from '@storyboard/story-model';
+import type { AiProviderId } from '@storyboard/story-model';
+import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
 
 export const chooseProviderCommand = 'storyboard.provider.choose';
 

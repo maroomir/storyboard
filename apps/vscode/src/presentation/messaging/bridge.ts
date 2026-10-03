@@ -1,6 +1,6 @@
 import { ZodError } from 'zod';
 
-import { AiProviderError } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
 import {
   createStoryboardErrorResponse,
   createStoryboardSuccessResponse,

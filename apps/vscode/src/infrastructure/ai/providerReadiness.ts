@@ -1,4 +1,5 @@
-import type { AiTaskName, ConfigBridge } from '@storyboard/story-ai';
+import type { AiTaskName } from '@storyboard/story-model';
+import type { ConfigBridge } from '@storyboard/story-ai';
 
 // Background features (inline completion, on-save diagnostics) must stay quiet until the author
 // has chosen a provider; only an explicit command should surface the "choose one" prompt.

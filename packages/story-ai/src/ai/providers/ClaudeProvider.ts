@@ -2,8 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { type MessageParam, type TextBlockParam } from '@anthropic-ai/sdk/resources/messages';
 
 import { aiGenerateResponseWithUsage } from '#ai/ai/cost';
-import { AiProviderError } from '#ai/contracts/aiProviderError';
 import {
+  AiProviderError,
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
@@ -11,15 +11,13 @@ import {
   type AiProvider,
   type AiProviderId,
   type AiUsage,
-} from '#ai/contracts/aiTypes';
-import {
   acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
   getProviderDisplayName,
   missingApiKeyMessage,
   missingModelMessage,
-} from '#ai/contracts/providerCatalog';
+} from '@storyboard/story-model';
 import { registerProviderFactory, resolveApiKeyProviderOptions } from '#ai/ai/providerFactory';
 
 type ClaudeMessageRole = Exclude<AiMessageRole, 'system'>;

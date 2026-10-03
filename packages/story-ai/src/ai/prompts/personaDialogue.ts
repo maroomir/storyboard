@@ -1,11 +1,11 @@
 import type { Background, SceneGrounding } from '@storyboard/story-model';
-import { joinCardText } from '@storyboard/story-model';
 import {
+  joinCardText,
   craftContractLines,
   sceneGroundingLines,
   voiceStyleLines,
   type StyleDirective,
-} from '#ai/contracts/styleDirective';
+} from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

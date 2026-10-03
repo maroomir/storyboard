@@ -28,7 +28,6 @@ const ALLOWED_IMPORTS = {
 const BROWSER_SAFE_PACKAGES = new Set([
   '@storyboard/story-engine/contracts',
   '@storyboard/story-model/contracts',
-  '@storyboard/story-ai/contracts',
 ]);
 
 const NODE_BUILTIN = /^(node:|fs$|path$|os$|child_process$|crypto$)/;

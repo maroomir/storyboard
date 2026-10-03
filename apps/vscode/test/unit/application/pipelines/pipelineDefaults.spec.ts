@@ -6,7 +6,7 @@ import {
   SECTION_OUTPUT_LIMIT,
   pipelineDefaults
 } from "@storyboard/story-pipeline"
-import { integerSettingDefault } from "@storyboard/story-ai"
+import { integerSettingDefault } from "@storyboard/story-model"
 
 describe("pipeline defaults data file", () => {
   // 1/3 은 JSON 으로 적을 수 없어 가장 가까운 배정도 값을 적었다. 누가 자릿수를 줄이면 뼈대 분량이

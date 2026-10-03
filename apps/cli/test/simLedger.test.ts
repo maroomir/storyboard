@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { UsageRecord } from '@storyboard/story-ai';
+import type { UsageRecord } from '@storyboard/story-model';
 import { describeCost, summarizeUsage } from '@storyboard/story-sim';
 
 // 비용 축의 유일한 오류 모드는 «모르는 값을 0으로 접는 것»이다. 그러면 모든 실행이 $0로 읽힌다.

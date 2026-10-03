@@ -6,7 +6,8 @@ import {
   formatStoryStateForPrompt,
   type StoryStateEntry,
 } from '@storyboard/story-model';
-import type { StoryboardAiService, StoryStateUpdateItem } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
+import type { StoryStateUpdateItem } from '@storyboard/story-model';
 import type { GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import type { SceneGenerationInputs } from './sceneGenerationInputs';
 

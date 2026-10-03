@@ -1,9 +1,5 @@
-import type {
-  AiGenerateResponse,
-  AiMessage,
-  AiProviderId,
-  AiProviderRegistry,
-} from '@storyboard/story-ai';
+import type { AiGenerateResponse, AiMessage, AiProviderId } from '@storyboard/story-model';
+import type { AiProviderRegistry } from '@storyboard/story-ai';
 
 // 심판은 계측기이지 측정 대상이 아니다. 그래서 제품의 태스크 라우팅을 타지 않고 프로바이더와
 // 모델을 못박아 부르며, 사용량도 생성 원장과 섞지 않는다.

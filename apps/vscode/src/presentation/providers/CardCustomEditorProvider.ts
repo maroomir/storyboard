@@ -15,6 +15,7 @@ import {
   sceneSummaryReference,
   serializeCard,
   serializeWorkspaceCard,
+  describeNarration,
 } from '@storyboard/story-model';
 import type { SceneCard, WorkspaceCard } from '@storyboard/story-model';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
@@ -25,7 +26,6 @@ import {
   loadCharacterRoster,
   loadNarratorCards,
 } from '@storyboard/story-engine';
-import { describeNarration } from '@storyboard/story-ai';
 import { VirtualDocumentStore } from './virtualDocumentStore';
 import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';

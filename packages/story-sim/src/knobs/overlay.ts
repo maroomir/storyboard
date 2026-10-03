@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
-import type { AiProviderId, GenerationKnobs, PromptTuningOverrides } from '@storyboard/story-ai';
-import { sectionViolationKinds } from '@storyboard/story-pipeline';
+import type { AiProviderId, GenerationKnobs } from '@storyboard/story-model';
+import type { PromptTuningOverrides } from '@storyboard/story-ai';
+import { sectionViolationKinds } from '@storyboard/story-model';
 
 import { isSectionOutputLimitKnob, knobRegistry, type KnobSpec } from '#sim/knobs/knobRegistry';
 

@@ -1,6 +1,9 @@
-import { characterMatchTokens, findForeignScriptSpans } from '@storyboard/story-model';
+import {
+  characterMatchTokens,
+  findForeignScriptSpans,
+  integerSettingDefault,
+} from '@storyboard/story-model';
 import type { CharacterCard } from '@storyboard/story-model';
-import { integerSettingDefault } from '@storyboard/story-ai';
 
 import { pipelineDefaults } from './pipelineDefaults';
 import { resolveSceneGenerationTuning } from './sceneGenerationTuning';

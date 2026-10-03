@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { PersonaDialoguePrompt, type StyleDirective } from "@storyboard/story-ai"
+import { PersonaDialoguePrompt } from "@storyboard/story-ai"
+import { type StyleDirective } from "@storyboard/story-model"
 import type { Background, SceneGrounding } from "@storyboard/story-model"
 
 describe("PersonaDialoguePrompt golden", () => {

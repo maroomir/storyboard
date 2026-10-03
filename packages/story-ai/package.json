@@ -10,8 +10,7 @@
   },
   "types": "src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./contracts": "./src/contracts.ts"
+    ".": "./src/index.ts"
   },
   "files": [
     "src"

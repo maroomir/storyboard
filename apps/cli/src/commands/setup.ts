@@ -8,17 +8,6 @@ import {
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
-  type ConfigBridge,
-} from '@storyboard/story-ai';
-import {
-  auditChapterMemory,
-  auditStoryMemory,
-  getStoryboardProjectPaths,
-  loadNarratorCards,
-  readProjectJson,
-  resolveThreadPaths,
-} from '@storyboard/story-engine';
-import {
   formatSceneOrderRanges,
   findUnreadableStoryStateLines,
   isLegacySceneFileName,
@@ -32,6 +21,15 @@ import {
   type SceneCard,
   type StoryboardProject,
 } from '@storyboard/story-model';
+import { type ConfigBridge } from '@storyboard/story-ai';
+import {
+  auditChapterMemory,
+  auditStoryMemory,
+  getStoryboardProjectPaths,
+  loadNarratorCards,
+  readProjectJson,
+  resolveThreadPaths,
+} from '@storyboard/story-engine';
 
 import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';

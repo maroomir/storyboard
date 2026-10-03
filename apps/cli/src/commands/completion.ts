@@ -5,8 +5,6 @@ import {
   aiProviderIds,
   storyboardModelCatalog,
   storyboardSettingCatalog,
-} from '@storyboard/story-ai';
-import {
   compositionKindLabels,
   compositionKinds,
   isIgnoredSampleCardFileName,

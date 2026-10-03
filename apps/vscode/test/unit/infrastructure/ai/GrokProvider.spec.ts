@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, computeCostUsd, GrokProvider } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import { computeCostUsd, GrokProvider } from '@storyboard/story-ai';
 import type { OpenAiClientLike } from '@storyboard/story-ai';
 describe("GrokProvider", () => {
   it("requires an API key and a model", () => {

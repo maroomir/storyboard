@@ -2,7 +2,7 @@ import {
   isSpanRequiredTool,
   studioToolNamesByShape,
   type StudioAgentToolName,
-} from '#ai/contracts/studioAgent';
+} from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
 import type { PromptArtifact } from './types';

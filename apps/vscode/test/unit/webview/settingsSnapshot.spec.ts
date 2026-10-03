@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { aiProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-ai"
+import { aiProviderIds, requiresApiKey as engineRequiresApiKey } from "@storyboard/story-model"
 
 import {
   AI_PROVIDER_IDS,

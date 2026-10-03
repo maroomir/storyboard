@@ -8,13 +8,13 @@ import {
   pipelineDefaults,
   resolveSceneGenerationTuning,
   runSceneGenerationPipeline,
-  sectionViolationKinds,
   selectRepresentativeDialogue,
   validateExpandedSection,
   validatePolishedSkeleton,
   validateSceneSkeleton,
-  type SceneGenerationPipelineAiService
+  type SceneGenerationPipelineAiService,
 } from "@storyboard/story-pipeline"
+import { sectionViolationKinds } from "@storyboard/story-model"
 
 // 손잡이를 넓히면서 기본값이 한 칸이라도 움직였는지 보는 대조 테스트. 파이프라인 동작을 바꾸는
 // 커밋이 아니라 «주입 가능하게만 만드는» 커밋이라는 것을 이 파일이 증명한다.

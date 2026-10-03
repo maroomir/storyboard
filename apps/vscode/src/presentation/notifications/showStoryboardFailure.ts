@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import { missingApiKeyMarker, missingProviderMessage } from '@storyboard/story-ai';
+import { missingApiKeyMarker } from '@storyboard/story-model';
+import { missingProviderMessage } from '@storyboard/story-ai';
 
 import { chooseProviderCommand } from '@/presentation/commands/chooseProvider';
 import { openSettingsCommand } from '@/presentation/commands/openSettings';

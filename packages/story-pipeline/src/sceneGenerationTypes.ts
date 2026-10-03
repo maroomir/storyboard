@@ -2,6 +2,8 @@ import type {
   ProjectFormat,
   SceneContext,
   SceneDialogueRecord,
+  AiProviderId,
+  StyleDirective,
 } from '@storyboard/story-model';
 import type {
   IBackgroundMemoryStore,
@@ -9,7 +11,7 @@ import type {
   ISceneDialogueCorpus,
   ISceneDialogueStore,
 } from './memoryStore';
-import type { AiProviderId, StoryboardAiService, StyleDirective } from '@storyboard/story-ai';
+import type { StoryboardAiService } from '@storyboard/story-ai';
 import type { SceneGenerationTuning } from './sceneGenerationTuning';
 import type { SceneStageId } from './sceneStageCatalog';
 export type SceneGenerationPipelineAiService = Pick<

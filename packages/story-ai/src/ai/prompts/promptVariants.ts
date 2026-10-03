@@ -5,7 +5,7 @@ import {
   aiTaskNames,
   type AiProviderId,
   type AiTaskName,
-} from '#ai/contracts/aiTypes';
+} from '@storyboard/story-model';
 
 import promptVariantRulesData from './promptVariants.params.json';
 import { type PromptVariantId } from './types';

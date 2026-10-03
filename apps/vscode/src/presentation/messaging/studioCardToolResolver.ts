@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 
-import type { StudioAgentInvokeRequest, StudioValidationVerdict } from '@storyboard/story-ai';
+import type {
+  StudioAgentInvokeRequest,
+  StudioValidationVerdict,
+  StoryboardCard,
+} from '@storyboard/story-model';
 import { parseCard, parseSceneCard, isBackgroundCard } from '@storyboard/story-model';
-import type { StoryboardCard } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';

@@ -1,4 +1,8 @@
-import type { StoryUri } from '@storyboard/story-model';
+import type {
+  StoryUri,
+  StudioAgentFollowUp,
+  StudioAgentLookupRequest,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import {
@@ -8,7 +12,6 @@ import {
   readSceneFile,
   serializeCard,
 } from '@storyboard/story-model';
-import type { StudioAgentFollowUp, StudioAgentLookupRequest } from '@storyboard/story-ai';
 
 import type { StudioEntity, StudioFollowUpTarget } from '#engine/shared/messaging/studio';
 import {

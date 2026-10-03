@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
-import type { StudioCardSeed } from '@storyboard/story-ai';
+import type { StudioCardSeed } from '@storyboard/story-model';
 
 import type { AiGateway } from '@storyboard/story-engine';
 import type { CardManager } from '@storyboard/story-app';

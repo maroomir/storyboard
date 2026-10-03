@@ -7,7 +7,8 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ConfigBridge, OllamaProvider, storyboardModelCatalog } from '@storyboard/story-ai';
+import { ConfigBridge, OllamaProvider } from '@storyboard/story-ai';
+import { storyboardModelCatalog } from '@storyboard/story-model';
 import type { OllamaClientLike, StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { chooseCostAxis } from '@storyboard/story-sim';
 

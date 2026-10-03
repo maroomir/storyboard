@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ContinuityIssueLike, DraftCritiqueIssue, StyleDirective } from '@storyboard/story-ai';
+import type { ContinuityIssueLike, DraftCritiqueIssue, StyleDirective } from '@storyboard/story-model';
 import {
   createDraft,
   NodeUri,

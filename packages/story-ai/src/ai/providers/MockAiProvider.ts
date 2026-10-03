@@ -6,8 +6,8 @@ import {
   type AiProviderId,
   type AiTaskName,
   type AiUsage,
-} from '#ai/contracts/aiTypes';
-import { getProviderDisplayName } from '#ai/contracts/providerCatalog';
+  getProviderDisplayName,
+} from '@storyboard/story-model';
 import { registerProviderFactory } from '#ai/ai/providerFactory';
 
 const mockCatalogModelId = 'mock-default';

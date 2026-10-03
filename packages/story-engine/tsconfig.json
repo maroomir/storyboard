@@ -17,9 +17,6 @@
       ],
       "@storyboard/story-model/contracts": [
         "../story-model/src/contracts.ts"
-      ],
-      "@storyboard/story-ai/contracts": [
-        "../story-ai/src/contracts.ts"
       ]
     }
   },

@@ -6,13 +6,9 @@ import {
   aiTaskNames,
   storyboardModelCatalog,
   storyboardSettingCatalog,
-} from '@storyboard/story-ai';
-import type {
-  AiProviderRegistry,
-  AiTaskName,
-  ConfigBridge,
-  SecretStore,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
+import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
+import type { AiTaskName } from '@storyboard/story-model';
 
 export interface SettingsConfigFiles {
   readonly user: string;

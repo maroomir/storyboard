@@ -47,7 +47,7 @@ change.
 
 Typical changes and what they touch:
 
-- **A new AI provider**: a catalog row in `packages/story-ai/src/contracts/providerCatalog.ts` plus
+- **A new AI provider**: a catalog row in `packages/story-model/src/contracts/providerCatalog.ts` plus
   a provider module that registers itself. The registry is not edited.
 - **A prompt wording change**: the Markdown resource under `packages/story-ai/src/ai/prompts/resources/`.
   Temperature and output limits live in that file's front matter.

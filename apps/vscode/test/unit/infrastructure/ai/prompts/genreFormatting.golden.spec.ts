@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { GenreFormattingPrompt, type StyleDirective } from "@storyboard/story-ai"
+import { GenreFormattingPrompt } from "@storyboard/story-ai"
+import { type StyleDirective } from "@storyboard/story-model"
 
 describe("GenreFormattingPrompt golden", () => {
   const dialogue = "조만재: 안녕\n엘리아: 반가워"

@@ -769,7 +769,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `providers.ollama.baseUrl`
 - `providers.ollama.model`: 기본 `gemma4:12b`(카탈로그는 제안일 뿐, 받아 둔 어떤 태그든 받는다)
 
-모델 목록·요금·기본 모델은 `packages/story-ai/src/contracts/providerCatalog.ts` 한 곳이 갖는다. 기본값이 아닌
+모델 목록·요금·기본 모델은 `packages/story-model/src/contracts/providerCatalog.ts` 한 곳이 갖는다. 기본값이 아닌
 `temperature`를 거부하는 모델(Claude 4.7 이후, GPT-6, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
 프로바이더는 그 모델에 `temperature`를 보내지 않는다.
 - `tasks.<taskName>.provider`: 작업별 provider 오버라이드

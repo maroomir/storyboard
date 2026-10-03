@@ -1,8 +1,5 @@
-import type { StoryUri } from '@storyboard/story-model';
-import { z } from 'zod';
-
-import { aiProviderIds, aiTaskNames } from '@storyboard/story-ai';
 import type {
+  StoryUri,
   AiProviderId,
   AiTaskName,
   AiUsage,
@@ -11,7 +8,10 @@ import type {
   UsageAttribution,
   UsageRecord,
   UsageSummaryByEntity,
-} from '@storyboard/story-ai';
+} from '@storyboard/story-model';
+import { z } from 'zod';
+
+import { aiProviderIds, aiTaskNames } from '@storyboard/story-model';
 const usageLedgerVersion = 1 as const;
 
 export type UsageLedgerEntry = UsageRecord & {

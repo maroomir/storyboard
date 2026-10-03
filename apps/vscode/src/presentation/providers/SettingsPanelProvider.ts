@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 import { createWebviewBridge, type StoryboardRpcHandlers } from '@/presentation/messaging/bridge';
 import { createAiRpcHandlers } from '@/presentation/messaging/aiRpcHandlers';
-import { aiProviderIds } from '@storyboard/story-ai';
+import { aiProviderIds } from '@storyboard/story-model';
 import type { AiProviderRegistry, ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import { createContractRpcHandlers } from '@/presentation/messaging/contractRpcHandlers';
 import {

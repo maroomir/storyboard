@@ -10,12 +10,12 @@ export {
   storyboardModelCatalog,
   studioAgentToolNames,
   studioToolNamesByShape,
-} from '@storyboard/story-ai/contracts';
+} from '@storyboard/story-model/contracts';
 export type {
   AiProviderId,
   ProviderModelOption,
   StudioAgentToolName,
-} from '@storyboard/story-ai/contracts';
+} from '@storyboard/story-model/contracts';
 export {
   compositionCatalog,
   compositionKindLabels,

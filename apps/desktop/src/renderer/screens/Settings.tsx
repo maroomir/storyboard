@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { AiProviderId } from '@storyboard/story-engine/contracts';
+import type { AiProviderId } from '@storyboard/story-model/contracts';
 
 import type { DesktopSettings, SettingEntry, UiLanguage } from '@/shared/dto';
 

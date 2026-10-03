@@ -1,7 +1,7 @@
 import * as vscode from "vscode"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
-import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-ai';
+import type { ContinuityIssueLike, DraftCritiqueIssue } from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn<[], Promise<ContinuityIssueLike[]>>()
 const critiqueDraftMock = vi.fn(async (input: unknown): Promise<DraftCritiqueIssue[]> => {

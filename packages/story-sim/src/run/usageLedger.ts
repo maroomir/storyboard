@@ -1,5 +1,5 @@
 import { computeCostUsd } from '@storyboard/story-ai';
-import type { AiTaskName, UsageRecord } from '@storyboard/story-ai';
+import type { AiTaskName, UsageRecord } from '@storyboard/story-model';
 
 export interface TaskUsage {
   readonly calls: number;

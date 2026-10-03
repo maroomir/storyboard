@@ -3,11 +3,10 @@ import path from "node:path"
 
 import { test } from "vitest"
 
-import { buildSceneContext, readSceneFile } from "@storyboard/story-model"
+import { buildSceneContext, readSceneFile, summarizeSceneCoverage } from "@storyboard/story-model"
 import { StoryboardAiService } from "@storyboard/story-ai"
 import type { AiProviderRegistry } from "@storyboard/story-ai"
-import type { AiGenerateResponse, AiProvider } from "@storyboard/story-ai"
-import { summarizeSceneCoverage } from "@storyboard/story-ai"
+import type { AiGenerateResponse, AiProvider } from "@storyboard/story-model"
 
 import { createUsageSummary } from "./usageSummary"
 import { createHarnessProvider, defaultHarnessModel, resolveHarnessProviderId } from "./harnessProvider"

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { AiProviderError, computeCostUsd, OpenAiProvider } from '@storyboard/story-ai';
+import { AiProviderError } from '@storyboard/story-model';
+import { computeCostUsd, OpenAiProvider } from '@storyboard/story-ai';
 import type { OpenAiClientLike } from '@storyboard/story-ai';
 describe("OpenAiProvider", () => {
   it("requires an API key", () => {

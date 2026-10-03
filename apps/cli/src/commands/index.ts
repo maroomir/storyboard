@@ -61,9 +61,11 @@ import {
   serializeDraft,
   setCardId,
   parseSceneFileName,
+  aiProviderIds,
+  requiresApiKey,
+  type AiProviderId,
 } from '@storyboard/story-model';
 
-import { aiProviderIds, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 
 import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
