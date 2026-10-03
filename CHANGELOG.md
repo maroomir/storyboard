@@ -9,6 +9,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- **Obsidian·Notion 노트에서 작품을 시작할 수 있습니다.** `storyboard notes absorb <볼트 폴더·노트 | Notion 주소>`가 하위 페이지와 본문 링크 한 단계까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다. 실행 전에 노트 수와 예상 비용을 보여 주고 반영 전에 다시 묻습니다(에이전트는 `--yes`, 계획만 보려면 `--dry-run`). 이미 있는 카드와 시놉시스는 덮어쓰지 않습니다 — 카드에 더할 내용은 `card promote`로 고르고, 작품 계약은 `project set` 명령으로 제안합니다. 새 작품은 `storyboard init --title … --from-notes …` 한 번으로 만들고 계약의 빈 칸까지 채웁니다. Notion은 `storyboard notes connect notion`으로 통합 토큰을 한 번 넣고, 읽을 페이지에 그 통합을 연결해야 합니다. 지금은 CLI에서만 됩니다.
+
 ## [0.11.2] - 2026-10-04
 
 ### 추가

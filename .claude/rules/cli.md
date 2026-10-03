@@ -75,6 +75,21 @@ is the single source for the parser's flag table, `--help`, per-verb help and `n
 시점·줄기를 한 줄로 보여 주고, `doctor`는 카드 없는 서술자 참조를 실패로, 계약에 없는 줄기와
 초점 없는 1·2인칭 서술자를 경고로 보고한다.
 
+## Note import (`apps/cli/src/commands/notes.ts`)
+
+`notes absorb <path|url>` reads an Obsidian folder or note (every note under it, in name order) or a
+Notion page (sub-pages and inline database rows, in page order), plus the notes their text links to
+— one step, no further. The model sorts them into character/background cards, scene cards, the
+contract and a synopsis; what it cannot place is reported and never written. Nothing that exists
+is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,
+which `card promote` applies beside the draft candidates; an existing synopsis gets
+`synopsis.candidate.md`; the contract is only proposed (`project set …`), except that
+`init --from-notes` fills the empty fields of the work it just made. Scenes follow the last scene
+number in the order the notes were read — the model never reorders them. A person is asked before
+the paid step and before writing; without a TTY the verb stops at the estimate unless `--yes` is
+given, and `--dry-run` stops at the plan. The Notion integration token lives in `secrets.json`
+(`notes connect notion`). The collected notes and the plan stay in the git-ignored cache.
+
 ## Editor-only surface
 
 Inline completion, hover, the `.card` custom editor and the relation graph are editor chrome, not

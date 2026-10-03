@@ -622,6 +622,16 @@ bible candidate와 같은 결을 가지는, **캐릭터 카드 필드용** 후�
 relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고, attributes는 카드에 없는 key만 제안한다(기존 값 비파괴).
 배경 `characterIds`는 후보를 거치지 않고 배경 카드에 결정적으로 직접 기록된다.
 
+### 4.8b `.storyboard/cache/notes/` (노트 흡수)
+
+`storyboard notes absorb`·`init --from-notes`가 Obsidian 볼트나 Notion 페이지에서 읽은 것을 둔다. 모두 git 밖의
+캐시이며, 워크스페이스에 들어가는 것은 카드·씬·시놉시스뿐이다.
+
+- `source.json`: 수집한 노트 원문과 출처(트리에서 읽었는지 링크로 따라왔는지), 읽지 못한 노트.
+- `plan.json`: 마지막 정리 계획 — 새 카드, 기존 카드에 대한 변경, 번호를 붙인 씬, 계약·시놉시스 제안, 분류 못한 노트.
+- `candidates.json`: 이미 있던 카드에 대한 노트의 변경. `card promote`가 초안 후보(§4.8a)와 함께 반영하고, 반영한 항목을 지운다. 흡수를 다시 하면 통째로 바뀐다.
+- `synopsis.candidate.md`: `outline/synopsis.md`가 이미 있을 때 노트에서 만든 시놉시스.
+
 ### 4.9 `.storyboard/memory/personas/`·`backgrounds/` (에이전트 영속 메모리)
 
 > 페르소나 메모리(`personas/`)와 배경 메모리(`backgrounds/`) 모두 구현됨(Phase G-2·G-4).
