@@ -149,3 +149,13 @@ export function rewriteSceneCardStemText(rawCard: string, rename: SceneRename): 
     .replace(fieldLine('id', ''), `$1${to.stem}$2`)
     .replace(fieldLine('summary', '.summary.md'), `$1${to.stem}.summary.md$2`);
 }
+
+// A rename writes the new card before it deletes the old one, so an interrupted rename leaves the
+// old card next to its rewritten copy.
+export function isSceneCardRenameCopy(
+  sourceRawCard: string,
+  targetRawCard: string,
+  rename: SceneRename,
+): boolean {
+  return rewriteSceneCardStemText(sourceRawCard, rename) === targetRawCard;
+}

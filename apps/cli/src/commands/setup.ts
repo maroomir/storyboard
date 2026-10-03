@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { basename, join } from 'node:path';
 
 import {
   aiProviderIds,
@@ -23,8 +23,11 @@ import {
   findUnreadableStoryStateLines,
   isLegacySceneFileName,
   isInlineSceneSummary,
+  isSceneCardRenameCopy,
   isLegacySeedPlaceholderSummary,
   mainThreadId,
+  parseSceneFileName,
+  parseSceneStem,
   readMissingGitignoreEntries,
   type SceneCard,
   type StoryboardProject,
@@ -493,6 +496,85 @@ async function collectChapterSummaryChecks(
   return [{ status: 'ok', label: '장별 요약', detail: '요약이 지금의 초안과 맞습니다.' }];
 }
 
+// NOTE: scene rename writes every new file before it deletes an old one. Cut off before the old
+// card goes, both cards stand side by side and the same rename finishes the job; cut off after,
+// the old stem's draft or summary is left with no card.
+function collectInterruptedRenameChecks(
+  paths: ReturnType<typeof getStoryboardProjectPaths>,
+  sceneFileNames: readonly string[],
+  draftFileNames: readonly string[],
+): DoctorCheck[] {
+  const cards = sceneFileNames.flatMap((fileName) => {
+    const parts = parseSceneFileName(fileName);
+    const fsPath = join(paths.sceneDirectory.fsPath, fileName);
+
+    if (parts === undefined) {
+      return [];
+    }
+
+    const raw = readFileSync(fsPath, 'utf8');
+    return [
+      {
+        parts,
+        raw,
+        stemless: raw.split(parts.stem).join(''),
+        modifiedAt: statSync(fsPath).mtimeMs,
+      },
+    ];
+  });
+
+  // The copy is the card written later; a tie is broken by name so a pair is reported once.
+  const isWrittenAfter = (
+    later: (typeof cards)[number],
+    earlier: (typeof cards)[number],
+  ): boolean =>
+    later.modifiedAt === earlier.modifiedAt
+      ? later.parts.stem > earlier.parts.stem
+      : later.modifiedAt > earlier.modifiedAt;
+
+  const cutOffRenames = cards.flatMap((source) =>
+    cards
+      .filter(
+        (target) =>
+          target.stemless === source.stemless &&
+          isWrittenAfter(target, source) &&
+          isSceneCardRenameCopy(source.raw, target.raw, { from: source.parts, to: target.parts }),
+      )
+      .map((target) => ({ fromStem: source.parts.stem, toStem: target.parts.stem })),
+  );
+
+  const cardStems = new Set(cards.map((card) => card.parts.stem));
+  const orphanFiles = [
+    ...draftFileNames
+      .map((fileName) => fileName.replace(/\.md$/, ''))
+      .filter((stem) => parseSceneStem(stem) !== undefined && !cardStems.has(stem))
+      .map((stem) => `draft/${stem}.md`),
+    ...sceneFileNames
+      .filter((fileName) => fileName.endsWith('.summary.md'))
+      .filter((fileName) => !cardStems.has(fileName.replace(/\.summary\.md$/, '')))
+      .map((fileName) => `scene/${fileName}`),
+  ];
+
+  return [
+    ...cutOffRenames.map(({ fromStem, toStem }) => ({
+      status: 'fail' as const,
+      label: '씬 이름 바꾸기',
+      detail: `${fromStem} → ${toStem} 가 끝나지 않아 두 카드가 함께 있습니다.`,
+      fix: `storyboard scene rename ${fromStem} --to ${toStem}`,
+    })),
+    ...(orphanFiles.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '카드 없는 씬 파일',
+            detail: `${orphanFiles.join(', ')} 의 씬 카드가 없습니다.`,
+            fix: '끊긴 씬 이름 바꾸기가 남긴 옛 파일이면 지우고, 아니면 카드를 되살리세요 (git으로 되돌릴 수 있습니다).',
+          },
+        ]
+      : []),
+  ];
+}
+
 async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCheck[]> {
   const root = container.workspaceRoot;
   const paths = getStoryboardProjectPaths(root);
@@ -555,6 +637,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
           },
         ]
       : []),
+    ...collectInterruptedRenameChecks(paths, sceneFileNames, drafts),
     ...(unreadable.length > 0
       ? [
           {

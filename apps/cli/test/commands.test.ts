@@ -6,6 +6,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -908,3 +909,47 @@ describe('doctor: unreadable ledger lines', () => {
   });
 });
 
+
+describe('doctor: interrupted scene rename', () => {
+  function writeScene(stem: string, title = '야시장'): string {
+    const cardPath = join(workspace, 'scene', `${stem}.card`);
+    writeFileSync(cardPath, `type: scene\nid: ${stem}\ntitle: ${title}\nsummary: ${stem}.summary.md\n`);
+    return cardPath;
+  }
+
+  it('names the rename that finishes two cards left side by side', async () => {
+    const oldCard = writeScene('03-night-market');
+    utimesSync(oldCard, new Date('2026-10-01'), new Date('2026-10-01'));
+    writeScene('04-night-market');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('03-night-market → 04-night-market 가 끝나지 않아');
+    expect(outcome.message).toContain('storyboard scene rename 03-night-market --to 04-night-market');
+    expect(outcome.message).not.toContain('04-night-market → 03-night-market');
+  });
+
+  it('reports a draft and a summary left with no card', async () => {
+    writeScene('04-night-market');
+    writeFileSync(join(workspace, 'scene', '03-night-market.summary.md'), '야시장.\n');
+    writeFileSync(join(workspace, 'draft', '03-night-market.md'), '등불 아래.\n');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).toContain(
+      'draft/03-night-market.md, scene/03-night-market.summary.md 의 씬 카드가 없습니다',
+    );
+    expect(outcome.message).not.toContain('가 끝나지 않아');
+  });
+
+  it('stays quiet about scenes that only look alike', async () => {
+    writeScene('03-night-market');
+    writeScene('04-dawn', '새벽');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).not.toContain('씬 이름 바꾸기');
+    expect(outcome.message).not.toContain('카드 없는 씬 파일');
+  });
+});
