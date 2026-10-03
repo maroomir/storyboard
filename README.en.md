@@ -72,10 +72,15 @@ Usage lives in the [extension](apps/vscode/README.en.md), [CLI](apps/cli/README.
 
 ## Contributing
 
-One maintainer builds this to write their own novels. Issues and pull requests are welcome and
-usually answered within days, but no response time is promised. Start with
-[`CONTRIBUTING.md`](CONTRIBUTING.md) and the `good first issue` label. Contributions written with
-AI agents are accepted. Security problems follow [`SECURITY.md`](SECURITY.md).
+Storyboard aims to be a tool many writers use and the people who use it grow together. Pull
+requests that change or add features are actively welcome, not just bug fixes — new providers,
+pipeline stages and screen improvements alike. Telling us in an issue what got in your way or what
+you wish it did is a contribution too. For a larger change, agreeing on the direction in an issue
+first gets it merged faster.
+
+Start with [`CONTRIBUTING.md`](CONTRIBUTING.md) and the `good first issue` and `help wanted` labels.
+Contributions written with AI agents are accepted. Security problems follow
+[`SECURITY.md`](SECURITY.md).
 
 ## License
 

@@ -68,10 +68,13 @@ npm run desktop:dev    # 데스크톱 앱 개발 실행
 
 ## 기여
 
-이 도구는 메인테이너 한 사람이 자기 작품을 쓰려고 만들고 있습니다. 이슈와 PR은 환영하고 되도록 며칠
-안에 답하지만, 응답 시한을 약속하지는 않습니다. 시작은 [`CONTRIBUTING.md`](CONTRIBUTING.md)와
-`good first issue` 라벨에서 하세요. AI 에이전트로 작성한 기여도 받습니다. 보안 문제는
-[`SECURITY.md`](SECURITY.md)를 따릅니다.
+Storyboard는 더 많은 작가가 쓰고, 쓰는 사람들이 함께 키우는 도구를 지향합니다. 버그 수정은 물론
+기능을 바꾸거나 새로 더하는 PR도 적극적으로 받습니다 — 새 프로바이더, 파이프라인 단계, 화면 개선 모두
+환영합니다. 써 보고 불편했던 점이나 원하는 기능을 이슈로 남겨 주는 것도 큰 기여입니다. 큰 변경은 이슈로
+방향을 먼저 맞추면 더 빨리 들어갑니다.
+
+시작은 [`CONTRIBUTING.md`](CONTRIBUTING.md)와 `good first issue`·`help wanted` 라벨에서 하세요. AI
+에이전트로 작성한 기여도 받습니다. 보안 문제는 [`SECURITY.md`](SECURITY.md)를 따릅니다.
 
 ## 라이선스
 

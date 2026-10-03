@@ -2,8 +2,10 @@
 
 Storyboard generates long-form fiction in small, inspectable steps: a project contract, cards,
 an outline, scene seeds, scene drafts, reviews, and an assembled manuscript. Three apps (a VS Code
-extension, a CLI and a desktop app) run the same engine. Contributions of any size are welcome, and
-the maintainer is one person, so small, focused pull requests get the fastest turnaround.
+extension, a CLI and a desktop app) run the same engine. The goal is a tool many writers use, so
+contributions of any size are welcome — new features and changes to existing behavior as much as bug
+fixes. Small, focused pull requests get the fastest turnaround; for a larger change, open an issue
+first so the direction is agreed before the code is written.
 
 한국어 사용자: 이슈와 PR은 한국어로 써도 됩니다. 아래 규칙은 언어와 무관합니다.
 
@@ -95,7 +97,7 @@ A green run means exactly this, no more:
 - Do not add `Co-Authored-By` trailers for AI tools.
 
 Expect a first reply within a few days. Issues labeled `good first issue` are scoped to be finished
-in one sitting; `help wanted` marks work the maintainer would like but has not scheduled.
+in one sitting; `help wanted` marks work that is open for anyone to pick up.
 
 ## Contributions written with AI agents
 
