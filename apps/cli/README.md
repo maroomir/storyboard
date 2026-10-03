@@ -152,6 +152,19 @@ same `scene rename` it names again to finish. Files with the old name and no car
 storyboard scene rename 03-night-market --to 04-night-market
 ```
 
+Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault folder (or one note)
+or a Notion page with everything under it, plus the notes they link to one step away, and sorts
+them into character and background cards, scene cards and a synopsis. It shows the cost estimate
+first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at the plan. Cards
+that already exist are never overwritten — what the notes add to them waits for `card promote`.
+A Notion page needs an integration token once (`notes connect notion`) and the page shared with
+that integration. A new work can start from notes in one step:
+
+```bash
+storyboard init --title "달의 문" --from-notes ~/Vault/달의문
+storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes
+```
+
 `cards build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
 without touching the tree. A new card whose name yields no ascii id is reported rather than filed
 under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
