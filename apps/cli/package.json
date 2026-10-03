@@ -26,7 +26,6 @@
     "@storyboard/story-engine": "*",
     "@storyboard/story-model": "*",
     "@storyboard/story-node": "*",
-    "@storyboard/story-pipeline": "*",
     "@storyboard/story-sim": "*",
     "ink": "^5.2.1",
     "react": "^18.3.1",

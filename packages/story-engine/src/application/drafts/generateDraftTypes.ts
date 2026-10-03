@@ -12,7 +12,7 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
-import type { SceneGenerationPipelineStage } from '@storyboard/story-pipeline';
+import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 
 // 승인 UI는 presentation이 구현한다. undefined를 돌려주면 생성을 취소한다.
 export type ConfirmSceneGrounding = (input: {

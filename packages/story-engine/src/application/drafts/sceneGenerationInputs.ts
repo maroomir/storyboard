@@ -19,7 +19,7 @@ import type { IProjectRepository, ISceneRepository } from '#engine/application/d
 import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';
 import { sceneCacheFilePath } from '#engine/persistence/sceneCacheWorkspace';
-import { resolveSceneBreakJoiner } from '@storyboard/story-pipeline';
+import { resolveSceneBreakJoiner } from '#engine/pipeline/sceneGenerationPolicies';
 import type { GenerateDraftResult, GenerateDraftWorkflowOptions } from './generateDraftTypes';
 import { resolveSceneBeats } from './resolveSceneBeats';
 import { resolveSceneGrounding } from './resolveSceneGrounding';

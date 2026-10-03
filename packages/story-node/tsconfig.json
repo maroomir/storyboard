@@ -15,9 +15,6 @@
       "@storyboard/story-ai": [
         "../story-ai/src/index.ts"
       ],
-      "@storyboard/story-pipeline": [
-        "../story-pipeline/src/index.ts"
-      ],
       "@storyboard/story-model/contracts": [
         "../story-model/src/contracts.ts"
       ]

@@ -34,12 +34,12 @@ import { resolveSceneThread } from './resolveSceneThread';
 import { formatAugmentCards, StoryboardAiService } from '@storyboard/story-ai';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
+import { type DraftCandidateRejectionReason } from '#engine/pipeline/draftCandidateValidation';
 import {
-  type DraftCandidateRejectionReason,
   runReviseLoop,
   type ReviseLoopContext,
   type ReviseSeedIssues,
-} from '@storyboard/story-pipeline';
+} from '#engine/pipeline/reviseLoop';
 
 async function readProjectIfPresent(
   fs: IFileSystem,

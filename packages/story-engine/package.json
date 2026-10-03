@@ -2,7 +2,7 @@
   "name": "@storyboard/story-engine",
   "version": "0.0.0",
   "private": true,
-  "description": "Storyboard's runtime-agnostic core: domain policies, file records, and the shared contracts every app speaks",
+  "description": "Storyboard's runtime-agnostic core: use cases, repositories, host ports, and the scene and novel pipelines",
   "license": "Apache-2.0",
   "main": "src/index.ts",
   "imports": {
@@ -23,7 +23,6 @@
   "dependencies": {
     "@storyboard/story-ai": "*",
     "@storyboard/story-model": "*",
-    "@storyboard/story-pipeline": "*",
     "zod": "^4.4.2"
   },
   "devDependencies": {

@@ -1,5 +1,5 @@
 import type { UsageRecord } from '@storyboard/story-model';
-import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
+import type { SceneGenerationTuning } from '@storyboard/story-engine';
 
 // story-sim 은 CLI 컨테이너를 모른다. 한 지점을 돌릴 워크스페이스를 여는 일만 포트로 맡기고,
 // apps/cli 가 그것을 제품 경로(GenerateDraftUseCase)로 구현한다.

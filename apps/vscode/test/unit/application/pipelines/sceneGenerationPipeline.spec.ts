@@ -12,9 +12,7 @@ import {
   overrideScenePipelinePlan,
   resetScenePipelinePlan,
   resolveScenePipelinePlan,
-  sceneStageIds
-} from '@storyboard/story-pipeline';
-import {
+  sceneStageIds,
   runSceneGenerationPipeline,
   planSectionCount,
   planSectionTargetLengths,
@@ -25,8 +23,8 @@ import {
   findRepeatedDialogueRun,
   type SceneDialogueCorpus,
   type SceneGenerationPipelineAiService,
-  type SceneGenerationPipelineStage
-} from '@storyboard/story-pipeline'
+  type SceneGenerationPipelineStage,
+} from '@storyboard/story-engine';
 
 // 검증의 최소 분량(목표의 절반)을 넘겨야 재시도가 돌지 않는다. 목 응답을 그 길이로 채우되, prefix 를
 // 씨앗으로 삼은 결정적 난수열로 채워 구간마다 다른 본문이 되게 한다. 같은 조각을 되풀이해 채우면

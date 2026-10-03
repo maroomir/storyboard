@@ -32,10 +32,10 @@ vi.mock("../../../../../../packages/story-model/src/domain/files/draftHistory", 
   >()),
   archiveExistingDraft: (...args: unknown[]): unknown => archiveExistingDraftMock(...args)
 }))
-vi.mock('@storyboard/story-pipeline', async () => {
+vi.mock('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline', async () => {
   const actual = await vi.importActual<
-    typeof import('@storyboard/story-pipeline')
-  >('@storyboard/story-pipeline')
+    typeof import('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline')
+  >('../../../../../../packages/story-engine/src/pipeline/sceneGenerationPipeline')
   return {
     ...actual,
     SceneGenerationPipeline: class {
@@ -51,9 +51,9 @@ import {
   GenerateDraftUseCase,
   type GenerateDraftRequest,
   type GenerateDraftResult,
-  type GenerateDraftUseCaseDependencies
+  type GenerateDraftUseCaseDependencies,
+  SceneGenerationPipelineCancelledError,
 } from "@storyboard/story-engine"
-import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")

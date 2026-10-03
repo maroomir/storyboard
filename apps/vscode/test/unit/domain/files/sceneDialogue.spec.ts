@@ -7,7 +7,7 @@ import {
   type SceneDialogueRecord,
   coerceDialogueAttribution,
 } from "@storyboard/story-model"
-import { selectRepresentativeDialogue } from "@storyboard/story-pipeline"
+import { selectRepresentativeDialogue } from "@storyboard/story-engine"
 
 function recordOf(sceneStem: string, turns: SceneDialogueRecord["turns"]): SceneDialogueRecord {
   return { sceneStem, bodyHash: computeDraftBodyHash(sceneStem), turns }

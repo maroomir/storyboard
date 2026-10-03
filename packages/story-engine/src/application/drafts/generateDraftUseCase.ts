@@ -20,10 +20,8 @@ import {
 } from '#engine/persistence/cardMemoryWorkspace';
 import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcerpt';
 import type { StoryboardAiService } from '@storyboard/story-ai';
-import {
-  SceneGenerationPipeline,
-  SceneGenerationPipelineCancelledError,
-} from '@storyboard/story-pipeline';
+import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
+import { SceneGenerationPipelineCancelledError } from '#engine/pipeline/sceneGenerationTypes';
 import type {
   GenerateDraftRequest,
   GenerateDraftResult,

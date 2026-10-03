@@ -1,4 +1,4 @@
-import { pipelineDefaults } from '@storyboard/story-pipeline';
+import { pipelineDefaults } from '@storyboard/story-engine';
 import { sectionViolationKinds } from '@storyboard/story-model';
 
 // 심판을 부르지 않고도 나오는 신호들. 선별 단계는 이것만으로 손잡이 순위를 매긴다 — 온도 낮은

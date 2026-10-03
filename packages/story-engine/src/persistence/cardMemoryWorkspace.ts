@@ -26,7 +26,7 @@ import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,
   ISceneDialogueStore,
-} from '@storyboard/story-pipeline';
+} from '#engine/pipeline/memoryStore';
 
 async function ensurePersonaMemoryDirectory(
   fs: IFileSystem,

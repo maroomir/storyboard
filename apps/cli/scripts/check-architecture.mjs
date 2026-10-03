@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   orderedLayerRule,
+  refusePipelineAssembly,
   requireAliasForEscapingImport,
   runArchitectureCheck,
 } from '../../../scripts/architecture/runner.mjs';
@@ -16,11 +17,7 @@ const LAYER_ORDER = ['adapters', 'commands', 'tui'];
 
 // The CLI must never grow its own copy of the generation pipeline: orchestration belongs to the
 // engine, and a verb that assembles pipeline stages by hand would be the fourth such mirror.
-function refuseDirectPipelineImport(filePath, importPath, _statement, report) {
-  if (importPath === '@storyboard/story-pipeline') {
-    report('CLI imports the pipeline directly instead of an engine use case', filePath);
-  }
-}
+const refuseDirectPipelineImport = refusePipelineAssembly('CLI');
 
 runArchitectureCheck('CLI', SOURCE_ROOT, {
   rules: [orderedLayerRule(LAYER_ORDER, SOURCE_ROOT)],

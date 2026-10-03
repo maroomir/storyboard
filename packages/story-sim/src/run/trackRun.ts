@@ -1,7 +1,7 @@
 import { applyPromptTuningOverrides, resetPromptTuningOverrides } from '@storyboard/story-ai';
 import type { PromptTuningOverrides } from '@storyboard/story-ai';
 import type { UsageRecord } from '@storyboard/story-model';
-import type { SceneGenerationTuning } from '@storyboard/story-pipeline';
+import type { SceneGenerationTuning } from '@storyboard/story-engine';
 
 import type { ISimWorkspaceFactory } from '#sim/ports/workspaceFactory';
 import { summarizeUsage, type TokenTotals } from '#sim/run/usageLedger';
