@@ -13,6 +13,7 @@ export interface StoryboardRelativePaths {
   readonly usageLedger: string;
   readonly novelRunState: string;
   readonly runLock: string;
+  readonly sceneRenameJournal: string;
   readonly sceneCacheDirectory: string;
   readonly storyState: string;
   readonly chapterSummaries: string;
@@ -55,6 +56,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   usageLedger: '.storyboard/cache/usage.json',
   novelRunState: '.storyboard/cache/novel-run.json',
   runLock: '.storyboard/cache/run.lock',
+  sceneRenameJournal: '.storyboard/cache/scene-rename.json',
   sceneCacheDirectory: '.storyboard/cache/scenes',
   storyState: '.storyboard/memory/storyState.md',
   chapterSummaries: '.storyboard/memory/summaries.md',

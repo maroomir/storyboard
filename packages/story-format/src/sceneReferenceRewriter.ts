@@ -1,6 +1,8 @@
 import type { BibleFact, StoryBible } from './bible';
 import type { CharacterCard } from './card';
-import type { SceneFileNameParts } from './scene';
+import { z } from 'zod';
+
+import { parseSceneStem, type SceneFileNameParts } from './scene';
 import type { StoryState, StoryStateEntry } from './storyState';
 
 // A scene rename moves the stem and possibly the order. Every reference written as the old stem
@@ -150,12 +152,28 @@ export function rewriteSceneCardStemText(rawCard: string, rename: SceneRename): 
     .replace(fieldLine('summary', '.summary.md'), `$1${to.stem}.summary.md$2`);
 }
 
-// A rename writes the new card before it deletes the old one, so an interrupted rename leaves the
-// old card next to its rewritten copy.
-export function isSceneCardRenameCopy(
-  sourceRawCard: string,
-  targetRawCard: string,
-  rename: SceneRename,
-): boolean {
-  return rewriteSceneCardStemText(sourceRawCard, rename) === targetRawCard;
+// NOTE: A rename records itself before its first write and removes the record after its last
+// delete. Only a recorded rename may finish over files it already wrote: card contents alone cannot
+// tell a cut-off rename from two scenes that look alike (two fresh cards differ only in their stem).
+const sceneRenameJournalSchema = z.object({ fromStem: z.string(), toStem: z.string() });
+
+export function serializeSceneRenameJournal(rename: SceneRename): string {
+  return `${JSON.stringify({ fromStem: rename.from.stem, toStem: rename.to.stem }, null, 2)}\n`;
+}
+
+// An unreadable journal is no evidence of a rename, so it reads as none and the rename is refused.
+export function parseSceneRenameJournal(raw: string): SceneRename | undefined {
+  let value: unknown;
+
+  try {
+    value = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+
+  const parsed = sceneRenameJournalSchema.safeParse(value);
+  const from = parsed.success ? parseSceneStem(parsed.data.fromStem) : undefined;
+  const to = parsed.success ? parseSceneStem(parsed.data.toStem) : undefined;
+
+  return from === undefined || to === undefined ? undefined : { from, to };
 }
