@@ -72,6 +72,10 @@ class MemoryWorkspace implements IFileSystem {
   public async modifiedTime(): Promise<number> {
     return 0
   }
+
+  public async isRealPathInside(): Promise<boolean> {
+    return true
+  }
 }
 
 const workspaceRoot = vscode.Uri.file("/ws")

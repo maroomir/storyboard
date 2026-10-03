@@ -1,6 +1,8 @@
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   NoteSourceError,
@@ -78,6 +80,70 @@ describe('ObsidianNoteSource', () => {
   });
 });
 
+describe('ObsidianNoteSource and symbolic links', () => {
+  const fileSystem = new NodeFileSystem();
+  let base: string;
+  let vaultDirectory: string;
+
+  beforeEach(async () => {
+    base = await mkdtemp(join(tmpdir(), 'storyboard-notes-'));
+    vaultDirectory = join(base, 'vault');
+    await mkdir(vaultDirectory);
+    await mkdir(join(base, 'outside'));
+    await writeFile(join(base, 'outside', 'secret.md'), 'SECRET-OUTSIDE-MARKER');
+    await writeFile(join(vaultDirectory, 'villain.md'), '# 악역 준');
+  });
+
+  afterEach(async () => {
+    await rm(base, { recursive: true, force: true });
+  });
+
+  const collectVault = () =>
+    new ObsidianNoteSource({ fileSystem, root: NodeUri.file(vaultDirectory) }).collect();
+
+  it('skips a file link that points outside the vault and says why', async () => {
+    await symlink(join('..', 'outside', 'secret.md'), join(vaultDirectory, 'leak.md'));
+
+    const { notes, skipped } = await collectVault();
+
+    expect(notes.map((note) => note.id)).toEqual(['villain.md']);
+    expect(notes.some((note) => note.body.includes('SECRET-OUTSIDE-MARKER'))).toBe(false);
+    expect(skipped).toEqual([{ label: 'leak.md', reason: expect.stringContaining('볼트 밖') }]);
+  });
+
+  it('does not walk a folder link that points outside the vault', async () => {
+    await symlink(join('..', 'outside'), join(vaultDirectory, 'dirlink'));
+
+    const { notes } = await collectVault();
+
+    expect(notes.map((note) => note.id)).toEqual(['villain.md']);
+  });
+
+  it('does not follow a note link to a symbolic link that points outside the vault', async () => {
+    await mkdir(join(vaultDirectory, '.obsidian'));
+    await mkdir(join(vaultDirectory, '씬'));
+    await writeFile(join(vaultDirectory, '씬', '1 시작.md'), '[[leak]]');
+    await symlink(join('..', 'outside', 'secret.md'), join(vaultDirectory, 'leak.md'));
+
+    const { notes, skipped } = await new ObsidianNoteSource({
+      fileSystem,
+      root: NodeUri.file(join(vaultDirectory, '씬')),
+    }).collect();
+
+    expect(notes.map((note) => note.id)).toEqual(['씬/1 시작.md']);
+    expect(skipped).toEqual([{ label: 'leak.md', reason: expect.stringContaining('볼트 밖') }]);
+  });
+
+  it('reads a link that stays inside the vault', async () => {
+    await symlink('villain.md', join(vaultDirectory, 'alias.md'));
+
+    const { notes, skipped } = await collectVault();
+
+    expect(notes.map((note) => note.id)).toEqual(['alias.md', 'villain.md']);
+    expect(skipped).toEqual([]);
+  });
+});
+
 describe('parseNotionPageId', () => {
   it('finds the id in a titled link, a bare id and a database peek', () => {
     const id = '1429989fe8ac4effbc8f57f56486db54';
@@ -137,7 +203,12 @@ const notionRoutes: Record<string, unknown> = {
           ],
         },
       },
-      { id: 'b2', type: 'heading_2', has_children: false, heading_2: { rich_text: [text('인물')] } },
+      {
+        id: 'b2',
+        type: 'heading_2',
+        has_children: false,
+        heading_2: { rich_text: [text('인물')] },
+      },
     ],
     'cursor-2',
   ),
@@ -158,11 +229,21 @@ const notionRoutes: Record<string, unknown> = {
     { id: 'b6', type: 'link_to_page', link_to_page: { type: 'page_id', page_id: unsharedId } },
   ]),
   [`GET /blocks/${nestedBlockId}/children?page_size=100`]: list([
-    { id: 'b3a', type: 'to_do', has_children: false, to_do: { rich_text: [text('주인공')], checked: true } },
+    {
+      id: 'b3a',
+      type: 'to_do',
+      has_children: false,
+      to_do: { rich_text: [text('주인공')], checked: true },
+    },
   ]),
   [`GET /pages/${childId}`]: page(childId, '씬 메모'),
   [`GET /blocks/${childId}/children?page_size=100`]: list([
-    { id: 'c1', type: 'paragraph', has_children: false, paragraph: { rich_text: [text('만조의 밤.')] } },
+    {
+      id: 'c1',
+      type: 'paragraph',
+      has_children: false,
+      paragraph: { rich_text: [text('만조의 밤.')] },
+    },
   ]),
   [`POST /databases/${databaseId}/query`]: list([
     page(rowId, '준', { 역할: { type: 'select', select: { name: '조력자' } } }),
@@ -170,7 +251,12 @@ const notionRoutes: Record<string, unknown> = {
   [`GET /blocks/${rowId}/children?page_size=100`]: list([]),
   [`GET /pages/${linkedId}`]: page(linkedId, '세계관'),
   [`GET /blocks/${linkedId}/children?page_size=100`]: list([
-    { id: 'l1', type: 'quote', has_children: false, quote: { rich_text: [text('문은 만조에만 열린다.')] } },
+    {
+      id: 'l1',
+      type: 'quote',
+      has_children: false,
+      quote: { rich_text: [text('문은 만조에만 열린다.')] },
+    },
     { id: 'l2', type: 'child_page', has_children: false, child_page: { title: '더 깊은 페이지' } },
   ]),
 };

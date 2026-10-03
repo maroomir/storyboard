@@ -15,6 +15,7 @@ import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { NoteDocument, NoteOrigin, SkippedNote } from '#engine/shared/noteAbsorb';
 
 const vaultMarkerDirectory = '.obsidian';
+const outsideVaultReason = '볼트 밖을 가리키는 링크라 읽지 않았습니다';
 
 export interface ObsidianNoteSourceOptions {
   readonly fileSystem: IFileSystem;
@@ -42,15 +43,25 @@ export class ObsidianNoteSource implements INoteSource {
     const treeFiles = isSingleNote ? [root] : await listMarkdownFiles(fileSystem, root);
     const notes: NoteDocument[] = [];
     const linkTargets: string[] = [];
+    const skipped: SkippedNote[] = [];
 
     for (const file of treeFiles) {
+      // SECURITY: a symbolic link in the vault may point anywhere on disk, and what is read here is
+      // sent to the AI provider. Only files that really live under the vault are read.
+      if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
+        skipped.push({ label: relativePath(vaultRoot, file), reason: outsideVaultReason });
+        continue;
+      }
+
       const note = await readNote(fileSystem, vaultRoot, file, 'tree');
       notes.push(note);
       linkTargets.push(...extractNoteLinkTargets(note.body));
     }
 
-    const collectedIds = new Set(notes.map((note) => note.id));
-    const skipped: SkippedNote[] = [];
+    const collectedIds = new Set([
+      ...notes.map((note) => note.id),
+      ...skipped.map((entry) => entry.label),
+    ]);
     const pendingTargets = [...new Set(linkTargets)];
 
     if (pendingTargets.length > 0) {
@@ -60,7 +71,10 @@ export class ObsidianNoteSource implements INoteSource {
         const file = vaultIndex.resolve(target);
 
         if (file === undefined) {
-          skipped.push({ label: target, reason: '링크가 가리키는 노트를 볼트에서 찾지 못했습니다' });
+          skipped.push({
+            label: target,
+            reason: '링크가 가리키는 노트를 볼트에서 찾지 못했습니다',
+          });
           continue;
         }
 
@@ -71,6 +85,12 @@ export class ObsidianNoteSource implements INoteSource {
         }
 
         collectedIds.add(id);
+
+        if (!(await fileSystem.isRealPathInside(file, vaultRoot))) {
+          skipped.push({ label: id, reason: outsideVaultReason });
+          continue;
+        }
+
         notes.push(await readNote(fileSystem, vaultRoot, file, 'link'));
       }
     }
@@ -109,7 +129,10 @@ function compareNames(left: string, right: string): number {
   return left.normalize('NFC').localeCompare(right.normalize('NFC'), 'ko', { numeric: true });
 }
 
-async function listMarkdownFiles(fileSystem: IFileSystem, directory: StoryUri): Promise<StoryUri[]> {
+async function listMarkdownFiles(
+  fileSystem: IFileSystem,
+  directory: StoryUri,
+): Promise<StoryUri[]> {
   const entries = [...(await fileSystem.readDirectory(directory))]
     .filter(([name]) => !name.startsWith('.'))
     .sort(([left], [right]) => compareNames(left, right));

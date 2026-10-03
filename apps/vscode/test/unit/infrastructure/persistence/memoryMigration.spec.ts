@@ -65,6 +65,10 @@ class InMemoryFileSystem implements IFileSystem {
   public async modifiedTime(): Promise<number> {
     return 0;
   }
+
+  public async isRealPathInside(): Promise<boolean> {
+    return true;
+  }
 }
 
 function migrate(fileSystem: InMemoryFileSystem): ReturnType<typeof migrateLegacyMemory> {

@@ -60,6 +60,7 @@ function memoizeFileReads(fileSystem: IFileSystem): IFileSystem {
     readDirectory: (uri) => fileSystem.readDirectory(uri),
     delete: (uri) => fileSystem.delete(uri),
     modifiedTime: (uri) => fileSystem.modifiedTime(uri),
+    isRealPathInside: (uri, root) => fileSystem.isRealPathInside(uri, root),
   };
 }
 

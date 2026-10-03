@@ -15,4 +15,6 @@ export interface IFileSystem {
   // Epoch milliseconds of the last write, or 0 when the file is missing or the host cannot tell.
   // Never throws — a caller distinguishes "missing" by the 0, not by catching.
   modifiedTime(uri: StoryUri): Promise<number>;
+  // Whether `uri`, with every symbolic link resolved, still lies under `root` resolved the same way.
+  isRealPathInside(uri: StoryUri, root: StoryUri): Promise<boolean>;
 }

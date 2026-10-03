@@ -1,3 +1,6 @@
+import { promises as fs } from 'node:fs';
+import { isAbsolute, relative, sep } from 'node:path';
+
 import type { StoryUri } from '@storyboard/story-engine';
 import * as vscode from 'vscode';
 
@@ -49,6 +52,16 @@ export class VscodeFileSystem implements IFileSystem {
     } catch {
       return 0;
     }
+  }
+
+  public async isRealPathInside(uri: StoryUri, root: StoryUri): Promise<boolean> {
+    const [realTarget, realRoot] = await Promise.all([
+      fs.realpath(uri.fsPath),
+      fs.realpath(root.fsPath),
+    ]);
+    const fromRoot = relative(realRoot, realTarget);
+
+    return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot);
   }
 }
 

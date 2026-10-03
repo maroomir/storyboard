@@ -99,6 +99,10 @@ class InMemoryFileSystem implements IFileSystem {
   public async modifiedTime(): Promise<number> {
     return 0;
   }
+
+  public async isRealPathInside(): Promise<boolean> {
+    return true;
+  }
 }
 
 const workspaceUri = NodeUri.file('/w');

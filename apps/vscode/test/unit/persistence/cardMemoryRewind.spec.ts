@@ -56,6 +56,10 @@ class MemoryWorkspace implements IFileSystem {
   public async modifiedTime(): Promise<number> {
     return 0;
   }
+
+  public async isRealPathInside(): Promise<boolean> {
+    return true;
+  }
 }
 
 const paths = getStoryboardProjectPaths(vscode.Uri.file('/workspace'));

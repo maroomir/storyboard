@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
 import type { FileSystemDirectoryEntry, IFileSystem, StoryUri } from '@storyboard/story-engine';
 
@@ -64,6 +64,16 @@ export class NodeFileSystem implements IFileSystem {
     } catch {
       return 0;
     }
+  }
+
+  public async isRealPathInside(uri: StoryUri, root: StoryUri): Promise<boolean> {
+    const [realTarget, realRoot] = await Promise.all([
+      fs.realpath(pathOf(uri)),
+      fs.realpath(pathOf(root)),
+    ]);
+    const fromRoot = relative(realRoot, realTarget);
+
+    return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot);
   }
 }
 
