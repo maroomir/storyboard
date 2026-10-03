@@ -7,7 +7,7 @@ import {
   type NoteExtraction,
   type NoteExtractionKnownCard,
 } from '@storyboard/story-ai';
-import type { StoryUri, StoryboardCard } from '@storyboard/story-format';
+import type { StoryUri, StoryboardCard } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';

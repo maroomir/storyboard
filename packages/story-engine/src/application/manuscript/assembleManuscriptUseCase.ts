@@ -1,17 +1,16 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, ChapterPlan } from '@storyboard/story-model';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import {
   assembleManuscript,
   type AssembledManuscript,
   type ManuscriptDraftEntry,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import {
   buildForeshadowingMarkdown,
   collectForeshadowing,
   countForeshadowing,
 } from '#engine/domain/foreshadowingTracker';
-import type { ChapterPlan } from '@storyboard/story-format';
 
 export type ManuscriptAssemblySource = {
   readonly draftsByOrder: ReadonlyMap<number, ManuscriptDraftEntry>;

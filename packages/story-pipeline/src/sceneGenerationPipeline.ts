@@ -4,14 +4,14 @@ import type {
   ProjectFormat,
   SceneContext,
   SceneDialogueRecord,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { EntityRef, GenerateTextOptions, StyleDirective } from '@storyboard/story-ai';
 import {
   computeDraftBodyHash,
   createEmptyBackground,
   splitSceneNarrativeSource,
   unknownDialogueSpeaker,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { condensePreviousContext } from './sceneGenerationPolicies';
 import {
   assertNotCancelled,

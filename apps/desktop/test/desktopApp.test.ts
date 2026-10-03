@@ -8,7 +8,7 @@ import {
   serializeWorkspaceRunLock,
 } from '@storyboard/story-engine';
 import { resolveStoryboardHomePaths } from '@storyboard/story-config';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { DesktopApp } from '@/main/desktopApp';
@@ -254,7 +254,7 @@ describe('with a work open', () => {
     expect(result.ok ? undefined : result.error.code).toBe('provider-missing');
   });
 
-  it('saves a card through the story-format schema and rejects an invalid one', async () => {
+  it('saves a card through the story-model schema and rejects an invalid one', async () => {
     await expectOk('bible.create', { kind: 'character', id: 'hana', name: '하나' });
     const card = await expectOk('bible.read', { kind: 'character', id: 'hana' });
 

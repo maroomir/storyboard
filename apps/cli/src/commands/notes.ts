@@ -8,7 +8,7 @@ import {
   type NoteBundle,
   type NoteLocation,
 } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { CliContainer } from '@/container';

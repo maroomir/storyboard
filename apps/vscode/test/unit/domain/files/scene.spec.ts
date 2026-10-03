@@ -19,8 +19,8 @@ import {
   sceneSummaryReference,
   serializeSceneCard,
   SceneParseError
-} from '@storyboard/story-format';
-const scenesFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-format/test/fixtures/scenes/", import.meta.url))
+} from '@storyboard/story-model';
+const scenesFixtureDirectory = fileURLToPath(new URL("../../../../../../packages/story-model/test/fixtures/scenes/", import.meta.url))
 
 describe("scene file codec", () => {
   it("parses a scene card into frontmatter view and prompt body", () => {

@@ -2,7 +2,7 @@ import { watch, type FSWatcher } from 'node:fs';
 import { sep } from 'node:path';
 
 import { workspaceConfigRelativePath } from '@storyboard/story-config';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 import type { WorkspaceArea } from '@/shared/ipcContract';
 

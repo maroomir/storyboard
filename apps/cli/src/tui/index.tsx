@@ -11,7 +11,7 @@ import {
 } from '@storyboard/story-config';
 
 import { StoryboardTui, type TuiHeaderInfo } from './app';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 export interface RunTuiOptions {
   readonly version: string;

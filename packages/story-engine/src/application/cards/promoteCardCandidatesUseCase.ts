@@ -4,8 +4,7 @@ import {
   selectNewCardCandidateItems,
   type CardCandidateItem,
 } from '#engine/domain/cardCandidatePromotion';
-import type { CharacterCard } from '@storyboard/story-format';
-import type { StoryUri } from '@storyboard/story-format';
+import type { CharacterCard, StoryUri } from '@storyboard/story-model';
 import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 
 export interface ICardCandidateRepository {

@@ -1,6 +1,6 @@
 import { isRunBudgetExceeded, UsageMeter } from '@storyboard/story-engine';
 import type { UsageRecord } from '@storyboard/story-ai';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 import { describe, expect, it, vi } from 'vitest';
 
 const workspaceRoot = NodeUri.file('/ws');

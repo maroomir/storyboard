@@ -5,7 +5,7 @@ import {
   parseCardIdFromFileName,
   parseSceneFileName,
   sceneStemPattern,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import { deriveSceneUri } from '@/infrastructure/vscode/draftSceneLink';
 import {

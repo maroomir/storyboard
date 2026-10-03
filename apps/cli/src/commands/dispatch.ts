@@ -27,7 +27,7 @@ import {
 } from './completion';
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
-import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 // 설정 파일을 쓰는 verb 는 이 둘뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
 const configWritingVerbs = new Set(['setup', 'config set']);

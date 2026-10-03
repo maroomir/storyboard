@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { ProjectFormat } from '@storyboard/story-model';
 import {
   craftContractLines,
   narrativeStyleLines,

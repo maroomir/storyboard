@@ -1,4 +1,4 @@
-import type { AssembledManuscript } from '@storyboard/story-format';
+import type { AssembledManuscript } from '@storyboard/story-model';
 import type {
   AiProviderId,
   ContinuityIssueLike,

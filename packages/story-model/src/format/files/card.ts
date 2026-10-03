@@ -1,10 +1,10 @@
-import type { StoryUri } from '#format/storyUri';
+import type { StoryUri } from '#model/format/storyUri';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 
-import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '#format/card';
-import { narratorCardSchema, type NarratorCard } from '#format/narrator';
-import { sceneCardSchema, type SceneCard } from '#format/scene';
+import { cardSchema, type BackgroundCard, type CharacterCard, type StoryboardCard } from '#model/format/card';
+import { narratorCardSchema, type NarratorCard } from '#model/format/narrator';
+import { sceneCardSchema, type SceneCard } from '#model/format/scene';
 import { serializeSceneCard } from './scene';
 
 export type CardParseErrorCode = 'invalid-yaml' | 'invalid-card-schema';

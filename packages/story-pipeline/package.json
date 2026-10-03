@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "@storyboard/story-ai": "*",
-    "@storyboard/story-format": "*"
+    "@storyboard/story-model": "*"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",

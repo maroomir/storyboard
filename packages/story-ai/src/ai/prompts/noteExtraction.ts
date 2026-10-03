@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { characterRoles } from '@storyboard/story-format';
+import { characterRoles } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
 import { type PromptArtifact, type PromptVariantId } from './types';

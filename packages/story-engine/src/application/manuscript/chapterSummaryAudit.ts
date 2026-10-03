@@ -2,7 +2,7 @@ import {
   assembleManuscript,
   computeDraftBodyHash,
   readChapterPlanFile,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import {
   auditChapterSummaries,
   buildChapterSummariesMarkdown,

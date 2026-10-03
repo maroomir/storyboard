@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, StoryboardProject } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { INovelRunStateRepository } from '#engine/application/novel/novelPipeline';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
@@ -8,7 +8,6 @@ import {
   writeNovelRunState,
 } from '#engine/domain/files/novelRunState';
 import { readProjectJson } from '#engine/persistence/projectJson';
-import type { StoryboardProject } from '@storyboard/story-format';
 
 export class NovelRunStateRepository implements INovelRunStateRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}

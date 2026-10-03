@@ -18,7 +18,7 @@ import {
   promptResources,
   selectPromptVariant,
 } from '@storyboard/story-ai';
-import { NodeUri, resolveCraftContract, defaultCraftContract } from '@storyboard/story-format';
+import { NodeUri, resolveCraftContract, defaultCraftContract } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 let root: string;

@@ -4,12 +4,12 @@ import * as vscode from "vscode"
 
 const buildSceneContextMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args)
 }))
 import { GenerateSceneBeatsUseCase } from "@storyboard/story-engine"
-import { planSceneBeatCount, SceneParseError } from "@storyboard/story-format"
+import { planSceneBeatCount, SceneParseError } from "@storyboard/story-model"
 
 const sceneUri = vscode.Uri.file("/workspace/scene/01-intro.card")
 const workspaceRoot = vscode.Uri.file("/workspace")

@@ -6,8 +6,8 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@storyboard/story-format": [
-        "../story-format/src/index.ts"
+      "@storyboard/story-model": [
+        "../story-model/src/index.ts"
       ]
     }
   },

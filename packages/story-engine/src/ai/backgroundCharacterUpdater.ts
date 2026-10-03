@@ -1,6 +1,10 @@
-import type { StoryUri } from '@storyboard/story-format';
-import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { BackgroundCard, CardFileSystem, CharacterCard } from '@storyboard/story-format';
+import type {
+  StoryUri,
+  BackgroundCard,
+  CardFileSystem,
+  CharacterCard,
+} from '@storyboard/story-model';
+import { isBackgroundCard, readCardFile, writeCardFile } from '@storyboard/story-model';
 interface BackgroundCharacterUpdateLogger {
   readonly error: (message: string, error?: unknown) => void;
 }

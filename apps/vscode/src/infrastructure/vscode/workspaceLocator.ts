@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
-import type { StoryUri, StoryWorkspaceFolder, IWorkspaceLocator } from '@storyboard/story-engine';
+import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
+import type { IWorkspaceLocator } from '@storyboard/story-engine';
 
 export class VscodeWorkspaceLocator implements IWorkspaceLocator {
   public folders(): readonly StoryWorkspaceFolder[] {

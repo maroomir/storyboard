@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 const draftHistoryArchivePattern = /^(\d{4}-\d{2}-\d{2}-\d{2}-\d{2})-rev-(\d{2,})\.md$/;
 

@@ -2,7 +2,7 @@ import {
   formatChapterInputComment,
   isChapterInputComment,
   parseChapterInputComment,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 export interface ChapterSummary {
   readonly chapterTitle: string;

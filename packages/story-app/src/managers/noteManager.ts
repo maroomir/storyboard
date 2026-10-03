@@ -16,7 +16,7 @@ import type {
   PromoteNoteCandidatesUseCase,
 } from '@storyboard/story-engine';
 import type { SecretStore } from '@storyboard/story-ai';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 export interface NoteManagerDependencies {
   readonly collectNotesUseCase: CollectNotesUseCase;

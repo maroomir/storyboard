@@ -2,7 +2,7 @@ import type {
   OutlineBrief,
   OutlineCharacterBrief,
   OutlineSynopsis,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

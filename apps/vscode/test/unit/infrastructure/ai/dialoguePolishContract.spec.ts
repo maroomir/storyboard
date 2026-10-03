@@ -5,7 +5,7 @@ import {
   SceneSkeletonPrompt,
   StoryStateUpdatePrompt
 } from "@storyboard/story-ai"
-import { createEmptyBackground } from "@storyboard/story-format"
+import { createEmptyBackground } from "@storyboard/story-model"
 
 const personas = new Map([["서하", '나는 서하다. "추출 뒤에는 되돌릴 수 없습니다."']])
 

@@ -1,5 +1,9 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-engine';
-import { parseSceneCard, type SceneCard } from '@storyboard/story-format';
+import {
+  joinStoryPath,
+  type StoryUri,
+  parseSceneCard,
+  type SceneCard,
+} from '@storyboard/story-model';
 
 import type { CliContainer } from '@/container';
 

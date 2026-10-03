@@ -12,8 +12,8 @@ import {
   buildSceneContext,
   parseDraft,
   readSceneFile,
-} from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
   sceneContextFileSystem,
   vscodeFsAdapter,

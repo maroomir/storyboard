@@ -1,4 +1,4 @@
-import { sceneSeedSectionLabels } from '@storyboard/story-format';
+import { sceneSeedSectionLabels } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

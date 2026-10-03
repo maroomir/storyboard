@@ -9,7 +9,7 @@ import {
   parseScene,
   resolveCraftContract,
   resolveSceneTargetLength
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { buildStyleDirective, narrativeStyleLines } from '@storyboard/story-ai';
 
 const fullGrounding = {

@@ -1,6 +1,6 @@
 import { clampIntegerSetting, integerSettingDefault } from '@storyboard/story-ai';
 
-export { resolveSceneTargetLength } from '@storyboard/story-format';
+export { resolveSceneTargetLength } from '@storyboard/story-model';
 
 export type DraftCandidateRejectionReason = 'empty' | 'meta-response' | 'too-short' | 'not-shorter';
 

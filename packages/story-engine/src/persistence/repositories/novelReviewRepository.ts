@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { joinStoryPath, type StoryUri, readBibleFile } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type {
   INovelReviewRepository,
@@ -6,7 +6,6 @@ import type {
 } from '#engine/application/novel/novelPipeline';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { readBibleFile } from '@storyboard/story-format';
 import {
   parseChapterSummariesMarkdown,
   type ChapterSummary,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { parseScene } from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import { parseScene } from '@storyboard/story-model';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
   computeSceneInputHash,
   parseSceneCache,

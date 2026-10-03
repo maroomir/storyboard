@@ -10,7 +10,7 @@ import {
   parseDraft,
   readSceneFile,
   serializeDraft,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { archiveExistingDraft, sceneContextPaths } from '@storyboard/story-engine';
 import { formatAugmentCards } from '@storyboard/story-ai';
 import type { ConfigBridge } from '@storyboard/story-ai';

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import type { CharacterCard, SceneContext, SceneFile } from "@storyboard/story-format"
+import type { CharacterCard, SceneContext, SceneFile } from "@storyboard/story-model"
 import {
   condensePreviousContext,
   findRepeatedDialogueRun,

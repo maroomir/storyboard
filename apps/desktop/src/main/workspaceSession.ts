@@ -11,7 +11,7 @@ import {
   readWorkspaceRunLock,
   scenePath,
 } from '@storyboard/story-engine';
-import { NodeUri, STORYBOARD_RELATIVE_PATHS, readSceneFile, type ProjectSetting } from '@storyboard/story-format';
+import { NodeUri, STORYBOARD_RELATIVE_PATHS, readSceneFile, type ProjectSetting } from '@storyboard/story-model';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 import { NodeFileSystem } from '@storyboard/story-node';
 

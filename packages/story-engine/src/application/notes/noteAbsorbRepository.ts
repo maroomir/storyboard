@@ -4,7 +4,7 @@ import type {
   StoryUri,
   StoryboardCard,
   StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import type { NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';
 import type { NoteBundle, NoteCandidateFile } from '#engine/shared/noteAbsorb';

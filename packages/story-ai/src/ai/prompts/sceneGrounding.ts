@@ -1,4 +1,4 @@
-import { sceneGroundingFieldLabels, type SceneGroundingFieldKey } from '@storyboard/story-format';
+import { sceneGroundingFieldLabels, type SceneGroundingFieldKey } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

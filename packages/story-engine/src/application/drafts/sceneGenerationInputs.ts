@@ -1,5 +1,5 @@
 import { hasStoryboardProjectAt } from '#engine/paths/projectDetection';
-import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-format';
+import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
 import type { IProjectRepository, ISceneRepository } from '#engine/application/drafts/draftRepositories';
 import { sceneContextPaths } from '#engine/paths/sceneContextPaths';
 import {
@@ -9,7 +9,7 @@ import {
   parseSceneFileName,
   SceneParseError,
   type NarrationDirective,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import {
   draftPath,
   getStoryboardProjectPaths,

@@ -73,7 +73,7 @@ import { StudioManager } from './managers/studioManager';
 import { RunGate } from './runGate';
 import { describeParameters, type ParameterReport } from './parameterRegistry';
 import { loadResourceOverrides, type ResourceOverrideReport } from './resourceOverrides';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 // What a host must supply before the engine can run: the six adapters that differ between the
 // extension, the CLI and the desktop app. Everything else is built here, once, the same way.

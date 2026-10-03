@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { parseBibleCandidates, serializeBibleCandidates, type BibleCandidateRecord } from "@storyboard/story-engine"
-import { buildCandidateFact } from '@storyboard/story-format';
+import { buildCandidateFact } from '@storyboard/story-model';
 
 const record: BibleCandidateRecord = {
   sceneStem: "01-prologue",

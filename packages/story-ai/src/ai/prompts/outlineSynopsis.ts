@@ -1,5 +1,5 @@
-import { pointOfViewLabels } from '@storyboard/story-format';
-import type { OutlineBrief } from '@storyboard/story-format';
+import { pointOfViewLabels } from '@storyboard/story-model';
+import type { OutlineBrief } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';

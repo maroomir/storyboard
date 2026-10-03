@@ -1,12 +1,18 @@
 import { listCardFileUris } from '#engine/persistence/cardFiles';
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import {
+  joinStoryPath,
+  type StoryUri,
+  parseCard,
+  parseDraft,
+  readDraftFile,
+  readSceneFile,
+} from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type {
   CardRecommendationInput,
   ICardRecommendationRepository,
 } from '#engine/application/cards/recommendCardsUseCase';
 import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '#engine/paths/projectPaths';
-import { parseCard, parseDraft, readDraftFile, readSceneFile } from '@storyboard/story-format';
 import type { RecommendationSource } from '#engine/ai/cardRecommendationBuilder';
 import type { RecommendationCategory } from '@storyboard/story-ai';
 

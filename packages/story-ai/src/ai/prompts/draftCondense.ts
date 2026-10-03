@@ -1,4 +1,4 @@
-import type { ProjectFormat } from '@storyboard/story-format';
+import type { ProjectFormat } from '@storyboard/story-model';
 import { renderPrompt } from './promptResource';
 import { promptTuning } from './promptTuning';
 import { type PromptArtifact, type PromptVariantId } from './types';

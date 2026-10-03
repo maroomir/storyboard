@@ -2,15 +2,15 @@ import { stubFileSystem } from "../../../stubs/fileSystem"
 import * as vscode from "vscode"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { SceneParseError } from '@storyboard/story-format';
+import { SceneParseError } from '@storyboard/story-model';
 import { workspace, type WorkspaceFolder } from "../../../stubs/vscode"
 
 const readSceneFileMock = vi.fn()
 const readProjectJsonMock = vi.fn()
 const buildSceneContextMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   readSceneFile: (...args: unknown[]): unknown => readSceneFileMock(...args),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: async (): Promise<unknown> => ({ prompt: undefined, bibleFacts: [] })

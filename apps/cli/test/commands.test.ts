@@ -15,7 +15,7 @@ import {
   parseSceneStem,
   serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ParsedArguments } from '../src/cliArguments';

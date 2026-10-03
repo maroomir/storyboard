@@ -1,7 +1,7 @@
 import { vscodeFileSystem } from '@/infrastructure/vscode/vscodeFileSystem';
 import * as vscode from 'vscode';
 
-import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-format';
+import { extractDraftBody, parseDraft, serializeDraft } from '@storyboard/story-model';
 
 import type { ConfigBridge } from '@storyboard/story-ai';
 

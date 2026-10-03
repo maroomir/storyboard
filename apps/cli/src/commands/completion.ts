@@ -18,7 +18,7 @@ import {
   narratorPersons,
   pointOfViewLabels,
   pointOfViews,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import {
   commandCatalog,

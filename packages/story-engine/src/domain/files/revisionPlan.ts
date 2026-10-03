@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 import yaml from 'js-yaml';
 import { ZodError } from 'zod';
 import { z } from 'zod';

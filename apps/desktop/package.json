@@ -29,7 +29,7 @@
     "@storyboard/story-app": "*",
     "@storyboard/story-config": "*",
     "@storyboard/story-engine": "*",
-    "@storyboard/story-format": "*",
+    "@storyboard/story-model": "*",
     "@storyboard/story-node": "*",
     "electron-updater": "^6.8.9",
     "isomorphic-git": "^1.42.2",

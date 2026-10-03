@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-format';
+import { createEmptyBackground, createEmptyCharacter } from '@storyboard/story-model';
 import type { StudioCardSeed } from '@storyboard/story-ai';
 
 import type { AiGateway } from '@storyboard/story-engine';

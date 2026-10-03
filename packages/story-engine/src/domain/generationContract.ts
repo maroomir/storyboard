@@ -2,8 +2,8 @@ import {
   contractFieldKeys,
   mainThreadId,
   resolveCompositionPresetDefaults,
-} from '@storyboard/story-format';
-import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { ContractFieldKey, ProjectSetting } from '@storyboard/story-model';
 
 const minReasonableTargetWordCount = 1_000;
 const maxReasonableTargetWordCount = 2_000_000;

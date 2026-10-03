@@ -9,8 +9,8 @@ import {
   detectCharactersInText,
   isIgnoredSampleCardFileName,
   readCardFile,
-} from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { CharacterCard } from '@storyboard/story-model';
 const wordPattern = /[0-9A-Za-z가-힣_-]+/;
 
 interface CharacterHoverContext {

@@ -6,7 +6,7 @@ import {
   type ProjectSetting,
   type StoryboardProject,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { getStoryboardProjectPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { createDefaultProjectJson, writeProjectJson } from '#engine/persistence/projectJson';

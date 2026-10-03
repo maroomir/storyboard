@@ -11,13 +11,13 @@ import {
   resolveNarration,
   serializeNarratorCard,
   type NarratorCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 const cardsFixtureDirectory = fileURLToPath(
-  new URL('../../../../../packages/story-format/test/fixtures/cards/', import.meta.url),
+  new URL('../../../../../packages/story-model/test/fixtures/cards/', import.meta.url),
 );
 const scenesFixtureDirectory = fileURLToPath(
-  new URL('../../../../../packages/story-format/test/fixtures/scenes/', import.meta.url),
+  new URL('../../../../../packages/story-model/test/fixtures/scenes/', import.meta.url),
 );
 
 const hanaFirst: NarratorCard = {

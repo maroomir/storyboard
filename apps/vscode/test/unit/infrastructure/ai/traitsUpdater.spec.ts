@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { parseCard, serializeCard } from '@storyboard/story-format';
-import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
+import { parseCard, serializeCard } from '@storyboard/story-model';
+import type { CardFileSystem, CharacterCard } from '@storyboard/story-model';
 import {
   applyTraitsFromExtractedBullets,
   extractQuotedUtterancesForCharacter

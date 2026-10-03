@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { joinStoryPath, type StoryUri, readCardFile, writeCardFile } from '@storyboard/story-model';
 import type { FileSystemDirectoryEntry, IFileSystem } from '#engine/ports/fileSystem';
 import type { ICardCandidateRepository } from '#engine/application/cards/promoteCardCandidatesUseCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -8,8 +8,7 @@ import {
   pruneRecordByPromotedKeys,
   type CardCandidateItem,
 } from '#engine/domain/cardCandidatePromotion';
-import { readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { CharacterCard } from '@storyboard/story-format';
+import type { CharacterCard } from '@storyboard/story-model';
 import { readCardCandidateFile, writeCardCandidateFile } from '#engine/domain/files/cardCandidates';
 import type { CardCandidateRecord } from '#engine/shared/cardCandidates';
 

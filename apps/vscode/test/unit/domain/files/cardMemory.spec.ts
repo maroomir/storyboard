@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
   computeBackgroundCardHash,
   computePersonaCardHash,
@@ -10,7 +10,7 @@ import {
   serializePersonaMemory,
   type BackgroundMemoryRecord,
   type PersonaMemoryRecord
-} from "@storyboard/story-format"
+} from "@storyboard/story-model"
 
 const eliaCard: CharacterCard = {
   type: "character",

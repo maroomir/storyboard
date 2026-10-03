@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { BackgroundDescriptionPrompt } from "@storyboard/story-ai"
-import { createEmptyBackground, type Background } from "@storyboard/story-format"
+import { createEmptyBackground, type Background } from "@storyboard/story-model"
 
 describe("BackgroundDescriptionPrompt golden", () => {
   const full: Background = {

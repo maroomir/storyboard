@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@storyboard/story-ai": "*",
-    "@storyboard/story-format": "*",
+    "@storyboard/story-model": "*",
     "@storyboard/story-pipeline": "*",
     "zod": "^4.4.2"
   },

@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, Draft } from '@storyboard/story-model';
 import type { IDraftRepository } from '#engine/application/drafts/draftRepositories';
 import type { IFileSystem } from '#engine/ports/fileSystem';
-import { writeDraftFile } from '@storyboard/story-format';
-import type { Draft } from '@storyboard/story-format';
+import { writeDraftFile } from '@storyboard/story-model';
 export class DraftRepository implements IDraftRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

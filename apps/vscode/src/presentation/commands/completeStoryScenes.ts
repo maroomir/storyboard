@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import type { NovelManager } from '@storyboard/story-app';
-import { parseScene } from '@storyboard/story-format';
+import { parseScene } from '@storyboard/story-model';
 import type { ProposalReviewService } from '@/presentation/providers/proposalReviewService';
 
 const completeStoryCommand = 'storyboard.scene.completeStory';

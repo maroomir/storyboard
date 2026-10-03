@@ -5,8 +5,8 @@ import {
   readChapterNarrationDefaults,
   resolveSceneNarration,
 } from '@storyboard/story-engine';
-import { NodeUri, parseScene } from '@storyboard/story-format';
-import type { SceneFile, StoryboardProject, StoryUri } from '@storyboard/story-format';
+import { NodeUri, parseScene } from '@storyboard/story-model';
+import type { SceneFile, StoryboardProject, StoryUri } from '@storyboard/story-model';
 
 const paths = getStoryboardProjectPaths(NodeUri.file('/w'));
 

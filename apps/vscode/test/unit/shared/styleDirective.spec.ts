@@ -2,9 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import { buildStyleDirective, describeNarration, GenreFormattingPrompt, narrativeStyleLines, PersonaDialoguePrompt, PersonaGenerationPrompt, proseConventionLines, voiceStyleLines } from '@storyboard/story-ai';
 import type { StyleDirective } from '@storyboard/story-ai';
-import { resolveNarration } from '@storyboard/story-format';
-import type { Background, Character } from '@storyboard/story-format';
-import type { ProjectSetting } from '@storyboard/story-format';
+import { resolveNarration } from '@storyboard/story-model';
+import type { Background, Character, ProjectSetting } from '@storyboard/story-model';
 function settingOf(overrides: Partial<ProjectSetting>): ProjectSetting {
   return { tags: [], prohibitions: [], styleConstraints: [], qualityCriteria: [], ...overrides }
 }

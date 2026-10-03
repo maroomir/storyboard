@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri } from '@storyboard/story-model';
 
 import { failedResult, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 import type { NoteBundle } from '#engine/shared/noteAbsorb';

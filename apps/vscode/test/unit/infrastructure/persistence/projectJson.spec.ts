@@ -5,7 +5,7 @@ import {
   parseProjectJson,
   serializeProjectJson
 } from "@storyboard/story-engine"
-import type { StoryboardProject } from '@storyboard/story-format';
+import type { StoryboardProject } from '@storyboard/story-model';
 
 function baseProject(): StoryboardProject {
   return createDefaultProjectJson({ name: "MagicBoy" })

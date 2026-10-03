@@ -27,7 +27,7 @@ const ALLOWED_IMPORTS = {
 // exports may pull node-only modules into the page.
 const BROWSER_SAFE_PACKAGES = new Set([
   '@storyboard/story-engine/contracts',
-  '@storyboard/story-format/contracts',
+  '@storyboard/story-model/contracts',
   '@storyboard/story-ai/contracts',
 ]);
 

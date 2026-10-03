@@ -5,7 +5,7 @@ import {
   convertLegacySceneText,
   isLegacySceneFileName,
   SceneParseError
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 describe("legacy scene conversion", () => {
   it("recognizes legacy scene file names", () => {

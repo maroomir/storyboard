@@ -5,7 +5,7 @@ import {
   parseSceneFileName,
   type SceneFile,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { joinStoryPath } from '#engine/paths/storyUri';
 import { resolveThreadPaths, type StoryboardProjectPaths } from '#engine/paths/projectPaths';

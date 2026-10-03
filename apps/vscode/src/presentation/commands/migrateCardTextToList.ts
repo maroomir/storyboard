@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 
 import { migrateCardTextFieldsToList } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { getStoryboardProjectPaths, isIgnoredSampleCardFileName } from '@storyboard/story-engine';
+import { getStoryboardProjectPaths } from '@storyboard/story-engine';
+import { isIgnoredSampleCardFileName } from '@storyboard/story-model';
 import { getTargetWorkspaceFolder, hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 
 const migrateCommand = 'storyboard.cards.migrateTextToList';

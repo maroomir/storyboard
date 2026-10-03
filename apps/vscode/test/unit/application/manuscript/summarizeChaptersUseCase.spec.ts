@@ -5,7 +5,7 @@ import {
   SummarizeChaptersUseCase,
   type IChapterSummaryRepository
 } from "@storyboard/story-engine"
-import type { ChapterPlan } from '@storyboard/story-format';
+import type { ChapterPlan } from '@storyboard/story-model';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

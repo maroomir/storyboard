@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { PersonaGenerationPrompt } from '@storyboard/story-ai';
-import type { Character } from '@storyboard/story-format';
+import type { Character } from '@storyboard/story-model';
 const baseCharacter: Character = {
   type: "character",
   id: "elia",

@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { ZodError, type ZodIssue } from 'zod';
 
-import { CardParseError, STORYBOARD_GLOBS, parseCard } from '@storyboard/story-format';
+import {
+  CardParseError,
+  STORYBOARD_GLOBS,
+  parseCard,
+  isIgnoredSampleCardFileName,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import { isIgnoredSampleCardFileName } from '@storyboard/story-engine';
 import { resolveStoryboardWorkspaceRoot } from '@/infrastructure/vscode/workspace';
 import { createDiagnostic } from './diagnosticsShared';
 

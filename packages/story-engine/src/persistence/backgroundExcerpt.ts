@@ -8,7 +8,7 @@ import {
   parseSceneFileName,
   readDraftFile,
   readSceneFile,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 const EXCERPT_LENGTH_LIMIT = 800;
 

@@ -15,8 +15,8 @@ import {
   sceneSummaryReference,
   serializeCard,
   serializeWorkspaceCard,
-} from '@storyboard/story-format';
-import type { SceneCard, WorkspaceCard } from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import type { SceneCard, WorkspaceCard } from '@storyboard/story-model';
 import type { SceneStructureFieldKey } from '@storyboard/story-ai';
 import { applyCardCollectProposals } from '@storyboard/story-engine';
 import type { IStoryboardLogger } from '@storyboard/story-engine';

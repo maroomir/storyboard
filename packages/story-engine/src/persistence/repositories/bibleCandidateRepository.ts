@@ -1,10 +1,14 @@
-import { type StoryUri } from '@storyboard/story-format';
+import {
+  type StoryUri,
+  createEmptyBible,
+  readBibleFile,
+  writeBibleFile,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { IBibleCandidateRepository } from '#engine/application/project/promoteBibleCandidatesUseCase';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
-import { createEmptyBible, readBibleFile, writeBibleFile } from '@storyboard/story-format';
-import type { StoryBible } from '@storyboard/story-format';
+import type { StoryBible } from '@storyboard/story-model';
 import {
   readBibleCandidateFile,
   type BibleCandidateRecord,

@@ -5,7 +5,7 @@ import {
   narratorKnowledges,
   narratorPersons,
   pointOfViews,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 export type CommandGroup =
   | '시작하기'

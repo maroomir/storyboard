@@ -4,7 +4,6 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   groupChapterStems,
-  isHiddenSceneFileName,
   loadNarratorCards,
   readChapterNarrationDefaults,
   readProjectJson,
@@ -17,6 +16,7 @@ import {
   type StoryboardProjectPaths,
 } from '@storyboard/story-engine';
 import {
+  isHiddenSceneFileName,
   joinCardText,
   parseCard,
   parseDraft,
@@ -30,7 +30,7 @@ import {
   type ChapterPlan,
   type SceneFile,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import type {
   DraftDocument,

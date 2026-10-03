@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { buildCompositionPreset, validateGenerationContract } from '@storyboard/story-engine';
-import type { ProjectSetting } from '@storyboard/story-format';
-import { deriveNarrationFromPointOfView, pointOfViews } from "@storyboard/story-format"
+import type { ProjectSetting } from '@storyboard/story-model';
+import { deriveNarrationFromPointOfView, pointOfViews } from "@storyboard/story-model"
 
 function settingWith(preset: ReturnType<typeof buildCompositionPreset>): ProjectSetting {
   return {
@@ -85,7 +85,7 @@ describe('buildCompositionPreset', () => {
 });
 
 // 프리셋이 시점에서 인칭·지식 경계를 따로 계산하던 시절에는 2인칭이 3인칭 서술자로, 전지적 시점이
-// 목격 서술자로 만들어졌다. 이제 story-format 의 파생 표 하나만 본다.
+// 목격 서술자로 만들어졌다. 이제 story-model 의 파생 표 하나만 본다.
 describe("narrator cards against the point-of-view table", () => {
   it("derives person and knowledge exactly as the format package does", () => {
     for (const pov of pointOfViews) {

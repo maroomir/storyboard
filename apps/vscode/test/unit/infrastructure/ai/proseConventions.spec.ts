@@ -5,7 +5,7 @@ import {
   SceneSectionExpansionPrompt,
   SceneSkeletonPrompt
 } from "@storyboard/story-ai"
-import { createEmptyBackground } from "@storyboard/story-format"
+import { createEmptyBackground } from "@storyboard/story-model"
 
 describe("산문 규약 주입", () => {
   const background = createEmptyBackground("scene-default", "미정")

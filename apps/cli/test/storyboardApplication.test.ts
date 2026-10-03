@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { StoryboardApplication } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
-import { NodeUri } from '@storyboard/story-format';
+import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 
 function createApplication(): StoryboardApplication {

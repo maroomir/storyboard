@@ -2,7 +2,7 @@ import type {
   ProjectFormat,
   SceneContext,
   SceneDialogueRecord,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type {
   IBackgroundMemoryStore,
   IPersonaMemoryStore,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { assembleManuscript, type ManuscriptDraftEntry } from '@storyboard/story-format'
-import type { ChapterPlan } from '@storyboard/story-format';
+import { assembleManuscript, type ManuscriptDraftEntry } from '@storyboard/story-model'
+import type { ChapterPlan } from '@storyboard/story-model';
 
 const plan: ChapterPlan = {
   version: "1.0.0",

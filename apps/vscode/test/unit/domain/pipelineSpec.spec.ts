@@ -6,7 +6,7 @@ import {
   renderPipelineSpec,
   resolvePipelinePlan,
   type PipelineStageDefinition
-} from "@storyboard/story-format"
+} from "@storyboard/story-model"
 
 const catalog: readonly PipelineStageDefinition[] = [
   { id: "prepare", label: "준비", required: true },

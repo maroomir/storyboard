@@ -3,7 +3,7 @@ import {
   parseCardIdFromFileName,
   parseNarratorCard,
   type NarratorCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import { loadTextFile, readDirectoryFiles } from '#engine/persistence/directoryFiles';
 import type { StoryboardProjectPaths } from '#engine/paths/projectPaths';

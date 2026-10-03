@@ -8,13 +8,16 @@ import {
   uriExists,
 } from '@/infrastructure/vscode/workspace';
 import { readProjectJson } from '@storyboard/story-engine';
-import { parseSceneFileName, serializeSceneCard } from '@storyboard/story-format';
+import {
+  parseSceneFileName,
+  serializeSceneCard,
+  resolveScenePrefixDigitCount,
+} from '@storyboard/story-model';
 import {
   computeNextSceneOrderFromSceneFileNames,
   formatSceneOrderPrefix,
   validateSceneSlugInput,
 } from './newSceneHelpers';
-import { resolveScenePrefixDigitCount } from '@storyboard/story-format';
 import type { ConfigBridge } from '@storyboard/story-ai';
 
 const createSceneCommand = 'storyboard.scene.create';

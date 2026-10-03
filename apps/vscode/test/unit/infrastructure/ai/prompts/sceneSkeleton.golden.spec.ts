@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { SceneSkeletonPrompt, type SceneSkeletonInput } from "@storyboard/story-ai"
-import { createEmptyBackground } from "@storyboard/story-format"
+import { createEmptyBackground } from "@storyboard/story-model"
 
 describe("SceneSkeletonPrompt golden", () => {
   const emptyBackground = createEmptyBackground("scene-default", "미정")

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { ChapterPlanPrompt } from "@storyboard/story-ai"
-import type { OutlineBrief, OutlineCharacterBrief, OutlineSynopsis } from "@storyboard/story-format"
+import type { OutlineBrief, OutlineCharacterBrief, OutlineSynopsis } from "@storyboard/story-model"
 
 describe("ChapterPlanPrompt golden", () => {
   const brief: OutlineBrief = {

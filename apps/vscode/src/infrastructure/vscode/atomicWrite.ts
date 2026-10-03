@@ -1,4 +1,4 @@
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 // NOTE: vscode.workspace.fs.writeFile은 자르고 쓰기라 중간에 죽으면 잘린 파일이 남는다. 초안은

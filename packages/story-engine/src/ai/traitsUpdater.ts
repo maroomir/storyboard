@@ -1,6 +1,5 @@
-import type { StoryUri } from '@storyboard/story-format';
-import { readCardFile, writeCardFile } from '@storyboard/story-format';
-import type { CardFileSystem, CharacterCard } from '@storyboard/story-format';
+import type { StoryUri, CardFileSystem, CharacterCard } from '@storyboard/story-model';
+import { readCardFile, writeCardFile } from '@storyboard/story-model';
 import { parseBulletList } from '@storyboard/story-ai';
 import type { StoryboardAiService, UsageAttribution } from '@storyboard/story-ai';
 import { reconcileCharacterTraits } from '#engine/domain/traitsProcessor';

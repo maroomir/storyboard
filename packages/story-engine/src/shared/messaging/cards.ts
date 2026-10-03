@@ -6,7 +6,7 @@ import {
   characterRoles,
   narratorCardSchema,
   sceneCardSchema,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 import { cardCollectProposalSchema } from '#engine/shared/cardCollect';
 import { uriStringSchema } from './atoms';
 

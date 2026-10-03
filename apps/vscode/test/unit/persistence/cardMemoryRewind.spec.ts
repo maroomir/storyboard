@@ -12,7 +12,7 @@ import {
   computePersonaCardHash,
   type BackgroundCard,
   type CharacterCard,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 class MemoryWorkspace implements IFileSystem {
   private readonly files = new Map<string, string>();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { joinCardText, splitCardTextToList } from '@storyboard/story-format';
+import { joinCardText, splitCardTextToList } from '@storyboard/story-model';
 
 describe("joinCardText", () => {
   it("returns an empty string for undefined or empty input", () => {

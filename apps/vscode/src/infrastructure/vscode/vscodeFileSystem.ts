@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import { isAbsolute, relative, sep } from 'node:path';
 
-import type { StoryUri } from '@storyboard/story-engine';
+import type { StoryUri } from '@storyboard/story-model';
 import * as vscode from 'vscode';
 
 import type { FileSystemDirectoryEntry, IFileSystem } from '@storyboard/story-engine';

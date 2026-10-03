@@ -1,21 +1,19 @@
 import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/assembleManuscriptUseCase';
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
-import { assembleManuscript } from '@storyboard/story-format';
+import { assembleManuscript, flattenChapterPlan, toOutlineBrief } from '@storyboard/story-model';
 import { buildManuscriptReviewMarkdown } from '#engine/domain/manuscriptReview';
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import { draftPath, scenePath, type StoryboardProjectPaths } from '#engine/paths/projectPaths';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
 import { buildSceneSeeds } from '#engine/domain/sceneSeedFactory';
 import type { NovelRunState, NovelStageName } from '#engine/domain/files/novelRunState';
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, ChapterPlan, StoryboardProject } from '@storyboard/story-model';
 import type {
   AiProviderRegistry,
   ContinuityIssueLike,
   DraftCritiqueIssue,
 } from '@storyboard/story-ai';
 import type { ReviseSeedIssues } from '@storyboard/story-pipeline';
-import { flattenChapterPlan, toOutlineBrief } from '@storyboard/story-format';
-import type { ChapterPlan, StoryboardProject } from '@storyboard/story-format';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,

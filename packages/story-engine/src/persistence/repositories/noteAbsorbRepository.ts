@@ -8,7 +8,7 @@ import {
   type StoryUri,
   type StoryboardCard,
   type StoryboardProject,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
 import type { NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';

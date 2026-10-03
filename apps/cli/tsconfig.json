@@ -16,8 +16,8 @@
       "@storyboard/story-engine": [
         "../../packages/story-engine/src/index.ts"
       ],
-      "@storyboard/story-format": [
-        "../../packages/story-format/src/index.ts"
+      "@storyboard/story-model": [
+        "../../packages/story-model/src/index.ts"
       ],
       "@storyboard/story-config": [
         "../../packages/story-config/src/index.ts"
@@ -34,8 +34,8 @@
       "@storyboard/story-sim": [
         "../../packages/story-sim/src/index.ts"
       ],
-      "@storyboard/story-format/contracts": [
-        "../../packages/story-format/src/contracts.ts"
+      "@storyboard/story-model/contracts": [
+        "../../packages/story-model/src/contracts.ts"
       ],
       "@storyboard/story-ai/contracts": [
         "../../packages/story-ai/src/contracts.ts"

@@ -16,7 +16,7 @@ import type { StoryboardResponsePayload } from '@storyboard/story-engine';
 import type { SceneListItem } from '@storyboard/story-engine';
 import { createWebviewHtml, getWebviewDistRoot } from './webviewHtml';
 import { sidebarViewIds } from '@/contributionIds';
-import { STORYBOARD_GLOBS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-format';
+import { STORYBOARD_GLOBS, STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
 const generateDraftCommand = 'storyboard.draft.generate';
 

@@ -1,6 +1,5 @@
 import type { EntityRef, GenerateTextOptions, StoryboardAiService } from '@storyboard/story-ai';
-import type { Background } from '@storyboard/story-format';
-import type { BackgroundCard, CharacterCard } from '@storyboard/story-format';
+import type { Background, BackgroundCard, CharacterCard } from '@storyboard/story-model';
 import {
   SceneGenerationPipelineCancelledError,
   type BackgroundMemoryStore,

@@ -1,11 +1,9 @@
 import {
   getStoryboardProjectPaths,
-  NodeUri,
   UsageLedgerRecorder,
   type IStoryboardLogger,
-  type StoryUri,
-  type StoryWorkspaceFolder,
 } from '@storyboard/story-engine';
+import { NodeUri, type StoryUri, type StoryWorkspaceFolder } from '@storyboard/story-model';
 import { StoryboardApplication, type ResourceOverrideReport } from '@storyboard/story-app';
 import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
 import {

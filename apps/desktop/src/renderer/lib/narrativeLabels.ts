@@ -11,13 +11,13 @@ import {
   type NarratorKnowledge,
   type NarratorPerson,
   type PointOfView,
-} from '@storyboard/story-format/contracts';
+} from '@storyboard/story-model/contracts';
 
 import type { NarrationSummary, UiLanguage } from '@/shared/dto';
 
 import type { Translate } from './i18n';
 
-// Korean names belong to story-format; only their English translations live here.
+// Korean names belong to story-model; only their English translations live here.
 const englishPointOfView: Record<PointOfView, string> = {
   first: 'First person',
   'first-retrospective': 'First person, looking back (the narrator knows the ending)',

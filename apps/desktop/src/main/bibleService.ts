@@ -22,7 +22,7 @@ import {
   writeBibleFile,
   type BibleFact,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import { ZodError, type ZodType } from 'zod';
 
 import type { BibleCard, BibleCardKind, BibleCardSummary, CanonFact } from '@/shared/dto';
@@ -84,7 +84,7 @@ function summaryDetail(card: BibleCard): string | undefined {
 }
 
 // The story bible screen: character, background and narrator cards, and the canon facts. Every
-// write goes through the story-format schema and codec, so a card saved here serializes to the same
+// write goes through the story-model schema and codec, so a card saved here serializes to the same
 // bytes the extension and the CLI would write.
 export class BibleService {
   private readonly paths: StoryboardProjectPaths;

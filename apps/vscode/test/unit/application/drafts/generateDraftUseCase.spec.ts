@@ -12,8 +12,8 @@ const uriExistsMock = vi.fn()
 const archiveExistingDraftMock = vi.fn()
 const pipelineRunMock = vi.fn()
 
-vi.mock("@storyboard/story-format", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@storyboard/story-format")>()),
+vi.mock("@storyboard/story-model", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@storyboard/story-model")>()),
   buildSceneContext: (...args: unknown[]): unknown => buildSceneContextMock(...args),
   buildNarrativeContext: (...args: unknown[]): unknown => buildNarrativeContextMock(...args)
 }))
@@ -47,7 +47,7 @@ import {
   type GenerateDraftUseCaseDependencies
 } from "@storyboard/story-engine"
 import { SceneGenerationPipelineCancelledError } from '@storyboard/story-pipeline'
-import { computeDraftBodyHash, createDraft, parseDraft, serializeDraft } from '@storyboard/story-format'
+import { computeDraftBodyHash, createDraft, parseDraft, serializeDraft } from '@storyboard/story-model'
 
 const workspaceRoot = vscode.Uri.file("/ws")
 const sceneUri = vscode.Uri.file("/ws/scene/01-intro.card")

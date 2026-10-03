@@ -11,8 +11,6 @@ import {
   buildCompositionPreset,
   buildSceneSeeds,
   diffCandidatesAgainstCanon,
-  isIgnoredSampleCardFileName,
-  joinStoryPath,
   migrateCardTextFieldsToList,
   writeNarratorCardsIfMissing,
   writeWorkspaceAgentGuidesIfMissing,
@@ -20,7 +18,6 @@ import {
   createWorkspace,
   ensureWorkspaceGitignore,
   getStoryboardProjectPaths,
-  NodeUri,
   sceneFilePath,
   sceneContextPaths,
   sealStoryMemory,
@@ -29,11 +26,12 @@ import {
   resealStoryMemory,
   sceneStageCatalog,
   writeProjectJson,
-  type StoryUri,
 } from '@storyboard/story-engine';
-
-import { aiProviderIds, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 import {
+  isIgnoredSampleCardFileName,
+  joinStoryPath,
+  NodeUri,
+  type StoryUri,
   compositionKinds,
   formatSceneOrderRanges,
   mainThreadId,
@@ -42,8 +40,6 @@ import {
   type NarratorCard,
   type PointOfView,
   type ProjectSetting,
-} from '@storyboard/story-format';
-import {
   convertLegacySceneText,
   createEmptyBackground,
   extractInlineSceneSummary,
@@ -64,8 +60,10 @@ import {
   serializeCard,
   serializeDraft,
   setCardId,
-} from '@storyboard/story-format';
-import { parseSceneFileName } from '@storyboard/story-format';
+  parseSceneFileName,
+} from '@storyboard/story-model';
+
+import { aiProviderIds, requiresApiKey, type AiProviderId } from '@storyboard/story-ai';
 
 import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';

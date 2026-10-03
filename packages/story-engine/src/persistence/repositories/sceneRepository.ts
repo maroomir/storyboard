@@ -1,8 +1,7 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, SceneFile, SceneGrounding } from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { ISceneRepository } from '#engine/application/drafts/draftRepositories';
-import { applySceneBeats, applySceneGrounding, readSceneFile } from '@storyboard/story-format';
-import type { SceneFile, SceneGrounding } from '@storyboard/story-format';
+import { applySceneBeats, applySceneGrounding, readSceneFile } from '@storyboard/story-model';
 export class SceneRepository implements ISceneRepository {
   public constructor(private readonly fileSystem: IFileSystem) {}
 

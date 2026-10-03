@@ -5,7 +5,7 @@ import type { ConfigBridge } from '@storyboard/story-ai';
 import { isDraftMarkdownFile } from '@storyboard/story-engine';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
-import { parseDraft } from '@storyboard/story-format';
+import { parseDraft } from '@storyboard/story-model';
 import { LatestRequestGuard } from './latestRequestGuard';
 import { analyzeSlop, type SlopFinding } from '@storyboard/story-engine';
 

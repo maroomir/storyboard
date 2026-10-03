@@ -1,10 +1,9 @@
-import type { StoryUri } from '@storyboard/story-format';
+import type { StoryUri, SceneFile, StoryboardCard } from '@storyboard/story-model';
 import type { IUseCase } from '#engine/application/useCase';
 import { z } from 'zod';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { applyCardCollectProposals, shouldProposeCardCollect } from '#engine/domain/cardCollect';
-import type { SceneFile, StoryboardCard } from '@storyboard/story-format';
 import { parseJsonObject } from '@storyboard/story-ai';
 import {
   cardCollectProposalId,

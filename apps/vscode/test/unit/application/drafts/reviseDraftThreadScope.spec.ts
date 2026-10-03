@@ -8,7 +8,7 @@ import {
   serializeStoryState,
   type StoryState,
   type StoryUri,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 
 const checkContinuityMock = vi.fn(
   async (body: string, factLines: readonly string[]): Promise<ContinuityIssueLike[]> => {

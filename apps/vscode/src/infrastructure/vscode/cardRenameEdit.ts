@@ -8,11 +8,11 @@ import {
   rewriteCardIdReferences,
   serializeCard,
   setCardId,
-} from '@storyboard/story-format';
+  isIgnoredSampleCardFileName,
+} from '@storyboard/story-model';
 import {
   characterProfilePath,
   getStoryboardProjectPaths,
-  isIgnoredSampleCardFileName,
   parseCardIdFromPath,
 } from '@storyboard/story-engine';
 import { uriExists } from './workspace';

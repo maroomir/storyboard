@@ -5,14 +5,14 @@ import {
   resolveCraftContract,
   resolveSceneTargetLength,
   sceneGroundingFieldLabels,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 import type {
   CraftContractOverride,
   NarrationDirective,
   NarrativeTense,
   ProjectSetting,
   SceneGrounding,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
 // NOTE: Shared narrative-style context injected into every scene-generation prompt so point of
 // view, genre/tone, and style constraints survive from project settings into persona, dialogue,
 // and genre-format steps. Runtime-agnostic; no vscode imports.

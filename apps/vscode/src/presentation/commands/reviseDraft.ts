@@ -5,7 +5,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { draftPath } from '@storyboard/story-engine';
 import { hasStoryboardProject, uriExists } from '@/infrastructure/vscode/workspace';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import { parseSceneStem } from '@storyboard/story-format';
+import { parseSceneStem } from '@storyboard/story-model';
 import { showStoryboardFailure } from '@/presentation/notifications/showStoryboardFailure';
 
 const reviseDraftCommand = 'storyboard.draft.reviseLoop';

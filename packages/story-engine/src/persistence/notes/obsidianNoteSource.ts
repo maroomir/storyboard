@@ -1,4 +1,4 @@
-import { joinStoryPath, type StoryUri } from '@storyboard/story-format';
+import { joinStoryPath, type StoryUri } from '@storyboard/story-model';
 
 import {
   NoteSourceError,

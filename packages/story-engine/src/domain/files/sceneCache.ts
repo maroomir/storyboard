@@ -1,16 +1,16 @@
-import type { StoryUri } from '@storyboard/story-format';
-import { createHash } from 'node:crypto';
-import { z } from 'zod';
-
-import { formatCardAttributes, joinCardText } from '@storyboard/story-format';
 import type {
+  StoryUri,
   BackgroundCard,
   SceneFile,
   BibleFact,
   CharacterCard,
   ProjectFormat,
   SceneGrounding,
-} from '@storyboard/story-format';
+} from '@storyboard/story-model';
+import { createHash } from 'node:crypto';
+import { z } from 'zod';
+
+import { formatCardAttributes, joinCardText } from '@storyboard/story-model';
 import { aiProviderIds, aiTaskCatalog } from '@storyboard/story-ai';
 import type { AiProviderId, AiTaskName } from '@storyboard/story-ai';
 
