@@ -2,6 +2,7 @@ import {
   parseBible,
   parseCard,
   parseDraft,
+  parseSceneRenameJournal,
   parseStoryState,
   parseSceneFileName,
   parseSceneStem,
@@ -13,6 +14,7 @@ import {
   serializeBible,
   serializeCard,
   serializeDraft,
+  serializeSceneRenameJournal,
   serializeStoryState,
   type SceneRename,
   type StoryUri,
@@ -79,7 +81,8 @@ const sceneEntityKeyFieldNames = new Set(['id', 'key']);
 // cache and memory file is named after it, and the ledgers and canon refer to it by stem or by
 // order. A rename moves and rewrites all of them. Every file is read and transformed before the
 // first write, so a file that cannot be parsed stops the rename with nothing changed. A rename
-// cut off before it deleted the old card is finished by running the same rename again.
+// cut off before it deleted the old card is finished by running the same rename again; the
+// journal it wrote first is what marks it as cut off.
 export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSceneResult> {
   public constructor(private readonly deps: RenameSceneUseCaseDependencies) {}
 
@@ -113,7 +116,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     const rename: SceneRename = { from, to };
     const memoryScopes = await this.listMemoryScopes(paths);
     const moves = await this.planMoves(paths, memoryScopes, rename);
-    const isResuming = await this.isInterruptedRename(root, rename, moves);
+    const isResuming = await this.isInterruptedRename(paths, rename, moves);
     const occupant = await this.findSceneWithOrder(
       paths,
       to.order,
@@ -130,6 +133,11 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
 
     const rewrites = await this.planRewrites(paths, memoryScopes, rename);
 
+    await this.deps.fileSystem.writeFile(
+      paths.sceneRenameJournal,
+      toBytes(serializeSceneRenameJournal(rename)),
+    );
+
     for (const write of [...moves, ...rewrites]) {
       await this.deps.fileSystem.writeFile(write.to, toBytes(write.content));
     }
@@ -141,6 +149,7 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     await this.deleteEmptyDirectories(paths, rename);
+    await this.deps.fileSystem.delete(paths.sceneRenameJournal);
 
     return {
       ok: true,
@@ -154,14 +163,22 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
   }
 
   // NOTE: A rename cut off before it deleted the old card left the target card and possibly more
-  // of the moved files. It is that rename only if every target already there holds exactly what
-  // this rename would write; otherwise the target is another scene and must not be overwritten.
+  // of the moved files. It is that rename only if its journal names this same rename and every
+  // target already there holds exactly what this rename would write; otherwise the target is
+  // another scene and must not be overwritten.
   private async isInterruptedRename(
-    root: StoryUri,
+    paths: StoryboardProjectPaths,
     rename: SceneRename,
     moves: readonly PlannedWrite[],
   ): Promise<boolean> {
-    if (!(await this.deps.fileSystem.exists(scenePath(root, rename.to.stem)))) {
+    const journal = await this.readTextIfExists(paths.sceneRenameJournal);
+    const journaled = journal === undefined ? undefined : parseSceneRenameJournal(journal);
+
+    if (
+      journaled?.from.stem !== rename.from.stem ||
+      journaled.to.stem !== rename.to.stem ||
+      !(await this.deps.fileSystem.exists(scenePath(paths.workspaceRoot, rename.to.stem)))
+    ) {
       return false;
     }
 

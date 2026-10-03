@@ -6,12 +6,16 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
-  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import {
+  parseSceneStem,
+  serializeSceneRenameJournal,
+  STORYBOARD_RELATIVE_PATHS,
+} from '@storyboard/story-format';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ParsedArguments } from '../src/cliArguments';
@@ -917,17 +921,32 @@ describe('doctor: interrupted scene rename', () => {
     return cardPath;
   }
 
-  it('names the rename that finishes two cards left side by side', async () => {
-    const oldCard = writeScene('03-night-market');
-    utimesSync(oldCard, new Date('2026-10-01'), new Date('2026-10-01'));
+  function writeRenameJournal(fromStem: string, toStem: string): void {
+    writeFileSync(
+      join(workspace, STORYBOARD_RELATIVE_PATHS.sceneRenameJournal),
+      serializeSceneRenameJournal({ from: parseSceneStem(fromStem)!, to: parseSceneStem(toStem)! }),
+    );
+  }
+
+  it('names the rename its journal left unfinished', async () => {
+    writeScene('03-night-market');
     writeScene('04-night-market');
+    writeRenameJournal('03-night-market', '04-night-market');
 
     const outcome = await run('doctor', args(['doctor']));
 
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('03-night-market → 04-night-market 가 끝나지 않아');
     expect(outcome.message).toContain('storyboard scene rename 03-night-market --to 04-night-market');
-    expect(outcome.message).not.toContain('04-night-market → 03-night-market');
+  });
+
+  it('ignores a journal whose old card is already gone', async () => {
+    writeScene('04-night-market');
+    writeRenameJournal('03-night-market', '04-night-market');
+
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).not.toContain('씬 이름 바꾸기');
   });
 
   it('reports a draft and a summary left with no card', async () => {
@@ -951,5 +970,30 @@ describe('doctor: interrupted scene rename', () => {
 
     expect(outcome.message).not.toContain('씬 이름 바꾸기');
     expect(outcome.message).not.toContain('카드 없는 씬 파일');
+  });
+});
+
+describe('scene rename: two fresh scenes are not a cut-off rename', () => {
+  beforeEach(async () => {
+    await run('scene create', args(['scene', 'create'], { name: 'opening' }));
+    await run('scene create', args(['scene', 'create'], { name: 'storm' }));
+  });
+
+  it('does not report a rename in doctor', async () => {
+    const outcome = await run('doctor', args(['doctor']));
+
+    expect(outcome.message).not.toContain('씬 이름 바꾸기');
+  });
+
+  it('refuses the number the other scene holds and keeps both cards', async () => {
+    const outcome = await run(
+      'scene rename',
+      args(['scene', 'rename'], { to: '02-storm' }, ['01-opening']),
+    );
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('02-storm 가 쓰고 있습니다');
+    expect(existsSync(join(workspace, 'scene', '01-opening.card'))).toBe(true);
+    expect(existsSync(join(workspace, 'scene', '02-storm.card'))).toBe(true);
   });
 });
