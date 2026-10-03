@@ -40,6 +40,11 @@ export interface StoryboardProjectPaths {
   readonly backgroundMemoryDirectory: StoryUri;
   readonly bibleCacheDirectory: StoryUri;
   readonly cardCacheDirectory: StoryUri;
+  readonly noteCacheDirectory: StoryUri;
+  readonly noteSource: StoryUri;
+  readonly notePlan: StoryUri;
+  readonly noteCandidates: StoryUri;
+  readonly noteSynopsisCandidate: StoryUri;
   readonly studioSessionDirectory: StoryUri;
   readonly bibleDirectory: StoryUri;
   readonly bibleCanon: StoryUri;
@@ -92,6 +97,11 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     backgroundMemoryDirectory: resolve(STORYBOARD_RELATIVE_PATHS.backgroundMemoryDirectory),
     bibleCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleCacheDirectory),
     cardCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.cardCacheDirectory),
+    noteCacheDirectory: resolve(STORYBOARD_RELATIVE_PATHS.noteCacheDirectory),
+    noteSource: resolve(STORYBOARD_RELATIVE_PATHS.noteSource),
+    notePlan: resolve(STORYBOARD_RELATIVE_PATHS.notePlan),
+    noteCandidates: resolve(STORYBOARD_RELATIVE_PATHS.noteCandidates),
+    noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
     bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
     bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),
