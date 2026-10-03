@@ -29,7 +29,8 @@ function createMemoryFileSystem(): IFileSystem & { readonly files: Map<string, U
     listFileNames: async () => [],
     readDirectory: async () => [],
     delete: async (uri) => void files.delete(uri.fsPath),
-    modifiedTime: async () => 0
+    modifiedTime: async () => 0,
+    isRealPathInside: async () => true
   }
 }
 

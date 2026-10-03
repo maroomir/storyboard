@@ -29,5 +29,6 @@ export const stubFileSystem: IFileSystem = {
     ])
   },
   delete: (uri) => workspace.fs.delete(uri as UriLike),
-  modifiedTime: async (uri) => (await workspace.fs.stat(uri as UriLike)).mtime ?? 0
+  modifiedTime: async (uri) => (await workspace.fs.stat(uri as UriLike)).mtime ?? 0,
+  isRealPathInside: async () => true
 }
