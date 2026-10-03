@@ -22,6 +22,11 @@ export interface StoryboardRelativePaths {
   readonly backgroundMemoryDirectory: string;
   readonly bibleCacheDirectory: string;
   readonly cardCacheDirectory: string;
+  readonly noteCacheDirectory: string;
+  readonly noteSource: string;
+  readonly notePlan: string;
+  readonly noteCandidates: string;
+  readonly noteSynopsisCandidate: string;
   readonly studioSessionDirectory: string;
   readonly bibleDirectory: string;
   readonly bibleCanon: string;
@@ -65,6 +70,11 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   backgroundMemoryDirectory: '.storyboard/memory/backgrounds',
   bibleCacheDirectory: '.storyboard/cache/bible',
   cardCacheDirectory: '.storyboard/cache/cards',
+  noteCacheDirectory: '.storyboard/cache/notes',
+  noteSource: '.storyboard/cache/notes/source.json',
+  notePlan: '.storyboard/cache/notes/plan.json',
+  noteCandidates: '.storyboard/cache/notes/candidates.json',
+  noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
   studioSessionDirectory: '.storyboard/cache/studio-sessions',
   bibleDirectory: '.storyboard/bible',
   bibleCanon: '.storyboard/bible/canon.yaml',

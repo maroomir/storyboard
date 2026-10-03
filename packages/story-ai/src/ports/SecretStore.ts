@@ -39,6 +39,21 @@ export class SecretStore {
     return (await this.getApiKey(providerId)) !== undefined;
   }
 
+  public async setNotionToken(token: string): Promise<void> {
+    const normalizedToken = token.trim();
+
+    if (normalizedToken.length === 0) {
+      await this.secretStorage.delete(notionTokenSecretKey);
+      return;
+    }
+
+    await this.secretStorage.store(notionTokenSecretKey, normalizedToken);
+  }
+
+  public async getNotionToken(): Promise<string | undefined> {
+    return this.secretStorage.get(notionTokenSecretKey);
+  }
+
   public onDidChangeApiKey(
     providerId: AiProviderId,
     listener: () => void,
@@ -56,6 +71,10 @@ export class SecretStore {
     });
   }
 }
+
+// The Notion integration token the note import reads pages with. It sits beside the API keys so a
+// host has one secret file to protect.
+export const notionTokenSecretKey = 'storyboard.integration.notion';
 
 export function createApiKeySecretKey(providerId: AiProviderId): string {
   return `storyboard.apiKey.${providerId}`;
