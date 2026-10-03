@@ -7,7 +7,7 @@ alwaysApply: true
 
 Cross-cutting standards for how the apps and the shared packages are structured, named, and
 typed. The reference module is **`apps/cli`** — its rules are enforced end to end by its own
-architecture check; on the package side, **`packages/story-format`** is the reference
+architecture check; on the package side, **`packages/story-model`** is the reference
 for schema-first types and the error-class template. Generic readability and verb rules live in
 `.cursor/rules/clean-code.mdc`; this file covers only what is monorepo-specific.
 
@@ -22,8 +22,10 @@ for schema-first types and the error-class template. Generic readability and ver
   its host adapters and hands them in. Do not construct engine use cases anywhere else — and do not
   construct ones no command or handler calls.
 - A package's public contract is its `index.ts` only; deep imports into `src/` are not part of the
-  contract. Inside a package, organize by role — `story-ai`'s `ai/` (services), `contracts/`
-  (DTOs), `ports/` (host adapters) split is the model.
+  contract. Inside a package, organize by role — `story-ai`'s `ai/` (services) and `ports/`
+  (host adapters) split is the model. `story-model` keeps one folder per origin: `format/` (file
+  format), `contracts/` (AI contracts), `shared/` (app-to-app contracts), `domain/` (pure policies),
+  `paths/` (path rules), each importing only the ones before it.
 - Packages ship TypeScript source (no build); every app must resolve `@storyboard/*` identically in
   tsconfig `paths`, esbuild `alias`, and vitest `alias` — keep all three in sync when adding a
   package.
@@ -74,7 +76,7 @@ for schema-first types and the error-class template. Generic readability and ver
 - **Two channels, never mixed ad hoc**:
   1. Expected failures the caller acts on are **returned** as discriminated unions —
      `{ ok: false, kind: 'failed' | 'cancelled', message }` (`GenerateDraftResult` pattern).
-  2. Programmer/config errors are **thrown** as custom errors following the story-format template:
+  2. Programmer/config errors are **thrown** as custom errors following the story-model template:
      `class XError extends Error` with a `code` string-literal union, optional `cause`, and
      `this.name` set. Codes are English kebab-case; messages are Korean.
 - Catch-alls live only at the outermost isolation ring (the CLI's `index.ts`: log to stderr, set
@@ -117,8 +119,8 @@ exactly one file; everything else derives from it.
   or a `Math.min`/`Math.max` bound at a call site.
 - **Record why a measured value is what it is** next to the value, as `modelProfiles.params.json` does with
   its `measured` block. A number with no provenance cannot be re-tuned.
-- **The webview reads the real tables**, not copies: `@storyboard/story-engine/contracts` re-exports
-  the browser-safe catalogs through `packages/story-engine/src/shared/catalogs.ts`. Add a re-export
+- **The webview reads the real tables**, not copies: `@storyboard/story-model/contracts` re-exports
+  the browser-safe catalogs through `packages/story-model/src/shared/catalogs.ts`. Add a re-export
   there rather than a second declaration under `webview-ui`.
 - **Two homes that cannot be merged** (`package.json` contributions versus code constants, or the
   webview security allowlist) get a test that fails when they disagree — see
@@ -126,9 +128,9 @@ exactly one file; everything else derives from it.
 - **`scripts/architecture/check-workspace.mjs` (root `npm run lint`) fails the build** when a literal
   appears outside the file that owns it. Add the pair to `OWNED_LITERALS` when you give a value a single home.
 - **Browser-safe entry points**: a package barrel may export node-only modules, so anything the
-  webview bundle reaches value-first must come from the narrow entry — `@storyboard/story-ai/contracts`,
-  `@storyboard/story-format/contracts`, `@storyboard/story-engine/contracts`. `story-engine/shared`
-  itself must import only those, never a package barrel. Declare a new entry in the package's
+  webview bundle reaches value-first must come from the narrow entry `@storyboard/story-model/contracts` — the one
+  browser-safe entry, joining the format tables, the AI catalogs and the shared contracts. Whatever
+  it exports must stay free of node-only modules. Declare a new entry in the package's
   `exports` and in every consumer's tsconfig `paths`; `scripts/aliases.mjs` orders aliases
   longest-first so `pkg/contracts` is not shadowed by `pkg`.
 
@@ -145,11 +147,11 @@ behaviour it changes.
 
 | File | Owner | Holds |
 |---|---|---|
-| `packages/story-model/src/contracts/modelProfiles.params.json` | story-ai | Per-model measured overrides keyed by their `generation.*` parameter id, with the `measured` block recording where each number came from |
-| `packages/story-format/src/craftContract.params.json` | story-format | The craft contract every generation prompt carries by default: telling ban, motif repeat limit, stock-gesture blacklist, interior/action/density rules, scene length multiplier |
+| `packages/story-model/src/contracts/modelProfiles.params.json` | story-model | Per-model measured overrides keyed by their `generation.*` parameter id, with the `measured` block recording where each number came from |
+| `packages/story-model/src/format/craftContract.params.json` | story-model | The craft contract every generation prompt carries by default: telling ban, motif repeat limit, stock-gesture blacklist, interior/action/density rules, scene length multiplier |
 | `packages/story-ai/src/ai/prompts/promptVariants.params.json` | story-ai | When a call gets the `xs` or `rich` prompt variant instead of the generic one: compact providers, model name pattern and tasks for `xs`; output floor, long-form tasks and top-tier model keywords for `rich` |
-| `packages/story-format/src/compositionPresets.params.json` | story-format | What the composition presets build: the omnibus episode count and minimum, the episode thread id prefix and title suffix, the frame/inner/main thread ids and titles |
-| `packages/story-pipeline/src/pipelineDefaults.params.json` | story-pipeline | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
+| `packages/story-model/src/format/compositionPresets.params.json` | story-model | What the composition presets build: the omnibus episode count and minimum, the episode thread id prefix and title suffix, the frame/inner/main thread ids and titles |
+| `packages/story-engine/src/pipeline/pipelineDefaults.params.json` | story-engine | Model-agnostic generation defaults: skeleton ratio, retry limits, similarity thresholds, repetition windows, voice-sample bounds, context budgets, retry-candidate weights |
 | `packages/story-sim/src/simDefaults.params.json` | story-sim | Measurement-side knobs: reader-panel size, repeat count, and the reference token prices the cost axis converts with |
 
 A prompt's `temperature` and `maxTokens` are not a params file: they sit in the front-matter of its
@@ -157,9 +159,9 @@ resource file (`packages/story-ai/src/ai/prompts/resources/<key>.md`), so an aut
 may carry its own.
 
 Identifier tables stay TypeScript (`as const`) and live with their owner:
-`providerCatalog.ts`, `settingCatalog.ts` and `generationParameters.ts` (story-ai; the last names every
+`providerCatalog.ts`, `settingCatalog.ts` and `generationParameters.ts` (story-model `contracts/`; the last names every
 `generation.*` knob the model profiles and the sweep may move), `project.ts` / `paths.ts` / `narrator.ts`
-(story-format), `contributionIds.ts` and `storyboardMessages.ts` (vscode), `commands/catalog.ts` (cli).
+(story-model `format/`), `contributionIds.ts` and `storyboardMessages.ts` (vscode), `commands/catalog.ts` (cli).
 
 Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a row in this table.
 
@@ -167,11 +169,12 @@ Adding a params file means: the `*.params.json` suffix, a sibling zod schema, a 
 
 - Direction: apps import `@storyboard/*` entry points only; packages import other packages (declared
   ones only) and Node builtins — never `vscode`, app code, or browser APIs. Current graph:
-  `format ← ai ← pipeline ← engine ← sim`, `engine ← node`, `engine, ai ← app`, `ai ← config`.
+  `model ← ai ← engine ← app`, `engine ← node`, `engine ← sim`, `ai ← config`.
 - **Every imported workspace package must be declared in that consumer's `package.json`** — do not
   rely on app-level aliases happening to resolve it.
-- App-specific bans are build failures: the CLI must not import `@storyboard/story-pipeline`
-  directly.
+- App-specific bans are build failures: the CLI and the desktop must not import the engine's
+  pipeline assembly symbols (`refusePipelineAssembly` in `scripts/architecture/runner.mjs` owns the
+  list).
 - When a utility is needed in a second app or package (atomic write, hashing, a logger contract),
   promote the existing one into a shared package instead of re-implementing it locally.
 
@@ -183,11 +186,11 @@ Two kinds of reference, two mechanisms. The architecture checks enforce both.
   folder uses it — a bare `./sibling` is fine, `../` is a build failure. The webview keeps its own
   `@webview/` so the host and the browser bundle never share one prefix.
 - **Inside a package**: a Node subpath import declared in the package's own `package.json`
-  (`#engine/`, `#format/`, `#ai/`, `#git/`, `#pipeline/`). It is **not** a bundler alias, and that is
+  (`#engine/`, `#model/`, `#ai/`, `#git/`). It is **not** a bundler alias, and that is
   the point: apps bundle package source, and a bundler's alias table is global, so a package using
   `@/` would silently resolve to the *app's* `src/` — a wrong file, no error, in a green build. A
   package must never use another package's prefix.
-- **Across packages**: the package name (`@storyboard/story-format`), never a path.
+- **Across packages**: the package name (`@storyboard/story-model`), never a path.
 - **One source of truth**: a project's own `tsconfig.json` holds its `paths`; `scripts/aliases.mjs`
   reads it and hands the same table to esbuild, Vite and Vitest. Never restate a path in a bundler
   config. Note that TypeScript replaces `paths` wholesale when a child config declares it, so a

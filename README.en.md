@@ -46,10 +46,9 @@ An npm-workspaces monorepo. Packages expose TypeScript source with no build step
 | [`apps/cli`](apps/cli/) | `@storyboard/cli` | The CLI (`storyboard`): the headline product and reference implementation |
 | [`apps/desktop`](apps/desktop/) | `@storyboard/desktop` | The desktop app for writers (Electron; macOS Apple Silicon and Windows) |
 | [`packages/story-app`](packages/story-app/) | `@storyboard/story-app` | The composition root and manager facades every app shares |
-| [`packages/story-engine`](packages/story-engine/) | `@storyboard/story-engine` | Runtime-agnostic core: domain policies, use cases, persistence, shared contracts |
-| [`packages/story-format`](packages/story-format/) | `@storyboard/story-format` | Workspace file format: schemas, codecs, path conventions, shared fixtures |
-| [`packages/story-ai`](packages/story-ai/) | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, response contracts, ports |
-| [`packages/story-pipeline`](packages/story-pipeline/) | `@storyboard/story-pipeline` | Scene generation stage orchestration |
+| [`packages/story-engine`](packages/story-engine/) | `@storyboard/story-engine` | Runtime-agnostic core: use cases, persistence, host ports, the scene and novel pipelines |
+| [`packages/story-model`](packages/story-model/) | `@storyboard/story-model` | File format (schemas, codecs, path conventions, shared fixtures), contracts, pure policies |
+| [`packages/story-ai`](packages/story-ai/) | `@storyboard/story-ai` | AI engine: provider registry, prompt catalog, ports |
 | [`packages/story-config`](packages/story-config/) | `@storyboard/story-config` | The shared home (`~/.storyboard`): config layers, the secrets file, watchers |
 | [`packages/story-node`](packages/story-node/) | `@storyboard/story-node` | Node host adapters: file system, workspace locator |
 | [`packages/story-sim`](packages/story-sim/) | `@storyboard/story-sim` | Quality and cost measurement: knob sweeps, reader panel, Pareto reports |

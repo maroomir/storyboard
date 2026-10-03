@@ -29,10 +29,9 @@ green too.
 
 | Path | Owns |
 |---|---|
-| `packages/story-format` | Workspace file format: schemas, codecs, paths, the round-trip fixtures |
-| `packages/story-ai` | Providers, prompts (`src/ai/prompts/resources/*.md`), response contracts |
-| `packages/story-pipeline` | The scene and novel generation stages |
-| `packages/story-engine` | Domain policies, use cases, repositories, the ports a host implements |
+| `packages/story-model` | Workspace file format (schemas, codecs, paths, the round-trip fixtures), AI and shared contracts, pure policies |
+| `packages/story-ai` | Providers, prompts (`src/ai/prompts/resources/*.md`) |
+| `packages/story-engine` | Use cases, repositories, the ports a host implements, the scene and novel generation stages |
 | `packages/story-app` | `StoryboardApplication`: builds the object graph once for every app |
 | `packages/story-config` | `~/.storyboard`: config layers, the 0600 secrets file, watchers |
 | `packages/story-node` | Node adapters shared by the CLI and the desktop app |

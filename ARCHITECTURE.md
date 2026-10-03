@@ -315,7 +315,7 @@ description:
   - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).
   - `attributes`·`arc`·`relations`는 환각 위험이 있어 **직접 기록하지 않는다**. draft에서 AI가 추출해 `.storyboard/cache/cards/<scene>.json`에 후보로 적재(`apps/vscode/src/infrastructure/ai/cardCandidateUpdater.ts`)하고, `Storyboard: Promote Card Candidates` 명령으로 사용자가 고른 항목만 카드에 병합한다. relation `target`은 실제 카드 id로 해석되는 경우만, attributes는 카드에 없는 key만 제안된다(기존 값 비파괴).
   - 적재 전 자기검증: `cards.candidates.verify` 설정(기본 on)이 켜지면 각 후보가 본문에 명시되었는지 인물별 1회 재확인(`cardFactVerification`)해 명시된 항목만 캐시에 남긴다(검증 실패 시 추출 결과 유지).
-  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-engine/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
+  - 승격 후 정리: 카드에 반영된 후보는 캐시 파일에서 제거하고, 남은 후보가 없는 파일은 삭제한다(`packages/story-model/src/domain/cardCandidatePromotion.ts`의 `pruneRecordByPromotedKeys`). bible 후보(감사 목적 보존)와 달리 카드 후보는 재노출을 막기 위해 정리한다.
   - 위 후처리는 모두 `cards.candidates.updateAfterGenerate` 설정(기본 off)이 켜진 경우에만 실행된다.
 
 ### 4.2a `.card` (서술자 카드, `narrator/`)
@@ -498,7 +498,7 @@ grounding:
 
 v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다. 변환은 결정적이며(AI 없음),
 `[목적]` 라벨 블록은 구조 필드로, 그 밖의 산문은 `summary`로 무손실 매핑된다
-(`convertLegacySceneText` in `packages/story-format/src/files/sceneMigration.ts`).
+(`convertLegacySceneText` in `packages/story-model/src/format/files/sceneMigration.ts`).
 
 - 데스크톱: `Storyboard: Migrate Scenes to Cards` (`storyboard.scene.migrate`) — 확인 후 `.card`
   생성·`.txt` 삭제.
@@ -791,10 +791,10 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 | 루트 안 경로 | 덮는 것 | 번들 원본 |
 |---|---|---|
 | `prompts/<key>.md` | 프롬프트 문구(`## system`·`## user`, 변형은 `## system:xs`)와 머리말(`---` 사이 `temperature`·`maxTokens`) | `packages/story-ai/src/ai/prompts/resources/<key>.md` |
-| `craftContract.json` | 모든 생성 프롬프트에 붙는 작법 계약 기본값(적은 항목만 덮임; `project.json`의 `setting.craftContract`가 그 위에 마지막으로 적용) | `packages/story-format/src/craftContract.params.json` |
+| `craftContract.json` | 모든 생성 프롬프트에 붙는 작법 계약 기본값(적은 항목만 덮임; `project.json`의 `setting.craftContract`가 그 위에 마지막으로 적용) | `packages/story-model/src/format/craftContract.params.json` |
 | `promptVariants.json` | xs·rich 변형 선택 규칙(압축 프로바이더·모델 패턴·작업, 출력 하한·장문 작업·상위 모델 키워드) | `packages/story-ai/src/ai/prompts/promptVariants.params.json` |
-| `compositionPresets.json` | 구성 프리셋이 만드는 줄기 이름·편 수 | `packages/story-format/src/compositionPresets.params.json` |
-| `pipelines/scene.yaml` | 씬 초안 파이프라인의 단계 순서(`version: 1` + `stages` 목록, `{id, enabled: false}` 로 끄기) — 필수 단계는 뺄 수 없고 앞선 단계가 있어야 하는 단계는 순서를 검사 | `sceneStageCatalog`(`packages/story-pipeline/src/sceneStageCatalog.ts`)의 순서 |
+| `compositionPresets.json` | 구성 프리셋이 만드는 줄기 이름·편 수 | `packages/story-model/src/format/compositionPresets.params.json` |
+| `pipelines/scene.yaml` | 씬 초안 파이프라인의 단계 순서(`version: 1` + `stages` 목록, `{id, enabled: false}` 로 끄기) — 필수 단계는 뺄 수 없고 앞선 단계가 있어야 하는 단계는 순서를 검사 | `sceneStageCatalog`(`packages/story-engine/src/pipeline/sceneStageCatalog.ts`)의 순서 |
 | `pipelines/novel.yaml` | 장편 파이프라인의 단계 순서 | `novelStageCatalog`(`packages/story-engine/src/application/novel/novelStageCatalog.ts`)의 순서 |
 
 프롬프트 문구는 Mustache 부분집합(`{{name}}`·`{{#name}}…{{/name}}`·`{{^name}}`·`{{> partial}}`·`{{! }}`)으로 쓰고,
@@ -922,7 +922,7 @@ ReviewIssue {
 
 - `category → target.agent` 매핑은 **결정적 규칙**이다(감독이 LLM으로 추론하지 않음): voice→persona(cardId), continuity→canon, repetition·purpose→narrator, grammar→copy-editor(검수자 직접 수정).
 - 감독은 타깃별로 그룹핑해 해당 에이전트만 재호출하고, 다른 단계는 씬 캐시(4.6)·카드 메모리(4.9)에서 재사용한다. 타깃이 없는 전역 이슈일 때만 전체 재작성으로 폴백한다.
-- 구현됨(Phase G-3). `packages/story-pipeline/src/reviewRouting.ts`가 `category→agent` 결정 매핑과 `routeReviewIssues`(canon→persona→narrator 고정 순서)를 제공하고, `reviseDraftWorkflow`가 그룹별로 스코프된 지시를 만들어 `reviseDraft`를 순차 호출한다. `voice.cardId`는 `excerpt`를 등장인물 name·alias와 대조해 best-effort로 채우며(단일 매칭일 때만), 매칭 실패 시 persona 그룹을 등장 캐릭터 전체 대상으로 처리한다. grammar는 현 revise 루프에 검사 경로가 없어 라우팅 대상에서 제외하고 타입에만 둔다. setting 라우팅은 G-4 전까지 비활성이다.
+- 구현됨(Phase G-3). `packages/story-engine/src/pipeline/reviewRouting.ts`가 `category→agent` 결정 매핑과 `routeReviewIssues`(canon→persona→narrator 고정 순서)를 제공하고, `reviseDraftWorkflow`가 그룹별로 스코프된 지시를 만들어 `reviseDraft`를 순차 호출한다. `voice.cardId`는 `excerpt`를 등장인물 name·alias와 대조해 best-effort로 채우며(단일 매칭일 때만), 매칭 실패 시 persona 그룹을 등장 캐릭터 전체 대상으로 처리한다. grammar는 현 revise 루프에 검사 경로가 없어 라우팅 대상에서 제외하고 타입에만 둔다. setting 라우팅은 G-4 전까지 비활성이다.
 
 ### 8.4 비목표
 
@@ -1026,7 +1026,7 @@ ReviewIssue {
 
 저장소 루트는 `apps/*`·`packages/*`를 워크스페이스로 두는 private npm workspaces 매니페스트(`storyboard-monorepo`)이고, 패키지 잠금 파일(`package-lock.json`)은 루트 하나만 둔다. **버전도 루트 하나**이며 `npm run version:sync`가 두 앱에 복제한다.
 
-앱은 셋이고 서로를 모른다. 모두 `packages/story-engine`(도메인 정책·유즈케이스·저장 계층·공유 계약)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록. Node 위에서 도는 앱이 똑같이 쓰는 파일시스템(`NodeFileSystem`)과 워크스페이스 탐색(`NodeWorkspaceLocator`)은 `packages/story-node`에 한 벌만 둔다. 어댑터를 받아 엔진의 객체 그래프(리포지토리·유즈케이스·NovelPipeline)를 한 번 조립하는 컴포지션 루트는 `packages/story-app`의 `StoryboardApplication`이고, 각 앱의 컨테이너는 자기 어댑터만 만들어 넘긴다. 앱은 그 위의 매니저(`drafts`·`manuscript`·`cards`·`novel`·`studio`)의 동사만 부르고, 유즈케이스는 `IUseCase<Request, Result>` 한 형태(`execute(request)`)를 구현한다.
+앱은 셋이고 서로를 모른다. 모두 `packages/story-engine`(유즈케이스·저장 계층·파이프라인)과 그 아래 `packages/story-model`(파일 포맷·계약·도메인 정책·경로 규칙)을 소비하며, 다른 것은 호스트 어댑터뿐이다 — 파일시스템, 워크스페이스 탐색, 로거, 비밀 저장소, 설정, 사용량 기록. Node 위에서 도는 앱이 똑같이 쓰는 파일시스템(`NodeFileSystem`)과 워크스페이스 탐색(`NodeWorkspaceLocator`)은 `packages/story-node`에 한 벌만 둔다. 어댑터를 받아 엔진의 객체 그래프(리포지토리·유즈케이스·NovelPipeline)를 한 번 조립하는 컴포지션 루트는 `packages/story-app`의 `StoryboardApplication`이고, 각 앱의 컨테이너는 자기 어댑터만 만들어 넘긴다. 앱은 그 위의 매니저(`drafts`·`manuscript`·`cards`·`novel`·`studio`)의 동사만 부르고, 유즈케이스는 `IUseCase<Request, Result>` 한 형태(`execute(request)`)를 구현한다.
 
 | 앱 | 워크스페이스 | 실행 이름 |
 |---|---|---|
@@ -1040,17 +1040,23 @@ CLI에 없는 기능이 확장에 생기지 않도록 `apps/cli/test/parity.test
 
 ### 12.1 계층 구조
 
-내부 계층은 `packages/story-engine`으로 옮겨 두 앱이 공유한다. 앱에 남은 것은 호스트 어댑터와 그
+내부 계층은 `packages/story-model`과 `packages/story-engine`에 있고 모든 앱이 공유한다. 패키지 방향은
+`story-model ← story-ai ← story-engine ← story-app` 한 줄이다. 앱에 남은 것은 호스트 어댑터와 그
 호스트의 입출력뿐이다.
 
 ```text
+packages/story-model/src/
+  format/         # 워크스페이스 파일 포맷: 스키마·코덱·경로 규약
+  contracts/      # AI 계약·카탈로그
+  shared/         # 앱 간 RPC·카드 계약
+  domain/         # runtime-agnostic policies·file records
+  paths/          # 프로젝트 경로 규칙
+
 packages/story-engine/src/
   application/    # use cases, NovelPipeline, ports 소비
+  pipeline/       # 씬 생성 단계
   persistence/    # repository 구현 (IFileSystem 위)
-  domain/         # runtime-agnostic policies·codecs·value types
-  shared/         # 다른 내부 레이어를 import하지 않는 contracts
   ports/          # IFileSystem, IWorkspaceLocator, IUsageSink, IStoryboardLogger
-  paths/          # StoryUri, NodeUri, 프로젝트 경로 규약
 
 packages/story-app/src/
   storyboardApplication.ts   # 호스트 어댑터 6개 → 엔진 객체 그래프를 한 번 조립하는 컴포지션 루트
@@ -1074,11 +1080,12 @@ apps/vscode/src/extension.ts
 **검사가 실제로 강제하는 것** — 초록불을 그 이상으로 읽지 않도록 적어 둔다.
 
 - `apps/vscode`: `extension.ts`의 fan-out, `infrastructure → presentation/bootstrap` 금지, 순환 금지,
-  공유 패키지의 `vscode`·앱 import 금지, 엔진 `shared`의 자기 참조 한정.
-- `apps/cli`: 순서형 레이어 방향과 순환 금지. `@storyboard/story-pipeline`
-  직접 import도 거부한다(생성 루프의 두 번째 사본 방지).
-- `packages/story-engine`: 자체 레이어 방향 — `shared` 는 자기만, `domain` 은 `domain`/`shared` 만,
-  `paths`·`ai` 는 그보다 안쪽만, `ports` 는 `ports`/`paths`/`domain` 만 import 한다. 순환도 막는다.
+  공유 패키지의 `vscode`·앱 import 금지.
+- `apps/cli`·`apps/desktop`: 레이어 방향과 순환 금지. 엔진의 파이프라인 조립 심볼
+  (`scripts/architecture/runner.mjs`의 `refusePipelineAssembly`) import도 거부한다(생성 루프의 두 번째 사본 방지).
+- `packages/story-model`: 자체 레이어 방향 — `format` 은 자기만, `contracts` 는 `contracts`/`format` 만,
+  이어서 `shared`·`domain`·`paths` 는 각각 자기보다 앞선 것만 import 한다. 순환도 막는다.
+- `packages/story-engine`: `pipeline`·`ports`·`ai` 는 자기 폴더(와 다른 패키지)만 import 한다. 순환도 막는다.
   `persistence` 와 `application` 은 설계상 상호 의존이라(application 이 리포지터리 포트를 선언하고
   persistence 가 구현한다) 둘 사이에는 순서를 두지 않는다.
 

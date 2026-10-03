@@ -15,7 +15,8 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   `StoryboardApplication` (`container.drafts.generate(…)`, `container.novel.run(…)`). Assembling pipeline
   stages by hand here would be the third copy of the generation loop (after the extension and the
   harness), so `apps/cli/scripts/check-architecture.mjs` fails the build if the CLI imports
-  `@storyboard/story-pipeline` directly.
+  the engine's pipeline assembly symbols (`SceneGenerationPipeline`, `runSceneGenerationPipeline`,
+  `sceneStages`, `runReviseLoop`).
 - **Parity is a test, not a promise.** `apps/cli/test/parity.test.ts` maps every
   `contributes.commands` entry in `apps/vscode/package.json` to a CLI verb, an editor-only
   exemption, or a tracked gap. Adding a command to the extension without a verb fails CI. The
@@ -62,9 +63,9 @@ command picks a file on its own. Secrets are exempt — always the one 0600 home
 two resource roots (workspace wins), and `packages/story-app/src/resourceOverrides.ts` owns what a
 root may hold — `prompts/<key>.md` replaces the bundled resource of that prompt (bundled texts in
 `packages/story-ai/src/ai/prompts/resources/`), `craftContract.json` lays over the bundled craft
-contract (`packages/story-format/src/craftContract.params.json`), `promptVariants.json` over the
+contract (`packages/story-model/src/format/craftContract.params.json`), `promptVariants.json` over the
 variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params.json`), `compositionPresets.json` over what the composition presets build
-(`packages/story-format/src/compositionPresets.params.json`), and `pipelines/scene.yaml` /
+(`packages/story-model/src/format/compositionPresets.params.json`), and `pipelines/scene.yaml` /
 `pipelines/novel.yaml` over the stage order of the two pipelines (checked against
 `sceneStageCatalog` and `novelStageCatalog`; a required stage cannot be dropped). `doctor` lists the
 files in force and fails on one it cannot use. `dispatch.ts` loads them before a
