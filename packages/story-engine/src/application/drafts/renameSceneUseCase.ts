@@ -78,7 +78,8 @@ const sceneEntityKeyFieldNames = new Set(['id', 'key']);
 // Scenes are keyed by their file stem: the card, its summary, the draft and its history, every
 // cache and memory file is named after it, and the ledgers and canon refer to it by stem or by
 // order. A rename moves and rewrites all of them. Every file is read and transformed before the
-// first write, so a file that cannot be parsed stops the rename with nothing changed.
+// first write, so a file that cannot be parsed stops the rename with nothing changed. A rename
+// cut off before it deleted the old card is finished by running the same rename again.
 export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSceneResult> {
   public constructor(private readonly deps: RenameSceneUseCaseDependencies) {}
 
@@ -109,7 +110,15 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     }
 
     const paths = getStoryboardProjectPaths(root);
-    const occupant = await this.findSceneWithOrder(paths, to.order, from.stem);
+    const rename: SceneRename = { from, to };
+    const memoryScopes = await this.listMemoryScopes(paths);
+    const moves = await this.planMoves(paths, memoryScopes, rename);
+    const isResuming = await this.isInterruptedRename(root, rename, moves);
+    const occupant = await this.findSceneWithOrder(
+      paths,
+      to.order,
+      isResuming ? [from.stem, to.stem] : [from.stem],
+    );
 
     if (occupant !== undefined) {
       return {
@@ -119,9 +128,6 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
       };
     }
 
-    const rename: SceneRename = { from, to };
-    const memoryScopes = await this.listMemoryScopes(paths);
-    const moves = await this.planMoves(paths, memoryScopes, rename);
     const rewrites = await this.planRewrites(paths, memoryScopes, rename);
 
     for (const write of [...moves, ...rewrites]) {
@@ -147,15 +153,38 @@ export class RenameSceneUseCase implements IUseCase<RenameSceneRequest, RenameSc
     };
   }
 
+  // NOTE: A rename cut off before it deleted the old card left the target card and possibly more
+  // of the moved files. It is that rename only if every target already there holds exactly what
+  // this rename would write; otherwise the target is another scene and must not be overwritten.
+  private async isInterruptedRename(
+    root: StoryUri,
+    rename: SceneRename,
+    moves: readonly PlannedWrite[],
+  ): Promise<boolean> {
+    if (!(await this.deps.fileSystem.exists(scenePath(root, rename.to.stem)))) {
+      return false;
+    }
+
+    for (const move of moves) {
+      const written = await this.readTextIfExists(move.to);
+
+      if (written !== undefined && written !== move.content) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private async findSceneWithOrder(
     paths: StoryboardProjectPaths,
     order: number,
-    exceptStem: string,
+    exceptStems: readonly string[],
   ): Promise<string | undefined> {
     for (const fileName of await this.listFileNames(paths.sceneDirectory)) {
       const parts = parseSceneFileName(fileName);
 
-      if (parts !== undefined && parts.order === order && parts.stem !== exceptStem) {
+      if (parts !== undefined && parts.order === order && !exceptStems.includes(parts.stem)) {
         return parts.stem;
       }
     }
