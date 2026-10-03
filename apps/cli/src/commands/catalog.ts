@@ -12,6 +12,7 @@ export type CommandGroup =
   | '기획'
   | '씬과 초안'
   | '카드와 정전'
+  | '노트 가져오기'
   | '검사'
   | '원고'
   | '측정'
@@ -52,6 +53,7 @@ export const commandGroups: readonly CommandGroup[] = [
   '기획',
   '씬과 초안',
   '카드와 정전',
+  '노트 가져오기',
   '검사',
   '원고',
   '측정',
@@ -125,7 +127,12 @@ export const flagCatalog: readonly FlagSpec[] = [
     valueLabel: '<engine>',
     summary: 'sim: 다시 채점할 원본 기록의 엔진 커밋 접두어 (기본: 전부)',
   },
-  { name: 'yes', summary: 'sim: 견적을 묻지 않고 바로 시작합니다' },
+  { name: 'yes', summary: '견적·계획을 묻지 않고 바로 진행합니다 (sim, notes absorb)' },
+  {
+    name: 'from-notes',
+    valueLabel: '<path|url>',
+    summary: 'init: 만든 워크스페이스에 노트를 흡수합니다 (Obsidian 폴더·노트 또는 Notion 주소)',
+  },
   { name: 'revise-iterations', valueLabel: '<n>', summary: '검수-재작성 반복 상한 (1-5)' },
   { name: 'no-revise', summary: '생성 뒤 검수-재작성을 건너뜁니다' },
   {
@@ -246,11 +253,15 @@ export const commandCatalog: readonly CommandSpec[] = [
       'composition',
       'episodes',
       'pov-characters',
+      'from-notes',
+      'yes',
+      'dry-run',
     ],
     examples: [
       'storyboard init --title "밤의 항해"',
       'storyboard init --title "밤의 항해" --genre 미스터리 --audience 성인 --pov third-limited --target-words 300000',
       'storyboard init --repair',
+      'storyboard init --title "달의 문" --from-notes ~/Vault/달의문',
       'storyboard init --title "네 개의 밤" --composition omnibus --episodes 4',
     ],
     needsWorkspace: false,
@@ -598,7 +609,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     writesWorkspace: true,
     group: '카드와 정전',
     usage: 'card promote',
-    summary: '초안에서 추출한 카드 후보를 반영합니다',
+    summary: '초안과 노트에서 나온 카드 후보를 반영합니다',
     flags: ['dry-run'],
   },
   {
@@ -608,6 +619,27 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'bible promote',
     summary: '초안에서 추출한 설정 후보를 정전에 반영합니다',
     flags: ['dry-run'],
+  },
+  {
+    verb: 'notes connect notion',
+    group: '노트 가져오기',
+    usage: 'notes connect notion',
+    summary: 'Notion 통합 토큰을 secrets.json 에 저장합니다 (표준 입력도 받습니다, 비우면 삭제)',
+    needsWorkspace: false,
+  },
+  {
+    verb: 'notes absorb',
+    writesWorkspace: true,
+    group: '노트 가져오기',
+    usage: 'notes absorb <path|url>',
+    summary:
+      'Obsidian 폴더·노트나 Notion 페이지를 하위 페이지까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다 (견적을 먼저 보여 줍니다, 기존 카드는 후보로만)',
+    flags: ['yes', 'dry-run'],
+    examples: [
+      'storyboard notes absorb ~/Vault/달의문',
+      'storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes',
+      'storyboard notes absorb ~/Vault/달의문 --yes --dry-run',
+    ],
   },
   {
     verb: 'canon diff',

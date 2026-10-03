@@ -5,6 +5,17 @@ import { createInterface } from 'node:readline/promises';
 const endOfText = '\u0003';
 const deleteChar = '\u007f';
 
+// An agent pipes a secret in instead of typing it.
+export async function readStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.from(chunk));
+  }
+
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 export async function askLine(prompt: string): Promise<string> {
   const readline = createInterface({ input: process.stdin, output: process.stderr });
 
@@ -57,4 +68,3 @@ export async function askSecret(prompt: string): Promise<string> {
     stdin.on('data', onData);
   });
 }
-

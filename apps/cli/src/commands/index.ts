@@ -71,7 +71,8 @@ import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
-import { askLine, askSecret } from './prompt';
+import { absorbNotes, connectNotion, runNoteAbsorb } from './notes';
+import { askLine, askSecret, readStdin } from './prompt';
 import {
   addNarrator,
   describeSceneNarration,
@@ -432,26 +433,57 @@ const showScene: CommandHandler = async ({ container, args }) => {
 
 // An unattended run has nobody to pick from a list, so promotion applies everything the prepare
 // step judged new. `--dry-run` is how an agent inspects first.
+// Candidates come from two places — facts generation pulled out of drafts, and notes about cards
+// that already existed — and the author promotes both with this one verb.
 const promoteCards: CommandHandler = async ({ container, args }) => {
   const prepared = await container.cards.prepareCandidatePromotion(container.workspaceRoot);
+  const preparedNotes = await container.notes.prepareCandidatePromotion(container.workspaceRoot);
 
-  if (prepared.kind !== 'ready') {
-    return { ok: true, message: describeNothingToPromote(prepared.kind), data: prepared };
+  if (prepared.kind !== 'ready' && preparedNotes.kind !== 'ready') {
+    const kind =
+      prepared.kind === 'no_candidates' && preparedNotes.kind === 'no_candidates'
+        ? 'no_candidates'
+        : 'no_new_candidates';
+    return { ok: true, message: describeNothingToPromote(kind), data: { kind } };
   }
+
+  const draftItems = prepared.kind === 'ready' ? prepared.items : [];
+  const noteCandidates = preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
 
   if (flagBoolean(args.flags, 'dry-run')) {
-    return { ok: true, message: `승격 후보 ${prepared.items.length}건`, data: prepared.items };
+    return {
+      ok: true,
+      message: [
+        `승격 후보 ${draftItems.length + noteCandidates.length}건`,
+        ...(draftItems.length > 0 ? [`  초안에서  ${draftItems.length}건`] : []),
+        ...noteCandidates.map(
+          (candidate) =>
+            `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건`,
+        ),
+      ].join('\n'),
+      data: { drafts: draftItems, notes: noteCandidates },
+    };
   }
 
-  const result = await container.cards.promoteCandidates(container.workspaceRoot, prepared.items);
+  const result =
+    draftItems.length > 0
+      ? await container.cards.promoteCandidates(container.workspaceRoot, draftItems)
+      : undefined;
+  const noteResult =
+    noteCandidates.length > 0
+      ? await container.notes.promoteCandidates(container.workspaceRoot, noteCandidates)
+      : undefined;
+  const isDraftSaveFailed = result !== undefined && result.kind !== 'promoted';
+  const updatedCardCount =
+    (result?.kind === 'promoted' ? result.updatedCardCount : 0) +
+    (noteResult?.updatedCardIds.length ?? 0);
 
   return {
-    ok: result.kind === 'promoted',
-    message:
-      result.kind === 'promoted'
-        ? `카드 ${result.updatedCardCount}개를 갱신했습니다.`
-        : '카드를 저장하지 못했습니다.',
-    data: result,
+    ok: !isDraftSaveFailed,
+    message: isDraftSaveFailed
+      ? '카드를 저장하지 못했습니다.'
+      : `카드 ${updatedCardCount}개를 갱신했습니다.`,
+    data: { drafts: result ?? null, notes: noteResult ?? null },
   };
 };
 
@@ -1514,6 +1546,22 @@ const initProject: CommandHandler = async ({ container, args }) => {
     narratorCards: contract.narratorCards ?? [],
   });
   const gitRepository = ensureGitRepository(container.workspaceRoot.fsPath);
+  const fromNotes = flagString(args.flags, 'from-notes');
+
+  if (fromNotes !== undefined) {
+    const absorbed = await runNoteAbsorb(container, args, fromNotes, {
+      shouldFillContract: true,
+      retryCommand: `storyboard notes absorb '${fromNotes.replace(/'/g, `'\\''`)}' --yes`,
+    });
+
+    return {
+      ok: absorbed.ok,
+      message:
+        `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
+        `${describeGitRepository(gitRepository)}\n${absorbed.message}`,
+      data: { id: project.id, name: project.name, gitRepository, notes: absorbed.data ?? null },
+    };
+  }
 
   return {
     ok: true,
@@ -1906,16 +1954,6 @@ async function resolveApiKeyProvider(
   return byIndex ?? (candidates.includes(answer as AiProviderId) ? answer : undefined);
 }
 
-async function readStdin(): Promise<string> {
-  const chunks: Buffer[] = [];
-
-  for await (const chunk of process.stdin) {
-    chunks.push(Buffer.from(chunk));
-  }
-
-  return Buffer.concat(chunks).toString('utf8');
-}
-
 function describeNothingToPromote(kind: 'no_candidates' | 'no_new_candidates'): string {
   return kind === 'no_candidates' ? '승격할 후보가 없습니다.' : '후보가 모두 이미 반영돼 있습니다.';
 }
@@ -1938,6 +1976,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card recommend character': recommendCards,
   'card recommend background': recommendCards,
   'card promote': promoteCards,
+  'notes absorb': absorbNotes,
+  'notes connect notion': connectNotion,
   'bible promote': promoteBible,
   'apikey set': setApiKey,
   'apikey show': showApiKeys,
