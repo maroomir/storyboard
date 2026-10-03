@@ -101,6 +101,10 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       });
     case 'storyCardBuild':
       return JSON.stringify({ entities: [] });
+    case 'noteExtraction':
+      return JSON.stringify({ notes: [], entities: [], scenes: [], premise: [] });
+    case 'noteSynthesis':
+      return JSON.stringify({ setting: {}, synopsis: {} });
     case 'cardFactVerification':
       return '[]';
     case 'sceneGrounding':

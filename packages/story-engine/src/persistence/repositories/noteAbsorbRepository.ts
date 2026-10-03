@@ -1,6 +1,7 @@
 import type { StoryUri } from '@storyboard/story-format';
 
 import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
+import type { NoteAbsorbPlan } from '#engine/domain/notes/noteAbsorbPlan';
 import { getStoryboardProjectPaths } from '#engine/paths/projectPaths';
 import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { NoteBundle } from '#engine/shared/noteAbsorb';
@@ -17,5 +18,12 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
     await this.fileSystem.createDirectory(paths.noteCacheDirectory);
     await this.fileSystem.writeFile(paths.noteSource, encodeJson(bundle));
+  }
+
+  public async savePlan(workspaceRoot: StoryUri, plan: NoteAbsorbPlan): Promise<void> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+
+    await this.fileSystem.createDirectory(paths.noteCacheDirectory);
+    await this.fileSystem.writeFile(paths.notePlan, encodeJson(plan));
   }
 }

@@ -44,6 +44,12 @@ import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
+import {
+  type NoteExtraction,
+  type NoteExtractionKnownCard,
+  type NoteExtractionNote,
+} from './prompts/noteExtraction';
+import { type NoteSynthesis } from './prompts/noteSynthesis';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import { parseJsonObject } from '#ai/contracts/aiResponseParser';
 import type { StudioAgentAction } from '#ai/contracts/studioAgent';
@@ -265,6 +271,22 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<RecommendedEntity[]> {
     return this.cardAiService.extractCardRecommendations(body, category, knownNames, options);
+  }
+
+  public async extractNotes(
+    notes: readonly NoteExtractionNote[],
+    knownCards: readonly NoteExtractionKnownCard[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteExtraction> {
+    return this.cardAiService.extractNotes(notes, knownCards, options);
+  }
+
+  public async synthesizeNotePremise(
+    premise: readonly string[],
+    castNames: readonly string[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteSynthesis> {
+    return this.cardAiService.synthesizeNotePremise(premise, castNames, options);
   }
 
   public async verifyCardCandidatesByCharacter(
