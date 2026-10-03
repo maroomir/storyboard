@@ -19,6 +19,18 @@ import {
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
 import { FactExtractionPrompt } from './prompts/factExtraction';
+import {
+  NoteExtractionPrompt,
+  coerceNoteExtraction,
+  type NoteExtraction,
+  type NoteExtractionKnownCard,
+  type NoteExtractionNote,
+} from './prompts/noteExtraction';
+import {
+  NoteSynthesisPrompt,
+  coerceNoteSynthesis,
+  type NoteSynthesis,
+} from './prompts/noteSynthesis';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
 import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '#ai/contracts/aiTypes';
@@ -147,6 +159,40 @@ export class CardAiService {
     );
 
     return coerceCardRecommendations(parseJsonArray(response.text), category);
+  }
+
+  public async extractNotes(
+    notes: readonly NoteExtractionNote[],
+    knownCards: readonly NoteExtractionKnownCard[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteExtraction> {
+    const variant = this.gateway.resolvePromptVariant('noteExtraction', options);
+    const prompt = NoteExtractionPrompt.build(notes, knownCards, variant);
+    const response = await this.generateWithDefaults(
+      'noteExtraction',
+      prompt,
+      NoteExtractionPrompt.config,
+      options,
+    );
+
+    return coerceNoteExtraction(parseJsonObject(response.text));
+  }
+
+  public async synthesizeNotePremise(
+    premise: readonly string[],
+    castNames: readonly string[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteSynthesis> {
+    const variant = this.gateway.resolvePromptVariant('noteSynthesis', options);
+    const prompt = NoteSynthesisPrompt.build(premise, castNames, variant);
+    const response = await this.generateWithDefaults(
+      'noteSynthesis',
+      prompt,
+      NoteSynthesisPrompt.config,
+      options,
+    );
+
+    return coerceNoteSynthesis(parseJsonObject(response.text));
   }
 
   public async verifyCardCandidatesByCharacter(
