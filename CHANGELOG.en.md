@@ -10,9 +10,11 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-10-04
+
 ### Added
 
-- **A work can start from Obsidian or Notion notes.** `storyboard notes absorb <vault folder or note | Notion URL>` reads everything under it plus the notes its text links to one step away, and turns them into character, background and scene cards and a synopsis. It shows how many notes it found and the estimated cost before running, and asks again before writing (an agent passes `--yes`; `--dry-run` shows the plan only). Existing cards and synopses are never overwritten — what the notes add to a card waits for `card promote`, and contract changes come back as a `project set` command to run. A new work is made in one step with `storyboard init --title … --from-notes …`, which also fills the contract's empty fields. Notion needs an integration token once (`storyboard notes connect notion`) and the page connected to that integration. CLI only for now.
+- **A work can start from Obsidian or Notion notes.** `storyboard notes absorb <vault folder or note | Notion URL>` reads everything under it plus the notes its text links to one step away, and turns them into character, background and scene cards and a synopsis. It shows how many notes it found and the estimated cost before running, and asks again before writing (an agent passes `--yes`; `--dry-run` shows the plan only). Existing cards and synopses are never overwritten — what the notes add to a card waits for `card promote`, and contract changes come back as a `project set` command to run. A new work is made in one step with `storyboard init --title … --from-notes …`, which also fills the contract's empty fields. Notion needs an integration token once (`storyboard notes connect notion`) and the page connected to that integration. A symlink pointing outside the vault is not read; the estimate lists it under what could not be read, with the reason. CLI only for now.
 
 ## [0.11.2] - 2026-10-04
 
