@@ -1,12 +1,10 @@
+import { NoteExtractionPrompt, NoteSynthesisPrompt, computeCostUsd } from '@storyboard/story-ai';
 import {
-  NoteExtractionPrompt,
-  NoteSynthesisPrompt,
-  computeCostUsd,
+  type AiProviderId,
   emptyNoteSynthesis,
   type NoteExtraction,
   type NoteExtractionKnownCard,
-} from '@storyboard/story-ai';
-import { type AiProviderId } from '@storyboard/story-model';
+} from '@storyboard/story-model';
 import type { StoryUri, StoryboardCard } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';

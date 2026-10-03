@@ -1,5 +1,4 @@
-import type { NoteSynthesisSetting } from '@storyboard/story-ai';
-import type { ProjectSetting, StoryUri } from '@storyboard/story-model';
+import type { ProjectSetting, StoryUri, NoteSynthesisSetting } from '@storyboard/story-model';
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';

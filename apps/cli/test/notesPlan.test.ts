@@ -1,13 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  NoteExtractionPrompt,
-  coerceNoteExtraction,
-  coerceNoteSynthesis,
-  emptyNoteSynthesis,
-  type NoteExtraction,
-  type NoteExtractionEntity,
-} from '@storyboard/story-ai';
+import { NoteExtractionPrompt } from '@storyboard/story-ai';
 import {
   buildNoteAbsorbPlan,
   groupNotesIntoChunks,
@@ -15,7 +8,16 @@ import {
   noteChunkCharacterLimit,
   type NoteDocument,
 } from '@storyboard/story-engine';
-import { parseScene, type SceneFile, type StoryboardCard } from '@storyboard/story-model';
+import {
+  parseScene,
+  type SceneFile,
+  type StoryboardCard,
+  coerceNoteExtraction,
+  coerceNoteSynthesis,
+  emptyNoteSynthesis,
+  type NoteExtraction,
+  type NoteExtractionEntity,
+} from '@storyboard/story-model';
 
 function note(id: string, body = '본문', origin: NoteDocument['origin'] = 'tree'): NoteDocument {
   return { id, title: id.replace(/\.md$/, ''), path: [], body, origin };

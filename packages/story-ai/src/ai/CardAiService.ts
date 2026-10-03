@@ -19,22 +19,21 @@ import {
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
 import { FactExtractionPrompt } from './prompts/factExtraction';
+import { NoteExtractionPrompt } from './prompts/noteExtraction';
+import { NoteSynthesisPrompt } from './prompts/noteSynthesis';
+import { coerceNoteSynthesis, type NoteSynthesis } from '@storyboard/story-model';
+import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
+import type { PromptArtifact, PromptConfig } from './prompts/types';
+import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
 import {
-  NoteExtractionPrompt,
+  parseBulletList,
+  parseJsonArray,
+  parseJsonObject,
   coerceNoteExtraction,
   type NoteExtraction,
   type NoteExtractionKnownCard,
   type NoteExtractionNote,
-} from './prompts/noteExtraction';
-import {
-  NoteSynthesisPrompt,
-  coerceNoteSynthesis,
-  type NoteSynthesis,
-} from './prompts/noteSynthesis';
-import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
-import type { PromptArtifact, PromptConfig } from './prompts/types';
-import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
-import { parseBulletList, parseJsonArray, parseJsonObject } from '@storyboard/story-model';
+} from '@storyboard/story-model';
 
 export type ExtractTraitsByCharacterOptions = GenerateTextOptions & {
   readonly aliases?: readonly string[];
