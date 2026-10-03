@@ -149,6 +149,7 @@ describe('CLI verbs and the run lock', () => {
       'setup',
       'apikey set',
       'apikey show',
+      'notes connect notion',
       'doctor',
       'config show',
       'config set',
