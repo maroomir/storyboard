@@ -9,7 +9,9 @@ import {
   parseBible,
   parseCard,
   parseDraft,
+  parseSceneStem,
   parseStoryState,
+  rewriteSceneCardStemText,
   serializeDraft,
 } from '@storyboard/story-format';
 import { NodeFileSystem } from '@storyboard/story-node';
@@ -39,11 +41,32 @@ function has(relativePath: string): boolean {
   return existsSync(join(workspace, relativePath));
 }
 
-function rename(toStem: string): ReturnType<RenameSceneUseCase['execute']> {
-  return new RenameSceneUseCase({
-    fileSystem: new NodeFileSystem(),
-    logger: silentLogger,
-  }).execute({ workspaceRoot: NodeUri.file(workspace), fromStem, toStem });
+function rename(
+  toStem: string,
+  fileSystem: NodeFileSystem = new NodeFileSystem(),
+): ReturnType<RenameSceneUseCase['execute']> {
+  return new RenameSceneUseCase({ fileSystem, logger: silentLogger }).execute({
+    workspaceRoot: NodeUri.file(workspace),
+    fromStem,
+    toStem,
+  });
+}
+
+class FailingFileSystem extends NodeFileSystem {
+  private writesLeft: number;
+
+  public constructor(writesBeforeFailure: number) {
+    super();
+    this.writesLeft = writesBeforeFailure;
+  }
+
+  public override async writeFile(...args: Parameters<NodeFileSystem['writeFile']>): Promise<void> {
+    if (this.writesLeft-- === 0) {
+      throw new Error('disk full');
+    }
+
+    await super.writeFile(...args);
+  }
 }
 
 function draftFor(stem: string, body: string): string {
@@ -213,6 +236,44 @@ describe('RenameSceneUseCase', () => {
     expect(result).toMatchObject({ ok: false, kind: 'order-taken' });
     expect(has(`scene/${fromStem}.card`)).toBe(true);
     expect(has('scene/05-night-market.card')).toBe(false);
+  });
+
+  it('finishes a rename that was cut off by running it again', async () => {
+    expect(await rename('04-night-market', new FailingFileSystem(8))).toMatchObject({ ok: false });
+    expect(read('.storyboard/memory/storyState.md')).toContain('scene-input: 4 ');
+    expect(has(`scene/${fromStem}.card`)).toBe(true);
+    expect(has('scene/04-night-market.card')).toBe(true);
+
+    expect(await rename('04-night-market')).toMatchObject({ ok: true, kind: 'renamed' });
+    expect(has(`scene/${fromStem}.card`)).toBe(false);
+    expect(has(`draft/${fromStem}.md`)).toBe(false);
+    expect(parseDraft(read('draft/04-night-market.md')).sceneStem).toBe('04-night-market');
+    const state = parseStoryState(read('.storyboard/memory/storyState.md'));
+    expect([...state.sceneInputHashes.keys()].sort()).toEqual([4, 5]);
+    expect(state.entries.map((entry) => entry.throughScene)).toEqual([4, 5]);
+    expect(parseBible(read('.storyboard/bible/canon.yaml')).facts[0]?.sourceScene).toBe(
+      '04-night-market',
+    );
+  });
+
+  it('still refuses the number when the card there is not the cut-off copy', async () => {
+    write('scene/04-night-market.card', 'type: scene\nid: 04-night-market\ntitle: 다른 씬\n');
+
+    expect(await rename('04-night-market')).toMatchObject({ ok: false, kind: 'order-taken' });
+  });
+
+  it('does not take a card that matches but whose draft is another scene', async () => {
+    write(
+      'scene/04-night-market.card',
+      rewriteSceneCardStemText(read(`scene/${fromStem}.card`), {
+        from: parseSceneStem(fromStem)!,
+        to: parseSceneStem('04-night-market')!,
+      }),
+    );
+    write('draft/04-night-market.md', draftFor('04-night-market', '다른 씬의 초안.\n'));
+
+    expect(await rename('04-night-market')).toMatchObject({ ok: false, kind: 'order-taken' });
+    expect(parseDraft(read('draft/04-night-market.md')).body).toBe('다른 씬의 초안.\n');
   });
 
   it('refuses a malformed stem and a missing scene', async () => {
