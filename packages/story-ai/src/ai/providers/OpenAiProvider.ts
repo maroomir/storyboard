@@ -46,6 +46,7 @@ interface OpenAiChatCompletionRequest {
   readonly messages: readonly AiMessage[];
   readonly temperature?: number;
   readonly max_tokens?: number;
+  readonly max_completion_tokens?: number;
   readonly reasoning_effort?: ReasoningEffort;
 }
 
@@ -108,7 +109,8 @@ export class OpenAiProvider implements AiProvider {
         model: this.model,
         messages: request.messages.map(({ role, content }) => ({ role, content })),
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
-        max_tokens: request.maxTokens,
+        // NOTE: GPT-6 세대는 max_tokens 를 400 으로 거부한다(2026-10-04 gpt-6-luna 실측).
+        max_completion_tokens: request.maxTokens,
         ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
           ? { reasoning_effort: request.reasoningEffort }
           : {}),
@@ -156,12 +158,7 @@ function createDefaultOpenAiClient(apiKey: string): OpenAiClientLike {
     chat: {
       completions: {
         create: async (request): Promise<OpenAiChatCompletionResponse> =>
-          client.chat.completions.create({
-            model: request.model,
-            messages: [...request.messages],
-            temperature: request.temperature,
-            max_tokens: request.max_tokens,
-          }),
+          client.chat.completions.create({ ...request, messages: [...request.messages] }),
       },
     },
   };
