@@ -19,6 +19,8 @@ import {
   resolveVerb,
 } from '@/cliArguments';
 import { createCliContainer } from '@/container';
+import { createTerminalProfile, plainTerminalFacts, type TerminalFacts } from '@/terminal/profile';
+import type { Theme } from '@/terminal/theme';
 import { renderCommandHelp, renderUnknownCommand, renderUsage } from '@/help';
 import { findCommandSpec } from './catalog';
 import {
@@ -49,7 +51,9 @@ export interface DispatchDependencies {
   readonly cwd: string;
   // Whether a person can answer questions (setup) and wants progress lines by default.
   readonly isInteractive: boolean;
-  readonly createLogger: (showProgress: boolean) => IStoryboardLogger;
+  readonly createLogger: (showProgress: boolean, stderrTheme: Theme) => IStoryboardLogger;
+  // The real streams; without them the output is the plain text a pipe gets.
+  readonly terminal?: TerminalFacts;
 }
 
 export interface DispatchResult {
@@ -133,6 +137,10 @@ export async function dispatch(
 
   const parsed = parseArguments(argv);
   const mode: OutputMode = { json: argv.includes('--json') };
+  const terminal = createTerminalProfile(deps.terminal ?? plainTerminalFacts, {
+    hasNoColorFlag: argv.includes('--no-color'),
+    isJsonOutput: mode.json,
+  });
 
   if (isParseFailure(parsed)) {
     return failure(`${parsed.message}\n전체 옵션: storyboard --help`, mode);
@@ -233,7 +241,7 @@ export async function dispatch(
     (deps.isInteractive && !mode.json && !flagBoolean(args.flags, 'quiet'));
   const container = createCliContainer({
     workspacePath,
-    logger: deps.createLogger(showProgress),
+    logger: deps.createLogger(showProgress, terminal.stderr.theme),
     canPrompt: deps.isInteractive,
     version: deps.version,
     ...(flagString(args.flags, 'provider') === undefined

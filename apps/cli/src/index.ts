@@ -9,7 +9,12 @@ async function main(argv: readonly string[]): Promise<number> {
     version,
     cwd: process.cwd(),
     isInteractive: process.stdin.isTTY === true && process.stderr.isTTY === true,
-    createLogger: (showProgress) => new ConsoleLogger(showProgress),
+    createLogger: (showProgress, stderrTheme) => new ConsoleLogger(showProgress, stderrTheme),
+    terminal: {
+      stdout: { isTty: process.stdout.isTTY === true, columns: process.stdout.columns },
+      stderr: { isTty: process.stderr.isTTY === true, columns: process.stderr.columns },
+      env: process.env,
+    },
   });
 
   if (result.launchTui) {

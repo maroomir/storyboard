@@ -61,6 +61,14 @@ describe('dispatch', () => {
     expect(help.stdout).toContain('storyboard draft generate <stem> | --all');
   });
 
+  it('accepts --no-color anywhere and keeps a run without real streams free of color codes', async () => {
+    const result = await dispatch(['--no-color', '-v'], deps());
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toBe('1.2.3\n');
+    expect((await dispatch(['--help'], deps())).stdout).not.toContain('\u001b[');
+  });
+
   it('keeps every failure inside the JSON envelope when --json is set', async () => {
     const unknown = await dispatch(['scene', 'generat', '--json'], deps());
     expect(unknown.exitCode).toBe(1);
