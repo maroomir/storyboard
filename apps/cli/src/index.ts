@@ -1,6 +1,7 @@
 import { ConsoleLogger } from './adapters/consoleLogger';
 import { LiveArea } from './adapters/liveArea';
 import { PauseRequests } from './adapters/pauseRequests';
+import { TerminalPrompter } from './adapters/prompter';
 import { dispatch } from './commands/dispatch';
 import {
   bellSignal,
@@ -51,10 +52,14 @@ async function main(argv: readonly string[]): Promise<number> {
     liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
   });
 
+  const isInteractive = process.stdin.isTTY === true && process.stderr.isTTY === true;
   const result = await dispatch(argv, {
     version,
     cwd: process.cwd(),
-    isInteractive: process.stdin.isTTY === true && process.stderr.isTTY === true,
+    isInteractive,
+    ...(isInteractive
+      ? { createPrompter: (stderr) => new TerminalPrompter(process.stdin, liveArea, stderr) }
+      : {}),
     createLogger: (showProgress, stderrTheme) =>
       new ConsoleLogger(showProgress, stderrTheme, (text) => liveArea.writeAbove(text)),
     liveArea,

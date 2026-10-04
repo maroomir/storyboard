@@ -758,6 +758,31 @@ describe('draft generate --all pause', () => {
   });
 });
 
+describe('paid run confirmation', () => {
+  it('runs nothing when the person at the interactive screen declines', async () => {
+    const real = container();
+    let hasRun = false;
+    const stubbed = {
+      ...real,
+      prompter: { shouldConfirmPaidRuns: true, choose: async () => false },
+      drafts: stubManager(real.drafts, {
+        generateAll: async () => {
+          hasRun = true;
+          return { kind: 'no_scenes', ok: false };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    const outcome = await commands['draft generate']({
+      container: stubbed,
+      args: args(['draft', 'generate'], { all: true }),
+    });
+
+    expect(hasRun).toBe(false);
+    expect(outcome.message).toContain('취소했습니다');
+  });
+});
+
 describe('draft generate warnings', () => {
   // 초안 앞머리의 warnings 는 사람이 파일을 열어야 보인다. 무인 실행에서는 아무도 열지 않는다.
   it('reports the draft warnings on stderr and in the json data', async () => {

@@ -13,10 +13,11 @@ import {
 } from '@storyboard/story-engine';
 
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
+import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
 import { noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
-import { askLine, askSecret, readStdin } from './prompt';
+import { askSecret, readStdin } from './prompt';
 
 export function parseNoteLocation(raw: string): NoteLocation {
   return isNotionUrl(raw)
@@ -28,10 +29,22 @@ function canAsk(container: CliContainer): boolean {
   return container.canPrompt && process.stdin.isTTY === true;
 }
 
-async function confirm(question: string): Promise<boolean> {
-  const answer = await askLine(`${question} [y/N] `);
+async function confirm(
+  prompter: IPrompter,
+  title: string,
+  details: readonly string[],
+  proceedLabel: string,
+): Promise<boolean> {
+  const answer = await prompter.choose({
+    title,
+    details,
+    options: [
+      { label: proceedLabel, value: true },
+      { label: '취소', value: false },
+    ],
+  });
 
-  return /^(y|yes|예|네)$/i.test(answer);
+  return answer === true;
 }
 
 function formatUsd(value: number | undefined): string {
@@ -169,7 +182,7 @@ export async function runNoteAbsorb(
   const isConfirmed = flagBoolean(args.flags, 'yes');
 
   if (!isConfirmed) {
-    if (!canAsk(container)) {
+    if (container.prompter === undefined) {
       return {
         ok: true,
         message: [
@@ -181,9 +194,7 @@ export async function runNoteAbsorb(
       };
     }
 
-    process.stderr.write(`${estimateLines.join('\n')}\n`);
-
-    if (!(await confirm('노트를 AI 로 정리할까요?'))) {
+    if (!(await confirm(container.prompter, '노트를 AI 로 정리할까요?', estimateLines, '정리'))) {
       return { ok: true, message: '취소했습니다. 아무것도 쓰지 않았습니다.', data: { estimate } };
     }
   }
@@ -204,10 +215,10 @@ export async function runNoteAbsorb(
     };
   }
 
-  if (!isConfirmed) {
-    process.stderr.write(`${planLines.join('\n')}\n`);
-
-    if (!(await confirm('이대로 워크스페이스에 반영할까요?'))) {
+  if (!isConfirmed && container.prompter !== undefined) {
+    if (
+      !(await confirm(container.prompter, '이대로 워크스페이스에 반영할까요?', planLines, '반영'))
+    ) {
       return {
         ok: true,
         message: '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',

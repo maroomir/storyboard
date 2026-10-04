@@ -17,6 +17,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
 import { PauseRequests } from './adapters/pauseRequests';
+import type { IPrompter } from './adapters/prompter';
 import { LineRunProgress, type IRunProgress } from './adapters/runProgress';
 import { resolveCliPaths } from './adapters/paths';
 import {
@@ -64,6 +65,8 @@ export interface CliContainer extends Pick<
   readonly progress: IRunProgress;
   // Ctrl+C (or Esc in the TUI) asking a run to stop at its next scene boundary.
   readonly pauseRequests: PauseRequests;
+  // A person to ask; absent in a pipe or for an agent, where a command must not wait for input.
+  readonly prompter?: IPrompter;
   // 측정 결과가 «무엇으로 쟀는지» 를 적으려면 실행한 버전을 되돌려 줘야 한다.
   readonly version: string;
 }
@@ -75,6 +78,7 @@ export interface CliContainerOptions {
   readonly progress?: IRunProgress;
   // Left out, nothing ever asks a run to pause.
   readonly pauseRequests?: PauseRequests;
+  readonly prompter?: IPrompter;
   readonly canPrompt: boolean;
   readonly version: string;
   readonly provider?: string;
@@ -214,6 +218,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     canPrompt: options.canPrompt,
     progress: options.progress ?? new LineRunProgress(options.logger),
     pauseRequests: options.pauseRequests ?? new PauseRequests(),
+    ...(options.prompter === undefined ? {} : { prompter: options.prompter }),
     homePaths,
     loadResourceOverrides: () => application.loadResourceOverrides(),
     describeParameters: () => application.describeParameters(),

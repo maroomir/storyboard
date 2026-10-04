@@ -2,7 +2,10 @@ import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
+import type { ChoiceRequest } from '@/adapters/prompter';
+
 import { Banner } from './banner';
+import { ChoiceDialog } from './choiceDialog';
 import { Dashboard } from './dashboard';
 import { StatusBar } from './statusBar';
 import { SuggestionList } from './suggestionList';
@@ -77,6 +80,11 @@ function LogLine({
   );
 }
 
+interface PendingChoice {
+  readonly request: ChoiceRequest<unknown>;
+  readonly resolve: (value: unknown) => void;
+}
+
 export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { exit } = useApp();
   const { stdout } = useStdout();
@@ -84,6 +92,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
+  const [pendingChoice, setPendingChoice] = useState<PendingChoice | undefined>(undefined);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
   const { loadWorkspaceView } = props;
@@ -102,7 +111,18 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     () =>
       createTuiSession(
         { version: props.version, cwd: props.cwd },
-        { append, clear: () => setEntries([]), exit: () => exit() },
+        {
+          append,
+          ask: <T,>(request: ChoiceRequest<T>) =>
+            new Promise<T | undefined>((resolve) =>
+              setPendingChoice({
+                request,
+                resolve: (value) => resolve(value as T | undefined),
+              }),
+            ),
+          clear: () => setEntries([]),
+          exit: () => exit(),
+        },
       ),
     [append, exit, props.cwd, props.version],
   );
@@ -154,8 +174,18 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.',
       );
     },
-    { isActive: isBusy },
+    { isActive: isBusy && pendingChoice === undefined },
   );
+
+  const answerChoice = (index: number | undefined): void => {
+    if (pendingChoice === undefined) {
+      return;
+    }
+    setPendingChoice(undefined);
+    pendingChoice.resolve(
+      index === undefined ? undefined : pendingChoice.request.options[index]?.value,
+    );
+  };
 
   const visibleEntries = entries.slice(-(props.maxLogLines ?? 200));
 
@@ -178,6 +208,10 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           columns={columns}
         />
       ) : null}
+
+      {pendingChoice === undefined ? null : (
+        <ChoiceDialog request={pendingChoice.request} onAnswer={answerChoice} />
+      )}
 
       {editor.search === undefined ? (
         <Box paddingX={1}>

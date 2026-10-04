@@ -38,6 +38,7 @@ import {
 } from '@storyboard/story-model';
 
 import type { CliContainer } from '@/container';
+import type { WorkspaceStatus } from '@storyboard/story-app';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
 import { cardCategories, draftCheckKinds, type CardCategory } from './catalog';
@@ -78,6 +79,47 @@ const sceneStageLabels: Record<string, string> = Object.fromEntries(
   sceneStageCatalog.map((definition) => [definition.id, definition.label]),
 );
 
+function describeModel(container: CliContainer): string {
+  const { configBridge } = container;
+  const provider = configBridge.getDefaultProvider();
+  const model = configBridge.getProviderConfig(provider).model;
+  return model === undefined ? provider : `${provider} · ${model}`;
+}
+
+// The interactive screen asks before a paid batch run; a one-shot command was started on purpose
+// and an agent's run must never wait, so both go ahead.
+interface PaidRunSummary {
+  readonly title: string;
+  readonly details: readonly string[];
+}
+
+async function confirmPaidRun(
+  container: CliContainer,
+  summarize: (status: WorkspaceStatus) => PaidRunSummary,
+): Promise<boolean> {
+  const { prompter } = container;
+
+  if (prompter === undefined || !prompter.shouldConfirmPaidRuns) {
+    return true;
+  }
+
+  const { title, details } = summarize(await container.describeWorkspace());
+  const answer = await prompter.choose({
+    title,
+    details: [...details, `모델  ${describeModel(container)}`],
+    options: [
+      { label: '진행', value: true },
+      { label: '취소', value: false },
+    ],
+  });
+  return answer === true;
+}
+
+const cancelledBeforeRun: CommandOutcome = {
+  ok: true,
+  message: '취소했습니다. 아무것도 생성하지 않았습니다.',
+};
+
 // What the rail shows beside the scene: the pipeline stage while it runs, then saving and review.
 function describeBatchStep(progress: GenerateAllDraftsProgress): string {
   switch (progress.kind) {
@@ -96,6 +138,20 @@ function describeBatchStep(progress: GenerateAllDraftsProgress): string {
 
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
+    const isConfirmed = await confirmPaidRun(container, (status) => {
+      const pending = status.drafts.missing + status.drafts.stale;
+      return {
+        title: `초안 ${pending}개 생성`,
+        details: [
+          `대상  초안이 없거나 카드보다 오래된 씬 ${pending}개 (전체 ${status.scenes.total}개)`,
+        ],
+      };
+    });
+
+    if (!isConfirmed) {
+      return cancelledBeforeRun;
+    }
+
     const result = await container.drafts.generateAll({
       shouldPause: container.pauseRequests.watch(),
       onProgress: (progress) =>
@@ -346,6 +402,19 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 };
 
 const generateNovel: CommandHandler = async ({ container, args }) => {
+  const isConfirmed = await confirmPaidRun(container, (status) => ({
+    title: '장편 생성',
+    details: [
+      `작품  ${status.project.name}`,
+      `지금  씬 ${status.scenes.total}개 · 초안 ${status.drafts.ready}개`,
+      '기획부터 원고 조립까지 이어서 돌립니다 (Esc 로 씬 경계에서 멈춤)',
+    ],
+  }));
+
+  if (!isConfirmed) {
+    return cancelledBeforeRun;
+  }
+
   const project = await container.novel.readProject(container.workspaceRoot);
   const reviseIterations = flagString(args.flags, 'revise-iterations');
   const result = await container.novel.run({

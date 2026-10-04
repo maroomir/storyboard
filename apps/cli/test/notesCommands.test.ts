@@ -208,6 +208,28 @@ describe('notes absorb', () => {
     expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'plan.json'))).toBe(false);
   });
 
+  it('asks a person with the estimate in the question and writes nothing when declined', async () => {
+    const questions: { title: string; details: readonly string[] }[] = [];
+    const asking = {
+      ...container(),
+      prompter: {
+        shouldConfirmPaidRuns: false,
+        choose: async (request: { title: string; details: readonly string[] }) => {
+          questions.push(request);
+          return false;
+        },
+      },
+    } as unknown as CliContainer;
+
+    const outcome = await run('notes absorb', absorbArgs(), asking);
+
+    expect(outcome.message).toContain('취소했습니다');
+    expect(questions).toHaveLength(1);
+    expect(questions[0]?.title).toBe('노트를 AI 로 정리할까요?');
+    expect(questions[0]?.details.join('\n')).toContain('읽은 노트 7장');
+    expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'plan.json'))).toBe(false);
+  });
+
   it('runs the whole path on the mock provider and writes nothing it was not given', async () => {
     const outcome = await run('notes absorb', absorbArgs({ yes: true }));
 

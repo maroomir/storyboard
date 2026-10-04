@@ -2,6 +2,7 @@ import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
+import type { ChoiceRequest } from '@/adapters/prompter';
 import { computeCompletions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
@@ -150,6 +151,8 @@ export function renderVerbList(): string {
 
 export interface SessionSink {
   readonly append: (tone: LogTone, text: string) => void;
+  // Shows a question over the prompt and settles with the answer.
+  readonly ask: <T>(request: ChoiceRequest<T>) => Promise<T | undefined>;
   readonly clear: () => void;
   readonly exit: () => void;
 }
@@ -185,6 +188,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       isInteractive: false,
       createLogger: () => createSessionLogger(sink),
       pauseRequests,
+      createPrompter: () => ({ shouldConfirmPaidRuns: true, choose: sink.ask }),
     });
   };
 
