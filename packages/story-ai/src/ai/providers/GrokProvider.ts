@@ -80,7 +80,13 @@ export class GrokProvider implements AiProvider {
             outputTokens: response.usage.completion_tokens ?? 0,
           }
         : undefined;
-      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
+      return aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        usage,
+        isTruncated: response.choices[0]?.finish_reason === 'length',
+      });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',

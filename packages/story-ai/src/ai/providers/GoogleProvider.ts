@@ -28,6 +28,7 @@ interface GoogleGenerateContentResultLike {
       readonly promptTokenCount?: number;
       readonly candidatesTokenCount?: number;
     };
+    readonly candidates?: ReadonlyArray<{ readonly finishReason?: string }>;
   };
 }
 
@@ -110,7 +111,13 @@ export class GoogleProvider implements AiProvider {
 
       const text = result.response.text();
       const usage = usageFromGoogleResult(result);
-      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
+      return aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        usage,
+        isTruncated: result.response.candidates?.[0]?.finishReason === 'MAX_TOKENS',
+      });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',

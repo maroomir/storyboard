@@ -89,6 +89,25 @@ describe("GrokProvider", () => {
       provider.generate({ taskName: "sceneDraft", messages: [{ role: "user", content: "x" }] })
     ).rejects.toMatchObject({ code: "generation-failed", providerId: "grok" })
   })
+
+  it.each([
+    ["length", true],
+    ["stop", undefined]
+  ] as const)("reports a %s finish as truncated: %s", async (finishReason, expectedTruncation) => {
+    const client: OpenAiClientLike = {
+      models: { list: async (): Promise<unknown> => ({}) },
+      chat: {
+        completions: {
+          create: async () => ({ choices: [{ message: { content: '{"notes":[' }, finish_reason: finishReason }] })
+        }
+      }
+    }
+    const provider = new GrokProvider({ apiKey: "test-key", model: "grok-4.6", createClient: (): OpenAiClientLike => client })
+
+    const response = await provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }] })
+
+    expect(response.isTruncated).toBe(expectedTruncation)
+  })
 })
 
 interface FakeGrokCreateRequest {

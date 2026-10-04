@@ -99,6 +99,24 @@ describe("GoogleProvider", () => {
       costUsd: computeCostUsd({ providerId: "google", model: "gemini-2.5-flash", usage })
     })
   })
+
+  it.each([
+    ["MAX_TOKENS", true],
+    ["STOP", undefined]
+  ] as const)("reports a %s finish as truncated: %s", async (finishReason, expectedTruncation) => {
+    const client: GoogleClientLike = {
+      getGenerativeModel: () => ({
+        generateContent: async () => ({
+          response: { text: (): string => '{"notes":[', candidates: [{ finishReason }] }
+        })
+      })
+    }
+    const provider = new GoogleProvider({ apiKey: "google-test", model: "gemini-2.5-flash", createClient: (): GoogleClientLike => client })
+
+    const response = await provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }] })
+
+    expect(response.isTruncated).toBe(expectedTruncation)
+  })
 })
 
 interface FakeGoogleClientOptions {

@@ -79,6 +79,25 @@ describe("OpenAiProvider", () => {
       { role: "user", content: "본문" }
     ])
   })
+
+  it.each([
+    ["length", true],
+    ["stop", undefined]
+  ] as const)("reports a %s finish as truncated: %s", async (finishReason, expectedTruncation) => {
+    const client: OpenAiClientLike = {
+      models: { list: async (): Promise<unknown> => ({}) },
+      chat: {
+        completions: {
+          create: async () => ({ choices: [{ message: { content: '{"notes":[' }, finish_reason: finishReason }] })
+        }
+      }
+    }
+    const provider = new OpenAiProvider({ apiKey: "test-key", model: "gpt-5.4-mini", createClient: (): OpenAiClientLike => client })
+
+    const response = await provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }] })
+
+    expect(response.isTruncated).toBe(expectedTruncation)
+  })
 })
 
 interface FakeOpenAiCreateRequest {
