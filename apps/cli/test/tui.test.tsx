@@ -13,6 +13,7 @@ import { NodeFileSystem } from '@storyboard/story-node';
 
 import { dispatch } from '../src/commands/dispatch';
 import { describeHeader } from '../src/tui/index';
+import { Dashboard, describeDraftProgress } from '../src/tui/dashboard';
 import { readWorkspaceView } from '../src/tui/workspaceView';
 import { splitCommandLine, suggestForInput } from '../src/tui/session';
 import { selectVisibleWindow } from '../src/tui/suggestionList';
@@ -121,6 +122,50 @@ describe('readWorkspaceView', () => {
     expect(acquired.ok).toBe(true);
 
     expect((await readWorkspaceView(cwd, '0')).lockHolder).toContain('데스크톱 앱');
+  });
+
+  it('reads the work status a home screen shows', async () => {
+    await dispatch(['init', '--title', '현황'], {
+      version: '0',
+      cwd,
+      isInteractive: false,
+      createLogger: () => silentLogger,
+    });
+    const view = await readWorkspaceView(cwd, '0');
+
+    expect(view.status?.project.name).toBe('현황');
+    expect(view.status?.nextStep).toBe('fill-contract');
+    expect((await readWorkspaceView(home, '0')).status).toBeUndefined();
+  });
+});
+
+describe('Dashboard', () => {
+  const status = {
+    project: { name: '레벨 제로', missingContract: [] },
+    outline: { hasSynopsis: true, hasChapterPlan: true },
+    cards: { characters: 5, backgrounds: 3, narrators: 0 },
+    scenes: { total: 32 },
+    drafts: { ready: 18, stale: 2, missing: 12, withWarnings: 0 },
+    canon: { pendingFacts: 0 },
+    manuscript: { isAssembled: false, isStale: false, isReviewed: false },
+    nextStep: 'generate-drafts',
+  } as const;
+
+  it('counts fresh drafts against scenes', () => {
+    const progress = describeDraftProgress(status);
+
+    expect([progress.done, progress.total]).toEqual([18, 32]);
+    expect(progress.bar).toHaveLength(24);
+    expect(describeDraftProgress({ ...status, scenes: { total: 0 } }).bar).toBe('░'.repeat(24));
+  });
+
+  it('shows progress and the command that moves the work forward', () => {
+    const { lastFrame } = render(<Dashboard status={status} />);
+
+    expect(lastFrame()).toContain('레벨 제로');
+    expect(lastFrame()).toContain('초안 18/32');
+    expect(lastFrame()).toContain('56%');
+    expect(lastFrame()).toContain('다음 draft generate --all');
   });
 });
 
