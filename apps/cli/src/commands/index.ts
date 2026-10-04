@@ -312,8 +312,7 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 };
 
 const generateNovel: CommandHandler = async ({ container, args }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const project = await container.novel.readProject(container.workspaceRoot);
   const reviseIterations = flagString(args.flags, 'revise-iterations');
   const result = await container.novel.run({
     workspaceUri: container.workspaceRoot,
@@ -639,8 +638,7 @@ const condenseDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const project = await container.novel.readProject(container.workspaceRoot);
 
   return rewriteDraft(container, stem, range, async (target) => {
     const result = await container.drafts.condense({
