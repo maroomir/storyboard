@@ -109,8 +109,9 @@ const fixedExtraction = coerceNoteExtraction({
   premise: ['해양 미스터리'],
 });
 
+// 모델이 비워 둔 칸은 값이 undefined 인 키로 남는다.
 const fixedSynthesis = {
-  setting: { genre: '해양 미스터리', concept: '만조에만 열리는 문' },
+  setting: { genre: '해양 미스터리', audience: undefined, concept: '만조에만 열리는 문' },
   synopsis: { logline: '만조에만 열리는 문을 둘러싼 이야기.', mainConflicts: [], styleRules: [] },
 };
 
@@ -227,6 +228,8 @@ describe('notes absorb', () => {
     expect(outcome.message).toContain('인물  hana (하나) — 새 카드');
     expect(outcome.message).toContain('씬    01-high-tide 만조 ← 달의 문/씬/1 만조.md');
     expect(outcome.message).toContain('분류 못함  10 귀환');
+    expect(outcome.message).toContain('작품 계약  장르: 해양 미스터리');
+    expect(outcome.message).not.toContain('undefined');
     expect(cardFiles('scene')).toEqual(before);
     expect(existsSync(join(workspace, 'character', 'hana.card'))).toBe(false);
   });

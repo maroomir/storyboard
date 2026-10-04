@@ -75,6 +75,10 @@ function describePlan(plan: NoteAbsorbPlan): string[] {
   }
 
   for (const [key, value] of Object.entries(plan.setting)) {
+    if (value === undefined) {
+      continue;
+    }
+
     lines.push(`작품 계약  ${settingLabels[key] ?? key}: ${String(value)}`);
   }
 
