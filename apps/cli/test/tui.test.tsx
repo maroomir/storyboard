@@ -12,6 +12,9 @@ import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 import { dispatch } from '../src/commands/dispatch';
+import { canShowWordmark, storyboardWordmark } from '../src/terminal/banner';
+import { measureWidth } from '../src/terminal/width';
+import { Banner } from '../src/tui/banner';
 import { describeHeader } from '../src/tui/index';
 import { Dashboard, describeDraftProgress } from '../src/tui/dashboard';
 import { readWorkspaceView } from '../src/tui/workspaceView';
@@ -139,6 +142,18 @@ describe('readWorkspaceView', () => {
   });
 });
 
+describe('Banner', () => {
+  it('draws the two-line wordmark when it fits and one line when it does not', () => {
+    expect(new Set(storyboardWordmark.map(measureWidth)).size).toBe(1);
+    expect(canShowWordmark(80)).toBe(true);
+    expect(canShowWordmark(40)).toBe(false);
+
+    const narrow = render(<Banner version="1.2.3" columns={40} />).lastFrame() ?? '';
+    expect(narrow).toContain('Storyboard 1.2.3');
+    expect(narrow).not.toContain(storyboardWordmark[0]);
+  });
+});
+
 describe('Dashboard', () => {
   const status = {
     project: { name: '레벨 제로', missingContract: [] },
@@ -175,8 +190,8 @@ describe('StoryboardTui', () => {
       <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
     );
 
-    expect(lastFrame()).toContain('Storyboard');
-    expect(lastFrame()).toContain('1.2.3');
+    expect(lastFrame()).toContain(storyboardWordmark[0]);
+    expect(lastFrame()).toContain('1.2.3 · 장편 소설을 터미널에서');
     await wait(50);
 
     stdin.write('/doctor');
