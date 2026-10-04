@@ -15,6 +15,7 @@ import {
   readNoteConsolidationResponse,
   selectNoteConsolidationTargets,
   groupNotesIntoChunks,
+  listKnownNoteEntities,
   measureNoteAbsorbWorkload,
   noteChunkCharacterLimit,
   type NoteDocument,
@@ -26,6 +27,7 @@ import {
   emptyNoteSynthesis,
   type NoteExtraction,
   type NoteExtractionEntity,
+  type NoteExtractionKnownCard,
   type NoteExtractionResponse,
   type NoteExtractionResult,
   type NoteBundle,
@@ -189,6 +191,101 @@ describe('buildNoteAbsorbPlan', () => {
     expect(plan.cards[0]?.changes.find((change) => change.kind === 'relation')).toMatchObject({
       target: 'character-2',
     });
+  });
+
+  it('does not let one wrong alias pull another person into a card', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('1.md'), note('2.md'), note('3.md'), note('4.md'), note('5.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({ name: '조만재', suggestedId: 'jo-manjae', aliases: ['궤변가'], sourceNotes: ['1.md'] }),
+            entity({ name: '정은하', suggestedId: 'jeong-eunha', aliases: ['엘리트', '갤럭시'], sourceNotes: ['1.md'] }),
+          ],
+        }),
+        extraction({
+          entities: [entity({ name: '조만재', aliases: ['엘리트'], sourceNotes: ['3.md'] })],
+        }),
+        extraction({
+          entities: [
+            entity({ name: '정은하', aliases: ['엘리트'], desire: ['이해받고 싶다'], sourceNotes: ['4.md'] }),
+            entity({ name: '엘리트', description: ['16세'], sourceNotes: ['5.md'] }),
+            entity({ name: '은하', aliases: ['갤럭시'], sourceNotes: ['5.md'] }),
+            entity({
+              name: '손수영',
+              relations: [{ target: '정은하', type: '친구' }],
+              sourceNotes: ['5.md'],
+            }),
+          ],
+        }),
+      ],
+    });
+    const cardOf = (id: string) => plan.cards.find((card) => card.card.id === id);
+    const valuesOf = (id: string) =>
+      cardOf(id)?.changes.map((change) => ('value' in change ? change.value : change.kind));
+
+    expect(valuesOf('jo-manjae')).toEqual(['궤변가', '엘리트']);
+    expect(valuesOf('jeong-eunha')).toEqual(['엘리트', '갤럭시', '은하', '이해받고 싶다']);
+    // 두 사람에 붙은 별칭만으로는 누구인지 알 수 없어 따로 남는다.
+    expect(plan.cards.find((card) => card.card.name === '엘리트')?.isNew).toBe(true);
+    expect(
+      plan.cards
+        .find((card) => card.card.name === '손수영')
+        ?.changes.find((change) => change.kind === 'relation'),
+    ).toMatchObject({ target: 'jeong-eunha' });
+  });
+
+  it('makes one card of a place two requests name differently but give the same id', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('a.md'), note('b.md'), note('c.md')],
+      extractions: [
+        extraction({
+          entities: [entity({ type: 'background', name: '만재네 집', suggestedId: 'manjae-house', sourceNotes: ['a.md'] })],
+        }),
+        extraction({
+          entities: [entity({ type: 'background', name: '만재의 집', suggestedId: 'manjae-house', sourceNotes: ['b.md'] })],
+        }),
+        extraction({
+          entities: [
+            entity({
+              type: 'background',
+              name: '조만재의 집 거실',
+              existingId: 'manjae-house',
+              description: ['소파가 있는 거실'],
+              sourceNotes: ['c.md'],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    expect(plan.cards.map((card) => card.card.id)).toEqual(['manjae-house']);
+    expect(plan.cards[0]?.sourceNotes).toEqual(['a.md', 'b.md', 'c.md']);
+  });
+
+  it('lists what earlier requests found beside the cards on disk', () => {
+    const known = listKnownNoteEntities(
+      [
+        extraction({
+          entities: [
+            entity({ name: '하나', existingId: 'hana', sourceNotes: ['a.md'] }),
+            entity({ name: '준', suggestedId: 'jun', aliases: ['준이'], sourceNotes: ['a.md'] }),
+            entity({ type: 'background', name: 'Ayala Mall', sourceNotes: ['a.md'] }),
+            entity({ name: '등대지기', suggestedId: 'hana', sourceNotes: ['a.md'] }),
+          ],
+        }),
+        extraction({ entities: [entity({ name: '준', aliases: ['준돌이'], sourceNotes: ['b.md'] })] }),
+      ],
+      [{ id: 'hana', type: 'character', name: '하나', aliases: [] }],
+    );
+
+    expect(known).toEqual([
+      { id: 'hana', type: 'character', name: '하나', aliases: [] },
+      { id: 'jun', type: 'character', name: '준', aliases: ['준이', '준돌이'] },
+      { id: 'ayala-mall', type: 'background', name: 'Ayala Mall', aliases: [] },
+    ]);
   });
 
   it('keeps one of the items two notes word only differently in spacing or punctuation', () => {
@@ -556,9 +653,13 @@ describe('PlanNoteAbsorbUseCase', () => {
     const savedResponses: NoteExtractionResponse[][] = [];
     const warnings: string[] = [];
     const consolidationRequests: unknown[] = [];
+    const knownCardRequests: NoteExtractionKnownCard[][] = [];
     let call = 0;
     const aiService = {
-      extractNotes: async () => results[call++] as NoteExtractionResult,
+      extractNotes: async (_chunk: unknown, knownCards: NoteExtractionKnownCard[]) => {
+        knownCardRequests.push(knownCards);
+        return results[call++] as NoteExtractionResult;
+      },
       synthesizeNotePremise: async () => emptyNoteSynthesis,
       consolidateNoteCharacters: async (targets: unknown) => {
         consolidationRequests.push(targets);
@@ -583,7 +684,7 @@ describe('PlanNoteAbsorbUseCase', () => {
       } as unknown as INoteAbsorbRepository,
     });
 
-    return { useCase, savedResponses, warnings, consolidationRequests };
+    return { useCase, savedResponses, warnings, consolidationRequests, knownCardRequests };
   }
 
   const readable: NoteExtractionResult = {
@@ -653,6 +754,17 @@ describe('PlanNoteAbsorbUseCase', () => {
       '인물 조만재 의 성격·태그는 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
     ]);
     expect(result.ok && result.plan.warnings[0]).toBe(warnings[0]);
+  });
+
+  it('shows the next request who the earlier requests found', async () => {
+    const { useCase, knownCardRequests } = createUseCase(twoReadings);
+
+    await useCase.execute({ workspaceRoot, bundle });
+
+    expect(knownCardRequests).toEqual([
+      [],
+      [{ id: 'jo-manjae', type: 'character', name: '조만재', aliases: [] }],
+    ]);
   });
 
   it('makes no merge request when nobody needs one', async () => {

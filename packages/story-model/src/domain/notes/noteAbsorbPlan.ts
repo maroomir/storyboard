@@ -1,6 +1,7 @@
 import type {
   NoteExtraction,
   NoteExtractionEntity,
+  NoteExtractionKnownCard,
   NoteExtractionScene,
 } from '#model/contracts/noteExtraction';
 import type { NoteSynthesis, NoteSynthesisSetting } from '#model/contracts/noteSynthesis';
@@ -136,19 +137,74 @@ function mergeEntity(
   };
 }
 
+function validCardId(value: string | undefined): string | undefined {
+  return value !== undefined && cardIdPattern.test(value) ? value : undefined;
+}
+
+// The id an entity read in an earlier request goes by until the plan gives it one, so a later
+// request can point at it the way it points at a card on disk.
+function provisionalCardId(entity: NoteExtractionEntity): string | undefined {
+  return validCardId(entity.suggestedId) ?? slugify(entity.name);
+}
+
+function idsOf(entity: NoteExtractionEntity): string[] {
+  return [entity.existingId, provisionalCardId(entity)].filter(
+    (id): id is string => id !== undefined,
+  );
+}
+
+function namesOf(entity: NoteExtractionEntity): string[] {
+  return [entity.name, ...entity.aliases].map(normalizeName);
+}
+
+// One wrong alias from the model must not pull another person in: a name beats an id the model
+// gave, an id beats an alias, and an alias two entries share points at neither.
+function findMergeTarget(
+  merged: readonly NoteExtractionEntity[],
+  entity: NoteExtractionEntity,
+): number | undefined {
+  const sameType = [...merged.keys()].filter((index) => merged[index]?.type === entity.type);
+  const name = normalizeName(entity.name);
+  const byName = sameType.find((index) => normalizeName(merged[index]?.name ?? '') === name);
+
+  if (byName !== undefined) {
+    return byName;
+  }
+
+  const ids = idsOf(entity);
+  const byId = sameType.find((index) => {
+    const known = merged[index];
+    return known !== undefined && idsOf(known).some((id) => ids.includes(id));
+  });
+
+  if (byId !== undefined) {
+    return byId;
+  }
+
+  const aliasTargets = new Set<number>();
+
+  for (const alias of namesOf(entity)) {
+    const carriers = sameType.filter((index) => {
+      const known = merged[index];
+      return known !== undefined && namesOf(known).includes(alias);
+    });
+
+    if (carriers.length === 1) {
+      aliasTargets.add(carriers[0] as number);
+    }
+  }
+
+  return aliasTargets.size === 1 ? [...aliasTargets][0] : undefined;
+}
+
 function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractionEntity[] {
   const merged: NoteExtractionEntity[] = [];
 
   for (const entity of entities) {
-    const names = [entity.name, ...entity.aliases].map(normalizeName);
-    const index = merged.findIndex(
-      (known) =>
-        known.type === entity.type &&
-        [known.name, ...known.aliases].some((name) => names.includes(normalizeName(name))),
-    );
-    const known = merged[index];
+    const index = findMergeTarget(merged, entity);
+    const known = index === undefined ? undefined : merged[index];
 
-    if (known === undefined) {
+    if (index === undefined || known === undefined) {
       merged.push(entity);
     } else {
       merged[index] = mergeEntity(known, entity);
@@ -156,6 +212,30 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractio
   }
 
   return merged;
+}
+
+// What the requests read so far found, listed for the next request beside the cards on disk, so
+// it points at the same person or place instead of naming it a second time.
+export function listKnownNoteEntities(
+  extractions: readonly NoteExtraction[],
+  cards: readonly NoteExtractionKnownCard[],
+): NoteExtractionKnownCard[] {
+  const takenIds = new Set(cards.map((card) => card.id));
+  const provisional = mergeEntities(extractions.flatMap((extraction) => extraction.entities))
+    .filter((entity) => entity.existingId === undefined)
+    .flatMap((entity): NoteExtractionKnownCard[] => {
+      const id = provisionalCardId(entity);
+
+      if (id === undefined || takenIds.has(id)) {
+        return [];
+      }
+
+      takenIds.add(id);
+
+      return [{ id, type: entity.type, name: entity.name, aliases: entity.aliases }];
+    });
+
+  return [...cards, ...provisional];
 }
 
 function takeUniqueId(
@@ -173,10 +253,6 @@ function takeUniqueId(
   takenIds.add(id);
 
   return id;
-}
-
-function validCardId(value: string | undefined): string | undefined {
-  return value !== undefined && cardIdPattern.test(value) ? value : undefined;
 }
 
 function createNewCard(entity: NoteExtractionEntity, id: string): StoryboardCard {
@@ -202,28 +278,36 @@ interface ResolvedEntity {
 }
 
 // Names resolve to ids across what is already in the workspace and what this plan adds, so a
-// relation between two people who both arrive from the notes still lands.
+// relation between two people who both arrive from the notes still lands. A card's own name wins
+// over another card's alias, and an alias two cards share resolves to neither.
 class CardNameIndex {
   private readonly idsByName = new Map<string, string>();
+  private readonly idsByAlias = new Map<string, Set<string>>();
 
   public constructor(private readonly kind: NoteExtractionEntity['type']) {}
 
-  public add(card: StoryboardCard, extraNames: readonly string[] = []): void {
+  public add(card: StoryboardCard, extraAliases: readonly string[] = []): void {
     if (entityKind(card) !== this.kind) {
       return;
     }
 
-    for (const name of [card.name, ...(card.aliases ?? []), ...extraNames]) {
-      const key = normalizeName(name);
+    const nameKey = normalizeName(card.name);
 
-      if (!this.idsByName.has(key)) {
-        this.idsByName.set(key, card.id);
-      }
+    if (!this.idsByName.has(nameKey)) {
+      this.idsByName.set(nameKey, card.id);
+    }
+
+    for (const alias of [...(card.aliases ?? []), ...extraAliases]) {
+      const key = normalizeName(alias);
+      this.idsByAlias.set(key, new Set([...(this.idsByAlias.get(key) ?? []), card.id]));
     }
   }
 
   public resolve(name: string): string | undefined {
-    return this.idsByName.get(normalizeName(name));
+    const key = normalizeName(name);
+    const aliasIds = [...(this.idsByAlias.get(key) ?? [])];
+
+    return this.idsByName.get(key) ?? (aliasIds.length === 1 ? aliasIds[0] : undefined);
   }
 }
 
