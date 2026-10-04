@@ -16,6 +16,7 @@ import {
   buildNoteAbsorbPlan,
   type NoteAbsorbPlan,
   groupNotesIntoChunks,
+  listKnownNoteEntities,
   measureNoteAbsorbWorkload,
   type NoteAbsorbWorkload,
   type NoteConsolidationFailure,
@@ -138,7 +139,10 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         const position = `${index + 1}/${chunks.length}`;
         this.deps.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
 
-        const result = await aiService.extractNotes(chunk, knownCards);
+        const result = await aiService.extractNotes(
+          chunk,
+          listKnownNoteEntities(extractions, knownCards),
+        );
         extractions.push(result.extraction);
         responses.push({
           chunk: index + 1,
