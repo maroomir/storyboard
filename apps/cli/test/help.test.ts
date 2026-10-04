@@ -133,6 +133,24 @@ describe('suggestVerbs', () => {
     expect(renderUnknownCommand('draf generate')).toContain('storyboard draft generate');
     expect(renderUnknownCommand('xyzzy')).toContain('storyboard --help');
   });
+
+  // 옛 이름은 별칭 없이 사라졌다. 그 이름을 친 에이전트가 새 이름을 제안에서 찾을 수 있어야 한다.
+  it('leads a renamed command to its new name', () => {
+    const renamed: Readonly<Record<string, string>> = {
+      'scene generate': 'draft generate',
+      'scene revise': 'draft revise',
+      'scene seeds': 'scene seed',
+      'check slop': 'draft check',
+      'cards build': 'card build',
+      'cards migrate': 'card migrate',
+      'bible promote': 'canon promote',
+      'manuscript summaries': 'manuscript summarize',
+    };
+
+    for (const [oldName, newName] of Object.entries(renamed)) {
+      expect(suggestVerbs(oldName), oldName).toContain(newName);
+    }
+  });
 });
 
 // 옵션 목록·셸 목록·언어 목록이 도움말과 자동완성에 따로 적혀 있던 시절에는 «도움말에는 있는데

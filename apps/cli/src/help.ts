@@ -119,20 +119,37 @@ export function suggestVerbs(input: string, limit = 3): string[] {
   return scored.slice(0, limit).map((entry) => entry.verb);
 }
 
+const prefixScore = 10;
+const sameActionScore = 4;
+const sharedWordScore = 2;
+const nearWordScore = 1;
+const nearWordDistance = 2;
+
+// The action counts for more than the noun: a command that moved to another noun
+// (`scene generate` → `draft generate`) is found by what it does, not by the noun it left.
 function similarity(input: string, verb: string): number {
   if (verb.startsWith(input) || input.startsWith(verb)) {
-    return 3;
+    return prefixScore;
   }
 
   const inputWords = input.split(/\s+/);
   const verbWords = verb.split(/\s+/);
-  const shared = inputWords.filter((word) => verbWords.includes(word)).length;
+  const inputAction = inputWords[inputWords.length - 1];
+  const verbAction = verbWords[verbWords.length - 1];
 
-  if (shared > 0) {
-    return 1 + shared;
-  }
+  return inputWords.reduce((score, word) => {
+    if (word === inputAction && word === verbAction) {
+      return score + sameActionScore;
+    }
 
-  return verbWords.some((word) => levenshtein(inputWords[0] ?? '', word) <= 2) ? 1 : 0;
+    if (verbWords.includes(word)) {
+      return score + sharedWordScore;
+    }
+
+    return verbWords.some((candidate) => levenshtein(word, candidate) <= nearWordDistance)
+      ? score + nearWordScore
+      : score;
+  }, 0);
 }
 
 function levenshtein(a: string, b: string): number {
