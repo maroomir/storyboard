@@ -1,6 +1,6 @@
 ---
 temperature: 0.2
-maxTokens: 8000
+maxTokens: 16000
 ---
 ## system
 작가가 노트 앱에 적어 둔 작품 메모를 읽고, 소설 작업 공간의 재료로 나눠 옮기는 도우미다.
