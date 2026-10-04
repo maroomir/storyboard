@@ -1,0 +1,19 @@
+---
+description: Mask Notion ids, personal links, home paths, tokens and e-mails in anything posted to the public repo
+alwaysApply: true
+---
+
+# Public posts: mask personal data
+
+`maroomir/storyboard` is public. Issues, PRs, comments, releases, commit messages, fixtures and docs
+must never carry personal data — an edited post keeps the original in its edit history.
+
+- Notion ids (32 hex or dashed UUID) and Notion URLs carrying one → `https://www.notion.so/<id>`, `'<Notion 페이지 URL>'`.
+- Personal links (`*.notion.site`, vault paths, private document links) → `<개인 링크>`.
+- Home paths (`/Users/<name>/…`, `/home/<name>/…`) → `~/…`, `/path/to/workspace`.
+- Tokens (`ntn_…`, `secret_…`, `sk-…`, `ghp_…`) → `<token>`; other people's e-mails → `<email>`.
+- Repro commands keep their shape and lose their values.
+- Check before posting: `grep -nE '[0-9a-f]{32}|notion\.(so|site|com)/|/Users/|/home/' body.md` prints only placeholders.
+- If something leaked, edit the post and delete the old revision from its edit history on GitHub's web UI.
+
+Canonical rule: `.claude/rules/public-posts.md` (Claude Code also enforces it with a PreToolUse hook).

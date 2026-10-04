@@ -167,6 +167,7 @@ Do not create a new abstraction solely to move a file. Use ports for genuine run
 - Use a strict Content Security Policy for webviews.
 - Use nonces for scripts and avoid `unsafe-eval` unless a toolchain forces it and the tradeoff is documented.
 - Sanitize or safely render user-provided Markdown/HTML.
+- The repository is public. Issues, PRs, comments, releases, commit messages, fixtures and docs never carry Notion ids or URLs that carry one, personal links (`*.notion.site`, vault paths), home paths (`/Users/<name>/…`), tokens, or other people's e-mails — write placeholders (`'<Notion 페이지 URL>'`, `<id>`, `~/…`, `<token>`). Check a body with `grep -nE '[0-9a-f]{32}|notion\.(so|site|com)/|/Users/|/home/'` before posting; if something leaked, edit the post and delete the old revision from its GitHub edit history. Canonical rule: `.claude/rules/public-posts.md`.
 
 ## Implementation Workflow
 
@@ -319,5 +320,6 @@ Important rule files:
 - `.claude/rules/comments.md`
 - `.claude/rules/release.md`
 - `.claude/rules/agent-workflow.md`
+- `.claude/rules/public-posts.md`
 
 When writing or reviewing code, always apply the clean code standards summarized in `.claude/rules/clean-code.md` and the comment markers in `.claude/rules/comments.md` when adding or editing comments.

@@ -60,6 +60,9 @@ Ask the user for missing critical information.
 Use `.github/pull_request_template.md` as the body skeleton. Keep every section and heading; fill
 them as follows:
 
+> The repository is public: mask Notion ids and URLs, personal links, home paths, tokens and e-mails
+> with placeholders before posting (`.claude/rules/public-posts.md`).
+
 - **요약**: one or two sentences on what changed and why, replacing the HTML comment.
 - **반영 내용**: one table row per change, grouped by workspace (`vscode`, `cli`, `story-engine`, `story-model`,
   `story-ai`, `docs`, `rules`, `ci`). Derive rows from `git diff origin/main..HEAD --stat`

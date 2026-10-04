@@ -12,3 +12,4 @@
 @.claude/rules/comments.md
 @.claude/rules/release.md
 @.claude/rules/agent-workflow.md
+@.claude/rules/public-posts.md
