@@ -63,6 +63,16 @@ stays in the CLI's `gitRepository` adapter.
 `terminal → adapters → commands → tui`. A layer may import itself and anything to its left;
 `apps/cli/scripts/check-architecture.mjs` enforces the direction and rejects cycles.
 
+## Terminal output (`apps/cli/src/terminal`)
+
+Everything drawn — widths, colors, boxes, two-column tables, OSC signals — is pure string work in
+`terminal/`, measured in terminal columns (`string-width`), never `String.length`. Decoration is for
+a person: color only where `shouldUseColor` allows (a TTY, no `--json`, `--no-color`, `NO_COLOR` or
+`TERM=dumb`), and marks (`✓`/`✗`), panels, the next-step hint, links and the window title only when
+that stream is a TTY. A pipe and `--json` get the bytes they got before any of it, and `dispatch`
+called without `terminal` facts (tests, the TUI) is plain. Use single-width marks: `string-width`
+counts emoji-capable characters such as `✔` as two columns while terminals draw one.
+
 ## Host adapters
 
 Only six files differ from what the extension supplies, which is the whole point of the engine
