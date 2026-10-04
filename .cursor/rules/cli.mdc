@@ -50,10 +50,14 @@ A command's help group follows its noun, so one noun never spreads over two grou
 (`card`, `canon`) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
 change recorded in the changelog — and a freed name is not reused for a different action.
 
-Read-only verbs that look at the work go through manager reads, not the file system:
-`drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `novel.readProject`, and
-`describeWorkspace` for `status` (the engine names the open step as a `WorkspaceNextStep`;
-`nextStepCommands` in `apps/cli/src/commands/status.ts` owns the command for each).
+Verbs read and write the work through manager verbs, not the file system: reads
+`drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `cards.listNarrators`,
+`novel.readProject`, and `describeWorkspace` for `status` (the engine names the open step as a
+`WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/status.ts` owns the command for
+each); writes `drafts.createScene`, `novel.seedScenes`, `cards.rename`,
+`cards.createNarrator`/`removeNarrator`, `cards.applyBuildTargets`, `novel.applyCompletedScenes`
+and `drafts.saveEdit`. What stays in the CLI is the terminal's input form — flags turned into a
+request, `--lines` slicing — and the unattended policy of applying a whole proposal.
 
 ## Layering
 
