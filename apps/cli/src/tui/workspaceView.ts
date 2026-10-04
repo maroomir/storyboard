@@ -36,7 +36,7 @@ const silentLogger: IStoryboardLogger = {
   show: () => undefined,
 };
 
-function isWorkspace(cwd: string): boolean {
+export function isWorkspace(cwd: string): boolean {
   return existsSync(join(cwd, STORYBOARD_RELATIVE_PATHS.projectJson));
 }
 

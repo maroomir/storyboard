@@ -89,6 +89,8 @@ export interface DispatchResult {
   readonly outcome?: CommandOutcome;
   // Set when the argv asked for the interactive screen instead of a one-shot command.
   readonly launchTui?: boolean;
+  // Dollars the run spent, for the interactive screen's /cost.
+  readonly costUsd?: number;
 }
 
 interface OutputMode {
@@ -375,6 +377,7 @@ export async function dispatch(
 
   return {
     exitCode: outcome.ok ? 0 : 1,
+    costUsd: meter.reading().costUsd,
     stdout,
     stderr: `${draftChanges}${shouldSuggestNextStep ? await suggestNextStep(container, terminal.stderr) : ''}`,
     outcome,

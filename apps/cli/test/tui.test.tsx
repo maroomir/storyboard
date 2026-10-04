@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -19,7 +19,8 @@ import { Banner } from '../src/tui/banner';
 import { describeHeader } from '../src/tui/index';
 import { Dashboard, describeDraftProgress } from '../src/tui/dashboard';
 import { readWorkspaceView } from '../src/tui/workspaceView';
-import { splitCommandLine, suggestForInput } from '../src/tui/session';
+import { describeSpending, splitCommandLine, suggestForInput } from '../src/tui/session';
+import { loadTuiThemeName, saveTuiThemeName } from '../src/tui/tuiTheme';
 import { selectVisibleWindow } from '../src/tui/suggestionList';
 
 let home: string;
@@ -163,6 +164,28 @@ describe('history and folding', () => {
   });
 });
 
+describe('settings screens', () => {
+  it('totals what the screen spent, command by command', () => {
+    expect(describeSpending([])).toContain('아직 비용이 든 명령이 없습니다');
+    expect(
+      describeSpending([
+        { line: 'draft generate 01-a', costUsd: 0.18 },
+        { line: 'draft revise 01-a', costUsd: 0.05 },
+      ]).split('\n'),
+    ).toEqual(['$   0.18  draft generate 01-a', '$   0.05  draft revise 01-a', '$   0.23  합계']);
+  });
+
+  it('keeps the theme choice in its own file and falls back on a damaged one', () => {
+    const file = join(home, 'tui.json');
+
+    expect(loadTuiThemeName(file)).toBe('default');
+    saveTuiThemeName('mono', file);
+    expect(loadTuiThemeName(file)).toBe('mono');
+    writeFileSync(file, '{ not json');
+    expect(loadTuiThemeName(file)).toBe('default');
+  });
+});
+
 describe('Banner', () => {
   it('draws the two-line wordmark when it fits and one line when it does not', () => {
     expect(new Set(storyboardWordmark.map(measureWidth)).size).toBe(1);
@@ -303,5 +326,25 @@ describe('StoryboardTui', () => {
     stdin.write('\r');
     await wait(50);
     expect(lastFrame()).toContain('❯ /clear');
+  });
+
+  it('changes a setting through /config with the same write config set makes', async () => {
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    await typeKeys(stdin, '/config');
+    stdin.write('\r');
+    await wait(100);
+    expect(lastFrame()).toContain('생성 직후 자동 검수·수정');
+
+    stdin.write('\r');
+    await wait(50);
+    stdin.write('2');
+    await wait(300);
+
+    expect(lastFrame()).toContain('revise.loop.afterGenerate = false 저장했습니다');
+    expect(readFileSync(join(home, 'config.json'), 'utf8')).toMatch(/"afterGenerate": false/);
   });
 });

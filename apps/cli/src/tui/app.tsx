@@ -9,6 +9,13 @@ import { ChoiceDialog } from './choiceDialog';
 import { Dashboard } from './dashboard';
 import { StatusBar } from './statusBar';
 import { TextDialog } from './textDialog';
+import {
+  TuiThemeContext,
+  tuiThemes,
+  useTuiTheme,
+  type TuiTheme,
+  type TuiThemeName,
+} from './tuiTheme';
 import { SuggestionList } from './suggestionList';
 import type { TuiHeaderInfo, WorkspaceView } from './workspaceView';
 
@@ -27,14 +34,16 @@ export interface StoryboardTuiProps extends TuiSessionOptions {
   readonly maxLogLines?: number;
   // Reads the workspace around the prompt again; called on start and after every command.
   readonly loadWorkspaceView?: () => Promise<WorkspaceView>;
+  // The color preset the screen opens with; /theme changes it for the session and saves it.
+  readonly themeName?: TuiThemeName;
 }
 
-const toneColor: Record<LogTone, string | undefined> = {
-  input: 'cyan',
-  progress: 'gray',
+const toneRole: Record<LogTone, keyof TuiTheme | undefined> = {
+  input: 'accent',
+  progress: 'muted',
   result: undefined,
-  error: 'red',
-  hint: 'yellow',
+  error: 'danger',
+  hint: 'warning',
 };
 
 const tonePrefix: Record<LogTone, string> = {
@@ -67,12 +76,14 @@ function LogLine({
   readonly entry: LogEntry;
   readonly isExpanded: boolean;
 }): React.ReactElement {
+  const theme = useTuiTheme();
   const lines = foldLines(entry.text.split('\n'), isExpanded);
+  const role = toneRole[entry.tone];
 
   return (
     <Box flexDirection="column">
       {lines.map((line, index) => (
-        <Text key={`${entry.id}-${index}`} color={toneColor[entry.tone]}>
+        <Text key={`${entry.id}-${index}`} color={role === undefined ? undefined : theme[role]}>
           {index === 0 ? tonePrefix[entry.tone] : ' '.repeat(tonePrefix[entry.tone].length)}
           {line}
         </Text>
@@ -101,6 +112,8 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
+  const [themeName, setThemeName] = useState<TuiThemeName>(props.themeName ?? 'default');
+  const theme = tuiThemes[themeName];
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | undefined>(undefined);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
@@ -134,6 +147,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
             new Promise<string | undefined>((resolve) =>
               setPendingQuestion({ kind: 'text', request, resolve }),
             ),
+          setTheme: (name: TuiThemeName) => setThemeName(name),
           clear: () => setEntries([]),
           exit: () => exit(),
         },
@@ -212,56 +226,58 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const visibleEntries = entries.slice(-(props.maxLogLines ?? 200));
 
   return (
-    <Box flexDirection="column">
-      <Banner version={props.version} columns={columns} />
+    <TuiThemeContext.Provider value={theme}>
+      <Box flexDirection="column">
+        <Banner version={props.version} columns={columns} />
 
-      {view.status === undefined ? null : <Dashboard status={view.status} />}
+        {view.status === undefined ? null : <Dashboard status={view.status} />}
 
-      <Box flexDirection="column" paddingX={1} paddingY={0}>
-        {visibleEntries.map((entry) => (
-          <LogLine key={entry.id} entry={entry} isExpanded={isOutputExpanded} />
-        ))}
+        <Box flexDirection="column" paddingX={1} paddingY={0}>
+          {visibleEntries.map((entry) => (
+            <LogLine key={entry.id} entry={entry} isExpanded={isOutputExpanded} />
+          ))}
+        </Box>
+
+        {editor.isSuggestionOpen && !isBusy ? (
+          <SuggestionList
+            suggestions={suggestions}
+            selectedIndex={editor.selectedSuggestion}
+            columns={columns}
+          />
+        ) : null}
+
+        {pendingQuestion?.kind === 'choice' ? (
+          <ChoiceDialog request={pendingQuestion.request} onAnswer={answerChoice} />
+        ) : null}
+        {pendingQuestion?.kind === 'text' ? (
+          <TextDialog request={pendingQuestion.request} onAnswer={answerText} />
+        ) : null}
+
+        {editor.search === undefined ? (
+          <Box paddingX={1}>
+            <Text color={isBusy ? theme.muted : theme.accent}>{isBusy ? '… ' : '❯ '}</Text>
+            <Text>
+              {editor.value.slice(0, editor.cursor)}
+              <Text inverse>{editor.value[editor.cursor] ?? ' '}</Text>
+              {editor.value.slice(editor.cursor + 1)}
+            </Text>
+          </Box>
+        ) : (
+          <Box paddingX={1}>
+            <Text color={theme.accent}>기록 검색 </Text>
+            <Text>
+              {editor.search.query}
+              <Text inverse> </Text>
+            </Text>
+            <Text color={theme.muted}>
+              {'  '}
+              {editor.search.match ?? '일치 없음'} · Enter 넣기 · Ctrl+R 이전 · Esc 취소
+            </Text>
+          </Box>
+        )}
+
+        <StatusBar view={view} isBusy={isBusy} />
       </Box>
-
-      {editor.isSuggestionOpen && !isBusy ? (
-        <SuggestionList
-          suggestions={suggestions}
-          selectedIndex={editor.selectedSuggestion}
-          columns={columns}
-        />
-      ) : null}
-
-      {pendingQuestion?.kind === 'choice' ? (
-        <ChoiceDialog request={pendingQuestion.request} onAnswer={answerChoice} />
-      ) : null}
-      {pendingQuestion?.kind === 'text' ? (
-        <TextDialog request={pendingQuestion.request} onAnswer={answerText} />
-      ) : null}
-
-      {editor.search === undefined ? (
-        <Box paddingX={1}>
-          <Text color={isBusy ? 'gray' : 'cyan'}>{isBusy ? '… ' : '❯ '}</Text>
-          <Text>
-            {editor.value.slice(0, editor.cursor)}
-            <Text inverse>{editor.value[editor.cursor] ?? ' '}</Text>
-            {editor.value.slice(editor.cursor + 1)}
-          </Text>
-        </Box>
-      ) : (
-        <Box paddingX={1}>
-          <Text color="cyan">기록 검색 </Text>
-          <Text>
-            {editor.search.query}
-            <Text inverse> </Text>
-          </Text>
-          <Text color="gray">
-            {'  '}
-            {editor.search.match ?? '일치 없음'} · Enter 넣기 · Ctrl+R 이전 · Esc 취소
-          </Text>
-        </Box>
-      )}
-
-      <StatusBar view={view} isBusy={isBusy} />
-    </Box>
+    </TuiThemeContext.Provider>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import { measureWidth, padEndToWidth, truncateToWidth } from '@/terminal/width';
 
 import type { InputSuggestion } from './session';
+import { useTuiTheme } from './tuiTheme';
 
 // Enough rows to see the neighbourhood of the selection without pushing the log off the screen.
 const visibleRows = 8;
@@ -25,6 +26,7 @@ export function selectVisibleWindow(total: number, selectedIndex: number): [numb
 }
 
 export function SuggestionList(props: SuggestionListProps): React.ReactElement {
+  const theme = useTuiTheme();
   const [start, end] = selectVisibleWindow(props.suggestions.length, props.selectedIndex);
   const textWidth = Math.min(
     maximumTextWidth,
@@ -39,15 +41,15 @@ export function SuggestionList(props: SuggestionListProps): React.ReactElement {
       {props.suggestions.slice(start, end).map((suggestion, offset) => {
         const isSelected = start + offset === props.selectedIndex;
         return (
-          <Text key={suggestion.line} color={isSelected ? 'cyan' : undefined}>
+          <Text key={suggestion.line} color={isSelected ? theme.accent : undefined}>
             {isSelected ? '▸ ' : '  '}
             {padEndToWidth(truncateToWidth(suggestion.text, textWidth), textWidth)}
             {'  '}
-            <Text color="gray">{truncateToWidth(suggestion.summary, summaryWidth)}</Text>
+            <Text color={theme.muted}>{truncateToWidth(suggestion.summary, summaryWidth)}</Text>
           </Text>
         );
       })}
-      <Text color="gray">
+      <Text color={theme.muted}>
         {'  ↑↓ 선택 · Tab 확정 · Esc 닫기'}
         {hasMore ? `  (${props.selectedIndex + 1}/${props.suggestions.length})` : ''}
       </Text>
