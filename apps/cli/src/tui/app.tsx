@@ -1,4 +1,4 @@
-import { Box, Text, useApp, useStdout } from 'ink';
+import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
@@ -140,6 +140,22 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   useEffect(() => {
     setInputValue(editor.value);
   }, [editor.value]);
+
+  // The prompt is idle while a command runs; Esc is the one key that still means something then.
+  useInput(
+    (_input, key) => {
+      if (!key.escape) {
+        return;
+      }
+      append(
+        'hint',
+        session.requestPause()
+          ? '지금 씬을 마치고 멈춥니다.'
+          : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.',
+      );
+    },
+    { isActive: isBusy },
+  );
 
   const visibleEntries = entries.slice(-(props.maxLogLines ?? 200));
 

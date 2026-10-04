@@ -1,5 +1,6 @@
 import { ConsoleLogger } from './adapters/consoleLogger';
 import { LiveArea } from './adapters/liveArea';
+import { PauseRequests } from './adapters/pauseRequests';
 import { dispatch } from './commands/dispatch';
 import {
   bellSignal,
@@ -39,6 +40,17 @@ async function main(argv: readonly string[]): Promise<number> {
   }
 
   const liveArea = new LiveArea(process.stderr, process.stderr.columns || 80);
+  const pauseRequests = new PauseRequests();
+
+  // NOTE: 첫 Ctrl+C 는 씬 경계 정지를 예약하고(이미 쓴 토큰을 버리지 않게), 두 번째는 바로
+  // 끝낸다. 멈출 수 있는 실행이 없으면 첫 번째부터 바로 끝낸다.
+  process.on('SIGINT', () => {
+    if (!pauseRequests.request()) {
+      process.exit(130);
+    }
+    liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
+  });
+
   const result = await dispatch(argv, {
     version,
     cwd: process.cwd(),
@@ -46,6 +58,7 @@ async function main(argv: readonly string[]): Promise<number> {
     createLogger: (showProgress, stderrTheme) =>
       new ConsoleLogger(showProgress, stderrTheme, (text) => liveArea.writeAbove(text)),
     liveArea,
+    pauseRequests,
     terminal: {
       stdout: { isTty: process.stdout.isTTY === true, columns: process.stdout.columns },
       stderr: { isTty: process.stderr.isTTY === true, columns: process.stderr.columns },

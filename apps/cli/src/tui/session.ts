@@ -1,6 +1,7 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
+import { PauseRequests } from '@/adapters/pauseRequests';
 import { computeCompletions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
@@ -165,19 +166,27 @@ function createSessionLogger(sink: SessionSink): IStoryboardLogger {
 
 export interface TuiSession {
   readonly run: (line: string) => Promise<void>;
+  // Esc during a run: stop at the next scene boundary. False when the running command cannot.
+  readonly requestPause: () => boolean;
 }
 
 // Everything typed at the prompt goes through the same `dispatch` the one-shot CLI uses; the TUI
 // only decides how to show what comes back.
 export function createTuiSession(options: TuiSessionOptions, sink: SessionSink): TuiSession {
-  const runArgv = async (argv: readonly string[]): Promise<DispatchResult> =>
-    dispatch(argv, {
+  // One per command, so a pause asked for one run never carries into the next.
+  let pauseRequests = new PauseRequests();
+
+  const runArgv = async (argv: readonly string[]): Promise<DispatchResult> => {
+    pauseRequests = new PauseRequests();
+    return dispatch(argv, {
       version: options.version,
       cwd: options.cwd,
       // Progress belongs in the log, but readline prompts would fight the screen for stdin.
       isInteractive: false,
       createLogger: () => createSessionLogger(sink),
+      pauseRequests,
     });
+  };
 
   const show = (result: DispatchResult): void => {
     const text = (result.stdout + result.stderr).trimEnd();
@@ -188,6 +197,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   return {
+    requestPause: () => pauseRequests.request(),
     run: async (line: string): Promise<void> => {
       const trimmed = line.trim();
 

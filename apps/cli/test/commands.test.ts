@@ -721,6 +721,43 @@ describe('draft generate progress', () => {
   });
 });
 
+describe('draft generate --all pause', () => {
+  it('stops at a scene boundary when asked and says what is left', async () => {
+    const real = container();
+    let shouldPause: (() => boolean) | undefined;
+    const stubbed = {
+      ...real,
+      drafts: stubManager(real.drafts, {
+        generateAll: async (request: { shouldPause?: () => boolean }) => {
+          shouldPause = request.shouldPause;
+          real.pauseRequests.request();
+          return {
+            kind: 'completed',
+            ok: true,
+            summary: {
+              cacheHits: 0,
+              failureLabels: [],
+              failures: 0,
+              generated: 1,
+              sceneCount: 3,
+              pausedWithRemaining: 2,
+            },
+          };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    const outcome = await commands['draft generate']({
+      container: stubbed,
+      args: args(['draft', 'generate'], { all: true }),
+    });
+
+    expect(shouldPause?.()).toBe(true);
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('남은 씬 2개');
+  });
+});
+
 describe('draft generate warnings', () => {
   // 초안 앞머리의 warnings 는 사람이 파일을 열어야 보인다. 무인 실행에서는 아무도 열지 않는다.
   it('reports the draft warnings on stderr and in the json data', async () => {

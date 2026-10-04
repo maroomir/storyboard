@@ -30,7 +30,9 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
         {header.providerLabel}
       </Text>
       <Box flexShrink={0} marginLeft={2}>
-        <Text color="gray">/help 도움말 · Ctrl+R 기록 · Ctrl+C 나가기</Text>
+        <Text color="gray">
+          {props.isBusy ? 'Esc 씬 경계에서 멈춤' : '/help 도움말 · Ctrl+R 기록 · Ctrl+C 나가기'}
+        </Text>
       </Box>
     </Box>
   );

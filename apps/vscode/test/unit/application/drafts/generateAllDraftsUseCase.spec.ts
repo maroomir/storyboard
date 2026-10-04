@@ -98,4 +98,35 @@ describe("GenerateAllDraftsUseCase", () => {
     })
     expect(generateDraftUseCase.execute).toHaveBeenCalledOnce()
   })
+
+  it("pauses between scenes and reports the scenes it did not reach", async () => {
+    let isPauseRequested = false
+    const generateDraftUseCase = {
+      execute: vi.fn(async () => {
+        isPauseRequested = true
+        return { kind: "cache_hit", ok: true, draftUri: firstScene }
+      })
+    }
+
+    const result = await new GenerateAllDraftsUseCase({
+      generateDraftUseCase: generateDraftUseCase as never,
+      logger: logger(),
+      reviseAfterGenerateGate: {} as never,
+      sceneRepository: repository(1, [firstScene, secondScene, thirdScene])
+    }).execute({ shouldPause: () => isPauseRequested })
+
+    expect(generateDraftUseCase.execute).toHaveBeenCalledOnce()
+    expect(result).toEqual({
+      kind: "completed",
+      ok: true,
+      summary: {
+        cacheHits: 1,
+        failureLabels: [],
+        failures: 0,
+        generated: 0,
+        sceneCount: 3,
+        pausedWithRemaining: 2
+      }
+    })
+  })
 })

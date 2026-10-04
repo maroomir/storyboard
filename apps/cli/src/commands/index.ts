@@ -97,6 +97,7 @@ function describeBatchStep(progress: GenerateAllDraftsProgress): string {
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
     const result = await container.drafts.generateAll({
+      shouldPause: container.pauseRequests.watch(),
       onProgress: (progress) =>
         container.progress.update({
           line: `${progress.current}/${progress.total} ${progress.label}`,
@@ -110,7 +111,18 @@ const generateScene: CommandHandler = async ({ container, args }) => {
     }
 
     // A batch where scenes failed is not a success, however many others went through.
-    const { cacheHits, failureLabels, failures, generated } = result.summary;
+    const { cacheHits, failureLabels, failures, generated, pausedWithRemaining } = result.summary;
+
+    // A pause is not a failure of any scene, but the batch is unfinished, so it does not exit 0.
+    if (pausedWithRemaining !== undefined) {
+      return {
+        ok: false,
+        message:
+          `멈췄습니다: 생성 ${generated}건, 남은 씬 ${pausedWithRemaining}개. ` +
+          '다시 실행하면 남은 씬부터 이어 갑니다.',
+        data: result.summary,
+      };
+    }
 
     return {
       ok: failures === 0,
@@ -346,6 +358,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
       container.progress.update({ line: `${stage}: ${message}`, step: message }),
     requestApproval: async () => true,
     shouldCancel: () => false,
+    shouldPause: container.pauseRequests.watch(),
   });
 
   const { spending } = result;

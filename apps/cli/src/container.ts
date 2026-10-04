@@ -16,6 +16,7 @@ import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@story
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { NodeFileSystem, NodeWorkspaceLocator } from '@storyboard/story-node';
+import { PauseRequests } from './adapters/pauseRequests';
 import { LineRunProgress, type IRunProgress } from './adapters/runProgress';
 import { resolveCliPaths } from './adapters/paths';
 import {
@@ -61,6 +62,8 @@ export interface CliContainer extends Pick<
   readonly fileSystem: NodeFileSystem;
   // Where a long run reports how far it is: a rail at a terminal, log lines otherwise.
   readonly progress: IRunProgress;
+  // Ctrl+C (or Esc in the TUI) asking a run to stop at its next scene boundary.
+  readonly pauseRequests: PauseRequests;
   // 측정 결과가 «무엇으로 쟀는지» 를 적으려면 실행한 버전을 되돌려 줘야 한다.
   readonly version: string;
 }
@@ -70,6 +73,8 @@ export interface CliContainerOptions {
   readonly logger: IStoryboardLogger;
   // Left out, progress goes to the logger as lines.
   readonly progress?: IRunProgress;
+  // Left out, nothing ever asks a run to pause.
+  readonly pauseRequests?: PauseRequests;
   readonly canPrompt: boolean;
   readonly version: string;
   readonly provider?: string;
@@ -208,6 +213,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     version: options.version,
     canPrompt: options.canPrompt,
     progress: options.progress ?? new LineRunProgress(options.logger),
+    pauseRequests: options.pauseRequests ?? new PauseRequests(),
     homePaths,
     loadResourceOverrides: () => application.loadResourceOverrides(),
     describeParameters: () => application.describeParameters(),
