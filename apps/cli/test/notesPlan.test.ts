@@ -72,6 +72,14 @@ describe('note extraction prompt', () => {
     expect(prompt.user).toContain('- jun · 인물 · 준 (다른 호칭: 준이)');
   });
 
+  it('asks for what a place is, not only how it feels', () => {
+    const prompt = NoteExtractionPrompt.build([], []);
+
+    expect(prompt.system).toContain('배경(background)에만 적는 것:');
+    expect(prompt.system).toContain('description: 이곳이 어떤 곳인지');
+    expect(prompt.system).toContain('"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[]');
+  });
+
   it('keeps what parses when one entry of a response is malformed', () => {
     const parsed = coerceNoteExtraction({
       notes: [{ id: 'a.md', kinds: ['character', 'nonsense'] }, { kinds: ['scene'] }],
