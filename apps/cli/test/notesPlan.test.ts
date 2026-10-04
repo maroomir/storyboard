@@ -79,6 +79,7 @@ describe('note extraction prompt', () => {
 
     expect(prompt.system).toContain('배경(background)에만 적는 것:');
     expect(prompt.system).toContain('description: 이곳이 어떤 곳인지');
+    expect(prompt.system).toContain('[기존 카드]에 있는 장소의 한 부분이면 새 배경을 만들지 말고');
     expect(prompt.system).toContain('"type":"background","name":"","suggestedId":"","aliases":[],"description":[],"tags":[]');
   });
 
