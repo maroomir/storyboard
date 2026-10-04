@@ -80,6 +80,22 @@ describe("OpenAiProvider", () => {
     ])
   })
 
+  it.each([
+    [new Error("429 You have no credits remaining.\n Add credits."), "OpenAI 텍스트 생성에 실패했습니다: 429 You have no credits remaining. Add credits."],
+    [{ status: 500 }, "OpenAI 텍스트 생성에 실패했습니다."]
+  ] as const)("names what OpenAI said when generation fails", async (cause, expectedMessage) => {
+    const client: OpenAiClientLike = {
+      models: { list: async (): Promise<unknown> => Promise.reject(cause) },
+      chat: { completions: { create: async () => Promise.reject(cause) } }
+    }
+    const provider = new OpenAiProvider({ apiKey: "sk-test", model: "gpt-6-luna", createClient: (): OpenAiClientLike => client })
+
+    await expect(provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }] })).rejects.toThrow(
+      expectedMessage
+    )
+    await expect(provider.checkConnection()).rejects.toThrow(expectedMessage.replace("텍스트 생성", "연결 확인"))
+  })
+
   it("caps output with max_completion_tokens, which reasoning models require", async () => {
     let captured: FakeOpenAiCreateRequest | undefined
     const provider = new OpenAiProvider({
