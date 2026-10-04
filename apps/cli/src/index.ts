@@ -1,4 +1,5 @@
 import { ConsoleLogger } from './adapters/consoleLogger';
+import { LiveArea } from './adapters/liveArea';
 import { dispatch } from './commands/dispatch';
 import {
   bellSignal,
@@ -37,11 +38,14 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
+  const liveArea = new LiveArea(process.stderr, process.stderr.columns || 80);
   const result = await dispatch(argv, {
     version,
     cwd: process.cwd(),
     isInteractive: process.stdin.isTTY === true && process.stderr.isTTY === true,
-    createLogger: (showProgress, stderrTheme) => new ConsoleLogger(showProgress, stderrTheme),
+    createLogger: (showProgress, stderrTheme) =>
+      new ConsoleLogger(showProgress, stderrTheme, (text) => liveArea.writeAbove(text)),
+    liveArea,
     terminal: {
       stdout: { isTty: process.stdout.isTTY === true, columns: process.stdout.columns },
       stderr: { isTty: process.stderr.isTTY === true, columns: process.stderr.columns },

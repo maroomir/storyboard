@@ -215,7 +215,7 @@ describe('StoryboardTui', () => {
     expect(lastFrame()).toContain('1.2.3 · 장편 소설을 터미널에서');
     await wait(50);
 
-    stdin.write('/doctor');
+    await typeKeys(stdin, '/doctor');
     await wait(20);
     stdin.write('\r');
     await wait(200);
@@ -231,7 +231,7 @@ describe('StoryboardTui', () => {
     // Ink attaches its input listener in an effect, after the first frame.
     await wait(50);
 
-    stdin.write('config s');
+    await typeKeys(stdin, 'config s');
     await wait(20);
     expect(lastFrame()).toContain('config show');
     expect(lastFrame()).toContain('config set');

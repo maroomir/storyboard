@@ -1,0 +1,78 @@
+import { describe, expect, it } from 'vitest';
+
+import { LiveArea } from '../src/adapters/liveArea';
+import { formatElapsed, LineRunProgress, RailRunProgress } from '../src/adapters/runProgress';
+import { createTheme } from '../src/terminal/theme';
+
+function recordingStream(): { written: string[]; write: (text: string) => void } {
+  const written: string[] = [];
+  return { written, write: (text) => written.push(text) };
+}
+
+describe('live area', () => {
+  it('erases the drawn lines before writing above them and draws them again after', () => {
+    const stream = recordingStream();
+    const area = new LiveArea(stream, 80);
+
+    area.show(['진행 1', '진행 2']);
+    area.writeAbove('[warn] 경고\n');
+    area.clear();
+
+    expect(stream.written).toEqual([
+      '진행 1\n진행 2\n',
+      '\u001b[2A\u001b[0J',
+      '[warn] 경고\n',
+      '진행 1\n진행 2\n',
+      '\u001b[2A\u001b[0J',
+    ]);
+  });
+
+  it('cuts a line that would wrap, so the erase stays exact', () => {
+    const stream = recordingStream();
+    new LiveArea(stream, 10).show(['씬 012-ambush 살붙임']);
+
+    expect(stream.written[0]?.endsWith('…\n')).toBe(true);
+  });
+});
+
+describe('run progress', () => {
+  it('logs the same line a pipe has always had', () => {
+    const logged: string[] = [];
+    const progress = new LineRunProgress({
+      info: (message) => logged.push(message),
+      warn: () => undefined,
+      error: () => undefined,
+      show: () => undefined,
+    });
+
+    progress.update({ line: '3/32 03-gate', unit: { current: 3, total: 32, label: '03-gate' } });
+    expect(logged).toEqual(['3/32 03-gate']);
+  });
+
+  it('draws the scene, its stage, time, cost and a bar on the rail', () => {
+    let clock = 0;
+    const rail = new RailRunProgress({
+      liveArea: new LiveArea(recordingStream(), 80),
+      theme: createTheme(false),
+      readCostUsd: () => 0.18,
+      now: () => clock,
+    });
+
+    rail.update({
+      line: '12/32 012-ambush',
+      unit: { current: 12, total: 32, label: '012-ambush' },
+    });
+    clock = 102_000;
+    rail.update({ line: '살붙임 3/5', step: '살붙임 3/5' });
+    const [status, bar] = rail.describeLines();
+    rail.finish();
+
+    expect(status).toMatch(/^. 12\/32 012-ambush · 살붙임 3\/5 {2}01:42 · \$0\.18$/);
+    expect(bar).toBe(`  ${'█'.repeat(7)}${'░'.repeat(13)}`);
+  });
+
+  it('formats elapsed time as minutes and seconds', () => {
+    expect(formatElapsed(0)).toBe('00:00');
+    expect(formatElapsed(3_725_000)).toBe('62:05');
+  });
+});

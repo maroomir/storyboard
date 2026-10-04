@@ -18,6 +18,8 @@ import {
   parseArguments,
   resolveVerb,
 } from '@/cliArguments';
+import type { LiveArea } from '@/adapters/liveArea';
+import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
 import { createCliContainer } from '@/container';
 import {
   createTerminalProfile,
@@ -68,6 +70,9 @@ export interface DispatchDependencies {
   readonly createLogger: (showProgress: boolean, stderrTheme: Theme) => IStoryboardLogger;
   // The real streams; without them the output is the plain text a pipe gets.
   readonly terminal?: TerminalFacts;
+  // The bottom of stderr a progress rail may redraw; the logger writes above it. Without one,
+  // progress is log lines.
+  readonly liveArea?: LiveArea;
 }
 
 export interface DispatchResult {
@@ -276,9 +281,20 @@ export async function dispatch(
   const showProgress =
     flagBoolean(args.flags, 'verbose') ||
     (deps.isInteractive && !mode.json && !flagBoolean(args.flags, 'quiet'));
+  const logger = deps.createLogger(showProgress, terminal.stderr.theme);
+  const usageSession = { readCostUsd: (): number => 0 };
+  const progress: IRunProgress =
+    deps.liveArea !== undefined && showProgress && terminal.stderr.isTty && !mode.json
+      ? new RailRunProgress({
+          liveArea: deps.liveArea,
+          theme: terminal.stderr.theme,
+          readCostUsd: () => usageSession.readCostUsd(),
+        })
+      : new LineRunProgress(logger);
   const container = createCliContainer({
     workspacePath,
-    logger: deps.createLogger(showProgress, terminal.stderr.theme),
+    logger,
+    progress,
     canPrompt: deps.isInteractive,
     version: deps.version,
     ...(flagString(args.flags, 'provider') === undefined
@@ -303,12 +319,17 @@ export async function dispatch(
     }
   }
 
-  const outcome =
+  const meter = container.usageMeter.startSession();
+  usageSession.readCostUsd = () => meter.reading().costUsd;
+
+  const outcome = await runReportingProgress(progress, () =>
     spec?.writesWorkspace === true
-      ? await runHoldingWorkspaceLock(container, verb, () =>
+      ? runHoldingWorkspaceLock(container, verb, () =>
           handler({ container, args, stdout: terminal.stdout }),
         )
-      : await handler({ container, args, stdout: terminal.stdout });
+      : handler({ container, args, stdout: terminal.stdout }),
+  );
+  meter.stop();
 
   // `init` makes the workspace rather than writing one under the lock, but it is the first action.
   const isAction = spec?.writesWorkspace === true || verb === 'init';
@@ -341,6 +362,18 @@ async function suggestNextStep(
     // A hint must never turn a finished run into a failure; without it the author still has
     // `storyboard status`.
     return '';
+  }
+}
+
+// The rail is cleared before the result is printed, whatever the run ended with.
+async function runReportingProgress(
+  progress: IRunProgress,
+  run: () => Promise<CommandOutcome>,
+): Promise<CommandOutcome> {
+  try {
+    return await run();
+  } finally {
+    progress.finish();
   }
 }
 
