@@ -6,6 +6,7 @@ import type { RunSnapshot, SceneNotes, TocScene, WorkspaceOverview } from '@/sha
 
 import type { WorkspaceChange } from '@/renderer/lib/workspaceChange';
 import { MarginNotes } from '@/renderer/components/MarginNotes';
+import { SceneCardPreview } from '@/renderer/components/SceneCardPreview';
 import { TableOfContents } from '@/renderer/components/TableOfContents';
 import { call, messageOf } from '@/renderer/lib/call';
 import { useI18n } from '@/renderer/lib/i18n';
@@ -162,6 +163,7 @@ export function Desk(props: DeskProps): JSX.Element {
               <button type="button" className="button button-primary" disabled={isReadOnly} onClick={() => void writeScene()}>
                 {t('desk.writeScene')}
               </button>
+              {notes !== undefined && notes.stem === selectedStem ? <SceneCardPreview notes={notes} /> : null}
             </div>
           )}
         </div>

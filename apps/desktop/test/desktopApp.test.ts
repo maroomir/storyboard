@@ -196,6 +196,38 @@ describe('with a work open', () => {
     ]);
   });
 
+  it('hands the scene card to the desk: the summary file, the beats and the mood', async () => {
+    const sceneDirectory = join(workspacePath(), 'scene');
+    writeFileSync(
+      join(sceneDirectory, '02-letter.card'),
+      [
+        'type: scene',
+        'id: 02-letter',
+        'title: 편지',
+        'mood: 쓸쓸함',
+        'summary: 02-letter.summary.md',
+        'beats:',
+        '  - 하나가 우체국 앞에서 망설인다.',
+        '  - 준이 편지를 대신 부친다.',
+        '',
+      ].join('\n'),
+    );
+    writeFileSync(join(sceneDirectory, '02-letter.summary.md'), '하나는 끝내 편지를 부치지 못한다.\n');
+    writeFileSync(join(sceneDirectory, '03-quiet.card'), ['type: scene', 'id: 03-quiet', 'title: 고요', ''].join('\n'));
+
+    const withCard = await expectOk('scene.notes', { stem: '02-letter' });
+    const bare = await expectOk('scene.notes', { stem: '03-quiet' });
+
+    expect(withCard).toMatchObject({
+      summary: '하나는 끝내 편지를 부치지 못한다.',
+      beats: ['하나가 우체국 앞에서 망설인다.', '준이 편지를 대신 부친다.'],
+      mood: '쓸쓸함',
+    });
+    expect(bare.beats).toEqual([]);
+    expect(bare.summary).toBeUndefined();
+    expect(bare.mood).toBeUndefined();
+  });
+
   it('keeps one history copy per editing session and snapshots when the session ends', async () => {
     await expectOk('draft.save', { stem: '01-harbor', body: '고친 문단 하나.\n', reason: 'autosave' });
     await expectOk('draft.save', { stem: '01-harbor', body: '고친 문단 둘.\n', reason: 'autosave' });

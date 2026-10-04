@@ -108,6 +108,9 @@ export interface SceneNotes {
   readonly chapterTitle?: string;
   readonly narration?: NarrationSummary;
   readonly thread: string;
+  readonly summary?: string;
+  readonly beats: readonly string[];
+  readonly mood?: string;
   readonly characters: readonly NoteCard[];
   readonly background?: NoteCard;
   readonly facts: readonly StoryFactNote[];
