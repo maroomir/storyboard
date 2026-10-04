@@ -48,9 +48,10 @@ export function mergeProjectSetting(
   };
 }
 
-export class UpdateProjectContractUseCase
-  implements IUseCase<UpdateProjectContractRequest, UpdateProjectContractResult>
-{
+export class UpdateProjectContractUseCase implements IUseCase<
+  UpdateProjectContractRequest,
+  UpdateProjectContractResult
+> {
   public constructor(private readonly deps: UpdateProjectContractUseCaseDependencies) {}
 
   public async execute(
