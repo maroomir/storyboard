@@ -16,6 +16,8 @@ export interface TerminalFacts {
 }
 
 export interface TerminalStream {
+  // A person reads it, so marks and hints are worth adding; a pipe gets only the result.
+  readonly isTty: boolean;
   readonly columns: number;
   readonly theme: Theme;
 }
@@ -45,6 +47,7 @@ export function createTerminalProfile(
   request: OutputRequest,
 ): TerminalProfile {
   const describeStream = (stream: TerminalStreamFacts): TerminalStream => ({
+    isTty: stream.isTty,
     columns: stream.columns ?? defaultColumns,
     theme: createTheme(shouldUseColor({ isTty: stream.isTty, env: facts.env, ...request })),
   });
@@ -53,6 +56,7 @@ export function createTerminalProfile(
 }
 
 export const plainTerminalStream: TerminalStream = {
+  isTty: false,
   columns: defaultColumns,
   theme: plainTheme,
 };

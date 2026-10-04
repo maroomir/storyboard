@@ -19,7 +19,12 @@ import {
   resolveVerb,
 } from '@/cliArguments';
 import { createCliContainer } from '@/container';
-import { createTerminalProfile, plainTerminalFacts, type TerminalFacts } from '@/terminal/profile';
+import {
+  createTerminalProfile,
+  plainTerminalFacts,
+  type TerminalFacts,
+  type TerminalStream,
+} from '@/terminal/profile';
 import type { Theme } from '@/terminal/theme';
 import {
   renderCommandHelp,
@@ -37,6 +42,7 @@ import {
 } from './completion';
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
+import { markOutcome, renderNextStep } from './outcomeView';
 
 // 설정 파일을 쓰는 verb 는 이 둘뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
 const configWritingVerbs = new Set(['setup', 'config set']);
@@ -86,12 +92,17 @@ function reportText(outcome: CommandOutcome, mode: OutputMode): string {
   return `${outcome.message}\n`;
 }
 
-function failure(message: string, mode: OutputMode): DispatchResult {
+function failure(message: string, mode: OutputMode, stream: TerminalStream): DispatchResult {
   const outcome: CommandOutcome = { ok: false, message };
 
   return mode.json
     ? { exitCode: 1, stdout: reportText(outcome, mode), stderr: '', outcome }
-    : { exitCode: 1, stdout: '', stderr: `${message}\n`, outcome };
+    : {
+        exitCode: 1,
+        stdout: '',
+        stderr: `${markOutcome(message, { ok: false, isAction: false }, stream)}\n`,
+        outcome,
+      };
 }
 
 // SECURITY-adjacent: an unknown provider used to fall back to `mock`, which always succeeds — a
@@ -149,7 +160,7 @@ export async function dispatch(
   });
 
   if (isParseFailure(parsed)) {
-    return failure(`${parsed.message}\n전체 옵션: storyboard --help`, mode);
+    return failure(`${parsed.message}\n전체 옵션: storyboard --help`, mode, terminal.stderr);
   }
 
   // `help <verb>` and `tui` are not handlers, but they must resolve as verbs.
@@ -175,7 +186,7 @@ export async function dispatch(
     if (topic.length > 0) {
       const topicHelp = renderHelpTopic(topic, terminal.stdout);
       return topicHelp === undefined
-        ? failure(renderUnknownCommand(topic), mode)
+        ? failure(renderUnknownCommand(topic), mode, terminal.stderr)
         : { exitCode: 0, stdout: topicHelp, stderr: '' };
     }
 
@@ -190,14 +201,18 @@ export async function dispatch(
   if (verb === 'completion') {
     const script = renderCompletionScript(args.positionals[0] ?? '');
     return script === undefined
-      ? failure(`셸을 지정해 주세요: storyboard completion <${completionShells.join('|')}>`, mode)
+      ? failure(
+          `셸을 지정해 주세요: storyboard completion <${completionShells.join('|')}>`,
+          mode,
+          terminal.stderr,
+        )
       : { exitCode: 0, stdout: script, stderr: '' };
   }
 
   const handler = commands[verb];
 
   if (!handler) {
-    return failure(renderUnknownCommand(verb), mode);
+    return failure(renderUnknownCommand(verb), mode, terminal.stderr);
   }
 
   if (flagBoolean(args.flags, 'help')) {
@@ -215,7 +230,7 @@ export async function dispatch(
   );
 
   if (providerFailure !== undefined) {
-    return failure(providerFailure, mode);
+    return failure(providerFailure, mode, terminal.stderr);
   }
 
   const workspacePath = resolve(deps.cwd, flagString(args.flags, 'workspace') ?? '.');
@@ -235,6 +250,7 @@ export async function dispatch(
         `  이 작품에 저장하려면   storyboard ${verb} --workspace <경로>\n` +
         `  모든 작품에 저장하려면 storyboard ${verb} --global`,
       mode,
+      terminal.stderr,
     );
   }
 
@@ -244,6 +260,7 @@ export async function dispatch(
         '  새로 만들려면   storyboard init --title "작품 이름"\n' +
         '  다른 곳이라면   storyboard <명령> --workspace <경로>',
       mode,
+      terminal.stderr,
     );
   }
 
@@ -283,12 +300,37 @@ export async function dispatch(
       ? await runHoldingWorkspaceLock(container, verb, () => handler({ container, args }))
       : await handler({ container, args });
 
+  // `init` makes the workspace rather than writing one under the lock, but it is the first action.
+  const isAction = spec?.writesWorkspace === true || verb === 'init';
+  const stdout = mode.json
+    ? reportText(outcome, mode)
+    : `${markOutcome(outcome.message, { ok: outcome.ok, isAction }, terminal.stdout)}\n`;
+  const shouldSuggestNextStep =
+    outcome.ok &&
+    isAction &&
+    !mode.json &&
+    terminal.stderr.isTty &&
+    !flagBoolean(args.flags, 'quiet');
+
   return {
     exitCode: outcome.ok ? 0 : 1,
-    stdout: reportText(outcome, mode),
-    stderr: '',
+    stdout,
+    stderr: shouldSuggestNextStep ? await suggestNextStep(container, terminal.stderr) : '',
     outcome,
   };
+}
+
+async function suggestNextStep(
+  container: ReturnType<typeof createCliContainer>,
+  stream: TerminalStream,
+): Promise<string> {
+  try {
+    return renderNextStep(await container.describeWorkspace(), stream);
+  } catch {
+    // A hint must never turn a finished run into a failure; without it the author still has
+    // `storyboard status`.
+    return '';
+  }
 }
 
 async function runHoldingWorkspaceLock(

@@ -1228,16 +1228,18 @@ const initProject: CommandHandler = async ({ container, args }) => {
 
   return {
     ok: true,
-    message:
+    // NOTE: 다음 단계는 dispatch 가 현황(status)에서 읽어 터미널에 덧붙인다. 계약을 플래그로 채운
+    // init 에게 «계약을 채우라» 고 하지 않도록 여기서는 적지 않는다.
+    message: [
       `${project.name} 워크스페이스를 만들었습니다: ${container.workspaceRoot.fsPath}` +
-      `${describeGitRepository(gitRepository)}\n` +
-      (createdNarrators.length > 0
-        ? `서술자 카드를 만들었습니다: ${createdNarrators.join(', ')}\n`
-        : '') +
-      '다음: `storyboard project set` 으로 작품 계약을 채우고 `storyboard outline generate` 를 실행하세요.' +
-      (container.configBridge.isDefaultProviderConfigured()
-        ? ''
-        : '\nAI 프로바이더가 아직 없습니다: `storyboard setup`'),
+        describeGitRepository(gitRepository),
+      ...(createdNarrators.length > 0
+        ? [`서술자 카드를 만들었습니다: ${createdNarrators.join(', ')}`]
+        : []),
+      ...(container.configBridge.isDefaultProviderConfigured()
+        ? []
+        : ['AI 프로바이더가 아직 없습니다: `storyboard setup`']),
+    ].join('\n'),
     data: {
       id: project.id,
       name: project.name,

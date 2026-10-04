@@ -39,6 +39,7 @@ after the first public release.
 
 - **`storyboard status` shows where a work stands and the command to run next.** Empty contract fields, the outline, card counts, scene count, drafts (missing, older than their card, with warnings left), unpromoted canon candidates, and whether the manuscript is assembled and reviewed. Under `--json`, `data.next.command` lets an agent pick the next step.
 - **Commands to look at scenes, cards, drafts and the contract.** `scene list`, `card list [character|background]`, `card show <id>`, `draft show <stem>`, `project show`. All are read-only, so they run while another app is working.
+- **At a terminal, a command that changes the work ends with `✔` and the command to run next.** It is the step `storyboard status` picks, and a failure is marked `✖`. Pipes, `--json` and `--quiet` get neither, and the fixed "next:" line `init` used to print gives way to it.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05
