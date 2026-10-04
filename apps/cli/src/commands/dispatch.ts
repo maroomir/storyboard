@@ -19,6 +19,7 @@ import {
   resolveVerb,
 } from '@/cliArguments';
 import type { LiveArea } from '@/adapters/liveArea';
+import type { PauseRequests } from '@/adapters/pauseRequests';
 import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
 import { createCliContainer } from '@/container';
 import {
@@ -73,6 +74,8 @@ export interface DispatchDependencies {
   // The bottom of stderr a progress rail may redraw; the logger writes above it. Without one,
   // progress is log lines.
   readonly liveArea?: LiveArea;
+  // Ctrl+C / Esc reaching a run that can stop at a scene boundary.
+  readonly pauseRequests?: PauseRequests;
 }
 
 export interface DispatchResult {
@@ -295,6 +298,7 @@ export async function dispatch(
     workspacePath,
     logger,
     progress,
+    ...(deps.pauseRequests === undefined ? {} : { pauseRequests: deps.pauseRequests }),
     canPrompt: deps.isInteractive,
     version: deps.version,
     ...(flagString(args.flags, 'provider') === undefined

@@ -49,6 +49,7 @@ after the first public release.
 - **The interactive screen opens with a STORYBOARD block wordmark and the version**, a single title line on a narrow terminal; the work and the provider moved to the status line.
 - **In the interactive screen a long result shows its first 12 lines and Ctrl+O unfolds or folds it**, and Ctrl+R searches earlier input and puts the match back at the prompt (Enter places it without running it).
 - **A long run shows a progress rail that updates in place at a terminal.** `draft generate`, `novel generate` and `outline generate` draw the current scene (12/32) and stage (expand 3/5), elapsed time, money spent and, for a batch, a progress bar at the bottom of stderr, with warnings and errors scrolling above it. Progress lines in a pipe or under `--verbose` are unchanged.
+- **One Ctrl+C makes `draft generate --all` and `novel generate` stop after the scene in progress**, so no spent tokens are thrown away and running again resumes with the remaining scenes. A second Ctrl+C ends at once, and a command that cannot pause still ends on the first. In the interactive screen Esc does the same during a run. A paused run is unfinished, so it exits 1.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05

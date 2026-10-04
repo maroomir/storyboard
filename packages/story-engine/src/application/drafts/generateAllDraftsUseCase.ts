@@ -30,6 +30,9 @@ export type GenerateAllDraftsSummary = {
   readonly failures: number;
   readonly generated: number;
   readonly sceneCount: number;
+  // Set when the run was paused: the scenes it did not reach. Running again picks them up, since
+  // finished drafts are cache hits.
+  readonly pausedWithRemaining?: number;
 };
 
 export type GenerateAllDraftsResult =
@@ -40,6 +43,8 @@ export type GenerateAllDraftsResult =
 export type GenerateAllDraftsOptions = {
   readonly onProgress?: (progress: GenerateAllDraftsProgress) => void;
   readonly shouldCancel?: () => boolean;
+  // Checked between scenes only, so a pause never throws away a scene in progress.
+  readonly shouldPause?: () => boolean;
 };
 
 export interface GenerateAllDraftsUseCaseDependencies {
@@ -70,9 +75,15 @@ export class GenerateAllDraftsUseCase implements IUseCase<
     let failures = 0;
     const failureLabels: string[] = [];
     const total = scenes.scenes.length;
+    let pausedWithRemaining: number | undefined;
 
     for (const [index, sceneUri] of scenes.scenes.entries()) {
       if (options.shouldCancel?.()) {
+        break;
+      }
+
+      if (options.shouldPause?.()) {
+        pausedWithRemaining = total - index;
         break;
       }
 
@@ -128,7 +139,14 @@ export class GenerateAllDraftsUseCase implements IUseCase<
     return {
       kind: 'completed',
       ok: true,
-      summary: { generated, cacheHits, failures, failureLabels, sceneCount: total },
+      summary: {
+        generated,
+        cacheHits,
+        failures,
+        failureLabels,
+        sceneCount: total,
+        ...(pausedWithRemaining === undefined ? {} : { pausedWithRemaining }),
+      },
     };
   }
 }
