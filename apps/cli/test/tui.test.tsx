@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StoryboardTui } from '../src/tui/app';
 import { describeHeader } from '../src/tui/index';
 import { splitCommandLine, suggestForInput } from '../src/tui/session';
+import { selectVisibleWindow } from '../src/tui/suggestionList';
 
 let home: string;
 let cwd: string;
@@ -27,6 +28,14 @@ afterEach(() => {
 
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+// A person types one key at a time; a whole string in one write reaches Ink as a single chunk.
+async function typeKeys(stdin: { write: (data: string) => void }, text: string): Promise<void> {
+  for (const key of text) {
+    stdin.write(key);
+    await wait(5);
+  }
+}
+
 describe('splitCommandLine', () => {
   it('keeps quoted arguments together', () => {
     expect(splitCommandLine('init --title "밤의 항해" --language ko')).toEqual([
@@ -41,9 +50,33 @@ describe('splitCommandLine', () => {
 
 describe('suggestForInput', () => {
   it('proposes verbs by prefix and slash commands by leading slash', () => {
-    expect(suggestForInput('draft gen').map((s) => s.text)).toEqual(['draft generate']);
-    expect(suggestForInput('/he').map((s) => s.text)).toEqual(['/help']);
-    expect(suggestForInput('')).toEqual([]);
+    expect(suggestForInput('draft gen', cwd).map((s) => s.text)).toEqual(['draft generate']);
+    expect(suggestForInput('/he', cwd).map((s) => s.text)).toEqual(['/help']);
+    expect(suggestForInput('', cwd)).toEqual([]);
+  });
+
+  it('completes the word after the verb and keeps what was typed before it', () => {
+    expect(suggestForInput('draft check ', cwd).map((s) => s.line)).toEqual([
+      'draft check grammar ',
+      'draft check continuity ',
+      'draft check slop ',
+    ]);
+    expect(suggestForInput('draft generate --f', cwd)).toEqual([
+      expect.objectContaining({ text: '--force', line: 'draft generate --force ' }),
+    ]);
+  });
+
+  it('falls back to the closest verbs for a misspelled one', () => {
+    expect(suggestForInput('scen genrate', cwd).map((s) => s.text)).toContain('draft generate');
+  });
+});
+
+describe('selectVisibleWindow', () => {
+  it('keeps the selection inside an eight-row window', () => {
+    expect(selectVisibleWindow(3, 2)).toEqual([0, 3]);
+    expect(selectVisibleWindow(20, 0)).toEqual([0, 8]);
+    expect(selectVisibleWindow(20, 10)).toEqual([6, 14]);
+    expect(selectVisibleWindow(20, 19)).toEqual([12, 20]);
   });
 });
 
@@ -91,5 +124,25 @@ describe('StoryboardTui', () => {
     stdin.write('\t');
     await wait(20);
     expect(lastFrame()).toContain('❯ config show');
+  });
+
+  it('closes the list with Esc, then clears the line with a second Esc', async () => {
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    await typeKeys(stdin, 'config s');
+    await wait(20);
+    expect(lastFrame()).toContain('Tab 확정');
+
+    stdin.write('\u001b');
+    await wait(50);
+    expect(lastFrame()).not.toContain('Tab 확정');
+    expect(lastFrame()).toContain('❯ config s');
+
+    stdin.write('\u001b');
+    await wait(50);
+    expect(lastFrame()).not.toContain('config s');
   });
 });

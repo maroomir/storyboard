@@ -43,6 +43,7 @@ after the first public release.
 - **`storyboard doctor` draws one box per section at a terminal** — environment, AI, resource files, the work — and ends with the pass/warn/fail counts and the first fix to try. Piped and `--json` output is unchanged.
 - **A misspelled option names the one that was meant** (`--titel` → `--title`), and a command whose action is one letter off (`scene generat`) still finds the right one.
 - **Terminal integration**: absolute paths in a result are clickable in terminals that support OSC 8, the window title reads like `Storyboard · draft generate` during a run and comes back afterwards, and a run longer than 30 seconds rings the bell when it ends. Pipes, `--json`, `TERM=dumb` and shell completion get none of it.
+- **Completion in the interactive screen follows past the verb.** Flags, check and card kinds, scene stems and card ids come from the same list shell completion uses, and Tab replaces only the word being typed. The list scrolls eight rows at a time, Esc closes it (a second Esc clears the line), and a misspelled verb shows the closest ones.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05
