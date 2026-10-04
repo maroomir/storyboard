@@ -39,6 +39,8 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
+import { readProjectJson, resealStoryMemory } from '@storyboard/story-engine';
+import type { ConfigBridge } from '@storyboard/story-ai';
 import {
   draftPath,
   getStoryboardProjectPaths,
@@ -71,6 +73,7 @@ export interface DraftManagerDependencies {
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
   readonly fileSystem: IFileSystem;
+  readonly configBridge: ConfigBridge;
 }
 
 // Everything an app does to one scene's draft: generate it, revise it, reshape it, save an edit,
@@ -176,6 +179,25 @@ export class DraftManager {
 
   public createScene(request: CreateSceneRequest): Promise<CreateSceneResult> {
     return this.deps.createSceneUseCase.execute(request);
+  }
+
+  // Records "the cards changed but these drafts stand" in the story-state ledger: the stale entries
+  // of the given scenes (all stale ones when left out) are sealed against today's cards and scenes.
+  // Returns the scene numbers it resealed.
+  public async resealStoryState(
+    workspaceRoot: StoryUri,
+    sceneOrders?: readonly number[],
+  ): Promise<readonly number[]> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const project = await readProjectJson(this.deps.fileSystem, paths.projectJson);
+
+    return await resealStoryMemory({
+      fileSystem: this.deps.fileSystem,
+      paths,
+      format: project.format,
+      sceneBreakJoiner: this.deps.configBridge.getDraftSceneBreakSeparator(),
+      ...(sceneOrders === undefined ? {} : { sceneOrders }),
+    });
   }
 
   public renameScene(request: RenameSceneRequest): Promise<RenameSceneResult> {
