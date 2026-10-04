@@ -151,7 +151,7 @@ describe('renderGroupHelp', () => {
 
 describe('help layout', () => {
   const screens = (columns: number): string[] => {
-    const stream = { columns, theme: createTheme(false) };
+    const stream = { isTty: false, columns, theme: createTheme(false) };
     return [
       renderUsage('9.9.9', stream),
       renderFullUsage('9.9.9', stream),
@@ -170,7 +170,9 @@ describe('help layout', () => {
 
   it('colors only when the stream allows it', () => {
     expect(renderUsage('9.9.9')).not.toContain('\u001b[');
-    expect(renderUsage('9.9.9', { columns: 80, theme: createTheme(true) })).toContain('\u001b[36m');
+    expect(renderUsage('9.9.9', { isTty: true, columns: 80, theme: createTheme(true) })).toContain(
+      '\u001b[36m',
+    );
   });
 });
 
