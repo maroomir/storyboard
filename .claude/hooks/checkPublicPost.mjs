@@ -22,7 +22,8 @@ const leakPatterns = [
 ];
 
 const emailPattern = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
-const publishingCommandPattern = /\b(?:gh\s+(?:issue|pr|api|release|gist)\b|git\s+commit\b)/;
+const publishingCommandPattern =
+  /\b(?:gh\s+(?:issue|pr)\s+(?:create|edit|comment|review|close|merge)\b|gh\s+(?:release|gist)\s+(?:create|edit)\b|gh\s+api\b|git\s+commit\b)/;
 const apiWritePattern =
   /(?:-X|--method)[\s=]+(?:POST|PATCH|PUT)\b|\s(?:-f|-F|--field|--raw-field)\s+(?!query=)/i;
 // NOTE: scratchpad and temp paths carry a session UUID; they are never part of a post.
