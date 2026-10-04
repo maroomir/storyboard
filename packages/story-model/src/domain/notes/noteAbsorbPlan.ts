@@ -157,9 +157,12 @@ function namesOf(entity: NoteExtractionEntity): string[] {
   return [entity.name, ...entity.aliases].map(normalizeName);
 }
 
-// One wrong alias from the model must not pull another person in: a name beats an id the model
-// gave, an id beats an alias, and an alias two entries share points at neither.
-function findMergeTarget(
+function hasOwnId(entity: NoteExtractionEntity): boolean {
+  return entity.existingId !== undefined || validCardId(entity.suggestedId) !== undefined;
+}
+
+// A name beats an id the model gave; aliases wait until every request has been read.
+function findSameSubject(
   merged: readonly NoteExtractionEntity[],
   entity: NoteExtractionEntity,
 ): number | undefined {
@@ -172,46 +175,81 @@ function findMergeTarget(
   }
 
   const ids = idsOf(entity);
-  const byId = sameType.find((index) => {
+
+  return sameType.find((index) => {
     const known = merged[index];
     return known !== undefined && idsOf(known).some((id) => ids.includes(id));
   });
+}
 
-  if (byId !== undefined) {
-    return byId;
+// An alias decides only when one entry's own name is the alias of exactly one other entry and
+// the named entry has no id of its own. Two people who merely share an alias stay apart: a wrong
+// merge mixes two people into one card, a wrong split is fixed by hand.
+function findAliasTarget(
+  groups: readonly NoteExtractionEntity[],
+  index: number,
+): number | undefined {
+  const entity = groups[index];
+
+  if (entity === undefined || hasOwnId(entity)) {
+    return undefined;
   }
 
-  const aliasTargets = new Set<number>();
+  const name = normalizeName(entity.name);
+  const carriers = [...groups.keys()].filter((other) => {
+    const known = groups[other];
+    return other !== index && known?.type === entity.type && namesOf(known).includes(name);
+  });
 
-  for (const alias of namesOf(entity)) {
-    const carriers = sameType.filter((index) => {
-      const known = merged[index];
-      return known !== undefined && namesOf(known).includes(alias);
-    });
+  return carriers.length === 1 ? carriers[0] : undefined;
+}
 
-    if (carriers.length === 1) {
-      aliasTargets.add(carriers[0] as number);
-    }
+function findRoot(parents: number[], index: number): number {
+  let root = index;
+
+  while (parents[root] !== root) {
+    root = parents[root] as number;
   }
 
-  return aliasTargets.size === 1 ? [...aliasTargets][0] : undefined;
+  return root;
 }
 
 function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractionEntity[] {
-  const merged: NoteExtractionEntity[] = [];
+  const groups: NoteExtractionEntity[] = [];
 
   for (const entity of entities) {
-    const index = findMergeTarget(merged, entity);
-    const known = index === undefined ? undefined : merged[index];
+    const index = findSameSubject(groups, entity);
+    const known = index === undefined ? undefined : groups[index];
 
     if (index === undefined || known === undefined) {
-      merged.push(entity);
+      groups.push(entity);
     } else {
-      merged[index] = mergeEntity(known, entity);
+      groups[index] = mergeEntity(known, entity);
     }
   }
 
-  return merged;
+  const parents = [...groups.keys()];
+
+  for (const index of groups.keys()) {
+    const target = findAliasTarget(groups, index);
+
+    if (target !== undefined) {
+      const [first, second] = [findRoot(parents, index), findRoot(parents, target)].sort(
+        (left, right) => left - right,
+      );
+      parents[second as number] = first as number;
+    }
+  }
+
+  const merged = new Map<number, NoteExtractionEntity>();
+
+  groups.forEach((entity, index) => {
+    const root = findRoot(parents, index);
+    const known = merged.get(root);
+    merged.set(root, known === undefined ? entity : mergeEntity(known, entity));
+  });
+
+  return [...merged.values()];
 }
 
 // What the requests read so far found, listed for the next request beside the cards on disk, so
