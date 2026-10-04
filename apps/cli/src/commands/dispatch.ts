@@ -20,6 +20,7 @@ import {
 } from '@/cliArguments';
 import type { LiveArea } from '@/adapters/liveArea';
 import type { PauseRequests } from '@/adapters/pauseRequests';
+import type { IPrompter } from '@/adapters/prompter';
 import { LineRunProgress, RailRunProgress, type IRunProgress } from '@/adapters/runProgress';
 import { createCliContainer } from '@/container';
 import {
@@ -76,6 +77,8 @@ export interface DispatchDependencies {
   readonly liveArea?: LiveArea;
   // Ctrl+C / Esc reaching a run that can stop at a scene boundary.
   readonly pauseRequests?: PauseRequests;
+  // How to ask the person at this run a question; left out where nobody can answer.
+  readonly createPrompter?: (stderr: TerminalStream) => IPrompter;
 }
 
 export interface DispatchResult {
@@ -299,6 +302,9 @@ export async function dispatch(
     logger,
     progress,
     ...(deps.pauseRequests === undefined ? {} : { pauseRequests: deps.pauseRequests }),
+    ...(deps.createPrompter === undefined || mode.json
+      ? {}
+      : { prompter: deps.createPrompter(terminal.stderr) }),
     canPrompt: deps.isInteractive,
     version: deps.version,
     ...(flagString(args.flags, 'provider') === undefined
