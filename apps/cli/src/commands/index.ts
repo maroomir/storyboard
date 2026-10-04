@@ -11,6 +11,8 @@ import {
   ensureWorkspaceGitignore,
   sealStoryMemory,
   readProjectJson,
+  novelStageLabel,
+  resolveNovelPipelinePlan,
   sceneStageCatalog,
   type GenerateAllDraftsProgress,
 } from '@storyboard/story-engine';
@@ -416,6 +418,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   }
 
   const project = await container.novel.readProject(container.workspaceRoot);
+  const novelPlan = resolveNovelPipelinePlan();
   const reviseIterations = flagString(args.flags, 'revise-iterations');
   const result = await container.novel.run({
     workspaceUri: container.workspaceRoot,
@@ -424,7 +427,14 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     runMode: 'auto',
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
     onProgress: (stage, message) =>
-      container.progress.update({ line: `${stage}: ${message}`, step: message }),
+      container.progress.update({
+        line: `${stage}: ${message}`,
+        step: message,
+        checklist: {
+          labels: novelPlan.map((name) => novelStageLabel(name)),
+          currentIndex: novelPlan.indexOf(stage),
+        },
+      }),
     requestApproval: async () => true,
     shouldCancel: () => false,
     shouldPause: container.pauseRequests.watch(),

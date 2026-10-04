@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import { LiveArea } from '../src/adapters/liveArea';
-import { formatElapsed, LineRunProgress, RailRunProgress } from '../src/adapters/runProgress';
+import {
+  describeChecklist,
+  formatElapsed,
+  LineRunProgress,
+  RailRunProgress,
+} from '../src/adapters/runProgress';
 import { createTheme } from '../src/terminal/theme';
 
 function recordingStream(): { written: string[]; write: (text: string) => void } {
@@ -67,12 +72,43 @@ describe('run progress', () => {
     const [status, bar] = rail.describeLines();
     rail.finish();
 
-    expect(status).toMatch(/^. 12\/32 012-ambush · 살붙임 3\/5 {2}01:42 · \$0\.18$/);
+    expect(status).toMatch(/^. 문장을 고르는 중… 12\/32 012-ambush · 살붙임 3\/5 {2}01:42 · \$0\.18$/);
     expect(bar).toBe(`  ${'█'.repeat(7)}${'░'.repeat(13)}`);
   });
 
   it('formats elapsed time as minutes and seconds', () => {
     expect(formatElapsed(0)).toBe('00:00');
     expect(formatElapsed(3_725_000)).toBe('62:05');
+  });
+
+  it('checks done stages, marks the running one and dims the rest', () => {
+    const checklist = {
+      labels: ['아웃라인', '씬 시드', '장별 초안·검수', '원고 조립'],
+      currentIndex: 2,
+    };
+
+    expect(describeChecklist(checklist, createTheme(false))).toBe(
+      '✓ 아웃라인  ✓ 씬 시드  › 장별 초안·검수  · 원고 조립',
+    );
+  });
+
+  it('adds the checklist under the status line of a staged run', () => {
+    const rail = new RailRunProgress({
+      liveArea: new LiveArea(recordingStream(), 80),
+      theme: createTheme(false),
+      readCostUsd: () => 0,
+      now: () => 0,
+    });
+
+    rail.update({
+      line: 'seeds: 씬 시드를 만드는 중',
+      step: '씬 시드를 만드는 중',
+      checklist: { labels: ['아웃라인', '씬 시드'], currentIndex: 1 },
+    });
+    const lines = rail.describeLines();
+    rail.finish();
+
+    expect(lines[0]).toMatch(/^. 구상하는 중… 씬 시드를 만드는 중 {2}00:00$/);
+    expect(lines[1]).toBe('  ✓ 아웃라인  › 씬 시드');
   });
 });
