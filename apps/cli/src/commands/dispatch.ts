@@ -31,6 +31,7 @@ import {
   renderFullUsage,
   renderHelpTopic,
   renderUnknownCommand,
+  renderUnknownFlag,
   renderUsage,
 } from '@/help';
 import { findCommandSpec } from './catalog';
@@ -160,7 +161,13 @@ export async function dispatch(
   });
 
   if (isParseFailure(parsed)) {
-    return failure(`${parsed.message}\n전체 옵션: storyboard --help`, mode, terminal.stderr);
+    return failure(
+      parsed.unknownFlag === undefined
+        ? `${parsed.message}\n전체 옵션: storyboard --help`
+        : renderUnknownFlag(parsed.unknownFlag),
+      mode,
+      terminal.stderr,
+    );
   }
 
   // `help <verb>` and `tui` are not handlers, but they must resolve as verbs.

@@ -74,6 +74,14 @@ describe('dispatch', () => {
     expect((await dispatch(['help', 'nothing'], deps())).exitCode).toBe(1);
   });
 
+  it('names the flag that was meant when one is misspelled', async () => {
+    const result = await dispatch(['init', '--titel', '작품'], deps());
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('알 수 없는 옵션: --titel');
+    expect(result.stderr).toContain('혹시 →  --title');
+  });
+
   it('accepts --no-color anywhere and keeps a run without real streams free of color codes', async () => {
     const result = await dispatch(['--no-color', '-v'], deps());
 
