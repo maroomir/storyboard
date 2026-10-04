@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-10-04
+
 ### Fixed
 
 - **`notes absorb` recognises the address Notion's "Copy link" hands out (`https://app.notion.com/p/…`).** Only `notion.so` and `notion.site` addresses counted as Notion, so this one was read as a local path and ended in "노트를 찾을 수 없습니다", and links of the same form inside a note were not followed. (#60)

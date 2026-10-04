@@ -2,7 +2,7 @@ import { ConsoleLogger } from './adapters/consoleLogger';
 import { dispatch } from './commands/dispatch';
 import { runTui } from './tui/index';
 
-const version = '0.11.4';
+const version = '0.11.5';
 
 async function main(argv: readonly string[]): Promise<number> {
   const result = await dispatch(argv, {

@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.11.5] - 2026-10-04
+
 ### 고침
 
 - **Notion 「링크 복사」 주소(`https://app.notion.com/p/…`)를 `notes absorb`가 알아봅니다.** 지금까지는 `notion.so`·`notion.site` 주소만 Notion으로 보고 이 주소는 로컬 경로로 읽어 «노트를 찾을 수 없습니다»로 끝났고, 노트 본문에 붙은 같은 형식의 링크도 따라가지 않았습니다. (#60)
