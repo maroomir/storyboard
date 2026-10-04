@@ -11,6 +11,9 @@ import {
   type NovelPipeline,
   type NovelPipelineResult,
   type NovelPipelineRunOptions,
+  type SeedScenesRequest,
+  type SeedScenesResult,
+  type SeedScenesUseCase,
   type StoryFileSnapshot,
   type UsageMeter,
 } from '@storyboard/story-engine';
@@ -21,6 +24,7 @@ export interface NovelManagerDependencies {
   readonly novelPipeline: NovelPipeline;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
+  readonly seedScenesUseCase: SeedScenesUseCase;
   readonly novelRunStateRepository: INovelRunStateRepository;
   readonly outlineRepository: IOutlineRepository;
   readonly configBridge: ConfigBridge;
@@ -97,6 +101,11 @@ export class NovelManager {
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {
     return this.deps.generateOutlineUseCase.execute(request);
+  }
+
+  // Scene cards from the chapter plan `generateOutline` wrote.
+  public seedScenes(request: SeedScenesRequest): Promise<SeedScenesResult> {
+    return this.deps.seedScenesUseCase.execute(request);
   }
 
   public completeScenes(request: CompleteStoryScenesRequest): Promise<CompleteStoryScenesProposal> {

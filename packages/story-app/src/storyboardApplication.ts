@@ -16,6 +16,7 @@ import {
   CompleteStoryScenesUseCase,
   CondenseDraftUseCase,
   CreateCardUseCase,
+  CreateSceneUseCase,
   DraftRepository,
   ExpandDraftUseCase,
   ExportManuscriptUseCase,
@@ -48,6 +49,7 @@ import {
   SceneRepository,
   SceneSeedRepository,
   SceneSidebarRepository,
+  SeedScenesUseCase,
   StoryFeatureRepository,
   StudioChatUseCase,
   SummarizeChaptersUseCase,
@@ -132,6 +134,7 @@ interface EngineGraph {
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly createCardUseCase: CreateCardUseCase;
+  readonly createSceneUseCase: CreateSceneUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
   readonly exportManuscriptUseCase: ExportManuscriptUseCase;
   readonly generateAllDraftsUseCase: GenerateAllDraftsUseCase;
@@ -150,6 +153,7 @@ interface EngineGraph {
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
+  readonly seedScenesUseCase: SeedScenesUseCase;
   readonly studioChatUseCase: StudioChatUseCase;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
 }
@@ -356,6 +360,7 @@ function buildServices(
     }),
     condenseDraftUseCase: new CondenseDraftUseCase({ aiGateway, logger }),
     createCardUseCase: new CreateCardUseCase({ repository: cardWriterRepository }),
+    createSceneUseCase: new CreateSceneUseCase({ fileSystem, logger }),
     expandDraftUseCase: new ExpandDraftUseCase({ aiGateway, logger }),
     exportManuscriptUseCase: new ExportManuscriptUseCase({
       repository: manuscriptAssemblyRepository,
@@ -426,6 +431,7 @@ function buildServices(
     reviseAfterGenerateGate,
     reviseDraftUseCase,
     saveDraftEditUseCase: new SaveDraftEditUseCase({ fileSystem }),
+    seedScenesUseCase: new SeedScenesUseCase({ fileSystem, logger, sceneSeedRepository }),
     studioChatUseCase: new StudioChatUseCase({ aiGateway, logger }),
     summarizeChaptersUseCase,
   };

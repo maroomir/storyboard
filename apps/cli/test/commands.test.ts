@@ -253,6 +253,58 @@ describe('kind arguments', () => {
   });
 });
 
+describe('scene create and scene seed', () => {
+  it('numbers a new scene after the highest one, with or without a usable name', async () => {
+    const first = await run('scene create', args(['scene', 'create'], { name: 'Night Market' }));
+    const second = await run('scene create', args(['scene', 'create'], { name: '야시장' }));
+
+    expect(first.data).toMatchObject({ stem: '01-night-market' });
+    expect(second.data).toMatchObject({ stem: '02-scene-2' });
+    expect(readFileSync(join(workspace, 'scene', '02-scene-2.card'), 'utf8')).toContain(
+      'id: 02-scene-2',
+    );
+  });
+
+  it('seeds scenes from the chapter plan and refuses to overwrite without --force', async () => {
+    const missing = await run('scene seed', args(['scene', 'seed']));
+    expect(missing.ok).toBe(false);
+    expect(missing.message).toContain('outline generate');
+
+    mkdirSync(join(workspace, '.storyboard', 'outline'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'outline', 'chapters.yaml'),
+      [
+        'version: 1.0.0',
+        'acts:',
+        '  - id: act-1',
+        '    title: 1막',
+        '    chapters:',
+        '      - id: chapter-1',
+        '        title: 1장',
+        '        scenes:',
+        '          - id: harbor',
+        '            title: 항구',
+        '            purpose: 하나가 항구에 닿는다',
+        '',
+      ].join('\n'),
+    );
+
+    const seeded = await run('scene seed', args(['scene', 'seed']));
+    expect(seeded.ok).toBe(true);
+    expect(seeded.data).toHaveLength(1);
+    expect(readdirSync(join(workspace, 'scene')).filter((name) => name.endsWith('.card'))).toEqual(
+      seeded.data,
+    );
+
+    const refused = await run('scene seed', args(['scene', 'seed']));
+    expect(refused.ok).toBe(false);
+    expect(refused.message).toContain('--force');
+
+    const forced = await run('scene seed', args(['scene', 'seed'], { force: true }));
+    expect(forced.ok).toBe(true);
+  });
+});
+
 describe('card build', () => {
   // 익스텐션은 제안을 골라 파일까지 쓰는데 CLI 는 JSON 만 뱉고 끝이었다. 파리티 테스트는
   // verb 존재만 보므로 이 반쪽 상태를 잡지 못했다.

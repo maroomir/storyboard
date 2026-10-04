@@ -21,10 +21,8 @@ import {
   characterCardPath,
   draftPath,
   analyzeSlop,
-  buildSceneSeeds,
   diffCandidatesAgainstCanon,
   getStoryboardProjectPaths,
-  sceneFilePath,
   sceneContextPaths,
   scenePath,
   joinStoryPath,
@@ -40,9 +38,6 @@ import {
   type ProjectSetting,
   createEmptyBackground,
   createEmptyCharacter,
-  readChapterPlanFile,
-  resolveScenePrefixDigitCount,
-  serializeSceneCard,
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
@@ -707,55 +702,36 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   });
 };
 
-// Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
-// generation — `buildSceneSeeds` is deterministic.
+// Seeds come from the outline, so an agent runs `outline generate` first. Overwriting is what the
+// editor asks about with a modal; unattended, it is refused unless `--force` says so.
 const generateSceneSeeds: CommandHandler = async ({ container, args }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const result = await container.novel.seedScenes({
+    workspaceRoot: container.workspaceRoot,
+    overwrite: flagBoolean(args.flags, 'force'),
+  });
 
-  if (!(await container.fileSystem.exists(paths.outlineChapters))) {
-    return {
-      ok: false,
-      message: '아웃라인(chapters.yaml)이 없습니다. outline generate 를 먼저 실행해 주세요.',
-    };
+  switch (result.kind) {
+    case 'seeded':
+      return {
+        ok: true,
+        message: `씬 시드 ${result.fileNames.length}개를 생성했습니다.`,
+        data: result.fileNames,
+      };
+    case 'empty_plan':
+      return { ok: true, message: '아웃라인에 생성할 씬이 없습니다.', data: [] };
+    case 'missing_outline':
+      return {
+        ok: false,
+        message: '아웃라인(chapters.yaml)이 없습니다. outline generate 를 먼저 실행해 주세요.',
+      };
+    case 'existing_scenes':
+      return {
+        ok: false,
+        message: `씬 파일이 이미 ${result.existingCount}개 있습니다. 덮어쓰려면 --force 를 주세요.`,
+      };
+    case 'failed':
+      return { ok: false, message: result.message };
   }
-
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
-  const plan = await readChapterPlanFile(paths.outlineChapters, container.fileSystem);
-  const seeds = buildSceneSeeds(
-    plan,
-    resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined),
-  );
-
-  if (seeds.length === 0) {
-    return { ok: true, message: '아웃라인에 생성할 씬이 없습니다.', data: [] };
-  }
-
-  const existing = await container.fileSystem
-    .listFileNames(paths.sceneDirectory)
-    .catch(() => [] as readonly string[]);
-
-  // Overwriting is what the editor asks about with a modal. Unattended, refuse unless told.
-  if (existing.length > 0 && !flagBoolean(args.flags, 'force')) {
-    return {
-      ok: false,
-      message: `씬 파일이 이미 ${existing.length}개 있습니다. 덮어쓰려면 --force 를 주세요.`,
-    };
-  }
-
-  await container.fileSystem.createDirectory(paths.sceneDirectory);
-
-  for (const seed of seeds) {
-    await container.fileSystem.writeFile(
-      joinStoryPath(paths.sceneDirectory, seed.fileName),
-      new TextEncoder().encode(seed.content),
-    );
-  }
-
-  return {
-    ok: true,
-    message: `씬 시드 ${seeds.length}개를 생성했습니다.`,
-    data: seeds.map((seed) => seed.fileName),
-  };
 };
 
 // 익스텐션은 제안을 QuickPick 으로 고르고 diff 로 검토한 뒤 쓴다. 무인 실행에는 그 자리가 없으니
@@ -920,8 +896,8 @@ const createCard: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// The prefix is the workspace's own numbering, so a new scene lands after the highest one rather
-// than at a number the author has to pick.
+// 씬은 번호가 정체성을 지니므로 이름에서 슬러그를 못 만들어도 거부하지 않는다. 그때는 엔진이
+// sceneSeedFactory 의 폴백과 같은 `scene-<번호>` 로 붙인다.
 const createScene: CommandHandler = async ({ container, args }) => {
   const name = flagString(args.flags, 'name') ?? args.positionals[0];
 
@@ -929,37 +905,20 @@ const createScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--name 으로 씬 이름을 지정해 주세요.' };
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
-  const existing = await container.fileSystem
-    .listFileNames(paths.sceneDirectory)
-    .catch(() => [] as readonly string[]);
+  const slug = slugify(name);
+  const result = await container.drafts.createScene({
+    workspaceRoot: container.workspaceRoot,
+    ...(slug === undefined ? {} : { slug }),
+  });
 
-  const digitCount = resolveScenePrefixDigitCount(project.editor.scenePrefixDigits, undefined);
-  const highest = existing
-    .map((fileName) => parseSceneFileName(fileName)?.order)
-    .filter((order): order is number => order !== undefined)
-    .reduce((max, order) => Math.max(max, order), 0);
-  const order = highest + 1;
-  const prefix = String(order).padStart(digitCount, '0');
-  // 씬은 번호가 정체성을 지니므로 이름에서 슬러그를 못 만들어도 거부하지 않는다.
-  // sceneSeedFactory 의 폴백과 같은 모양을 쓴다.
-  const slug = slugify(name) ?? `scene-${order}`;
-  const uri = sceneFilePath(container.workspaceRoot, prefix, slug);
-
-  if (await container.fileSystem.exists(uri)) {
-    return { ok: false, message: `이미 있습니다: ${prefix}-${slug}.card` };
+  if (!result.ok) {
+    return { ok: false, message: result.message };
   }
-
-  await container.fileSystem.writeFile(
-    uri,
-    new TextEncoder().encode(serializeSceneCard({ type: 'scene', id: `${prefix}-${slug}` })),
-  );
 
   return {
     ok: true,
-    message: `${prefix}-${slug}.card 를 만들었습니다.`,
-    data: { stem: `${prefix}-${slug}`, path: uri.fsPath },
+    message: `${result.stem}.card 를 만들었습니다.`,
+    data: { stem: result.stem, path: (result.uri as StoryUri).fsPath },
   };
 };
 
