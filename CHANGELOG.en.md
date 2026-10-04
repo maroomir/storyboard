@@ -10,12 +10,6 @@ after the first public release.
 
 ## [Unreleased]
 
-## [0.11.4] - 2026-10-04
-
-### Changed
-
-- **The shared packages are now four layers (no behaviour change).** The direction is one line: `story-model ← story-ai ← story-engine ← story-app`. `story-format` was renamed to `story-model`, which also took in the contracts from `story-ai` and `shared`, `domain` and `paths` from `story-engine`; `story-pipeline` was absorbed into `story-engine`. The bundled craft contract and composition presets now live in `packages/story-model/src/format/`, and the pipeline defaults in `packages/story-engine/src/pipeline/`. Override files in `~/.storyboard` and a work's `.storyboard` keep working as before.
-
 ### Fixed
 
 - **`notes absorb` recognises the address Notion's "Copy link" hands out (`https://app.notion.com/p/…`).** Only `notion.so` and `notion.site` addresses counted as Notion, so this one was read as a local path and ended in "노트를 찾을 수 없습니다", and links of the same form inside a note were not followed. (#60)
@@ -27,6 +21,12 @@ after the first public release.
 - **Note requests ask for less thinking.** Even with the higher output limit, claude-sonnet-5 spent all 16,000 tokens thinking over a five-note batch and returned no text. The note extraction and synthesis prompts now carry a `low` reasoning effort, sent only to models that accept one — Claude (Sonnet and Opus 4.6 onwards, Fable) and OpenAI (GPT-5 and GPT-6). The same batch finished with 21 thinking tokens and about 4,000 output tokens. A prompt override file may set `reasoningEffort: low|medium|high` in its front-matter, and `storyboard params show` lists it.
 - **OpenAI GPT-6 models generate again.** OpenAI rejects the `max_tokens` output limit for the GPT-6 family, so every request ended in "OpenAI text generation failed". The limit is now sent as `max_completion_tokens`, and the reasoning effort actually reaches the request.
 - **A failed AI call now says why.** The message was only "OpenAI text generation failed", so running out of credits (429), a wrong key (401) and a rejected setting (400) looked the same. The provider's own answer is now appended on one line ("…failed: 429 You have no credits remaining…"), and the connection check (`apikey set`, `doctor`) does the same.
+
+## [0.11.4] - 2026-10-04
+
+### Changed
+
+- **The shared packages are now four layers (no behaviour change).** The direction is one line: `story-model ← story-ai ← story-engine ← story-app`. `story-format` was renamed to `story-model`, which also took in the contracts from `story-ai` and `shared`, `domain` and `paths` from `story-engine`; `story-pipeline` was absorbed into `story-engine`. The bundled craft contract and composition presets now live in `packages/story-model/src/format/`, and the pipeline defaults in `packages/story-engine/src/pipeline/`. Override files in `~/.storyboard` and a work's `.storyboard` keep working as before.
 
 ## [0.11.3] - 2026-10-04
 

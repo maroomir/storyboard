@@ -9,12 +9,6 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
-## [0.11.4] - 2026-10-04
-
-### 변경
-
-- **공유 패키지를 네 겹으로 재편했습니다(동작 변화 없음).** 방향은 `story-model ← story-ai ← story-engine ← story-app` 한 줄입니다. `story-format`은 `story-model`로 이름을 바꿨고, `story-ai`의 계약과 `story-engine`의 `shared`·`domain`·`paths`가 그 안으로 모였으며, `story-pipeline`은 `story-engine`에 흡수됐습니다. 기본 작법 계약과 구성 프리셋 원본의 위치는 `packages/story-model/src/format/`, 파이프라인 기본값은 `packages/story-engine/src/pipeline/`입니다. `~/.storyboard`와 작품의 `.storyboard`에 두는 덮어쓰기 파일은 그대로 동작합니다.
-
 ### 고침
 
 - **Notion 「링크 복사」 주소(`https://app.notion.com/p/…`)를 `notes absorb`가 알아봅니다.** 지금까지는 `notion.so`·`notion.site` 주소만 Notion으로 보고 이 주소는 로컬 경로로 읽어 «노트를 찾을 수 없습니다»로 끝났고, 노트 본문에 붙은 같은 형식의 링크도 따라가지 않았습니다. (#60)
@@ -26,6 +20,12 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 - **노트 정리는 사고 강도를 낮춰 요청합니다.** 출력 한도를 올려도 claude-sonnet-5는 노트 다섯 편 묶음에 1만 6천 토큰을 모두 사고로 써 본문 없이 잘렸습니다. 노트 정리·종합 프롬프트가 사고 강도 `low`를 갖고, 이를 받는 Claude(Sonnet·Opus 4.6 이후, Fable)와 OpenAI(GPT-5·GPT-6 계열) 모델에만 보냅니다. 같은 묶음이 사고 21토큰, 출력 4천여 토큰으로 끝났습니다. 프롬프트 덮어쓰기 파일의 머리말에 `reasoningEffort: low|medium|high`를 적을 수 있고, `storyboard params show`에 보입니다.
 - **OpenAI GPT-6 모델로 생성이 됩니다.** OpenAI가 GPT-6 계열에서 출력 한도 `max_tokens`를 받지 않아 모든 요청이 「OpenAI 텍스트 생성에 실패했습니다」로 끝났습니다. 이제 `max_completion_tokens`로 보내고, 사고 강도도 실제 요청에 실립니다.
 - **AI 호출이 실패하면 프로바이더가 밝힌 이유가 함께 보입니다.** 지금까지는 「OpenAI 텍스트 생성에 실패했습니다」만 보여 크레딧 부족(429), 잘못된 키(401), 받지 않는 설정(400)을 구별할 수 없었습니다. 이제 「…실패했습니다: 429 You have no credits remaining…」처럼 프로바이더의 응답을 한 줄로 덧붙입니다. 연결 확인(`apikey set`, `doctor`)도 같습니다.
+
+## [0.11.4] - 2026-10-04
+
+### 변경
+
+- **공유 패키지를 네 겹으로 재편했습니다(동작 변화 없음).** 방향은 `story-model ← story-ai ← story-engine ← story-app` 한 줄입니다. `story-format`은 `story-model`로 이름을 바꿨고, `story-ai`의 계약과 `story-engine`의 `shared`·`domain`·`paths`가 그 안으로 모였으며, `story-pipeline`은 `story-engine`에 흡수됐습니다. 기본 작법 계약과 구성 프리셋 원본의 위치는 `packages/story-model/src/format/`, 파이프라인 기본값은 `packages/story-engine/src/pipeline/`입니다. `~/.storyboard`와 작품의 `.storyboard`에 두는 덮어쓰기 파일은 그대로 동작합니다.
 
 ## [0.11.3] - 2026-10-04
 
