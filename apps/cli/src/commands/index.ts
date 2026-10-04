@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 import { ensureGitRepository, type GitRepositoryOutcome } from '@/adapters/gitRepository';
 
 import {
-  applyStoryCardChanges,
   buildCompositionPreset,
   writeNarratorCardsIfMissing,
   writeWorkspaceAgentGuidesIfMissing,
@@ -17,15 +16,12 @@ import {
   writeProjectJson,
 } from '@storyboard/story-engine';
 import {
-  backgroundCardPath,
-  characterCardPath,
   draftPath,
   analyzeSlop,
   diffCandidatesAgainstCanon,
   getStoryboardProjectPaths,
   sceneContextPaths,
   scenePath,
-  joinStoryPath,
   NodeUri,
   type StoryUri,
   compositionKinds,
@@ -43,7 +39,6 @@ import {
   formatBibleFactLines,
   parseDraft,
   readSceneFile,
-  serializeCard,
   serializeDraft,
   parseSceneFileName,
   aiProviderIds,
@@ -745,24 +740,8 @@ const completeStory: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `완결 씬 제안 ${proposal.scenes.length}건`, data: proposal };
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const written: string[] = [];
-  const skipped: string[] = [];
-
-  await container.fileSystem.createDirectory(paths.sceneDirectory);
-
-  for (const scene of proposal.scenes) {
-    const uri = joinStoryPath(paths.sceneDirectory, scene.fileName);
-
-    // 완결 씬은 뒤에 덧붙이는 제안이다. 이미 있는 파일을 덮으면 쓰던 씬이 사라진다.
-    if (await container.fileSystem.exists(uri)) {
-      skipped.push(scene.fileName);
-      continue;
-    }
-
-    await container.fileSystem.writeFile(uri, new TextEncoder().encode(scene.content));
-    written.push(scene.fileName);
-  }
+  const { writtenFileNames: written, skippedFileNames: skipped } =
+    await container.novel.applyCompletedScenes(container.workspaceRoot, proposal.scenes);
 
   return {
     ok: true,
@@ -788,29 +767,12 @@ const buildStoryCards: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: `카드 구성안 ${proposal.targets.length}건`, data: proposal };
   }
 
-  const written: string[] = [];
-  // 이름에서 id 를 못 만드는 새 카드는 익스텐션이 사람에게 물어보는 자리다. 여기서 짐작해
-  // new-card-2 같은 id 를 박아 넣는 대신, 이름을 돌려주고 card create --id 를 거치게 한다.
-  const needsId: string[] = [];
-
-  for (const target of proposal.targets) {
-    if (target.isNew && target.requiresIdConfirmation) {
-      needsId.push(target.card.name);
-      continue;
-    }
-
-    const card = applyStoryCardChanges(
-      target,
-      target.changes.map((change) => change.proposal),
-    );
-    const uri =
-      card.type === 'character'
-        ? characterCardPath(container.workspaceRoot, card.id)
-        : backgroundCardPath(container.workspaceRoot, card.id);
-
-    await container.fileSystem.writeFile(uri, new TextEncoder().encode(serializeCard(card)));
-    written.push(card.id);
-  }
+  // 이름에서 id 를 못 만드는 새 카드는 익스텐션이 사람에게 물어보는 자리다. 짐작해 id 를 박아
+  // 넣는 대신 이름을 돌려받아, card create --id 를 거치게 한다.
+  const { writtenIds: written, needsIdNames: needsId } = await container.cards.applyBuildTargets(
+    container.workspaceRoot,
+    proposal.targets,
+  );
 
   return {
     ok: true,

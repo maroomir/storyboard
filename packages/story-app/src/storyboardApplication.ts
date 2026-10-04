@@ -1,6 +1,7 @@
 import {
   AiGateway,
   ApplyDraftFormatUseCase,
+  ApplyStoryProposals,
   ApplyNoteAbsorbUseCase,
   AssembleManuscriptUseCase,
   AugmentDraftUseCase,
@@ -126,6 +127,7 @@ interface EngineGraph {
   readonly sceneSidebarRepository: SceneSidebarRepository;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
   readonly applyNoteAbsorbUseCase: ApplyNoteAbsorbUseCase;
+  readonly applyStoryProposals: ApplyStoryProposals;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
@@ -336,6 +338,7 @@ function buildServices(
       noteRepository: noteAbsorbRepository,
       cardWriter: cardWriterRepository,
     }),
+    applyStoryProposals: new ApplyStoryProposals({ fileSystem }),
     assembleManuscriptUseCase,
     augmentDraftUseCase: new AugmentDraftUseCase({ fileSystem, aiGateway, logger, configBridge }),
     buildStoryCardsUseCase: new BuildStoryCardsUseCase({

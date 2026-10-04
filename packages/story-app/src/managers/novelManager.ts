@@ -1,5 +1,8 @@
 import {
   isRunBudgetExceeded,
+  type ApplyCompletedScenesResult,
+  type ApplyStoryProposals,
+  type CompletedStoryScene,
   type CompleteStoryScenesProposal,
   type CompleteStoryScenesRequest,
   type CompleteStoryScenesUseCase,
@@ -25,6 +28,7 @@ export interface NovelManagerDependencies {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly seedScenesUseCase: SeedScenesUseCase;
+  readonly applyStoryProposals: ApplyStoryProposals;
   readonly novelRunStateRepository: INovelRunStateRepository;
   readonly outlineRepository: IOutlineRepository;
   readonly configBridge: ConfigBridge;
@@ -110,6 +114,14 @@ export class NovelManager {
 
   public completeScenes(request: CompleteStoryScenesRequest): Promise<CompleteStoryScenesProposal> {
     return this.deps.completeStoryScenesUseCase.execute(request);
+  }
+
+  // Writes the scenes `completeScenes` proposed, leaving any file that already exists.
+  public applyCompletedScenes(
+    workspaceRoot: StoryUri,
+    scenes: readonly CompletedStoryScene[],
+  ): Promise<ApplyCompletedScenesResult> {
+    return this.deps.applyStoryProposals.applyCompletedScenes(workspaceRoot, scenes);
   }
 
   public hasCurrentCompletionSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
