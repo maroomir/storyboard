@@ -1,4 +1,5 @@
 import {
+  extractInlineSceneSummary,
   joinStoryPath,
   parseCard,
   serializeSceneCard,
@@ -95,9 +96,18 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     fileName: string,
     card: SceneCard,
   ): Promise<void> {
+    const extraction = extractInlineSceneSummary(card);
+
+    if (extraction !== undefined) {
+      await this.fileSystem.writeFile(
+        this.sceneUri(workspaceRoot, extraction.summaryFileName),
+        encodeText(extraction.summaryText),
+      );
+    }
+
     await this.fileSystem.writeFile(
       this.sceneUri(workspaceRoot, fileName),
-      encodeText(serializeSceneCard(card)),
+      encodeText(serializeSceneCard(extraction?.card ?? card)),
     );
   }
 

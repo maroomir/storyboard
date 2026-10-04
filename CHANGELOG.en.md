@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`notes absorb` writes each scene summary to `<stem>.summary.md`.** It used to put the summary inline in the scene card, so `doctor` warned about "inline summary scenes" right after an absorb — a warning about the product's own output. `scene migrate` is no longer needed afterwards. (#65)
+
 ## [0.11.5] - 2026-10-04
 
 ### Fixed
