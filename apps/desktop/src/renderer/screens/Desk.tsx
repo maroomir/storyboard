@@ -163,7 +163,7 @@ export function Desk(props: DeskProps): JSX.Element {
               <button type="button" className="button button-primary" disabled={isReadOnly} onClick={() => void writeScene()}>
                 {t('desk.writeScene')}
               </button>
-              {notes !== undefined && notes.stem === selectedStem ? <SceneCardPreview notes={notes} /> : null}
+              {notes !== undefined && notes.stem === selectedStem ? <SceneCardPreview key={notes.stem} notes={notes} /> : null}
             </div>
           )}
         </div>
