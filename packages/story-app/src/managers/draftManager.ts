@@ -97,7 +97,10 @@ export class DraftManager {
     return await this.scenes.list(workspaceRoot);
   }
 
-  public async readScene(workspaceRoot: StoryUri, sceneStem: string): Promise<SceneFile | undefined> {
+  public async readScene(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+  ): Promise<SceneFile | undefined> {
     const uri = scenePath(workspaceRoot, sceneStem);
 
     if (!(await this.deps.fileSystem.exists(uri))) {

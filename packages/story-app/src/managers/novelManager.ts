@@ -107,7 +107,9 @@ export class NovelManager {
     return this.deps.outlineRepository.loadProject(workspaceRoot);
   }
 
-  public updateContract(request: UpdateProjectContractRequest): Promise<UpdateProjectContractResult> {
+  public updateContract(
+    request: UpdateProjectContractRequest,
+  ): Promise<UpdateProjectContractResult> {
     return this.deps.updateProjectContractUseCase.execute(request);
   }
 
