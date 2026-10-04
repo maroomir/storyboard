@@ -251,7 +251,12 @@ describe('notes absorb', () => {
 
     const scene = readFileSync(join(workspace, 'scene', '01-high-tide.card'), 'utf8');
     expect(scene).toContain('location: harbor');
+    expect(scene).toContain('summary: 01-high-tide.summary.md');
+    expect(readFileSync(join(workspace, 'scene', '01-high-tide.summary.md'), 'utf8')).toBe(
+      '만조의 밤, 하나가 항구에서 문이 열리는 것을 본다.\n',
+    );
     expect(cardFiles('scene')).toContain('02-lighthouse-night.card');
+    expect((await run('doctor', args(['doctor']))).message).not.toContain('인라인 summary');
 
     expect(
       readFileSync(join(workspace, '.storyboard', 'outline', 'synopsis.md'), 'utf8'),
