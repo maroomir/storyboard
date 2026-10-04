@@ -8,6 +8,12 @@ export function normalizeNoteName(value: string): string {
   return value.normalize('NFC').trim().toLocaleLowerCase('ko');
 }
 
+// Notes are read in name order wherever the source has no order of its own: numbers compare as
+// numbers, so `10 귀환` follows `9 등대`.
+export function compareNoteNames(left: string, right: string): number {
+  return left.normalize('NFC').localeCompare(right.normalize('NFC'), 'ko', { numeric: true });
+}
+
 export function stripMarkdownExtension(fileName: string): string {
   return fileName.replace(/\.md$/i, '');
 }

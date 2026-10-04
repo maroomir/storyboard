@@ -191,6 +191,8 @@ const rowId = '00000000000000000000000000000004';
 const linkedId = '00000000000000000000000000000005';
 const unsharedId = '00000000000000000000000000000006';
 const nestedBlockId = '00000000000000000000000000000007';
+const tenthRowId = '00000000000000000000000000000008';
+const ninthRowId = '00000000000000000000000000000009';
 
 function text(plainText: string): Record<string, unknown> {
   return { type: 'text', plain_text: plainText, href: null };
@@ -271,10 +273,15 @@ const notionRoutes: Record<string, unknown> = {
     },
   ]),
   [`GET /databases/${databaseId}`]: { object: 'database', id: databaseId, title: [text('인물 표')] },
+  // Notion은 정렬 없는 질의에 최근 행부터 준다.
   [`POST /databases/${databaseId}/query`]: list([
     page(rowId, '준', { 역할: { type: 'select', select: { name: '조력자' } } }),
+    page(tenthRowId, '10 귀환'),
+    page(ninthRowId, '9 등대'),
   ]),
   [`GET /blocks/${rowId}/children?page_size=100`]: list([]),
+  [`GET /blocks/${tenthRowId}/children?page_size=100`]: list([]),
+  [`GET /blocks/${ninthRowId}/children?page_size=100`]: list([]),
   [`GET /pages/${linkedId}`]: page(linkedId, '세계관'),
   [`GET /blocks/${linkedId}/children?page_size=100`]: list([
     {
@@ -336,7 +343,7 @@ function createNotionFetch(options: { rateLimitOnce?: string } = {}): {
 describe('NotionNoteSource', () => {
   const pageUrl = `https://www.notion.so/team/Moon-Gate-${rootId}`;
 
-  it('reads sub-pages and database rows in page order, then linked pages one step', async () => {
+  it('reads sub-pages in page order and database rows in title order, then linked pages one step', async () => {
     const { fetch } = createNotionFetch();
     const source = new NotionNoteSource({ pageUrl, token: 'secret-token', fetch });
 
@@ -345,12 +352,14 @@ describe('NotionNoteSource', () => {
     expect(notes.map((note) => [note.title, note.origin, note.path])).toEqual([
       ['달의 문', 'tree', []],
       ['씬 메모', 'tree', ['달의 문']],
+      ['9 등대', 'tree', ['달의 문', '인물 표']],
+      ['10 귀환', 'tree', ['달의 문', '인물 표']],
       ['준', 'tree', ['달의 문', '인물 표']],
       ['세계관', 'link', []],
     ]);
     expect(notes[0]?.body).toBe('규칙은 세계관 참고.\n## 인물\n- 하나\n  - [x] 주인공');
-    expect(notes[2]?.body).toBe('- 역할: 조력자');
-    expect(notes[3]?.body).toBe('> 문은 만조에만 열린다.');
+    expect(notes[4]?.body).toBe('- 역할: 조력자');
+    expect(notes[5]?.body).toBe('> 문은 만조에만 열린다.');
     // 공유되지 않은 링크는 실패가 아니라 빠진 노트다.
     expect(skipped.map((entry) => entry.label)).toEqual([unsharedId]);
   });
@@ -365,9 +374,8 @@ describe('NotionNoteSource', () => {
 
     const { notes } = await source.collect();
 
-    expect(notes.map((note) => [note.title, note.origin, note.path])).toEqual([
-      ['준', 'tree', ['인물 표']],
-    ]);
+    expect(notes.map((note) => note.title)).toEqual(['9 등대', '10 귀환', '준']);
+    expect(notes.every((note) => note.path.join() === '인물 표')).toBe(true);
   });
 
   it('waits out a rate limit and retries', async () => {
@@ -385,7 +393,7 @@ describe('NotionNoteSource', () => {
     const { notes } = await source.collect();
 
     expect(waits).toEqual([2000]);
-    expect(notes).toHaveLength(4);
+    expect(notes).toHaveLength(6);
   });
 
   it('reports a rejected token and an unreadable root page as typed errors', async () => {

@@ -5,6 +5,7 @@ import {
 } from '#engine/application/notes/noteSource';
 import {
   asNotionRecord,
+  compareNoteNames,
   listNotionChildren,
   listNotionLinkedPageIds,
   normalizeNotionId,
@@ -177,7 +178,13 @@ export class NotionNoteSource implements INoteSource {
       notionRichText((await this.request('GET', `/databases/${id}`)).title).trim() ||
       untitledNoteTitle;
 
-    for (const row of await this.listAll('POST', `/databases/${id}/query`)) {
+    // NOTE: a query without sorts returns rows newest first, and the view's own order is not exposed,
+    // so rows are read in title order — the order a vault's notes are read in.
+    const rows = (await this.listAll('POST', `/databases/${id}/query`)).sort((left, right) =>
+      compareNoteNames(notionPageTitle(left), notionPageTitle(right)),
+    );
+
+    for (const row of rows) {
       const rowId = typeof row.id === 'string' ? normalizeNotionId(row.id) : '';
 
       if (rowId.length === 0) {

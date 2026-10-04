@@ -1,4 +1,5 @@
 import {
+  compareNoteNames,
   joinStoryPath,
   type StoryUri,
   extractNoteLinkTargets,
@@ -126,17 +127,13 @@ async function findVaultRoot(fileSystem: IFileSystem, start: StoryUri): Promise<
   }
 }
 
-function compareNames(left: string, right: string): number {
-  return left.normalize('NFC').localeCompare(right.normalize('NFC'), 'ko', { numeric: true });
-}
-
 async function listMarkdownFiles(
   fileSystem: IFileSystem,
   directory: StoryUri,
 ): Promise<StoryUri[]> {
   const entries = [...(await fileSystem.readDirectory(directory))]
     .filter(([name]) => !name.startsWith('.'))
-    .sort(([left], [right]) => compareNames(left, right));
+    .sort(([left], [right]) => compareNoteNames(left, right));
   const files: StoryUri[] = [];
 
   for (const [name, entry] of entries) {
