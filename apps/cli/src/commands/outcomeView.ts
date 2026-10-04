@@ -26,11 +26,11 @@ export function markOutcome(
   const [headline = '', ...details] = message.split('\n');
 
   if (!marking.ok) {
-    return [paint('danger', `✖ ${headline}`), ...details].join('\n');
+    return [paint('danger', `✗ ${headline}`), ...details].join('\n');
   }
 
   return marking.isAction
-    ? [`${paint('success', '✔')} ${headline}`, ...details].join('\n')
+    ? [`${paint('success', '✓')} ${headline}`, ...details].join('\n')
     : message;
 }
 

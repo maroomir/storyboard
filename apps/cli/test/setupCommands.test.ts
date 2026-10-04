@@ -11,6 +11,8 @@ import { createCliContainer } from '../src/container';
 import { runConfigSet, runConfigShow, runDoctor, runSetup } from '../src/commands/setup';
 import { commands } from '../src/commands';
 import type { ParsedArguments } from '../src/cliArguments';
+import { createTheme } from '../src/terminal/theme';
+import { measureWidth } from '../src/terminal/width';
 
 let home: string;
 let workspace: string;
@@ -104,6 +106,32 @@ describe('storyboard doctor', () => {
     );
     expect(outcome.message).toContain('씬 파이프라인 명세를 쓸 수 없습니다');
     expect(outcome.message).toContain('buildPersonas');
+  });
+});
+
+describe('storyboard doctor at a terminal', () => {
+  const terminal = { isTty: true, columns: 80, theme: createTheme(false) };
+
+  it('draws one aligned box per section with a count and the first fix', async () => {
+    const outcome = await runDoctor({ container: container(), args: args(), stdout: terminal });
+    const lines = outcome.message.split('\n');
+    const boxLines = lines.filter((line) => /^[╭│╰]/.test(line));
+
+    expect(outcome.ok).toBe(false);
+    expect(
+      lines.filter((line) => line.startsWith('╭─ ')).map((line) => line.split(' ')[1]),
+    ).toEqual(['환경', 'AI', '작품']);
+    expect(new Set(boxLines.map(measureWidth)).size).toBe(1);
+    expect(outcome.message).toMatch(/통과 \d+ · 경고 \d+ · 실패 [1-9]/);
+    expect(outcome.message).toContain('먼저 →  storyboard setup');
+  });
+
+  it('keeps the plain lines and the check list for a pipe', async () => {
+    const piped = await runDoctor({ container: container(), args: args() });
+    const drawn = await runDoctor({ container: container(), args: args(), stdout: terminal });
+
+    expect(piped.message).not.toContain('╭');
+    expect(piped.data).toEqual(drawn.data);
   });
 });
 

@@ -48,7 +48,8 @@ export function createTerminalProfile(
 ): TerminalProfile {
   const describeStream = (stream: TerminalStreamFacts): TerminalStream => ({
     isTty: stream.isTty,
-    columns: stream.columns ?? defaultColumns,
+    // Some pseudo terminals report 0 columns; that is "unknown", not a zero-width screen.
+    columns: stream.columns !== undefined && stream.columns > 0 ? stream.columns : defaultColumns,
     theme: createTheme(shouldUseColor({ isTty: stream.isTty, env: facts.env, ...request })),
   });
 
