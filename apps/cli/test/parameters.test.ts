@@ -93,6 +93,12 @@ describe('params show', () => {
       value: 0.1,
       origin: 'default',
     });
+    expect(byId.get('prompt.noteExtraction.reasoningEffort')).toMatchObject({
+      kind: 'prompt',
+      value: 'low',
+      origin: 'default',
+    });
+    expect(byId.has('prompt.grammarCheck.reasoningEffort')).toBe(false);
   });
 
   it('shows a prompt file as the origin of the tuning it carries', async () => {

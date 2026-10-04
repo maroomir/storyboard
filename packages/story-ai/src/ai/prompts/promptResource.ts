@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
+import { reasoningEfforts } from '@storyboard/story-model';
+
 import { promptResourceSources } from './resources.generated';
 import { renderTemplate, type TemplatePartials, type TemplateView } from './template';
 import type { PromptArtifact, PromptConfig, PromptVariantId } from './types';
 
 // A prompt resource is one Markdown file per prompt. A front-matter block between `---` lines
-// carries the sampling config (`temperature`, `maxTokens`); `## system` and `## user` hold the
+// carries the sampling config (`temperature`, `maxTokens`, optionally `reasoningEffort`); `## system` and `## user` hold the
 // generic variant; `## system:xs`, `## user:rich` and so on hold a variant's text, and a variant
 // without its own section falls back to the generic one. The body of a section is the text up to
 // the next `## ` heading with the trailing blank lines dropped.
@@ -39,9 +41,11 @@ const headingPattern = /^## (system|user)(?::(generic|xs|rich))?\s*$/;
 const promptConfigSchema = z.strictObject({
   temperature: z.number().min(0).max(2),
   maxTokens: z.number().int().positive(),
+  reasoningEffort: z.enum(reasoningEfforts).optional(),
 });
 
-const frontMatterLinePattern = /^([A-Za-z]+):\s*(-?\d+(?:\.\d+)?)\s*$/;
+const frontMatterLinePattern = /^([A-Za-z]+):\s*(\S+)\s*$/;
+const numberPattern = /^-?\d+(?:\.\d+)?$/;
 
 function parseFrontMatter(
   key: string,
@@ -60,7 +64,7 @@ function parseFrontMatter(
     );
   }
 
-  const fields: Record<string, number> = {};
+  const fields: Record<string, number | string> = {};
 
   for (const line of lines.slice(1, end)) {
     if (line.trim() === '') {
@@ -76,7 +80,7 @@ function parseFrontMatter(
       );
     }
 
-    fields[match[1]] = Number(match[2]);
+    fields[match[1]] = numberPattern.test(match[2]) ? Number(match[2]) : match[2];
   }
 
   const parsed = promptConfigSchema.safeParse(fields);

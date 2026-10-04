@@ -1,3 +1,5 @@
+import type { ReasoningEffort } from '@storyboard/story-model';
+
 export type PromptVariantId = 'generic' | 'xs' | 'rich';
 
 export interface PromptArtifact {
@@ -8,4 +10,5 @@ export interface PromptArtifact {
 export interface PromptConfig {
   readonly temperature: number;
   readonly maxTokens: number;
+  readonly reasoningEffort?: ReasoningEffort;
 }

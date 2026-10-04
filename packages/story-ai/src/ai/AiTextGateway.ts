@@ -31,12 +31,14 @@ export class AiTextGateway {
           messages,
           temperature: options.temperature,
           maxTokens: options.maxTokens,
+          reasoningEffort: options.reasoningEffort,
         })
       : await this.registry.generate({
           taskName,
           messages,
           temperature: options.temperature,
           maxTokens: options.maxTokens,
+          reasoningEffort: options.reasoningEffort,
         });
 
     this.emitUsageIfNeeded(taskName, response, options.attribution);

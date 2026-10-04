@@ -6,9 +6,11 @@ import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
+  type ReasoningEffort,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
+  acceptsReasoningEffort,
   acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
@@ -44,6 +46,7 @@ interface OpenAiChatCompletionRequest {
   readonly messages: readonly AiMessage[];
   readonly temperature?: number;
   readonly max_tokens?: number;
+  readonly reasoning_effort?: ReasoningEffort;
 }
 
 interface OpenAiChatCompletionResponse {
@@ -106,6 +109,9 @@ export class OpenAiProvider implements AiProvider {
         messages: request.messages.map(({ role, content }) => ({ role, content })),
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
         max_tokens: request.maxTokens,
+        ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
+          ? { reasoning_effort: request.reasoningEffort }
+          : {}),
       });
 
       const text = response.choices[0]?.message?.content ?? '';

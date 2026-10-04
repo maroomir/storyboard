@@ -106,6 +106,18 @@ function promptEntries(
         defaultValue: bundled.maxTokens,
         origin: config.maxTokens === bundled.maxTokens ? 'default' : origin,
       },
+      ...(config.reasoningEffort === undefined && bundled.reasoningEffort === undefined
+        ? []
+        : [
+            {
+              kind: 'prompt' as const,
+              id: `prompt.${key}.reasoningEffort`,
+              label: `${key} 사고 강도`,
+              value: config.reasoningEffort ?? '',
+              defaultValue: bundled.reasoningEffort ?? '',
+              origin: config.reasoningEffort === bundled.reasoningEffort ? 'default' : origin,
+            },
+          ]),
     ];
   });
 }

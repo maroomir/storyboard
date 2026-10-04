@@ -13,6 +13,9 @@ export interface ProviderModelEntry {
   readonly cacheReadPricePerMillion?: number;
   // 생략하면 true. 기본값이 아닌 temperature 를 400 으로 거부하거나 지원 중단한 모델만 false 로 적는다.
   readonly acceptsTemperature?: boolean;
+  // 생략하면 false. 사고 강도(Claude output_config.effort, OpenAI reasoning_effort)의 low·medium·high
+  // 를 받는다고 공식 문서가 밝힌 모델만 true 로 적는다. 받지 않는 모델은 400 을 낸다.
+  readonly acceptsReasoningEffort?: boolean;
 }
 
 // Claude 접두 캐시: 쓰기는 입력 요금의 1.25배, 읽기는 0.1배(5분 캐시 기준). Opus 5.5(0.05배)와
@@ -49,7 +52,8 @@ export const providerCatalog = {
     defaultModel: 'gpt-6-sol',
     defaultBaseUrl: undefined,
     // NOTE: OpenAI 최신 모델 안내가 GPT-6 세대(Astra·Sol·Luna)는 temperature·top_p 를 빼라고 명시한다.
-    // 5.x 는 확인된 문구가 없다.
+    // 5.x 는 확인된 문구가 없다. 사고 강도는 GPT-5 모델 문서가 minimal~high, GPT-6 안내가 low~max 를
+    // 받는다고 밝힌다(2026-10-04 확인).
     models: [
       {
         id: 'gpt-6-sol',
@@ -57,6 +61,7 @@ export const providerCatalog = {
         inputPricePerMillion: 2.0,
         outputPricePerMillion: 10.0,
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-6-astra',
@@ -64,6 +69,7 @@ export const providerCatalog = {
         inputPricePerMillion: 10.0,
         outputPricePerMillion: 50.0,
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-6-luna',
@@ -71,36 +77,42 @@ export const providerCatalog = {
         inputPricePerMillion: 0.1,
         outputPricePerMillion: 0.5,
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-5.6-terra',
         displayName: 'GPT-5.6 Terra',
         inputPricePerMillion: 2.0,
         outputPricePerMillion: 12.0,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-5.6-sol',
         displayName: 'GPT-5.6 Sol',
         inputPricePerMillion: 4.0,
         outputPricePerMillion: 20.0,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-5.5',
         displayName: 'GPT-5.5',
         inputPricePerMillion: 5.0,
         outputPricePerMillion: 30.0,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-5.6-luna',
         displayName: 'GPT-5.6 Luna',
         inputPricePerMillion: 0.2,
         outputPricePerMillion: 1.2,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'gpt-5.4-mini',
         displayName: 'GPT-5.4 mini',
         inputPricePerMillion: 0.75,
         outputPricePerMillion: 4.5,
+        acceptsReasoningEffort: true,
       },
     ],
   },
@@ -111,6 +123,8 @@ export const providerCatalog = {
     defaultModel: 'claude-sonnet-5',
     defaultBaseUrl: undefined,
     // NOTE: Claude 4.7 이후 모델은 기본값이 아닌 temperature·top_p·top_k 를 400 으로 거부한다.
+    // NOTE: 사고 강도(output_config.effort)는 Opus·Sonnet 4.6 이후와 Fable 이 받고 Haiku 4.5 는 400 을
+    // 낸다(Claude API 문서, 2026-10-04 확인).
     models: [
       {
         id: 'claude-sonnet-5',
@@ -119,6 +133,7 @@ export const providerCatalog = {
         outputPricePerMillion: 10.0,
         ...claudeCachePrices(2.0),
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-opus-5-5',
@@ -127,6 +142,7 @@ export const providerCatalog = {
         outputPricePerMillion: 20.0,
         ...claudeCachePrices(4.0, 0.05),
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-opus-5',
@@ -135,6 +151,7 @@ export const providerCatalog = {
         outputPricePerMillion: 25.0,
         ...claudeCachePrices(5.0),
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-fable-5-1',
@@ -143,6 +160,7 @@ export const providerCatalog = {
         outputPricePerMillion: 50.0,
         ...claudeCachePrices(10.0, 0.025),
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-opus-4-8',
@@ -150,6 +168,7 @@ export const providerCatalog = {
         inputPricePerMillion: 5.0,
         outputPricePerMillion: 25.0,
         acceptsTemperature: false,
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-sonnet-4-6',
@@ -157,6 +176,7 @@ export const providerCatalog = {
         inputPricePerMillion: 3.0,
         outputPricePerMillion: 15.0,
         ...claudeCachePrices(3.0),
+        acceptsReasoningEffort: true,
       },
       {
         id: 'claude-haiku-4-5',
@@ -410,6 +430,11 @@ export function isModelInCatalogForProvider(providerId: AiProviderId, modelId: s
 export function acceptsTemperature(providerId: AiProviderId, modelId: string): boolean {
   const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
   return model?.acceptsTemperature !== false;
+}
+
+export function acceptsReasoningEffort(providerId: AiProviderId, modelId: string): boolean {
+  const model = catalogRows[providerId].models.find((entry) => entry.id === modelId);
+  return model?.acceptsReasoningEffort === true;
 }
 
 // 프로바이더가 내는 네 가지 실패 문구. 여섯 클래스가 저마다 문장을 적으면 이름 표기가 갈라지고,

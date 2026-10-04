@@ -51,8 +51,26 @@ describe("prompt tuning front-matter", () => {
     expect(() => parsePromptResource("x", "---\nheat: 0.5\nmaxTokens: 10\n---\n")).toThrow(
       "잘못되었습니다"
     )
-    expect(() => parsePromptResource("x", "---\ntemperature: warm\n---\n")).toThrow(
+    expect(() => parsePromptResource("x", "---\ntemperature 0.5\n---\n")).toThrow(
       "이해할 수 없습니다"
     )
+    expect(() => parsePromptResource("x", "---\ntemperature: warm\nmaxTokens: 10\n---\n")).toThrow(
+      "잘못되었습니다"
+    )
+    expect(() =>
+      parsePromptResource("x", "---\ntemperature: 0.5\nmaxTokens: 10\nreasoningEffort: max\n---\n")
+    ).toThrow("잘못되었습니다")
+  })
+
+  it("reads an optional reasoning effort, which the note prompts set low", () => {
+    const resource = parsePromptResource(
+      "x",
+      "---\ntemperature: 0.5\nmaxTokens: 10\nreasoningEffort: low\n---\n## system\n지시\n## user\n본문\n"
+    )
+
+    expect(resource.config).toEqual({ temperature: 0.5, maxTokens: 10, reasoningEffort: "low" })
+    expect(promptResources.config("noteExtraction").reasoningEffort).toBe("low")
+    expect(promptResources.config("noteSynthesis").reasoningEffort).toBe("low")
+    expect(promptResources.config("backgroundDescription").reasoningEffort).toBeUndefined()
   })
 })

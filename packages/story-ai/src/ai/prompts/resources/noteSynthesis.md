@@ -1,6 +1,7 @@
 ---
 temperature: 0.3
 maxTokens: 2000
+reasoningEffort: low
 ---
 ## system
 작가의 메모에서 뽑은 문장을 읽고, 작품 계약과 시놉시스의 칸을 채우는 도우미다.
