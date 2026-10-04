@@ -12,11 +12,28 @@ prose, the canon, and a story-state ledger.
 Three apps share one engine. A work is a git repository, and the AI key is the writer's own
 (`~/.storyboard/secrets.json`).
 
-| App | For | Install |
+| App | For | What it offers |
 |---|---|---|
-| **CLI** `storyboard` | Terminal users and **AI agents that drive Storyboard**. The reference implementation | `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh \| bash` |
-| **VS Code extension** | Writers who want cards, scenes and drafts inside the editor | the `.vsix` on the [latest release](https://github.com/maroomir/storyboard/releases/latest) |
-| **Desktop app** | Writers without developer tools: a manuscript desk, a run drawer, automatic version history | the `.dmg` / `-setup.exe` on the [latest release](https://github.com/maroomir/storyboard/releases/latest) |
+| **CLI** `storyboard` | Terminal users and AI agents                       | The reference implementation; every feature is one command away |
+| **VS Code extension** | Writers who want cards, scenes and drafts inside the editor | Card editor, draft diagnostics, the Studio panel |
+| **Desktop app** | Writers without developer tools | A manuscript desk, a run drawer, automatic version history |
+
+## Install
+
+**CLI** — needs Node 20 or newer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+```
+
+**VS Code extension** — download the `.vsix` from the [latest release](https://github.com/maroomir/storyboard/releases/latest) and install it:
+
+```bash
+code --install-extension storyboard-vscode-*.vsix
+```
+
+**Desktop app** — download the `.dmg` (macOS) or `-setup.exe` (Windows) from the
+[latest release](https://github.com/maroomir/storyboard/releases/latest) and run it.
 
 ## One cycle
 

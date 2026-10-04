@@ -9,11 +9,29 @@ Storyboard는 장편 소설 한 권을 **검증 가능한 작은 단계**로 나
 
 세 앱이 같은 엔진을 씁니다. 작품 저장소는 git 저장소이고, AI 키는 사용자 본인의 것(`~/.storyboard/secrets.json`)입니다.
 
-| 앱 | 누구를 위한 것 | 설치 |
-|---|---|---|
-| **CLI** `storyboard` | 터미널 사용자와 **Storyboard를 운전하는 AI 에이전트**. 레퍼런스 구현 | `curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh \| bash` |
-| **VS Code 확장** | 카드·씬·초안을 에디터에서 다루는 작가 | [릴리즈](https://github.com/maroomir/storyboard/releases/latest)의 `.vsix` |
-| **데스크톱 앱** | 개발 도구가 없는 작가. 원고 책상 + 실행 서랍 + 자동 버전 기록 | [릴리즈](https://github.com/maroomir/storyboard/releases/latest)의 `.dmg` / `-setup.exe` |
+
+| 앱                    | 이런 분께                    | 특징                         |
+| -------------------- | ------------------------ | -------------------------- |
+| **CLI** `storyboard` | 터미널에 익숙한 사용자, AI 에이전트    | 레퍼런스 구현. 모든 기능을 명령 한 줄로 실행 |
+| **VS Code 확장**       | 에디터에서 카드·씬·초안을 다루고 싶은 작가 | 카드 편집기, 초안 진단, 스튜디오 패널     |
+| **데스크톱 앱**           | 개발 도구 없이 쓰고 싶은 작가        | 원고 책상, 실행 서랍, 자동 버전 기록     |
+
+
+## 설치
+
+**CLI** — Node 20 이상이 필요합니다.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/maroomir/storyboard/main/scripts/install.sh | bash
+```
+
+**VS Code 확장** — [최신 릴리즈](https://github.com/maroomir/storyboard/releases/latest)에서 `.vsix`를 받아 설치합니다.
+
+```bash
+code --install-extension storyboard-vscode-*.vsix
+```
+
+**데스크톱 앱** — [최신 릴리즈](https://github.com/maroomir/storyboard/releases/latest)에서 macOS는 `.dmg`, Windows는 `-setup.exe`를 받아 실행합니다.
 
 ## 한 사이클
 
@@ -36,18 +54,20 @@ storyboard manuscript assemble        # draft/*.md → 원고
 
 npm workspaces 모노레포입니다. 패키지는 빌드 없이 TypeScript 소스를 그대로 노출하고, 앱이 번들합니다.
 
-| 워크스페이스                                          | 이름                         | 역할                                                                      |
-| ----------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------- |
-| [`apps/vscode`](apps/vscode/)                         | `storyboard-vscode`          | VSCode 확장 — 소설 저작 IDE                                              |
-| [`apps/cli`](apps/cli/)                               | `@storyboard/cli`            | CLI(`storyboard`) — 헤드라인 제품이자 레퍼런스 구현                       |
-| [`apps/desktop`](apps/desktop/)                       | `@storyboard/desktop`        | 작가용 데스크톱 앱(Electron, macOS Apple Silicon·Windows)                |
-| [`packages/story-app`](packages/story-app/)           | `@storyboard/story-app`      | 세 앱이 공유하는 컴포지션 루트와 매니저 파사드                            |
-| [`packages/story-engine`](packages/story-engine/)     | `@storyboard/story-engine`   | 런타임 무관 코어: 유즈케이스·저장 계층·호스트 포트·씬/장편 파이프라인 |
-| [`packages/story-model`](packages/story-model/)     | `@storyboard/story-model`   | 파일 포맷(스키마·코덱·경로 규약·공유 픽스처)·계약·도메인 정책 |
-| [`packages/story-ai`](packages/story-ai/)             | `@storyboard/story-ai`       | AI 엔진: 프로바이더 레지스트리·프롬프트 카탈로그·포트 |
-| [`packages/story-config`](packages/story-config/)     | `@storyboard/story-config`   | 공용 홈(`~/.storyboard`): 설정 계층·시크릿 파일·변경 감시                 |
-| [`packages/story-node`](packages/story-node/)         | `@storyboard/story-node`     | Node 호스트 어댑터: 파일 시스템·워크스페이스 로케이터                     |
-| [`packages/story-sim`](packages/story-sim/)           | `@storyboard/story-sim`      | 품질·비용 측정: 손잡이 스윕·독자 패널·파레토 리포트                       |
+
+| 워크스페이스                                            | 이름                         | 역할                                                |
+| ------------------------------------------------- | -------------------------- | ------------------------------------------------- |
+| [`apps/vscode`](apps/vscode/)                     | `storyboard-vscode`        | VSCode 확장 — 소설 저작 IDE                             |
+| [`apps/cli`](apps/cli/)                           | `@storyboard/cli`          | CLI(`storyboard`) — 헤드라인 제품이자 레퍼런스 구현             |
+| [`apps/desktop`](apps/desktop/)                   | `@storyboard/desktop`      | 작가용 데스크톱 앱(Electron, macOS Apple Silicon·Windows) |
+| [`packages/story-app`](packages/story-app/)       | `@storyboard/story-app`    | 세 앱이 공유하는 컴포지션 루트와 매니저 파사드                        |
+| [`packages/story-engine`](packages/story-engine/) | `@storyboard/story-engine` | 런타임 무관 코어: 유즈케이스·저장 계층·호스트 포트·씬/장편 파이프라인          |
+| [`packages/story-model`](packages/story-model/)   | `@storyboard/story-model`  | 파일 포맷(스키마·코덱·경로 규약·공유 픽스처)·계약·도메인 정책              |
+| [`packages/story-ai`](packages/story-ai/)         | `@storyboard/story-ai`     | AI 엔진: 프로바이더 레지스트리·프롬프트 카탈로그·포트                   |
+| [`packages/story-config`](packages/story-config/) | `@storyboard/story-config` | 공용 홈(`~/.storyboard`): 설정 계층·시크릿 파일·변경 감시         |
+| [`packages/story-node`](packages/story-node/)     | `@storyboard/story-node`   | Node 호스트 어댑터: 파일 시스템·워크스페이스 로케이터                  |
+| [`packages/story-sim`](packages/story-sim/)       | `@storyboard/story-sim`    | 품질·비용 측정: 손잡이 스윕·독자 패널·파레토 리포트                    |
+
 
 ## 개발
 
