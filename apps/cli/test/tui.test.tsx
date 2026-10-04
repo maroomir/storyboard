@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { foldLines, StoryboardTui } from '../src/tui/app';
 import { findHistoryMatch } from '../src/tui/lineEditor';
 import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
-import { NodeUri } from '@storyboard/story-model';
+import { NodeUri, serializeDraft } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 import { dispatch } from '../src/commands/dispatch';
@@ -18,6 +18,12 @@ import { measureWidth } from '../src/terminal/width';
 import { Banner } from '../src/tui/banner';
 import { describeHeader } from '../src/tui/index';
 import { Dashboard, describeDraftProgress } from '../src/tui/dashboard';
+import {
+  classifyReaderLine,
+  countManuscriptCharacters,
+  DraftReader,
+  layoutReaderLines,
+} from '../src/tui/draftReader';
 import { readWorkspaceView } from '../src/tui/workspaceView';
 import { describeSpending, splitCommandLine, suggestForInput } from '../src/tui/session';
 import { loadTuiThemeName, saveTuiThemeName } from '../src/tui/tuiTheme';
@@ -195,6 +201,91 @@ describe('settings screens', () => {
     expect(loadTuiThemeName(file)).toBe('mono');
     writeFileSync(file, '{ not json');
     expect(loadTuiThemeName(file)).toBe('default');
+  });
+});
+
+describe('draft reader', () => {
+  const body = ['그는 문을 열었다.', '', '"누구세요?"', '', '* * *', '', '다음 날 아침.'].join(
+    '\n',
+  );
+
+  it('tells dialogue, scene breaks and prose apart', () => {
+    expect(classifyReaderLine('"누구세요?"')).toBe('dialogue');
+    expect(classifyReaderLine('「가자」')).toBe('dialogue');
+    expect(classifyReaderLine('* * *')).toBe('separator');
+    expect(classifyReaderLine('---')).toBe('separator');
+    expect(classifyReaderLine('그는 문을 열었다.')).toBe('prose');
+    expect(classifyReaderLine('   ')).toBe('blank');
+  });
+
+  it('counts characters without spaces and wraps paragraphs to the width', () => {
+    expect(countManuscriptCharacters('가 나\n다')).toBe(3);
+    const lines = layoutReaderLines('가나다라마바사아자차카타파하 가나다라마바사아자차', 20);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.every((line) => line.kind === 'prose')).toBe(true);
+  });
+
+  it('pages through a long draft and closes on q', async () => {
+    const long = Array.from({ length: 60 }, (_, index) => `문단 ${index}.`).join('\n');
+    let isClosed = false;
+    const { lastFrame, stdin } = render(
+      <DraftReader
+        title="draft/01-a.md"
+        body={long}
+        columns={80}
+        rows={15}
+        onClose={() => {
+          isClosed = true;
+        }}
+      />,
+    );
+    await wait(50);
+
+    expect(lastFrame()).toContain('draft/01-a.md · 290자 · 0%');
+    expect(lastFrame()).toContain('문단 0.');
+    stdin.write(' ');
+    await wait(30);
+    expect(lastFrame()).not.toContain('문단 0.');
+    expect(lastFrame()).toContain('문단 10.');
+    stdin.write('q');
+    await wait(30);
+    expect(isClosed).toBe(true);
+  });
+
+  it('opens a shown draft in the reader instead of the log', async () => {
+    await dispatch(['init', '--title', '읽기'], {
+      version: '0',
+      cwd,
+      isInteractive: false,
+      createLogger: () => ({
+        info: () => undefined,
+        warn: () => undefined,
+        error: () => undefined,
+        show: () => undefined,
+      }),
+    });
+    mkdirSync(join(cwd, 'draft'), { recursive: true });
+    writeFileSync(
+      join(cwd, 'draft', '01-a.md'),
+      serializeDraft({
+        sceneStem: '01-a',
+        format: 'novel',
+        generatedAt: '2026-10-05T00:00:00.000Z',
+        body,
+      }),
+    );
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    await typeKeys(stdin, 'draft show 01-a');
+    stdin.write('\r');
+    await wait(400);
+
+    expect(lastFrame()).toContain('draft/01-a.md ·');
+    expect(lastFrame()).toContain('q 닫기');
+    expect(lastFrame()).toContain('"누구세요?"');
   });
 });
 

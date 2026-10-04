@@ -7,6 +7,7 @@ import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 import { Banner } from './banner';
 import { ChoiceDialog } from './choiceDialog';
 import { Dashboard } from './dashboard';
+import { DraftReader } from './draftReader';
 import { StatusBar } from './statusBar';
 import { TextDialog } from './textDialog';
 import {
@@ -114,6 +115,9 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   const [themeName, setThemeName] = useState<TuiThemeName>(props.themeName ?? 'default');
   const theme = tuiThemes[themeName];
+  const [reader, setReader] = useState<
+    { readonly title: string; readonly body: string } | undefined
+  >(undefined);
   const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | undefined>(undefined);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
@@ -148,6 +152,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
               setPendingQuestion({ kind: 'text', request, resolve }),
             ),
           setTheme: (name: TuiThemeName) => setThemeName(name),
+          openReader: (title: string, body: string) => setReader({ title, body }),
           clear: () => setEntries([]),
           exit: () => exit(),
         },
@@ -172,7 +177,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   );
 
   const editor = useLineEditor({
-    isActive: !isBusy,
+    isActive: !isBusy && reader === undefined,
     suggestions: suggestions.map((suggestion) => suggestion.line),
     onSubmit: (line) => {
       setIsBusy(true);
@@ -232,11 +237,21 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
 
         {view.status === undefined ? null : <Dashboard status={view.status} />}
 
-        <Box flexDirection="column" paddingX={1} paddingY={0}>
-          {visibleEntries.map((entry) => (
-            <LogLine key={entry.id} entry={entry} isExpanded={isOutputExpanded} />
-          ))}
-        </Box>
+        {reader === undefined ? (
+          <Box flexDirection="column" paddingX={1} paddingY={0}>
+            {visibleEntries.map((entry) => (
+              <LogLine key={entry.id} entry={entry} isExpanded={isOutputExpanded} />
+            ))}
+          </Box>
+        ) : (
+          <DraftReader
+            title={reader.title}
+            body={reader.body}
+            columns={columns}
+            rows={stdout.rows > 0 ? stdout.rows : 24}
+            onClose={() => setReader(undefined)}
+          />
+        )}
 
         {editor.isSuggestionOpen && !isBusy ? (
           <SuggestionList

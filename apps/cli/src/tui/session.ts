@@ -198,6 +198,8 @@ export interface SessionSink {
   readonly ask: <T>(request: ChoiceRequest<T>) => Promise<T | undefined>;
   readonly askText: (request: TextRequest) => Promise<string | undefined>;
   readonly setTheme: (name: TuiThemeName) => void;
+  // Opens a draft in the reader instead of the log.
+  readonly openReader: (title: string, body: string) => void;
   readonly clear: () => void;
   readonly exit: () => void;
 }
@@ -416,6 +418,18 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         if ((result.costUsd ?? 0) > 0) {
           spending.push({ line: trimmed, costUsd: result.costUsd ?? 0 });
         }
+
+        // A draft is read, not scanned: it opens in the reader rather than folding into the log.
+        const isDraftShown =
+          argv[0] === 'draft' &&
+          argv[1] === 'show' &&
+          result.exitCode === 0 &&
+          !argv.includes('--json');
+        if (isDraftShown) {
+          sink.openReader(`draft/${(argv[2] ?? '').replace(/^@/, '')}.md`, result.stdout);
+          return;
+        }
+
         show(result);
       } catch (error) {
         sink.append('error', error instanceof Error ? error.message : String(error));
