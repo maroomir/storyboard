@@ -270,6 +270,7 @@ const notionRoutes: Record<string, unknown> = {
       paragraph: { rich_text: [text('만조의 밤.')] },
     },
   ]),
+  [`GET /databases/${databaseId}`]: { object: 'database', id: databaseId, title: [text('인물 표')] },
   [`POST /databases/${databaseId}/query`]: list([
     page(rowId, '준', { 역할: { type: 'select', select: { name: '조력자' } } }),
   ]),
@@ -310,6 +311,18 @@ function createNotionFetch(options: { rateLimitOnce?: string } = {}): {
       };
     }
 
+    // Notion은 데이터베이스 id 로 페이지를 물으면 404 가 아니라 400 을 준다.
+    if (route === `GET /pages/${databaseId}`) {
+      return {
+        status: 400,
+        headers: { get: () => null },
+        json: async () => ({
+          code: 'validation_error',
+          message: `Provided ID ${databaseId} is a database, not a page. Use the retrieve database API instead.`,
+        }),
+      };
+    }
+
     const body = notionRoutes[route];
 
     return body === undefined
@@ -340,6 +353,21 @@ describe('NotionNoteSource', () => {
     expect(notes[3]?.body).toBe('> 문은 만조에만 열린다.');
     // 공유되지 않은 링크는 실패가 아니라 빠진 노트다.
     expect(skipped.map((entry) => entry.label)).toEqual([unsharedId]);
+  });
+
+  it('reads the rows of a full-page database given as the root', async () => {
+    const { fetch } = createNotionFetch();
+    const source = new NotionNoteSource({
+      pageUrl: `https://www.notion.so/team/${databaseId}?v=1`,
+      token: 'secret-token',
+      fetch,
+    });
+
+    const { notes } = await source.collect();
+
+    expect(notes.map((note) => [note.title, note.origin, note.path])).toEqual([
+      ['준', 'tree', ['인물 표']],
+    ]);
   });
 
   it('waits out a rate limit and retries', async () => {

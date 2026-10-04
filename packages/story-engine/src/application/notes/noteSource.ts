@@ -23,6 +23,7 @@ export interface INoteSourceProvider {
 
 export type NoteSourceErrorCode =
   | 'not-found'
+  | 'not-a-page'
   | 'missing-token'
   | 'unauthorized'
   | 'invalid-location'

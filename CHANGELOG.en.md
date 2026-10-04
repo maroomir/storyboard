@@ -19,6 +19,7 @@ after the first public release.
 ### Fixed
 
 - **`notes absorb` recognises the address Notion's "Copy link" hands out (`https://app.notion.com/p/…`).** Only `notion.so` and `notion.site` addresses counted as Notion, so this one was read as a local path and ended in "노트를 찾을 수 없습니다", and links of the same form inside a note were not followed. (#60)
+- **`notes absorb` reads the rows of a full-page database given as its address.** Notion answers a database id on the pages endpoint with 400, not 404, and the retry as a database only ran on 404, so the run ended in "Notion 요청이 실패했습니다 (400)". (#63)
 
 ## [0.11.3] - 2026-10-04
 
