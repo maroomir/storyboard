@@ -10,9 +10,6 @@ import {
   type AiProviderId,
   formatSceneOrderRanges,
   findUnreadableStoryStateLines,
-  isLegacySceneFileName,
-  isInlineSceneSummary,
-  isLegacySeedPlaceholderSummary,
   mainThreadId,
   parseSceneFileName,
   parseSceneRenameJournal,
@@ -214,8 +211,6 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
 }
 
 interface SceneCardCensus {
-  readonly placeholders: number;
-  readonly inlineSummaries: number;
   readonly withoutBeats: number;
   readonly unreadable: readonly string[];
   // 서술자·줄기 검사도 같은 카드를 본다. 한 번 읽어 두 진단이 나눠 쓴다.
@@ -275,21 +270,13 @@ async function surveySceneCards(
     paths.sceneDirectory,
     sceneFileNames,
   );
-  const placeholders = cards.filter(({ card }) =>
-    isLegacySeedPlaceholderSummary(card.summary),
-  ).length;
-  // 플레이스홀더는 인라인 summary 이기도 하지만 migrate 가 먼저 비우므로 따로 세지 않는다.
-  const inlineSummaries = cards.filter(
-    ({ card }) =>
-      isInlineSceneSummary(card.summary) && !isLegacySeedPlaceholderSummary(card.summary),
-  ).length;
   const withoutBeats = cards.filter(({ card }) => (card.beats?.length ?? 0) === 0).length;
   const largestSceneTarget = cards.reduce(
     (largest, { card }) => Math.max(largest, card.targetWordCount ?? 0),
     0,
   );
 
-  return { placeholders, inlineSummaries, withoutBeats, unreadable, cards, largestSceneTarget };
+  return { withoutBeats, unreadable, cards, largestSceneTarget };
 }
 
 // NOTE: 끊긴 서술자 참조와 정의되지 않은 줄기는 생성이 그 씬에 닿아야 드러난다. 장편은 그때가
@@ -567,7 +554,6 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     .listFileNames(paths.sceneDirectory)
     .catch(() => []);
   const scenes = sceneFileNames.filter((name) => name.endsWith('.card'));
-  const legacyScenes = sceneFileNames.filter((name) => isLegacySceneFileName(name));
   const drafts = (
     await container.fileSystem.listFileNames(paths.draftDirectory).catch(() => [])
   ).filter((name) => name.endsWith('.md'));
@@ -576,8 +562,6 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
     .map((uri) => `${basename(uri.fsPath)}/`);
   const hasOutline = existsSync(paths.outlineChapters.fsPath);
   const {
-    placeholders: placeholderScenes,
-    inlineSummaries,
     withoutBeats,
     unreadable,
     cards: sceneCards,
@@ -599,16 +583,6 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
           },
         ]
       : []),
-    ...(legacyScenes.length > 0
-      ? [
-          {
-            status: 'warn' as const,
-            label: '구형 씬',
-            detail: `scene/*.txt 가 ${legacyScenes.length}개 남아 있어 읽히지 않습니다.`,
-            fix: 'storyboard scene migrate',
-          },
-        ]
-      : []),
     ...collectInterruptedRenameChecks(paths, sceneFileNames, drafts),
     ...(unreadable.length > 0
       ? [
@@ -616,26 +590,6 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             status: 'warn' as const,
             label: '씬 카드',
             detail: `읽지 못한 카드가 있습니다 (${unreadable.join(', ')}).`,
-          },
-        ]
-      : []),
-    ...(placeholderScenes > 0
-      ? [
-          {
-            status: 'warn' as const,
-            label: '씬 요약',
-            detail: `0.8 이전 플레이스홀더 요약이 ${placeholderScenes}개 남아 있어 초안이 안내 문구로 쓰입니다.`,
-            fix: 'storyboard scene migrate',
-          },
-        ]
-      : []),
-    ...(inlineSummaries > 0
-      ? [
-          {
-            status: 'warn' as const,
-            label: '씬 요약',
-            detail: `인라인 summary 씬이 ${inlineSummaries}개 있습니다. summary 는 <stem>.summary.md 파일로 둡니다.`,
-            fix: 'storyboard scene migrate',
           },
         ]
       : []),

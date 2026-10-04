@@ -30,8 +30,6 @@ const commandToVerb: Readonly<Record<string, string>> = {
   'storyboard.draft.expand': 'draft expand',
   'storyboard.draft.augmentSelection': 'draft augment',
   'storyboard.draft.editSelection': 'draft edit',
-  'storyboard.cards.migrateTextToList': 'card migrate',
-  'storyboard.scene.migrate': 'scene migrate',
   'storyboard.state.reseal': 'state reseal',
   'storyboard.scene.beats': 'scene plot',
   'storyboard.scene.generateAllSeeds': 'scene seed',

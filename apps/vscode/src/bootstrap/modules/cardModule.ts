@@ -3,7 +3,6 @@ import * as vscode from 'vscode';
 import { registerCanonDiffCommand } from '@/presentation/commands/canonDiff';
 import { registerBuildStoryCardsFromScenesCommand } from '@/presentation/commands/buildStoryCardsFromScenes';
 import { registerCreateCardCommands } from '@/presentation/commands/createCard';
-import { registerMigrateCardTextCommand } from '@/presentation/commands/migrateCardTextToList';
 import { registerPromoteBibleCandidatesCommand } from '@/presentation/commands/promoteBibleCandidates';
 import { registerPromoteCardCandidatesCommand } from '@/presentation/commands/promoteCardCandidates';
 import { registerRecommendCardCommands } from '@/presentation/commands/recommendCards';
@@ -31,7 +30,6 @@ export class CardModule implements IApplicationModule {
       registerRecommendCardCommands({ cards }),
       registerBuildStoryCardsFromScenesCommand(context, cards, proposalReviewService),
       registerRenameCardCommands(),
-      registerMigrateCardTextCommand({ logger }),
       registerCardRenameParticipant({ logger }),
       registerPromoteBibleCandidatesCommand({ logger, cards }),
       registerPromoteCardCandidatesCommand({ logger, cards }),

@@ -21,12 +21,16 @@ after the first public release.
   | `check grammar\|continuity\|slop <stem>` | `draft check grammar\|continuity\|slop <stem>` |
   | `scene seeds` | `scene seed` |
   | `scene beats` | `scene plot` |
-  | `cards build` · `cards migrate` | `card build` · `card migrate` |
+  | `cards build` | `card build` |
   | `bible promote` | `canon promote` |
   | `narrator add` | `narrator create` |
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background` and `notes connect notion` are typed exactly as before (the kind moved from the command name to an argument).
 - **`storyboard --help` groups commands by noun.** Eight groups — 시작하기, 기획, 씬, 초안, 카드와 정전, 노트, 원고, 측정 — and one noun never spreads over two of them.
+
+### Removed
+
+- **The commands that converted pre-0.8 works are gone.** The CLI's `scene migrate` and `cards migrate`, the extension's `Storyboard: Migrate Scenes to Cards` and `Storyboard: Migrate Card Text Fields to List`, and the `doctor` checks that counted legacy `scene/*.txt`, placeholder summaries and inline summaries. Convert a work that still needs it with 0.11.5 or earlier before upgrading. An inline `summary` is still read.
 
 ### Added
 

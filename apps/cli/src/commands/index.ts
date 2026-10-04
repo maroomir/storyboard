@@ -23,7 +23,6 @@ import {
   analyzeSlop,
   buildSceneSeeds,
   diffCandidatesAgainstCanon,
-  migrateCardTextFieldsToList,
   getStoryboardProjectPaths,
   sceneFilePath,
   sceneContextPaths,
@@ -40,13 +39,8 @@ import {
   type NarratorCard,
   type PointOfView,
   type ProjectSetting,
-  convertLegacySceneText,
   createEmptyBackground,
-  extractInlineSceneSummary,
   createEmptyCharacter,
-  isLegacySceneFileName,
-  isLegacySeedPlaceholderSummary,
-  stripLegacySeedPlaceholder,
   readChapterPlanFile,
   resolveScenePrefixDigitCount,
   serializeSceneCard,
@@ -82,7 +76,6 @@ import {
   showNarrator,
 } from './narrators';
 import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
-import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
 import { showStatus } from './status';
 import { listCards, listScenes, showCard, showDraft, showProject } from './views';
@@ -779,8 +772,6 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
   });
 };
 
-// Both migrations rewrite files in place and are idempotent — a second run reports zero. They are
-// deterministic, so no provider is involved.
 async function eachCardFile(
   container: CliContainer,
   directory: StoryUri,
@@ -802,152 +793,6 @@ async function eachCardFile(
   }
 
   return changed;
-}
-
-const migrateCardText: CommandHandler = async ({ container }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  let migrated = 0;
-
-  for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
-    migrated += await eachCardFile(container, directory, async (uri) => {
-      const raw = new TextDecoder().decode(await container.fileSystem.readFile(uri));
-      const result = migrateCardTextFieldsToList(raw);
-
-      if (!result.changed) {
-        return false;
-      }
-
-      await container.fileSystem.writeFile(uri, new TextEncoder().encode(result.yaml));
-      return true;
-    });
-  }
-
-  return {
-    ok: true,
-    message:
-      migrated === 0 ? '바꿀 카드가 없습니다.' : `카드 ${migrated}개를 목록 형식으로 옮겼습니다.`,
-    data: { migrated },
-  };
-};
-
-const migrateScenes: CommandHandler = async ({ container }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const names = await container.fileSystem
-    .listFileNames(paths.sceneDirectory)
-    .catch(() => [] as readonly string[]);
-  const legacy = names.filter((name) => isLegacySceneFileName(name));
-  const converted: string[] = [];
-
-  for (const fileName of legacy) {
-    const legacyUri = joinStoryPath(paths.sceneDirectory, fileName);
-    const raw = new TextDecoder().decode(await container.fileSystem.readFile(legacyUri));
-    const conversion = convertLegacySceneText(raw, fileName);
-
-    await container.fileSystem.writeFile(
-      joinStoryPath(paths.sceneDirectory, conversion.fileName),
-      new TextEncoder().encode(conversion.text),
-    );
-    await container.fileSystem.delete(legacyUri);
-    converted.push(conversion.fileName);
-  }
-
-  const { cleared } = await clearLegacySeedPlaceholders(container, paths.sceneDirectory);
-  const { extracted, unreadable } = await extractInlineSceneSummaries(
-    container,
-    paths.sceneDirectory,
-  );
-
-  return {
-    ok: true,
-    message: describeSceneMigration(converted.length, cleared.length, extracted.length, unreadable),
-    data: { converted, clearedPlaceholders: cleared, extractedSummaries: extracted, unreadable },
-  };
-};
-
-// 0.8 이전 시드의 안내 문구가 summary에 남아 있으면 초안이 그 한 줄만 서사 재료로 받는다.
-async function clearLegacySeedPlaceholders(
-  container: CliContainer,
-  sceneDirectory: StoryUri,
-): Promise<{ readonly cleared: readonly string[]; readonly unreadable: readonly string[] }> {
-  const names = await container.fileSystem
-    .listFileNames(sceneDirectory)
-    .catch(() => [] as readonly string[]);
-  const { cards, unreadable } = await readSceneCards(container, sceneDirectory, names);
-  const cleared: string[] = [];
-
-  for (const { fileName, card } of cards) {
-    if (!isLegacySeedPlaceholderSummary(card.summary)) {
-      continue;
-    }
-
-    await container.fileSystem.writeFile(
-      joinStoryPath(sceneDirectory, fileName),
-      new TextEncoder().encode(
-        serializeSceneCard({ ...card, summary: stripLegacySeedPlaceholder(card.summary ?? '') }),
-      ),
-    );
-    cleared.push(fileName);
-  }
-
-  return { cleared, unreadable };
-}
-
-// 인라인 summary 산문은 창작자의 사건 재료다. 기계가 펼친 beats 와 구별되도록 카드 옆
-// `<stem>.summary.md` 로 옮기고 카드에는 파일명만 남긴다. 플레이스홀더를 걷어 낸 뒤에 돈다.
-async function extractInlineSceneSummaries(
-  container: CliContainer,
-  sceneDirectory: StoryUri,
-): Promise<{ readonly extracted: readonly string[]; readonly unreadable: readonly string[] }> {
-  const names = await container.fileSystem
-    .listFileNames(sceneDirectory)
-    .catch(() => [] as readonly string[]);
-  const { cards, unreadable } = await readSceneCards(container, sceneDirectory, names);
-  const extracted: string[] = [];
-
-  for (const { fileName, card } of cards) {
-    const extraction = extractInlineSceneSummary(card);
-    if (extraction === undefined) {
-      continue;
-    }
-
-    await container.fileSystem.writeFile(
-      joinStoryPath(sceneDirectory, extraction.summaryFileName),
-      new TextEncoder().encode(extraction.summaryText),
-    );
-    await container.fileSystem.writeFile(
-      joinStoryPath(sceneDirectory, fileName),
-      new TextEncoder().encode(serializeSceneCard(extraction.card)),
-    );
-    extracted.push(extraction.summaryFileName);
-  }
-
-  return { extracted, unreadable };
-}
-
-function describeSceneMigration(
-  converted: number,
-  cleared: number,
-  extracted: number,
-  unreadable: readonly string[],
-): string {
-  const parts: string[] = [];
-  if (converted > 0) {
-    parts.push(`씬 ${converted}개를 카드로 옮겼습니다.`);
-  }
-  if (cleared > 0) {
-    parts.push(`플레이스홀더 요약 ${cleared}개를 비웠습니다.`);
-  }
-  if (extracted > 0) {
-    parts.push(`인라인 summary ${extracted}개를 summary 파일로 옮겼습니다.`);
-  }
-  if (parts.length === 0) {
-    parts.push('바꿀 씬이 없습니다.');
-  }
-  if (unreadable.length > 0) {
-    parts.push(`읽지 못한 카드는 건너뛰었습니다: ${unreadable.join(', ')}`);
-  }
-
-  return parts.join(' ');
 }
 
 // Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
@@ -1987,7 +1832,6 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'scene seed': generateSceneSeeds,
   'scene plot': generateSceneBeats,
   'scene complete': completeStory,
-  'scene migrate': migrateScenes,
   'draft generate': generateScene,
   'draft revise': reviseScene,
   'draft show': showDraft,
@@ -2005,7 +1849,6 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card recommend': recommendCards,
   'card build': buildStoryCards,
   'card promote': promoteCards,
-  'card migrate': migrateCardText,
   'canon diff': canonDiff,
   'canon promote': promoteBible,
   'notes connect': connectNotes,

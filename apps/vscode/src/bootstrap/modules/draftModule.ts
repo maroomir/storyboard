@@ -7,7 +7,6 @@ import { registerCondenseDraftCommand } from '@/presentation/commands/condenseDr
 import { registerGenerateAllDraftsCommand } from '@/presentation/commands/generateAllDrafts';
 import { registerGenerateDraftCommands } from '@/presentation/commands/generateDraft';
 import { registerGenerateSceneBeatsCommand } from '@/presentation/commands/generateSceneBeats';
-import { registerMigrateScenesCommand } from '@/presentation/commands/migrateScenes';
 import { registerResealStoryStateCommand } from '@/presentation/commands/resealStoryState';
 import { registerNewSceneCommands } from '@/presentation/commands/newScene';
 import { registerRenameSceneCommand } from '@/presentation/commands/renameScene';
@@ -51,7 +50,6 @@ export class DraftModule implements IApplicationModule {
       registerAugmentDraftCommands({ drafts, logger }),
       registerNewSceneCommands({ configBridge }),
       registerRenameSceneCommand({ drafts, runGate }),
-      registerMigrateScenesCommand({ logger }),
       registerResealStoryStateCommand({ configBridge, fileSystem, logger }),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway, configBridge }),

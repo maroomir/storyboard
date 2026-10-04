@@ -23,7 +23,6 @@ export * from './domain/biblePromotion';
 export * from './domain/canonDiff';
 export * from './domain/cardCandidatePromotion';
 export * from './domain/cardCollect';
-export * from './domain/cardTextMigration';
 export * from './domain/chapterSummaries';
 export * from './domain/files/bibleCandidates';
 export * from './domain/files/cardCandidates';

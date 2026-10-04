@@ -34,13 +34,11 @@
   "storyboard.draft.condense.title": "Storyboard: Condense Draft",
   "storyboard.bible.promoteCandidates.title": "Storyboard: Promote Bible Candidates to Canon",
   "storyboard.cards.promoteCandidates.title": "Storyboard: Promote Card Candidates",
-  "storyboard.cards.migrateTextToList.title": "Storyboard: Migrate Card Text Fields to List",
   "storyboard.bible.canonDiff.title": "Storyboard: Canon Diff Report",
   "storyboard.draft.expand.title": "Storyboard: Expand Selection (Draft)",
   "storyboard.draft.augment.title": "Storyboard: Supplement Draft from Cards",
   "storyboard.draft.augmentSelection.title": "Storyboard: Update Selection from Cards",
   "storyboard.draft.editSelection.title": "Storyboard: Edit Selection with Instruction...",
   "storyboard.draft.export.title": "Storyboard: Export Draft…",
-  "storyboard.state.reseal.title": "Storyboard: Reseal Story State",
-  "storyboard.scene.migrate.title": "Storyboard: Migrate Scenes to Cards"
+  "storyboard.state.reseal.title": "Storyboard: Reseal Story State"
 }

@@ -76,7 +76,7 @@
 | **수기 입력** (작가 의도·정체성) | `id`(읽기전용)·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile` | `type`·`id`(읽기전용)·`name`·`description`·`tags`·`locationKind`(location) |
 | **AI 자동 갱신** (이야기 진행 누적) | `traits`·`recentDialogues`·`attributes`·`arc`·`relations` | `characterIds` |
 
-`voice`·`description`(캐릭터)와 `description`(배경)은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. 프롬프트·해시 등 텍스트가 필요한 경계에서는 `joinCardText`로 결합하므로 하류 계약은 문자열을 유지한다. 산문으로 작성된 기존 카드는 `storyboard.cards.migrateTextToList` 명령으로 줄 단위 목록으로 변환한다.
+`voice`·`description`(캐릭터)와 `description`(배경)은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. 프롬프트·해시 등 텍스트가 필요한 경계에서는 `joinCardText`로 결합하므로 하류 계약은 문자열을 유지한다.
 
 자동 갱신은 `storyboard.draft.updateCardsAfterGenerate`(기본 off)가 켜진 경우에만 동작하며, 방식은 두 가지다.
 

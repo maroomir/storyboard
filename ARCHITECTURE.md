@@ -303,7 +303,7 @@ description:
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
 - 모든 변경은 즉시 YAML 텍스트로 직렬화되어 디스크 반영 (양방향 sync)
-- 캐릭터 `voice`·`description`과 배경 `description`은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. `편집` 탭에서 항목 추가/삭제로 관리하고, YAML에는 시퀀스로 저장된다. 산문으로 작성된 기존 카드는 `Storyboard: Migrate Card Text Fields to List`(`storyboard.cards.migrateTextToList`) 명령으로 줄 단위 목록으로 변환한다.
+- 캐릭터 `voice`·`description`과 배경 `description`은 긴 산문 대신 **항목 목록(`string[]`)**으로 입력한다. `편집` 탭에서 항목 추가/삭제로 관리하고, YAML에는 시퀀스로 저장된다.
 
 #### 파라미터 입력 주체 (수기 vs AI 자동)
 
@@ -405,8 +405,8 @@ summary: 01-arrival.summary.md
 - `summary`는 해석 없이 그대로 프롬프트에 붙는 창작자의 자유 메모다. 산문은 카드 옆
   `scene/<stem>.summary.md`에 두고 카드에는 그 파일명만 적는다 — 창작자가 쓴 사건과 기계가 펼친
   비트를 파일 단위로 구별하기 위해서다. `parseScene`은 카드와 파일 본문을 함께 받고, 카드 에디터의
-  Summary 칸이 이 파일을 읽고 쓴다. 인라인 산문은 구형이라
-  `scene migrate`가 파일로 뽑는다(`scene complete`가 새로 제안하는 씬만 아직 인라인으로 나온다).
+  Summary 칸이 이 파일을 읽고 쓴다. 인라인 산문도 읽히지만
+  새 카드는 파일로 둔다(`scene complete`가 새로 제안하는 씬만 아직 인라인으로 나온다).
   비어 있는 구조 필드는 카드 에디터의 **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울
   수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
 - `beats`는 초안이 따라갈 시간 순 사건 목록이다. 초안 분량의 실질 상한은 씬의 사건 밀도이므로,
@@ -494,14 +494,10 @@ grounding:
 - `Storyboard: New Scene` 명령은 항상 다음 사용 가능 번호로 자동 생성
 - 이름·번호 변경은 `Storyboard: Rename Scene...` / `storyboard scene rename <stem> --to <stem>`만 지원한다. stem을 이름으로 쓰는 파일(초안, `.draft/` 이력, 요약, 씬·캐넌·카드 후보 캐시, 대사 기억, Studio 세션)을 옮기고, stem이나 번호로 가리키는 참조(이야기 상태 원장, 캐넌의 `sourceScene`·`validFrom`·`validUntil`·`revealFrom`, `revision-plan.yaml`, 사용량 원장, 인물 `arc[].sceneRef`, 페르소나·배경 기억)를 고친다. 다른 씬이 쓰는 번호는 거부한다. 아웃라인은 번호의 위치로 씬과 짝지어지므로 번호가 바뀌면 그 씬의 아웃라인 자리와 장도 바뀐다
 
-#### 구형 `.txt` 씬 마이그레이션
+#### 구형 `.txt` 씬
 
-v0.6.x 이전 워크스페이스의 `scene/*.txt`는 더 이상 읽지 않는다. 변환은 결정적이며(AI 없음),
-`[목적]` 라벨 블록은 구조 필드로, 그 밖의 산문은 `summary`로 무손실 매핑된다
-(`convertLegacySceneText` in `packages/story-model/src/format/files/sceneMigration.ts`).
-
-- 데스크톱: `Storyboard: Migrate Scenes to Cards` (`storyboard.scene.migrate`) — 확인 후 `.card`
-  생성·`.txt` 삭제.
+v0.6.x 이전 워크스페이스의 `scene/*.txt`는 읽지 않고, 변환 명령도 0.11.5 를 끝으로 없앴다. 그런
+작품은 0.11.5 이하에서 `storyboard scene migrate`로 먼저 `.card`로 옮긴 뒤 올린다.
 
 ### 4.5 `.md` (출력 원고, `draft/`)
 
@@ -724,7 +720,6 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.background.create` | `Storyboard: Create Background` | 새 `.card` (location 기본) 생성 후 열기 |
 | `storyboard.scene.create` | `Storyboard: New Scene` | 다음 번호로 `scene/NN-<slug>.card` 생성 후 열기 |
 | `storyboard.scene.rename` | `Storyboard: Rename Scene...` | 씬 stem·번호를 바꾸고 파생 파일과 참조를 함께 옮김 |
-| `storyboard.scene.migrate` | `Storyboard: Migrate Scenes to Cards` | 구형 `scene/*.txt`를 `scene/*.card`로 변환 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
 | `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |

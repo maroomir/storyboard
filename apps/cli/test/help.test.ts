@@ -142,7 +142,6 @@ describe('suggestVerbs', () => {
       'scene seeds': 'scene seed',
       'check slop': 'draft check',
       'cards build': 'card build',
-      'cards migrate': 'card migrate',
       'bible promote': 'canon promote',
       'manuscript summaries': 'manuscript summarize',
     };

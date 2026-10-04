@@ -114,7 +114,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
   }
 
-  it('reports missing directories and legacy scene files instead of throwing', async () => {
+  it('reports missing directories instead of throwing', async () => {
     writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
     mkdirSync(join(workspace, '.storyboard'));
     writeFileSync(join(workspace, '.storyboard', 'project.json'), '{}');
@@ -126,7 +126,6 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     expect(outcome.ok).toBe(true);
     const checks = checksOf(outcome);
     expect(checks.find((check) => check.label === '디렉터리')?.detail).toContain('draft/');
-    expect(checks.find((check) => check.label === '구형 씬')?.detail).toContain('1개');
     expect(checks.find((check) => check.label === '씬')?.detail).toContain('0개');
   });
 
