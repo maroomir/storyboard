@@ -3,6 +3,7 @@ import { Box, Text } from 'ink';
 import React from 'react';
 
 import { describeNextStep, nextStepCommands } from '@/commands/status';
+import { useTuiTheme } from './tuiTheme';
 
 const progressBarWidth = 24;
 
@@ -38,31 +39,32 @@ function describeManuscript({ manuscript }: WorkspaceStatus): string {
 // The home screen: how far the work is, and the one command that moves it forward — the same step
 // `storyboard status` names, written as it is typed at this prompt.
 export function Dashboard({ status }: DashboardProps): React.ReactElement {
+  const theme = useTuiTheme();
   const progress = describeDraftProgress(status);
   const command = nextStepCommands[status.nextStep];
   const percent = progress.total === 0 ? 0 : Math.round((progress.done / progress.total) * 100);
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="gray" paddingX={1}>
+    <Box flexDirection="column" borderStyle="round" borderColor={theme.muted} paddingX={1}>
       <Text bold>{status.project.name}</Text>
       <Text>
         씬 {status.scenes.total} · 초안 {progress.done}/{progress.total}
         {status.drafts.stale > 0 ? (
-          <Text color="yellow"> (오래됨 {status.drafts.stale})</Text>
+          <Text color={theme.warning}> (오래됨 {status.drafts.stale})</Text>
         ) : null}
         {' · '}인물 {status.cards.characters} · 배경 {status.cards.backgrounds} · 원고{' '}
         {describeManuscript(status)}
       </Text>
       <Text>
-        <Text color="cyan">{progress.bar}</Text> {percent}%
+        <Text color={theme.accent}>{progress.bar}</Text> {percent}%
       </Text>
       {command === undefined ? (
-        <Text color="green">{describeNextStep(status)}</Text>
+        <Text color={theme.success}>{describeNextStep(status)}</Text>
       ) : (
         <Text>
-          <Text color="gray">다음 </Text>
-          <Text color="cyan">{command}</Text>
-          <Text color="gray"> — {describeNextStep(status)}</Text>
+          <Text color={theme.muted}>다음 </Text>
+          <Text color={theme.accent}>{command}</Text>
+          <Text color={theme.muted}> — {describeNextStep(status)}</Text>
         </Text>
       )}
     </Box>

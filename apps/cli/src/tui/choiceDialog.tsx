@@ -2,6 +2,7 @@ import { Box, Text, useInput } from 'ink';
 import React, { useState } from 'react';
 
 import type { ChoiceRequest } from '@/adapters/prompter';
+import { useTuiTheme } from './tuiTheme';
 
 export interface ChoiceDialogProps {
   readonly request: ChoiceRequest<unknown>;
@@ -12,6 +13,7 @@ export interface ChoiceDialogProps {
 // The interactive screen's form of a prompter question: the details, numbered options, and the
 // same keys the one-shot prompt reads.
 export function ChoiceDialog(props: ChoiceDialogProps): React.ReactElement {
+  const theme = useTuiTheme();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const optionCount = props.request.options.length;
 
@@ -31,21 +33,21 @@ export function ChoiceDialog(props: ChoiceDialogProps): React.ReactElement {
   });
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={1}>
+    <Box flexDirection="column" borderStyle="round" borderColor={theme.accent} paddingX={1}>
       <Text bold>{props.request.title}</Text>
       {props.request.details.map((detail) => (
-        <Text key={detail} color="gray">
+        <Text key={detail} color={theme.muted}>
           {detail}
         </Text>
       ))}
       <Text> </Text>
       {props.request.options.map((option, index) => (
-        <Text key={option.label} color={index === selectedIndex ? 'cyan' : undefined}>
+        <Text key={option.label} color={index === selectedIndex ? theme.accent : undefined}>
           {index === selectedIndex ? '❯ ' : '  '}
           {index + 1}. {option.label}
         </Text>
       ))}
-      <Text color="gray">↑↓ 또는 숫자로 고르고 Enter · Esc 취소</Text>
+      <Text color={theme.muted}>↑↓ 또는 숫자로 고르고 Enter · Esc 취소</Text>
     </Box>
   );
 }

@@ -2,6 +2,7 @@ import { Box, Text, useInput } from 'ink';
 import React, { useState } from 'react';
 
 import type { TextRequest } from '@/adapters/prompter';
+import { useTuiTheme } from './tuiTheme';
 
 export interface TextDialogProps {
   readonly request: TextRequest;
@@ -10,6 +11,7 @@ export interface TextDialogProps {
 }
 
 export function TextDialog(props: TextDialogProps): React.ReactElement {
+  const theme = useTuiTheme();
   const [value, setValue] = useState('');
 
   useInput((input, key) => {
@@ -25,19 +27,19 @@ export function TextDialog(props: TextDialogProps): React.ReactElement {
   });
 
   return (
-    <Box borderStyle="round" borderColor="cyan" paddingX={1} flexDirection="column">
+    <Box borderStyle="round" borderColor={theme.accent} paddingX={1} flexDirection="column">
       <Text>
-        <Text color="cyan">◆ </Text>
+        <Text color={theme.accent}>◆ </Text>
         <Text bold>{props.request.title}</Text>
         {props.request.hint === undefined ? null : (
-          <Text color="gray"> ({props.request.hint})</Text>
+          <Text color={theme.muted}> ({props.request.hint})</Text>
         )}
       </Text>
       <Text>
         › {value}
         <Text inverse> </Text>
       </Text>
-      <Text color="gray">Enter 확정 · Esc 취소</Text>
+      <Text color={theme.muted}>Enter 확정 · Esc 취소</Text>
     </Box>
   );
 }

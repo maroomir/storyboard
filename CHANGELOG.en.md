@@ -54,6 +54,7 @@ after the first public release.
 - **`novel generate`'s progress rail carries a stage checklist** (`✓ outline  › seeds  · assemble`, in the order of the author's `pipelines/novel.yaml`), and the spinner shows a writer's phrase that changes every few seconds.
 - **A command that rewrites a draft shows the sentences it changed.** At a terminal, `draft edit`, `augment`, `condense`, `expand`, `format` and `revise` draw a sentence-level diff on stderr (removed in red, added in green, one sentence of context, the rest folded as "n sentences unchanged"). Pipes, `--json` and `--quiet` get none of it.
 - **`storyboard init` without a title asks at a terminal instead of failing**: the name, the genre (empty for later), the point of view and the composition, leaving each answered step on a rail. Choices already given as flags are not asked, and backing out with Esc or Ctrl+C creates nothing. Pipes and agents still fail without `--title`.
+- **The interactive screen gains `/model`, `/config`, `/theme` and `/cost`.** `/model` picks a provider and model and `/config` one setting from a list (written to the same file `config set` writes), `/theme` picks the screen colors (default, light background, mono) and keeps the choice in `~/.storyboard/tui.json`, and `/cost` lists what each command at this screen spent with the total.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05

@@ -1,6 +1,7 @@
 import { render } from 'ink';
 
 import { StoryboardTui } from './app';
+import { loadTuiThemeName } from './tuiTheme';
 import { describeHeader, readWorkspaceView } from './workspaceView';
 
 export { describeHeader };
@@ -25,6 +26,7 @@ export async function runTui(options: RunTuiOptions): Promise<number> {
       cwd={options.cwd}
       header={header}
       loadWorkspaceView={() => readWorkspaceView(options.cwd, options.version)}
+      themeName={loadTuiThemeName()}
     />,
     { exitOnCtrlC: false },
   );

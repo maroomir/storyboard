@@ -1,4 +1,9 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
+import {
+  aiProviderIds,
+  storyboardModelCatalog,
+  storyboardSettingCatalog,
+} from '@storyboard/story-model';
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
@@ -6,6 +11,9 @@ import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 import { computeCompletions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
+
+import { saveTuiThemeName, tuiThemeLabels, tuiThemeNames, type TuiThemeName } from './tuiTheme';
+import { isWorkspace } from './workspaceView';
 
 export type LogTone = 'input' | 'progress' | 'result' | 'error' | 'hint';
 
@@ -29,6 +37,10 @@ export const slashCommands: readonly SlashCommand[] = [
   { name: '/help', summary: '명령 목록 · /help <명령> 은 그 명령의 옵션' },
   { name: '/doctor', summary: '설정·프로바이더·워크스페이스 점검' },
   { name: '/setup', summary: '기본 프로바이더 바꾸기 (/setup <id>)' },
+  { name: '/model', summary: '프로바이더와 모델을 목록에서 고르기' },
+  { name: '/config', summary: '설정 하나를 골라 값 바꾸기' },
+  { name: '/theme', summary: '화면 색 테마 고르기' },
+  { name: '/cost', summary: '이 화면에서 쓴 비용' },
   { name: '/clear', summary: '화면 비우기' },
   { name: '/quit', summary: '나가기 (Ctrl+C 도 됩니다)' },
 ];
@@ -149,11 +161,31 @@ export function renderVerbList(): string {
   ].join('\n');
 }
 
+export interface SpendingEntry {
+  readonly line: string;
+  readonly costUsd: number;
+}
+
+// What this screen has spent, command by command. The CLI keeps no ledger across runs, so the
+// screen's own record is the only total there is.
+export function describeSpending(spending: readonly SpendingEntry[]): string {
+  if (spending.length === 0) {
+    return '이 화면에서 아직 비용이 든 명령이 없습니다.';
+  }
+
+  const total = spending.reduce((sum, entry) => sum + entry.costUsd, 0);
+  return [
+    ...spending.map((entry) => `$${entry.costUsd.toFixed(2).padStart(7)}  ${entry.line}`),
+    `$${total.toFixed(2).padStart(7)}  합계`,
+  ].join('\n');
+}
+
 export interface SessionSink {
   readonly append: (tone: LogTone, text: string) => void;
   // Shows a question over the prompt and settles with the answer.
   readonly ask: <T>(request: ChoiceRequest<T>) => Promise<T | undefined>;
   readonly askText: (request: TextRequest) => Promise<string | undefined>;
+  readonly setTheme: (name: TuiThemeName) => void;
   readonly clear: () => void;
   readonly exit: () => void;
 }
@@ -196,6 +228,94 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         announce: (line) => sink.append('hint', line),
       }),
     });
+  };
+
+  const spending: SpendingEntry[] = [];
+
+  // Settings go through `config set`, so the screen writes exactly what the shell would: this
+  // work's file inside a workspace, the shared home file outside one.
+  const setConfig = async (key: string, value: string): Promise<void> => {
+    const scope = isWorkspace(options.cwd) ? [] : ['--global'];
+    show(await runArgv(['config', 'set', key, value, ...scope]));
+  };
+
+  const chooseModel = async (): Promise<void> => {
+    const provider = await sink.ask({
+      title: '프로바이더',
+      details: [],
+      options: aiProviderIds.map((id) => ({ label: id, value: id })),
+    });
+    if (provider === undefined) {
+      return;
+    }
+
+    const models = storyboardModelCatalog[provider];
+    const model =
+      models.length > 0
+        ? await sink.ask({
+            title: `${provider} 모델`,
+            details: [],
+            options: models.map((entry) => ({ label: entry.displayName, value: entry.id })),
+          })
+        : await sink.askText({ title: `${provider} 모델 이름` });
+    if (model === undefined || model.length === 0) {
+      return;
+    }
+
+    await setConfig('ai.provider.default', provider);
+    await setConfig(`providers.${provider}.model`, model);
+  };
+
+  const chooseSetting = async (): Promise<void> => {
+    const definition = await sink.ask({
+      title: '설정',
+      details: ['값을 바꿀 설정을 고르세요'],
+      options: storyboardSettingCatalog.map((entry) => ({
+        label: `${entry.label} (${entry.key})`,
+        value: entry,
+      })),
+    });
+    if (definition === undefined) {
+      return;
+    }
+
+    const value =
+      definition.kind === 'boolean'
+        ? await sink.ask({
+            title: definition.label,
+            details: [definition.description],
+            options: [
+              { label: '켜기', value: 'true' },
+              { label: '끄기', value: 'false' },
+            ],
+          })
+        : await sink.askText({
+            title: definition.label,
+            hint: `기본 ${String(definition.defaultValue)}`,
+          });
+    if (value === undefined || value.length === 0) {
+      return;
+    }
+
+    await setConfig(definition.key, value);
+  };
+
+  const chooseTheme = async (): Promise<void> => {
+    const theme = await sink.ask({
+      title: '색 테마',
+      details: [],
+      options: tuiThemeNames.map((themeName) => ({
+        label: tuiThemeLabels[themeName],
+        value: themeName,
+      })),
+    });
+    if (theme === undefined) {
+      return;
+    }
+
+    sink.setTheme(theme);
+    saveTuiThemeName(theme);
+    sink.append('result', `테마를 «${tuiThemeLabels[theme]}» 로 바꿨습니다.`);
   };
 
   const show = (result: DispatchResult): void => {
@@ -246,6 +366,18 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
               await runArgv(rest.length > 0 ? ['setup', '--provider', rest[0] ?? ''] : ['setup']),
             );
             return;
+          case '/model':
+            await chooseModel();
+            return;
+          case '/config':
+            await chooseSetting();
+            return;
+          case '/theme':
+            await chooseTheme();
+            return;
+          case '/cost':
+            sink.append('result', describeSpending(spending));
+            return;
           default:
             sink.append('error', `모르는 슬래시 명령: ${name} — /help 를 보세요.`);
             return;
@@ -255,7 +387,11 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       const argv = splitCommandLine(trimmed);
 
       try {
-        show(await runArgv(argv.map((token) => (token === '--verbose' ? '--verbose' : token))));
+        const result = await runArgv(argv);
+        if ((result.costUsd ?? 0) > 0) {
+          spending.push({ line: trimmed, costUsd: result.costUsd ?? 0 });
+        }
+        show(result);
       } catch (error) {
         sink.append('error', error instanceof Error ? error.message : String(error));
       }
