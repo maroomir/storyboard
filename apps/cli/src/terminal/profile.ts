@@ -1,4 +1,4 @@
-import { createTheme, shouldUseColor, type Theme } from './theme';
+import { createTheme, plainTheme, shouldUseColor, type Theme } from './theme';
 
 // stdout 과 stderr 는 따로 판정한다. `storyboard draft show 01-a > out.md` 는 stdout 만 파일이고
 // 진행 로그는 여전히 사람이 보는 터미널로 간다.
@@ -51,3 +51,8 @@ export function createTerminalProfile(
 
   return { stdout: describeStream(facts.stdout), stderr: describeStream(facts.stderr) };
 }
+
+export const plainTerminalStream: TerminalStream = {
+  columns: defaultColumns,
+  theme: plainTheme,
+};

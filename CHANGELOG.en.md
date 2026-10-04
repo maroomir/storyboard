@@ -27,6 +27,7 @@ after the first public release.
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background` and `notes connect notion` are typed exactly as before (the kind moved from the command name to an argument).
 - **`storyboard --help` groups commands by noun.** Eight groups — 시작하기, 기획, 씬, 초안, 카드와 정전, 노트, 원고, 측정 — and one noun never spreads over two of them.
+- **`storyboard --help` shows the first steps and the command groups only.** See one group with `storyboard help draft` — by its id (`start`, `plan`, `scene`, `draft`, `card`, `notes`, `manuscript`, `sim`) or Korean name — and every command with `storyboard help --all`. Descriptions wrap to the terminal width and stay aligned with Korean text. A script that read the full list should switch to `help --all`.
 
 ### Removed
 

@@ -1,8 +1,8 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
-import { commandCatalog, commandGroups, findCommandSpec } from '@/commands/catalog';
+import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
-import { renderCommandHelp, suggestVerbs } from '@/help';
+import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
 export type LogTone = 'input' | 'progress' | 'result' | 'error' | 'hint';
 
@@ -101,19 +101,17 @@ export function suggestForInput(
   });
 }
 
+// The prompt takes a command without the `storyboard` prefix, so the list says how to drill in
+// rather than repeating the shell form.
 export function renderVerbList(): string {
-  const lines: string[] = [];
-
-  for (const group of commandGroups) {
-    const specs = commandCatalog.filter((spec) => spec.group === group && spec.verb !== 'tui');
-    if (specs.length === 0) {
-      continue;
-    }
-    lines.push(group, ...specs.map((spec) => `  ${spec.usage.padEnd(34)}${spec.summary}`));
-  }
-
-  lines.push('', '슬래시 명령', ...slashCommands.map((c) => `  ${c.name.padEnd(12)}${c.summary}`));
-  return lines.join('\n');
+  return [
+    ...renderGroupList(),
+    '',
+    '  /help <묶음> 은 한 묶음의 명령, /help <명령> 은 한 명령의 옵션',
+    '',
+    '슬래시 명령',
+    ...slashCommands.map((c) => `  ${c.name.padEnd(12)}${c.summary}`),
+  ].join('\n');
 }
 
 export interface SessionSink {
@@ -182,7 +180,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
             sink.append(
               'result',
               topic.length > 0
-                ? (renderCommandHelp(topic) ?? `모르는 명령: ${topic}`)
+                ? (renderHelpTopic(topic) ?? `모르는 명령: ${topic}`)
                 : renderVerbList(),
             );
             return;

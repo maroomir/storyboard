@@ -48,9 +48,11 @@ stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), 
 when the configured model cannot reach the largest scene target — measured, not guessed, and silent
 for combinations that were never measured.
 
-`storyboard` with no arguments prints the grouped command list with these steps at the top;
-`storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
-verb suggests the closest real ones. `-v` prints the version.
+`storyboard --help` prints these steps and the command groups, not every command;
+`storyboard help <group>` lists one group (by its id — `start`, `plan`, `scene`, `draft`, `card`,
+`notes`, `manuscript`, `sim` — or its Korean name), `storyboard help --all` lists every command, and
+`storyboard <command> --help` (or `-h`) shows one command's options and examples. Lines wrap to the
+terminal width, and a mistyped verb suggests the closest real ones. `-v` prints the version.
 
 ## Commands
 

@@ -61,6 +61,19 @@ describe('dispatch', () => {
     expect(help.stdout).toContain('storyboard draft generate <stem> | --all');
   });
 
+  it('opens help at the group list, one group, or every command', async () => {
+    const short = await dispatch(['--help'], deps());
+    const all = await dispatch(['help', '--all'], deps());
+    const group = await dispatch(['help', 'draft'], deps());
+
+    expect(short.stdout).toContain('명령 묶음');
+    expect(short.stdout).not.toContain('draft condense');
+    expect(all.stdout).toContain('draft condense');
+    expect(group.exitCode).toBe(0);
+    expect(group.stdout).toContain('draft condense');
+    expect((await dispatch(['help', 'nothing'], deps())).exitCode).toBe(1);
+  });
+
   it('accepts --no-color anywhere and keeps a run without real streams free of color codes', async () => {
     const result = await dispatch(['--no-color', '-v'], deps());
 

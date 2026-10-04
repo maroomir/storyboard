@@ -21,7 +21,13 @@ import {
 import { createCliContainer } from '@/container';
 import { createTerminalProfile, plainTerminalFacts, type TerminalFacts } from '@/terminal/profile';
 import type { Theme } from '@/terminal/theme';
-import { renderCommandHelp, renderUnknownCommand, renderUsage } from '@/help';
+import {
+  renderCommandHelp,
+  renderFullUsage,
+  renderHelpTopic,
+  renderUnknownCommand,
+  renderUsage,
+} from '@/help';
 import { findCommandSpec } from './catalog';
 import {
   completionShells,
@@ -165,13 +171,18 @@ export async function dispatch(
   // Bare `storyboard` and `--help` are entry points, not mistakes: usage goes to stdout, exit 0.
   if (args.path.length === 0 || verb === 'help') {
     const topic = verb === 'help' ? args.positionals.join(' ') : '';
-    const commandHelp = topic.length > 0 ? renderCommandHelp(topic) : undefined;
 
-    if (topic.length > 0 && commandHelp === undefined) {
-      return failure(renderUnknownCommand(topic), mode);
+    if (topic.length > 0) {
+      const topicHelp = renderHelpTopic(topic, terminal.stdout);
+      return topicHelp === undefined
+        ? failure(renderUnknownCommand(topic), mode)
+        : { exitCode: 0, stdout: topicHelp, stderr: '' };
     }
 
-    return { exitCode: 0, stdout: commandHelp ?? renderUsage(deps.version), stderr: '' };
+    const usage = flagBoolean(args.flags, 'all')
+      ? renderFullUsage(deps.version, terminal.stdout)
+      : renderUsage(deps.version, terminal.stdout);
+    return { exitCode: 0, stdout: usage, stderr: '' };
   }
 
   // `eval "$(storyboard completion zsh)"` runs on every shell start, so it must stay a pure
@@ -192,7 +203,8 @@ export async function dispatch(
   if (flagBoolean(args.flags, 'help')) {
     return {
       exitCode: 0,
-      stdout: renderCommandHelp(verb) ?? renderUsage(deps.version),
+      stdout:
+        renderCommandHelp(verb, terminal.stdout) ?? renderUsage(deps.version, terminal.stdout),
       stderr: '',
     };
   }

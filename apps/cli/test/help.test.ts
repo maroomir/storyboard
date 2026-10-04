@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   commandCatalog,
+  commandGroupIds,
+  commandGroups,
   completionShells,
   flagCatalog,
   globalFlagNames,
@@ -12,7 +14,17 @@ import {
 } from '../src/commands/catalog';
 import { computeCompletions } from '../src/commands/completion';
 import { commands } from '../src/commands/index';
-import { renderCommandHelp, renderUnknownCommand, renderUsage, suggestVerbs } from '../src/help';
+import {
+  renderCommandHelp,
+  renderFullUsage,
+  renderGroupHelp,
+  renderHelpTopic,
+  renderUnknownCommand,
+  renderUsage,
+  suggestVerbs,
+} from '../src/help';
+import { createTheme } from '../src/terminal/theme';
+import { measureWidth } from '../src/terminal/width';
 
 const setupSource = readFileSync(new URL('../src/commands/setup.ts', import.meta.url), 'utf8');
 const commandMentionPattern = /storyboard ([a-z][a-z0-9-]*)(?: ([a-z][a-z0-9-]*))?/g;
@@ -61,13 +73,18 @@ describe('command catalog', () => {
 
   it('only names flags the guide verbs accept', () => {
     const guide = createWorkspaceAgentGuide();
-    const known = new Set([...globalFlagNames, ...commandCatalog.flatMap((spec) => spec.flags ?? [])]);
+    const known = new Set([
+      ...globalFlagNames,
+      ...commandCatalog.flatMap((spec) => spec.flags ?? []),
+    ]);
 
     for (const [, flag] of guide.matchAll(/--([a-z][a-z-]*)/g)) {
       expect(known, `AGENTS.md names --${flag}`).toContain(flag);
     }
 
-    for (const [line, words, flag] of guide.matchAll(/storyboard ([a-z][a-z -]*?)(?: <stem>)? --([a-z-]+)/g)) {
+    for (const [line, words, flag] of guide.matchAll(
+      /storyboard ([a-z][a-z -]*?)(?: <stem>)? --([a-z-]+)/g,
+    )) {
       const spec = commandCatalog.find((candidate) => words.trim() === candidate.verb);
 
       expect(spec?.flags ?? [], `AGENTS.md: "${line}"`).toContain(flag);
@@ -86,25 +103,74 @@ describe('command catalog', () => {
 });
 
 describe('renderUsage', () => {
-  it('opens with getting-started steps and groups the commands', () => {
+  it('opens with getting-started steps and lists groups, not every command', () => {
     const usage = renderUsage('9.9.9');
 
     expect(usage).toContain('storyboard 9.9.9');
     expect(usage).toContain('처음이라면');
-    expect(usage.indexOf('storyboard init --title')).toBeLessThan(usage.indexOf('시작하기'));
-    for (const group of [
-      '시작하기',
-      '기획',
-      '씬',
-      '초안',
-      '카드와 정전',
-      '노트',
-      '원고',
-      '측정',
-    ]) {
-      expect(usage).toContain(`\n${group}\n`);
+    expect(usage.indexOf('storyboard init --title')).toBeLessThan(usage.indexOf('명령 묶음'));
+    for (const group of commandGroups) {
+      expect(usage).toContain(group);
+      expect(usage).toContain(commandGroupIds[group]);
     }
+    expect(usage).not.toContain('draft condense');
+    expect(usage).toContain('storyboard help --all');
     expect(usage).toContain('~/.storyboard/config.json');
+  });
+
+  it('lists every command under its group heading with --all', () => {
+    const full = renderFullUsage('9.9.9');
+
+    for (const group of commandGroups) {
+      expect(full).toContain(`\n${group}\n`);
+    }
+    // A usage line wider than the screen wraps, so the verb is what is sure to appear whole.
+    for (const spec of commandCatalog) {
+      expect(full, spec.verb).toContain(`  ${spec.verb}`);
+    }
+  });
+});
+
+describe('renderGroupHelp', () => {
+  it('shows one group by its Korean name or its id', () => {
+    const byId = renderGroupHelp('draft');
+
+    expect(byId).toBe(renderGroupHelp('초안'));
+    for (const spec of commandCatalog.filter((entry) => entry.group === '초안')) {
+      expect(byId).toContain(spec.usage);
+    }
+    expect(byId).not.toContain('scene list');
+    expect(renderGroupHelp('nothing')).toBeUndefined();
+  });
+
+  it('takes a command before a group of the same topic', () => {
+    expect(renderHelpTopic('status')).toBe(renderCommandHelp('status'));
+    expect(renderHelpTopic('scene')).toBe(renderGroupHelp('scene'));
+  });
+});
+
+describe('help layout', () => {
+  const screens = (columns: number): string[] => {
+    const stream = { columns, theme: createTheme(false) };
+    return [
+      renderUsage('9.9.9', stream),
+      renderFullUsage('9.9.9', stream),
+      ...commandGroups.map((group) => renderGroupHelp(group, stream) ?? ''),
+      ...commandCatalog.map((spec) => renderCommandHelp(spec.verb, stream) ?? ''),
+    ];
+  };
+
+  it.each([60, 80, 120])('keeps every line inside a %i-column terminal', (columns) => {
+    const lines = screens(columns).flatMap((screen) => screen.split('\n'));
+    const overflowing = lines.filter((line) => measureWidth(line) > columns);
+
+    // Examples are shell lines an author copies, so they are never broken.
+    expect(overflowing.filter((line) => !line.trimStart().startsWith('storyboard '))).toEqual([]);
+  });
+
+  it('colors only when the stream allows it', () => {
+    expect(renderUsage('9.9.9')).not.toContain('\u001b[');
+    expect(renderUsage('9.9.9', { columns: 80, theme: createTheme(true) })).toContain('\u001b[36m');
   });
 });
 
