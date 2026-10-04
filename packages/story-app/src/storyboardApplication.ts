@@ -12,6 +12,7 @@ import {
   CardRecommendationRepository,
   CardSidebarRepository,
   CardWriterRepository,
+  CheckDraftUseCase,
   CollectCardProposalsUseCase,
   CollectNotesUseCase,
   CompleteStoryScenesUseCase,
@@ -134,6 +135,7 @@ interface EngineGraph {
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
+  readonly checkDraftUseCase: CheckDraftUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly collectNotesUseCase: CollectNotesUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
@@ -350,6 +352,7 @@ function buildServices(
       aiGateway,
       repository: storyFeatureRepository,
     }),
+    checkDraftUseCase: new CheckDraftUseCase({ aiGateway, fileSystem, logger }),
     collectCardProposalsUseCase: new CollectCardProposalsUseCase({
       aiGateway,
       repository: cardCollectRepository,

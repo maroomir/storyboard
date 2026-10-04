@@ -3,22 +3,9 @@ import * as vscode from 'vscode';
 import type { ConfigBridge } from '@storyboard/story-ai';
 import { isTaskProviderReady } from '@/infrastructure/ai/providerReadiness';
 
-import type { AiGateway } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
-import {
-  sceneContextPaths,
-  getStoryboardProjectPaths,
-  isDraftMarkdownFile,
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  parseDraft,
-  readSceneFile,
-} from '@storyboard/story-model';
-import {
-  sceneContextFileSystem,
-  vscodeFsAdapter,
-} from '@/infrastructure/vscode/workspaceFsAdapters';
+import { isDraftMarkdownFile, parseDraft } from '@storyboard/story-model';
 import { createDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import type { ContinuityIssue } from '@storyboard/story-ai';
@@ -27,7 +14,7 @@ const continuityCheckCommand = 'storyboard.draft.continuityCheck';
 const continuitySource = 'storyboard-continuity';
 
 export interface RegisterContinuityDiagnosticsProviderDependencies {
-  readonly aiGateway: AiGateway;
+  readonly drafts: Pick<DraftManager, 'check'>;
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
@@ -85,44 +72,19 @@ class ContinuityDiagnosticsController {
       return;
     }
 
-    const paths = getStoryboardProjectPaths(workspaceFolder.uri);
-    const sceneStem = resolveSceneStem(document);
-    const sceneFileName = `${sceneStem}.card`;
+    const result = await this.dependencies.drafts.check({
+      workspaceRoot: workspaceFolder.uri,
+      sceneStem: resolveSceneStem(document),
+      kind: 'continuity',
+      text: document.getText(),
+    });
 
-    let factLines: string[];
-    try {
-      const scene = await readSceneFile(
-        vscode.Uri.joinPath(paths.sceneDirectory, sceneFileName),
-        vscodeFsAdapter,
-        sceneFileName,
-      );
-      const ctxPaths = sceneContextPaths(paths);
-      const context = await buildSceneContext(ctxPaths, scene, sceneContextFileSystem);
-      const narrative = await buildNarrativeContext(ctxPaths, context, sceneContextFileSystem);
-      factLines = formatBibleFactLines(context, narrative.bibleFacts);
-    } catch (error) {
-      this.dependencies.logger.error('Continuity context build failed', error);
+    if (result.kind !== 'continuity' || !result.hasFacts) {
       this.collection.delete(document.uri);
       return;
     }
 
-    if (factLines.length === 0) {
-      this.collection.delete(document.uri);
-      return;
-    }
-
-    try {
-      const issues = await this.dependencies.aiGateway
-        .createService(workspaceFolder.uri)
-        .checkContinuity(document.getText(), factLines, {
-          providerId: this.dependencies.aiGateway.getTaskProvider('continuityCheck'),
-          attribution: { primary: { kind: 'scene', id: sceneStem } },
-        });
-      this.collection.set(document.uri, mapContinuityIssuesToDiagnostics(document, issues));
-    } catch (error) {
-      this.dependencies.logger.error('Continuity check failed', error);
-      this.collection.delete(document.uri);
-    }
+    this.collection.set(document.uri, mapContinuityIssuesToDiagnostics(document, result.issues));
   }
 
   public dispose(): void {

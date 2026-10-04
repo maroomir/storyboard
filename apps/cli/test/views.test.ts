@@ -220,3 +220,16 @@ describe('manuscript export --out', () => {
     expect(readFileSync(join(workspace, 'out.md'), 'utf8')).toContain('**밤**');
   });
 });
+
+describe('draft check', () => {
+  it('runs slop locally and skips continuity when no canon fact applies', async () => {
+    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.');
+
+    const slop = await runJson('draft', 'check', 'slop', '01-opening');
+    const continuity = await runJson('draft', 'check', 'continuity', '01-opening');
+
+    expect(Array.isArray(slop.data)).toBe(true);
+    expect(continuity).toMatchObject({ ok: true, message: '대조할 정전 사실이 없습니다.' });
+  });
+});

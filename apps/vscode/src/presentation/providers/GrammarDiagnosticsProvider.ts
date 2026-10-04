@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import type { AiGateway } from '@storyboard/story-engine';
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { isDraftMarkdownFile, STORYBOARD_GLOBS, parseDraft } from '@storyboard/story-model';
 import { createWarningDiagnostic, toRange } from './diagnosticsShared';
@@ -16,7 +16,7 @@ const grammarDebounceMs = 700;
 const quickFixKind = (vscode.CodeActionKind?.QuickFix ?? 'quickfix') as vscode.CodeActionKind;
 
 export interface RegisterGrammarDiagnosticsProviderDependencies {
-  readonly aiGateway: AiGateway;
+  readonly drafts: Pick<DraftManager, 'check'>;
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
@@ -112,18 +112,19 @@ class GrammarDiagnosticsController {
       sceneStem = fileName.replace(/\.md$/i, '');
     }
 
-    try {
-      const issues = await this.dependencies.aiGateway
-        .createService(workspaceFolder.uri)
-        .checkGrammar(document.getText(), {
-          providerId: this.dependencies.aiGateway.getTaskProvider('grammarCheck'),
-          attribution: { primary: { kind: 'scene', id: sceneStem } },
-        });
-      this.collection.set(document.uri, this.toDiagnostics(document, issues));
-    } catch (error) {
-      this.dependencies.logger.error('Grammar check failed', error);
+    const result = await this.dependencies.drafts.check({
+      workspaceRoot: workspaceFolder.uri,
+      sceneStem,
+      kind: 'grammar',
+      text: document.getText(),
+    });
+
+    if (result.kind !== 'grammar') {
       this.collection.delete(document.uri);
+      return;
     }
+
+    this.collection.set(document.uri, this.toDiagnostics(document, result.issues));
   }
 
   public scheduleRealtimeCheck(document: vscode.TextDocument): void {

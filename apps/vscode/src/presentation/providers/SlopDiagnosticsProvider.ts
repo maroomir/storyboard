@@ -1,13 +1,9 @@
 import * as vscode from 'vscode';
 
+import type { DraftManager } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import {
-  isDraftMarkdownFile,
-  parseDraft,
-  analyzeSlop,
-  type SlopFinding,
-} from '@storyboard/story-model';
+import { isDraftMarkdownFile, parseDraft, type SlopFinding } from '@storyboard/story-model';
 import { createDiagnostic, createWarningDiagnostic, toRange } from './diagnosticsShared';
 import { hasStoryboardProject } from '@/infrastructure/vscode/workspace';
 import { LatestRequestGuard } from './latestRequestGuard';
@@ -17,6 +13,7 @@ const slopSource = 'storyboard-slop';
 const slopDebounceMs = 700;
 
 export interface RegisterSlopDiagnosticsProviderDependencies {
+  readonly drafts: Pick<DraftManager, 'check'>;
   readonly configBridge: ConfigBridge;
   readonly logger: IStoryboardLogger;
 }
@@ -88,9 +85,29 @@ class SlopDiagnosticsController {
       return;
     }
 
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
+    if (!workspaceFolder) {
+      this.collection.delete(document.uri);
+      return;
+    }
+
+    const result = await this.dependencies.drafts.check({
+      workspaceRoot: workspaceFolder.uri,
+      sceneStem: document.uri.path.split('/').pop()?.replace(/\.md$/i, '') ?? '',
+      kind: 'slop',
+      text: body,
+    });
+
+    if (result.kind !== 'slop') {
+      this.collection.delete(document.uri);
+      return;
+    }
+
     const bodyOffset = computeBodyOffset(documentText, body);
-    const findings = analyzeSlop(body);
-    this.collection.set(document.uri, mapSlopFindingsToDiagnostics(document, findings, bodyOffset));
+    this.collection.set(
+      document.uri,
+      mapSlopFindingsToDiagnostics(document, result.findings, bodyOffset),
+    );
   }
 
   public scheduleRealtimeCheck(document: vscode.TextDocument): void {
