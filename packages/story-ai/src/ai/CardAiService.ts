@@ -29,8 +29,8 @@ import {
   parseBulletList,
   parseJsonArray,
   parseJsonObject,
-  coerceNoteExtraction,
-  type NoteExtraction,
+  readNoteExtractionResponse,
+  type NoteExtractionResult,
   type NoteExtractionKnownCard,
   type NoteExtractionNote,
 } from '@storyboard/story-model';
@@ -164,7 +164,7 @@ export class CardAiService {
     notes: readonly NoteExtractionNote[],
     knownCards: readonly NoteExtractionKnownCard[],
     options: GenerateTextOptions = {},
-  ): Promise<NoteExtraction> {
+  ): Promise<NoteExtractionResult> {
     const variant = this.gateway.resolvePromptVariant('noteExtraction', options);
     const prompt = NoteExtractionPrompt.build(notes, knownCards, variant);
     const response = await this.generateWithDefaults(
@@ -174,7 +174,11 @@ export class CardAiService {
       options,
     );
 
-    return coerceNoteExtraction(parseJsonObject(response.text));
+    return readNoteExtractionResponse(
+      response.text,
+      parseJsonObject(response.text),
+      response.isTruncated === true,
+    );
   }
 
   public async synthesizeNotePremise(

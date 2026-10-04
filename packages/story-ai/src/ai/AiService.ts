@@ -21,7 +21,7 @@ import {
   coerceChapterPlan,
   coerceOutlineSynopsis,
   parseJsonObject,
-  type NoteExtraction,
+  type NoteExtractionResult,
   type NoteExtractionKnownCard,
   type NoteExtractionNote,
 } from '@storyboard/story-model';
@@ -280,7 +280,7 @@ export class StoryboardAiService {
     notes: readonly NoteExtractionNote[],
     knownCards: readonly NoteExtractionKnownCard[],
     options: GenerateTextOptions = {},
-  ): Promise<NoteExtraction> {
+  ): Promise<NoteExtractionResult> {
     return this.cardAiService.extractNotes(notes, knownCards, options);
   }
 

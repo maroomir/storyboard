@@ -89,7 +89,10 @@ which `card promote` applies beside the draft candidates; an existing synopsis g
 number in the order the notes were read — the model never reorders them. A person is asked before
 the paid step and before writing; without a TTY the verb stops at the estimate unless `--yes` is
 given, and `--dry-run` stops at the plan. The Notion integration token lives in `secrets.json`
-(`notes connect notion`). The collected notes and the plan stay in the git-ignored cache.
+(`notes connect notion`). The collected notes, the plan and each model response (`responses.json`)
+stay in the git-ignored cache. A request cut at the output limit or without a readable result is a
+warning naming its notes, and when no request could be read the verb fails rather than report an
+empty plan.
 
 ## Editor-only surface
 

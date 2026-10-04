@@ -129,6 +129,43 @@ function salvageList<T>(value: unknown, schema: z.ZodType<T>): T[] {
     : [];
 }
 
+// Why a response gave nothing to read: cut off at the output limit, or no extraction object in it.
+export type NoteExtractionFailure = 'truncated' | 'unparsed';
+
+export interface NoteExtractionResult {
+  readonly extraction: NoteExtraction;
+  readonly responseText: string;
+  readonly failure?: NoteExtractionFailure;
+}
+
+// What the plan keeps of each extraction request, so a failed one can be read afterwards.
+export interface NoteExtractionResponse {
+  readonly chunk: number;
+  readonly noteIds: readonly string[];
+  readonly failure?: NoteExtractionFailure;
+  readonly text: string;
+}
+
+const extractionKeys = ['notes', 'entities', 'scenes', 'premise'] as const;
+
+// NOTE: a broken response still parses when the balanced-object fallback picks up an inner object
+// such as one `notes` entry, so an object without any extraction key counts as unparsed too.
+export function readNoteExtractionResponse(
+  responseText: string,
+  parsed: Record<string, unknown> | null,
+  isTruncated: boolean,
+): NoteExtractionResult {
+  const failure: NoteExtractionFailure | undefined = isTruncated
+    ? 'truncated'
+    : parsed === null || !extractionKeys.some((key) => key in parsed)
+      ? 'unparsed'
+      : undefined;
+
+  return failure === undefined
+    ? { extraction: coerceNoteExtraction(parsed), responseText }
+    : { extraction: coerceNoteExtraction(null), responseText, failure };
+}
+
 export function coerceNoteExtraction(value: Record<string, unknown> | null): NoteExtraction {
   return {
     notes: salvageList(value?.notes, noteClassificationSchema),

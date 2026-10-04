@@ -46,6 +46,7 @@ export interface StoryboardProjectPaths {
   readonly notePlan: StoryUri;
   readonly noteCandidates: StoryUri;
   readonly noteSynopsisCandidate: StoryUri;
+  readonly noteExtractionResponses: StoryUri;
   readonly studioSessionDirectory: StoryUri;
   readonly bibleDirectory: StoryUri;
   readonly bibleCanon: StoryUri;
@@ -103,6 +104,7 @@ export function getStoryboardProjectPaths(workspaceRoot: StoryUri): StoryboardPr
     notePlan: resolve(STORYBOARD_RELATIVE_PATHS.notePlan),
     noteCandidates: resolve(STORYBOARD_RELATIVE_PATHS.noteCandidates),
     noteSynopsisCandidate: resolve(STORYBOARD_RELATIVE_PATHS.noteSynopsisCandidate),
+    noteExtractionResponses: resolve(STORYBOARD_RELATIVE_PATHS.noteExtractionResponses),
     studioSessionDirectory: resolve(STORYBOARD_RELATIVE_PATHS.studioSessionDirectory),
     bibleDirectory: resolve(STORYBOARD_RELATIVE_PATHS.bibleDirectory),
     bibleCanon: resolve(STORYBOARD_RELATIVE_PATHS.bibleCanon),

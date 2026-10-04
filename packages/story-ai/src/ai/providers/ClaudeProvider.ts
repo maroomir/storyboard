@@ -60,6 +60,7 @@ interface ClaudeMessageResponse {
     readonly cache_read_input_tokens?: number;
     readonly cache_creation_input_tokens?: number;
   };
+  readonly stop_reason?: string | null;
 }
 
 export class ClaudeProvider implements AiProvider {
@@ -130,7 +131,13 @@ export class ClaudeProvider implements AiProvider {
 
       const text = extractClaudeText(response);
       const usage = usageFromClaudeResponse(response);
-      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
+      return aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        usage,
+        isTruncated: response.stop_reason === 'max_tokens',
+      });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',
