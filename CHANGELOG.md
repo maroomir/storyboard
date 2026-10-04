@@ -9,6 +9,29 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 변경
+
+- **CLI 명령 이름을 한 규칙으로 맞췄습니다. 옛 이름은 더 이상 동작하지 않습니다.** 작품을 다루는 명령은 모두 `<단수 명사> <동사> [대상]` 두 단어이고, 종류(인물·배경, 검사 종류)는 이름이 아니라 첫 인자입니다. `scene`은 씬 카드, `draft`는 초안입니다. 옛 이름을 실행하면 «알 수 없는 명령»과 함께 가까운 새 이름을 알려 줍니다. 기존 작품의 `AGENTS.md`에는 옛 이름이 남아 있으니 아래 표대로 고치거나, 파일을 지우고 `storyboard init --repair`로 다시 만드세요.
+  | 이전 | 지금 |
+  |---|---|
+  | `scene generate <stem>` · `--all` | `draft generate <stem>` · `--all` |
+  | `scene revise <stem>` | `draft revise <stem>` |
+  | `scene draft <stem>` (경로 출력) | `draft show <stem>` (본문 출력, 경로는 `--json`의 `data.path`) |
+  | `check grammar\|continuity\|slop <stem>` | `draft check grammar\|continuity\|slop <stem>` |
+  | `scene seeds` | `scene seed` |
+  | `scene beats` | `scene plot` |
+  | `cards build` · `cards migrate` | `card build` · `card migrate` |
+  | `bible promote` | `canon promote` |
+  | `narrator add` | `narrator create` |
+  | `manuscript summaries` | `manuscript summarize` |
+  `card create|rename|recommend character|background`과 `notes connect notion`은 치는 글자가 그대로입니다(종류가 명령 이름에서 인자로 바뀌었을 뿐입니다).
+- **`storyboard --help`의 묶음이 명사를 따릅니다.** 시작하기 · 기획 · 씬 · 초안 · 카드와 정전 · 노트 · 원고 · 측정 여덟 묶음이고, 같은 명사가 두 묶음에 나뉘지 않습니다.
+
+### 추가
+
+- **`storyboard status`가 작품 현황과 다음에 실행할 명령을 보여 줍니다.** 계약에서 빈 항목, 아웃라인, 카드 수, 씬 수, 초안(없음·카드보다 오래됨·경고 남음), 미승격 정전 후보, 원고 조립·검사 여부를 한 번에 보고, `--json`의 `data.next.command`로 에이전트가 다음 단계를 고를 수 있습니다.
+- **씬·카드·초안·계약을 보는 명령이 생겼습니다.** `scene list`, `card list [character|background]`, `card show <id>`, `draft show <stem>`, `project show`. 모두 읽기 전용이라 다른 앱이 작업 중이어도 실행됩니다.
+
 ## [0.11.6] - 2026-10-05
 
 ### 변경

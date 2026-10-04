@@ -410,10 +410,10 @@ summary: 01-arrival.summary.md
   비어 있는 구조 필드는 카드 에디터의 **Summary에서 구조화** 버튼으로 AI 제안을 받아 검토 후 채울
   수 있고, 반영은 비어 있는 필드에만 적용된다(사용자가 적어 둔 값이 항상 이긴다).
 - `beats`는 초안이 따라갈 시간 순 사건 목록이다. 초안 분량의 실질 상한은 씬의 사건 밀도이므로,
-  `scene generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
+  `draft generate`는 `beats`가 비어 있으면 카드 재료·grounding·summary로 먼저
   `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))`개를 뽑아 카드에 쓴다
   (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `generation.beats.auto`로 끔).
-  `scene beats` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
+  `scene plot` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
   비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
   우선한다.
 
