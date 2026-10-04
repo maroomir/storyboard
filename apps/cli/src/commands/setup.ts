@@ -342,7 +342,7 @@ async function collectNarrationChecks(
             status: 'fail' as const,
             label: '서술자 참조',
             detail: `카드가 없는 서술자를 참조합니다 (${missingNarrators.join(', ')}). 그 씬은 생성되지 않습니다.`,
-            fix: `storyboard narrator add ${missingNarrators[0]}`,
+            fix: `storyboard narrator create ${missingNarrators[0]}`,
           },
         ]
       : []),
@@ -434,7 +434,7 @@ async function collectStoryStateChecks(
         status: 'warn',
         label: '이야기 상태',
         detail: `씬 ${formatSceneOrderRanges(audit.staleSceneOrders)}의 항목 ${audit.staleEntryCount}개가 지금의 카드·씬과 어긋나 프롬프트에서 빠집니다.`,
-        fix: 'storyboard scene generate --all',
+        fix: 'storyboard draft generate --all',
       },
     ];
   }
@@ -475,7 +475,7 @@ async function collectChapterSummaryChecks(
         status: 'warn',
         label: '장별 요약',
         detail: `${audit.staleChapterTitles.join(', ')}의 요약이 지금의 초안과 어긋나 프롬프트에서 빠집니다.`,
-        fix: 'storyboard manuscript summaries',
+        fix: 'storyboard manuscript summarize',
       },
     ];
   }
@@ -486,7 +486,7 @@ async function collectChapterSummaryChecks(
         status: 'info',
         label: '장별 요약',
         detail: `${audit.unsealedChapterTitles.join(', ')}에 초안 기록이 없어 낡음을 판정할 수 없습니다.`,
-        fix: 'storyboard manuscript summaries',
+        fix: 'storyboard manuscript summarize',
       },
     ];
   }
@@ -645,7 +645,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
             status: 'warn' as const,
             label: '씬 비트',
             detail: `비트 없는 씬이 ${withoutBeats}개 있습니다. 생성 시 자동으로 채우지만 미리 검수하려면 뽑아 두세요.`,
-            fix: 'storyboard scene beats --all',
+            fix: 'storyboard scene plot --all',
           },
         ]
       : []),
@@ -682,7 +682,7 @@ async function collectWorkspaceChecks(container: CliContainer): Promise<DoctorCh
       detail: `${scenes.length}개 (초안 ${drafts.length}개)`,
       ...(scenes.length > 0
         ? {}
-        : { fix: 'storyboard scene seeds  또는  storyboard scene create --name <이름>' }),
+        : { fix: 'storyboard scene seed  또는  storyboard scene create --name <이름>' }),
     },
     ...(await collectNarrationChecks(container, sceneCards)),
   ];

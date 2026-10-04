@@ -251,7 +251,7 @@ export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
   };
 }
 
-// NOTE: 0.8 이전 `scene seeds`는 summary에 안내 문구 한 줄을 넣었다. summary가 비어 있지 않으면
+// NOTE: 0.8 이전 `scene seed`는 summary에 안내 문구 한 줄을 넣었다. summary가 비어 있지 않으면
 // extractSceneNarrativeSource가 그것만을 서사 재료로 삼으므로, 남아 있으면 초안이 안내 문구로 쓰인다.
 const legacySeedPlaceholderSuffix =
   '자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';

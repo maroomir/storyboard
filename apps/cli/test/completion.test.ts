@@ -45,23 +45,31 @@ describe('computeCompletions', () => {
     expect(texts([''])).toEqual(expect.arrayContaining(['scene', 'init', 'doctor']));
     expect(texts([''])).not.toContain('tui');
     expect(texts(['sc'])).toEqual(['scene']);
-    expect(texts(['scene', 'g'])).toEqual(['scene', 'generate'].slice(1));
+    expect(texts(['draft', 'g'])).toEqual(['generate']);
 
-    const generate = computeCompletions(['scene', 'gen'], { cwd })[0];
+    const generate = computeCompletions(['draft', 'gen'], { cwd })[0];
     expect(generate?.description).toContain('씬 초안');
   });
 
   it('completes scene stems and card ids from the workspace, skipping the sample card', () => {
-    expect(texts(['scene', 'generate', ''])).toEqual(['01-intro', '02-storm']);
-    expect(texts(['check', 'grammar', '02'])).toEqual(['02-storm']);
+    expect(texts(['draft', 'generate', ''])).toEqual(['01-intro', '02-storm']);
+    expect(texts(['draft', 'check', 'grammar', '02'])).toEqual(['02-storm']);
     expect(texts(['card', 'rename', 'character', ''])).toEqual(['seorin']);
+    expect(texts(['card', 'rename', 'background', ''])).toEqual([]);
+  });
+
+  it('completes the kind a verb takes as its first argument', () => {
+    expect(texts(['card', 'create', ''])).toEqual(['character', 'background']);
+    expect(texts(['card', 'recommend', 'b'])).toEqual(['background']);
+    expect(texts(['draft', 'check', ''])).toEqual(['grammar', 'continuity', 'slop']);
+    expect(texts(['notes', 'connect', ''])).toEqual(['notion']);
   });
 
   it('completes flags for the verb plus the common ones, and values after a flag', () => {
-    expect(texts(['scene', 'generate', '--'])).toEqual(
+    expect(texts(['draft', 'generate', '--'])).toEqual(
       expect.arrayContaining(['--all', '--force', '--json']),
     );
-    expect(texts(['scene', 'generate', '--a'])).toEqual(['--all']);
+    expect(texts(['draft', 'generate', '--a'])).toEqual(['--all']);
     expect(texts(['setup', '--provider', 'c'])).toEqual(['claude']);
     expect(texts(['setup', '--provider', 'openai', '--model', ''])).toContain('gpt-5.6-terra');
     expect(texts(['config', 'set', 'editor.'])).toEqual(
@@ -73,8 +81,8 @@ describe('computeCompletions', () => {
   it('honours --workspace when looking up stems', () => {
     const elsewhere = mkdtempSync(join(tmpdir(), 'storyboard-elsewhere-'));
 
-    expect(texts(['--workspace', elsewhere, 'scene', 'generate', ''])).toEqual([]);
-    expect(texts(['scene', 'generate', '--workspace', cwd, ''])).toEqual(['01-intro', '02-storm']);
+    expect(texts(['--workspace', elsewhere, 'draft', 'generate', ''])).toEqual([]);
+    expect(texts(['draft', 'generate', '--workspace', cwd, ''])).toEqual(['01-intro', '02-storm']);
 
     rmSync(elsewhere, { recursive: true, force: true });
   });
@@ -103,7 +111,7 @@ describe('completion scripts', () => {
   });
 
   it('answers __complete through dispatch without parsing the partial line', async () => {
-    const result = await dispatch(['__complete', 'scene', 'generate', '--fo'], {
+    const result = await dispatch(['__complete', 'draft', 'generate', '--fo'], {
       version: '0.0.0',
       cwd,
       isInteractive: false,

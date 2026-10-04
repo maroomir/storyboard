@@ -56,9 +56,9 @@ describe('dispatch', () => {
 
   it('answers -v and per-verb -h', async () => {
     expect((await dispatch(['-v'], deps())).stdout).toBe('1.2.3\n');
-    const help = await dispatch(['scene', 'generate', '-h'], deps());
+    const help = await dispatch(['draft', 'generate', '-h'], deps());
     expect(help.exitCode).toBe(0);
-    expect(help.stdout).toContain('storyboard scene generate <stem> | --all');
+    expect(help.stdout).toContain('storyboard draft generate <stem> | --all');
   });
 
   it('keeps every failure inside the JSON envelope when --json is set', async () => {
@@ -67,12 +67,12 @@ describe('dispatch', () => {
     expect(JSON.parse(unknown.stdout)).toMatchObject({ ok: false });
     expect(unknown.stderr).toBe('');
 
-    const noWorkspace = await dispatch(['scene', 'generate', '01', '--json'], deps());
+    const noWorkspace = await dispatch(['draft', 'generate', '01', '--json'], deps());
     expect(JSON.parse(noWorkspace.stdout).message).toContain('storyboard init --title');
   });
 
   it('names the fix on stderr for a missing workspace without --json', async () => {
-    const result = await dispatch(['scene', 'generate', '01'], deps());
+    const result = await dispatch(['draft', 'generate', '01'], deps());
 
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('storyboard init --title');

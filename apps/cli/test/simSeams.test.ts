@@ -41,9 +41,9 @@ function containerWith(overrides: Partial<CliContainerOptions> = {}) {
 }
 
 async function generateScene(overrides: Partial<CliContainerOptions> = {}) {
-  return await commands['scene generate']({
+  return await commands['draft generate']({
     container: containerWith(overrides),
-    args: args(['scene', 'generate'], { force: true }, ['01-opening']),
+    args: args(['draft', 'generate'], { force: true }, ['01-opening']),
   });
 }
 

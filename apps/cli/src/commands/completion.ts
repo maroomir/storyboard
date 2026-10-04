@@ -19,12 +19,15 @@ import {
 } from '@storyboard/story-model';
 
 import {
+  cardCategories,
   commandCatalog,
   completionShells,
+  draftCheckKinds,
   findCommandSpec,
   findFlagSpec,
   globalFlagNames,
   initLanguages,
+  noteSources,
   type CommandSpec,
 } from './catalog';
 export { completionShells, type CompletionShell } from './catalog';
@@ -159,19 +162,28 @@ function configKeyCompletions(): Completion[] {
   ];
 }
 
+const cardCategoryLabels: Readonly<Record<string, string>> = {
+  character: '인물',
+  background: '배경',
+};
+
+function choiceCompletions(choices: readonly string[], description: string): Completion[] {
+  return choices.map((choice) => ({ text: choice, description }));
+}
+
 // Positional slots come from the catalog's usage line: `<stem>` is a scene, `<id>` after
-// `card rename <kind>` is a card of that kind, and so on.
+// `card rename <type>` is a card of that type, and so on.
 function positionalCompletions(
   spec: CommandSpec,
-  positionalIndex: number,
+  positionals: readonly string[],
   words: readonly string[],
   context: CompletionContext,
 ): Completion[] {
   const slots = spec.usage
     .split(' ')
     .slice(spec.verb.split(' ').length)
-    .filter((token) => token.startsWith('<'));
-  const slot = slots[positionalIndex];
+    .filter((token) => token.startsWith('<') || token.startsWith('['));
+  const slot = slots[positionals.length];
   const root = workspaceRoot(words, context.cwd);
 
   switch (slot) {
@@ -188,12 +200,25 @@ function positionalCompletions(
         }));
       }
 
-      const kind = spec.verb.endsWith('character') ? 'character' : 'background';
-      return listFiles(join(root, kind), '.card').map((id) => ({
-        text: id,
-        description: kind === 'character' ? '인물' : '배경',
-      }));
+      const categories = cardCategories.filter(
+        (category) => positionals[0] === undefined || category === positionals[0],
+      );
+      return categories.flatMap((category) =>
+        choiceCompletions(
+          listFiles(join(root, category), '.card'),
+          cardCategoryLabels[category] ?? category,
+        ),
+      );
     }
+    case `<${cardCategories.join('|')}>`:
+      return cardCategories.map((category) => ({
+        text: category,
+        description: cardCategoryLabels[category] ?? category,
+      }));
+    case `<${draftCheckKinds.join('|')}>`:
+      return choiceCompletions(draftCheckKinds, '검사');
+    case `[${noteSources.join('|')}]`:
+      return choiceCompletions(noteSources, '노트 출처');
     case '<provider>':
       return aiProviderIds.map((id) => ({ text: id, description: '' }));
     case '<key>':
@@ -269,7 +294,7 @@ export function computeCompletions(
   }
 
   if (spec !== undefined) {
-    candidates.push(...positionalCompletions(spec, positionals.length, previous, context));
+    candidates.push(...positionalCompletions(spec, positionals, previous, context));
   }
 
   return filterByPrefix(unique(candidates), current);

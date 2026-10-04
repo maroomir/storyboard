@@ -75,7 +75,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   useEffect(() => {
     append(
       'hint',
-      '명령을 그대로 치거나(예: scene generate --all), /help 로 목록을 보세요. Tab 으로 제안을 고르고 /quit 로 나갑니다.',
+      '명령을 그대로 치거나(예: draft generate --all), /help 로 목록을 보세요. Tab 으로 제안을 고르고 /quit 로 나갑니다.',
     );
     if (props.header.hint) {
       append('hint', props.header.hint);

@@ -73,7 +73,7 @@ export const showNarrator: CommandHandler = async ({ container, args }) => {
   };
 };
 
-export const addNarrator: CommandHandler = async ({ container, args }) => {
+export const createNarrator: CommandHandler = async ({ container, args }) => {
   const id = flagString(args.flags, 'id') ?? args.positionals[0];
 
   if (id === undefined || !narratorIdPattern.test(id)) {

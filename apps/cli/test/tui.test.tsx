@@ -41,7 +41,7 @@ describe('splitCommandLine', () => {
 
 describe('suggestForInput', () => {
   it('proposes verbs by prefix and slash commands by leading slash', () => {
-    expect(suggestForInput('scene gen').map((s) => s.text)).toEqual(['scene generate']);
+    expect(suggestForInput('draft gen').map((s) => s.text)).toEqual(['draft generate']);
     expect(suggestForInput('/he').map((s) => s.text)).toEqual(['/help']);
     expect(suggestForInput('')).toEqual([]);
   });

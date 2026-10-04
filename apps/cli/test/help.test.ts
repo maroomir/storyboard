@@ -39,8 +39,8 @@ describe('command catalog', () => {
     }
   });
 
-  // NOTE: 작품 저장소의 AGENTS.md 는 에이전트가 그대로 실행하는 명령표다. 세 단어 verb
-  // (card create character)까지 가장 긴 일치로 찾고, 같은 줄의 플래그가 그 verb 의 것인지도 본다.
+  // NOTE: 작품 저장소의 AGENTS.md 는 에이전트가 그대로 실행하는 명령표다. verb 뒤에 종류 인자가
+  // 붙은 줄(card create character)도 가장 긴 일치로 찾고, 같은 줄의 플래그가 그 verb 의 것인지도 본다.
   it('is the only source of the commands the workspace agent guide names', () => {
     const verbsLongestFirst = commandCatalog
       .map((spec) => spec.verb)
@@ -95,12 +95,12 @@ describe('renderUsage', () => {
     for (const group of [
       '시작하기',
       '기획',
-      '씬과 초안',
+      '씬',
+      '초안',
       '카드와 정전',
-      '검사',
+      '노트',
       '원고',
       '측정',
-      '유지보수',
     ]) {
       expect(usage).toContain(`\n${group}\n`);
     }
@@ -110,12 +110,12 @@ describe('renderUsage', () => {
 
 describe('renderCommandHelp', () => {
   it('shows usage, the verb-specific flags, and examples', () => {
-    const help = renderCommandHelp('scene generate');
+    const help = renderCommandHelp('draft generate');
 
-    expect(help).toContain('storyboard scene generate <stem> | --all');
+    expect(help).toContain('storyboard draft generate <stem> | --all');
     expect(help).toContain('--all');
     expect(help).toContain('--force');
-    expect(help).toContain('storyboard scene generate --all');
+    expect(help).toContain('storyboard draft generate --all');
     expect(help).toContain('--workspace');
   });
 
@@ -126,11 +126,11 @@ describe('renderCommandHelp', () => {
 
 describe('suggestVerbs', () => {
   it('offers the closest real verbs for a near miss', () => {
-    expect(suggestVerbs('scene generat')).toContain('scene generate');
+    expect(suggestVerbs('draft generat')).toContain('draft generate');
     expect(suggestVerbs('generate')).toEqual(
-      expect.arrayContaining(['scene generate', 'outline generate']),
+      expect.arrayContaining(['draft generate', 'outline generate']),
     );
-    expect(renderUnknownCommand('scen generate')).toContain('storyboard scene generate');
+    expect(renderUnknownCommand('draf generate')).toContain('storyboard draft generate');
     expect(renderUnknownCommand('xyzzy')).toContain('storyboard --help');
   });
 });

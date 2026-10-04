@@ -227,7 +227,7 @@ async function applyRevisionPasses(
 }
 
 // NOTE: Both apps share this exact review→revise policy; changing pass/stop semantics here changes
-// the extension's revise command and the CLI's `scene revise` together.
+// the extension's revise command and the CLI's `draft revise` together.
 export async function runReviseLoop(options: ReviseLoopOptions): Promise<ReviseLoopResult> {
   const { aiService, registry, attribution, ctx, maxIterations, reviseScoreThreshold } = options;
   const isCancelled = (): boolean => options.shouldCancel?.() ?? false;

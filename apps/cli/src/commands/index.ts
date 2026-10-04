@@ -70,11 +70,12 @@ import {
 import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
 
+import { cardCategories, draftCheckKinds, type CardCategory } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
-import { absorbNotes, connectNotion, runNoteAbsorb } from './notes';
+import { absorbNotes, connectNotes, runNoteAbsorb } from './notes';
 import { askLine, askSecret, readStdin } from './prompt';
 import {
-  addNarrator,
+  createNarrator,
   describeSceneNarration,
   listNarrators,
   removeNarrator,
@@ -86,8 +87,8 @@ import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from 
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
-function sceneStemFrom(args: ParsedArguments): string | undefined {
-  const raw = args.positionals[0];
+function sceneStemFrom(args: ParsedArguments, positionalIndex = 0): string | undefined {
+  const raw = args.positionals[positionalIndex];
   if (raw === undefined) {
     return undefined;
   }
@@ -134,7 +135,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   if (stem === undefined) {
     return {
       ok: false,
-      message: '씬 stem을 지정해 주세요. 예: storyboard scene generate 01-scene-1-1',
+      message: '씬 stem을 지정해 주세요. 예: storyboard draft generate 01-scene-1-1',
     };
   }
 
@@ -185,7 +186,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
-// 비트는 `scene generate` 가 비어 있을 때 자동으로 채우지만, 생성 전에 사건 전개를 검수하려는
+// 비트는 `draft generate` 가 비어 있을 때 자동으로 채우지만, 생성 전에 사건 전개를 검수하려는
 // 창작자를 위해 verb 로도 노출한다. --all 은 비트 없는 씬만 고르고, --force 가 있어야 다시 뽑는다.
 const generateSceneBeats: CommandHandler = async ({ container, args }) => {
   const force = flagBoolean(args.flags, 'force');
@@ -229,7 +230,7 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
   if (stem === undefined) {
     return {
       ok: false,
-      message: '씬 stem을 지정해 주세요. 예: storyboard scene beats 01-scene-1-1',
+      message: '씬 stem을 지정해 주세요. 예: storyboard scene plot 01-scene-1-1',
     };
   }
 
@@ -372,19 +373,6 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
   };
 };
 
-const showDraftPath: CommandHandler = async ({ container, args }) => {
-  const stem = sceneStemFrom(args);
-  if (stem === undefined) {
-    return { ok: false, message: '씬 stem을 지정해 주세요.' };
-  }
-  const uri = draftPath(container.workspaceRoot, stem);
-  return {
-    ok: await container.fileSystem.exists(uri),
-    message: uri.fsPath,
-    data: { path: uri.fsPath },
-  };
-};
-
 // 파생이 어떻게 됐는지 확인하는 자리. 서술자 카드를 만들지 않은 작품도 계약의 시점 하나가 어떤
 // 서술로 풀리는지 여기서 볼 수 있다.
 const showScene: CommandHandler = async ({ container, args }) => {
@@ -508,10 +496,10 @@ const promoteBible: CommandHandler = async ({ container, args }) => {
 
 // Read-only: an agent uses this to decide whether a card is worth creating, so it never writes.
 const recommendCards: CommandHandler = async ({ container, args }) => {
-  const category = args.path[2] ?? args.positionals[0];
+  const category = cardCategoryFrom(args);
 
-  if (category !== 'character' && category !== 'background') {
-    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  if (category === undefined) {
+    return { ok: false, message: describeMissingCardCategory('card recommend') };
   }
 
   const result = await container.cards.recommend({
@@ -541,13 +529,21 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
 // sequential, so a crash mid-rename leaves references half-updated — run it on a clean tree.
 const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/;
 
+function cardCategoryFrom(args: ParsedArguments): CardCategory | undefined {
+  return cardCategories.find((category) => category === args.positionals[0]);
+}
+
+function describeMissingCardCategory(verb: string): string {
+  return `카드 종류를 지정해 주세요: storyboard ${verb} <${cardCategories.join('|')}>`;
+}
+
 const renameCard: CommandHandler = async ({ container, args }) => {
-  const kind = args.path[2];
-  const oldId = args.positionals[0];
+  const kind = cardCategoryFrom(args);
+  const oldId = args.positionals[1];
   const newId = flagString(args.flags, 'to');
 
-  if (kind !== 'character' && kind !== 'background') {
-    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  if (kind === undefined) {
+    return { ok: false, message: describeMissingCardCategory('card rename') };
   }
 
   if (oldId === undefined || newId === undefined) {
@@ -1115,11 +1111,11 @@ const canonDiff: CommandHandler = async ({ container }) => {
 // Cards start empty and get filled by the studio or by hand; creating one is a file write, not a
 // generation, so no provider is involved.
 const createCard: CommandHandler = async ({ container, args }) => {
-  const kind = args.path[2];
-  const name = flagString(args.flags, 'name') ?? args.positionals[0];
+  const kind = cardCategoryFrom(args);
+  const name = flagString(args.flags, 'name') ?? args.positionals[1];
 
-  if (kind !== 'character' && kind !== 'background') {
-    return { ok: false, message: 'character 또는 background 중 하나를 지정해 주세요.' };
+  if (kind === undefined) {
+    return { ok: false, message: describeMissingCardCategory('card create') };
   }
 
   if (name === undefined || name.trim().length === 0) {
@@ -1765,7 +1761,6 @@ function mergeSetting(
 // Diagnostics the editor paints as squiggles have no terminal form, but the analysis behind them
 // does — and an agent that can check its own output is the whole point of the CLI. Findings go out
 // as data; the exit code says whether the draft is clean.
-type CheckKind = 'grammar' | 'continuity' | 'slop';
 
 async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
   const uri = draftPath(container.workspaceRoot, stem);
@@ -1778,8 +1773,15 @@ async function readDraftBody(container: CliContainer, stem: string): Promise<str
 }
 
 const checkDraft: CommandHandler = async ({ container, args }) => {
-  const kind = args.path[1] as CheckKind | undefined;
-  const stem = sceneStemFrom(args);
+  const kind = draftCheckKinds.find((candidate) => candidate === args.positionals[0]);
+  const stem = sceneStemFrom(args, 1);
+
+  if (kind === undefined) {
+    return {
+      ok: false,
+      message: `검사 종류를 지정해 주세요: storyboard draft check <${draftCheckKinds.join('|')}> <stem>`,
+    };
+  }
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
@@ -1959,61 +1961,55 @@ function describeNothingToPromote(kind: 'no_candidates' | 'no_new_candidates'): 
 }
 
 export const commands: Readonly<Record<string, CommandHandler>> = {
+  init: initProject,
   setup: runSetup,
-  doctor: runDoctor,
+  'apikey set': setApiKey,
+  'apikey show': showApiKeys,
   'config show': runConfigShow,
   'config set': runConfigSet,
   'params show': runParamsShow,
-  'scene generate': generateScene,
-  'scene beats': generateSceneBeats,
-  'scene revise': reviseScene,
-  'scene draft': showDraftPath,
-  'outline generate': generateOutline,
-  'novel generate': generateNovel,
-  'manuscript assemble': assembleManuscript,
-  'manuscript review': reviewManuscript,
-  'manuscript summaries': summarizeChapters,
-  'card recommend character': recommendCards,
-  'card recommend background': recommendCards,
-  'card promote': promoteCards,
-  'notes absorb': absorbNotes,
-  'notes connect notion': connectNotion,
-  'bible promote': promoteBible,
-  'apikey set': setApiKey,
-  'apikey show': showApiKeys,
-  'check grammar': checkDraft,
-  'check continuity': checkDraft,
-  'check slop': checkDraft,
-  init: initProject,
-  'state reseal': resealState,
+  doctor: runDoctor,
   'project set': setProjectContract,
-  'scene seeds': generateSceneSeeds,
-  'scene complete': completeStory,
-  'cards build': buildStoryCards,
-  'canon diff': canonDiff,
-  'draft edit': editDraft,
-  'draft condense': condenseDraft,
-  'draft expand': expandDraft,
-  'cards migrate': migrateCardText,
-  'scene migrate': migrateScenes,
-  'card rename character': renameCard,
-  'card rename background': renameCard,
-  'card create character': createCard,
-  'card create background': createCard,
-  'scene create': createScene,
-  'scene rename': renameScene,
-  'scene show': showScene,
+  'outline generate': generateOutline,
   'narrator list': listNarrators,
   'narrator show': showNarrator,
-  'narrator add': addNarrator,
+  'narrator create': createNarrator,
   'narrator remove': removeNarrator,
-  'draft format': applyDraftFormat,
+  'novel generate': generateNovel,
+  'scene show': showScene,
+  'scene create': createScene,
+  'scene rename': renameScene,
+  'scene seed': generateSceneSeeds,
+  'scene plot': generateSceneBeats,
+  'scene complete': completeStory,
+  'scene migrate': migrateScenes,
+  'draft generate': generateScene,
+  'draft revise': reviseScene,
+  'draft edit': editDraft,
   'draft augment': augmentDraft,
+  'draft condense': condenseDraft,
+  'draft expand': expandDraft,
+  'draft format': applyDraftFormat,
+  'draft check': checkDraft,
+  'state reseal': resealState,
+  'card create': createCard,
+  'card rename': renameCard,
+  'card recommend': recommendCards,
+  'card build': buildStoryCards,
+  'card promote': promoteCards,
+  'card migrate': migrateCardText,
+  'canon diff': canonDiff,
+  'canon promote': promoteBible,
+  'notes connect': connectNotes,
+  'notes absorb': absorbNotes,
+  'manuscript assemble': assembleManuscript,
+  'manuscript review': reviewManuscript,
+  'manuscript summarize': summarizeChapters,
   'manuscript export': exportManuscript,
   'sim run': runSim,
   'sim screen': screenSim,
   'sim sweep': sweepSim,
   'sim report': reportSim,
-  'sim apply': applySim,
   'sim rejudge': rejudgeSim,
+  'sim apply': applySim,
 };

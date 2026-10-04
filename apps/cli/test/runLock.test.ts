@@ -47,7 +47,7 @@ function lockOptions(now?: () => Date): Parameters<typeof acquireWorkspaceRunLoc
   return {
     fileSystem: new NodeFileSystem(),
     workspaceRoot: NodeUri.file(workspace),
-    holder: { owner: 'cli', label: 'storyboard scene generate', pid: 1, hostname: 'here' },
+    holder: { owner: 'cli', label: 'storyboard draft generate', pid: 1, hostname: 'here' },
     ...(now === undefined ? {} : { now }),
   };
 }
@@ -149,7 +149,7 @@ describe('CLI verbs and the run lock', () => {
       'setup',
       'apikey set',
       'apikey show',
-      'notes connect notion',
+      'notes connect',
       'doctor',
       'config show',
       'config set',
@@ -160,13 +160,9 @@ describe('CLI verbs and the run lock', () => {
       'narrator list',
       'narrator show',
       'scene show',
-      'scene draft',
-      'card recommend character',
-      'card recommend background',
+      'card recommend',
       'canon diff',
-      'check grammar',
-      'check continuity',
-      'check slop',
+      'draft check',
       'manuscript export',
       'sim run',
       'sim screen',

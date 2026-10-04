@@ -194,7 +194,7 @@ describe("scene input hash: narration fields", () => {
   }
 
   // NOTE: narrator·thread·povCharacter 는 프롬프트를 바꾼다. digest 에 없으면 시점을 바꾼 뒤
-  // `scene generate` 가 캐시를 맞다고 판단해 옛 시점의 초안을 그대로 내놓는다.
+  // `draft generate` 가 캐시를 맞다고 판단해 옛 시점의 초안을 그대로 내놓는다.
   it("changes the hash when the scene names a different narrator", () => {
     const before = computeSceneInputHash({ ...base, narration: { narrator: "hana-first" } })
     const after = computeSceneInputHash({ ...base, narration: { narrator: "wide" } })

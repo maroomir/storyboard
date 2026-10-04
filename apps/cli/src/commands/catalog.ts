@@ -10,13 +10,12 @@ import {
 export type CommandGroup =
   | '시작하기'
   | '기획'
-  | '씬과 초안'
+  | '씬'
+  | '초안'
   | '카드와 정전'
-  | '노트 가져오기'
-  | '검사'
+  | '노트'
   | '원고'
-  | '측정'
-  | '유지보수';
+  | '측정';
 
 // 어느 verb 에나 붙는 옵션. 최상위 도움말·verb 도움말·자동완성이 같은 목록을 봐야 «있다고 적혀
 // 있는데 완성되지 않는» 옵션이 생기지 않는다.
@@ -40,6 +39,18 @@ export type CompletionShell = (typeof completionShells)[number];
 
 export const initLanguages = ['ko', 'en', 'ja'] as const;
 
+// 종류는 명령 이름이 아니라 첫 인자다. usage 의 <type>·<kind> 칸, 핸들러의 검사, 자동완성이 같은
+// 목록을 본다.
+export const cardCategories = ['character', 'background'] as const;
+
+export type CardCategory = (typeof cardCategories)[number];
+
+export const draftCheckKinds = ['grammar', 'continuity', 'slop'] as const;
+
+export type DraftCheckKind = (typeof draftCheckKinds)[number];
+
+export const noteSources = ['notion'] as const;
+
 // `config show` 가 프로바이더마다 보여 주는 칸과, `config set` 이 실제로 쓸 수 있는 칸. 두 목록이
 // 다른 것은 뜻이 있어서다 — 보여 주기만 하는 값이 있다.
 export const displayedProviderKeys = ['model', 'baseUrl', 'contextTokens'] as const;
@@ -51,13 +62,12 @@ export type SettableProviderKey = (typeof settableProviderKeys)[number];
 export const commandGroups: readonly CommandGroup[] = [
   '시작하기',
   '기획',
-  '씬과 초안',
+  '씬',
+  '초안',
   '카드와 정전',
-  '노트 가져오기',
-  '검사',
+  '노트',
   '원고',
   '측정',
-  '유지보수',
 ];
 
 export interface CommandSpec {
@@ -138,12 +148,12 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'all',
     summary:
-      'scene generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene beats: 비트 없는 씬을 모두',
+      'draft generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene plot: 비트 없는 씬을 모두',
   },
   {
     name: 'force',
     summary:
-      '이미 있는 결과를 덮어씁니다 (scene generate, scene beats, scene seeds, outline generate)',
+      '이미 있는 결과를 덮어씁니다 (draft generate, scene plot, scene seed, outline generate)',
   },
   { name: 'out', valueLabel: '<path>', summary: 'manuscript export 의 출력 파일' },
   { name: 'lines', valueLabel: '<a-b>', summary: '대상 줄 범위 (없으면 본문 전체)' },
@@ -193,20 +203,20 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'person',
     valueLabel: '<value>',
-    summary: `narrator add: 인칭 (${narratorPersons.join(', ')})`,
+    summary: `narrator create: 인칭 (${narratorPersons.join(', ')})`,
   },
   {
     name: 'knowledge',
     valueLabel: '<value>',
-    summary: `narrator add: 지식 경계 (${narratorKnowledges.join(', ')})`,
+    summary: `narrator create: 지식 경계 (${narratorKnowledges.join(', ')})`,
   },
   {
     name: 'tense',
     valueLabel: '<value>',
-    summary: `narrator add: 시제 (${narrativeTenses.join(', ')})`,
+    summary: `narrator create: 시제 (${narrativeTenses.join(', ')})`,
   },
-  { name: 'focal', valueLabel: '<id>', summary: 'narrator add: 초점 인물 카드 id' },
-  { name: 'voice', valueLabel: '<text>', summary: 'narrator add: 서술자 목소리 (쉼표로 구분)' },
+  { name: 'focal', valueLabel: '<id>', summary: 'narrator create: 초점 인물 카드 id' },
+  { name: 'voice', valueLabel: '<text>', summary: 'narrator create: 서술자 목소리 (쉼표로 구분)' },
   { name: 'target-words', valueLabel: '<n>', summary: '작품 계약: 목표 분량(자)' },
   { name: 'chapters', valueLabel: '<n>', summary: '작품 계약: 장 수' },
   { name: 'scenes-per-chapter', valueLabel: '<n>', summary: '작품 계약: 장당 씬 수' },
@@ -298,28 +308,10 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
-    verb: 'doctor',
-    group: '시작하기',
-    usage: 'doctor',
-    summary:
-      '설정 파일·프로바이더·API 키·CLI 실행 파일과 로그인·워크스페이스·이야기 상태 원장을 점검합니다 (init --repair 로 보수)',
-    examples: ['storyboard doctor', 'storyboard doctor --json'],
-    needsWorkspace: false,
-  },
-  {
     verb: 'config show',
     group: '시작하기',
     usage: 'config show',
     summary: '적용 중인 설정과 출처(공통/이 작품/기본값)를 보여 줍니다',
-    needsWorkspace: false,
-  },
-  {
-    verb: 'params show',
-    group: '시작하기',
-    usage: 'params show',
-    summary:
-      '작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 출처, 적용된 리소스 파일을 보여 줍니다',
-    examples: ['storyboard params show', 'storyboard params show --json'],
     needsWorkspace: false,
   },
   {
@@ -336,13 +328,22 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
-    verb: 'state reseal',
-    writesWorkspace: true,
-    group: '유지보수',
-    usage: 'state reseal [<씬 범위>]',
+    verb: 'params show',
+    group: '시작하기',
+    usage: 'params show',
     summary:
-      '카드를 고쳤지만 지금 초안이 맞다고 보고 이야기 상태 원장을 다시 봉인합니다 (범위를 비우면 낡은 씬 전부)',
-    examples: ['storyboard state reseal', 'storyboard state reseal 5-32'],
+      '작가가 움직일 수 있는 값 전부(설정·생성 손잡이·프롬프트 온도)와 출처, 적용된 리소스 파일을 보여 줍니다',
+    examples: ['storyboard params show', 'storyboard params show --json'],
+    needsWorkspace: false,
+  },
+  {
+    verb: 'doctor',
+    group: '시작하기',
+    usage: 'doctor',
+    summary:
+      '설정 파일·프로바이더·API 키·CLI 실행 파일과 로그인·워크스페이스·이야기 상태 원장을 점검합니다 (init --repair 로 보수)',
+    examples: ['storyboard doctor', 'storyboard doctor --json'],
+    needsWorkspace: false,
   },
   {
     verb: 'completion',
@@ -393,6 +394,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     ],
   },
   {
+    verb: 'outline generate',
+    writesWorkspace: true,
+    group: '기획',
+    usage: 'outline generate',
+    summary: '작품 계약에서 시놉시스와 챕터 계획을 만듭니다',
+    flags: ['force'],
+  },
+  {
     verb: 'narrator list',
     group: '기획',
     usage: 'narrator list',
@@ -405,15 +414,15 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary: '서술자 하나의 인칭·지식 경계·시제·목소리를 봅니다',
   },
   {
-    verb: 'narrator add',
+    verb: 'narrator create',
     writesWorkspace: true,
     group: '기획',
-    usage: 'narrator add <id> [--person …]',
+    usage: 'narrator create <id> [--person …]',
     summary: '이름 붙인 서술자 카드를 만듭니다 (씬·장이 골라 쓰는 시점)',
     flags: ['id', 'name', 'person', 'knowledge', 'tense', 'focal', 'voice'],
     examples: [
-      'storyboard narrator add hana-first --person first --focal hana',
-      'storyboard narrator add narrator-old --person first --knowledge retrospective --focal hana',
+      'storyboard narrator create hana-first --person first --focal hana',
+      'storyboard narrator create narrator-old --person first --knowledge retrospective --focal hana',
     ],
   },
   {
@@ -422,30 +431,6 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '기획',
     usage: 'narrator remove <id>',
     summary: '서술자 카드를 지웁니다',
-  },
-  {
-    verb: 'outline generate',
-    writesWorkspace: true,
-    group: '기획',
-    usage: 'outline generate',
-    summary: '작품 계약에서 시놉시스와 챕터 계획을 만듭니다',
-    flags: ['force'],
-  },
-  {
-    verb: 'scene seeds',
-    writesWorkspace: true,
-    group: '기획',
-    usage: 'scene seeds',
-    summary: '아웃라인에서 씬 시드를 만듭니다',
-    flags: ['force'],
-  },
-  {
-    verb: 'scene complete',
-    writesWorkspace: true,
-    group: '기획',
-    usage: 'scene complete',
-    summary: '끝번호 뒤에 붙일 완결 씬을 만듭니다 (--dry-run 은 제안만)',
-    flags: ['dry-run'],
   },
   {
     verb: 'novel generate',
@@ -457,7 +442,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   },
   {
     verb: 'scene show',
-    group: '씬과 초안',
+    group: '씬',
     usage: 'scene show <stem>',
     summary: '씬 카드의 내용과 이 씬에 적용될 시점·줄기를 보여 줍니다',
     examples: ['storyboard scene show 03-night-market'],
@@ -465,7 +450,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'scene create',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '씬',
     usage: 'scene create --name <text>',
     summary: '다음 번호로 씬 카드를 만듭니다',
     flags: ['name'],
@@ -473,50 +458,67 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'scene rename',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '씬',
     usage: 'scene rename <stem> --to <stem>',
     summary: '씬 이름·번호를 바꾸고 초안·기억·정전의 참조를 함께 옮깁니다',
     flags: ['to'],
     examples: ['storyboard scene rename 03-night-market --to 04-night-market'],
   },
   {
-    verb: 'scene generate',
+    verb: 'scene seed',
     writesWorkspace: true,
-    group: '씬과 초안',
-    usage: 'scene generate <stem> | --all',
-    summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
-    flags: ['all', 'force', 'no-revise', 'revise-iterations'],
-    examples: ['storyboard scene generate 01-scene-1-1', 'storyboard scene generate --all'],
+    group: '씬',
+    usage: 'scene seed',
+    summary: '아웃라인에서 씬 시드를 만듭니다',
+    flags: ['force'],
   },
   {
-    verb: 'scene beats',
+    verb: 'scene plot',
     writesWorkspace: true,
-    group: '씬과 초안',
-    usage: 'scene beats <stem> | --all',
+    group: '씬',
+    usage: 'scene plot <stem> | --all',
     summary:
       '씬 카드의 사건 비트를 전개해 beats 필드에 씁니다 (--force 로 다시, --dry-run 은 제안만)',
     flags: ['all', 'force', 'dry-run'],
-    examples: ['storyboard scene beats 01-scene-1-1', 'storyboard scene beats --all --dry-run'],
+    examples: ['storyboard scene plot 01-scene-1-1', 'storyboard scene plot --all --dry-run'],
   },
   {
-    verb: 'scene revise',
+    verb: 'scene complete',
     writesWorkspace: true,
-    group: '씬과 초안',
-    usage: 'scene revise <stem>',
+    group: '씬',
+    usage: 'scene complete',
+    summary: '끝번호 뒤에 붙일 완결 씬을 만듭니다 (--dry-run 은 제안만)',
+    flags: ['dry-run'],
+  },
+  {
+    verb: 'scene migrate',
+    writesWorkspace: true,
+    group: '씬',
+    usage: 'scene migrate',
+    summary:
+      '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
+  },
+  {
+    verb: 'draft generate',
+    writesWorkspace: true,
+    group: '초안',
+    usage: 'draft generate <stem> | --all',
+    summary: '씬 초안을 생성합니다 (--force 로 재생성, --all 은 필요한 씬만)',
+    flags: ['all', 'force', 'no-revise', 'revise-iterations'],
+    examples: ['storyboard draft generate 01-scene-1-1', 'storyboard draft generate --all'],
+  },
+  {
+    verb: 'draft revise',
+    writesWorkspace: true,
+    group: '초안',
+    usage: 'draft revise <stem>',
     summary: '기존 초안을 검수하고 재작성합니다',
     flags: ['revise-iterations'],
   },
   {
-    verb: 'scene draft',
-    group: '씬과 초안',
-    usage: 'scene draft <stem>',
-    summary: '초안 파일 경로를 출력합니다',
-    examples: ['storyboard scene draft 01-scene-1-1 --json | jq -r .data.path'],
-  },
-  {
     verb: 'draft edit',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '초안',
     usage: 'draft edit <stem> --instruction <text>',
     summary: '지시대로 고칩니다 (--lines 로 구간 지정)',
     flags: ['instruction', 'lines'],
@@ -524,7 +526,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft augment',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '초안',
     usage: 'draft augment <stem>',
     summary: '갱신된 카드·정전을 기존 초안에 녹입니다',
     flags: ['lines', 'instruction', 'dry-run'],
@@ -532,7 +534,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft condense',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '초안',
     usage: 'draft condense <stem>',
     summary: '초안을 압축합니다',
     flags: ['lines'],
@@ -540,7 +542,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft expand',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '초안',
     usage: 'draft expand <stem>',
     summary: '초안을 늘립니다',
     flags: ['lines'],
@@ -548,59 +550,63 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft format',
     writesWorkspace: true,
-    group: '씬과 초안',
+    group: '초안',
     usage: 'draft format <stem>',
     summary: '초안을 프로젝트 형식으로 다시 씁니다',
   },
   {
-    verb: 'card create character',
+    verb: 'draft check',
+    group: '초안',
+    usage: `draft check <${draftCheckKinds.join('|')}> <stem>`,
+    summary:
+      '초안을 검사합니다 — grammar 문법, continuity 정전과 어긋나는 곳, slop 상투 표현(AI 호출 없음). 문제가 있으면 종료 코드 1',
+    examples: [
+      'storyboard draft check slop 01-scene-1-1',
+      'storyboard draft check continuity 01-scene-1-1 --json',
+    ],
+  },
+  {
+    verb: 'state reseal',
+    writesWorkspace: true,
+    group: '초안',
+    usage: 'state reseal [<씬 범위>]',
+    summary:
+      '카드를 고쳤지만 지금 초안이 맞다고 보고 이야기 상태 원장을 다시 봉인합니다 (범위를 비우면 낡은 씬 전부)',
+    examples: ['storyboard state reseal', 'storyboard state reseal 5-32'],
+  },
+  {
+    verb: 'card create',
     writesWorkspace: true,
     group: '카드와 정전',
-    usage: 'card create character --name <text>',
-    summary: '빈 인물 카드를 만듭니다',
+    usage: `card create <${cardCategories.join('|')}> --name <text>`,
+    summary: '빈 인물·배경 카드를 만듭니다',
     flags: ['name', 'id'],
+    examples: [
+      'storyboard card create character --name "서진아" --id seo-jina',
+      'storyboard card create background --name "Night Market"',
+    ],
   },
   {
-    verb: 'card create background',
+    verb: 'card rename',
     writesWorkspace: true,
     group: '카드와 정전',
-    usage: 'card create background --name <text>',
-    summary: '빈 배경 카드를 만듭니다',
-    flags: ['name', 'id'],
-  },
-  {
-    verb: 'card rename character',
-    writesWorkspace: true,
-    group: '카드와 정전',
-    usage: 'card rename character <id> --to <id>',
-    summary: '인물 카드 id 를 바꾸고 참조를 함께 고칩니다',
+    usage: `card rename <${cardCategories.join('|')}> <id> --to <id>`,
+    summary: '카드 id 를 바꾸고 참조를 함께 고칩니다',
     flags: ['to'],
+    examples: ['storyboard card rename character hana --to hana-seo'],
   },
   {
-    verb: 'card rename background',
+    verb: 'card recommend',
+    group: '카드와 정전',
+    usage: `card recommend <${cardCategories.join('|')}>`,
+    summary: '카드가 없는 인물·배경을 찾습니다 (읽기 전용)',
+    examples: ['storyboard card recommend character'],
+  },
+  {
+    verb: 'card build',
     writesWorkspace: true,
     group: '카드와 정전',
-    usage: 'card rename background <id> --to <id>',
-    summary: '배경 카드 id 를 바꾸고 참조를 함께 고칩니다',
-    flags: ['to'],
-  },
-  {
-    verb: 'card recommend character',
-    group: '카드와 정전',
-    usage: 'card recommend character',
-    summary: '카드가 없는 인물을 찾습니다 (읽기 전용)',
-  },
-  {
-    verb: 'card recommend background',
-    group: '카드와 정전',
-    usage: 'card recommend background',
-    summary: '카드가 없는 배경을 찾습니다 (읽기 전용)',
-  },
-  {
-    verb: 'cards build',
-    writesWorkspace: true,
-    group: '카드와 정전',
-    usage: 'cards build',
+    usage: 'card build',
     summary: '씬만 읽어 카드를 만듭니다 (--dry-run 은 제안만)',
     flags: ['dry-run'],
   },
@@ -613,24 +619,38 @@ export const commandCatalog: readonly CommandSpec[] = [
     flags: ['dry-run'],
   },
   {
-    verb: 'bible promote',
+    verb: 'card migrate',
     writesWorkspace: true,
     group: '카드와 정전',
-    usage: 'bible promote',
+    usage: 'card migrate',
+    summary: '낡은 산문형 카드 필드를 목록 형식으로 옮깁니다',
+  },
+  {
+    verb: 'canon diff',
+    group: '카드와 정전',
+    usage: 'canon diff',
+    summary: '정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)',
+  },
+  {
+    verb: 'canon promote',
+    writesWorkspace: true,
+    group: '카드와 정전',
+    usage: 'canon promote',
     summary: '초안에서 추출한 설정 후보를 정전에 반영합니다',
     flags: ['dry-run'],
   },
   {
-    verb: 'notes connect notion',
-    group: '노트 가져오기',
-    usage: 'notes connect notion',
+    verb: 'notes connect',
+    group: '노트',
+    usage: `notes connect [${noteSources.join('|')}]`,
     summary: 'Notion 통합 토큰을 secrets.json 에 저장합니다 (표준 입력도 받습니다, 비우면 삭제)',
+    examples: ['storyboard notes connect notion'],
     needsWorkspace: false,
   },
   {
     verb: 'notes absorb',
     writesWorkspace: true,
-    group: '노트 가져오기',
+    group: '노트',
     usage: 'notes absorb <path|url>',
     summary:
       'Obsidian 폴더·노트나 Notion 페이지를 하위 페이지까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다 (견적을 먼저 보여 줍니다, 기존 카드는 후보로만)',
@@ -640,30 +660,6 @@ export const commandCatalog: readonly CommandSpec[] = [
       'storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes',
       'storyboard notes absorb ~/Vault/달의문 --yes --dry-run',
     ],
-  },
-  {
-    verb: 'canon diff',
-    group: '카드와 정전',
-    usage: 'canon diff',
-    summary: '정전에 아직 없는 설정 후보를 보고합니다 (읽기 전용)',
-  },
-  {
-    verb: 'check grammar',
-    group: '검사',
-    usage: 'check grammar <stem>',
-    summary: '초안의 문법을 검사합니다',
-  },
-  {
-    verb: 'check continuity',
-    group: '검사',
-    usage: 'check continuity <stem>',
-    summary: '정전과 어긋나는 곳을 검사합니다',
-  },
-  {
-    verb: 'check slop',
-    group: '검사',
-    usage: 'check slop <stem>',
-    summary: '상투 표현을 검사합니다 (AI 호출 없음)',
   },
   {
     verb: 'manuscript assemble',
@@ -680,11 +676,18 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary: '조립 원고를 검사합니다',
   },
   {
-    verb: 'manuscript summaries',
+    verb: 'manuscript summarize',
     writesWorkspace: true,
     group: '원고',
-    usage: 'manuscript summaries',
+    usage: 'manuscript summarize',
     summary: '장별 요약을 만듭니다',
+  },
+  {
+    verb: 'manuscript export',
+    group: '원고',
+    usage: 'manuscript export [--out <path>]',
+    summary: '조립 원고를 stdout 또는 --out 파일로 냅니다',
+    flags: ['out'],
   },
   {
     verb: 'sim run',
@@ -785,28 +788,6 @@ export const commandCatalog: readonly CommandSpec[] = [
     flags: ['out', 'point', 'dry-run', 'force', 'profiles'],
     examples: ['storyboard sim apply --out runs.jsonl --point grid:0120 --dry-run'],
     needsWorkspace: false,
-  },
-  {
-    verb: 'manuscript export',
-    group: '원고',
-    usage: 'manuscript export [--out <path>]',
-    summary: '조립 원고를 stdout 또는 --out 파일로 냅니다',
-    flags: ['out'],
-  },
-  {
-    verb: 'cards migrate',
-    writesWorkspace: true,
-    group: '유지보수',
-    usage: 'cards migrate',
-    summary: '낡은 산문형 카드 필드를 목록 형식으로 옮깁니다',
-  },
-  {
-    verb: 'scene migrate',
-    writesWorkspace: true,
-    group: '유지보수',
-    usage: 'scene migrate',
-    summary:
-      '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
   },
 ];
 
