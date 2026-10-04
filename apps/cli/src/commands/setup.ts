@@ -31,6 +31,10 @@ import {
 import { isGitRepository } from '@/adapters/gitRepository';
 import { flagString } from '@/cliArguments';
 import type { CliContainer } from '@/container';
+import { renderBox, renderColumns, type ColumnRow } from '@/terminal/layout';
+import type { TerminalStream } from '@/terminal/profile';
+import type { ThemeRole } from '@/terminal/theme';
+import { measureWidth } from '@/terminal/width';
 import type { ParameterEntry } from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
 import { askLine, askSecret } from './prompt';
@@ -663,11 +667,16 @@ async function collectResourceChecks(container: CliContainer): Promise<DoctorChe
   ];
 }
 
-export async function runDoctor({ container }: CommandContext): Promise<CommandOutcome> {
+interface DoctorSection {
+  readonly title: string;
+  readonly checks: readonly DoctorCheck[];
+}
+
+export async function runDoctor({ container, stdout }: CommandContext): Promise<CommandOutcome> {
   const home = container.homePaths;
   const hasUserConfig = existsSync(home.configFile);
   const workspaceConfig = container.workspaceConfigFile;
-  const checks: DoctorCheck[] = [
+  const homeChecks: DoctorCheck[] = [
     { status: 'info', label: 'Storyboard 홈', detail: home.home },
     {
       status: hasUserConfig ? 'ok' : 'info',
@@ -677,23 +686,96 @@ export async function runDoctor({ container }: CommandContext): Promise<CommandO
     ...(workspaceConfig !== undefined && existsSync(workspaceConfig)
       ? [{ status: 'ok' as const, label: '이 작품 설정', detail: workspaceConfig }]
       : []),
-    ...(await collectProviderChecks(container)),
-    ...(await collectResourceChecks(container)),
-    ...(await collectWorkspaceChecks(container)),
-    { status: 'info', label: 'Node', detail: process.version },
+  ];
+  const nodeCheck: DoctorCheck = { status: 'info', label: 'Node', detail: process.version };
+  const sections: DoctorSection[] = [
+    { title: '환경', checks: [...homeChecks, nodeCheck] },
+    { title: 'AI', checks: await collectProviderChecks(container) },
+    { title: '리소스 파일', checks: await collectResourceChecks(container) },
+    { title: '작품', checks: await collectWorkspaceChecks(container) },
+  ];
+  // The flat list keeps the order `--json` readers have always had.
+  const checks: DoctorCheck[] = [
+    ...homeChecks,
+    ...sections.slice(1).flatMap((section) => section.checks),
+    nodeCheck,
   ];
 
-  const failures = checks.filter((check) => check.status === 'fail');
-  const lines = checks.map((check) => {
-    const fix = check.fix ? `\n     → ${check.fix}` : '';
-    return `${statusIcon(check.status)} ${check.label}: ${check.detail}${fix}`;
-  });
-
   return {
-    ok: failures.length === 0,
-    message: lines.join('\n'),
+    ok: !checks.some((check) => check.status === 'fail'),
+    message:
+      stdout?.isTty === true
+        ? renderDoctorPanels(sections, stdout).join('\n')
+        : checks.map(renderDoctorLine).join('\n'),
     data: { checks },
   };
+}
+
+function renderDoctorLine(check: DoctorCheck): string {
+  const fix = check.fix ? `\n     → ${check.fix}` : '';
+  return `${statusIcon(check.status)} ${check.label}: ${check.detail}${fix}`;
+}
+
+const doctorMarks: Readonly<
+  Record<DoctorCheck['status'], readonly [mark: string, role: ThemeRole]>
+> = {
+  ok: ['✓', 'success'],
+  warn: ['▲', 'warning'],
+  fail: ['✗', 'danger'],
+  info: ['·', 'muted'],
+};
+
+// Wide enough for a workspace path, narrow enough to read as a panel rather than a log.
+const doctorPanelWidth = 100;
+
+// One box per section, a count line, and the first fix to try — what a person at a terminal needs
+// to act on without reading every line.
+function renderDoctorPanels(sections: readonly DoctorSection[], stream: TerminalStream): string[] {
+  const { paint } = stream.theme;
+  const visibleSections = sections.filter((section) => section.checks.length > 0);
+  const allChecks = visibleSections.flatMap((section) => section.checks);
+  const innerWidth = Math.min(stream.columns, doctorPanelWidth) - 4;
+  const labelWidth = Math.max(...allChecks.map((check) => measureWidth(check.label))) + 2;
+
+  const describeCheck = (check: DoctorCheck): ColumnRow => {
+    const [mark, role] = doctorMarks[check.status];
+    const fix = check.fix === undefined ? '' : `\n${paint('muted', `→ ${check.fix}`)}`;
+    return { label: `${paint(role, mark)} ${check.label}`, description: `${check.detail}${fix}` };
+  };
+
+  const panels = visibleSections.flatMap((section) =>
+    renderBox(
+      renderColumns(section.checks.map(describeCheck), {
+        availableWidth: innerWidth,
+        indent: 0,
+        labelWidth,
+      }),
+      {
+        availableWidth: stream.columns,
+        innerWidth,
+        title: section.title,
+        paintFrame: (text) => paint('muted', text),
+        paintTitle: (text) => paint('heading', text),
+      },
+    ),
+  );
+
+  const count = (status: DoctorCheck['status']): number =>
+    allChecks.filter((check) => check.status === status).length;
+  const summary = [
+    paint('success', `통과 ${count('ok')}`),
+    paint('warning', `경고 ${count('warn')}`),
+    paint('danger', `실패 ${count('fail')}`),
+  ].join(paint('muted', ' · '));
+  const firstFix =
+    allChecks.find((check) => check.status === 'fail' && check.fix !== undefined) ??
+    allChecks.find((check) => check.status === 'warn' && check.fix !== undefined);
+
+  return [
+    ...panels,
+    ` ${summary}`,
+    ...(firstFix?.fix === undefined ? [] : [` ${paint('muted', '먼저 →')}  ${firstFix.fix}`]),
+  ];
 }
 
 function describeOrigin(configBridge: ConfigBridge, key: string): string {

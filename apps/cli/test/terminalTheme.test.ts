@@ -52,6 +52,15 @@ describe('terminal profile', () => {
     expect(profile.stderr.columns).toBe(120);
   });
 
+  it('reads a reported width of 0 as unknown', () => {
+    const profile = createTerminalProfile(
+      { ...facts, stderr: { isTty: true, columns: 0 } },
+      { hasNoColorFlag: false, isJsonOutput: false },
+    );
+
+    expect(profile.stderr.columns).toBe(defaultColumns);
+  });
+
   it('turns color off on both streams for --no-color', () => {
     const profile = createTerminalProfile(facts, { hasNoColorFlag: true, isJsonOutput: false });
 

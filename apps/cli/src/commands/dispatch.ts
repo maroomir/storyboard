@@ -297,8 +297,10 @@ export async function dispatch(
 
   const outcome =
     spec?.writesWorkspace === true
-      ? await runHoldingWorkspaceLock(container, verb, () => handler({ container, args }))
-      : await handler({ container, args });
+      ? await runHoldingWorkspaceLock(container, verb, () =>
+          handler({ container, args, stdout: terminal.stdout }),
+        )
+      : await handler({ container, args, stdout: terminal.stdout });
 
   // `init` makes the workspace rather than writing one under the lock, but it is the first action.
   const isAction = spec?.writesWorkspace === true || verb === 'init';

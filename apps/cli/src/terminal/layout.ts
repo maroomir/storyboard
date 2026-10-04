@@ -15,6 +15,8 @@ export interface BoxOptions {
   // The terminal's columns; the box is as wide as its content needs, never wider than this.
   readonly availableWidth: number;
   readonly title?: string;
+  // Sizes the box to this instead of its content, so stacked boxes line up.
+  readonly innerWidth?: number;
   // Styles the frame characters, e.g. dimming them. Content keeps its own styling.
   readonly paintFrame?: (text: string) => string;
   readonly paintTitle?: (text: string) => string;
@@ -32,8 +34,11 @@ export function renderBox(lines: readonly string[], options: BoxOptions): string
   const widestAllowed = Math.min(options.availableWidth, maximumBoxWidth);
   const titleWidth = options.title === undefined ? 0 : measureWidth(options.title) + 4;
   const contentWidth = Math.max(titleWidth, ...lines.map(measureWidth));
-  const innerWidth = Math.min(contentWidth, widestAllowed - 4);
-  const body = lines.flatMap((line) => wrapToWidth(line, innerWidth));
+  const innerWidth = Math.min(options.innerWidth ?? contentWidth, widestAllowed - 4);
+  // Only an over-wide line is re-wrapped; wrapping trims, which would undo a caller's indentation.
+  const body = lines.flatMap((line) =>
+    measureWidth(line) <= innerWidth ? [line] : wrapToWidth(line, innerWidth),
+  );
 
   const title =
     options.title === undefined ? '' : ` ${truncateToWidth(options.title, innerWidth - 2)} `;
@@ -60,6 +65,8 @@ export interface ColumnOptions {
   // The label column never grows past this, so one long usage line cannot push every description
   // to the right edge; a longer label puts its description on the next line instead.
   readonly maximumLabelWidth?: number;
+  // Fixes the label column, so several tables drawn apart still share one description column.
+  readonly labelWidth?: number;
 }
 
 // A label column and a description column whose wrapped lines hang under the description start.
@@ -70,7 +77,7 @@ export function renderColumns(rows: readonly ColumnRow[], options: ColumnOptions
   const fittingLabels = rows
     .map((row) => measureWidth(row.label))
     .filter((w) => w <= maximumLabelWidth);
-  const labelWidth = Math.max(0, ...fittingLabels);
+  const labelWidth = options.labelWidth ?? Math.max(0, ...fittingLabels);
   const descriptionStart = indent.length + labelWidth + gap;
   const descriptionWidth = options.availableWidth - descriptionStart;
 

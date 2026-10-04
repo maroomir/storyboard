@@ -54,10 +54,10 @@ afterEach(() => {
 describe('markOutcome', () => {
   it('checks an action, crosses a failure, and leaves printed data alone', () => {
     expect(markOutcome('씬 카드를 만들었습니다\n경로', { ok: true, isAction: true }, tty)).toBe(
-      '✔ 씬 카드를 만들었습니다\n경로',
+      '✓ 씬 카드를 만들었습니다\n경로',
     );
     expect(markOutcome('초안이 없습니다', { ok: false, isAction: false }, tty)).toBe(
-      '✖ 초안이 없습니다',
+      '✗ 초안이 없습니다',
     );
     expect(markOutcome('본문 첫 줄', { ok: true, isAction: false }, tty)).toBe('본문 첫 줄');
   });
@@ -73,7 +73,7 @@ describe('result after a run', () => {
     const result = await dispatch(['init', '--title', '다음 단계'], deps(atTerminal));
 
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.startsWith('✔ ')).toBe(true);
+    expect(result.stdout.startsWith('✓ ')).toBe(true);
     expect(result.stderr).toMatch(/^다음 → {2}storyboard \S/);
   });
 
@@ -81,7 +81,7 @@ describe('result after a run', () => {
     const piped = await dispatch(['init', '--title', '파이프'], deps());
     const json = await dispatch(['scene', 'list', '--json'], deps(atTerminal));
 
-    expect(piped.stdout.startsWith('✔')).toBe(false);
+    expect(piped.stdout.startsWith('✓')).toBe(false);
     expect(piped.stderr).toBe('');
     expect(json.stderr).toBe('');
     expect(() => JSON.parse(json.stdout)).not.toThrow();
@@ -92,13 +92,13 @@ describe('result after a run', () => {
     const result = await dispatch(['scene', 'list'], deps(atTerminal));
 
     expect(result.stderr).toBe('');
-    expect(result.stdout.startsWith('✔')).toBe(false);
+    expect(result.stdout.startsWith('✓')).toBe(false);
   });
 
   it('crosses out a failure on stderr at a terminal', async () => {
     const result = await dispatch(['draft', 'show', 'none'], deps(atTerminal));
 
     expect(result.exitCode).toBe(1);
-    expect(`${result.stdout}${result.stderr}`).toContain('✖ ');
+    expect(`${result.stdout}${result.stderr}`).toContain('✗ ');
   });
 });

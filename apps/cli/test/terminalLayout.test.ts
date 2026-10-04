@@ -58,6 +58,13 @@ describe('box', () => {
     expect(measureWidth(box[0] ?? '')).toBeLessThanOrEqual(50);
   });
 
+  it('keeps the indentation of a line that already fits', () => {
+    const box = renderBox(['첫 줄', '    들여 쓴 줄'], { availableWidth: 80, innerWidth: 30 });
+
+    expect(box[2]?.startsWith('│     들여 쓴 줄')).toBe(true);
+    expect(measureWidth(box[0] ?? '')).toBe(34);
+  });
+
   it('drops the frame on a terminal too narrow for one', () => {
     const plain = renderBox(content, { availableWidth: minimumBoxWidth - 1, title: '환경' });
 
