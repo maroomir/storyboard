@@ -26,6 +26,7 @@ import {
   GenerateOutlineUseCase,
   GenerateSceneBeatsUseCase,
   ManuscriptAssemblyRepository,
+  NarratorCardRepository,
   NoteAbsorbRepository,
   NoteSourceProvider,
   NovelPipeline,
@@ -122,6 +123,7 @@ interface EngineGraph {
   readonly postGenerationUpdates: PostGenerationUpdateManager;
   readonly bibleCandidateRepository: BibleCandidateRepository;
   readonly cardSidebarRepository: CardSidebarRepository;
+  readonly narratorCardRepository: NarratorCardRepository;
   readonly novelRunStateRepository: NovelRunStateRepository;
   readonly outlineRepository: OutlineRepository;
   readonly sceneSidebarRepository: SceneSidebarRepository;
@@ -324,6 +326,7 @@ function buildServices(
     postGenerationUpdates,
     bibleCandidateRepository,
     cardSidebarRepository,
+    narratorCardRepository: new NarratorCardRepository(fileSystem),
     novelRunStateRepository,
     outlineRepository,
     sceneSidebarRepository,

@@ -8,13 +8,16 @@ import type {
   CollectCardProposalsUseCase,
   CreateCardUseCase,
   IBibleCandidateRepository,
+  CreateNarratorCardResult,
   ICardSidebarRepository,
+  INarratorCardRepository,
   IFileSystem,
   PrepareBibleCandidatePromotionResult,
   PrepareCardCandidatePromotionResult,
   PromoteBibleCandidatesUseCase,
   PromoteCardCandidatesResult,
   PromoteCardCandidatesUseCase,
+  RemoveNarratorCardResult,
   RecommendCardsRequest,
   RecommendCardsResult,
   RecommendCardsUseCase,
@@ -31,6 +34,7 @@ import {
   parseCard,
   type CardCandidateItem,
   type CardCollectProposal,
+  type NarratorCard,
   type BibleFact,
   type SidebarCardSummary,
   type StoryboardCard,
@@ -53,6 +57,7 @@ export interface CardManagerDependencies {
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly cardSidebarRepository: ICardSidebarRepository;
+  readonly narratorCardRepository: INarratorCardRepository;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
 }
@@ -92,6 +97,22 @@ export class CardManager {
     }
 
     return undefined;
+  }
+
+  public listNarrators(workspaceRoot: StoryUri): Promise<ReadonlyMap<string, NarratorCard>> {
+    return this.deps.narratorCardRepository.list(workspaceRoot);
+  }
+
+  // Refuses an id another narrator card already holds rather than overwriting it.
+  public createNarrator(
+    workspaceRoot: StoryUri,
+    card: NarratorCard,
+  ): Promise<CreateNarratorCardResult> {
+    return this.deps.narratorCardRepository.create(workspaceRoot, card);
+  }
+
+  public removeNarrator(workspaceRoot: StoryUri, id: string): Promise<RemoveNarratorCardResult> {
+    return this.deps.narratorCardRepository.remove(workspaceRoot, id);
   }
 
   public deriveUniqueId(
