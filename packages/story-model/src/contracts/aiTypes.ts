@@ -26,11 +26,18 @@ export interface AiMessage {
   readonly cacheBoundary?: boolean;
 }
 
+// How hard a thinking model may think before it answers. Its tokens come out of `maxTokens`.
+export const reasoningEfforts = ['low', 'medium', 'high'] as const;
+
+export type ReasoningEffort = (typeof reasoningEfforts)[number];
+
 export interface AiGenerateRequest {
   readonly taskName: AiTaskName;
   readonly messages: readonly AiMessage[];
   readonly temperature?: number;
   readonly maxTokens?: number;
+  // Sent only to a model whose catalog row says it accepts one.
+  readonly reasoningEffort?: ReasoningEffort;
 }
 
 export type AiStreamChunk =

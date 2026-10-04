@@ -229,6 +229,7 @@ export class DraftAiService {
       ...options,
       temperature: options.temperature ?? config.temperature,
       maxTokens: options.maxTokens ?? config.maxTokens,
+      reasoningEffort: options.reasoningEffort ?? config.reasoningEffort,
     });
   }
 }

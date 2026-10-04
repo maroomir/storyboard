@@ -7,10 +7,12 @@ import {
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiMessage,
+  type ReasoningEffort,
   type AiMessageRole,
   type AiProvider,
   type AiProviderId,
   type AiUsage,
+  acceptsReasoningEffort,
   acceptsTemperature,
   connectionCheckFailedMessage,
   generationFailedMessage,
@@ -45,6 +47,7 @@ interface ClaudeMessageRequest {
   readonly model: string;
   readonly max_tokens: number;
   readonly temperature?: number;
+  readonly output_config?: { readonly effort: ReasoningEffort };
   readonly system?: string | ReadonlyArray<TextBlockParam>;
   readonly messages: ReadonlyArray<ClaudeConversationMessage>;
 }
@@ -115,6 +118,9 @@ export class ClaudeProvider implements AiProvider {
         model: this.model,
         max_tokens: request.maxTokens ?? 4096,
         temperature: acceptsTemperature(this.id, this.model) ? request.temperature : undefined,
+        ...(request.reasoningEffort !== undefined && acceptsReasoningEffort(this.id, this.model)
+          ? { output_config: { effort: request.reasoningEffort } }
+          : {}),
         ...(systemPrompt
           ? {
               system: [

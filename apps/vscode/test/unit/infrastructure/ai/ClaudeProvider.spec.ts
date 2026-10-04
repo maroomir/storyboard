@@ -53,6 +53,31 @@ describe("ClaudeProvider", () => {
     expect(response.isTruncated).toBe(expectedTruncation)
   })
 
+  it.each([
+    ["claude-sonnet-5", { effort: "low" }],
+    ["claude-haiku-4-5", undefined]
+  ] as const)("sends a reasoning effort to %s only when the model accepts it", async (model, expected) => {
+    let capturedRequest: Parameters<ClaudeClientLike["messages"]["create"]>[0] | undefined
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model,
+      createClient: (): ClaudeClientLike =>
+        createFakeClaudeClient({
+          onCreateMessage: (request): void => {
+            capturedRequest = request
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "noteExtraction",
+      messages: [{ role: "user", content: "노트" }],
+      reasoningEffort: "low"
+    })
+
+    expect(capturedRequest?.output_config).toEqual(expected)
+  })
+
   it("checks connection through Claude messages.create", async () => {
     let didCreateMessage = false
     const provider = new ClaudeProvider({

@@ -98,6 +98,31 @@ describe("OpenAiProvider", () => {
 
     expect(response.isTruncated).toBe(expectedTruncation)
   })
+
+  it.each([
+    ["gpt-6-sol", "low"],
+    ["gpt-4.1-custom", undefined]
+  ] as const)("sends a reasoning effort to %s only when the model accepts it", async (model, expected) => {
+    let captured: FakeOpenAiCreateRequest | undefined
+    const provider = new OpenAiProvider({
+      apiKey: "sk-test",
+      model,
+      createClient: (): OpenAiClientLike =>
+        createFakeOpenAiClient({
+          onCreate: (request): void => {
+            captured = request
+          }
+        })
+    })
+
+    await provider.generate({
+      taskName: "noteExtraction",
+      messages: [{ role: "user", content: "노트" }],
+      reasoningEffort: "low"
+    })
+
+    expect((captured as { reasoning_effort?: string } | undefined)?.reasoning_effort).toBe(expected)
+  })
 })
 
 interface FakeOpenAiCreateRequest {

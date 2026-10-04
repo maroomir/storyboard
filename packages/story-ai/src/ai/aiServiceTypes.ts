@@ -2,6 +2,7 @@ import type {
   SceneGrounding,
   StyleDirective,
   AiProviderId,
+  ReasoningEffort,
   UsageAttribution,
   UsageRecord,
 } from '@storyboard/story-model';
@@ -10,6 +11,7 @@ export interface GenerateTextOptions {
   readonly providerId?: AiProviderId;
   readonly temperature?: number;
   readonly maxTokens?: number;
+  readonly reasoningEffort?: ReasoningEffort;
   readonly attribution?: UsageAttribution;
   readonly styleDirective?: StyleDirective;
   readonly sceneGrounding?: SceneGrounding;

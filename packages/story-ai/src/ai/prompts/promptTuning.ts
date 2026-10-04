@@ -1,3 +1,5 @@
+import type { ReasoningEffort } from '@storyboard/story-model';
+
 import { promptResourceKeys, promptResources } from './promptResource';
 import type { PromptConfig } from './types';
 
@@ -35,6 +37,11 @@ export function promptTuning(key: PromptTuningKey): PromptConfig {
     },
     get maxTokens(): number {
       return promptTuningOverrides[key]?.maxTokens ?? promptResources.config(key).maxTokens;
+    },
+    get reasoningEffort(): ReasoningEffort | undefined {
+      return (
+        promptTuningOverrides[key]?.reasoningEffort ?? promptResources.config(key).reasoningEffort
+      );
     },
   };
 }
