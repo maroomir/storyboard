@@ -7,8 +7,9 @@ import {
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
+import { runShellCommand } from '@/adapters/shellCommand';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
-import { computeCompletions } from '@/commands/completion';
+import { computeCompletions, listWorkspaceMentions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
@@ -128,6 +129,17 @@ export function suggestForInput(input: string, cwd: string = process.cwd()): Inp
 
   const current = words[words.length - 1] ?? '';
   const head = trimmed.slice(0, trimmed.length - current.length);
+
+  if (current.startsWith('@')) {
+    const prefix = current.slice(1);
+    return listWorkspaceMentions(cwd)
+      .filter((mention) => mention.text.startsWith(prefix))
+      .map((mention) => ({
+        text: `@${mention.text}`,
+        summary: mention.description,
+        line: `${head}${mention.text} `,
+      }));
+  }
   const completions = computeCompletions(words, { cwd });
 
   if (completions.length > 0) {
@@ -337,6 +349,16 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
 
       sink.append('input', trimmed);
 
+      if (trimmed.startsWith('!')) {
+        const result = await runShellCommand(trimmed.slice(1), options.cwd);
+        const output = result.output.trimEnd();
+        sink.append(
+          result.exitCode === 0 ? 'result' : 'error',
+          output.length > 0 ? output : `종료 코드 ${result.exitCode}`,
+        );
+        return;
+      }
+
       if (trimmed.startsWith('/')) {
         const [name, ...rest] = trimmed.split(/\s+/);
 
@@ -387,7 +409,10 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       const argv = splitCommandLine(trimmed);
 
       try {
-        const result = await runArgv(argv);
+        // `@01-a` names the scene 01-a; the mark only told the composer what to suggest.
+        const result = await runArgv(
+          argv.map((token) => (token.startsWith('@') ? token.slice(1) : token)),
+        );
         if ((result.costUsd ?? 0) > 0) {
           spending.push({ line: trimmed, costUsd: result.costUsd ?? 0 });
         }

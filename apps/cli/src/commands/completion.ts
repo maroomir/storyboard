@@ -240,6 +240,21 @@ function positionalCompletions(
 
 // `words` is everything after `storyboard` up to and including the word being typed (possibly
 // empty). The answer is what could legally come next, filtered by that last word.
+// Everything an `@` at the interactive prompt can name: scenes, cards and narrators, with what each
+// one is.
+export function listWorkspaceMentions(cwd: string): Completion[] {
+  return [
+    ...listFiles(join(cwd, 'scene'), '.card').map((stem) => ({ text: stem, description: '씬' })),
+    ...cardCategories.flatMap((category) =>
+      choiceCompletions(
+        listFiles(join(cwd, category), '.card'),
+        cardCategoryLabels[category] ?? category,
+      ),
+    ),
+    ...listFiles(join(cwd, 'narrator'), '.card').map((id) => ({ text: id, description: '서술자' })),
+  ];
+}
+
 export function computeCompletions(
   words: readonly string[],
   context: CompletionContext,
