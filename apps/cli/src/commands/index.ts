@@ -12,6 +12,7 @@ import {
   sealStoryMemory,
   readProjectJson,
   sceneStageCatalog,
+  type GenerateAllDraftsProgress,
 } from '@storyboard/story-engine';
 import {
   draftPath,
@@ -35,7 +36,6 @@ import {
   requiresApiKey,
   type AiProviderId,
 } from '@storyboard/story-model';
-
 
 import type { CliContainer } from '@/container';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
@@ -78,11 +78,31 @@ const sceneStageLabels: Record<string, string> = Object.fromEntries(
   sceneStageCatalog.map((definition) => [definition.id, definition.label]),
 );
 
+// What the rail shows beside the scene: the pipeline stage while it runs, then saving and review.
+function describeBatchStep(progress: GenerateAllDraftsProgress): string {
+  switch (progress.kind) {
+    case 'prepared':
+      return '준비';
+    case 'pipeline':
+      return progress.stage === undefined
+        ? '생성'
+        : `${sceneStageLabels[progress.stage] ?? progress.stage} ${progress.stageCurrent ?? 0}/${progress.stageTotal ?? 0}`;
+    case 'saving':
+      return '저장';
+    case 'revising':
+      return '검수·수정';
+  }
+}
+
 const generateScene: CommandHandler = async ({ container, args }) => {
   if (flagBoolean(args.flags, 'all')) {
     const result = await container.drafts.generateAll({
       onProgress: (progress) =>
-        container.logger.info(`${progress.current}/${progress.total} ${progress.label}`),
+        container.progress.update({
+          line: `${progress.current}/${progress.total} ${progress.label}`,
+          unit: { current: progress.current, total: progress.total, label: progress.label },
+          step: describeBatchStep(progress),
+        }),
     });
 
     if (!result.ok) {
@@ -113,8 +133,10 @@ const generateScene: CommandHandler = async ({ container, args }) => {
   const result = await container.drafts.generate({
     sceneUri: sceneUriFor(container.workspaceRoot, stem),
     force: flagBoolean(args.flags, 'force'),
-    onPipelineProgress: (stage, current, total) =>
-      container.logger.info(`${sceneStageLabels[stage] ?? stage} ${current}/${total}`),
+    onPipelineProgress: (stage, current, total) => {
+      const step = `${sceneStageLabels[stage] ?? stage} ${current}/${total}`;
+      container.progress.update({ line: step, step });
+    },
   });
 
   if (!result.ok) {
@@ -136,7 +158,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
 
   if (result.kind === 'generated' && reviseRequested) {
     const revised = await container.drafts.reviseScene(container.workspaceRoot, stem, {
-      onProgress: (message) => container.logger.info(message),
+      onProgress: (message) => container.progress.update({ line: message, step: message }),
     });
 
     // A rejected candidate means the original was kept. Saying nothing would let an unattended run
@@ -253,7 +275,7 @@ const generateOutline: CommandHandler = async ({ container, args }) => {
   const result = await container.novel.generateOutline({
     workspaceRoot: container.workspaceRoot,
     overwrite: flagBoolean(args.flags, 'force'),
-    onProgress: (message: string) => container.logger.info(message),
+    onProgress: (message: string) => container.progress.update({ line: message, step: message }),
   });
 
   return { ok: result.ok, message: describeOutlineResult(result.kind), data: result };
@@ -320,7 +342,8 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
     runMode: 'auto',
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
-    onProgress: (stage, message) => container.logger.info(`${stage}: ${message}`),
+    onProgress: (stage, message) =>
+      container.progress.update({ line: `${stage}: ${message}`, step: message }),
     requestApproval: async () => true,
     shouldCancel: () => false,
   });
