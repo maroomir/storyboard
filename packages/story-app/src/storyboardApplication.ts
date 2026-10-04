@@ -37,6 +37,7 @@ import {
   PromoteCardCandidatesUseCase,
   PromoteNoteCandidatesUseCase,
   RecommendCardsUseCase,
+  RenameCardUseCase,
   ReviewManuscriptUseCase,
   ReviseAfterGenerateGate,
   ReviseDraftUseCase,
@@ -143,6 +144,7 @@ interface EngineGraph {
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteNoteCandidatesUseCase: PromoteNoteCandidatesUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
+  readonly renameCardUseCase: RenameCardUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly reviewManuscriptUseCase: ReviewManuscriptUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
@@ -414,6 +416,7 @@ function buildServices(
       logger,
       repository: cardRecommendationRepository,
     }),
+    renameCardUseCase: new RenameCardUseCase({ fileSystem, logger }),
     renameSceneUseCase: new RenameSceneUseCase({ fileSystem, logger }),
     reviewManuscriptUseCase: new ReviewManuscriptUseCase({
       aiGateway,

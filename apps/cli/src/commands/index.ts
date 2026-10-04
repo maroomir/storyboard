@@ -27,7 +27,6 @@ import {
   sceneFilePath,
   sceneContextPaths,
   scenePath,
-  isIgnoredSampleCardFileName,
   joinStoryPath,
   NodeUri,
   type StoryUri,
@@ -47,13 +46,10 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-  parseCard,
   parseDraft,
   readSceneFile,
-  rewriteCardIdReferences,
   serializeCard,
   serializeDraft,
-  setCardId,
   parseSceneFileName,
   aiProviderIds,
   requiresApiKey,
@@ -519,9 +515,6 @@ const recommendCards: CommandHandler = async ({ container, args }) => {
       };
 };
 
-// Renaming a card is a workspace-wide edit: the file moves, its own id changes, and every card
-// that references it is rewritten. The editor does this in one WorkspaceEdit; here the writes are
-// sequential, so a crash mid-rename leaves references half-updated — run it on a clean tree.
 const cardIdPattern = /^[a-z0-9][a-z0-9-]*$/;
 
 function cardCategoryFrom(args: ParsedArguments): CardCategory | undefined {
@@ -533,97 +526,39 @@ function describeMissingCardCategory(verb: string): string {
 }
 
 const renameCard: CommandHandler = async ({ container, args }) => {
-  const kind = cardCategoryFrom(args);
-  const oldId = args.positionals[1];
-  const newId = flagString(args.flags, 'to');
+  const category = cardCategoryFrom(args);
+  const fromId = args.positionals[1];
+  const toId = flagString(args.flags, 'to');
 
-  if (kind === undefined) {
+  if (category === undefined) {
     return { ok: false, message: describeMissingCardCategory('card rename') };
   }
 
-  if (oldId === undefined || newId === undefined) {
+  if (fromId === undefined || toId === undefined) {
     return { ok: false, message: '바꿀 id 와 --to <새 id> 를 지정해 주세요.' };
   }
 
-  if (!cardIdPattern.test(newId)) {
-    return {
-      ok: false,
-      message: 'ID 는 영문 소문자, 숫자, 하이픈만 쓸 수 있고 숫자나 문자로 시작해야 합니다.',
-    };
+  const result = await container.cards.rename({
+    workspaceRoot: container.workspaceRoot,
+    category,
+    fromId,
+    toId,
+  });
+
+  if (!result.ok) {
+    return { ok: false, message: result.message };
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const directory = kind === 'character' ? paths.characterDirectory : paths.backgroundDirectory;
-  const oldUri = joinStoryPath(directory, `${oldId}.card`);
-  const newUri = joinStoryPath(directory, `${newId}.card`);
-
-  if (!(await container.fileSystem.exists(oldUri))) {
-    return { ok: false, message: `카드가 없습니다: ${oldId}` };
+  for (const path of result.unreadableFiles) {
+    container.logger.warn(`참조를 갱신하지 못했습니다: ${path}`);
   }
-
-  if (await container.fileSystem.exists(newUri)) {
-    return { ok: false, message: `이미 있습니다: ${newId}` };
-  }
-
-  const renamed = setCardId(
-    parseCard(new TextDecoder().decode(await container.fileSystem.readFile(oldUri))),
-    newId,
-  );
-
-  await container.fileSystem.writeFile(newUri, new TextEncoder().encode(serializeCard(renamed)));
-  await container.fileSystem.delete(oldUri);
-
-  // Only a character id is referenced from other cards; a background id is not.
-  const rewritten =
-    kind === 'character'
-      ? await rewriteCharacterReferences(container, paths, oldId, newId, newUri)
-      : 0;
 
   return {
     ok: true,
-    message: `${oldId} → ${newId}${rewritten > 0 ? ` (참조 ${rewritten}건 갱신)` : ''}`,
-    data: { oldId, newId, rewritten },
+    message: `${fromId} → ${toId}${result.rewrittenCount > 0 ? ` (참조 ${result.rewrittenCount}건 갱신)` : ''}`,
+    data: { oldId: fromId, newId: toId, rewritten: result.rewrittenCount },
   };
 };
-
-async function rewriteCharacterReferences(
-  container: CliContainer,
-  paths: ReturnType<typeof getStoryboardProjectPaths>,
-  oldId: string,
-  newId: string,
-  renamedUri: StoryUri,
-): Promise<number> {
-  let rewritten = 0;
-
-  for (const directory of [paths.characterDirectory, paths.backgroundDirectory]) {
-    rewritten += await eachCardFile(container, directory, async (uri) => {
-      if (uri.path === renamedUri.path) {
-        return false;
-      }
-
-      const raw = new TextDecoder().decode(await container.fileSystem.readFile(uri));
-      let next: string;
-
-      try {
-        next = serializeCard(rewriteCardIdReferences(parseCard(raw), oldId, newId));
-      } catch (error) {
-        // One unreadable card must not abort a rename that already moved the file. Report it and
-        // keep going; the operator fixes that card and re-runs.
-        container.logger.warn(`참조를 갱신하지 못했습니다: ${uri.fsPath} — ${String(error)}`);
-        return false;
-      }
-
-      if (next === raw) {
-        return false;
-      }
-
-      await container.fileSystem.writeFile(uri, new TextEncoder().encode(next));
-      return true;
-    });
-  }
-
-  return rewritten;
-}
 
 // The editor names a region by dragging; a terminal names it by line numbers. `--lines 40-60` is
 // the same input in the form this host has.
@@ -771,29 +706,6 @@ const expandDraft: CommandHandler = async ({ container, args }) => {
       : { ok: false, message: `늘리지 못했습니다 (${result.kind}).` };
   });
 };
-
-async function eachCardFile(
-  container: CliContainer,
-  directory: StoryUri,
-  visit: (uri: StoryUri, fileName: string) => Promise<boolean>,
-): Promise<number> {
-  const names = await container.fileSystem
-    .listFileNames(directory)
-    .catch(() => [] as readonly string[]);
-  let changed = 0;
-
-  for (const fileName of names) {
-    if (!fileName.endsWith('.card') || isIgnoredSampleCardFileName(fileName)) {
-      continue;
-    }
-
-    if (await visit(joinStoryPath(directory, fileName), fileName)) {
-      changed += 1;
-    }
-  }
-
-  return changed;
-}
 
 // Seeds come from the outline, so an agent runs `outline generate` first. Writing them is not a
 // generation — `buildSceneSeeds` is deterministic.
