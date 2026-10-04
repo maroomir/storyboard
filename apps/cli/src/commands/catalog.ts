@@ -368,6 +368,13 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'project show',
+    group: '기획',
+    usage: 'project show',
+    summary: '작품 이름과 계약(장르·독자층·시점·분량·구성)을 보여 줍니다',
+    examples: ['storyboard project show', 'storyboard project show --json'],
+  },
+  {
     verb: 'project set',
     writesWorkspace: true,
     group: '기획',
@@ -439,6 +446,13 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'novel generate',
     summary: '기획부터 원고 조립까지 한 번에 돌립니다 (모든 승인 자동)',
     flags: ['revise-iterations'],
+  },
+  {
+    verb: 'scene list',
+    group: '씬',
+    usage: 'scene list',
+    summary: '씬 카드를 번호순으로, 초안이 있는지와 함께 봅니다',
+    examples: ['storyboard scene list', 'storyboard scene list --json | jq -r ".data.scenes[].stem"'],
   },
   {
     verb: 'scene show',
@@ -516,6 +530,16 @@ export const commandCatalog: readonly CommandSpec[] = [
     flags: ['revise-iterations'],
   },
   {
+    verb: 'draft show',
+    group: '초안',
+    usage: 'draft show <stem>',
+    summary: '초안 본문을 출력합니다 (--json 이면 경로·분량·생성 정보도)',
+    examples: [
+      'storyboard draft show 01-scene-1-1',
+      'storyboard draft show 01-scene-1-1 --json | jq -r .data.path',
+    ],
+  },
+  {
     verb: 'draft edit',
     writesWorkspace: true,
     group: '초안',
@@ -573,6 +597,20 @@ export const commandCatalog: readonly CommandSpec[] = [
     summary:
       '카드를 고쳤지만 지금 초안이 맞다고 보고 이야기 상태 원장을 다시 봉인합니다 (범위를 비우면 낡은 씬 전부)',
     examples: ['storyboard state reseal', 'storyboard state reseal 5-32'],
+  },
+  {
+    verb: 'card list',
+    group: '카드와 정전',
+    usage: `card list [${cardCategories.join('|')}]`,
+    summary: '인물·배경 카드를 봅니다 (종류를 적으면 그 종류만)',
+    examples: ['storyboard card list', 'storyboard card list character --json'],
+  },
+  {
+    verb: 'card show',
+    group: '카드와 정전',
+    usage: 'card show <id>',
+    summary: '카드 하나의 내용을 봅니다 (인물에서 먼저 찾고 배경에서 찾습니다)',
+    examples: ['storyboard card show hana'],
   },
   {
     verb: 'card create',

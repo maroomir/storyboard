@@ -84,6 +84,7 @@ import {
 import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
 import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
+import { listCards, listScenes, showCard, showDraft, showProject } from './views';
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
@@ -1969,6 +1970,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'config set': runConfigSet,
   'params show': runParamsShow,
   doctor: runDoctor,
+  'project show': showProject,
   'project set': setProjectContract,
   'outline generate': generateOutline,
   'narrator list': listNarrators,
@@ -1976,6 +1978,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'narrator create': createNarrator,
   'narrator remove': removeNarrator,
   'novel generate': generateNovel,
+  'scene list': listScenes,
   'scene show': showScene,
   'scene create': createScene,
   'scene rename': renameScene,
@@ -1985,6 +1988,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'scene migrate': migrateScenes,
   'draft generate': generateScene,
   'draft revise': reviseScene,
+  'draft show': showDraft,
   'draft edit': editDraft,
   'draft augment': augmentDraft,
   'draft condense': condenseDraft,
@@ -1992,6 +1996,8 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'draft format': applyDraftFormat,
   'draft check': checkDraft,
   'state reseal': resealState,
+  'card list': listCards,
+  'card show': showCard,
   'card create': createCard,
   'card rename': renameCard,
   'card recommend': recommendCards,

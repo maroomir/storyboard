@@ -63,6 +63,8 @@ describe('computeCompletions', () => {
     expect(texts(['card', 'recommend', 'b'])).toEqual(['background']);
     expect(texts(['draft', 'check', ''])).toEqual(['grammar', 'continuity', 'slop']);
     expect(texts(['notes', 'connect', ''])).toEqual(['notion']);
+    expect(texts(['card', 'list', 'c'])).toEqual(['character']);
+    expect(texts(['card', 'show', ''])).toEqual(['seorin']);
   });
 
   it('completes flags for the verb plus the common ones, and values after a flag', () => {

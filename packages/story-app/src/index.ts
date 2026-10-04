@@ -3,8 +3,16 @@ export {
   type StoryboardApplicationDependencies,
   type StoryboardApplicationOptions,
 } from './storyboardApplication';
-export { CardManager, type CardManagerDependencies } from './managers/cardManager';
-export { DraftManager, type DraftManagerDependencies } from './managers/draftManager';
+export {
+  CardManager,
+  type CardManagerDependencies,
+  type CardReading,
+} from './managers/cardManager';
+export {
+  DraftManager,
+  type DraftManagerDependencies,
+  type DraftReading,
+} from './managers/draftManager';
 export {
   ManuscriptManager,
   type ManuscriptManagerDependencies,

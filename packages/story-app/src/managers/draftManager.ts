@@ -21,6 +21,7 @@ import type {
   GenerateSceneBeatsRequest,
   GenerateSceneBeatsResult,
   GenerateSceneBeatsUseCase,
+  IFileSystem,
   ISceneSidebarRepository,
   ReviseAfterGenerateGate,
   ReviseAfterGenerateHooks,
@@ -35,7 +36,19 @@ import type {
   SaveDraftEditResult,
   SaveDraftEditUseCase,
 } from '@storyboard/story-engine';
-import type { StoryUri } from '@storyboard/story-model';
+import {
+  draftPath,
+  getStoryboardProjectPaths,
+  parseDraft,
+  type Draft,
+  type SceneListItem,
+  type StoryUri,
+} from '@storyboard/story-model';
+
+export interface DraftReading {
+  readonly uri: StoryUri;
+  readonly draft: Draft;
+}
 
 export interface DraftManagerDependencies {
   readonly generateDraftUseCase: GenerateDraftUseCase;
@@ -50,6 +63,7 @@ export interface DraftManagerDependencies {
   readonly saveDraftEditUseCase: SaveDraftEditUseCase;
   readonly renameSceneUseCase: RenameSceneUseCase;
   readonly sceneSidebarRepository: ISceneSidebarRepository;
+  readonly fileSystem: IFileSystem;
 }
 
 // Everything an app does to one scene's draft: generate it, revise it, reshape it, save an edit,
@@ -59,6 +73,32 @@ export class DraftManager {
 
   public constructor(private readonly deps: DraftManagerDependencies) {
     this.scenes = deps.sceneSidebarRepository;
+  }
+
+  // The scene cards in number order, each saying whether its draft is missing, current or older
+  // than the card. A workspace with no scene directory yet has no scenes.
+  public async listScenes(workspaceRoot: StoryUri): Promise<SceneListItem[]> {
+    const { sceneDirectory } = getStoryboardProjectPaths(workspaceRoot);
+
+    if (!(await this.deps.fileSystem.exists(sceneDirectory))) {
+      return [];
+    }
+
+    return await this.scenes.list(workspaceRoot);
+  }
+
+  public async readDraft(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+  ): Promise<DraftReading | undefined> {
+    const uri = draftPath(workspaceRoot, sceneStem);
+
+    if (!(await this.deps.fileSystem.exists(uri))) {
+      return undefined;
+    }
+
+    const text = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
+    return { uri, draft: parseDraft(text) };
   }
 
   public generate(request: GenerateDraftRequest): Promise<GenerateDraftResult> {
