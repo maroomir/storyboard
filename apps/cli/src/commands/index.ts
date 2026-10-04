@@ -606,12 +606,12 @@ async function rewriteDraft(
     return { ok: false, message: result.message };
   }
 
-  // NOTE: 터미널 호출은 편집 세션이 아니므로 고치기 전 판본을 .draft/ 에 남기지 않는다(종전과 같음).
+  // 손질 한 번이 한 편집 세션이다. 고치기 전 판본은 편집기에서처럼 .draft/ 에 남는다.
   const saved = await container.drafts.saveEdit({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
     body: replaceLines(body, range, result.text),
-    archivePrevious: false,
+    archivePrevious: true,
   });
 
   if (!saved.ok) {

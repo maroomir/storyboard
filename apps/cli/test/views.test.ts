@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -231,5 +231,17 @@ describe('draft check', () => {
 
     expect(Array.isArray(slop.data)).toBe(true);
     expect(continuity).toMatchObject({ ok: true, message: '대조할 정전 사실이 없습니다.' });
+  });
+});
+
+describe('draft expand', () => {
+  it('keeps the version it started from in .draft/', async () => {
+    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.\n\n하나는 우산을 접었다.');
+
+    const expanded = await dispatch(['draft', 'expand', '01-opening'], deps());
+
+    expect(expanded.exitCode, expanded.stdout).toBe(0);
+    expect(readdirSync(join(workspace, '.draft', '01-opening'))).toHaveLength(1);
   });
 });

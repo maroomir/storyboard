@@ -54,10 +54,15 @@ Verbs read and write the work through manager verbs, not the file system: reads
 `drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `cards.listNarrators`,
 `novel.readProject`, and `describeWorkspace` for `status` (the engine names the open step as a
 `WorkspaceNextStep`; `nextStepCommands` in `apps/cli/src/commands/status.ts` owns the command for
-each); writes `drafts.createScene`, `novel.seedScenes`, `cards.rename`,
-`cards.createNarrator`/`removeNarrator`, `cards.applyBuildTargets`, `novel.applyCompletedScenes`
-and `drafts.saveEdit`. What stays in the CLI is the terminal's input form — flags turned into a
-request, `--lines` slicing — and the unattended policy of applying a whole proposal.
+each), `drafts.readScene`; writes `drafts.createScene`, `novel.seedScenes`, `novel.updateContract`,
+`drafts.resealStoryState`, `cards.rename`, `cards.createNarrator`/`removeNarrator`,
+`cards.applyBuildTargets`, `novel.applyCompletedScenes`, `drafts.saveEdit` and
+`manuscript.writeExport`; checks `drafts.check` (the extension's diagnostics call the same one).
+What stays in the CLI is the terminal's input form — flags turned into a request, `--lines`
+slicing, scene ranges — and the unattended policy of applying a whole proposal. `init` is the one
+exception: it runs before a workspace exists, so it calls the engine's workspace functions
+(`createWorkspace`, `ensureWorkspaceGitignore`, `sealStoryMemory`, …) directly, and `git init`
+stays in the CLI's `gitRepository` adapter.
 
 ## Layering
 

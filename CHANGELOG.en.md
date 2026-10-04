@@ -31,6 +31,8 @@ after the first public release.
 ### Removed
 
 - **The commands that converted pre-0.8 works are gone.** The CLI's `scene migrate` and `cards migrate`, the extension's `Storyboard: Migrate Scenes to Cards` and `Storyboard: Migrate Card Text Fields to List`, and the `doctor` checks that counted legacy `scene/*.txt`, placeholder summaries and inline summaries. Convert a work that still needs it with 0.11.5 or earlier before upgrading. An inline `summary` is still read.
+- **`manuscript export --out` writes the format its extension names.** A `.txt` target gets plain text with the markdown marks removed, as the editor's "Plain text" export does; anything else gets markdown. It used to write markdown whatever the extension.
+- **`draft condense` and `draft expand` keep the draft they started from in `.draft/`,** as an edit in the editor does. They used to overwrite it with no history.
 
 ### Added
 

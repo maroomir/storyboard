@@ -30,6 +30,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 ### 제거
 
 - **0.8 이전 작품을 변환하던 명령을 없앴습니다.** CLI 의 `scene migrate`·`cards migrate`, 익스텐션의 `Storyboard: Migrate Scenes to Cards`·`Storyboard: Migrate Card Text Fields to List`, 그리고 `doctor` 가 구형 `scene/*.txt`·플레이스홀더 요약·인라인 summary 를 세던 점검이 사라집니다. 아직 변환하지 않은 작품은 0.11.5 이하에서 먼저 변환한 뒤 올리세요. 인라인 `summary` 는 계속 읽힙니다.
+- **`manuscript export --out`이 확장자에 맞는 형식으로 냅니다.** `.txt`면 편집기의 «Plain text» 내보내기와 같이 마크다운 기호를 걷은 평문, 그 밖은 마크다운입니다. 지금까지는 확장자와 관계없이 마크다운을 그대로 썼습니다.
+- **`draft condense`·`draft expand`가 고치기 전 초안을 `.draft/`에 남깁니다.** 편집기에서 손질할 때와 같습니다. 지금까지는 이력 없이 덮어썼습니다.
 
 ### 추가
 
