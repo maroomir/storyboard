@@ -228,13 +228,13 @@ describe('buildNoteAbsorbPlan', () => {
       ...baseInput,
       cards: [hanaCard],
       scenes: [existingScene('03-prologue', '프롤로그')],
-      notes: [note('씬/1 만조.md'), note('씬/2 등대.md')],
+      notes: [note('씬/1 만조.md'), note('씬/2 등대.md'), note('씬/3 프롤로그.md')],
       extractions: [
         extraction({
           scenes: coerceNoteExtraction({
             scenes: [
               { title: '등대의 밤', slug: 'prologue', summary: '기록을 찾는다.', sourceNote: '씬/2 등대.md' },
-              { title: '프롤로그', summary: '이미 있는 씬.', sourceNote: '씬/1 만조.md' },
+              { title: '프롤로그', summary: '이미 있는 씬.', sourceNote: '씬/3 프롤로그.md' },
               {
                 title: '만조',
                 slug: '만조',
@@ -262,6 +262,48 @@ describe('buildNoteAbsorbPlan', () => {
     expect(plan.scenes[0]?.card.location).toBeUndefined();
     expect(plan.skippedScenes.map((scene) => scene.label)).toEqual(['프롤로그']);
     expect(plan.warnings).toHaveLength(2);
+  });
+
+  it('makes one scene of a note, its other parts beats, and none of a draft', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('에피소드/01.md'), note('초안/01.md')],
+      extractions: [
+        extraction({
+          notes: [
+            { id: '에피소드/01.md', kinds: ['scene'] },
+            { id: '초안/01.md', kinds: ['draft', 'character'] },
+          ],
+          scenes: coerceNoteExtraction({
+            scenes: [
+              {
+                title: '첫 만남',
+                slug: 'first-meeting',
+                summary: '둘이 처음 만난다.',
+                beats: ['공항에서 마주친다', '짐이 바뀐다'],
+                sourceNote: '에피소드/01.md',
+              },
+              { title: '초안의 장면', summary: '원고 속 사건.', sourceNote: '초안/01.md' },
+            ],
+          }).scenes,
+        }),
+        // 한 노트가 두 요청에 나뉘어 읽히면 같은 출처의 씬이 다음 요청에서 또 온다.
+        extraction({
+          scenes: coerceNoteExtraction({
+            scenes: [{ title: '집으로', summary: '함께 집으로 간다.', sourceNote: '에피소드/01.md' }],
+          }).scenes,
+        }),
+      ],
+    });
+
+    expect(plan.scenes).toHaveLength(1);
+    expect(plan.scenes[0]?.card).toMatchObject({
+      title: '첫 만남',
+      summary: '둘이 처음 만난다.',
+      beats: ['공항에서 마주친다', '짐이 바뀐다', '함께 집으로 간다.'],
+    });
+    expect(plan.draftNotes).toEqual([{ id: '초안/01.md', title: '초안/01' }]);
+    expect(plan.unclassifiedNotes).toEqual([]);
   });
 
   it('reports the notes nothing was taken from', () => {

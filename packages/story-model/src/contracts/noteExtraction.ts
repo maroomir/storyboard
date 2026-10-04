@@ -2,8 +2,9 @@ import { z } from 'zod';
 
 import { characterRoles } from '#model/format/card';
 
-// What a note may hold. `other` alone means nothing in the note belongs in the workspace.
-export const noteKinds = ['character', 'background', 'scene', 'premise', 'other'] as const;
+// What a note may hold. `other` alone means nothing in the note belongs in the workspace; `draft` is
+// prose already written, which gives cards and premise but never a scene.
+export const noteKinds = ['character', 'background', 'scene', 'premise', 'draft', 'other'] as const;
 
 export type NoteKind = (typeof noteKinds)[number];
 
@@ -101,6 +102,7 @@ const noteSceneSchema = z.object({
   title: z.string().trim().min(1),
   slug: optionalText,
   summary: z.string().trim().min(1),
+  beats: textList(),
   characterNames: textList(),
   locationName: optionalText,
   mood: optionalText,

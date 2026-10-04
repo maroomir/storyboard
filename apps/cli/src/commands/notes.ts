@@ -82,6 +82,12 @@ function describePlan(plan: NoteAbsorbPlan): string[] {
     lines.push(`시놉시스  ${plan.synopsis.logline || '(로그라인 없음)'}`);
   }
 
+  for (const note of plan.draftNotes) {
+    lines.push(
+      `원고      ${note.title} (${note.id}) — 인물·배경·작품 정보만 옮기고 씬은 만들지 않습니다`,
+    );
+  }
+
   for (const note of plan.unclassifiedNotes) {
     lines.push(`분류 못함  ${note.title} (${note.id}) — 옮기지 않습니다`);
   }

@@ -49,6 +49,8 @@ export interface NoteAbsorbPlan {
   readonly synopsis?: OutlineSynopsis;
   // Notes nothing was taken from. They are reported, never written anywhere.
   readonly unclassifiedNotes: readonly UnclassifiedNote[];
+  // Prose already written: read for cards and premise, never turned into scenes.
+  readonly draftNotes: readonly UnclassifiedNote[];
   readonly warnings: readonly string[];
 }
 
@@ -334,6 +336,50 @@ function planCards(
   return { plans, characters, backgrounds };
 }
 
+function findDraftNoteIds(extractions: readonly NoteExtraction[]): Set<string> {
+  return new Set(
+    extractions.flatMap((extraction) =>
+      extraction.notes
+        .filter((note) => note.kinds.some((kind) => kind === 'draft'))
+        .map((note) => note.id),
+    ),
+  );
+}
+
+function beatsOf(scene: NoteExtractionScene): string[] {
+  return scene.beats.length > 0 ? scene.beats : [scene.summary];
+}
+
+// One note is one scene. A model that splits a note anyway, or a note long enough to be read in two
+// requests, gives several scenes for one source; they become the first one with every part a beat.
+function mergeScenesBySourceNote(scenes: readonly NoteExtractionScene[]): NoteExtractionScene[] {
+  const merged: NoteExtractionScene[] = [];
+  const indexBySourceNote = new Map<string, number>();
+
+  for (const scene of scenes) {
+    const index =
+      scene.sourceNote === undefined ? undefined : indexBySourceNote.get(scene.sourceNote);
+    const known = index === undefined ? undefined : merged[index];
+
+    if (index === undefined || known === undefined) {
+      if (scene.sourceNote !== undefined) {
+        indexBySourceNote.set(scene.sourceNote, merged.length);
+      }
+
+      merged.push(scene);
+      continue;
+    }
+
+    merged[index] = {
+      ...known,
+      beats: [...beatsOf(known), ...beatsOf(scene)],
+      characterNames: union(known.characterNames, scene.characterNames),
+    };
+  }
+
+  return merged;
+}
+
 // A notebook has no scene numbers. The only order it has is the order its notes were read in, and
 // within one note the order the scenes were written in — nothing here reorders by content.
 function orderScenes(
@@ -341,9 +387,12 @@ function orderScenes(
   notes: readonly NoteDocument[],
 ): NoteExtractionScene[] {
   const noteIndexById = new Map(notes.map((note, index) => [note.id, index]));
-
-  return extractions
+  const draftNoteIds = findDraftNoteIds(extractions);
+  const scenes = extractions
     .flatMap((extraction) => extraction.scenes)
+    .filter((scene) => scene.sourceNote === undefined || !draftNoteIds.has(scene.sourceNote));
+
+  return mergeScenesBySourceNote(scenes)
     .map((scene, position) => ({
       scene,
       position,
@@ -428,6 +477,7 @@ function planScenes(
         ...(scene.mood === undefined ? {} : { mood: scene.mood }),
         ...(scene.purpose === undefined ? {} : { purpose: scene.purpose }),
         summary: scene.summary,
+        ...(scene.beats.length > 0 ? { beats: scene.beats } : {}),
       },
       ...(scene.sourceNote === undefined ? {} : { sourceNote: scene.sourceNote }),
     });
@@ -459,6 +509,14 @@ function findUnclassifiedNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
 
   return input.notes
     .filter((note) => !usedNoteIds.has(note.id))
+    .map((note) => ({ id: note.id, title: note.title }));
+}
+
+function findDraftNotes(input: NoteAbsorbPlanInput): UnclassifiedNote[] {
+  const draftNoteIds = findDraftNoteIds(input.extractions);
+
+  return input.notes
+    .filter((note) => draftNoteIds.has(note.id))
     .map((note) => ({ id: note.id, title: note.title }));
 }
 
@@ -494,6 +552,7 @@ export function buildNoteAbsorbPlan(input: NoteAbsorbPlanInput): NoteAbsorbPlan 
     setting: input.synthesis.setting,
     ...(synopsis === undefined ? {} : { synopsis }),
     unclassifiedNotes: findUnclassifiedNotes(input),
+    draftNotes: findDraftNotes(input),
     warnings: scenes.warnings,
   };
 }
