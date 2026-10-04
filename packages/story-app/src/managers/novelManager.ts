@@ -7,6 +7,7 @@ import {
   type GenerateOutlineResult,
   type GenerateOutlineUseCase,
   type INovelRunStateRepository,
+  type IOutlineRepository,
   type NovelPipeline,
   type NovelPipelineResult,
   type NovelPipelineRunOptions,
@@ -14,13 +15,14 @@ import {
   type UsageMeter,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { UsageAmount } from '@storyboard/story-model';
+import type { StoryboardProject, StoryUri, UsageAmount } from '@storyboard/story-model';
 
 export interface NovelManagerDependencies {
   readonly novelPipeline: NovelPipeline;
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly novelRunStateRepository: INovelRunStateRepository;
+  readonly outlineRepository: IOutlineRepository;
   readonly configBridge: ConfigBridge;
   readonly usageMeter: UsageMeter;
 }
@@ -86,6 +88,11 @@ export class NovelManager {
     } finally {
       spending.stop();
     }
+  }
+
+  // The work itself: its name, format and the contract every generation reads.
+  public readProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
+    return this.deps.outlineRepository.loadProject(workspaceRoot);
   }
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {

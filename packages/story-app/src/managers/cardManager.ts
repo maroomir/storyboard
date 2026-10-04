@@ -7,6 +7,7 @@ import type {
   CreateCardUseCase,
   IBibleCandidateRepository,
   ICardSidebarRepository,
+  IFileSystem,
   PrepareBibleCandidatePromotionResult,
   PrepareCardCandidatePromotionResult,
   PromoteBibleCandidatesUseCase,
@@ -15,15 +16,26 @@ import type {
   RecommendCardsRequest,
   RecommendCardsResult,
   RecommendCardsUseCase,
+  SidebarCardCategory,
   StoryFileSnapshot,
 } from '@storyboard/story-engine';
-import type {
-  CardCandidateItem,
-  CardCollectProposal,
-  BibleFact,
-  StoryboardCard,
-  StoryUri,
+import {
+  backgroundCardPath,
+  characterCardPath,
+  parseCard,
+  type CardCandidateItem,
+  type CardCollectProposal,
+  type BibleFact,
+  type SidebarCardSummary,
+  type StoryboardCard,
+  type StoryUri,
 } from '@storyboard/story-model';
+
+export interface CardReading {
+  readonly category: SidebarCardCategory;
+  readonly uri: StoryUri;
+  readonly card: StoryboardCard;
+}
 
 export interface CardManagerDependencies {
   readonly createCardUseCase: CreateCardUseCase;
@@ -34,6 +46,7 @@ export interface CardManagerDependencies {
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
+  readonly fileSystem: IFileSystem;
 }
 
 // The story bible's cards and canon: create and list cards, and move what generation proposed
@@ -45,6 +58,32 @@ export class CardManager {
   public constructor(private readonly deps: CardManagerDependencies) {
     this.sidebar = deps.cardSidebarRepository;
     this.bibleCandidates = deps.bibleCandidateRepository;
+  }
+
+  public list(
+    workspaceRoot: StoryUri,
+    category: SidebarCardCategory,
+  ): Promise<SidebarCardSummary[]> {
+    return this.sidebar.list(workspaceRoot, category);
+  }
+
+  // A card by id alone: a character is looked for first, then a background.
+  public async read(workspaceRoot: StoryUri, id: string): Promise<CardReading | undefined> {
+    const candidates: readonly CardReading['category'][] = ['character', 'background'];
+
+    for (const category of candidates) {
+      const uri =
+        category === 'character'
+          ? characterCardPath(workspaceRoot, id)
+          : backgroundCardPath(workspaceRoot, id);
+
+      if (await this.deps.fileSystem.exists(uri)) {
+        const text = new TextDecoder().decode(await this.deps.fileSystem.readFile(uri));
+        return { category, uri, card: parseCard(text) };
+      }
+    }
+
+    return undefined;
   }
 
   public deriveUniqueId(

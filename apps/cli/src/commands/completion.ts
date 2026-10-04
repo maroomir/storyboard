@@ -211,6 +211,7 @@ function positionalCompletions(
       );
     }
     case `<${cardCategories.join('|')}>`:
+    case `[${cardCategories.join('|')}]`:
       return cardCategories.map((category) => ({
         text: category,
         description: cardCategoryLabels[category] ?? category,
