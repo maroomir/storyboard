@@ -84,6 +84,7 @@ import {
 import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
 import { readSceneCards } from './sceneCards';
 import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
+import { showStatus } from './status';
 import { listCards, listScenes, showCard, showDraft, showProject } from './views';
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
@@ -1970,6 +1971,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'config set': runConfigSet,
   'params show': runParamsShow,
   doctor: runDoctor,
+  status: showStatus,
   'project show': showProject,
   'project set': setProjectContract,
   'outline generate': generateOutline,

@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { serializeDraft } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { commandCatalog } from '../src/commands/catalog';
 import { dispatch, type DispatchDependencies } from '../src/commands/dispatch';
+import { nextStepCommands } from '../src/commands/status';
 
 const silentLogger = {
   info: () => undefined,
@@ -146,5 +148,60 @@ describe('project show', () => {
     expect(shown.data.setting.genre).toBe('미스터리');
     expect(shown.data.missing).toEqual(['audience', 'pov', 'targetWordCount']);
     expect(shown.message).toContain('독자층: —');
+  });
+});
+
+describe('status', () => {
+  it('walks the next step from an empty contract to a reviewed manuscript', async () => {
+    const empty = await runJson('status');
+    expect(empty.data.project.missingContract).toEqual(['audience', 'pov', 'targetWordCount']);
+    expect(empty.data.next).toMatchObject({ step: 'fill-contract', command: 'project set' });
+
+    await dispatch(
+      ['project', 'set', '--audience', '성인', '--pov', 'third-limited', '--target-words', '90000'],
+      deps(),
+    );
+    expect((await runJson('status')).data.next.command).toBe('outline generate');
+
+    await dispatch(['scene', 'create', '--name', 'opening'], deps());
+    await dispatch(['scene', 'create', '--name', 'storm'], deps());
+    await dispatch(['card', 'create', 'character', '--name', '하나', '--id', 'hana'], deps());
+    writeDraft('01-opening', '비가 그친 항구에 첫 배가 들어왔다.');
+
+    const drafting = await runJson('status');
+    expect(drafting.data.scenes).toEqual({ total: 2 });
+    expect(drafting.data.drafts).toMatchObject({ missing: 1, withWarnings: 0 });
+    expect(drafting.data.cards).toEqual({ characters: 1, backgrounds: 0, narrators: 0 });
+    expect(drafting.data.next.command).toBe('draft generate --all');
+
+    writeDraft('02-storm', '폭풍이 방파제를 넘었다.');
+    expect((await runJson('status')).data.next.command).toBe('manuscript assemble');
+
+    mkdirSync(join(workspace, 'manuscript'), { recursive: true });
+    writeFileSync(join(workspace, 'manuscript', 'manuscript.md'), '# 보기 시험\n');
+    expect((await runJson('status')).data.next.command).toBe('manuscript review');
+
+    writeFileSync(join(workspace, 'manuscript', 'REVIEW.md'), '# 검사\n');
+    const done = await runJson('status');
+    expect(done.data.next).toMatchObject({ step: 'none', command: null });
+    expect(done.data.manuscript).toEqual({ isAssembled: true, isStale: false, isReviewed: true });
+  });
+
+  it('prints the overview with the next command on the last line', async () => {
+    const result = await dispatch(['status'], deps());
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('계약      독자층·시점·목표 분량 비어 있음');
+    expect(result.stdout.trimEnd().split('\n').at(-1)).toContain('storyboard project set');
+  });
+
+  it('only recommends commands the catalog has', () => {
+    const verbs = commandCatalog.map((spec) => spec.verb);
+
+    for (const command of Object.values(nextStepCommands)) {
+      if (command !== undefined) {
+        expect(verbs.some((verb) => `${command} `.startsWith(`${verb} `))).toBe(true);
+      }
+    }
   });
 });

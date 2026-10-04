@@ -36,6 +36,13 @@ export {
   type ParameterReport,
 } from './parameterRegistry';
 export {
+  describeWorkspaceStatus,
+  workspaceNextSteps,
+  type DescribeWorkspaceStatusInput,
+  type WorkspaceNextStep,
+  type WorkspaceStatus,
+} from './workspaceStatus';
+export {
   loadResourceOverrides,
   resourceLayout,
   type ResourceOverrideApplied,
