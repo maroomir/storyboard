@@ -51,6 +51,7 @@ interface OllamaChatResponse {
   };
   readonly prompt_eval_count?: number;
   readonly eval_count?: number;
+  readonly done_reason?: string;
 }
 
 export class OllamaProvider implements AiProvider {
@@ -123,7 +124,13 @@ export class OllamaProvider implements AiProvider {
       }
 
       const usage = usageFromOllamaResponse(response);
-      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
+      return aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        usage,
+        isTruncated: response.done_reason === 'length',
+      });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',

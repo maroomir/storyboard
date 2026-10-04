@@ -118,6 +118,21 @@ describe("OllamaProvider", () => {
       { role: "user", content: "본문" }
     ])
   })
+
+  it.each([
+    ["length", true],
+    ["stop", undefined]
+  ] as const)("reports a %s finish as truncated: %s", async (doneReason, expectedTruncation) => {
+    const client: OllamaClientLike = {
+      get: async (): Promise<Record<string, unknown>> => ({}),
+      post: async (): Promise<Record<string, unknown>> => ({ message: { content: '{"notes":[' }, done_reason: doneReason })
+    }
+    const provider = new OllamaProvider({ baseUrl: "http://localhost:11434", model: "llama3.3", createClient: (): OllamaClientLike => client })
+
+    const response = await provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }] })
+
+    expect(response.isTruncated).toBe(expectedTruncation)
+  })
 })
 
 interface FakeOllamaPostBody {

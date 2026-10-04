@@ -51,6 +51,7 @@ interface OpenAiChatCompletionResponse {
     readonly message?: {
       readonly content?: string | null;
     };
+    readonly finish_reason?: string | null;
   }>;
   readonly usage?: {
     readonly prompt_tokens?: number;
@@ -109,7 +110,13 @@ export class OpenAiProvider implements AiProvider {
 
       const text = response.choices[0]?.message?.content ?? '';
       const usage = usageFromOpenAiResponse(response);
-      return aiGenerateResponseWithUsage({ providerId: this.id, model: this.model, text, usage });
+      return aiGenerateResponseWithUsage({
+        providerId: this.id,
+        model: this.model,
+        text,
+        usage,
+        isTruncated: response.choices[0]?.finish_reason === 'length',
+      });
     } catch (error) {
       throw new AiProviderError(
         'generation-failed',
