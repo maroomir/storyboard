@@ -65,6 +65,7 @@ describe('StoryboardTui', () => {
 
     expect(lastFrame()).toContain('Storyboard');
     expect(lastFrame()).toContain('1.2.3');
+    await wait(50);
 
     stdin.write('/doctor');
     await wait(20);
@@ -79,6 +80,8 @@ describe('StoryboardTui', () => {
     const { lastFrame, stdin } = render(
       <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
     );
+    // Ink attaches its input listener in an effect, after the first frame.
+    await wait(50);
 
     stdin.write('config s');
     await wait(20);
