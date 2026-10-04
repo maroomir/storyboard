@@ -80,6 +80,25 @@ describe("OpenAiProvider", () => {
     ])
   })
 
+  it("caps output with max_completion_tokens, which reasoning models require", async () => {
+    let captured: FakeOpenAiCreateRequest | undefined
+    const provider = new OpenAiProvider({
+      apiKey: "sk-test",
+      model: "gpt-6-luna",
+      createClient: (): OpenAiClientLike =>
+        createFakeOpenAiClient({
+          onCreate: (request): void => {
+            captured = request
+          }
+        })
+    })
+
+    await provider.generate({ taskName: "noteExtraction", messages: [{ role: "user", content: "노트" }], maxTokens: 16000 })
+
+    expect(captured).toMatchObject({ max_completion_tokens: 16000 })
+    expect(captured).not.toHaveProperty("max_tokens")
+  })
+
   it.each([
     ["length", true],
     ["stop", undefined]
