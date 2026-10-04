@@ -23,9 +23,11 @@ import {
   scenePath,
   NodeUri,
   type StoryUri,
+  compositionCatalog,
   compositionKinds,
   formatSceneOrderRanges,
   mainThreadId,
+  pointOfViewCatalog,
   pointOfViews,
   type CompositionKind,
   type NarratorCard,
@@ -39,6 +41,7 @@ import {
   type AiProviderId,
 } from '@storyboard/story-model';
 
+import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
 import type { WorkspaceStatus } from '@storyboard/story-app';
 import { flagBoolean, flagString, type ParsedArguments } from '@/cliArguments';
@@ -1298,8 +1301,18 @@ const initProject: CommandHandler = async ({ container, args }) => {
   }
 
   const name = flagString(args.flags, 'title') ?? args.positionals[0];
+  const hasName = name !== undefined && name.trim().length > 0;
 
-  if (name === undefined || name.trim().length === 0) {
+  // A person at a terminal is asked instead of being told to start over with flags.
+  if (!hasName && container.prompter !== undefined) {
+    const answers = await askInitContract(container.prompter, args);
+
+    return answers === undefined
+      ? { ok: true, message: '취소했습니다. 아무것도 만들지 않았습니다.' }
+      : initProject({ container, args: { ...args, flags: { ...args.flags, ...answers } } });
+  }
+
+  if (!hasName) {
     return {
       ok: false,
       message: '작품 이름이 필요합니다: storyboard init --title "작품 이름"',
@@ -1415,6 +1428,73 @@ type ContractInput =
       readonly narratorCards?: readonly NarratorCard[];
     }
   | { readonly message: string };
+
+// The onboarding rail: the name, then each contract choice the flags did not already make. A
+// skipped answer leaves that field for `project set` later; backing out at any step creates nothing.
+async function askInitContract(
+  prompter: IPrompter,
+  args: ParsedArguments,
+): Promise<Record<string, string> | undefined> {
+  const later = '';
+  prompter.announce('┌  새 작품 만들기');
+
+  const title = await prompter.askText({ title: '작품 이름' });
+  if (title === undefined || title.length === 0) {
+    return undefined;
+  }
+  prompter.announce(`◇  작품 이름  › ${title}`);
+  const answers: Record<string, string> = { title };
+
+  if (flagString(args.flags, 'genre') === undefined) {
+    const genre = await prompter.askText({ title: '장르', hint: '비우면 나중에' });
+    if (genre === undefined) {
+      return undefined;
+    }
+    prompter.announce(`◇  장르  › ${genre.length > 0 ? genre : '나중에'}`);
+    if (genre.length > 0) {
+      answers.genre = genre;
+    }
+  }
+
+  if (flagString(args.flags, 'pov') === undefined) {
+    const pov = await prompter.choose<string>({
+      title: '시점',
+      details: [],
+      options: [
+        ...pointOfViews.map((value) => ({ label: pointOfViewCatalog[value].optionLabel, value })),
+        { label: '나중에 정하기', value: later },
+      ],
+    });
+    if (pov === undefined) {
+      return undefined;
+    }
+    prompter.announce(
+      `◇  시점  › ${pov === later ? '나중에' : pointOfViewCatalog[pov as PointOfView].label}`,
+    );
+    if (pov !== later) {
+      answers.pov = pov;
+    }
+  }
+
+  if (flagString(args.flags, 'composition') === undefined) {
+    const composition = await prompter.choose<CompositionKind>({
+      title: '구성',
+      details: [],
+      options: compositionKinds.map((value) => ({
+        label: compositionCatalog[value].optionLabel,
+        value,
+      })),
+    });
+    if (composition === undefined) {
+      return undefined;
+    }
+    prompter.announce(`◇  구성  › ${compositionCatalog[composition].label}`);
+    answers.composition = composition;
+  }
+
+  prompter.announce('└  만드는 중…');
+  return answers;
+}
 
 async function readContractInput(
   container: CliContainer,

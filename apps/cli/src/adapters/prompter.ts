@@ -1,3 +1,5 @@
+import { createInterface } from 'node:readline/promises';
+
 import { renderBox } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
 
@@ -18,9 +20,19 @@ export interface ChoiceRequest<T> {
   readonly options: readonly ChoiceOption<T>[];
 }
 
+export interface TextRequest {
+  readonly title: string;
+  // Shown beside the question: what an empty answer means, an example.
+  readonly hint?: string;
+}
+
 export interface IPrompter {
   // Undefined when the person backed out (Esc, Ctrl+C).
   choose<T>(request: ChoiceRequest<T>): Promise<T | undefined>;
+  // The typed line, trimmed; undefined when the person backed out.
+  askText(request: TextRequest): Promise<string | undefined>;
+  // A line that stays on screen between questions, such as a wizard's answered steps.
+  announce(line: string): void;
   // The interactive screen asks before a paid batch run; a one-shot command was started on
   // purpose and does not.
   readonly shouldConfirmPaidRuns: boolean;
@@ -75,6 +87,36 @@ export class TerminalPrompter implements IPrompter {
     private readonly liveArea: LiveArea,
     private readonly stream: TerminalStream,
   ) {}
+
+  public announce(line: string): void {
+    this.liveArea.writeAbove(`${line}\n`);
+  }
+
+  // A cooked-mode line on the process's stdin, so the terminal's own editing and the IME handle
+  // Hangul input. Ctrl+C and Ctrl+D back out.
+  public async askText(request: TextRequest): Promise<string | undefined> {
+    const { paint } = this.stream.theme;
+    const hint = request.hint === undefined ? '' : paint('muted', ` (${request.hint})`);
+    const readline = createInterface({ input: process.stdin, output: process.stderr });
+    const backOut = new AbortController();
+    readline.on('SIGINT', () => backOut.abort());
+    readline.on('close', () => backOut.abort());
+
+    try {
+      const answer = await readline.question(
+        `${paint('accent', '◆')}  ${request.title}${hint}  › `,
+        { signal: backOut.signal },
+      );
+      // The answered question line gives way to the caller's own record of the step.
+      process.stderr.write('\u001b[1A\u001b[2K');
+      return answer.trim();
+    } catch {
+      process.stderr.write('\n');
+      return undefined;
+    } finally {
+      readline.close();
+    }
+  }
 
   public choose<T>(request: ChoiceRequest<T>): Promise<T | undefined> {
     let selectedIndex = 0;
