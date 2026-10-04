@@ -16,6 +16,9 @@ import type {
   RecommendCardsRequest,
   RecommendCardsResult,
   RecommendCardsUseCase,
+  RenameCardRequest,
+  RenameCardResult,
+  RenameCardUseCase,
   SidebarCardCategory,
   StoryFileSnapshot,
 } from '@storyboard/story-engine';
@@ -40,6 +43,7 @@ export interface CardReading {
 export interface CardManagerDependencies {
   readonly createCardUseCase: CreateCardUseCase;
   readonly recommendCardsUseCase: RecommendCardsUseCase;
+  readonly renameCardUseCase: RenameCardUseCase;
   readonly collectCardProposalsUseCase: CollectCardProposalsUseCase;
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
@@ -110,6 +114,10 @@ export class CardManager {
 
   public write(workspaceRoot: StoryUri, card: StoryboardCard): Promise<StoryUri> {
     return this.deps.createCardUseCase.write(workspaceRoot, card);
+  }
+
+  public rename(request: RenameCardRequest): Promise<RenameCardResult> {
+    return this.deps.renameCardUseCase.execute(request);
   }
 
   public recommend(request: RecommendCardsRequest): Promise<RecommendCardsResult> {

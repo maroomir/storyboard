@@ -15,6 +15,7 @@ export * from './application/cards/collectCardProposalsUseCase';
 export * from './application/cards/createCardUseCase';
 export * from './application/cards/promoteCardCandidatesUseCase';
 export * from './application/cards/recommendCardsUseCase';
+export * from './application/cards/renameCardUseCase';
 export * from './application/cards/sceneSidebarRepository';
 export * from './application/drafts/applyDraftFormatUseCase';
 export * from './application/drafts/augmentDraftUseCase';
