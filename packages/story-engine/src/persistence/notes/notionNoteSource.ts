@@ -104,7 +104,10 @@ export class NotionNoteSource implements INoteSource {
     try {
       await this.visitPage(rootId, [], 'tree');
     } catch (error) {
-      if (!(error instanceof NoteSourceError) || error.code !== 'not-found') {
+      if (
+        !(error instanceof NoteSourceError) ||
+        (error.code !== 'not-found' && error.code !== 'not-a-page')
+      ) {
         throw error;
       }
 
@@ -301,7 +304,15 @@ function toNoteSourceError(status: number, payload: NotionRecord): NoteSourceErr
     );
   }
 
-  const detail = typeof payload.message === 'string' ? `: ${payload.message}` : '';
+  const message = typeof payload.message === 'string' ? payload.message : '';
+
+  // NOTE: Notion answers a database id on /pages with 400 validation_error, not 404, and the
+  // message is the only thing that tells it apart from a malformed request.
+  if (status === 400 && payload.code === 'validation_error' && /is a database/i.test(message)) {
+    return new NoteSourceError('not-a-page', '페이지가 아니라 데이터베이스입니다.');
+  }
+
+  const detail = message.length > 0 ? `: ${message}` : '';
 
   return new NoteSourceError('request-failed', `Notion 요청이 실패했습니다 (${status})${detail}`);
 }
