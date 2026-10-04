@@ -37,9 +37,7 @@ import {
   buildNarrativeContext,
   buildSceneContext,
   formatBibleFactLines,
-  parseDraft,
   readSceneFile,
-  serializeDraft,
   parseSceneFileName,
   aiProviderIds,
   requiresApiKey,
@@ -623,17 +621,19 @@ async function rewriteDraft(
     return { ok: false, message: result.message };
   }
 
-  const draftUri = draftPath(container.workspaceRoot, stem);
-  const existing = parseDraft(
-    new TextDecoder().decode(await container.fileSystem.readFile(draftUri)),
-  );
+  // NOTE: 터미널 호출은 편집 세션이 아니므로 고치기 전 판본을 .draft/ 에 남기지 않는다(종전과 같음).
+  const saved = await container.drafts.saveEdit({
+    workspaceRoot: container.workspaceRoot,
+    sceneStem: stem,
+    body: replaceLines(body, range, result.text),
+    archivePrevious: false,
+  });
 
-  await container.fileSystem.writeFile(
-    draftUri,
-    new TextEncoder().encode(
-      serializeDraft({ ...existing, body: replaceLines(body, range, result.text) }),
-    ),
-  );
+  if (!saved.ok) {
+    return { ok: false, message: `초안이 없습니다: ${stem}` };
+  }
+
+  const draftUri = draftPath(container.workspaceRoot, stem);
 
   return { ok: true, message: result.message, data: { draft: draftUri.fsPath } };
 }
@@ -1443,10 +1443,8 @@ function mergeSetting(
 // as data; the exit code says whether the draft is clean.
 
 async function readDraftBody(container: CliContainer, stem: string): Promise<string | undefined> {
-  const uri = draftPath(container.workspaceRoot, stem);
-
   try {
-    return parseDraft(new TextDecoder().decode(await container.fileSystem.readFile(uri))).body;
+    return (await container.drafts.readDraft(container.workspaceRoot, stem))?.draft.body;
   } catch {
     return undefined;
   }
