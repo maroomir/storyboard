@@ -1,6 +1,7 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
+import { computeCompletions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
 import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
@@ -74,11 +75,22 @@ export function splitCommandLine(line: string): string[] {
   return argv;
 }
 
-// What the composer proposes while the author types: slash commands for a leading `/`, otherwise
-// verbs that start with (or resemble) the words typed so far.
-export function suggestForInput(
-  input: string,
-): ReadonlyArray<{ readonly text: string; readonly summary: string }> {
+export interface InputSuggestion {
+  // What the list shows: a whole verb while the verb is being typed, otherwise the one token.
+  readonly text: string;
+  readonly summary: string;
+  // The input line once this suggestion is taken; only the token under the cursor changes.
+  readonly line: string;
+}
+
+function isVerbOrVerbStart(words: string): boolean {
+  return commandCatalog.some((spec) => spec.verb === words || spec.verb.startsWith(`${words} `));
+}
+
+// What the composer proposes while the author types: slash commands for a leading `/`; otherwise
+// what shell completion would offer for the last word (verb words, flags, scene stems, card ids),
+// and for a verb nothing starts with, the verbs it most resembles.
+export function suggestForInput(input: string, cwd: string = process.cwd()): InputSuggestion[] {
   const trimmed = input.trimStart();
 
   if (trimmed.length === 0) {
@@ -88,17 +100,38 @@ export function suggestForInput(
   if (trimmed.startsWith('/')) {
     return slashCommands
       .filter((command) => command.name.startsWith(trimmed.split(/\s/)[0] ?? ''))
-      .map((command) => ({ text: command.name, summary: command.summary }));
+      .map((command) => ({
+        text: command.name,
+        summary: command.summary,
+        line: `${command.name} `,
+      }));
   }
 
-  const lower = trimmed.toLowerCase();
-  const prefixed = commandCatalog.filter((spec) => spec.verb.startsWith(lower));
-  const pool = prefixed.length > 0 ? prefixed.map((spec) => spec.verb) : suggestVerbs(lower, 5);
+  const words = splitCommandLine(trimmed);
+  if (/\s$/.test(trimmed)) {
+    words.push('');
+  }
 
-  return pool.slice(0, 6).map((verb) => {
-    const spec = findCommandSpec(verb);
-    return { text: verb, summary: spec?.summary ?? '' };
-  });
+  const current = words[words.length - 1] ?? '';
+  const head = trimmed.slice(0, trimmed.length - current.length);
+  const completions = computeCompletions(words, { cwd });
+
+  if (completions.length > 0) {
+    return completions.map((completion) => {
+      const line = `${head}${completion.text}`;
+      const text = isVerbOrVerbStart(line.trim()) ? line.trim() : completion.text;
+      return { text, summary: completion.description, line: `${line} ` };
+    });
+  }
+
+  const isTypingVerb = words.length <= 3 && !current.startsWith('-');
+  return isTypingVerb
+    ? suggestVerbs(trimmed.toLowerCase(), 5).map((verb) => ({
+        text: verb,
+        summary: findCommandSpec(verb)?.summary ?? '',
+        line: `${verb} `,
+      }))
+    : [];
 }
 
 // The prompt takes a command without the `storyboard` prefix, so the list says how to drill in

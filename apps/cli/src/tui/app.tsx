@@ -1,7 +1,8 @@
-import { Box, Text, useApp } from 'ink';
+import { Box, Text, useApp, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
+import { SuggestionList } from './suggestionList';
 import {
   createTuiSession,
   suggestForInput,
@@ -55,6 +56,7 @@ function LogLine({ entry }: { readonly entry: LogEntry }): React.ReactElement {
 
 export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const nextId = useRef(1);
@@ -83,11 +85,14 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   }, [append, props.header.hint]);
 
   const [inputValue, setInputValue] = useState('');
-  const suggestions = useMemo(() => suggestForInput(inputValue), [inputValue]);
+  const suggestions = useMemo(
+    () => suggestForInput(inputValue, props.cwd),
+    [inputValue, props.cwd],
+  );
 
   const editor = useLineEditor({
     isActive: !isBusy,
-    suggestions: suggestions.map((suggestion) => suggestion.text),
+    suggestions: suggestions.map((suggestion) => suggestion.line),
     onSubmit: (line) => {
       setIsBusy(true);
       void session.run(line).finally(() => setIsBusy(false));
@@ -120,19 +125,12 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
         ))}
       </Box>
 
-      {suggestions.length > 0 && !isBusy ? (
-        <Box flexDirection="column" paddingX={2}>
-          {suggestions.map((suggestion, index) => (
-            <Text
-              key={suggestion.text}
-              color={index === editor.selectedSuggestion ? 'cyan' : 'gray'}
-            >
-              {index === editor.selectedSuggestion ? '▸ ' : '  '}
-              {suggestion.text.padEnd(28)}
-              {suggestion.summary}
-            </Text>
-          ))}
-        </Box>
+      {editor.isSuggestionOpen && !isBusy ? (
+        <SuggestionList
+          suggestions={suggestions}
+          selectedIndex={editor.selectedSuggestion}
+          columns={stdout.columns > 0 ? stdout.columns : 80}
+        />
       ) : null}
 
       <Box paddingX={1}>
