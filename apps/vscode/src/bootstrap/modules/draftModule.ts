@@ -53,9 +53,9 @@ export class DraftModule implements IApplicationModule {
       registerResealStoryStateCommand({ configBridge, fileSystem, logger }),
       registerCharacterHoverProvider(),
       registerInlineCompletionProvider({ aiGateway, configBridge }),
-      registerGrammarDiagnosticsProvider({ aiGateway, configBridge, logger }),
-      registerContinuityDiagnosticsProvider({ aiGateway, configBridge, logger }),
-      registerSlopDiagnosticsProvider({ configBridge, logger }),
+      registerGrammarDiagnosticsProvider({ drafts, configBridge, logger }),
+      registerContinuityDiagnosticsProvider({ drafts, configBridge, logger }),
+      registerSlopDiagnosticsProvider({ drafts, configBridge, logger }),
       registerSidebarScenesProvider(_context, {
         aiProviderRegistry,
         sceneSidebarRepository: drafts.scenes,

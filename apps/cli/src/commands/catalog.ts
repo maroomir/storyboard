@@ -6,6 +6,7 @@ import {
   narratorPersons,
   pointOfViews,
 } from '@storyboard/story-model';
+import { draftCheckKinds } from '@storyboard/story-engine';
 
 export type CommandGroup =
   | '시작하기'
@@ -46,9 +47,7 @@ export const cardCategories = ['character', 'background'] as const;
 
 export type CardCategory = (typeof cardCategories)[number];
 
-export const draftCheckKinds = ['grammar', 'continuity', 'slop'] as const;
-
-export type DraftCheckKind = (typeof draftCheckKinds)[number];
+export { draftCheckKinds, type DraftCheckKind } from '@storyboard/story-engine';
 
 export const noteSources = ['notion'] as const;
 

@@ -15,10 +15,8 @@ import {
 } from '@storyboard/story-engine';
 import {
   draftPath,
-  analyzeSlop,
   diffCandidatesAgainstCanon,
   getStoryboardProjectPaths,
-  sceneContextPaths,
   scenePath,
   NodeUri,
   type StoryUri,
@@ -32,10 +30,6 @@ import {
   type ProjectSetting,
   createEmptyBackground,
   createEmptyCharacter,
-  buildNarrativeContext,
-  buildSceneContext,
-  formatBibleFactLines,
-  readSceneFile,
   parseSceneFileName,
   aiProviderIds,
   requiresApiKey,
@@ -1450,70 +1444,47 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: `초안이 없습니다: ${stem}` };
   }
 
-  if (kind === 'slop') {
-    // Deterministic, no provider call — the cheapest of the three.
-    const findings = analyzeSlop(body);
-    return {
-      ok: findings.length === 0,
-      message: findings.length === 0 ? '상투 표현을 찾지 못했습니다.' : `${findings.length}건`,
-      data: findings,
-    };
-  }
-
-  const service = container.aiGateway.createService(container.workspaceRoot);
-  const attribution = { primary: { kind: 'scene' as const, id: stem } };
-
-  if (kind === 'grammar') {
-    const issues = await service.checkGrammar(body, {
-      providerId: container.aiGateway.getTaskProvider('grammarCheck'),
-      attribution,
-    });
-    return {
-      ok: issues.length === 0,
-      message: issues.length === 0 ? '문법 문제를 찾지 못했습니다.' : `${issues.length}건`,
-      data: issues,
-    };
-  }
-
-  const factLines = await loadCanonFactLines(container, stem);
-
-  if (factLines.length === 0) {
-    return { ok: true, message: '대조할 정전 사실이 없습니다.', data: [] };
-  }
-
-  const issues = await service.checkContinuity(body, factLines, {
-    providerId: container.aiGateway.getTaskProvider('continuityCheck'),
-    attribution,
+  const result = await container.drafts.check({
+    workspaceRoot: container.workspaceRoot,
+    sceneStem: stem,
+    kind,
+    text: body,
   });
 
-  return {
-    ok: issues.length === 0,
-    message: issues.length === 0 ? '연속성 문제를 찾지 못했습니다.' : `${issues.length}건`,
-    data: issues,
-  };
-};
+  switch (result.kind) {
+    case 'failed':
+      return { ok: false, message: result.message };
+    case 'slop':
+      return {
+        ok: result.findings.length === 0,
+        message:
+          result.findings.length === 0
+            ? '상투 표현을 찾지 못했습니다.'
+            : `${result.findings.length}건`,
+        data: result.findings,
+      };
+    case 'grammar':
+      return {
+        ok: result.issues.length === 0,
+        message:
+          result.issues.length === 0 ? '문법 문제를 찾지 못했습니다.' : `${result.issues.length}건`,
+        data: result.issues,
+      };
+    case 'continuity':
+      if (!result.hasFacts) {
+        return { ok: true, message: '대조할 정전 사실이 없습니다.', data: [] };
+      }
 
-async function loadCanonFactLines(
-  container: CliContainer,
-  stem: string,
-): Promise<readonly string[]> {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const fileName = `${stem}.card`;
-
-  try {
-    const scene = await readSceneFile(
-      scenePath(container.workspaceRoot, stem),
-      container.fileSystem,
-      fileName,
-    );
-    const contextPaths = sceneContextPaths(paths);
-    const context = await buildSceneContext(contextPaths, scene, container.fileSystem);
-    const narrative = await buildNarrativeContext(contextPaths, context, container.fileSystem);
-    return formatBibleFactLines(context, narrative.bibleFacts);
-  } catch {
-    return [];
+      return {
+        ok: result.issues.length === 0,
+        message:
+          result.issues.length === 0
+            ? '연속성 문제를 찾지 못했습니다.'
+            : `${result.issues.length}건`,
+        data: result.issues,
+      };
   }
-}
+};
 
 // SECURITY: the key is read from stdin or a hidden prompt, never from argv — an API key on a
 // command line lands in the shell history and in the process list for every user on the machine.

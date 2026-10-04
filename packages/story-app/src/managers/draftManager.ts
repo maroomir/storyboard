@@ -3,6 +3,9 @@ import type {
   ApplyDraftFormatRequest,
   ApplyDraftFormatResult,
   ApplyDraftFormatUseCase,
+  CheckDraftRequest,
+  CheckDraftResult,
+  CheckDraftUseCase,
   AugmentDraftRequest,
   AugmentDraftResult,
   AugmentDraftUseCase,
@@ -65,6 +68,7 @@ export interface DraftManagerDependencies {
   readonly reviseDraftUseCase: ReviseDraftUseCase;
   readonly reviseAfterGenerateGate: ReviseAfterGenerateGate;
   readonly applyDraftFormatUseCase: ApplyDraftFormatUseCase;
+  readonly checkDraftUseCase: CheckDraftUseCase;
   readonly augmentDraftUseCase: AugmentDraftUseCase;
   readonly condenseDraftUseCase: CondenseDraftUseCase;
   readonly expandDraftUseCase: ExpandDraftUseCase;
@@ -154,6 +158,10 @@ export class DraftManager {
     hooks: ReviseGateHooks = {},
   ): Promise<ReviseDraftWorkflowResult | undefined> {
     return this.deps.reviseAfterGenerateGate.runForScene(workspaceUri, sceneStem, hooks);
+  }
+
+  public check(request: CheckDraftRequest): Promise<CheckDraftResult> {
+    return this.deps.checkDraftUseCase.execute(request);
   }
 
   public applyFormat(request: ApplyDraftFormatRequest): Promise<ApplyDraftFormatResult> {
