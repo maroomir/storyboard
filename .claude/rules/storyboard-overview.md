@@ -148,4 +148,5 @@ Cline demonstrates a mature VSCode extension architecture with extension-host or
 - `RELEASE.md` (repo root) for version commits, tags, and GitHub Releases.
 - `apps/vscode/EXTENSION_QA.md` for manual extension QA.
 - `apps/vscode/GUIDE.md` for draft editor features.
+- `apps/cli/GUIDE.md` for what the CLI's screens look like; its screenshots live in `apps/cli/docs/screenshots/`.
 - Optional local-only `.doc/` (gitignored) for migration plans and ADRs.

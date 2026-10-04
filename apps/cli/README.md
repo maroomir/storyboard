@@ -3,6 +3,11 @@
 Storyboard from a terminal. Same engine as the VSCode extension, no editor required — which is what
 lets another AI agent drive a Storyboard workspace.
 
+![The interactive screen: wordmark, the work's status and the next command](docs/screenshots/11-tui-dashboard.png)
+
+What each screen looks like — help, `status`, `doctor`, the progress rail, the sentence diff and the
+interactive screen — is in the [screen guide](GUIDE.md) (Korean).
+
 ## Install
 
 ```bash
@@ -106,6 +111,14 @@ that accepts the same verbs as the one-shot CLI. Typing shows matching verbs (Ta
 picks, Esc clears), `/help` lists everything, `/doctor` and `/setup <id>` run those verbs, `/quit`
 or Ctrl+C leaves. `storyboard tui` opens it explicitly; in a pipe it refuses and points back to the
 one-shot form, so agents never end up inside it.
+
+![Completion in the interactive screen](docs/screenshots/12-tui-completion.png)
+
+A long run draws a progress rail in place, and one Ctrl+C stops it at the next scene boundary:
+
+![The progress rail of draft generate --all](docs/screenshots/06-progress-rail.png)
+
+More screens: [GUIDE.md](GUIDE.md).
 
 ## Use
 
