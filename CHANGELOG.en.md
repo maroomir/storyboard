@@ -56,6 +56,7 @@ after the first public release.
 - **`storyboard init` without a title asks at a terminal instead of failing**: the name, the genre (empty for later), the point of view and the composition, leaving each answered step on a rail. Choices already given as flags are not asked, and backing out with Esc or Ctrl+C creates nothing. Pipes and agents still fail without `--title`.
 - **The interactive screen gains `/model`, `/config`, `/theme` and `/cost`.** `/model` picks a provider and model and `/config` one setting from a list (written to the same file `config set` writes), `/theme` picks the screen colors (default, light background, mono) and keeps the choice in `~/.storyboard/tui.json`, and `/cost` lists what each command at this screen spent with the total.
 - **In the interactive screen `@` names scenes, cards and narrators and `!` runs a shell line.** Typing `draft show @01` lists candidates and Tab fills in the bare name (a token left with its `@` is read as the name too); `!git status` runs in the work's folder with the author's shell and shows the output.
+- **`draft show` in the interactive screen opens the draft in a reader**: dialogue highlighted, scene breaks centered and dimmed, the character count (without spaces) and the reading position on top; ↑↓, Space, b and g/G move and q closes. One-shot `draft show` output is unchanged.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05
