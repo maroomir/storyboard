@@ -71,7 +71,7 @@ export function isNotionUrl(location: string): boolean {
     const { protocol, hostname } = new URL(location);
     return (
       (protocol === 'https:' || protocol === 'http:') &&
-      /(^|\.)notion\.(so|site)$/i.test(hostname)
+      /(^|\.)notion\.(so|site|com)$/i.test(hostname)
     );
   } catch {
     return false;
