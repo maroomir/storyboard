@@ -1,33 +1,25 @@
 import {
-  getStoryboardProjectPaths,
-  joinStoryPath,
   type StoryUri,
   narratorKnowledges,
   narratorPersons,
   narrativeTenses,
   resolveNarration,
-  serializeNarratorCard,
   type NarratorCard,
   type NarratorKnowledge,
   type NarratorPerson,
   type NarrativeTense,
   describeNarration,
 } from '@storyboard/story-model';
-import { loadNarratorCards, readProjectJson } from '@storyboard/story-engine';
 
 import { flagString } from '@/cliArguments';
+import type { CliContainer } from '@/container';
 
 import type { CommandHandler, CommandOutcome } from './outcome';
 
 const narratorIdPattern = /^[a-z0-9][a-z0-9-]*$/;
 
-function narratorCardPath(workspaceRoot: StoryUri, id: string): StoryUri {
-  return joinStoryPath(getStoryboardProjectPaths(workspaceRoot).narratorDirectory, `${id}.card`);
-}
-
 export const listNarrators: CommandHandler = async ({ container }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const narrators = [...(await loadNarratorCards(paths, container.fileSystem)).values()];
+  const narrators = [...(await container.cards.listNarrators(container.workspaceRoot)).values()];
 
   if (narrators.length === 0) {
     return {
@@ -53,8 +45,7 @@ export const showNarrator: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '서술자 id 를 지정해 주세요.' };
   }
 
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const narrator = (await loadNarratorCards(paths, container.fileSystem)).get(id);
+  const narrator = (await container.cards.listNarrators(container.workspaceRoot)).get(id);
 
   if (!narrator) {
     return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
@@ -89,23 +80,16 @@ export const createNarrator: CommandHandler = async ({ container, args }) => {
     return card.outcome;
   }
 
-  const uri = narratorCardPath(container.workspaceRoot, id);
+  const created = await container.cards.createNarrator(container.workspaceRoot, card.card);
 
-  if (await container.fileSystem.exists(uri)) {
+  if (!created.ok) {
     return { ok: false, message: `이미 있습니다: narrator/${id}.card` };
   }
-
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  await container.fileSystem.createDirectory(paths.narratorDirectory);
-  await container.fileSystem.writeFile(
-    uri,
-    new TextEncoder().encode(serializeNarratorCard(card.card)),
-  );
 
   return {
     ok: true,
     message: `narrator/${id}.card 를 만들었습니다. 씬 카드의 narrator 에 이 id 를 적으면 그 씬에 적용됩니다.`,
-    data: { ...toNarratorData(card.card), path: uri.fsPath },
+    data: { ...toNarratorData(card.card), path: (created.uri as StoryUri).fsPath },
   };
 };
 
@@ -116,13 +100,11 @@ export const removeNarrator: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '서술자 id 를 지정해 주세요.' };
   }
 
-  const uri = narratorCardPath(container.workspaceRoot, id);
+  const removed = await container.cards.removeNarrator(container.workspaceRoot, id);
 
-  if (!(await container.fileSystem.exists(uri))) {
+  if (!removed.ok) {
     return { ok: false, message: `서술자 '${id}' 를 찾을 수 없습니다.` };
   }
-
-  await container.fileSystem.delete(uri);
 
   return {
     ok: true,
@@ -134,12 +116,11 @@ export const removeNarrator: CommandHandler = async ({ container, args }) => {
 
 // 씬이 어떤 시점으로 생성될지 해석된 결과 한 줄. 파생이 어떻게 됐는지 눈으로 확인하는 자리다.
 export async function describeSceneNarration(
-  container: { readonly workspaceRoot: StoryUri; readonly fileSystem: FileSystemLike },
+  container: Pick<CliContainer, 'workspaceRoot' | 'cards' | 'novel'>,
   sceneNarrator: string | undefined,
   povCharacter: string | undefined,
 ): Promise<string> {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
+  const project = await container.novel.readProject(container.workspaceRoot);
 
   try {
     const narration = resolveNarration({
@@ -149,7 +130,7 @@ export async function describeSceneNarration(
         : { defaultNarrator: project.setting.narration.defaultNarrator }),
       ...(project.setting?.pov === undefined ? {} : { pov: project.setting.pov }),
       ...(povCharacter === undefined ? {} : { focalFallback: povCharacter }),
-      narrators: await loadNarratorCards(paths, container.fileSystem),
+      narrators: await container.cards.listNarrators(container.workspaceRoot),
     });
 
     return narration ? describeNarration(narration) : '지정 없음';
@@ -157,8 +138,6 @@ export async function describeSceneNarration(
     return error instanceof Error ? error.message : String(error);
   }
 }
-
-type FileSystemLike = Parameters<typeof loadNarratorCards>[1];
 
 type BuildCardResult =
   | { readonly ok: true; readonly card: NarratorCard }
