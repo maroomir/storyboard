@@ -42,6 +42,7 @@ after the first public release.
 - **At a terminal, a command that changes the work ends with `✓` and the command to run next.** It is the step `storyboard status` picks, and a failure is marked `✗`. Pipes, `--json` and `--quiet` get neither, and the fixed "next:" line `init` used to print gives way to it.
 - **`storyboard doctor` draws one box per section at a terminal** — environment, AI, resource files, the work — and ends with the pass/warn/fail counts and the first fix to try. Piped and `--json` output is unchanged.
 - **A misspelled option names the one that was meant** (`--titel` → `--title`), and a command whose action is one letter off (`scene generat`) still finds the right one.
+- **Terminal integration**: absolute paths in a result are clickable in terminals that support OSC 8, the window title reads like `Storyboard · draft generate` during a run and comes back afterwards, and a run longer than 30 seconds rings the bell when it ends. Pipes, `--json`, `TERM=dumb` and shell completion get none of it.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05

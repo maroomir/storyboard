@@ -25,6 +25,7 @@ import {
   type TerminalFacts,
   type TerminalStream,
 } from '@/terminal/profile';
+import { linkFilePaths } from '@/terminal/signals';
 import type { Theme } from '@/terminal/theme';
 import {
   renderCommandHelp,
@@ -311,9 +312,10 @@ export async function dispatch(
 
   // `init` makes the workspace rather than writing one under the lock, but it is the first action.
   const isAction = spec?.writesWorkspace === true || verb === 'init';
+  const markedMessage = markOutcome(outcome.message, { ok: outcome.ok, isAction }, terminal.stdout);
   const stdout = mode.json
     ? reportText(outcome, mode)
-    : `${markOutcome(outcome.message, { ok: outcome.ok, isAction }, terminal.stdout)}\n`;
+    : `${terminal.stdout.isTty ? linkFilePaths(markedMessage, existsSync) : markedMessage}\n`;
   const shouldSuggestNextStep =
     outcome.ok &&
     isAction &&

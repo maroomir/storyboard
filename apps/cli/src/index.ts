@@ -1,10 +1,42 @@
 import { ConsoleLogger } from './adapters/consoleLogger';
 import { dispatch } from './commands/dispatch';
+import {
+  bellSignal,
+  createWindowTitle,
+  longRunMilliseconds,
+  popWindowTitle,
+  pushWindowTitle,
+} from './terminal/signals';
 import { runTui } from './tui/index';
 
 const version = '0.11.6';
 
+// Shell completion runs inside the shell's own prompt and `completion` is `eval`ed; neither may
+// touch the window. `help` and `tui` are not runs.
+const verbsWithoutSignals = new Set(['__complete', 'completion', 'help', 'tui']);
+
+// The words before the first flag name the run: `draft generate`.
+function describeRun(argv: readonly string[]): string | undefined {
+  const firstFlag = argv.findIndex((token) => token.startsWith('-'));
+  const words = (firstFlag === -1 ? argv : argv.slice(0, firstFlag)).slice(0, 2);
+  const isSignalled =
+    words.length > 0 &&
+    !verbsWithoutSignals.has(words[0] ?? '') &&
+    process.stderr.isTTY === true &&
+    process.env.TERM !== 'dumb' &&
+    !argv.includes('--json');
+
+  return isSignalled ? words.join(' ') : undefined;
+}
+
 async function main(argv: readonly string[]): Promise<number> {
+  const runName = describeRun(argv);
+  const startedAt = Date.now();
+
+  if (runName !== undefined) {
+    process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
+  }
+
   const result = await dispatch(argv, {
     version,
     cwd: process.cwd(),
@@ -23,6 +55,12 @@ async function main(argv: readonly string[]): Promise<number> {
 
   process.stdout.write(result.stdout);
   process.stderr.write(result.stderr);
+
+  if (runName !== undefined) {
+    const hasRunLong = Date.now() - startedAt >= longRunMilliseconds;
+    process.stderr.write(`${popWindowTitle}${hasRunLong ? bellSignal : ''}`);
+  }
+
   return result.exitCode;
 }
 
