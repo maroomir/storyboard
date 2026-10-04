@@ -1,8 +1,9 @@
 import type { NoteDocument } from '#model/shared/noteAbsorb';
 
-// One extraction request reads at most this much note text, the same span `cards build` gives a
-// request of scenes.
-export const noteChunkCharacterLimit = 40_000;
+// NOTE: 한 요청이 읽는 노트 분량. 출력 한도(noteExtraction 의 maxTokens)와 함께 정해진다. 2026-10
+// 실측에서 claude-sonnet-5 는 3.6천자 노트 한 장에 사고 2.5천 + 본문 5.1천 토큰을 썼고, 4만 자
+// 묶음은 출력 8천 토큰을 사고로 다 써 본문 없이 잘렸다.
+export const noteChunkCharacterLimit = 12_000;
 
 // NOTE: 견적용 어림값이다. 한글은 글자당 토큰이 영문보다 많아 1.5자를 1토큰으로 잡고, 요청마다
 // 붙는 지시문 몫을 따로 더한다. 실제 사용량은 모델의 토크나이저가 정한다.
