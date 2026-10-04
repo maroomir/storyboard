@@ -10,6 +10,25 @@ function addUnique(list: readonly string[], value: string): string[] {
   return list.includes(value) ? [...list] : [...list, value];
 }
 
+// Free-text list items that differ only in spacing, punctuation or case say the same thing, so a
+// card never collects both. Ids are compared exactly.
+export function normalizeCardListText(value: string): string {
+  return value
+    .normalize('NFC')
+    .toLocaleLowerCase('ko')
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function hasCardListText(list: readonly string[], value: string): boolean {
+  const normalized = normalizeCardListText(value);
+
+  return list.some((item) => normalizeCardListText(item) === normalized);
+}
+
+export function addUniqueCardListText(list: readonly string[], value: string): string[] {
+  return hasCardListText(list, value) ? [...list] : [...list, value];
+}
+
 function attributeValueAsString(value: unknown): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
@@ -65,25 +84,25 @@ function applyToCharacter(
         break;
       }
       case 'trait':
-        traits = addUnique(traits, proposal.value);
+        traits = addUniqueCardListText(traits, proposal.value);
         break;
       case 'alias':
-        aliases = addUnique(aliases, proposal.value);
+        aliases = addUniqueCardListText(aliases, proposal.value);
         break;
       case 'tag':
-        tags = addUnique(tags, proposal.value);
+        tags = addUniqueCardListText(tags, proposal.value);
         break;
       case 'recentDialogue':
-        recentDialogues = addUnique(recentDialogues, proposal.value);
+        recentDialogues = addUniqueCardListText(recentDialogues, proposal.value);
         break;
       case 'descriptionLine':
-        description = addUnique(description, proposal.value);
+        description = addUniqueCardListText(description, proposal.value);
         break;
       case 'voiceLine':
-        voice = addUnique(voice, proposal.value);
+        voice = addUniqueCardListText(voice, proposal.value);
         break;
       case 'desireLine':
-        desire = addUnique(desire, proposal.value);
+        desire = addUniqueCardListText(desire, proposal.value);
         break;
       default:
         break;
@@ -119,9 +138,9 @@ function applyToBackground(
 
   for (const proposal of accepted) {
     if (proposal.kind === 'descriptionLine') {
-      description = addUnique(description, proposal.value);
+      description = addUniqueCardListText(description, proposal.value);
     } else if (proposal.kind === 'sense') {
-      senses = addUnique(senses, proposal.value);
+      senses = addUniqueCardListText(senses, proposal.value);
     } else if (proposal.kind === 'characterId') {
       characterIds = addUnique(characterIds, proposal.value);
     } else if (proposal.kind === 'scalar') {
@@ -131,9 +150,9 @@ function applyToBackground(
         weather = proposal.after;
       }
     } else if (proposal.kind === 'alias') {
-      aliases = addUnique(aliases, proposal.value);
+      aliases = addUniqueCardListText(aliases, proposal.value);
     } else if (proposal.kind === 'tag') {
-      tags = addUnique(tags, proposal.value);
+      tags = addUniqueCardListText(tags, proposal.value);
     }
   }
 
@@ -162,6 +181,10 @@ function isNewListValue(list: readonly string[] | undefined, value: string): boo
   return !(list ?? []).includes(value);
 }
 
+function isNewListText(list: readonly string[] | undefined, value: string): boolean {
+  return !hasCardListText(list ?? [], value);
+}
+
 // NOTE: Keyed fields are proposable when the key is absent (add) OR present with a different value
 // (update). Free-form lists are append-only, so only genuinely new values qualify.
 export function shouldProposeCardCollect(
@@ -185,19 +208,19 @@ export function shouldProposeCardCollect(
         return current?.summary !== proposal.summary;
       }
       case 'trait':
-        return isNewListValue(card.traits, proposal.value);
+        return isNewListText(card.traits, proposal.value);
       case 'alias':
-        return isNewListValue(card.aliases, proposal.value);
+        return isNewListText(card.aliases, proposal.value);
       case 'tag':
-        return isNewListValue(card.tags, proposal.value);
+        return isNewListText(card.tags, proposal.value);
       case 'recentDialogue':
-        return isNewListValue(card.recentDialogues, proposal.value);
+        return isNewListText(card.recentDialogues, proposal.value);
       case 'descriptionLine':
-        return isNewListValue(card.description, proposal.value);
+        return isNewListText(card.description, proposal.value);
       case 'voiceLine':
-        return isNewListValue(card.voice, proposal.value);
+        return isNewListText(card.voice, proposal.value);
       case 'desireLine':
-        return isNewListValue(card.desire, proposal.value);
+        return isNewListText(card.desire, proposal.value);
       default:
         return false;
     }
@@ -205,13 +228,13 @@ export function shouldProposeCardCollect(
 
   switch (proposal.kind) {
     case 'alias':
-      return isNewListValue(card.aliases, proposal.value);
+      return isNewListText(card.aliases, proposal.value);
     case 'tag':
-      return isNewListValue(card.tags, proposal.value);
+      return isNewListText(card.tags, proposal.value);
     case 'descriptionLine':
-      return isNewListValue(card.description, proposal.value);
+      return isNewListText(card.description, proposal.value);
     case 'sense':
-      return isNewListValue(card.senses, proposal.value);
+      return isNewListText(card.senses, proposal.value);
     case 'characterId':
       return isNewListValue(card.characterIds, proposal.value);
     case 'scalar':

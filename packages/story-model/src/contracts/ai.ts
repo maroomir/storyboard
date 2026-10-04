@@ -63,6 +63,7 @@ export const aiTaskCatalog = [
   { name: 'storyCardBuild', label: '씬 기반 카드 구성' },
   { name: 'noteExtraction', label: '노트 분류·추출' },
   { name: 'noteSynthesis', label: '노트 계약·시놉시스 정리' },
+  { name: 'noteCardConsolidation', label: '노트 인물 성격·태그 정리' },
   { name: 'studioAgent', label: 'Studio 대화' },
   { name: 'studioValidation', label: 'Studio 정합성 검사' },
 ] as const;

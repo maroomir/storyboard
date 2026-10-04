@@ -102,6 +102,24 @@ describe('applyCardCollectProposals (background)', () => {
 });
 
 describe('shouldProposeCardCollect', () => {
+  it('treats a list item that differs only in spacing or punctuation as already there', () => {
+    expect(shouldProposeCardCollect(elia, proposal({ kind: 'trait', value: ' 용감함.' }))).toBe(
+      false,
+    );
+    expect(
+      shouldProposeCardCollect(
+        library,
+        proposal({ kind: 'descriptionLine', value: '오래된  도서관!' }),
+      ),
+    ).toBe(false);
+    expect(
+      shouldProposeCardCollect(elia, proposal({ kind: 'trait', value: '용감하지 않음' })),
+    ).toBe(true);
+    expect(
+      applyCardCollectProposals(elia, [proposal({ kind: 'trait', value: '용감함!' })]),
+    ).toMatchObject({ traits: ['용감함'] });
+  });
+
   it('proposes new keys and changed values but not unchanged ones', () => {
     expect(
       shouldProposeCardCollect(elia, proposal({ kind: 'attribute', key: 'age', value: '17' })),

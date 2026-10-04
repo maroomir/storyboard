@@ -95,7 +95,11 @@ given, and `--dry-run` stops at the plan. The Notion integration token lives in 
 (`notes connect notion`). The collected notes, the plan and each model response (`responses.json`)
 stay in the git-ignored cache. A request cut at the output limit or without a readable result is a
 warning naming its notes, and when no request could be read the verb fails rather than report an
-empty plan.
+empty plan. List items that differ only in spacing or punctuation are one item (absorb, `card
+promote` and the draft candidates share that rule); a person whose traits and tags were read in more
+than one request, or whose card already has some, gets one more request that keeps one wording per
+meaning — chosen from the candidates, never rewritten — and when it fails the merged lists stand
+with a warning.
 
 ## Editor-only surface
 

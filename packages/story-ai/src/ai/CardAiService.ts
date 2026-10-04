@@ -19,9 +19,16 @@ import {
   type RecommendedEntity,
 } from './prompts/cardRecommendation';
 import { FactExtractionPrompt } from './prompts/factExtraction';
+import { NoteCardConsolidationPrompt } from './prompts/noteCardConsolidation';
 import { NoteExtractionPrompt } from './prompts/noteExtraction';
 import { NoteSynthesisPrompt } from './prompts/noteSynthesis';
-import { coerceNoteSynthesis, type NoteSynthesis } from '@storyboard/story-model';
+import {
+  coerceNoteSynthesis,
+  readNoteConsolidationResponse,
+  type NoteConsolidationResult,
+  type NoteConsolidationTarget,
+  type NoteSynthesis,
+} from '@storyboard/story-model';
 import { TraitsExtractionPrompt } from './prompts/traitsExtraction';
 import type { PromptArtifact, PromptConfig } from './prompts/types';
 import type { AiGenerateResponse, UsageAttribution, AiTaskName } from '@storyboard/story-model';
@@ -196,6 +203,25 @@ export class CardAiService {
     );
 
     return coerceNoteSynthesis(parseJsonObject(response.text));
+  }
+
+  public async consolidateNoteCharacters(
+    targets: readonly NoteConsolidationTarget[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteConsolidationResult> {
+    const variant = this.gateway.resolvePromptVariant('noteCardConsolidation', options);
+    const prompt = NoteCardConsolidationPrompt.build(targets, variant);
+    const response = await this.generateWithDefaults(
+      'noteCardConsolidation',
+      prompt,
+      NoteCardConsolidationPrompt.config,
+      options,
+    );
+
+    return readNoteConsolidationResponse(
+      parseJsonObject(response.text),
+      response.isTruncated === true,
+    );
   }
 
   public async verifyCardCandidatesByCharacter(

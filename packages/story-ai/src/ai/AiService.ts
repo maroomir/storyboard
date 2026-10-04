@@ -58,7 +58,11 @@ import { OutlineSynopsisPrompt } from './prompts/outlineSynopsis';
 import { type CardCandidateExtraction } from './prompts/cardCandidateExtraction';
 import { type BackgroundFactExtraction } from './prompts/backgroundFactExtraction';
 import { type RecommendationCategory, type RecommendedEntity } from './prompts/cardRecommendation';
-import { type NoteSynthesis } from '@storyboard/story-model';
+import {
+  type NoteConsolidationResult,
+  type NoteConsolidationTarget,
+  type NoteSynthesis,
+} from '@storyboard/story-model';
 import { type PromptArtifact, type PromptConfig } from './prompts/types';
 import type { StoryStateUpdateInput } from './prompts/storyStateUpdate';
 import {
@@ -290,6 +294,13 @@ export class StoryboardAiService {
     options: GenerateTextOptions = {},
   ): Promise<NoteSynthesis> {
     return this.cardAiService.synthesizeNotePremise(premise, castNames, options);
+  }
+
+  public async consolidateNoteCharacters(
+    targets: readonly NoteConsolidationTarget[],
+    options: GenerateTextOptions = {},
+  ): Promise<NoteConsolidationResult> {
+    return this.cardAiService.consolidateNoteCharacters(targets, options);
   }
 
   public async verifyCardCandidatesByCharacter(
