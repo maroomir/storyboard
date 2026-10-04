@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -76,6 +76,18 @@ describe('suggestForInput', () => {
     expect(suggestForInput('draft generate --f', cwd)).toEqual([
       expect.objectContaining({ text: '--force', line: 'draft generate --force ' }),
     ]);
+  });
+
+  it('names scenes and cards after an @ and fills in the bare stem', () => {
+    mkdirSync(join(cwd, 'scene'), { recursive: true });
+    mkdirSync(join(cwd, 'character'), { recursive: true });
+    writeFileSync(join(cwd, 'scene', '01-ambush.card'), '');
+    writeFileSync(join(cwd, 'character', 'hana.card'), '');
+
+    expect(suggestForInput('draft show @01', cwd)).toEqual([
+      { text: '@01-ambush', summary: '씬', line: 'draft show 01-ambush ' },
+    ]);
+    expect(suggestForInput('card show @', cwd).map((s) => s.text)).toEqual(['@01-ambush', '@hana']);
   });
 
   it('falls back to the closest verbs for a misspelled one', () => {
@@ -346,5 +358,18 @@ describe('StoryboardTui', () => {
 
     expect(lastFrame()).toContain('revise.loop.afterGenerate = false 저장했습니다');
     expect(readFileSync(join(home, 'config.json'), 'utf8')).toMatch(/"afterGenerate": false/);
+  });
+
+  it('runs a line that starts with ! in the shell and shows what it printed', async () => {
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    await typeKeys(stdin, '!echo 셸에서');
+    stdin.write('\r');
+    await wait(300);
+
+    expect(lastFrame()).toContain('셸에서');
   });
 });
