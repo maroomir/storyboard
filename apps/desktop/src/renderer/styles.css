@@ -485,6 +485,37 @@ textarea {
   border: 1px dashed var(--line-strong);
   border-radius: 10px;
 }
+.scene-card-preview {
+  align-self: stretch;
+  color: var(--ink-soft);
+}
+.scene-card-preview summary {
+  cursor: pointer;
+}
+.scene-card-preview h3 {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.scene-card-preview p,
+.scene-card-preview ol {
+  margin: 0;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.scene-card-preview ol {
+  padding-left: 20px;
+}
+.scene-card-preview dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 14px 0 0;
+}
+.scene-card-preview dd {
+  margin: 0;
+  color: var(--ink);
+}
 
 .edit-bar {
   display: flex;

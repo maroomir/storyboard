@@ -243,6 +243,7 @@ export async function readSceneNotes(container: DesktopContainer, stem: string):
   const plan = await readChapterPlanIfAny(paths, fileSystem);
   const chapterTitle = plan === undefined ? undefined : findChapterTitle(plan, project, container, stem);
   const targetLength = sceneTargetLength(scene, project);
+  const summary = scene.summaryText?.trim() || undefined;
 
   return {
     stem,
@@ -250,6 +251,9 @@ export async function readSceneNotes(container: DesktopContainer, stem: string):
     ...(chapterTitle === undefined ? {} : { chapterTitle }),
     ...(narration === undefined ? {} : { narration }),
     thread: thread.threadId,
+    ...(summary === undefined ? {} : { summary }),
+    beats: scene.card.beats ?? [],
+    ...(scene.card.mood === undefined ? {} : { mood: scene.card.mood }),
     characters,
     ...(background === undefined ? {} : { background }),
     facts,
