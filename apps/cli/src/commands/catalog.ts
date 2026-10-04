@@ -99,6 +99,8 @@ export interface CommandSpec {
   // Changes the workspace, so it takes the workspace run lock for its duration and refuses while
   // another app (the desktop, the extension, another CLI) holds it.
   readonly writesWorkspace?: true;
+  // Rewrites the draft of the scene named by the first argument, so a terminal shows what changed.
+  readonly rewritesDraft?: true;
 }
 
 export interface FlagSpec {
@@ -544,6 +546,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft revise',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft revise <stem>',
     summary: '기존 초안을 검수하고 재작성합니다',
@@ -562,6 +565,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft edit',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft edit <stem> --instruction <text>',
     summary: '지시대로 고칩니다 (--lines 로 구간 지정)',
@@ -570,6 +574,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft augment',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft augment <stem>',
     summary: '갱신된 카드·정전을 기존 초안에 녹입니다',
@@ -578,6 +583,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft condense',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft condense <stem>',
     summary: '초안을 압축합니다',
@@ -586,6 +592,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft expand',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft expand <stem>',
     summary: '초안을 늘립니다',
@@ -594,6 +601,7 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'draft format',
     writesWorkspace: true,
+    rewritesDraft: true,
     group: '초안',
     usage: 'draft format <stem>',
     summary: '초안을 프로젝트 형식으로 다시 씁니다',

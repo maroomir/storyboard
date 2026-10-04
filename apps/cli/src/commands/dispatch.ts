@@ -29,6 +29,7 @@ import {
   type TerminalFacts,
   type TerminalStream,
 } from '@/terminal/profile';
+import { diffSentences, renderSentenceDiff } from '@/terminal/diff';
 import { linkFilePaths } from '@/terminal/signals';
 import type { Theme } from '@/terminal/theme';
 import {
@@ -329,6 +330,19 @@ export async function dispatch(
     }
   }
 
+  // Only a person reads a diff; it is skipped for pipes, --json and --quiet.
+  const shouldShowDraftChanges =
+    spec?.rewritesDraft === true &&
+    terminal.stderr.isTty &&
+    !mode.json &&
+    !flagBoolean(args.flags, 'quiet');
+  const draftStem = args.positionals[0]?.replace(/\.card$/, '');
+  const readDraftBody = async (): Promise<string | undefined> =>
+    draftStem === undefined
+      ? undefined
+      : (await container.drafts.readDraft(container.workspaceRoot, draftStem))?.draft.body;
+  const draftBefore = shouldShowDraftChanges ? await readDraftBody() : undefined;
+
   const meter = container.usageMeter.startSession();
   usageSession.readCostUsd = () => meter.reading().costUsd;
 
@@ -354,10 +368,15 @@ export async function dispatch(
     terminal.stderr.isTty &&
     !flagBoolean(args.flags, 'quiet');
 
+  const draftChanges =
+    outcome.ok && draftBefore !== undefined && draftStem !== undefined
+      ? renderDraftChanges(draftStem, draftBefore, await readDraftBody(), terminal.stderr)
+      : '';
+
   return {
     exitCode: outcome.ok ? 0 : 1,
     stdout,
-    stderr: shouldSuggestNextStep ? await suggestNextStep(container, terminal.stderr) : '',
+    stderr: `${draftChanges}${shouldSuggestNextStep ? await suggestNextStep(container, terminal.stderr) : ''}`,
     outcome,
   };
 }
@@ -373,6 +392,19 @@ async function suggestNextStep(
     // `storyboard status`.
     return '';
   }
+}
+
+function renderDraftChanges(
+  stem: string,
+  before: string,
+  after: string | undefined,
+  stream: TerminalStream,
+): string {
+  if (after === undefined || after === before) {
+    return '';
+  }
+
+  return `${renderSentenceDiff(`draft/${stem}.md`, diffSentences(before, after), stream.theme).join('\n')}\n`;
 }
 
 // The rail is cleared before the result is printed, whatever the run ended with.

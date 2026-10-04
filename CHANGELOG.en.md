@@ -52,6 +52,7 @@ after the first public release.
 - **One Ctrl+C makes `draft generate --all` and `novel generate` stop after the scene in progress**, so no spent tokens are thrown away and running again resumes with the remaining scenes. A second Ctrl+C ends at once, and a command that cannot pause still ends on the first. In the interactive screen Esc does the same during a run. A paused run is unfinished, so it exits 1.
 - **`notes absorb` asks with a choice box that carries the estimate** (↑↓, digits, Enter; Esc cancels). In the interactive screen `draft generate --all` and `novel generate` also show the target scene count and the model and ask before they start. One-shot commands and agent runs still never ask.
 - **`novel generate`'s progress rail carries a stage checklist** (`✓ outline  › seeds  · assemble`, in the order of the author's `pipelines/novel.yaml`), and the spinner shows a writer's phrase that changes every few seconds.
+- **A command that rewrites a draft shows the sentences it changed.** At a terminal, `draft edit`, `augment`, `condense`, `expand`, `format` and `revise` draw a sentence-level diff on stderr (removed in red, added in green, one sentence of context, the rest folded as "n sentences unchanged"). Pipes, `--json` and `--quiet` get none of it.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05
