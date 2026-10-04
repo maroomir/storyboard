@@ -12,11 +12,11 @@ describe('parseArguments', () => {
   });
 
   it('keeps a boolean flag from swallowing the next token', () => {
-    const parsed = parseArguments(['scene', 'generate', '--json', '01-a']);
+    const parsed = parseArguments(['draft', 'generate', '--json', '01-a']);
 
     expect(isParseFailure(parsed)).toBe(false);
     if (!isParseFailure(parsed)) {
-      expect(parsed.words).toEqual(['scene', 'generate', '01-a']);
+      expect(parsed.words).toEqual(['draft', 'generate', '01-a']);
       expect(parsed.flags['json']).toBe(true);
     }
   });
@@ -33,10 +33,10 @@ describe('parseArguments', () => {
       throw new Error('unexpected parse failure');
     }
 
-    const resolved = resolveVerb(parsed, ['card create character', 'card create background']);
+    const resolved = resolveVerb(parsed, ['card', 'card create']);
 
-    expect(resolved.path).toEqual(['card', 'create', 'character']);
-    expect(resolved.positionals).toEqual([]);
+    expect(resolved.path).toEqual(['card', 'create']);
+    expect(resolved.positionals).toEqual(['character']);
     expect(resolved.flags['name']).toBe('서린');
   });
 });

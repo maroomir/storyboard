@@ -14,6 +14,7 @@ import {
 
 import { flagBoolean, type ParsedArguments } from '@/cliArguments';
 import type { CliContainer } from '@/container';
+import { noteSources } from './catalog';
 import type { CommandHandler, CommandOutcome } from './outcome';
 import { askLine, askSecret, readStdin } from './prompt';
 
@@ -252,7 +253,16 @@ export const absorbNotes: CommandHandler = async ({ container, args }) => {
 
 // SECURITY: the token is read without echo (or from stdin for an agent) and goes only to the 0600
 // secrets file; it is never printed.
-export const connectNotion: CommandHandler = async ({ container }) => {
+export const connectNotes: CommandHandler = async ({ container, args }) => {
+  const source = args.positionals[0] ?? noteSources[0];
+
+  if (!noteSources.some((candidate) => candidate === source)) {
+    return {
+      ok: false,
+      message: `연결할 수 있는 노트 출처가 아닙니다: ${source}\n쓸 수 있는 값: ${noteSources.join(', ')}`,
+    };
+  }
+
   const token = (
     canAsk(container)
       ? await askSecret(

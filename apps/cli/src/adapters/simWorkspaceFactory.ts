@@ -5,7 +5,7 @@ import type { ISimWorkspaceFactory, SimSceneGenerator } from '@storyboard/story-
 
 import { createCliContainer, type CliContainerOptions } from '@/container';
 
-// 측정 실행을 제품과 같은 경로에 태운다. 사용자가 `scene generate` 로 밟는 길과 같은 use case 를
+// 측정 실행을 제품과 같은 경로에 태운다. 사용자가 `draft generate` 로 밟는 길과 같은 use case 를
 // 부르고, 컨테이너가 열어 둔 이음매 셋으로 원장·손잡이·후처리만 갈아끼운다.
 export interface SimWorkspaceFactoryOptions {
   readonly logger: CliContainerOptions['logger'];

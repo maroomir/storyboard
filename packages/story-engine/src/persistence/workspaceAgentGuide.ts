@@ -13,11 +13,11 @@ export function createWorkspaceAgentGuide(): string {
 
 ## 지켜야 할 선
 
-- **\`draft/*.md\`를 직접 쓰거나 고치지 마라.** 생성은 \`storyboard scene generate\`, 손질은
+- **\`draft/*.md\`를 직접 쓰거나 고치지 마라.** 생성은 \`storyboard draft generate\`, 손질은
   \`storyboard draft edit\`·\`storyboard draft augment\`·\`storyboard draft condense\`·
   \`storyboard draft expand\`. 직접 쓰면 원장·정전·검수가 전부 비껴간다.
 - **\`.storyboard/memory/\`와 \`.storyboard/bible/\`를 손으로 고치지 마라.** 원장은
-  \`storyboard state reseal\`, 정전은 \`storyboard bible promote\`로만 바뀐다.
+  \`storyboard state reseal\`, 정전은 \`storyboard canon promote\`로만 바뀐다.
   \`.storyboard/cache/\`는 생성물이니 고치지 마라.
 - 손대도 되는 것: \`character/\`, \`background/\`, \`narrator/\`, \`scene/*.card\`(시드·비트·요약).
   작품 계약(\`.storyboard/project.json\`)은 \`storyboard project set\`으로만 바꾼다.
@@ -36,28 +36,28 @@ storyboard help            # 이 파일은 명령을 다 적지 않는다. 지�
 
 ## 한 사이클
 
-1. 계약: \`storyboard project set\`, 서술자가 필요하면 \`storyboard narrator add\`
+1. 계약: \`storyboard project set\`, 서술자가 필요하면 \`storyboard narrator create\`
 2. 카드: \`storyboard card create character\`, \`storyboard card create background\`,
-   \`storyboard cards build\`, \`storyboard card recommend character\`
-3. 기획: \`storyboard outline generate\` → \`storyboard scene seeds\` → \`storyboard scene beats --all\`
-4. 생성: \`storyboard scene generate <stem>\` (필요한 씬만은 \`storyboard scene generate --all\`,
+   \`storyboard card build\`, \`storyboard card recommend character\`
+3. 기획: \`storyboard outline generate\` → \`storyboard scene seed\` → \`storyboard scene plot --all\`
+4. 생성: \`storyboard draft generate <stem>\` (필요한 씬만은 \`storyboard draft generate --all\`,
    장편 전체는 \`storyboard novel generate\`)
-5. 검수: \`storyboard check continuity <stem>\`, \`storyboard check grammar <stem>\`,
-   \`storyboard check slop <stem>\` → 문제는 \`storyboard scene revise\` 또는 \`storyboard draft edit\`
-6. 반영: \`storyboard canon diff\` → \`storyboard bible promote\`, \`storyboard card promote\`
+5. 검수: \`storyboard draft check continuity <stem>\`, \`storyboard draft check grammar <stem>\`,
+   \`storyboard draft check slop <stem>\` → 문제는 \`storyboard draft revise\` 또는 \`storyboard draft edit\`
+6. 반영: \`storyboard canon diff\` → \`storyboard canon promote\`, \`storyboard card promote\`
 7. 조립: \`storyboard manuscript assemble\` → \`storyboard manuscript review\` →
    \`storyboard manuscript export\`
 
 카드를 고친 뒤에는 \`storyboard doctor\`가 낡은 씬을 알려 준다. 초안이 여전히 맞으면
-\`storyboard state reseal\`, 아니면 \`storyboard scene generate <stem> --force\`.
+\`storyboard state reseal\`, 아니면 \`storyboard draft generate <stem> --force\`.
 
 ## 실행 규칙
 
 - \`--json\`으로 결과를 받고 **종료 코드로 판단한다.** 0이 아니면 다음 단계로 가지 말고 stderr를 보고하라.
 - \`--force\`, \`--all\`, \`storyboard novel generate\`는 비용이 크다. 사람이 시키지 않았으면 씬
   하나로 확인한 뒤 넓혀라.
-- \`--dry-run\`이 있는 명령(\`storyboard scene beats\`, \`storyboard cards build\`,
-  \`storyboard card promote\`, \`storyboard bible promote\`, \`storyboard draft augment\`,
+- \`--dry-run\`이 있는 명령(\`storyboard scene plot\`, \`storyboard card build\`,
+  \`storyboard card promote\`, \`storyboard canon promote\`, \`storyboard draft augment\`,
   \`storyboard scene complete\`)은 먼저 \`--dry-run\`으로 제안을 보고 결정하라.
 - 터미널이 아닌 곳에서 진행 로그가 필요하면 \`--verbose\`.
 

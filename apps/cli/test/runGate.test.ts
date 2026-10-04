@@ -42,7 +42,7 @@ describe('RunGate', () => {
     const acquired = await desktop.acquire(root, '장편 생성');
     expect(acquired.ok).toBe(true);
 
-    const held = await cli.hold(root, 'storyboard scene generate', async () => 'ran');
+    const held = await cli.hold(root, 'storyboard draft generate', async () => 'ran');
 
     expect(held.ok).toBe(false);
     if (!held.ok) {

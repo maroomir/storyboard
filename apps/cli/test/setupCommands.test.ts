@@ -205,7 +205,7 @@ describe('storyboard doctor on a pre-0.8 workspace', () => {
     const check = checksOf(stale).find((entry) => entry.label === '이야기 상태');
     expect(check?.status).toBe('warn');
     expect(check?.detail).toContain('씬 1');
-    expect(check?.fix).toContain('storyboard scene generate');
+    expect(check?.fix).toContain('storyboard draft generate');
   });
 
   it('clears the stale mark when state reseal accepts the drafts as they are', async () => {
@@ -293,7 +293,7 @@ describe('storyboard doctor chapter summaries', () => {
     );
 
     expect(check?.detail).toContain('1장');
-    expect(check?.fix).toBe('storyboard manuscript summaries');
+    expect(check?.fix).toBe('storyboard manuscript summarize');
   });
 
   it('says nothing is wrong once the recorded hash matches the assembled chapter', async () => {
