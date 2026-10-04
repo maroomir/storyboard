@@ -2,12 +2,13 @@ import { Box, Text, useApp, useInput, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
-import type { ChoiceRequest } from '@/adapters/prompter';
+import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 
 import { Banner } from './banner';
 import { ChoiceDialog } from './choiceDialog';
 import { Dashboard } from './dashboard';
 import { StatusBar } from './statusBar';
+import { TextDialog } from './textDialog';
 import { SuggestionList } from './suggestionList';
 import type { TuiHeaderInfo, WorkspaceView } from './workspaceView';
 
@@ -80,10 +81,18 @@ function LogLine({
   );
 }
 
-interface PendingChoice {
-  readonly request: ChoiceRequest<unknown>;
-  readonly resolve: (value: unknown) => void;
-}
+// One question at a time sits over the prompt while a command waits for its answer.
+type PendingQuestion =
+  | {
+      readonly kind: 'choice';
+      readonly request: ChoiceRequest<unknown>;
+      readonly resolve: (value: unknown) => void;
+    }
+  | {
+      readonly kind: 'text';
+      readonly request: TextRequest;
+      readonly resolve: (value: string | undefined) => void;
+    };
 
 export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { exit } = useApp();
@@ -92,7 +101,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
-  const [pendingChoice, setPendingChoice] = useState<PendingChoice | undefined>(undefined);
+  const [pendingQuestion, setPendingQuestion] = useState<PendingQuestion | undefined>(undefined);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
   const { loadWorkspaceView } = props;
@@ -115,10 +124,15 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           append,
           ask: <T,>(request: ChoiceRequest<T>) =>
             new Promise<T | undefined>((resolve) =>
-              setPendingChoice({
+              setPendingQuestion({
+                kind: 'choice',
                 request,
                 resolve: (value) => resolve(value as T | undefined),
               }),
+            ),
+          askText: (request: TextRequest) =>
+            new Promise<string | undefined>((resolve) =>
+              setPendingQuestion({ kind: 'text', request, resolve }),
             ),
           clear: () => setEntries([]),
           exit: () => exit(),
@@ -174,17 +188,25 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.',
       );
     },
-    { isActive: isBusy && pendingChoice === undefined },
+    { isActive: isBusy && pendingQuestion === undefined },
   );
 
   const answerChoice = (index: number | undefined): void => {
-    if (pendingChoice === undefined) {
+    if (pendingQuestion?.kind !== 'choice') {
       return;
     }
-    setPendingChoice(undefined);
-    pendingChoice.resolve(
-      index === undefined ? undefined : pendingChoice.request.options[index]?.value,
+    setPendingQuestion(undefined);
+    pendingQuestion.resolve(
+      index === undefined ? undefined : pendingQuestion.request.options[index]?.value,
     );
+  };
+
+  const answerText = (answer: string | undefined): void => {
+    if (pendingQuestion?.kind !== 'text') {
+      return;
+    }
+    setPendingQuestion(undefined);
+    pendingQuestion.resolve(answer);
   };
 
   const visibleEntries = entries.slice(-(props.maxLogLines ?? 200));
@@ -209,9 +231,12 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
         />
       ) : null}
 
-      {pendingChoice === undefined ? null : (
-        <ChoiceDialog request={pendingChoice.request} onAnswer={answerChoice} />
-      )}
+      {pendingQuestion?.kind === 'choice' ? (
+        <ChoiceDialog request={pendingQuestion.request} onAnswer={answerChoice} />
+      ) : null}
+      {pendingQuestion?.kind === 'text' ? (
+        <TextDialog request={pendingQuestion.request} onAnswer={answerText} />
+      ) : null}
 
       {editor.search === undefined ? (
         <Box paddingX={1}>

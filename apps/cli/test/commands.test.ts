@@ -95,6 +95,55 @@ describe('project contract', () => {
     return project.setting ?? {};
   }
 
+  function askingContainer(texts: (string | undefined)[], choices: unknown[], announced: string[]) {
+    return {
+      ...container(),
+      prompter: {
+        shouldConfirmPaidRuns: false,
+        askText: async () => texts.shift(),
+        choose: async () => choices.shift(),
+        announce: (line: string) => announced.push(line),
+      },
+    } as unknown as Parameters<(typeof commands)['init']>[0]['container'];
+  }
+
+  it('asks for the name and the contract when init runs at a terminal without a title', async () => {
+    rmSync(workspace, { recursive: true, force: true });
+    workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
+    const announced: string[] = [];
+
+    const outcome = await commands['init']!({
+      container: askingContainer(['레벨 제로', ''], ['third-limited', 'omnibus'], announced),
+      args: args(['init']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(outcome.message).toContain('레벨 제로 워크스페이스를 만들었습니다');
+    expect(settingOf()).toMatchObject({ pov: 'third-limited', composition: 'omnibus' });
+    expect(settingOf().genre).toBeUndefined();
+    expect(announced).toEqual([
+      '┌  새 작품 만들기',
+      '◇  작품 이름  › 레벨 제로',
+      '◇  장르  › 나중에',
+      '◇  시점  › 3인칭 제한적',
+      '◇  구성  › 옴니버스',
+      '└  만드는 중…',
+    ]);
+  });
+
+  it('creates nothing when the person backs out of the onboarding', async () => {
+    rmSync(workspace, { recursive: true, force: true });
+    workspace = mkdtempSync(join(tmpdir(), 'storyboard-cli-ws-'));
+
+    const outcome = await commands['init']!({
+      container: askingContainer(['레벨 제로', '판타지'], [undefined], []),
+      args: args(['init']),
+    });
+
+    expect(outcome.message).toContain('취소했습니다');
+    expect(existsSync(join(workspace, '.storyboard', 'project.json'))).toBe(false);
+  });
+
   // 계약이 비면 outline generate 가 거절한다. 채우는 길이 없으면 CLI 만으로는 시작할 수 없었다.
   it('fills the contract from init flags', async () => {
     rmSync(workspace, { recursive: true, force: true });
