@@ -16,6 +16,10 @@ after the first public release.
 
 - **The shared packages are now four layers (no behaviour change).** The direction is one line: `story-model ← story-ai ← story-engine ← story-app`. `story-format` was renamed to `story-model`, which also took in the contracts from `story-ai` and `shared`, `domain` and `paths` from `story-engine`; `story-pipeline` was absorbed into `story-engine`. The bundled craft contract and composition presets now live in `packages/story-model/src/format/`, and the pipeline defaults in `packages/story-engine/src/pipeline/`. Override files in `~/.storyboard` and a work's `.storyboard` keep working as before.
 
+### Fixed
+
+- **`notes absorb` recognises the address Notion's "Copy link" hands out (`https://app.notion.com/p/…`).** Only `notion.so` and `notion.site` addresses counted as Notion, so this one was read as a local path and ended in "노트를 찾을 수 없습니다", and links of the same form inside a note were not followed. (#60)
+
 ## [0.11.3] - 2026-10-04
 
 ### Added

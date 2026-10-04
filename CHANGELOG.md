@@ -15,6 +15,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 - **공유 패키지를 네 겹으로 재편했습니다(동작 변화 없음).** 방향은 `story-model ← story-ai ← story-engine ← story-app` 한 줄입니다. `story-format`은 `story-model`로 이름을 바꿨고, `story-ai`의 계약과 `story-engine`의 `shared`·`domain`·`paths`가 그 안으로 모였으며, `story-pipeline`은 `story-engine`에 흡수됐습니다. 기본 작법 계약과 구성 프리셋 원본의 위치는 `packages/story-model/src/format/`, 파이프라인 기본값은 `packages/story-engine/src/pipeline/`입니다. `~/.storyboard`와 작품의 `.storyboard`에 두는 덮어쓰기 파일은 그대로 동작합니다.
 
+### 고침
+
+- **Notion 「링크 복사」 주소(`https://app.notion.com/p/…`)를 `notes absorb`가 알아봅니다.** 지금까지는 `notion.so`·`notion.site` 주소만 Notion으로 보고 이 주소는 로컬 경로로 읽어 «노트를 찾을 수 없습니다»로 끝났고, 노트 본문에 붙은 같은 형식의 링크도 따라가지 않았습니다. (#60)
+
 ## [0.11.3] - 2026-10-04
 
 ### 추가

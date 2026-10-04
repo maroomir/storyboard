@@ -10,7 +10,13 @@ import {
   ObsidianNoteSource,
   type NoteHttpFetch,
 } from '@storyboard/story-engine';
-import { extractNoteLinkTargets, parseNotionPageId, NodeUri } from '@storyboard/story-model';
+import {
+  extractNoteLinkTargets,
+  isNotionUrl,
+  listNotionLinkedPageIds,
+  parseNotionPageId,
+  NodeUri,
+} from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
 
 const vault = join(__dirname, 'fixtures', 'notes', 'obsidianVault');
@@ -154,6 +160,27 @@ describe('parseNotionPageId', () => {
       parseNotionPageId(`https://www.notion.so/team/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?v=1&p=${id}`),
     ).toBe(id);
     expect(parseNotionPageId('https://www.notion.so/team/no-id-here')).toBeUndefined();
+  });
+
+  it('reads the app.notion.com address that 「링크 복사」 hands out', () => {
+    const id = '1429989fe8ac4effbc8f57f56486db54';
+    const copiedLink = `https://app.notion.com/p/${id}?source=copy_link`;
+
+    expect(isNotionUrl(copiedLink)).toBe(true);
+    expect(parseNotionPageId(copiedLink)).toBe(id);
+    expect(isNotionUrl('https://notion.example.com/p/x')).toBe(false);
+  });
+
+  it('follows an app.notion.com link written in the text', () => {
+    const id = '1429989fe8ac4effbc8f57f56486db54';
+    const block = {
+      type: 'paragraph',
+      paragraph: {
+        rich_text: [{ type: 'text', plain_text: '세계관', href: `https://app.notion.com/p/${id}` }],
+      },
+    };
+
+    expect(listNotionLinkedPageIds([{ block, children: [] }])).toEqual([id]);
   });
 });
 
