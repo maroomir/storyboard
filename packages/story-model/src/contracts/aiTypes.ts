@@ -56,6 +56,8 @@ export interface AiGenerateResponse {
   readonly model?: string;
   readonly usage?: AiUsage;
   readonly costUsd?: number;
+  // The provider stopped at the output limit, so the text ends mid-way.
+  readonly isTruncated?: boolean;
 }
 
 export type EntityKind = 'scene' | 'character' | 'background';

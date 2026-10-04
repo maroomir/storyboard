@@ -7,6 +7,7 @@ import type {
   NoteAbsorbPlan,
   NoteBundle,
   NoteCandidateFile,
+  NoteExtractionResponse,
 } from '@storyboard/story-model';
 
 
@@ -16,6 +17,10 @@ import type {
 export interface INoteAbsorbRepository {
   saveBundle(workspaceRoot: StoryUri, bundle: NoteBundle): Promise<void>;
   savePlan(workspaceRoot: StoryUri, plan: NoteAbsorbPlan): Promise<void>;
+  saveExtractionResponses(
+    workspaceRoot: StoryUri,
+    responses: readonly NoteExtractionResponse[],
+  ): Promise<void>;
   loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile | undefined>;
   // An empty list removes the file, so a promoted or superseded candidate does not linger.
   saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;

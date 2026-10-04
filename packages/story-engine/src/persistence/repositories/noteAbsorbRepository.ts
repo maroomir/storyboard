@@ -14,6 +14,7 @@ import {
   noteCandidateFileSchema,
   type NoteBundle,
   type NoteCandidateFile,
+  type NoteExtractionResponse,
 } from '@storyboard/story-model';
 
 import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
@@ -38,6 +39,13 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
   public async savePlan(workspaceRoot: StoryUri, plan: NoteAbsorbPlan): Promise<void> {
     await this.writeCacheFile(workspaceRoot, 'notePlan', encodeJson(plan));
+  }
+
+  public async saveExtractionResponses(
+    workspaceRoot: StoryUri,
+    responses: readonly NoteExtractionResponse[],
+  ): Promise<void> {
+    await this.writeCacheFile(workspaceRoot, 'noteExtractionResponses', encodeJson(responses));
   }
 
   public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile | undefined> {
@@ -136,7 +144,12 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
 
   private async writeCacheFile(
     workspaceRoot: StoryUri,
-    key: 'noteSource' | 'notePlan' | 'noteCandidates' | 'noteSynopsisCandidate',
+    key:
+      | 'noteSource'
+      | 'notePlan'
+      | 'noteCandidates'
+      | 'noteSynopsisCandidate'
+      | 'noteExtractionResponses',
     content: Uint8Array,
   ): Promise<void> {
     const paths = getStoryboardProjectPaths(workspaceRoot);

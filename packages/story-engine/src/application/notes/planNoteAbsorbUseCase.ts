@@ -3,18 +3,26 @@ import {
   type AiProviderId,
   emptyNoteSynthesis,
   type NoteExtraction,
+  type NoteExtractionFailure,
   type NoteExtractionKnownCard,
+  type NoteExtractionResponse,
   buildNoteAbsorbPlan,
   type NoteAbsorbPlan,
   groupNotesIntoChunks,
   measureNoteAbsorbWorkload,
   type NoteAbsorbWorkload,
+  STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
-import type { StoryUri, StoryboardCard, NoteBundle } from '@storyboard/story-model';
+import type { NoteDocument, StoryUri, StoryboardCard, NoteBundle } from '@storyboard/story-model';
 
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import type { IStoryFeatureRepository } from '#engine/application/story/storyFeatureTypes';
-import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
+import {
+  failedResult,
+  runUseCase,
+  type IUseCase,
+  type UseCaseFailure,
+} from '#engine/application/useCase';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
@@ -49,6 +57,22 @@ function toKnownCard(card: StoryboardCard): NoteExtractionKnownCard {
     name: card.name,
     aliases: card.aliases ?? [],
   };
+}
+
+const failureDescriptions: Readonly<Record<NoteExtractionFailure, string>> = {
+  truncated: '응답이 출력 한도에서 잘려',
+  unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
+};
+
+function describeExtractionFailure(
+  failure: NoteExtractionFailure,
+  chunk: readonly NoteDocument[],
+  position: string,
+): string {
+  const [first] = chunk;
+  const titles = chunk.length > 1 ? `${first?.title} 외 ${chunk.length - 1}장` : `${first?.title}`;
+
+  return `노트 묶음 ${position} (${titles})은 ${failureDescriptions[failure]} 아무것도 옮기지 못했습니다.`;
 }
 
 // The paid half of the import: the notes are read by the model, and what comes back is merged into
@@ -88,10 +112,37 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       const knownCards = source.cards.map(toKnownCard);
       const chunks = groupNotesIntoChunks(bundle.notes);
       const extractions: NoteExtraction[] = [];
+      const responses: NoteExtractionResponse[] = [];
+      const failureWarnings: string[] = [];
 
       for (const [index, chunk] of chunks.entries()) {
-        this.deps.logger.info(`노트 묶음 ${index + 1}/${chunks.length} 을 읽는 중입니다.`);
-        extractions.push(await aiService.extractNotes(chunk, knownCards));
+        const position = `${index + 1}/${chunks.length}`;
+        this.deps.logger.info(`노트 묶음 ${position} 을 읽는 중입니다.`);
+
+        const result = await aiService.extractNotes(chunk, knownCards);
+        extractions.push(result.extraction);
+        responses.push({
+          chunk: index + 1,
+          noteIds: chunk.map((note) => note.id),
+          ...(result.failure === undefined ? {} : { failure: result.failure }),
+          text: result.responseText,
+        });
+
+        if (result.failure !== undefined) {
+          const warning = describeExtractionFailure(result.failure, chunk, position);
+          this.deps.logger.warn(warning);
+          failureWarnings.push(warning);
+        }
+      }
+
+      await this.deps.noteRepository.saveExtractionResponses(workspaceRoot, responses);
+
+      const responsesHint = `모델의 원문 응답은 ${STORYBOARD_RELATIVE_PATHS.noteExtractionResponses} 에 있습니다.`;
+
+      if (failureWarnings.length > 0 && failureWarnings.length === chunks.length) {
+        return failedResult(
+          new Error(`노트 묶음 ${chunks.length}개를 모두 읽지 못했습니다. ${responsesHint}`),
+        );
       }
 
       const premise = [...new Set(extractions.flatMap((extraction) => extraction.premise))];
@@ -113,9 +164,14 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         scenePrefixDigits: source.project.editor.scenePrefixDigits,
       });
 
-      await this.deps.noteRepository.savePlan(workspaceRoot, plan);
+      const checkedPlan =
+        failureWarnings.length === 0
+          ? plan
+          : { ...plan, warnings: [...failureWarnings, responsesHint, ...plan.warnings] };
 
-      return { ok: true as const, plan };
+      await this.deps.noteRepository.savePlan(workspaceRoot, checkedPlan);
+
+      return { ok: true as const, plan: checkedPlan };
     });
   }
 }

@@ -35,6 +35,24 @@ describe("ClaudeProvider", () => {
     expect(capturedRequest?.temperature).toBe(expectedTemperature)
   })
 
+  it.each([
+    ["max_tokens", true],
+    ["end_turn", undefined]
+  ] as const)("reports a %s stop as truncated: %s", async (stopReason, expectedTruncation) => {
+    const provider = new ClaudeProvider({
+      apiKey: "sk-ant-test",
+      model: "claude-sonnet-5",
+      createClient: (): ClaudeClientLike => createFakeClaudeClient({ completionText: '{"notes":[', stopReason })
+    })
+
+    const response = await provider.generate({
+      taskName: "noteExtraction",
+      messages: [{ role: "user", content: "노트" }]
+    })
+
+    expect(response.isTruncated).toBe(expectedTruncation)
+  })
+
   it("checks connection through Claude messages.create", async () => {
     let didCreateMessage = false
     const provider = new ClaudeProvider({
@@ -146,6 +164,7 @@ interface FakeClaudeClientOptions {
     readonly cache_read_input_tokens?: number
     readonly cache_creation_input_tokens?: number
   }
+  readonly stopReason?: string
   readonly onCreateMessage?: (request: Parameters<ClaudeClientLike["messages"]["create"]>[0]) => void
 }
 
@@ -157,11 +176,13 @@ function createFakeClaudeClient(options: FakeClaudeClientOptions): ClaudeClientL
       ): Promise<{
         readonly content: readonly [{ readonly type: "text"; readonly text: string }]
         readonly usage?: FakeClaudeClientOptions["usage"]
+        readonly stop_reason?: string
       }> => {
         options.onCreateMessage?.(request)
         return {
           content: [{ type: "text", text: options.completionText ?? "ok" }],
-          ...(options.usage !== undefined ? { usage: options.usage } : {})
+          ...(options.usage !== undefined ? { usage: options.usage } : {}),
+          ...(options.stopReason !== undefined ? { stop_reason: options.stopReason } : {})
         }
       }
     }

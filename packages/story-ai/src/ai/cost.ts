@@ -7,10 +7,13 @@ export function aiGenerateResponseWithUsage(params: {
   readonly model: string;
   readonly text: string;
   readonly usage?: AiUsage;
+  readonly isTruncated?: boolean;
 }): AiGenerateResponse {
-  const { providerId, model, text, usage } = params;
+  const { providerId, model, text, usage, isTruncated } = params;
+  const truncation = isTruncated === true ? { isTruncated } : {};
+
   if (!usage) {
-    return { providerId, model, text };
+    return { providerId, model, text, ...truncation };
   }
 
   const costUsd = computeCostUsd({ providerId, model, usage });
@@ -21,6 +24,7 @@ export function aiGenerateResponseWithUsage(params: {
     text,
     usage,
     ...(costUsd === undefined ? {} : { costUsd }),
+    ...truncation,
   };
 }
 

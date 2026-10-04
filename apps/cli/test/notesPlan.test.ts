@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { NoteExtractionPrompt } from '@storyboard/story-ai';
 import {
+  PlanNoteAbsorbUseCase,
+  type AiGateway,
+  type INoteAbsorbRepository,
+  type IStoryFeatureRepository,
+  type IStoryboardLogger,
+} from '@storyboard/story-engine';
+import {
   buildNoteAbsorbPlan,
   groupNotesIntoChunks,
   measureNoteAbsorbWorkload,
@@ -15,6 +22,12 @@ import {
   emptyNoteSynthesis,
   type NoteExtraction,
   type NoteExtractionEntity,
+  type NoteExtractionResponse,
+  type NoteExtractionResult,
+  type NoteBundle,
+  NodeUri,
+  parseJsonObject,
+  readNoteExtractionResponse,
 } from '@storyboard/story-model';
 
 function note(id: string, body = '본문', origin: NoteDocument['origin'] = 'tree'): NoteDocument {
@@ -285,5 +298,119 @@ describe('buildNoteAbsorbPlan', () => {
       pov: 'third-limited',
     });
     expect(buildNoteAbsorbPlan({ ...baseInput, notes: [], extractions: [] }).synopsis).toBeUndefined();
+  });
+});
+
+describe('readNoteExtractionResponse', () => {
+  const extractionText = '{"notes":[{"id":"a.md","kinds":["scene"]}],"scenes":[]}';
+
+  it('reads a whole response', () => {
+    const result = readNoteExtractionResponse(extractionText, parseJsonObject(extractionText), false);
+
+    expect(result.failure).toBeUndefined();
+    expect(result.extraction.notes).toEqual([{ id: 'a.md', kinds: ['scene'] }]);
+  });
+
+  it('reads nothing from a response cut at the output limit', () => {
+    const cut = '{"notes":[{"id":"a.md","kinds":["scene"]}],"scenes":[{"title":"만';
+    const result = readNoteExtractionResponse(cut, parseJsonObject(cut), true);
+
+    expect(result.failure).toBe('truncated');
+    expect(result.extraction).toEqual(extraction({}));
+    expect(result.responseText).toBe(cut);
+  });
+
+  it('counts a broken response as unparsed even when an inner object parses', () => {
+    // 따옴표 하나가 이스케이프되지 않으면 바깥 객체는 깨지고, 안쪽 notes 항목만 균형이 맞는다.
+    const broken = '{"notes":[{"id":"a.md","kinds":["scene"]}],"scenes":[{"summary":"그가 "안녕" 했다"}]}';
+    const parsed = parseJsonObject(broken);
+
+    expect(parsed).not.toBeNull();
+    expect(readNoteExtractionResponse(broken, parsed, false).failure).toBe('unparsed');
+    expect(readNoteExtractionResponse('설명만 있음', null, false).failure).toBe('unparsed');
+  });
+});
+
+describe('PlanNoteAbsorbUseCase', () => {
+  const workspaceRoot = NodeUri.file('/tmp/storyboard-plan-test');
+  const longBody = '가'.repeat(noteChunkCharacterLimit - 100);
+  const bundle: NoteBundle = {
+    kind: 'obsidian',
+    location: '/vault',
+    collectedAt: '2026-10-04T00:00:00.000Z',
+    notes: [note('첫째.md', longBody), note('둘째.md', longBody)],
+    skipped: [],
+  };
+
+  function createUseCase(results: readonly NoteExtractionResult[]) {
+    const savedResponses: NoteExtractionResponse[][] = [];
+    const warnings: string[] = [];
+    let call = 0;
+    const aiService = {
+      extractNotes: async () => results[call++] as NoteExtractionResult,
+      synthesizeNotePremise: async () => emptyNoteSynthesis,
+    };
+    const useCase = new PlanNoteAbsorbUseCase({
+      aiGateway: { createService: () => aiService } as unknown as AiGateway,
+      logger: {
+        info: () => undefined,
+        warn: (message: string) => warnings.push(message),
+        error: () => undefined,
+      } as unknown as IStoryboardLogger,
+      storyRepository: {
+        load: async () => ({ cards: [], scenes: [], project: { editor: { scenePrefixDigits: 2 } } }),
+      } as unknown as IStoryFeatureRepository,
+      noteRepository: {
+        savePlan: async () => undefined,
+        saveExtractionResponses: async (_root: unknown, responses: NoteExtractionResponse[]) => {
+          savedResponses.push(responses);
+        },
+      } as unknown as INoteAbsorbRepository,
+    });
+
+    return { useCase, savedResponses, warnings };
+  }
+
+  const readable: NoteExtractionResult = {
+    extraction: extraction({ notes: [{ id: '둘째.md', kinds: ['scene'] }] }),
+    responseText: '{"notes":[]}',
+  };
+  const truncated: NoteExtractionResult = {
+    extraction: extraction({}),
+    responseText: '{"notes":[',
+    failure: 'truncated',
+  };
+
+  it('warns about a request it could not read and keeps every response in the cache', async () => {
+    const { useCase, savedResponses, warnings } = createUseCase([truncated, readable]);
+
+    const result = await useCase.execute({ workspaceRoot, bundle });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.plan.warnings[0]).toContain('노트 묶음 1/2 (첫째)은 응답이 출력 한도에서 잘려');
+    expect(result.ok && result.plan.warnings[1]).toContain('.storyboard/cache/notes/responses.json');
+    expect(warnings).toHaveLength(1);
+    expect(savedResponses).toEqual([
+      [
+        { chunk: 1, noteIds: ['첫째.md'], failure: 'truncated', text: '{"notes":[' },
+        { chunk: 2, noteIds: ['둘째.md'], text: '{"notes":[]}' },
+      ],
+    ]);
+  });
+
+  it('fails when no request could be read', async () => {
+    const { useCase, savedResponses, warnings } = createUseCase([
+      truncated,
+      { ...truncated, failure: 'unparsed' },
+    ]);
+
+    const result = await useCase.execute({ workspaceRoot, bundle });
+
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.message).toBe(
+      '노트 묶음 2개를 모두 읽지 못했습니다. 모델의 원문 응답은 .storyboard/cache/notes/responses.json 에 있습니다.',
+    );
+    expect(warnings[1]).toContain('응답에서 정리 결과(JSON)를 찾지 못해');
+    expect(savedResponses).toHaveLength(1);
   });
 });

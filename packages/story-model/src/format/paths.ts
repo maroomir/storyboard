@@ -27,6 +27,7 @@ export interface StoryboardRelativePaths {
   readonly notePlan: string;
   readonly noteCandidates: string;
   readonly noteSynopsisCandidate: string;
+  readonly noteExtractionResponses: string;
   readonly studioSessionDirectory: string;
   readonly bibleDirectory: string;
   readonly bibleCanon: string;
@@ -75,6 +76,7 @@ export const STORYBOARD_RELATIVE_PATHS: StoryboardRelativePaths = {
   notePlan: '.storyboard/cache/notes/plan.json',
   noteCandidates: '.storyboard/cache/notes/candidates.json',
   noteSynopsisCandidate: '.storyboard/cache/notes/synopsis.candidate.md',
+  noteExtractionResponses: '.storyboard/cache/notes/responses.json',
   studioSessionDirectory: '.storyboard/cache/studio-sessions',
   bibleDirectory: '.storyboard/bible',
   bibleCanon: '.storyboard/bible/canon.yaml',
