@@ -196,7 +196,8 @@ under a guessed id — create it with `card create background --name "방송실"
 and run `card build` again.
 
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
-forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
+forces them for pipes). Color appears only at a terminal; pipes, `--json`, `NO_COLOR` and
+`TERM=dumb` stay plain, and `--no-color` turns it off. Setup failures name the fix: no workspace → `storyboard init`, no provider
 → `storyboard setup`, no key → `storyboard apikey set` (asks for the provider, hides the key as you paste it, and checks the connection; `apikey show` lists which providers have a key).
 
 A draft is only as long as the events its scene card carries, so `draft generate` first expands

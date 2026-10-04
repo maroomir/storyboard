@@ -26,6 +26,7 @@ export const globalFlagNames = [
   'json',
   'quiet',
   'verbose',
+  'no-color',
   'help',
   'version',
 ] as const;
@@ -228,6 +229,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'json', summary: '결과를 JSON 으로 stdout 에 출력합니다 (실패도 JSON)' },
   { name: 'quiet', summary: '진행 로그를 숨깁니다 (기본: 터미널이면 stderr 에 표시)' },
   { name: 'verbose', summary: '터미널이 아니어도 진행 로그를 stderr 에 출력합니다' },
+  { name: 'no-color', summary: '색을 끕니다 (NO_COLOR 환경 변수와 같음)' },
   { name: 'version', summary: '버전을 출력합니다 (-v)' },
   { name: 'help', summary: '이 도움말 또는 <명령> --help (-h)' },
 ];

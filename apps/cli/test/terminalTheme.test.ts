@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { createTerminalProfile, defaultColumns } from '../src/terminal/profile';
 import { createTheme, plainTheme, shouldUseColor } from '../src/terminal/theme';
 
 const terminal = { isTty: true, env: {}, hasNoColorFlag: false, isJsonOutput: false };
@@ -32,5 +33,28 @@ describe('color conditions', () => {
 
   it('ignores an empty NO_COLOR, as the convention says', () => {
     expect(shouldUseColor({ ...terminal, env: { NO_COLOR: '' } })).toBe(true);
+  });
+});
+
+describe('terminal profile', () => {
+  const facts = {
+    stdout: { isTty: false },
+    stderr: { isTty: true, columns: 120 },
+    env: {},
+  };
+
+  it('judges stdout and stderr apart, so a redirected result keeps a colored log', () => {
+    const profile = createTerminalProfile(facts, { hasNoColorFlag: false, isJsonOutput: false });
+
+    expect(profile.stdout.theme.isColorEnabled).toBe(false);
+    expect(profile.stdout.columns).toBe(defaultColumns);
+    expect(profile.stderr.theme.isColorEnabled).toBe(true);
+    expect(profile.stderr.columns).toBe(120);
+  });
+
+  it('turns color off on both streams for --no-color', () => {
+    const profile = createTerminalProfile(facts, { hasNoColorFlag: true, isJsonOutput: false });
+
+    expect(profile.stderr.theme.isColorEnabled).toBe(false);
   });
 });

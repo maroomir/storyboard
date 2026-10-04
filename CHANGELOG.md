@@ -35,6 +35,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 - **`storyboard status`가 작품 현황과 다음에 실행할 명령을 보여 줍니다.** 계약에서 빈 항목, 아웃라인, 카드 수, 씬 수, 초안(없음·카드보다 오래됨·경고 남음), 미승격 정전 후보, 원고 조립·검사 여부를 한 번에 보고, `--json`의 `data.next.command`로 에이전트가 다음 단계를 고를 수 있습니다.
 - **씬·카드·초안·계약을 보는 명령이 생겼습니다.** `scene list`, `card list [character|background]`, `card show <id>`, `draft show <stem>`, `project show`. 모두 읽기 전용이라 다른 앱이 작업 중이어도 실행됩니다.
+- **터미널에서는 경고와 오류에 색이 붙습니다.** 파이프·`--json`·`NO_COLOR`·`TERM=dumb`에서는 지금과 같은 글자만 나가고, `--no-color`로 직접 끌 수 있습니다.
 
 ## [0.11.6] - 2026-10-05
 
