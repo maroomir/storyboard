@@ -10,6 +10,29 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed
+
+- **CLI command names follow one rule, and the old names no longer work.** Every command on a work is `<singular noun> <verb> [target]`, two words, and a kind (character or background, the kind of check) is the first argument rather than part of the name. `scene` is the scene card; `draft` is the prose. An old name answers "unknown command" and suggests the closest new one. A work's existing `AGENTS.md` still names the old commands: edit it from the table below, or delete it and run `storyboard init --repair` to write it again.
+  | Before | Now |
+  |---|---|
+  | `scene generate <stem>` · `--all` | `draft generate <stem>` · `--all` |
+  | `scene revise <stem>` | `draft revise <stem>` |
+  | `scene draft <stem>` (printed the path) | `draft show <stem>` (prints the body; the path is `data.path` under `--json`) |
+  | `check grammar\|continuity\|slop <stem>` | `draft check grammar\|continuity\|slop <stem>` |
+  | `scene seeds` | `scene seed` |
+  | `scene beats` | `scene plot` |
+  | `cards build` · `cards migrate` | `card build` · `card migrate` |
+  | `bible promote` | `canon promote` |
+  | `narrator add` | `narrator create` |
+  | `manuscript summaries` | `manuscript summarize` |
+  `card create|rename|recommend character|background` and `notes connect notion` are typed exactly as before (the kind moved from the command name to an argument).
+- **`storyboard --help` groups commands by noun.** Eight groups — 시작하기, 기획, 씬, 초안, 카드와 정전, 노트, 원고, 측정 — and one noun never spreads over two of them.
+
+### Added
+
+- **`storyboard status` shows where a work stands and the command to run next.** Empty contract fields, the outline, card counts, scene count, drafts (missing, older than their card, with warnings left), unpromoted canon candidates, and whether the manuscript is assembled and reviewed. Under `--json`, `data.next.command` lets an agent pick the next step.
+- **Commands to look at scenes, cards, drafts and the contract.** `scene list`, `card list [character|background]`, `card show <id>`, `draft show <stem>`, `project show`. All are read-only, so they run while another app is working.
+
 ## [0.11.6] - 2026-10-05
 
 ### Changed

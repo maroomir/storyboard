@@ -39,10 +39,10 @@ code --install-extension storyboard-vscode-*.vsix
 storyboard init --title "밤의 항해" --genre 미스터리 --pov third-limited --target-words 300000
 storyboard setup                      # 프로바이더와 키 (claude, openai, google, grok, ollama)
 storyboard outline generate           # 계약 → 시놉시스·장 계획
-storyboard scene seeds                # 장 계획 → scene/*.card
-storyboard scene beats --all          # 씬마다 사건 비트
-storyboard scene generate 01-prologue # 뼈대 → 대사 → 구간 확장 → 기계 검증 → 검수·재작성
-storyboard check continuity 01-prologue
+storyboard scene seed                 # 장 계획 → scene/*.card
+storyboard scene plot --all           # 씬마다 사건 비트
+storyboard draft generate 01-prologue # 뼈대 → 대사 → 구간 확장 → 기계 검증 → 검수·재작성
+storyboard draft check continuity 01-prologue
 storyboard manuscript assemble        # draft/*.md → 원고
 ```
 

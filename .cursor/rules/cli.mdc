@@ -32,6 +32,29 @@ extension runs, in a terminal, so another AI agent can write a novel without an 
   extension or another CLI holds it. Read-only verbs never wait on it. `apps/cli/test/runLock.test.ts`
   fails when a verb is added without saying which kind it is.
 
+## Command naming
+
+Every command on a work is `<noun> <verb> [target] [--options]` — two words. The noun is the kind
+of file it touches (`project`, `outline`, `narrator`, `scene`, `draft`, `card`, `canon`, `notes`,
+`manuscript`), always singular, and the verb comes from one vocabulary: `list`/`show` to look,
+`create`/`rename`/`remove`/`set` to change, `generate`/`revise`/`check`/… for AI work,
+`diff`/`promote` for candidates. A kind is an argument, never part of the name
+(`card create character`, `draft check slop <stem>`, `notes connect notion`); the lists of kinds
+(`cardCategories`, `draftCheckKinds`, `noteSources`) live in the catalog and feed the usage line, the
+handler's check and completion. One-word commands (`init`, `setup`, `doctor`, `status`, `help`,
+`tui`, `completion`) are about the machine or the session. `scene` is the scene card and `draft` is
+the prose: generating, revising, showing and checking a draft are all `draft` verbs.
+
+A command's help group follows its noun, so one noun never spreads over two groups: 시작하기 /
+기획 (`project`, `outline`, `narrator`, `novel`) / 씬 / 초안 (`draft`, `state`) / 카드와 정전
+(`card`, `canon`) / 노트 / 원고 / 측정. Old names are not kept as aliases — a rename is a breaking
+change recorded in the changelog — and a freed name is not reused for a different action.
+
+Read-only verbs that look at the work go through manager reads, not the file system:
+`drafts.listScenes`, `drafts.readDraft`, `cards.list`, `cards.read`, `novel.readProject`, and
+`describeWorkspace` for `status` (the engine names the open step as a `WorkspaceNextStep`;
+`nextStepCommands` in `apps/cli/src/commands/status.ts` owns the command for each).
+
 ## Layering
 
 `adapters → commands`. A layer may import itself and anything to its left;
@@ -77,7 +100,7 @@ is the single source for the parser's flag table, `--help`, per-verb help and `n
 
 ## Narration verbs
 
-`narrator add|list|show|remove`가 서술자 카드를 다루고, `init`·`project set`의 `--composition`이
+`narrator create|list|show|remove`가 서술자 카드를 다루고, `init`·`project set`의 `--composition`이
 구성 프리셋을 적용한다(프리셋이 줄기와 서술자 카드를 만든다). `scene show <stem>`은 해석된
 시점·줄기를 한 줄로 보여 주고, `doctor`는 카드 없는 서술자 참조를 실패로, 계약에 없는 줄기와
 초점 없는 1·2인칭 서술자를 경고로 보고한다.
@@ -121,7 +144,7 @@ up to three per extraction request.
 
 Inline completion, hover, the `.card` custom editor and the relation graph are editor chrome, not
 capabilities — they have no terminal form. What is portable is the *ability* behind a provider: the
-three diagnostics become `check` verbs, the card editor becomes card CRUD verbs. Do not add an
+three diagnostics become `draft check <kind>`, the card editor becomes card CRUD verbs. Do not add an
 entry to the parity test's editor-only list without that argument holding.
 
 ## Interactive screen (`apps/cli/src/tui`)

@@ -41,10 +41,10 @@ code --install-extension storyboard-vscode-*.vsix
 storyboard init --title "Night Passage" --genre mystery --pov third-limited --target-words 300000
 storyboard setup                      # provider and key (claude, openai, google, grok, ollama)
 storyboard outline generate           # contract → synopsis and chapter plan
-storyboard scene seeds                # chapter plan → scene/*.card
-storyboard scene beats --all          # event beats for every scene
-storyboard scene generate 01-prologue # skeleton → dialogue → section expansion → checks → review and revise
-storyboard check continuity 01-prologue
+storyboard scene seed                 # chapter plan → scene/*.card
+storyboard scene plot --all           # event beats for every scene
+storyboard draft generate 01-prologue # skeleton → dialogue → section expansion → checks → review and revise
+storyboard draft check continuity 01-prologue
 storyboard manuscript assemble        # draft/*.md → manuscript
 ```
 

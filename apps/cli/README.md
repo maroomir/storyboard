@@ -26,6 +26,7 @@ storyboard init --title "밤의 항해"   # an empty directory becomes a workspa
 storyboard setup                      # pick the AI provider (and key) — shared with the extension
 storyboard project set --genre …      # the contract the outline needs (init takes the same flags)
 storyboard doctor                     # what is still missing, with the command that fixes it
+storyboard status                     # where the work stands, and the command to run next
 ```
 
 `init` also writes `AGENTS.md` (and a `CLAUDE.md` that imports it) for coding agents working in the
@@ -34,26 +35,54 @@ code, ask before changing the contract, the budget or the model. Existing files 
 overwritten; fill in its last section with the work's own notes.
 
 `doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
-`scene seeds`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
+`scene seed`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
 ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
 you regenerate that scene. When the edit was one you do not want redrafted — beats added to a card
 whose prose still stands — `storyboard state reseal [<scene range>]` records the current cards as the
 ledger's basis instead, which is the only way to clear that mark without regenerating. The chapter summaries (`.storyboard/memory/summaries.md`) are checked the
-same way against the drafts they were written from, and `storyboard manuscript summaries` refreshes
+same way against the drafts they were written from, and `storyboard manuscript summarize` refreshes
 the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
 (`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a
 pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
 stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
 keeping any summary you wrote above it, and moves that inline summary into
 `scene/<stem>.summary.md` so the card holds only the file name. `doctor` also counts the scenes that
-still carry an inline summary and the scenes without beats (fix: `scene beats --all`), and it warns
+still carry an inline summary and the scenes without beats (fix: `scene plot --all`), and it warns
 when the configured model cannot reach the largest scene target — measured, not guessed, and silent
 for combinations that were never measured.
 
 `storyboard` with no arguments prints the grouped command list with these steps at the top;
 `storyboard <command> --help` (or `-h`) shows one command's options and examples, and a mistyped
 verb suggests the closest real ones. `-v` prints the version.
+
+## Commands
+
+Every command on a work is `<noun> <verb> [target] [--options]`, two words. The noun is the kind of
+file it touches — `project`, `outline`, `narrator`, `scene`, `draft`, `card`, `canon`, `notes`,
+`manuscript` — always singular, and the verb comes from one small vocabulary: `list` and `show` to
+look, `create` / `rename` / `remove` / `set` to change, `generate` / `revise` / `check` and the like
+for AI work, `diff` / `promote` for candidates. A kind is an argument, never part of the name:
+`card create character`, `draft check slop 01-intro`, `notes connect notion`. One-word commands
+(`init`, `setup`, `doctor`, `status`, `help`, `tui`, `completion`) are about the machine or the
+session rather than a file of the work.
+
+`scene` is the scene card and `draft` is the prose written from it: `scene list|show|create|rename|
+seed|plot|complete|migrate` against `draft generate|revise|show|edit|augment|condense|expand|format|
+check`. `storyboard --help` groups the commands the same way: 시작하기, 기획, 씬, 초안, 카드와 정전,
+노트, 원고, 측정.
+
+```bash
+storyboard status                 # contract, outline, cards, scenes, drafts, manuscript + next command
+storyboard project show           # the contract, and which fields are still empty
+storyboard scene list             # scene cards in number order, each with its draft state
+storyboard draft show 01-intro    # the draft's body on stdout
+storyboard card list character    # cards of one kind (leave the kind out for both)
+storyboard card show hana         # one card, found by id
+```
+
+`status --json` carries the same counts plus `data.next` (`step`, `command`, `reason`), so an agent
+can ask what to run next and branch on it.
 
 ## Tab completion
 
@@ -86,11 +115,11 @@ one-shot form, so agents never end up inside it.
 storyboard init --title "시그널" --genre "하이틴 로맨스" --audience "10~20대" \
   --pov third-limited --target-words 480000 --chapters 8 --scenes-per-chapter 4
 storyboard outline generate
-storyboard scene seeds
-storyboard scene beats 01-scene-1-1 --dry-run
-storyboard scene generate 01-scene-1-1 --force
-storyboard scene generate --all
-storyboard scene revise 01-scene-1-1
+storyboard scene seed
+storyboard scene plot 01-scene-1-1 --dry-run
+storyboard draft generate 01-scene-1-1 --force
+storyboard draft generate --all
+storyboard draft revise 01-scene-1-1
 storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
@@ -111,7 +140,7 @@ storyboard project set --target-words 320000 --from contract.json
 서술자에 이름을 붙인다:
 
 ```bash
-storyboard narrator add hana-first --person first --focal hana --voice "건조한 단문"
+storyboard narrator create hana-first --person first --focal hana --voice "건조한 단문"
 storyboard narrator list
 ```
 
@@ -165,25 +194,25 @@ storyboard init --title "달의 문" --from-notes ~/Vault/달의문
 storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes
 ```
 
-`cards build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
+`card build` and `scene complete` write their proposals. Pass `--dry-run` to see the proposal
 without touching the tree. A new card whose name yields no ascii id is reported rather than filed
 under a guessed id — create it with `card create background --name "방송실" --id broadcast-room`
-and run `cards build` again.
+and run `card build` again.
 
 Progress lines go to stderr whenever stderr is a terminal (`--quiet` hides them, `--verbose`
 forces them for pipes). Setup failures name the fix: no workspace → `storyboard init`, no provider
 → `storyboard setup`, no key → `storyboard apikey set` (asks for the provider, hides the key as you paste it, and checks the connection; `apikey show` lists which providers have a key).
 
-A draft is only as long as the events its scene card carries, so `scene generate` first expands
+A draft is only as long as the events its scene card carries, so `draft generate` first expands
 the card's `beats` when it has none — from the structured fields, the grounding facts and the
 summary in `scene/<stem>.summary.md` (staying inside that summary when there is one) — and writes
-them to the card before drafting. `scene beats <stem> | --all` runs that step on its own so you can
+them to the card before drafting. `scene plot <stem> | --all` runs that step on its own so you can
 read the beats before spending a generation: `--dry-run` only prints the proposal, `--all` picks the
 scenes without beats, and existing beats are regenerated only with `--force`. The count is
 `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))` (defaults 5 and 1,500);
 `generation.beats.auto: false` turns the automatic step off.
 
-`scene generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
+`draft generate` prints the draft's warnings (a short draft, for instance) on stderr and, under
 `--json`, in `data.warnings`; the exit code stays 0. `--verbose` also logs each pipeline stage as it
 runs, which is how you tell a 20-minute scene apart from a hung one.
 
@@ -193,7 +222,7 @@ parse loose text; progress and warnings always go to stderr. Exit code is 0 on s
 on failure.
 
 ```bash
-storyboard scene draft 01-scene-1-1 --json | jq -r .data.path
+storyboard draft show 01-scene-1-1 --json | jq -r .data.path
 ```
 
 ## Config

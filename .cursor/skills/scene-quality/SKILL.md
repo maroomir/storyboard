@@ -40,7 +40,7 @@ All harness and test commands below run from `apps/vscode` (the harness include 
 ## Loop
 
 1. **Generate** (writes `draft/NN-slug.md`):
-   `npm run cli:build && node apps/cli/dist/index.js scene generate <NN-slug> --workspace <ws> --force --provider claude --model claude-sonnet-5`
+   `npm run cli:build && node apps/cli/dist/index.js draft generate <NN-slug> --workspace <ws> --force --provider claude --model claude-sonnet-5`
    Back up each iteration to `<ws>/draft-history/` before regenerating.
 2. **Objective coverage:**
    `cd apps/vscode && SCENE_WS=<ws> SCENE_FILE=<NN-slug.card> npx vitest run --config vitest.harness.config.ts coverageCheck`
