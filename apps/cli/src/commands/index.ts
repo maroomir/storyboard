@@ -172,14 +172,9 @@ const generateSceneBeats: CommandHandler = async ({ container, args }) => {
   const dryRun = flagBoolean(args.flags, 'dry-run');
 
   if (flagBoolean(args.flags, 'all')) {
-    const paths = getStoryboardProjectPaths(container.workspaceRoot);
-    const names = await container.fileSystem
-      .listFileNames(paths.sceneDirectory)
-      .catch(() => [] as readonly string[]);
-    const stems = names
-      .map((fileName) => parseSceneFileName(fileName)?.stem)
-      .filter((stem): stem is string => stem !== undefined)
-      .sort();
+    const stems = (await container.drafts.listScenes(container.workspaceRoot)).map(
+      (scene) => scene.stem,
+    );
     const results: Record<string, unknown> = {};
     const failures: string[] = [];
     let proposed = 0;
@@ -361,13 +356,11 @@ const showScene: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const uri = scenePath(container.workspaceRoot, stem);
+  const scene = await container.drafts.readScene(container.workspaceRoot, stem);
 
-  if (!(await container.fileSystem.exists(uri))) {
+  if (scene === undefined) {
     return { ok: false, message: `씬을 찾을 수 없습니다: ${stem}` };
   }
-
-  const scene = await readSceneFile(uri, container.fileSystem, `${stem}.card`);
   const narration = await describeSceneNarration(
     container,
     scene.card.narrator,
@@ -1062,12 +1055,23 @@ const exportManuscript: CommandHandler = async ({ container, args }) => {
     return { ok: true, message: '', data: { projectName: source.projectName } };
   }
 
-  await container.fileSystem.writeFile(
-    NodeUri.file(target),
-    new TextEncoder().encode(source.markdown),
+  // 편집기의 형식 선택과 같은 두 형식이다. 확장자가 .txt 면 마크다운 기호를 걷어 낸 평문으로 낸다.
+  const format = target.toLowerCase().endsWith('.txt') ? 'txt' : 'md';
+  const exported = await container.manuscript.writeExport(
+    NodeUri.file(resolve(target)),
+    source.markdown,
+    format,
   );
 
-  return { ok: true, message: `${target} 로 내보냈습니다.`, data: { path: target } };
+  if (!exported.ok) {
+    return { ok: false, message: `내보내지 못했습니다: ${exported.message}` };
+  }
+
+  return {
+    ok: true,
+    message: `${target} 로 내보냈습니다.`,
+    data: { path: target, format },
+  };
 };
 
 // An agent starting from an empty directory needs this first; without it the CLI can only work in
