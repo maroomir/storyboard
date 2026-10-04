@@ -175,6 +175,11 @@ shell line. Because Ink and yoga-layout use top-level await the bundle is ESM (`
 `esbuild.config.mjs` adds a `createRequire` banner for CJS dependencies and aliases
 `react-devtools-core` to a stub. Nothing outside `tui/` may import `ink` or `react`. The TUI refuses
 to start without a TTY so agents never end up inside it.
+Around the prompt it reads, on start and after every command, a `WorkspaceView` (`tui/workspaceView.ts`):
+the run-lock holder through `RunGate.describeHolder` for the status line, and `describeWorkspace` for
+the dashboard, whose next command comes from the same `nextStepCommands` the `status` verb uses.
+Completion at the prompt is `computeCompletions` — the shell's list — so a new flag or kind needs no
+TUI change.
 
 ## Shell completion (`apps/cli/src/commands/completion.ts`)
 
