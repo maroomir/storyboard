@@ -43,7 +43,10 @@ import {
   draftPath,
   getStoryboardProjectPaths,
   parseDraft,
+  readSceneFile,
+  scenePath,
   type Draft,
+  type SceneFile,
   type SceneListItem,
   type StoryUri,
 } from '@storyboard/story-model';
@@ -89,6 +92,16 @@ export class DraftManager {
     }
 
     return await this.scenes.list(workspaceRoot);
+  }
+
+  public async readScene(workspaceRoot: StoryUri, sceneStem: string): Promise<SceneFile | undefined> {
+    const uri = scenePath(workspaceRoot, sceneStem);
+
+    if (!(await this.deps.fileSystem.exists(uri))) {
+      return undefined;
+    }
+
+    return await readSceneFile(uri, this.deps.fileSystem, `${sceneStem}.card`);
   }
 
   public async readDraft(

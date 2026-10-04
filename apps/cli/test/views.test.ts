@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -203,5 +203,20 @@ describe('status', () => {
         expect(verbs.some((verb) => `${command} `.startsWith(`${verb} `))).toBe(true);
       }
     }
+  });
+});
+
+describe('manuscript export --out', () => {
+  it('writes plain text for a .txt target and markdown otherwise', async () => {
+    mkdirSync(join(workspace, 'manuscript'), { recursive: true });
+    writeFileSync(join(workspace, 'manuscript', 'manuscript.md'), '# 보기 시험\n\n**밤**이 왔다.\n');
+
+    const text = await dispatch(['manuscript', 'export', '--out', join(workspace, 'out.txt')], deps());
+    const markdown = await dispatch(['manuscript', 'export', '--out', join(workspace, 'out.md')], deps());
+
+    expect(text.exitCode).toBe(0);
+    expect(markdown.exitCode).toBe(0);
+    expect(readFileSync(join(workspace, 'out.txt'), 'utf8')).toBe('보기 시험\n\n밤이 왔다.\n');
+    expect(readFileSync(join(workspace, 'out.md'), 'utf8')).toContain('**밤**');
   });
 });
