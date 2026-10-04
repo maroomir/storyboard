@@ -10,5 +10,5 @@ export default defineConfig({
   resolve: {
     alias: aliasesFromTsconfig(path.join(packageRoot, 'tsconfig.json')),
   },
-  test: { include: ['test/**/*.test.ts'], environment: 'node' },
+  test: { include: ['test/**/*.test.ts', 'test/**/*.test.tsx'], environment: 'node' },
 });
