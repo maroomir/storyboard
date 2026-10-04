@@ -79,7 +79,8 @@ is the single source for the parser's flag table, `--help`, per-verb help and `n
 ## Note import (`apps/cli/src/commands/notes.ts`)
 
 `notes absorb <path|url>` reads an Obsidian folder or note (every note under it, in name order) or a
-Notion page (sub-pages and inline database rows, in page order), plus the notes their text links to
+Notion page or full-page database (sub-pages in page order, database rows in title order, since
+Notion exposes no view order), plus the notes their text links to
 — one step, no further. The model sorts them into character/background cards, scene cards, the
 contract and a synopsis; what it cannot place is reported and never written. Nothing that exists
 is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,

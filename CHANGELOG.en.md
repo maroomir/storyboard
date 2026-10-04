@@ -22,6 +22,7 @@ after the first public release.
 - **`notes absorb` reads the rows of a full-page database given as its address.** Notion answers a database id on the pages endpoint with 400, not 404, and the retry as a database only ran on 404, so the run ended in "Notion 요청이 실패했습니다 (400)". (#63)
 - **`notes absorb` no longer passes over a note request it could not read.** A response cut at the output limit, or one with no readable result, was silently treated as "unclassified", so a paid run could "succeed" with 0 cards and 0 scenes. Such a batch now warns which notes were left out, and the verb fails (exit 1) when no batch could be read. The model's raw responses are kept in `.storyboard/cache/notes/responses.json`. Claude, OpenAI, Grok, Google and Ollama all report a response that stopped at the output limit. (#62)
 - **Note requests get an output budget they can finish in.** A model that thinks spends those tokens out of the output limit too, and reading 40,000 characters per request under an 8,000-token limit left nothing for the result. A request now reads up to 12,000 characters with a 16,000-token limit; there are more requests, so the estimate's ceiling is higher.
+- **Notion database rows are read in title order.** Notion returns unsorted rows newest first, so episodes `01`–`07` were read backwards and their scenes numbered backwards. Rows now follow the same name order as an Obsidian folder (numbers compare as numbers); sub-pages keep their order on the page.
 
 ## [0.11.3] - 2026-10-04
 
