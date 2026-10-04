@@ -57,7 +57,7 @@ Read-only verbs that look at the work go through manager reads, not the file sys
 
 ## Layering
 
-`adapters → commands`. A layer may import itself and anything to its left;
+`terminal → adapters → commands → tui`. A layer may import itself and anything to its left;
 `apps/cli/scripts/check-architecture.mjs` enforces the direction and rejects cycles.
 
 ## Host adapters
@@ -150,7 +150,7 @@ entry to the parity test's editor-only list without that argument holding.
 ## Interactive screen (`apps/cli/src/tui`)
 
 `storyboard` at a terminal with no arguments, or `storyboard tui`, renders an Ink app. It is a
-third layer (`adapters → commands → tui`) that only calls `commands/dispatch.ts` — the same entry
+top layer (`terminal → adapters → commands → tui`) that only calls `commands/dispatch.ts` — the same entry
 `index.ts` uses for one-shot runs — so a verb behaves identically typed at the prompt or on the
 shell line. Because Ink and yoga-layout use top-level await the bundle is ESM (`dist/index.mjs`);
 `esbuild.config.mjs` adds a `createRequire` banner for CJS dependencies and aliases
