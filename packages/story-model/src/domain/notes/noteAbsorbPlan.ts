@@ -8,7 +8,7 @@ import { cardIdPattern, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
 
-import { shouldProposeCardCollect } from '#model/domain/cardCollect';
+import { addUniqueCardListText, shouldProposeCardCollect } from '#model/domain/cardCollect';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
@@ -84,6 +84,10 @@ function union(left: readonly string[], right: readonly string[]): string[] {
   return [...new Set([...left, ...right])];
 }
 
+function unionText(left: readonly string[], right: readonly string[]): string[] {
+  return [...left, ...right].reduce<string[]>(addUniqueCardListText, []);
+}
+
 function entityKind(card: StoryboardCard): NoteExtractionEntity['type'] {
   return card.type === 'character' ? 'character' : 'background';
 }
@@ -108,12 +112,12 @@ function mergeEntity(
     suggestedId: first.suggestedId ?? second.suggestedId,
     existingId: first.existingId ?? second.existingId,
     role: secondRank > firstRank ? second.role : first.role,
-    aliases: union(first.aliases, [...otherNames, ...second.aliases]),
-    tags: union(first.tags, second.tags),
-    traits: union(first.traits, second.traits),
-    description: union(first.description, second.description),
-    voice: union(first.voice, second.voice),
-    desire: union(first.desire, second.desire),
+    aliases: unionText(first.aliases, [...otherNames, ...second.aliases]),
+    tags: unionText(first.tags, second.tags),
+    traits: unionText(first.traits, second.traits),
+    description: unionText(first.description, second.description),
+    voice: unionText(first.voice, second.voice),
+    desire: unionText(first.desire, second.desire),
     attributes: [
       ...first.attributes,
       ...second.attributes.filter((attribute) => !knownAttributeKeys.has(attribute.key)),
@@ -124,7 +128,7 @@ function mergeEntity(
         (relation) => !knownRelationTargets.has(normalizeName(relation.target)),
       ),
     ],
-    senses: union(first.senses, second.senses),
+    senses: unionText(first.senses, second.senses),
     time: first.time ?? second.time,
     weather: first.weather ?? second.weather,
     characterNames: union(first.characterNames, second.characterNames),

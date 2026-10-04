@@ -1,6 +1,13 @@
-import { NoteExtractionPrompt, NoteSynthesisPrompt, computeCostUsd } from '@storyboard/story-ai';
+import {
+  NoteCardConsolidationPrompt,
+  NoteExtractionPrompt,
+  NoteSynthesisPrompt,
+  type StoryboardAiService,
+  computeCostUsd,
+} from '@storyboard/story-ai';
 import {
   type AiProviderId,
+  applyNoteConsolidation,
   emptyNoteSynthesis,
   type NoteExtraction,
   type NoteExtractionFailure,
@@ -11,6 +18,8 @@ import {
   groupNotesIntoChunks,
   measureNoteAbsorbWorkload,
   type NoteAbsorbWorkload,
+  type NoteConsolidationFailure,
+  selectNoteConsolidationTargets,
   STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
 import type { NoteDocument, StoryUri, StoryboardCard, NoteBundle } from '@storyboard/story-model';
@@ -64,6 +73,15 @@ const failureDescriptions: Readonly<Record<NoteExtractionFailure, string>> = {
   unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
 };
 
+const consolidationFailureDescriptions: Readonly<Record<NoteConsolidationFailure, string>> = {
+  truncated: '응답이 출력 한도에서 잘려',
+  unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
+};
+
+function describeUnconsolidatedCharacters(names: readonly string[], reason: string): string {
+  return `인물 ${names.join(', ')} 의 성격·태그는 ${reason} 같은 뜻의 항목을 하나로 줄이지 못했습니다.`;
+}
+
 function describeExtractionFailure(
   failure: NoteExtractionFailure,
   chunk: readonly NoteDocument[],
@@ -88,6 +106,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     const workload = measureNoteAbsorbWorkload(bundle.notes, {
       extractionMaxTokens: NoteExtractionPrompt.config.maxTokens,
       synthesisMaxTokens: NoteSynthesisPrompt.config.maxTokens,
+      consolidationMaxTokens: NoteCardConsolidationPrompt.config.maxTokens,
     });
     const costCeilingUsd = computeCostUsd({
       providerId,
@@ -155,7 +174,7 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
           ? emptyNoteSynthesis
           : await aiService.synthesizeNotePremise(premise, [...new Set(castNames)]);
 
-      const plan = buildNoteAbsorbPlan({
+      const mergedPlan = buildNoteAbsorbPlan({
         notes: bundle.notes,
         extractions,
         synthesis,
@@ -163,15 +182,61 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         scenes: source.scenes,
         scenePrefixDigits: source.project.editor.scenePrefixDigits,
       });
+      const consolidation = await this.consolidateCharacters(aiService, mergedPlan, chunks);
+      const plan = consolidation.plan;
 
+      const leadingWarnings = [
+        ...(failureWarnings.length === 0 ? [] : [...failureWarnings, responsesHint]),
+        ...consolidation.warnings,
+      ];
       const checkedPlan =
-        failureWarnings.length === 0
+        leadingWarnings.length === 0
           ? plan
-          : { ...plan, warnings: [...failureWarnings, responsesHint, ...plan.warnings] };
+          : { ...plan, warnings: [...leadingWarnings, ...plan.warnings] };
 
       await this.deps.noteRepository.savePlan(workspaceRoot, checkedPlan);
 
       return { ok: true as const, plan: checkedPlan };
     });
+  }
+
+  // Exact repeats are already gone; this asks the model once for the ones worded differently.
+  // A failed request keeps the merged lists, so the import goes on with a warning.
+  private async consolidateCharacters(
+    aiService: Pick<StoryboardAiService, 'consolidateNoteCharacters'>,
+    plan: NoteAbsorbPlan,
+    chunks: readonly (readonly NoteDocument[])[],
+  ): Promise<{ readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] }> {
+    const chunkByNoteId = new Map<string, number>();
+    for (const [index, chunk] of chunks.entries()) {
+      for (const note of chunk) {
+        if (!chunkByNoteId.has(note.id)) {
+          chunkByNoteId.set(note.id, index);
+        }
+      }
+    }
+
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId);
+    if (targets.length === 0) {
+      return { plan, warnings: [] };
+    }
+
+    this.deps.logger.info(`인물 ${targets.length}명의 성격·태그를 정리하는 중입니다.`);
+    const result = await aiService.consolidateNoteCharacters(targets);
+    const consolidated = applyNoteConsolidation(plan, targets, result.consolidated);
+    const unansweredNames = consolidated.unanswered.map((target) => target.name);
+
+    if (unansweredNames.length === 0) {
+      return { plan: consolidated.plan, warnings: [] };
+    }
+
+    const reason =
+      result.failure === undefined
+        ? '정리 응답에 빠져'
+        : consolidationFailureDescriptions[result.failure];
+    const warning = describeUnconsolidatedCharacters(unansweredNames, reason);
+    this.deps.logger.warn(warning);
+
+    return { plan: consolidated.plan, warnings: [warning] };
   }
 }

@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **`notes absorb` writes each scene summary to `<stem>.summary.md`.** It used to put the summary inline in the scene card, so `doctor` warned about "inline summary scenes" right after an absorb — a warning about the product's own output. `scene migrate` is no longer needed afterwards. (#65)
+- **Character cards made by `notes absorb` no longer repeat a trait or tag in other words.** When the notes were read in several requests, items were merged only when they matched letter for letter, so "허세가 심함", "허세를 부린다" and "허세력 있음" all stayed. Items that differ only in spacing or punctuation are now one item, and a person read in more than one request, or whose card already has traits or tags, gets one more request that keeps one wording per meaning. The model only chooses among the notes' own wordings, and if that request fails the merged lists stay, with a warning. The estimate now shows its request count as a maximum. `card promote` and the draft candidates also treat an item that differs only in spacing or punctuation as already on the card. (#66)
 
 ## [0.11.5] - 2026-10-04
 

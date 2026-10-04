@@ -44,7 +44,7 @@ function describeEstimate(bundle: NoteBundle, estimate: NoteAbsorbEstimate): str
       .filter((note) => note.origin === 'link')
       .map((note) => `  링크로 읽음  ${note.title} (${note.id})`),
     ...bundle.skipped.map((entry) => `  읽지 못함    ${entry.label} — ${entry.reason}`),
-    `AI 요청 ${estimate.requestCount}회 · ${estimate.providerId}/${estimate.model} · 입력 약 ${estimate.inputTokens.toLocaleString()} 토큰 · ${formatUsd(estimate.costCeilingUsd)}`,
+    `AI 요청 최대 ${estimate.requestCount}회 · ${estimate.providerId}/${estimate.model} · 입력 약 ${estimate.inputTokens.toLocaleString()} 토큰 · ${formatUsd(estimate.costCeilingUsd)}`,
   ];
 }
 

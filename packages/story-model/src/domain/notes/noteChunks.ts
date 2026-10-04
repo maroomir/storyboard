@@ -63,10 +63,15 @@ export interface NoteAbsorbWorkload {
 
 export function measureNoteAbsorbWorkload(
   notes: readonly NoteDocument[],
-  outputLimits: { readonly extractionMaxTokens: number; readonly synthesisMaxTokens: number },
+  outputLimits: {
+    readonly extractionMaxTokens: number;
+    readonly synthesisMaxTokens: number;
+    readonly consolidationMaxTokens: number;
+  },
 ): NoteAbsorbWorkload {
   const extractionRequestCount = groupNotesIntoChunks(notes).length;
-  const requestCount = extractionRequestCount + 1;
+  // Synthesis and character consolidation run only when the notes call for them; both are counted.
+  const requestCount = extractionRequestCount + 2;
   const characterCount = notes.reduce(
     (total, note) => total + note.title.length + note.body.length,
     0,
@@ -80,6 +85,8 @@ export function measureNoteAbsorbWorkload(
     inputTokens:
       Math.ceil(characterCount / charactersPerToken) + requestCount * instructionTokensPerRequest,
     outputTokenCeiling:
-      extractionRequestCount * outputLimits.extractionMaxTokens + outputLimits.synthesisMaxTokens,
+      extractionRequestCount * outputLimits.extractionMaxTokens +
+      outputLimits.synthesisMaxTokens +
+      outputLimits.consolidationMaxTokens,
   };
 }

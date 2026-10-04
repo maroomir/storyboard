@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { NoteExtractionPrompt } from '@storyboard/story-ai';
+import { NoteCardConsolidationPrompt, NoteExtractionPrompt } from '@storyboard/story-ai';
 import {
   PlanNoteAbsorbUseCase,
   type AiGateway,
@@ -9,7 +9,11 @@ import {
   type IStoryboardLogger,
 } from '@storyboard/story-engine';
 import {
+  applyNoteConsolidation,
   buildNoteAbsorbPlan,
+  type NoteConsolidationResult,
+  readNoteConsolidationResponse,
+  selectNoteConsolidationTargets,
   groupNotesIntoChunks,
   measureNoteAbsorbWorkload,
   noteChunkCharacterLimit,
@@ -107,17 +111,17 @@ describe('note chunks', () => {
     ]);
   });
 
-  it('counts one synthesis request on top of the extraction requests', () => {
+  it('counts the synthesis and consolidation requests on top of the extraction requests', () => {
     const workload = measureNoteAbsorbWorkload(
       [note('a.md', '가'.repeat(300)), note('b.md', '나'.repeat(300), 'link')],
-      { extractionMaxTokens: 8000, synthesisMaxTokens: 2000 },
+      { extractionMaxTokens: 8000, synthesisMaxTokens: 2000, consolidationMaxTokens: 4000 },
     );
 
     expect(workload).toMatchObject({
       noteCount: 2,
       linkedNoteCount: 1,
-      requestCount: 2,
-      outputTokenCeiling: 10000,
+      requestCount: 3,
+      outputTokenCeiling: 14000,
     });
     expect(workload.inputTokens).toBeGreaterThan(400);
   });
@@ -177,6 +181,53 @@ describe('buildNoteAbsorbPlan', () => {
     expect(plan.cards[0]?.changes.find((change) => change.kind === 'relation')).toMatchObject({
       target: 'character-2',
     });
+  });
+
+  it('keeps one of the items two notes word only differently in spacing or punctuation', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('a.md'), note('b.md')],
+      extractions: [
+        extraction({
+          entities: [entity({ name: '조만재', traits: ['허세가 심함'], tags: ['허세'], sourceNotes: ['a.md'] })],
+        }),
+        extraction({
+          entities: [
+            entity({
+              name: '조만재',
+              traits: ['허세가  심함.', '고집이 세다'],
+              tags: ['허세', '허세남'],
+              sourceNotes: ['b.md'],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const changes = plan.cards[0]?.changes ?? [];
+    expect(changes.filter((change) => change.kind === 'trait').map((change) => change.value)).toEqual([
+      '허세가 심함',
+      '고집이 세다',
+    ]);
+    expect(changes.filter((change) => change.kind === 'tag').map((change) => change.value)).toEqual([
+      '허세',
+      '허세남',
+    ]);
+  });
+
+  it('does not propose a line an existing card says with other punctuation', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [hanaCard],
+      notes: [note('하나.md')],
+      extractions: [
+        extraction({
+          entities: [entity({ name: '하나', description: ['등대지기의 손녀'], sourceNotes: ['하나.md'] })],
+        }),
+      ],
+    });
+
+    expect(plan.cards).toEqual([]);
   });
 
   it('turns a note about an existing card into candidate changes only', () => {
@@ -373,6 +424,112 @@ describe('readNoteExtractionResponse', () => {
   });
 });
 
+describe('note character consolidation', () => {
+  const baseInput = {
+    synthesis: emptyNoteSynthesis,
+    scenes: [] as SceneFile[],
+    scenePrefixDigits: 2,
+  };
+  const chunkByNoteId = new Map([
+    ['a.md', 0],
+    ['b.md', 1],
+  ]);
+
+  function planOf(cards: StoryboardCard[], ...readings: Partial<NoteExtractionEntity>[][]) {
+    return buildNoteAbsorbPlan({
+      ...baseInput,
+      cards,
+      notes: [note('a.md'), note('b.md')],
+      extractions: readings.map((entities) =>
+        extraction({ entities: entities.map((overrides) => entity({ name: '조만재', ...overrides })) }),
+      ),
+    });
+  }
+
+  const twoReadings = planOf(
+    [],
+    [{ suggestedId: 'jo-manjae', traits: ['허세가 심함', '백과사전을 즐겨 읽음'], sourceNotes: ['a.md'] }],
+    [{ traits: ['허세를 부린다', '백과사전을 탐독함'], tags: ['허세남'], sourceNotes: ['b.md'] }],
+  );
+
+  it('asks only about a person read in more than one request or already on a card', () => {
+    expect(selectNoteConsolidationTargets(twoReadings, chunkByNoteId)).toEqual([
+      {
+        cardId: 'jo-manjae',
+        name: '조만재',
+        existingTraits: [],
+        existingTags: [],
+        traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허세를 부린다', '백과사전을 탐독함'],
+        tags: ['허세남'],
+      },
+    ]);
+
+    const oneReading = planOf([], [{ traits: ['허세가 심함', '고집이 세다'], sourceNotes: ['a.md', 'a.md'] }]);
+    expect(selectNoteConsolidationTargets(oneReading, chunkByNoteId)).toEqual([]);
+
+    const existing: StoryboardCard = { type: 'character', id: 'jo', name: '조만재', role: 'main', traits: ['허세가 심함'] };
+    const onCard = planOf([existing], [{ traits: ['허세를 부린다'], sourceNotes: ['a.md'] }]);
+    expect(selectNoteConsolidationTargets(onCard, chunkByNoteId)).toMatchObject([
+      { cardId: 'jo', existingTraits: ['허세가 심함'], traits: ['허세를 부린다'] },
+    ]);
+  });
+
+  it('keeps only the candidates the model chose, never a wording it made up', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+    const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, [
+      { cardId: 'jo-manjae', traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허풍쟁이'], tags: ['허세남'] },
+    ]);
+
+    expect(unanswered).toEqual([]);
+    expect(plan.cards[0]?.changes.map((change) => ('value' in change ? change.value : change.kind))).toEqual([
+      '허세남',
+      '허세가 심함',
+      '백과사전을 즐겨 읽음',
+    ]);
+  });
+
+  it('keeps a new person whole when the answer leaves nothing, and drops an existing card it empties', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+    expect(
+      applyNoteConsolidation(twoReadings, targets, [{ cardId: 'jo-manjae', traits: [], tags: [] }]).plan,
+    ).toEqual(twoReadings);
+
+    const existing: StoryboardCard = { type: 'character', id: 'jo', name: '조만재', role: 'main', traits: ['허세가 심함'] };
+    const onCard = planOf([existing], [{ traits: ['허세를 부린다'], sourceNotes: ['a.md'] }]);
+    const onCardTargets = selectNoteConsolidationTargets(onCard, chunkByNoteId);
+    expect(
+      applyNoteConsolidation(onCard, onCardTargets, [{ cardId: 'jo', traits: [], tags: [] }]).plan.cards,
+    ).toEqual([]);
+  });
+
+  it('reports the people the answer left out', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+    const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, []);
+
+    expect(plan).toEqual(twoReadings);
+    expect(unanswered.map((target) => target.name)).toEqual(['조만재']);
+  });
+
+  it('reads a response and refuses a cut or shapeless one', () => {
+    expect(
+      readNoteConsolidationResponse({ characters: [{ id: 'jo', traits: ['허세가 심함', ''] }, { traits: [] }] }, false),
+    ).toEqual({ consolidated: [{ cardId: 'jo', traits: ['허세가 심함'], tags: [] }] });
+    expect(readNoteConsolidationResponse({ characters: [] }, true).failure).toBe('truncated');
+    expect(readNoteConsolidationResponse({ people: [] }, false).failure).toBe('unparsed');
+    expect(readNoteConsolidationResponse(null, false).failure).toBe('unparsed');
+  });
+
+  it('shows each person with what the card has and what the notes offer', () => {
+    const prompt = NoteCardConsolidationPrompt.build([
+      { cardId: 'jo', name: '조만재', existingTraits: ['허세가 심함'], existingTags: [], traits: ['허세를 부린다'], tags: [] },
+    ]);
+
+    expect(prompt.user).toBe(
+      ['[인물] id: jo (조만재)', '[기존] traits:', '- 허세가 심함', '[후보] traits:', '- 허세를 부린다'].join('\n'),
+    );
+  });
+});
+
 describe('PlanNoteAbsorbUseCase', () => {
   const workspaceRoot = NodeUri.file('/tmp/storyboard-plan-test');
   const longBody = '가'.repeat(noteChunkCharacterLimit - 100);
@@ -384,13 +541,21 @@ describe('PlanNoteAbsorbUseCase', () => {
     skipped: [],
   };
 
-  function createUseCase(results: readonly NoteExtractionResult[]) {
+  function createUseCase(
+    results: readonly NoteExtractionResult[],
+    consolidation: NoteConsolidationResult = { consolidated: [] },
+  ) {
     const savedResponses: NoteExtractionResponse[][] = [];
     const warnings: string[] = [];
+    const consolidationRequests: unknown[] = [];
     let call = 0;
     const aiService = {
       extractNotes: async () => results[call++] as NoteExtractionResult,
       synthesizeNotePremise: async () => emptyNoteSynthesis,
+      consolidateNoteCharacters: async (targets: unknown) => {
+        consolidationRequests.push(targets);
+        return consolidation;
+      },
     };
     const useCase = new PlanNoteAbsorbUseCase({
       aiGateway: { createService: () => aiService } as unknown as AiGateway,
@@ -410,7 +575,7 @@ describe('PlanNoteAbsorbUseCase', () => {
       } as unknown as INoteAbsorbRepository,
     });
 
-    return { useCase, savedResponses, warnings };
+    return { useCase, savedResponses, warnings, consolidationRequests };
   }
 
   const readable: NoteExtractionResult = {
@@ -438,6 +603,59 @@ describe('PlanNoteAbsorbUseCase', () => {
         { chunk: 2, noteIds: ['둘째.md'], text: '{"notes":[]}' },
       ],
     ]);
+  });
+
+  function readingOf(noteId: string, traits: string[]): NoteExtractionResult {
+    return {
+      extraction: extraction({
+        entities: [entity({ name: '조만재', suggestedId: 'jo-manjae', traits, sourceNotes: [noteId] })],
+      }),
+      responseText: '{}',
+    };
+  }
+
+  const twoReadings = [
+    readingOf('첫째.md', ['허세가 심함']),
+    readingOf('둘째.md', ['허세를 부린다', '고집이 세다']),
+  ];
+
+  it('asks once to merge the traits of a person read in two requests', async () => {
+    const { useCase, warnings, consolidationRequests } = createUseCase(twoReadings, {
+      consolidated: [{ cardId: 'jo-manjae', traits: ['허세가 심함', '고집이 세다'], tags: [] }],
+    });
+
+    const result = await useCase.execute({ workspaceRoot, bundle });
+
+    expect(consolidationRequests).toHaveLength(1);
+    expect(warnings).toEqual([]);
+    expect(result.ok && result.plan.cards[0]?.changes.map((change) => 'value' in change && change.value)).toEqual([
+      '허세가 심함',
+      '고집이 세다',
+    ]);
+  });
+
+  it('keeps the merged traits and warns when the merge request fails', async () => {
+    const { useCase, warnings } = createUseCase(twoReadings, { consolidated: [], failure: 'truncated' });
+
+    const result = await useCase.execute({ workspaceRoot, bundle });
+
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.plan.cards[0]?.changes).toHaveLength(3);
+    expect(warnings).toEqual([
+      '인물 조만재 의 성격·태그는 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
+    ]);
+    expect(result.ok && result.plan.warnings[0]).toBe(warnings[0]);
+  });
+
+  it('makes no merge request when nobody needs one', async () => {
+    const { useCase, consolidationRequests } = createUseCase([
+      readingOf('첫째.md', ['허세가 심함']),
+      readable,
+    ]);
+
+    await useCase.execute({ workspaceRoot, bundle });
+
+    expect(consolidationRequests).toEqual([]);
   });
 
   it('fails when no request could be read', async () => {

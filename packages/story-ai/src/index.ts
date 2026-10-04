@@ -25,6 +25,7 @@ export * from './ai/prompts/genreFormatting';
 export * from './ai/prompts/grammarCheck';
 export * from './ai/prompts/inlineCompletion';
 export * from './ai/prompts/noteExtraction';
+export * from './ai/prompts/noteCardConsolidation';
 export * from './ai/prompts/noteSynthesis';
 export * from './ai/prompts/outlineSynopsis';
 export * from './ai/prompts/personaDialogue';
