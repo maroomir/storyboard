@@ -26,6 +26,7 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background`과 `notes connect notion`은 치는 글자가 그대로입니다(종류가 명령 이름에서 인자로 바뀌었을 뿐입니다).
 - **`storyboard --help`의 묶음이 명사를 따릅니다.** 시작하기 · 기획 · 씬 · 초안 · 카드와 정전 · 노트 · 원고 · 측정 여덟 묶음이고, 같은 명사가 두 묶음에 나뉘지 않습니다.
+- **`storyboard --help`가 처음 할 일과 명령 묶음만 보여 줍니다.** 한 묶음은 `storyboard help draft`처럼 영문 id(`start`·`plan`·`scene`·`draft`·`card`·`notes`·`manuscript`·`sim`)나 한글 이름으로, 모든 명령은 `storyboard help --all`로 봅니다. 설명은 터미널 폭에 맞춰 줄바꿈되고 한글이 섞여도 열이 맞습니다. 전체 목록을 읽던 스크립트는 `help --all`로 바꾸세요.
 
 ### 제거
 

@@ -84,7 +84,10 @@ export function renderColumns(rows: readonly ColumnRow[], options: ColumnOptions
     const continuation = wrapped.slice(1).map((line) => `${hanging}${line}`);
 
     if (measureWidth(row.label) > labelWidth) {
-      return [`${indent}${row.label}`, ...wrapped.map((line) => `${hanging}${line}`)];
+      return [
+        ...wrapLabel(row.label, indent, options.availableWidth),
+        ...wrapped.map((line) => `${hanging}${line}`),
+      ];
     }
 
     return [
@@ -98,11 +101,20 @@ function renderStackedRows(rows: readonly ColumnRow[], indent: string, width: nu
   const descriptionIndent = `${indent}  `;
 
   return rows.flatMap((row) => [
-    `${indent}${row.label}`,
+    ...wrapLabel(row.label, indent, width),
     ...wrapToWidth(row.description, width - descriptionIndent.length).map(
       (line) => `${descriptionIndent}${line}`,
     ),
   ]);
+}
+
+// A usage line longer than the terminal wraps with its continuation indented under it.
+function wrapLabel(label: string, indent: string, width: number): string[] {
+  const continuationIndent = `${indent}  `;
+
+  return wrapToWidth(label, width - continuationIndent.length).map(
+    (line, index) => `${index === 0 ? indent : continuationIndent}${line}`,
+  );
 }
 
 function identity(text: string): string {

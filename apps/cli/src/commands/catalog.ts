@@ -70,6 +70,23 @@ export const commandGroups: readonly CommandGroup[] = [
   '측정',
 ];
 
+// `help <묶음>` 으로 칠 수 있는 이름. 한글 묶음 이름은 셸에서 띄어쓰기와 IME 때문에 치기 어렵다.
+export const commandGroupIds: Readonly<Record<CommandGroup, string>> = {
+  시작하기: 'start',
+  기획: 'plan',
+  씬: 'scene',
+  초안: 'draft',
+  '카드와 정전': 'card',
+  노트: 'notes',
+  원고: 'manuscript',
+  측정: 'sim',
+};
+
+export function findCommandGroup(topic: string): CommandGroup | undefined {
+  const needle = topic.trim().toLowerCase();
+  return commandGroups.find((group) => group === needle || commandGroupIds[group] === needle);
+}
+
 export interface CommandSpec {
   readonly verb: string;
   readonly group: CommandGroup;
@@ -148,7 +165,7 @@ export const flagCatalog: readonly FlagSpec[] = [
   {
     name: 'all',
     summary:
-      'draft generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene plot: 비트 없는 씬을 모두',
+      'draft generate: 초안이 없거나 입력이 바뀐 씬을 모두 / scene plot: 비트 없는 씬을 모두 / help: 전체 명령',
   },
   {
     name: 'force',
@@ -372,8 +389,10 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'help',
     group: '시작하기',
-    usage: 'help [command]',
-    summary: '전체 또는 한 명령의 도움말',
+    usage: 'help [command | group] [--all]',
+    summary: '명령 묶음, 한 묶음 또는 한 명령의 도움말 (--all 은 전체 명령)',
+    flags: ['all'],
+    examples: ['storyboard help draft', 'storyboard help draft generate', 'storyboard help --all'],
     needsWorkspace: false,
   },
   {
