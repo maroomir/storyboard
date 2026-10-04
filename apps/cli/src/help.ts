@@ -328,7 +328,9 @@ function similarity(input: string, verb: string): number {
   const verbAction = verbWords[verbWords.length - 1];
 
   return inputWords.reduce((score, word) => {
-    if (word === inputAction && word === verbAction) {
+    // The action decides what a command does, so a one-letter slip on it (`generat`) still counts.
+    // Two letters would make `slop` an action of `show`.
+    if (word === inputAction && verbAction !== undefined && levenshtein(word, verbAction) <= 1) {
       return score + sameActionScore;
     }
 
@@ -363,14 +365,47 @@ function levenshtein(a: string, b: string): number {
   return rows[a.length] ?? 0;
 }
 
-export function renderUnknownCommand(verb: string): string {
-  const suggestions = suggestVerbs(verb);
-  const hint =
-    suggestions.length > 0
-      ? `이런 명령을 찾으셨나요?\n${suggestions.map((s) => `  storyboard ${s}`).join('\n')}\n`
-      : '';
+function renderSuggestions(
+  headline: string,
+  suggestions: readonly string[],
+  fallback: string,
+): string {
+  return [
+    headline,
+    ...suggestions.map((suggestion) => `  혹시 →  ${suggestion}`),
+    `  ${suggestions.length > 0 ? '전체 목록' : '목록'} →  ${fallback}`,
+  ].join('\n');
+}
 
-  return `알 수 없는 명령: ${verb}\n${hint}전체 목록: storyboard --help\n`;
+export function renderUnknownCommand(verb: string): string {
+  return renderSuggestions(
+    `알 수 없는 명령: ${verb}`,
+    suggestVerbs(verb).map((suggestion) => `storyboard ${suggestion}`),
+    'storyboard --help',
+  );
+}
+
+// A flag typo is a letter or two off (`--titel`, `--dryrun`), so only near names are offered.
+export function suggestFlags(name: string, limit = 2): string[] {
+  const needle = name.toLowerCase();
+
+  return flagCatalog
+    .map((flag) => ({
+      name: flag.name,
+      distance: flag.name.startsWith(needle) ? 0 : levenshtein(needle, flag.name),
+    }))
+    .filter((entry) => entry.distance <= nearWordDistance)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, limit)
+    .map((entry) => entry.name);
+}
+
+export function renderUnknownFlag(name: string): string {
+  return renderSuggestions(
+    `알 수 없는 옵션: --${name}`,
+    suggestFlags(name).map((suggestion) => `--${suggestion}`),
+    'storyboard <명령> --help',
+  );
 }
 
 export { flagCatalog };

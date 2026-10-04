@@ -20,7 +20,9 @@ import {
   renderGroupHelp,
   renderHelpTopic,
   renderUnknownCommand,
+  renderUnknownFlag,
   renderUsage,
+  suggestFlags,
   suggestVerbs,
 } from '../src/help';
 import { createTheme } from '../src/terminal/theme';
@@ -202,6 +204,13 @@ describe('suggestVerbs', () => {
     expect(renderUnknownCommand('xyzzy')).toContain('storyboard --help');
   });
 
+  it('offers a near flag for a misspelled one', () => {
+    expect(suggestFlags('titel')).toContain('title');
+    expect(suggestFlags('dryrun')).toContain('dry-run');
+    expect(suggestFlags('zzzzzz')).toEqual([]);
+    expect(renderUnknownFlag('jsno')).toContain('혹시 →  --json');
+  });
+
   // 옛 이름은 별칭 없이 사라졌다. 그 이름을 친 에이전트가 새 이름을 제안에서 찾을 수 있어야 한다.
   it('leads a renamed command to its new name', () => {
     const renamed: Readonly<Record<string, string>> = {
@@ -212,6 +221,7 @@ describe('suggestVerbs', () => {
       'cards build': 'card build',
       'bible promote': 'canon promote',
       'manuscript summaries': 'manuscript summarize',
+      'scene generat': 'draft generate',
     };
 
     for (const [oldName, newName] of Object.entries(renamed)) {

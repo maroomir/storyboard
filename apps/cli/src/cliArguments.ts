@@ -24,6 +24,8 @@ const shortFlags: Readonly<Record<string, string>> = { '-h': '--help', '-v': '--
 
 export interface ParseFailure {
   readonly message: string;
+  // Set when the failure is a flag the catalog does not know, so the caller can suggest a near one.
+  readonly unknownFlag?: string;
 }
 
 // `storyboard draft generate 01-a --provider claude --json` splits into a verb path, positionals and
@@ -44,7 +46,7 @@ export function parseArguments(argv: readonly string[]): RawArguments | ParseFai
     const [name, inlineValue] = splitFlag(token.slice(2));
 
     if (!booleanFlags.has(name) && !valueFlags.has(name)) {
-      return { message: `알 수 없는 옵션: --${name}` };
+      return { message: `알 수 없는 옵션: --${name}`, unknownFlag: name };
     }
 
     if (booleanFlags.has(name)) {
