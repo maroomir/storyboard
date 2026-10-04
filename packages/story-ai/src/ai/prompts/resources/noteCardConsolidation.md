@@ -1,6 +1,6 @@
 ---
 temperature: 0.1
-maxTokens: 4000
+maxTokens: 16000
 reasoningEffort: low
 ---
 ## system
