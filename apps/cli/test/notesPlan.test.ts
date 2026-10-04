@@ -227,14 +227,108 @@ describe('buildNoteAbsorbPlan', () => {
       cardOf(id)?.changes.map((change) => ('value' in change ? change.value : change.kind));
 
     expect(valuesOf('jo-manjae')).toEqual(['궤변가', '엘리트']);
-    expect(valuesOf('jeong-eunha')).toEqual(['엘리트', '갤럭시', '은하', '이해받고 싶다']);
+    expect(valuesOf('jeong-eunha')).toEqual(['엘리트', '갤럭시', '이해받고 싶다']);
     // 두 사람에 붙은 별칭만으로는 누구인지 알 수 없어 따로 남는다.
     expect(plan.cards.find((card) => card.card.name === '엘리트')?.isNew).toBe(true);
+    // 이름이 아니라 별칭끼리만 겹치면 같은 사람이라 볼 근거가 없어 따로 남는다.
+    expect(plan.cards.find((card) => card.card.name === '은하')?.isNew).toBe(true);
     expect(
       plan.cards
         .find((card) => card.card.name === '손수영')
         ?.changes.find((change) => change.kind === 'relation'),
     ).toMatchObject({ target: 'jeong-eunha' });
+  });
+
+  it('keeps two people apart when the model gives both the same alias in one request', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('a.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({
+              name: '조만재',
+              suggestedId: 'jo-manjae',
+              aliases: ['만재', '은하'],
+              traits: ['무뚝뚝하다'],
+              sourceNotes: ['a.md'],
+            }),
+            entity({
+              name: '정은하',
+              suggestedId: 'jeong-eunha',
+              aliases: ['은하'],
+              traits: ['허세를 부린다'],
+              description: ['이사 온 화가'],
+              sourceNotes: ['a.md'],
+            }),
+          ],
+        }),
+      ],
+    });
+    const valuesOf = (id: string) =>
+      plan.cards
+        .find((card) => card.card.id === id)
+        ?.changes.map((change) => ('value' in change ? change.value : change.kind));
+
+    expect(plan.cards.map((card) => card.card.id)).toEqual(['jo-manjae', 'jeong-eunha']);
+    expect(valuesOf('jo-manjae')).toEqual(['만재', '은하', '무뚝뚝하다']);
+    expect(valuesOf('jeong-eunha')).toEqual(['은하', '이사 온 화가', '허세를 부린다']);
+  });
+
+  it('keeps a later person out of a card that only took their alias in an earlier request', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      notes: [note('a.md'), note('b.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({
+              name: '조만재',
+              suggestedId: 'jo-manjae',
+              aliases: ['만재', '은하'],
+              description: ['동네 철물점 주인'],
+              sourceNotes: ['a.md'],
+            }),
+          ],
+        }),
+        extraction({
+          entities: [
+            entity({ name: '정은하', aliases: ['은하'], description: ['은하는 화가다'], sourceNotes: ['b.md'] }),
+          ],
+        }),
+      ],
+    });
+    const valuesOf = (name: string) =>
+      plan.cards
+        .find((card) => card.card.name === name)
+        ?.changes.map((change) => ('value' in change ? change.value : change.kind));
+
+    expect(plan.cards.map((card) => [card.card.name, card.sourceNotes])).toEqual([
+      ['조만재', ['a.md']],
+      ['정은하', ['b.md']],
+    ]);
+    expect(valuesOf('조만재')).toEqual(['만재', '은하', '동네 철물점 주인']);
+    expect(valuesOf('정은하')).toEqual(['은하', '은하는 화가다']);
+  });
+
+  it('merges a name into the one entry that carries it as an alias unless the name has its own id', () => {
+    const planFor = (manjae: Partial<NoteExtractionEntity>) =>
+      buildNoteAbsorbPlan({
+        ...baseInput,
+        notes: [note('a.md'), note('b.md')],
+        extractions: [
+          extraction({ entities: [entity({ name: '만재', ...manjae, sourceNotes: ['a.md'] })] }),
+          extraction({
+            entities: [entity({ name: '조만재', suggestedId: 'jo-manjae', aliases: ['만재'], sourceNotes: ['b.md'] })],
+          }),
+        ],
+      }).cards.map((card) => [card.card.name, card.sourceNotes]);
+
+    expect(planFor({})).toEqual([['만재', ['a.md', 'b.md']]]);
+    expect(planFor({ suggestedId: 'manjae' })).toEqual([
+      ['만재', ['a.md']],
+      ['조만재', ['b.md']],
+    ]);
   });
 
   it('makes one card of a place two requests name differently but give the same id', () => {

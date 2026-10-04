@@ -83,7 +83,7 @@ Notion page or full-page database (sub-pages in page order, database rows in tit
 Notion exposes no view order), plus the notes their text links to
 — one step, no further. The requests run in order and each is shown the people and places the
 earlier ones found beside the existing cards, so one subject keeps one id; entries merge by name,
-then id, then an alias only one entry carries. The model sorts them into character/background cards, scene cards, the
+then id, and only after every request is read, a name that is the alias of exactly one other entry when the named entry has no id of its own; entries that only share an alias stay apart. The model sorts them into character/background cards, scene cards, the
 contract and a synopsis — one scene card per note, its events as beats; prose already written
 (`draft`) gives cards and the contract but never a scene. What it cannot place is reported and never
 written. Nothing that exists
