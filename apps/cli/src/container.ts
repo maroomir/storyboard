@@ -9,6 +9,7 @@ import {
   StoryboardApplication,
   type ParameterReport,
   type ResourceOverrideReport,
+  type WorkspaceStatus,
 } from '@storyboard/story-app';
 import { ConfigBridge, type ConfigBridgeDependencies, SecretStore } from '@storyboard/story-ai';
 
@@ -49,6 +50,8 @@ export interface CliContainer extends Pick<
   readonly loadResourceOverrides: () => Promise<ResourceOverrideReport>;
   // Every value an author can move, with its origin, for `params show`.
   readonly describeParameters: () => Promise<ParameterReport>;
+  // Where the work stands and which step is open next, for `status`.
+  readonly describeWorkspace: () => Promise<WorkspaceStatus>;
   readonly workspaceConfigFile: string | undefined;
   // The file `setup`/`config set` write to on this run: the workspace's unless --global was given.
   readonly configWriteFile: string;
@@ -202,6 +205,7 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
     homePaths,
     loadResourceOverrides: () => application.loadResourceOverrides(),
     describeParameters: () => application.describeParameters(),
+    describeWorkspace: () => application.describeWorkspace(workspaceRoot),
     workspaceConfigFile,
     configWriteFile:
       configuration.targetFile(options.configWriteTarget ?? configurationTargets.user) ??

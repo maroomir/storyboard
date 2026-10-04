@@ -346,6 +346,14 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'status',
+    group: '시작하기',
+    usage: 'status',
+    summary:
+      '작품 현황(계약·아웃라인·카드·씬·초안·정전 후보·원고)과 다음에 실행할 명령을 보여 줍니다',
+    examples: ['storyboard status', 'storyboard status --json | jq -r .data.next.command'],
+  },
+  {
     verb: 'completion',
     group: '시작하기',
     usage: `completion <${completionShells.join('|')}>`,

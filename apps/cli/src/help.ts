@@ -42,7 +42,7 @@ export function renderGettingStarted(): string {
     '  storyboard draft generate --all         초안 생성 (검수·수정 포함)',
     '  storyboard manuscript assemble          원고 조립',
     '',
-    '  storyboard doctor 가 무엇이 빠졌는지 알려 줍니다.',
+    '  storyboard doctor 가 무엇이 빠졌는지, storyboard status 가 다음에 할 일을 알려 줍니다.',
   ].join('\n');
 }
 

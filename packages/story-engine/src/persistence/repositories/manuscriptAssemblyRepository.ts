@@ -26,6 +26,9 @@ import type { AssembledManuscript } from '@storyboard/story-model';
 import { collectDraftsByOrder } from '#engine/persistence/manuscriptDrafts';
 import { readProjectJson } from '#engine/persistence/projectJson';
 
+// The final review's report, beside the assembled volume.
+export const manuscriptReviewFileName = 'REVIEW.md';
+
 export class ManuscriptAssemblyRepository
   implements
     IManuscriptAssemblyRepository,
@@ -101,7 +104,7 @@ export class ManuscriptAssemblyRepository
   public async saveReview(workspaceRoot: StoryUri, markdown: string): Promise<StoryUri> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
     await this.fileSystem.createDirectory(paths.manuscriptDirectory);
-    const reportUri = joinStoryPath(paths.manuscriptDirectory, 'REVIEW.md');
+    const reportUri = joinStoryPath(paths.manuscriptDirectory, manuscriptReviewFileName);
     await this.fileSystem.writeFile(reportUri, new TextEncoder().encode(markdown));
     return reportUri;
   }
