@@ -82,7 +82,9 @@ is the single source for the parser's flag table, `--help`, per-verb help and `n
 Notion page or full-page database (sub-pages in page order, database rows in title order, since
 Notion exposes no view order), plus the notes their text links to
 — one step, no further. The model sorts them into character/background cards, scene cards, the
-contract and a synopsis; what it cannot place is reported and never written. Nothing that exists
+contract and a synopsis — one scene card per note, its events as beats; prose already written
+(`draft`) gives cards and the contract but never a scene. What it cannot place is reported and never
+written. Nothing that exists
 is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,
 which `card promote` applies beside the draft candidates; an existing synopsis gets
 `synopsis.candidate.md`; the contract is only proposed (`project set …`), except that
