@@ -2,6 +2,7 @@ import { Box, Text, useApp, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
+import { Dashboard } from './dashboard';
 import { StatusBar } from './statusBar';
 import { SuggestionList } from './suggestionList';
 import type { TuiHeaderInfo, WorkspaceView } from './workspaceView';
@@ -129,6 +130,8 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
         </Text>
         <Text color="gray">{view.header.providerLabel}</Text>
       </Box>
+
+      {view.status === undefined ? null : <Dashboard status={view.status} />}
 
       <Box flexDirection="column" paddingX={1} paddingY={0}>
         {visibleEntries.map((entry) => (

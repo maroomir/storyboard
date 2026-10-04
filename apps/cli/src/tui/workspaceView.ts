@@ -7,6 +7,7 @@ import {
   resolveStoryboardHomePaths,
   resolveWorkspaceConfigFile,
 } from '@storyboard/story-config';
+import type { WorkspaceStatus } from '@storyboard/story-app';
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import { STORYBOARD_RELATIVE_PATHS } from '@storyboard/story-model';
 
@@ -24,6 +25,8 @@ export interface WorkspaceView {
   readonly header: TuiHeaderInfo;
   // Another app writing this workspace right now, phrased for the author.
   readonly lockHolder?: string;
+  // Absent outside a workspace, or when the workspace cannot be read; the prompt still works then.
+  readonly status?: WorkspaceStatus;
 }
 
 const silentLogger: IStoryboardLogger = {
@@ -84,6 +87,22 @@ export async function readWorkspaceView(cwd: string, version: string): Promise<W
     version,
   });
   const lockHolder = await container.runGate.describeHolder(container.workspaceRoot);
+  const status = await readStatus(container);
 
-  return lockHolder === undefined ? { header } : { header, lockHolder };
+  return {
+    header,
+    ...(lockHolder === undefined ? {} : { lockHolder }),
+    ...(status === undefined ? {} : { status }),
+  };
+}
+
+async function readStatus(
+  container: ReturnType<typeof createCliContainer>,
+): Promise<WorkspaceStatus | undefined> {
+  try {
+    return await container.describeWorkspace();
+  } catch {
+    // A damaged project file must not take the prompt down with it; `doctor` at the prompt names it.
+    return undefined;
+  }
 }
