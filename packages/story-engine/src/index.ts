@@ -60,6 +60,7 @@ export * from './application/novel/novelPipelineTypes';
 export * from './application/novel/novelStageCatalog';
 export * from './application/novel/novelStages';
 export * from './application/novel/seedScenesUseCase';
+export * from './application/novel/updateProjectContractUseCase';
 export * from './application/project/promoteBibleCandidatesUseCase';
 export * from './application/story/applyStoryProposals';
 export * from './application/story/buildStoryCardsUseCase';

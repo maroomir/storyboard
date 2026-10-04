@@ -55,6 +55,7 @@ import {
   StoryFeatureRepository,
   StudioChatUseCase,
   SummarizeChaptersUseCase,
+  UpdateProjectContractUseCase,
   UsageMeter,
   type IFileSystem,
   type IStoryboardLogger,
@@ -160,6 +161,7 @@ interface EngineGraph {
   readonly seedScenesUseCase: SeedScenesUseCase;
   readonly studioChatUseCase: StudioChatUseCase;
   readonly summarizeChaptersUseCase: SummarizeChaptersUseCase;
+  readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
 }
 
 // The one place the engine's object graph is assembled. Each app builds its adapters, hands them
@@ -440,6 +442,7 @@ function buildServices(
     seedScenesUseCase: new SeedScenesUseCase({ fileSystem, logger, sceneSeedRepository }),
     studioChatUseCase: new StudioChatUseCase({ aiGateway, logger }),
     summarizeChaptersUseCase,
+    updateProjectContractUseCase: new UpdateProjectContractUseCase({ fileSystem, logger }),
   };
 }
 

@@ -17,6 +17,9 @@ import {
   type SeedScenesRequest,
   type SeedScenesResult,
   type SeedScenesUseCase,
+  type UpdateProjectContractRequest,
+  type UpdateProjectContractResult,
+  type UpdateProjectContractUseCase,
   type StoryFileSnapshot,
   type UsageMeter,
 } from '@storyboard/story-engine';
@@ -28,6 +31,7 @@ export interface NovelManagerDependencies {
   readonly generateOutlineUseCase: GenerateOutlineUseCase;
   readonly completeStoryScenesUseCase: CompleteStoryScenesUseCase;
   readonly seedScenesUseCase: SeedScenesUseCase;
+  readonly updateProjectContractUseCase: UpdateProjectContractUseCase;
   readonly applyStoryProposals: ApplyStoryProposals;
   readonly novelRunStateRepository: INovelRunStateRepository;
   readonly outlineRepository: IOutlineRepository;
@@ -101,6 +105,10 @@ export class NovelManager {
   // The work itself: its name, format and the contract every generation reads.
   public readProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
     return this.deps.outlineRepository.loadProject(workspaceRoot);
+  }
+
+  public updateContract(request: UpdateProjectContractRequest): Promise<UpdateProjectContractResult> {
+    return this.deps.updateProjectContractUseCase.execute(request);
   }
 
   public generateOutline(request: GenerateOutlineRequest): Promise<GenerateOutlineResult> {

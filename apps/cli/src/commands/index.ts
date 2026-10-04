@@ -4,16 +4,14 @@ import { ensureGitRepository, type GitRepositoryOutcome } from '@/adapters/gitRe
 
 import {
   buildCompositionPreset,
-  writeNarratorCardsIfMissing,
   writeWorkspaceAgentGuidesIfMissing,
   createStoryboardDirectories,
   createWorkspace,
+  mergeProjectSetting,
   ensureWorkspaceGitignore,
   sealStoryMemory,
   readProjectJson,
-  resealStoryMemory,
   sceneStageCatalog,
-  writeProjectJson,
 } from '@storyboard/story-engine';
 import {
   draftPath,
@@ -1126,8 +1124,6 @@ function parseSceneOrders(raw: string): readonly number[] | undefined {
 // 낡음 판정은 옳다. 사람이 "카드는 고쳤지만 이 초안이 맞다"고 판단했을 때 그 판단을 원장에 남기는
 // 유일한 통로이므로, 자동으로 도는 곳이 없고 이 명령만 덮어쓴다.
 const resealState: CommandHandler = async ({ container, args }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
   const rawOrders = args.positionals[0];
   const sceneOrders = rawOrders === undefined ? undefined : parseSceneOrders(rawOrders);
 
@@ -1138,13 +1134,7 @@ const resealState: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const resealed = await resealStoryMemory({
-    fileSystem: container.fileSystem,
-    paths,
-    format: project.format,
-    sceneBreakJoiner: container.configBridge.getDraftSceneBreakSeparator(),
-    ...(sceneOrders === undefined ? {} : { sceneOrders }),
-  });
+  const resealed = await container.drafts.resealStoryState(container.workspaceRoot, sceneOrders);
 
   return {
     ok: true,
@@ -1216,7 +1206,8 @@ const initProject: CommandHandler = async ({ container, args }) => {
   }
 
   const language = flagString(args.flags, 'language');
-  const setting = mergeSetting(undefined, contract.setting);
+  const setting =
+    contract.setting === undefined ? undefined : mergeProjectSetting(undefined, contract.setting);
   const { project, createdNarrators } = await createWorkspace({
     fileSystem: container.fileSystem,
     workspaceRoot: container.workspaceRoot,
@@ -1281,7 +1272,6 @@ function describeGitRepository(outcome: GitRepositoryOutcome): string {
 // 계약은 outline generate 의 입구다. 이걸 채우는 길이 없으면 워크스페이스를 만들고도 CLI 만으로는
 // 한 걸음도 못 나간다. init 이 처음 채우고, project set 이 나중에 고친다 — 둘 다 같은 입력을 읽는다.
 const setProjectContract: CommandHandler = async ({ container, args }) => {
-  const paths = getStoryboardProjectPaths(container.workspaceRoot);
   const contract = await readContractInput(container, args);
 
   if ('message' in contract) {
@@ -1296,13 +1286,17 @@ const setProjectContract: CommandHandler = async ({ container, args }) => {
     };
   }
 
-  const project = await readProjectJson(container.fileSystem, paths.projectJson);
-  const setting = mergeSetting(project.setting, contract.setting);
+  const updated = await container.novel.updateContract({
+    workspaceRoot: container.workspaceRoot,
+    setting: contract.setting,
+    ...(contract.narratorCards === undefined ? {} : { narratorCards: contract.narratorCards }),
+  });
 
-  await writeProjectJson(container.fileSystem, paths.projectJson, { ...project, setting });
-  await writeNarratorCardsIfMissing(container.fileSystem, paths, contract.narratorCards ?? []);
+  if (!updated.ok) {
+    return { ok: false, message: updated.message };
+  }
 
-  return { ok: true, message: '작품 계약을 갱신했습니다.', data: setting };
+  return { ok: true, message: '작품 계약을 갱신했습니다.', data: updated.setting };
 };
 
 type ContractInput =
@@ -1420,25 +1414,6 @@ async function readContractInput(
   return {
     setting: Object.keys(merged).length === 0 ? undefined : merged,
     ...(preset && preset.narratorCards.length > 0 ? { narratorCards: preset.narratorCards } : {}),
-  };
-}
-
-// 계약은 한 번에 다 채워지지 않는다. 주지 않은 키는 그대로 두고 준 키만 덮어쓴다.
-function mergeSetting(
-  current: ProjectSetting | undefined,
-  patch: Partial<ProjectSetting> | undefined,
-): ProjectSetting | undefined {
-  if (patch === undefined) {
-    return current;
-  }
-
-  return {
-    tags: [],
-    prohibitions: [],
-    styleConstraints: [],
-    qualityCriteria: [],
-    ...(current ?? {}),
-    ...patch,
   };
 }
 
