@@ -513,14 +513,6 @@ export const commandCatalog: readonly CommandSpec[] = [
     flags: ['dry-run'],
   },
   {
-    verb: 'scene migrate',
-    writesWorkspace: true,
-    group: '씬',
-    usage: 'scene migrate',
-    summary:
-      '구형 scene/*.txt 를 .card 로 옮기고, 플레이스홀더 요약을 지우고, 인라인 summary 를 <stem>.summary.md 로 뽑습니다',
-  },
-  {
     verb: 'draft generate',
     writesWorkspace: true,
     group: '초안',
@@ -663,13 +655,6 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'card promote',
     summary: '초안과 노트에서 나온 카드 후보를 반영합니다',
     flags: ['dry-run'],
-  },
-  {
-    verb: 'card migrate',
-    writesWorkspace: true,
-    group: '카드와 정전',
-    usage: 'card migrate',
-    summary: '낡은 산문형 카드 필드를 목록 형식으로 옮깁니다',
   },
   {
     verb: 'canon diff',

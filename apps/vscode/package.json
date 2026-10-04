@@ -117,10 +117,6 @@
         "title": "%storyboard.state.reseal.title%"
       },
       {
-        "command": "storyboard.scene.migrate",
-        "title": "%storyboard.scene.migrate.title%"
-      },
-      {
         "command": "storyboard.scene.create",
         "title": "%storyboard.scene.create.title%",
         "icon": "$(add)"
@@ -169,10 +165,6 @@
       {
         "command": "storyboard.cards.promoteCandidates",
         "title": "%storyboard.cards.promoteCandidates.title%"
-      },
-      {
-        "command": "storyboard.cards.migrateTextToList",
-        "title": "%storyboard.cards.migrateTextToList.title%"
       },
       {
         "command": "storyboard.bible.canonDiff",

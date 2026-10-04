@@ -34,8 +34,7 @@ workspace: draft through `storyboard` verbs instead of writing `draft/*.md` by h
 code, ask before changing the contract, the budget or the model. Existing files are never
 overwritten; fill in its last section with the work's own notes.
 
-`doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, legacy `scene/*.txt`, placeholder summaries from
-`scene seed`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
+`doctor` looks at the workspace for what an older Storyboard left behind: missing `draft/`/`scene/`, a stale `.gitignore` block, cards it cannot parse. It also checks the story-state
 ledger (`.storyboard/memory/storyState.md`) against the current cards and scenes: entries whose
 scene has been edited since are reported as stale, and generation drops them from the prompt until
 you regenerate that scene. When the edit was one you do not want redrafted — beats added to a card
@@ -45,10 +44,7 @@ same way against the drafts they were written from, and `storyboard manuscript s
 the ones that no longer match. `storyboard init --repair` restores the directories, `.gitignore` and any missing agent guide
 (`AGENTS.md`, `CLAUDE.md`) of an existing workspace without touching the contract (a plain `init` refuses one) and seals a
 pre-0.8 ledger against today's cards and scenes, so edits made after the repair are what count as
-stale; `storyboard scene migrate` converts the `.txt` files, clears the placeholder line while
-keeping any summary you wrote above it, and moves that inline summary into
-`scene/<stem>.summary.md` so the card holds only the file name. `doctor` also counts the scenes that
-still carry an inline summary and the scenes without beats (fix: `scene plot --all`), and it warns
+stale. `doctor` also counts the scenes without beats (fix: `scene plot --all`), and it warns
 when the configured model cannot reach the largest scene target — measured, not guessed, and silent
 for combinations that were never measured.
 
@@ -68,7 +64,7 @@ for AI work, `diff` / `promote` for candidates. A kind is an argument, never par
 session rather than a file of the work.
 
 `scene` is the scene card and `draft` is the prose written from it: `scene list|show|create|rename|
-seed|plot|complete|migrate` against `draft generate|revise|show|edit|augment|condense|expand|format|
+seed|plot|complete` against `draft generate|revise|show|edit|augment|condense|expand|format|
 check`. `storyboard --help` groups the commands the same way: 시작하기, 기획, 씬, 초안, 카드와 정전,
 노트, 원고, 측정.
 

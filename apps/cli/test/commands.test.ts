@@ -421,99 +421,7 @@ describe('scene rename', () => {
   });
 });
 
-describe('pre-0.8 workspace migration', () => {
-  const placeholderSummary =
-    '> 1막 · 1장 — 자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';
-
-  function writeLegacyScene(): void {
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      [
-        'type: scene',
-        'id: 01-first',
-        'title: 첫 방송',
-        'purpose: 진아가 마이크를 처음 켰다.',
-        `summary: '${placeholderSummary}'`,
-        '',
-      ].join('\n'),
-    );
-  }
-
-  // summary가 비어 있지 않으면 초안이 그 한 줄만 서사 재료로 받는다.
-  it('clears the legacy placeholder summary', async () => {
-    writeLegacyScene();
-
-    const outcome = await run('scene migrate', args(['scene', 'migrate']));
-
-    expect(outcome.ok).toBe(true);
-    expect(outcome.message).toContain('플레이스홀더');
-    const migrated = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
-    expect(migrated).not.toContain('자동 생성된 씬 시드');
-    expect(migrated).toContain('진아가 마이크를 처음 켰다.');
-  });
-
-  it('keeps the summary an author wrote above the placeholder', async () => {
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      [
-        'type: scene',
-        'id: 01-first',
-        'title: 첫 방송',
-        'summary: |-',
-        '  진아가 마이크를 켠다.',
-        '  유정이 큐 사인을 놓친다.',
-        `  ${placeholderSummary}`,
-        '',
-      ].join('\n'),
-    );
-
-    const outcome = await run('scene migrate', args(['scene', 'migrate']));
-
-    expect(outcome.ok).toBe(true);
-    const migrated = readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8');
-    expect(migrated).not.toContain('자동 생성된 씬 시드');
-    // 걷어 낸 뒤 남은 저자 산문은 인라인 summary 이므로 같은 실행에서 파일로 옮겨진다.
-    expect(migrated).toContain('summary: 01-first.summary.md');
-    expect(readFileSync(join(workspace, 'scene', '01-first.summary.md'), 'utf8')).toBe(
-      '진아가 마이크를 켠다.\n유정이 큐 사인을 놓친다.\n',
-    );
-  });
-
-  it('skips a card it cannot parse and names it', async () => {
-    writeLegacyScene();
-    writeFileSync(join(workspace, 'scene', '02-broken.card'), 'type: scene\nid: [\n');
-
-    const outcome = await run('scene migrate', args(['scene', 'migrate']));
-
-    expect(outcome.ok).toBe(true);
-    expect(outcome.message).toContain('플레이스홀더 요약 1개');
-    expect(outcome.message).toContain('02-broken.card');
-
-    const doctor = await run('doctor', args(['doctor']));
-    expect(doctor.message).toContain('읽지 못한 카드');
-  });
-
-  // 창작자가 쓴 사건과 기계가 펼친 beats 를 구별하려고 summary 산문은 카드 옆 파일로 둔다.
-  it('moves an authored inline summary into <stem>.summary.md', async () => {
-    writeFileSync(
-      join(workspace, 'scene', '01-first.card'),
-      ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
-    );
-
-    const outcome = await run('scene migrate', args(['scene', 'migrate']));
-
-    expect(outcome.message).toContain('인라인 summary 1개');
-    expect(readFileSync(join(workspace, 'scene', '01-first.card'), 'utf8')).toBe(
-      'type: scene\nid: 01-first\nsummary: 01-first.summary.md\n',
-    );
-    expect(readFileSync(join(workspace, 'scene', '01-first.summary.md'), 'utf8')).toBe(
-      '진아가 사연을 읽었다.\n',
-    );
-
-    const again = await run('scene migrate', args(['scene', 'migrate']));
-    expect(again.message).toBe('바꿀 씬이 없습니다.');
-  });
-
+describe('pre-0.8 workspace repair', () => {
   // 0.8 이전 워크스페이스에는 마커만 있고 manuscript/ 가 없다.
   it('tops up a stale gitignore block on re-init', async () => {
     writeFileSync(
@@ -564,8 +472,7 @@ describe('pre-0.8 workspace migration', () => {
     expect(outcome.ok).toBe(false);
   });
 
-  it('reports both gaps in doctor', async () => {
-    writeLegacyScene();
+  it('reports a stale gitignore block in doctor', async () => {
     writeFileSync(
       join(workspace, '.gitignore'),
       '# Storyboard generated files\n.storyboard/cache/\n.draft/\n',
@@ -573,12 +480,19 @@ describe('pre-0.8 workspace migration', () => {
 
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).toContain('플레이스홀더 요약이 1개');
-    expect(outcome.message).toContain('storyboard scene migrate');
     expect(outcome.message).toContain('manuscript/');
   });
 
-  it('reports inline summaries and missing beats in doctor', async () => {
+  it('names a card it cannot parse in doctor', async () => {
+    writeFileSync(join(workspace, 'scene', '02-broken.card'), 'type: scene\nid: [\n');
+
+    const doctor = await run('doctor', args(['doctor']));
+
+    expect(doctor.message).toContain('읽지 못한 카드');
+    expect(doctor.message).toContain('02-broken.card');
+  });
+
+  it('reports missing beats in doctor', async () => {
     writeFileSync(
       join(workspace, 'scene', '01-first.card'),
       ['type: scene', 'id: 01-first', 'summary: 진아가 사연을 읽었다.', ''].join('\n'),
@@ -590,7 +504,6 @@ describe('pre-0.8 workspace migration', () => {
 
     const outcome = await run('doctor', args(['doctor']));
 
-    expect(outcome.message).toContain('인라인 summary 씬이 1개');
     expect(outcome.message).toContain('비트 없는 씬이 1개');
     expect(outcome.message).toContain('storyboard scene plot --all');
   });

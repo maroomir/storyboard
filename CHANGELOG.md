@@ -20,12 +20,16 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
   | `check grammar\|continuity\|slop <stem>` | `draft check grammar\|continuity\|slop <stem>` |
   | `scene seeds` | `scene seed` |
   | `scene beats` | `scene plot` |
-  | `cards build` · `cards migrate` | `card build` · `card migrate` |
+  | `cards build` | `card build` |
   | `bible promote` | `canon promote` |
   | `narrator add` | `narrator create` |
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background`과 `notes connect notion`은 치는 글자가 그대로입니다(종류가 명령 이름에서 인자로 바뀌었을 뿐입니다).
 - **`storyboard --help`의 묶음이 명사를 따릅니다.** 시작하기 · 기획 · 씬 · 초안 · 카드와 정전 · 노트 · 원고 · 측정 여덟 묶음이고, 같은 명사가 두 묶음에 나뉘지 않습니다.
+
+### 제거
+
+- **0.8 이전 작품을 변환하던 명령을 없앴습니다.** CLI 의 `scene migrate`·`cards migrate`, 익스텐션의 `Storyboard: Migrate Scenes to Cards`·`Storyboard: Migrate Card Text Fields to List`, 그리고 `doctor` 가 구형 `scene/*.txt`·플레이스홀더 요약·인라인 summary 를 세던 점검이 사라집니다. 아직 변환하지 않은 작품은 0.11.5 이하에서 먼저 변환한 뒤 올리세요. 인라인 `summary` 는 계속 읽힙니다.
 
 ### 추가
 

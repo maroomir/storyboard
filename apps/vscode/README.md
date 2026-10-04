@@ -65,7 +65,7 @@ manuscript/*.md
 - 프로젝트 설정은 자동 장편 생성의 입력 계약입니다. `Storyboard: Open Settings`의 **작품 계약** 탭에서 독자층·목표 분량·시점·구성·금지 조건을 입력하고 생성 준비 상태를 확인합니다. 구성을 고르면 연속성 줄기와 서술자 카드가 함께 만들어지고, 그 결과는 같은 탭에 요약으로 표시됩니다.
 - `Storyboard: Generate Novel Outline`은 `synopsis.md`와 `chapters.yaml`을 만들고, `Storyboard: Generate Scene Seeds`는 이 계획에서 씬 시드를 파생합니다.
 - `.card` 파일은 YAML 기반 자료 카드입니다.
-- `scene/*.card` 파일 하나가 씬 하나이며(`type: scene`), 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다. 구형 `scene/*.txt` 워크스페이스는 **Storyboard: Migrate Scenes to Cards** 명령으로 변환합니다.
+- `scene/*.card` 파일 하나가 씬 하나이며(`type: scene`), 사용자가 쓰거나 outline에서 자동 생성될 수 있습니다.
 - 씬의 파일명(`NN-slug`)이 곧 씬의 키입니다. 이름이나 번호를 바꿀 때는 탐색기의 씬 카드 컨텍스트 메뉴나 명령 팔레트의 **Storyboard: Rename Scene...** 을 씁니다. 초안·`.draft/` 이력·요약·캐시·대사 기억·Studio 대화가 함께 옮겨지고, 이야기 상태 원장과 캐넌의 참조도 새 이름·번호로 고쳐집니다. 다른 씬이 쓰는 번호로는 바꿀 수 없으므로, 씬을 끼워 넣을 때는 뒤쪽 씬부터 하나씩 옮깁니다.
 - `draft/*.md` 파일은 AI가 생성하고 검사·재작성하는 원고입니다.
 - `manuscript/`는 장별 조립 원고, 전체 원고(`manuscript.md`), 최종 검사·요약·복선 보고서를 담는 재생성 가능한 산출물입니다.

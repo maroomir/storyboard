@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const sceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.card$/;
-export const legacySceneFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.txt$/;
 export const sceneStemPattern = /^(\d+)-([a-z0-9][a-z0-9-]*)$/;
 // 창작자가 쓴 사건 산문은 카드 옆 `<stem>.summary.md`에 두고, 카드의 summary 에는 그 파일명만 적는다.
 export const sceneSummaryFileNamePattern = /^(\d+)-([a-z0-9][a-z0-9-]*)\.summary\.md$/;
@@ -109,7 +108,7 @@ export function isSceneSummaryReference(summary: string | undefined): boolean {
   return sceneSummaryReference(summary) !== undefined;
 }
 
-// 파일로 옮기지 않은 인라인 산문. doctor 가 세고 `scene migrate` 가 파일로 뽑는다.
+// 파일로 옮기지 않은 인라인 산문.
 export function isInlineSceneSummary(summary: string | undefined): boolean {
   return summary !== undefined && summary.trim().length > 0 && !isSceneSummaryReference(summary);
 }
@@ -249,24 +248,6 @@ export function splitSceneNarrativeSource(body: string): SceneNarrativeParts {
     narrative: narrative.join('\n\n'),
     design: blocks.filter((block) => block.startsWith('[')).join('\n\n'),
   };
-}
-
-// NOTE: 0.8 이전 `scene seed`는 summary에 안내 문구 한 줄을 넣었다. summary가 비어 있지 않으면
-// extractSceneNarrativeSource가 그것만을 서사 재료로 삼으므로, 남아 있으면 초안이 안내 문구로 쓰인다.
-const legacySeedPlaceholderSuffix =
-  '자동 생성된 씬 시드입니다. 초안 생성 전에 자유롭게 수정하세요.';
-
-export function isLegacySeedPlaceholderSummary(summary: string | undefined): boolean {
-  return summary !== undefined && summary.trim().endsWith(legacySeedPlaceholderSuffix);
-}
-
-// 저자가 안내 문구를 지우지 않고 그 위에 요약을 써 둔 카드도 있으므로 마지막 줄만 걷어 낸다.
-export function stripLegacySeedPlaceholder(summary: string): string | undefined {
-  const lines = summary.trimEnd().split('\n');
-  lines.pop();
-  const authored = lines.join('\n').trim();
-
-  return authored.length > 0 ? authored : undefined;
 }
 
 export function parseSceneFileName(fileName: string): SceneFileNameParts | undefined {
