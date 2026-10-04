@@ -46,6 +46,7 @@ after the first public release.
 - **Completion in the interactive screen follows past the verb.** Flags, check and card kinds, scene stems and card ids come from the same list shell completion uses, and Tab replaces only the word being typed. The list scrolls eight rows at a time, Esc closes it (a second Esc clears the line), and a misspelled verb shows the closest ones.
 - **The interactive screen ends with a status line**: the work, whether it can be written now (or which app holds the run lock), the provider and model, and the keys that matter. It is read again after every command.
 - **The interactive screen opens on the work's status**: scene, draft, character and background counts, a draft progress bar, the manuscript state and the next command `storyboard status` picks, refreshed after every command.
+- **The interactive screen opens with a STORYBOARD block wordmark and the version**, a single title line on a narrow terminal; the work and the provider moved to the status line.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
 ## [0.11.6] - 2026-10-05

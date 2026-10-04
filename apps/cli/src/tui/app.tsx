@@ -2,6 +2,7 @@ import { Box, Text, useApp, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
+import { Banner } from './banner';
 import { Dashboard } from './dashboard';
 import { StatusBar } from './statusBar';
 import { SuggestionList } from './suggestionList';
@@ -58,6 +59,7 @@ function LogLine({ entry }: { readonly entry: LogEntry }): React.ReactElement {
 export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { exit } = useApp();
   const { stdout } = useStdout();
+  const columns = stdout.columns > 0 ? stdout.columns : 80;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
@@ -120,16 +122,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
 
   return (
     <Box flexDirection="column">
-      <Box borderStyle="round" borderColor="cyan" paddingX={1} justifyContent="space-between">
-        <Text>
-          <Text bold color="cyan">
-            Storyboard
-          </Text>
-          <Text> {props.version}</Text>
-          <Text color="gray"> · {view.header.workspaceLabel}</Text>
-        </Text>
-        <Text color="gray">{view.header.providerLabel}</Text>
-      </Box>
+      <Banner version={props.version} columns={columns} />
 
       {view.status === undefined ? null : <Dashboard status={view.status} />}
 
@@ -143,7 +136,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
         <SuggestionList
           suggestions={suggestions}
           selectedIndex={editor.selectedSuggestion}
-          columns={stdout.columns > 0 ? stdout.columns : 80}
+          columns={columns}
         />
       ) : null}
 
