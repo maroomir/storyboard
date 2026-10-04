@@ -9,7 +9,7 @@ for schema-first types and the error-class template. Generic readability and ver
 ## Directory and File Structure
 
 - Apps are ordered one-way layer stacks enforced by each app's `scripts/check-architecture.mjs`.
-  The CLI's single `LAYER_ORDER` line (`adapters → commands → tui`) is the model: every source file
+  The CLI's single `LAYER_ORDER` line (`terminal → adapters → commands → tui`) is the model: every source file
   lives in exactly one layer, and a layer imports only itself and layers to its left.
 - The engine's object graph is built once, for every app, by `StoryboardApplication` in
   `packages/story-app`. Each app keeps one thin root of its own — `createCliContainer()` (cli),
