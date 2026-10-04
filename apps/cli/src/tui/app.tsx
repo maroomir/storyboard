@@ -2,7 +2,11 @@ import { Box, Text, useApp, useStdout } from 'ink';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useLineEditor } from './lineEditor';
+import { StatusBar } from './statusBar';
 import { SuggestionList } from './suggestionList';
+import type { TuiHeaderInfo, WorkspaceView } from './workspaceView';
+
+export type { TuiHeaderInfo };
 import {
   createTuiSession,
   suggestForInput,
@@ -12,15 +16,11 @@ import {
   type TuiSessionOptions,
 } from './session';
 
-export interface TuiHeaderInfo {
-  readonly workspaceLabel: string;
-  readonly providerLabel: string;
-  readonly hint?: string;
-}
-
 export interface StoryboardTuiProps extends TuiSessionOptions {
   readonly header: TuiHeaderInfo;
   readonly maxLogLines?: number;
+  // Reads the workspace around the prompt again; called on start and after every command.
+  readonly loadWorkspaceView?: () => Promise<WorkspaceView>;
 }
 
 const toneColor: Record<LogTone, string | undefined> = {
@@ -59,7 +59,15 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const { stdout } = useStdout();
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
+  const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
+  const { loadWorkspaceView } = props;
+
+  const refreshView = useCallback((): void => {
+    void loadWorkspaceView?.().then(setView);
+  }, [loadWorkspaceView]);
+
+  useEffect(refreshView, [refreshView]);
 
   const append = useCallback((tone: LogTone, text: string): void => {
     setEntries((previous) => [...previous, { id: nextId.current++, tone, text }]);
@@ -95,7 +103,10 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     suggestions: suggestions.map((suggestion) => suggestion.line),
     onSubmit: (line) => {
       setIsBusy(true);
-      void session.run(line).finally(() => setIsBusy(false));
+      void session.run(line).finally(() => {
+        setIsBusy(false);
+        refreshView();
+      });
     },
     onExit: () => exit(),
   });
@@ -114,9 +125,9 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
             Storyboard
           </Text>
           <Text> {props.version}</Text>
-          <Text color="gray"> · {props.header.workspaceLabel}</Text>
+          <Text color="gray"> · {view.header.workspaceLabel}</Text>
         </Text>
-        <Text color="gray">{props.header.providerLabel}</Text>
+        <Text color="gray">{view.header.providerLabel}</Text>
       </Box>
 
       <Box flexDirection="column" paddingX={1} paddingY={0}>
@@ -141,6 +152,8 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           {editor.value.slice(editor.cursor + 1)}
         </Text>
       </Box>
+
+      <StatusBar view={view} isBusy={isBusy} />
     </Box>
   );
 }

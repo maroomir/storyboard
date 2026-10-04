@@ -7,7 +7,13 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { StoryboardTui } from '../src/tui/app';
+import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
+import { NodeUri } from '@storyboard/story-model';
+import { NodeFileSystem } from '@storyboard/story-node';
+
+import { dispatch } from '../src/commands/dispatch';
 import { describeHeader } from '../src/tui/index';
+import { readWorkspaceView } from '../src/tui/workspaceView';
 import { splitCommandLine, suggestForInput } from '../src/tui/session';
 import { selectVisibleWindow } from '../src/tui/suggestionList';
 
@@ -90,6 +96,34 @@ describe('describeHeader', () => {
   });
 });
 
+describe('readWorkspaceView', () => {
+  const silentLogger = {
+    info: () => undefined,
+    warn: () => undefined,
+    error: () => undefined,
+    show: () => undefined,
+  };
+
+  it('names the app that holds the run lock of the workspace', async () => {
+    await dispatch(['init', '--title', '잠금'], {
+      version: '0',
+      cwd,
+      isInteractive: false,
+      createLogger: () => silentLogger,
+    });
+    expect((await readWorkspaceView(cwd, '0')).lockHolder).toBeUndefined();
+
+    const acquired = await acquireWorkspaceRunLock({
+      fileSystem: new NodeFileSystem(),
+      workspaceRoot: NodeUri.file(cwd),
+      holder: { owner: 'desktop', label: '소설 생성', pid: process.pid, hostname: 'here' },
+    });
+    expect(acquired.ok).toBe(true);
+
+    expect((await readWorkspaceView(cwd, '0')).lockHolder).toContain('데스크톱 앱');
+  });
+});
+
 describe('StoryboardTui', () => {
   it('renders the header, runs a typed command, and shows its result in the log', async () => {
     const { lastFrame, stdin } = render(
@@ -144,5 +178,27 @@ describe('StoryboardTui', () => {
     stdin.write('\u001b');
     await wait(50);
     expect(lastFrame()).not.toContain('config s');
+  });
+
+  it('keeps a status line under the prompt', async () => {
+    const view = {
+      header: { workspaceLabel: '밤의 항해', providerLabel: 'mock' },
+      lockHolder: '데스크톱 앱이(가) «소설 생성» 작업 중입니다',
+    };
+    const { lastFrame } = render(
+      <StoryboardTui
+        version="1.2.3"
+        cwd={cwd}
+        header={describeHeader(cwd)}
+        loadWorkspaceView={() => Promise.resolve(view)}
+      />,
+    );
+    await wait(50);
+
+    const lines = (lastFrame() ?? '').split('\n');
+    expect(lines.findIndex((line) => line.includes('❯'))).toBeLessThan(
+      lines.findIndex((line) => line.includes('«소설 생성» 작업 중')),
+    );
+    expect(lastFrame()).toContain('/help 도움말');
   });
 });

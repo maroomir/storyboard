@@ -2,6 +2,7 @@ import { hostname } from 'node:os';
 
 import {
   acquireWorkspaceRunLock,
+  readWorkspaceRunLock,
   type AcquireWorkspaceRunLockResult,
   type IFileSystem,
 } from '@storyboard/story-engine';
@@ -33,6 +34,12 @@ export class RunGate {
       workspaceRoot,
       holder: { owner: this.deps.owner, label, pid: process.pid, hostname: hostname() },
     });
+  }
+
+  // Who is writing the workspace right now, phrased for the author; undefined when nobody is.
+  public async describeHolder(workspaceRoot: StoryUri): Promise<string | undefined> {
+    const holder = await readWorkspaceRunLock({ fileSystem: this.deps.fileSystem, workspaceRoot });
+    return holder === undefined ? undefined : describeWorkspaceRunLockHolder(holder);
   }
 
   // Holds the workspace for the duration of `run`. A refusal carries who holds it, phrased for the
