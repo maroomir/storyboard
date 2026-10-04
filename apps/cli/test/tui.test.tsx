@@ -6,7 +6,8 @@ import { render } from 'ink-testing-library';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { StoryboardTui } from '../src/tui/app';
+import { foldLines, StoryboardTui } from '../src/tui/app';
+import { findHistoryMatch } from '../src/tui/lineEditor';
 import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
 import { NodeUri } from '@storyboard/story-model';
 import { NodeFileSystem } from '@storyboard/story-node';
@@ -142,6 +143,26 @@ describe('readWorkspaceView', () => {
   });
 });
 
+describe('history and folding', () => {
+  it('finds the newest matching line, then older ones', () => {
+    const history = ['scene list', 'draft show 01-a', 'draft show 02-b', 'status'];
+
+    expect(findHistoryMatch(history, 'draft')).toBe(2);
+    expect(findHistoryMatch(history, 'draft', 2)).toBe(1);
+    expect(findHistoryMatch(history, 'draft', 1)).toBeUndefined();
+    expect(findHistoryMatch(history, '')).toBe(3);
+  });
+
+  it('folds a long result to its head and unfolds it on request', () => {
+    const lines = Array.from({ length: 40 }, (_, index) => `줄 ${index}`);
+
+    expect(foldLines(lines, false)).toHaveLength(13);
+    expect(foldLines(lines, false).at(-1)).toBe('… +28줄 · Ctrl+O 로 펼치기');
+    expect(foldLines(lines, true)).toHaveLength(40);
+    expect(foldLines(lines.slice(0, 14), false)).toHaveLength(14);
+  });
+});
+
 describe('Banner', () => {
   it('draws the two-line wordmark when it fits and one line when it does not', () => {
     expect(new Set(storyboardWordmark.map(measureWidth)).size).toBe(1);
@@ -260,5 +281,27 @@ describe('StoryboardTui', () => {
       lines.findIndex((line) => line.includes('«소설 생성» 작업 중')),
     );
     expect(lastFrame()).toContain('/help 도움말');
+  });
+
+  it('puts a line found with Ctrl+R back at the prompt without running it', async () => {
+    const { lastFrame, stdin } = render(
+      <StoryboardTui version="1.2.3" cwd={cwd} header={describeHeader(cwd)} />,
+    );
+    await wait(50);
+
+    await typeKeys(stdin, '/clear');
+    stdin.write('\r');
+    await wait(50);
+
+    stdin.write('\u0012');
+    await wait(20);
+    await typeKeys(stdin, 'cl');
+    await wait(20);
+    expect(lastFrame()).toContain('기록 검색 cl');
+    expect(lastFrame()).toContain('/clear · Enter 넣기');
+
+    stdin.write('\r');
+    await wait(50);
+    expect(lastFrame()).toContain('❯ /clear');
   });
 });

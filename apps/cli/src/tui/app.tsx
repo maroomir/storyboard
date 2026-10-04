@@ -37,12 +37,33 @@ const tonePrefix: Record<LogTone, string> = {
   input: '› ',
   progress: '  · ',
   result: '',
-  error: '✖ ',
+  error: '✗ ',
   hint: '  ',
 };
 
-function LogLine({ entry }: { readonly entry: LogEntry }): React.ReactElement {
-  const lines = entry.text.split('\n');
+// A result longer than this is folded to its head so one long listing does not push the dashboard
+// and the earlier commands off the screen.
+const foldedLineLimit = 12;
+
+export function foldLines(lines: readonly string[], isExpanded: boolean): string[] {
+  if (isExpanded || lines.length <= foldedLineLimit + 2) {
+    return [...lines];
+  }
+
+  return [
+    ...lines.slice(0, foldedLineLimit),
+    `… +${lines.length - foldedLineLimit}줄 · Ctrl+O 로 펼치기`,
+  ];
+}
+
+function LogLine({
+  entry,
+  isExpanded,
+}: {
+  readonly entry: LogEntry;
+  readonly isExpanded: boolean;
+}): React.ReactElement {
+  const lines = foldLines(entry.text.split('\n'), isExpanded);
 
   return (
     <Box flexDirection="column">
@@ -62,6 +83,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const columns = stdout.columns > 0 ? stdout.columns : 80;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
+  const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   const [view, setView] = useState<WorkspaceView>({ header: props.header });
   const nextId = useRef(1);
   const { loadWorkspaceView } = props;
@@ -112,6 +134,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
       });
     },
     onExit: () => exit(),
+    onToggleOutput: () => setIsOutputExpanded((expanded) => !expanded),
   });
 
   useEffect(() => {
@@ -128,7 +151,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
 
       <Box flexDirection="column" paddingX={1} paddingY={0}>
         {visibleEntries.map((entry) => (
-          <LogLine key={entry.id} entry={entry} />
+          <LogLine key={entry.id} entry={entry} isExpanded={isOutputExpanded} />
         ))}
       </Box>
 
@@ -140,14 +163,28 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
         />
       ) : null}
 
-      <Box paddingX={1}>
-        <Text color={isBusy ? 'gray' : 'cyan'}>{isBusy ? '… ' : '❯ '}</Text>
-        <Text>
-          {editor.value.slice(0, editor.cursor)}
-          <Text inverse>{editor.value[editor.cursor] ?? ' '}</Text>
-          {editor.value.slice(editor.cursor + 1)}
-        </Text>
-      </Box>
+      {editor.search === undefined ? (
+        <Box paddingX={1}>
+          <Text color={isBusy ? 'gray' : 'cyan'}>{isBusy ? '… ' : '❯ '}</Text>
+          <Text>
+            {editor.value.slice(0, editor.cursor)}
+            <Text inverse>{editor.value[editor.cursor] ?? ' '}</Text>
+            {editor.value.slice(editor.cursor + 1)}
+          </Text>
+        </Box>
+      ) : (
+        <Box paddingX={1}>
+          <Text color="cyan">기록 검색 </Text>
+          <Text>
+            {editor.search.query}
+            <Text inverse> </Text>
+          </Text>
+          <Text color="gray">
+            {'  '}
+            {editor.search.match ?? '일치 없음'} · Enter 넣기 · Ctrl+R 이전 · Esc 취소
+          </Text>
+        </Box>
+      )}
 
       <StatusBar view={view} isBusy={isBusy} />
     </Box>

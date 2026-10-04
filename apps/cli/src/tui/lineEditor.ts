@@ -1,4 +1,4 @@
-import { useInput } from 'ink';
+import { useInput, type Key } from 'ink';
 import { useState } from 'react';
 
 export interface LineEditorOptions {
@@ -7,6 +7,15 @@ export interface LineEditorOptions {
   readonly suggestions: readonly string[];
   readonly onSubmit: (line: string) => void;
   readonly onExit: () => void;
+  // Ctrl+O: show folded output in full, or fold it again.
+  readonly onToggleOutput?: () => void;
+}
+
+export interface HistorySearch {
+  readonly query: string;
+  // Index into the history of the line that matches, if any does.
+  readonly matchIndex?: number;
+  readonly match?: string;
 }
 
 export interface LineEditorState {
@@ -15,11 +24,29 @@ export interface LineEditorState {
   readonly selectedSuggestion: number;
   // Suggestions exist and Esc has not closed them since the last edit.
   readonly isSuggestionOpen: boolean;
+  // Set while Ctrl+R searches the history.
+  readonly search?: HistorySearch;
+}
+
+// The newest line containing the query, older than `beforeIndex` when given — Ctrl+R pressed again
+// steps back to the previous match, as in a shell.
+export function findHistoryMatch(
+  history: readonly string[],
+  query: string,
+  beforeIndex: number = history.length,
+): number | undefined {
+  for (let index = Math.min(beforeIndex, history.length) - 1; index >= 0; index -= 1) {
+    if ((history[index] ?? '').includes(query)) {
+      return index;
+    }
+  }
+
+  return undefined;
 }
 
 // A small line editor on top of Ink's key stream: ↑/↓ move through the open suggestion list or
-// the history, Tab takes a suggestion, Esc closes the list and then clears the line, Ctrl+C
-// leaves. Enough for a prompt; not a text area.
+// the history, Tab takes a suggestion, Ctrl+R searches the history, Esc closes the list and then
+// clears the line, Ctrl+C leaves. Enough for a prompt; not a text area.
 export function useLineEditor(options: LineEditorOptions): LineEditorState {
   const [value, setValue] = useState('');
   const [cursor, setCursor] = useState(0);
@@ -27,7 +54,33 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
   const [historyIndex, setHistoryIndex] = useState<number | undefined>(undefined);
   const [selectedSuggestion, setSelectedSuggestion] = useState(0);
   const [isDismissed, setIsDismissed] = useState(false);
-  const isSuggestionOpen = options.suggestions.length > 0 && !isDismissed;
+  const [search, setSearch] = useState<HistorySearch | undefined>(undefined);
+  const isSuggestionOpen = options.suggestions.length > 0 && !isDismissed && search === undefined;
+
+  const searchFor = (query: string, beforeIndex?: number): void => {
+    const matchIndex = findHistoryMatch(history, query, beforeIndex);
+    setSearch(
+      matchIndex === undefined ? { query } : { query, matchIndex, match: history[matchIndex] },
+    );
+  };
+
+  // While searching, keys edit the query; Enter takes the match into the line without running it.
+  const handleSearchKey = (current: HistorySearch, input: string, key: Key): void => {
+    if (key.escape) {
+      setSearch(undefined);
+    } else if (key.return) {
+      setSearch(undefined);
+      if (current.match !== undefined) {
+        replace(current.match);
+      }
+    } else if (key.ctrl && input === 'r') {
+      searchFor(current.query, current.matchIndex);
+    } else if (key.backspace || key.delete) {
+      searchFor(current.query.slice(0, -1));
+    } else if (input.length > 0 && !key.ctrl && !key.meta) {
+      searchFor(current.query + input);
+    }
+  };
 
   const replace = (next: string): void => {
     setValue(next);
@@ -47,6 +100,21 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
     (input, key) => {
       if (key.ctrl && input === 'c') {
         options.onExit();
+        return;
+      }
+
+      if (search !== undefined) {
+        handleSearchKey(search, input, key);
+        return;
+      }
+
+      if (key.ctrl && input === 'r') {
+        searchFor('');
+        return;
+      }
+
+      if (key.ctrl && input === 'o') {
+        options.onToggleOutput?.();
         return;
       }
 
@@ -137,5 +205,11 @@ export function useLineEditor(options: LineEditorOptions): LineEditorState {
     { isActive: options.isActive },
   );
 
-  return { value, cursor, selectedSuggestion, isSuggestionOpen };
+  return {
+    value,
+    cursor,
+    selectedSuggestion,
+    isSuggestionOpen,
+    ...(search === undefined ? {} : { search }),
+  };
 }
