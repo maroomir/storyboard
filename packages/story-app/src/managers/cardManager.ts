@@ -1,4 +1,6 @@
 import type {
+  ApplyStoryCardTargetsResult,
+  ApplyStoryProposals,
   BuildStoryCardsProposal,
   BuildStoryCardsRequest,
   BuildStoryCardsUseCase,
@@ -20,6 +22,7 @@ import type {
   RenameCardResult,
   RenameCardUseCase,
   SidebarCardCategory,
+  StoryCardTarget,
   StoryFileSnapshot,
 } from '@storyboard/story-engine';
 import {
@@ -48,6 +51,7 @@ export interface CardManagerDependencies {
   readonly promoteCardCandidatesUseCase: PromoteCardCandidatesUseCase;
   readonly promoteBibleCandidatesUseCase: PromoteBibleCandidatesUseCase;
   readonly buildStoryCardsUseCase: BuildStoryCardsUseCase;
+  readonly applyStoryProposals: ApplyStoryProposals;
   readonly cardSidebarRepository: ICardSidebarRepository;
   readonly bibleCandidateRepository: IBibleCandidateRepository;
   readonly fileSystem: IFileSystem;
@@ -153,6 +157,14 @@ export class CardManager {
 
   public buildFromScenes(request: BuildStoryCardsRequest): Promise<BuildStoryCardsProposal> {
     return this.deps.buildStoryCardsUseCase.execute(request);
+  }
+
+  // Writes every change `buildFromScenes` proposed; new cards with no derivable id are named back.
+  public applyBuildTargets(
+    workspaceRoot: StoryUri,
+    targets: readonly StoryCardTarget[],
+  ): Promise<ApplyStoryCardTargetsResult> {
+    return this.deps.applyStoryProposals.applyCardTargets(workspaceRoot, targets);
   }
 
   public hasCurrentBuildSources(snapshots: readonly StoryFileSnapshot[]): Promise<boolean> {
