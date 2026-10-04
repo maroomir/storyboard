@@ -449,10 +449,24 @@ export function missingModelMessage(providerId: AiProviderId): string {
   return `${getProviderDisplayName(providerId)} 모델이 설정되어 있지 않습니다.`;
 }
 
-export function connectionCheckFailedMessage(providerId: AiProviderId): string {
-  return `${getProviderDisplayName(providerId)} 연결 확인에 실패했습니다.`;
+// The provider's own words (status, quota, rejected parameter) are what a person can act on.
+function withProviderErrorDetail(message: string, cause: unknown): string {
+  const detail = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : '';
+  const singleLineDetail = detail.replace(/\s+/g, ' ').trim();
+
+  return singleLineDetail ? `${message}: ${singleLineDetail}` : `${message}.`;
 }
 
-export function generationFailedMessage(providerId: AiProviderId): string {
-  return `${getProviderDisplayName(providerId)} 텍스트 생성에 실패했습니다.`;
+export function connectionCheckFailedMessage(providerId: AiProviderId, cause?: unknown): string {
+  return withProviderErrorDetail(
+    `${getProviderDisplayName(providerId)} 연결 확인에 실패했습니다`,
+    cause,
+  );
+}
+
+export function generationFailedMessage(providerId: AiProviderId, cause?: unknown): string {
+  return withProviderErrorDetail(
+    `${getProviderDisplayName(providerId)} 텍스트 생성에 실패했습니다`,
+    cause,
+  );
 }

@@ -93,7 +93,7 @@ export class OllamaProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        connectionCheckFailedMessage(this.id),
+        connectionCheckFailedMessage(this.id, error),
         error,
       );
     }
@@ -135,7 +135,7 @@ export class OllamaProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        error instanceof ThinkingExhaustedOutputError ? error.message : generationFailedMessage(this.id),
+        error instanceof ThinkingExhaustedOutputError ? error.message : generationFailedMessage(this.id, error),
         error,
       );
     }

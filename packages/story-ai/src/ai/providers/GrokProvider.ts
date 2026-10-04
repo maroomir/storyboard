@@ -58,7 +58,7 @@ export class GrokProvider implements AiProvider {
       throw new AiProviderError(
         'connection-failed',
         this.id,
-        connectionCheckFailedMessage(this.id),
+        connectionCheckFailedMessage(this.id, error),
         error,
       );
     }
@@ -91,7 +91,7 @@ export class GrokProvider implements AiProvider {
       throw new AiProviderError(
         'generation-failed',
         this.id,
-        generationFailedMessage(this.id),
+        generationFailedMessage(this.id, error),
         error,
       );
     }
