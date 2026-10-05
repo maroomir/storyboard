@@ -113,7 +113,15 @@ export async function setHiddenProviderKey(
   }
 
   if (field === 'command') {
-    await configBridge.setCliProviderConfig(providerId, { command: raw });
+    const command = raw.trim();
+
+    // The config schema rejects a blank command, and a file it rejects stops every later command —
+    // including the one that would put it right.
+    if (command.length === 0) {
+      return { ok: false, message: `${key} 는 비워 둘 수 없습니다. 실행 파일의 경로를 적으세요.` };
+    }
+
+    await configBridge.setCliProviderConfig(providerId, { command });
   } else if (field === 'timeoutMs') {
     const timeoutMs = Number(raw);
 
