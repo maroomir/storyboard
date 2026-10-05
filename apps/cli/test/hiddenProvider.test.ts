@@ -29,6 +29,7 @@ import { ConfigFileError, createFileConfiguration } from '@storyboard/story-conf
 
 import { availableProviderIds } from '@/adapters/availableProviders';
 import { commandCatalog } from '@/commands/catalog';
+import { computeCompletions } from '@/commands/completion';
 
 const enabledKey = 'providers.claude-code.enabled';
 const acknowledgedKey = 'providers.claude-code.riskAcknowledged';
@@ -218,6 +219,32 @@ describe('the hidden subscription provider: what the CLI names', () => {
 
   it('names it once the home file switches it on', () => {
     expect(availableProviderIds(homeEnvironment({ [enabledKey]: true }))).toContain('claude-code');
+  });
+
+  // QA D6: the model slot completed the hidden provider's models while it was off.
+  it('completes no model for it while the switch is off', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'storyboard-hidden-home-'));
+    const previousHome = process.env.STORYBOARD_HOME;
+    process.env.STORYBOARD_HOME = directory;
+    const modelsFor = (provider: string): string[] =>
+      computeCompletions(['draft', 'generate', '--provider', provider, '--model', ''], {
+        cwd: directory,
+      }).map((completion) => completion.text);
+
+    try {
+      writeJson(join(directory, 'config.json'), {});
+      expect(modelsFor('claude-code')).toEqual([]);
+      expect(modelsFor('claude')).toContain('claude-sonnet-5');
+
+      writeJson(join(directory, 'config.json'), { [enabledKey]: true });
+      expect(modelsFor('claude-code')).toContain('claude-sonnet-5');
+    } finally {
+      if (previousHome === undefined) {
+        delete process.env.STORYBOARD_HOME;
+      } else {
+        process.env.STORYBOARD_HOME = previousHome;
+      }
+    }
   });
 
   it('never mentions it in help or the catalog of flags', () => {

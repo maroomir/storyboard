@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import {
+  type AiProviderId,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   compositionKindLabels,
@@ -108,8 +109,8 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
       const providerIndex = words.indexOf('--provider');
       const provider = providerIndex >= 0 ? words[providerIndex + 1] : undefined;
       const catalog =
-        provider && provider in storyboardModelCatalog
-          ? storyboardModelCatalog[provider as keyof typeof storyboardModelCatalog]
+        provider && availableProviderIds().includes(provider as AiProviderId)
+          ? storyboardModelCatalog[provider as AiProviderId]
           : undefined;
       return (catalog ?? []).map((entry) => ({ text: entry.id, description: entry.displayName }));
     }
