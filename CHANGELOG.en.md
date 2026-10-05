@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.11.6] - 2026-10-05
+
 ### Changed
 
 - **The desktop shows the scene card of a scene that has no draft yet.** Right after a note import or scene seeds, a scene showed only "This scene has no draft yet.", so the summary and beats on its card looked missing. Below that notice and "Write this scene" there is now a folded "Show the scene card (N beats)" that opens on the summary, the beats, and the characters, location and mood. A summary kept in `<stem>.summary.md` is read too. (#68)
