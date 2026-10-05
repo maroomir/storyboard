@@ -154,6 +154,28 @@ describe('the hidden subscription provider: who can see it', () => {
     expect(() => configBridge.isDefaultProviderConfigured()).toThrow(ConfigFileError);
   });
 
+  // QA D7: the refusal named only the key and the file, not what was wrong or how to fix it. It
+  // repeats the value the person wrote and lists what is available, never the hidden provider.
+  it.each(['ai.provider.default', 'tasks.sceneDraft.provider'])(
+    'says which name in %s is unknown and what to use instead',
+    (key) => {
+      const { configBridge } = createHome({ [key]: 'claude-code' });
+      let message = '';
+
+      try {
+        configBridge.getTaskAiConfig('sceneDraft');
+      } catch (error) {
+        message = (error as Error).message;
+      }
+
+      expect(message).toContain(`${key}`);
+      expect(message).toContain('알 수 없는 프로바이더: claude-code');
+      expect(message).toContain('쓸 수 있는 값: openai, claude, google, grok, ollama, mock');
+      expect(message).toContain('다시 고르세요');
+      expect(message).not.toContain('구독');
+    },
+  );
+
   it('accepts the name once the home file switches it on', () => {
     const { configBridge } = createHome({
       [enabledKey]: true,
