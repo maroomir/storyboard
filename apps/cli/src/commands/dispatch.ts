@@ -318,13 +318,14 @@ export async function dispatch(
     terminal.stderr.theme,
     flagBoolean(args.flags, 'verbose'),
   );
-  const usageSession = { readCostUsd: (): number => 0 };
+  const usageSession = { readCostUsd: (): number => 0, readUnpricedTokens: (): number => 0 };
   const progress: IRunProgress =
     deps.liveArea !== undefined && showProgress && terminal.stderr.isTty && !mode.json
       ? new RailRunProgress({
           liveArea: deps.liveArea,
           theme: terminal.stderr.theme,
           readCostUsd: () => usageSession.readCostUsd(),
+          readUnpricedTokens: () => usageSession.readUnpricedTokens(),
         })
       : new LineRunProgress(logger);
   const container = createCliContainer({
@@ -374,6 +375,8 @@ export async function dispatch(
 
   const meter = container.usageMeter.startSession();
   usageSession.readCostUsd = () => meter.reading().costUsd;
+  usageSession.readUnpricedTokens = () =>
+    meter.reading().hasUnpricedUsage ? meter.reading().tokens : 0;
 
   const outcome = await runReportingProgress(progress, () =>
     spec?.writesWorkspace === true
