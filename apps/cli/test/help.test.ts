@@ -9,6 +9,7 @@ import {
   commandGroups,
   completionShells,
   flagCatalog,
+  draftCheckKinds,
   globalFlagNames,
   initLanguages,
 } from '../src/commands/catalog';
@@ -22,6 +23,7 @@ import {
   renderUnknownCommand,
   renderUnknownFlag,
   renderUsage,
+  renamedCommands,
   suggestFlags,
   suggestVerbs,
 } from '../src/help';
@@ -227,6 +229,25 @@ describe('suggestVerbs', () => {
     for (const [oldName, newName] of Object.entries(renamed)) {
       expect(suggestVerbs(oldName), oldName).toContain(newName);
     }
+  });
+
+  it('renames only to commands that exist, and never to an old name', () => {
+    const verbs = commandCatalog.map((spec) => spec.verb);
+
+    for (const [oldName, renamed] of Object.entries(renamedCommands)) {
+      expect(verbs, oldName).toContain(renamed.verb);
+      expect(verbs, oldName).not.toContain(oldName);
+      if (renamed.kind !== undefined) {
+        expect(draftCheckKinds, oldName).toContain(renamed.kind);
+      }
+    }
+  });
+
+  it('puts a renamed command first and leaves a plain typo to the nearest commands', () => {
+    expect(suggestVerbs('scene generate')[0]).toBe('draft generate');
+    expect(renderUnknownCommand('scene generat')).toContain('혹시 →  storyboard draft generate');
+    expect(renderUnknownCommand('scene generat')).not.toContain('이름이 바뀌었습니다');
+    expect(renderUnknownCommand('draf generate')).toContain('혹시 →  storyboard draft generate');
   });
 });
 

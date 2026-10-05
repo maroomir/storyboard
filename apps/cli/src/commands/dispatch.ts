@@ -238,7 +238,7 @@ export async function dispatch(
   const handler = commands[verb];
 
   if (!handler) {
-    return failure(renderUnknownCommand(verb), mode, terminal.stderr);
+    return failure(renderUnknownCommand(verb, args.positionals), mode, terminal.stderr);
   }
 
   if (flagBoolean(args.flags, 'help')) {
