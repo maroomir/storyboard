@@ -90,10 +90,11 @@ export function resolveVerb(raw: RawArguments, verbs: readonly string[]): Parsed
     }
   }
 
+  // An unknown verb keeps its arguments so a renamed command's hint can repeat them.
   return {
-    path: raw.words.slice(0, Math.min(2, raw.words.length)),
+    path: raw.words.slice(0, 2),
     flags: raw.flags,
-    positionals: [],
+    positionals: raw.words.slice(2),
   };
 }
 

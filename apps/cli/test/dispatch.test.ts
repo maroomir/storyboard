@@ -100,6 +100,32 @@ describe('dispatch', () => {
     expect(JSON.parse(noWorkspace.stdout).message).toContain('storyboard init --title');
   });
 
+  // 기존 작품의 AGENTS.md 에는 옛 이름이 남아 있다. 그것을 친 에이전트의 첫 안내가 비용이 드는
+  // 다른 명령이면 안 된다 — 변경 기록의 대응표 그대로, 인자를 이어 붙여 첫 줄에 준다.
+  it('leads every renamed command to its new name first, keeping the arguments', async () => {
+    const renamed: ReadonlyArray<readonly [string, string]> = [
+      ['scene generate 01', 'draft generate 01'],
+      ['scene revise 01', 'draft revise 01'],
+      ['scene draft 01', 'draft show 01'],
+      ['check grammar 01', 'draft check grammar 01'],
+      ['check continuity 01', 'draft check continuity 01'],
+      ['check slop 01', 'draft check slop 01'],
+      ['scene seeds', 'scene seed'],
+      ['scene beats 01', 'scene plot 01'],
+      ['cards build', 'card build'],
+      ['bible promote', 'canon promote'],
+      ['narrator add hana', 'narrator create hana'],
+      ['manuscript summaries', 'manuscript summarize'],
+    ];
+
+    for (const [oldCommand, newCommand] of renamed) {
+      const result = await dispatch(oldCommand.split(' '), deps());
+
+      expect(result.exitCode, oldCommand).not.toBe(0);
+      expect(result.stderr.split('\n')[1], oldCommand).toContain(`storyboard ${newCommand}`);
+    }
+  });
+
   it('names the fix on stderr for a missing workspace without --json', async () => {
     const result = await dispatch(['draft', 'generate', '01'], deps());
 

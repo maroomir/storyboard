@@ -12,7 +12,7 @@ after the first public release.
 
 ### Changed
 
-- **CLI command names follow one rule, and the old names no longer work.** Every command on a work is `<singular noun> <verb> [target]`, two words, and a kind (character or background, the kind of check) is the first argument rather than part of the name. `scene` is the scene card; `draft` is the prose. An old name answers "unknown command" and suggests the closest new one. A work's existing `AGENTS.md` still names the old commands: edit it from the table below, or delete it and run `storyboard init --repair` to write it again.
+- **CLI command names follow one rule, and the old names no longer work.** Every command on a work is `<singular noun> <verb> [target]`, two words, and a kind (character or background, the kind of check) is the first argument rather than part of the name. `scene` is the scene card; `draft` is the prose. An old name fails as "unknown command" and its first hint is the new name with the arguments carried over (`scene generate 01` → `storyboard draft generate 01`). A work's existing `AGENTS.md` still names the old commands: edit it from the table below, or delete it and run `storyboard init --repair` to write it again.
   | Before | Now |
   |---|---|
   | `scene generate <stem>` · `--all` | `draft generate <stem>` · `--all` |

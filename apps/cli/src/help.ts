@@ -296,8 +296,30 @@ export function renderHelpTopic(
   return renderCommandHelp(topic, stream) ?? renderGroupHelp(topic, stream);
 }
 
+// NOTE: The rename table of the changelog's «CLI 명령 이름을 한 규칙으로» entry. Old names are not
+// aliases; an agent following an old AGENTS.md is told the one new name, never a near miss that
+// costs money (`scene generate` reads closest to `outline generate`).
+export const renamedCommands: Readonly<Record<string, { verb: string; kind?: string }>> = {
+  'scene generate': { verb: 'draft generate' },
+  'scene revise': { verb: 'draft revise' },
+  'scene draft': { verb: 'draft show' },
+  'check grammar': { verb: 'draft check', kind: 'grammar' },
+  'check continuity': { verb: 'draft check', kind: 'continuity' },
+  'check slop': { verb: 'draft check', kind: 'slop' },
+  'scene seeds': { verb: 'scene seed' },
+  'scene beats': { verb: 'scene plot' },
+  'cards build': { verb: 'card build' },
+  'bible promote': { verb: 'canon promote' },
+  'narrator add': { verb: 'narrator create' },
+  'manuscript summaries': { verb: 'manuscript summarize' },
+};
+
+function findRenamedCommand(input: string): { verb: string; kind?: string } | undefined {
+  return renamedCommands[input.trim().toLowerCase().replace(/\s+/g, ' ')];
+}
+
 // A wrong verb is usually a near miss on a real one; naming the closest ones beats dumping the
-// whole usage screen the author already scrolled past.
+// whole usage screen the author already scrolled past. A renamed command leads with its new name.
 export function suggestVerbs(input: string, limit = 3): string[] {
   const needle = input.trim().toLowerCase();
 
@@ -305,12 +327,14 @@ export function suggestVerbs(input: string, limit = 3): string[] {
     return [];
   }
 
+  const renamedVerb = findRenamedCommand(needle)?.verb;
   const scored = commandCatalog
     .map((spec) => ({ verb: spec.verb, score: similarity(needle, spec.verb.toLowerCase()) }))
-    .filter((entry) => entry.score > 0)
-    .sort((a, b) => b.score - a.score);
+    .filter((entry) => entry.score > 0 && entry.verb !== renamedVerb)
+    .sort((a, b) => b.score - a.score)
+    .map((entry) => entry.verb);
 
-  return scored.slice(0, limit).map((entry) => entry.verb);
+  return (renamedVerb === undefined ? scored : [renamedVerb, ...scored]).slice(0, limit);
 }
 
 const prefixScore = 10;
@@ -381,7 +405,18 @@ function renderSuggestions(
   ].join('\n');
 }
 
-export function renderUnknownCommand(verb: string): string {
+export function renderUnknownCommand(verb: string, args: readonly string[] = []): string {
+  const renamed = findRenamedCommand(verb);
+
+  if (renamed !== undefined) {
+    const words = [renamed.verb, ...(renamed.kind === undefined ? [] : [renamed.kind]), ...args];
+    return [
+      `알 수 없는 명령: ${verb}`,
+      `  이름이 바뀌었습니다 →  storyboard ${words.join(' ')}`,
+      '  전체 목록 →  storyboard --help',
+    ].join('\n');
+  }
+
   return renderSuggestions(
     `알 수 없는 명령: ${verb}`,
     suggestVerbs(verb).map((suggestion) => `storyboard ${suggestion}`),
