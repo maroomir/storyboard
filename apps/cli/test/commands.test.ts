@@ -770,6 +770,47 @@ describe('draft generate progress', () => {
   });
 });
 
+describe('draft generate --all progress', () => {
+  it('names the stage on each log line, so a piped log does not repeat one line', async () => {
+    const logged: string[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      progress: { update: ({ line }: { line: string }) => logged.push(line), finish: () => {} },
+      drafts: stubManager(real.drafts, {
+        generateAll: async (request: { onProgress?: (progress: unknown) => void }) => {
+          const scene = { current: 2, total: 3, label: '02-blank-pages.card' };
+          request.onProgress?.({ ...scene, kind: 'prepared' });
+          request.onProgress?.({
+            ...scene,
+            kind: 'pipeline',
+            stage: 'expandSection',
+            stageCurrent: 1,
+            stageTotal: 3,
+          });
+          request.onProgress?.({ ...scene, kind: 'saving' });
+          return {
+            kind: 'completed',
+            ok: true,
+            summary: { cacheHits: 0, failureLabels: [], failures: 0, generated: 1, sceneCount: 3 },
+          };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['draft generate']>[0]['container'];
+
+    await commands['draft generate']({
+      container: stubbed,
+      args: args(['draft', 'generate'], { all: true }),
+    });
+
+    expect(logged).toEqual([
+      '2/3 02-blank-pages.card · 준비',
+      '2/3 02-blank-pages.card · 살붙임 1/3',
+      '2/3 02-blank-pages.card · 저장',
+    ]);
+  });
+});
+
 describe('draft generate --all pause', () => {
   it('stops at a scene boundary when asked and says what is left', async () => {
     const real = container();
