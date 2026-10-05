@@ -10,6 +10,17 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-10-06
+
+### Added
+
+- **One experimental feature.** It is off by default and asks for your explicit consent before it can be switched on. Nothing changes unless you turn it on.
+
+### Fixed
+
+- **An empty response from the model no longer saves a draft.** It used to end with "draft generated" and exit code 0 while the existing draft was overwritten by a file holding only its front matter. The existing draft is now left alone and the run fails with the reason. This applies to every provider.
+- **A setting that names an unusable provider now says what is wrong.** When `ai.provider.default` or `tasks.*.provider` holds a value that cannot be used, the only message used to be "invalid setting value". It now shows the value written, the values available now, and how to fix it.
+
 ## [0.12.0] - 2026-10-05
 
 ### Changed (breaking)
