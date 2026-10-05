@@ -11,6 +11,7 @@ import {
 import {
   applyNoteConsolidation,
   buildNoteAbsorbPlan,
+  type NoteAbsorbPlan,
   type NoteConsolidationResult,
   readNoteConsolidationResponse,
   selectNoteConsolidationTargets,
@@ -638,7 +639,7 @@ describe('readNoteExtractionResponse', () => {
   });
 });
 
-describe('note character consolidation', () => {
+describe('note card consolidation', () => {
   const baseInput = {
     synthesis: emptyNoteSynthesis,
     scenes: [] as SceneFile[],
@@ -660,64 +661,231 @@ describe('note character consolidation', () => {
     });
   }
 
+  function valuesOf(plan: NoteAbsorbPlan, cardId: string) {
+    return plan.cards
+      .find((card) => card.card.id === cardId)
+      ?.changes.map((change) => ('value' in change ? change.value : change.kind));
+  }
+
   const twoReadings = planOf(
     [],
     [{ suggestedId: 'jo-manjae', traits: ['허세가 심함', '백과사전을 즐겨 읽음'], sourceNotes: ['a.md'] }],
     [{ traits: ['허세를 부린다', '백과사전을 탐독함'], tags: ['허세남'], sourceNotes: ['b.md'] }],
   );
 
-  it('asks only about a person read in more than one request or already on a card', () => {
-    expect(selectNoteConsolidationTargets(twoReadings, chunkByNoteId)).toEqual([
+  it('asks only about a card read in more than one request or already holding a list', () => {
+    expect(selectNoteConsolidationTargets(twoReadings, chunkByNoteId, [])).toEqual([
       {
         cardId: 'jo-manjae',
         name: '조만재',
-        existingTraits: [],
-        existingTags: [],
-        traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허세를 부린다', '백과사전을 탐독함'],
-        tags: ['허세남'],
+        type: 'character',
+        existing: {},
+        candidates: {
+          traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허세를 부린다', '백과사전을 탐독함'],
+          tags: ['허세남'],
+        },
+        sharedAliases: [],
       },
     ]);
 
     const oneReading = planOf([], [{ traits: ['허세가 심함', '고집이 세다'], sourceNotes: ['a.md', 'a.md'] }]);
-    expect(selectNoteConsolidationTargets(oneReading, chunkByNoteId)).toEqual([]);
+    expect(selectNoteConsolidationTargets(oneReading, chunkByNoteId, [])).toEqual([]);
 
     const existing: StoryboardCard = { type: 'character', id: 'jo', name: '조만재', role: 'main', traits: ['허세가 심함'] };
     const onCard = planOf([existing], [{ traits: ['허세를 부린다'], sourceNotes: ['a.md'] }]);
-    expect(selectNoteConsolidationTargets(onCard, chunkByNoteId)).toMatchObject([
-      { cardId: 'jo', existingTraits: ['허세가 심함'], traits: ['허세를 부린다'] },
+    expect(selectNoteConsolidationTargets(onCard, chunkByNoteId, [existing])).toMatchObject([
+      { cardId: 'jo', existing: { traits: ['허세가 심함'] }, candidates: { traits: ['허세를 부린다'] } },
     ]);
+  });
+
+  it('asks about the description, voice and desire of a person and the lists of a place', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [],
+      notes: [note('a.md'), note('b.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({
+              name: '조만재',
+              suggestedId: 'jo-manjae',
+              description: ['백과사전을 즐겨 읽는 집돌이'],
+              voice: ['허세 섞인 말투'],
+              desire: ['은하에게 인정받고 싶어함'],
+              sourceNotes: ['a.md'],
+            }),
+            entity({ type: 'background', name: '만재네 집', suggestedId: 'manjae-house', description: ['낡은 아파트'], senses: ['녹슨 냄새'], sourceNotes: ['a.md'] }),
+          ],
+        }),
+        extraction({
+          entities: [
+            entity({
+              name: '조만재',
+              description: ['아침마다 백과사전을 읽는 습관이 있음'],
+              voice: ['허세스럽고 과장된 말투'],
+              desire: ['은하와 가까워지고 싶어함'],
+              sourceNotes: ['b.md'],
+            }),
+            entity({ type: 'background', name: '만재네 집', description: ['오래된 아파트'], tags: ['주거'], sourceNotes: ['b.md'] }),
+          ],
+        }),
+      ],
+    });
+
+    expect(selectNoteConsolidationTargets(plan, chunkByNoteId, []).map((target) => [target.cardId, target.candidates])).toEqual([
+      [
+        'jo-manjae',
+        {
+          description: ['백과사전을 즐겨 읽는 집돌이', '아침마다 백과사전을 읽는 습관이 있음'],
+          voice: ['허세 섞인 말투', '허세스럽고 과장된 말투'],
+          desire: ['은하에게 인정받고 싶어함', '은하와 가까워지고 싶어함'],
+        },
+      ],
+      ['manjae-house', { description: ['낡은 아파트', '오래된 아파트'], senses: ['녹슨 냄새'], tags: ['주거'] }],
+    ]);
+  });
+
+  it('asks about an alias another card carries even when each card was read once', () => {
+    const disk: StoryboardCard = { type: 'character', id: 'geunuk', name: '이근욱', role: 'extra', aliases: ['엘리트'] };
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [disk],
+      notes: [note('a.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({ name: '조만재', suggestedId: 'jo-manjae', aliases: ['만재', '엘리트'], sourceNotes: ['a.md'] }),
+            entity({ name: '정은하', suggestedId: 'jeong-eunha', aliases: ['엘리트', '은하를 그렇게 부름'], sourceNotes: ['a.md'] }),
+            entity({ name: '손수영', suggestedId: 'son-suyeong', aliases: ['수영'], sourceNotes: ['a.md'] }),
+          ],
+        }),
+      ],
+    });
+
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, [disk]);
+
+    expect(targets.map((target) => [target.cardId, target.sharedAliases])).toEqual([
+      [
+        'jo-manjae',
+        [{ alias: '엘리트', otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jeong-eunha', name: '정은하' }] }],
+      ],
+      [
+        'jeong-eunha',
+        [{ alias: '엘리트', otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jo-manjae', name: '조만재' }] }],
+      ],
+    ]);
+  });
+
+  describe('a shared alias', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [],
+      notes: [note('a.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({ name: '조만재', suggestedId: 'jo-manjae', aliases: ['만재', '엘리트'], sourceNotes: ['a.md'] }),
+            entity({ name: '정은하', suggestedId: 'jeong-eunha', aliases: ['은하', '엘리트'], sourceNotes: ['a.md'] }),
+          ],
+        }),
+      ],
+    });
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, []);
+
+    it('stays only on the card the model gives it to', () => {
+      const result = applyNoteConsolidation(plan, targets, [
+        { cardId: 'jo-manjae', values: { aliases: ['만재'] } },
+        { cardId: 'jeong-eunha', values: { aliases: ['은하', '엘리트'] } },
+      ]);
+
+      expect(valuesOf(result.plan, 'jo-manjae')).toEqual(['만재']);
+      expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['은하', '엘리트']);
+      expect(result.warnings).toEqual([]);
+    });
+
+    it('leaves every card the model says it belongs to none of', () => {
+      const result = applyNoteConsolidation(plan, targets, [
+        { cardId: 'jo-manjae', values: { aliases: ['만재'] } },
+        { cardId: 'jeong-eunha', values: { aliases: ['은하'] } },
+      ]);
+
+      expect(valuesOf(result.plan, 'jo-manjae')).toEqual(['만재']);
+      expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['은하']);
+      expect(result.warnings).toEqual([]);
+    });
+
+    it('stays on both cards with a warning when the answer gives it to both or is missing', () => {
+      const toBoth = applyNoteConsolidation(plan, targets, [
+        { cardId: 'jo-manjae', values: { aliases: ['만재', '엘리트'] } },
+        { cardId: 'jeong-eunha', values: { aliases: ['은하', '엘리트'] } },
+      ]);
+      const halfAnswered = applyNoteConsolidation(plan, targets, [
+        { cardId: 'jo-manjae', values: { aliases: ['만재'] } },
+      ]);
+      const warning = '별칭 «엘리트» 이 누구의 것인지 정하지 못해 조만재, 정은하 에 모두 남겼습니다.';
+
+      for (const result of [toBoth, halfAnswered]) {
+        expect(valuesOf(result.plan, 'jo-manjae')).toEqual(['만재', '엘리트']);
+        expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['은하', '엘리트']);
+        expect(result.warnings).toEqual([warning]);
+      }
+    });
+  });
+
+  it('keeps an alias a card on disk also has on the new card the model gives it to, and says so', () => {
+    const disk: StoryboardCard = { type: 'character', id: 'geunuk', name: '이근욱', role: 'extra', aliases: ['엘리트'] };
+    const plan = planOf([disk], [{ suggestedId: 'jo-manjae', aliases: ['만재', '엘리트'], sourceNotes: ['a.md'] }]);
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, [disk]);
+
+    const kept = applyNoteConsolidation(plan, targets, [{ cardId: 'jo-manjae', values: { aliases: ['만재', '엘리트'] } }]);
+    expect(valuesOf(kept.plan, 'jo-manjae')).toEqual(['만재', '엘리트']);
+    expect(kept.plan.cards.map((card) => card.card.id)).toEqual(['jo-manjae']);
+    expect(kept.warnings).toEqual([
+      '별칭 «엘리트» 은 조만재 의 것으로 보아 남겼습니다. 같은 별칭이 있는 기존 카드 이근욱 는 고치지 않았습니다.',
+    ]);
+
+    const dropped = applyNoteConsolidation(plan, targets, [{ cardId: 'jo-manjae', values: { aliases: ['만재'] } }]);
+    expect(valuesOf(dropped.plan, 'jo-manjae')).toEqual(['만재']);
+    expect(dropped.warnings).toEqual([]);
   });
 
   it('keeps only the candidates the model chose, never a wording it made up', () => {
-    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
     const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, [
-      { cardId: 'jo-manjae', traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허풍쟁이'], tags: ['허세남'] },
+      { cardId: 'jo-manjae', values: { traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허풍쟁이'], tags: ['허세남'] } },
     ]);
 
     expect(unanswered).toEqual([]);
-    expect(plan.cards[0]?.changes.map((change) => ('value' in change ? change.value : change.kind))).toEqual([
-      '허세남',
-      '허세가 심함',
-      '백과사전을 즐겨 읽음',
-    ]);
+    expect(valuesOf(plan, 'jo-manjae')).toEqual(['허세남', '허세가 심함', '백과사전을 즐겨 읽음']);
   });
 
-  it('keeps a new person whole when the answer leaves nothing, and drops an existing card it empties', () => {
-    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+  it('keeps a list of a new card the answer empties or leaves out, and drops an existing card it empties', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
     expect(
-      applyNoteConsolidation(twoReadings, targets, [{ cardId: 'jo-manjae', traits: [], tags: [] }]).plan,
+      applyNoteConsolidation(twoReadings, targets, [{ cardId: 'jo-manjae', values: { traits: [], tags: [] } }]).plan,
     ).toEqual(twoReadings);
+    expect(applyNoteConsolidation(twoReadings, targets, [{ cardId: 'jo-manjae', values: {} }]).plan).toEqual(twoReadings);
 
     const existing: StoryboardCard = { type: 'character', id: 'jo', name: '조만재', role: 'main', traits: ['허세가 심함'] };
     const onCard = planOf([existing], [{ traits: ['허세를 부린다'], sourceNotes: ['a.md'] }]);
-    const onCardTargets = selectNoteConsolidationTargets(onCard, chunkByNoteId);
+    const onCardTargets = selectNoteConsolidationTargets(onCard, chunkByNoteId, [existing]);
     expect(
-      applyNoteConsolidation(onCard, onCardTargets, [{ cardId: 'jo', traits: [], tags: [] }]).plan.cards,
+      applyNoteConsolidation(onCard, onCardTargets, [{ cardId: 'jo', values: { traits: [] } }]).plan.cards,
     ).toEqual([]);
   });
 
-  it('reports the people the answer left out', () => {
-    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId);
+  it('lets the answer drop every alias of a new card', () => {
+    const plan = planOf([], [{ suggestedId: 'jo-manjae', aliases: ['엘리트라 불리는 쪽은 아님'], traits: ['허세'], sourceNotes: ['a.md'] }]);
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, []);
+
+    expect(targets.map((target) => target.cardId)).toEqual(['jo-manjae']);
+    expect(
+      valuesOf(applyNoteConsolidation(plan, targets, [{ cardId: 'jo-manjae', values: { aliases: [], traits: ['허세'] } }]).plan, 'jo-manjae'),
+    ).toEqual(['허세']);
+  });
+
+  it('reports the cards the answer left out', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
     const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, []);
 
     expect(plan).toEqual(twoReadings);
@@ -726,20 +894,36 @@ describe('note character consolidation', () => {
 
   it('reads a response and refuses a cut or shapeless one', () => {
     expect(
-      readNoteConsolidationResponse({ characters: [{ id: 'jo', traits: ['허세가 심함', ''] }, { traits: [] }] }, false),
-    ).toEqual({ consolidated: [{ cardId: 'jo', traits: ['허세가 심함'], tags: [] }] });
-    expect(readNoteConsolidationResponse({ characters: [] }, true).failure).toBe('truncated');
-    expect(readNoteConsolidationResponse({ people: [] }, false).failure).toBe('unparsed');
+      readNoteConsolidationResponse({ cards: [{ id: 'jo', traits: ['허세가 심함', ''], voice: 'x' }, { traits: [] }] }, false),
+    ).toEqual({ consolidated: [{ cardId: 'jo', values: { traits: ['허세가 심함'] } }] });
+    expect(readNoteConsolidationResponse({ cards: [] }, true).failure).toBe('truncated');
+    expect(readNoteConsolidationResponse({ characters: [] }, false).failure).toBe('unparsed');
     expect(readNoteConsolidationResponse(null, false).failure).toBe('unparsed');
   });
 
-  it('shows each person with what the card has and what the notes offer', () => {
+  it('shows each card with what it has, what the notes offer and whom it shares an alias with', () => {
     const prompt = NoteCardConsolidationPrompt.build([
-      { cardId: 'jo', name: '조만재', existingTraits: ['허세가 심함'], existingTags: [], traits: ['허세를 부린다'], tags: [] },
+      {
+        cardId: 'jo',
+        name: '조만재',
+        type: 'character',
+        existing: { traits: ['허세가 심함'] },
+        candidates: { aliases: ['엘리트'], traits: ['허세를 부린다'] },
+        sharedAliases: [{ alias: '엘리트', otherCards: [{ cardId: 'eunha', name: '정은하' }] }],
+      },
     ]);
 
     expect(prompt.user).toBe(
-      ['[인물] id: jo (조만재)', '[기존] traits:', '- 허세가 심함', '[후보] traits:', '- 허세를 부린다'].join('\n'),
+      [
+        '[인물] id: jo (조만재)',
+        '[기존] traits:',
+        '- 허세가 심함',
+        '[후보] aliases:',
+        '- 엘리트',
+        '[후보] traits:',
+        '- 허세를 부린다',
+        '[공유 별칭] 엘리트 — eunha (정은하) 도 가짐',
+      ].join('\n'),
     );
   });
 });
@@ -770,7 +954,7 @@ describe('PlanNoteAbsorbUseCase', () => {
         return results[call++] as NoteExtractionResult;
       },
       synthesizeNotePremise: async () => emptyNoteSynthesis,
-      consolidateNoteCharacters: async (targets: unknown) => {
+      consolidateNoteCards: async (targets: unknown) => {
         consolidationRequests.push(targets);
         return consolidation;
       },
@@ -839,7 +1023,7 @@ describe('PlanNoteAbsorbUseCase', () => {
 
   it('asks once to merge the traits of a person read in two requests', async () => {
     const { useCase, warnings, consolidationRequests } = createUseCase(twoReadings, {
-      consolidated: [{ cardId: 'jo-manjae', traits: ['허세가 심함', '고집이 세다'], tags: [] }],
+      consolidated: [{ cardId: 'jo-manjae', values: { traits: ['허세가 심함', '고집이 세다'] } }],
     });
 
     const result = await useCase.execute({ workspaceRoot, bundle });
@@ -860,7 +1044,7 @@ describe('PlanNoteAbsorbUseCase', () => {
     expect(result.ok).toBe(true);
     expect(result.ok && result.plan.cards[0]?.changes).toHaveLength(3);
     expect(warnings).toEqual([
-      '인물 조만재 의 성격·태그는 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
+      '카드 조만재 의 목록은 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
     ]);
     expect(result.ok && result.plan.warnings[0]).toBe(warnings[0]);
   });

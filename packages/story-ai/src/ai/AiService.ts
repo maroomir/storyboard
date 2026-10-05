@@ -296,11 +296,11 @@ export class StoryboardAiService {
     return this.cardAiService.synthesizeNotePremise(premise, castNames, options);
   }
 
-  public async consolidateNoteCharacters(
+  public async consolidateNoteCards(
     targets: readonly NoteConsolidationTarget[],
     options: GenerateTextOptions = {},
   ): Promise<NoteConsolidationResult> {
-    return this.cardAiService.consolidateNoteCharacters(targets, options);
+    return this.cardAiService.consolidateNoteCards(targets, options);
   }
 
   public async verifyCardCandidatesByCharacter(
