@@ -59,6 +59,11 @@ after the first public release.
 - **`draft show` in the interactive screen opens the draft in a reader**: dialogue highlighted, scene breaks centered and dimmed, the character count (without spaces) and the reading position on top; ↑↓, Space, b and g/G move and q closes. One-shot `draft show` output is unchanged.
 - **Warnings and errors are colored at a terminal.** Pipes, `--json`, `NO_COLOR` and `TERM=dumb` get the same plain text as before, and `--no-color` turns color off.
 
+### Fixed
+
+- **No draft is left "older than its card" after `draft generate --all`.** When the model left a field of the scene's fact sheet empty, every run rewrote the scene card with the same content, so a draft that was kept counted as stale. The card is no longer written when nothing changes. (#79)
+- **Stopping a screen-drawing command such as `!vim` in the interactive screen no longer leaves the screen broken.** Shell output keeps only its text and colors.
+
 ## [0.11.6] - 2026-10-05
 
 ### Changed
