@@ -7,6 +7,8 @@ import {
   hiddenProviderIds,
   hiddenProviderRiskAcknowledgedKey,
   isHiddenProvider,
+  listAvailableProviderIds,
+  unknownProviderMessage,
   type AiProviderId,
   storyboardSettingCatalog,
   type StoryboardSettingDefinition,
@@ -90,6 +92,19 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 // Walks one file's settings. A key may be spelled flat ("generation.beats.minimum") or nested, so the walk
 // joins path segments and checks the joined key at every level: a known key is validated, an
 // object under an unknown key is descended into, anything else is an unknown key.
+// A provider name the file spells that is not one: repeat what was written and list what is
+// available, so the person knows what to put there. A hidden provider that is off is not listed.
+function describeUnknownProvider(
+  value: unknown,
+  enabledHiddenProviderIds: readonly AiProviderId[],
+): string[] {
+  return [
+    unknownProviderMessage(String(value)),
+    `쓸 수 있는 값: ${listAvailableProviderIds(enabledHiddenProviderIds).join(', ')}`,
+    '파일에서 고치거나 설정에서 프로바이더를 다시 고르세요.',
+  ];
+}
+
 // A hidden provider that the home file has not switched on is an unknown name, exactly as it was
 // before the provider existed.
 export function validateConfigSettings(
@@ -114,7 +129,12 @@ export function validateConfigSettings(
         throw new ConfigFileError(
           'invalid-value',
           file,
-          `설정 값이 올바르지 않습니다: ${key} (${file})`,
+          [
+            `설정 값이 올바르지 않습니다: ${key} (${file})`,
+            ...(schema === providerIdSchema
+              ? describeUnknownProvider(value, enabledHiddenProviderIds)
+              : []),
+          ].join('\n'),
           parsed.error,
         );
       }
