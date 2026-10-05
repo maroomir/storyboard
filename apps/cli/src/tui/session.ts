@@ -7,8 +7,8 @@ import {
 
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
-import { runShellCommand } from '@/adapters/shellCommand';
-import { keepTextAndColors } from '@/terminal/controlCodes';
+import { runShellCommand, type ShellCommandResult } from '@/adapters/shellCommand';
+import { isScreenDrawing, keepTextAndColors } from '@/terminal/controlCodes';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 import { computeCompletions, listWorkspaceMentions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
@@ -217,6 +217,18 @@ function createSessionLogger(sink: SessionSink): IStoryboardLogger {
   };
 }
 
+function describeShellOutput(result: ShellCommandResult): string {
+  if (isScreenDrawing(result.output)) {
+    return (
+      '화면 전체를 그리는 프로그램은 여기서 실행할 수 없습니다. 터미널에서 직접 실행해 주세요. ' +
+      `(종료 코드 ${result.exitCode})`
+    );
+  }
+
+  const output = keepTextAndColors(result.output).trimEnd();
+  return output.length > 0 ? output : `종료 코드 ${result.exitCode}`;
+}
+
 // A run the author stopped is neither a result nor an error.
 function describeResultTone(result: DispatchResult): LogTone {
   if (result.outcome?.stop !== undefined) {
@@ -380,11 +392,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         const result = await shellRun.result.finally(() => {
           stopShellCommand = undefined;
         });
-        const output = keepTextAndColors(result.output).trimEnd();
-        sink.append(
-          result.exitCode === 0 ? 'result' : 'error',
-          output.length > 0 ? output : `종료 코드 ${result.exitCode}`,
-        );
+        sink.append(result.exitCode === 0 ? 'result' : 'error', describeShellOutput(result));
         return;
       }
 

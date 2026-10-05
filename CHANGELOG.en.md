@@ -62,7 +62,7 @@ after the first public release.
 ### Fixed
 
 - **No draft is left "older than its card" after `draft generate --all`.** When the model left a field of the scene's fact sheet empty, every run rewrote the scene card with the same content, so a draft that was kept counted as stale. The card is no longer written when nothing changes. (#79)
-- **Stopping a screen-drawing command such as `!vim` in the interactive screen no longer leaves the screen broken.** Shell output keeps only its text and colors.
+- **Stopping a screen-drawing command such as `!vim` in the interactive screen no longer leaves the screen broken.** Shell output keeps only its text and colors, and the output of a full-screen program is replaced by one line saying it cannot run there.
 
 ## [0.11.6] - 2026-10-05
 
