@@ -4,14 +4,12 @@ import type { CliRunFailure, CliRunRequest, CliRunResult, ICliRunner } from '#ai
 
 const stderrTailLimit = 4_000;
 
-function childEnvironment(withoutEnvironment: readonly string[]): NodeJS.ProcessEnv {
-  const environment = { ...process.env };
-
-  for (const name of withoutEnvironment) {
-    delete environment[name];
-  }
-
-  return environment;
+function childEnvironment(withheldPrefixes: readonly string[]): NodeJS.ProcessEnv {
+  return Object.fromEntries(
+    Object.entries(process.env).filter(
+      ([name]) => !withheldPrefixes.some((prefix) => name.startsWith(prefix)),
+    ),
+  );
 }
 
 // How long a child gets to end after SIGTERM before the whole group is killed, and how long after

@@ -5,7 +5,7 @@ export interface CliRunRequest {
   readonly args: readonly string[];
   readonly stdin: string;
   readonly timeoutMs: number;
-  // Variables the child must not inherit, whatever the parent's environment holds.
+  // Name prefixes of variables the child must not inherit, whatever the parent's environment holds.
   readonly withoutEnvironment: readonly string[];
   readonly onStdoutLine?: (line: string) => void;
   readonly signal?: AbortSignal;
