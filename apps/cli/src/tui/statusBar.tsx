@@ -7,6 +7,21 @@ import { useTuiTheme } from './tuiTheme';
 export interface StatusBarProps {
   readonly view: WorkspaceView;
   readonly isBusy: boolean;
+  readonly columns: number;
+  // What Esc does in the running command; absent when it does nothing there.
+  readonly escapeHint?: string;
+}
+
+// Below this the full key list would push the status onto a second line.
+const fullKeyHintColumns = 72;
+
+function describeKeyHint(props: StatusBarProps): string {
+  if (props.isBusy) {
+    return props.escapeHint ?? '';
+  }
+  return props.columns >= fullKeyHintColumns
+    ? '/help 도움말 · Ctrl+R 기록 · Ctrl+C 나가기'
+    : '/help 도움말';
 }
 
 // The line under the prompt: which work, whether it can be written now, which AI answers, and the
@@ -15,6 +30,7 @@ export interface StatusBarProps {
 export function StatusBar(props: StatusBarProps): React.ReactElement {
   const theme = useTuiTheme();
   const { header, lockHolder } = props.view;
+  const keyHint = describeKeyHint(props);
 
   return (
     <Box paddingX={1} justifyContent="space-between">
@@ -31,11 +47,11 @@ export function StatusBar(props: StatusBarProps): React.ReactElement {
         {' · '}
         {header.providerLabel}
       </Text>
-      <Box flexShrink={0} marginLeft={2}>
-        <Text color={theme.muted}>
-          {props.isBusy ? 'Esc 씬 경계에서 멈춤' : '/help 도움말 · Ctrl+R 기록 · Ctrl+C 나가기'}
-        </Text>
-      </Box>
+      {keyHint.length === 0 ? null : (
+        <Box flexShrink={0} marginLeft={2}>
+          <Text color={theme.muted}>{keyHint}</Text>
+        </Box>
+      )}
     </Box>
   );
 }

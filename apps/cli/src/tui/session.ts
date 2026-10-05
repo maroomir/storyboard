@@ -200,6 +200,8 @@ export interface SessionSink {
   readonly setTheme: (name: TuiThemeName) => void;
   // Opens a draft in the reader instead of the log.
   readonly openReader: (title: string, body: string) => void;
+  // What Esc does in the running command, for the status line; undefined when it does nothing.
+  readonly setEscapeHint: (hint: string | undefined) => void;
   readonly clear: () => void;
   readonly exit: () => void;
 }
@@ -224,8 +226,9 @@ function describeResultTone(result: DispatchResult): LogTone {
 
 export interface TuiSession {
   readonly run: (line: string) => Promise<void>;
-  // Esc during a run: stop at the next scene boundary. False when the running command cannot.
-  readonly requestPause: () => boolean;
+  // Esc during a run: stops a shell command, or a batch at the next scene boundary. Returns what
+  // happened, for the log.
+  readonly interrupt: () => string;
 }
 
 // Everything typed at the prompt goes through the same `dispatch` the one-shot CLI uses; the TUI
@@ -233,9 +236,10 @@ export interface TuiSession {
 export function createTuiSession(options: TuiSessionOptions, sink: SessionSink): TuiSession {
   // One per command, so a pause asked for one run never carries into the next.
   let pauseRequests = new PauseRequests();
+  let stopShellCommand: (() => void) | undefined;
 
   const runArgv = async (argv: readonly string[]): Promise<DispatchResult> => {
-    pauseRequests = new PauseRequests();
+    pauseRequests = new PauseRequests(() => sink.setEscapeHint('Esc 씬 경계에서 멈춤'));
     return dispatch(argv, {
       version: options.version,
       cwd: options.cwd,
@@ -349,7 +353,16 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
   };
 
   return {
-    requestPause: () => pauseRequests.request(),
+    interrupt: () => {
+      if (stopShellCommand !== undefined) {
+        stopShellCommand();
+        return '셸 명령을 멈췄습니다.';
+      }
+
+      return pauseRequests.request()
+        ? '지금 씬을 마치고 멈춥니다.'
+        : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.';
+    },
     run: async (line: string): Promise<void> => {
       const trimmed = line.trim();
 
@@ -360,7 +373,12 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
       sink.append('input', trimmed);
 
       if (trimmed.startsWith('!')) {
-        const result = await runShellCommand(trimmed.slice(1), options.cwd);
+        const shellRun = runShellCommand(trimmed.slice(1), options.cwd);
+        stopShellCommand = shellRun.stop;
+        sink.setEscapeHint('Esc 명령 중단');
+        const result = await shellRun.result.finally(() => {
+          stopShellCommand = undefined;
+        });
         const output = result.output.trimEnd();
         sink.append(
           result.exitCode === 0 ? 'result' : 'error',

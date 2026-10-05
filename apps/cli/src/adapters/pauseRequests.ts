@@ -4,9 +4,13 @@ export class PauseRequests {
   private isWatched = false;
   private isRequested = false;
 
+  // Tells a screen that Esc now means something, so it can say so.
+  public constructor(private readonly onWatch?: () => void) {}
+
   // A run that can stop at a scene boundary calls this and polls the returned check.
   public watch(): () => boolean {
     this.isWatched = true;
+    this.onWatch?.();
     return () => this.isRequested;
   }
 

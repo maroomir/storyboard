@@ -112,6 +112,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
   const columns = stdout.columns > 0 ? stdout.columns : 80;
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [isBusy, setIsBusy] = useState(false);
+  const [escapeHint, setEscapeHint] = useState<string | undefined>(undefined);
   const [isOutputExpanded, setIsOutputExpanded] = useState(false);
   const [themeName, setThemeName] = useState<TuiThemeName>(props.themeName ?? 'default');
   const theme = tuiThemes[themeName];
@@ -153,6 +154,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
             ),
           setTheme: (name: TuiThemeName) => setThemeName(name),
           openReader: (title: string, body: string) => setReader({ title, body }),
+          setEscapeHint,
           clear: () => setEntries([]),
           exit: () => exit(),
         },
@@ -183,6 +185,7 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
       setIsBusy(true);
       void session.run(line).finally(() => {
         setIsBusy(false);
+        setEscapeHint(undefined);
         refreshView();
       });
     },
@@ -194,18 +197,14 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
     setInputValue(editor.value);
   }, [editor.value]);
 
-  // The prompt is idle while a command runs; Esc is the one key that still means something then.
+  // The prompt is idle while a command runs; Esc (or Ctrl+C) is the one key that means something
+  // then.
   useInput(
-    (_input, key) => {
-      if (!key.escape) {
+    (input, key) => {
+      if (!key.escape && !(key.ctrl && input === 'c')) {
         return;
       }
-      append(
-        'hint',
-        session.requestPause()
-          ? '지금 씬을 마치고 멈춥니다.'
-          : '이 명령은 중간에 멈출 수 없습니다. 끝날 때까지 기다려 주세요.',
-      );
+      append('hint', session.interrupt());
     },
     { isActive: isBusy && pendingQuestion === undefined },
   );
@@ -291,7 +290,12 @@ export function StoryboardTui(props: StoryboardTuiProps): React.ReactElement {
           </Box>
         )}
 
-        <StatusBar view={view} isBusy={isBusy} />
+        <StatusBar
+          view={view}
+          isBusy={isBusy}
+          columns={columns}
+          {...(escapeHint === undefined || pendingQuestion !== undefined ? {} : { escapeHint })}
+        />
       </Box>
     </TuiThemeContext.Provider>
   );
