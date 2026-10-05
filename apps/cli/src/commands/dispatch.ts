@@ -159,6 +159,21 @@ function validateProvider(
   return undefined;
 }
 
+// The command line as typed, minus the verb's words: arguments and flags with their values keep
+// their order, which the parsed form (flags in a map) has lost.
+function removeVerbWords(argv: readonly string[], verbWords: readonly string[]): string[] {
+  const rest = [...argv];
+
+  for (const word of verbWords) {
+    const index = rest.indexOf(word);
+    if (index !== -1) {
+      rest.splice(index, 1);
+    }
+  }
+
+  return rest;
+}
+
 // One entry for both faces of the CLI: `index.ts` prints what comes back, the TUI renders it.
 export async function dispatch(
   argv: readonly string[],
@@ -238,7 +253,11 @@ export async function dispatch(
   const handler = commands[verb];
 
   if (!handler) {
-    return failure(renderUnknownCommand(verb, args.positionals), mode, terminal.stderr);
+    return failure(
+      renderUnknownCommand(verb, removeVerbWords(argv, args.path)),
+      mode,
+      terminal.stderr,
+    );
   }
 
   if (flagBoolean(args.flags, 'help')) {

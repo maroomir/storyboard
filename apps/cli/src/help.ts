@@ -314,8 +314,28 @@ export const renamedCommands: Readonly<Record<string, { verb: string; kind?: str
   'manuscript summaries': { verb: 'manuscript summarize' },
 };
 
-function findRenamedCommand(input: string): { verb: string; kind?: string } | undefined {
-  return renamedCommands[input.trim().toLowerCase().replace(/\s+/g, ' ')];
+interface RenamedCommandMatch {
+  readonly newWords: readonly string[];
+  readonly rest: readonly string[];
+}
+
+// The old name is the longest run of leading words found in the table; whatever follows it
+// (arguments, flags and their values) stays in the order it was typed.
+function findRenamedCommand(tokens: readonly string[]): RenamedCommandMatch | undefined {
+  const words = tokens.flatMap((token) => token.trim().split(/\s+/)).filter((word) => word !== '');
+
+  for (let length = words.length; length > 0; length -= 1) {
+    const renamed = renamedCommands[words.slice(0, length).join(' ').toLowerCase()];
+
+    if (renamed !== undefined) {
+      return {
+        newWords: [renamed.verb, ...(renamed.kind === undefined ? [] : [renamed.kind])],
+        rest: words.slice(length),
+      };
+    }
+  }
+
+  return undefined;
 }
 
 // A wrong verb is usually a near miss on a real one; naming the closest ones beats dumping the
@@ -327,7 +347,7 @@ export function suggestVerbs(input: string, limit = 3): string[] {
     return [];
   }
 
-  const renamedVerb = findRenamedCommand(needle)?.verb;
+  const renamedVerb = findRenamedCommand([needle])?.newWords[0];
   const scored = commandCatalog
     .map((spec) => ({ verb: spec.verb, score: similarity(needle, spec.verb.toLowerCase()) }))
     .filter((entry) => entry.score > 0 && entry.verb !== renamedVerb)
@@ -405,11 +425,12 @@ function renderSuggestions(
   ].join('\n');
 }
 
-export function renderUnknownCommand(verb: string, args: readonly string[] = []): string {
-  const renamed = findRenamedCommand(verb);
+// `rest` is what followed the verb on the command line, flags included, in the order it was typed.
+export function renderUnknownCommand(verb: string, rest: readonly string[] = []): string {
+  const renamed = findRenamedCommand([verb, ...rest]);
 
   if (renamed !== undefined) {
-    const words = [renamed.verb, ...(renamed.kind === undefined ? [] : [renamed.kind]), ...args];
+    const words = [...renamed.newWords, ...renamed.rest];
     return [
       `알 수 없는 명령: ${verb}`,
       `  이름이 바뀌었습니다 →  storyboard ${words.join(' ')}`,
