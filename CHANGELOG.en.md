@@ -28,12 +28,12 @@ after the first public release.
   `card create|rename|recommend character|background` and `notes connect notion` are typed exactly as before (the kind moved from the command name to an argument).
 - **`storyboard --help` groups commands by noun.** Eight groups — 시작하기, 기획, 씬, 초안, 카드와 정전, 노트, 원고, 측정 — and one noun never spreads over two of them.
 - **`storyboard --help` shows the first steps and the command groups only.** See one group with `storyboard help draft` — by its id (`start`, `plan`, `scene`, `draft`, `card`, `notes`, `manuscript`, `sim`) or Korean name — and every command with `storyboard help --all`. Descriptions wrap to the terminal width and stay aligned with Korean text. A script that read the full list should switch to `help --all`.
+- **`manuscript export --out` writes the format its extension names.** A `.txt` target gets plain text with the markdown marks removed, as the editor's "Plain text" export does; anything else gets markdown. It used to write markdown whatever the extension.
+- **`draft condense` and `draft expand` keep the draft they started from in `.draft/`,** as an edit in the editor does. They used to overwrite it with no history.
 
 ### Removed
 
 - **The commands that converted pre-0.8 works are gone.** The CLI's `scene migrate` and `cards migrate`, the extension's `Storyboard: Migrate Scenes to Cards` and `Storyboard: Migrate Card Text Fields to List`, and the `doctor` checks that counted legacy `scene/*.txt`, placeholder summaries and inline summaries. Convert a work that still needs it with 0.11.5 or earlier before upgrading. An inline `summary` is still read.
-- **`manuscript export --out` writes the format its extension names.** A `.txt` target gets plain text with the markdown marks removed, as the editor's "Plain text" export does; anything else gets markdown. It used to write markdown whatever the extension.
-- **`draft condense` and `draft expand` keep the draft they started from in `.draft/`,** as an edit in the editor does. They used to overwrite it with no history.
 
 ### Added
 
