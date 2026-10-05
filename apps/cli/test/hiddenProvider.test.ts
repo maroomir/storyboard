@@ -1,7 +1,9 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { buildSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -506,6 +508,38 @@ describe('the Node CLI runner', () => {
     });
 
     expect(result.failure).toBe('timeout');
+  });
+
+  it('takes its child down when the host process exits mid-call', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'storyboard-runner-'));
+    const pidFile = join(directory, 'child.pid');
+    const runnerBundle = join(directory, 'runner.cjs');
+    buildSync({
+      entryPoints: [
+        join(__dirname, '../../../packages/story-ai/src/ai/providers/nodeCliRunner.ts'),
+      ],
+      outfile: runnerBundle,
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+    });
+    const hostScript = `
+      const { NodeCliRunner } = require(${JSON.stringify(runnerBundle)});
+      void new NodeCliRunner().run({
+        command: process.execPath,
+        args: ['-e', 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)', ${JSON.stringify(pidFile)}],
+        stdin: '', timeoutMs: 60000, withoutEnvironment: [],
+      });
+      const wait = setInterval(() => {
+        if (require('node:fs').existsSync(${JSON.stringify(pidFile)})) { clearInterval(wait); process.exit(0); }
+      }, 20);
+    `;
+
+    execFileSync(process.execPath, ['-e', hostScript], { stdio: 'ignore' });
+    const childPid = Number(readFileSync(pidFile, 'utf8'));
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(() => process.kill(childPid, 0)).toThrow();
   });
 
   it('kills the child when the caller aborts', async () => {
