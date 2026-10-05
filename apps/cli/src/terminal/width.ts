@@ -6,6 +6,7 @@ import wrapAnsi from 'wrap-ansi';
 
 const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 const ellipsis = '…';
+const colorCodePattern = /(\u001b\[[0-9;]*m)/;
 
 export function measureWidth(text: string): number {
   return stringWidth(text);
@@ -15,7 +16,8 @@ export function padEndToWidth(text: string, width: number): string {
   return text + ' '.repeat(Math.max(0, width - measureWidth(text)));
 }
 
-// Cuts plain text (no color codes) so it fits, marking the cut with an ellipsis.
+// Cuts text so it fits, marking the cut with an ellipsis. Color codes take no room, and the ones
+// after the cut are kept so every color that was opened is closed again.
 export function truncateToWidth(text: string, width: number): string {
   if (measureWidth(text) <= width) {
     return text;
@@ -24,16 +26,25 @@ export function truncateToWidth(text: string, width: number): string {
   const room = width - measureWidth(ellipsis);
   let kept = '';
   let keptWidth = 0;
+  let isFull = false;
 
-  for (const { segment } of graphemes.segment(text)) {
-    const segmentWidth = measureWidth(segment);
-
-    if (keptWidth + segmentWidth > room) {
-      break;
+  for (const part of text.split(colorCodePattern)) {
+    if (colorCodePattern.test(part)) {
+      kept += part;
+      continue;
     }
 
-    kept += segment;
-    keptWidth += segmentWidth;
+    for (const { segment } of graphemes.segment(part)) {
+      const segmentWidth = measureWidth(segment);
+
+      if (isFull || keptWidth + segmentWidth > room) {
+        isFull = true;
+        break;
+      }
+
+      kept += segment;
+      keptWidth += segmentWidth;
+    }
   }
 
   return room < 0 ? '' : `${kept}${ellipsis}`;

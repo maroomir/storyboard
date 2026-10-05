@@ -40,7 +40,7 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
-  const liveArea = new LiveArea(process.stderr, process.stderr.columns || 80);
+  const liveArea = new LiveArea(process.stderr, () => process.stderr.columns || 80);
   const pauseRequests = new PauseRequests();
 
   // NOTE: 첫 Ctrl+C 는 씬 경계 정지를 예약하고(이미 쓴 토큰을 버리지 않게), 두 번째는 바로

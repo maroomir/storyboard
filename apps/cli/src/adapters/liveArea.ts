@@ -10,16 +10,18 @@ export interface LiveAreaStream {
 export class LiveArea {
   private lines: readonly string[] = [];
 
+  // The width is read on every draw, so a window resized during a run is measured as it is now.
   public constructor(
     private readonly stream: LiveAreaStream,
-    private readonly columns: number,
+    private readonly readColumns: () => number,
   ) {}
 
   public show(lines: readonly string[]): void {
     this.erase();
+    const columns = this.readColumns();
     // A line as wide as the screen would wrap and the erase would miss its second row.
     this.lines = lines.map((line) =>
-      measureWidth(line) < this.columns ? line : truncateToWidth(line, this.columns - 1),
+      measureWidth(line) < columns ? line : truncateToWidth(line, columns - 1),
     );
     this.draw();
   }
@@ -42,10 +44,18 @@ export class LiveArea {
     }
   }
 
-  // Cursor up over the drawn lines, then clear to the end of the screen.
+  // Back to the first column (a `^C` echo moves the cursor), up over the rows the lines take now
+  // (a narrowed window wraps them), then clear to the end of the screen.
   private erase(): void {
-    if (this.lines.length > 0) {
-      this.stream.write(`\u001b[${this.lines.length}A\u001b[0J`);
+    if (this.lines.length === 0) {
+      return;
     }
+
+    const columns = Math.max(1, this.readColumns());
+    const rows = this.lines.reduce(
+      (total, line) => total + Math.max(1, Math.ceil(measureWidth(line) / columns)),
+      0,
+    );
+    this.stream.write(`\r\u001b[${rows}A\u001b[0J`);
   }
 }

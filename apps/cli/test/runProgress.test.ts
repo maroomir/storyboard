@@ -17,7 +17,7 @@ function recordingStream(): { written: string[]; write: (text: string) => void }
 describe('live area', () => {
   it('erases the drawn lines before writing above them and draws them again after', () => {
     const stream = recordingStream();
-    const area = new LiveArea(stream, 80);
+    const area = new LiveArea(stream, () => 80);
 
     area.show(['진행 1', '진행 2']);
     area.writeAbove('[warn] 경고\n');
@@ -25,18 +25,30 @@ describe('live area', () => {
 
     expect(stream.written).toEqual([
       '진행 1\n진행 2\n',
-      '\u001b[2A\u001b[0J',
+      '\r\u001b[2A\u001b[0J',
       '[warn] 경고\n',
       '진행 1\n진행 2\n',
-      '\u001b[2A\u001b[0J',
+      '\r\u001b[2A\u001b[0J',
     ]);
   });
 
   it('cuts a line that would wrap, so the erase stays exact', () => {
     const stream = recordingStream();
-    new LiveArea(stream, 10).show(['씬 012-ambush 살붙임']);
+    new LiveArea(stream, () => 10).show(['씬 012-ambush 살붙임']);
 
     expect(stream.written[0]?.endsWith('…\n')).toBe(true);
+  });
+
+  it('erases the rows a narrowed window wrapped the lines into', () => {
+    const stream = recordingStream();
+    let columns = 80;
+    const area = new LiveArea(stream, () => columns);
+
+    area.show(['가'.repeat(30)]);
+    columns = 20;
+    area.clear();
+
+    expect(stream.written.at(-1)).toBe('\r\u001b[3A\u001b[0J');
   });
 });
 
@@ -57,7 +69,7 @@ describe('run progress', () => {
   it('draws the scene, its stage, time, cost and a bar on the rail', () => {
     let clock = 0;
     const rail = new RailRunProgress({
-      liveArea: new LiveArea(recordingStream(), 80),
+      liveArea: new LiveArea(recordingStream(), () => 80),
       theme: createTheme(false),
       readCostUsd: () => 0.18,
       now: () => clock,
@@ -94,7 +106,7 @@ describe('run progress', () => {
 
   it('adds the checklist under the status line of a staged run', () => {
     const rail = new RailRunProgress({
-      liveArea: new LiveArea(recordingStream(), 80),
+      liveArea: new LiveArea(recordingStream(), () => 80),
       theme: createTheme(false),
       readCostUsd: () => 0,
       now: () => 0,
