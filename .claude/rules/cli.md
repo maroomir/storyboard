@@ -107,7 +107,8 @@ alias with a parenthesis is dropped when the response is read; an alias another 
 it on one card or none, and with no clear
 answer it stays on every card with a warning — a card on disk is never changed. That request goes
 out once per card (cards sharing an alias go together) and answers each list as groups of one
-meaning, keeping the first of each group and any candidate it left ungrouped; the estimate counts
+meaning, keeping each group's first line in the notes' own wording and any candidate it left
+ungrouped (a rewritten head or a list not answered as groups keeps the notes' lines, with a warning); the estimate counts
 up to three per extraction request.
 
 ## Editor-only surface
