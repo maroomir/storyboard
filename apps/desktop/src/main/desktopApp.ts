@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
+import { requestHiddenProviderConsent } from '@storyboard/story-ai';
 import type { ConfigFileError, StoryboardHomePaths } from '@storyboard/story-config';
 
 import type { AppBootstrap, UiLanguage, WorkspaceOverview } from '@/shared/dto';
@@ -25,8 +26,17 @@ export interface DesktopAppPorts {
   readonly emit: <E extends DesktopEventName>(event: E, payload: DesktopEvents[E]) => void;
   // A non-blocking notice for problems the author should know about but that stop nothing.
   readonly notify: (message: string) => void;
+  // A blocking yes/no. Closing the dialog is a no.
+  readonly confirm: (question: ConfirmQuestion) => Promise<boolean>;
   // Restarts into a downloaded update. Only a packaged app ever has one.
   readonly installUpdate: () => void;
+}
+
+export interface ConfirmQuestion {
+  readonly title: string;
+  readonly detail: string;
+  readonly acceptLabel: string;
+  readonly declineLabel: string;
 }
 
 export class DesktopApp {
@@ -190,6 +200,11 @@ export class DesktopApp {
     }
 
     this.current = opened.data;
+    // NOTE: 숨은 프로바이더를 켜는 화면은 없다. 홈 설정 파일을 손으로 고쳐 켠 사람에게, 작품을 열 때
+    // 위험 고지를 보여 주고 답을 받는다.
+    await requestHiddenProviderConsent(opened.data.container.configBridge, (question) =>
+      this.ports.confirm({ ...question, declineLabel: this.t('common.cancel') }),
+    );
     const overview = await opened.data.overview();
     this.state.rememberWorkspace(opened.data.path, overview.title);
     this.ports.emit('run.changed', opened.data.runs.snapshot());
