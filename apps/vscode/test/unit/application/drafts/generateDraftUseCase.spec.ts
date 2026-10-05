@@ -281,6 +281,25 @@ describe("GenerateDraftUseCase", () => {
     aiServiceStub.proposeSceneBeats.mockClear()
   })
 
+  // QA D5: an empty model response was saved over the existing draft and reported as success. No
+  // provider is trusted on this: an empty body never replaces a draft.
+  describe("empty generation", () => {
+    it.each(["", "  \n\n  "])("refuses to save a draft whose body is %j and keeps the old one", async (draftBody) => {
+      pipelineRunMock.mockResolvedValue({ ...pipelineSuccessResult, draftBody })
+      const sceneCacheRepository = createSceneCacheRepository()
+      const draftRepository = createDraftRepository()
+      const dependencies = createDependencies({ sceneCacheRepository, draftRepository })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result).toMatchObject({ ok: false, kind: "failed" })
+      expect((result as { message: string }).message).toContain("빈 본문")
+      expect(draftRepository.write).not.toHaveBeenCalled()
+      expect(sceneCacheRepository.write).not.toHaveBeenCalled()
+      expect(archiveExistingDraftMock).not.toHaveBeenCalled()
+    })
+  })
+
   describe("cache hit and force", () => {
     it("returns the cached draft without invoking the generation pipeline when the input hash matches", async () => {
       const matchingHash = computeSceneInputHash({
