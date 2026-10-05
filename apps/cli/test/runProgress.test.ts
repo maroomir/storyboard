@@ -104,6 +104,23 @@ describe('run progress', () => {
     );
   });
 
+  it('shows tokens in place of dollars for a run that has no price', () => {
+    const rail = new RailRunProgress({
+      liveArea: new LiveArea(recordingStream(), () => 80),
+      theme: createTheme(false),
+      readCostUsd: () => 0,
+      readUnpricedTokens: () => 12_345,
+      now: () => 0,
+    });
+
+    rail.update({ line: 'draft: 뼈대', step: '뼈대' });
+    const lines = rail.describeLines();
+    rail.finish();
+
+    expect(lines[0]).toMatch(/00:00 · 12,345 토큰$/);
+    expect(lines[0]).not.toContain('$');
+  });
+
   it('adds the checklist under the status line of a staged run', () => {
     const rail = new RailRunProgress({
       liveArea: new LiveArea(recordingStream(), () => 80),

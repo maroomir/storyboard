@@ -57,6 +57,9 @@ export interface RailRunProgressDependencies {
   readonly theme: Theme;
   // Dollars spent by this run so far; 0 for an unpriced (local) model.
   readonly readCostUsd: () => number;
+  // Tokens this run spent that have no price (a subscription login). Shown in place of dollars, so
+  // such a run reads as «this many tokens» rather than as nothing or as $0.
+  readonly readUnpricedTokens?: () => number;
   readonly now?: () => number;
 }
 
@@ -128,9 +131,13 @@ export class RailRunProgress implements IRunProgress {
       this.unit === undefined ? '' : `${this.unit.current}/${this.unit.total} ${this.unit.label}`;
     const what = [item, this.step].filter((part) => part.length > 0).join(paint('muted', ' · '));
     const cost = this.deps.readCostUsd();
+    const unpricedTokens = this.deps.readUnpricedTokens?.() ?? 0;
     const meta = [
       formatElapsed(this.now() - (this.startedAt ?? this.now())),
       ...(cost > 0 ? [`$${cost.toFixed(2)}`] : []),
+      ...(cost <= 0 && unpricedTokens > 0
+        ? [`${Math.round(unpricedTokens).toLocaleString('en-US')} 토큰`]
+        : []),
     ].join(' · ');
     const elapsed = this.now() - (this.startedAt ?? this.now());
     const phrase = writerPhrases[Math.floor(elapsed / phraseMilliseconds) % writerPhrases.length];
