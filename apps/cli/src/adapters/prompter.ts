@@ -98,14 +98,20 @@ export class TerminalPrompter implements IPrompter {
   }
 
   // A cooked-mode line on the process's stdin, so the terminal's own editing and the IME handle
-  // Hangul input. Ctrl+C and Ctrl+D back out.
+  // Hangul input. Esc, Ctrl+C and Ctrl+D back out, as Esc and Ctrl+C do in a choice box.
   public async askText(request: TextRequest): Promise<string | undefined> {
     const { paint } = this.stream.theme;
     const hint = request.hint === undefined ? '' : paint('muted', ` (${request.hint})`);
     const readline = createInterface({ input: process.stdin, output: process.stderr });
     const backOut = new AbortController();
+    const backOutOnEscape = (_text: unknown, key: { readonly name?: string } | undefined): void => {
+      if (key?.name === 'escape') {
+        backOut.abort();
+      }
+    };
     readline.on('SIGINT', () => backOut.abort());
     readline.on('close', () => backOut.abort());
+    process.stdin.on('keypress', backOutOnEscape);
 
     try {
       const answer = await readline.question(
@@ -119,6 +125,7 @@ export class TerminalPrompter implements IPrompter {
       process.stderr.write('\n');
       return undefined;
     } finally {
+      process.stdin.off('keypress', backOutOnEscape);
       readline.close();
     }
   }
