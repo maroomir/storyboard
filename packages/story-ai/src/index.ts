@@ -7,6 +7,7 @@ export * from './ai/StudioAgentService';
 export * from './ai/aiResponseCoercion';
 export * from './ai/aiServiceTypes';
 export * from './ai/cost';
+export * from './ai/hiddenProviderConsent';
 export * from './ai/prompts/backgroundDescription';
 export * from './ai/prompts/backgroundFactExtraction';
 export * from './ai/prompts/cardCandidateExtraction';

@@ -21,6 +21,7 @@ const app = new DesktopApp({
   chooseDirectory: async () => undefined,
   emit: () => undefined,
   notify: () => undefined,
+  confirm: async () => false,
   installUpdate: () => undefined,
 });
 const router = createIpcRouter(createInvokeHandlers(app), app.logger, {

@@ -28,6 +28,8 @@ let documents: string;
 let app: DesktopApp;
 let router: (message: unknown) => Promise<InvokeResult<InvokeChannel>>;
 let notices: string[];
+let confirmQuestions: string[];
+let confirmAnswer: boolean;
 let runEvents: RunSnapshot[];
 
 const createRequest: WorkspaceCreateRequest = {
@@ -89,6 +91,8 @@ beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), 'storyboard-desktop-home-'));
   documents = mkdtempSync(join(tmpdir(), 'storyboard-desktop-docs-'));
   notices = [];
+  confirmQuestions = [];
+  confirmAnswer = false;
   runEvents = [];
   app = new DesktopApp({
     homePaths: resolveStoryboardHomePaths({ STORYBOARD_HOME: home }),
@@ -103,6 +107,10 @@ beforeEach(() => {
       }
     },
     notify: (message) => notices.push(message),
+    confirm: async (question) => {
+      confirmQuestions.push(question.title);
+      return confirmAnswer;
+    },
     installUpdate: () => undefined,
   });
   router = createIpcRouter(createInvokeHandlers(app), app.logger, {
@@ -131,6 +139,42 @@ describe('first run', () => {
 
     expect(settings.providers.map((provider) => provider.id)).not.toContain('mock');
     expect(settings.providers.find((provider) => provider.id === 'ollama')?.isAdvanced).toBe(true);
+  });
+});
+
+describe('the hidden subscription provider', () => {
+  const createWork = () =>
+    expectOk('workspace.create', { parentDirectory: join(documents, 'Storyboard'), request: createRequest });
+  const homeConfig = () => JSON.parse(readFileSync(join(home, 'config.json'), 'utf8')) as unknown;
+  const switchOnByHand = () =>
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ providers: { 'claude-code': { enabled: true } } }));
+
+  it('is not offered in settings and nobody is asked anything while it is off', async () => {
+    const settings = await expectOk('settings.read', {});
+    await createWork();
+
+    expect(settings.providers.map((provider) => provider.id)).not.toContain('claude-code');
+    expect(confirmQuestions).toEqual([]);
+  });
+
+  it('asks when a work opens with it switched on by hand, and switches it off on no', async () => {
+    switchOnByHand();
+    await createWork();
+
+    expect(confirmQuestions).toEqual(['구독 로그인으로 생성하기 전에 확인해 주세요.']);
+    expect(homeConfig()).toEqual({ providers: { 'claude-code': { enabled: false } } });
+  });
+
+  it('remembers a yes and does not ask again', async () => {
+    switchOnByHand();
+    confirmAnswer = true;
+    await createWork();
+    await expectOk('workspace.close', {});
+    await expectOk('workspace.open', { recentPath: workspacePath() });
+
+    expect(confirmQuestions).toHaveLength(1);
+    expect(homeConfig()).toEqual({ providers: { 'claude-code': { enabled: true, riskAcknowledged: true } } });
+    expect((await expectOk('settings.read', {})).providers.map((provider) => provider.id)).toContain('claude-code');
   });
 });
 

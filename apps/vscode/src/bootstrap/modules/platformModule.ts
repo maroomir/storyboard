@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { type IStoryboardLogger } from '@storyboard/story-engine';
 import { StoryboardApplication } from '@storyboard/story-app';
-import { ConfigBridge, SecretStore } from '@storyboard/story-ai';
+import { ConfigBridge, requestHiddenProviderConsent, SecretStore } from '@storyboard/story-ai';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { migrateVscodeSettingsToHome } from '@/infrastructure/settings/migrateVscodeSettings';
 import {
@@ -126,8 +126,10 @@ export class PlatformModule implements IApplicationModule {
       application,
       usageRecorder,
       configBridge.onDidChange((): void => logger.info('Storyboard configuration changed')),
+      configBridge.onDidChange((): void => void askHiddenProviderConsent(configBridge)),
       proposalReviewService,
     );
+    void askHiddenProviderConsent(configBridge);
 
     logger.info('Activating Storyboard extension');
   }
@@ -144,6 +146,29 @@ export class PlatformModule implements IApplicationModule {
     this.disposables.dispose();
 
     this.services = undefined;
+  }
+}
+
+// NOTE: 숨은 프로바이더를 켜는 화면은 없다. 홈 설정 파일을 손으로 고쳐 켠 사람에게 위험 고지를
+// 보여 주고 답을 받는다. 닫거나 취소하면 «아니요» 이고, 그러면 다시 꺼진다.
+let isAskingHiddenProviderConsent = false;
+
+async function askHiddenProviderConsent(configBridge: ConfigBridge): Promise<void> {
+  if (isAskingHiddenProviderConsent) {
+    return;
+  }
+
+  isAskingHiddenProviderConsent = true;
+
+  try {
+    await requestHiddenProviderConsent(
+      configBridge,
+      async ({ title, detail, acceptLabel }) =>
+        (await vscode.window.showWarningMessage(title, { modal: true, detail }, acceptLabel)) ===
+        acceptLabel,
+    );
+  } finally {
+    isAskingHiddenProviderConsent = false;
   }
 }
 

@@ -35,6 +35,21 @@ function startDesktopApp(): DesktopApp {
     notify: (message) => {
       void dialog.showMessageBox({ type: 'warning', message });
     },
+    confirm: async ({ title, detail, acceptLabel, declineLabel }) => {
+      const options = {
+        type: 'warning' as const,
+        message: title,
+        detail,
+        buttons: [declineLabel, acceptLabel],
+        defaultId: 0,
+        cancelId: 0,
+      };
+      const { response } = mainWindow
+        ? await dialog.showMessageBox(mainWindow, options)
+        : await dialog.showMessageBox(options);
+
+      return response === 1;
+    },
     installUpdate: () => {
       isQuitting = true;
       autoUpdater.quitAndInstall();
