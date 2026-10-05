@@ -40,6 +40,14 @@ async function main(argv: readonly string[]): Promise<number> {
     process.stderr.write(`${pushWindowTitle}${createWindowTitle(`Storyboard · ${runName}`)}`);
   }
 
+  // NOTE: Ctrl+C 는 파이프의 받는 쪽(`| head`, `| cat`)도 끝낸다. 읽는 쪽이 없는 결과는 버릴 뿐
+  // 실패가 아니므로, 종료 코드는 실행 결과대로 둔다.
+  process.stdout.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code !== 'EPIPE') {
+      throw error;
+    }
+  });
+
   const liveArea = new LiveArea(process.stderr, () => process.stderr.columns || 80);
   const pauseRequests = new PauseRequests();
 
