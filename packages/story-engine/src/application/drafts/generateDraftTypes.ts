@@ -14,6 +14,12 @@ import type { TraitsUpdateSummary } from '#engine/ai/traitsUpdater';
 import type { PostGenerationUpdateManager } from '#engine/ai/PostGenerationUpdateManager';
 import type { SceneGenerationPipelineStage } from '#engine/pipeline/sceneGenerationTypes';
 
+// 생성이 빈 본문을 돌려받았을 때. 기존 초안은 건드리지 않는다. (검수-재작성은 빈 후보를
+// draftCandidateValidation 이 이미 기각한다.)
+export function emptyDraftBodyMessage(sceneStem: string): string {
+  return `모델이 빈 본문을 돌려줘 초안을 저장하지 않았습니다. 기존 초안은 그대로입니다: ${sceneStem}`;
+}
+
 // 승인 UI는 presentation이 구현한다. undefined를 돌려주면 생성을 취소한다.
 export type ConfirmSceneGrounding = (input: {
   readonly sceneStem: string;

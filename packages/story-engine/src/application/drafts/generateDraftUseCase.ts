@@ -22,11 +22,12 @@ import { findRecentBackgroundExcerpt } from '#engine/persistence/backgroundExcer
 import type { StoryboardAiService } from '@storyboard/story-ai';
 import { SceneGenerationPipeline } from '#engine/pipeline/sceneGenerationPipeline';
 import { SceneGenerationPipelineCancelledError } from '#engine/pipeline/sceneGenerationTypes';
-import type {
-  GenerateDraftRequest,
-  GenerateDraftResult,
-  GenerateDraftUseCaseDependencies,
-  GenerateDraftWorkflowOptions,
+import {
+  emptyDraftBodyMessage,
+  type GenerateDraftRequest,
+  type GenerateDraftResult,
+  type GenerateDraftUseCaseDependencies,
+  type GenerateDraftWorkflowOptions,
 } from './generateDraftTypes';
 import {
   loadSceneGenerationInputs,
@@ -164,6 +165,12 @@ async function persistGeneratedDraft(
   cacheProviders: SceneCacheRecord['providers'],
 ): Promise<GenerateDraftResult> {
   const { paths, threadPaths, scene, project, draftUri, cacheUri } = inputs;
+
+  // A model that answers with nothing must never cost the author the draft they already have, and
+  // must not read as success: no provider is trusted on this.
+  if (result.draftBody.trim().length === 0) {
+    return { ok: false, kind: 'failed', message: emptyDraftBodyMessage(scene.stem) };
+  }
 
   const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
   const draft = createDraft({
