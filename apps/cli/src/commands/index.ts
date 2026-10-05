@@ -436,7 +436,7 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
     onProgress: (stage, message) =>
       container.progress.update({
-        line: `${stage}: ${message}`,
+        line: `${novelStageLabel(stage)}: ${message}`,
         step: message,
         checklist: {
           labels: novelPlan.map((name) => novelStageLabel(name)),
