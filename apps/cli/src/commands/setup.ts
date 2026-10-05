@@ -3,6 +3,7 @@ import { basename } from 'node:path';
 
 import {
   listSelectableProviderIds,
+  isHiddenProvider,
   requiresApiKey,
   storyboardModelCatalog,
   storyboardSettingCatalog,
@@ -37,6 +38,7 @@ import type { ThemeRole } from '@/terminal/theme';
 import { measureWidth } from '@/terminal/width';
 import type { ParameterEntry } from '@storyboard/story-app';
 import type { CommandContext, CommandOutcome } from './outcome';
+import { collectHiddenProviderChecks, setHiddenProviderKey } from './hiddenProvider';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
@@ -213,6 +215,10 @@ async function collectProviderChecks(container: CliContainer): Promise<DoctorChe
             fix: `echo "$KEY" | storyboard apikey set ${providerId}`,
           },
     );
+  }
+
+  if (isHiddenProvider(providerId)) {
+    checks.push(...(await collectHiddenProviderChecks(container, providerId)));
   }
 
   return checks;
@@ -998,6 +1004,12 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     }
     await configBridge.setDefaultProvider(raw);
     return describeSaved(container, key, raw);
+  }
+
+  const hiddenProviderOutcome = await setHiddenProviderKey(container, key, raw);
+
+  if (hiddenProviderOutcome !== undefined) {
+    return hiddenProviderOutcome;
   }
 
   const providerMatch = new RegExp(
