@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 
 import {
-  aiProviderIds,
   listSelectableProviderIds,
   requiresApiKey,
   storyboardModelCatalog,
@@ -41,9 +40,10 @@ import type { CommandContext, CommandOutcome } from './outcome';
 import { askLine, askSecret } from './prompt';
 import { readSceneCards } from './sceneCards';
 import { displayedProviderKeys, settableProviderKeys, type SettableProviderKey } from './catalog';
+import { availableProviderIds, enabledHiddenProviderIds } from '@/adapters/availableProviders';
 
 function isProviderId(value: string): value is AiProviderId {
-  return aiProviderIds.includes(value as AiProviderId);
+  return availableProviderIds().includes(value as AiProviderId);
 }
 
 function describeProvider(providerId: AiProviderId): string {
@@ -53,13 +53,16 @@ function describeProvider(providerId: AiProviderId): string {
   if (providerId === 'mock') {
     return '가짜 텍스트 · 흐름 확인용';
   }
+  if (!requiresApiKey(providerId)) {
+    return '구독 로그인';
+  }
   return 'API 키 필요';
 }
 
 async function chooseProviderInteractively(
   current: AiProviderId | undefined,
 ): Promise<AiProviderId | undefined> {
-  const selectableProviderIds = listSelectableProviderIds(current);
+  const selectableProviderIds = listSelectableProviderIds(current, enabledHiddenProviderIds());
 
   process.stderr.write('Storyboard 가 기본으로 쓸 AI 프로바이더를 고르세요.\n');
   selectableProviderIds.forEach((providerId, index) => {
@@ -804,7 +807,7 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
     },
   ];
 
-  for (const providerId of aiProviderIds) {
+  for (const providerId of availableProviderIds()) {
     const runtime = configBridge.getProviderConfig(providerId);
     for (const key of displayedProviderKeys) {
       const value = runtime[key];
@@ -990,7 +993,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     if (!isProviderId(raw)) {
       return {
         ok: false,
-        message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`,
+        message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
       };
     }
     await configBridge.setDefaultProvider(raw);

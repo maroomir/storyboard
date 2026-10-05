@@ -3,6 +3,11 @@ import { z } from 'zod';
 import {
   aiProviderIds,
   aiTaskNames,
+  hiddenProviderEnabledKey,
+  hiddenProviderIds,
+  hiddenProviderRiskAcknowledgedKey,
+  isHiddenProvider,
+  type AiProviderId,
   storyboardSettingCatalog,
   type StoryboardSettingDefinition,
 } from '@storyboard/story-model';
@@ -60,6 +65,14 @@ function buildKnownKeySchemas(): ReadonlyMap<string, z.ZodType> {
     schemas.set(`providers.${providerId}.model`, nonEmptyString);
   }
 
+  // The hidden providers' keys are not in the setting catalog, so no list or completion shows them.
+  for (const providerId of hiddenProviderIds) {
+    schemas.set(hiddenProviderEnabledKey(providerId), z.boolean());
+    schemas.set(hiddenProviderRiskAcknowledgedKey(providerId), z.boolean());
+    schemas.set(`providers.${providerId}.command`, nonEmptyString);
+    schemas.set(`providers.${providerId}.timeoutMs`, z.number().int().positive());
+  }
+
   for (const taskName of aiTaskNames) {
     schemas.set(`tasks.${taskName}.provider`, providerIdSchema);
     schemas.set(`tasks.${taskName}.model`, nonEmptyString);
@@ -77,11 +90,19 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 // Walks one file's settings. A key may be spelled flat ("generation.beats.minimum") or nested, so the walk
 // joins path segments and checks the joined key at every level: a known key is validated, an
 // object under an unknown key is descended into, anything else is an unknown key.
+// A hidden provider that the home file has not switched on is an unknown name, exactly as it was
+// before the provider existed.
 export function validateConfigSettings(
   file: string,
   settings: Record<string, unknown>,
+  enabledHiddenProviderIds: readonly AiProviderId[] = [],
 ): readonly ConfigKeyWarning[] {
   const warnings: ConfigKeyWarning[] = [];
+
+  const isDisabledHiddenProvider = (schema: z.ZodType, value: unknown): boolean =>
+    schema === providerIdSchema &&
+    isHiddenProvider(value as AiProviderId) &&
+    !enabledHiddenProviderIds.includes(value as AiProviderId);
 
   const visit = (value: unknown, key: string): void => {
     const schema = knownKeySchemas.get(key);
@@ -89,7 +110,7 @@ export function validateConfigSettings(
     if (schema) {
       const parsed = schema.safeParse(value);
 
-      if (!parsed.success) {
+      if (!parsed.success || isDisabledHiddenProvider(schema, value)) {
         throw new ConfigFileError(
           'invalid-value',
           file,

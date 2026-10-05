@@ -3,6 +3,7 @@ export { validateConfigSettings, type ConfigKeyWarning } from '#config/configSch
 export {
   configurationTargets,
   createFileConfiguration,
+  readEnabledHiddenProviderIds,
   type ConfigurationTarget,
   type FileConfiguration,
   type FileConfigurationOptions,

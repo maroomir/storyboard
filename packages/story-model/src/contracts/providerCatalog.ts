@@ -1,13 +1,14 @@
 // 프로바이더 한 곳. 표시명·기본 모델·모델 목록·요금이 provider 마다 한 행이며,
 // 아래의 파생 표들은 전부 이 행에서 나온다. 프로바이더를 추가할 때 고쳐야 하는 파일은 여기 하나다.
 
-export type ProviderTransport = 'http' | 'mock';
+export type ProviderTransport = 'http' | 'cli' | 'mock';
 
 export interface ProviderModelEntry {
   readonly id: string;
   readonly displayName: string;
-  readonly inputPricePerMillion: number;
-  readonly outputPricePerMillion: number;
+  // 구독 로그인으로 부르는 모델(transport 'cli')만 비운다. 요금이 없는 호출은 0 이 아니라 «모름» 이다.
+  readonly inputPricePerMillion?: number;
+  readonly outputPricePerMillion?: number;
   // 접두 캐시 요금. 프로바이더가 캐시 토큰을 입력과 따로 세는 경우에만 적는다(Claude).
   readonly cacheWritePricePerMillion?: number;
   readonly cacheReadPricePerMillion?: number;
@@ -37,6 +38,8 @@ export interface ProviderCatalogEntry {
   readonly displayName: string;
   readonly transport: ProviderTransport;
   readonly requiresApiKey: boolean;
+  // 목록·도움말·완성 어디에도 나오지 않고, 홈 설정의 `providers.<id>.enabled` 가 켜져야만 쓸 수 있다.
+  readonly isHidden?: boolean;
   readonly defaultModel: string | undefined;
   readonly defaultBaseUrl: string | undefined;
   readonly models: readonly ProviderModelEntry[];
@@ -330,6 +333,32 @@ export const providerCatalog = {
       },
     ],
   },
+  // NOTE: 사용자가 직접 설치하고 자기 구독으로 로그인한 공식 `claude` 실행 파일을 그대로 부른다.
+  // 인증 정보는 읽지도 넘기지도 않는다. 온도·시드 플래그는 없고, 사고 강도는 `--effort` 로 받는다
+  // (2.1.289, 2026-10-05 실측 — Haiku 는 재지 않아 API 행과 같게 비워 둔다).
+  'claude-code': {
+    displayName: 'Claude (구독 로그인)',
+    transport: 'cli',
+    requiresApiKey: false,
+    isHidden: true,
+    defaultModel: 'claude-sonnet-5',
+    defaultBaseUrl: undefined,
+    models: [
+      {
+        id: 'claude-sonnet-5',
+        displayName: 'Claude Sonnet 5',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+      },
+      {
+        id: 'claude-opus-5-5',
+        displayName: 'Claude Opus 5.5',
+        acceptsTemperature: false,
+        acceptsReasoningEffort: true,
+      },
+      { id: 'claude-haiku-4-5', displayName: 'Claude Haiku 4.5', acceptsTemperature: false },
+    ],
+  },
   mock: {
     displayName: 'Mock AI',
     transport: 'mock',
@@ -358,10 +387,39 @@ export const aiProviderIds = Object.keys(providerCatalog) as unknown as readonly
 // 한 번 넓혀서 읽는다.
 const catalogRows: Readonly<Record<AiProviderId, ProviderCatalogEntry>> = providerCatalog;
 
+export function isHiddenProvider(providerId: AiProviderId): boolean {
+  return catalogRows[providerId].isHidden === true;
+}
+
+export const hiddenProviderIds: readonly AiProviderId[] = aiProviderIds.filter(isHiddenProvider);
+
+// 숨은 프로바이더를 켜는 키와, 위험 고지에 동의했다는 기록. 둘 다 홈 설정 파일에서만 읽는다 —
+// 구독은 사람에게 묶인 것이라, 남이 준 작품의 설정이 내 구독을 켜서는 안 된다.
+export function hiddenProviderEnabledKey(providerId: AiProviderId): string {
+  return `providers.${providerId}.enabled`;
+}
+
+export function hiddenProviderRiskAcknowledgedKey(providerId: AiProviderId): string {
+  return `providers.${providerId}.riskAcknowledged`;
+}
+
+// 사람에게 이름을 보여 주거나 받은 이름을 검사하는 곳이 쓰는 목록. 켜지 않은 숨은 프로바이더는
+// 없는 이름이다.
+export function listAvailableProviderIds(
+  enabledHiddenProviderIds: readonly AiProviderId[] = [],
+): AiProviderId[] {
+  return aiProviderIds.filter(
+    (providerId) => !isHiddenProvider(providerId) || enabledHiddenProviderIds.includes(providerId),
+  );
+}
+
 // 작가가 고르는 목록. mock 은 개발용이라 빼되, 이미 mock 으로 설정된 값은 선택 상태가 사라지지
 // 않도록 목록에 남긴다.
-export function listSelectableProviderIds(currentProviderId?: AiProviderId): AiProviderId[] {
-  return aiProviderIds.filter(
+export function listSelectableProviderIds(
+  currentProviderId?: AiProviderId,
+  enabledHiddenProviderIds: readonly AiProviderId[] = [],
+): AiProviderId[] {
+  return listAvailableProviderIds(enabledHiddenProviderIds).filter(
     (providerId) =>
       catalogRows[providerId].transport !== 'mock' || providerId === currentProviderId,
   );
@@ -397,19 +455,25 @@ export const storyboardModelPricing = Object.fromEntries(
   aiProviderIds.map((providerId) => [
     providerId,
     Object.fromEntries(
-      catalogRows[providerId].models.map((model) => [
-        model.id,
-        {
-          inputPricePerMillion: model.inputPricePerMillion,
-          outputPricePerMillion: model.outputPricePerMillion,
-          ...(model.cacheWritePricePerMillion === undefined
-            ? {}
-            : { cacheWritePricePerMillion: model.cacheWritePricePerMillion }),
-          ...(model.cacheReadPricePerMillion === undefined
-            ? {}
-            : { cacheReadPricePerMillion: model.cacheReadPricePerMillion }),
-        },
-      ]),
+      catalogRows[providerId].models.flatMap((model) =>
+        model.inputPricePerMillion === undefined || model.outputPricePerMillion === undefined
+          ? []
+          : [
+              [
+                model.id,
+                {
+                  inputPricePerMillion: model.inputPricePerMillion,
+                  outputPricePerMillion: model.outputPricePerMillion,
+                  ...(model.cacheWritePricePerMillion === undefined
+                    ? {}
+                    : { cacheWritePricePerMillion: model.cacheWritePricePerMillion }),
+                  ...(model.cacheReadPricePerMillion === undefined
+                    ? {}
+                    : { cacheReadPricePerMillion: model.cacheReadPricePerMillion }),
+                },
+              ],
+            ],
+      ),
     ),
   ]),
 ) as unknown as Readonly<Record<AiProviderId, Readonly<Record<string, ModelPricePerMillion>>>>;
@@ -469,4 +533,55 @@ export function generationFailedMessage(providerId: AiProviderId, cause?: unknow
     `${getProviderDisplayName(providerId)} 텍스트 생성에 실패했습니다`,
     cause,
   );
+}
+
+// 구독 로그인 경로를 켜기 전에 사람이 읽고 답하는 고지문. 세 앱이 같은 글을 보여 준다.
+export const subscriptionRiskNoticeTitle = '구독 로그인으로 생성하기 전에 확인해 주세요.';
+
+export const subscriptionRiskNoticeItems = [
+  {
+    title: '구독 한도를 함께 씁니다.',
+    detail:
+      '씬 하나에 수십 번 호출합니다. 한도가 차면 같은 계정의 다른 작업도 한도가 풀릴 때까지 멈춥니다.',
+  },
+  {
+    title: '계정이 제한될 수 있습니다.',
+    detail:
+      '구독은 «통상적인 개인 사용»을 전제로 합니다. 자동·대량 호출로 판단되면 제공자가 계정을 제한·정지할 수 있습니다.',
+  },
+  {
+    title: '예고 없이 멈출 수 있습니다.',
+    detail:
+      'claude 실행 파일의 동작이 바뀌면 로그인을 읽지 못해 이 경로 전체가 동작하지 않게 됩니다.',
+  },
+  {
+    title: '예산이 멈춰 주지 않습니다.',
+    detail: '금액이 계산되지 않아 실행 예산이 적용되지 않고, 토큰 수만 표시됩니다.',
+  },
+  {
+    title: '실험 기능입니다.',
+    detail: '지원 대상이 아니며 언제든 빠질 수 있습니다.',
+  },
+] as const;
+
+export const subscriptionRiskNoticeQuestion = '이 위험을 이해했고 내 책임으로 켭니다.';
+
+export function formatSubscriptionRiskNotice(): string {
+  const items = subscriptionRiskNoticeItems.flatMap((item, index) => [
+    `${index + 1}. ${item.title}`,
+    `   ${item.detail}`,
+  ]);
+
+  return [subscriptionRiskNoticeTitle, '', ...items].join('\n');
+}
+
+export const subscriptionRiskWarning =
+  '구독 로그인으로 생성합니다 — 구독 한도를 쓰고, 실행 예산이 적용되지 않으며, 예고 없이 멈출 수 있습니다.';
+
+export function unknownProviderMessage(providerId: string): string {
+  return `알 수 없는 프로바이더: ${providerId}`;
+}
+
+export function riskNotAcknowledgedMessage(providerId: AiProviderId): string {
+  return `${getProviderDisplayName(providerId)} 경로의 위험 고지에 아직 동의하지 않았습니다. \`storyboard config set ${hiddenProviderEnabledKey(providerId)} true\` 로 고지를 읽고 동의한 뒤 다시 시도하세요.`;
 }

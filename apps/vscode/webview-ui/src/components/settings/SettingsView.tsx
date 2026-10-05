@@ -13,7 +13,7 @@ import { ProviderConfigCard } from './ProviderConfigCard';
 import { SettingsSummaryCards } from './SettingsSummaryCards';
 import { TaskAssignmentsSection } from './TaskAssignmentsSection';
 import {
-  listSelectableProviderIds,
+  listSnapshotSelectableProviderIds,
   originLabel,
   parseSettingsReadSnapshot,
   type AiProviderId,
@@ -278,7 +278,7 @@ export function SettingsView({
             description="API 키, Ollama Base URL, 연결 테스트만 관리합니다. 모델 선택은 기본값 또는 태스크 탭에서 조정합니다."
           />
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
-            {listSelectableProviderIds().map((providerId) => (
+            {listSnapshotSelectableProviderIds(snapshot).map((providerId) => (
               <ProviderConfigCard
                 key={providerId}
                 providerId={providerId}

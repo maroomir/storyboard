@@ -255,6 +255,7 @@ function buildServices(
     secretStore,
     configBridge,
     requireConfiguredProvider: true,
+    onRiskWarning: (message) => logger.warn(message),
   });
   const usageMeter = new UsageMeter();
   const usageSink = usageMeter.wrap(guardUsageLedger(dependencies.usageLedger, logger));

@@ -6,7 +6,7 @@ import {
   getProviderStatus,
   getValueOrigin,
   isAiProviderId,
-  listSelectableProviderIds,
+  listSnapshotSelectableProviderIds,
   parseSaveTarget,
   pickModelForTaskProvider,
   type SaveTarget,
@@ -91,7 +91,8 @@ export function DefaultProviderSection({
                 제공자를 선택하세요
               </option>
             )}
-            {listSelectableProviderIds(
+            {listSnapshotSelectableProviderIds(
+              snapshot,
               snapshot.isDefaultProviderConfigured ? defaultProviderId : undefined,
             ).map((id) => (
               <option key={id} value={id}>

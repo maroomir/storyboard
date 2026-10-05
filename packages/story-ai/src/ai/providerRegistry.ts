@@ -3,14 +3,17 @@ import {
   AiProviderError,
   type AiConnectionResult,
   type AiStreamChunk,
-  aiProviderIds,
   type AiGenerateRequest,
   type AiGenerateResponse,
   type AiProvider,
   type AiProviderId,
   type AiProviderStatus,
   type AiTaskName,
+  isHiddenProvider,
   requiresApiKey,
+  riskNotAcknowledgedMessage,
+  subscriptionRiskWarning,
+  unknownProviderMessage,
 } from '@storyboard/story-model';
 import './providers';
 import { createRegisteredProvider, type ProviderClientFactories } from './providerFactory';
@@ -25,6 +28,8 @@ export interface AiProviderRegistryOptions extends ProviderClientFactories {
   // fake draft that exits clean. With this on, a task that resolves to no configured provider is
   // refused with `missing-provider` so the host can ask the author to choose one.
   readonly requireConfiguredProvider?: boolean;
+  // Told once per registry, the first time a hidden provider is about to be called.
+  readonly onRiskWarning?: (message: string) => void;
 }
 
 export const missingProviderMessage =
@@ -33,8 +38,14 @@ export const missingProviderMessage =
 export class AiProviderRegistry {
   public constructor(private readonly options: AiProviderRegistryOptions) {}
 
+  private readonly warnedProviderIds = new Set<AiProviderId>();
+
   public async listProviders(): Promise<AiProviderStatus[]> {
-    return Promise.all(aiProviderIds.map((providerId) => this.getProviderStatus(providerId)));
+    return Promise.all(
+      this.options.configBridge
+        .getAvailableProviderIds()
+        .map((providerId) => this.getProviderStatus(providerId)),
+    );
   }
 
   public async checkConnection(providerId: AiProviderId): Promise<AiConnectionResult> {
@@ -119,8 +130,11 @@ export class AiProviderRegistry {
       secretStore,
       configBridge,
       requireConfiguredProvider: _guard,
+      onRiskWarning: _warn,
       ...clients
     } = this.options;
+
+    this.assertHiddenProviderAllowed(providerId);
 
     return await createRegisteredProvider(providerId, {
       configBridge,
@@ -128,6 +142,37 @@ export class AiProviderRegistry {
       clients,
       ...(modelOverride === undefined ? {} : { modelOverride }),
     });
+  }
+
+  // The last gate: whatever a host forgot to check, a hidden provider that the home file has not
+  // switched on is an unknown name here, and one whose risks were never accepted does not run.
+  private assertHiddenProviderAllowed(providerId: AiProviderId): void {
+    if (!isHiddenProvider(providerId)) {
+      return;
+    }
+
+    const { configBridge, onRiskWarning } = this.options;
+
+    if (!configBridge.isHiddenProviderEnabled(providerId)) {
+      throw new AiProviderError(
+        'provider-not-enabled',
+        providerId,
+        unknownProviderMessage(providerId),
+      );
+    }
+
+    if (!configBridge.isHiddenProviderRiskAcknowledged(providerId)) {
+      throw new AiProviderError(
+        'risk-not-acknowledged',
+        providerId,
+        riskNotAcknowledgedMessage(providerId),
+      );
+    }
+
+    if (!this.warnedProviderIds.has(providerId)) {
+      this.warnedProviderIds.add(providerId);
+      onRiskWarning?.(subscriptionRiskWarning);
+    }
   }
 
   private async getProviderStatus(providerId: AiProviderId): Promise<AiProviderStatus> {

@@ -8,6 +8,7 @@ import {
   settingsUpdateTaskAiConfigRequestPayloadSchema,
   storyboardMessageProtocolVersion,
   aiProviderIds,
+  listAvailableProviderIds,
   aiTaskNames,
   storyboardModelCatalog,
 } from "@storyboard/story-model"
@@ -160,7 +161,7 @@ describe("createSettingsRpcHandlers", () => {
     const snapshot = await handlers["settings.read"]!({}, {} as never)
 
     expect(snapshot.defaultProvider).toBe("mock")
-    expect(snapshot.providers).toHaveLength(aiProviderIds.length)
+    expect(snapshot.providers).toHaveLength(listAvailableProviderIds().length)
     expect(snapshot.taskAssignments.sceneDraft).toEqual({ providerId: "claude", model: null })
     for (const taskName of aiTaskNames) {
       expect(snapshot.taskAssignments).toHaveProperty(taskName)

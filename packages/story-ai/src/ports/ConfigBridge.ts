@@ -4,7 +4,12 @@ import {
   type AiProviderId,
   type AiTaskName,
   getDefaultModelId,
+  hiddenProviderEnabledKey,
+  hiddenProviderIds,
+  hiddenProviderRiskAcknowledgedKey,
+  isHiddenProvider,
   isModelInCatalogForProvider,
+  listAvailableProviderIds,
   providerCatalog,
   storyboardModelCatalog,
   findModelProfile,
@@ -37,6 +42,13 @@ export interface ProviderModelConfig {
   // 생각(thinking)을 켤지. 안 주면 ollama 가 모델 기본값을 쓴다. 생각하는 모델은 상한 없이 생각하면
   // 한 호출이 수십 분이 될 수 있어, 측정에서는 명시적으로 끄거나 켜서 잰다.
   readonly think?: boolean;
+}
+
+// 실행 파일로 부르는 프로바이더가 홈 설정에서 받는 두 값. 둘 다 없으면 PATH 의 실행 파일과
+// 프로바이더의 기본 시간 제한을 쓴다.
+export interface CliProviderConfig {
+  readonly command?: string;
+  readonly timeoutMs?: number;
 }
 
 export const promptVariantIds = ['generic', 'xs', 'rich'] as const;
@@ -103,7 +115,63 @@ export class ConfigBridge {
       .getConfiguration()
       .get<unknown>('ai.provider.default', undefined);
 
-    return typeof configured === 'string' && resolveStoredProviderId(configured) !== undefined;
+    return typeof configured === 'string' && this.resolveStoredProviderId(configured) !== undefined;
+  }
+
+  // SECURITY: 숨은 프로바이더의 키는 홈 설정 파일의 값만 본다. 작품에 딸려 온 설정 파일이 이 기계의
+  // 구독을 켜거나 실행 파일을 고를 수 있어서는 안 된다.
+  public isHiddenProviderEnabled(providerId: AiProviderId): boolean {
+    return this.readHomeValue(hiddenProviderEnabledKey(providerId)) === true;
+  }
+
+  public isHiddenProviderRiskAcknowledged(providerId: AiProviderId): boolean {
+    return this.readHomeValue(hiddenProviderRiskAcknowledgedKey(providerId)) === true;
+  }
+
+  public async acknowledgeHiddenProviderRisk(providerId: AiProviderId): Promise<void> {
+    await this.updateHomeValue(hiddenProviderRiskAcknowledgedKey(providerId), true);
+  }
+
+  public async setHiddenProviderEnabled(
+    providerId: AiProviderId,
+    isEnabled: boolean,
+  ): Promise<void> {
+    await this.updateHomeValue(hiddenProviderEnabledKey(providerId), isEnabled);
+  }
+
+  public getEnabledHiddenProviderIds(): AiProviderId[] {
+    return hiddenProviderIds.filter((providerId) => this.isHiddenProviderEnabled(providerId));
+  }
+
+  // 켜지 않은 숨은 프로바이더는 없는 이름이다. 이름을 보여 주거나 받는 곳은 전부 이 목록을 쓴다.
+  public getAvailableProviderIds(): AiProviderId[] {
+    return listAvailableProviderIds(this.getEnabledHiddenProviderIds());
+  }
+
+  public isProviderAvailable(providerId: AiProviderId): boolean {
+    return !isHiddenProvider(providerId) || this.isHiddenProviderEnabled(providerId);
+  }
+
+  public getCliProviderConfig(providerId: AiProviderId): CliProviderConfig {
+    const command = this.readHomeValue(`providers.${providerId}.command`);
+    const timeoutMs = this.readHomeValue(`providers.${providerId}.timeoutMs`);
+
+    return {
+      ...(typeof command === 'string' && command.trim().length > 0
+        ? { command: command.trim() }
+        : {}),
+      ...(typeof timeoutMs === 'number' && timeoutMs > 0 ? { timeoutMs } : {}),
+    };
+  }
+
+  private readHomeValue(section: string): unknown {
+    return this.dependencies.getConfiguration().inspect?.<unknown>(section)?.globalValue;
+  }
+
+  private async updateHomeValue<T>(section: string, value: T): Promise<void> {
+    const configuration = this.dependencies.getConfiguration();
+    this.assertConfigurationUpdate(configuration);
+    await configuration.update(section, value, userConfigurationTarget);
   }
 
   public getProviderConfig(providerId: AiProviderId): ProviderModelConfig {
@@ -411,7 +479,17 @@ export class ConfigBridge {
       .getConfiguration()
       .get(section, fallback as string);
 
-    return resolveStoredProviderId(configuredProvider) ?? fallback;
+    return this.resolveStoredProviderId(configuredProvider) ?? fallback;
+  }
+
+  // 설정 파일이 적어 둔 프로바이더 이름. 카탈로그에 없거나 켜지 않은 숨은 프로바이더면 undefined
+  // 이고, 호출자는 «고르지 않음» 으로 다룬다 — 없어진 이름을 말없이 다른 프로바이더로 바꾸지 않는다.
+  // 모델도 요금도 다르기 때문에 사람이 다시 고르는 편이 낫다.
+  private resolveStoredProviderId(value: string): AiProviderId | undefined {
+    return aiProviderIds.includes(value as AiProviderId) &&
+      this.isProviderAvailable(value as AiProviderId)
+      ? (value as AiProviderId)
+      : undefined;
   }
 
   private readTaskStoredEntry(
@@ -435,7 +513,7 @@ export class ConfigBridge {
     const rawProvider = nested?.provider ?? fromDotProvider;
     const rawModel = nested?.model ?? fromDotModel;
 
-    const provider = rawProvider ? resolveStoredProviderId(rawProvider) : undefined;
+    const provider = rawProvider ? this.resolveStoredProviderId(rawProvider) : undefined;
 
     if (provider === undefined) {
       return undefined;
@@ -530,11 +608,4 @@ function resolveEffectiveModelForTask(
   }
 
   return fallbackModelId;
-}
-
-// 설정 파일이 적어 둔 프로바이더 이름. 카탈로그에 없으면 undefined 이고, 호출자는 «고르지 않음»
-// 으로 다룬다 — 없어진 이름을 말없이 다른 프로바이더로 바꾸지 않는다. 모델도 요금도 다르기 때문에
-// 사람이 다시 고르는 편이 낫다.
-function resolveStoredProviderId(value: string): AiProviderId | undefined {
-  return aiProviderIds.includes(value as AiProviderId) ? (value as AiProviderId) : undefined;
 }

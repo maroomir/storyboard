@@ -1,6 +1,5 @@
 import type { IStoryboardLogger } from '@storyboard/story-engine';
 import {
-  aiProviderIds,
   storyboardModelCatalog,
   storyboardSettingCatalog,
 } from '@storyboard/story-model';
@@ -16,6 +15,7 @@ import { renderGroupList, renderHelpTopic, suggestVerbs } from '@/help';
 
 import { saveTuiThemeName, tuiThemeLabels, tuiThemeNames, type TuiThemeName } from './tuiTheme';
 import { isWorkspace } from './workspaceView';
+import { availableProviderIds } from '@/adapters/availableProviders';
 
 export type LogTone = 'input' | 'progress' | 'result' | 'error' | 'hint';
 
@@ -282,7 +282,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
     const provider = await sink.ask({
       title: '프로바이더',
       details: [],
-      options: aiProviderIds.map((id) => ({ label: id, value: id })),
+      options: availableProviderIds().map((id) => ({ label: id, value: id })),
     });
     if (provider === undefined) {
       return;

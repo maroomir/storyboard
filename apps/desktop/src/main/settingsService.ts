@@ -1,5 +1,4 @@
 import {
-  aiProviderIds,
   findStoryboardSetting,
   isValidStoryboardSettingValue,
   providerCatalog,
@@ -88,7 +87,7 @@ export class SettingsService {
     const providers: ProviderOption[] = [];
 
     // NOTE: mock 은 작가에게 보이지 않는다. 가짜 원고를 진짜처럼 저장하는 선택지이기 때문이다.
-    for (const id of aiProviderIds.filter((candidate) => candidate !== 'mock')) {
+    for (const id of configBridge.getAvailableProviderIds().filter((candidate) => candidate !== 'mock')) {
       providers.push({
         id,
         label: providerCatalog[id].displayName,
