@@ -56,7 +56,7 @@ async function switchOn(
     await configBridge.acknowledgeHiddenProviderRisk(providerId);
   }
 
-  await configBridge.setHiddenProviderEnabled(providerId, true);
+  await configBridge.enableHiddenProvider(providerId);
   container.logger.warn(subscriptionRiskWarning);
 
   return {
@@ -93,11 +93,18 @@ export async function setHiddenProviderKey(
       return switchOn(container, providerId);
     }
 
-    await configBridge.setHiddenProviderEnabled(providerId, false);
+    const clearedKeys = await configBridge.disableHiddenProvider(providerId);
     return {
       ok: true,
-      message: `${key} = false 저장했습니다: ${container.homePaths.configFile}`,
-      data: { key, value: false },
+      message: [
+        `${key} = false 저장했습니다: ${container.homePaths.configFile}`,
+        ...(clearedKeys.length === 0
+          ? []
+          : [
+              `이 프로바이더를 가리키던 설정도 지웠습니다(${clearedKeys.join(', ')}). 다시 고르세요: storyboard setup`,
+            ]),
+      ].join('\n'),
+      data: { key, value: false, clearedKeys },
     };
   }
 

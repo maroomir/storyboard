@@ -36,7 +36,7 @@ export async function requestHiddenProviderConsent(
     if (isAccepted) {
       await configBridge.acknowledgeHiddenProviderRisk(providerId);
     } else {
-      await configBridge.setHiddenProviderEnabled(providerId, false);
+      await configBridge.disableHiddenProvider(providerId);
     }
   }
 }

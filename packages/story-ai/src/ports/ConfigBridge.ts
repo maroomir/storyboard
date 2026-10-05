@@ -132,11 +132,44 @@ export class ConfigBridge {
     await this.updateHomeValue(hiddenProviderRiskAcknowledgedKey(providerId), true);
   }
 
-  public async setHiddenProviderEnabled(
-    providerId: AiProviderId,
-    isEnabled: boolean,
-  ): Promise<void> {
-    await this.updateHomeValue(hiddenProviderEnabledKey(providerId), isEnabled);
+  public async enableHiddenProvider(providerId: AiProviderId): Promise<void> {
+    await this.updateHomeValue(hiddenProviderEnabledKey(providerId), true);
+  }
+
+  // Once off, the name is unknown, and a config file that still routes to it would be rejected as a
+  // whole. So the routes go first, while the name still reads, then the switch. Returns the keys it
+  // cleared so the host can tell the person to choose again.
+  public async disableHiddenProvider(providerId: AiProviderId): Promise<readonly string[]> {
+    const configuration = this.dependencies.getConfiguration();
+    this.assertConfigurationUpdate(configuration);
+    const routeKeys = [
+      'ai.provider.default',
+      ...aiTaskNames.map((taskName) => `tasks.${taskName}.provider`),
+    ];
+    const clearedKeys: string[] = [];
+
+    for (const key of routeKeys) {
+      const inspected = configuration.inspect?.<unknown>(key);
+      const layers = [
+        [inspected?.globalValue, userConfigurationTarget],
+        [inspected?.workspaceValue, workspaceConfigurationTarget],
+      ] as const;
+
+      for (const [value, target] of layers) {
+        if (value !== providerId) {
+          continue;
+        }
+
+        await configuration.update(key, undefined, target);
+        if (key.startsWith('tasks.')) {
+          await configuration.update(key.replace(/\.provider$/, '.model'), undefined, target);
+        }
+        clearedKeys.push(key);
+      }
+    }
+
+    await this.updateHomeValue(hiddenProviderEnabledKey(providerId), false);
+    return clearedKeys;
   }
 
   public getEnabledHiddenProviderIds(): AiProviderId[] {

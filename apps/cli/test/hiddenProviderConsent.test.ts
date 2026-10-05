@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ChoiceRequest, IPrompter } from '@/adapters/prompter';
 import type { ParsedArguments } from '@/cliArguments';
-import { runConfigSet } from '@/commands/setup';
+import { runConfigSet, runSetup } from '@/commands/setup';
 import { createCliContainer } from '@/container';
 
 const enabledKey = 'providers.claude-code.enabled';
@@ -156,6 +156,65 @@ describe('switching the hidden subscription provider on', () => {
     expect(homeConfig()).toEqual({
       providers: { 'claude-code': { enabled: true, riskAcknowledged: true } },
     });
+  });
+
+  // QA D3: switching it off left `ai.provider.default: claude-code` behind, which made the whole home
+  // file invalid, so it could never be switched back on.
+  it('can be switched off and back on after it became the default', async () => {
+    await runConfigSet({
+      container: container(prompterAnswering(true)),
+      args: args([enabledKey, 'true']),
+    });
+    const chosen = await runSetup({
+      container: container(),
+      args: { path: [], flags: { provider: 'claude-code', global: true }, positionals: [] },
+    });
+    expect(chosen.ok).toBe(true);
+
+    const off = await runConfigSet({ container: container(), args: args([enabledKey, 'false']) });
+    expect(off.ok).toBe(true);
+    expect(off.message).toContain('storyboard setup');
+    expect(homeConfig()).toEqual({
+      providers: { 'claude-code': { enabled: false, riskAcknowledged: true } },
+    });
+    expect(container().configBridge.isDefaultProviderConfigured()).toBe(false);
+
+    warnings = [];
+    const on = await runConfigSet({ container: container(), args: args([enabledKey, 'true']) });
+    expect(on.ok).toBe(true);
+    expect(warnings).toHaveLength(1);
+  });
+
+  it('clears the task routes that named it, in both the home and the work file', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({
+        ai: { provider: { default: 'claude' } },
+        providers: { 'claude-code': { enabled: true, riskAcknowledged: true } },
+        tasks: {
+          sceneDraft: { provider: 'claude-code', model: 'claude-sonnet-5' },
+          grammarCheck: { provider: 'claude', model: 'claude-sonnet-5' },
+        },
+      }),
+    );
+    mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'config.json'),
+      JSON.stringify({ 'ai.provider.default': 'claude-code', 'budget.run.limitUsd': 3 }),
+    );
+
+    const off = await runConfigSet({ container: container(), args: args([enabledKey, 'false']) });
+
+    expect(off.ok).toBe(true);
+    expect(homeConfig()).toEqual({
+      ai: { provider: { default: 'claude' } },
+      providers: { 'claude-code': { enabled: false, riskAcknowledged: true } },
+      tasks: { grammarCheck: { provider: 'claude', model: 'claude-sonnet-5' } },
+    });
+    expect(JSON.parse(readFileSync(join(workspace, '.storyboard', 'config.json'), 'utf8'))).toEqual(
+      { 'budget.run.limitUsd': 3 },
+    );
+    expect(container().configBridge.getDefaultProvider()).toBe('claude');
   });
 
   it('writes its keys to the home file even inside a workspace', async () => {
