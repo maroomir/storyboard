@@ -87,6 +87,15 @@ for schema-first types and the error-class template. Generic readability and ver
   loaded and `AiProviderRegistry` only looks the id up (`story-ai/src/ai/providerFactory.ts`).
   Adding a provider is its catalog row plus its module, imported from `providers/index.ts`; the
   registry is not edited.
+- **Hidden providers**: a catalog row with `isHidden` (today only `claude-code`, `transport: 'cli'`)
+  is a name only when the **home** config file sets `providers.<id>.enabled`; a workspace file is
+  never asked, for that key or for `command`, `timeoutMs` and `riskAcknowledged`. Anything that
+  shows or accepts a provider name uses the available list (`ConfigBridge.getAvailableProviderIds`,
+  `listAvailableProviderIds`, the CLI's `availableProviderIds()`), never `aiProviderIds` — that one
+  is for types and for schemas that must still read old records. `AiProviderRegistry` is the last
+  gate: off is an unknown provider, on without the accepted risk notice is refused. The keys stay
+  out of the setting catalog, help, completion, README and the changelogs. A program-run provider
+  goes through `ICliRunner`, hands the child no API key, and reads no credential itself.
 - Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
   warnings go to stderr.
 - State: story content lives in the git workspace only. Engine settings live in the shared
