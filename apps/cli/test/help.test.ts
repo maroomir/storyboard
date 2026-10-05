@@ -249,6 +249,17 @@ describe('suggestVerbs', () => {
     expect(renderUnknownCommand('scene generat')).not.toContain('이름이 바뀌었습니다');
     expect(renderUnknownCommand('draf generate')).toContain('혹시 →  storyboard draft generate');
   });
+
+  // 명령 전체가 한 토큰으로 넘어와도(따옴표로 묶은 하네스) 앞쪽 단어로 옛 이름을 찾는다.
+  it('finds an old name at the front of one string and keeps the rest', () => {
+    expect(renderUnknownCommand('scene generate --all')).toContain(
+      '이름이 바뀌었습니다 →  storyboard draft generate --all',
+    );
+    expect(renderUnknownCommand('scene beats 01', ['--all'])).toContain(
+      '이름이 바뀌었습니다 →  storyboard scene plot 01 --all',
+    );
+    expect(suggestVerbs('scene generate --all')[0]).toBe('draft generate');
+  });
 });
 
 // 옵션 목록·셸 목록·언어 목록이 도움말과 자동완성에 따로 적혀 있던 시절에는 «도움말에는 있는데

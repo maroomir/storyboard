@@ -102,27 +102,33 @@ describe('dispatch', () => {
 
   // 기존 작품의 AGENTS.md 에는 옛 이름이 남아 있다. 그것을 친 에이전트의 첫 안내가 비용이 드는
   // 다른 명령이면 안 된다 — 변경 기록의 대응표 그대로, 인자를 이어 붙여 첫 줄에 준다.
-  it('leads every renamed command to its new name first, keeping the arguments', async () => {
+  it('leads every renamed command to its new name first, keeping arguments and flags in order', async () => {
     const renamed: ReadonlyArray<readonly [string, string]> = [
-      ['scene generate 01', 'draft generate 01'],
-      ['scene revise 01', 'draft revise 01'],
-      ['scene draft 01', 'draft show 01'],
-      ['check grammar 01', 'draft check grammar 01'],
-      ['check continuity 01', 'draft check continuity 01'],
-      ['check slop 01', 'draft check slop 01'],
+      ['scene generate', 'draft generate'],
+      ['scene revise', 'draft revise'],
+      ['scene draft', 'draft show'],
+      ['check grammar', 'draft check grammar'],
+      ['check continuity', 'draft check continuity'],
+      ['check slop', 'draft check slop'],
       ['scene seeds', 'scene seed'],
-      ['scene beats 01', 'scene plot 01'],
+      ['scene beats', 'scene plot'],
       ['cards build', 'card build'],
       ['bible promote', 'canon promote'],
-      ['narrator add hana', 'narrator create hana'],
+      ['narrator add', 'narrator create'],
       ['manuscript summaries', 'manuscript summarize'],
     ];
+    const tails = ['01', '--all', '01 --provider openai --all'];
 
-    for (const [oldCommand, newCommand] of renamed) {
-      const result = await dispatch(oldCommand.split(' '), deps());
+    for (const [oldName, newName] of renamed) {
+      for (const tail of tails) {
+        const oldCommand = `${oldName} ${tail}`;
+        const result = await dispatch(oldCommand.split(' '), deps());
 
-      expect(result.exitCode, oldCommand).not.toBe(0);
-      expect(result.stderr.split('\n')[1], oldCommand).toContain(`storyboard ${newCommand}`);
+        expect(result.exitCode, oldCommand).not.toBe(0);
+        expect(result.stderr.split('\n')[1], oldCommand).toMatch(
+          new RegExp(`storyboard ${newName} ${tail}$`),
+        );
+      }
     }
   });
 
