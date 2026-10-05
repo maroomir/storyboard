@@ -102,6 +102,20 @@ describe('note extraction prompt', () => {
     expect(parsed.premise).toEqual(['해양 미스터리']);
   });
 
+  it('drops an alias that carries a parenthesis, which is a note about the name and not a name', () => {
+    const parsed = coerceNoteExtraction({
+      entities: [
+        {
+          type: 'character',
+          name: '조만재',
+          aliases: ['만재', '엘리트라 불리는 쪽은 아님(은하를 그렇게 부름)', '[별명] 궤변가', '철물점 아저씨'],
+        },
+      ],
+    });
+
+    expect(parsed.entities[0]?.aliases).toEqual(['만재', '철물점 아저씨']);
+  });
+
   it('reads a synthesis with blank fields as nothing proposed', () => {
     expect(coerceNoteSynthesis(null)).toEqual(emptyNoteSynthesis);
     expect(
