@@ -33,7 +33,7 @@ after the first public release.
 
 ### Removed
 
-- **The commands that converted pre-0.8 works are gone.** The CLI's `scene migrate` and `cards migrate`, the extension's `Storyboard: Migrate Scenes to Cards` and `Storyboard: Migrate Card Text Fields to List`, and the `doctor` checks that counted legacy `scene/*.txt`, placeholder summaries and inline summaries. Convert a work that still needs it with 0.11.5 or earlier before upgrading. An inline `summary` is still read.
+- **The commands that converted pre-0.8 works are gone.** The CLI's `scene migrate` and `cards migrate`, the extension's `Storyboard: Migrate Scenes to Cards` and `Storyboard: Migrate Card Text Fields to List`, and the `doctor` checks that counted legacy `scene/*.txt`, placeholder summaries and inline summaries. Convert a work that still needs it with 0.11.6 or earlier before upgrading. An inline `summary` is still read.
 
 ### Added
 
