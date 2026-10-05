@@ -372,7 +372,7 @@ describe('the hidden subscription provider: the call', () => {
     ]);
     expect(request?.args).not.toContain('--bare');
     expect(request?.stdin).toBe('비 오는 골목을 묘사해.');
-    expect(request?.withoutEnvironment).toContain('ANTHROPIC_API_KEY');
+    expect(request?.withoutEnvironment).toEqual(['ANTHROPIC_']);
     expect(request?.timeoutMs).toBe(600_000);
     expect(response).toEqual({
       providerId: 'claude-code',
@@ -563,6 +563,40 @@ describe('the Node CLI runner', () => {
 
     expect(result).toEqual({ exitCode: 0, stderr: '' });
     expect(lines).toEqual(['in:프롬프트', 'undefined|kept']);
+  });
+
+  // Every ANTHROPIC_ variable is withheld (a key, a token, another endpoint); the subscription's own
+  // login, including a token the person made with `claude setup-token`, is the executable's business.
+  it('withholds every variable that starts with a withheld prefix', async () => {
+    const names = [
+      'ANTHROPIC_API_KEY',
+      'ANTHROPIC_AUTH_TOKEN',
+      'ANTHROPIC_BASE_URL',
+      'CLAUDE_CODE_OAUTH_TOKEN',
+    ];
+    for (const name of names) {
+      process.env[name] = `value-of-${name}`;
+    }
+    const lines: string[] = [];
+
+    try {
+      await runner.run({
+        ...base,
+        command: process.execPath,
+        args: [
+          '-e',
+          `console.log(${JSON.stringify(names)}.map((name) => process.env[name] ?? '-').join('|'))`,
+        ],
+        withoutEnvironment: ['ANTHROPIC_'],
+        onStdoutLine: (line) => lines.push(line),
+      });
+    } finally {
+      for (const name of names) {
+        delete process.env[name];
+      }
+    }
+
+    expect(lines).toEqual(['-|-|-|value-of-CLAUDE_CODE_OAUTH_TOKEN']);
   });
 
   it('reports a missing executable', async () => {

@@ -95,7 +95,8 @@ for schema-first types and the error-class template. Generic readability and ver
   is for types and for schemas that must still read old records. `AiProviderRegistry` is the last
   gate: off is an unknown provider, on without the accepted risk notice is refused. The keys stay
   out of the setting catalog, help, completion, README and the changelogs. A program-run provider
-  goes through `ICliRunner`, hands the child no API key, and reads no credential itself.
+  goes through `ICliRunner`, hands the child no `ANTHROPIC_*` variable, and reads no credential
+  itself.
 - Process contract (cli): exit 0/non-0 is the API; stdout carries only the result, progress and
   warnings go to stderr.
 - State: story content lives in the git workspace only. Engine settings live in the shared

@@ -23,10 +23,10 @@ const defaultCommand = 'claude';
 const defaultTimeoutMs = 10 * 60 * 1000;
 const connectionCheckTimeoutMs = 20 * 1000;
 
-// SECURITY: the child signs in with whatever the user's own `claude` login holds. A key in the
-// parent's environment would silently turn a subscription call into a metered one, so the child
-// never inherits these.
-const withheldEnvironment = ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'] as const;
+// SECURITY: the child signs in with whatever the user's own `claude` login holds. An ANTHROPIC_
+// variable in the parent's environment — a key, a token, another endpoint — would silently turn a
+// subscription call into a metered one or send it elsewhere, so the child inherits none of them.
+const withheldEnvironment = ['ANTHROPIC_'] as const;
 
 // NOTE: 2.1.289 에서 실측한 조합이다. 도구·MCP·슬래시 명령·사용자 설정을 모두 끄지 않으면 호출마다
 // 2만 토큰이 넘는 코딩 에이전트 문맥이 실린다. `--bare` 는 구독 로그인을 읽지 않으므로 쓰지 않는다.
