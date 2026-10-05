@@ -47,6 +47,16 @@ function textList() {
   );
 }
 
+// 괄호가 든 별칭은 호칭이 아니라 호칭에 붙인 설명이다(«엘리트라 불리는 쪽은 아님(은하를 그렇게
+// 부름)»). 그런 줄이 카드에 남으면 틀린 호칭이 생성 프롬프트까지 가므로 읽을 때 걸러 낸다.
+const annotatedAliasPattern = /[()[\]{}（）［］｛｝【】〔〕]/;
+
+function aliasList() {
+  return textList().transform((aliases) =>
+    aliases.filter((alias) => !annotatedAliasPattern.test(alias)),
+  );
+}
+
 function recordList<T extends z.ZodType>(item: T) {
   return emptyWhenMissing(
     z.preprocess(
@@ -79,7 +89,7 @@ const noteEntitySchema = z.object({
     (value) => ((characterRoles as readonly unknown[]).includes(value) ? value : undefined),
     z.enum(characterRoles).optional(),
   ),
-  aliases: textList(),
+  aliases: aliasList(),
   tags: textList(),
   traits: textList(),
   description: textList(),
