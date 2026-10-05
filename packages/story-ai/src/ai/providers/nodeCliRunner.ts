@@ -1,4 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import type { CliRunFailure, CliRunRequest, CliRunResult, ICliRunner } from '#ai/ports/cliRunner';
 
@@ -38,6 +41,16 @@ function signalChild(child: ChildProcess, signal: NodeJS.Signals): void {
   }
 }
 
+// NOTE: claude 실행 파일은 작업 디렉터리에서 위로 올라가며 CLAUDE.md 를 찾아 프롬프트에 싣는다.
+// 작품 폴더에는 init 이 만든 에이전트 지침이 있으므로, 자식은 늘 빈 전용 디렉터리에서 띄운다.
+// API 프로바이더가 받는 것과 같은 프롬프트만 받게 하려는 것이다.
+let emptyWorkingDirectory: string | undefined;
+
+function getEmptyWorkingDirectory(): string {
+  emptyWorkingDirectory ??= mkdtempSync(join(tmpdir(), 'storyboard-cli-'));
+  return emptyWorkingDirectory;
+}
+
 const runningChildren = new Set<ChildProcess>();
 
 // A host that exits mid-call must not leave the child running on: nobody would read what it writes,
@@ -47,6 +60,11 @@ const runningChildren = new Set<ChildProcess>();
 export function killRunningCliChildren(): void {
   for (const child of runningChildren) {
     signalChild(child, 'SIGKILL');
+  }
+
+  if (emptyWorkingDirectory !== undefined) {
+    rmSync(emptyWorkingDirectory, { recursive: true, force: true });
+    emptyWorkingDirectory = undefined;
   }
 }
 
@@ -69,6 +87,7 @@ export class NodeCliRunner implements ICliRunner {
       // SECURITY: no shell, so nothing in the arguments is ever interpreted as a command.
       const child = spawn(request.command, [...request.args], {
         env: childEnvironment(request.withoutEnvironment),
+        cwd: getEmptyWorkingDirectory(),
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: false,
         detached: usesProcessGroup,
