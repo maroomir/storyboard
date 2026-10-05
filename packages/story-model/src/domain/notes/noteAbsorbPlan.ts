@@ -9,7 +9,11 @@ import { cardIdPattern, type StoryboardCard } from '#model/format/card';
 import { outlineSynopsisSchema, type OutlineSynopsis } from '#model/format/outline';
 import { sceneFileNamePattern, type SceneCard, type SceneFile } from '#model/format/scene';
 
-import { addUniqueCardListText, shouldProposeCardCollect } from '#model/domain/cardCollect';
+import {
+  addUniqueCardListText,
+  normalizeCardListText,
+  shouldProposeCardCollect,
+} from '#model/domain/cardCollect';
 import {
   cardCollectProposalId,
   type CardCollectProposal,
@@ -24,6 +28,9 @@ export interface NoteCardPlan {
   readonly isNew: boolean;
   readonly changes: readonly CardCollectProposal[];
   readonly sourceNotes: readonly string[];
+  // How many readings of the notes gave each alias, keyed by its normalized text: when two cards
+  // share an alias, this is what the consolidation request weighs it by.
+  readonly aliasReadCounts: Readonly<Record<string, number>>;
 }
 
 export interface NoteScenePlan {
@@ -214,8 +221,15 @@ function findRoot(parents: number[], index: number): number {
   return root;
 }
 
-function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractionEntity[] {
+interface MergedEntity {
+  readonly entity: NoteExtractionEntity;
+  // The entries the model returned that became this one, one per reading.
+  readonly readings: readonly NoteExtractionEntity[];
+}
+
+function mergeEntities(entities: readonly NoteExtractionEntity[]): MergedEntity[] {
   const groups: NoteExtractionEntity[] = [];
+  const readingsByGroup: NoteExtractionEntity[][] = [];
 
   for (const entity of entities) {
     const index = findSameSubject(groups, entity);
@@ -223,8 +237,10 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractio
 
     if (index === undefined || known === undefined) {
       groups.push(entity);
+      readingsByGroup.push([entity]);
     } else {
       groups[index] = mergeEntity(known, entity);
+      readingsByGroup[index]?.push(entity);
     }
   }
 
@@ -241,15 +257,33 @@ function mergeEntities(entities: readonly NoteExtractionEntity[]): NoteExtractio
     }
   }
 
-  const merged = new Map<number, NoteExtractionEntity>();
+  const merged = new Map<number, MergedEntity>();
 
   groups.forEach((entity, index) => {
     const root = findRoot(parents, index);
     const known = merged.get(root);
-    merged.set(root, known === undefined ? entity : mergeEntity(known, entity));
+    const readings = readingsByGroup[index] ?? [];
+    merged.set(
+      root,
+      known === undefined
+        ? { entity, readings }
+        : { entity: mergeEntity(known.entity, entity), readings: [...known.readings, ...readings] },
+    );
   });
 
   return [...merged.values()];
+}
+
+function countAliasReads(readings: readonly NoteExtractionEntity[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+
+  for (const reading of readings) {
+    for (const key of new Set(reading.aliases.map(normalizeCardListText))) {
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+  }
+
+  return counts;
 }
 
 // What the requests read so far found, listed for the next request beside the cards on disk, so
@@ -260,6 +294,7 @@ export function listKnownNoteEntities(
 ): NoteExtractionKnownCard[] {
   const takenIds = new Set(cards.map((card) => card.id));
   const provisional = mergeEntities(extractions.flatMap((extraction) => extraction.entities))
+    .map((merged) => merged.entity)
     .filter((entity) => entity.existingId === undefined)
     .flatMap((entity): NoteExtractionKnownCard[] => {
       const id = provisionalCardId(entity);
@@ -311,6 +346,7 @@ function createNewCard(entity: NoteExtractionEntity, id: string): StoryboardCard
 
 interface ResolvedEntity {
   readonly entity: NoteExtractionEntity;
+  readonly readings: readonly NoteExtractionEntity[];
   readonly card: StoryboardCard;
   readonly isNew: boolean;
 }
@@ -401,7 +437,7 @@ function toProposalDrafts(
 }
 
 function planCards(
-  entities: readonly NoteExtractionEntity[],
+  entities: readonly MergedEntity[],
   cards: readonly StoryboardCard[],
 ): {
   readonly plans: NoteCardPlan[];
@@ -418,7 +454,7 @@ function planCards(
     backgrounds.add(card);
   }
 
-  const resolved = entities.map((entity, index): ResolvedEntity => {
+  const resolved = entities.map(({ entity, readings }, index): ResolvedEntity => {
     const kindIndex = entity.type === 'character' ? characters : backgrounds;
     const byId = entity.existingId === undefined ? undefined : cardsById.get(entity.existingId);
     const existing =
@@ -427,7 +463,7 @@ function planCards(
         : cardsById.get(kindIndex.resolve(entity.name) ?? '');
 
     if (existing !== undefined) {
-      return { entity, card: existing, isNew: false };
+      return { entity, readings, card: existing, isNew: false };
     }
 
     const id = takeUniqueId(
@@ -438,7 +474,7 @@ function planCards(
     const card = createNewCard(entity, id);
     kindIndex.add(card, entity.aliases);
 
-    return { entity, card, isNew: true };
+    return { entity, readings, card, isNew: true };
   });
 
   const plans = resolved.flatMap((entry): NoteCardPlan[] => {
@@ -455,7 +491,15 @@ function planCards(
 
     // An existing card the notes add nothing to is not a candidate.
     return entry.isNew || changes.length > 0
-      ? [{ card: entry.card, isNew: entry.isNew, changes, sourceNotes: entry.entity.sourceNotes }]
+      ? [
+          {
+            card: entry.card,
+            isNew: entry.isNew,
+            changes,
+            sourceNotes: entry.entity.sourceNotes,
+            aliasReadCounts: countAliasReads(entry.readings),
+          },
+        ]
       : [];
   });
 

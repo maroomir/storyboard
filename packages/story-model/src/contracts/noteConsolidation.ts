@@ -17,15 +17,19 @@ export type NoteConsolidatedValues = Partial<
   Readonly<Record<NoteConsolidatedField, readonly string[]>>
 >;
 
+// `readCount` is how many readings of the notes gave the alias to that card; a card on disk that
+// already has it carries none.
 export interface NoteAliasCarrier {
   readonly cardId: string;
   readonly name: string;
+  readonly readCount?: number;
 }
 
 // An alias that another card carries too, as a candidate of its own or already on disk. Only the
 // model can tell whose it is, so every card that proposes it is asked in the same request.
 export interface NoteSharedAlias {
   readonly alias: string;
+  readonly readCount: number;
   readonly otherCards: readonly NoteAliasCarrier[];
 }
 

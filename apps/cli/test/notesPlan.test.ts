@@ -775,12 +775,37 @@ describe('note card consolidation', () => {
     expect(targets.map((target) => [target.cardId, target.sharedAliases])).toEqual([
       [
         'jo-manjae',
-        [{ alias: '엘리트', otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jeong-eunha', name: '정은하' }] }],
+        [{ alias: '엘리트', readCount: 1, otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jeong-eunha', name: '정은하', readCount: 1 }] }],
       ],
       [
         'jeong-eunha',
-        [{ alias: '엘리트', otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jo-manjae', name: '조만재' }] }],
+        [{ alias: '엘리트', readCount: 1, otherCards: [{ cardId: 'geunuk', name: '이근욱' }, { cardId: 'jo-manjae', name: '조만재', readCount: 1 }] }],
       ],
+    ]);
+  });
+
+  it('counts how many readings gave a shared alias to each card', () => {
+    const plan = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [],
+      notes: [note('a.md'), note('b.md'), note('c.md')],
+      extractions: [
+        extraction({
+          entities: [
+            entity({ name: '조만재', suggestedId: 'jo-manjae', aliases: ['엘리트'], sourceNotes: ['a.md'] }),
+            entity({ name: '정은하', suggestedId: 'jeong-eunha', aliases: ['엘리트'], sourceNotes: ['a.md'] }),
+          ],
+        }),
+        extraction({ entities: [entity({ name: '정은하', aliases: ['엘리트!'], sourceNotes: ['b.md'] })] }),
+        extraction({ entities: [entity({ name: '정은하', aliases: ['엘리트', '갤럭시'], sourceNotes: ['c.md'] })] }),
+      ],
+    });
+
+    expect(
+      selectNoteConsolidationTargets(plan, chunkByNoteId, []).map((target) => [target.cardId, target.sharedAliases]),
+    ).toEqual([
+      ['jo-manjae', [{ alias: '엘리트', readCount: 1, otherCards: [{ cardId: 'jeong-eunha', name: '정은하', readCount: 3 }] }]],
+      ['jeong-eunha', [{ alias: '엘리트', readCount: 3, otherCards: [{ cardId: 'jo-manjae', name: '조만재', readCount: 1 }] }]],
     ]);
   });
 
@@ -905,7 +930,8 @@ describe('note card consolidation', () => {
       type: 'character',
       existing: {},
       candidates: { description },
-      sharedAliases: sharedWith.length === 0 ? [] : [{ alias: '엘리트', otherCards: sharedWith.map((id) => ({ cardId: id, name: id })) }],
+      sharedAliases:
+        sharedWith.length === 0 ? [] : [{ alias: '엘리트', readCount: 1, otherCards: sharedWith.map((id) => ({ cardId: id, name: id })) }],
     });
     const targets = [
       target('a', lines('가'), ['c']),
@@ -938,7 +964,16 @@ describe('note card consolidation', () => {
         type: 'character',
         existing: { traits: ['허세가 심함'] },
         candidates: { aliases: ['엘리트'], traits: ['허세를 부린다'] },
-        sharedAliases: [{ alias: '엘리트', otherCards: [{ cardId: 'eunha', name: '정은하' }] }],
+        sharedAliases: [
+          {
+            alias: '엘리트',
+            readCount: 1,
+            otherCards: [
+              { cardId: 'eunha', name: '정은하', readCount: 4 },
+              { cardId: 'geunuk', name: '이근욱' },
+            ],
+          },
+        ],
       },
     ]);
 
@@ -951,7 +986,7 @@ describe('note card consolidation', () => {
         '- 엘리트',
         '[후보] traits:',
         '- 허세를 부린다',
-        '[공유 별칭] 엘리트 — eunha (정은하) 도 가짐',
+        '[공유 별칭] 엘리트 — 이 카드에서 1번 읽힘 · eunha (정은하) 4번 읽힘 · geunuk (이근욱) 기존 카드',
       ].join('\n'),
     );
   });
