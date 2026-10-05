@@ -121,8 +121,9 @@ async function confirmPaidRun(
 }
 
 const cancelledBeforeRun: CommandOutcome = {
-  ok: true,
+  ok: false,
   message: '취소했습니다. 아무것도 생성하지 않았습니다.',
+  stop: 'cancelled',
 };
 
 // What the rail shows beside the scene: the pipeline stage while it runs, then saving and review.
@@ -182,6 +183,7 @@ const generateScene: CommandHandler = async ({ container, args }) => {
           `멈췄습니다: 생성 ${generated}건, 남은 씬 ${pausedWithRemaining}개. ` +
           '다시 실행하면 남은 씬부터 이어 갑니다.',
         data: result.summary,
+        stop: 'paused',
       };
     }
 
@@ -451,8 +453,14 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
 
   return {
     ok: result.outcome === 'completed',
-    message: `장편 생성 ${result.outcome}: ${result.message}${budgetNote}`,
+    message:
+      result.outcome === 'failed'
+        ? `장편 생성에 실패했습니다: ${result.message}`
+        : `${result.message}${budgetNote}`,
     data: { ...result, costUsd: spending.costUsd },
+    ...(result.outcome === 'paused' || result.outcome === 'cancelled'
+      ? { stop: result.outcome }
+      : {}),
   };
 };
 
@@ -1308,7 +1316,7 @@ const initProject: CommandHandler = async ({ container, args }) => {
     const answers = await askInitContract(container.prompter, args);
 
     return answers === undefined
-      ? { ok: true, message: '취소했습니다. 아무것도 만들지 않았습니다.' }
+      ? { ok: false, message: '취소했습니다. 아무것도 만들지 않았습니다.', stop: 'cancelled' }
       : initProject({ container, args: { ...args, flags: { ...args.flags, ...answers } } });
   }
 

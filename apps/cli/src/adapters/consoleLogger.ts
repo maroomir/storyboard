@@ -9,6 +9,8 @@ export class ConsoleLogger implements IStoryboardLogger {
     private readonly theme: Theme = plainTheme,
     // Writes above a live progress rail when one is drawn, so a warning never tears it.
     private readonly write: (text: string) => void = (text) => process.stderr.write(text),
+    // A stack trace is for whoever debugs the CLI (`--verbose`); an author gets the message.
+    private readonly showsErrorStack = true,
   ) {}
 
   public info(message: string): void {
@@ -25,7 +27,7 @@ export class ConsoleLogger implements IStoryboardLogger {
     this.write(`${this.theme.paint('danger', '[error]')} ${message}\n`);
 
     if (error instanceof Error) {
-      this.write(`${error.stack ?? error.message}\n`);
+      this.write(`${(this.showsErrorStack ? error.stack : undefined) ?? error.message}\n`);
       return;
     }
 

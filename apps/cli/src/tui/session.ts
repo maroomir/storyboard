@@ -214,6 +214,14 @@ function createSessionLogger(sink: SessionSink): IStoryboardLogger {
   };
 }
 
+// A run the author stopped is neither a result nor an error.
+function describeResultTone(result: DispatchResult): LogTone {
+  if (result.outcome?.stop !== undefined) {
+    return 'hint';
+  }
+  return result.exitCode === 0 ? 'result' : 'error';
+}
+
 export interface TuiSession {
   readonly run: (line: string) => Promise<void>;
   // Esc during a run: stop at the next scene boundary. False when the running command cannot.
@@ -336,7 +344,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
     const text = (result.stdout + result.stderr).trimEnd();
 
     if (text.length > 0) {
-      sink.append(result.exitCode === 0 ? 'result' : 'error', text);
+      sink.append(describeResultTone(result), text);
     }
   };
 

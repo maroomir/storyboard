@@ -68,8 +68,13 @@ async function main(argv: readonly string[]): Promise<number> {
     ...(isInteractive
       ? { createPrompter: (stderr) => new TerminalPrompter(process.stdin, liveArea, stderr) }
       : {}),
-    createLogger: (showProgress, stderrTheme) =>
-      new ConsoleLogger(showProgress, stderrTheme, (text) => liveArea.writeAbove(text)),
+    createLogger: (showProgress, stderrTheme, showsErrorStack) =>
+      new ConsoleLogger(
+        showProgress,
+        stderrTheme,
+        (text) => liveArea.writeAbove(text),
+        showsErrorStack,
+      ),
     liveArea,
     pauseRequests,
     terminal: {

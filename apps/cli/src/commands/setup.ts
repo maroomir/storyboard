@@ -701,13 +701,15 @@ export async function runDoctor({ container, stdout }: CommandContext): Promise<
     nodeCheck,
   ];
 
+  const isDrawn = stdout?.isTty === true;
+
   return {
     ok: !checks.some((check) => check.status === 'fail'),
-    message:
-      stdout?.isTty === true
-        ? renderDoctorPanels(sections, stdout).join('\n')
-        : checks.map(renderDoctorLine).join('\n'),
+    message: isDrawn
+      ? renderDoctorPanels(sections, stdout).join('\n')
+      : checks.map(renderDoctorLine).join('\n'),
     data: { checks },
+    isDrawn,
   };
 }
 
