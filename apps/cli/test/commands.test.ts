@@ -811,6 +811,31 @@ describe('draft generate --all progress', () => {
   });
 });
 
+describe('novel generate progress', () => {
+  it('logs the stage by its name, not its id', async () => {
+    const logged: string[] = [];
+    const real = container();
+    const stubbed = {
+      ...real,
+      progress: { update: ({ line }: { line: string }) => logged.push(line), finish: () => {} },
+      novel: stubManager(real.novel, {
+        run: async (request: { onProgress?: (stage: string, message: string) => void }) => {
+          request.onProgress?.('outline', '아웃라인 생성 중…');
+          return {
+            outcome: 'completed',
+            message: '장편 생성을 완료했습니다.',
+            spending: { costUsd: 0, isOverBudget: false },
+          };
+        },
+      } as never),
+    } as unknown as Parameters<(typeof commands)['novel generate']>[0]['container'];
+
+    await commands['novel generate']({ container: stubbed, args: args(['novel', 'generate']) });
+
+    expect(logged).toEqual(['아웃라인: 아웃라인 생성 중…']);
+  });
+});
+
 describe('draft generate --all pause', () => {
   it('stops at a scene boundary when asked and says what is left', async () => {
     const real = container();
