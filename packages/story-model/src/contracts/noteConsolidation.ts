@@ -45,13 +45,16 @@ export interface NoteConsolidationTarget {
   readonly sharedAliases: readonly NoteSharedAlias[];
 }
 
-// `values` are what the answer keeps. A field answered as groups of one meaning keeps the first item
-// of each group, and `placed` lists every item it grouped: a candidate it left out of every group
-// was overlooked, not dropped.
+export type NoteConsolidatedGroups = Partial<
+  Readonly<Record<NoteConsolidatedField, readonly (readonly string[])[]>>
+>;
+
+// A field is answered either as a flat list of what to keep (`values`, the shape asked for aliases)
+// or as groups of one meaning, the most specific first (`groups`, the shape asked for the rest).
 export interface NoteConsolidatedLists {
   readonly cardId: string;
   readonly values: NoteConsolidatedValues;
-  readonly placed?: NoteConsolidatedValues;
+  readonly groups?: NoteConsolidatedGroups;
 }
 
 export type NoteConsolidationFailure = 'truncated' | 'unparsed';
@@ -89,23 +92,22 @@ function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
 
   const record = entry as Record<string, unknown>;
   const values: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
-  const placed: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
+  const groups: Partial<Record<NoteConsolidatedField, readonly (readonly string[])[]>> = {};
 
   for (const field of noteConsolidatedFields) {
-    const groups = readGroups(record[field]);
-    const list = groups === undefined ? readTextList(record[field]) : undefined;
+    const fieldGroups = readGroups(record[field]);
+    const list = fieldGroups === undefined ? readTextList(record[field]) : undefined;
 
-    if (groups !== undefined) {
-      values[field] = groups.map((group) => group[0] as string);
-      placed[field] = groups.flat();
+    if (fieldGroups !== undefined) {
+      groups[field] = fieldGroups;
     } else if (list !== undefined) {
       values[field] = list;
     }
   }
 
-  return Object.keys(placed).length === 0
+  return Object.keys(groups).length === 0
     ? { cardId: id.data.id, values }
-    : { cardId: id.data.id, values, placed };
+    : { cardId: id.data.id, values, groups };
 }
 
 export function readNoteConsolidationResponse(

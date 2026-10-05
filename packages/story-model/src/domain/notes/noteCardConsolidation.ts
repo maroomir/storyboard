@@ -200,30 +200,73 @@ export function groupNoteConsolidationTargets(
 
 type KeptValues = Partial<Record<NoteConsolidatedField, Set<string>>>;
 
-function keptValues(
-  candidates: readonly string[],
-  answer: readonly string[],
-  placed: readonly string[] | undefined,
-): Set<string> {
+function keptFromList(candidates: readonly string[], answer: readonly string[]): Set<string> {
   const answered = new Set(answer.map(normalizeCardListText));
-  const placedKeys = placed === undefined ? undefined : new Set(placed.map(normalizeCardListText));
 
-  return new Set(
-    candidates.filter((value) => {
-      const key = normalizeCardListText(value);
-      return answered.has(key) || (placedKeys !== undefined && !placedKeys.has(key));
-    }),
-  );
+  return new Set(candidates.filter((value) => answered.has(normalizeCardListText(value))));
 }
 
-// The model only chooses among the candidates: a value it rewrote or made up is not a candidate and
-// is dropped, so the card keeps the notes' own wording. A candidate an answer in groups left out of
-// every group is kept, and so is every candidate of a field left out of the answer or a new card's
-// list the answer empties — a description with no line at all cannot be right. Aliases may all
-// go: every one of them may have been a remark or someone else's.
+// Each group keeps one line in the notes' own wording: its first item that is a candidate. A group
+// headed by a line the card already has keeps none, since that meaning is on the card. A group with
+// no candidate in it places nothing, so a candidate left out of every group is kept.
+function keptFromGroups(
+  target: NoteConsolidationTarget,
+  field: NoteConsolidatedField,
+  groups: readonly (readonly string[])[],
+  warnings: string[],
+): Set<string> {
+  const candidateByKey = new Map(
+    (target.candidates[field] ?? []).map((value) => [normalizeCardListText(value), value]),
+  );
+  const existingKeys = new Set((target.existing[field] ?? []).map(normalizeCardListText));
+  const kept = new Set<string>();
+  const placedKeys = new Set<string>();
+
+  for (const group of groups) {
+    const members = group.flatMap((item) => {
+      const value = candidateByKey.get(normalizeCardListText(item));
+      return value === undefined ? [] : [value];
+    });
+    const [head] = group;
+    const [firstMember] = members;
+
+    if (head === undefined || firstMember === undefined) {
+      continue;
+    }
+
+    members.forEach((value) => placedKeys.add(normalizeCardListText(value)));
+
+    if (existingKeys.has(normalizeCardListText(head))) {
+      continue;
+    }
+
+    if (!candidateByKey.has(normalizeCardListText(head))) {
+      warnings.push(
+        `카드 ${target.name} 의 ${field} 정리 답이 후보에 없는 «${head}» 를 대표로 적어, 그 묶음에서 노트의 문구 «${firstMember}» 를 남겼습니다.`,
+      );
+    }
+
+    kept.add(firstMember);
+  }
+
+  for (const [key, value] of candidateByKey) {
+    if (!placedKeys.has(key)) {
+      kept.add(value);
+    }
+  }
+
+  return kept;
+}
+
+// The model only chooses among the candidates: a value it rewrote or made up never reaches the
+// card, which keeps the notes' own wording. Every candidate of a field stays when the answer leaves
+// the field out, answers a list other than aliases flat (that shape cannot say which line covers a
+// dropped one), or empties a new card's list — a description with no line at all cannot be right.
+// Aliases are answered as a flat list and may all go: each may have been a remark or someone else's.
 function narrowTargetValues(
   target: NoteConsolidationTarget,
   answer: NoteConsolidatedLists,
+  warnings: string[],
 ): KeptValues {
   const kept: KeptValues = {};
 
@@ -231,13 +274,24 @@ function narrowTargetValues(
     NoteConsolidatedField,
     readonly string[],
   ][]) {
-    const answered = answer.values[field];
+    const groups = answer.groups?.[field];
+    const list = answer.values[field];
+    let values: Set<string>;
 
-    if (answered === undefined) {
+    if (groups !== undefined) {
+      values = keptFromGroups(target, field, groups, warnings);
+    } else if (list !== undefined && field === 'aliases') {
+      values = keptFromList(candidates, list);
+    } else {
+      if (list !== undefined) {
+        warnings.push(
+          `카드 ${target.name} 의 ${field} 정리 답이 묶음 형식이 아니어서 후보를 모두 남겼습니다.`,
+        );
+      }
+
       continue;
     }
 
-    const values = keptValues(candidates, answered, answer.placed?.[field]);
     const isEmptiedList =
       values.size === 0 && field !== 'aliases' && target.existing[field] === undefined;
 
@@ -310,9 +364,10 @@ function decideSharedAliases(
       const value = proposedValue(target);
       return value !== undefined && (keptById.get(target.cardId)?.aliases?.has(value) ?? true);
     };
-    const isUndecided = decision.proposers.some(
-      (target) => answerById.get(target.cardId)?.values.aliases === undefined,
-    );
+    const isUndecided = decision.proposers.some((target) => {
+      const answer = answerById.get(target.cardId);
+      return answer?.values.aliases === undefined && answer?.groups?.aliases === undefined;
+    });
     const keepers = decision.proposers.filter(isKeptBy);
 
     if (isUndecided || keepers.length > 1) {
@@ -356,16 +411,17 @@ export function applyNoteConsolidation(
 ): { readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] } {
   const answerById = new Map(answers.map((answer) => [answer.cardId, answer]));
   const keptById = new Map<string, KeptValues>();
+  const warnings: string[] = [];
 
   for (const target of targets) {
     const answer = answerById.get(target.cardId);
 
     if (answer !== undefined) {
-      keptById.set(target.cardId, narrowTargetValues(target, answer));
+      keptById.set(target.cardId, narrowTargetValues(target, answer, warnings));
     }
   }
 
-  const warnings = decideSharedAliases(targets, answerById, keptById);
+  warnings.push(...decideSharedAliases(targets, answerById, keptById));
 
   const cards = plan.cards.flatMap((cardPlan): NoteCardPlan[] => {
     const kept = keptById.get(cardPlan.card.id);

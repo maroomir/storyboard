@@ -885,7 +885,14 @@ describe('note card consolidation', () => {
   it('keeps only the candidates the model chose, never a wording it made up', () => {
     const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
     const { plan } = applyNoteConsolidation(twoReadings, targets, [
-      { cardId: 'jo-manjae', values: { traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허풍쟁이'], tags: ['허세남'] } },
+      {
+        cardId: 'jo-manjae',
+        values: {},
+        groups: {
+          traits: [['허세가 심함', '허세를 부린다'], ['백과사전을 즐겨 읽음', '백과사전을 탐독함'], ['허풍쟁이']],
+          tags: [['허세남']],
+        },
+      },
     ]);
 
     expect(valuesOf(plan, 'jo-manjae')).toEqual(['허세남', '허세가 심함', '백과사전을 즐겨 읽음']);
@@ -902,7 +909,9 @@ describe('note card consolidation', () => {
     const onCard = planOf([existing], [{ traits: ['허세를 부린다'], sourceNotes: ['a.md'] }]);
     const onCardTargets = selectNoteConsolidationTargets(onCard, chunkByNoteId, [existing]);
     expect(
-      applyNoteConsolidation(onCard, onCardTargets, [{ cardId: 'jo', values: { traits: [] } }]).plan.cards,
+      applyNoteConsolidation(onCard, onCardTargets, [
+        { cardId: 'jo', values: {}, groups: { traits: [['허세가 심함', '허세를 부린다']] } },
+      ]).plan.cards,
     ).toEqual([]);
   });
 
@@ -967,8 +976,8 @@ describe('note card consolidation', () => {
 
     expect(answer.consolidated[0]).toEqual({
       cardId: 'jo-manjae',
-      values: { traits: ['허세가 심함', '백과사전을 즐겨 읽음'], tags: ['허세남'] },
-      placed: { traits: ['허세가 심함', '허세를 부린다', '백과사전을 즐겨 읽음', '백과사전을 탐독함', '지어낸 말'] },
+      values: { tags: ['허세남'] },
+      groups: { traits: [['허세가 심함', '허세를 부린다'], ['백과사전을 즐겨 읽음', '백과사전을 탐독함', '지어낸 말']] },
     });
     expect(valuesOf(applyNoteConsolidation(twoReadings, targets, answer.consolidated).plan, 'jo-manjae')).toEqual([
       '허세남',
@@ -982,6 +991,53 @@ describe('note card consolidation', () => {
       '허세를 부린다',
       '백과사전을 탐독함',
     ]);
+  });
+
+  describe('an answer in groups', () => {
+    const painter = buildNoteAbsorbPlan({
+      ...baseInput,
+      cards: [],
+      notes: [note('a.md'), note('b.md')],
+      extractions: [
+        extraction({
+          entities: [entity({ name: '정은하', suggestedId: 'jeong-eunha', description: ['이사 온 화가', '옆집에 산다'], sourceNotes: ['a.md'] })],
+        }),
+        extraction({
+          entities: [entity({ name: '정은하', description: ['은하는 화가다', '화가로 일한다'], sourceNotes: ['b.md'] })],
+        }),
+      ],
+    });
+    const painterTargets = selectNoteConsolidationTargets(painter, chunkByNoteId, []);
+    const consolidate = (description: unknown) =>
+      applyNoteConsolidation(
+        painter,
+        painterTargets,
+        readNoteConsolidationResponse({ cards: [{ id: 'jeong-eunha', description }] }, false).consolidated,
+      );
+
+    it('keeps the first wording of the notes when the model rewrote the head of a group, and says so', () => {
+      const result = consolidate([['직업은 화가', '이사 온 화가', '은하는 화가다', '화가로 일한다'], ['옆집에 산다']]);
+
+      expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['이사 온 화가', '옆집에 산다']);
+      expect(result.warnings).toEqual([
+        '카드 정은하 의 description 정리 답이 후보에 없는 «직업은 화가» 를 대표로 적어, 그 묶음에서 노트의 문구 «이사 온 화가» 를 남겼습니다.',
+      ]);
+    });
+
+    it('treats a group with no candidate in it as not placing anything', () => {
+      const result = consolidate([['직업은 화가', '그림 그리는 사람'], ['옆집에 산다']]);
+
+      expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['이사 온 화가', '옆집에 산다', '은하는 화가다', '화가로 일한다']);
+    });
+
+    it('keeps every line of a field answered as a flat list instead of groups, and says so', () => {
+      const result = consolidate(['옆집에 산다']);
+
+      expect(valuesOf(result.plan, 'jeong-eunha')).toEqual(['이사 온 화가', '옆집에 산다', '은하는 화가다', '화가로 일한다']);
+      expect(result.warnings).toEqual([
+        '카드 정은하 의 description 정리 답이 묶음 형식이 아니어서 후보를 모두 남겼습니다.',
+      ]);
+    });
   });
 
   it('reads a response and refuses a cut or shapeless one', () => {
@@ -1126,7 +1182,7 @@ describe('PlanNoteAbsorbUseCase', () => {
 
   it('asks once to merge the traits of a person read in two requests', async () => {
     const { useCase, warnings, consolidationRequests } = createUseCase(twoReadings, {
-      consolidated: [{ cardId: 'jo-manjae', values: { traits: ['허세가 심함', '고집이 세다'] } }],
+      consolidated: [{ cardId: 'jo-manjae', values: {}, groups: { traits: [['허세가 심함', '허세를 부린다'], ['고집이 세다']] } }],
     });
 
     const result = await useCase.execute({ workspaceRoot, bundle });
