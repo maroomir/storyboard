@@ -1,5 +1,6 @@
 import {
   noteConsolidatedFields,
+  type NoteAliasCarrier,
   type NoteConsolidatedValues,
   type NoteConsolidationTarget,
 } from '@storyboard/story-model';
@@ -19,6 +20,11 @@ function renderLists(label: string, values: NoteConsolidatedValues): string[] {
   });
 }
 
+function renderCarrier(carrier: NoteAliasCarrier): string {
+  const reads = carrier.readCount === undefined ? '기존 카드' : `${carrier.readCount}번 읽힘`;
+  return `${carrier.cardId} (${carrier.name}) ${reads}`;
+}
+
 function renderTarget(target: NoteConsolidationTarget): string {
   return [
     `[${cardKindLabels[target.type]}] id: ${target.cardId} (${target.name})`,
@@ -26,9 +32,9 @@ function renderTarget(target: NoteConsolidationTarget): string {
     ...renderLists('[후보]', target.candidates),
     ...target.sharedAliases.map(
       (shared) =>
-        `[공유 별칭] ${shared.alias} — ${shared.otherCards
-          .map((carrier) => `${carrier.cardId} (${carrier.name})`)
-          .join(', ')} 도 가짐`,
+        `[공유 별칭] ${shared.alias} — 이 카드에서 ${shared.readCount}번 읽힘 · ${shared.otherCards
+          .map(renderCarrier)
+          .join(' · ')}`,
     ),
   ].join('\n');
 }

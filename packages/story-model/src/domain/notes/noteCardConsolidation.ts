@@ -63,16 +63,24 @@ function chunkCount(plan: NoteCardPlan, chunkByNoteId: ReadonlyMap<string, numbe
   return new Set(plan.sourceNotes.map((noteId) => chunkByNoteId.get(noteId))).size;
 }
 
+function readCountOf(cardPlan: NoteCardPlan, alias: string): number {
+  return cardPlan.aliasReadCounts[normalizeCardListText(alias)] ?? 1;
+}
+
 // Every card that carries each alias, on disk or as a candidate of this plan.
 function collectAliasCarriers(
   plan: NoteAbsorbPlan,
   cards: readonly StoryboardCard[],
 ): Map<string, Map<string, NoteAliasCarrier>> {
   const carriersByAlias = new Map<string, Map<string, NoteAliasCarrier>>();
-  const addCarrier = (card: StoryboardCard, alias: string): void => {
+  const addCarrier = (card: StoryboardCard, alias: string, readCount?: number): void => {
     const key = aliasKey(cardKindOf(card), alias);
     const carriers = carriersByAlias.get(key) ?? new Map<string, NoteAliasCarrier>();
-    carriers.set(card.id, { cardId: card.id, name: card.name });
+    carriers.set(card.id, {
+      cardId: card.id,
+      name: card.name,
+      ...(readCount === undefined ? {} : { readCount }),
+    });
     carriersByAlias.set(key, carriers);
   };
 
@@ -81,7 +89,9 @@ function collectAliasCarriers(
   }
 
   for (const cardPlan of plan.cards) {
-    candidateValuesOf(cardPlan, 'aliases').forEach((alias) => addCarrier(cardPlan.card, alias));
+    candidateValuesOf(cardPlan, 'aliases').forEach((alias) =>
+      addCarrier(cardPlan.card, alias, readCountOf(cardPlan, alias)),
+    );
   }
 
   return carriersByAlias;
@@ -98,7 +108,9 @@ function findSharedAliases(
       (carrier) => carrier.cardId !== cardPlan.card.id,
     );
 
-    return otherCards.length === 0 ? [] : [{ alias, otherCards }];
+    return otherCards.length === 0
+      ? []
+      : [{ alias, readCount: readCountOf(cardPlan, alias), otherCards }];
   });
 }
 
