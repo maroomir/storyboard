@@ -8,6 +8,7 @@ import {
 import { commandCatalog, findCommandSpec } from '@/commands/catalog';
 import { PauseRequests } from '@/adapters/pauseRequests';
 import { runShellCommand } from '@/adapters/shellCommand';
+import { keepTextAndColors } from '@/terminal/controlCodes';
 import type { ChoiceRequest, TextRequest } from '@/adapters/prompter';
 import { computeCompletions, listWorkspaceMentions } from '@/commands/completion';
 import { dispatch, type DispatchResult } from '@/commands/dispatch';
@@ -379,7 +380,7 @@ export function createTuiSession(options: TuiSessionOptions, sink: SessionSink):
         const result = await shellRun.result.finally(() => {
           stopShellCommand = undefined;
         });
-        const output = result.output.trimEnd();
+        const output = keepTextAndColors(result.output).trimEnd();
         sink.append(
           result.exitCode === 0 ? 'result' : 'error',
           output.length > 0 ? output : `종료 코드 ${result.exitCode}`,
