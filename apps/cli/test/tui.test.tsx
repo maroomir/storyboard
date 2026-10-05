@@ -25,6 +25,8 @@ import {
   layoutReaderLines,
 } from '../src/tui/draftReader';
 import { readWorkspaceView } from '../src/tui/workspaceView';
+import { StatusBar } from '../src/tui/statusBar';
+import { runShellCommand } from '../src/adapters/shellCommand';
 import { describeSpending, splitCommandLine, suggestForInput } from '../src/tui/session';
 import { loadTuiThemeName, saveTuiThemeName } from '../src/tui/tuiTheme';
 import { selectVisibleWindow } from '../src/tui/suggestionList';
@@ -407,6 +409,34 @@ describe('StoryboardTui', () => {
       lines.findIndex((line) => line.includes('«소설 생성» 작업 중')),
     );
     expect(lastFrame()).toContain('/help 도움말');
+  });
+
+  it('keeps the status on one line in a narrow window', () => {
+    const view = {
+      header: { workspaceLabel: '아주 긴 작품 이름이 붙은 장편', providerLabel: 'mock' },
+    };
+    const { lastFrame } = render(<StatusBar view={view} isBusy={false} columns={40} />);
+
+    expect((lastFrame() ?? '').split('\n')).toHaveLength(1);
+    expect(lastFrame()).not.toContain('Ctrl+R');
+  });
+
+  it('stops a shell command that would wait forever, with what it started', async () => {
+    const run = runShellCommand('sleep 30', tmpdir());
+    run.stop();
+
+    expect((await run.result).exitCode).not.toBe(0);
+  });
+
+  it('names Esc only when the running command can stop', () => {
+    const view = { header: { workspaceLabel: '작품', providerLabel: 'mock' } };
+
+    expect(render(<StatusBar view={view} isBusy columns={100} />).lastFrame()).not.toContain('Esc');
+    expect(
+      render(
+        <StatusBar view={view} isBusy columns={100} escapeHint="Esc 씬 경계에서 멈춤" />,
+      ).lastFrame(),
+    ).toContain('Esc 씬 경계에서 멈춤');
   });
 
   it('puts a line found with Ctrl+R back at the prompt without running it', async () => {
