@@ -92,16 +92,20 @@ function readTokenCount(usage: JsonRecord, key: string): number {
   return typeof value === 'number' ? value : 0;
 }
 
+// NOTE: 실행 파일은 프롬프트 거의 전부를 캐시 쓰기로 센다(실측: 6만 토큰 프롬프트에 input_tokens 2,
+// cache_creation_input_tokens 61,354). 이 경로는 요금이 없어 토큰 수가 유일한 척도이므로, 캐시로
+// 센 것까지 입력에 합쳐 «보낸 만큼» 이 보이게 한다.
 function readUsage(value: unknown): AiUsage | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
   return {
-    inputTokens: readTokenCount(value, 'input_tokens'),
+    inputTokens:
+      readTokenCount(value, 'input_tokens') +
+      readTokenCount(value, 'cache_creation_input_tokens') +
+      readTokenCount(value, 'cache_read_input_tokens'),
     outputTokens: readTokenCount(value, 'output_tokens'),
-    cacheReadInputTokens: readTokenCount(value, 'cache_read_input_tokens'),
-    cacheCreationInputTokens: readTokenCount(value, 'cache_creation_input_tokens'),
   };
 }
 
