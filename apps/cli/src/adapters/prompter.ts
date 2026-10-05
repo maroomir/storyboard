@@ -52,7 +52,9 @@ export function describeChoiceLines<T>(
 
   return [
     ...renderBox([...request.details, ...(request.details.length > 0 ? [''] : []), ...options], {
-      availableWidth: stream.columns,
+      // The live area keeps the last column free so a line never wraps; a full-width frame would
+      // lose its right edge there.
+      availableWidth: stream.columns - 1,
       title: request.title,
       paintFrame: (text) => paint('muted', text),
       paintTitle: (text) => paint('heading', text),
