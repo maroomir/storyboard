@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -597,6 +597,28 @@ describe('the Node CLI runner', () => {
     }
 
     expect(lines).toEqual(['-|-|-|value-of-CLAUDE_CODE_OAUTH_TOKEN']);
+  });
+
+  // The executable finds CLAUDE.md by walking up from its working directory, so a child started in
+  // the work (whose init writes CLAUDE.md and AGENTS.md) carried those agent instructions into every
+  // generation. The API providers never see them; neither may this one.
+  it('runs the child in an empty directory, never the host working directory', async () => {
+    const lines: string[] = [];
+
+    await runner.run({
+      ...base,
+      command: process.execPath,
+      args: [
+        '-e',
+        'const fs = require("node:fs"); console.log(process.cwd()); console.log(fs.readdirSync(".").length)',
+      ],
+      onStdoutLine: (line) => lines.push(line),
+    });
+
+    const [childDirectory, entryCount] = lines;
+    expect(realpathSync(childDirectory ?? '')).not.toBe(realpathSync(process.cwd()));
+    expect(realpathSync(childDirectory ?? '').startsWith(realpathSync(tmpdir()))).toBe(true);
+    expect(entryCount).toBe('0');
   });
 
   it('reports a missing executable', async () => {
