@@ -157,19 +157,9 @@ export function selectNoteConsolidationTargets(
   });
 }
 
-// NOTE: 정리 요청 하나가 받는 후보 분량(글자). 남기는 줄은 후보에서 고르므로 출력은 이 분량을 넘지
-// 않는다. 한글 1.5자를 1토큰으로 보면 4천 토큰 남짓이라, 사고를 포함한 출력 한도(maxTokens 16000)
-// 안에 든다. 2026-10 실측에서 성격·태그만으로도 출력 4천 토큰 한도에서 잘린 적이 있다.
-export const noteConsolidationCharacterLimit = 6_000;
-
-function measureTarget(target: NoteConsolidationTarget): number {
-  const lists = [...Object.values(target.existing), ...Object.values(target.candidates)];
-
-  return lists.flat().reduce((total, value) => total + value.length, target.name.length);
-}
-
-// Cards that share an alias are decided together, so they always travel in one request; past
-// that, cards fill each request up to the limit in plan order. A group over the limit goes alone.
+// Each card is its own request, so the model weighs one card's lines against each other instead of
+// skimming a dozen cards at once; cards that share an alias are decided together, so they travel
+// in one request.
 export function groupNoteConsolidationTargets(
   targets: readonly NoteConsolidationTarget[],
 ): NoteConsolidationTarget[][] {
@@ -198,49 +188,39 @@ export function groupNoteConsolidationTargets(
     }
   });
 
-  const linked = new Map<number, NoteConsolidationTarget[]>();
+  const requests = new Map<number, NoteConsolidationTarget[]>();
 
   targets.forEach((target, index) => {
     const root = findRoot(index);
-    linked.set(root, [...(linked.get(root) ?? []), target]);
+    requests.set(root, [...(requests.get(root) ?? []), target]);
   });
 
-  const requests: NoteConsolidationTarget[][] = [];
-  let current: NoteConsolidationTarget[] = [];
-  let currentSize = 0;
-
-  for (const group of linked.values()) {
-    const groupSize = group.reduce((total, target) => total + measureTarget(target), 0);
-
-    if (current.length > 0 && currentSize + groupSize > noteConsolidationCharacterLimit) {
-      requests.push(current);
-      current = [];
-      currentSize = 0;
-    }
-
-    current.push(...group);
-    currentSize += groupSize;
-  }
-
-  if (current.length > 0) {
-    requests.push(current);
-  }
-
-  return requests;
+  return [...requests.values()];
 }
 
 type KeptValues = Partial<Record<NoteConsolidatedField, Set<string>>>;
 
-function keptValues(candidates: readonly string[], answer: readonly string[]): Set<string> {
+function keptValues(
+  candidates: readonly string[],
+  answer: readonly string[],
+  placed: readonly string[] | undefined,
+): Set<string> {
   const answered = new Set(answer.map(normalizeCardListText));
+  const placedKeys = placed === undefined ? undefined : new Set(placed.map(normalizeCardListText));
 
-  return new Set(candidates.filter((value) => answered.has(normalizeCardListText(value))));
+  return new Set(
+    candidates.filter((value) => {
+      const key = normalizeCardListText(value);
+      return answered.has(key) || (placedKeys !== undefined && !placedKeys.has(key));
+    }),
+  );
 }
 
 // The model only chooses among the candidates: a value it rewrote or made up is not a candidate and
-// is dropped, so the card keeps the notes' own wording. A field left out of the answer keeps every
-// candidate, and so does a new card's list the answer empties — a description with no line at all
-// cannot be right. Aliases may all go: every one of them may have been a remark or someone else's.
+// is dropped, so the card keeps the notes' own wording. A candidate an answer in groups left out of
+// every group is kept, and so is every candidate of a field left out of the answer or a new card's
+// list the answer empties — a description with no line at all cannot be right. Aliases may all
+// go: every one of them may have been a remark or someone else's.
 function narrowTargetValues(
   target: NoteConsolidationTarget,
   answer: NoteConsolidatedLists,
@@ -257,7 +237,7 @@ function narrowTargetValues(
       continue;
     }
 
-    const values = keptValues(candidates, answered);
+    const values = keptValues(candidates, answered, answer.placed?.[field]);
     const isEmptiedList =
       values.size === 0 && field !== 'aliases' && target.existing[field] === undefined;
 

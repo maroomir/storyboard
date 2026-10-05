@@ -45,9 +45,13 @@ export interface NoteConsolidationTarget {
   readonly sharedAliases: readonly NoteSharedAlias[];
 }
 
+// `values` are what the answer keeps. A field answered as groups of one meaning keeps the first item
+// of each group, and `placed` lists every item it grouped: a candidate it left out of every group
+// was overlooked, not dropped.
 export interface NoteConsolidatedLists {
   readonly cardId: string;
   readonly values: NoteConsolidatedValues;
+  readonly placed?: NoteConsolidatedValues;
 }
 
 export type NoteConsolidationFailure = 'truncated' | 'unparsed';
@@ -67,6 +71,15 @@ function readTextList(value: unknown): string[] | undefined {
     : undefined;
 }
 
+function readGroups(value: unknown): string[][] | undefined {
+  return Array.isArray(value) && value.length > 0 && value.every(Array.isArray)
+    ? value.flatMap((group) => {
+        const items = readTextList(group) ?? [];
+        return items.length === 0 ? [] : [items];
+      })
+    : undefined;
+}
+
 function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
   const id = answerIdSchema.safeParse(entry);
 
@@ -76,16 +89,23 @@ function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
 
   const record = entry as Record<string, unknown>;
   const values: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
+  const placed: Partial<Record<NoteConsolidatedField, readonly string[]>> = {};
 
   for (const field of noteConsolidatedFields) {
-    const list = readTextList(record[field]);
+    const groups = readGroups(record[field]);
+    const list = groups === undefined ? readTextList(record[field]) : undefined;
 
-    if (list !== undefined) {
+    if (groups !== undefined) {
+      values[field] = groups.map((group) => group[0] as string);
+      placed[field] = groups.flat();
+    } else if (list !== undefined) {
       values[field] = list;
     }
   }
 
-  return { cardId: id.data.id, values };
+  return Object.keys(placed).length === 0
+    ? { cardId: id.data.id, values }
+    : { cardId: id.data.id, values, placed };
 }
 
 export function readNoteConsolidationResponse(
