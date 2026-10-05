@@ -13,6 +13,7 @@ import {
 } from './commands/catalog';
 import { renderColumns, type ColumnRow } from './terminal/layout';
 import { plainTerminalStream, type TerminalStream } from './terminal/profile';
+import { wrapToWidth } from './terminal/width';
 
 // 도움말은 세 겹이다. 맨 처음 화면은 묶음만, `help <묶음>` 은 한 묶음의 명령, `help --all` 은 전부.
 // 60 개가 넘는 명령을 한 화면에 쏟으면 처음 온 사람은 어디서 시작할지 찾지 못한다.
@@ -87,7 +88,10 @@ function renderGettingStarted(stream: TerminalStream): string[] {
   return [
     ...renderSection('처음이라면', numbered, stream, gettingStartedLabelWidth),
     '',
-    `  ${stream.theme.paint('accent', 'storyboard status')} 가 다음에 할 일을, ${stream.theme.paint('accent', 'storyboard doctor')} 가 빠진 설정을 알려 줍니다.`,
+    ...wrapToWidth(
+      `${stream.theme.paint('accent', 'storyboard status')} 가 다음에 할 일을, ${stream.theme.paint('accent', 'storyboard doctor')} 가 빠진 설정을 알려 줍니다.`,
+      stream.columns - 2,
+    ).map((line) => `  ${line}`),
   ];
 }
 

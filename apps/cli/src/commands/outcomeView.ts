@@ -1,6 +1,7 @@
 import type { WorkspaceStatus } from '@storyboard/story-app';
 
 import type { TerminalStream } from '@/terminal/profile';
+import { wrapWordsToWidth } from '@/terminal/width';
 
 import { describeNextStep, nextStepCommands } from './status';
 
@@ -24,20 +25,24 @@ export function markOutcome(
     return message;
   }
 
+  // Printed data (a draft body, a scene list) is left as it is; a message is a sentence, and the
+  // terminal would break it inside a word.
+  if (marking.ok && marking.stop === undefined && !marking.isAction) {
+    return message;
+  }
+
   const { paint } = stream.theme;
   const [headline = '', ...details] = message.split('\n');
+  const markedHeadline =
+    marking.stop !== undefined
+      ? paint('warning', headline)
+      : marking.ok
+        ? `${paint('success', '✓')} ${headline}`
+        : paint('danger', `✗ ${headline}`);
 
-  if (marking.stop !== undefined) {
-    return [paint('warning', headline), ...details].join('\n');
-  }
-
-  if (!marking.ok) {
-    return [paint('danger', `✗ ${headline}`), ...details].join('\n');
-  }
-
-  return marking.isAction
-    ? [`${paint('success', '✓')} ${headline}`, ...details].join('\n')
-    : message;
+  return [markedHeadline, ...details]
+    .flatMap((line) => wrapWordsToWidth(line, stream.columns))
+    .join('\n');
 }
 
 // The same step `storyboard status` names, so the hint after a run and the status screen never
@@ -50,5 +55,6 @@ export function renderNextStep(status: WorkspaceStatus, stream: TerminalStream):
   }
 
   const { paint } = stream.theme;
-  return `${paint('muted', '다음 →')}  ${paint('accent', `storyboard ${command}`)}  ${paint('muted', describeNextStep(status))}\n`;
+  const hint = `${paint('muted', '다음 →')}  ${paint('accent', `storyboard ${command}`)}  ${paint('muted', describeNextStep(status))}`;
+  return `${wrapWordsToWidth(hint, stream.columns).join('\n')}\n`;
 }

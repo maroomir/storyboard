@@ -6,6 +6,7 @@ import wrapAnsi from 'wrap-ansi';
 
 const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 const ellipsis = '…';
+// eslint-disable-next-line no-control-regex -- a color code starts with ESC.
 const colorCodePattern = /(\u001b\[[0-9;]*m)/;
 
 export function measureWidth(text: string): number {
@@ -48,6 +49,16 @@ export function truncateToWidth(text: string, width: number): string {
   }
 
   return room < 0 ? '' : `${kept}${ellipsis}`;
+}
+
+// Breaks only at spaces, so a word or a path wider than the line stays whole (and stays one link)
+// and the terminal wraps it.
+export function wrapWordsToWidth(text: string, width: number): string[] {
+  // Trimming the whole text would take a caller's indentation; only a wrapped line loses the space
+  // it was broken at.
+  return wrapAnsi(text, Math.max(1, width), { hard: false, trim: false })
+    .split('\n')
+    .map((line, index) => (index === 0 ? line : line.trimStart()));
 }
 
 // Breaks at spaces where it can and inside a word only when one word is wider than the line, so a
