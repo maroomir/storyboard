@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 
 import type { CliRunFailure, CliRunRequest, CliRunResult, ICliRunner } from '#ai/ports/cliRunner';
 
@@ -14,6 +14,26 @@ function childEnvironment(withoutEnvironment: readonly string[]): NodeJS.Process
   return environment;
 }
 
+// A host that exits mid-call (Ctrl+C, a closed window) must not leave the child running on: nobody
+// would read what it writes, and it would go on spending the subscription.
+const runningChildren = new Set<ChildProcess>();
+let isExitHookInstalled = false;
+
+function trackUntilClosed(child: ChildProcess): void {
+  if (!isExitHookInstalled) {
+    isExitHookInstalled = true;
+    process.once('exit', () => {
+      for (const running of runningChildren) {
+        running.kill('SIGTERM');
+      }
+    });
+  }
+
+  runningChildren.add(child);
+  child.once('close', () => runningChildren.delete(child));
+  child.once('error', () => runningChildren.delete(child));
+}
+
 export class NodeCliRunner implements ICliRunner {
   public run(request: CliRunRequest): Promise<CliRunResult> {
     return new Promise((resolve) => {
@@ -23,6 +43,8 @@ export class NodeCliRunner implements ICliRunner {
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: false,
       });
+
+      trackUntilClosed(child);
 
       let failure: CliRunFailure | undefined;
       let stderr = '';
