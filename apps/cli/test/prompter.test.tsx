@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LiveArea } from '../src/adapters/liveArea';
 import { describeChoiceLines, TerminalPrompter } from '../src/adapters/prompter';
+import { measureWidth } from '../src/terminal/width';
 import { createTheme } from '../src/terminal/theme';
 import { ChoiceDialog } from '../src/tui/choiceDialog';
 
@@ -67,6 +68,14 @@ describe('terminal prompter', () => {
     expect(lines).toContain('초안 14개 생성');
     expect(lines).toContain('❯ 2. 취소');
     expect(lines).toContain('  1. 진행');
+  });
+
+  it('keeps the options aligned and the key hint whole in a narrow terminal', () => {
+    const lines = describeChoiceLines(request, 0, { ...stream, columns: 40 });
+
+    expect(lines).toContain('  2. 취소');
+    expect(lines.every((line) => measureWidth(line) < 40)).toBe(true);
+    expect(lines.join('').replace(/\s+/g, '')).toContain('Esc취소');
   });
 });
 
