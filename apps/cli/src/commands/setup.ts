@@ -17,6 +17,7 @@ import {
   readMissingGitignoreEntries,
   type SceneCard,
   type StoryboardProject,
+  type StoryboardSettingDefinition,
   getStoryboardProjectPaths,
   resolveThreadPaths,
 } from '@storyboard/story-model';
@@ -881,6 +882,27 @@ export async function runParamsShow({ container }: CommandContext): Promise<Comm
   return { ok: true, message: lines.join('\n'), data: report };
 }
 
+// The catalog's bounds, so the author learns what would be accepted instead of only being refused.
+function describeOutOfRange(
+  definition: StoryboardSettingDefinition,
+  value: boolean | number | string,
+): string | undefined {
+  const { minimum, maximum } = definition;
+  const isBelow = typeof value === 'number' && minimum !== undefined && value < minimum;
+  const isAbove = typeof value === 'number' && maximum !== undefined && value > maximum;
+
+  if (!isBelow && !isAbove) {
+    return undefined;
+  }
+
+  const range = [
+    ...(minimum === undefined ? [] : [`${minimum} 이상`]),
+    ...(maximum === undefined ? [] : [`${maximum} 이하`]),
+  ].join(' ');
+  const ending = maximum === undefined ? '이어야' : '여야';
+  return `${definition.label}(${definition.key}) 값은 ${range}${ending} 합니다: ${value}`;
+}
+
 function parseSettingValue(
   kind: 'boolean' | 'integer' | 'string',
   raw: string,
@@ -1005,6 +1027,12 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
 
   if (value === undefined) {
     return { ok: false, message: `${key} 는 ${definition.kind} 값이어야 합니다.` };
+  }
+
+  const rangeProblem = describeOutOfRange(definition, value);
+
+  if (rangeProblem !== undefined) {
+    return { ok: false, message: rangeProblem };
   }
 
   try {

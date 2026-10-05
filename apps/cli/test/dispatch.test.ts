@@ -142,4 +142,14 @@ describe('dispatch', () => {
     expect(global.outcome?.data).toMatchObject({ file: join(home, 'config.json') });
     expect(readFileSync(join(cwd, '.storyboard', 'config.json'), 'utf8')).toContain('300');
   });
+
+  it('names the allowed range when a value is outside it', async () => {
+    const result = await dispatch(
+      ['config', 'set', 'revise.loop.maxIterations', '9', '--global'],
+      deps(),
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stdout).toContain('1 이상 5 이하여야 합니다: 9');
+  });
 });
