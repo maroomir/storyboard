@@ -5,7 +5,19 @@ import {
 } from '@storyboard/story-model/contracts';
 
 export const AI_PROVIDER_IDS = aiProviderIds;
-export { listSelectableProviderIds } from '@storyboard/story-model/contracts';
+import { listSelectableProviderIds } from '@storyboard/story-model/contracts';
+
+// NOTE: 호스트가 보낸 제공자 목록에 있는 것만 고를 수 있다. 호스트는 켜지 않은 숨은 제공자를
+// 목록에 넣지 않으므로, 웹뷰는 무엇이 숨어 있는지 따로 알 필요가 없다.
+export function listSnapshotSelectableProviderIds(
+  snapshot: SettingsReadSnapshot,
+  currentProviderId?: AiProviderId,
+): AiProviderId[] {
+  return listSelectableProviderIds(
+    currentProviderId,
+    snapshot.providers.map((provider) => provider.providerId),
+  );
+}
 export type { AiProviderId };
 
 export type AiTaskName = string;

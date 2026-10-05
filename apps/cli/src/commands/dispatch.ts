@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import {
-  aiProviderIds,
   storyboardModelCatalog,
   type AiProviderId,
   STORYBOARD_RELATIVE_PATHS,
@@ -50,6 +49,7 @@ import {
 import { commands } from './index';
 import type { CommandOutcome } from './outcome';
 import { markOutcome, renderNextStep } from './outcomeView';
+import { availableProviderIds } from '@/adapters/availableProviders';
 
 // 설정 파일을 쓰는 verb 는 이 둘뿐이다. API 키는 0600 홈 파일 하나로 고정이라 여기 없다.
 const configWritingVerbs = new Set(['setup', 'config set']);
@@ -138,8 +138,8 @@ function validateProvider(
       : '--model 은 --provider 와 함께 써야 합니다. 어느 프로바이더의 모델인지 알 수 없습니다.';
   }
 
-  if (!aiProviderIds.includes(provider as AiProviderId)) {
-    return `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+  if (!availableProviderIds().includes(provider as AiProviderId)) {
+    return `알 수 없는 프로바이더: ${provider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
 
   const catalog = storyboardModelCatalog[provider as AiProviderId];

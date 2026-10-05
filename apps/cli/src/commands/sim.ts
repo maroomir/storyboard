@@ -2,7 +2,6 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import {
-  aiProviderIds,
   storyboardModelCatalog,
   parseSceneCard,
   parseSceneFileName,
@@ -69,6 +68,7 @@ import { flagBoolean, flagString } from '@/cliArguments';
 import { createSimWorkspaceFactory } from '@/adapters/simWorkspaceFactory';
 import { createCliContainer } from '@/container';
 import type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
+import { availableProviderIds } from '@/adapters/availableProviders';
 
 // NOTE: 시뮬레이터는 트랙 저장소를 대상으로 돌고 제품 워크스페이스를 요구하지 않는다. 그래서
 // 다섯 동사 모두 needsWorkspace: false 이고, 대상은 --track 이 가리킨다.
@@ -271,7 +271,7 @@ function generationRecord(
 }
 
 function isProviderId(value: string): value is AiProviderId {
-  return aiProviderIds.includes(value as AiProviderId);
+  return availableProviderIds().includes(value as AiProviderId);
 }
 
 // 명령줄 > 트랙 저장소의 sim.config.json > 워크스페이스 자체 설정. 기계 프로필은 파일에 두고,
@@ -293,7 +293,7 @@ function generationSelection(context: CommandContext, config: SimConfig): Select
 
   if (flagProvider !== undefined) {
     if (!isProviderId(flagProvider)) {
-      return `알 수 없는 프로바이더: ${flagProvider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+      return `알 수 없는 프로바이더: ${flagProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
     }
     const model = flagModel ?? storyboardModelCatalog[flagProvider][0]?.id;
     return model === undefined
@@ -336,7 +336,7 @@ function judgeSelection(
   }
 
   if (!isProviderId(rawProvider)) {
-    return `알 수 없는 심판 프로바이더: ${rawProvider}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+    return `알 수 없는 심판 프로바이더: ${rawProvider}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
 
   const model =

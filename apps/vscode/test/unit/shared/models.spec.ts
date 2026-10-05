@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { aiProviderIds, providerCatalog, storyboardModelCatalog } from '@storyboard/story-model';
+import { aiProviderIds, isHiddenProvider, listAvailableProviderIds, providerCatalog, storyboardModelCatalog, storyboardModelPricing } from '@storyboard/story-model';
 import { ConfigBridge } from '@storyboard/story-ai';
 import type { AiProviderId } from '@storyboard/story-model';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
@@ -52,8 +52,8 @@ describe("providerCatalog internal consistency", () => {
 
   // Every provider Storyboard speaks to is billed per token now, so a missing price would make a
   // paid run look free rather than merely unknown.
-  it("reaches every provider over http or the offline mock", () => {
-    for (const providerId of aiProviderIds) {
+  it("reaches every listed provider over http or the offline mock", () => {
+    for (const providerId of listAvailableProviderIds()) {
       const entry = providerCatalog[providerId]
 
       expect(["http", "mock"], `${providerId} transport`).toContain(entry.transport)
@@ -63,9 +63,18 @@ describe("providerCatalog internal consistency", () => {
   // The subscription CLIs left in 0.9.2 and nothing maps onto them any more. A config naming one
   // must fall through to "no provider chosen" so the author picks again — the model and the price
   // are different, so choosing on their behalf would spend money they did not agree to.
-  it("keeps the retired subscription CLIs out of the catalog", () => {
+  it("keeps the retired subscription CLIs out of every list a person is shown", () => {
     for (const retiredId of ["claude-code", "codex", "gemini-cli"]) {
-      expect(aiProviderIds, `${retiredId} is still in the catalog`).not.toContain(retiredId)
+      expect(listAvailableProviderIds(), `${retiredId} is still listed`).not.toContain(retiredId)
+    }
+  })
+
+  // The one program-run provider exists only behind a home-file switch.
+  it("hides every provider that runs a program on this machine", () => {
+    for (const providerId of aiProviderIds) {
+      if (providerCatalog[providerId].transport === "cli") {
+        expect(isHiddenProvider(providerId), `${providerId} is not hidden`).toBe(true)
+      }
     }
   })
 
@@ -76,6 +85,12 @@ describe("providerCatalog internal consistency", () => {
 
       expect(entry.models.length, `${providerId} has no model`).toBeGreaterThan(0)
       expect(new Set(ids).size, `${providerId} repeats a model id`).toBe(ids.length)
+
+      // A subscription login has no price: its usage must read as unpriced, never as free.
+      if (entry.transport === "cli") {
+        expect(storyboardModelPricing[providerId]).toEqual({})
+        continue
+      }
 
       for (const model of entry.models) {
         expect(typeof model.inputPricePerMillion, `${providerId}/${model.id} input price`).toBe("number")

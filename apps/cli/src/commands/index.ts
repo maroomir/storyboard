@@ -36,7 +36,6 @@ import {
   createEmptyBackground,
   createEmptyCharacter,
   parseSceneFileName,
-  aiProviderIds,
   requiresApiKey,
   type AiProviderId,
 } from '@storyboard/story-model';
@@ -61,6 +60,7 @@ import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './
 import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
 import { showStatus } from './status';
 import { listCards, listScenes, showCard, showDraft, showProject } from './views';
+import { availableProviderIds } from '@/adapters/availableProviders';
 
 export type { CommandContext, CommandHandler, CommandOutcome } from './outcome';
 
@@ -1697,11 +1697,11 @@ const checkDraft: CommandHandler = async ({ container, args }) => {
 const setApiKey: CommandHandler = async ({ container, args }) => {
   const provider = await resolveApiKeyProvider(container, args.positionals[0]);
 
-  if (typeof provider === 'string' && !aiProviderIds.includes(provider as AiProviderId)) {
+  if (typeof provider === 'string' && !availableProviderIds().includes(provider as AiProviderId)) {
     return { ok: false, message: provider };
   }
   if (provider === undefined) {
-    return { ok: false, message: `프로바이더를 지정해 주세요: ${aiProviderIds.join(', ')}` };
+    return { ok: false, message: `프로바이더를 지정해 주세요: ${availableProviderIds().join(', ')}` };
   }
 
   const providerId = provider as AiProviderId;
@@ -1745,7 +1745,7 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
 const showApiKeys: CommandHandler = async ({ container }) => {
   const rows: { readonly providerId: AiProviderId; readonly stored: boolean }[] = [];
 
-  for (const providerId of aiProviderIds) {
+  for (const providerId of availableProviderIds()) {
     if (!requiresApiKey(providerId)) {
       continue;
     }
@@ -1771,15 +1771,15 @@ async function resolveApiKeyProvider(
   given: string | undefined,
 ): Promise<string | undefined> {
   if (given !== undefined) {
-    return aiProviderIds.includes(given as AiProviderId)
+    return availableProviderIds().includes(given as AiProviderId)
       ? given
-      : `모르는 프로바이더입니다: ${given}\n쓸 수 있는 값: ${aiProviderIds.join(', ')}`;
+      : `모르는 프로바이더입니다: ${given}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`;
   }
   if (!process.stdin.isTTY || !container.canPrompt) {
     return undefined;
   }
 
-  const candidates = aiProviderIds.filter((providerId) => requiresApiKey(providerId));
+  const candidates = availableProviderIds().filter((providerId) => requiresApiKey(providerId));
   process.stderr.write('어느 프로바이더의 API 키입니까?\n');
   candidates.forEach((providerId, index) => {
     process.stderr.write(`  ${index + 1}. ${providerId}\n`);

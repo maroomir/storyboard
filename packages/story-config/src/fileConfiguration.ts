@@ -2,6 +2,11 @@ import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } 
 import { dirname } from 'node:path';
 
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
+import {
+  hiddenProviderEnabledKey,
+  hiddenProviderIds,
+  type AiProviderId,
+} from '@storyboard/story-model';
 
 import { ConfigFileError } from '#config/configFileError';
 import { validateConfigSettings, type ConfigKeyWarning } from '#config/configSchema';
@@ -173,6 +178,24 @@ function writeConfigFile(file: string, settings: Record<string, unknown>): void 
   }
 }
 
+// SECURITY: only the user's home file may switch a hidden provider on; a workspace file is never
+// asked. Hosts that list provider names before a configuration exists (argument checks, shell
+// completion) read the same answer through this.
+export function readEnabledHiddenProviderIds(userConfigFile: string): AiProviderId[] {
+  let userSettings: Record<string, unknown>;
+
+  try {
+    userSettings = parseConfigFile(userConfigFile);
+  } catch {
+    // Whoever reads the file for its settings reports what is wrong with it.
+    return [];
+  }
+
+  return hiddenProviderIds.filter(
+    (providerId) => lookup(userSettings, hiddenProviderEnabledKey(providerId)) === true,
+  );
+}
+
 export interface FileConfiguration extends StoryboardConfigurationLike {
   readonly inspect: NonNullable<StoryboardConfigurationLike['inspect']>;
   readonly update: NonNullable<StoryboardConfigurationLike['update']>;
@@ -182,13 +205,27 @@ export interface FileConfiguration extends StoryboardConfigurationLike {
 export function createFileConfiguration(options: FileConfigurationOptions): FileConfiguration {
   const overrides = options.overrides ?? {};
   const cache = new Map<string, CachedFile>();
+  let enabledHiddenProviders: { readonly key: string; readonly ids: AiProviderId[] } | undefined;
+
+  function enabledHiddenProviderIds(): AiProviderId[] {
+    const key = fileKey(options.userConfigFile);
+
+    if (enabledHiddenProviders?.key === key) {
+      return enabledHiddenProviders.ids;
+    }
+
+    const ids = readEnabledHiddenProviderIds(options.userConfigFile);
+    enabledHiddenProviders = { key, ids };
+    return ids;
+  }
 
   function read(file: string | undefined): Record<string, unknown> {
     if (file === undefined) {
       return {};
     }
 
-    const key = fileKey(file);
+    const enabledHiddenIds = enabledHiddenProviderIds();
+    const key = `${fileKey(file)}:${enabledHiddenIds.join(',')}`;
     const cached = cache.get(file);
 
     if (cached && cached.key === key) {
@@ -199,7 +236,7 @@ export function createFileConfiguration(options: FileConfigurationOptions): File
 
     try {
       value = parseConfigFile(file);
-      for (const warning of validateConfigSettings(file, value)) {
+      for (const warning of validateConfigSettings(file, value, enabledHiddenIds)) {
         options.onUnknownKey?.(warning);
       }
     } catch (error) {

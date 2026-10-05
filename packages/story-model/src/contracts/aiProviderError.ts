@@ -5,7 +5,13 @@ export type AiProviderErrorCode =
   | 'missing-api-key'
   | 'missing-model'
   | 'connection-failed'
-  | 'generation-failed';
+  | 'generation-failed'
+  | 'provider-not-enabled'
+  | 'risk-not-acknowledged'
+  | 'cli-not-found'
+  | 'cli-not-logged-in'
+  | 'cli-usage-limit'
+  | 'cli-timeout';
 
 export class AiProviderError extends Error {
   public constructor(

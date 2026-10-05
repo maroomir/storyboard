@@ -26,7 +26,10 @@ export async function chooseDefaultProvider(
     ? deps.configBridge.getDefaultProvider()
     : undefined;
 
-  const items: ProviderPickItem[] = listSelectableProviderIds(current).map((providerId) => {
+  const items: ProviderPickItem[] = listSelectableProviderIds(
+    current,
+    deps.configBridge.getEnabledHiddenProviderIds(),
+  ).map((providerId) => {
     const status = statuses.find((entry) => entry.providerId === providerId);
     const notes: string[] = [];
 
@@ -38,6 +41,8 @@ export async function chooseDefaultProvider(
       notes.push('로컬');
     } else if (providerId === 'mock') {
       notes.push('가짜 텍스트 · 흐름 확인용');
+    } else if (!requiresApiKey(providerId)) {
+      notes.push('구독 로그인');
     } else {
       notes.push(status?.hasApiKey ? 'API 키 저장됨' : 'API 키 필요');
     }

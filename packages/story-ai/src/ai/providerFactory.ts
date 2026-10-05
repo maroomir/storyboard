@@ -1,5 +1,6 @@
 import type { AiProvider, AiProviderId } from '@storyboard/story-model';
 import type { ConfigBridge } from '#ai/ports/ConfigBridge';
+import type { ICliRunner } from '#ai/ports/cliRunner';
 import type { SecretStore } from '#ai/ports/SecretStore';
 import type { ClaudeClientLike } from './providers/ClaudeProvider';
 import type { GoogleClientLike } from './providers/GoogleProvider';
@@ -9,6 +10,7 @@ import type { OpenAiClientLike } from './providers/OpenAiProvider';
 // Test seams: a host or a spec hands in the HTTP client a provider should talk through instead of
 // the real SDK. Each is optional; a provider without one builds its own.
 export interface ProviderClientFactories {
+  readonly createCliRunner?: () => ICliRunner;
   readonly createClaudeClient?: (apiKey: string) => ClaudeClientLike;
   readonly createGoogleClient?: (apiKey: string) => GoogleClientLike;
   readonly createGrokClient?: (apiKey: string) => OpenAiClientLike;

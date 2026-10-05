@@ -2,7 +2,6 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import {
-  aiProviderIds,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   compositionKindLabels,
@@ -30,6 +29,7 @@ import {
   noteSources,
   type CommandSpec,
 } from './catalog';
+import { availableProviderIds } from '@/adapters/availableProviders';
 export { completionShells, type CompletionShell } from './catalog';
 
 export interface Completion {
@@ -103,7 +103,7 @@ function flagCompletions(spec: CommandSpec | undefined): Completion[] {
 function valueCompletions(flagName: string, words: readonly string[]): Completion[] | undefined {
   switch (flagName) {
     case 'provider':
-      return aiProviderIds.map((id) => ({ text: id, description: '' }));
+      return availableProviderIds().map((id) => ({ text: id, description: '' }));
     case 'model': {
       const providerIndex = words.indexOf('--provider');
       const provider = providerIndex >= 0 ? words[providerIndex + 1] : undefined;
@@ -148,7 +148,7 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
 }
 
 function configKeyCompletions(): Completion[] {
-  const providerKeys = aiProviderIds.flatMap((id) => [
+  const providerKeys = availableProviderIds().flatMap((id) => [
     { text: `providers.${id}.model`, description: `${id} 모델` },
     ...(id === 'ollama'
       ? [{ text: 'providers.ollama.baseUrl', description: 'Ollama Base URL' }]
@@ -221,7 +221,7 @@ function positionalCompletions(
     case `[${noteSources.join('|')}]`:
       return choiceCompletions(noteSources, '노트 출처');
     case '<provider>':
-      return aiProviderIds.map((id) => ({ text: id, description: '' }));
+      return availableProviderIds().map((id) => ({ text: id, description: '' }));
     case '<key>':
       return configKeyCompletions();
     case '<command>':
