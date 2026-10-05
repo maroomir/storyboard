@@ -2,6 +2,7 @@ import { createInterface } from 'node:readline/promises';
 
 import { renderBox } from '@/terminal/layout';
 import type { TerminalStream } from '@/terminal/profile';
+import { wrapToWidth } from '@/terminal/width';
 
 import type { LiveArea } from './liveArea';
 
@@ -59,7 +60,9 @@ export function describeChoiceLines<T>(
       paintFrame: (text) => paint('muted', text),
       paintTitle: (text) => paint('heading', text),
     }),
-    paint('muted', '  ↑↓ 또는 숫자로 고르고 Enter · Esc 취소'),
+    ...wrapToWidth('↑↓ 또는 숫자로 고르고 Enter · Esc 취소', stream.columns - 3).map((line) =>
+      paint('muted', `  ${line}`),
+    ),
   ];
 }
 

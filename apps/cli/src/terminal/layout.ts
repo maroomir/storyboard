@@ -26,8 +26,12 @@ export function renderBox(lines: readonly string[], options: BoxOptions): string
   const paintFrame = options.paintFrame ?? identity;
   const paintTitle = options.paintTitle ?? identity;
 
+  // Only an over-wide line is re-wrapped; wrapping trims, which would undo a caller's indentation.
+  const wrapOverWide = (width: number) => (line: string) =>
+    measureWidth(line) <= width ? [line] : wrapToWidth(line, width);
+
   if (options.availableWidth < minimumBoxWidth) {
-    const body = lines.flatMap((line) => wrapToWidth(line, options.availableWidth));
+    const body = lines.flatMap(wrapOverWide(options.availableWidth));
     return options.title === undefined ? body : [paintTitle(options.title), ...body];
   }
 
@@ -35,10 +39,7 @@ export function renderBox(lines: readonly string[], options: BoxOptions): string
   const titleWidth = options.title === undefined ? 0 : measureWidth(options.title) + 4;
   const contentWidth = Math.max(titleWidth, ...lines.map(measureWidth));
   const innerWidth = Math.min(options.innerWidth ?? contentWidth, widestAllowed - 4);
-  // Only an over-wide line is re-wrapped; wrapping trims, which would undo a caller's indentation.
-  const body = lines.flatMap((line) =>
-    measureWidth(line) <= innerWidth ? [line] : wrapToWidth(line, innerWidth),
-  );
+  const body = lines.flatMap(wrapOverWide(innerWidth));
 
   const title =
     options.title === undefined ? '' : ` ${truncateToWidth(options.title, innerWidth - 2)} `;
