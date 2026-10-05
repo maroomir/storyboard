@@ -164,6 +164,19 @@ export class ConfigBridge {
     };
   }
 
+  public async setCliProviderConfig(
+    providerId: AiProviderId,
+    config: CliProviderConfig,
+  ): Promise<void> {
+    if (config.command !== undefined) {
+      await this.updateHomeValue(`providers.${providerId}.command`, config.command);
+    }
+
+    if (config.timeoutMs !== undefined) {
+      await this.updateHomeValue(`providers.${providerId}.timeoutMs`, config.timeoutMs);
+    }
+  }
+
   private readHomeValue(section: string): unknown {
     return this.dependencies.getConfiguration().inspect?.<unknown>(section)?.globalValue;
   }
