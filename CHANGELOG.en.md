@@ -10,7 +10,9 @@ after the first public release.
 
 ## [Unreleased]
 
-### Changed
+## [0.12.0] - 2026-10-05
+
+### Changed (breaking)
 
 - **CLI command names follow one rule, and the old names no longer work.** Every command on a work is `<singular noun> <verb> [target]`, two words, and a kind (character or background, the kind of check) is the first argument rather than part of the name. `scene` is the scene card; `draft` is the prose. An old name fails as "unknown command" and its first hint is the new name with the arguments carried over (`scene generate 01` → `storyboard draft generate 01`). A work's existing `AGENTS.md` still names the old commands: edit it from the table below, or delete it and run `storyboard init --repair` to write it again.
   | Before | Now |
@@ -26,6 +28,9 @@ after the first public release.
   | `narrator add` | `narrator create` |
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background` and `notes connect notion` are typed exactly as before (the kind moved from the command name to an argument).
+
+### Changed
+
 - **`storyboard --help` groups commands by noun.** Eight groups — 시작하기, 기획, 씬, 초안, 카드와 정전, 노트, 원고, 측정 — and one noun never spreads over two of them.
 - **`storyboard --help` shows the first steps and the command groups only.** See one group with `storyboard help draft` — by its id (`start`, `plan`, `scene`, `draft`, `card`, `notes`, `manuscript`, `sim`) or Korean name — and every command with `storyboard help --all`. Descriptions wrap to the terminal width and stay aligned with Korean text. A script that read the full list should switch to `help --all`.
 - **`manuscript export --out` writes the format its extension names.** A `.txt` target gets plain text with the markdown marks removed, as the editor's "Plain text" export does; anything else gets markdown. It used to write markdown whatever the extension.

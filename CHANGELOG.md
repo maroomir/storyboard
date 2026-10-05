@@ -9,7 +9,9 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
-### 변경
+## [0.12.0] - 2026-10-05
+
+### 변경 (호환성 주의)
 
 - **CLI 명령 이름을 한 규칙으로 맞췄습니다. 옛 이름은 더 이상 동작하지 않습니다.** 작품을 다루는 명령은 모두 `<단수 명사> <동사> [대상]` 두 단어이고, 종류(인물·배경, 검사 종류)는 이름이 아니라 첫 인자입니다. `scene`은 씬 카드, `draft`는 초안입니다. 옛 이름을 실행하면 «알 수 없는 명령»으로 실패하고, 첫 안내로 그 새 이름을 인자까지 붙여 알려 줍니다(`scene generate 01` → `storyboard draft generate 01`). 기존 작품의 `AGENTS.md`에는 옛 이름이 남아 있으니 아래 표대로 고치거나, 파일을 지우고 `storyboard init --repair`로 다시 만드세요.
   | 이전 | 지금 |
@@ -25,6 +27,9 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
   | `narrator add` | `narrator create` |
   | `manuscript summaries` | `manuscript summarize` |
   `card create|rename|recommend character|background`과 `notes connect notion`은 치는 글자가 그대로입니다(종류가 명령 이름에서 인자로 바뀌었을 뿐입니다).
+
+### 변경
+
 - **`storyboard --help`의 묶음이 명사를 따릅니다.** 시작하기 · 기획 · 씬 · 초안 · 카드와 정전 · 노트 · 원고 · 측정 여덟 묶음이고, 같은 명사가 두 묶음에 나뉘지 않습니다.
 - **`storyboard --help`가 처음 할 일과 명령 묶음만 보여 줍니다.** 한 묶음은 `storyboard help draft`처럼 영문 id(`start`·`plan`·`scene`·`draft`·`card`·`notes`·`manuscript`·`sim`)나 한글 이름으로, 모든 명령은 `storyboard help --all`로 봅니다. 설명은 터미널 폭에 맞춰 줄바꿈되고 한글이 섞여도 열이 맞습니다. 전체 목록을 읽던 스크립트는 `help --all`로 바꾸세요.
 - **`manuscript export --out`이 확장자에 맞는 형식으로 냅니다.** `.txt`면 편집기의 «Plain text» 내보내기와 같이 마크다운 기호를 걷은 평문, 그 밖은 마크다운입니다. 지금까지는 확장자와 관계없이 마크다운을 그대로 썼습니다.
