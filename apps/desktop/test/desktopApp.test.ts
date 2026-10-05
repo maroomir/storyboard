@@ -165,6 +165,27 @@ describe('the hidden subscription provider', () => {
     expect(homeConfig()).toEqual({ providers: { 'claude-code': { enabled: false } } });
   });
 
+  // QA D3: a no wrote only `enabled: false`, so a default still naming the provider made the whole
+  // home file invalid and every other setting fell back to its default.
+  it('clears the default that named it on no, keeping the rest of the home settings', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({
+        ai: { provider: { default: 'claude-code' } },
+        providers: { 'claude-code': { enabled: true }, claude: { model: 'claude-opus-5-5' } },
+      }),
+    );
+    await createWork();
+
+    expect(confirmQuestions).toHaveLength(1);
+    expect(homeConfig()).toEqual({
+      providers: { 'claude-code': { enabled: false }, claude: { model: 'claude-opus-5-5' } },
+    });
+    const settings = await expectOk('settings.read', {});
+    expect(settings.providers.find((provider) => provider.id === 'claude')?.model).toBe('claude-opus-5-5');
+    expect(notices).toEqual([]);
+  });
+
   it('remembers a yes and does not ask again', async () => {
     switchOnByHand();
     confirmAnswer = true;
