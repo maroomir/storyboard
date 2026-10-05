@@ -329,12 +329,8 @@ describe('the hidden subscription provider: the call', () => {
       providerId: 'claude-code',
       model: 'claude-sonnet-5',
       text: '빗물이 흘렀다.',
-      usage: {
-        inputTokens: 2,
-        outputTokens: 129,
-        cacheReadInputTokens: 0,
-        cacheCreationInputTokens: 543,
-      },
+      // Cache tokens are folded into the input: with no price, tokens are the only measure.
+      usage: { inputTokens: 545, outputTokens: 129 },
     });
   });
 
