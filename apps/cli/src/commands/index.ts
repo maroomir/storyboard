@@ -160,12 +160,15 @@ const generateScene: CommandHandler = async ({ container, args }) => {
 
     const result = await container.drafts.generateAll({
       shouldPause: container.pauseRequests.watch(),
-      onProgress: (progress) =>
+      onProgress: (progress) => {
+        const step = describeBatchStep(progress);
         container.progress.update({
-          line: `${progress.current}/${progress.total} ${progress.label}`,
+          // A log line per stage, so each line says which stage it is.
+          line: `${progress.current}/${progress.total} ${progress.label} · ${step}`,
           unit: { current: progress.current, total: progress.total, label: progress.label },
-          step: describeBatchStep(progress),
-        }),
+          step,
+        });
+      },
     });
 
     if (!result.ok) {
