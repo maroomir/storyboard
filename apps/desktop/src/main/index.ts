@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
+import { killRunningCliChildren } from '@storyboard/story-ai';
 import { resolveStoryboardHomePaths } from '@storyboard/story-config';
 
 import { ipcEventChannelName, ipcInvokeChannelName } from '@/shared/ipcChannelNames';
@@ -153,4 +154,17 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.on('window-all-closed', () => app.quit());
+
+  // NOTE: 창을 닫든 신호로 끝나든, 생성 중인 구독 CLI 자식은 앱과 함께 끝난다. 신호는 종료 확인을
+  // 묻지 않는다 — 물어볼 사람이 없을 수 있다.
+  app.on('will-quit', killRunningCliChildren);
+  for (const [signal, exitCode] of [
+    ['SIGTERM', 143],
+    ['SIGHUP', 129],
+  ] as const) {
+    process.on(signal, () => {
+      killRunningCliChildren();
+      app.exit(exitCode);
+    });
+  }
 }

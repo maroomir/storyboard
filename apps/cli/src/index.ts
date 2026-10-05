@@ -60,6 +60,11 @@ async function main(argv: readonly string[]): Promise<number> {
     liveArea.writeAbove('지금 씬을 마치고 멈춥니다. 바로 끝내려면 Ctrl+C 를 한 번 더 누르세요.\n');
   });
 
+  // NOTE: Node 는 처리기가 없는 SIGTERM·SIGHUP 에 exit 이벤트 없이 죽는다. 그러면 생성 중인 자식
+  // 프로세스가 고아로 남아 구독을 계속 쓰므로, 두 신호를 정상 종료로 바꿔 exit 훅이 돌게 한다.
+  process.on('SIGTERM', () => process.exit(143));
+  process.on('SIGHUP', () => process.exit(129));
+
   const isInteractive = process.stdin.isTTY === true && process.stderr.isTTY === true;
   const result = await dispatch(argv, {
     version,

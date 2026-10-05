@@ -3,7 +3,12 @@ import * as vscode from 'vscode';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 import { type IStoryboardLogger } from '@storyboard/story-engine';
 import { StoryboardApplication } from '@storyboard/story-app';
-import { ConfigBridge, requestHiddenProviderConsent, SecretStore } from '@storyboard/story-ai';
+import {
+  ConfigBridge,
+  killRunningCliChildren,
+  requestHiddenProviderConsent,
+  SecretStore,
+} from '@storyboard/story-ai';
 import type { StoryboardConfigurationLike } from '@storyboard/story-ai';
 import { migrateVscodeSettingsToHome } from '@/infrastructure/settings/migrateVscodeSettings';
 import {
@@ -143,6 +148,8 @@ export class PlatformModule implements IApplicationModule {
   }
 
   public dispose(): void {
+    // NOTE: 확장 호스트가 내려갈 때 생성 중인 구독 CLI 자식도 함께 끝낸다.
+    killRunningCliChildren();
     this.disposables.dispose();
 
     this.services = undefined;

@@ -1,5 +1,5 @@
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawn } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -560,6 +560,50 @@ describe('the Node CLI runner', () => {
       expect(Date.now() - started).toBeLessThan(6_000);
       await new Promise((resolve) => setTimeout(resolve, 100));
       expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+    }
+  }, 20_000);
+
+  // QA D2: a host killed by SIGTERM or SIGHUP left the child running. The CLI turns both into an
+  // orderly exit (apps/cli/src/index.ts), which runs the runner's exit hook.
+  it('takes its child group down when a host turns SIGTERM or SIGHUP into an exit', async () => {
+    for (const [signal, exitCode] of [
+      ['SIGTERM', 143],
+      ['SIGHUP', 129],
+    ] as const) {
+      const directory = mkdtempSync(join(tmpdir(), 'storyboard-runner-'));
+      const pidFile = join(directory, 'grandchild.pid');
+      const runnerBundle = join(directory, 'runner.cjs');
+      buildSync({
+        entryPoints: [
+          join(__dirname, '../../../packages/story-ai/src/ai/providers/nodeCliRunner.ts'),
+        ],
+        outfile: runnerBundle,
+        bundle: true,
+        platform: 'node',
+        format: 'cjs',
+      });
+      const grandchild = `"${process.execPath}" -e 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)' "${pidFile}"`;
+      const host = spawn(
+        process.execPath,
+        [
+          '-e',
+          `process.on(${JSON.stringify(signal)}, () => process.exit(${exitCode}));
+           const { NodeCliRunner } = require(${JSON.stringify(runnerBundle)});
+           void new NodeCliRunner().run({ command: '/bin/sh', args: ['-c', ${JSON.stringify(`${grandchild} & wait`)}],
+             stdin: '', timeoutMs: 60000, withoutEnvironment: [] });
+           setInterval(() => {}, 1000);`,
+        ],
+        { stdio: 'ignore' },
+      );
+
+      while (!existsSync(pidFile)) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      host.kill(signal);
+      await new Promise((resolve) => host.once('exit', resolve));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      expect(isAlive(Number(readFileSync(pidFile, 'utf8'))), signal).toBe(false);
     }
   }, 20_000);
 
