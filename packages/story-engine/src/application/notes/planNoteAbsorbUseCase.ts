@@ -79,8 +79,8 @@ const consolidationFailureDescriptions: Readonly<Record<NoteConsolidationFailure
   unparsed: '응답에서 정리 결과(JSON)를 찾지 못해',
 };
 
-function describeUnconsolidatedCharacters(names: readonly string[], reason: string): string {
-  return `인물 ${names.join(', ')} 의 성격·태그는 ${reason} 같은 뜻의 항목을 하나로 줄이지 못했습니다.`;
+function describeUnconsolidatedCards(names: readonly string[], reason: string): string {
+  return `카드 ${names.join(', ')} 의 목록은 ${reason} 같은 뜻의 항목을 하나로 줄이지 못했습니다.`;
 }
 
 function describeExtractionFailure(
@@ -186,7 +186,12 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
         scenes: source.scenes,
         scenePrefixDigits: source.project.editor.scenePrefixDigits,
       });
-      const consolidation = await this.consolidateCharacters(aiService, mergedPlan, chunks);
+      const consolidation = await this.consolidateCards(
+        aiService,
+        mergedPlan,
+        chunks,
+        source.cards,
+      );
       const plan = consolidation.plan;
 
       const leadingWarnings = [
@@ -204,12 +209,14 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     });
   }
 
-  // Exact repeats are already gone; this asks the model once for the ones worded differently.
-  // A failed request keeps the merged lists, so the import goes on with a warning.
-  private async consolidateCharacters(
-    aiService: Pick<StoryboardAiService, 'consolidateNoteCharacters'>,
+  // Exact repeats are already gone; this asks the model once for the ones worded differently and
+  // for whose a doubtful alias is. A failed request keeps the merged lists, so the import goes on
+  // with a warning.
+  private async consolidateCards(
+    aiService: Pick<StoryboardAiService, 'consolidateNoteCards'>,
     plan: NoteAbsorbPlan,
     chunks: readonly (readonly NoteDocument[])[],
+    cards: readonly StoryboardCard[],
   ): Promise<{ readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] }> {
     const chunkByNoteId = new Map<string, number>();
     for (const [index, chunk] of chunks.entries()) {
@@ -220,27 +227,27 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       }
     }
 
-    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId);
+    const targets = selectNoteConsolidationTargets(plan, chunkByNoteId, cards);
     if (targets.length === 0) {
       return { plan, warnings: [] };
     }
 
-    this.deps.logger.info(`인물 ${targets.length}명의 성격·태그를 정리하는 중입니다.`);
-    const result = await aiService.consolidateNoteCharacters(targets);
+    this.deps.logger.info(`카드 ${targets.length}장의 목록과 별칭을 정리하는 중입니다.`);
+    const result = await aiService.consolidateNoteCards(targets);
     const consolidated = applyNoteConsolidation(plan, targets, result.consolidated);
     const unansweredNames = consolidated.unanswered.map((target) => target.name);
-
-    if (unansweredNames.length === 0) {
-      return { plan: consolidated.plan, warnings: [] };
-    }
-
     const reason =
       result.failure === undefined
         ? '정리 응답에 빠져'
         : consolidationFailureDescriptions[result.failure];
-    const warning = describeUnconsolidatedCharacters(unansweredNames, reason);
-    this.deps.logger.warn(warning);
+    const warnings = [
+      ...(unansweredNames.length === 0
+        ? []
+        : [describeUnconsolidatedCards(unansweredNames, reason)]),
+      ...consolidated.warnings,
+    ];
+    warnings.forEach((warning) => this.deps.logger.warn(warning));
 
-    return { plan: consolidated.plan, warnings: [warning] };
+    return { plan: consolidated.plan, warnings };
   }
 }

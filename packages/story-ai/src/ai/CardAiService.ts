@@ -205,7 +205,7 @@ export class CardAiService {
     return coerceNoteSynthesis(parseJsonObject(response.text));
   }
 
-  public async consolidateNoteCharacters(
+  public async consolidateNoteCards(
     targets: readonly NoteConsolidationTarget[],
     options: GenerateTextOptions = {},
   ): Promise<NoteConsolidationResult> {
