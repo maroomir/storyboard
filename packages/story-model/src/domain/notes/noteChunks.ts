@@ -70,8 +70,11 @@ export function measureNoteAbsorbWorkload(
   },
 ): NoteAbsorbWorkload {
   const extractionRequestCount = groupNotesIntoChunks(notes).length;
-  // Synthesis and character consolidation run only when the notes call for them; both are counted.
-  const requestCount = extractionRequestCount + 2;
+  // NOTE: 정리 요청은 뽑힌 목록 분량에 따라 나뉘어 읽기 전에는 수를 모른다. 묶음 하나(1.2만 자)에서
+  // 뽑히는 목록이 정리 요청 하나의 분량(6천 자)을 넘지 않는다고 보고, 묶음 수만큼을 상한으로 센다.
+  // 종합 요청과 정리 요청은 노트가 필요로 할 때만 돌지만 견적에는 넣는다.
+  const consolidationRequestCount = extractionRequestCount;
+  const requestCount = extractionRequestCount + 1 + consolidationRequestCount;
   const characterCount = notes.reduce(
     (total, note) => total + note.title.length + note.body.length,
     0,
@@ -87,6 +90,6 @@ export function measureNoteAbsorbWorkload(
     outputTokenCeiling:
       extractionRequestCount * outputLimits.extractionMaxTokens +
       outputLimits.synthesisMaxTokens +
-      outputLimits.consolidationMaxTokens,
+      consolidationRequestCount * outputLimits.consolidationMaxTokens,
   };
 }

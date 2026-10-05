@@ -104,7 +104,9 @@ wording per meaning in its aliases, traits, tags, description, voice, desire and
 from the candidates, never rewritten — and when it fails the merged lists stand with a warning. An
 alias with a parenthesis is dropped when the response is read; an alias another card carries too
 (new or on disk) goes to the same request, which keeps it on one card or none, and with no clear
-answer it stays on every card with a warning — a card on disk is never changed.
+answer it stays on every card with a warning — a card on disk is never changed. That request is
+split by the size of its candidates (cards sharing an alias stay together), and the estimate counts
+one per extraction request.
 
 ## Editor-only surface
 

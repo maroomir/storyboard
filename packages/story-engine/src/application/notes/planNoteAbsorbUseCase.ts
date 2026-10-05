@@ -19,7 +19,9 @@ import {
   listKnownNoteEntities,
   measureNoteAbsorbWorkload,
   type NoteAbsorbWorkload,
+  type NoteConsolidatedLists,
   type NoteConsolidationFailure,
+  groupNoteConsolidationTargets,
   selectNoteConsolidationTargets,
   STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
@@ -232,20 +234,32 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
       return { plan, warnings: [] };
     }
 
-    this.deps.logger.info(`카드 ${targets.length}장의 목록과 별칭을 정리하는 중입니다.`);
-    const result = await aiService.consolidateNoteCards(targets);
-    const consolidated = applyNoteConsolidation(plan, targets, result.consolidated);
-    const unansweredNames = consolidated.unanswered.map((target) => target.name);
-    const reason =
-      result.failure === undefined
-        ? '정리 응답에 빠져'
-        : consolidationFailureDescriptions[result.failure];
-    const warnings = [
-      ...(unansweredNames.length === 0
-        ? []
-        : [describeUnconsolidatedCards(unansweredNames, reason)]),
-      ...consolidated.warnings,
-    ];
+    const requests = groupNoteConsolidationTargets(targets);
+    const answers: NoteConsolidatedLists[] = [];
+    const warnings: string[] = [];
+    this.deps.logger.info(
+      `카드 ${targets.length}장의 목록과 별칭을 요청 ${requests.length}개로 정리하는 중입니다.`,
+    );
+
+    for (const request of requests) {
+      const result = await aiService.consolidateNoteCards(request);
+      const answeredIds = new Set(result.consolidated.map((answer) => answer.cardId));
+      const unansweredNames = request
+        .filter((target) => !answeredIds.has(target.cardId))
+        .map((target) => target.name);
+      answers.push(...result.consolidated);
+
+      if (unansweredNames.length > 0) {
+        const reason =
+          result.failure === undefined
+            ? '정리 응답에 빠져'
+            : consolidationFailureDescriptions[result.failure];
+        warnings.push(describeUnconsolidatedCards(unansweredNames, reason));
+      }
+    }
+
+    const consolidated = applyNoteConsolidation(plan, targets, answers);
+    warnings.push(...consolidated.warnings);
     warnings.forEach((warning) => this.deps.logger.warn(warning));
 
     return { plan: consolidated.plan, warnings };

@@ -145,6 +145,78 @@ export function selectNoteConsolidationTargets(
   });
 }
 
+// NOTE: 정리 요청 하나가 받는 후보 분량(글자). 남기는 줄은 후보에서 고르므로 출력은 이 분량을 넘지
+// 않는다. 한글 1.5자를 1토큰으로 보면 4천 토큰 남짓이라, 사고를 포함한 출력 한도(maxTokens 16000)
+// 안에 든다. 2026-10 실측에서 성격·태그만으로도 출력 4천 토큰 한도에서 잘린 적이 있다.
+export const noteConsolidationCharacterLimit = 6_000;
+
+function measureTarget(target: NoteConsolidationTarget): number {
+  const lists = [...Object.values(target.existing), ...Object.values(target.candidates)];
+
+  return lists.flat().reduce((total, value) => total + value.length, target.name.length);
+}
+
+// Cards that share an alias are decided together, so they always travel in one request; past
+// that, cards fill each request up to the limit in plan order. A group over the limit goes alone.
+export function groupNoteConsolidationTargets(
+  targets: readonly NoteConsolidationTarget[],
+): NoteConsolidationTarget[][] {
+  const indexById = new Map(targets.map((target, index) => [target.cardId, index]));
+  const parents = targets.map((_, index) => index);
+  const findRoot = (index: number): number => {
+    let root = index;
+
+    while (parents[root] !== root) {
+      root = parents[root] as number;
+    }
+
+    return root;
+  };
+
+  targets.forEach((target, index) => {
+    for (const shared of target.sharedAliases) {
+      for (const carrier of shared.otherCards) {
+        const other = indexById.get(carrier.cardId);
+
+        if (other !== undefined) {
+          const [first, second] = [findRoot(index), findRoot(other)].sort((a, b) => a - b);
+          parents[second as number] = first as number;
+        }
+      }
+    }
+  });
+
+  const linked = new Map<number, NoteConsolidationTarget[]>();
+
+  targets.forEach((target, index) => {
+    const root = findRoot(index);
+    linked.set(root, [...(linked.get(root) ?? []), target]);
+  });
+
+  const requests: NoteConsolidationTarget[][] = [];
+  let current: NoteConsolidationTarget[] = [];
+  let currentSize = 0;
+
+  for (const group of linked.values()) {
+    const groupSize = group.reduce((total, target) => total + measureTarget(target), 0);
+
+    if (current.length > 0 && currentSize + groupSize > noteConsolidationCharacterLimit) {
+      requests.push(current);
+      current = [];
+      currentSize = 0;
+    }
+
+    current.push(...group);
+    currentSize += groupSize;
+  }
+
+  if (current.length > 0) {
+    requests.push(current);
+  }
+
+  return requests;
+}
+
 type KeptValues = Partial<Record<NoteConsolidatedField, Set<string>>>;
 
 function keptValues(candidates: readonly string[], answer: readonly string[]): Set<string> {
@@ -289,11 +361,7 @@ export function applyNoteConsolidation(
   plan: NoteAbsorbPlan,
   targets: readonly NoteConsolidationTarget[],
   answers: readonly NoteConsolidatedLists[],
-): {
-  readonly plan: NoteAbsorbPlan;
-  readonly unanswered: readonly NoteConsolidationTarget[];
-  readonly warnings: readonly string[];
-} {
+): { readonly plan: NoteAbsorbPlan; readonly warnings: readonly string[] } {
   const answerById = new Map(answers.map((answer) => [answer.cardId, answer]));
   const keptById = new Map<string, KeptValues>();
 
@@ -320,9 +388,5 @@ export function applyNoteConsolidation(
     return narrowed.isNew || narrowed.changes.length > 0 ? [narrowed] : [];
   });
 
-  return {
-    plan: { ...plan, cards },
-    unanswered: targets.filter((target) => !answerById.has(target.cardId)),
-    warnings,
-  };
+  return { plan: { ...plan, cards }, warnings };
 }

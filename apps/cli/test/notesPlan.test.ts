@@ -10,6 +10,8 @@ import {
 } from '@storyboard/story-engine';
 import {
   applyNoteConsolidation,
+  groupNoteConsolidationTargets,
+  type NoteConsolidationTarget,
   buildNoteAbsorbPlan,
   type NoteAbsorbPlan,
   type NoteConsolidationResult,
@@ -137,7 +139,7 @@ describe('note chunks', () => {
     ]);
   });
 
-  it('counts the synthesis and consolidation requests on top of the extraction requests', () => {
+  it('counts the synthesis request and one consolidation request per extraction request', () => {
     const workload = measureNoteAbsorbWorkload(
       [note('a.md', '가'.repeat(300)), note('b.md', '나'.repeat(300), 'link')],
       { extractionMaxTokens: 8000, synthesisMaxTokens: 2000, consolidationMaxTokens: 4000 },
@@ -150,6 +152,12 @@ describe('note chunks', () => {
       outputTokenCeiling: 14000,
     });
     expect(workload.inputTokens).toBeGreaterThan(400);
+
+    const twoChunks = measureNoteAbsorbWorkload(
+      [note('a.md', '가'.repeat(noteChunkCharacterLimit - 100)), note('b.md', '나'.repeat(noteChunkCharacterLimit - 100))],
+      { extractionMaxTokens: 8000, synthesisMaxTokens: 2000, consolidationMaxTokens: 4000 },
+    );
+    expect(twoChunks).toMatchObject({ requestCount: 5, outputTokenCeiling: 26000 });
   });
 });
 
@@ -851,11 +859,10 @@ describe('note card consolidation', () => {
 
   it('keeps only the candidates the model chose, never a wording it made up', () => {
     const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
-    const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, [
+    const { plan } = applyNoteConsolidation(twoReadings, targets, [
       { cardId: 'jo-manjae', values: { traits: ['허세가 심함', '백과사전을 즐겨 읽음', '허풍쟁이'], tags: ['허세남'] } },
     ]);
 
-    expect(unanswered).toEqual([]);
     expect(valuesOf(plan, 'jo-manjae')).toEqual(['허세남', '허세가 심함', '백과사전을 즐겨 읽음']);
   });
 
@@ -884,12 +891,34 @@ describe('note card consolidation', () => {
     ).toEqual(['허세']);
   });
 
-  it('reports the cards the answer left out', () => {
+  it('leaves a card the answer left out as it was', () => {
     const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
-    const { plan, unanswered } = applyNoteConsolidation(twoReadings, targets, []);
 
-    expect(plan).toEqual(twoReadings);
-    expect(unanswered.map((target) => target.name)).toEqual(['조만재']);
+    expect(applyNoteConsolidation(twoReadings, targets, []).plan).toEqual(twoReadings);
+  });
+
+  it('sends cards that share an alias together and splits the rest by size', () => {
+    const lines = (prefix: string) => [prefix.repeat(2_500)];
+    const target = (cardId: string, description: string[], sharedWith: string[] = []): NoteConsolidationTarget => ({
+      cardId,
+      name: cardId,
+      type: 'character',
+      existing: {},
+      candidates: { description },
+      sharedAliases: sharedWith.length === 0 ? [] : [{ alias: '엘리트', otherCards: sharedWith.map((id) => ({ cardId: id, name: id })) }],
+    });
+    const targets = [
+      target('a', lines('가'), ['c']),
+      target('b', lines('나')),
+      target('c', lines('다'), ['a']),
+      target('d', lines('라')),
+      target('e', ['짧은 줄']),
+    ];
+
+    expect(groupNoteConsolidationTargets(targets).map((group) => group.map((item) => item.cardId))).toEqual([
+      ['a', 'c'],
+      ['b', 'd', 'e'],
+    ]);
   });
 
   it('reads a response and refuses a cut or shapeless one', () => {
@@ -941,7 +970,7 @@ describe('PlanNoteAbsorbUseCase', () => {
 
   function createUseCase(
     results: readonly NoteExtractionResult[],
-    consolidation: NoteConsolidationResult = { consolidated: [] },
+    consolidation: NoteConsolidationResult | readonly NoteConsolidationResult[] = { consolidated: [] },
   ) {
     const savedResponses: NoteExtractionResponse[][] = [];
     const warnings: string[] = [];
@@ -956,7 +985,9 @@ describe('PlanNoteAbsorbUseCase', () => {
       synthesizeNotePremise: async () => emptyNoteSynthesis,
       consolidateNoteCards: async (targets: unknown) => {
         consolidationRequests.push(targets);
-        return consolidation;
+        return Array.isArray(consolidation)
+          ? (consolidation[consolidationRequests.length - 1] as NoteConsolidationResult)
+          : (consolidation as NoteConsolidationResult);
       },
     };
     const useCase = new PlanNoteAbsorbUseCase({
@@ -1047,6 +1078,28 @@ describe('PlanNoteAbsorbUseCase', () => {
       '카드 조만재 의 목록은 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
     ]);
     expect(result.ok && result.plan.warnings[0]).toBe(warnings[0]);
+  });
+
+  it('splits a large consolidation into requests and warns only about the one that failed', async () => {
+    const readingOfTwo = (noteId: string): NoteExtractionResult => ({
+      extraction: extraction({
+        entities: ['jo-manjae', 'jeong-eunha'].map((id) =>
+          entity({ name: id, suggestedId: id, description: [`${noteId} ${'가'.repeat(2_000)}`], sourceNotes: [noteId] }),
+        ),
+      }),
+      responseText: '{}',
+    });
+    const { useCase, warnings, consolidationRequests } = createUseCase(
+      [readingOfTwo('첫째.md'), readingOfTwo('둘째.md')],
+      [{ consolidated: [{ cardId: 'jo-manjae', values: {} }] }, { consolidated: [], failure: 'truncated' }],
+    );
+
+    await useCase.execute({ workspaceRoot, bundle });
+
+    expect(consolidationRequests).toHaveLength(2);
+    expect(warnings).toEqual([
+      '카드 jeong-eunha 의 목록은 응답이 출력 한도에서 잘려 같은 뜻의 항목을 하나로 줄이지 못했습니다.',
+    ]);
   });
 
   it('shows the next request who the earlier requests found', async () => {
