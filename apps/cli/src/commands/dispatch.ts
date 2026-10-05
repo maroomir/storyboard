@@ -70,7 +70,11 @@ export interface DispatchDependencies {
   readonly cwd: string;
   // Whether a person can answer questions (setup) and wants progress lines by default.
   readonly isInteractive: boolean;
-  readonly createLogger: (showProgress: boolean, stderrTheme: Theme) => IStoryboardLogger;
+  readonly createLogger: (
+    showProgress: boolean,
+    stderrTheme: Theme,
+    showsErrorStack: boolean,
+  ) => IStoryboardLogger;
   // The real streams; without them the output is the plain text a pipe gets.
   readonly terminal?: TerminalFacts;
   // The bottom of stderr a progress rail may redraw; the logger writes above it. Without one,
@@ -290,7 +294,11 @@ export async function dispatch(
   const showProgress =
     flagBoolean(args.flags, 'verbose') ||
     (deps.isInteractive && !mode.json && !flagBoolean(args.flags, 'quiet'));
-  const logger = deps.createLogger(showProgress, terminal.stderr.theme);
+  const logger = deps.createLogger(
+    showProgress,
+    terminal.stderr.theme,
+    flagBoolean(args.flags, 'verbose'),
+  );
   const usageSession = { readCostUsd: (): number => 0 };
   const progress: IRunProgress =
     deps.liveArea !== undefined && showProgress && terminal.stderr.isTty && !mode.json
@@ -359,12 +367,22 @@ export async function dispatch(
 
   // `init` makes the workspace rather than writing one under the lock, but it is the first action.
   const isAction = spec?.writesWorkspace === true || verb === 'init';
-  const markedMessage = markOutcome(outcome.message, { ok: outcome.ok, isAction }, terminal.stdout);
+  const markedMessage = markOutcome(
+    outcome.message,
+    {
+      ok: outcome.ok,
+      isAction,
+      ...(outcome.stop === undefined ? {} : { stop: outcome.stop }),
+      ...(outcome.isDrawn === undefined ? {} : { isDrawn: outcome.isDrawn }),
+    },
+    terminal.stdout,
+  );
   const stdout = mode.json
     ? reportText(outcome, mode)
     : `${terminal.stdout.isTty ? linkFilePaths(markedMessage, existsSync) : markedMessage}\n`;
   const shouldSuggestNextStep =
     outcome.ok &&
+    outcome.stop === undefined &&
     isAction &&
     !mode.json &&
     terminal.stderr.isTty &&

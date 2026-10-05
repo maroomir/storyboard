@@ -8,6 +8,8 @@ import { describeNextStep, nextStepCommands } from './status';
 
 export interface OutcomeMarking {
   readonly ok: boolean;
+  readonly stop?: 'paused' | 'cancelled';
+  readonly isDrawn?: boolean;
   // A verb that changed the work earns a check mark; one that only printed something (a draft
   // body, a scene list) does not, since a mark in front of data reads as part of it.
   readonly isAction: boolean;
@@ -18,12 +20,16 @@ export function markOutcome(
   marking: OutcomeMarking,
   stream: TerminalStream,
 ): string {
-  if (!stream.isTty || message.length === 0) {
+  if (!stream.isTty || message.length === 0 || marking.isDrawn === true) {
     return message;
   }
 
   const { paint } = stream.theme;
   const [headline = '', ...details] = message.split('\n');
+
+  if (marking.stop !== undefined) {
+    return [paint('warning', headline), ...details].join('\n');
+  }
 
   if (!marking.ok) {
     return [paint('danger', `✗ ${headline}`), ...details].join('\n');

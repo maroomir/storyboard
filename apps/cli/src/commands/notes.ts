@@ -195,7 +195,12 @@ export async function runNoteAbsorb(
     }
 
     if (!(await confirm(container.prompter, '노트를 AI 로 정리할까요?', estimateLines, '정리'))) {
-      return { ok: true, message: '취소했습니다. 아무것도 쓰지 않았습니다.', data: { estimate } };
+      return {
+        ok: false,
+        message: '취소했습니다. 아무것도 쓰지 않았습니다.',
+        data: { estimate },
+        stop: 'cancelled',
+      };
     }
   }
 
@@ -220,9 +225,10 @@ export async function runNoteAbsorb(
       !(await confirm(container.prompter, '이대로 워크스페이스에 반영할까요?', planLines, '반영'))
     ) {
       return {
-        ok: true,
+        ok: false,
         message: '반영하지 않았습니다. 계획은 .storyboard/cache/notes/plan.json 에 있습니다.',
         data: { plan: planned.plan },
+        stop: 'cancelled',
       };
     }
   }

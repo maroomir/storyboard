@@ -62,6 +62,15 @@ describe('markOutcome', () => {
     expect(markOutcome('본문 첫 줄', { ok: true, isAction: false }, tty)).toBe('본문 첫 줄');
   });
 
+  it('marks neither a stopped run nor a drawn verdict', () => {
+    expect(
+      markOutcome('멈췄습니다: 남은 씬 3개', { ok: false, isAction: true, stop: 'paused' }, tty),
+    ).toBe('멈췄습니다: 남은 씬 3개');
+    expect(markOutcome('╭ 환경 ─╮', { ok: false, isAction: false, isDrawn: true }, tty)).toBe(
+      '╭ 환경 ─╮',
+    );
+  });
+
   it('adds nothing for a pipe', () => {
     const pipe = { ...tty, isTty: false };
     expect(markOutcome('실패', { ok: false, isAction: false }, pipe)).toBe('실패');
