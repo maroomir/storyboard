@@ -506,6 +506,63 @@ describe('the Node CLI runner', () => {
     expect(result.failure).toBe('timeout');
   });
 
+  function isAlive(pid: number): boolean {
+    try {
+      process.kill(pid, 0);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // QA D1: a child that ignores SIGTERM kept the run (and the workspace lock) forever.
+  it('ends a child that ignores SIGTERM within the grace period', async () => {
+    const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'child.pid');
+    const started = Date.now();
+
+    const result = await runner.run({
+      ...base,
+      command: process.execPath,
+      args: [
+        '-e',
+        'process.on("SIGTERM", () => {}); require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)',
+        pidFile,
+      ],
+      timeoutMs: 300,
+    });
+
+    expect(result.failure).toBe('timeout');
+    expect(Date.now() - started).toBeLessThan(6_000);
+    expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+  }, 10_000);
+
+  // QA D1: a wrapper script's own child held the stdout pipe, so `close` never came.
+  it('ends the whole process group, grandchildren included', async () => {
+    const pidFile = join(mkdtempSync(join(tmpdir(), 'storyboard-runner-')), 'grandchild.pid');
+    const grandchild = `"${process.execPath}" -e 'require("node:fs").writeFileSync(process.argv[1], String(process.pid)); setInterval(() => {}, 1000)' "${pidFile}"`;
+
+    for (const ending of ['timeout', 'aborted'] as const) {
+      const abort = new AbortController();
+      if (ending === 'aborted') {
+        setTimeout(() => abort.abort(), 300);
+      }
+      const started = Date.now();
+
+      const result = await runner.run({
+        ...base,
+        command: '/bin/sh',
+        args: ['-c', `${grandchild} & wait`],
+        timeoutMs: ending === 'timeout' ? 300 : 60_000,
+        signal: abort.signal,
+      });
+
+      expect(result.failure).toBe(ending);
+      expect(Date.now() - started).toBeLessThan(6_000);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(isAlive(Number(readFileSync(pidFile, 'utf8')))).toBe(false);
+    }
+  }, 20_000);
+
   it('takes its child down when the host process exits mid-call', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'storyboard-runner-'));
     const pidFile = join(directory, 'child.pid');
