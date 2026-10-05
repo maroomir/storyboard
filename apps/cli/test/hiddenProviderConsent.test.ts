@@ -242,6 +242,29 @@ describe('switching the hidden subscription provider on', () => {
     });
   });
 
+  // QA D4: an empty command was saved, after which the schema rejected the home file and every
+  // command — including the one that would fix it — failed.
+  it('refuses an empty or blank command before writing anything', async () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ [enabledKey]: true }));
+    const before = homeConfig();
+
+    for (const blank of ['', '   ']) {
+      const outcome = await runConfigSet({
+        container: container(),
+        args: args(['providers.claude-code.command', blank]),
+      });
+
+      expect(outcome.ok).toBe(false);
+      expect(homeConfig()).toEqual(before);
+    }
+
+    const fixed = await runConfigSet({
+      container: container(),
+      args: args(['providers.claude-code.command', '/opt/bin/claude']),
+    });
+    expect(fixed.ok).toBe(true);
+  });
+
   it('treats its other keys as an unknown provider while it is off', async () => {
     const outcome = await runConfigSet({
       container: container(),
