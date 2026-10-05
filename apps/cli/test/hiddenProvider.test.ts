@@ -491,6 +491,33 @@ describe('the hidden subscription provider: the call', () => {
     expect(error.message).toContain('boom');
   });
 
+  // QA D8: a normal result with a failing exit code put the whole draft into the error message.
+  it('keeps the generated text out of the error when the exit code fails', async () => {
+    const body = '빗물이 흘렀다. '.repeat(200);
+    const runner = new FakeRunner([resultLine({ result: body })], { exitCode: 1, stderr: '' });
+
+    const error = await expectProviderError(
+      createProvider(runner).generate(userRequest),
+      'generation-failed',
+    );
+
+    expect(error.message).not.toContain('빗물');
+    expect(error.message).toContain('종료 코드 1');
+  });
+
+  // QA D8: 1500 ms read as «2초».
+  it.each([
+    [1500, '1.5초'],
+    [3000, '3초'],
+  ])('states a %i ms time limit as %s', async (timeoutMs, seconds) => {
+    const runner = new FakeRunner([], { exitCode: null, stderr: '', failure: 'timeout' });
+    const provider = new ClaudeCodeProvider({ model: 'claude-sonnet-5', runner, timeoutMs });
+
+    const error = await expectProviderError(provider.generate(userRequest), 'cli-timeout');
+
+    expect(error.message).toContain(`${seconds} 안에`);
+  });
+
   it('fails on an error result even when the exit code is zero', async () => {
     const runner = new FakeRunner([
       resultLine({ is_error: true, result: 'model not found', api_error_status: 404 }),

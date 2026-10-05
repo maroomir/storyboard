@@ -348,7 +348,7 @@ export class ClaudeCodeProvider implements AiProvider {
       throw new AiProviderError(
         'cli-timeout',
         this.id,
-        `${this.displayName} 호출이 ${Math.round(this.timeoutMs / 1000)}초 안에 끝나지 않아 중단했습니다. 구독 한도에 닿았을 수 있습니다. 더 기다리려면 홈 설정의 providers.${this.id}.timeoutMs 를 늘리세요.`,
+        `${this.displayName} 호출이 ${Number((this.timeoutMs / 1000).toFixed(1))}초 안에 끝나지 않아 중단했습니다. 구독 한도에 닿았을 수 있습니다. 더 기다리려면 홈 설정의 providers.${this.id}.timeoutMs 를 늘리세요.`,
       );
     }
 
@@ -397,7 +397,9 @@ export class ClaudeCodeProvider implements AiProvider {
   // «generation failed».
   private failedRunError(run: CliRunResult, output: CliOutput): AiProviderError {
     const { result } = output;
-    const detail = result?.text.trim() || run.stderr.trim() || `종료 코드 ${String(run.exitCode)}`;
+    // A result that is not an error is the generated text, not a reason; it never goes in a message.
+    const reason = result?.isError === true ? result.text.trim() : '';
+    const detail = reason || run.stderr.trim() || `종료 코드 ${String(run.exitCode)}`;
 
     if (/not logged in|\/login/i.test(detail)) {
       return this.notLoggedInError();
