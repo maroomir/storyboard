@@ -29,7 +29,7 @@ class FakeKeys extends EventEmitter {
 }
 
 function prompterWith(keys: FakeKeys): TerminalPrompter {
-  return new TerminalPrompter(keys, new LiveArea({ write: () => undefined }, 80), stream);
+  return new TerminalPrompter(keys, new LiveArea({ write: () => undefined }, () => 80), stream);
 }
 
 describe('terminal prompter', () => {

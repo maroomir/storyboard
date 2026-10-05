@@ -23,6 +23,14 @@ describe('terminal width', () => {
     expect(truncateToWidth('짧다', 9)).toBe('짧다');
   });
 
+  it('gives color codes no room when it truncates', () => {
+    const painted = `\u001b[32m✓ 아웃라인\u001b[39m  \u001b[90m· 씬 시드\u001b[39m`;
+    const cut = truncateToWidth(painted, 14);
+
+    expect(measureWidth(cut)).toBe(14);
+    expect(cut.endsWith('\u001b[39m…')).toBe(true);
+  });
+
   it('wraps Korean text inside the width and breaks a word only when it must', () => {
     const lines = wrapToWidth('씬 카드의 사건 비트를 전개해 beats 필드에 씁니다', 16);
 
