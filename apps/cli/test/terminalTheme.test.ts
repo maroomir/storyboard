@@ -66,4 +66,13 @@ describe('terminal profile', () => {
 
     expect(profile.stderr.theme.isColorEnabled).toBe(false);
   });
+
+  it('reads a dumb terminal like a pipe, so no rail, link or panel reaches it', () => {
+    const profile = createTerminalProfile(
+      { ...facts, env: { TERM: 'dumb' } },
+      { hasNoColorFlag: false, isJsonOutput: false },
+    );
+
+    expect(profile.stderr.isTty).toBe(false);
+  });
 });

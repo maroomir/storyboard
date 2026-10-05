@@ -46,8 +46,11 @@ export function createTerminalProfile(
   facts: TerminalFacts,
   request: OutputRequest,
 ): TerminalProfile {
+  // A dumb terminal cannot move the cursor or follow an escape sequence, so it is read like a
+  // pipe: no rail, no links, no panels.
+  const isDumb = facts.env.TERM === 'dumb';
   const describeStream = (stream: TerminalStreamFacts): TerminalStream => ({
-    isTty: stream.isTty,
+    isTty: stream.isTty && !isDumb,
     // Some pseudo terminals report 0 columns; that is "unknown", not a zero-width screen.
     columns: stream.columns !== undefined && stream.columns > 0 ? stream.columns : defaultColumns,
     theme: createTheme(shouldUseColor({ isTty: stream.isTty, env: facts.env, ...request })),
