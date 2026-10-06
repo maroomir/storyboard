@@ -9,6 +9,10 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 고침
+
+- **`draft edit`·`draft augment`가 수정본을 초안에 씁니다.** 지금까지는 성공을 알리면서 이전 초안을 `.draft/`에 보관만 하고 초안은 그대로 두었습니다. 이제 `draft condense`·`draft expand`처럼 수정본을 쓰고 이전 판본을 보관합니다. `draft edit`도 `--dry-run`을 받습니다.
+
 ## [0.12.1] - 2026-10-06
 
 ### 추가

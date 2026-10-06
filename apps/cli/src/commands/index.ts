@@ -40,6 +40,7 @@ import {
   type AiProviderId,
 } from '@storyboard/story-model';
 
+import type { DraftAugmentScope } from '@storyboard/story-ai';
 import type { IPrompter } from '@/adapters/prompter';
 import type { CliContainer } from '@/container';
 import type { WorkspaceStatus } from '@storyboard/story-app';
@@ -1064,49 +1065,24 @@ const applyDraftFormat: CommandHandler = async ({ container, args }) => {
 // regenerating it. The editor shows a diff first; unattended, the caller asked for it, so it lands.
 const augmentDraft: CommandHandler = async ({ container, args }) => {
   const stem = sceneStemFrom(args);
+  const range = rangeFrom(args);
 
   if (stem === undefined) {
     return { ok: false, message: '씬 stem 을 지정해 주세요.' };
   }
 
-  const draftUri = draftPath(container.workspaceRoot, stem);
-  const body = await readDraftBody(container, stem);
-
-  if (body === undefined) {
-    return { ok: false, message: `초안이 없습니다: ${stem}` };
-  }
-
-  const range = rangeFrom(args);
-
   if (range === 'invalid') {
     return { ok: false, message: '--lines 는 40-60 형식이어야 합니다.' };
   }
 
-  const instruction = flagString(args.flags, 'instruction');
-  const prepared = await container.drafts.prepareAugmentation({
-    draftSceneStem: stem,
-    sceneUri: scenePath(container.workspaceRoot, stem),
+  return augmentDraftRange(container, stem, range, {
     scope: range === undefined ? 'draft' : 'selection',
-    target: sliceLines(body, range),
-    workspaceRoot: container.workspaceRoot,
-    ...(instruction === undefined ? {} : { instruction }),
+    instruction: flagString(args.flags, 'instruction'),
+    isDryRun: flagBoolean(args.flags, 'dry-run'),
+    appliedMessage: '카드 기반 보충을 반영했습니다.',
+    proposedMessage: '보충안을 만들었습니다 (적용하지 않음).',
+    failedLabel: '보충하지 못했습니다',
   });
-
-  if (!prepared.ok) {
-    return { ok: false, message: `보충하지 못했습니다 (${prepared.kind}).`, data: prepared };
-  }
-
-  if (flagBoolean(args.flags, 'dry-run')) {
-    return { ok: true, message: '보충안을 만들었습니다 (적용하지 않음).', data: prepared };
-  }
-
-  await container.drafts.applyAugmentation({
-    draftUri,
-    sceneStem: stem,
-    workspaceRoot: container.workspaceRoot,
-  });
-
-  return { ok: true, message: '카드 기반 보충을 반영했습니다.', data: { draft: draftUri.fsPath } };
 };
 
 // The editor asks for the instruction in a prompt box; here it is a flag. Everything else is the
@@ -1128,37 +1104,63 @@ const editDraft: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: '--instruction 으로 어떻게 고칠지 알려 주세요.' };
   }
 
-  const body = await readDraftBody(container, stem);
-
-  if (body === undefined) {
-    return { ok: false, message: `초안이 없습니다: ${stem}` };
-  }
-
-  const prepared = await container.drafts.prepareAugmentation({
-    draftSceneStem: stem,
-    sceneUri: scenePath(container.workspaceRoot, stem),
+  return augmentDraftRange(container, stem, range, {
     scope: 'selection',
-    target: sliceLines(body, range),
-    workspaceRoot: container.workspaceRoot,
     instruction,
+    isDryRun: flagBoolean(args.flags, 'dry-run'),
+    appliedMessage: '지시대로 고쳤습니다.',
+    proposedMessage: '수정안을 만들었습니다 (적용하지 않음).',
+    failedLabel: '고치지 못했습니다',
   });
-
-  if (!prepared.ok) {
-    return { ok: false, message: `고치지 못했습니다 (${prepared.kind}).`, data: prepared };
-  }
-
-  if (flagBoolean(args.flags, 'dry-run')) {
-    return { ok: true, message: '수정안을 만들었습니다 (적용하지 않음).', data: prepared };
-  }
-
-  await container.drafts.applyAugmentation({
-    draftUri: draftPath(container.workspaceRoot, stem),
-    sceneStem: stem,
-    workspaceRoot: container.workspaceRoot,
-  });
-
-  return { ok: true, message: '지시대로 고쳤습니다.', data: { stem } };
 };
+
+interface AugmentDraftRangeOptions {
+  readonly scope: DraftAugmentScope;
+  readonly instruction: string | undefined;
+  readonly isDryRun: boolean;
+  readonly appliedMessage: string;
+  readonly proposedMessage: string;
+  readonly failedLabel: string;
+}
+
+async function augmentDraftRange(
+  container: CliContainer,
+  stem: string,
+  range: LineRange | undefined,
+  options: AugmentDraftRangeOptions,
+): Promise<CommandOutcome> {
+  const prepare = (target: string) =>
+    container.drafts.prepareAugmentation({
+      draftSceneStem: stem,
+      sceneUri: scenePath(container.workspaceRoot, stem),
+      scope: options.scope,
+      target,
+      workspaceRoot: container.workspaceRoot,
+      ...(options.instruction === undefined ? {} : { instruction: options.instruction }),
+    });
+
+  if (options.isDryRun) {
+    const body = await readDraftBody(container, stem);
+
+    if (body === undefined) {
+      return { ok: false, message: `초안이 없습니다: ${stem}` };
+    }
+
+    const prepared = await prepare(sliceLines(body, range));
+
+    return prepared.ok
+      ? { ok: true, message: options.proposedMessage, data: prepared }
+      : { ok: false, message: `${options.failedLabel} (${prepared.kind}).`, data: prepared };
+  }
+
+  return rewriteDraft(container, stem, range, async (target) => {
+    const prepared = await prepare(target);
+
+    return prepared.ok
+      ? { ok: true, text: prepared.text, message: options.appliedMessage }
+      : { ok: false, message: `${options.failedLabel} (${prepared.kind}).` };
+  });
+}
 
 const exportManuscript: CommandHandler = async ({ container, args }) => {
   const source = await container.manuscript.loadExportSource(container.workspaceRoot);
@@ -1701,7 +1703,10 @@ const setApiKey: CommandHandler = async ({ container, args }) => {
     return { ok: false, message: provider };
   }
   if (provider === undefined) {
-    return { ok: false, message: `프로바이더를 지정해 주세요: ${availableProviderIds().join(', ')}` };
+    return {
+      ok: false,
+      message: `프로바이더를 지정해 주세요: ${availableProviderIds().join(', ')}`,
+    };
   }
 
   const providerId = provider as AiProviderId;

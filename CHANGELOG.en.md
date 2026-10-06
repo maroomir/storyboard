@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`draft edit` and `draft augment` write the revision to the draft.** They reported success but only archived the previous draft in `.draft/` and left the draft as it was. They now write the revision and keep the previous version, as `draft condense` and `draft expand` do. `draft edit` also accepts `--dry-run`.
+
 ## [0.12.1] - 2026-10-06
 
 ### Added
