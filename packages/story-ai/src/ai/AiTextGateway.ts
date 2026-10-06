@@ -6,6 +6,7 @@ import type {
   UsageRecord,
   AiTaskName,
 } from '@storyboard/story-model';
+import { projectUsageAttribution } from '@storyboard/story-model';
 import { isAttributed } from './aiResponseCoercion';
 import { selectPromptVariant } from './prompts/promptVariants';
 import type { PromptVariantId } from './prompts/types';
@@ -94,17 +95,22 @@ export class AiTextGateway {
   ): void {
     const onUsage = this.options.onUsage;
 
-    if (!onUsage || !attribution || !isAttributed(attribution)) {
+    if (!onUsage) {
       return;
     }
 
+    // NOTE: 귀속이 없는 호출을 버리면 원장·예산·/cost 어디에도 잡히지 않는다. 씬이나 카드에 속하지
+    // 않는 호출은 작품에 귀속한다.
     onUsage({
       taskName,
       providerId: response.providerId,
       model: response.model,
       usage: response.usage,
       ...(response.costUsd === undefined ? {} : { costUsd: response.costUsd }),
-      attribution,
+      attribution:
+        attribution !== undefined && isAttributed(attribution)
+          ? attribution
+          : projectUsageAttribution,
     });
   }
 }

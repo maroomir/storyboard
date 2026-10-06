@@ -13,7 +13,7 @@ export type UsageLedgerEntry = UsageRecord & {
   readonly recordedAt: string;
 };
 
-const entityKindSchema = z.enum(['scene', 'character', 'background']);
+const entityKindSchema = z.enum(['scene', 'character', 'background', 'project']);
 
 const entityRefSchema = z.object({
   kind: entityKindSchema,
@@ -119,6 +119,10 @@ export function mergeUsageLedgerEntryIntoSummary(
           nextBackgrounds[entityId] ?? emptyUsageAmount(),
           delta,
         );
+        return;
+      }
+      case 'project': {
+        // The work has no row of its own: its spend shows in the total, which every host reads.
         return;
       }
       default: {

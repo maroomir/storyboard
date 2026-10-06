@@ -18,6 +18,7 @@ import {
   serializeDraft,
   serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
+  type UsageRecord,
 } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -1300,5 +1301,42 @@ describe('draft edit and draft augment', () => {
     );
 
     expect(draftBody().startsWith('첫 문단.\n\n[Mock AI: draftAugment]')).toBe(true);
+  });
+});
+
+// 예전에는 아웃라인처럼 씬에 속하지 않는 호출이 귀속 없이 나가 원장·예산·/cost 어디에도 잡히지 않았다.
+describe('spend that belongs to no scene', () => {
+  it('charges the outline calls to the work', async () => {
+    await run(
+      'project set',
+      args(['project', 'set'], {
+        genre: '스릴러',
+        audience: '성인',
+        pov: 'third-limited',
+        'target-words': '12000',
+      }),
+    );
+    const records: UsageRecord[] = [];
+    const recording = createCliContainer({
+      workspacePath: workspace,
+      logger: silentLogger,
+      canPrompt: false,
+      version: '0.0.0',
+      usageSink: { record: async (_root, usage) => void records.push(usage) },
+    });
+
+    await commands['novel generate']({ container: recording, args: args(['novel', 'generate']) });
+
+    const outlineRecords = records.filter((record) =>
+      ['outlineSynopsis', 'chapterPlan'].includes(record.taskName),
+    );
+    expect(outlineRecords.map((record) => record.taskName)).toEqual([
+      'outlineSynopsis',
+      'chapterPlan',
+    ]);
+    expect(outlineRecords.map((record) => record.attribution.primary?.kind)).toEqual([
+      'project',
+      'project',
+    ]);
   });
 });

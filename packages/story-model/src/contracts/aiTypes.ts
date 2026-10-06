@@ -67,7 +67,7 @@ export interface AiGenerateResponse {
   readonly isTruncated?: boolean;
 }
 
-export type EntityKind = 'scene' | 'character' | 'background';
+export type EntityKind = 'scene' | 'character' | 'background' | 'project';
 
 export interface EntityRef {
   readonly kind: EntityKind;
@@ -78,6 +78,12 @@ export interface UsageAttribution {
   readonly primary?: EntityRef;
   readonly participants?: readonly EntityRef[];
 }
+
+// A call that serves no one scene or card (the outline, a chapter summary, a manuscript review) is
+// still spend on the work, so it is charged to the work as a whole.
+export const projectUsageAttribution: UsageAttribution = {
+  primary: { kind: 'project', id: 'project' },
+};
 
 export interface AiProviderStatus {
   readonly providerId: AiProviderId;
