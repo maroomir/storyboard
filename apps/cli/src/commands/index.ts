@@ -941,7 +941,7 @@ const createCard: CommandHandler = async ({ container, args }) => {
   if (suggested === undefined) {
     return {
       ok: false,
-      message: `'${name.trim()}' 에서 id 를 만들 수 없습니다. --id 로 영소문자 id 를 지정해 주세요 (예: --id seo-jina).`,
+      message: `'${name.trim()}' 에서 id 를 만들 수 없습니다. --id hana 처럼 영문 id 를 주세요 (영소문자·숫자·하이픈).`,
     };
   }
 
