@@ -12,7 +12,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 import {
+  createDraft,
+  parseDraft,
   parseSceneStem,
+  serializeDraft,
   serializeSceneRenameJournal,
   STORYBOARD_RELATIVE_PATHS,
 } from '@storyboard/story-model';
@@ -1217,5 +1220,74 @@ describe('scene rename: two fresh scenes are not a cut-off rename', () => {
     expect(outcome.message).toContain('02-storm 가 쓰고 있습니다');
     expect(existsSync(join(workspace, 'scene', '01-opening.card'))).toBe(true);
     expect(existsSync(join(workspace, 'scene', '02-storm.card'))).toBe(true);
+  });
+});
+
+// 예전에는 이전 초안을 .draft/ 에 보관만 하고 수정본을 쓰지 않아, 성공을 보고해도 초안이 그대로였다.
+describe('draft edit and draft augment', () => {
+  const originalBody = '첫 문단.\n\n둘째 문단.\n';
+
+  async function writeSceneWithDraft(): Promise<void> {
+    await run('scene create', args(['scene', 'create'], { name: 'night market' }));
+    mkdirSync(join(workspace, 'draft'), { recursive: true });
+    writeFileSync(
+      join(workspace, 'draft', '01-night-market.md'),
+      serializeDraft(
+        createDraft({ sceneStem: '01-night-market', format: 'novel', body: originalBody }),
+      ),
+    );
+  }
+
+  function draftBody(): string {
+    return parseDraft(readFileSync(join(workspace, 'draft', '01-night-market.md'), 'utf8')).body;
+  }
+
+  function historyCount(): number {
+    const directory = join(workspace, '.draft', '01-night-market');
+    return existsSync(directory) ? readdirSync(directory).length : 0;
+  }
+
+  it.each([
+    ['draft augment', {}],
+    ['draft edit', { instruction: '더 짧게' }],
+  ] as const)(
+    '%s writes the revision and keeps the previous draft in history',
+    async (verb, flags) => {
+      await writeSceneWithDraft();
+
+      const outcome = await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+
+      expect(outcome.ok).toBe(true);
+      expect(draftBody()).not.toBe(originalBody);
+      expect(draftBody()).toContain('[Mock AI: draftAugment]');
+      expect(historyCount()).toBe(1);
+    },
+  );
+
+  it.each([
+    ['draft augment', {}],
+    ['draft edit', { instruction: '더 짧게' }],
+  ] as const)('%s --dry-run leaves the draft alone', async (verb, flags) => {
+    await writeSceneWithDraft();
+
+    const outcome = await run(
+      verb,
+      args(verb.split(' '), { ...flags, 'dry-run': true }, ['01-night-market']),
+    );
+
+    expect(outcome.ok).toBe(true);
+    expect(draftBody()).toBe(originalBody);
+    expect(historyCount()).toBe(0);
+  });
+
+  it('replaces only the --lines range', async () => {
+    await writeSceneWithDraft();
+
+    await run(
+      'draft edit',
+      args(['draft', 'edit'], { instruction: '고쳐', lines: '3-3' }, ['01-night-market']),
+    );
+
+    expect(draftBody().startsWith('첫 문단.\n\n[Mock AI: draftAugment]')).toBe(true);
   });
 });

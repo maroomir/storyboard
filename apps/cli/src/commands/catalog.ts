@@ -569,7 +569,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     group: '초안',
     usage: 'draft edit <stem> --instruction <text>',
     summary: '지시대로 고칩니다 (--lines 로 구간 지정)',
-    flags: ['instruction', 'lines'],
+    flags: ['instruction', 'lines', 'dry-run'],
   },
   {
     verb: 'draft augment',
