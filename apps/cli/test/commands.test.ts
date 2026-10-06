@@ -238,6 +238,17 @@ describe('card create', () => {
     expect(existsSync(join(workspace, 'character', 'new-card.card'))).toBe(false);
   });
 
+  // 거부만 하면 무엇을 줘야 할지 알기 어려웠다. 실패 문구가 바로 쓸 수 있는 모양을 보여 준다.
+  it('shows the shape of the id it wants when it refuses a name', async () => {
+    const outcome = await run(
+      'card create',
+      args(['card', 'create'], { name: '하나' }, ['character']),
+    );
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('--id hana 처럼 영문 id 를 주세요');
+  });
+
   it('uses the explicit id when one is given', async () => {
     const outcome = await run(
       'card create',
