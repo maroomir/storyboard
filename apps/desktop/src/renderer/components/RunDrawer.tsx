@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
 
@@ -52,7 +52,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
   };
 
   const saveBudget = (): void => {
-    const value = Math.max(0, Math.floor(Number(budget)));
+    const value = Math.max(0, Number(budget));
     if (Number.isFinite(value) && value !== run.budgetUsd) {
       void act(() => call('run.setBudget', { budgetUsd: value }));
     }
@@ -224,6 +224,7 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
                 type="number"
                 min={0}
                 max={10000}
+                step={decimalSettingStep}
                 value={budget}
                 onChange={(event) => setBudget(event.target.value)}
                 onBlur={saveBudget}

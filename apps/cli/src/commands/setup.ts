@@ -18,7 +18,10 @@ import {
   type SceneCard,
   type StoryboardProject,
   type StoryboardSettingDefinition,
+  type StoryboardSettingKind,
+  decimalSettingStep,
   getStoryboardProjectPaths,
+  isOnDecimalStep,
   resolveThreadPaths,
 } from '@storyboard/story-model';
 import { type ConfigBridge } from '@storyboard/story-ai';
@@ -913,7 +916,7 @@ function describeOutOfRange(
 }
 
 function parseSettingValue(
-  kind: 'boolean' | 'integer' | 'string',
+  kind: StoryboardSettingKind,
   raw: string,
 ): boolean | number | string | undefined {
   switch (kind) {
@@ -922,6 +925,10 @@ function parseSettingValue(
     case 'integer': {
       const parsed = Number.parseInt(raw, 10);
       return Number.isNaN(parsed) ? undefined : parsed;
+    }
+    case 'decimal': {
+      const parsed = Number(raw);
+      return raw.trim().length === 0 || !Number.isFinite(parsed) ? undefined : parsed;
     }
     case 'string':
       return raw;
@@ -1042,6 +1049,13 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
 
   if (value === undefined) {
     return { ok: false, message: `${key} 는 ${definition.kind} 값이어야 합니다.` };
+  }
+
+  if (definition.kind === 'decimal' && !isOnDecimalStep(value as number)) {
+    return {
+      ok: false,
+      message: `${definition.label}(${key}) 값은 소수 둘째 자리(${decimalSettingStep} 단위)까지만 받습니다: ${raw}`,
+    };
   }
 
   const rangeProblem = describeOutOfRange(definition, value);

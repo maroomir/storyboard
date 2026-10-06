@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { AiProviderId } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, type AiProviderId } from '@storyboard/story-model/contracts';
 
 import type { DesktopSettings, SettingEntry, UiLanguage } from '@/shared/dto';
 
@@ -244,8 +244,9 @@ function SettingControl(props: {
   }
 
   const commit = (): void => {
-    const value = entry.kind === 'integer' ? Math.floor(Number(draft)) : draft;
-    if (String(value) !== String(entry.value) && (entry.kind !== 'integer' || Number.isFinite(value))) {
+    const isNumber = entry.kind === 'integer' || entry.kind === 'decimal';
+    const value = entry.kind === 'integer' ? Math.floor(Number(draft)) : isNumber ? Number(draft) : draft;
+    if (String(value) !== String(entry.value) && (!isNumber || Number.isFinite(value))) {
       props.onChange(value);
     }
   };
@@ -255,7 +256,8 @@ function SettingControl(props: {
       <span className="field-label">{props.label}</span>
       <input
         className="input"
-        type={entry.kind === 'integer' ? 'number' : 'text'}
+        type={entry.kind === 'integer' || entry.kind === 'decimal' ? 'number' : 'text'}
+        step={entry.kind === 'decimal' ? decimalSettingStep : undefined}
         min={entry.minimum}
         max={entry.maximum}
         value={draft}

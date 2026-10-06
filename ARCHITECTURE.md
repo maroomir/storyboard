@@ -774,7 +774,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 - `editor.grammar.realtime`: 기본 `false`
 - `editor.scene.prefixDigits`: 기본 `2`
 - `revise.loop.maxIterations`: 검수·재작성 루프 최대 재작성 횟수, 기본 `2`
-- `budget.run.limitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
+- `budget.run.limitUsd`: 장편 생성 1회 실행의 AI 비용 상한(USD, 0.01 단위), 기본 `0`(제한 없음). 넘으면 파이프라인의 `shouldPause`가 켜져 진행 중인 씬까지 마치고 `paused`로 멈추며, 다시 실행하면 이어 간다. 요금이 없는 호출(로컬 모델)은 상한에 걸리지 않는다. 호스트마다 컴포지션 루트에서 사용량 싱크를 `UsageMeter`로 한 번 감싸고, 실행마다 세션을 열어 쓴 비용을 잰다.
 - `generation.section.outputLimit`: 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수, 기본 `7000`. 목표 분량을 이 값으로 나눠 구간 수가 정해지므로, **낮추면 호출이 늘고 분량이 늘어난다.** 프롬프트의 목표 글자 수 지시는 실측에서 무력했고(비단조), 분량을 실제로 움직이는 손잡이는 호출 수다. 모델·목표 분량에 따라 최적값이 다르므로 설정으로 열어 둔다.
 - `revise.loop.scoreThreshold`: 비평 루브릭 점수(0–100)가 이 값 이상이면 검수·재작성 루프를 조기 통과시키는 선택적 품질 기준, 기본 `0`(비활성, AI 호출 수·중단 동작은 기존과 동일). 연속성 high 이슈는 점수와 무관하게 계속 차단한다.
 - 확장 UI 다국어(i18n): `package.nls.json`(기본/영어) + `package.nls.<locale>.json`(예: `package.nls.ko.json`) 메커니즘을 사용한다. `displayName`·`description`과 **모든 명령 제목**을 외부화했다. 설정 설명, 런타임 문자열(`vscode.l10n`), webview 문자열은 점진적으로 이관한다. 소설 본문 언어와는 별개다.

@@ -369,6 +369,32 @@ describe('storyboard config', () => {
     expect(shown.message).toMatch(/ai\.provider\.default\s+\(없음\)\s+기본값/);
   });
 
+  // 예전에는 정수 설정이라 0.25 가 경고 없이 0(제한 없음)으로 저장됐다.
+  it('keeps a run budget in cents and refuses a finer amount', async () => {
+    const cents = await runConfigSet({
+      container: container(),
+      args: args({}, ['budget.run.limitUsd', '0.25']),
+    });
+    expect(cents.ok).toBe(true);
+    expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
+      budget: { run: { limitUsd: 0.25 } },
+    });
+    expect(container().configBridge.getRunBudgetUsd()).toBe(0.25);
+
+    const finer = await runConfigSet({
+      container: container(),
+      args: args({}, ['budget.run.limitUsd', '0.255']),
+    });
+    expect(finer.ok).toBe(false);
+    expect(finer.message).toContain('소수 둘째 자리');
+
+    const notNumber = await runConfigSet({
+      container: container(),
+      args: args({}, ['budget.run.limitUsd', '1달러']),
+    });
+    expect(notNumber.ok).toBe(false);
+  });
+
   it('validates provider fields against the catalog', async () => {
     const badModel = await runConfigSet({
       container: container(),

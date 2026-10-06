@@ -3,10 +3,12 @@ import { z } from 'zod';
 import {
   aiProviderIds,
   aiTaskNames,
+  decimalSettingStep,
   hiddenProviderEnabledKey,
   hiddenProviderIds,
   hiddenProviderRiskAcknowledgedKey,
   isHiddenProvider,
+  isOnDecimalStep,
   listAvailableProviderIds,
   unknownProviderMessage,
   type AiProviderId,
@@ -29,19 +31,29 @@ function settingSchema(definition: StoryboardSettingDefinition): z.ZodType {
   switch (definition.kind) {
     case 'boolean':
       return z.boolean();
-    case 'integer': {
-      let schema = z.number().int();
-      if (definition.minimum !== undefined) {
-        schema = schema.min(definition.minimum);
-      }
-      if (definition.maximum !== undefined) {
-        schema = schema.max(definition.maximum);
-      }
-      return schema;
-    }
+    case 'integer':
+      return boundedNumberSchema(definition, z.number().int());
+    case 'decimal':
+      return boundedNumberSchema(definition, z.number()).refine(isOnDecimalStep, {
+        message: `${decimalSettingStep} 단위여야 합니다`,
+      });
     case 'string':
       return z.string().trim().min(1);
   }
+}
+
+function boundedNumberSchema(
+  definition: StoryboardSettingDefinition,
+  base: z.ZodNumber,
+): z.ZodNumber {
+  let schema = base;
+  if (definition.minimum !== undefined) {
+    schema = schema.min(definition.minimum);
+  }
+  if (definition.maximum !== undefined) {
+    schema = schema.max(definition.maximum);
+  }
+  return schema;
 }
 
 const providerIdSchema = z.enum(aiProviderIds);

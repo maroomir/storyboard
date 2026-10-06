@@ -17,7 +17,9 @@ import {
   sectionOutputLimitParameterId,
   type GenerationKnobs,
   booleanSettingDefault,
+  clampDecimalSetting,
   clampIntegerSetting,
+  decimalSettingDefault,
   findStoryboardSetting,
   integerSettingDefault,
   isValidStoryboardSettingValue,
@@ -32,7 +34,6 @@ const userConfigurationTarget = 1;
 const workspaceConfigurationTarget = 2;
 
 export type ConfigValueOrigin = 'default' | 'user' | 'workspace';
-
 
 export interface ProviderModelConfig {
   readonly model?: string;
@@ -231,7 +232,10 @@ export class ConfigBridge {
       const think = configuration.get<boolean | undefined>('providers.ollama.think', undefined);
 
       return {
-        baseUrl: configuration.get('providers.ollama.baseUrl', providerCatalog.ollama.defaultBaseUrl),
+        baseUrl: configuration.get(
+          'providers.ollama.baseUrl',
+          providerCatalog.ollama.defaultBaseUrl,
+        ),
         model: configuration.get('providers.ollama.model', providerCatalog.ollama.defaultModel),
         ...(typeof contextTokens === 'number' && contextTokens > 0 ? { contextTokens } : {}),
         ...(typeof think === 'boolean' ? { think } : {}),
@@ -384,6 +388,13 @@ export class ConfigBridge {
     return clampIntegerSetting(key, value);
   }
 
+  private readDecimalSetting(key: string): number {
+    const defaultValue = decimalSettingDefault(key);
+    const configured = this.dependencies.getConfiguration().get(key, defaultValue);
+
+    return clampDecimalSetting(key, Number.isFinite(configured) ? configured : defaultValue);
+  }
+
   public getValueOrigin(section: string): ConfigValueOrigin {
     const inspected = this.dependencies.getConfiguration().inspect?.<unknown>(section);
 
@@ -443,7 +454,7 @@ export class ConfigBridge {
   }
 
   public getRunBudgetUsd(): number {
-    return this.readIntegerSetting('budget.run.limitUsd');
+    return this.readDecimalSetting('budget.run.limitUsd');
   }
 
   public isSceneGroundingAutoApproveEnabled(): boolean {
