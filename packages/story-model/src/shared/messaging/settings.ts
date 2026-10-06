@@ -53,7 +53,7 @@ const settingDefinitionPayloadSchema = z.object({
   key: z.string().trim().min(1),
   label: z.string().trim().min(1),
   description: z.string(),
-  kind: z.enum(['boolean', 'integer', 'string']),
+  kind: z.enum(['boolean', 'integer', 'decimal', 'string']),
   defaultValue: settingValueSchema,
   minimum: z.number().optional(),
   maximum: z.number().optional(),

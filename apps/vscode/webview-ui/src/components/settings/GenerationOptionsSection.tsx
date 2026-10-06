@@ -2,6 +2,8 @@ import React, { useMemo, useState } from 'react';
 
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
+import { decimalSettingStep } from '@storyboard/story-model/contracts';
+
 import { OriginPill } from './SettingsPrimitives';
 import {
   getValueOrigin,
@@ -134,9 +136,15 @@ function OptionControl({
       return;
     }
 
-    const next = definition.kind === 'integer' ? Number.parseInt(draft, 10) : draft.trim();
+    const isNumber = definition.kind === 'integer' || definition.kind === 'decimal';
+    const next =
+      definition.kind === 'integer'
+        ? Number.parseInt(draft, 10)
+        : isNumber
+          ? Number(draft)
+          : draft.trim();
 
-    if (definition.kind === 'integer' && Number.isNaN(next as number)) {
+    if (isNumber && Number.isNaN(next as number)) {
       setDraft(null);
       return;
     }
@@ -152,7 +160,8 @@ function OptionControl({
     <div className="flex items-center gap-2">
       <input
         id={inputId}
-        type={definition.kind === 'integer' ? 'number' : 'text'}
+        type={definition.kind === 'integer' || definition.kind === 'decimal' ? 'number' : 'text'}
+        step={definition.kind === 'decimal' ? decimalSettingStep : undefined}
         className={`${sbInputClass} w-28`}
         value={current}
         min={definition.minimum}

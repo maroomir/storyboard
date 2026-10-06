@@ -1,5 +1,6 @@
 import type {
   AiProviderId,
+  StoryboardSettingKind,
   CompositionKind,
   ContractFieldKey,
   PointOfView,
@@ -174,7 +175,7 @@ export interface SettingEntry {
   readonly key: string;
   readonly label: string;
   readonly description: string;
-  readonly kind: 'boolean' | 'integer' | 'string';
+  readonly kind: StoryboardSettingKind;
   readonly value: boolean | number | string;
   readonly minimum?: number;
   readonly maximum?: number;

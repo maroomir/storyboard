@@ -385,6 +385,16 @@ describe('with a work open', () => {
     expect(existsSync(join(home, 'config.json'))).toBe(false);
   });
 
+  it('takes a run budget in cents and refuses a finer amount', async () => {
+    await expectOk('run.setBudget', { budgetUsd: 0.25 });
+
+    const workspaceConfig = JSON.parse(readFileSync(join(workspacePath(), '.storyboard', 'config.json'), 'utf8')) as {
+      budget?: { run?: { limitUsd?: number } };
+    };
+    expect(workspaceConfig.budget?.run?.limitUsd).toBe(0.25);
+    expect((await invoke('run.setBudget', { budgetUsd: 0.255 })).ok).toBe(false);
+  });
+
   it('restores an earlier version without losing the current one', async () => {
     await expectOk('draft.save', { stem: '01-harbor', body: '두 번째 버전.\n', reason: 'autosave' });
     await expectOk('draft.endSession', { stem: '01-harbor' });

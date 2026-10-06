@@ -2,6 +2,7 @@ import {
   aiProviderIds,
   requiresApiKey as providerRequiresApiKey,
   type AiProviderId,
+  type StoryboardSettingKind,
 } from '@storyboard/story-model/contracts';
 
 export const AI_PROVIDER_IDS = aiProviderIds;
@@ -60,7 +61,7 @@ export interface SettingDefinition {
   readonly key: string;
   readonly label: string;
   readonly description: string;
-  readonly kind: 'boolean' | 'integer' | 'string';
+  readonly kind: StoryboardSettingKind;
   readonly defaultValue: SettingValue;
   readonly minimum?: number;
   readonly maximum?: number;

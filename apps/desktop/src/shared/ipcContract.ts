@@ -6,6 +6,7 @@ import {
   pointOfViews,
   bibleFactSchema,
   cardIdPattern,
+  isOnDecimalStep,
   sceneStemPattern,
   novelRunModes,
 } from '@storyboard/story-model/contracts';
@@ -83,7 +84,7 @@ export const invokeRequestSchemas = {
   'run.generateScene': z.object({ stem: sceneStemSchema, force: z.boolean() }),
   'run.pause': empty,
   'run.answerApproval': z.object({ approved: z.boolean() }),
-  'run.setBudget': z.object({ budgetUsd: z.number().int().min(0).max(10_000) }),
+  'run.setBudget': z.object({ budgetUsd: z.number().min(0).max(10_000).refine(isOnDecimalStep) }),
 
   'bible.list': z.object({ kind: bibleCardKindSchema }),
   'bible.read': z.object({ kind: bibleCardKindSchema, id: cardIdSchema }),

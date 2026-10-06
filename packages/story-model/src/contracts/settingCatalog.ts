@@ -1,4 +1,8 @@
-export type StoryboardSettingKind = 'boolean' | 'integer' | 'string';
+export type StoryboardSettingKind = 'boolean' | 'integer' | 'decimal' | 'string';
+
+// A `decimal` setting is an amount of money: it moves in cents, so a finer value is refused rather
+// than rounded behind the author's back.
+export const decimalSettingStep = 0.01;
 
 export interface StoryboardSettingDefinition {
   readonly key: string;
@@ -74,7 +78,7 @@ export const storyboardSettingCatalog: readonly StoryboardSettingDefinition[] = 
     label: '장편 생성 1회 예산(USD)',
     description:
       '장편 생성을 한 번 실행할 때 쓸 AI 비용의 상한입니다. 넘으면 진행 중인 씬까지 마치고 멈추며, 다시 실행하면 이어서 진행합니다. 0이면 제한하지 않습니다.',
-    kind: 'integer',
+    kind: 'decimal',
     defaultValue: 0,
     minimum: 0,
     maximum: 10000,
@@ -211,14 +215,28 @@ export function isValidStoryboardSettingValue(
       return typeof value === 'boolean';
     case 'integer':
       return (
-        typeof value === 'number' &&
-        Number.isInteger(value) &&
-        (definition.minimum === undefined || value >= definition.minimum) &&
-        (definition.maximum === undefined || value <= definition.maximum)
+        typeof value === 'number' && Number.isInteger(value) && isWithinRange(definition, value)
+      );
+    case 'decimal':
+      return (
+        typeof value === 'number' && isOnDecimalStep(value) && isWithinRange(definition, value)
       );
     case 'string':
       return typeof value === 'string' && value.trim().length > 0;
   }
+}
+
+export function isOnDecimalStep(value: number): boolean {
+  const steps = value / decimalSettingStep;
+
+  return Number.isFinite(steps) && Math.abs(steps - Math.round(steps)) < 1e-9;
+}
+
+function isWithinRange(definition: StoryboardSettingDefinition, value: number): boolean {
+  return (
+    (definition.minimum === undefined || value >= definition.minimum) &&
+    (definition.maximum === undefined || value <= definition.maximum)
+  );
 }
 
 // 기본값과 허용 범위는 이 카탈로그가 갖는다. 설정을 읽는 쪽이 같은 숫자를 다시 적으면 설정 화면과
@@ -245,12 +263,23 @@ export function integerSettingDefault(key: string): number {
   return requireSetting(key, 'integer').defaultValue as number;
 }
 
+export function decimalSettingDefault(key: string): number {
+  return requireSetting(key, 'decimal').defaultValue as number;
+}
+
 export function stringSettingDefault(key: string): string {
   return requireSetting(key, 'string').defaultValue as string;
 }
 
 export function clampIntegerSetting(key: string, value: number): number {
-  const definition = requireSetting(key, 'integer');
+  return clampToRange(requireSetting(key, 'integer'), value);
+}
+
+export function clampDecimalSetting(key: string, value: number): number {
+  return clampToRange(requireSetting(key, 'decimal'), value);
+}
+
+function clampToRange(definition: StoryboardSettingDefinition, value: number): number {
   const atLeast = definition.minimum === undefined ? value : Math.max(definition.minimum, value);
 
   return definition.maximum === undefined ? atLeast : Math.min(definition.maximum, atLeast);

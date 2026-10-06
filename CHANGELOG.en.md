@@ -12,6 +12,7 @@ after the first public release.
 
 ### Fixed
 
+- **The novel run budget (`budget.run.limitUsd`) takes cents.** It was an integer setting, so `config set budget.run.limitUsd 0.25` silently saved 0 (no limit). It now accepts up to two decimal places and refuses a finer amount. The desktop settings and run drawer step by 0.01.
 - **`draft edit` and `draft augment` write the revision to the draft.** They reported success but only archived the previous draft in `.draft/` and left the draft as it was. They now write the revision and keep the previous version, as `draft condense` and `draft expand` do. `draft edit` also accepts `--dry-run`.
 
 ## [0.12.1] - 2026-10-06
