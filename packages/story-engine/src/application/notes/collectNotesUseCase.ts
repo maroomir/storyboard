@@ -1,4 +1,4 @@
-import type { StoryUri, NoteBundle } from '@storyboard/story-model';
+import { canonicalNotionPageUrl, type StoryUri, type NoteBundle } from '@storyboard/story-model';
 
 import { failedResult, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
@@ -36,7 +36,10 @@ export class CollectNotesUseCase implements IUseCase<CollectNotesRequest, Collec
 
       const bundle: NoteBundle = {
         kind: source.kind,
-        location: location.kind === 'obsidian' ? location.root.fsPath : location.pageUrl,
+        location:
+          location.kind === 'obsidian'
+            ? location.root.fsPath
+            : canonicalNotionPageUrl(location.pageUrl),
         collectedAt: new Date().toISOString(),
         notes: [...collected.notes],
         skipped: [...collected.skipped],

@@ -11,6 +11,7 @@ import {
   type NoteHttpFetch,
 } from '@storyboard/story-engine';
 import {
+  canonicalNotionPageUrl,
   extractNoteLinkTargets,
   isNotionUrl,
   listNotionLinkedPageIds,
@@ -181,6 +182,23 @@ describe('parseNotionPageId', () => {
     };
 
     expect(listNotionLinkedPageIds([{ block, children: [] }])).toEqual([id]);
+  });
+
+  it('gives every address of one page the same location', () => {
+    const id = '1429989fe8ac4effbc8f57f56486db54';
+    const addresses = [
+      `https://www.notion.so/team/Moon-Gate-${id}`,
+      `https://www.notion.so/team/Renamed-Gate-${id}?pvs=4`,
+      'https://www.notion.so/1429989f-e8ac-4eff-bc8f-57f56486db54',
+      `https://app.notion.com/p/${id}?source=copy_link`,
+    ];
+
+    expect(new Set(addresses.map(canonicalNotionPageUrl))).toEqual(
+      new Set([`https://www.notion.so/${id}`]),
+    );
+    expect(canonicalNotionPageUrl('https://www.notion.so/team/no-id-here')).toBe(
+      'https://www.notion.so/team/no-id-here',
+    );
   });
 });
 
