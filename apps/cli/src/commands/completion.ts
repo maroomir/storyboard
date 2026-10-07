@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path';
 
 import {
   type AiProviderId,
+  aiTaskCatalog,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   compositionKindLabels,
@@ -106,8 +107,7 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
     case 'provider':
       return availableProviderIds().map((id) => ({ text: id, description: '' }));
     case 'model': {
-      const providerIndex = words.indexOf('--provider');
-      const provider = providerIndex >= 0 ? words[providerIndex + 1] : undefined;
+      const provider = findProviderWord(words);
       const catalog =
         provider && availableProviderIds().includes(provider as AiProviderId)
           ? storyboardModelCatalog[provider as AiProviderId]
@@ -148,6 +148,20 @@ function valueCompletions(flagName: string, words: readonly string[]): Completio
   }
 }
 
+// `--provider <id>`, or the value of a `config set` key that names a provider.
+function findProviderWord(words: readonly string[]): string | undefined {
+  const providerIndex = words.indexOf('--provider');
+
+  if (providerIndex >= 0) {
+    return words[providerIndex + 1];
+  }
+
+  const keyIndex = words.findIndex(
+    (word) => word === 'ai.provider.default' || /^tasks\.[^.]+\.provider$/.test(word),
+  );
+  return keyIndex >= 0 ? words[keyIndex + 1] : undefined;
+}
+
 function configKeyCompletions(): Completion[] {
   const providerKeys = availableProviderIds().flatMap((id) => [
     { text: `providers.${id}.model`, description: `${id} 모델` },
@@ -160,6 +174,10 @@ function configKeyCompletions(): Completion[] {
     { text: 'ai.provider.default', description: '기본 AI 프로바이더' },
     ...providerKeys,
     ...storyboardSettingCatalog.map((entry) => ({ text: entry.key, description: entry.label })),
+    ...aiTaskCatalog.flatMap((task) => [
+      { text: `tasks.${task.name}.provider`, description: `${task.label} 프로바이더` },
+      { text: `tasks.${task.name}.model`, description: `${task.label} 모델` },
+    ]),
   ];
 }
 

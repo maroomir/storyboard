@@ -87,6 +87,20 @@ describe('computeCompletions', () => {
     expect(texts(['completion', ''])).toEqual(['zsh', 'bash', 'fish']);
   });
 
+  it('completes task route keys and the model of the provider a config key names', () => {
+    expect(texts(['config', 'set', 'tasks.noteExtraction.'])).toEqual([
+      'tasks.noteExtraction.provider',
+      'tasks.noteExtraction.model',
+    ]);
+    expect(texts(['config', 'unset', 'tasks.noteEx'])).toContain('tasks.noteExtraction.provider');
+    expect(
+      texts(['config', 'set', 'tasks.noteExtraction.provider', 'claude', '--model', 'claude-o']),
+    ).toContain('claude-opus-5-5');
+    expect(texts(['config', 'set', 'ai.provider.default', 'openai', '--model', ''])).toContain(
+      'gpt-5.6-terra',
+    );
+  });
+
   it('honours --workspace when looking up stems', () => {
     const elsewhere = mkdtempSync(join(tmpdir(), 'storyboard-elsewhere-'));
 
