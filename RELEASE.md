@@ -55,15 +55,17 @@ jobs. Its steps are also separate scripts:
   scenarios open a frozen workspace an earlier release wrote and must leave it unchanged. When a
   difference is intended, run `npm run bvt:golden -- --update`, read the snapshot diff, and commit
   it with the change.
+- `npm run bvt:smoke` — the artifact smoke: `scripts/package-release.sh` packages the VSIX, the
+  CLI tarball and `install.sh` into a scratch directory, then `scripts/bvt/smoke.sh` installs the
+  tarball with the real `install.sh`, drives a mock work with the installed `storyboard` and checks
+  the VSIX contents. `npm run bvt:smoke:desktop` builds the desktop app and starts it with
+  `STORYBOARD_DESKTOP_SMOKE=1`, which exits 0 once the first screen has rendered; the workflow runs
+  the same against the packaged app on each platform.
 
-Reproduce the artifacts:
+Reproduce the artifacts (the workflow runs the same script):
 
 ```bash
-version="$(node -p "require('./package.json').version")"
-mkdir -p release
-npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
-npm run cli:build
-scripts/package-tarballs.sh "$version" release
+scripts/package-release.sh "$(node -p "require('./package.json').version")" release
 ```
 
 The CLI build writes a runtime `dist/package.json` that lists only the bundle's esbuild externals as
@@ -119,11 +121,14 @@ Artifact storage counts against the account's shared quota and release assets do
    that every app is synced to it, runs lint and tests from the repository root, then opens the
    release as a **draft** with no assets.
 2. `bvt` (ubuntu, Node 20, full clone for the tags) runs the build verification test described
-   under *Local verification*. A failure here leaves the draft release empty.
+   under *Local verification*: the diff contracts, the impact map, the golden workspaces, then
+   packages the VSIX and the CLI tarball and smokes them. A failure here leaves the draft release
+   empty.
 3. `desktop` builds the installers on `macos-latest` and `windows-latest` (Node 22):
    `storyboard-desktop-<version>-mac-arm64.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
    their `.blockmap` files and the update feed `latest-mac.yml` / `latest.yml`. Signing is used when
-   its secrets exist (below); otherwise the job warns and ships unsigned installers. Each job
+   its secrets exist (below); otherwise the job warns and ships unsigned installers. The packaged
+   app is then started in smoke mode and must render its first screen and exit 0 before each job
    uploads its own installers straight to the draft release.
 4. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
    downloads the desktop installers back from the draft, copies `scripts/install.sh` alongside and

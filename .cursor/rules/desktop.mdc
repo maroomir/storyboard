@@ -73,6 +73,10 @@ Engine messages (errors, progress) stay Korean in both languages.
   `compositionPresets.json` for the thread names and counts the composition presets build,
   `pipelines/scene.yaml` and `pipelines/novel.yaml` for the stage order of the two pipelines.
 
+## Smoke mode
+
+`STORYBOARD_DESKTOP_SMOKE=1` makes main render the first screen and exit 0 once the renderer mounted into `#root`, 1 on a load failure, crash or the 30 s limit; no update check, nothing written. The release workflow runs the packaged app this way per platform (`scripts/bvt/smokeDesktop.sh mac|win`), locally `npm run bvt:smoke:desktop`.
+
 ## Packaging
 
 `electron-builder.config.cjs` packages `dist/` alone (everything is bundled, so no `node_modules`

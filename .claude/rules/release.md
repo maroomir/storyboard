@@ -41,3 +41,15 @@ in `bvt/`, and each step is also its own script:
   approved by `npm run bvt:golden -- --update` and the snapshot diff in the same commit; a new
   frozen workspace is a copy of a fresh snapshot's `workspace/` made at a release and a `reopen`
   row pointing at it.
+- `bvt:smoke` — **artifact smoke** (`scripts/bvt/smoke.sh`, local wrapper `smokeRelease.sh`): the
+  VSIX, the CLI tarball and `install.sh` are packaged by `scripts/package-release.sh` (the same
+  script `publish` uses) and then *used*: `install.sh --from` installs the tarball into a scratch
+  prefix, the installed `storyboard` prints the version and drives a mock work through
+  `novel generate`, `draft show`, `scene create`, `status --json` (stdout must parse as a JSON
+  result) and `manuscript export`; the VSIX is unzipped and its manifest version, `main`, webview
+  page and changelog checked and the bundle parsed. `bvt:smoke:desktop` builds the desktop app and
+  starts it with `STORYBOARD_DESKTOP_SMOKE=1` (`scripts/bvt/smokeDesktop.sh dev`); the release
+  workflow runs the same on the **packaged** app in the `desktop` job on macOS and Windows.
+
+`npm run bvt` runs the four in that order; `bvt:smoke:desktop` is separate because it needs the
+Electron binary, which the `bvt` runner does not download.

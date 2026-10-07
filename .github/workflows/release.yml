@@ -86,6 +86,15 @@ jobs:
       - name: Golden workspaces
         run: npm run bvt:golden
 
+      # The same packaging steps `publish` runs; the smoke installs and runs what they produced.
+      - name: Package the extension and the CLI
+        run: |
+          scripts/package-release.sh "${GITHUB_REF_NAME#v}" release
+          (cd release && shasum -a 256 storyboard-* install.sh > SHA256SUMS)
+
+      - name: Artifact smoke
+        run: scripts/bvt/smoke.sh release "${GITHUB_REF_NAME#v}"
+
   # Installers are built on the platform they are for. Signing and notarization switch on only when
   # their secrets exist; without them the installers are unsigned but still ship.
   desktop:
@@ -147,6 +156,11 @@ jobs:
       - name: Package the installers
         run: npm run package:${{ matrix.target }} --workspace @storyboard/desktop
 
+      # The packaged app itself must start, render its first screen and exit cleanly.
+      - name: Desktop smoke
+        shell: bash
+        run: scripts/bvt/smokeDesktop.sh ${{ matrix.target }}
+
       - name: Upload the installers and the update feed
         shell: bash
         env:
@@ -177,13 +191,7 @@ jobs:
         run: npm ci
 
       - name: Package the extension and the CLI
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          mkdir -p release
-          npm run package:vsix --workspace storyboard-vscode -- --out "$PWD/release/storyboard-vscode-${version}.vsix"
-          npm run build --workspace @storyboard/cli
-          scripts/package-tarballs.sh "$version" release
-          cp scripts/install.sh release/install.sh
+        run: scripts/package-release.sh "${GITHUB_REF_NAME#v}" release
 
       - name: Collect the desktop installers
         env:

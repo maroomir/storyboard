@@ -16,6 +16,12 @@ import { createMainWindow, defaultMainWindowFiles } from './mainWindow';
 let mainWindow: BrowserWindow | undefined;
 let isQuitting = false;
 
+// NOTE: the release workflow starts the packaged app with STORYBOARD_DESKTOP_SMOKE=1 and reads
+// only the exit code: 0 once the renderer has mounted its first screen, 1 on a load failure, a
+// renderer crash or the time limit. Nothing is written and no update check runs.
+const isSmokeRun = process.env.STORYBOARD_DESKTOP_SMOKE === '1';
+const smokeLimitMs = 30_000;
+
 function startDesktopApp(): DesktopApp {
   const desktop = new DesktopApp({
     homePaths: resolveStoryboardHomePaths(process.env),
@@ -118,6 +124,35 @@ function openMainWindow(desktop: DesktopApp): void {
   });
 }
 
+function runSmoke(window: BrowserWindow): void {
+  const finish = (code: number, message: string): void => {
+    clearTimeout(deadline);
+    (code === 0 ? console.log : console.error)(`smoke: ${message}`);
+    isQuitting = true;
+    app.exit(code);
+  };
+  const deadline = setTimeout(() => finish(1, `the renderer did not mount within ${smokeLimitMs} ms`), smokeLimitMs);
+
+  window.webContents.on('did-fail-load', (_event, code, description) => finish(1, `load failed (${code} ${description})`));
+  window.webContents.on('render-process-gone', (_event, details) => finish(1, `renderer gone (${details.reason})`));
+  window.webContents.once('did-finish-load', () => {
+    const poll = async (): Promise<void> => {
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const isMounted = (await window.webContents.executeJavaScript(
+          'document.getElementById("root")?.childElementCount > 0',
+        )) as boolean;
+        if (isMounted) {
+          finish(0, 'renderer mounted');
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      finish(1, 'the renderer loaded but mounted nothing');
+    };
+    void poll();
+  });
+}
+
 function checkForUpdates(desktop: DesktopApp): void {
   // An unpackaged build has no update feed; a failed check must never stop the app.
   if (!app.isPackaged) {
@@ -144,6 +179,10 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     const desktop = startDesktopApp();
     openMainWindow(desktop);
+    if (isSmokeRun && mainWindow !== undefined) {
+      runSmoke(mainWindow);
+      return;
+    }
     checkForUpdates(desktop);
 
     app.on('activate', () => {
