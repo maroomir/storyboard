@@ -141,8 +141,9 @@ contract and a synopsis — one scene card per note, its events as beats; prose 
 written. Nothing that exists
 is overwritten: a card that exists gets candidates in `.storyboard/cache/notes/candidates.json`,
 which `card promote` applies beside the draft candidates; an existing synopsis gets a section in
-`synopsis.candidate.md`. Both accumulate per note location — absorbing a location again replaces
-only its share, and `--replace-candidates` starts over. `card promote` merges a card's candidates
+`synopsis.candidate.md`. Both accumulate per note location (a Notion page is its id, however it
+was linked) — absorbing a location again replaces only its share, and `--replace-candidates` starts
+over; a candidate file that cannot be read stops the verb before the paid step. `card promote` merges a card's candidates
 across locations and holds back a slot the notes give different values, until
 `card discard <id> --change <ref>` drops all but one (`card discard` also drops whole cards'
 candidates, draft and note). The contract is only proposed (`project set …`), except that
