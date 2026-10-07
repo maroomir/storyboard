@@ -1,9 +1,9 @@
 ---
 name: ai-provider-workflow
 description: >-
-  Guides AI provider, SecretStorage, ConfigBridge, and RPC work in Storyboard:
-  keys only in secrets, settings via configuration, registry boundaries, and
-  deterministic tests. Use when changing packages/story-ai/src/ai, secrets,
+  Guides AI provider, SecretStore, ConfigBridge, and RPC work in Storyboard:
+  keys only in ~/.storyboard/secrets.json, settings via the shared config files,
+  registry boundaries, and deterministic tests. Use when changing packages/story-ai/src/ai, secrets,
   provider config, or webview/extension AI messaging.
 ---
 
@@ -13,10 +13,10 @@ Authoritative detail: [`ARCHITECTURE.md`](ARCHITECTURE.md) (settings and command
 
 ## Policy (do not violate)
 
-1. **Default provider** is `mock` in settings unless the product explicitly changes it—dogfood and tests without keys.
-2. **API keys** live only in `vscode.ExtensionContext.secrets` via `SecretStore`, pattern `storyboard.apiKey.<provider>`. Never put keys in `settings.json`, prompts, logs, or webview payloads.
-3. **Models and overrides** come from `vscode.workspace.getConfiguration("storyboard")` through **`ConfigBridge`** so provider code does not reach for VSCode config ad hoc.
-4. **Override order**: `storyboard.tasks.<taskName>.provider` → `storyboard.defaultProvider` → safe fallback `mock`.
+1. **No implicit provider.** `ai.provider.default` must be chosen (`setup`, `config set`, the settings panel). `ConfigBridge.getDefaultProvider()` falls back to `mock` only so read-only surfaces have something to show; anything that generates checks `isDefaultProviderConfigured()` or the registry's guard, and an unknown provider is refused, never downgraded to `mock`.
+2. **API keys** live only in `~/.storyboard/secrets.json` (0600), read and written through `SecretStore` over `@storyboard/story-config`'s `createFileSecretStorage`, under `storyboard.apiKey.<provider>`. Every app shares that one file. Never put keys in `config.json`, prompts, logs, or webview payloads.
+3. **Settings** come from `~/.storyboard/config.json`, overridden by the workspace's `.storyboard/config.json`, through **`ConfigBridge`** over `createFileConfiguration`, so provider code never reads a config file itself. The extension contributes no VSCode `configuration`.
+4. **Override order**: `tasks.<taskName>.provider|model` → `ai.provider.default` with `providers.<id>.model`. A task model with no task provider is ignored. A route is written one task at a time, to one layer (`setTaskAiConfig` / `clearTaskAiConfig`).
 5. **Non-deterministic LLM output**: do not snapshot-test raw model responses. Test fixtures, parsing (`aiResponseParser`, `jsonRepair`, `traitsProcessor`), provider **request shaping**, and mocked HTTP/SDK boundaries.
 
 ## Implementation boundaries
