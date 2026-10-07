@@ -38,6 +38,7 @@ const summarizeChaptersMock = vi.fn()
 const checkContinuityMock = vi.fn(async () => [] as unknown[])
 const critiqueDraftMock = vi.fn(async () => [] as unknown[])
 const saveReviewMock = vi.fn(async () => undefined)
+const generateOutlineCharactersMock = vi.fn(async () => [{ id: "hero", name: "주인공", description: [] }] as unknown[])
 
 vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
   recordRevisionEntry: (...args: unknown[]): unknown => recordRevisionEntryMock(...args)
@@ -152,7 +153,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
           styleRules: []
         }),
         generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
-        generateOutlineCharacters: async (): Promise<unknown[]> => [],
+        generateOutlineCharacters: async (): Promise<unknown[]> => generateOutlineCharactersMock(),
         checkContinuity: async (): Promise<unknown[]> => checkContinuityMock(),
         critiqueDraft: async (): Promise<unknown[]> => critiqueDraftMock(),
         summarizeChapter: async (): Promise<string> => ""
@@ -193,7 +194,8 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     } as never,
     outlineRepository: {
       hasChapterPlan: async (): Promise<boolean> => false,
-      loadCharacterBriefs: async (): Promise<unknown[]> => [],
+      // The sample plan casts only hero, so the cast stage has nothing to ask for.
+      loadCharacterBriefs: async (): Promise<unknown[]> => [{ id: "hero", name: "주인공" }],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
       loadSynopsis: async (): Promise<undefined> => undefined,
       save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
@@ -266,6 +268,7 @@ describe("NovelPipeline", () => {
     checkContinuityMock.mockClear()
     critiqueDraftMock.mockClear()
     saveReviewMock.mockClear()
+    generateOutlineCharactersMock.mockReset().mockResolvedValue([{ id: "hero", name: "주인공", description: [] }])
     checkContinuityMock.mockResolvedValue([])
     critiqueDraftMock.mockResolvedValue([])
     generateDraftMock.mockResolvedValue(generatedResult)
@@ -417,6 +420,43 @@ describe("NovelPipeline", () => {
     expect(result.outcome).toBe("paused")
     expect(harness.progressStages).toEqual(["outline"])
     expect(harness.persistedStates.at(-1)?.status).toBe("paused")
+  })
+
+  // 예전에는 모델이 돌려주지 않은 인물도 조용히 넘어가 단계가 완료로 남았다.
+  it("tells which cast the model left out and fails when it answered for nobody", async () => {
+    const plan: ChapterPlan = {
+      ...samplePlan,
+      acts: [
+        {
+          ...samplePlan.acts[0]!,
+          chapters: [
+            {
+              ...samplePlan.acts[0]!.chapters[0]!,
+              scenes: [{ id: "s1", title: "씬1", purpose: "", characters: ["hero", "jun", "민수"], foreshadowing: [], neededCanon: [] }]
+            }
+          ]
+        }
+      ]
+    }
+    const harness = createHarness()
+    harness.dependencies.outlineRepository.loadChapterPlan = async (): Promise<ChapterPlan> => plan
+    harness.dependencies.outlineRepository.loadCharacterBriefs = async (): Promise<unknown[]> => []
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("completed")
+    expect(harness.progressMessages.filter((entry) => entry.stage === "characters").map((entry) => entry.message)).toEqual([
+      "인물 카드 확인 중…",
+      "인물 카드 1장을 만들었습니다.",
+      "모델이 카드를 돌려주지 않은 인물이 있습니다: jun. 카드를 직접 만들어 주세요.",
+      "카드 이름이 될 수 없는 인물 id 라 카드를 만들지 않았습니다: 민수. outline/chapters.yaml 의 id 를 영소문자로 고쳐 주세요."
+    ])
+
+    generateOutlineCharactersMock.mockResolvedValue([])
+    const failed = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(failed.outcome).toBe("failed")
+    expect(failed.message).toContain("인물 카드를 하나도 만들지 못했습니다: hero")
   })
 
   it("returns failed and records lastError when a draft fails", async () => {

@@ -5,7 +5,7 @@ exports[`ChapterPlanPrompt golden > demands a zero chapter count 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 0개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -44,7 +44,7 @@ exports[`ChapterPlanPrompt golden > demands both counts 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 8개, 각 장의 씬(scene)은 정확히 4개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -83,7 +83,7 @@ exports[`ChapterPlanPrompt golden > demands the chapter count 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 12개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -122,7 +122,7 @@ exports[`ChapterPlanPrompt golden > demands the scene count 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 각 장의 씬(scene)은 정확히 3개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -161,7 +161,7 @@ exports[`ChapterPlanPrompt golden > renders a linear plan for the generic varian
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -198,7 +198,7 @@ exports[`ChapterPlanPrompt golden > renders a linear plan for the rich variant 1
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -266,7 +266,7 @@ exports[`ChapterPlanPrompt golden > renders alternating-pov with narrators 1`] =
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -307,7 +307,7 @@ exports[`ChapterPlanPrompt golden > renders alternating-pov without narrators 1`
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -346,7 +346,7 @@ exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 1`] =
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -370,7 +370,7 @@ exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 2`] =
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -394,7 +394,7 @@ exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 3`] =
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -418,7 +418,7 @@ exports[`ChapterPlanPrompt golden > renders each synopsis field on its own 4`] =
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -442,7 +442,7 @@ exports[`ChapterPlanPrompt golden > renders empty material for the generic varia
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 이야기 흐름과 일치하게 작성하라.",
@@ -455,7 +455,7 @@ id는 영소문자/숫자/하이픈만 사용하고, 막→장→씬 순서가 �
 (시놉시스 정보 없음)
 
 [등장 인물]
-(등록된 인물 없음. 주요 인물마다 영소문자/숫자/하이픈으로 된 id를 새로 지어 characters에 써라. 그 id로 인물 카드가 만들어진다.)",
+(등록된 인물 없음. 주요 인물마다 id를 새로 지어 characters에 써라.)",
 }
 `;
 
@@ -471,7 +471,7 @@ exports[`ChapterPlanPrompt golden > renders empty material for the xs variant 1`
 (시놉시스 정보 없음)
 
 [등장 인물]
-(등록된 인물 없음. 주요 인물마다 영소문자/숫자/하이픈으로 된 id를 새로 지어 characters에 써라. 그 id로 인물 카드가 만들어진다.)",
+(등록된 인물 없음. 주요 인물마다 id를 새로 지어 characters에 써라.)",
 }
 `;
 
@@ -480,7 +480,7 @@ exports[`ChapterPlanPrompt golden > renders frame with threads 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -522,7 +522,7 @@ exports[`ChapterPlanPrompt golden > renders frame without threads or narrators 1
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -561,7 +561,7 @@ exports[`ChapterPlanPrompt golden > renders linear with threads 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -600,7 +600,7 @@ exports[`ChapterPlanPrompt golden > renders omnibus with narrators only 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.
@@ -639,7 +639,7 @@ exports[`ChapterPlanPrompt golden > renders omnibus with threads 1`] = `
   "system": "장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {"acts":[{"id":"","title":"","summary":"","chapters":[{"id":"","title":"","summary":"","narrator":"","thread":"","targetWordCount":0,"scenes":[{"id":"","title":"","purpose":"","characters":[""],"location":"","conflict":"","twist":"","emotionalShift":"","foreshadowing":[""],"neededCanon":[""],"targetWordCount":0}]}]}]}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 장(chapter)은 정확히 6개로 만들어라. 이 개수는 반드시 지켜야 한다.

@@ -154,24 +154,38 @@ export interface OutlineCharacterDraft {
   readonly description: readonly string[];
 }
 
-// The cast the plan names without a card. An id that cannot be a card file name is left out: no
-// card could answer it, so the scene that names it resolves its other characters instead.
+export interface UncastCharacters {
+  readonly cast: readonly OutlineCastMember[];
+  // Ids no card file could carry (a Korean name, say): no card can answer them, so the scenes that
+  // name them resolve their other characters instead.
+  readonly unusableIds: readonly string[];
+}
+
+// The cast the plan names without a card.
 export function findUncastCharacters(
   plan: ChapterPlan,
   existingIds: ReadonlySet<string>,
-): OutlineCastMember[] {
+): UncastCharacters {
   const sceneTitlesById = new Map<string, Set<string>>();
+  const unusableIds = new Set<string>();
 
   for (const { scene } of flattenChapterPlan(plan)) {
     for (const id of scene.characters) {
-      if (existingIds.has(id) || !cardIdPattern.test(id)) {
+      if (existingIds.has(id)) {
+        continue;
+      }
+      if (!cardIdPattern.test(id)) {
+        unusableIds.add(id);
         continue;
       }
       sceneTitlesById.set(id, (sceneTitlesById.get(id) ?? new Set()).add(scene.title));
     }
   }
 
-  return [...sceneTitlesById].map(([id, sceneTitles]) => ({ id, sceneTitles: [...sceneTitles] }));
+  return {
+    cast: [...sceneTitlesById].map(([id, sceneTitles]) => ({ id, sceneTitles: [...sceneTitles] })),
+    unusableIds: [...unusableIds],
+  };
 }
 
 // Keeps only the ids that were asked for, so a model cannot add a card nobody casts.

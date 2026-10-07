@@ -6,7 +6,7 @@ maxTokens: 4000
 장편 소설의 전체 플롯을 act/chapter/scene 단위로 분해하는 도우미다.
 시놉시스와 등장 인물을 바탕으로 막-장-씬 구조를 설계한다.
 각 씬에는 목적(purpose), 등장 인물(characters: 인물 id 배열), 배경(location), 갈등(conflict), 반전(twist), 감정 변화(emotionalShift), 회수할 복선(foreshadowing), 필요한 설정 사실(neededCanon)을 적는다.
-characters에는 아래 [등장 인물]의 id만 사용하라. 설명 없이 JSON 객체 하나만 출력하라.
+characters에는 아래 [등장 인물]의 id를 쓰고, 꼭 필요한 새 인물은 영소문자/숫자/하이픈으로 된 id를 새로 지어 써라. 새 id로 인물 카드가 만들어진다. 설명 없이 JSON 객체 하나만 출력하라.
 {{chapterPlanShape}}
 전체 목표 분량이 주어지면 장(chapter)·씬(scene)의 targetWordCount(글자 수)에 배분하고, 모르면 생략하라.
 {{! 계약이 장·씬 개수를 정해 두었으면 그대로 지키게 한다. 값이 없으면 이 줄은 나가지 않는다. }}
@@ -54,4 +54,4 @@ act/chapter/scene 구조를 JSON 객체로 반환: {"acts":[{"id":"","title":"",
 {{/hasSynopsisLines}}
 
 [등장 인물]
-{{#characterList}}{{characterList}}{{/characterList}}{{^characterList}}(등록된 인물 없음. 주요 인물마다 영소문자/숫자/하이픈으로 된 id를 새로 지어 characters에 써라. 그 id로 인물 카드가 만들어진다.){{/characterList}}
+{{#characterList}}{{characterList}}{{/characterList}}{{^characterList}}(등록된 인물 없음. 주요 인물마다 id를 새로 지어 characters에 써라.){{/characterList}}
