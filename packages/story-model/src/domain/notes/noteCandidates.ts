@@ -286,3 +286,42 @@ export function removeNoteCandidateChange(
 
   return mapCardChanges(file, cardId, (change) => noteChangeIdentity(change) !== identity);
 }
+
+const synopsisSourceMarker = /^<!-- note-source: (.+) -->$/;
+
+function synopsisSourceHeading(location: string): string {
+  return `<!-- note-source: ${location} -->`;
+}
+
+// The synopsis candidate is one section per location under a marker line. A re-read location
+// replaces its section; text above the first marker (a file from before sections) is kept as is.
+export function mergeNoteSynopsisCandidate(
+  existing: string | undefined,
+  location: string,
+  synopsisMarkdown: string | undefined,
+): string {
+  const preamble: string[] = [];
+  const sections: { location: string; lines: string[] }[] = [];
+
+  for (const line of (existing ?? '').split('\n')) {
+    const marker = synopsisSourceMarker.exec(line);
+
+    if (marker?.[1] !== undefined) {
+      sections.push({ location: marker[1], lines: [] });
+    } else {
+      (sections.at(-1)?.lines ?? preamble).push(line);
+    }
+  }
+
+  const kept = sections.filter((section) => section.location !== location);
+  const added =
+    synopsisMarkdown === undefined ? [] : [{ location, lines: synopsisMarkdown.split('\n') }];
+  const blocks = [
+    preamble.join('\n').trim(),
+    ...[...kept, ...added].map((section) =>
+      [synopsisSourceHeading(section.location), section.lines.join('\n').trim()].join('\n'),
+    ),
+  ].filter((block) => block.length > 0);
+
+  return blocks.length === 0 ? '' : `${blocks.join('\n\n')}\n`;
+}

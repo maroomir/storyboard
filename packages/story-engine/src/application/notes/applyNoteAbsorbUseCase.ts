@@ -14,6 +14,8 @@ import {
   applyCardCollectProposals,
   emptyNoteCandidateFile,
   mergeNoteCandidateSources,
+  mergeNoteSynopsisCandidate,
+  serializeSynopsisMarkdown,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
@@ -157,16 +159,35 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   private async applySynopsis(
     request: ApplyNoteAbsorbRequest,
   ): Promise<'written' | 'candidate' | 'none'> {
-    const { workspaceRoot, plan } = request;
+    const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
+    const { noteRepository } = this.deps;
+    const isCandidate =
+      plan.synopsis !== undefined && (await noteRepository.synopsisExists(workspaceRoot));
+
+    if (plan.synopsis !== undefined && !isCandidate) {
+      await noteRepository.writeSynopsis(workspaceRoot, plan.synopsis);
+    }
+
+    const existing = await noteRepository.loadSynopsisCandidate(workspaceRoot);
+
+    if (existing !== undefined || isCandidate) {
+      await noteRepository.saveSynopsisCandidate(
+        workspaceRoot,
+        mergeNoteSynopsisCandidate(
+          shouldReplaceCandidates ? undefined : existing,
+          location,
+          isCandidate && plan.synopsis !== undefined
+            ? serializeSynopsisMarkdown(plan.synopsis)
+            : undefined,
+        ),
+      );
+    }
 
     if (plan.synopsis === undefined) {
       return 'none';
     }
 
-    const hasSynopsis = await this.deps.noteRepository.synopsisExists(workspaceRoot);
-    await this.deps.noteRepository.writeSynopsis(workspaceRoot, plan.synopsis, hasSynopsis);
-
-    return hasSynopsis ? 'candidate' : 'written';
+    return isCandidate ? 'candidate' : 'written';
   }
 
   private async applySetting(request: ApplyNoteAbsorbRequest): Promise<{

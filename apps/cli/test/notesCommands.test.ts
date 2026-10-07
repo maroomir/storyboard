@@ -518,6 +518,31 @@ describe('notes absorb', () => {
       expect(none.message).toBe('버릴 후보가 없습니다.');
     });
 
+    it('keeps one synopsis section per location beside the author synopsis', async () => {
+      const synopsisCandidate = join(
+        workspace,
+        '.storyboard',
+        'cache',
+        'notes',
+        'synopsis.candidate.md',
+      );
+      const sectionLocations = () =>
+        [...readFileSync(synopsisCandidate, 'utf8').matchAll(/^<!-- note-source: (.+) -->$/gm)].map(
+          (match) => match[1],
+        );
+
+      await absorbAt(vault);
+      await absorbAt(otherLocation);
+      await absorbAt(vault);
+      expect(sectionLocations()).toEqual([otherLocation, vault]);
+      expect(readFileSync(synopsisCandidate, 'utf8')).toContain(
+        '만조에만 열리는 문을 둘러싼 이야기.',
+      );
+
+      await absorbAt(vault, undefined, { 'replace-candidates': true });
+      expect(sectionLocations()).toEqual([vault]);
+    });
+
     it('drops a candidate file an earlier version wrote, with a warning', async () => {
       const warnings: string[] = [];
       const warning = createCliContainer({

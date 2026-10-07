@@ -38,12 +38,10 @@ export interface INoteAbsorbRepository {
   sceneExists(workspaceRoot: StoryUri, fileName: string): Promise<boolean>;
   writeScene(workspaceRoot: StoryUri, fileName: string, card: SceneCard): Promise<void>;
   synopsisExists(workspaceRoot: StoryUri): Promise<boolean>;
-  // `asCandidate` keeps an author's synopsis untouched and puts the notes' version beside it.
-  writeSynopsis(
-    workspaceRoot: StoryUri,
-    synopsis: OutlineSynopsis,
-    asCandidate: boolean,
-  ): Promise<void>;
+  writeSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void>;
+  // The notes' synopses kept beside an author's own. Empty text removes the file.
+  loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined>;
+  saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void>;
   loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject>;
   saveProject(workspaceRoot: StoryUri, project: StoryboardProject): Promise<void>;
 }
