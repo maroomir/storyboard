@@ -198,6 +198,7 @@ describe('switching the hidden subscription provider on', () => {
       }),
     );
     mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    writeFileSync(join(workspace, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
     writeFileSync(
       join(workspace, '.storyboard', 'config.json'),
       JSON.stringify({ 'ai.provider.default': 'claude-code', 'budget.run.limitUsd': 3 }),
