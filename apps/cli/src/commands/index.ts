@@ -22,6 +22,7 @@ import {
   getStoryboardProjectPaths,
   scenePath,
   NodeUri,
+  type NovelRunState,
   type StoryUri,
   compositionCatalog,
   compositionKinds,
@@ -413,6 +414,19 @@ const summarizeChapters: CommandHandler = async ({ container }) => {
 };
 
 const generateNovel: CommandHandler = async ({ container, args }) => {
+  // NOTE: 이 명령은 실행 잠금을 쥔 채 돈다. 그러니 running 으로 남은 상태는 죽은 프로세스의 것이다.
+  const interrupted = await container.novel.findResumableRun(container.workspaceRoot, {
+    holdsRunLock: true,
+  });
+  const restartChoice =
+    interrupted === undefined
+      ? 'restart'
+      : await askResumeOrRestart(container.prompter, interrupted);
+
+  if (restartChoice === undefined) {
+    return cancelledBeforeRun;
+  }
+
   const isConfirmed = await confirmPaidRun(container, (status) => ({
     title: '장편 생성',
     details: [
@@ -435,6 +449,9 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
     // Every gate is auto-approved: a CLI run is unattended, and stopping to ask would stall a queue.
     runMode: 'auto',
     ...(reviseIterations === undefined ? {} : { reviseMaxIterations: Number(reviseIterations) }),
+    ...(restartChoice === 'resume' && interrupted !== undefined
+      ? { resumeState: interrupted }
+      : {}),
     onProgress: (stage, message) =>
       container.progress.update({
         line: `${novelStageLabel(stage)}: ${message}`,
@@ -467,6 +484,29 @@ const generateNovel: CommandHandler = async ({ container, args }) => {
       : {}),
   };
 };
+
+// 끊긴 실행이 있을 때 사람에게만 묻는다. 에이전트·파이프·--json 은 프롬프터가 없어 묻지 않고 이어 간다.
+// 한 번 실행하는 명령에 질문을 더하지 않는다는 원칙의 예외다: 잘못 고르면 쓴 돈이 버려진다.
+// «처음부터»도 있는 아웃라인과 씬 카드는 그대로 쓴다. 실행 기록만 새로 시작한다.
+async function askResumeOrRestart(
+  prompter: IPrompter | undefined,
+  interrupted: NovelRunState,
+): Promise<'resume' | 'restart' | undefined> {
+  if (prompter === undefined) {
+    return 'resume';
+  }
+
+  const finished = interrupted.completedStages.map((stage) => novelStageLabel(stage)).join(', ');
+
+  return await prompter.choose<'resume' | 'restart'>({
+    title: '끊긴 장편 생성이 있습니다',
+    details: [`끝난 단계  ${finished.length === 0 ? '없음' : finished}`],
+    options: [
+      { label: '이어 가기', value: 'resume' },
+      { label: '처음부터 (있는 아웃라인·씬 카드는 그대로 씀)', value: 'restart' },
+    ],
+  });
+}
 
 // 파생이 어떻게 됐는지 확인하는 자리. 서술자 카드를 만들지 않은 작품도 계약의 시점 하나가 어떤
 // 서술로 풀리는지 여기서 볼 수 있다.

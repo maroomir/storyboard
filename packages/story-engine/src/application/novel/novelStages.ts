@@ -90,6 +90,14 @@ export async function runOutlineStage(
   aiService: NovelAiService,
   outlineRepository: INovelOutlineRepository,
 ): Promise<void> {
+  // A rerun keeps the plan it already made: a new one would seed the same scenes under new names.
+  if (
+    (await outlineRepository.hasChapterPlan(workspaceUri)) &&
+    flattenChapterPlan(await outlineRepository.loadChapterPlan(workspaceUri)).length > 0
+  ) {
+    return;
+  }
+
   const brief = toOutlineBrief(project);
   const synopsis = await aiService.generateOutlineSynopsis(brief);
   const characters = await outlineRepository.loadCharacterBriefs(workspaceUri);
@@ -104,7 +112,8 @@ export async function runSeedsStage(
   digitCount: number,
   sceneSeedRepository: ISceneSeedRepository,
 ): Promise<void> {
-  await sceneSeedRepository.saveSeeds(workspaceUri, buildSceneSeeds(plan, digitCount));
+  // A scene card that exists may carry the author's edits, so a rerun writes only the missing ones.
+  await sceneSeedRepository.saveMissingSeeds(workspaceUri, buildSceneSeeds(plan, digitCount));
 }
 
 async function runChapterDraftsAndRevise(

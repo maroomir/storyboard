@@ -84,7 +84,7 @@ redrawn in place in the `LiveArea` at the bottom of stderr (the logger writes ab
 the same log lines as before. Ctrl+C reaches a run through `PauseRequests`: a verb that can stop at
 a scene boundary calls `watch()` and passes it as `shouldPause`; without a watcher Ctrl+C still ends
 the process. Questions go through `container.prompter` (`IPrompter`), present only when a person
-can answer (a TTY or the TUI) — one-shot verbs never add a new question, and `shouldConfirmPaidRuns`
+can answer (a TTY or the TUI) — one-shot verbs never add a new question (the one exception: `novel generate` asks whether to continue an interrupted run or start over, and continues without asking when no one can answer), and `shouldConfirmPaidRuns`
 is the TUI's alone. A catalog entry with `rewritesDraft: true` gets a sentence diff of its draft on
 stderr after a successful run. The TUI's color preset is app-only state in `~/.storyboard/tui.json`.
 

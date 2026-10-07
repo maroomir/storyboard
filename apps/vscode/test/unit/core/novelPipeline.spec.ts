@@ -187,12 +187,16 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       }
     } as never,
     outlineRepository: {
+      hasChapterPlan: async (): Promise<boolean> => false,
       loadCharacterBriefs: async (): Promise<unknown[]> => [],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
       save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
     } as never,
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
-    sceneSeedRepository: { saveSeeds: async (): Promise<void> => undefined } as never,
+    sceneSeedRepository: {
+      saveSeeds: async (): Promise<void> => undefined,
+      saveMissingSeeds: async (): Promise<number> => 0
+    } as never,
     summarizeChaptersUseCase: {
       execute: async (...args: unknown[]): Promise<unknown> => {
         summarizeChaptersMock(...args)

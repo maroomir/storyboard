@@ -127,6 +127,39 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
         foreshadowing: ['모의 복선'],
         neededCanon: ['모의 설정'],
       });
+    case 'outlineSynopsis':
+      return JSON.stringify({
+        logline: '모의 로그라인',
+        mainConflicts: ['모의 갈등'],
+        ending: '모의 결말',
+      });
+    case 'chapterPlan':
+      return JSON.stringify({
+        acts: [
+          {
+            title: '1막',
+            chapters: [
+              {
+                title: '1장',
+                scenes: [
+                  {
+                    id: 'sc-1-1',
+                    title: '첫 만남',
+                    purpose: '두 사람이 만난다',
+                    characters: ['hana'],
+                  },
+                  {
+                    id: 'sc-1-2',
+                    title: '엇갈림',
+                    purpose: '오해가 생긴다',
+                    characters: ['hana', 'jun'],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
     case 'inlineCompletion':
       return createMockInlineCompletion(promptSummary);
     case 'draftExpansion':

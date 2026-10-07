@@ -16,6 +16,7 @@ export interface INovelRunStateRepository {
 }
 
 export interface INovelOutlineRepository {
+  hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
   loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan>;
   save(
@@ -27,6 +28,8 @@ export interface INovelOutlineRepository {
 
 export interface ISceneSeedRepository {
   saveSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<void>;
+  // Writes only the seeds whose scene card does not exist yet and returns how many it wrote.
+  saveMissingSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<number>;
 }
 
 export interface NovelReviewSource {
