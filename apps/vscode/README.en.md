@@ -9,7 +9,7 @@ Korean README: [`README.md`](README.md)
 - Target direction: one-click long-form novel generation IDE (Autonomous Fiction Studio).
 - Initialize one workspace folder as one Storyboard project.
 - Manage the **Generation Contract**: genre, audience, POV, target word count, prohibitions, style constraints, and quality criteria.
-- Run `Storyboard: Generate Novel` for project settings → outline → scene seeds → drafts, review, revision → manuscript assembly, review, and summaries.
+- Run `Storyboard: Generate Novel` for project settings → outline → character cards → scene seeds → drafts, review, revision → manuscript assembly, review, and summaries.
 - Plan long-form structure with `.storyboard/outline/synopsis.md`, `chapters.yaml`, and `revision-plan.yaml`.
 - Manage character and background cards with `character/*.card` and `background/*.card`.
 - Use a custom editor for `.card` files and dedicated Characters / Backgrounds sidebars.

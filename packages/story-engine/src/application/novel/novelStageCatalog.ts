@@ -12,8 +12,9 @@ import {
 // `pipelines/novel.yaml` is checked against.
 export const novelStageCatalog = [
   { id: 'outline', label: '아웃라인', required: true },
+  { id: 'characters', label: '인물 카드', required: true, requires: ['outline'] },
   { id: 'seeds', label: '씬 시드', required: true, requires: ['outline'] },
-  { id: 'chapters', label: '장별 초안·검수', required: true, requires: ['seeds'] },
+  { id: 'chapters', label: '장별 초안·검수', required: true, requires: ['characters', 'seeds'] },
   { id: 'assemble', label: '원고 조립', requires: ['chapters'] },
   { id: 'review', label: '원고 최종 검사', requires: ['assemble'] },
   { id: 'revise-from-review', label: '검수 결과 재작성', requires: ['review'] },

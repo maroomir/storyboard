@@ -160,6 +160,13 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
           },
         ],
       });
+    case 'outlineCharacters':
+      return JSON.stringify({
+        characters: [
+          { id: 'hana', name: '하나', role: 'main', description: ['모의 주인공'] },
+          { id: 'jun', name: '준', role: 'supporting', description: ['모의 조연'] },
+        ],
+      });
     case 'inlineCompletion':
       return createMockInlineCompletion(promptSummary);
     case 'draftExpansion':

@@ -120,6 +120,7 @@ export const koMessages = {
 
   'run.title': '실행',
   'run.stage.outline': '아웃라인',
+  'run.stage.characters': '인물 카드',
   'run.stage.seeds': '씬 씨앗',
   'run.stage.chapters': '장별 초안·검수',
   'run.stage.assemble': '원고 조립',

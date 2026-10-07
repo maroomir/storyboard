@@ -10,6 +10,7 @@ export type NovelRunMode = (typeof novelRunModes)[number];
 
 export const novelStageNames = [
   'outline',
+  'characters',
   'seeds',
   'chapters',
   'assemble',

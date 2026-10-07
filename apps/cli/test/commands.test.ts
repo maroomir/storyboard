@@ -1458,3 +1458,66 @@ describe('novel generate again', () => {
     expect(readFileSync(firstScene, 'utf8')).toContain('# 작가 메모');
   });
 });
+
+// 예전에는 빈 작품의 novel generate 가 첫 씬에서 실패했다: 시드가 가리키는 인물 카드가 없었다.
+describe('novel generate on an empty work', () => {
+  async function setContract(): Promise<void> {
+    await run(
+      'project set',
+      args(['project', 'set'], {
+        genre: '스릴러',
+        audience: '성인',
+        pov: 'third-limited',
+        'target-words': '12000',
+      }),
+    );
+  }
+
+  async function generateRecording() {
+    const records: UsageRecord[] = [];
+    const recording = createCliContainer({
+      workspacePath: workspace,
+      logger: silentLogger,
+      canPrompt: false,
+      version: '0.0.0',
+      usageSink: { record: async (_root, usage) => void records.push(usage) },
+    });
+    const outcome = await commands['novel generate']({
+      container: recording,
+      args: args(['novel', 'generate']),
+    });
+
+    return { outcome, tasks: records.map((record) => record.taskName) };
+  }
+
+  it('makes the cards the chapter plan casts and runs to the end', async () => {
+    await setContract();
+
+    const { outcome } = await generateRecording();
+
+    expect(outcome.ok, outcome.message).toBe(true);
+    expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toContain('name: 하나');
+    expect(readFileSync(join(workspace, 'character', 'jun.card'), 'utf8')).toContain('name: 준');
+  });
+
+  it('leaves a card that exists alone and asks only for the missing one', async () => {
+    await setContract();
+    await run('card create', args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']));
+    const authored = readFileSync(join(workspace, 'character', 'hana.card'), 'utf8');
+
+    await generateRecording();
+
+    expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toBe(authored);
+    expect(existsSync(join(workspace, 'character', 'jun.card'))).toBe(true);
+  });
+
+  it('calls nothing when every cast member has a card', async () => {
+    await setContract();
+    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character']));
+    await run('card create', args(['card', 'create'], { name: '준', id: 'jun' }, ['character']));
+
+    const { tasks } = await generateRecording();
+
+    expect(tasks).not.toContain('outlineCharacters');
+  });
+});

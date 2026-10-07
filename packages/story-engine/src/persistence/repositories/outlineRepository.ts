@@ -10,6 +10,7 @@ import type { IOutlineRepository } from '#engine/application/novel/generateOutli
 import { listCharacterBriefs } from '#engine/persistence/characterBriefs';
 import {
   getStoryboardProjectPaths,
+  parseSynopsisMarkdown,
   readChapterPlanFile,
   writeChapterPlanFile,
   writeSynopsisFile,
@@ -60,6 +61,18 @@ export class OutlineRepository implements IOutlineRepository {
     return await readChapterPlanFile(
       getStoryboardProjectPaths(workspaceRoot).outlineChapters,
       this.fileSystem,
+    );
+  }
+
+  public async loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined> {
+    const synopsisUri = getStoryboardProjectPaths(workspaceRoot).outlineSynopsis;
+
+    if (!(await this.fileSystem.exists(synopsisUri))) {
+      return undefined;
+    }
+
+    return parseSynopsisMarkdown(
+      new TextDecoder().decode(await this.fileSystem.readFile(synopsisUri)),
     );
   }
 

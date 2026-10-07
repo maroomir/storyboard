@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { cardIdPattern, characterRoles, type CharacterRole } from './card';
 import {
   pointOfViews,
   type CompositionKind,
@@ -140,6 +141,69 @@ export interface OutlineCharacterBrief {
   readonly role?: string;
 }
 
+// A character the chapter plan casts but no card describes yet, with the scenes it appears in.
+export interface OutlineCastMember {
+  readonly id: string;
+  readonly sceneTitles: readonly string[];
+}
+
+export interface OutlineCharacterDraft {
+  readonly id: string;
+  readonly name: string;
+  readonly role?: CharacterRole;
+  readonly description: readonly string[];
+}
+
+// The cast the plan names without a card. An id that cannot be a card file name is left out: no
+// card could answer it, so the scene that names it resolves its other characters instead.
+export function findUncastCharacters(
+  plan: ChapterPlan,
+  existingIds: ReadonlySet<string>,
+): OutlineCastMember[] {
+  const sceneTitlesById = new Map<string, string[]>();
+
+  for (const { scene } of flattenChapterPlan(plan)) {
+    for (const id of scene.characters) {
+      if (existingIds.has(id) || !cardIdPattern.test(id)) {
+        continue;
+      }
+      sceneTitlesById.set(id, [...(sceneTitlesById.get(id) ?? []), scene.title]);
+    }
+  }
+
+  return [...sceneTitlesById].map(([id, sceneTitles]) => ({ id, sceneTitles }));
+}
+
+// Keeps only the ids that were asked for, so a model cannot add a card nobody casts.
+export function coerceOutlineCharacters(
+  raw: unknown,
+  requestedIds: readonly string[],
+): OutlineCharacterDraft[] {
+  const entries = isRecord(raw) ? asArray(raw.characters) : asArray(raw);
+  const drafts = new Map<string, OutlineCharacterDraft>();
+
+  for (const entry of entries) {
+    const record = isRecord(entry) ? entry : {};
+    const id = text(record.id);
+
+    if (id === undefined || !requestedIds.includes(id) || drafts.has(id)) {
+      continue;
+    }
+
+    const role = text(record.role)?.toLowerCase();
+    drafts.set(id, {
+      id,
+      name: text(record.name) ?? id,
+      ...(role !== undefined && (characterRoles as readonly string[]).includes(role)
+        ? { role: role as CharacterRole }
+        : {}),
+      description: textList(record.description),
+    });
+  }
+
+  return [...drafts.values()];
+}
+
 export interface FlatChapterScene {
   readonly scene: ScenePlan;
   readonly actTitle: string;
@@ -230,6 +294,10 @@ export function coerceOutlineSynopsis(raw: unknown, brief: OutlineBrief): Outlin
 
   const data = salvaged as unknown as OutlineSynopsis;
   return { ...data, pov: data.pov ?? brief.pov };
+}
+
+export function emptyOutlineSynopsis(): OutlineSynopsis {
+  return outlineSynopsisSchema.parse({}) as OutlineSynopsis;
 }
 
 export function coerceChapterPlan(raw: unknown): ChapterPlan {

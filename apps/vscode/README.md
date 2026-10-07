@@ -11,7 +11,7 @@ English README: [`README.en.md`](README.en.md)
 - **작품 계약** 설정으로 장르·독자층·시점·구성·목표 분량·금지 조건·문체/품질 기준 관리
 - 시점은 다섯 값(1인칭, 1인칭 회고, 2인칭, 3인칭 제한, 3인칭 전지) 가운데 하나이며, `narrator/*.card`로 이름 붙인 서술자를 만들면 씬·장마다 시점을 달리할 수 있음
 - 구성(선형·옴니버스·시점 교차·액자식)을 고르면 연속성 줄기와 서술자 카드를 프리셋이 만들고, 옴니버스는 편 안에서만 이야기 상태·요약·기억이 이어짐
-- `Storyboard: Generate Novel`로 작품 설정 → outline → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
+- `Storyboard: Generate Novel`로 작품 설정 → outline → 인물 카드 → 씬 시드 → 초안·검수·재작성 → 원고 조립·검사·요약까지 실행
 - `.storyboard/outline/synopsis.md`, `chapters.yaml`, `revision-plan.yaml` 기반 장편 구조 계획
 - `character/*.card`, `background/*.card` 기반 캐릭터/배경 카드 관리
 - `.card` 파일용 커스텀 에디터와 Characters / Backgrounds 사이드바

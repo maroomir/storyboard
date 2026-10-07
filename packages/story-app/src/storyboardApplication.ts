@@ -400,6 +400,7 @@ function buildServices(
       aiGateway,
       aiProviderRegistry,
       assembleManuscriptUseCase,
+      cardWriter: cardWriterRepository,
       configBridge,
       generateDraftUseCase,
       logger,

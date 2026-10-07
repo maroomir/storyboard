@@ -19,6 +19,7 @@ export interface INovelOutlineRepository {
   hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
   loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan>;
+  loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined>;
   save(
     workspaceRoot: StoryUri,
     synopsis: OutlineSynopsis,

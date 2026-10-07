@@ -254,7 +254,7 @@ describe('loadResourceOverrides', () => {
     writePrompt(
       join(workspace, 'pipelines'),
       'novel.yaml',
-      'version: 1\nstages:\n  - outline\n  - seeds\n  - chapters\n  - id: review\n    enabled: false\n  - summaries\n',
+      'version: 1\nstages:\n  - outline\n  - characters\n  - seeds\n  - chapters\n  - id: review\n    enabled: false\n  - summaries\n',
     );
 
     const report = await loadResourceOverrides(new NodeFileSystem(), [
@@ -270,7 +270,13 @@ describe('loadResourceOverrides', () => {
       'draftSkeleton',
       'expandSection',
     ]);
-    expect(resolveNovelPipelinePlan()).toEqual(['outline', 'seeds', 'chapters', 'summaries']);
+    expect(resolveNovelPipelinePlan()).toEqual([
+      'outline',
+      'characters',
+      'seeds',
+      'chapters',
+      'summaries',
+    ]);
 
     await loadResourceOverrides(new NodeFileSystem(), []);
 

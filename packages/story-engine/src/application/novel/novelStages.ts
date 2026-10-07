@@ -2,6 +2,9 @@ import type { AssembleManuscriptUseCase } from '#engine/application/manuscript/a
 import type { SummarizeChaptersUseCase } from '#engine/application/manuscript/summarizeChaptersUseCase';
 import {
   assembleManuscript,
+  createEmptyCharacter,
+  emptyOutlineSynopsis,
+  findUncastCharacters,
   flattenChapterPlan,
   toOutlineBrief,
   integerSettingDefault,
@@ -24,6 +27,7 @@ import type {
 } from '@storyboard/story-model';
 import type { AiProviderRegistry } from '@storyboard/story-ai';
 import type { ReviseSeedIssues } from '#engine/pipeline/reviseLoop';
+import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,
@@ -104,6 +108,46 @@ export async function runOutlineStage(
   const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
 
   await outlineRepository.save(workspaceUri, synopsis, chapterPlan);
+}
+
+// The chapter plan may cast people no card describes (an empty work has no cards at all), and a
+// scene whose cast resolves to nobody cannot be drafted. One call drafts the missing cards; a card
+// that exists is never touched, and nothing is called when the cast is complete.
+export async function runCharactersStage(
+  workspaceUri: StoryUri,
+  project: StoryboardProject,
+  plan: ChapterPlan,
+  aiService: NovelAiService,
+  outlineRepository: INovelOutlineRepository,
+  cardWriter: ICardWriterRepository,
+): Promise<number> {
+  const existingIds = new Set(
+    (await outlineRepository.loadCharacterBriefs(workspaceUri)).map((brief) => brief.id),
+  );
+  const cast = findUncastCharacters(plan, existingIds);
+
+  if (cast.length === 0) {
+    return 0;
+  }
+
+  const synopsis = (await outlineRepository.loadSynopsis(workspaceUri)) ?? emptyOutlineSynopsis();
+  const drafts = await aiService.generateOutlineCharacters(toOutlineBrief(project), synopsis, cast);
+  let writtenCount = 0;
+
+  for (const draft of drafts) {
+    if (await cardWriter.exists(workspaceUri, 'character', draft.id)) {
+      continue;
+    }
+
+    await cardWriter.write(workspaceUri, {
+      ...createEmptyCharacter(draft.id, draft.name),
+      ...(draft.role === undefined ? {} : { role: draft.role }),
+      description: [...draft.description],
+    });
+    writtenCount += 1;
+  }
+
+  return writtenCount;
 }
 
 export async function runSeedsStage(
