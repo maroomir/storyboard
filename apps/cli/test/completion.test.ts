@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   computeCompletions,
@@ -12,6 +12,7 @@ import {
 import { dispatch } from '../src/commands/dispatch';
 
 let cwd: string;
+let home: string;
 
 const silentLogger = {
   info: () => undefined,
@@ -25,6 +26,10 @@ function texts(words: string[]): string[] {
 }
 
 beforeEach(() => {
+  // The provider list depends on the home config (a hidden provider enabled there is offered), so
+  // the test owns an empty home rather than reading the machine's.
+  home = mkdtempSync(join(tmpdir(), 'storyboard-complete-home-'));
+  vi.stubEnv('STORYBOARD_HOME', home);
   cwd = mkdtempSync(join(tmpdir(), 'storyboard-complete-'));
   mkdirSync(join(cwd, '.storyboard'));
   writeFileSync(join(cwd, '.storyboard', 'project.json'), '{}');
@@ -37,6 +42,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
+  rmSync(home, { recursive: true, force: true });
   rmSync(cwd, { recursive: true, force: true });
 });
 
