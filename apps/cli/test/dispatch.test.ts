@@ -175,6 +175,28 @@ describe('dispatch', () => {
     expect(readFileSync(join(cwd, '.storyboard', 'config.json'), 'utf8')).toContain('300');
   });
 
+  // The issue's own command: --model here is the value config set saves, not a model for this run
+  // that needs a --provider beside it.
+  it('takes --model on config set without a --provider', async () => {
+    const result = await dispatch(
+      [
+        'config',
+        'set',
+        'tasks.noteExtraction.provider',
+        'claude',
+        '--model',
+        'claude-opus-5-5',
+        '--global',
+      ],
+      deps(),
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
+      tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
+    });
+  });
+
   it('names the allowed range when a value is outside it', async () => {
     const result = await dispatch(
       ['config', 'set', 'revise.loop.maxIterations', '9', '--global'],

@@ -24,12 +24,12 @@ function args(
   return { path: [], flags, positionals };
 }
 
-function container(): ReturnType<typeof createCliContainer> {
+function container(warnings: string[] = []): ReturnType<typeof createCliContainer> {
   return createCliContainer({
     workspacePath: workspace,
     logger: {
       info: () => undefined,
-      warn: () => undefined,
+      warn: (message: string) => warnings.push(message),
       error: () => undefined,
       show: () => undefined,
     },
@@ -417,5 +417,157 @@ describe('storyboard config', () => {
       providers: { claude: { model: 'claude-haiku-4-5' } },
       ai: { provider: { default: 'claude' } },
     });
+  });
+
+  it('names the current keys when it refuses one', async () => {
+    const unknown = await runConfigSet({
+      container: container(),
+      args: args({}, ['defaultProvider', 'claude']),
+    });
+
+    expect(unknown.ok).toBe(false);
+    expect(unknown.message).toContain('ai.provider.default');
+    expect(unknown.message).toContain('tasks.<task>.provider|model');
+    expect(unknown.message).not.toContain('쓸 수 있는 키: defaultProvider');
+  });
+
+  it('sets the default provider and its model in one command', async () => {
+    const badModel = await runConfigSet({
+      container: container(),
+      args: args({ model: 'gpt-99' }, ['ai.provider.default', 'claude']),
+    });
+    expect(badModel.ok).toBe(false);
+
+    const saved = await runConfigSet({
+      container: container(),
+      args: args({ model: 'claude-sonnet-5' }, ['ai.provider.default', 'claude']),
+    });
+
+    expect(saved.ok).toBe(true);
+    expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({
+      ai: { provider: { default: 'claude' } },
+      providers: { claude: { model: 'claude-sonnet-5' } },
+    });
+  });
+
+  it('refuses --model on a key that names no provider', async () => {
+    const outcome = await runConfigSet({
+      container: container(),
+      args: args({ model: 'claude-sonnet-5' }, ['revise.loop.maxIterations', '3']),
+    });
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('--model');
+  });
+});
+
+describe('storyboard config set tasks', () => {
+  function readHomeConfig(): unknown {
+    return JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'));
+  }
+
+  it('routes a task to a provider and model given together', async () => {
+    const outcome = await runConfigSet({
+      container: container(),
+      args: args({ model: 'claude-opus-5-5' }, ['tasks.noteExtraction.provider', 'claude']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(readHomeConfig()).toEqual({
+      tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
+    });
+  });
+
+  it('refuses an unknown task, an unknown provider and a model the provider does not have', async () => {
+    const unknownTask = await runConfigSet({
+      container: container(),
+      args: args({}, ['tasks.noteExtractoin.provider', 'claude']),
+    });
+    expect(unknownTask.ok).toBe(false);
+    expect(unknownTask.message).toContain('알 수 없는 작업: noteExtractoin');
+    expect(unknownTask.message).toContain('noteExtraction');
+
+    const unknownProvider = await runConfigSet({
+      container: container(),
+      args: args({}, ['tasks.noteExtraction.provider', 'codex']),
+    });
+    expect(unknownProvider.ok).toBe(false);
+
+    const wrongModel = await runConfigSet({
+      container: container(),
+      args: args({ model: 'gpt-5.5' }, ['tasks.noteExtraction.provider', 'claude']),
+    });
+    expect(wrongModel.ok).toBe(false);
+    expect(wrongModel.message).toContain('claude 에 없는 모델: gpt-5.5');
+  });
+
+  // The engine ignores a model with no provider, so a lone model takes the default provider with it.
+  it('fills the provider of a lone model from the default provider, or refuses without one', async () => {
+    const withoutDefault = await runConfigSet({
+      container: container(),
+      args: args({}, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
+    });
+    expect(withoutDefault.ok).toBe(false);
+    expect(withoutDefault.message).toContain('tasks.noteExtraction.provider');
+
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'claude' }));
+    const filled = await runConfigSet({
+      container: container(),
+      args: args({}, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
+    });
+
+    expect(filled.ok).toBe(true);
+    expect(filled.message).toContain('기본값 claude');
+    expect(readHomeConfig()).toEqual({
+      'ai.provider.default': 'claude',
+      tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
+    });
+
+    const outsideCatalog = await runConfigSet({
+      container: container(),
+      args: args({}, ['tasks.noteExtraction.model', 'gpt-5.5']),
+    });
+    expect(outsideCatalog.ok).toBe(false);
+  });
+
+  it('keeps the model across a provider change only while the new provider has it', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } } }),
+    );
+    const warnings: string[] = [];
+
+    const outcome = await runConfigSet({
+      container: container(warnings),
+      args: args({}, ['tasks.noteExtraction.provider', 'openai']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(readHomeConfig()).toEqual({ tasks: { noteExtraction: { provider: 'openai' } } });
+    expect(warnings.join('\n')).toContain('tasks.noteExtraction.model 을 비웠습니다');
+
+    await runConfigSet({
+      container: container(),
+      args: args({ model: 'gpt-5.5' }, ['tasks.noteExtraction.provider', 'openai']),
+    });
+    const kept: string[] = [];
+    await runConfigSet({
+      container: container(kept),
+      args: args({}, ['tasks.noteExtraction.provider', 'openai']),
+    });
+
+    expect(readHomeConfig()).toEqual({
+      tasks: { noteExtraction: { provider: 'openai', model: 'gpt-5.5' } },
+    });
+    expect(kept).toEqual([]);
+  });
+
+  it('refuses --model on the model key itself', async () => {
+    const outcome = await runConfigSet({
+      container: container(),
+      args: args({ model: 'claude-opus-5-5' }, ['tasks.noteExtraction.model', 'claude-opus-5-5']),
+    });
+
+    expect(outcome.ok).toBe(false);
   });
 });

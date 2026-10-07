@@ -337,12 +337,13 @@ export const commandCatalog: readonly CommandSpec[] = [
   {
     verb: 'config set',
     group: '시작하기',
-    usage: 'config set <key> <value> [--global]',
+    usage: 'config set <key> <value> [--model <name>] [--global]',
     summary:
       '이 작품의 .storyboard/config.json 값을 바꿉니다 (--global 이면 ~/.storyboard/config.json)',
-    flags: ['global'],
+    flags: ['model', 'global'],
     examples: [
-      'storyboard config set defaultProvider claude',
+      'storyboard config set ai.provider.default claude --model claude-sonnet-5',
+      'storyboard config set tasks.noteExtraction.provider claude --model claude-opus-5-5',
       'storyboard config set revise.loop.maxIterations 3',
     ],
     needsWorkspace: false,
