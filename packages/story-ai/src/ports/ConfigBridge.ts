@@ -319,15 +319,12 @@ export class ConfigBridge {
       return;
     }
 
-    if (config.model === null) {
-      throw new Error('setTaskAiConfig: model is required when providerId is set.');
-    }
-
-    if (!isModelInCatalogForProvider(config.providerId, config.model)) {
+    // A route without a model runs on the provider's own model, as the reader already resolves it.
+    if (config.model !== null && !isModelInCatalogForProvider(config.providerId, config.model)) {
       throw new Error(`setTaskAiConfig: model is not allowed for provider ${config.providerId}.`);
     }
 
-    await this.updateTaskRoute(taskName, config.providerId, config.model);
+    await this.updateTaskRoute(taskName, config.providerId, config.model ?? undefined);
   }
 
   public async clearTaskAiConfig(taskName: AiTaskName): Promise<void> {

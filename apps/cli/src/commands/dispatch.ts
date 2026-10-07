@@ -269,10 +269,12 @@ export async function dispatch(
     };
   }
 
-  const providerFailure = validateProvider(
-    flagString(args.flags, 'provider'),
-    flagString(args.flags, 'model'),
-  );
+  // `config set` names its provider in the key, so its --model is the value it saves, which the
+  // verb checks itself — not a model for this run.
+  const providerFailure =
+    verb === 'config set'
+      ? undefined
+      : validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model'));
 
   if (providerFailure !== undefined) {
     return failure(providerFailure, mode, terminal.stderr);

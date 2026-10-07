@@ -2,12 +2,15 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename } from 'node:path';
 
 import {
+  aiTaskNames,
   listSelectableProviderIds,
   isHiddenProvider,
+  isModelInCatalogForProvider,
   requiresApiKey,
   storyboardModelCatalog,
   storyboardSettingCatalog,
   type AiProviderId,
+  type AiTaskName,
   formatSceneOrderRanges,
   findUnreadableStoryStateLines,
   mainThreadId,
@@ -935,7 +938,12 @@ function parseSettingValue(
   }
 }
 
-function describeSaved(container: CliContainer, key: string, value: unknown): CommandOutcome {
+function describeSaved(
+  container: CliContainer,
+  key: string,
+  value: unknown,
+  notes: readonly string[] = [],
+): CommandOutcome {
   const file = container.configWriteFile;
   const origin = container.configBridge.getValueOrigin(key);
   // NOTE: 작품 파일이 공통을 덮는다. --global 로 썼는데 이 작품에 같은 키가 있으면 방금 쓴 값은
@@ -944,11 +952,28 @@ function describeSaved(container: CliContainer, key: string, value: unknown): Co
 
   return {
     ok: true,
-    message:
-      `${key} = ${String(value)} 저장했습니다: ${file}` +
-      (isShadowed ? `\n다만 이 작품의 ${container.workspaceConfigFile} 값이 우선합니다.` : ''),
+    message: [
+      `${key} = ${String(value)} 저장했습니다: ${file}`,
+      ...notes,
+      ...(isShadowed ? [`다만 이 작품의 ${container.workspaceConfigFile} 값이 우선합니다.`] : []),
+    ].join('\n'),
     data: { key, value, origin, file },
   };
+}
+
+function describeModelOutsideCatalog(providerId: AiProviderId, model: string): string {
+  return (
+    `${providerId} 에 없는 모델: ${model}\n` +
+    `쓸 수 있는 값: ${storyboardModelCatalog[providerId].map((entry) => entry.id).join(', ')}`
+  );
+}
+
+// NOTE: 로컬 런타임은 기계마다 받아 둔 모델이 다르다. 카탈로그를 고정 목록으로 강제하면
+// 사용자가 이미 가진 모델을 쓸 수 없으므로, ollama 에서는 목록을 제안으로만 쓴다.
+function findProviderModelProblem(providerId: AiProviderId, model: string): string | undefined {
+  return providerId === 'ollama' || isModelInCatalogForProvider(providerId, model)
+    ? undefined
+    : describeModelOutsideCatalog(providerId, model);
 }
 
 async function setProviderField(
@@ -960,14 +985,9 @@ async function setProviderField(
   const { configBridge } = container;
 
   if (field === 'model') {
-    const catalog = storyboardModelCatalog[providerId];
-    // NOTE: 로컬 런타임은 기계마다 받아 둔 모델이 다르다. 카탈로그를 고정 목록으로 강제하면
-    // 사용자가 이미 가진 모델을 쓸 수 없으므로, ollama 에서는 목록을 제안으로만 쓴다.
-    if (providerId !== 'ollama' && !catalog.some((entry) => entry.id === raw)) {
-      return {
-        ok: false,
-        message: `${providerId} 에 없는 모델: ${raw}\n쓸 수 있는 값: ${catalog.map((entry) => entry.id).join(', ')}`,
-      };
+    const modelProblem = findProviderModelProblem(providerId, raw);
+    if (modelProblem !== undefined) {
+      return { ok: false, message: modelProblem };
     }
     await configBridge.setProviderModel(providerId, raw);
   } else if (field === 'baseUrl') {
@@ -991,12 +1011,105 @@ async function setProviderField(
   return describeSaved(container, `providers.${providerId}.${field}`, raw);
 }
 
+function isTaskName(value: string): value is AiTaskName {
+  return (aiTaskNames as readonly string[]).includes(value);
+}
+
+// A task route is a provider and, optionally, its model: the engine ignores a model with no
+// provider, so whichever half is set, the pair is written whole and stays one the engine reads.
+async function setTaskRoute(
+  container: CliContainer,
+  taskName: string,
+  field: 'provider' | 'model',
+  raw: string,
+  modelFlag: string | undefined,
+): Promise<CommandOutcome> {
+  const { configBridge } = container;
+  const key = `tasks.${taskName}.${field}`;
+
+  if (!isTaskName(taskName)) {
+    return {
+      ok: false,
+      message: `알 수 없는 작업: ${taskName}\n쓸 수 있는 값: ${aiTaskNames.join(', ')}`,
+    };
+  }
+
+  const current = configBridge.getTaskAiConfigOverride(taskName);
+
+  if (field === 'model') {
+    if (modelFlag !== undefined) {
+      return {
+        ok: false,
+        message: `--model 은 tasks.${taskName}.provider 와 함께 씁니다. 모델만 바꾸려면 값으로 주세요.`,
+      };
+    }
+
+    const isFilledFromDefault = current === null;
+
+    if (isFilledFromDefault && !configBridge.isDefaultProviderConfigured()) {
+      return {
+        ok: false,
+        message:
+          `기본 프로바이더가 없어 ${raw} 가 어느 프로바이더의 모델인지 알 수 없습니다.\n` +
+          `  storyboard config set tasks.${taskName}.provider <프로바이더> --model ${raw}`,
+      };
+    }
+
+    const providerId = current?.providerId ?? configBridge.getDefaultProvider();
+
+    if (!isModelInCatalogForProvider(providerId, raw)) {
+      return { ok: false, message: describeModelOutsideCatalog(providerId, raw) };
+    }
+
+    await configBridge.setTaskAiConfig(taskName, { providerId, model: raw });
+    return describeSaved(
+      container,
+      key,
+      raw,
+      isFilledFromDefault
+        ? [`프로바이더는 기본값 ${providerId} 로 함께 저장했습니다 (tasks.${taskName}.provider).`]
+        : [],
+    );
+  }
+
+  if (!isProviderId(raw)) {
+    return {
+      ok: false,
+      message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
+    };
+  }
+
+  if (modelFlag !== undefined && !isModelInCatalogForProvider(raw, modelFlag)) {
+    return { ok: false, message: describeModelOutsideCatalog(raw, modelFlag) };
+  }
+
+  const keptModel = current?.model ?? null;
+  const isKeptModelUsable = keptModel !== null && isModelInCatalogForProvider(raw, keptModel);
+  const model = modelFlag ?? (isKeptModelUsable ? keptModel : null);
+
+  if (modelFlag === undefined && keptModel !== null && !isKeptModelUsable) {
+    container.logger.warn(
+      `tasks.${taskName}.model 을 비웠습니다: ${keptModel} 는 ${raw} 의 모델이 아닙니다. ` +
+        `${raw} 에 정한 모델로 실행합니다.`,
+    );
+  }
+
+  await configBridge.setTaskAiConfig(taskName, { providerId: raw, model });
+  return describeSaved(
+    container,
+    key,
+    raw,
+    modelFlag === undefined ? [] : [`tasks.${taskName}.model = ${modelFlag}`],
+  );
+}
+
 // `config set` is the agent-friendly face of the settings panel: one key, one value, validated by
 // the same catalog the panel renders.
 export async function runConfigSet({ container, args }: CommandContext): Promise<CommandOutcome> {
   const { configBridge } = container;
   const key = flagString(args.flags, 'key') ?? args.positionals[0];
   const raw = flagString(args.flags, 'value') ?? args.positionals[1];
+  const modelFlag = flagString(args.flags, 'model');
 
   if (key === undefined || raw === undefined) {
     return { ok: false, message: '사용법: storyboard config set <key> <value>' };
@@ -1009,8 +1122,39 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
         message: `알 수 없는 프로바이더: ${raw}\n쓸 수 있는 값: ${availableProviderIds().join(', ')}`,
       };
     }
+
+    const modelProblem =
+      modelFlag === undefined ? undefined : findProviderModelProblem(raw, modelFlag);
+    if (modelProblem !== undefined) {
+      return { ok: false, message: modelProblem };
+    }
+
     await configBridge.setDefaultProvider(raw);
-    return describeSaved(container, key, raw);
+    if (modelFlag === undefined) {
+      return describeSaved(container, key, raw);
+    }
+
+    await configBridge.setProviderModel(raw, modelFlag);
+    return describeSaved(container, key, raw, [`providers.${raw}.model = ${modelFlag}`]);
+  }
+
+  const taskMatch = /^tasks\.([^.]+)\.(provider|model)$/.exec(key);
+
+  if (taskMatch) {
+    return setTaskRoute(
+      container,
+      taskMatch[1] ?? '',
+      taskMatch[2] as 'provider' | 'model',
+      raw,
+      modelFlag,
+    );
+  }
+
+  if (modelFlag !== undefined) {
+    return {
+      ok: false,
+      message: '--model 은 ai.provider.default 나 tasks.<task>.provider 와 함께만 씁니다.',
+    };
   }
 
   const hiddenProviderOutcome = await setHiddenProviderKey(container, key, raw);
@@ -1040,7 +1184,8 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return {
       ok: false,
       message:
-        `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: defaultProvider, providers.<id>.${settableProviderKeys.join('|')}, ` +
+        `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: ai.provider.default, ` +
+        `providers.<id>.${settableProviderKeys.join('|')}, tasks.<task>.provider|model, ` +
         storyboardSettingCatalog.map((entry) => entry.key).join(', '),
     };
   }
