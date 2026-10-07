@@ -20,6 +20,8 @@
     "cli:build": "npm run build --workspace @storyboard/cli",
     "desktop:dev": "npm run dev --workspace @storyboard/desktop",
     "desktop:package": "npm run package --workspace @storyboard/desktop",
-    "version:sync": "node scripts/sync-version.mjs"
+    "version:sync": "node scripts/sync-version.mjs",
+    "bvt": "npm run bvt:contracts",
+    "bvt:contracts": "node scripts/bvt/checkDiffContracts.mjs"
   }
 }

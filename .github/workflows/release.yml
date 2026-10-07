@@ -53,10 +53,37 @@ jobs:
             --title "$GITHUB_REF_NAME" \
             --notes "Assets are still uploading."
 
+  # The build verification test: what lint and the unit tests cannot see. It runs between the
+  # checks on the source and the jobs that build what ships, so a failure here leaves the release
+  # in draft with nothing uploaded. The diff contracts need the previous tag, hence the full clone.
+  bvt:
+    needs: verify
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Diff contracts
+        run: npm run bvt:contracts
+
   # Installers are built on the platform they are for. Signing and notarization switch on only when
   # their secrets exist; without them the installers are unsigned but still ship.
   desktop:
-    needs: verify
+    needs: bvt
     strategy:
       matrix:
         include:

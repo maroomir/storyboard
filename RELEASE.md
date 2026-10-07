@@ -33,7 +33,17 @@ npm run compile
 npm run build      # bundles both apps
 npm run lint
 npm test
+npm run bvt        # the build verification test, see below
 ```
+
+`npm run bvt` is what the workflow's `bvt` job runs between the source checks and the packaging
+jobs. Its steps are also separate scripts:
+
+- `npm run bvt:contracts` — diff contracts between the previous tag and HEAD: a change must carry
+  its mandatory companion (source ↔ both changelogs, a prompt resource ↔ its generated module, a
+  params file ↔ its schema and its coding-standards row, the config schema ↔ a settings test,
+  desktop `ko.ts` ↔ `en.ts`, `.claude/rules` ↔ `.cursor/rules`, a version bump ↔ its changelog
+  section). `node scripts/bvt/checkDiffContracts.mjs v0.12.1` checks another range.
 
 Reproduce the artifacts:
 
@@ -97,18 +107,20 @@ Artifact storage counts against the account's shared quota and release assets do
 1. `verify` (ubuntu, Node 20) installs with `npm ci`, checks the tag matches the root version and
    that every app is synced to it, runs lint and tests from the repository root, then opens the
    release as a **draft** with no assets.
-2. `desktop` builds the installers on `macos-latest` and `windows-latest` (Node 22):
+2. `bvt` (ubuntu, Node 20, full clone for the tags) runs the build verification test described
+   under *Local verification*. A failure here leaves the draft release empty.
+3. `desktop` builds the installers on `macos-latest` and `windows-latest` (Node 22):
    `storyboard-desktop-<version>-mac-arm64.dmg` and `.zip`, `storyboard-desktop-<version>-win-x64-setup.exe`,
    their `.blockmap` files and the update feed `latest-mac.yml` / `latest.yml`. Signing is used when
    its secrets exist (below); otherwise the job warns and ships unsigned installers. Each job
    uploads its own installers straight to the draft release.
-3. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
+4. `publish` packages `storyboard-vscode-<version>.vsix` and `storyboard-cli-<version>.tar.gz`,
    downloads the desktop installers back from the draft, copies `scripts/install.sh` alongside and
    creates `SHA256SUMS` over everything.
-4. Builds the release notes from the `## [<version>]` section of `CHANGELOG.md`
+5. Builds the release notes from the `## [<version>]` section of `CHANGELOG.md`
    (with `CHANGELOG.en.md` in a collapsed `English` block). Only that version's entries go into
    the release body; the job fails if the section is missing.
-5. Uploads the remaining assets and takes the release out of draft, so a run that dies partway
+6. Uploads the remaining assets and takes the release out of draft, so a run that dies partway
    never leaves a half-built release visible. The desktop app's auto-update reads this release
    (the `latest*.yml` feed), so a draft that never leaves draft never reaches installed apps.
 
