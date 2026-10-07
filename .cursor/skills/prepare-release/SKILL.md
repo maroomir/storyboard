@@ -53,7 +53,17 @@ One tag ships three apps. Reproduce the extension and CLI artifacts locally exac
 
 Do not assume `vsce` or marketplace publish until CI, `vsce` config, and publisher metadata are confirmed.
 
-## 5. Tag (after maintainer confirmation)
+## 5. Preflight (mandatory, on the version commit)
+
+Everything the tag would set off on GitHub, run here first; only the upload is left to the workflow:
+
+```bash
+npm run release:preflight                # add -- --package to also package and smoke this platform's desktop app
+```
+
+It refuses an uncommitted tree, a branch other than `main`, an unsynced version, a tag that already exists and a missing or empty `## [<version>] - YYYY-MM-DD` section in either changelog, then runs lint, the tests, `npm run bvt` and the desktop smoke. **Do not tag until it prints `Preflight passed`.** Fix what it reports, commit, and run it again.
+
+## 6. Tag (after maintainer confirmation)
 
 ```bash
 git tag "v<version>"

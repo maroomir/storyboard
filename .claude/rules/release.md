@@ -53,3 +53,12 @@ in `bvt/`, and each step is also its own script:
 
 `npm run bvt` runs the four in that order; `bvt:smoke:desktop` is separate because it needs the
 Electron binary, which the `bvt` runner does not download.
+
+## Preflight before the tag
+
+**An agent never creates a release tag without `npm run release:preflight` passing on that commit.**
+`scripts/release-preflight.sh` runs what the tag would set off, minus the upload: the tree must be
+committed and on `main`, the version synced and untagged, both changelogs carrying a dated,
+non-empty `## [<version>]` section; then lint, the tests, `npm run bvt` and the desktop smoke
+(`-- --package` adds the packaged app for this platform). A tag that fails on GitHub is then the
+exception; the Windows app smoke is the one check only the workflow can do.

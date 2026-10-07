@@ -21,6 +21,7 @@
     "desktop:dev": "npm run dev --workspace @storyboard/desktop",
     "desktop:package": "npm run package --workspace @storyboard/desktop",
     "version:sync": "node scripts/sync-version.mjs",
+    "release:preflight": "scripts/release-preflight.sh",
     "bvt": "npm run bvt:contracts && npm run bvt:impact && npm run bvt:golden && npm run bvt:smoke",
     "bvt:contracts": "node scripts/bvt/checkDiffContracts.mjs",
     "bvt:impact": "node scripts/bvt/runImpactMap.mjs",

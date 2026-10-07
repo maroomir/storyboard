@@ -26,7 +26,16 @@ node scripts/sync-version.mjs --check   # what the release workflow enforces
 
 ## Local verification
 
-Run the same checks the release workflow runs.
+Before tagging, run everything the tag would set off, in one command on the version commit:
+
+```bash
+npm run release:preflight            # -- --package also packages and smokes this platform's desktop app
+```
+
+It checks that the tree is committed and on `main`, that the version is synced and not yet tagged,
+and that both changelogs carry a dated, non-empty `## [<version>]` section; then it runs lint, the
+tests, `npm run bvt` and the desktop smoke, and ends with `Preflight passed for v<version>`. Nothing
+is tagged or uploaded. The pieces are also available one by one:
 
 ```bash
 npm run compile
@@ -99,6 +108,8 @@ git commit -m "chore: release v0.8.0"
 ```
 
 ## Tag and push
+
+Only after `npm run release:preflight` has printed `Preflight passed` on this commit.
 
 ```bash
 git tag v0.8.0
