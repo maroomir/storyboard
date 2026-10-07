@@ -1,7 +1,6 @@
 import {
   describeWorkspaceRunLockHolder,
   getStoryboardProjectPaths,
-  isResumable,
   novelStageNames,
   scenePath,
   validateGenerationContract,
@@ -13,7 +12,6 @@ import {
 } from '@storyboard/story-model';
 import {
   readProjectJson,
-  readWorkspaceRunLock,
   type GenerateDraftRequest,
   type NovelApprovalKind,
   type UsageMeterSession,
@@ -418,26 +416,16 @@ export class RunController {
     return state === undefined ? undefined : { mode: state.runMode, completedStages: state.completedStages };
   }
 
-  // NOTE: 엔진의 isResumable 은 paused·failed 만 본다. 앱이 죽으면 상태가 running 으로 남는데,
-  // 그것을 새 실행으로 다루면 아웃라인부터 다시 만든다. 쥔 앱이 없는 running 은 끊긴 실행이다.
+  // While our own run is going there is nothing to resume; otherwise the engine decides, including
+  // a run left `running` by an app that died.
   private async readResumableState(): Promise<NovelRunState | undefined> {
     const { container } = this.dependencies;
-    const state = await container.novel.runState.readExisting(container.workspaceRoot);
-
-    if (state === undefined || state.status !== 'running') {
-      return isResumable(state) ? state : undefined;
-    }
 
     if (this.active !== undefined) {
       return undefined;
     }
 
-    const holder = await readWorkspaceRunLock({
-      fileSystem: container.fileSystem,
-      workspaceRoot: container.workspaceRoot,
-    });
-
-    return holder === undefined ? state : undefined;
+    return await container.novel.findResumableRun(container.workspaceRoot, { holdsRunLock: false });
   }
 
   private appendLog(message: string, tone: RunLogLine['tone'] = 'info', stage?: NovelStageName): void {

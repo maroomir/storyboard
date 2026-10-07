@@ -1,5 +1,7 @@
 import {
   isRunBudgetExceeded,
+  readWorkspaceRunLock,
+  type IFileSystem,
   type ApplyCompletedScenesResult,
   type ApplyStoryProposals,
   type CompletedStoryScene,
@@ -24,7 +26,13 @@ import {
   type UsageMeter,
 } from '@storyboard/story-engine';
 import type { ConfigBridge } from '@storyboard/story-ai';
-import type { StoryboardProject, StoryUri, UsageAmount } from '@storyboard/story-model';
+import {
+  isResumable,
+  type NovelRunState,
+  type StoryboardProject,
+  type StoryUri,
+  type UsageAmount,
+} from '@storyboard/story-model';
 
 export interface NovelManagerDependencies {
   readonly novelPipeline: NovelPipeline;
@@ -37,6 +45,7 @@ export interface NovelManagerDependencies {
   readonly outlineRepository: IOutlineRepository;
   readonly configBridge: ConfigBridge;
   readonly usageMeter: UsageMeter;
+  readonly fileSystem: IFileSystem;
 }
 
 export interface NovelRunRequest extends Omit<NovelPipelineRunOptions, 'reviseMaxIterations'> {
@@ -100,6 +109,28 @@ export class NovelManager {
     } finally {
       spending.stop();
     }
+  }
+
+  // The run a new one should continue from. A state left `running` while no app holds the run lock
+  // was cut off (its process died), so it continues like a paused one instead of rebuilding the
+  // outline. A host that already holds the lock knows no other run is alive.
+  public async findResumableRun(
+    workspaceRoot: StoryUri,
+    options: { readonly holdsRunLock: boolean },
+  ): Promise<NovelRunState | undefined> {
+    const state = await this.runState.readExisting(workspaceRoot);
+
+    if (state?.status !== 'running') {
+      return isResumable(state) ? state : undefined;
+    }
+
+    if (options.holdsRunLock) {
+      return state;
+    }
+
+    const holder = await readWorkspaceRunLock({ fileSystem: this.deps.fileSystem, workspaceRoot });
+
+    return holder === undefined ? state : undefined;
   }
 
   // The work itself: its name, format and the contract every generation reads.

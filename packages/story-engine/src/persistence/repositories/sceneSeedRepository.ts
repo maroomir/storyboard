@@ -20,4 +20,21 @@ export class SceneSeedRepository implements ISceneSeedRepository {
       );
     }
   }
+
+  public async saveMissingSeeds(
+    workspaceRoot: StoryUri,
+    seeds: readonly GeneratedSceneSeed[],
+  ): Promise<number> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    const missing: GeneratedSceneSeed[] = [];
+
+    for (const seed of seeds) {
+      if (!(await this.fileSystem.exists(joinStoryPath(paths.sceneDirectory, seed.fileName)))) {
+        missing.push(seed);
+      }
+    }
+
+    await this.saveSeeds(workspaceRoot, missing);
+    return missing.length;
+  }
 }

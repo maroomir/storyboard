@@ -50,7 +50,9 @@ storyboard manuscript assemble        # draft/*.md → manuscript
 
 `storyboard novel generate` runs all of it without approvals. When the run budget
 (`budget.run.limitUsd`) is reached it finishes the scene in progress and stops; running it again
-continues. A new work also gets an `AGENTS.md`, so an agent such as Claude Code goes through these
+continues. A run that failed or whose process was cut off continues too when run again. At a
+terminal it asks whether to continue or start over, and starting over still keeps the outline and
+scene cards that exist. A new work also gets an `AGENTS.md`, so an agent such as Claude Code goes through these
 commands instead of writing the prose itself.
 
 ## Repository layout

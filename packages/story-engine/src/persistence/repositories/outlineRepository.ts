@@ -27,6 +27,10 @@ export class OutlineRepository implements IOutlineRepository {
     );
   }
 
+  public async hasChapterPlan(workspaceRoot: StoryUri): Promise<boolean> {
+    return await this.fileSystem.exists(getStoryboardProjectPaths(workspaceRoot).outlineChapters);
+  }
+
   public async loadCharacterBriefs(
     workspaceRoot: StoryUri,
   ): Promise<readonly OutlineCharacterBrief[]> {

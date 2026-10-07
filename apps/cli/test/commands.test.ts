@@ -22,6 +22,8 @@ import {
 } from '@storyboard/story-model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
+import { acquireWorkspaceRunLock } from '@storyboard/story-engine';
+
 import type { ParsedArguments } from '../src/cliArguments';
 import { commands } from '../src/commands/index';
 import { createCliContainer } from '../src/container';
@@ -1338,5 +1340,121 @@ describe('spend that belongs to no scene', () => {
       'project',
       'project',
     ]);
+  });
+});
+
+// 예전에는 다시 돌린 novel generate 가 아웃라인을 새로 만들고, 다른 이름의 씬 시드를 또 썼다.
+describe('novel generate again', () => {
+  const runStateFile = (): string => join(workspace, STORYBOARD_RELATIVE_PATHS.novelRunState);
+
+  async function startNovel(): Promise<void> {
+    await run(
+      'project set',
+      args(['project', 'set'], {
+        genre: '스릴러',
+        audience: '성인',
+        pov: 'third-limited',
+        'target-words': '12000',
+      }),
+    );
+    await run('novel generate', args(['novel', 'generate']));
+  }
+
+  // 프로세스가 죽으면 실행 상태가 running 으로 남는다.
+  function leaveRunCutOff(): void {
+    const state = JSON.parse(readFileSync(runStateFile(), 'utf8')) as Record<string, unknown>;
+    writeFileSync(
+      runStateFile(),
+      JSON.stringify({ ...state, status: 'running', completedStages: ['outline', 'seeds'] }),
+    );
+  }
+
+  async function runAgain(answer?: 'resume' | 'restart') {
+    const records: UsageRecord[] = [];
+    const questions: string[] = [];
+    const again = createCliContainer({
+      workspacePath: workspace,
+      logger: silentLogger,
+      canPrompt: answer !== undefined,
+      version: '0.0.0',
+      usageSink: { record: async (_root, usage) => void records.push(usage) },
+      ...(answer === undefined
+        ? {}
+        : {
+            prompter: {
+              choose: async <T>(request: { title: string; options: { value: T }[] }) => {
+                questions.push(request.title);
+                return request.options.find((option) => option.value === answer)?.value;
+              },
+              askText: async () => undefined,
+              announce: () => undefined,
+              shouldConfirmPaidRuns: false,
+            },
+          }),
+    });
+
+    await commands['novel generate']({ container: again, args: args(['novel', 'generate']) });
+
+    return { tasks: records.map((record) => record.taskName), questions };
+  }
+
+  function sceneFiles(): string[] {
+    return readdirSync(join(workspace, 'scene')).sort();
+  }
+
+  it('continues a run whose process died without asking an agent', async () => {
+    await startNovel();
+    const scenesBefore = sceneFiles();
+    leaveRunCutOff();
+
+    const { tasks, questions } = await runAgain();
+
+    expect(questions).toEqual([]);
+    expect(tasks).not.toContain('outlineSynopsis');
+    expect(tasks).not.toContain('chapterPlan');
+    expect(sceneFiles()).toEqual(scenesBefore);
+  });
+
+  it('asks a person whether to continue', async () => {
+    await startNovel();
+    leaveRunCutOff();
+
+    const { tasks, questions } = await runAgain('resume');
+
+    expect(questions).toHaveLength(1);
+    expect(tasks).not.toContain('outlineSynopsis');
+  });
+
+  // 데스크톱·익스텐션은 잠금을 쥐기 전에 묻는다. 살아 있는 잠금이 있으면 그 running 은 진행 중이다.
+  it('treats a running state as cut off only when no app holds the lock', async () => {
+    await startNovel();
+    leaveRunCutOff();
+    const app = container();
+    const lookup = () => app.novel.findResumableRun(app.workspaceRoot, { holdsRunLock: false });
+
+    expect((await lookup())?.status).toBe('running');
+
+    await acquireWorkspaceRunLock({
+      fileSystem: app.fileSystem,
+      workspaceRoot: app.workspaceRoot,
+      holder: { owner: 'desktop', label: '장편 생성', pid: 1, hostname: 'test' },
+    });
+
+    expect(await lookup()).toBeUndefined();
+  });
+
+  it('starts over without rebuilding the outline or the scene cards that exist', async () => {
+    await startNovel();
+    const scenesBefore = sceneFiles();
+    const firstScene = join(workspace, 'scene', scenesBefore[0] ?? '');
+    writeFileSync(firstScene, `${readFileSync(firstScene, 'utf8')}# 작가 메모\n`);
+    leaveRunCutOff();
+
+    const { tasks } = await runAgain('restart');
+
+    expect(tasks).not.toContain('outlineSynopsis');
+    expect(tasks).not.toContain('chapterPlan');
+    expect(sceneFiles()).toEqual(scenesBefore);
+    expect(readFileSync(firstScene, 'utf8')).toContain('# 작가 메모');
   });
 });

@@ -1,14 +1,9 @@
 import * as vscode from 'vscode';
 
-import {
-  type INovelRunStateRepository,
-  type NovelApprovalKind,
-  type NovelPipelineResult,
-} from '@storyboard/story-engine';
+import { type NovelApprovalKind, type NovelPipelineResult } from '@storyboard/story-engine';
 import type { NovelManager, RunGate } from '@storyboard/story-app';
 import {
   validateGenerationContract,
-  isResumable,
   getStoryboardProjectPaths,
   type NovelRunMode,
   type NovelRunState,
@@ -37,7 +32,7 @@ const runModeLabels: Record<NovelRunMode, string> = {
 
 export interface RegisterGenerateNovelCommandDependencies {
   readonly runGate: Pick<RunGate, 'hold'>;
-  readonly novel: Pick<NovelManager, 'run' | 'runState'>;
+  readonly novel: Pick<NovelManager, 'run' | 'runState' | 'findResumableRun'>;
 }
 
 export function registerGenerateNovelCommand(
@@ -75,7 +70,7 @@ async function runGenerateNovel(
     return;
   }
 
-  const decision = await decideRun(dependencies.novel.runState, workspaceRoot);
+  const decision = await decideRun(dependencies.novel, workspaceRoot);
   if (!decision) {
     return;
   }
@@ -118,12 +113,12 @@ interface RunDecision {
 }
 
 async function decideRun(
-  novelRunStateRepository: INovelRunStateRepository,
+  novel: Pick<NovelManager, 'findResumableRun'>,
   workspaceRoot: vscode.Uri,
 ): Promise<RunDecision | undefined> {
-  const existing = await novelRunStateRepository.readExisting(workspaceRoot);
+  const existing = await novel.findResumableRun(workspaceRoot, { holdsRunLock: false });
 
-  if (isResumable(existing)) {
+  if (existing !== undefined) {
     const resume = `이어서 진행 (${runModeLabels[existing.runMode]})`;
     const restart = '처음부터 다시';
     const choice = await vscode.window.showQuickPick([resume, restart], {
