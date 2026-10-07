@@ -303,6 +303,20 @@ describe('with a work open', () => {
     expect(gitSubjects()[0]).toBe('직접 고침: 밤의 방파제');
   });
 
+  // An AI edit always kept a `.draft/` copy, whatever `editor.draft.keepHistory` said; the version
+  // history has the step anyway, so the copy follows the setting like a regeneration does.
+  it('keeps the pre-edit draft on an AI edit only when the history setting is on', async () => {
+    await expectOk('draft.save', { stem: '01-harbor', body: 'AI가 고친 문단.\n', reason: 'ai-edit' });
+
+    expect(existsSync(join(workspacePath(), '.draft', '01-harbor'))).toBe(false);
+    expect(gitSubjects()[0]).toBe('AI 수정: 밤의 방파제');
+
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ editor: { draft: { keepHistory: true } } }));
+    await expectOk('draft.save', { stem: '01-harbor', body: 'AI가 다시 고친 문단.\n', reason: 'ai-edit' });
+
+    expect(readdirSync(join(workspacePath(), '.draft', '01-harbor'))).toHaveLength(1);
+  });
+
   it('renames a scene with its draft, snapshots it, and refuses a number another scene holds', async () => {
     writeScene('02-letter', '편지');
 

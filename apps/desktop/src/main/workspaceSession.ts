@@ -209,7 +209,8 @@ export class WorkspaceSession {
   }
 
   // The first save of a session keeps the pre-edit version in `.draft/`; the session's snapshot is
-  // taken when it ends. An AI edit is its own step: archived and snapshotted at once.
+  // taken when it ends. An AI edit is its own step, snapshotted at once; its `.draft/` copy follows
+  // the history setting like a regeneration's does.
   public async saveDraft(
     stem: string,
     body: string,
@@ -221,7 +222,10 @@ export class WorkspaceSession {
       return refusal;
     }
 
-    const archivePrevious = reason === 'ai-edit' || !this.archivedStems.has(stem);
+    const archivePrevious =
+      reason === 'ai-edit'
+        ? this.container.configBridge.isKeepDraftHistoryEnabled()
+        : !this.archivedStems.has(stem);
     const result = await this.container.drafts.saveEdit({
       workspaceRoot: this.container.workspaceRoot,
       sceneStem: stem,
