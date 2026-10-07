@@ -1,4 +1,5 @@
 import {
+  pipelineStageEntries,
   resolvePipelinePlan,
   type PipelineSpec,
   type PipelineStageDefinition,
@@ -29,9 +30,32 @@ export function novelStageLabel(id: NovelStageName): string {
 let currentNovelPipelinePlan: readonly NovelStageName[] = novelStageNames;
 
 export function overrideNovelPipelinePlan(spec: PipelineSpec): readonly NovelStageName[] {
-  currentNovelPipelinePlan = resolvePipelinePlan(spec, novelStageCatalog) as NovelStageName[];
+  currentNovelPipelinePlan = resolvePipelinePlan(
+    insertCharactersStage(spec),
+    novelStageCatalog,
+  ) as NovelStageName[];
 
   return currentNovelPipelinePlan;
+}
+
+// NOTE: `characters` arrived after authors had written their novel.yaml. A file that does not name
+// it runs it right after `outline`, so an upgrade keeps the author's order instead of dropping it.
+function insertCharactersStage(spec: PipelineSpec): PipelineSpec {
+  const ids = pipelineStageEntries(spec).map((entry) => entry.id);
+  const outlineIndex = ids.indexOf('outline');
+
+  if (ids.includes('characters') || outlineIndex === -1) {
+    return spec;
+  }
+
+  return {
+    ...spec,
+    stages: [
+      ...spec.stages.slice(0, outlineIndex + 1),
+      'characters',
+      ...spec.stages.slice(outlineIndex + 1),
+    ],
+  };
 }
 
 export function resetNovelPipelinePlan(): void {

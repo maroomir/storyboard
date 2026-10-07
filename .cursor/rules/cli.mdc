@@ -118,7 +118,8 @@ contract (`packages/story-model/src/format/craftContract.params.json`), `promptV
 variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params.json`), `compositionPresets.json` over what the composition presets build
 (`packages/story-model/src/format/compositionPresets.params.json`), and `pipelines/scene.yaml` /
 `pipelines/novel.yaml` over the stage order of the two pipelines (checked against
-`sceneStageCatalog` and `novelStageCatalog`; a required stage cannot be dropped). `doctor` lists the
+`sceneStageCatalog` and `novelStageCatalog`; a required stage cannot be dropped, except that a
+`novel.yaml` written before `characters` existed runs it right after `outline`). `doctor` lists the
 files in force and fails on one it cannot use. `dispatch.ts` loads them before a
 workspace verb runs, warning about files it cannot use.
 `setup` / `doctor` / `config show|set` / `params show` are the onboarding

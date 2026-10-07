@@ -284,6 +284,23 @@ describe('loadResourceOverrides', () => {
     expect(resolveNovelPipelinePlan()).toEqual(novelStageNames);
   });
 
+  // characters 단계가 생기기 전에 쓴 파일이다. 예전에는 통째로 버려져 꺼 둔 유료 단계까지 돌았다.
+  it('keeps the order of a novel.yaml written before the characters stage', async () => {
+    const workspace = join(root, 'ws', '.storyboard');
+    writePrompt(
+      join(workspace, 'pipelines'),
+      'novel.yaml',
+      'version: 1\nstages:\n  - outline\n  - seeds\n  - chapters\n  - id: review\n    enabled: false\n',
+    );
+
+    const report = await loadResourceOverrides(new NodeFileSystem(), [NodeUri.file(workspace)]);
+
+    expect(report.problems).toEqual([]);
+    expect(resolveNovelPipelinePlan()).toEqual(['outline', 'characters', 'seeds', 'chapters']);
+
+    await loadResourceOverrides(new NodeFileSystem(), []);
+  });
+
   it('reports a pipeline spec that drops a required stage and keeps the bundled order', async () => {
     const home = join(root, 'home');
     writePrompt(join(home, 'pipelines'), 'scene.yaml', 'version: 1\nstages:\n  - expandSection\n');
