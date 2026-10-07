@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { decimalSettingStep, type AiProviderId } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, parseSettingNumberInput, type AiProviderId } from '@storyboard/story-model/contracts';
 
 import type { DesktopSettings, SettingEntry, UiLanguage } from '@/shared/dto';
 
@@ -244,9 +244,13 @@ function SettingControl(props: {
   }
 
   const commit = (): void => {
-    const isNumber = entry.kind === 'integer' || entry.kind === 'decimal';
-    const value = entry.kind === 'integer' ? Math.floor(Number(draft)) : isNumber ? Number(draft) : draft;
-    if (String(value) !== String(entry.value) && (!isNumber || Number.isFinite(value))) {
+    const typed = entry.kind === 'string' ? draft : parseSettingNumberInput(draft);
+    if (typed === undefined) {
+      setDraft(String(entry.value));
+      return;
+    }
+    const value = entry.kind === 'integer' && typeof typed === 'number' ? Math.floor(typed) : typed;
+    if (String(value) !== String(entry.value)) {
       props.onChange(value);
     }
   };
