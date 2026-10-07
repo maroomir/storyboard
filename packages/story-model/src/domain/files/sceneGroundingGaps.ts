@@ -28,15 +28,22 @@ const sceneGroundingGapsSchema = z.object({
 
 export type SceneGroundingGaps = Readonly<Record<string, SceneGroundingGap>>;
 
-// What the proposal reads: the scene's text, its fact sheet so far and the people in it.
+// What the proposal reads: the scene's text, its fact sheet so far and the people in it. The
+// fields and the names are put in one order first: a sheet an approval screen filled in and the
+// same sheet read back from the card must give one key.
 export function computeSceneGroundingInputKey(
   scene: SceneFile,
   characterNames: readonly string[],
 ): string {
+  const grounding = scene.frontmatter.grounding ?? {};
   const source = JSON.stringify({
     body: scene.body,
-    grounding: scene.frontmatter.grounding ?? {},
-    characterNames,
+    grounding: Object.fromEntries(
+      sceneGroundingFieldKeys.flatMap((key) =>
+        grounding[key] === undefined ? [] : [[key, grounding[key].trim()]],
+      ),
+    ),
+    characterNames: [...characterNames].sort(),
   });
 
   return createHash('sha256').update(source).digest('hex');
