@@ -314,9 +314,6 @@ export class ConfigBridge {
     taskName: AiTaskName,
     config: { readonly providerId: AiProviderId | null; readonly model: string | null },
   ): Promise<void> {
-    const configuration = this.dependencies.getConfiguration();
-    this.assertConfigurationUpdate(configuration);
-
     if (config.providerId === null) {
       await this.clearTaskAiConfig(taskName);
       return;
@@ -330,18 +327,27 @@ export class ConfigBridge {
       throw new Error(`setTaskAiConfig: model is not allowed for provider ${config.providerId}.`);
     }
 
-    const merged = this.readTasksPersistMap(configuration);
-    merged[taskName] = { provider: config.providerId, model: config.model };
-    await configuration.update('tasks', merged, this.resolveUpdateTarget('tasks'));
+    await this.updateTaskRoute(taskName, config.providerId, config.model);
   }
 
   public async clearTaskAiConfig(taskName: AiTaskName): Promise<void> {
+    await this.updateTaskRoute(taskName, undefined, undefined);
+  }
+
+  // NOTE: 한 작업의 두 칸만 그 층의 파일에 쓴다. 합친 `tasks` 맵을 통째로 쓰면 홈의 라우팅이 작품
+  // 파일로 복사되고, 작품에서 지운 라우팅이 홈 값으로 되살아난다.
+  private async updateTaskRoute(
+    taskName: AiTaskName,
+    providerId: AiProviderId | undefined,
+    model: string | undefined,
+  ): Promise<void> {
     const configuration = this.dependencies.getConfiguration();
     this.assertConfigurationUpdate(configuration);
+    const providerKey = `tasks.${taskName}.provider`;
+    const target = this.resolveUpdateTarget(providerKey);
 
-    const merged = this.readTasksPersistMap(configuration);
-    delete merged[taskName];
-    await configuration.update('tasks', merged, this.resolveUpdateTarget('tasks'));
+    await configuration.update(providerKey, providerId, target);
+    await configuration.update(`tasks.${taskName}.model`, model, target);
   }
 
   public getSettingValue(key: string): boolean | number | string {
@@ -583,26 +589,6 @@ export class ConfigBridge {
     }
 
     return { provider };
-  }
-
-  private readTasksPersistMap(
-    configuration: StoryboardConfigurationLike,
-  ): Record<string, { readonly provider: AiProviderId; readonly model?: string }> {
-    const merged: Record<string, { readonly provider: AiProviderId; readonly model?: string }> = {};
-
-    for (const taskName of aiTaskNames) {
-      const stored = this.readTaskStoredEntry(configuration, taskName);
-      if (!stored) {
-        continue;
-      }
-
-      merged[taskName] =
-        stored.model !== undefined
-          ? { provider: stored.provider, model: stored.model }
-          : { provider: stored.provider };
-    }
-
-    return merged;
   }
 
   private assertConfigurationUpdate(

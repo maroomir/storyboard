@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { readFileSync } from 'node:fs';
 
+import { ConfigBridge } from '@storyboard/story-ai';
 import {
   ConfigFileError,
   configurationTargets,
@@ -200,5 +201,62 @@ describe('CLI configuration updates', () => {
     await configuration.update('ai.provider.default', undefined);
 
     expect(JSON.parse(readFileSync(user, 'utf8'))).toEqual({});
+  });
+});
+
+describe('task routing across the two config files', () => {
+  function bridgeOver(
+    userFile: string,
+    workspaceFile: string,
+    writeTarget?: number,
+  ): ConfigBridge {
+    const configuration = createFileConfiguration({
+      userConfigFile: userFile,
+      workspaceConfigFile: workspaceFile,
+    });
+    return new ConfigBridge({
+      getConfiguration: () => configuration,
+      ...(writeTarget === undefined ? {} : { writeTarget }),
+    });
+  }
+
+  // Writing the merged map would copy every home route into the work's file, and a route removed
+  // from the work would come back from the home file.
+  it('writes one task into the chosen file without copying the other layer', async () => {
+    const user = write('user.json', { tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } } });
+    const workspace = write('workspace.json', {});
+    const configBridge = bridgeOver(user, workspace, configurationTargets.workspace);
+
+    await configBridge.setTaskAiConfig('grammarCheck', {
+      providerId: 'claude',
+      model: 'claude-haiku-4-5',
+    });
+
+    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({
+      tasks: { grammarCheck: { provider: 'claude', model: 'claude-haiku-4-5' } },
+    });
+    expect(JSON.parse(readFileSync(user, 'utf8'))).toEqual({
+      tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } },
+    });
+
+    await configBridge.clearTaskAiConfig('grammarCheck');
+
+    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({});
+    expect(configBridge.getTaskProviderOverride('sceneDraft')).toBe('openai');
+  });
+
+  it('clears a route from the layer it lives in when the host names no layer', async () => {
+    const user = write('user.json', {
+      tasks: { sceneDraft: { provider: 'openai' }, grammarCheck: { provider: 'claude' } },
+    });
+    const workspace = write('workspace.json', {});
+    const configBridge = bridgeOver(user, workspace);
+
+    await configBridge.clearTaskAiConfig('sceneDraft');
+
+    expect(JSON.parse(readFileSync(user, 'utf8'))).toEqual({
+      tasks: { grammarCheck: { provider: 'claude' } },
+    });
+    expect(JSON.parse(readFileSync(workspace, 'utf8'))).toEqual({});
   });
 });
