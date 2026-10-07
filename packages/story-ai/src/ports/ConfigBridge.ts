@@ -347,6 +347,16 @@ export class ConfigBridge {
     await configuration.update(`tasks.${taskName}.model`, model, target);
   }
 
+  // The value in force for a key, from whichever layer holds it — undefined when none does.
+  public getConfiguredValue(section: string): unknown {
+    return this.dependencies.getConfiguration().get<unknown>(section, undefined);
+  }
+
+  // Removes a key from the file it is written to; a value the other layer holds is in force again.
+  public async clearValue(section: string): Promise<void> {
+    await this.configurationUpdate(section, undefined);
+  }
+
   public getSettingValue(key: string): boolean | number | string {
     const definition = findStoryboardSetting(key);
 

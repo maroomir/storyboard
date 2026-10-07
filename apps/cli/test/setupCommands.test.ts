@@ -4,11 +4,18 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { configurationTargets } from '@storyboard/story-config';
 import { collectCurrentChapterHashes } from '@storyboard/story-engine';
 import { getStoryboardProjectPaths } from '@storyboard/story-model';
 
 import { createCliContainer } from '../src/container';
-import { runConfigSet, runConfigShow, runDoctor, runSetup } from '../src/commands/setup';
+import {
+  runConfigSet,
+  runConfigShow,
+  runConfigUnset,
+  runDoctor,
+  runSetup,
+} from '../src/commands/setup';
 import { commands } from '../src/commands';
 import type { ParsedArguments } from '../src/cliArguments';
 import { createTheme } from '../src/terminal/theme';
@@ -590,5 +597,92 @@ describe('storyboard config set tasks', () => {
     });
 
     expect(outcome.ok).toBe(false);
+  });
+});
+
+describe('storyboard config unset', () => {
+  function readJson(file: string): unknown {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  }
+
+  it('removes a setting from the file and refuses a key config set would not take', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ 'ai.provider.default': 'claude', revise: { loop: { maxIterations: 3 } } }),
+    );
+
+    const removed = await runConfigUnset({
+      container: container(),
+      args: args({}, ['revise.loop.maxIterations']),
+    });
+    expect(removed.ok).toBe(true);
+    expect(readJson(join(home, 'config.json'))).toEqual({ 'ai.provider.default': 'claude' });
+
+    const unknown = await runConfigUnset({
+      container: container(),
+      args: args({}, ['providers.claude-code.enabled']),
+    });
+    expect(unknown.ok).toBe(false);
+    expect(unknown.message).toContain('알 수 없는 설정 키');
+
+    const unknownTask = await runConfigUnset({
+      container: container(),
+      args: args({}, ['tasks.nope.provider']),
+    });
+    expect(unknownTask.ok).toBe(false);
+    expect(unknownTask.message).toContain('알 수 없는 작업: nope');
+  });
+
+  // A model with no provider is ignored by the engine, so removing the provider removes the route.
+  it('removes the whole route with the provider, and only the model with the model', async () => {
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({
+        tasks: {
+          noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' },
+          sceneDraft: { provider: 'openai', model: 'gpt-5.5' },
+        },
+      }),
+    );
+
+    await runConfigUnset({
+      container: container(),
+      args: args({}, ['tasks.sceneDraft.model']),
+    });
+    const routeRemoved = await runConfigUnset({
+      container: container(),
+      args: args({}, ['tasks.noteExtraction.provider']),
+    });
+
+    expect(routeRemoved.message).toContain('tasks.noteExtraction.model 도 함께 지웠습니다');
+    expect(readJson(join(home, 'config.json'))).toEqual({
+      tasks: { sceneDraft: { provider: 'openai' } },
+    });
+  });
+
+  it('says when the other file still holds the key', async () => {
+    mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    writeFileSync(join(workspace, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'claude' }));
+    writeFileSync(
+      join(workspace, '.storyboard', 'config.json'),
+      JSON.stringify({ 'ai.provider.default': 'openai' }),
+    );
+
+    const outcome = await runConfigUnset({
+      container: createCliContainer({
+        workspacePath: workspace,
+        logger: { info: () => undefined, warn: () => undefined, error: () => undefined, show: () => undefined },
+        canPrompt: false,
+        version: '0.0.0',
+        configWriteTarget: configurationTargets.workspace,
+      }),
+      args: args({}, ['ai.provider.default']),
+    });
+
+    expect(outcome.ok).toBe(true);
+    expect(readJson(join(workspace, '.storyboard', 'config.json'))).toEqual({});
+    expect(outcome.message).toContain('공통 설정의 값 claude 가 계속 적용됩니다');
+    expect(outcome.data).toMatchObject({ origin: 'user', value: 'claude' });
   });
 });
