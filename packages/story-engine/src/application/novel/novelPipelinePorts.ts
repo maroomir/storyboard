@@ -20,6 +20,8 @@ export interface INovelOutlineRepository {
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
   loadChapterPlan(workspaceRoot: StoryUri): Promise<ChapterPlan>;
   loadSynopsis(workspaceRoot: StoryUri): Promise<OutlineSynopsis | undefined>;
+  // Writes the synopsis alone, leaving a chapter plan the author may have written as it is.
+  saveSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void>;
   save(
     workspaceRoot: StoryUri,
     synopsis: OutlineSynopsis,

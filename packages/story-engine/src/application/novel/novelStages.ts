@@ -94,15 +94,23 @@ export async function runOutlineStage(
   aiService: NovelAiService,
   outlineRepository: INovelOutlineRepository,
 ): Promise<void> {
+  const brief = toOutlineBrief(project);
+
   // A rerun keeps the plan it already made: a new one would seed the same scenes under new names.
+  // A plan the author wrote by hand may have no synopsis beside it; that one is still made.
   if (
     (await outlineRepository.hasChapterPlan(workspaceUri)) &&
     flattenChapterPlan(await outlineRepository.loadChapterPlan(workspaceUri)).length > 0
   ) {
+    if ((await outlineRepository.loadSynopsis(workspaceUri)) === undefined) {
+      await outlineRepository.saveSynopsis(
+        workspaceUri,
+        await aiService.generateOutlineSynopsis(brief),
+      );
+    }
     return;
   }
 
-  const brief = toOutlineBrief(project);
   const synopsis = await aiService.generateOutlineSynopsis(brief);
   const characters = await outlineRepository.loadCharacterBriefs(workspaceUri);
   const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
