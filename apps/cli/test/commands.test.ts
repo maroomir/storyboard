@@ -1295,6 +1295,21 @@ describe('draft edit and draft augment', () => {
     expect(historyCount()).toBe(0);
   });
 
+  // 쓰기 경로는 빈 구간을 거부하는데 --dry-run 은 빈 선택 영역으로 모델을 불렀다.
+  it('refuses an empty --lines range on --dry-run too', async () => {
+    await writeSceneWithDraft();
+
+    const outcome = await run(
+      'draft edit',
+      args(['draft', 'edit'], { instruction: '고쳐', lines: '99-120', 'dry-run': true }, [
+        '01-night-market',
+      ]),
+    );
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toBe('대상 구간이 비어 있습니다.');
+  });
+
   it('replaces only the --lines range', async () => {
     await writeSceneWithDraft();
 
