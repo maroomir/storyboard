@@ -197,6 +197,21 @@ describe('dispatch', () => {
     });
   });
 
+  it('refuses config unset outside a workspace unless --global says where', async () => {
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ revise: { loop: { maxIterations: 3 } } }));
+
+    const ambiguous = await dispatch(['config', 'unset', 'revise.loop.maxIterations'], deps());
+    expect(ambiguous.exitCode).toBe(1);
+    expect(ambiguous.stderr).toContain('--global');
+
+    const result = await dispatch(
+      ['config', 'unset', 'revise.loop.maxIterations', '--global'],
+      deps(),
+    );
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual({});
+  });
+
   it('names the allowed range when a value is outside it', async () => {
     const result = await dispatch(
       ['config', 'set', 'revise.loop.maxIterations', '9', '--global'],

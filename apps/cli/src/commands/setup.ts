@@ -1027,6 +1027,16 @@ async function setProviderField(
   return describeSaved(container, `providers.${providerId}.${field}`, raw);
 }
 
+function describeUnknownKey(key: string): string {
+  return (
+    `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: ai.provider.default, ` +
+    `providers.<id>.${settableProviderKeys.join('|')}, tasks.<task>.provider|model, ` +
+    storyboardSettingCatalog.map((entry) => entry.key).join(', ')
+  );
+}
+
+const taskKeyPattern = /^tasks\.([^.]+)\.(provider|model)$/;
+
 function isTaskName(value: string): value is AiTaskName {
   return (aiTaskNames as readonly string[]).includes(value);
 }
@@ -1154,7 +1164,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
     return describeSaved(container, key, raw, [`providers.${raw}.model = ${modelFlag}`]);
   }
 
-  const taskMatch = /^tasks\.([^.]+)\.(provider|model)$/.exec(key);
+  const taskMatch = taskKeyPattern.exec(key);
 
   if (taskMatch) {
     return setTaskRoute(
@@ -1197,13 +1207,7 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   const definition = storyboardSettingCatalog.find((entry) => entry.key === key);
 
   if (!definition) {
-    return {
-      ok: false,
-      message:
-        `알 수 없는 설정 키: ${key}\n쓸 수 있는 키: ai.provider.default, ` +
-        `providers.<id>.${settableProviderKeys.join('|')}, tasks.<task>.provider|model, ` +
-        storyboardSettingCatalog.map((entry) => entry.key).join(', '),
-    };
+    return { ok: false, message: describeUnknownKey(key) };
   }
 
   const value = parseSettingValue(definition.kind, raw);
@@ -1232,4 +1236,70 @@ export async function runConfigSet({ container, args }: CommandContext): Promise
   }
 
   return describeSaved(container, key, value);
+}
+
+// The keys `config set` writes, minus the hidden providers' own: those are switched off through
+// `config set … false`, which also clears the routes that name the provider.
+function findUnsettableKeyProblem(key: string): string | undefined {
+  const taskMatch = taskKeyPattern.exec(key);
+
+  if (taskMatch) {
+    const taskName = taskMatch[1] ?? '';
+    return isTaskName(taskName)
+      ? undefined
+      : `알 수 없는 작업: ${taskName}\n쓸 수 있는 값: ${aiTaskNames.join(', ')}`;
+  }
+
+  const providerMatch = new RegExp(
+    `^providers\\.([a-z-]+)\\.(${settableProviderKeys.join('|')})$`,
+  ).exec(key);
+  const isKnownKey =
+    key === 'ai.provider.default' ||
+    (providerMatch !== null && isProviderId(providerMatch[1] ?? '')) ||
+    storyboardSettingCatalog.some((entry) => entry.key === key);
+
+  return isKnownKey ? undefined : describeUnknownKey(key);
+}
+
+// Like `config set`, it touches only the file this run writes to, so a value the other file holds
+// comes back into force — said out loud, or the author would think the key is gone everywhere.
+export async function runConfigUnset({ container, args }: CommandContext): Promise<CommandOutcome> {
+  const { configBridge } = container;
+  const key = flagString(args.flags, 'key') ?? args.positionals[0];
+
+  if (key === undefined) {
+    return { ok: false, message: '사용법: storyboard config unset <key>' };
+  }
+
+  const keyProblem = findUnsettableKeyProblem(key);
+
+  if (keyProblem !== undefined) {
+    return { ok: false, message: keyProblem };
+  }
+
+  const taskMatch = taskKeyPattern.exec(key);
+  const taskName = taskMatch?.[1];
+  const isTaskProviderKey = taskMatch?.[2] === 'provider' && taskName !== undefined;
+
+  if (isTaskProviderKey && isTaskName(taskName)) {
+    await configBridge.clearTaskAiConfig(taskName);
+  } else {
+    await configBridge.clearValue(key);
+  }
+
+  const file = container.configWriteFile;
+  const origin = configBridge.getValueOrigin(key);
+  const value = configBridge.getConfiguredValue(key);
+
+  return {
+    ok: true,
+    message: [
+      `${key} 를 지웠습니다: ${file}`,
+      ...(isTaskProviderKey ? [`tasks.${taskName}.model 도 함께 지웠습니다.`] : []),
+      ...(origin === 'default'
+        ? []
+        : [`다만 ${describeOrigin(configBridge, key)} 설정의 값 ${String(value)} 가 계속 적용됩니다.`]),
+    ].join('\n'),
+    data: { key, file, origin, value: value ?? null },
+  };
 }

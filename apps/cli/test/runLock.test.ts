@@ -154,6 +154,7 @@ describe('CLI verbs and the run lock', () => {
       'status',
       'config show',
       'config set',
+      'config unset',
       'params show',
       'completion',
       'tui',

@@ -59,7 +59,14 @@ import {
   showNarrator,
 } from './narrators';
 import { applySim, rejudgeSim, reportSim, runSim, screenSim, sweepSim } from './sim';
-import { runConfigSet, runConfigShow, runDoctor, runParamsShow, runSetup } from './setup';
+import {
+  runConfigSet,
+  runConfigShow,
+  runConfigUnset,
+  runDoctor,
+  runParamsShow,
+  runSetup,
+} from './setup';
 import { showStatus } from './status';
 import { listCards, listScenes, showCard, showDraft, showProject } from './views';
 import { availableProviderIds } from '@/adapters/availableProviders';
@@ -1876,6 +1883,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'apikey show': showApiKeys,
   'config show': runConfigShow,
   'config set': runConfigSet,
+  'config unset': runConfigUnset,
   'params show': runParamsShow,
   doctor: runDoctor,
   status: showStatus,

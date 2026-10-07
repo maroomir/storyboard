@@ -349,6 +349,19 @@ export const commandCatalog: readonly CommandSpec[] = [
     needsWorkspace: false,
   },
   {
+    verb: 'config unset',
+    group: '시작하기',
+    usage: 'config unset <key> [--global]',
+    summary:
+      '이 작품의 .storyboard/config.json 에서 값을 지웁니다 (--global 이면 ~/.storyboard/config.json)',
+    flags: ['global'],
+    examples: [
+      'storyboard config unset tasks.noteExtraction.provider --global',
+      'storyboard config unset revise.loop.maxIterations',
+    ],
+    needsWorkspace: false,
+  },
+  {
     verb: 'params show',
     group: '시작하기',
     usage: 'params show',
