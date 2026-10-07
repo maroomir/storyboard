@@ -24,6 +24,8 @@ import type {
   StoryboardRequestMethod,
   UsageAmount,
 } from '@webview/lib/types';
+import { formatUsageBadgeLabel, formatUsageBadgeTooltip } from '@webview/lib/costFormat';
+
 import { Button } from '../ui/Button';
 import { CostBadge } from '../ui/CostBadge';
 import { EmptyState } from '../ui/EmptyState';
@@ -115,7 +117,10 @@ export function ScenesSidebar({
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const scenesUsageTotal = sumUsageMap(sidebarState.usage.scenes);
+  // The header carries the work's whole spend: the outline, summaries and the review belong to no
+  // scene, so a sum of the scene rows would hide them.
+  const workUsage = sidebarState.usage.total;
+  const workUsageTooltip = `작품 전체 · ${formatUsageBadgeTooltip(workUsage)} · 씬 ${formatUsageBadgeLabel(sumUsageMap(sidebarState.usage.scenes))}`;
   const sceneUsage = (scene: SceneListItem): UsageAmount =>
     usageAmountOf(sidebarState.usage.scenes, scene.stem);
 
@@ -180,7 +185,7 @@ export function ScenesSidebar({
           </p>
           <h1 className="m-0 text-xl leading-snug text-sb-fg">{sidebarState.title}</h1>
         </div>
-        <CostBadge usage={scenesUsageTotal} className="shrink-0" />
+        <CostBadge usage={workUsage} tooltip={workUsageTooltip} className="shrink-0" />
       </div>
 
       {sidebarState.scenes.length === 0 ? (
