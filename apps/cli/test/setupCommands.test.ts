@@ -555,7 +555,9 @@ describe('storyboard config set tasks', () => {
   it('keeps the model across a provider change only while the new provider has it', async () => {
     writeFileSync(
       join(home, 'config.json'),
-      JSON.stringify({ tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } } }),
+      JSON.stringify({
+        tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
+      }),
     );
     const warnings: string[] = [];
 
@@ -589,7 +591,9 @@ describe('storyboard config set tasks', () => {
     writeFileSync(join(workspace, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
     writeFileSync(
       join(home, 'config.json'),
-      JSON.stringify({ tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } } }),
+      JSON.stringify({
+        tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } },
+      }),
     );
     writeFileSync(
       join(workspace, '.storyboard', 'config.json'),
@@ -687,7 +691,12 @@ describe('storyboard config unset', () => {
     const outcome = await runConfigUnset({
       container: createCliContainer({
         workspacePath: workspace,
-        logger: { info: () => undefined, warn: () => undefined, error: () => undefined, show: () => undefined },
+        logger: {
+          info: () => undefined,
+          warn: () => undefined,
+          error: () => undefined,
+          show: () => undefined,
+        },
         canPrompt: false,
         version: '0.0.0',
         configWriteTarget: configurationTargets.workspace,

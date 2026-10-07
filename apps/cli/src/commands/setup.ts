@@ -1298,7 +1298,9 @@ export async function runConfigUnset({ container, args }: CommandContext): Promi
       ...(isTaskProviderKey ? [`tasks.${taskName}.model 도 함께 지웠습니다.`] : []),
       ...(origin === 'default'
         ? []
-        : [`다만 ${describeOrigin(configBridge, key)} 설정의 값 ${String(value)} 가 계속 적용됩니다.`]),
+        : [
+            `다만 ${describeOrigin(configBridge, key)} 설정의 값 ${String(value)} 가 계속 적용됩니다.`,
+          ]),
     ].join('\n'),
     data: { key, file, origin, value: value ?? null },
   };
