@@ -34,6 +34,18 @@ describe("findUncastCharacters", () => {
       { title: "재회", characters: ["hana", "jun"] }
     ])
 
-    expect(findUncastCharacters(plan, new Set(["jun"]))).toEqual([{ id: "hana", sceneTitles: ["이별", "재회"] }])
+    expect(findUncastCharacters(plan, new Set(["jun"]))).toEqual({
+      cast: [{ id: "hana", sceneTitles: ["이별", "재회"] }],
+      unusableIds: []
+    })
+  })
+
+  it("reports an id no card file could carry instead of dropping it", () => {
+    const plan = planWithScenes([{ title: "이별", characters: ["민수", "hana", "JUN"] }])
+
+    expect(findUncastCharacters(plan, new Set())).toEqual({
+      cast: [{ id: "hana", sceneTitles: ["이별"] }],
+      unusableIds: ["민수", "JUN"]
+    })
   })
 })

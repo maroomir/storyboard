@@ -110,9 +110,17 @@ export async function runOutlineStage(
   await outlineRepository.save(workspaceUri, synopsis, chapterPlan);
 }
 
+export interface CharactersStageReport {
+  readonly writtenCount: number;
+  // Cast the model returned no card for; the person is told rather than the stage retried.
+  readonly missingIds: readonly string[];
+  readonly unusableIds: readonly string[];
+}
+
 // The chapter plan may cast people no card describes (an empty work has no cards at all), and a
 // scene whose cast resolves to nobody cannot be drafted. One call drafts the missing cards; a card
-// that exists is never touched, and nothing is called when the cast is complete.
+// that exists is never touched, and nothing is called when the cast is complete. A call that
+// answers for nobody fails the stage, so a rerun asks again instead of drafting without a cast.
 export async function runCharactersStage(
   workspaceUri: StoryUri,
   project: StoryboardProject,
@@ -120,18 +128,25 @@ export async function runCharactersStage(
   aiService: NovelAiService,
   outlineRepository: INovelOutlineRepository,
   cardWriter: ICardWriterRepository,
-): Promise<number> {
+): Promise<CharactersStageReport> {
   const existingIds = new Set(
     (await outlineRepository.loadCharacterBriefs(workspaceUri)).map((brief) => brief.id),
   );
-  const cast = findUncastCharacters(plan, existingIds);
+  const { cast, unusableIds } = findUncastCharacters(plan, existingIds);
 
   if (cast.length === 0) {
-    return 0;
+    return { writtenCount: 0, missingIds: [], unusableIds };
   }
 
   const synopsis = (await outlineRepository.loadSynopsis(workspaceUri)) ?? emptyOutlineSynopsis();
   const drafts = await aiService.generateOutlineCharacters(toOutlineBrief(project), synopsis, cast);
+  const draftedIds = new Set(drafts.map((draft) => draft.id));
+  const missingIds = cast.map((member) => member.id).filter((id) => !draftedIds.has(id));
+
+  if (missingIds.length === cast.length) {
+    throw new Error(`인물 카드를 하나도 만들지 못했습니다: ${missingIds.join(', ')}`);
+  }
+
   let writtenCount = 0;
 
   for (const draft of drafts) {
@@ -147,7 +162,7 @@ export async function runCharactersStage(
     writtenCount += 1;
   }
 
-  return writtenCount;
+  return { writtenCount, missingIds, unusableIds };
 }
 
 export async function runSeedsStage(
