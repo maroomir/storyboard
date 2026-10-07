@@ -164,7 +164,9 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
   const fileSystem = new NodeFileSystem();
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
   // A folder without a project is not a work, so it has no work settings to read or show.
-  const isWorkspace = existsSync(join(options.workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson));
+  const isWorkspace = existsSync(
+    join(options.workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson),
+  );
   const workspaceConfigFile = isWorkspace
     ? resolveWorkspaceConfigFile(workspaceRoot.fsPath)
     : undefined;
