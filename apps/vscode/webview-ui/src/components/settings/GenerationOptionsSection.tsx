@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 
 import { Button } from '../ui/Button';
 import { SectionHeader } from '../ui/SectionHeader';
-import { decimalSettingStep } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, parseSettingNumberInput } from '@storyboard/story-model/contracts';
 
 import { OriginPill } from './SettingsPrimitives';
 import {
@@ -136,20 +136,18 @@ function OptionControl({
       return;
     }
 
-    const isNumber = definition.kind === 'integer' || definition.kind === 'decimal';
     const next =
       definition.kind === 'integer'
         ? Number.parseInt(draft, 10)
-        : isNumber
-          ? Number(draft)
+        : definition.kind === 'decimal'
+          ? parseSettingNumberInput(draft)
           : draft.trim();
 
-    if (isNumber && Number.isNaN(next as number)) {
-      setDraft(null);
+    setDraft(null);
+
+    if (next === undefined || Number.isNaN(next)) {
       return;
     }
-
-    setDraft(null);
 
     if (next !== value) {
       onSave(next);

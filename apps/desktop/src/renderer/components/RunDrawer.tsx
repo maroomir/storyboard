@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { decimalSettingStep, novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
+import { decimalSettingStep, parseSettingNumberInput, novelRunModes, novelStageNames, type NovelRunMode } from '@storyboard/story-model/contracts';
 
 import type { RunSnapshot, WorkspaceOverview } from '@/shared/dto';
 
@@ -52,8 +52,13 @@ export function RunDrawer(props: RunDrawerProps): JSX.Element {
   };
 
   const saveBudget = (): void => {
-    const value = Math.max(0, Number(budget));
-    if (Number.isFinite(value) && value !== run.budgetUsd) {
+    const typed = parseSettingNumberInput(budget);
+    if (typed === undefined) {
+      setBudget(String(run.budgetUsd));
+      return;
+    }
+    const value = Math.max(0, typed);
+    if (value !== run.budgetUsd) {
       void act(() => call('run.setBudget', { budgetUsd: value }));
     }
   };

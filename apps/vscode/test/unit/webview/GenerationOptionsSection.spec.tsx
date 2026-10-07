@@ -18,7 +18,7 @@ function createSnapshot(): SettingsReadSnapshot {
     taskAssignments: {},
     modelCatalog: {} as SettingsReadSnapshot["modelCatalog"],
     taskCatalog: [],
-    origins: { "editor.draft.keepHistory": "workspace" },
+    origins: { "editor.draft.keepHistory": "workspace", "budget.run.limitUsd": "user" },
     configFiles: { user: "/home/me/.storyboard/config.json", workspace: "/work/novel/.storyboard/config.json" },
     settingCatalog: [
       {
@@ -38,9 +38,19 @@ function createSnapshot(): SettingsReadSnapshot {
         minimum: 1,
         maximum: 5,
         group: "검수"
+      },
+      {
+        key: "budget.run.limitUsd",
+        label: "실행 예산",
+        description: "달러.",
+        kind: "decimal",
+        defaultValue: 0,
+        minimum: 0,
+        maximum: 10000,
+        group: "예산"
       }
     ],
-    settingValues: { "editor.draft.keepHistory": true, "revise.loop.maxIterations": 2 }
+    settingValues: { "editor.draft.keepHistory": true, "revise.loop.maxIterations": 2, "budget.run.limitUsd": 5 }
   }
 }
 
@@ -84,5 +94,24 @@ describe("GenerationOptionsSection", () => {
     fireEvent.change(input, { target: { value: "4" } })
     fireEvent.keyDown(input, { key: "Enter" })
     expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "revise.loop.maxIterations", value: 4 })
+  })
+
+  // 비운 칸은 0(제한 없음)이 아니라 저장된 값을 그대로 둔다는 뜻이다.
+  it("keeps the saved budget when its field is cleared", () => {
+    const callRpc = vi.fn().mockResolvedValue({})
+
+    render(
+      <GenerationOptionsSection snapshot={createSnapshot()} callRpc={callRpc} onRpcError={vi.fn()} onSaved={vi.fn()} />
+    )
+
+    const input = screen.getByLabelText(/실행 예산/) as HTMLInputElement
+    fireEvent.change(input, { target: { value: "" } })
+    fireEvent.keyDown(input, { key: "Enter" })
+    expect(callRpc).not.toHaveBeenCalled()
+    expect(input.value).toBe("5")
+
+    fireEvent.change(input, { target: { value: "0.25" } })
+    fireEvent.blur(input)
+    expect(callRpc).toHaveBeenCalledWith("settings.updateSettingValue", { key: "budget.run.limitUsd", value: 0.25 })
   })
 })

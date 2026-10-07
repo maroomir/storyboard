@@ -226,6 +226,15 @@ export function isValidStoryboardSettingValue(
   }
 }
 
+// A number typed into a settings field. A cleared field reads as no value, never as 0, so the
+// caller keeps what is saved.
+export function parseSettingNumberInput(text: string): number | undefined {
+  const trimmed = text.trim();
+  const value = Number(trimmed);
+
+  return trimmed === '' || !Number.isFinite(value) ? undefined : value;
+}
+
 export function isOnDecimalStep(value: number): boolean {
   const steps = value / decimalSettingStep;
 
