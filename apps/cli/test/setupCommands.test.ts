@@ -562,6 +562,27 @@ describe('storyboard config set tasks', () => {
     expect(kept).toEqual([]);
   });
 
+  it('shows only the routed tasks, each with the file it comes from', async () => {
+    mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    writeFileSync(join(workspace, '.storyboard', 'project.json'), '{"id":"w","name":"작품"}');
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ tasks: { noteExtraction: { provider: 'claude', model: 'claude-opus-5-5' } } }),
+    );
+    writeFileSync(
+      join(workspace, '.storyboard', 'config.json'),
+      JSON.stringify({ tasks: { sceneDraft: { provider: 'openai' } } }),
+    );
+
+    const shown = await runConfigShow({ container: container(), args: args() });
+
+    expect(shown.message).toMatch(/tasks\.noteExtraction\.provider\s+claude\s+공통/);
+    expect(shown.message).toMatch(/tasks\.noteExtraction\.model\s+claude-opus-5-5\s+공통/);
+    expect(shown.message).toMatch(/tasks\.sceneDraft\.provider\s+openai\s+이 작품/);
+    expect(shown.message).not.toContain('tasks.sceneDraft.model');
+    expect(shown.message).not.toContain('tasks.grammarCheck');
+  });
+
   it('refuses --model on the model key itself', async () => {
     const outcome = await runConfigSet({
       container: container(),
