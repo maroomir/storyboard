@@ -749,14 +749,13 @@ function replaceLines(body: string, range: LineRange | undefined, replacement: s
   ].join('\n');
 }
 
-// Rewrites the draft in place. `--lines` narrows it; without one the whole body is the target,
-// which is the shape a terminal caller usually wants.
-async function rewriteDraft(
+// The draft and the lines a rewrite works on. The same check serves a dry run, so an empty range
+// is refused before any model is called.
+async function loadDraftTarget(
   container: CliContainer,
   stem: string,
   range: LineRange | undefined,
-  transform: (target: string) => Promise<{ ok: boolean; text?: string; message: string }>,
-): Promise<CommandOutcome> {
+): Promise<{ ok: true; body: string; target: string } | { ok: false; message: string }> {
   const body = await readDraftBody(container, stem);
 
   if (body === undefined) {
@@ -769,6 +768,24 @@ async function rewriteDraft(
     return { ok: false, message: '대상 구간이 비어 있습니다.' };
   }
 
+  return { ok: true, body, target };
+}
+
+// Rewrites the draft in place. `--lines` narrows it; without one the whole body is the target,
+// which is the shape a terminal caller usually wants.
+async function rewriteDraft(
+  container: CliContainer,
+  stem: string,
+  range: LineRange | undefined,
+  transform: (target: string) => Promise<{ ok: boolean; text?: string; message: string }>,
+): Promise<CommandOutcome> {
+  const loaded = await loadDraftTarget(container, stem, range);
+
+  if (!loaded.ok) {
+    return loaded;
+  }
+
+  const { body, target } = loaded;
   const result = await transform(target);
 
   if (!result.ok || result.text === undefined) {
@@ -1180,13 +1197,13 @@ async function augmentDraftRange(
     });
 
   if (options.isDryRun) {
-    const body = await readDraftBody(container, stem);
+    const loaded = await loadDraftTarget(container, stem, range);
 
-    if (body === undefined) {
-      return { ok: false, message: `초안이 없습니다: ${stem}` };
+    if (!loaded.ok) {
+      return loaded;
     }
 
-    const prepared = await prepare(sliceLines(body, range));
+    const prepared = await prepare(loaded.target);
 
     return prepared.ok
       ? { ok: true, message: options.proposedMessage, data: prepared }
