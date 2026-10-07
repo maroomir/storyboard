@@ -54,12 +54,9 @@ class MutableFakeConfiguration implements StoryboardConfigurationLike {
   }
 
   public async update<T>(section: string, value: T): Promise<void> {
-    if (section === "tasks") {
-      for (const key of [...this.values.keys()]) {
-        if (key.startsWith("tasks.")) {
-          this.values.delete(key)
-        }
-      }
+    if (value === undefined) {
+      this.values.delete(section)
+      return
     }
 
     this.values.set(section, value as unknown)
@@ -225,16 +222,15 @@ describe("createSettingsRpcHandlers", () => {
       { taskName: "grammarCheck", providerId: "google", model: "gemini-2.5-flash" },
       {} as never
     )
-    const tasks = configuration.get("tasks") as Record<string, { provider: string; model?: string }>
-    expect(tasks["grammarCheck"]?.provider).toBe("google")
-    expect(tasks["grammarCheck"]?.model).toBe("gemini-2.5-flash")
+    expect(configuration.get("tasks.grammarCheck.provider")).toBe("google")
+    expect(configuration.get("tasks.grammarCheck.model")).toBe("gemini-2.5-flash")
 
     await handlers["settings.updateTaskAiConfig"]!(
       { taskName: "grammarCheck", providerId: null, model: null },
       {} as never
     )
-    const tasksAfterClear = configuration.get("tasks") as Record<string, { provider: string }>
-    expect(tasksAfterClear["grammarCheck"]).toBeUndefined()
+    expect(configuration.get("tasks.grammarCheck.provider")).toBeUndefined()
+    expect(configuration.get("tasks.grammarCheck.model")).toBeUndefined()
   })
 
   it("reports where each value came from and where a write landed", async () => {
