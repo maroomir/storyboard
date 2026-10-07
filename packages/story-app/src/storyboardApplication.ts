@@ -49,6 +49,7 @@ import {
   SaveDraftEditUseCase,
   SceneBatchRepository,
   SceneCacheRepository,
+  SceneGroundingGapRepository,
   SceneRepository,
   SceneSeedRepository,
   SceneSidebarRepository,
@@ -301,6 +302,7 @@ function buildServices(
     ...(options.postGenerationUpdates === false ? {} : { postGenerationUpdates }),
     projectRepository,
     sceneCacheRepository,
+    sceneGroundingGapRepository: new SceneGroundingGapRepository(fileSystem),
     sceneRepository,
     workspaceLocator,
   });

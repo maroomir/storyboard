@@ -30,6 +30,7 @@ export * from './domain/files/draftHistory';
 export * from './domain/files/novelRunState';
 export * from './domain/files/revisionPlan';
 export * from './domain/files/sceneCache';
+export * from './domain/files/sceneGroundingGaps';
 export * from './domain/files/studioFollowUp';
 export * from './domain/files/studioSession';
 export * from './domain/files/usageLedger';

@@ -265,7 +265,13 @@ async function loadSceneContextBundle(
   // 확정된 사실이 inputHash와 생성 프롬프트에 같이 반영된다. grounding은 characters/location을
   // 건드리지 않으므로 컨텍스트를 다시 만들지 않고 씬만 갈아 끼운다.
   const characterNames = builtContext.characters.map((character) => character.name);
-  const grounded = await resolveSceneGrounding(sceneUri, rawScene, characterNames, options);
+  const grounded = await resolveSceneGrounding(
+    paths.workspaceRoot,
+    sceneUri,
+    rawScene,
+    characterNames,
+    options,
+  );
   if (grounded.kind === 'cancelled') {
     return { ok: false, result: { ok: false, kind: 'cancelled' } };
   }
