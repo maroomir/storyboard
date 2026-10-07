@@ -11,12 +11,12 @@ import type { UsageAmount } from '@webview/lib/types';
 export type CostBadgeProps = {
   readonly usage: UsageAmount;
   readonly className?: string;
+  readonly tooltip?: string;
 };
 
-export function CostBadge({ usage, className }: CostBadgeProps): React.ReactElement {
+export function CostBadge({ usage, className, tooltip }: CostBadgeProps): React.ReactElement {
   const label = formatUsageBadgeLabel(usage);
   const isPlaceholder = isEmptyUsageDisplay(usage);
-  const tooltip = formatUsageBadgeTooltip(usage);
 
   return (
     <span
@@ -26,7 +26,7 @@ export function CostBadge({ usage, className }: CostBadgeProps): React.ReactElem
         isPlaceholder ? 'text-sb-fg-muted' : 'text-sb-fg',
         className,
       )}
-      title={tooltip}
+      title={tooltip ?? formatUsageBadgeTooltip(usage)}
       aria-label={`AI 사용량 ${label}`}
     >
       <span className="min-w-0 truncate">{label}</span>
