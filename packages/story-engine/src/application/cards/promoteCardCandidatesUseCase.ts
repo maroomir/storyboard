@@ -64,4 +64,21 @@ export class PromoteCardCandidatesUseCase {
 
     return { kind: 'promoted', updatedCardCount };
   }
+
+  // Drops the draft candidates of the given cards, or every one without a list. Returns how many
+  // items went.
+  public async discard(
+    workspaceRoot: StoryUri,
+    cardIds: ReadonlySet<string> | undefined,
+  ): Promise<number> {
+    const items = collectCardCandidateItems(
+      await this.deps.repository.loadRecords(workspaceRoot),
+    ).filter((item) => cardIds === undefined || cardIds.has(item.cardId));
+
+    if (items.length > 0) {
+      await this.deps.repository.prune(workspaceRoot, new Set(items.map(cardCandidateItemKey)));
+    }
+
+    return items.length;
+  }
 }

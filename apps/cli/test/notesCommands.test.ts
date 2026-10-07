@@ -460,6 +460,64 @@ describe('notes absorb', () => {
       expect(again.message).toContain('[s2:attribute:age] 20');
     });
 
+    it('keeps one value of a conflict with card discard --change, then promotes it', async () => {
+      await absorbAt(otherLocation, hanaAged('20'));
+
+      const missing = await run(
+        'card discard',
+        args(['card', 'discard'], { change: 's9:attribute:age' }, ['hana']),
+      );
+      expect(missing.ok).toBe(false);
+
+      const discarded = await run(
+        'card discard',
+        args(['card', 'discard'], { change: 's1:attribute:age' }, ['hana']),
+      );
+      expect(discarded.ok).toBe(true);
+
+      const promoted = await run('card promote', args(['card', 'promote']));
+      expect(promoted.message).toBe('카드 1개를 갱신했습니다.');
+      expect(readFileSync(join(workspace, 'character', 'hana.card'), 'utf8')).toContain(
+        "age: '20'",
+      );
+    });
+
+    it('refuses --change without exactly one card id', async () => {
+      const outcome = await run(
+        'card discard',
+        args(['card', 'discard'], { change: 's1:attribute:age' }),
+      );
+      expect(outcome.ok).toBe(false);
+    });
+
+    it('discards the candidates of the named cards, or all of them', async () => {
+      const draftCandidates = join(workspace, '.storyboard', 'cache', 'cards');
+      mkdirSync(draftCandidates, { recursive: true });
+      writeFileSync(
+        join(draftCandidates, '01-high-tide.json'),
+        JSON.stringify({
+          sceneStem: '01-high-tide',
+          generatedAt: new Date().toISOString(),
+          characters: [{ cardId: 'hana', attributes: [{ key: 'height', value: '160' }] }],
+        }),
+      );
+      await absorbAt(otherLocation, onlyCards('harbor'));
+
+      const one = await run('card discard', args(['card', 'discard'], {}, ['harbor']));
+      expect(one.message).toBe('후보를 버렸습니다.\n  노트에서  harbor');
+
+      const preview = await run('card promote', args(['card', 'promote'], { 'dry-run': true }));
+      expect(preview.message).toContain('노트에서  hana');
+      expect(preview.message).toContain('초안에서  1건');
+
+      const all = await run('card discard', args(['card', 'discard']));
+      expect(all.message).toBe('후보를 버렸습니다.\n  노트에서  hana\n  초안에서  1건');
+      expect(existsSync(candidatesPath())).toBe(false);
+
+      const none = await run('card discard', args(['card', 'discard']));
+      expect(none.message).toBe('버릴 후보가 없습니다.');
+    });
+
     it('drops a candidate file an earlier version wrote, with a warning', async () => {
       const warnings: string[] = [];
       const warning = createCliContainer({

@@ -5,6 +5,8 @@ import type {
   CollectNotesRequest,
   CollectNotesResult,
   CollectNotesUseCase,
+  DiscardNoteCandidatesRequest,
+  DiscardNoteCandidatesResult,
   NoteAbsorbEstimate,
   PlanNoteAbsorbRequest,
   PlanNoteAbsorbResult,
@@ -62,5 +64,12 @@ export class NoteManager {
     candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
     return this.deps.promoteNoteCandidatesUseCase.promote(workspaceRoot, candidates);
+  }
+
+  public discardCandidates(
+    workspaceRoot: StoryUri,
+    request: DiscardNoteCandidatesRequest,
+  ): Promise<DiscardNoteCandidatesResult> {
+    return this.deps.promoteNoteCandidatesUseCase.discard(workspaceRoot, request);
   }
 }

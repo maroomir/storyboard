@@ -245,6 +245,11 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
   {
+    name: 'change',
+    valueLabel: '<ref>',
+    summary: 'card discard: 버릴 노트 후보 하나 (card promote 가 보여 준 [ref])',
+  },
+  {
     name: 'replace-candidates',
     summary: 'notes absorb: 앞선 흡수가 남긴 노트 후보를 버리고 이번 후보만 남깁니다',
   },
@@ -701,6 +706,20 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'card promote',
     summary: '초안과 노트에서 나온 카드 후보를 반영합니다',
     flags: ['dry-run'],
+  },
+  {
+    verb: 'card discard',
+    writesWorkspace: true,
+    group: '카드와 정전',
+    usage: 'card discard <id> [--change <ref>]',
+    summary:
+      '승격하지 않은 카드 후보를 버립니다 (id 를 여럿 줄 수 있고, 없으면 전부 · --change 는 그 카드의 노트 후보 하나만)',
+    flags: ['change'],
+    examples: [
+      'storyboard card discard hana',
+      'storyboard card discard hana --change s2:attribute:age',
+      'storyboard card discard',
+    ],
   },
   {
     verb: 'canon diff',

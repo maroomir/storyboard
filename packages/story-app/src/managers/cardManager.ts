@@ -166,6 +166,13 @@ export class CardManager {
     return this.deps.promoteCardCandidatesUseCase.promote(workspaceRoot, items);
   }
 
+  public discardCandidates(
+    workspaceRoot: StoryUri,
+    cardIds: ReadonlySet<string> | undefined,
+  ): Promise<number> {
+    return this.deps.promoteCardCandidatesUseCase.discard(workspaceRoot, cardIds);
+  }
+
   public prepareBiblePromotion(
     workspaceRoot: StoryUri,
   ): Promise<PrepareBibleCandidatePromotionResult> {
