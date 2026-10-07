@@ -166,7 +166,10 @@ function configKeyCompletions(): Completion[] {
   const providerKeys = availableProviderIds().flatMap((id) => [
     { text: `providers.${id}.model`, description: `${id} 모델` },
     ...(id === 'ollama'
-      ? [{ text: 'providers.ollama.baseUrl', description: 'Ollama Base URL' }]
+      ? [
+          { text: 'providers.ollama.baseUrl', description: 'Ollama Base URL' },
+          { text: 'providers.ollama.contextTokens', description: 'Ollama 문맥 창 (토큰)' },
+        ]
       : []),
   ]);
 
