@@ -244,6 +244,10 @@ export const flagCatalog: readonly FlagSpec[] = [
   { name: 'key', valueLabel: '<key>', summary: 'config set 이 바꿀 설정 키' },
   { name: 'value', valueLabel: '<value>', summary: 'config set 이 넣을 값' },
   { name: 'dry-run', summary: '반영하지 않고 대상만 보고합니다' },
+  {
+    name: 'replace-candidates',
+    summary: 'notes absorb: 앞선 흡수가 남긴 노트 후보를 버리고 이번 후보만 남깁니다',
+  },
   { name: 'json', summary: '결과를 JSON 으로 stdout 에 출력합니다 (실패도 JSON)' },
   { name: 'quiet', summary: '진행 로그를 숨깁니다 (기본: 터미널이면 stderr 에 표시)' },
   { name: 'verbose', summary: '터미널이 아니어도 진행 로그를 stderr 에 출력합니다' },
@@ -727,7 +731,7 @@ export const commandCatalog: readonly CommandSpec[] = [
     usage: 'notes absorb <path|url>',
     summary:
       'Obsidian 폴더·노트나 Notion 페이지를 하위 페이지까지 읽어 인물·배경·씬 카드와 시놉시스로 옮깁니다 (견적을 먼저 보여 줍니다, 기존 카드는 후보로만)',
-    flags: ['yes', 'dry-run'],
+    flags: ['yes', 'dry-run', 'replace-candidates'],
     examples: [
       'storyboard notes absorb ~/Vault/달의문',
       'storyboard notes absorb https://www.notion.so/team/Moon-Gate-1429989fe8ac4effbc8f57f56486db54 --yes',

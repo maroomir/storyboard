@@ -428,6 +428,7 @@ function buildServices(
       repository: cardCandidateRepository,
     }),
     promoteNoteCandidatesUseCase: new PromoteNoteCandidatesUseCase({
+      logger,
       noteRepository: noteAbsorbRepository,
       cardWriter: cardWriterRepository,
     }),

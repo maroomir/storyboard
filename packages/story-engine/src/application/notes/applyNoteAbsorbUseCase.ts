@@ -9,7 +9,12 @@ import type {
 
 import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import { runUseCase, type IUseCase, type UseCaseFailure } from '#engine/application/useCase';
-import { applyCardCollectProposals } from '@storyboard/story-model';
+import {
+  addNoteCandidateSource,
+  applyCardCollectProposals,
+  emptyNoteCandidateFile,
+  mergeNoteCandidateSources,
+} from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { INoteAbsorbRepository } from './noteAbsorbRepository';
 
@@ -21,12 +26,16 @@ export interface ApplyNoteAbsorbRequest {
   // True only for a workspace `init` just made from the notes: then the contract's empty fields
   // are filled. Otherwise the contract is never touched and differences come back as proposals.
   readonly shouldFillContract: boolean;
+  // Drops every candidate earlier absorbs left instead of adding to them.
+  readonly shouldReplaceCandidates: boolean;
 }
 
 export interface ApplyNoteAbsorbOutcome {
   readonly ok: true;
   readonly createdCards: readonly string[];
   readonly candidateCards: readonly string[];
+  // Cards with candidates waiting for `card promote`, this absorb's included.
+  readonly pendingCandidateCards: readonly string[];
   readonly createdScenes: readonly string[];
   readonly skippedScenes: readonly NoteLeftOut[];
   readonly synopsis: 'written' | 'candidate' | 'none';
@@ -66,8 +75,9 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
   private async applyCards(request: ApplyNoteAbsorbRequest): Promise<{
     readonly createdCards: string[];
     readonly candidateCards: string[];
+    readonly pendingCandidateCards: string[];
   }> {
-    const { workspaceRoot, plan, location } = request;
+    const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
     const createdCards: string[] = [];
     const candidates: NoteCardCandidate[] = [];
 
@@ -98,14 +108,26 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
       }
     }
 
-    // Each absorb reads the notes whole, so its candidates replace the previous run's.
-    await this.deps.noteRepository.saveCandidates(workspaceRoot, {
-      location,
-      absorbedAt: new Date().toISOString(),
-      candidates,
-    });
+    const loaded = await this.deps.noteRepository.loadCandidates(workspaceRoot);
 
-    return { createdCards, candidateCards: candidates.map((candidate) => candidate.cardId) };
+    if (loaded.kind === 'legacy') {
+      this.deps.logger.warn(
+        '이전 버전이 남긴 카드 후보(.storyboard/cache/notes/candidates.json)는 읽지 않고 이번 후보로 바꿉니다. 필요하면 그 노트를 다시 흡수하세요.',
+      );
+    }
+
+    const file = addNoteCandidateSource(
+      loaded.kind === 'current' ? loaded.file : emptyNoteCandidateFile,
+      { location, absorbedAt: new Date().toISOString(), candidates },
+      shouldReplaceCandidates,
+    );
+    await this.deps.noteRepository.saveCandidates(workspaceRoot, file);
+
+    return {
+      createdCards,
+      candidateCards: candidates.map((candidate) => candidate.cardId),
+      pendingCandidateCards: mergeNoteCandidateSources(file.sources).map((card) => card.cardId),
+    };
   }
 
   private async applyScenes(request: ApplyNoteAbsorbRequest): Promise<{

@@ -39,6 +39,7 @@ import {
   parseSceneFileName,
   requiresApiKey,
   type AiProviderId,
+  type MergedNoteCardCandidate,
 } from '@storyboard/story-model';
 
 import type { DraftAugmentScope } from '@storyboard/story-ai';
@@ -559,6 +560,23 @@ const showScene: CommandHandler = async ({ container, args }) => {
   };
 };
 
+// Notes that disagree about one slot of a card are held back: promotion asks nobody, so the
+// author keeps one value with `card discard --change` and promotes again.
+function describeNoteConflicts(cards: readonly MergedNoteCardCandidate[]): string[] {
+  const lines = cards.flatMap((card) =>
+    card.conflicts.flatMap((conflict) => [
+      `  보류      ${card.cardId} ${conflict.key} — 노트마다 값이 다릅니다`,
+      ...conflict.options.map(
+        (option) => `    [${option.ref}] ${option.value} ← ${option.locations.join(', ')}`,
+      ),
+    ]),
+  );
+
+  return lines.length === 0
+    ? []
+    : [...lines, '  하나만 남기려면: storyboard card discard <id> --change <ref>'];
+}
+
 // An unattended run has nobody to pick from a list, so promotion applies everything the prepare
 // step judged new. `--dry-run` is how an agent inspects first.
 // Candidates come from two places — facts generation pulled out of drafts, and notes about cards
@@ -577,6 +595,11 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
 
   const draftItems = prepared.kind === 'ready' ? prepared.items : [];
   const noteCandidates = preparedNotes.kind === 'ready' ? preparedNotes.candidates : [];
+  const conflictedCards = [
+    ...noteCandidates,
+    ...(preparedNotes.kind === 'ready' ? preparedNotes.heldCards : []),
+  ].filter((candidate) => candidate.conflicts.length > 0);
+  const conflictLines = describeNoteConflicts(conflictedCards);
 
   if (flagBoolean(args.flags, 'dry-run')) {
     return {
@@ -586,10 +609,11 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
         ...(draftItems.length > 0 ? [`  초안에서  ${draftItems.length}건`] : []),
         ...noteCandidates.map(
           (candidate) =>
-            `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건`,
+            `  노트에서  ${candidate.cardId} (${candidate.name}) 변경 ${candidate.changes.length}건 ← ${candidate.locations.join(', ')}`,
         ),
+        ...conflictLines,
       ].join('\n'),
-      data: { drafts: draftItems, notes: noteCandidates },
+      data: { drafts: draftItems, notes: noteCandidates, conflicts: conflictedCards },
     };
   }
 
@@ -610,8 +634,8 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
     ok: !isDraftSaveFailed,
     message: isDraftSaveFailed
       ? '카드를 저장하지 못했습니다.'
-      : `카드 ${updatedCardCount}개를 갱신했습니다.`,
-    data: { drafts: result ?? null, notes: noteResult ?? null },
+      : [`카드 ${updatedCardCount}개를 갱신했습니다.`, ...conflictLines].join('\n'),
+    data: { drafts: result ?? null, notes: noteResult ?? null, conflicts: conflictedCards },
   };
 };
 

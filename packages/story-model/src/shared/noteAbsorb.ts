@@ -46,11 +46,20 @@ export const noteCardCandidateSchema = z.object({
   changes: z.array(cardCollectProposalSchema),
 });
 
-export const noteCandidateFileSchema = z.object({
+// One absorb's candidates. Absorbing the same location again replaces its source, so a re-read is
+// idempotent; other locations keep theirs until promoted or discarded.
+export const noteCandidateSourceSchema = z.object({
+  id: z.string().regex(/^s\d+$/),
   location: z.string().min(1),
   absorbedAt: z.string().datetime(),
   candidates: z.array(noteCardCandidateSchema),
 });
 
+export const noteCandidateFileSchema = z.object({
+  version: z.literal(2),
+  sources: z.array(noteCandidateSourceSchema),
+});
+
 export type NoteCardCandidate = z.infer<typeof noteCardCandidateSchema>;
+export type NoteCandidateSource = z.infer<typeof noteCandidateSourceSchema>;
 export type NoteCandidateFile = z.infer<typeof noteCandidateFileSchema>;
