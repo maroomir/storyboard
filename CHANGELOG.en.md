@@ -10,15 +10,24 @@ after the first public release.
 
 ## [Unreleased]
 
+### Changed (breaking)
+
+- **The note card candidate file (`.storyboard/cache/notes/candidates.json`) has a new format.** Candidates left by 0.12 are not read: `card promote` skips them with a warning and the next `notes absorb` rewrites the file in the new format. If candidates were still waiting to be promoted, absorb those notes again.
+
 ### Added
 
 - **`storyboard config set` routes a task to its own provider and model.** `tasks.<task>.provider|model` is checked against the task names, the available providers and the model list, and `--model` sets both at once (`config set tasks.noteExtraction.provider claude --model claude-opus-5-5`). A lone model takes the default provider with it, and a provider change drops a model the new provider does not have, saying so. `ai.provider.default` takes `--model` too. `config show` lists the routed tasks with their origin.
 - **New `storyboard config unset <key>`.** It removes a value from this work's settings file (or the shared one with `--global`), by the same rule as `config set`, and says when the other file still holds a value. Unsetting `tasks.<task>.provider` removes the task's whole route.
+- **`card discard` drops card candidates that have not been promoted.** Given card ids it drops the draft and note candidates of those cards; with none it drops them all. `--change <ref>` drops a single note candidate of that card.
+- **`notes absorb --replace-candidates`** drops the note candidates earlier absorbs left (card and synopsis candidates) and keeps only this absorb's.
 
 ### Fixed
 
 - **`config set`'s refusal and help example no longer name `defaultProvider`,** which went away in 0.10. They now name `ai.provider.default` and `tasks.<task>.provider|model`.
 - **Changing one task's route no longer copies the other settings file's routes.** The extension's settings panel and the CLI both wrote the whole task list, merged from the home and work files, into one file, so a change made in a work copied the home routes into it. Only that task's values are written now.
+- **Absorbing notes several times in a row no longer loses card candidates that were not promoted yet.** Each absorb used to rewrite the candidate file whole, silently replacing what other notes had left, and an absorb that touched no existing card even deleted the file. Candidates now accumulate per note location, and absorbing the same location again replaces only what it left before. When an absorb finishes it lists every card waiting to be promoted.
+- **`card promote` merges what several notes say about one card.** Items that differ only in spacing or punctuation count as one, and each card shows which notes its candidates came from. A slot the notes disagree on (an age, a relation) is held back rather than applied, with a `[ref]` for each value: drop one with `card discard <id> --change <ref>` and promote again.
+- **The notes' synopsis candidate (`synopsis.candidate.md`) also keeps one section per note location.** Only the synopsis from the last absorb used to remain.
 
 ## [0.12.3] - 2026-10-08
 

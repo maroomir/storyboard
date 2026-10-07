@@ -200,7 +200,9 @@ Notes kept in Obsidian or Notion come in with `notes absorb`. It reads a vault f
 or a Notion page with everything under it, plus the notes they link to one step away, and sorts
 them into character and background cards, scene cards and a synopsis. It shows the cost estimate
 first and asks before writing; an agent passes `--yes`, and `--dry-run` stops at the plan. Cards
-that already exist are never overwritten — what the notes add to them waits for `card promote`.
+that already exist are never overwritten — what the notes add to them waits for `card promote`,
+and absorbing more notes adds to what is waiting rather than replacing it. Where two notes give one
+slot different values, `card promote` holds it back and `card discard <id> --change <ref>` keeps one.
 A Notion page needs an integration token once (`notes connect notion`) and the page shared with
 that integration. A new work can start from notes in one step:
 
