@@ -160,18 +160,18 @@ export function findUncastCharacters(
   plan: ChapterPlan,
   existingIds: ReadonlySet<string>,
 ): OutlineCastMember[] {
-  const sceneTitlesById = new Map<string, string[]>();
+  const sceneTitlesById = new Map<string, Set<string>>();
 
   for (const { scene } of flattenChapterPlan(plan)) {
     for (const id of scene.characters) {
       if (existingIds.has(id) || !cardIdPattern.test(id)) {
         continue;
       }
-      sceneTitlesById.set(id, [...(sceneTitlesById.get(id) ?? []), scene.title]);
+      sceneTitlesById.set(id, (sceneTitlesById.get(id) ?? new Set()).add(scene.title));
     }
   }
 
-  return [...sceneTitlesById].map(([id, sceneTitles]) => ({ id, sceneTitles }));
+  return [...sceneTitlesById].map(([id, sceneTitles]) => ({ id, sceneTitles: [...sceneTitles] }));
 }
 
 // Keeps only the ids that were asked for, so a model cannot add a card nobody casts.
