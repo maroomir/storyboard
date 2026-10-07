@@ -265,6 +265,18 @@ the one 0600 home file.
 { "ai.provider.default": "claude", "tasks": { "sceneDraft": { "provider": "claude", "model": "claude-sonnet-5" } } }
 ```
 
+A task can run on its own provider and model (`tasks.<task>.provider|model`, task names from
+`config set`'s error message or shell completion). Give both at once with `--model`, which
+`ai.provider.default` takes too; a lone model takes the default provider with it, and a provider
+change drops a model the new provider does not have. `config show` lists only the routed tasks.
+`storyboard config unset <key>` removes a key from the file this run writes to — the whole route for
+`tasks.<task>.provider` — and says so when the other file still holds a value.
+
+```bash
+storyboard config set tasks.noteExtraction.provider claude --model claude-opus-5-5 --global
+storyboard config unset tasks.noteExtraction.provider --global
+```
+
 Every provider Storyboard speaks to is reached with an API key (or runs locally, for `ollama`).
 Subscription CLI providers were removed in 0.9.2: Anthropic, OpenAI and Google all limit a
 subscription or account login to interactive personal use and direct programmatic and bulk

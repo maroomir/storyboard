@@ -772,7 +772,7 @@ Storyboard 워크스페이스는 git 저장소 그 자체이며, 교환용 아�
 모델 목록·요금·기본 모델은 `packages/story-model/src/contracts/providerCatalog.ts` 한 곳이 갖는다. 기본값이 아닌
 `temperature`를 거부하는 모델(Claude 4.7 이후, GPT-6, Gemini 3.x)은 그 행에 `acceptsTemperature: false`를 적고,
 프로바이더는 그 모델에 `temperature`를 보내지 않는다.
-- `tasks.<taskName>.provider`: 작업별 provider 오버라이드
+- `tasks.<taskName>.provider`·`tasks.<taskName>.model`: 작업별 provider·모델 오버라이드. 모델만 있고 provider가 없는 항목은 무시된다. CLI는 `config set|unset`으로 다룬다.
 - `revise.loop.afterGenerate`: 생성(Generate / Regenerate / Generate All) 직후 검수·재작성 루프를 자동 실행해 한 동작으로 검수된 초안을 만든다. 기본 `true`(품질 우선); 끄면 AI 호출·비용을 줄인다.
 - `editor.grammar.realtime`: 기본 `false`
 - `editor.scene.prefixDigits`: 기본 `2`

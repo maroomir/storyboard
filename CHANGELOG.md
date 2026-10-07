@@ -9,6 +9,16 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+### 추가
+
+- **`storyboard config set`으로 작업별 프로바이더·모델을 정합니다.** `tasks.<작업>.provider|model`을 작업 이름·쓸 수 있는 프로바이더·모델 목록으로 검증해 저장하고, `--model`로 둘을 한 번에 줄 수 있습니다(`config set tasks.noteExtraction.provider claude --model claude-opus-5-5`). 모델만 주면 기본 프로바이더를 함께 저장하고, 프로바이더만 바꾸면 새 프로바이더에 없는 모델은 비우고 알려 줍니다. `ai.provider.default`도 `--model`을 받습니다. `config show`는 정해 둔 작업의 라우팅을 출처와 함께 보여 줍니다.
+- **`storyboard config unset <키>`가 생겼습니다.** `config set`과 같은 규칙으로 이 작품(또는 `--global`이면 공통) 설정 파일에서 값을 지우고, 다른 파일의 값이 계속 적용되면 그 값을 알려 줍니다. `tasks.<작업>.provider`를 지우면 그 작업의 라우팅 전체가 지워집니다.
+
+### 고침
+
+- **`config set`의 거부 문구와 도움말 예시가 0.10에서 사라진 `defaultProvider`를 안내하던 문제를 고쳤습니다.** 이제 `ai.provider.default`와 `tasks.<작업>.provider|model`을 안내합니다.
+- **작업 하나의 라우팅을 바꾸면 다른 설정 파일의 라우팅까지 복사되던 문제를 고쳤습니다.** 확장 설정 패널과 CLI 모두 홈과 작품 설정을 합친 작업 목록 전체를 한 파일에 썼기 때문에, 작품에서 바꾸면 홈의 라우팅이 작품 파일로 옮겨 적혔습니다. 이제 그 작업의 값만 씁니다.
+
 ## [0.12.3] - 2026-10-08
 
 ### 고침
