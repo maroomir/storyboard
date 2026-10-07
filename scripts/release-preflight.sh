@@ -25,6 +25,12 @@ done
 version="$(node -p "require('./package.json').version")"
 tag="v$version"
 
+# The preflight answers for the repository, not for this machine: nothing below reads the home
+# config (an enabled hidden provider there changes what the CLI lists and what a test expects).
+scratch_home="$(mktemp -d)"
+trap 'rm -rf "$scratch_home"' EXIT
+export STORYBOARD_HOME="$scratch_home"
+
 step() { printf '\n== %s\n' "$1"; }
 fail() { printf '\npreflight failed: %s\n' "$1" >&2; exit 1; }
 
