@@ -1129,6 +1129,7 @@ describe('PlanNoteAbsorbUseCase', () => {
         load: async () => ({ cards: [], scenes: [], project: { editor: { scenePrefixDigits: 2 } } }),
       } as unknown as IStoryFeatureRepository,
       noteRepository: {
+        loadCandidates: async () => ({ kind: 'none' }),
         savePlan: async () => undefined,
         saveExtractionResponses: async (_root: unknown, responses: NoteExtractionResponse[]) => {
           savedResponses.push(responses);

@@ -543,6 +543,26 @@ describe('notes absorb', () => {
       expect(sectionLocations()).toEqual([vault]);
     });
 
+    it('refuses a candidate file it cannot read before any request or write', async () => {
+      writeFileSync(candidatesPath(), '{broken');
+
+      const planned = await run('notes absorb', absorbArgs({ yes: true }));
+      expect(planned.ok).toBe(false);
+      expect(planned.message).toContain('.storyboard/cache/notes/candidates.json');
+      expect(existsSync(join(workspace, '.storyboard', 'cache', 'notes', 'responses.json'))).toBe(
+        false,
+      );
+
+      const applied = await absorbAt(vault, onlyCards('jun'));
+      expect(applied.ok).toBe(false);
+      expect(existsSync(join(workspace, 'character', 'jun.card'))).toBe(false);
+
+      await expect(
+        run('card promote', args(['card', 'promote'], { 'dry-run': true })),
+      ).rejects.toThrow('.storyboard/cache/notes/candidates.json');
+      expect(readFileSync(candidatesPath(), 'utf8')).toBe('{broken');
+    });
+
     it('drops a candidate file an earlier version wrote, with a warning', async () => {
       const warnings: string[] = [];
       const warning = createCliContainer({

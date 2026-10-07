@@ -129,6 +129,10 @@ export class PlanNoteAbsorbUseCase implements IUseCase<
     const { workspaceRoot, bundle } = request;
 
     return await runUseCase(this.deps.logger, '노트를 정리하지 못했습니다.', async () => {
+      // Applying adds to the waiting candidates, so a candidate file it could not read fails here,
+      // before any request is paid for.
+      await this.deps.noteRepository.loadCandidates(workspaceRoot);
+
       const source = await this.deps.storyRepository.load(workspaceRoot);
       const aiService = this.deps.aiGateway.createService(workspaceRoot);
       const knownCards = source.cards.map(toKnownCard);

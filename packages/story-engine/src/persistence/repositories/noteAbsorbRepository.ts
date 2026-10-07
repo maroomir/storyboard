@@ -13,14 +13,16 @@ import {
   characterCardPath,
   getStoryboardProjectPaths,
   noteCandidateFileSchema,
+  STORYBOARD_RELATIVE_PATHS,
   type NoteBundle,
   type NoteCandidateFile,
   type NoteExtractionResponse,
 } from '@storyboard/story-model';
 
-import type {
-  INoteAbsorbRepository,
-  NoteCandidateLoad,
+import {
+  NoteCandidateFileError,
+  type INoteAbsorbRepository,
+  type NoteCandidateLoad,
 } from '#engine/application/notes/noteAbsorbRepository';
 import type { NoteAbsorbPlan } from '@storyboard/story-model';
 import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
@@ -32,6 +34,14 @@ function encodeText(text: string): Uint8Array {
 
 function encodeJson(value: unknown): Uint8Array {
   return encodeText(`${JSON.stringify(value, null, 2)}\n`);
+}
+
+function unreadableCandidateFile(cause: unknown): NoteCandidateFileError {
+  return new NoteCandidateFileError(
+    'unreadable',
+    `노트 카드 후보 파일을 읽지 못했습니다 (JSON 이 아니거나 형식이 맞지 않습니다): ${STORYBOARD_RELATIVE_PATHS.noteCandidates}\n고치거나 지운 뒤 다시 실행하세요. 지우면 승격을 기다리던 노트 후보가 사라집니다.`,
+    cause,
+  );
 }
 
 export class NoteAbsorbRepository implements INoteAbsorbRepository {
@@ -59,13 +69,26 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
       return { kind: 'none' };
     }
 
-    const json: unknown = JSON.parse(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
+    const text = new TextDecoder().decode(await this.fileSystem.readFile(uri));
+    let json: unknown;
+
+    try {
+      json = JSON.parse(text);
+    } catch (error) {
+      throw unreadableCandidateFile(error);
+    }
 
     if (typeof json === 'object' && json !== null && !('version' in json)) {
       return { kind: 'legacy' };
     }
 
-    return { kind: 'current', file: noteCandidateFileSchema.parse(json) };
+    const parsed = noteCandidateFileSchema.safeParse(json);
+
+    if (!parsed.success) {
+      throw unreadableCandidateFile(parsed.error);
+    }
+
+    return { kind: 'current', file: parsed.data };
   }
 
   public async saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void> {
