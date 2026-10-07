@@ -6,6 +6,7 @@ import type {
   IDraftRepository,
   IProjectRepository,
   ISceneCacheRepository,
+  ISceneGroundingGapRepository,
   ISceneRepository,
 } from '#engine/application/drafts/draftRepositories';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -37,6 +38,7 @@ export interface GenerateDraftUseCaseDependencies {
   readonly postGenerationUpdates?: PostGenerationUpdateManager;
   readonly projectRepository: IProjectRepository;
   readonly sceneCacheRepository: ISceneCacheRepository;
+  readonly sceneGroundingGapRepository: ISceneGroundingGapRepository;
   readonly sceneRepository: ISceneRepository;
   readonly workspaceLocator: IWorkspaceLocator;
 }

@@ -6,6 +6,7 @@ import type {
   SceneGrounding,
   StoryboardProject,
   SceneCacheRecord,
+  SceneGroundingGap,
 } from '@storyboard/story-model';
 export interface IProjectRepository {
   read(uri: StoryUri): Promise<StoryboardProject>;
@@ -25,4 +26,14 @@ export interface ISceneCacheRepository {
   read(uri: StoryUri): Promise<SceneCacheRecord>;
   write(uri: StoryUri, record: SceneCacheRecord): Promise<void>;
   ensureDirectory(uri: StoryUri): Promise<void>;
+}
+
+export interface ISceneGroundingGapRepository {
+  read(workspaceRoot: StoryUri, sceneStem: string): Promise<SceneGroundingGap | undefined>;
+  // Undefined clears the scene's record.
+  write(
+    workspaceRoot: StoryUri,
+    sceneStem: string,
+    gap: SceneGroundingGap | undefined,
+  ): Promise<void>;
 }

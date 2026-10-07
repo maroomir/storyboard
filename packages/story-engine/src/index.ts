@@ -101,6 +101,7 @@ export * from './persistence/repositories/outlineRepository';
 export * from './persistence/repositories/projectRepository';
 export * from './persistence/repositories/sceneBatchRepository';
 export * from './persistence/repositories/sceneCacheRepository';
+export * from './persistence/repositories/sceneGroundingGapRepository';
 export * from './persistence/repositories/sceneRepository';
 export * from './persistence/repositories/sceneSeedRepository';
 export * from './persistence/repositories/sceneSidebarRepository';
