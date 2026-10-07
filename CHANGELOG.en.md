@@ -22,6 +22,7 @@ after the first public release.
 
 ### Fixed
 
+- **A fact-sheet cache that cannot be read no longer stops a draft.** When `.storyboard/cache/grounding-gaps.json` could not be read (a directory in its place, say), `draft generate` failed with `EISDIR`. An unreadable record now counts as no record and generation goes on. (#95)
 - **The fact-sheet cache keys a scene the same way whatever the order of its fields and cast.** Fields filled in on the extension's approval screen came in another order than the card read back, so the key differed and the proposal and the approval ran once more; reordering `characters:` asked again too. The fields and the names are now put in one order before the key is made. (#94)
 - **`novel generate` writes the synopsis a work with only a chapter plan lacks.** A plan written by hand, or a work whose `outline/synopsis.md` was deleted, kept its plan but never got a synopsis, so the cast-card stage ran on an empty one. The synopsis alone is now made, leaving the plan as it is. (#92)
 - **The cast-card stage tells which people it could not write.** When the model left a requested person out or returned another id such as `JUN`, the stage finished without the card and never tried again. It now reports the missing people in the progress log, fails the stage when it got none so a rerun asks again, and reports ids no card file can carry (a Korean name, say). The chapter-plan prompt now gives a new person a lowercase id even when cards exist. (#93)
