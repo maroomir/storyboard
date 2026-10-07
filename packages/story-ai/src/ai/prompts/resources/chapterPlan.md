@@ -54,4 +54,4 @@ act/chapter/scene 구조를 JSON 객체로 반환: {"acts":[{"id":"","title":"",
 {{/hasSynopsisLines}}
 
 [등장 인물]
-{{#characterList}}{{characterList}}{{/characterList}}{{^characterList}}(등록된 인물 없음){{/characterList}}
+{{#characterList}}{{characterList}}{{/characterList}}{{^characterList}}(등록된 인물 없음. 주요 인물마다 영소문자/숫자/하이픈으로 된 id를 새로 지어 characters에 써라. 그 id로 인물 카드가 만들어진다.){{/characterList}}

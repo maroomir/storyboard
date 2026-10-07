@@ -53,6 +53,7 @@ export const aiTaskCatalog = [
   { name: 'draftAugment', label: '초안 보충' },
   { name: 'outlineSynopsis', label: '시놉시스 생성' },
   { name: 'chapterPlan', label: '챕터 구성' },
+  { name: 'outlineCharacters', label: '인물 카드 초안' },
   { name: 'draftCritique', label: '초안 비평' },
   { name: 'draftRevision', label: '초안 수정' },
   { name: 'chapterSummary', label: '장 요약' },

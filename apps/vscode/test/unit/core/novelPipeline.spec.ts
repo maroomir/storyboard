@@ -152,6 +152,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
           styleRules: []
         }),
         generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
+        generateOutlineCharacters: async (): Promise<unknown[]> => [],
         checkContinuity: async (): Promise<unknown[]> => checkContinuityMock(),
         critiqueDraft: async (): Promise<unknown[]> => critiqueDraftMock(),
         summarizeChapter: async (): Promise<string> => ""
@@ -159,6 +160,10 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       getTaskProvider: () => "mock"
     } as never,
     aiProviderRegistry: { getTaskProvider: () => "mock" } as never,
+    cardWriter: {
+      exists: async (): Promise<boolean> => false,
+      write: async (): Promise<unknown> => workspaceUri
+    } as never,
     assembleManuscriptUseCase: {
       execute: async (): Promise<unknown> => ({ ok: true, kind: "assembled" })
     } as never,
@@ -190,6 +195,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       hasChapterPlan: async (): Promise<boolean> => false,
       loadCharacterBriefs: async (): Promise<unknown[]> => [],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
+      loadSynopsis: async (): Promise<undefined> => undefined,
       save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
     } as never,
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
@@ -229,6 +235,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
 
 const expectedStageOrder: NovelStageName[] = [
   "outline",
+  "characters",
   "seeds",
   "chapters",
   "assemble",
@@ -240,6 +247,7 @@ const expectedStageOrder: NovelStageName[] = [
 // resume does not run the review a second time.
 const expectedCompletedStages: NovelStageName[] = [
   "outline",
+  "characters",
   "seeds",
   "chapters",
   "assemble",
@@ -337,7 +345,7 @@ describe("NovelPipeline", () => {
       updatedAt: new Date().toISOString(),
       runMode: "auto",
       status: "paused",
-      completedStages: ["outline", "seeds", "chapters"],
+      completedStages: ["outline", "characters", "seeds", "chapters"],
       nextChapterIndex: 2
     }
     const harness = createHarness({ resumeState })
@@ -560,16 +568,23 @@ describe("NovelPipeline — 단계 계획", () => {
   it("takes the order from a spec laid over the bundled one and refuses one that drops the chapters", async () => {
     overrideNovelPipelinePlan({
       version: 1,
-      stages: ["outline", "seeds", "chapters", { id: "assemble", enabled: false }, "summaries"]
+      stages: ["outline", "characters", "seeds", "chapters", { id: "assemble", enabled: false }, "summaries"]
     })
     const harness = createHarness()
 
     const result = await new NovelPipeline(harness.dependencies).run(harness.options)
 
     expect(result.outcome).toBe("completed")
-    expect(harness.progressStages).toEqual(["outline", "seeds", "chapters", "chapters", "summaries"])
+    expect(harness.progressStages).toEqual([
+      "outline",
+      "characters",
+      "seeds",
+      "chapters",
+      "chapters",
+      "summaries"
+    ])
     expect(() =>
-      overrideNovelPipelinePlan({ version: 1, stages: ["outline", "seeds", "summaries"] })
+      overrideNovelPipelinePlan({ version: 1, stages: ["outline", "characters", "seeds", "summaries"] })
     ).toThrow("chapters")
   })
 })

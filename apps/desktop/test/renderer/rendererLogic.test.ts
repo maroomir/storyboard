@@ -73,9 +73,9 @@ describe('replaceSelection', () => {
 
 describe('stageRail', () => {
   it('marks finished and current stages of a running novel', () => {
-    const rail = stageRail({ ...idleRun, status: 'running', kind: 'novel', currentStage: 'chapters', completedStages: ['outline', 'seeds'] });
+    const rail = stageRail({ ...idleRun, status: 'running', kind: 'novel', currentStage: 'chapters', completedStages: ['outline', 'characters', 'seeds'] });
 
-    expect(rail.map((item) => item.state)).toEqual(['done', 'done', 'current', 'waiting', 'waiting', 'waiting', 'waiting']);
+    expect(rail.map((item) => item.state)).toEqual(['done', 'done', 'done', 'current', 'waiting', 'waiting', 'waiting', 'waiting']);
   });
 
   it('shows what a stopped run finished while idle', () => {

@@ -119,6 +119,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
 
   'run.title': 'Run',
   'run.stage.outline': 'Outline',
+  'run.stage.characters': 'Characters',
   'run.stage.seeds': 'Scene seeds',
   'run.stage.chapters': 'Chapter drafts',
   'run.stage.assemble': 'Assemble',

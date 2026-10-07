@@ -14,6 +14,7 @@ import type {
 import type { IStoryboardLogger } from '#engine/ports/logger';
 import type { AiProviderRegistry, ConfigBridge } from '@storyboard/story-ai';
 import type { IUsageSink } from '#engine/ports/usageSink';
+import type { ICardWriterRepository } from '#engine/application/cards/createCardUseCase';
 import type {
   INovelOutlineRepository,
   INovelReviewRepository,
@@ -27,6 +28,7 @@ export interface NovelPipelineDependencies {
   readonly aiGateway: AiGateway;
   readonly aiProviderRegistry: AiProviderRegistry;
   readonly assembleManuscriptUseCase: AssembleManuscriptUseCase;
+  readonly cardWriter: ICardWriterRepository;
   readonly configBridge: ConfigBridge;
   readonly generateDraftUseCase: GenerateDraftUseCase;
   readonly logger: IStoryboardLogger;

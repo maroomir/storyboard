@@ -17,13 +17,22 @@ const baseState: NovelRunState = {
 describe("planRemainingStages", () => {
   it("returns all stages for a fresh run", () => {
     const plan = planRemainingStages(undefined, 3)
-    expect(plan.stages).toEqual(["outline", "seeds", "chapters", "assemble", "review", "revise-from-review", "summaries"])
+    expect(plan.stages).toEqual([
+      "outline",
+      "characters",
+      "seeds",
+      "chapters",
+      "assemble",
+      "review",
+      "revise-from-review",
+      "summaries"
+    ])
     expect(plan.startChapterIndex).toBe(0)
   })
 
   it("skips completed stages and resumes chapters at nextChapterIndex", () => {
     const plan = planRemainingStages(
-      { ...baseState, completedStages: ["outline", "seeds"], nextChapterIndex: 2 },
+      { ...baseState, completedStages: ["outline", "characters", "seeds"], nextChapterIndex: 2 },
       5
     )
     expect(plan.stages).toEqual(["chapters", "assemble", "review", "revise-from-review", "summaries"])
@@ -32,7 +41,7 @@ describe("planRemainingStages", () => {
 
   it("treats the chapters stage as finished once completed", () => {
     const plan = planRemainingStages(
-      { ...baseState, completedStages: ["outline", "seeds", "chapters"], nextChapterIndex: 5 },
+      { ...baseState, completedStages: ["outline", "characters", "seeds", "chapters"], nextChapterIndex: 5 },
       5
     )
     expect(plan.stages).toEqual(["assemble", "review", "revise-from-review", "summaries"])

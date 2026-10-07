@@ -722,7 +722,7 @@ relation `target`은 실제 카드 id로 해석되는 경우만 후보화하고,
 | `storyboard.scene.rename` | `Storyboard: Rename Scene...` | 씬 stem·번호를 바꾸고 파생 파일과 참조를 함께 옮김 |
 | `storyboard.draft.generate` | `Storyboard: Generate Draft (Current Scene)` | 활성/지정 씬 → `draft/<scene>.md` 생성 |
 | `storyboard.draft.generateAll` | `Storyboard: Generate All Drafts` | scene 일괄 처리 |
-| `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |
+| `storyboard.novel.generate` | `Storyboard: Generate Novel` | 작품 설정 → outline→characters→seeds→장별 draft/검수→조립→검사→요약 전체 실행(모드 선택·재개) |
 | `storyboard.outline.generate` | `Storyboard: Generate Novel Outline` | 작품 설정 → `.storyboard/outline/synopsis.md`·`chapters.yaml` 생성 |
 | `storyboard.scene.generateAllSeeds` | `Storyboard: Generate Scene Seeds` | `chapters.yaml` → `scene/NN-slug.card` 생성 |
 | `storyboard.manuscript.assemble` | `Storyboard: Assemble Manuscript` | `chapters.yaml` 순서로 `draft/*.md`를 `manuscript/` 챕터·볼륨 파일로 조립 |
@@ -985,7 +985,7 @@ ReviewIssue {
 
 ### Phase F: One-Click Novel (초기 구현)
 
-- `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→seeds(C)→장별 draft/검수(D)→assemble/review/재작성/재검사/summaries(E)를 한 진행 상태로 실행한다.
+- `Storyboard: Generate Novel`(`storyboard.novel.generate`) 명령이 validate(A)→outline(B)→characters→seeds(C)→장별 draft/검수(D)→assemble/review/재작성/재검사/summaries(E)를 한 진행 상태로 실행한다. characters 단계는 장 계획이 부르는데 카드가 없는 인물만 모델 호출 한 번으로 카드를 만들고(빠진 인물이 없으면 호출하지 않음), 있는 카드는 덮어쓰지 않는다. 다시 실행하면 씬이 있는 장 계획과 이미 있는 씬 카드를 그대로 쓴다.
 - 최종 검사는 조립 원고에 `<!-- scene: <stem> -->` 주석을 넣어 읽으므로, 각 이슈가 자기 씬을
   `sceneStem`으로 지목한다. high 이슈는 씬별로 모아 해당 초안을 **1회 재작성**하고, 그 뒤 전권을
   **1회 재검사**해 보고서를 다시 쓴다. 씬을 특정하지 못한 이슈는 재작성 대상이 아니며 보고서의

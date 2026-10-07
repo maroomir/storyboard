@@ -11,6 +11,7 @@ import {
   pauseIfRequested,
   runAssembleStage,
   runChapterStages,
+  runCharactersStage,
   runOutlineStage,
   runReviewStage,
   runReviseFromReviewStage,
@@ -178,6 +179,31 @@ const outlineStage: INovelStage = {
   },
 };
 
+const charactersStage: INovelStage = {
+  id: 'characters',
+  async run(ctx) {
+    const { options } = ctx;
+    const plan = await ctx.chapterPlan();
+
+    await ctx.runStageOnce('characters', '인물 카드 확인 중…', async () => {
+      const writtenCount = await runCharactersStage(
+        options.workspaceUri,
+        options.project,
+        plan,
+        ctx.newAiService(),
+        options.deps.outlineRepository,
+        options.deps.cardWriter,
+      );
+
+      if (writtenCount > 0) {
+        options.onProgress('characters', `인물 카드 ${writtenCount}장을 만들었습니다.`);
+      }
+    });
+
+    return await checkpoint(ctx);
+  },
+};
+
 const seedsStage: INovelStage = {
   id: 'seeds',
   async run(ctx) {
@@ -330,6 +356,7 @@ const summariesStage: INovelStage = {
 
 export const novelStages: Readonly<Record<NovelStageName, INovelStage>> = {
   outline: outlineStage,
+  characters: charactersStage,
   seeds: seedsStage,
   chapters: chaptersStage,
   assemble: assembleStage,

@@ -4,7 +4,9 @@ import type {
   SceneGrounding,
   ChapterPlan,
   OutlineBrief,
+  OutlineCastMember,
   OutlineCharacterBrief,
+  OutlineCharacterDraft,
   OutlineSynopsis,
   ProjectFormat,
   StudioCardSeed,
@@ -19,6 +21,7 @@ import type {
 } from '@storyboard/story-model';
 import {
   coerceChapterPlan,
+  coerceOutlineCharacters,
   coerceOutlineSynopsis,
   parseJsonObject,
   type NoteExtractionResult,
@@ -49,6 +52,7 @@ import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
 import { ChapterPlanPrompt } from './prompts/chapterPlan';
+import { OutlineCharactersPrompt } from './prompts/outlineCharacters';
 import { ChapterSummaryPrompt, type ChapterSummaryInput } from './prompts/chapterSummary';
 import type { DraftAugmentInput } from './prompts/draftAugment';
 import type { DraftCritiqueInput } from './prompts/draftCritique';
@@ -395,6 +399,28 @@ export class StoryboardAiService {
     );
 
     return coerceChapterPlan(parseJsonObject(response.text));
+  }
+
+  // Cards for the cast a chapter plan names but no card describes, so the scenes can resolve them.
+  public async generateOutlineCharacters(
+    brief: OutlineBrief,
+    synopsis: OutlineSynopsis,
+    cast: readonly OutlineCastMember[],
+    options: GenerateTextOptions = {},
+  ): Promise<OutlineCharacterDraft[]> {
+    const variant = this.gateway.resolvePromptVariant('outlineCharacters', options);
+    const prompt = OutlineCharactersPrompt.build(brief, synopsis, cast, variant);
+    const response = await this.generateWithDefaults(
+      'outlineCharacters',
+      prompt,
+      OutlineCharactersPrompt.config,
+      options,
+    );
+
+    return coerceOutlineCharacters(
+      parseJsonObject(response.text),
+      cast.map((member) => member.id),
+    );
   }
 
   public async critiqueDraft(
