@@ -93,6 +93,11 @@ describe('computeCompletions', () => {
       'tasks.noteExtraction.model',
     ]);
     expect(texts(['config', 'unset', 'tasks.noteEx'])).toContain('tasks.noteExtraction.provider');
+    expect(texts(['config', 'set', 'providers.ollama.'])).toEqual([
+      'providers.ollama.model',
+      'providers.ollama.baseUrl',
+      'providers.ollama.contextTokens',
+    ]);
     expect(
       texts(['config', 'set', 'tasks.noteExtraction.provider', 'claude', '--model', 'claude-o']),
     ).toContain('claude-opus-5-5');
