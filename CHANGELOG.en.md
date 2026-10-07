@@ -20,6 +20,7 @@ after the first public release.
 
 ### Fixed
 
+- **`novel generate` refuses a chapter plan whose chapter count the contract no longer matches.** After `project set --chapters 2` a rerun quietly reused the old one-chapter plan. It now refuses with «계약은 2장인데 장 계획은 1장입니다»: match the contract to the plan, or delete `outline/chapters.yaml` and rerun for a new plan. A contract without a chapter count is not checked.
 - **`draft edit`, `augment`, `condense`, `expand` and the desktop's AI edit follow `editor.draft.keepHistory`.** The touch-up verbs always kept the previous version in `.draft/` even with the setting off, against the setting's own description («keeps the previous draft before it is replaced»). They now follow the same setting a regeneration does (off by default). The one copy an editing session's first hand save keeps is unchanged.
 - **`card create --id` refuses an id a card already holds.** Given `--id hana` while `hana` existed, it quietly made `hana-2`, and an agent then pointed at the wrong card. It now refuses with «이미 있는 카드입니다». An id derived from the name is still numbered as before.
 - **`draft edit` and `draft augment --dry-run` refuse an empty range.** A `--lines` past the end of the draft was refused by the writing path but a dry run called the model on an empty selection. Both now run the same check. (#96)

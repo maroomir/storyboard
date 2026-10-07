@@ -427,6 +427,20 @@ describe("NovelPipeline", () => {
     expect(harness.persistedStates.at(-1)?.status).toBe("paused")
   })
 
+  // 계약의 장 수를 바꾼 뒤 다시 돌리면 예전에는 경고 없이 옛 계획으로 돌았다. 돈이 드는 실행이라 거부한다.
+  it("refuses to run a kept chapter plan whose chapter count the contract no longer matches", async () => {
+    const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
+    harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("failed")
+    expect(result.message).toBe(
+      "계약은 3장인데 장 계획(outline/chapters.yaml)은 2장입니다. 계약의 장 수를 계획에 맞추거나, 계획을 새로 만들려면 outline/chapters.yaml 을 지우고 다시 돌리세요."
+    )
+    expect(generateOutlineSynopsisMock).not.toHaveBeenCalled()
+  })
+
   // 손으로 쓴 장 계획이나 시놉시스만 지운 작품: 예전에는 계획만 보고 시놉시스를 영영 만들지 않았다.
   it("writes the synopsis a hand-written chapter plan lacks, without a new plan", async () => {
     const harness = createHarness()
