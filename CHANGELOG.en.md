@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-10-07
+
 ### Fixed
 
 - **Fact-sheet fields the model left blank are not asked for on every run.** When one field stayed blank, `draft generate --all` sent a proposal request for that scene on every run, even when the draft was kept from the cache. The blank fields are now remembered in the git-ignored cache (`.storyboard/cache/grounding-gaps.json`) and not asked for again until the scene text, its fact sheet or its cast changes.
