@@ -10,6 +10,16 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **`storyboard config set` routes a task to its own provider and model.** `tasks.<task>.provider|model` is checked against the task names, the available providers and the model list, and `--model` sets both at once (`config set tasks.noteExtraction.provider claude --model claude-opus-5-5`). A lone model takes the default provider with it, and a provider change drops a model the new provider does not have, saying so. `ai.provider.default` takes `--model` too. `config show` lists the routed tasks with their origin.
+- **New `storyboard config unset <key>`.** It removes a value from this work's settings file (or the shared one with `--global`), by the same rule as `config set`, and says when the other file still holds a value. Unsetting `tasks.<task>.provider` removes the task's whole route.
+
+### Fixed
+
+- **`config set`'s refusal and help example no longer name `defaultProvider`,** which went away in 0.10. They now name `ai.provider.default` and `tasks.<task>.provider|model`.
+- **Changing one task's route no longer copies the other settings file's routes.** The extension's settings panel and the CLI both wrote the whole task list, merged from the home and work files, into one file, so a change made in a work copied the home routes into it. Only that task's values are written now.
+
 ## [0.12.3] - 2026-10-08
 
 ### Fixed

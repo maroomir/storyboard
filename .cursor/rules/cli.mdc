@@ -106,9 +106,9 @@ reads like the extension's settings UI. Secrets live in `~/.storyboard/secrets.j
 files come from `@storyboard/story-config` and are validated against its config schema when read: a
 value the schema rejects fails the run with `ConfigFileError('invalid-value')`, a key nothing reads is
 logged as a warning and kept; the pre-0.8 `cli.json`/`cli-secrets.json` are no longer
-read at all. **Writes follow git's rule**: `setup` and `config set` write the workspace file when run
-inside a workspace, `--global` writes the home file, and outside a workspace they refuse rather than
-guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
+read at all. **Writes follow git's rule**: `setup`, `config set` and `config unset` write the
+workspace file when run inside a workspace, `--global` writes the home file, and outside a workspace
+they refuse rather than guess. `dispatch.ts` decides that once and hands the target to `ConfigBridge` (`writeTarget`); no
 command picks a file on its own. Secrets are exempt — always the one 0600 home file.
 **Author resources are data too**: the home `~/.storyboard` and the workspace's `.storyboard` are
 two resource roots (workspace wins), and `packages/story-app/src/resourceOverrides.ts` owns what a
@@ -122,7 +122,7 @@ variant selection rules (`packages/story-ai/src/ai/prompts/promptVariants.params
 `novel.yaml` written before `characters` existed runs it right after `outline`). `doctor` lists the
 files in force and fails on one it cannot use. `dispatch.ts` loads them before a
 workspace verb runs, warning about files it cannot use.
-`setup` / `doctor` / `config show|set` / `params show` are the onboarding
+`setup` / `doctor` / `config show|set|unset` / `params show` are the onboarding
 verbs (`apps/cli/src/commands/setup.ts`); the command catalog in `apps/cli/src/commands/catalog.ts`
 is the single source for the parser's flag table, `--help`, per-verb help and `needsWorkspace`, and
 `apps/cli/test/help.test.ts` fails when a verb is implemented without a catalog entry.
