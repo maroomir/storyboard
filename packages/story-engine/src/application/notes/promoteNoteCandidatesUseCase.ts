@@ -6,6 +6,8 @@ import {
   emptyNoteCandidateFile,
   keepNoteCandidateConflicts,
   mergeNoteCandidateSources,
+  removeNoteCandidateCards,
+  removeNoteCandidateChange,
   shouldProposeCardCollect,
 } from '@storyboard/story-model';
 import type { IStoryboardLogger } from '#engine/ports/logger';
@@ -25,6 +27,15 @@ export type PrepareNoteCandidatePromotionResult =
 export interface PromoteNoteCandidatesResult {
   readonly updatedCardIds: readonly string[];
 }
+
+// Without card ids every note candidate goes; with a change ref only that value of one card.
+export type DiscardNoteCandidatesRequest =
+  | { readonly kind: 'cards'; readonly cardIds?: ReadonlySet<string> }
+  | { readonly kind: 'change'; readonly cardId: string; readonly ref: string };
+
+export type DiscardNoteCandidatesResult =
+  | { readonly kind: 'discarded'; readonly cardIds: readonly string[] }
+  | { readonly kind: 'change_not_found' };
 
 export interface PromoteNoteCandidatesUseCaseDependencies {
   readonly logger: IStoryboardLogger;
@@ -100,6 +111,34 @@ export class PromoteNoteCandidatesUseCase {
     await this.deps.noteRepository.saveCandidates(workspaceRoot, file);
 
     return { updatedCardIds };
+  }
+
+  public async discard(
+    workspaceRoot: StoryUri,
+    request: DiscardNoteCandidatesRequest,
+  ): Promise<DiscardNoteCandidatesResult> {
+    const file = await this.loadFile(workspaceRoot);
+    const next =
+      request.kind === 'cards'
+        ? removeNoteCandidateCards(file, request.cardIds)
+        : removeNoteCandidateChange(file, request.cardId, request.ref);
+
+    if (next === undefined) {
+      return { kind: 'change_not_found' };
+    }
+
+    await this.deps.noteRepository.saveCandidates(workspaceRoot, next);
+
+    const before = mergeNoteCandidateSources(file.sources).map((card) => card.cardId);
+    const remaining = new Set(mergeNoteCandidateSources(next.sources).map((card) => card.cardId));
+
+    return {
+      kind: 'discarded',
+      cardIds:
+        request.kind === 'change'
+          ? [request.cardId]
+          : before.filter((cardId) => !remaining.has(cardId)),
+    };
   }
 
   private async loadFile(workspaceRoot: StoryUri): Promise<NoteCandidateFile> {

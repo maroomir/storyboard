@@ -639,6 +639,62 @@ const promoteCards: CommandHandler = async ({ container, args }) => {
   };
 };
 
+const discardCardCandidates: CommandHandler = async ({ container, args }) => {
+  const invalidId = args.positionals.find((id) => !cardIdPattern.test(id));
+
+  if (invalidId !== undefined) {
+    return { ok: false, message: `카드 id 가 올바르지 않습니다: ${invalidId}` };
+  }
+
+  const changeRef = flagString(args.flags, 'change');
+
+  if (changeRef !== undefined) {
+    const [cardId] = args.positionals;
+
+    if (cardId === undefined || args.positionals.length > 1) {
+      return {
+        ok: false,
+        message: '--change 는 카드 id 하나와 함께 씁니다: card discard <id> --change <ref>',
+      };
+    }
+
+    const result = await container.notes.discardCandidates(container.workspaceRoot, {
+      kind: 'change',
+      cardId,
+      ref: changeRef,
+    });
+
+    return result.kind === 'change_not_found'
+      ? {
+          ok: false,
+          message: `${cardId} 의 노트 후보에 ${changeRef} 가 없습니다. card promote --dry-run 으로 확인하세요.`,
+        }
+      : { ok: true, message: `${cardId} 의 노트 후보 ${changeRef} 를 버렸습니다.`, data: result };
+  }
+
+  const cardIds = args.positionals.length > 0 ? new Set(args.positionals) : undefined;
+  const notes = await container.notes.discardCandidates(container.workspaceRoot, {
+    kind: 'cards',
+    ...(cardIds === undefined ? {} : { cardIds }),
+  });
+  const draftItemCount = await container.cards.discardCandidates(container.workspaceRoot, cardIds);
+  const noteCardIds = notes.kind === 'discarded' ? notes.cardIds : [];
+
+  if (noteCardIds.length === 0 && draftItemCount === 0) {
+    return { ok: true, message: '버릴 후보가 없습니다.', data: { notes: [], drafts: 0 } };
+  }
+
+  return {
+    ok: true,
+    message: [
+      '후보를 버렸습니다.',
+      ...(noteCardIds.length > 0 ? [`  노트에서  ${noteCardIds.join(', ')}`] : []),
+      ...(draftItemCount > 0 ? [`  초안에서  ${draftItemCount}건`] : []),
+    ].join('\n'),
+    data: { notes: noteCardIds, drafts: draftItemCount },
+  };
+};
+
 const promoteBible: CommandHandler = async ({ container, args }) => {
   const prepared = await container.cards.prepareBiblePromotion(container.workspaceRoot);
 
@@ -1943,6 +1999,7 @@ export const commands: Readonly<Record<string, CommandHandler>> = {
   'card recommend': recommendCards,
   'card build': buildStoryCards,
   'card promote': promoteCards,
+  'card discard': discardCardCandidates,
   'canon diff': canonDiff,
   'canon promote': promoteBible,
   'notes connect': connectNotes,
