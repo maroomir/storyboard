@@ -49,7 +49,7 @@ export function describeHeader(cwd: string): TuiHeaderInfo {
     getConfiguration: () =>
       createFileConfiguration({
         userConfigFile: home.configFile,
-        workspaceConfigFile: resolveWorkspaceConfigFile(cwd),
+        ...(isWorkspaceFolder ? { workspaceConfigFile: resolveWorkspaceConfigFile(cwd) } : {}),
         onInvalidFile: () => undefined,
       }),
   });

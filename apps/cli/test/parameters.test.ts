@@ -64,6 +64,7 @@ async function parameters(): Promise<{
 describe('params show', () => {
   it('lists settings, generation knobs and prompt tuning with their origin', async () => {
     writeFile(home, 'config.json', '{ "revise": { "loop": { "maxIterations": 4 } } }');
+    writeFile(join(cwd, '.storyboard'), 'project.json', '{"id":"w","name":"작품"}');
     writeFile(
       join(cwd, '.storyboard'),
       'config.json',

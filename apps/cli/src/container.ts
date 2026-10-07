@@ -1,6 +1,10 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
   getStoryboardProjectPaths,
   NodeUri,
+  STORYBOARD_RELATIVE_PATHS,
   type StoryUri,
   type StoryWorkspaceFolder,
 } from '@storyboard/story-model';
@@ -159,10 +163,14 @@ export function createCliContainer(options: CliContainerOptions): CliContainer {
 
   const fileSystem = new NodeFileSystem();
   const secretStore = new SecretStore(createFileSecretStorage(paths.secretsFile));
-  const workspaceConfigFile = resolveWorkspaceConfigFile(workspaceRoot.fsPath);
+  // A folder without a project is not a work, so it has no work settings to read or show.
+  const isWorkspace = existsSync(join(options.workspacePath, STORYBOARD_RELATIVE_PATHS.projectJson));
+  const workspaceConfigFile = isWorkspace
+    ? resolveWorkspaceConfigFile(workspaceRoot.fsPath)
+    : undefined;
   const configuration = createFileConfiguration({
     userConfigFile: paths.configFile,
-    workspaceConfigFile,
+    ...(workspaceConfigFile === undefined ? {} : { workspaceConfigFile }),
     overrides: configOverrides(options),
     onUnknownKey: (warning) => options.logger.warn(warning.message),
   });

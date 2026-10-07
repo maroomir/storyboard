@@ -426,6 +426,21 @@ describe('storyboard config', () => {
     });
   });
 
+  // A folder without project.json is not a work: a stray .storyboard/config.json there is neither
+  // read nor named as this work's settings.
+  it('reads and names no work settings outside a workspace', async () => {
+    mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'config.json'),
+      JSON.stringify({ revise: { loop: { maxIterations: 4 } } }),
+    );
+
+    const shown = await runConfigShow({ container: container(), args: args() });
+
+    expect(shown.message).not.toContain('이 작품 설정');
+    expect(shown.message).toMatch(/revise\.loop\.maxIterations\s+2\s+기본값/);
+  });
+
   it('names the current keys when it refuses one', async () => {
     const unknown = await runConfigSet({
       container: container(),
