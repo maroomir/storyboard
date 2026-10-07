@@ -66,6 +66,14 @@ export function parseNotionPageId(pageUrl: string): string | undefined {
     : undefined;
 }
 
+// One page has many addresses — with or without its title, `?pvs=4`, a database peek — and this
+// is the one they all share, so an absorbed page is the same location however it was linked.
+export function canonicalNotionPageUrl(pageUrl: string): string {
+  const pageId = parseNotionPageId(pageUrl);
+
+  return pageId === undefined ? pageUrl : `https://www.notion.so/${pageId}`;
+}
+
 export function isNotionUrl(location: string): boolean {
   try {
     const { protocol, hostname } = new URL(location);
