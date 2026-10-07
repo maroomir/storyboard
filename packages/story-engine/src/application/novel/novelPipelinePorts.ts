@@ -29,7 +29,10 @@ export interface INovelOutlineRepository {
 
 export interface ISceneSeedRepository {
   saveSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<void>;
-  // Writes only the seeds whose scene card does not exist yet and returns how many it wrote.
+  // The scene cards on disk by scene number. A card keeps its number through a rename or a change of
+  // prefix digits, so the number, not the file name, says which planned scene it is.
+  listSceneStemsByOrder(workspaceRoot: StoryUri): Promise<ReadonlyMap<number, string>>;
+  // Writes only the seeds whose scene number has no card yet and returns how many it wrote.
   saveMissingSeeds(workspaceRoot: StoryUri, seeds: readonly GeneratedSceneSeed[]): Promise<number>;
 }
 

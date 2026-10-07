@@ -1,5 +1,11 @@
-import { joinStoryPath, type StoryUri, getStoryboardProjectPaths } from '@storyboard/story-model';
+import {
+  joinStoryPath,
+  parseSceneFileName,
+  type StoryUri,
+  getStoryboardProjectPaths,
+} from '@storyboard/story-model';
 import type { IFileSystem } from '#engine/ports/fileSystem';
+import { listDirectoryFileNames } from '#engine/persistence/directoryFiles';
 import type { ISceneSeedRepository } from '#engine/application/novel/novelPipeline';
 import type { GeneratedSceneSeed } from '@storyboard/story-model';
 
@@ -21,18 +27,34 @@ export class SceneSeedRepository implements ISceneSeedRepository {
     }
   }
 
+  public async listSceneStemsByOrder(
+    workspaceRoot: StoryUri,
+  ): Promise<ReadonlyMap<number, string>> {
+    const fileNames = await listDirectoryFileNames(
+      this.fileSystem,
+      getStoryboardProjectPaths(workspaceRoot).sceneDirectory,
+    );
+    const stemsByOrder = new Map<number, string>();
+
+    for (const fileName of [...fileNames].sort()) {
+      const parts = parseSceneFileName(fileName);
+      if (parts !== undefined && !stemsByOrder.has(parts.order)) {
+        stemsByOrder.set(parts.order, parts.stem);
+      }
+    }
+
+    return stemsByOrder;
+  }
+
   public async saveMissingSeeds(
     workspaceRoot: StoryUri,
     seeds: readonly GeneratedSceneSeed[],
   ): Promise<number> {
-    const paths = getStoryboardProjectPaths(workspaceRoot);
-    const missing: GeneratedSceneSeed[] = [];
-
-    for (const seed of seeds) {
-      if (!(await this.fileSystem.exists(joinStoryPath(paths.sceneDirectory, seed.fileName)))) {
-        missing.push(seed);
-      }
-    }
+    const stemsByOrder = await this.listSceneStemsByOrder(workspaceRoot);
+    const missing = seeds.filter((seed) => {
+      const order = parseSceneFileName(seed.fileName)?.order;
+      return order === undefined || !stemsByOrder.has(order);
+    });
 
     await this.saveSeeds(workspaceRoot, missing);
     return missing.length;
