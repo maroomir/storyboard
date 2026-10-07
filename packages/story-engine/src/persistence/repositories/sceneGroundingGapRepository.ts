@@ -45,7 +45,12 @@ export class SceneGroundingGapRepository implements ISceneGroundingGapRepository
       return {};
     }
 
-    const raw = new TextDecoder().decode(await this.fileSystem.readFile(gapsUri));
-    return { ...parseSceneGroundingGaps(raw) };
+    // A record that cannot be read is no record: the cache saves a call, it never blocks one.
+    try {
+      const raw = new TextDecoder().decode(await this.fileSystem.readFile(gapsUri));
+      return { ...parseSceneGroundingGaps(raw) };
+    } catch {
+      return {};
+    }
   }
 }
