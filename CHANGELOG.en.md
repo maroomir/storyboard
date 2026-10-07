@@ -20,6 +20,7 @@ after the first public release.
 
 ### Fixed
 
+- **`card create --id` refuses an id a card already holds.** Given `--id hana` while `hana` existed, it quietly made `hana-2`, and an agent then pointed at the wrong card. It now refuses with «이미 있는 카드입니다». An id derived from the name is still numbered as before.
 - **`draft edit` and `draft augment --dry-run` refuse an empty range.** A `--lines` past the end of the draft was refused by the writing path but a dry run called the model on an empty selection. Both now run the same check. (#96)
 - **A fact-sheet cache that cannot be read no longer stops a draft.** When `.storyboard/cache/grounding-gaps.json` could not be read (a directory in its place, say), `draft generate` failed with `EISDIR`. An unreadable record now counts as no record and generation goes on. (#95)
 - **The fact-sheet cache keys a scene the same way whatever the order of its fields and cast.** Fields filled in on the extension's approval screen came in another order than the card read back, so the key differed and the proposal and the approval ran once more; reordering `characters:` asked again too. The fields and the names are now put in one order before the key is made. (#94)

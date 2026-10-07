@@ -274,6 +274,32 @@ describe('card create', () => {
     expect(outcome.ok).toBe(false);
     expect(outcome.message).toContain('영소문자');
   });
+
+  // 예전에는 --id hana 가 이미 있으면 hana-2 를 조용히 만들어, 에이전트가 엉뚱한 카드를 가리켰다.
+  it('refuses an explicit id a card already holds instead of numbering it', async () => {
+    await run('card create', args(['card', 'create'], { name: '하나', id: 'hana' }, ['character']));
+
+    const outcome = await run(
+      'card create',
+      args(['card', 'create'], { name: '한아', id: 'hana' }, ['character']),
+    );
+
+    expect(outcome.ok).toBe(false);
+    expect(outcome.message).toContain('이미 있는 카드입니다: hana');
+    expect(existsSync(join(workspace, 'character', 'hana-2.card'))).toBe(false);
+  });
+
+  it('still numbers an id it derived from the name', async () => {
+    await run('card create', args(['card', 'create'], { name: 'Hana' }, ['character']));
+
+    const outcome = await run(
+      'card create',
+      args(['card', 'create'], { name: 'Hana' }, ['character']),
+    );
+
+    expect(outcome.ok).toBe(true);
+    expect(existsSync(join(workspace, 'character', 'hana-2.card'))).toBe(true);
+  });
 });
 
 // 종류는 명령 이름이 아니라 첫 인자다. 빠지거나 틀리면 짐작하지 않고 쓸 수 있는 값을 알려 준다.
