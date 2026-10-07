@@ -201,6 +201,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
     sceneSeedRepository: {
       saveSeeds: async (): Promise<void> => undefined,
+      listSceneStemsByOrder: async (): Promise<ReadonlyMap<number, string>> => new Map(),
       saveMissingSeeds: async (): Promise<number> => 0
     } as never,
     summarizeChaptersUseCase: {

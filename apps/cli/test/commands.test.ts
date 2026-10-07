@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -1456,6 +1457,28 @@ describe('novel generate again', () => {
     expect(tasks).not.toContain('chapterPlan');
     expect(sceneFiles()).toEqual(scenesBefore);
     expect(readFileSync(firstScene, 'utf8')).toContain('# 작가 메모');
+  });
+
+  // 씬 번호가 같으면 이름이 바뀌어도 같은 씬이다. 예전에는 계획의 이름으로 씬을 하나 더 만들었다.
+  it('keeps a scene card that was renamed or renumbered to another width', async () => {
+    await startNovel();
+    const [firstStem] = sceneFiles().map((name) => name.replace(/\.card$/, ''));
+    renameSync(
+      join(workspace, 'scene', `${firstStem}.card`),
+      join(workspace, 'scene', '001-opening.card'),
+    );
+    renameSync(
+      join(workspace, 'draft', `${firstStem}.md`),
+      join(workspace, 'draft', '001-opening.md'),
+    );
+    const scenesBefore = sceneFiles();
+    const draftsBefore = readdirSync(join(workspace, 'draft')).sort();
+    leaveRunCutOff();
+
+    await runAgain('restart');
+
+    expect(sceneFiles()).toEqual(scenesBefore);
+    expect(readdirSync(join(workspace, 'draft')).sort()).toEqual(draftsBefore);
   });
 });
 

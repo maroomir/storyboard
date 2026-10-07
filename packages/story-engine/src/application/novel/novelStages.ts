@@ -504,13 +504,19 @@ export async function runSummariesStage(
   }
 }
 
-export function groupChapterStems(plan: ChapterPlan, digitCount: number): ChapterGroup[] {
+// A planned scene whose card was renamed is drafted under the card's name: `sceneStemsByOrder` maps
+// a scene number to the card on disk.
+export function groupChapterStems(
+  plan: ChapterPlan,
+  digitCount: number,
+  sceneStemsByOrder: ReadonlyMap<number, string> = new Map(),
+): ChapterGroup[] {
   const seeds = buildSceneSeeds(plan, digitCount);
   const flat = flattenChapterPlan(plan);
   const groups: { title: string; stems: string[]; actIndex: number; chapterIndex: number }[] = [];
 
   flat.forEach((flatScene, index) => {
-    const stem = seeds[index]?.stem;
+    const stem = sceneStemsByOrder.get(index + 1) ?? seeds[index]?.stem;
     if (stem === undefined) {
       return;
     }

@@ -116,12 +116,15 @@ function createNovelRunContext(options: NovelPipelineOptions): NovelRunContext {
 
   let loadedGroups: Promise<readonly ChapterGroup[]> | undefined;
   const chapterGroups = (): Promise<readonly ChapterGroup[]> => {
-    loadedGroups ??= chapterPlan().then((plan) => {
+    loadedGroups ??= chapterPlan().then(async (plan) => {
       const digitCount = resolveScenePrefixDigitCount(
         options.project.editor.scenePrefixDigits,
         options.deps.configBridge.inspectScenePrefixDigits(),
       );
-      return groupChapterStems(plan, digitCount);
+      const sceneStemsByOrder = await options.deps.sceneSeedRepository.listSceneStemsByOrder(
+        options.workspaceUri,
+      );
+      return groupChapterStems(plan, digitCount, sceneStemsByOrder);
     });
     return loadedGroups;
   };
