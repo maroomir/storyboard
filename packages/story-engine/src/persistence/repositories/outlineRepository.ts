@@ -76,14 +76,19 @@ export class OutlineRepository implements IOutlineRepository {
     );
   }
 
+  public async saveSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void> {
+    const paths = getStoryboardProjectPaths(workspaceRoot);
+    await this.fileSystem.createDirectory(paths.outlineDirectory);
+    await writeSynopsisFile(paths.outlineSynopsis, this.fileSystem, synopsis);
+  }
+
   public async save(
     workspaceRoot: StoryUri,
     synopsis: OutlineSynopsis,
     chapterPlan: ChapterPlan,
   ): Promise<StoryUri> {
     const paths = getStoryboardProjectPaths(workspaceRoot);
-    await this.fileSystem.createDirectory(paths.outlineDirectory);
-    await writeSynopsisFile(paths.outlineSynopsis, this.fileSystem, synopsis);
+    await this.saveSynopsis(workspaceRoot, synopsis);
     await writeChapterPlanFile(paths.outlineChapters, this.fileSystem, chapterPlan);
     return paths.outlineSynopsis;
   }

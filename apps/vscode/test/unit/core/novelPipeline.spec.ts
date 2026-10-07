@@ -38,6 +38,16 @@ const summarizeChaptersMock = vi.fn()
 const checkContinuityMock = vi.fn(async () => [] as unknown[])
 const critiqueDraftMock = vi.fn(async () => [] as unknown[])
 const saveReviewMock = vi.fn(async () => undefined)
+const generateOutlineSynopsisMock = vi.fn(async () => ({
+  logline: "",
+  genrePromise: "",
+  mainConflicts: [] as string[],
+  ending: "",
+  theme: "",
+  tone: "",
+  styleRules: [] as string[]
+}))
+const saveSynopsisMock = vi.fn(async () => undefined)
 const generateOutlineCharactersMock = vi.fn(async () => [{ id: "hero", name: "주인공", description: [] }] as unknown[])
 
 vi.mock("../../../../../packages/story-engine/src/persistence/revisionPlanRecorder", () => ({
@@ -143,15 +153,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
   const dependencies: NovelPipelineDependencies = {
     aiGateway: {
       createService: () => ({
-        generateOutlineSynopsis: async (): Promise<unknown> => ({
-          logline: "",
-          genrePromise: "",
-          mainConflicts: [],
-          ending: "",
-          theme: "",
-          tone: "",
-          styleRules: []
-        }),
+        generateOutlineSynopsis: async (): Promise<unknown> => generateOutlineSynopsisMock(),
         generateChapterPlan: async (): Promise<unknown> => ({ version: "1.0.0", acts: [] }),
         generateOutlineCharacters: async (): Promise<unknown[]> => generateOutlineCharactersMock(),
         checkContinuity: async (): Promise<unknown[]> => checkContinuityMock(),
@@ -198,6 +200,7 @@ function createHarness(overrides: Partial<NovelPipelineRunOptions> = {}): Pipeli
       loadCharacterBriefs: async (): Promise<unknown[]> => [{ id: "hero", name: "주인공" }],
       loadChapterPlan: async (): Promise<ChapterPlan> => samplePlan,
       loadSynopsis: async (): Promise<undefined> => undefined,
+      saveSynopsis: async (): Promise<void> => saveSynopsisMock(),
       save: async (): Promise<unknown> => vscode.Uri.joinPath(workspaceUri, "outline")
     } as never,
     reviseDraftUseCase: { execute: (...args: unknown[]): unknown => runReviseDraftWorkflowMock(...args) } as never,
@@ -268,6 +271,8 @@ describe("NovelPipeline", () => {
     checkContinuityMock.mockClear()
     critiqueDraftMock.mockClear()
     saveReviewMock.mockClear()
+    generateOutlineSynopsisMock.mockClear()
+    saveSynopsisMock.mockClear()
     generateOutlineCharactersMock.mockReset().mockResolvedValue([{ id: "hero", name: "주인공", description: [] }])
     checkContinuityMock.mockResolvedValue([])
     critiqueDraftMock.mockResolvedValue([])
@@ -420,6 +425,23 @@ describe("NovelPipeline", () => {
     expect(result.outcome).toBe("paused")
     expect(harness.progressStages).toEqual(["outline"])
     expect(harness.persistedStates.at(-1)?.status).toBe("paused")
+  })
+
+  // 손으로 쓴 장 계획이나 시놉시스만 지운 작품: 예전에는 계획만 보고 시놉시스를 영영 만들지 않았다.
+  it("writes the synopsis a hand-written chapter plan lacks, without a new plan", async () => {
+    const harness = createHarness()
+    harness.dependencies.outlineRepository.hasChapterPlan = async (): Promise<boolean> => true
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("completed")
+    expect(generateOutlineSynopsisMock).toHaveBeenCalledTimes(1)
+    expect(saveSynopsisMock).toHaveBeenCalledTimes(1)
+
+    harness.dependencies.outlineRepository.loadSynopsis = async (): Promise<unknown> => ({ logline: "있음" })
+    await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(generateOutlineSynopsisMock).toHaveBeenCalledTimes(1)
   })
 
   // 예전에는 모델이 돌려주지 않은 인물도 조용히 넘어가 단계가 완료로 남았다.
