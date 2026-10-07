@@ -122,22 +122,30 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     return await this.fileSystem.exists(getStoryboardProjectPaths(workspaceRoot).outlineSynopsis);
   }
 
-  public async writeSynopsis(
-    workspaceRoot: StoryUri,
-    synopsis: OutlineSynopsis,
-    asCandidate: boolean,
-  ): Promise<void> {
-    const content = encodeText(serializeSynopsisMarkdown(synopsis));
+  public async writeSynopsis(workspaceRoot: StoryUri, synopsis: OutlineSynopsis): Promise<void> {
+    await this.fileSystem.writeFile(
+      getStoryboardProjectPaths(workspaceRoot).outlineSynopsis,
+      encodeText(serializeSynopsisMarkdown(synopsis)),
+    );
+  }
 
-    if (asCandidate) {
-      await this.writeCacheFile(workspaceRoot, 'noteSynopsisCandidate', content);
+  public async loadSynopsisCandidate(workspaceRoot: StoryUri): Promise<string | undefined> {
+    const uri = getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate;
+
+    if (!(await this.fileSystem.exists(uri))) {
+      return undefined;
+    }
+
+    return new TextDecoder().decode(await this.fileSystem.readFile(uri));
+  }
+
+  public async saveSynopsisCandidate(workspaceRoot: StoryUri, text: string): Promise<void> {
+    if (text.length === 0) {
+      await this.fileSystem.delete(getStoryboardProjectPaths(workspaceRoot).noteSynopsisCandidate);
       return;
     }
 
-    await this.fileSystem.writeFile(
-      getStoryboardProjectPaths(workspaceRoot).outlineSynopsis,
-      content,
-    );
+    await this.writeCacheFile(workspaceRoot, 'noteSynopsisCandidate', encodeText(text));
   }
 
   public async loadProject(workspaceRoot: StoryUri): Promise<StoryboardProject> {
