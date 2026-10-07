@@ -990,7 +990,8 @@ const createCard: CommandHandler = async ({ container, args }) => {
   }
 
   const cardType = kind === 'character' ? 'character' : 'location';
-  const suggested = flagString(args.flags, 'id') ?? slugify(name);
+  const explicitId = flagString(args.flags, 'id');
+  const suggested = explicitId ?? slugify(name);
 
   // 한글 이름은 ascii 슬러그를 내지 못한다. 예전에는 이때 new-card, new-card-2 로 번호를 붙여
   // 이름과 무관한 id 가 조용히 만들어졌고, 씬 카드가 그 id 로 인물을 참조했다. 짐작하는 대신
@@ -1006,6 +1007,18 @@ const createCard: CommandHandler = async ({ container, args }) => {
     return {
       ok: false,
       message: `id 는 영소문자·숫자·하이픈만 쓸 수 있습니다: ${suggested}`,
+    };
+  }
+
+  // 이름에서 유도한 id 는 번호를 붙여 피하지만, 명시한 id 가 이미 있으면 짐작하지 않고 거부한다:
+  // 에이전트가 hana 를 달라고 했는데 hana-2 를 받으면 그 뒤로 엉뚱한 카드를 가리킨다.
+  if (
+    explicitId !== undefined &&
+    (await container.cards.exists(container.workspaceRoot, cardType, explicitId))
+  ) {
+    return {
+      ok: false,
+      message: `이미 있는 카드입니다: ${explicitId}. 다른 id 를 주거나 card show ${explicitId} 로 확인하세요.`,
     };
   }
 
