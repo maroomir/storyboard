@@ -80,6 +80,15 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
     readonly pendingCandidateCards: string[];
   }> {
     const { workspaceRoot, plan, location, shouldReplaceCandidates } = request;
+    // Read before any card is written, so a file that cannot be read leaves the workspace as it was.
+    const loaded = await this.deps.noteRepository.loadCandidates(workspaceRoot);
+
+    if (loaded.kind === 'legacy') {
+      this.deps.logger.warn(
+        '이전 버전이 남긴 카드 후보(.storyboard/cache/notes/candidates.json)는 읽지 않고 이번 후보로 바꿉니다. 필요하면 그 노트를 다시 흡수하세요.',
+      );
+    }
+
     const createdCards: string[] = [];
     const candidates: NoteCardCandidate[] = [];
 
@@ -108,14 +117,6 @@ export class ApplyNoteAbsorbUseCase implements IUseCase<
           changes: [...entry.changes],
         });
       }
-    }
-
-    const loaded = await this.deps.noteRepository.loadCandidates(workspaceRoot);
-
-    if (loaded.kind === 'legacy') {
-      this.deps.logger.warn(
-        '이전 버전이 남긴 카드 후보(.storyboard/cache/notes/candidates.json)는 읽지 않고 이번 후보로 바꿉니다. 필요하면 그 노트를 다시 흡수하세요.',
-      );
     }
 
     const file = addNoteCandidateSource(

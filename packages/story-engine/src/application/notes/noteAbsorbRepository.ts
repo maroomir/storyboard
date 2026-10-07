@@ -17,6 +17,19 @@ export type NoteCandidateLoad =
   | { readonly kind: 'legacy' }
   | { readonly kind: 'none' };
 
+export type NoteCandidateFileErrorCode = 'unreadable';
+
+export class NoteCandidateFileError extends Error {
+  public constructor(
+    public readonly code: NoteCandidateFileErrorCode,
+    message: string,
+    public override readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'NoteCandidateFileError';
+  }
+}
+
 // What the note import reads and writes. The bundle, the plan and the candidates live in the
 // workspace's cache, which git ignores: the notes stay the author's, and only what they turn into
 // is written to the workspace proper.
@@ -27,6 +40,7 @@ export interface INoteAbsorbRepository {
     workspaceRoot: StoryUri,
     responses: readonly NoteExtractionResponse[],
   ): Promise<void>;
+  // Throws NoteCandidateFileError for a file that is not JSON or not a candidate file.
   loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad>;
   // A file with no sources is removed, so a promoted or discarded candidate does not linger.
   saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;
