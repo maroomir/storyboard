@@ -21,6 +21,7 @@ import type {
   NovelStageName,
   StoryUri,
   ChapterPlan,
+  OutlineBrief,
   StoryboardProject,
   ContinuityIssueLike,
   DraftCritiqueIssue,
@@ -95,13 +96,15 @@ export async function runOutlineStage(
   outlineRepository: INovelOutlineRepository,
 ): Promise<void> {
   const brief = toOutlineBrief(project);
+  const keptPlan = (await outlineRepository.hasChapterPlan(workspaceUri))
+    ? await outlineRepository.loadChapterPlan(workspaceUri)
+    : undefined;
 
   // A rerun keeps the plan it already made: a new one would seed the same scenes under new names.
   // A plan the author wrote by hand may have no synopsis beside it; that one is still made.
-  if (
-    (await outlineRepository.hasChapterPlan(workspaceUri)) &&
-    flattenChapterPlan(await outlineRepository.loadChapterPlan(workspaceUri)).length > 0
-  ) {
+  if (keptPlan !== undefined && flattenChapterPlan(keptPlan).length > 0) {
+    refuseChapterCountMismatch(brief, keptPlan);
+
     if ((await outlineRepository.loadSynopsis(workspaceUri)) === undefined) {
       await outlineRepository.saveSynopsis(
         workspaceUri,
@@ -116,6 +119,18 @@ export async function runOutlineStage(
   const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
 
   await outlineRepository.save(workspaceUri, synopsis, chapterPlan);
+}
+
+// A kept plan is reused as it is, so a contract whose chapter count moved on would pay for a run
+// the plan no longer describes. The run is refused; the person picks which of the two to change.
+function refuseChapterCountMismatch(brief: OutlineBrief, plan: ChapterPlan): void {
+  const planChapterCount = plan.acts.reduce((count, act) => count + act.chapters.length, 0);
+
+  if (brief.chapterCount !== undefined && brief.chapterCount !== planChapterCount) {
+    throw new Error(
+      `계약은 ${brief.chapterCount}장인데 장 계획(outline/chapters.yaml)은 ${planChapterCount}장입니다. 계약의 장 수를 계획에 맞추거나, 계획을 새로 만들려면 outline/chapters.yaml 을 지우고 다시 돌리세요.`,
+    );
+  }
 }
 
 export interface CharactersStageReport {
