@@ -276,6 +276,20 @@ export async function dispatch(
       ? undefined
       : validateProvider(flagString(args.flags, 'provider'), flagString(args.flags, 'model'));
 
+  // NOTE: --provider 는 이번 실행의 설정을 메모리에서 덮어쓴다(작업 라우팅도 비운다). 설정 파일을
+  // 고치는 동사에 섞이면 저장된 라우팅이 안 보여 그 모델을 말없이 지우게 된다.
+  if (
+    (verb === 'config set' || verb === 'config unset') &&
+    flagString(args.flags, 'provider') !== undefined
+  ) {
+    return failure(
+      `--provider 는 이번 실행에 쓸 프로바이더를 정하는 옵션이라 ${verb} 과 함께 쓸 수 없습니다.\n` +
+        '  기본 프로바이더를 바꾸려면   storyboard config set ai.provider.default <프로바이더>',
+      mode,
+      terminal.stderr,
+    );
+  }
+
   if (providerFailure !== undefined) {
     return failure(providerFailure, mode, terminal.stderr);
   }

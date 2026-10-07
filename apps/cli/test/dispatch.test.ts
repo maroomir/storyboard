@@ -197,8 +197,34 @@ describe('dispatch', () => {
     });
   });
 
+  // --provider replaces the routes in memory for the run, so a config verb would no longer see the
+  // stored route and would drop its model without a word.
+  it('refuses the run flag --provider on config set and unset', async () => {
+    const stored = {
+      tasks: { sceneDraft: { provider: 'openai', model: 'gpt-5.5' } },
+    };
+    writeFileSync(join(home, 'config.json'), JSON.stringify(stored));
+
+    const set = await dispatch(
+      ['config', 'set', 'tasks.sceneDraft.provider', 'openai', '--provider', 'claude', '--global'],
+      deps(),
+    );
+    const unset = await dispatch(
+      ['config', 'unset', 'tasks.sceneDraft.model', '--provider', 'claude', '--global'],
+      deps(),
+    );
+
+    expect(set.exitCode).toBe(1);
+    expect(set.stderr).toContain('--provider');
+    expect(unset.exitCode).toBe(1);
+    expect(JSON.parse(readFileSync(join(home, 'config.json'), 'utf8'))).toEqual(stored);
+  });
+
   it('refuses config unset outside a workspace unless --global says where', async () => {
-    writeFileSync(join(home, 'config.json'), JSON.stringify({ revise: { loop: { maxIterations: 3 } } }));
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ revise: { loop: { maxIterations: 3 } } }),
+    );
 
     const ambiguous = await dispatch(['config', 'unset', 'revise.loop.maxIterations'], deps());
     expect(ambiguous.exitCode).toBe(1);
