@@ -16,12 +16,12 @@ import {
 } from '@storyboard/story-model';
 import { reviewChapterWindows } from '#engine/application/manuscript/reviewChapterWindows';
 import { recordRevisionEntry } from '#engine/persistence/revisionPlanRecorder';
+import { refuseChapterCountMismatch } from './chapterPlanContract';
 import type {
   NovelRunState,
   NovelStageName,
   StoryUri,
   ChapterPlan,
-  OutlineBrief,
   StoryboardProject,
   ContinuityIssueLike,
   DraftCritiqueIssue,
@@ -103,7 +103,7 @@ export async function runOutlineStage(
   // A rerun keeps the plan it already made: a new one would seed the same scenes under new names.
   // A plan the author wrote by hand may have no synopsis beside it; that one is still made.
   if (keptPlan !== undefined && flattenChapterPlan(keptPlan).length > 0) {
-    refuseChapterCountMismatch(brief, keptPlan);
+    refuseChapterCountMismatch(brief, keptPlan, 'kept');
 
     if ((await outlineRepository.loadSynopsis(workspaceUri)) === undefined) {
       await outlineRepository.saveSynopsis(
@@ -117,20 +117,9 @@ export async function runOutlineStage(
   const synopsis = await aiService.generateOutlineSynopsis(brief);
   const characters = await outlineRepository.loadCharacterBriefs(workspaceUri);
   const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
+  refuseChapterCountMismatch(brief, chapterPlan, 'generated');
 
   await outlineRepository.save(workspaceUri, synopsis, chapterPlan);
-}
-
-// A kept plan is reused as it is, so a contract whose chapter count moved on would pay for a run
-// the plan no longer describes. The run is refused; the person picks which of the two to change.
-function refuseChapterCountMismatch(brief: OutlineBrief, plan: ChapterPlan): void {
-  const planChapterCount = plan.acts.reduce((count, act) => count + act.chapters.length, 0);
-
-  if (brief.chapterCount !== undefined && brief.chapterCount !== planChapterCount) {
-    throw new Error(
-      `계약은 ${brief.chapterCount}장인데 장 계획(outline/chapters.yaml)은 ${planChapterCount}장입니다. 계약의 장 수를 계획에 맞추거나, 계획을 새로 만들려면 outline/chapters.yaml 을 지우고 다시 돌리세요.`,
-    );
-  }
 }
 
 export interface CharactersStageReport {
