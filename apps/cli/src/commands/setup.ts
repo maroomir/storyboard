@@ -830,6 +830,22 @@ export async function runConfigShow({ container }: CommandContext): Promise<Comm
     }
   }
 
+  // 라우팅이 없는 작업은 기본 프로바이더를 따른다. 작업이 서른 개가 넘어 정한 것만 보인다.
+  for (const taskName of aiTaskNames) {
+    const route = configBridge.getTaskAiConfigOverride(taskName);
+    if (route === null) {
+      continue;
+    }
+
+    const routeValues = { provider: route.providerId, model: route.model };
+    for (const [field, value] of Object.entries(routeValues)) {
+      if (value !== null) {
+        const settingKey = `tasks.${taskName}.${field}`;
+        rows.push({ key: settingKey, value, origin: describeOrigin(configBridge, settingKey) });
+      }
+    }
+  }
+
   for (const definition of storyboardSettingCatalog) {
     rows.push({
       key: definition.key,
