@@ -1291,19 +1291,36 @@ describe('draft edit and draft augment', () => {
   it.each([
     ['draft augment', {}],
     ['draft edit', { instruction: '더 짧게' }],
-  ] as const)(
-    '%s writes the revision and keeps the previous draft in history',
-    async (verb, flags) => {
-      await writeSceneWithDraft();
+  ] as const)('%s writes the revision', async (verb, flags) => {
+    await writeSceneWithDraft();
 
-      const outcome = await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+    const outcome = await run(verb, args(verb.split(' '), flags, ['01-night-market']));
 
-      expect(outcome.ok).toBe(true);
-      expect(draftBody()).not.toBe(originalBody);
-      expect(draftBody()).toContain('[Mock AI: draftAugment]');
-      expect(historyCount()).toBe(1);
-    },
-  );
+    expect(outcome.ok).toBe(true);
+    expect(draftBody()).not.toBe(originalBody);
+    expect(draftBody()).toContain('[Mock AI: draftAugment]');
+  });
+
+  // 손질 명령은 editor.draft.keepHistory 와 무관하게 늘 보관해, 설정 설명(«덮어쓰기 전에 이전 판을
+  // 남깁니다»)과 어긋났다. 재생성과 같은 설정을 따른다.
+  it.each([
+    ['draft augment', {}],
+    ['draft edit', { instruction: '더 짧게' }],
+  ] as const)('%s keeps the previous draft only when keepHistory is on', async (verb, flags) => {
+    await writeSceneWithDraft();
+
+    await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+
+    expect(historyCount()).toBe(0);
+
+    writeFileSync(
+      join(home, 'config.json'),
+      JSON.stringify({ 'ai.provider.default': 'mock', 'editor.draft.keepHistory': true }),
+    );
+    await run(verb, args(verb.split(' '), flags, ['01-night-market']));
+
+    expect(historyCount()).toBe(1);
+  });
 
   it.each([
     ['draft augment', {}],

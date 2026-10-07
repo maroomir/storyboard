@@ -792,12 +792,12 @@ async function rewriteDraft(
     return { ok: false, message: result.message };
   }
 
-  // 손질 한 번이 한 편집 세션이다. 고치기 전 판본은 편집기에서처럼 .draft/ 에 남는다.
+  // 손질 한 번이 한 편집 세션이다. 고치기 전 판본은 재생성과 같은 설정을 따라 .draft/ 에 남는다.
   const saved = await container.drafts.saveEdit({
     workspaceRoot: container.workspaceRoot,
     sceneStem: stem,
     body: replaceLines(body, range, result.text),
-    archivePrevious: true,
+    archivePrevious: container.configBridge.isKeepDraftHistoryEnabled(),
   });
 
   if (!saved.ok) {
