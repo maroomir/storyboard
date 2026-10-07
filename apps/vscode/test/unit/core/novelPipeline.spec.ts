@@ -441,6 +441,25 @@ describe("NovelPipeline", () => {
     expect(generateOutlineSynopsisMock).not.toHaveBeenCalled()
   })
 
+  // 모델이 계약의 장 수를 어긴 계획은 예전에는 그대로 저장돼 다음 실행마다 거부당했다. 저장 전에 돌려보낸다.
+  it("refuses to save a generated chapter plan whose chapter count the contract did not get", async () => {
+    const harness = createHarness({ project: { ...project, setting: { chapterCount: 3 } } })
+    harness.dependencies.aiGateway.createService = (() => ({
+      generateOutlineSynopsis: async (): Promise<unknown> => generateOutlineSynopsisMock(),
+      generateChapterPlan: async (): Promise<ChapterPlan> => samplePlan
+    })) as never
+    const save = vi.fn()
+    harness.dependencies.outlineRepository.save = save
+
+    const result = await new NovelPipeline(harness.dependencies).run(harness.options)
+
+    expect(result.outcome).toBe("failed")
+    expect(result.message).toBe(
+      "계약은 3장인데 모델이 만든 장 계획은 2장입니다. 계획은 저장하지 않았습니다. 다시 돌리거나 계약의 장 수를 바꾸세요."
+    )
+    expect(save).not.toHaveBeenCalled()
+  })
+
   // 손으로 쓴 장 계획이나 시놉시스만 지운 작품: 예전에는 계획만 보고 시놉시스를 영영 만들지 않았다.
   it("writes the synopsis a hand-written chapter plan lacks, without a new plan", async () => {
     const harness = createHarness()

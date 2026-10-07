@@ -10,6 +10,7 @@ import type { IStoryboardLogger } from '#engine/ports/logger';
 import { runUseCase, type IUseCase } from '#engine/application/useCase';
 import type { AiGateway } from '#engine/application/ai/aiGateway';
 import { validateGenerationContract, toOutlineBrief } from '@storyboard/story-model';
+import { refuseChapterCountMismatch } from './chapterPlanContract';
 export interface IOutlineRepository {
   hasExisting(workspaceRoot: StoryUri): Promise<boolean>;
   loadCharacterBriefs(workspaceRoot: StoryUri): Promise<readonly OutlineCharacterBrief[]>;
@@ -81,6 +82,7 @@ export class GenerateOutlineUseCase implements IUseCase<
         const characters = await this.deps.repository.loadCharacterBriefs(workspaceRoot);
         options.onProgress?.('챕터 구성 중…');
         const chapterPlan = await aiService.generateChapterPlan(brief, synopsis, characters);
+        refuseChapterCountMismatch(brief, chapterPlan, 'generated');
         options.onProgress?.('파일 저장 중…');
         const synopsisUri = await this.deps.repository.save(workspaceRoot, synopsis, chapterPlan);
 
