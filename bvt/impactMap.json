@@ -1,0 +1,241 @@
+{
+  "$comment": "Which checks a change pulls in, by the folders it touches. A file is matched against `ignore` first, then against the areas in order — the first area whose `paths` match owns it. A file no row claims fails the run, so a new folder needs a row here before it can ship. Checks are shell commands run from the repository root; the same command listed by several areas runs once.",
+  "ignore": [
+    "*.md",
+    "apps/*/*.md",
+    "apps/*/docs/**",
+    "apps/*/LICENSE",
+    "LICENSE",
+    ".gitignore",
+    ".claude/**",
+    ".cursor/**",
+    ".agents/**",
+    ".vscode/**",
+    ".github/CODEOWNERS",
+    ".github/*.md",
+    ".github/ISSUE_TEMPLATE/**",
+    "**/*.png",
+    "**/*.svg"
+  ],
+  "areas": [
+    {
+      "id": "model-format",
+      "paths": ["packages/story-model/src/format/**", "packages/story-model/test/fixtures/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/domain/files test/unit/shared"
+      ]
+    },
+    {
+      "id": "model-contracts",
+      "paths": ["packages/story-model/src/contracts/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/ai test/unit/shared/settingDefaults.spec.ts test/unit/shared/parameterMap.spec.ts test/unit/shared/models.spec.ts",
+        "npm run test --workspace @storyboard/cli -- test/parameters.test.ts test/providerFactories.test.ts test/configuration.test.ts"
+      ]
+    },
+    {
+      "id": "model-shared",
+      "paths": ["packages/story-model/src/shared/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/shared test/unit/presentation/messaging",
+        "npm run test --workspace @storyboard/cli -- test/parity.test.ts test/help.test.ts"
+      ]
+    },
+    {
+      "id": "model-domain",
+      "paths": ["packages/story-model/src/domain/**", "packages/story-model/src/paths/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/domain test/unit/shared/workspacePaths.spec.ts"
+      ]
+    },
+    {
+      "id": "model-package",
+      "paths": ["packages/story-model/**"],
+      "checks": [
+        "npm run lint --workspace @storyboard/story-model",
+        "npm run test --workspace storyboard-vscode -- test/unit/domain test/unit/shared"
+      ]
+    },
+    {
+      "id": "ai-prompts",
+      "paths": ["packages/story-ai/src/ai/prompts/**"],
+      "checks": [
+        "npm run check:prompts --workspace @storyboard/story-ai",
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/ai",
+        "npm run test --workspace @storyboard/cli -- test/promptResources.test.ts test/resourceOverrides.test.ts test/parameters.test.ts"
+      ]
+    },
+    {
+      "id": "ai-providers",
+      "paths": ["packages/story-ai/src/ai/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/ai",
+        "npm run test --workspace @storyboard/cli -- test/providerFactories.test.ts test/hiddenProvider.test.ts test/hiddenProviderConsent.test.ts test/apikey.test.ts test/usageMeter.test.ts"
+      ]
+    },
+    {
+      "id": "ai-package",
+      "paths": ["packages/story-ai/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/ai test/unit/infrastructure/settings test/unit/infrastructure/secrets",
+        "npm run test --workspace @storyboard/cli -- test/configuration.test.ts test/setupCommands.test.ts"
+      ]
+    },
+    {
+      "id": "config",
+      "paths": ["packages/story-config/**"],
+      "checks": [
+        "npm run test --workspace @storyboard/cli -- test/configuration.test.ts test/setupCommands.test.ts test/apikey.test.ts",
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/settings test/unit/infrastructure/secrets"
+      ]
+    },
+    {
+      "id": "engine-pipeline",
+      "paths": ["packages/story-engine/src/pipeline/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/application/pipelines test/unit/application/drafts"
+      ]
+    },
+    {
+      "id": "engine-novel",
+      "paths": ["packages/story-engine/src/application/novel/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/core test/unit/application/novel test/unit/domain/novelRunPlan.spec.ts test/unit/domain/pipelineSpec.spec.ts",
+        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/pauseRequests.test.ts"
+      ]
+    },
+    {
+      "id": "engine-application",
+      "paths": ["packages/story-engine/src/application/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/application test/unit/core",
+        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/saveDraftEdit.test.ts test/renameScene.test.ts"
+      ]
+    },
+    {
+      "id": "engine-persistence",
+      "paths": ["packages/story-engine/src/persistence/**"],
+      "checks": [
+        "npm run test --workspace storyboard-vscode -- test/unit/infrastructure/persistence test/unit/infrastructure/persistenceRepositories.spec.ts test/unit/persistence test/unit/domain/files"
+      ]
+    },
+    {
+      "id": "engine-package",
+      "paths": ["packages/story-engine/**"],
+      "checks": [
+        "npm run lint --workspace @storyboard/story-engine",
+        "npm run test --workspace storyboard-vscode -- test/unit/application test/unit/core test/unit/infrastructure"
+      ]
+    },
+    {
+      "id": "story-app",
+      "paths": ["packages/story-app/**"],
+      "checks": [
+        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/parameters.test.ts test/resourceOverrides.test.ts test/runGate.test.ts test/runLock.test.ts",
+        "npm run test --workspace @storyboard/desktop -- test/desktopApp.test.ts"
+      ]
+    },
+    {
+      "id": "story-node",
+      "paths": ["packages/story-node/**"],
+      "checks": [
+        "npm run test --workspace @storyboard/cli -- test/storyboardApplication.test.ts test/dispatch.test.ts",
+        "npm run test --workspace @storyboard/desktop -- test/desktopApp.test.ts"
+      ]
+    },
+    {
+      "id": "story-sim",
+      "paths": ["packages/story-sim/**"],
+      "checks": [
+        "npm run test --workspace @storyboard/cli -- test/sim"
+      ]
+    },
+    {
+      "id": "cli",
+      "paths": ["apps/cli/**"],
+      "checks": [
+        "npm run lint --workspace @storyboard/cli",
+        "npm run test --workspace @storyboard/cli",
+        "npm run cli:build"
+      ]
+    },
+    {
+      "id": "vscode-webview",
+      "paths": ["apps/vscode/webview-ui/**"],
+      "checks": [
+        "npm run build:webview --workspace storyboard-vscode",
+        "npm run test --workspace storyboard-vscode -- test/unit/webview"
+      ]
+    },
+    {
+      "id": "vscode-host",
+      "paths": ["apps/vscode/src/**"],
+      "checks": [
+        "npm run compile",
+        "npm run test --workspace storyboard-vscode -- test/unit/presentation test/unit/bootstrap test/unit/infrastructure/vscode test/unit/infrastructure/vscodeFileSystem.spec.ts"
+      ]
+    },
+    {
+      "id": "vscode-package",
+      "paths": ["apps/vscode/**"],
+      "checks": [
+        "npm run build --workspace storyboard-vscode",
+        "npm run test --workspace storyboard-vscode -- test/unit/presentation/manifest.spec.ts",
+        "npm run test --workspace @storyboard/cli -- test/parity.test.ts"
+      ]
+    },
+    {
+      "id": "desktop",
+      "paths": ["apps/desktop/**"],
+      "checks": [
+        "npm run lint --workspace @storyboard/desktop",
+        "npm run test --workspace @storyboard/desktop",
+        "npm run build --workspace @storyboard/desktop"
+      ]
+    },
+    {
+      "id": "architecture-scripts",
+      "paths": ["scripts/architecture/**"],
+      "checks": [
+        "npm run check:architecture",
+        "npm run check:architecture --workspace storyboard-vscode",
+        "npm run check:architecture --workspace @storyboard/cli",
+        "npm run check:architecture --workspace @storyboard/desktop",
+        "npm run check:architecture --workspace @storyboard/story-model",
+        "npm run check:architecture --workspace @storyboard/story-engine"
+      ]
+    },
+    {
+      "id": "bvt-scripts",
+      "paths": ["scripts/bvt/**", "bvt/**"],
+      "checks": [
+        "npm run test --workspace @storyboard/cli -- test/bvt"
+      ]
+    },
+    {
+      "id": "build-scripts",
+      "paths": ["scripts/**"],
+      "checks": [
+        "node scripts/sync-version.mjs --check",
+        "npm run check:prompts --workspace @storyboard/story-ai",
+        "npm run cli:build",
+        "npm run build --workspace storyboard-vscode"
+      ]
+    },
+    {
+      "id": "workflows",
+      "paths": [".github/workflows/**"],
+      "checks": [
+        "node -e \"for (const f of ['ci.yml','release.yml']) require('js-yaml').load(require('fs').readFileSync('.github/workflows/'+f,'utf8'))\""
+      ]
+    },
+    {
+      "id": "root-manifest",
+      "paths": ["package.json", "package-lock.json", "tsconfig.base.json", ".prettierrc.json"],
+      "checks": [
+        "node scripts/sync-version.mjs --check",
+        "npm run check:architecture"
+      ]
+    }
+  ]
+}

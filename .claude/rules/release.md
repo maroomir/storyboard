@@ -11,8 +11,8 @@ The version lives in the **root `package.json`**; `npm run version:sync` mirrors
 
 `npm run bvt` is the gate between the source checks and the jobs that build what ships: the
 release workflow runs it as the `bvt` job after `verify`, and a tag that fails it stays a draft
-with nothing uploaded. Run it locally before tagging. The code lives in `scripts/bvt/`,
-and each step is also its own script:
+with nothing uploaded. Run it locally before tagging. The code lives in `scripts/bvt/`, the data
+in `bvt/`, and each step is also its own script:
 
 - `bvt:contracts` — **diff contracts** (`scripts/bvt/diffContracts.mjs`): a change that has a
   mandatory companion must carry it in the same range — source ↔ both changelogs, a prompt
@@ -21,3 +21,12 @@ and each step is also its own script:
   root version bump ↔ its `## [version]` section. The range is the newest `v*` tag that is an
   ancestor of HEAD (not HEAD itself) up to HEAD; pass another base ref as the first argument.
   Adding a rule is a row in `diffContractRules` plus a case in `apps/cli/test/bvtDiffContracts.test.ts`.
+- `bvt:impact` — **impact map** (`bvt/impactMap.json`, `scripts/bvt/runImpactMap.mjs`): every
+  changed file in the range is matched against `ignore`, then against the areas in order, and the
+  first area whose `paths` match owns it; the checks of every touched area run once each (test runs
+  of one workspace are merged into one vitest start), with `STORYBOARD_HOME` pointed at an empty
+  directory so the machine's config cannot change the answer. **A file no row claims fails the
+  run**, and `apps/cli/test/bvtImpactMap.test.ts` fails as soon as a tracked file has no row, so a
+  new folder gets its row before it ships. `--plan` prints the checks without running them. An
+  area's checks are the focused tests of what it changes plus what `verify` does not run: the
+  bundles, the prompt-resource check, the workflow YAML parse.

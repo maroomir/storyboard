@@ -44,6 +44,11 @@ jobs. Its steps are also separate scripts:
   params file ↔ its schema and its coding-standards row, the config schema ↔ a settings test,
   desktop `ko.ts` ↔ `en.ts`, `.claude/rules` ↔ `.cursor/rules`, a version bump ↔ its changelog
   section). `node scripts/bvt/checkDiffContracts.mjs v0.12.1` checks another range.
+- `npm run bvt:impact` — the impact map (`bvt/impactMap.json`): the changed files pick the areas
+  they touch, and the checks of those areas run — focused tests plus what `verify` does not run,
+  such as the bundles and the prompt-resource check. A changed file that belongs to no area fails
+  the run; give it a row. `node scripts/bvt/runImpactMap.mjs v0.12.1 --plan` prints the plan for
+  another range without running it.
 
 Reproduce the artifacts:
 

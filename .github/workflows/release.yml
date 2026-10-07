@@ -80,6 +80,9 @@ jobs:
       - name: Diff contracts
         run: npm run bvt:contracts
 
+      - name: Impact map
+        run: npm run bvt:impact
+
   # Installers are built on the platform they are for. Signing and notarization switch on only when
   # their secrets exist; without them the installers are unsigned but still ship.
   desktop:
