@@ -126,8 +126,12 @@ function describeOutcome(outcome: ApplyNoteAbsorbOutcome): string[] {
   ];
 
   if (outcome.candidateCards.length > 0) {
+    lines.push(`기존 카드 ${outcome.candidateCards.join(', ')} 에 대한 내용은 후보로 남겼습니다.`);
+  }
+
+  if (outcome.pendingCandidateCards.length > 0) {
     lines.push(
-      `기존 카드 ${outcome.candidateCards.join(', ')} 에 대한 내용은 후보로 남겼습니다: storyboard card promote`,
+      `승격을 기다리는 카드 ${outcome.pendingCandidateCards.length}장 (${outcome.pendingCandidateCards.join(', ')}): storyboard card promote`,
     );
   }
 
@@ -238,6 +242,7 @@ export async function runNoteAbsorb(
     plan: planned.plan,
     location: bundle.location,
     shouldFillContract: options.shouldFillContract,
+    shouldReplaceCandidates: flagBoolean(args.flags, 'replace-candidates'),
   });
 
   if (!applied.ok) {

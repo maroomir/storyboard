@@ -13,7 +13,7 @@ import type {
   PromoteNoteCandidatesResult,
   PromoteNoteCandidatesUseCase,
 } from '@storyboard/story-engine';
-import type { NoteBundle, NoteCardCandidate, StoryUri } from '@storyboard/story-model';
+import type { MergedNoteCardCandidate, NoteBundle, StoryUri } from '@storyboard/story-model';
 import type { SecretStore } from '@storyboard/story-ai';
 
 export interface NoteManagerDependencies {
@@ -59,7 +59,7 @@ export class NoteManager {
 
   public promoteCandidates(
     workspaceRoot: StoryUri,
-    candidates: readonly NoteCardCandidate[],
+    candidates: readonly MergedNoteCardCandidate[],
   ): Promise<PromoteNoteCandidatesResult> {
     return this.deps.promoteNoteCandidatesUseCase.promote(workspaceRoot, candidates);
   }

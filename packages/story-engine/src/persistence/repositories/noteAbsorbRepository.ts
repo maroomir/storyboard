@@ -18,7 +18,10 @@ import {
   type NoteExtractionResponse,
 } from '@storyboard/story-model';
 
-import type { INoteAbsorbRepository } from '#engine/application/notes/noteAbsorbRepository';
+import type {
+  INoteAbsorbRepository,
+  NoteCandidateLoad,
+} from '#engine/application/notes/noteAbsorbRepository';
 import type { NoteAbsorbPlan } from '@storyboard/story-model';
 import { readProjectJson, writeProjectJson } from '#engine/persistence/projectJson';
 import type { IFileSystem } from '#engine/ports/fileSystem';
@@ -49,20 +52,24 @@ export class NoteAbsorbRepository implements INoteAbsorbRepository {
     await this.writeCacheFile(workspaceRoot, 'noteExtractionResponses', encodeJson(responses));
   }
 
-  public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile | undefined> {
+  public async loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad> {
     const uri = getStoryboardProjectPaths(workspaceRoot).noteCandidates;
 
     if (!(await this.fileSystem.exists(uri))) {
-      return undefined;
+      return { kind: 'none' };
     }
 
-    const text = new TextDecoder().decode(await this.fileSystem.readFile(uri));
+    const json: unknown = JSON.parse(new TextDecoder().decode(await this.fileSystem.readFile(uri)));
 
-    return noteCandidateFileSchema.parse(JSON.parse(text));
+    if (typeof json === 'object' && json !== null && !('version' in json)) {
+      return { kind: 'legacy' };
+    }
+
+    return { kind: 'current', file: noteCandidateFileSchema.parse(json) };
   }
 
   public async saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void> {
-    if (file.candidates.length === 0) {
+    if (file.sources.length === 0) {
       await this.fileSystem.delete(getStoryboardProjectPaths(workspaceRoot).noteCandidates);
       return;
     }

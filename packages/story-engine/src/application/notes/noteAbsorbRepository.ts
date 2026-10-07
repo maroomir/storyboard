@@ -10,6 +10,12 @@ import type {
   NoteExtractionResponse,
 } from '@storyboard/story-model';
 
+// A file written before 0.13 kept one absorb only; it is no longer read, and the next write
+// replaces it.
+export type NoteCandidateLoad =
+  | { readonly kind: 'current'; readonly file: NoteCandidateFile }
+  | { readonly kind: 'legacy' }
+  | { readonly kind: 'none' };
 
 // What the note import reads and writes. The bundle, the plan and the candidates live in the
 // workspace's cache, which git ignores: the notes stay the author's, and only what they turn into
@@ -21,8 +27,8 @@ export interface INoteAbsorbRepository {
     workspaceRoot: StoryUri,
     responses: readonly NoteExtractionResponse[],
   ): Promise<void>;
-  loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateFile | undefined>;
-  // An empty list removes the file, so a promoted or superseded candidate does not linger.
+  loadCandidates(workspaceRoot: StoryUri): Promise<NoteCandidateLoad>;
+  // A file with no sources is removed, so a promoted or discarded candidate does not linger.
   saveCandidates(workspaceRoot: StoryUri, file: NoteCandidateFile): Promise<void>;
   loadCard(
     workspaceRoot: StoryUri,
