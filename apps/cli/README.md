@@ -135,6 +135,10 @@ storyboard novel generate
 storyboard manuscript assemble && storyboard manuscript review
 ```
 
+`novel generate` is unattended: every approval gate is passed automatically, and a run the desktop
+app or the extension started in an approval mode is continued the same way. At a terminal it asks
+whether to continue an interrupted run or start over; in a pipe or with `--json` it continues.
+
 `outline generate` refuses until the contract names a genre, an audience, a point of view and a
 target word count, so `init` takes them as flags. `--from <json>` reads the same fields from a file
 (a whole `project.json` works too), and flags win over the file. To change the contract later, use
