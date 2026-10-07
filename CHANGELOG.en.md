@@ -18,8 +18,6 @@ after the first public release.
 - **The last BVT step is the artifact smoke.** The VSIX, the CLI tarball and `install.sh` the release will upload are packaged by the same script (`scripts/package-release.sh`) and then used: the `storyboard` that `install.sh` installed prints its version and drives a mock work from `novel generate` to `manuscript export`, and the VSIX is unzipped and its manifest, bundle, webview page and changelog checked. Started with `STORYBOARD_DESKTOP_SMOKE=1`, the desktop app renders its first screen and exits 0; the release workflow starts the packaged app that way on macOS and Windows.
 - **One preflight command before the tag.** `npm run release:preflight` runs what a tag would set off on GitHub, minus the upload: it refuses an uncommitted tree, a branch other than `main`, an unsynced version, an existing tag and a missing dated `## [<version>]` section in either changelog, then runs lint, the tests, the BVT and the desktop smoke and ends with `Preflight passed` (`-- --package` adds this platform's packaged app). An agent tags only a commit it has passed on.
 
-## [0.12.2] - 2026-10-07
-
 ### Fixed
 
 - **`draft edit` and `draft augment --dry-run` refuse an empty range.** A `--lines` past the end of the draft was refused by the writing path but a dry run called the model on an empty selection. Both now run the same check. (#96)
@@ -28,6 +26,11 @@ after the first public release.
 - **`novel generate` writes the synopsis a work with only a chapter plan lacks.** A plan written by hand, or a work whose `outline/synopsis.md` was deleted, kept its plan but never got a synopsis, so the cast-card stage ran on an empty one. The synopsis alone is now made, leaving the plan as it is. (#92)
 - **The cast-card stage tells which people it could not write.** When the model left a requested person out or returned another id such as `JUN`, the stage finished without the card and never tried again. It now reports the missing people in the progress log, fails the stage when it got none so a rerun asks again, and reports ids no card file can carry (a Korean name, say). The chapter-plan prompt now gives a new person a lowercase id even when cards exist. (#93)
 - **The cast-card prompt lists each scene title once.** A scene that cast the same person twice appeared twice under that person's scenes. (#97)
+
+## [0.12.2] - 2026-10-07
+
+### Fixed
+
 - **Fact-sheet fields the model left blank are not asked for on every run.** When one field stayed blank, `draft generate --all` sent a proposal request for that scene on every run, even when the draft was kept from the cache. The blank fields are now remembered in the git-ignored cache (`.storyboard/cache/grounding-gaps.json`) and not asked for again until the scene text, its fact sheet or its cast changes.
 - **`novel generate` runs to the end on an empty work.** The chapter plan cast people who had no card, so the first scene failed with "등장인물을 찾을 수 없습니다" (no characters found). A new `characters` stage after the outline now writes a card for each cast member who has none in one model call, leaves existing cards alone, and calls nothing when the cast is complete. The stage cannot be switched off. A `pipelines/novel.yaml` that does not name `characters` keeps its order and runs it right after `outline`.
 - **Running `novel generate` again no longer rebuilds the outline and the scene cards.** The CLI started a failed or cut-off run from the beginning, so it made a new outline and wrote the same scenes again under other names (`01-sc-1-1` and `01-scene-1-1`). It now continues the interrupted run, and at a terminal or in the TUI asks whether to continue or start over. Agents, pipes and `--json` continue without asking. Starting over still keeps the outline and the scene cards that exist. A scene card is known by its number, so one renamed or given another prefix width still stands for its scene. A run left "running" by a process that died counts as interrupted when no app holds the run lock, in the desktop app and the extension too.
