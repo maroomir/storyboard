@@ -1,0 +1,15 @@
+type: character
+id: jun
+name: 준
+profile: profile/jun.png
+role: supporting
+attributes: {}
+tags: []
+traits: []
+description:
+  - 모의 조연
+voice: []
+desire: []
+relations: []
+arc: []
+recentDialogues: []

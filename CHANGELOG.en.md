@@ -14,6 +14,7 @@ after the first public release.
 
 - **Releases now run a build verification test (BVT).** After lint and the unit tests, and before any installer is built, a pushed tag runs `npm run bvt`. The first step is the diff contracts: a change since the previous tag that lacks its mandatory companion (source ↔ both changelogs, a prompt resource ↔ its generated module, a params file ↔ its schema and table row, the config schema ↔ a settings test, desktop `ko.ts` ↔ `en.ts`, `.claude/rules` ↔ `.cursor/rules`, a version bump ↔ its changelog section) keeps the release in draft.
 - **The second BVT step is the impact map.** Only the checks of the areas the changed files belong to (`bvt/impactMap.json`) run: their focused tests, plus what lint and the unit tests never covered — the extension, webview, CLI and desktop bundles, the generated prompt module, the workflow YAML. A changed file that belongs to no area fails the run, so a new folder gets its row first.
+- **The third BVT step is the golden workspaces.** The built CLI writes a linear, an omnibus and an alternating-POV work end to end with the `mock` provider, and every file the work would commit is compared with the snapshot under `bvt/golden/` (timestamps, ids, hashes and the version masked). A work an earlier release wrote is reopened and read and assembled, and must come back unchanged. An intended format change is approved with `npm run bvt:golden -- --update` and the snapshot diff in the same commit.
 
 ## [0.12.2] - 2026-10-07
 

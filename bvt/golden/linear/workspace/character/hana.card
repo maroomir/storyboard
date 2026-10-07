@@ -1,0 +1,15 @@
+type: character
+id: hana
+name: 하나
+profile: profile/hana.png
+role: main
+attributes: {}
+tags: []
+traits: []
+description:
+  - 모의 주인공
+voice: []
+desire: []
+relations: []
+arc: []
+recentDialogues: []

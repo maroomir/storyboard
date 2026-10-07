@@ -49,6 +49,12 @@ jobs. Its steps are also separate scripts:
   such as the bundles and the prompt-resource check. A changed file that belongs to no area fails
   the run; give it a row. `node scripts/bvt/runImpactMap.mjs v0.12.1 --plan` prints the plan for
   another range without running it.
+- `npm run bvt:golden` — golden workspaces (`bvt/golden/`): the built CLI drives each scenario in
+  `scenarios.json` with the `mock` provider and every file the work would commit is compared with
+  the snapshot, with timestamps, ids, hashes and the version masked on both sides. The `reopen`
+  scenarios open a frozen workspace an earlier release wrote and must leave it unchanged. When a
+  difference is intended, run `npm run bvt:golden -- --update`, read the snapshot diff, and commit
+  it with the change.
 
 Reproduce the artifacts:
 

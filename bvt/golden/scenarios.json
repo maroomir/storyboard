@@ -1,0 +1,26 @@
+{
+  "$comment": "Each scenario is a workspace the built CLI drives with the mock provider, compared file by file with its snapshot under bvt/golden/<id>/. A `fresh` scenario starts from `init` with the given flags and runs the whole novel pipeline; a `reopen` scenario starts from the frozen workspace an earlier release wrote (never updated by --update) and runs the read-only and cache-driven verbs on it, so the candidate proves it can still open what is already on a writer's disk. `mayRewrite` names the files a reopen is allowed to change.",
+  "scenarios": [
+    {
+      "id": "linear",
+      "kind": "fresh",
+      "init": ["--genre", "미스터리", "--audience", "성인", "--pov", "third-limited", "--target-words", "6000", "--chapters", "2", "--scenes-per-chapter", "2", "--concept", "짧은 골든 작품"]
+    },
+    {
+      "id": "omnibus",
+      "kind": "fresh",
+      "init": ["--composition", "omnibus", "--episodes", "2", "--chapters", "2", "--scenes-per-chapter", "1", "--pov", "first"]
+    },
+    {
+      "id": "alternating-pov",
+      "kind": "fresh",
+      "init": ["--composition", "alternating-pov", "--pov-characters", "hana,jun", "--chapters", "2", "--scenes-per-chapter", "1"]
+    },
+    {
+      "id": "reopen-0.12.2",
+      "kind": "reopen",
+      "from": "frozen/0.12.2-linear",
+      "mayRewrite": []
+    }
+  ]
+}

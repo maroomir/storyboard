@@ -30,3 +30,14 @@ in `bvt/`, and each step is also its own script:
   new folder gets its row before it ships. `--plan` prints the checks without running them. An
   area's checks are the focused tests of what it changes plus what `verify` does not run: the
   bundles, the prompt-resource check, the workflow YAML parse.
+- `bvt:golden` — **golden workspaces** (`bvt/golden/scenarios.json`, `scripts/bvt/runGolden.mjs`):
+  the built CLI drives each scenario with the `mock` provider (deterministic, free) and every
+  file the work would commit is compared with the snapshot under `bvt/golden/<id>/`, after both
+  sides mask what is minted per run (timestamps, uuids, content hashes, the version string). A
+  `fresh` scenario runs `init` → `setup` → `novel generate` → `manuscript export` → `status`; a
+  `reopen` scenario copies a **frozen** workspace an earlier release wrote (`bvt/golden/frozen/`,
+  never rewritten by `--update`) and runs the reading and assembling verbs on it, so the candidate
+  proves it still opens what is on a writer's disk unchanged. An intended format change is
+  approved by `npm run bvt:golden -- --update` and the snapshot diff in the same commit; a new
+  frozen workspace is a copy of a fresh snapshot's `workspace/` made at a release and a `reopen`
+  row pointing at it.

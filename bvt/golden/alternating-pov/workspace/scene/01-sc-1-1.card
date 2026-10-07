@@ -1,0 +1,15 @@
+type: scene
+id: 01-sc-1-1
+title: 첫 만남
+characters:
+  - hana
+grounding:
+  incident: 모의 사건
+  place: 모의 장소
+  relation: 모의 관계
+  time: 모의 시점
+purpose: 두 사람이 만난다
+beats:
+  - 모의 비트 하나
+  - 모의 비트 둘
+  - 모의 비트 셋

@@ -83,6 +83,9 @@ jobs:
       - name: Impact map
         run: npm run bvt:impact
 
+      - name: Golden workspaces
+        run: npm run bvt:golden
+
   # Installers are built on the platform they are for. Signing and notarization switch on only when
   # their secrets exist; without them the installers are unsigned but still ship.
   desktop:

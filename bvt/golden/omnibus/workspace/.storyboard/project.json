@@ -1,0 +1,29 @@
+{
+  "version": "1.0.0",
+  "id": "9d056a17-44f6-450d-88f3-63794ea6ae38",
+  "name": "골든 omnibus",
+  "format": "novel",
+  "language": "ko",
+  "createdAt": "2026-10-07T21:38:10.362Z",
+  "editor": {
+    "scenePrefixDigits": 2
+  },
+  "setting": {
+    "tags": [],
+    "pov": "first",
+    "composition": "omnibus",
+    "threads": {
+      "ep1": {
+        "title": "1편"
+      },
+      "ep2": {
+        "title": "2편"
+      }
+    },
+    "chapterCount": 2,
+    "scenesPerChapter": 1,
+    "prohibitions": [],
+    "styleConstraints": [],
+    "qualityCriteria": []
+  }
+}

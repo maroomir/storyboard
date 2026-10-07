@@ -1,0 +1,16 @@
+type: scene
+id: 02-sc-1-2
+title: 엇갈림
+characters:
+  - hana
+  - jun
+grounding:
+  incident: 모의 사건
+  place: 모의 장소
+  relation: 모의 관계
+  time: 모의 시점
+purpose: 오해가 생긴다
+beats:
+  - 모의 비트 하나
+  - 모의 비트 둘
+  - 모의 비트 셋

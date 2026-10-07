@@ -21,8 +21,9 @@
     "desktop:dev": "npm run dev --workspace @storyboard/desktop",
     "desktop:package": "npm run package --workspace @storyboard/desktop",
     "version:sync": "node scripts/sync-version.mjs",
-    "bvt": "npm run bvt:contracts && npm run bvt:impact",
+    "bvt": "npm run bvt:contracts && npm run bvt:impact && npm run bvt:golden",
     "bvt:contracts": "node scripts/bvt/checkDiffContracts.mjs",
-    "bvt:impact": "node scripts/bvt/runImpactMap.mjs"
+    "bvt:impact": "node scripts/bvt/runImpactMap.mjs",
+    "bvt:golden": "npm run cli:build && node scripts/bvt/runGolden.mjs"
   }
 }

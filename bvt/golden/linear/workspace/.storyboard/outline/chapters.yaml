@@ -1,0 +1,23 @@
+version: 1.0.0
+acts:
+  - id: act-1
+    title: 1막
+    chapters:
+      - id: chapter-1-1
+        title: 1장
+        scenes:
+          - id: sc-1-1
+            title: 첫 만남
+            purpose: 두 사람이 만난다
+            characters:
+              - hana
+            foreshadowing: []
+            neededCanon: []
+          - id: sc-1-2
+            title: 엇갈림
+            purpose: 오해가 생긴다
+            characters:
+              - hana
+              - jun
+            foreshadowing: []
+            neededCanon: []
