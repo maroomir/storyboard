@@ -13,10 +13,12 @@ import {
   type AiTaskName,
   formatSceneOrderRanges,
   findUnreadableStoryStateLines,
+  flattenChapterPlan,
   mainThreadId,
   parseSceneFileName,
   parseSceneRenameJournal,
   parseSceneStem,
+  readChapterPlanFile,
   readMissingGitignoreEntries,
   type SceneCard,
   type StoryboardProject,
@@ -332,6 +334,7 @@ async function collectNarrationChecks(
       narrator.focal === undefined && (narrator.person === 'first' || narrator.person === 'second'),
   );
   const unreadableLedgerLines = await findUnreadableLedgerLines(container, project);
+  const narrationlessScenes = await findNarrationlessScenes(container, sceneCards, project);
 
   return [
     ...(narrators.size > 0
@@ -372,6 +375,16 @@ async function collectNarrationChecks(
           },
         ]
       : []),
+    ...(narrationlessScenes.length > 0
+      ? [
+          {
+            status: 'warn' as const,
+            label: '시점',
+            detail: `povCharacter 가 있는 씬 ${narrationlessScenes.length}개에 시점이 없습니다 (예: ${narrationlessScenes[0]}). 작품 계약의 pov 도 서술자도 없으면 시점 지시 없이 생성돼 3인칭으로 흐릅니다.`,
+            fix: 'storyboard project set --pov first',
+          },
+        ]
+      : []),
     ...(unreadableLedgerLines.length > 0
       ? [
           {
@@ -383,6 +396,32 @@ async function collectNarrationChecks(
         ]
       : []),
   ];
+}
+
+// NOTE: 시점은 씬 > 장 > 작품 기본 순으로 정해지고 아무것도 없으면 프롬프트에 시점 지시가 나가지
+// 않는다(기존 작품 보호). 초점 인물까지 적어 둔 씬이 그 길로 가면 작가의 뜻과 달리 3인칭이 되므로
+// 미리 알린다.
+async function findNarrationlessScenes(
+  container: CliContainer,
+  sceneCards: readonly { readonly fileName: string; readonly card: SceneCard }[],
+  project: StoryboardProject | undefined,
+): Promise<string[]> {
+  if (project?.setting?.pov !== undefined || project?.setting?.narration?.defaultNarrator) {
+    return [];
+  }
+
+  const paths = getStoryboardProjectPaths(container.workspaceRoot);
+  const chapterNarrators = await readChapterPlanFile(paths.outlineChapters, container.fileSystem)
+    .then((plan) => flattenChapterPlan(plan).map((placement) => placement.chapterNarrator))
+    .catch(() => [] as (string | undefined)[]);
+
+  return sceneCards
+    .filter(({ card }) => card.povCharacter !== undefined && card.narrator === undefined)
+    .filter(({ card }) => {
+      const order = parseSceneStem(card.id)?.order;
+      return order === undefined || chapterNarrators[order - 1] === undefined;
+    })
+    .map(({ card }) => card.id);
 }
 
 // 줄기별 원장까지 함께 본다. 편이 갈린 작품에서 깨진 줄이 기본 원장에만 있으리라는 보장이 없다.

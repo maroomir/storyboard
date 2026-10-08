@@ -18,7 +18,7 @@ describe("SceneSkeletonPrompt golden", () => {
     endState: "준이 문을 닫고 나간다.",
     grounding: { incident: "편지가 도착했다", place: "부두 창고" },
     style: {
-      narration: { tense: "present", focal: "하나" },
+      narration: { person: "first", knowledge: "witnessed", tense: "present", focal: "하나", voice: ["건조한 단문"] },
       genre: "로맨스",
       relationStage: "냉전",
       craftContract: { banTelling: false, actionClarity: true }

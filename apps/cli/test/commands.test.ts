@@ -655,6 +655,21 @@ describe('pre-0.8 workspace repair', () => {
     expect(outcome.message).toContain('비트 없는 씬이 1개');
     expect(outcome.message).toContain('storyboard scene plot --all');
   });
+
+  it('warns about a povCharacter scene the work gives no narration to', async () => {
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      ['type: scene', 'id: 01-first', 'povCharacter: hana', 'beats:', '  - 하나가 문을 연다.', ''].join('\n'),
+    );
+
+    const before = await run('doctor', args(['doctor']));
+    expect(before.message).toContain('povCharacter 가 있는 씬 1개에 시점이 없습니다');
+    expect(before.message).toContain('storyboard project set --pov first');
+
+    await run('project set', args(['project', 'set'], { pov: 'first' }));
+    const after = await run('doctor', args(['doctor']));
+    expect(after.message).not.toContain('시점이 없습니다');
+  });
 });
 
 describe('git repository', () => {
