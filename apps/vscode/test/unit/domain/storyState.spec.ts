@@ -14,6 +14,7 @@ import {
   mergeStoryState,
   sealStoryState,
   parseStoryState,
+  selectCharacterKnowledge,
   readStoryState,
   serializeStoryState,
   storyStateSceneOrders,
@@ -200,6 +201,29 @@ describe("formatStoryStateForPrompt", () => {
 
   it("returns undefined for an empty state", () => {
     expect(formatStoryStateForPrompt(createEmptyStoryState())).toBeUndefined()
+  })
+})
+
+describe("selectCharacterKnowledge", () => {
+  it("gives a character the facts and reveals it witnessed, before this scene, plus untagged ones", () => {
+    const state = parseStoryState(
+      [
+        "# 이야기 상태",
+        "## 확정 사실",
+        "- [1|hana] 하나만 본 일",
+        "- [1|jun] 준만 본 일",
+        "- [1] 태그 없는 옛 항목",
+        "- [3|hana] 뒤 씬의 일",
+        "## 공개된 정보",
+        "- [2|hana,jun] 둘이 들은 일",
+        "## 살아 있는 모티프",
+        "- [1|hana] 모티프는 지식이 아니다",
+        ""
+      ].join("\n")
+    )
+
+    expect(selectCharacterKnowledge(state, "hana", 3)).toEqual(["하나만 본 일", "태그 없는 옛 항목", "둘이 들은 일"])
+    expect(selectCharacterKnowledge(state, "jun", 3)).toEqual(["준만 본 일", "태그 없는 옛 항목", "둘이 들은 일"])
   })
 })
 

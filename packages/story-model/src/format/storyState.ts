@@ -347,6 +347,31 @@ function compactForOverlap(text: string): string {
   return text.toLowerCase().replace(/[^0-9a-z가-힣]+/g, '');
 }
 
+// NOTE: 인물별 «아는 것». 초점 필터는 서술자 한 명에게만 걸리고 대화하는 나머지 인물에게는 원장
+// 전체가 보였다. 뼈대·다듬기가 인물마다 이것만 보게 하면 «아직 못 들은 사실을 말하는» 경계 위반을
+// 지시문이 아니라 재료로 막는다. 목격자가 없는 구 항목은 판정할 수 없으므로 모두에게 보인다.
+const characterKnowledgeSections: readonly StoryStateSection[] = ['facts', 'revealed'];
+const characterKnowledgeBudget = 8;
+
+export function selectCharacterKnowledge(
+  state: StoryState,
+  characterId: string,
+  beforeSceneOrder: number | undefined,
+  sceneText?: string,
+): string[] {
+  const visible = state.entries.filter(
+    (entry) =>
+      characterKnowledgeSections.includes(entry.section) &&
+      entry.isStale !== true &&
+      (beforeSceneOrder === undefined ||
+        entry.throughScene === undefined ||
+        entry.throughScene < beforeSceneOrder) &&
+      isWitnessedBy(entry, { focal: characterId }),
+  );
+
+  return selectWithinBudget(visible, sceneText, characterKnowledgeBudget).map((entry) => entry.text);
+}
+
 // 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 항목을 주입에서 뺀다.
 export interface StoryStateFocalFilter {
   readonly focal: string;

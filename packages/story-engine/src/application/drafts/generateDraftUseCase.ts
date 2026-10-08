@@ -266,6 +266,7 @@ async function runAndPersistDraft(
       ),
       previousContext,
       canonFactLines: inputs.canonFactLines,
+      characterKnowledge: inputs.characterKnowledge,
       providers: pipelineProviders,
       onProgress: (stage, current, total): void => {
         if (options.shouldCancel?.()) {

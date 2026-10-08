@@ -739,6 +739,25 @@ describe("buildNarrativeContext", () => {
     expect(result.prompt?.indexOf("[이야기 상태]")).toBeLessThan(result.prompt?.indexOf("[설정 메모]") ?? -1)
   })
 
+  it("hands each character only what it witnessed as its knowledge", async () => {
+    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(
+      statePath,
+      "# 이야기 상태\n<!-- through-scene: 1 -->\n## 확정 사실\n- [1|elia] 엘리아가 편지를 숨겼다\n- [1|jihoon] 지훈이 열쇠를 주웠다\n"
+    )
+    const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
+
+    const result = await buildNarrativeContext(
+      { ...basePaths, storyState: statePath },
+      { scene: secondScene, characters: [eliaCard, jihoonCard] },
+      fileSystem
+    )
+
+    expect(result.characterKnowledge?.get(eliaCard.name)).toEqual(["엘리아가 편지를 숨겼다"])
+    expect(result.characterKnowledge?.get(jihoonCard.name)).toEqual(["지훈이 열쇠를 주웠다"])
+  })
+
   it("skips the story state ledger for the first scene", async () => {
     const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()
