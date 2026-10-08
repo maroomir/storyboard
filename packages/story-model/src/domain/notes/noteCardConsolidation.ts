@@ -404,6 +404,19 @@ function narrowCardPlan(cardPlan: NoteCardPlan, kept: KeptValues): NoteCardPlan 
   return { ...cardPlan, changes: cardPlan.changes.filter(isKept) };
 }
 
+// Both items stay on the card: a one-shot import has nobody to ask, so the author is told instead.
+function describeConflicts(
+  target: NoteConsolidationTarget,
+  answer: NoteConsolidatedLists,
+): string[] {
+  return (answer.conflicts ?? []).map(
+    (conflict) =>
+      `${target.name} 의 ${conflict.field} 후보가 서로 맞지 않습니다: ${conflict.items
+        .map((item) => `«${item}»`)
+        .join(' / ')}. 둘 다 남겼으니 카드를 확인해 하나를 지우세요.`,
+  );
+}
+
 export function applyNoteConsolidation(
   plan: NoteAbsorbPlan,
   targets: readonly NoteConsolidationTarget[],
@@ -418,6 +431,7 @@ export function applyNoteConsolidation(
 
     if (answer !== undefined) {
       keptById.set(target.cardId, narrowTargetValues(target, answer, warnings));
+      warnings.push(...describeConflicts(target, answer));
     }
   }
 

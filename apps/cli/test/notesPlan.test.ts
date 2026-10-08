@@ -958,6 +958,33 @@ describe('note card consolidation', () => {
     ]);
   });
 
+  it('reads the conflicts the model reports and warns about them', () => {
+    const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
+    const answer = readNoteConsolidationResponse(
+      {
+        cards: [
+          {
+            id: 'jo-manjae',
+            traits: [['허세가 심함']],
+            conflicts: [
+              { field: 'traits', items: ['허세가 심함', '겸손함'] },
+              { field: 'nope', items: ['a', 'b'] },
+              { field: 'tags', items: ['하나뿐'] },
+            ],
+          },
+        ],
+      },
+      false,
+    );
+
+    expect(answer.consolidated[0]?.conflicts).toEqual([{ field: 'traits', items: ['허세가 심함', '겸손함'] }]);
+
+    const { warnings } = applyNoteConsolidation(twoReadings, targets, answer.consolidated);
+    expect(warnings).toContainEqual(
+      '조만재 의 traits 후보가 서로 맞지 않습니다: «허세가 심함» / «겸손함». 둘 다 남겼으니 카드를 확인해 하나를 지우세요.',
+    );
+  });
+
   it('keeps the first item of each group and every candidate the groups left out', () => {
     const targets = selectNoteConsolidationTargets(twoReadings, chunkByNoteId, []);
     const answer = readNoteConsolidationResponse(
