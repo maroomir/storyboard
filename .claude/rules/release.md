@@ -36,8 +36,10 @@ in `bvt/`, and each step is also its own script:
   sides mask what is minted per run (timestamps, uuids, content hashes, the version string). A
   `fresh` scenario runs `init` → `setup` → `novel generate` → `manuscript export` → `status`; a
   `reopen` scenario copies a **frozen** workspace an earlier release wrote (`bvt/golden/frozen/`,
-  never rewritten by `--update`) and runs the reading and assembling verbs on it, so the candidate
-  proves it still opens what is on a writer's disk unchanged. An intended format change is
+  never rewritten by `--update`) and runs the reading and assembling verbs on it plus
+  `draft generate --all`, which must generate nothing (the git-ignored cache is absent, so the
+  committed story-state ledger is what says each draft is current), so the candidate proves it
+  still opens what is on a writer's disk unchanged. An intended format change is
   approved by `npm run bvt:golden -- --update` and the snapshot diff in the same commit; a new
   frozen workspace is a copy of a fresh snapshot's `workspace/` made at a release and a `reopen`
   row pointing at it.

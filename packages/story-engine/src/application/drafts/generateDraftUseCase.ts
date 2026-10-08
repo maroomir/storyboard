@@ -1,6 +1,4 @@
-import type { IFileSystem } from '#engine/ports/fileSystem';
 import type { StoryUri, BackgroundCard, AiProviderId, AiTaskName } from '@storyboard/story-model';
-import type { ISceneCacheRepository } from '#engine/application/drafts/draftRepositories';
 import {
   draftHistorySceneDirectory,
   joinUri,
@@ -11,6 +9,7 @@ import {
   serializeDraft,
   buildStyleDirective,
   archiveExistingDraft,
+  readStoryState,
   type SceneCacheRecord,
 } from '@storyboard/story-model';
 import {
@@ -58,20 +57,24 @@ function toBackgroundSnapshot(
   };
 }
 
+// NOTE: 씬 캐시는 작품의 .gitignore가 무시하므로 git으로 받은 작품에는 없다. 그때는 커밋되는 이야기
+// 상태 원장이 그 씬을 마지막으로 생성한 입력 해시를 대신 근거로 삼는다. 캐시가 있으면 캐시가 우선이다.
 async function isCacheHit(
-  fileSystem: IFileSystem,
-  cacheUri: StoryUri,
-  draftUri: StoryUri,
-  inputHash: string,
-  sceneCacheRepository: ISceneCacheRepository,
+  inputs: SceneGenerationInputs,
+  options: GenerateDraftWorkflowOptions,
 ): Promise<boolean> {
-  if (!(await fileSystem.exists(cacheUri)) || !(await fileSystem.exists(draftUri))) {
+  if (!(await options.fileSystem.exists(inputs.draftUri))) {
     return false;
   }
 
+  if (!(await options.fileSystem.exists(inputs.cacheUri))) {
+    const ledger = await readStoryState(inputs.threadPaths.storyState, options.fileSystem);
+    return ledger.sceneInputHashes.get(inputs.scene.order) === inputs.inputHash;
+  }
+
   try {
-    const record = await sceneCacheRepository.read(cacheUri);
-    return record.inputHash === inputHash;
+    const record = await options.sceneCacheRepository.read(inputs.cacheUri);
+    return record.inputHash === inputs.inputHash;
   } catch {
     return false;
   }
@@ -310,13 +313,7 @@ async function generateDraftForWorkspaceSceneWorkflow(
 
   if (
     !options.force &&
-    (await isCacheHit(
-      options.fileSystem,
-      inputs.cacheUri,
-      inputs.draftUri,
-      inputs.inputHash,
-      options.sceneCacheRepository,
-    ))
+    (await isCacheHit(inputs, options))
   ) {
     return await openCachedDraft(inputs.draftUri);
   }

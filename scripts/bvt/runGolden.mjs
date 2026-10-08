@@ -110,8 +110,9 @@ function runFresh(scenario) {
 }
 
 // A reopen scenario copies the frozen workspace, makes it a repository (a writer's is), and runs
-// the verbs that read a work and build from it; the files must come back as they went in. (A
-// generating verb is not run here: without the git-ignored cache it cannot tell a draft is current.)
+// the verbs that read a work and build from it; the files must come back as they went in. That
+// includes `draft generate --all`: without the git-ignored cache it must still see from the
+// committed story-state ledger that every draft is current, and generate nothing.
 function runReopen(scenario) {
   const { scratch, home, workspace } = makeScratch(scenario.id);
   const frozenRoot = path.join(goldenRoot, scenario.from, 'workspace');
@@ -133,6 +134,10 @@ function runReopen(scenario) {
   }
   runCli(workspace, home, ['project', 'show']);
   runCli(workspace, home, ['card', 'list']);
+  const batch = JSON.parse(runCli(workspace, home, ['draft', 'generate', '--all', '--json'])).data;
+  if (batch.generated !== 0) {
+    throw new Error(`${scenario.id}: draft generate --all regenerated ${batch.generated} current draft(s)`);
+  }
   runCli(workspace, home, ['manuscript', 'assemble']);
   runCli(workspace, home, ['manuscript', 'export', '--out', path.join(scratch, 'manuscript.md')]);
 

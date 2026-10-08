@@ -1,5 +1,5 @@
 {
-  "$comment": "Each scenario is a workspace the built CLI drives with the mock provider, compared file by file with its snapshot under bvt/golden/<id>/. A `fresh` scenario starts from `init` with the given flags and runs the whole novel pipeline; a `reopen` scenario starts from the frozen workspace an earlier release wrote (never updated by --update) and runs the read-only and cache-driven verbs on it, so the candidate proves it can still open what is already on a writer's disk. `mayRewrite` names the files a reopen is allowed to change.",
+  "$comment": "Each scenario is a workspace the built CLI drives with the mock provider, compared file by file with its snapshot under bvt/golden/<id>/. A `fresh` scenario starts from `init` with the given flags and runs the whole novel pipeline; a `reopen` scenario starts from the frozen workspace an earlier release wrote (never updated by --update) and runs the read-only verbs and `draft generate --all` on it (which must generate nothing, since the committed story-state ledger says every draft is current), so the candidate proves it can still open what is already on a writer's disk. `mayRewrite` names the files a reopen is allowed to change.",
   "scenarios": [
     {
       "id": "linear",

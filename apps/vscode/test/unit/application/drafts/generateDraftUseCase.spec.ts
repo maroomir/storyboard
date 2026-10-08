@@ -346,6 +346,61 @@ describe("GenerateDraftUseCase", () => {
       expect(sceneCacheRepository.write).not.toHaveBeenCalled()
     })
 
+    // #100: 씬 캐시는 gitignore 대상이라 git으로 받은 작품에는 없다. 커밋되는 원장의 입력 해시가
+    // 같으면 그대로인 초안을 다시 생성하지 않는다.
+    describe("without a scene cache", () => {
+      const groundedHash = computeSceneInputHash({
+        sceneBody: fakeScene.body,
+        characters: [primaryCharacterCard, secondaryCharacterCard] as never,
+        background: sceneBackgroundCard as never,
+        format: fakeProject.format as never,
+        bibleFacts: [],
+        sceneBreakJoiner: undefined,
+        grounding: { incident: "제안된 사건" }
+      })
+
+      function clonedWorkspaceFileSystem(ledgerInputHash: string): IFileSystem {
+        const ledger = `# 이야기 상태\n<!-- through-scene: 1 -->\n<!-- scene-input: 1 ${ledgerInputHash} -->\n`
+        return {
+          ...stubFileSystem,
+          exists: async (uri) => !uri.path.includes("/.storyboard/cache/"),
+          readFile: async (uri): Promise<Uint8Array> => {
+            if (uri.path.endsWith("/storyState.md")) {
+              return new TextEncoder().encode(ledger)
+            }
+            throw new Error(`not found: ${uri.path}`)
+          }
+        }
+      }
+
+      it("keeps the draft when the ledger recorded the same input hash", async () => {
+        const sceneCacheRepository = createSceneCacheRepository()
+        const draftRepository = createDraftRepository()
+        const dependencies = createDependencies({
+          sceneCacheRepository,
+          draftRepository,
+          fileSystem: clonedWorkspaceFileSystem(groundedHash)
+        })
+
+        const result = await execute(dependencies, createRequest({ force: false }))
+
+        expect(result).toMatchObject({ ok: true, kind: "cache_hit" })
+        expect(pipelineRunMock).not.toHaveBeenCalled()
+        expect(draftRepository.write).not.toHaveBeenCalled()
+      })
+
+      it("regenerates when the ledger recorded a different input hash", async () => {
+        const dependencies = createDependencies({
+          fileSystem: clonedWorkspaceFileSystem(`sha256:${"0".repeat(64)}`)
+        })
+
+        const result = await execute(dependencies, createRequest({ force: false }))
+
+        expect(result).toMatchObject({ ok: true, kind: "generated" })
+        expect(pipelineRunMock).toHaveBeenCalledTimes(1)
+      })
+    })
+
     // force는 캐시 적중 판정을 건너뛴다. 덮어쓰기 전 출처 판정은 그와 별개로 여전히 수행하므로
     // 여기서 캐시 기록을 읽는 것 자체는 정상이다 — 읽지 않으면 남이 쓴 초안을 보관 없이 지운다.
     it("bypasses the cache hit shortcut and regenerates when force is true", async () => {
