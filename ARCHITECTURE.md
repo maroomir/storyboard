@@ -564,7 +564,7 @@ Picktion 웹앱의 단일 아카이브(`.picktion`)와 달리, Storyboard는 **�
   },
   "backgroundSnapshot": { "id": "school", "name": "학교 정문" },
   "previousContext": "...",
-  "providers": { "situationExtraction": "openai", "personaDialogue": "claude" },
+  "providers": { "sceneSkeleton": "openai", "sceneDialoguePolish": "claude" },
   "inputHash": "sha256:..."
 }
 ```

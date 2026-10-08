@@ -10,12 +10,11 @@ import {
 } from '@storyboard/story-model';
 import {
   GenreFormattingPrompt,
-  PersonaDialoguePrompt,
+  SceneDialoguePolishPrompt,
   PersonaGenerationPrompt,
 } from '@storyboard/story-ai';
 import type {
   StyleDirective,
-  Background,
   Character,
   ProjectSetting,
 } from '@storyboard/story-model';
@@ -30,16 +29,6 @@ const character: Character = {
   role: "main",
   description: ["허세덩어리"],
   traits: []
-}
-
-const background: Background = {
-  type: "location",
-  id: "home",
-  name: "집",
-  locationKind: "place",
-  description: [],
-  characterIds: [],
-  tags: []
 }
 
 describe("buildStyleDirective", () => {
@@ -192,15 +181,13 @@ describe("prompt injection", () => {
     expect(persona.system).not.toContain("서술 시점:")
   })
 
-  it("persona dialogue reflects tone but not narrative pov", () => {
-    const dialogue = PersonaDialoguePrompt.build(
-      "조만재가 문을 연다.",
-      new Map([["조만재", "나는 세기의 철학자다."]]),
-      background,
-      undefined,
-      "generic",
-      directive
-    )
+  it("dialogue polish reflects tone but not narrative pov", () => {
+    const dialogue = SceneDialoguePolishPrompt.build({
+      numberedSkeleton: "조만재가 문을 연다. ⟨1⟩“이 몸이 왔다.”",
+      character: { name: "조만재", persona: "나는 세기의 철학자다." },
+      otherCharacters: [],
+      style: directive
+    })
     expect(dialogue.system).toContain("장르·톤: 허세 코미디")
     expect(dialogue.system).not.toContain("서술 시점:")
   })

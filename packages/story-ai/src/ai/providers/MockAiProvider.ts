@@ -58,8 +58,6 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
           situation: extractSceneInput(promptSummary),
         },
       ]);
-    case 'personaDialogue':
-      return createMockPersonaOrDialogue(promptSummary);
     case 'sceneDraft':
       return [`[Mock AI: ${taskName}]`, extractDraftInput(promptSummary)].join('\n');
     case 'traitsExtraction':
@@ -192,20 +190,6 @@ function extractSceneInput(prompt: string): string {
       : prompt.slice(inputStart, outputMarkerIndex);
 
   return input.trim() || '모의 상황';
-}
-
-function createMockPersonaOrDialogue(prompt: string): string {
-  if (prompt.includes('캐릭터 정보를 바탕으로 1인칭 페르소나')) {
-    return '나는 모의 응답으로 생성된 캐릭터 페르소나다. 상황에 맞춰 일관되게 말하고 행동한다.';
-  }
-
-  const speaker = extractFirstPersonaName(prompt) ?? '화자';
-  return `${speaker}: "모의 초안 생성을 위한 대사입니다."\n${speaker}는 현재 상황을 차분히 받아들였다.`;
-}
-
-function extractFirstPersonaName(prompt: string): string | undefined {
-  const match = /^\[([^\]]+)\]$/m.exec(prompt);
-  return match?.[1]?.trim();
 }
 
 function extractDraftInput(prompt: string): string {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import { craftContractLines, sceneGroundingLines } from '@storyboard/story-model';
-import { PersonaDialoguePrompt, SceneGroundingPrompt } from '@storyboard/story-ai';
+import { SceneGroundingPrompt, SceneSkeletonPrompt } from '@storyboard/story-ai';
 import type { Background } from '@storyboard/story-model';
 
 const background: Background = {
@@ -42,16 +42,13 @@ describe("scene grounding prompt lines", () => {
     ])
   })
 
-  it("puts confirmed facts into the dialogue prompt", () => {
-    const artifact = PersonaDialoguePrompt.build(
-      "서하가 문 앞에 선다",
-      new Map([["윤서하", "지친 사람"]]),
+  it("puts confirmed facts into the skeleton prompt", () => {
+    const artifact = SceneSkeletonPrompt.build({
+      narrativeSource: "서하가 문 앞에 선다",
+      personas: new Map([["윤서하", "지친 사람"]]),
       background,
-      undefined,
-      "generic",
-      undefined,
-      { incident: "임용시험 면접에서 떨어졌다" }
-    )
+      grounding: { incident: "임용시험 면접에서 떨어졌다" }
+    })
 
     expect(artifact.user).toContain("[이 장면의 확정 사실]")
     expect(artifact.user).toContain("- 사건: 임용시험 면접에서 떨어졌다")
@@ -105,13 +102,11 @@ describe("craft contract lines", () => {
   })
 
   it("reaches the generation prompt even without a style directive", () => {
-    const artifact = PersonaDialoguePrompt.build(
-      "서하가 문 앞에 선다",
-      new Map(),
-      background,
-      undefined,
-      "generic"
-    )
+    const artifact = SceneSkeletonPrompt.build({
+      narrativeSource: "서하가 문 앞에 선다",
+      personas: new Map(),
+      background
+    })
 
     expect(artifact.system).toContain("다시 설명하지 마라")
   })

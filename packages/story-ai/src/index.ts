@@ -32,7 +32,6 @@ export * from './ai/prompts/noteCardConsolidation';
 export * from './ai/prompts/noteSynthesis';
 export * from './ai/prompts/outlineCharacters';
 export * from './ai/prompts/outlineSynopsis';
-export * from './ai/prompts/personaDialogue';
 export * from './ai/prompts/personaGeneration';
 export * from './ai/prompts/promptResource';
 export * from './ai/prompts/promptTuning';
