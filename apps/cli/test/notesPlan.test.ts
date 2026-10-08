@@ -981,7 +981,7 @@ describe('note card consolidation', () => {
 
     const { warnings } = applyNoteConsolidation(twoReadings, targets, answer.consolidated);
     expect(warnings).toContainEqual(
-      '조만재 의 traits 후보가 서로 맞지 않습니다: «허세가 심함» / «겸손함». 둘 다 남겼으니 카드를 확인해 하나를 지우세요.',
+      '조만재 의 성격(traits) 후보가 서로 맞지 않습니다: «허세가 심함» / «겸손함». 둘 다 남겼으니 카드를 확인해 하나를 지우세요.',
     );
   });
 
