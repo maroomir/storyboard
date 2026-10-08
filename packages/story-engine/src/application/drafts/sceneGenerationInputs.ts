@@ -41,6 +41,7 @@ export interface SceneGenerationInputs {
   readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
   readonly previousContext: string | undefined;
   readonly canonFactLines: readonly string[];
+  readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
   readonly sceneBreakJoiner: string | undefined;
   readonly inputHash: string;
   readonly warnings: readonly string[];
@@ -212,6 +213,7 @@ export async function loadSceneGenerationInputs(
       project,
       context,
       previousContext,
+      characterKnowledge: contextResult.characterKnowledge,
       canonFactLines: contextResult.canonFactLines,
       sceneBreakJoiner,
       inputHash,
@@ -230,6 +232,7 @@ type SceneContextBundleResult =
       readonly context: Awaited<ReturnType<typeof buildSceneContext>>;
       readonly previousContext: string | undefined;
       readonly canonFactLines: readonly string[];
+      readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
       readonly sceneBreakJoiner: string | undefined;
       readonly inputHash: string;
       readonly warnings: readonly string[];
@@ -350,6 +353,7 @@ async function loadSceneContextBundle(
     context,
     previousContext: narrativeContext.prompt,
     canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
+    characterKnowledge: narrativeContext.characterKnowledge,
     sceneBreakJoiner,
     inputHash,
     warnings: [memoryAudit.staleWarning, chapterAudit.staleWarning].filter(

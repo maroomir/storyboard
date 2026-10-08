@@ -24,6 +24,8 @@ import { detectCharactersInText } from './characterDetector';
 import {
   formatStoryStateForPrompt,
   readStoryState,
+  selectCharacterKnowledge,
+  type StoryState,
   type StoryStateFocalFilter,
 } from './storyState';
 import { stripForeignScript } from './foreignScript';
@@ -207,6 +209,8 @@ async function readPreviousDraftTail(
 export interface NarrativeContext {
   readonly bibleFacts: readonly BibleFact[];
   readonly prompt?: string;
+  // 인물 이름 → 이 씬 이전에 그 인물이 겪었거나 알게 된 것. 원장의 목격자 태그로 고른다.
+  readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface NarrativeContextOptions {
@@ -299,37 +303,64 @@ export async function buildNarrativeContext(
   const previousContext =
     rawPreviousContext === undefined ? undefined : stripForeignScript(rawPreviousContext);
   const bibleFacts = await resolveSceneBibleFacts(paths, context, fileSystem);
-  const storyState = await readSceneStoryState(
-    paths,
-    context.scene.order,
-    fileSystem,
-    context.scene.body,
-    options?.focalFilter,
-  );
+  const ledger = await readSceneStoryLedger(paths, context.scene.order, fileSystem);
+  const storyState =
+    ledger === undefined
+      ? undefined
+      : formatStoryStateForPrompt(
+          ledger,
+          context.scene.order,
+          context.scene.body,
+          options?.focalFilter,
+        );
   const prompt = composeNarrativePrompt(
     formatBibleFactLines(context, bibleFacts),
     storyState,
     previousContext,
   );
+  const characterKnowledge =
+    ledger === undefined ? undefined : selectSceneCharacterKnowledge(ledger, context);
 
-  return { bibleFacts, prompt };
+  return {
+    bibleFacts,
+    prompt,
+    ...(characterKnowledge === undefined ? {} : { characterKnowledge }),
+  };
+}
+
+function selectSceneCharacterKnowledge(
+  ledger: StoryState,
+  context: SceneContext,
+): ReadonlyMap<string, readonly string[]> | undefined {
+  const knowledge = new Map<string, readonly string[]>();
+
+  for (const character of context.characters) {
+    const known = selectCharacterKnowledge(
+      ledger,
+      character.id,
+      context.scene.order,
+      context.scene.body,
+    );
+    if (known.length > 0) {
+      knowledge.set(character.name, known);
+    }
+  }
+
+  return knowledge.size > 0 ? knowledge : undefined;
 }
 
 // NOTE: 원장은 직전 씬까지의 상태다. 씬을 다시 생성할 때 자기 자신이 남긴 상태를 되먹지 않도록
-// 현재 씬보다 앞선 분량만 주입한다.
-async function readSceneStoryState(
+// 현재 씬보다 앞선 분량만 주입한다(선별은 formatStoryStateForPrompt 가 한다).
+async function readSceneStoryLedger(
   paths: SceneContextWorkspacePaths,
   currentSceneOrder: number,
   fileSystem: SceneContextWorkspaceFileSystem,
-  sceneText: string,
-  focalFilter: StoryStateFocalFilter | undefined,
-): Promise<string | undefined> {
+): Promise<StoryState | undefined> {
   if (!paths.storyState || currentSceneOrder <= 1) {
     return undefined;
   }
 
-  const state = await readStoryState(paths.storyState, fileSystem);
-  return formatStoryStateForPrompt(state, currentSceneOrder, sceneText, focalFilter);
+  return await readStoryState(paths.storyState, fileSystem);
 }
 
 export function formatBibleFactLines(context: SceneContext, facts: readonly BibleFact[]): string[] {

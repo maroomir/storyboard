@@ -518,6 +518,7 @@ const draftSkeletonStage: ISceneStage = {
         ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
         personas: state.personasUsed,
         catchphrases: characterCatchphrases(ctx.context.characters),
+        characterKnowledge: input.characterKnowledge,
         background: state.background,
         previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
         endState: ctx.context.scene.card?.endState,

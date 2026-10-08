@@ -9,6 +9,7 @@ import {
   type StyleDirective,
 } from '@storyboard/story-model';
 import { personaCatchphraseView } from './characterCatchphrases';
+import { personaKnowledgeView } from './characterKnowledge';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
@@ -20,6 +21,8 @@ export interface SceneSkeletonInput {
   readonly personas: ReadonlyMap<string, string>;
   // 이름 → 반복해야 하는 입버릇. 예시 대사 복사 금지의 예외다.
   readonly catchphrases?: ReadonlyMap<string, readonly string[]>;
+  // 이름 → 이 씬 이전에 그 인물이 아는 것. 없는 사실은 그 인물이 모른다.
+  readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
   readonly background: Background;
   readonly previousContext?: string;
   readonly endState?: string;
@@ -49,6 +52,7 @@ export const SceneSkeletonPrompt = {
           name,
           persona,
           ...personaCatchphraseView(name, input.catchphrases),
+          ...personaKnowledgeView(name, input.characterKnowledge),
         })),
         previousContext: input.previousContext,
         narrativeSource: input.narrativeSource,
