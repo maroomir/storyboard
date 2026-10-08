@@ -887,6 +887,22 @@ describe("GenerateDraftUseCase", () => {
       expect(writeBeats).not.toHaveBeenCalled()
     })
 
+    it("warns about a beat cast entry that is not a character of the scene", async () => {
+      const dependencies = createBeatsDependencies({
+        scene: {
+          ...beatScene,
+          card: { ...beatScene.card, beats: [{ text: "둘이 만난다", cast: ["juseo", "minsu"] }] }
+        } as never
+      })
+
+      const result = await execute(dependencies, createRequest({ force: true }))
+
+      expect(result.kind).toBe("generated")
+      expect((result as { warnings: string[] }).warnings).toContain(
+        "비트 1의 출연 «minsu»이(가) 이 씬의 인물 카드와 맞지 않아 그대로 프롬프트에 실렸습니다"
+      )
+    })
+
     it("skips beats entirely when generation.beats.auto is off", async () => {
       const writeBeats = vi.fn(async () => undefined)
       const dependencies = createBeatsDependencies({

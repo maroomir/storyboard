@@ -710,3 +710,55 @@ describe('storyboard config unset', () => {
     expect(outcome.data).toMatchObject({ origin: 'user', value: 'claude' });
   });
 });
+
+describe('storyboard doctor beat cast', () => {
+  function checksOf(outcome: { data?: unknown }): { label: string; detail: string }[] {
+    return (outcome.data as { checks: { label: string; detail: string }[] }).checks;
+  }
+
+  function writeWorkspaceWithBeatCast(cast: readonly string[]): void {
+    mkdirSync(join(workspace, '.storyboard'), { recursive: true });
+    mkdirSync(join(workspace, 'character'), { recursive: true });
+    mkdirSync(join(workspace, 'scene'), { recursive: true });
+    writeFileSync(
+      join(workspace, '.storyboard', 'project.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        id: 'p1',
+        name: '테스트',
+        format: 'novel',
+        language: 'ko',
+        createdAt: new Date().toISOString(),
+        editor: { scenePrefixDigits: 2 },
+      }),
+    );
+    writeFileSync(
+      join(workspace, 'character', 'hana.card'),
+      'type: character\nid: hana\nname: 김하나\naliases:\n  - 하나 씨\n',
+    );
+    writeFileSync(
+      join(workspace, 'scene', '01-first.card'),
+      `type: scene\nid: 01-first\ncharacters:\n  - hana\nbeats:\n  - text: 하나가 문을 연다.\n    cast:\n${cast.map((ref) => `      - ${ref}\n`).join('')}`,
+    );
+    writeFileSync(join(home, 'config.json'), JSON.stringify({ 'ai.provider.default': 'mock' }));
+  }
+
+  it('warns about a cast entry no character card answers to', async () => {
+    writeWorkspaceWithBeatCast(['hana', '김하나', '하나 씨', 'minsu']);
+
+    const check = checksOf(await runDoctor({ container: container(), args: args() })).find(
+      (entry) => entry.label === '비트 출연',
+    );
+
+    expect(check?.detail).toContain('01-first 비트 1: minsu');
+    expect(check?.detail).not.toContain('하나 씨');
+  });
+
+  it('stays quiet when every cast entry is a card id, name or alias', async () => {
+    writeWorkspaceWithBeatCast(['hana', '하나 씨']);
+
+    const checks = checksOf(await runDoctor({ container: container(), args: args() }));
+
+    expect(checks.some((entry) => entry.label === '비트 출연')).toBe(false);
+  });
+});

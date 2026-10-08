@@ -8,6 +8,7 @@ import {
   canonicalizeSceneCardText,
   extractInlineSceneSummary,
   extractSceneNarrativeSource,
+  findUnknownBeatCast,
   splitSceneNarrativeSource,
   isInlineSceneSummary,
   NodeUri,
@@ -409,5 +410,16 @@ describe("scene summary file and beats", () => {
     })
     expect(extractInlineSceneSummary({ type: "scene", id: "01-a", summary: "01-a.summary.md" })).toBeUndefined()
     expect(extractInlineSceneSummary({ type: "scene", id: "01-a" })).toBeUndefined()
+  })
+})
+
+describe("findUnknownBeatCast", () => {
+  it("names the cast entries no character id, name or alias answers to, by beat number", () => {
+    const unknown = findUnknownBeatCast(
+      ["문자열 비트", { text: "둘이 만난다", cast: ["hana", "하나 씨", "minsu"] }, { text: "혼자 남는다" }],
+      [{ id: "hana", name: "김하나", aliases: ["하나 씨"] }]
+    )
+
+    expect(unknown).toEqual([{ beat: 2, ref: "minsu" }])
   })
 })
