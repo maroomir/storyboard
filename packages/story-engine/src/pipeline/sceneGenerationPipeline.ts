@@ -228,6 +228,7 @@ async function expandSectionWithRetries(input: {
   readonly skeleton: string;
   readonly previousSection: string | undefined;
   readonly targetLength: number;
+  readonly backgroundFacts: readonly string[];
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
@@ -252,6 +253,7 @@ async function expandSectionWithRetries(input: {
         section: input.section,
         previousSection: input.previousSection,
         targetLength: input.targetLength,
+        backgroundFacts: input.backgroundFacts,
         retryReasons: reasons,
       },
       input.options,
@@ -631,6 +633,21 @@ const polishDialogueStage: ISceneStage = {
   },
 };
 
+// NOTE: 씬 사이 재료(원장·캐넌·이전 맥락)는 뼈대만 보지만, 이 씬의 배경 카드가 적은 공간 사실은
+// 살붙임도 본다. 뼈대만 보고 살을 붙이면 해외 콘도 12층이 장판·옥상 계단이 있는 한국 아파트로
+// 일반화됐다(#88-11). 배경의 사실은 새 설정이 아니라 이미 확정된 설정이다.
+function backgroundFactLines(background: Background): string[] {
+  const header = [background.time, background.weather]
+    .filter((part): part is string => Boolean(part && part.trim().length > 0))
+    .join(', ');
+
+  return [
+    ...(header.length > 0 ? [header] : []),
+    ...(background.description ?? []),
+    ...(background.senses ?? []),
+  ].filter((line) => line.trim().length > 0);
+}
+
 // 3단계. 뼈대를 구간으로 나눠 살을 붙인다. 매 호출이 뼈대 전문과 직전 구간 완성문을 함께 본다.
 const expandSectionStage: ISceneStage = {
   id: 'expandSection',
@@ -653,6 +670,7 @@ const expandSectionStage: ISceneStage = {
         skeleton: state.polishedText,
         previousSection: expandedSections.at(-1),
         targetLength: targetLengths[index] as number,
+        backgroundFacts: backgroundFactLines(state.background),
         characters: ctx.context.characters,
         options: withAttribution(
           {
