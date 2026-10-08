@@ -853,7 +853,8 @@ describe("GenerateDraftUseCase", () => {
       )
       expect(writeBeats).toHaveBeenCalledWith(sceneUri, ["첫 비트", "둘째 비트"])
       expect(pipelineRunMock.mock.calls[0]?.[0]).toMatchObject({
-        context: { scene: { body: "[목적]\n첫 만남\n\n첫 비트\n\n둘째 비트\n" } }
+        // 비트가 생긴 뒤에도 요약 메모는 [창작자 요약] 설계 블록으로 남는다(#88-1).
+        context: { scene: { body: "[목적]\n첫 만남\n\n[창작자 요약]\n준서가 하나를 만난다.\n\n첫 비트\n\n둘째 비트\n" } }
       })
     })
 
