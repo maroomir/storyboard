@@ -320,21 +320,23 @@ describe("scene summary file and beats", () => {
     expect(canonicalizeSceneCardText(rawScene)).toEqual({ text: rawScene, changed: false })
   })
 
-  it("renders beats as plain narrative paragraphs instead of the summary prose", () => {
+  it("renders beats as the narrative and keeps the summary prose as a design block", () => {
     const scene = parseScene(
       readFixtureScene("03-summary-file.card"),
       "03-summary-file.card",
-      "요약 산문"
+      "요약 산문 첫 문단.\n\n둘째 문단에는 말버릇 메모가 있다."
     )
 
-    expect(scene.summaryText).toBe("요약 산문")
+    expect(scene.summaryText).toBe("요약 산문 첫 문단.\n\n둘째 문단에는 말버릇 메모가 있다.")
     expect(scene.body).toBe(
-      "[목표 분량]\n약 3,000자\n\n샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다.\n"
+      "[목표 분량]\n약 3,000자\n\n[창작자 요약]\n요약 산문 첫 문단.\n둘째 문단에는 말버릇 메모가 있다.\n\n샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다.\n"
     )
-    // 파이프라인 뼈대 단계는 이 narrativeSource 만 사건 재료로 쓰므로 비트가 그대로 들어가야 한다.
+    // 파이프라인 뼈대 단계는 이 narrativeSource 만 사건 재료로 쓰므로 비트가 그대로 들어가야 하고,
+    // 요약 메모는 설계 블록으로 따로 간다(#88-1: 비트가 있으면 메모가 통째로 버려졌다).
     expect(extractSceneNarrativeSource(scene.body)).toBe(
       "샘플 캐릭터가 방송실 문을 연다.\n\n책상 위에 낯선 사연 엽서가 놓여 있다."
     )
+    expect(splitSceneNarrativeSource(scene.body).design).toContain("[창작자 요약]\n요약 산문 첫 문단.\n둘째 문단에는 말버릇 메모가 있다.")
   })
 
   it("renders the summary file text when the card has no beats", () => {
