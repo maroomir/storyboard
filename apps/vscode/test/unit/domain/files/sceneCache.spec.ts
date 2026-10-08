@@ -137,6 +137,27 @@ describe("scene cache codec", () => {
     expect(withAttributes).not.toBe(baseHash)
   })
 
+  it("changes the hash when catchphrases are added and keeps it for a card without them", () => {
+    const input = {
+      sceneBody: "같은 입력",
+      characters: [sampleCharacter],
+      background: sampleBackground,
+      format: "novel"
+    } as const
+    const baseHash = computeSceneInputHash(input)
+    const withCatchphrases = computeSceneInputHash({
+      ...input,
+      characters: [{ ...sampleCharacter, catchphrases: ["뭐 별거는 아닌데"] }]
+    })
+    const withEmptyCatchphrases = computeSceneInputHash({
+      ...input,
+      characters: [{ ...sampleCharacter, catchphrases: [] }]
+    })
+
+    expect(withCatchphrases).not.toBe(baseHash)
+    expect(withEmptyCatchphrases).toBe(baseHash)
+  })
+
   it("changes the hash when bible facts are injected", () => {
     const withoutFacts = computeSceneInputHash({
       sceneBody: "같은 입력",
