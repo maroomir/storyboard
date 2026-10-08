@@ -160,9 +160,12 @@ export const sceneSeedSectionLabels = {
   targetWordCount: '목표 분량',
 } as const;
 
+export const sceneSummaryLabel = '창작자 요약';
+
 // NOTE: 프롬프트는 씬 의도를 하나의 텍스트로 받는다. 구조 필드를 기존 씬 시드와 같은
 // `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다. 사건 재료는 라벨 없는 블록으로 놓이며
-// beats 가 있으면 그것이 summary 산문을 대신한다(beats 는 summary 안에서 펼친 것이라 중복이다).
+// beats 가 있으면 그것이 사건 재료다. 그때 summary 는 비트에 없는 질감(말버릇·분위기·작가 메모)을
+// 담으므로 버리지 않고 설계 블록으로 함께 넘긴다 — 한 블록으로 묶어야 사건 재료로 읽히지 않는다.
 export function renderSceneCardBody(card: SceneCard, summaryText?: string): string {
   const blocks: string[] = [];
 
@@ -205,9 +208,13 @@ export function renderSceneCardBody(card: SceneCard, summaryText?: string): stri
 
   const beats = card.beats ?? [];
   const summary = summaryText?.trim();
+  const hasSummary = summary !== undefined && summary.length > 0;
   if (beats.length > 0) {
+    if (hasSummary) {
+      blocks.push(`[${sceneSummaryLabel}]\n${summary.replace(/\n\s*\n+/g, '\n')}`);
+    }
     blocks.push(beats.join('\n\n'));
-  } else if (summary !== undefined && summary.length > 0) {
+  } else if (hasSummary) {
     blocks.push(summary);
   }
 
