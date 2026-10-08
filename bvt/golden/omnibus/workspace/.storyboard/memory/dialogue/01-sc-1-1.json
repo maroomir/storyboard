@@ -1,0 +1,26 @@
+{
+  "sceneStem": "01-sc-1-1",
+  "bodyHash": "sha256:40bb51a4c6d39db70538ba0a3c2a399213c9595fc5b3b032dc33e8c593ea6ed7",
+  "turns": [
+    {
+      "index": 1,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 2,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 둘입니다."
+    },
+    {
+      "index": 3,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 하나입니다."
+    },
+    {
+      "index": 4,
+      "speaker": "unknown",
+      "text": "다듬은 모의 대사 둘입니다."
+    }
+  ]
+}

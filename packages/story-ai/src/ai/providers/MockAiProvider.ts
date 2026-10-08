@@ -60,6 +60,10 @@ function createMockResponse(taskName: AiTaskName, userPrompt: string): string {
       ]);
     case 'sceneDraft':
       return [`[Mock AI: ${taskName}]`, extractDraftInput(promptSummary)].join('\n');
+    case 'sceneSkeleton':
+      return createMockSceneSkeleton(promptSummary);
+    case 'sceneDialoguePolish':
+      return createMockDialoguePolish(promptSummary);
     case 'traitsExtraction':
       return ['- 상황을 관찰하고 차분하게 반응함', '- 대화 속에서 감정을 분명하게 드러냄'].join(
         '\n',
@@ -190,6 +194,39 @@ function extractSceneInput(prompt: string): string {
       : prompt.slice(inputStart, outputMarkerIndex);
 
   return input.trim() || '모의 상황';
+}
+
+// NOTE: 뼈대에 따옴표 대사가 없으면 다듬기 단계가 통째로 건너뛰어져, 골든 작품이 번호 병합 경로를
+// 한 번도 지나지 않는다. 그래서 모의 뼈대는 대사 두 줄로 끝난다.
+function createMockSceneSkeleton(prompt: string): string {
+  return [
+    `[Mock AI: sceneSkeleton] ${prompt}`,
+    '“모의 대사 하나입니다.” “모의 대사 둘입니다.”',
+  ].join('\n\n');
+}
+
+// 인물별 다듬기의 모의 응답. 등장 인물을 이름순으로 세워 번호를 돌아가며 나눠 가지므로 두 인물이
+// 같은 번호를 가져가는 일이 없고, 손본 문장은 앞에 «다듬은»을 붙여 원고에서 알아볼 수 있다.
+function createMockDialoguePolish(prompt: string): string {
+  const self = /^\[이 인물\]\n(.+)$/m.exec(prompt)?.[1]?.trim();
+  if (self === undefined) {
+    return '[]';
+  }
+
+  const others = (/^\[다른 등장 인물\]\n(.+)$/m.exec(prompt)?.[1] ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+  const cast = [self, ...others].sort();
+  const position = cast.indexOf(self);
+  const rewrites = [...prompt.matchAll(/⟨(\d+)⟩“([^”\n]*)”/g)].flatMap((match) => {
+    const index = Number(match[1]);
+    return (index - 1) % cast.length === position
+      ? [{ n: index, text: `다듬은 ${match[2] ?? ''}` }]
+      : [];
+  });
+
+  return JSON.stringify(rewrites);
 }
 
 function extractDraftInput(prompt: string): string {

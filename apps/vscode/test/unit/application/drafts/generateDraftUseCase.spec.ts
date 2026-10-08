@@ -580,6 +580,21 @@ describe("GenerateDraftUseCase", () => {
       expect(record.bodyHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     })
 
+    it("logs how many lines the dialogue polish touched", async () => {
+      pipelineRunMock.mockResolvedValue({
+        ...pipelineSuccessResult,
+        dialoguePolish: { lineCount: 5, polishedCount: 3, contestedCount: 1 }
+      })
+      const dependencies = createDependencies()
+
+      await execute(dependencies, createRequest({ force: true }))
+
+      const lines = (dependencies as never as { logger: { info: ReturnType<typeof vi.fn> } }).logger.info.mock.calls.map(
+        (call) => String(call[0])
+      )
+      expect(lines.some((line) => line.includes("대사 다듬기 3/5개 손봄, 1개는 화자가 겹쳐 뼈대 유지"))).toBe(true)
+    })
+
     it("logs a warning and still persists the draft when archiving the previous draft fails", async () => {
       const archiveError = new Error("disk full")
       archiveExistingDraftMock.mockRejectedValueOnce(archiveError)
