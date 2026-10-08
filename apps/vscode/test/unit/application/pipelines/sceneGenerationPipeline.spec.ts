@@ -92,7 +92,10 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
   }
 }
 
-function polishResponse(rewrites: readonly { index: number; text: string }[], isTruncated = false) {
+function polishResponse(
+  rewrites: readonly { index: number; text: string }[],
+  isTruncated = false
+): { rewrites: readonly { index: number; text: string }[]; isTruncated: boolean } {
   return { rewrites, isTruncated }
 }
 
