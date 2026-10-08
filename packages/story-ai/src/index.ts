@@ -13,6 +13,7 @@ export * from './ai/prompts/backgroundFactExtraction';
 export * from './ai/prompts/cardCandidateExtraction';
 export * from './ai/prompts/cardCandidateVerification';
 export * from './ai/prompts/cardRecommendation';
+export * from './ai/prompts/characterCatchphrases';
 export * from './ai/prompts/chapterPlan';
 export * from './ai/prompts/chapterSummary';
 export * from './ai/prompts/continuityCheck';

@@ -180,6 +180,28 @@ describe('card file codec', () => {
     }
   });
 
+  it('round-trips character catchphrases between voice and desire', () => {
+    const card: StoryboardCard = {
+      type: 'character',
+      id: 'mother',
+      name: '엄마',
+      role: 'support',
+      voice: ['느릿한 반말'],
+      catchphrases: ['뭐 별거는 아닌데'],
+      desire: ['아들이 밥은 먹고 다녔으면'],
+    };
+
+    const serialized = serializeCard(card);
+    const reparsed = parseCard(serialized);
+
+    expect(serialized.indexOf('catchphrases:')).toBeGreaterThan(serialized.indexOf('voice:'));
+    expect(serialized.indexOf('catchphrases:')).toBeLessThan(serialized.indexOf('desire:'));
+    expect(reparsed.type).toBe('character');
+    if (reparsed.type === 'character') {
+      expect(reparsed.catchphrases).toEqual(['뭐 별거는 아닌데']);
+    }
+  });
+
   it('reads a narrator card through the workspace card parser the card editor uses', () => {
     const rawCard = [
       'type: narrator',

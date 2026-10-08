@@ -72,6 +72,9 @@ export const characterCardSchema = z.object({
   traits: stringListSchema.optional(),
   description: stringListSchema.optional(),
   voice: stringListSchema.optional(),
+  // NOTE: voice 의 예시 대사는 참고라 프롬프트가 복사를 금지한다. 반복돼야 하는 입버릇·러닝개그는
+  // 여기에 두어야 복사 금지와 반복 제한(craftContract.motifRepeatLimit)에서 빠진다(#88-3·4).
+  catchphrases: stringListSchema.optional(),
   desire: stringListSchema.optional(),
   relations: z.array(characterRelationSchema).optional(),
   arc: z.array(characterArcSchema).optional(),

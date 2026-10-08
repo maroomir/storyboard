@@ -7,7 +7,7 @@ import type {
   EntityRef,
   StyleDirective,
 } from '@storyboard/story-model';
-import type { GenerateTextOptions } from '@storyboard/story-ai';
+import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
 import {
   computeDraftBodyHash,
   createEmptyBackground,
@@ -292,7 +292,12 @@ async function polishDialogueOrKeepSkeleton(input: {
   // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다.
   for (let attempt = 0; attempt < input.tuning.polishRetryLimit; attempt += 1) {
     const polished = await input.aiService.polishSceneDialogue(
-      { skeleton: input.skeleton, personas: input.personas, voiceSamples: input.voiceSamples },
+      {
+        skeleton: input.skeleton,
+        personas: input.personas,
+        voiceSamples: input.voiceSamples,
+        catchphrases: characterCatchphrases(input.characters),
+      },
       input.options,
     );
 
@@ -496,6 +501,7 @@ const draftSkeletonStage: ISceneStage = {
         narrativeSource: ctx.narrativeSource,
         ...(ctx.design.length > 0 ? { design: ctx.design } : {}),
         personas: state.personasUsed,
+        catchphrases: characterCatchphrases(ctx.context.characters),
         background: state.background,
         previousContext: buildSkeletonContext(ctx.condensedPreviousContext, input.canonFactLines),
         endState: ctx.context.scene.card?.endState,

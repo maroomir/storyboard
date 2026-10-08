@@ -48,6 +48,11 @@ export function CharacterFields({
         onChange={(voice) => updateCard({ ...card, voice })}
       />
       <ListField
+        label="Catchphrases"
+        values={card.catchphrases ?? []}
+        onChange={(catchphrases) => updateCard({ ...card, catchphrases })}
+      />
+      <ListField
         label="Desire"
         values={card.desire ?? []}
         onChange={(desire) => updateCard({ ...card, desire })}

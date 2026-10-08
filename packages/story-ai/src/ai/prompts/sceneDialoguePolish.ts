@@ -3,6 +3,7 @@ import {
   voiceStyleLines,
   type StyleDirective,
 } from '@storyboard/story-model';
+import { personaCatchphraseView } from './characterCatchphrases';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
@@ -12,6 +13,8 @@ export interface SceneDialoguePolishInput {
   readonly personas: ReadonlyMap<string, string>;
   // 인물이 앞선 씬에서 실제로 한 말. 말투 기준점이며 프롬프트에 없으면 카드 예시 대사만 남는다.
   readonly voiceSamples?: ReadonlyMap<string, readonly string[]>;
+  // 이름 → 반복해야 하는 입버릇. 예시 대사 복사 금지의 예외다.
+  readonly catchphrases?: ReadonlyMap<string, readonly string[]>;
   readonly style?: StyleDirective;
 }
 
@@ -30,7 +33,13 @@ export const SceneDialoguePolishPrompt = {
         personas: Array.from(input.personas.entries()).map(([name, persona]) => {
           const samples = input.voiceSamples?.get(name) ?? [];
 
-          return { name, persona, hasSamples: samples.length > 0, samples };
+          return {
+            name,
+            persona,
+            hasSamples: samples.length > 0,
+            samples,
+            ...personaCatchphraseView(name, input.catchphrases),
+          };
         }),
         skeleton: input.skeleton,
       },

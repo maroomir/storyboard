@@ -271,6 +271,7 @@ function CharacterFields(props: { readonly card: CharacterCard; readonly onChang
       <ListInput label={t('bible.description')} value={card.description} onChange={(description) => props.onChange({ ...card, description })} />
       <ListInput label={t('bible.traits')} value={card.traits} onChange={(traits) => props.onChange({ ...card, traits })} />
       <ListInput label={t('bible.voice')} value={card.voice} onChange={(voice) => props.onChange({ ...card, voice })} />
+      <ListInput label={t('bible.catchphrases')} value={card.catchphrases} onChange={(catchphrases) => props.onChange({ ...card, catchphrases })} />
       <ListInput label={t('bible.desire')} value={card.desire} onChange={(desire) => props.onChange({ ...card, desire })} />
       <ListInput label={t('bible.aliases')} value={card.aliases} onChange={(aliases) => props.onChange({ ...card, aliases })} />
       <ListInput label={t('bible.tags')} value={card.tags} onChange={(tags) => props.onChange({ ...card, tags })} />

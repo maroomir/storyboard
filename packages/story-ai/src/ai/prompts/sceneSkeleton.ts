@@ -7,6 +7,7 @@ import {
   voiceStyleLines,
   type StyleDirective,
 } from '@storyboard/story-model';
+import { personaCatchphraseView } from './characterCatchphrases';
 import { renderPrompt } from './promptResource';
 import { type PromptArtifact, type PromptVariantId } from './types';
 import { promptTuning } from './promptTuning';
@@ -16,6 +17,8 @@ export interface SceneSkeletonInput {
   // 카드의 목적·갈등·반전 같은 설계 블록. 사건 재료와 섞으면 그대로 산문에 실리므로 따로 받는다.
   readonly design?: string;
   readonly personas: ReadonlyMap<string, string>;
+  // 이름 → 반복해야 하는 입버릇. 예시 대사 복사 금지의 예외다.
+  readonly catchphrases?: ReadonlyMap<string, readonly string[]>;
   readonly background: Background;
   readonly previousContext?: string;
   readonly endState?: string;
@@ -44,6 +47,7 @@ export const SceneSkeletonPrompt = {
         personas: Array.from(input.personas.entries()).map(([name, persona]) => ({
           name,
           persona,
+          ...personaCatchphraseView(name, input.catchphrases),
         })),
         previousContext: input.previousContext,
         narrativeSource: input.narrativeSource,
