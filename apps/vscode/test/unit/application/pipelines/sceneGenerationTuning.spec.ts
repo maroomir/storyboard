@@ -225,9 +225,9 @@ describe("the whole pipeline is unchanged by an explicit default", () => {
         log.push(`skeleton:${skeletonCalls}:${targetLength ?? "none"}`)
         return `"들어와, 엘리아." 짧은 뼈대 ${skeletonCalls}`
       }),
-      polishSceneDialogue: vi.fn(async (input) => {
+      polishSceneDialogue: vi.fn(async () => {
         log.push("polish")
-        return (input as { skeleton: string }).skeleton
+        return []
       }),
       attributeSceneDialogue: vi.fn(async (input) => {
         log.push("attribute")

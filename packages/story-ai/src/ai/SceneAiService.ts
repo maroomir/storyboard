@@ -18,8 +18,10 @@ import {
   type SceneDialogueAttributionInput,
 } from './prompts/sceneDialogueAttribution';
 import {
+  coerceDialogueRewrites,
   SceneDialoguePolishPrompt,
   type SceneDialoguePolishInput,
+  type SceneDialogueRewrite,
 } from './prompts/sceneDialoguePolish';
 import {
   coerceDialogueAttribution,
@@ -232,7 +234,7 @@ export class SceneAiService {
   public async polishSceneDialogue(
     input: SceneDialoguePolishInput,
     options: GenerateTextOptions = {},
-  ): Promise<string> {
+  ): Promise<SceneDialogueRewrite[]> {
     const variant = this.gateway.resolvePromptVariant('sceneDialoguePolish', options);
     const prompt = SceneDialoguePolishPrompt.build(
       { ...input, style: options.styleDirective },
@@ -244,7 +246,7 @@ export class SceneAiService {
       maxTokens: options.maxTokens ?? SceneDialoguePolishPrompt.config.maxTokens,
     });
 
-    return response.text.trim();
+    return coerceDialogueRewrites(parseJsonArray(response.text));
   }
 
   public async attributeSceneDialogue(

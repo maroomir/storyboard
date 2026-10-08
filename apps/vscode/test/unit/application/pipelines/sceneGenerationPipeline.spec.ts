@@ -81,7 +81,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     createCharacterPersona: vi.fn(async () => "p"),
     describeBackground: vi.fn(async () => ""),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
-    polishSceneDialogue: vi.fn(async (input) => (input as { skeleton: string }).skeleton),
+    polishSceneDialogue: vi.fn(async () => []),
     attributeSceneDialogue: vi.fn(async (input) =>
       (input as { lines: readonly string[] }).lines.map((_, offset) => ({
         index: offset + 1,
@@ -801,9 +801,9 @@ describe("대사 다듬기 단계", () => {
   it("polishes the skeleton before splitting, and expands the polished text", async () => {
     const ai = createRecordingAiService()
     const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금." ${"복도는 조용했다. ".repeat(20)}`
-    const polished = skeleton.replace('"가자, 지금."', '"가자, 지금 당장."')
+    const polished = skeleton.replace('"가자, 지금."', '“가자, 지금 당장.”')
     ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
-    ai.polishSceneDialogue.mockResolvedValueOnce(polished)
+    ai.polishSceneDialogue.mockResolvedValueOnce([{ index: 1, text: "“가자, 지금 당장.”" }])
     ai.expandSceneSection.mockImplementation(
       async (input) => `${(input as { section: string }).section} ${longProse("살붙인 본문")}`
     )
@@ -823,8 +823,9 @@ describe("대사 다듬기 단계", () => {
     expect(result.warnings).toEqual([])
   })
 
-  it("hands the personas to the polish call so voices stay distinct", async () => {
+  it("calls the polish once per character with only that character's persona", async () => {
     const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “알았어.”")
 
     await runSceneGenerationPipeline({
       sceneStem: "01-opening",
@@ -833,16 +834,34 @@ describe("대사 다듬기 단계", () => {
       format: "novel"
     })
 
-    const input = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
-      personas: ReadonlyMap<string, string>
-    }
-    expect(Array.from(input.personas.keys())).toEqual(["엘리아", "지훈"])
+    const inputs = ai.polishSceneDialogue.mock.calls.map(
+      (call) => call[0] as { character: { name: string; persona: string }; otherCharacters: string[]; numberedSkeleton: string }
+    )
+    expect(inputs.map((input) => input.character.name)).toEqual(["엘리아", "지훈"])
+    expect(inputs[0]?.otherCharacters).toEqual(["지훈"])
+    expect(inputs[0]?.numberedSkeleton).toBe("엘리아가 말했다. ⟨1⟩“가자, 지금.” 지훈이 답했다. ⟨2⟩“알았어.”")
   })
 
-  it("falls back to the original skeleton and warns when polishing adds a character", async () => {
+  it("skips the polish when the skeleton has no dialogue", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
-    ai.polishSceneDialogue.mockResolvedValue("엘리아가 문을 연다. 지훈이 들어왔다.")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.polishSceneDialogue).not.toHaveBeenCalled()
+  })
+
+  it("keeps the skeleton line when two characters claim the same dialogue", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “알았어.”")
+    ai.polishSceneDialogue
+      .mockResolvedValueOnce([{ index: 1, text: "가자, 당장." }, { index: 2, text: "엘리아 판" }])
+      .mockResolvedValueOnce([{ index: 2, text: "지훈 판" }])
 
     const result = await runSceneGenerationPipeline({
       sceneStem: "01-opening",
@@ -851,8 +870,30 @@ describe("대사 다듬기 단계", () => {
       format: "novel"
     })
 
-    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(2)
-    expect(result.skeleton).toBe("엘리아가 문을 연다.")
+    expect(result.skeleton).toBe("엘리아가 말했다. “가자, 당장.” 지훈이 답했다. “알았어.”")
+    expect(result.warnings[0]).toContain("대사 2번은 두 인물이 자기 대사라고 해")
+  })
+
+  it("falls back to the original skeleton and warns when a rewrite adds a character", async () => {
+    const ai = createRecordingAiService()
+    const skeleton = "엘리아가 말했다. “가자, 지금.”"
+    ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
+    ai.polishSceneDialogue.mockImplementation(async (input) =>
+      (input as { character: { name: string } }).character.name === "엘리아"
+        ? [{ index: 1, text: "지훈이 들어왔다" }]
+        : []
+    )
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    // 인물 2명 × 다듬기 재시도 한도(2판)
+    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(4)
+    expect(result.skeleton).toBe(skeleton)
     expect(result.warnings[0]).toContain("대사 다듬기를 되돌렸습니다")
     expect(result.warnings[0]).toContain("지훈")
   })
@@ -945,6 +986,7 @@ describe("대사 화자 귀속 단계", () => {
 
   it("feeds the character's earlier lines into the polish call", async () => {
     const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
     const corpus = createRecordingCorpus([
       {
         sceneStem: "01-opening",
@@ -962,13 +1004,14 @@ describe("대사 화자 귀속 단계", () => {
     })
 
     const polishInput = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
-      voiceSamples: ReadonlyMap<string, readonly string[]>
+      character: { samples: readonly string[] }
     }
-    expect(polishInput.voiceSamples.get("엘리아")).toEqual(["값보다 내력이 먼저입니다."])
+    expect(polishInput.character.samples).toEqual(["값보다 내력이 먼저입니다."])
   })
 
   it("never samples a scene that comes after the one being generated", async () => {
     const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
     const corpus = createRecordingCorpus([
       {
         sceneStem: "01-opening",
@@ -991,9 +1034,9 @@ describe("대사 화자 귀속 단계", () => {
     })
 
     const polishInput = ai.polishSceneDialogue.mock.calls[0]?.[0] as {
-      voiceSamples: ReadonlyMap<string, readonly string[]>
+      character: { samples: readonly string[] }
     }
-    expect(polishInput.voiceSamples.get("엘리아")).toEqual(["앞 씬에서 한 말입니다."])
+    expect(polishInput.character.samples).toEqual(["앞 씬에서 한 말입니다."])
   })
 })
 

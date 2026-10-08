@@ -7,7 +7,12 @@ import type {
   EntityRef,
   StyleDirective,
 } from '@storyboard/story-model';
-import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/story-ai';
+import {
+  characterCatchphrases,
+  type GenerateTextOptions,
+  type SceneDialogueRewrite,
+} from '@storyboard/story-ai';
+import { mergeDialogueRewrites, numberSkeletonDialogue } from './dialogueRewrites';
 import {
   computeDraftBodyHash,
   createEmptyBackground,
@@ -293,29 +298,58 @@ function weighViolations(
 // NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
 // 대사 개성은 덜해도 사건은 안전하고, 되돌린 사실은 헤더 경고로 알린다.
 
+// 인물 하나에 호출 하나. 각 호출은 자기 인물의 페르소나·입버릇·말투 표본·아는 것만 받고, 번호로
+// 가리킨 자기 대사만 돌려준다. 병합은 번호 기준이고 두 인물이 같은 번호를 가져가면 뼈대가 이긴다.
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
   readonly personas: ReadonlyMap<string, string>;
   readonly voiceSamples: ReadonlyMap<string, readonly string[]>;
+  readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
+  readonly onProgress: RunSceneGenerationPipelineInput['onProgress'];
 }): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
   let lastViolations: readonly SectionViolation[] = [];
+  const numbered = numberSkeletonDialogue(input.skeleton, input.tuning);
+  const speakers = [...input.personas.keys()];
+
+  if (numbered.dialogues.length === 0 || speakers.length === 0) {
+    input.onProgress?.('polishDialogue', 1, 1);
+    return { text: input.skeleton, warnings: [] };
+  }
+
+  const catchphrases = characterCatchphrases(input.characters);
+  const speechToOthers = characterSpeechToOthers(input.characters);
 
   // NOTE: 뼈대·구간은 attempt <= retryLimit 로 돌고 다듬기만 < 로 돈다. 같은 값이 호출 수를 하나
-  // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다.
+  // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다. 한 판은 인물 수만큼의 호출이다.
   for (let attempt = 0; attempt < input.tuning.polishRetryLimit; attempt += 1) {
-    const polished = await input.aiService.polishSceneDialogue(
-      {
-        skeleton: input.skeleton,
-        personas: input.personas,
-        voiceSamples: input.voiceSamples,
-        catchphrases: characterCatchphrases(input.characters),
-      },
-      input.options,
-    );
+    const rewritesByCharacter = new Map<string, readonly SceneDialogueRewrite[]>();
+
+    for (const [position, name] of speakers.entries()) {
+      input.onProgress?.('polishDialogue', position + 1, speakers.length);
+      const rewrites = await input.aiService.polishSceneDialogue(
+        {
+          numberedSkeleton: numbered.text,
+          character: {
+            name,
+            persona: input.personas.get(name) ?? '',
+            catchphrases: catchphrases.get(name) ?? [],
+            samples: input.voiceSamples.get(name) ?? [],
+            knowledge: input.characterKnowledge?.get(name) ?? [],
+            speechToOthers: speechToOthers.get(name) ?? [],
+          },
+          otherCharacters: speakers.filter((other) => other !== name),
+        },
+        input.options,
+      );
+      rewritesByCharacter.set(name, rewrites);
+    }
+
+    const merged = mergeDialogueRewrites(input.skeleton, numbered, rewritesByCharacter);
+    const polished = merged.text;
 
     const violations = validatePolishedSkeleton({
       skeleton: input.skeleton,
@@ -326,7 +360,15 @@ async function polishDialogueOrKeepSkeleton(input: {
     });
 
     if (violations.length === 0) {
-      return { text: polished, warnings: [] };
+      return {
+        text: polished,
+        warnings:
+          merged.contestedIndices.length === 0
+            ? []
+            : [
+                `대사 ${merged.contestedIndices.join(', ')}번은 두 인물이 자기 대사라고 해 뼈대 그대로 두었습니다`,
+              ],
+      };
     }
 
     lastViolations = violations;
@@ -336,6 +378,27 @@ async function polishDialogueOrKeepSkeleton(input: {
     text: input.skeleton,
     warnings: lastViolations.map((violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`),
   };
+}
+
+// 카드 relations 의 speech("반말"·"존댓말"·"형이라 부르며 반말")를 "상대에게: 말투" 줄로 만든다.
+// 상대는 이 씬에 있는 인물만이다. 씬에 없는 상대의 규칙은 이 호출이 쓸 일이 없다.
+function characterSpeechToOthers(
+  characters: SceneContext['characters'],
+): ReadonlyMap<string, readonly string[]> {
+  const nameById = new Map(characters.map((character) => [character.id, character.name]));
+  const lines = new Map<string, readonly string[]>();
+
+  for (const character of characters) {
+    const rules = (character.relations ?? []).flatMap((relation) => {
+      const target = nameById.get(relation.target);
+      return relation.speech && target ? [`${target}에게: ${relation.speech}`] : [];
+    });
+    if (rules.length > 0) {
+      lines.set(character.name, rules);
+    }
+  }
+
+  return lines;
 }
 
 function extractDialogueLines(text: string, tuning: ResolvedSceneGenerationTuning): string[] {
@@ -545,13 +608,14 @@ const polishDialogueStage: ISceneStage = {
   id: 'polishDialogue',
   async run(state) {
     const { ctx } = state;
-    ctx.onProgress?.('polishDialogue', 1, 1);
     const polished = await polishDialogueOrKeepSkeleton({
       aiService: ctx.aiService,
       skeleton: state.skeleton,
       personas: state.personasUsed,
       voiceSamples: state.voiceSamples,
+      characterKnowledge: state.input.characterKnowledge,
       characters: ctx.context.characters,
+      onProgress: ctx.onProgress,
       options: withAttribution(
         {
           ...buildGenerateOptions(ctx.providers, 'sceneDialoguePolish'),

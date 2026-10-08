@@ -17,8 +17,9 @@ describe("산문 규약 주입", () => {
       background
     }).system,
     대사다듬기: SceneDialoguePolishPrompt.build({
-      skeleton: "이준이 걷는다.",
-      personas: new Map()
+      numberedSkeleton: "이준이 걷는다.",
+      character: { name: "이준", persona: "" },
+      otherCharacters: []
     }).system,
     살붙임: SceneSectionExpansionPrompt.build({
       skeleton: "이준이 걷는다.",
