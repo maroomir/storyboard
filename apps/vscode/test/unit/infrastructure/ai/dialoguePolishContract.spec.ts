@@ -8,17 +8,23 @@ import {
 import { createEmptyBackground } from "@storyboard/story-model"
 
 const personas = new Map([["서하", '나는 서하다. "추출 뒤에는 되돌릴 수 없습니다."']])
+const polishInput = {
+  numberedSkeleton: "서하가 말한다. ⟨1⟩“가자.”",
+  character: { name: "서하", persona: personas.get("서하") ?? "" },
+  otherCharacters: []
+}
 
 describe("대사 다듬기 계약", () => {
-  const system = SceneDialoguePolishPrompt.build({ skeleton: "서하가 말한다.", personas }).system
+  const system = SceneDialoguePolishPrompt.build(polishInput).system
 
   it("forbids inventing turns instead of asking for more of them", () => {
-    expect(system).toContain("대사의 개수와 순서는 뼈대 그대로")
+    expect(system).toContain("대사를 새로 만들거나 하나를 둘로 쪼개지")
     expect(system).not.toContain("되묻거나 받아치게")
   })
 
-  it("names the empty restatement turn as the pattern to avoid", () => {
-    expect(system).toContain("의문형으로 되풀이하는 턴")
+  it("confines the call to one character's own lines and knowledge", () => {
+    expect(system).toContain("[이 인물]이 말한 대사만")
+    expect(system).toContain("[아는 것]에 적힌 정보만")
   })
 })
 
@@ -27,7 +33,7 @@ describe("페르소나 예시 대사 재사용 금지", () => {
   const stages = {
     뼈대: SceneSkeletonPrompt.build({ narrativeSource: "서하가 말한다.", personas, background })
       .system,
-    대사다듬기: SceneDialoguePolishPrompt.build({ skeleton: "서하가 말한다.", personas }).system
+    대사다듬기: SceneDialoguePolishPrompt.build(polishInput).system
   }
 
   for (const [stage, system] of Object.entries(stages)) {

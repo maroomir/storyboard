@@ -52,6 +52,9 @@ const cardAttributeValueSchema = z.union([z.string(), z.number(), z.boolean(), z
 export const characterRelationSchema = z.object({
   target: cardIdSchema,
   type: z.string().trim().min(1),
+  // 이 상대에게 쓰는 말투("반말", "존댓말", "누나라 부르며 존댓말"). voice 하나로는 상대별 존대를
+  // 적을 수 없어 검수가 맞게 쓴 존댓말을 위반으로 잡았다(#88-5). 인물별 다듬기와 검수가 읽는다.
+  speech: z.string().trim().min(1).optional(),
 });
 
 export const characterArcSchema = z.object({

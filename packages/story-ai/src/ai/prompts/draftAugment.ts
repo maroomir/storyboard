@@ -53,11 +53,23 @@ export function formatAugmentCards(
   background: BackgroundCard | undefined,
 ): string[] {
   const blocks: string[] = [];
+  const nameById = new Map(characters.map((character) => [character.id, character.name]));
 
   for (const character of characters) {
     const lines = [`[${character.name}] 역할: ${character.role ?? 'extra'}`];
     appendCardLine(lines, '말투', joinCardText(character.voice));
     appendCardLine(lines, '입버릇(반복해야 함)', (character.catchphrases ?? []).join(' / '));
+    appendCardLine(
+      lines,
+      '상대별 말투',
+      (character.relations ?? [])
+        .flatMap((relation) =>
+          relation.speech
+            ? [`${nameById.get(relation.target) ?? relation.target}에게 ${relation.speech}`]
+            : [],
+        )
+        .join(' / '),
+    );
     appendCardLine(lines, '설명', joinCardText(character.description));
     appendCardLine(lines, '욕망', joinCardText(character.desire));
     appendCardLine(lines, '특징', (character.traits ?? []).join(', '));
