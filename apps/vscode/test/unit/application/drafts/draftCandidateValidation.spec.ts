@@ -16,10 +16,18 @@ describe('draft candidate validation', () => {
     ).toBe(360);
   });
 
-  it('keeps the compression allowance for a draft still under its scene target', () => {
+  it('lets a draft still under its scene target shrink by a tenth at most', () => {
     expect(
-      resolveMinimumDraftLength(600, { maxCompressionPercent: 20, targetLength: 1000 }),
-    ).toBe(480);
+      resolveMinimumDraftLength(600, { maxCompressionPercent: 50, targetLength: 1000 }),
+    ).toBe(540);
+  });
+
+  it('keeps the floor continuous where a draft reaches its scene target', () => {
+    const policy = { maxCompressionPercent: 50, targetLength: 40_000 };
+
+    expect(resolveMinimumDraftLength(39_999, policy)).toBe(36_000);
+    expect(resolveMinimumDraftLength(40_000, policy)).toBe(36_000);
+    expect(resolveMinimumDraftLength(50_000, policy)).toBe(36_000);
   });
 
   it('accepts a revision slightly shorter than a draft still under its scene target', () => {
