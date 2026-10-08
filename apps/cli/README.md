@@ -279,6 +279,16 @@ storyboard config set tasks.noteExtraction.provider claude --model claude-opus-5
 storyboard config unset tasks.noteExtraction.provider --global
 ```
 
+Two tasks decide most of what a draft reads like: `sceneSkeleton` lays out the scene and writes
+every line of dialogue, and `sceneSectionExpansion` writes the prose around them. Both keep
+length and voice better on a top-tier model, so when the default provider runs a mid-size model,
+route those two up and leave the cheap tasks (grounding, beats, state updates) where they are:
+
+```bash
+storyboard config set tasks.sceneSkeleton.model claude-opus-5-5
+storyboard config set tasks.sceneSectionExpansion.model claude-opus-5-5
+```
+
 Every provider Storyboard speaks to is reached with an API key (or runs locally, for `ollama`).
 Subscription CLI providers were removed in 0.9.2: Anthropic, OpenAI and Google all limit a
 subscription or account login to interactive personal use and direct programmatic and bulk

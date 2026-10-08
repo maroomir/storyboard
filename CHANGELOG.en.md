@@ -10,10 +10,27 @@ after the first public release.
 
 ## [Unreleased]
 
+### Added
+
+- **Character cards have `catchphrases`.** Sample lines under `voice` describe how someone talks, so the prompts refuse to copy them; a catchphrase or running gag is material that must repeat. Put it under `catchphrases` and the skeleton and the dialogue polish use it again and again, and the repeat limit and the review leave it alone. The VSCode card editor and the desktop story bible have a field for it. (#88)
+- **`notes absorb` reports card candidates that contradict each other.** When two candidates of one field state the same fact in opposite ways ("sleeps on the living-room sofa" and "has a room of their own"), both stay and a warning names the card and the items. (#88)
+- **`doctor` warns about a scene with no point of view.** A scene with a `povCharacter` but no narration on the scene, the chapter or the contract is generated without a point-of-view instruction and drifts to third person; the check says so and points at `project set --pov`. (#88)
+
+### Changed
+
+- **The skeleton stage receives the point of view.** The person, knowledge-boundary and narrator-voice lines now reach the skeleton prompt, so whose eyes the events are seen through is decided at the design step. (#88)
+- **Section expansion fills in the narrator's voice.** The filler was fixed to sensory description; it is now the focal character's perception, action and interior plus how they read the situation (commentary, inference, exaggeration, self-justification). First person leads with commentary, and a comic genre fills in that tone. (#88)
+- **A persona holds only who the character is.** Events and relationship states mixed into the card description are no longer narrated as the present, so a first-meeting scene no longer says "yesterday too" or "these days". (#88)
+- **The skeleton keeps the information order of the beats.** A fact a character first learns in one event must first surface there. (#88)
+- **The fact sheet's `time` no longer invents a calendar.** Season, month and year are written only when the text or the known facts support them, never inferred from the day the command ran. (#88)
+- **The README recommends routing `sceneSkeleton` and `sceneSectionExpansion` to a top-tier model.** Those two tasks decide length and voice. (#88)
+
 ### Fixed
 
 - **A short previous draft no longer leaks its front matter into the next scene's previous-scene context.** The last 1000 characters of the raw draft file were used as they were, so when the body was shorter than that, metadata such as `generatedAt`, `generator` and `warnings` reached the model as story context. Only the body is used now. (#99)
 - **A work without `.storyboard/cache/`, such as one cloned with git, no longer regenerates drafts that are current.** Whether a draft was current was judged only from the git-ignored cache, so `novel generate` and `draft generate --all` treated every draft as "different from the last generation" and paid to rewrite each scene. Without a cache, the scene input hash recorded in the committed story-state ledger (`.storyboard/memory/storyState.md`) now decides, so a scene whose inputs are unchanged is left as it is. Existing works benefit without any file change. (#100)
+- **A scene card with beats no longer drops its summary memo.** The summary beside hand-written beats (inline `summary` or `.summary.md`) carries texture such as speech habits and mood and never reached the skeleton prompt. It now goes along as a `[창작자 요약]` design block. (#88)
+- **A review rewrite of a draft under its target length is no longer thrown away for being slightly shorter.** The floor was the original length, so a rewrite 3% shorter was rejected as `too-short`. A draft that has reached its target keeps the target-based floor; a shorter one gets only the compression allowance (`revise.length.maxCompressionPercent`). The rewrite prompt now also says to keep the length. (#88)
 
 ## [0.12.4] - 2026-10-08
 
