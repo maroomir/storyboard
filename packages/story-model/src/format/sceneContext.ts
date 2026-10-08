@@ -9,6 +9,7 @@ import { parseSceneFileName, type SceneFile } from './scene';
 import { parseSceneCard } from './files/scene';
 import { readCardFile } from './files/card';
 import { readBibleFile } from './files/bible';
+import { extractDraftBody } from './files/draft';
 import {
   createEmptyBible,
   revealKnownBy,
@@ -194,9 +195,9 @@ async function readPreviousDraftTail(
     }
 
     const uri = paths.joinPath(paths.draftDirectory, previousFileName[0]);
-    const content = new TextDecoder().decode(await fileSystem.readFile(uri));
+    const body = extractDraftBody(new TextDecoder().decode(await fileSystem.readFile(uri)));
 
-    const lastCharacters = content.slice(-1000).trim();
+    const lastCharacters = body.slice(-1000).trim();
     return lastCharacters.length > 0 ? lastCharacters : undefined;
   } catch {
     return undefined;

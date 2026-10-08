@@ -441,6 +441,22 @@ describe("readPreviousSceneContext", () => {
     expect(context).toContain("이전 씬의 마지막 문장입니다.")
   })
 
+  // #99: 본문이 짧으면 front matter까지 꼬리 1000자 안에 들어와 이전 장면 맥락에 섞였다.
+  it("leaves the previous draft's front matter out of a short draft's tail", async () => {
+    const fileSystem = new MockFileSystem()
+    fileSystem.setDirectory("/mock/workspace/draft", [["01-prologue.md", { type: "file" }]])
+    fileSystem.setFile(
+      "/mock/workspace/draft/01-prologue.md",
+      "---\nsceneStem: 01-prologue\nformat: novel\ngeneratedAt: '2026-10-07T21:38:09.796Z'\ngenerator: storyboard@0.12.4\nproviderId: mock\n---\n짧은 앞 씬 본문.\n"
+    )
+
+    const context = await import("@storyboard/story-model").then((m) =>
+      m.readPreviousSceneContext(mockPaths, 2, fileSystem)
+    )
+
+    expect(context).toBe("짧은 앞 씬 본문.")
+  })
+
   it("returns undefined if previous draft file is missing", async () => {
     const fileSystem = new MockFileSystem()
     fileSystem.setDirectory("/mock/workspace/draft", [
