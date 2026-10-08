@@ -13,7 +13,7 @@ maxTokens: 600
 {{#isContinuation}}
 
 {{/isContinuation}}
-- {{key}} ({{label}}): {{#incident}}오늘 이 인물에게 실제로 벌어진 사건 하나. 감정이 아니라 사건으로 적어라.{{/incident}}{{#place}}장면이 벌어지는 구체적인 공간. 은유가 아니라 실제 장소로 적어라.{{/place}}{{#relation}}등장인물들이 서로 어떤 사이인지. 만난 경위와 거리감이 드러나게 적어라.{{/relation}}{{#time}}계절·시각 등 장면이 놓인 시점.{{/time}}{{/requestedFields}}
+- {{key}} ({{label}}): {{#incident}}오늘 이 인물에게 실제로 벌어진 사건 하나. 감정이 아니라 사건으로 적어라.{{/incident}}{{#place}}장면이 벌어지는 구체적인 공간. 은유가 아니라 실제 장소로 적어라.{{/place}}{{#relation}}등장인물들이 서로 어떤 사이인지. 만난 경위와 거리감이 드러나게 적어라.{{/relation}}{{#time}}장면이 놓인 시점. 시각·상황(저녁 식사 직후 등)은 본문에서 정해도 되지만 계절·달·연도는 본문이나 확정된 사실에 근거가 있을 때만 적어라. 근거가 없으면 달력 정보 없이 적고, 실제 오늘 날짜에서 추론하지 마라.{{/time}}{{/requestedFields}}
 
 ## system:xs
 씬을 구체화한다. JSON 객체만 출력: {{jsonShape}}.
