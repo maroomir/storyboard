@@ -6,7 +6,11 @@ export interface NumberedSkeleton {
   // 따옴표 대사마다 바로 앞에 ⟨n⟩을 단 뼈대. 인물별 다듬기 호출이 받는 본문이다.
   readonly text: string;
   // n번째 대사가 원래 뼈대에서 차지한 자리(따옴표 포함)와 안쪽 문장.
-  readonly dialogues: readonly { readonly start: number; readonly end: number; readonly text: string }[];
+  readonly dialogues: readonly {
+    readonly start: number;
+    readonly end: number;
+    readonly text: string;
+  }[];
 }
 
 // NOTE: 인물별 호출은 자기 대사를 번호로 가리켜 돌려준다. 번호는 뼈대의 따옴표 대사 순서이며
@@ -38,9 +42,9 @@ export interface DialogueRewriteMerge {
   readonly contestedIndices: readonly number[];
 }
 
-const quoteCharacters = /[“”"\n]/;
+const forbiddenRewriteCharacters = /[“”"\n⟨⟩]/;
 
-// 번호 하나를 한 인물만 가져갔고, 돌려준 문장이 따옴표·줄바꿈 없는 한 문장일 때만 바꿔 넣는다.
+// 번호 하나를 한 인물만 가져갔고, 돌려준 문장이 따옴표·줄바꿈·번호 표시 없는 한 문장일 때만 바꿔 넣는다.
 export function mergeDialogueRewrites(
   skeleton: string,
   numbered: NumberedSkeleton,
@@ -53,7 +57,7 @@ export function mergeDialogueRewrites(
       const text = stripOuterQuotes(rewrite.text);
       const dialogue = numbered.dialogues[rewrite.index - 1];
 
-      if (dialogue === undefined || text.length === 0 || quoteCharacters.test(text)) {
+      if (dialogue === undefined || text.length === 0 || forbiddenRewriteCharacters.test(text)) {
         continue;
       }
 
@@ -88,6 +92,15 @@ export function mergeDialogueRewrites(
   return { text, replacedCount, contestedIndices };
 }
 
+// NOTE: 모델은 받은 뼈대의 ⟨n⟩ 번호를 문장 앞에 그대로 붙여 돌려주기도 한다. 그대로 넣으면 어느
+// 검증도 잡지 못하고 원고까지 번호가 남는다.
+const dialogueNumberMarker = /⟨\d+⟩/g;
+
 function stripOuterQuotes(text: string): string {
-  return text.trim().replace(/^[“"]/, '').replace(/[”"]$/, '').trim();
+  return text
+    .replace(dialogueNumberMarker, '')
+    .trim()
+    .replace(/^[“"]/, '')
+    .replace(/[”"]$/, '')
+    .trim();
 }
