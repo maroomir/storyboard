@@ -10,6 +10,10 @@ after the first public release.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A short previous draft no longer leaks its front matter into the next scene's previous-scene context.** The last 1000 characters of the raw draft file were used as they were, so when the body was shorter than that, metadata such as `generatedAt`, `generator` and `warnings` reached the model as story context. Only the body is used now. (#99)
+
 ## [0.12.4] - 2026-10-08
 
 ### Changed (breaking)

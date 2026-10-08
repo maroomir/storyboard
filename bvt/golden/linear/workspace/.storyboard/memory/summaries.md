@@ -4,7 +4,7 @@
 
 ## 1장
 
-<!-- chapter-input: sha256:383c6098e6ad66f4398a6a95cf4bf480d81c5985cd4a8db85cef72465e3e2bca -->
+<!-- chapter-input: sha256:cf7f513ce6080c43a6fc6c9a6ba803f81231f5bf7abe9d8fbe209d07cbcb473f -->
 
 [Mock AI: chapterSummary] [장 제목]
 1장
@@ -107,14 +107,6 @@
 
 [이전 맥락]
 [이전 장면]
-38:09.796Z'
-generator: storyboard@0.12.2
-providerId: mock
-model: mock-default
-warnings:
- - '1구간: 목표 2,000자에 크게 못 미칩니다 (739자). 사건 사이의 감각·행동·내면을 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요'
- - '1구간: 같은 내용의 문단을 되풀이했습니다 ("[이번 구간 — 이 부분만 확장하라] [Mock AI:…"). 채울 재료가 없으면 짧게 끝내세요'
----
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
 [Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
 [하나]
@@ -215,14 +207,6 @@ warnings:
 
 [이전 맥락]
 [이전 장면]
-38:09.796Z'
-generator: storyboard@0.12.2
-providerId: mock
-model: mock-default
-warnings:
- - '1구간: 목표 2,000자에 크게 못 미칩니다 (739자). 사건 사이의 감각·행동·내면을 더 쓰되 이미 쓴 문장을 되풀이하지는 마세요'
- - '1구간: 같은 내용의 문단을 되풀이했습니다 ("[이번 구간 — 이 부분만 확장하라] [Mock AI:…"). 채울 재료가 없으면 짧게 끝내세요'
----
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
 [Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
 [하나]
