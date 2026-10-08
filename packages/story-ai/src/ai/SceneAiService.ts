@@ -20,7 +20,7 @@ import {
   coerceDialogueRewrites,
   SceneDialoguePolishPrompt,
   type SceneDialoguePolishInput,
-  type SceneDialogueRewrite,
+  type SceneDialoguePolishResult,
 } from './prompts/sceneDialoguePolish';
 import {
   coerceDialogueAttribution,
@@ -207,7 +207,7 @@ export class SceneAiService {
   public async polishSceneDialogue(
     input: SceneDialoguePolishInput,
     options: GenerateTextOptions = {},
-  ): Promise<SceneDialogueRewrite[]> {
+  ): Promise<SceneDialoguePolishResult> {
     const variant = this.gateway.resolvePromptVariant('sceneDialoguePolish', options);
     const prompt = SceneDialoguePolishPrompt.build(
       { ...input, style: options.styleDirective },
@@ -219,7 +219,10 @@ export class SceneAiService {
       maxTokens: options.maxTokens ?? SceneDialoguePolishPrompt.config.maxTokens,
     });
 
-    return coerceDialogueRewrites(parseJsonArray(response.text));
+    return {
+      rewrites: coerceDialogueRewrites(parseJsonArray(response.text)),
+      isTruncated: response.isTruncated === true,
+    };
   }
 
   public async attributeSceneDialogue(

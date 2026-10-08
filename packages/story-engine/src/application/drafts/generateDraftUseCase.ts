@@ -175,6 +175,13 @@ async function persistGeneratedDraft(
     return { ok: false, kind: 'failed', message: emptyDraftBodyMessage(scene.stem) };
   }
 
+  if (result.dialoguePolish) {
+    const { lineCount, polishedCount, contestedCount } = result.dialoguePolish;
+    options.logger.info(
+      `${scene.stem}: 대사 다듬기 ${polishedCount}/${lineCount}개 손봄${contestedCount > 0 ? `, ${contestedCount}개는 화자가 겹쳐 뼈대 유지` : ''}`,
+    );
+  }
+
   const sceneDraftConfig = options.aiGateway.getTaskAiConfig('sceneDraft');
   const draft = createDraft({
     sceneStem: scene.stem,

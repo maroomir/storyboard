@@ -25,12 +25,20 @@ export interface SceneDialoguePolishInput {
   readonly numberedSkeleton: string;
   readonly character: SceneDialoguePolishCharacter;
   readonly otherCharacters: readonly string[];
+  // 이 인물의 지난 응답이 반려된 이유. 재호출에서만 있다.
+  readonly retryReasons?: readonly string[];
   readonly style?: StyleDirective;
 }
 
 export interface SceneDialogueRewrite {
   readonly index: number;
   readonly text: string;
+}
+
+export interface SceneDialoguePolishResult {
+  readonly rewrites: readonly SceneDialogueRewrite[];
+  // 출력 한도에서 잘린 응답. 잘린 JSON 은 읽히지 않으므로 손본 대사가 비거나 모자란다.
+  readonly isTruncated: boolean;
 }
 
 // NOTE: 뼈대는 사건 배치와 대사 작성을 한꺼번에 하느라 말투가 뭉개진다. 그래서 살붙임 전에 대사의
@@ -60,6 +68,8 @@ export const SceneDialoguePolishPrompt = {
         hasOtherCharacters: input.otherCharacters.length > 0,
         otherCharacters: input.otherCharacters.join(', '),
         numberedSkeleton: input.numberedSkeleton,
+        hasRetryReasons: list(input.retryReasons).length > 0,
+        retryReasons: list(input.retryReasons).join(' / '),
       },
       partials: {
         proseConventions: proseConventionLines(input.style?.narration?.tense).join('\n'),

@@ -48,7 +48,7 @@ import {
   type StudioAgentRunOptions,
   type StudioValidationInput,
 } from './StudioAgentService';
-import type { SceneDialogueRewrite } from './prompts/sceneDialoguePolish';
+import type { SceneDialoguePolishResult } from './prompts/sceneDialoguePolish';
 import type { StudioCardAuditPromptInput } from './prompts/studioCardAudit';
 import type { GenerateTextOptions, StoryboardAiServiceOptions } from './aiServiceTypes';
 import type { AiProviderRegistry } from './providerRegistry';
@@ -202,7 +202,7 @@ export class StoryboardAiService {
   public async polishSceneDialogue(
     input: Parameters<SceneAiService['polishSceneDialogue']>[0],
     options: GenerateTextOptions = {},
-  ): Promise<SceneDialogueRewrite[]> {
+  ): Promise<SceneDialoguePolishResult> {
     return this.sceneAiService.polishSceneDialogue(input, options);
   }
 
