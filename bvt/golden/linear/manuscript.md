@@ -9,13 +9,6 @@
 #### 첫 만남
 
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -39,13 +32,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -71,17 +57,6 @@
 #### 엇갈림
 
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-[준]
-[Mock AI: personaGeneration] 이름: 준
-설명: 모의 조연
-역할: supporting
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -100,13 +75,6 @@
 [이전 맥락]
 [이전 장면]
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -130,13 +98,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -171,17 +132,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-[준]
-[Mock AI: personaGeneration] 이름: 준
-설명: 모의 조연
-역할: supporting
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -200,13 +150,6 @@
 [이전 맥락]
 [이전 장면]
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -230,13 +173,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소

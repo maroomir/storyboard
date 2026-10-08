@@ -4,7 +4,7 @@
 
 ## 1장
 
-<!-- chapter-input: sha256:cf7f513ce6080c43a6fc6c9a6ba803f81231f5bf7abe9d8fbe209d07cbcb473f -->
+<!-- chapter-input: sha256:ef2d1d944e193cbe0f5fe06d59780f63975da8b637f40fb52f17ab00dda0b2ea -->
 
 [Mock AI: chapterSummary] [장 제목]
 1장
@@ -17,13 +17,6 @@
 ## 첫 만남
 
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -47,13 +40,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -79,17 +65,6 @@
 ## 엇갈림
 
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-[준]
-[Mock AI: personaGeneration] 이름: 준
-설명: 모의 조연
-역할: supporting
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -108,13 +83,6 @@
 [이전 맥락]
 [이전 장면]
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -138,13 +106,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -179,17 +140,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-[준]
-[Mock AI: personaGeneration] 이름: 준
-설명: 모의 조연
-역할: supporting
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -208,13 +158,6 @@
 [이전 맥락]
 [이전 장면]
 [Mock AI: sceneSectionExpansion] [장면 전체 뼈대]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
@@ -238,13 +181,6 @@
 모의 비트 셋
 
 [이번 구간 — 이 부분만 확장하라]
-[Mock AI: sceneDialoguePolish] [등장 캐릭터 페르소나]
-[하나]
-[Mock AI: personaGeneration] 이름: 하나
-설명: 모의 주인공
-역할: main
-
-[뼈대]
 [Mock AI: sceneSkeleton] [이 장면의 확정 사실]
 - 사건: 모의 사건
 - 장소: 모의 장소
