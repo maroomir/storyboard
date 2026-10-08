@@ -4,17 +4,17 @@
     {
       "id": "linear",
       "kind": "fresh",
-      "init": ["--genre", "미스터리", "--audience", "성인", "--pov", "third-limited", "--target-words", "6000", "--chapters", "2", "--scenes-per-chapter", "2", "--concept", "짧은 골든 작품"]
+      "init": ["--genre", "미스터리", "--audience", "성인", "--pov", "third-limited", "--target-words", "6000", "--chapters", "1", "--scenes-per-chapter", "2", "--concept", "짧은 골든 작품"]
     },
     {
       "id": "omnibus",
       "kind": "fresh",
-      "init": ["--composition", "omnibus", "--episodes", "2", "--chapters", "2", "--scenes-per-chapter", "1", "--pov", "first"]
+      "init": ["--composition", "omnibus", "--episodes", "2", "--chapters", "1", "--scenes-per-chapter", "1", "--pov", "first"]
     },
     {
       "id": "alternating-pov",
       "kind": "fresh",
-      "init": ["--composition", "alternating-pov", "--pov-characters", "hana,jun", "--chapters", "2", "--scenes-per-chapter", "1"]
+      "init": ["--composition", "alternating-pov", "--pov-characters", "hana,jun", "--chapters", "1", "--scenes-per-chapter", "1"]
     },
     {
       "id": "reopen-0.12.2",
