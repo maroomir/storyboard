@@ -32,52 +32,61 @@ const schoolCard: BackgroundCard = {
   description: ["낡은 복도와 교실"]
 }
 
+const personaPrompt = "persona prompt v1"
+
 describe("persona memory codec", () => {
   it("serializes and parses a persona memory record", () => {
     const record: PersonaMemoryRecord = {
       cardId: "elia",
       persona: "나는 엘리아다.",
       updatedThroughScene: "03-classroom",
-      cardHash: computePersonaCardHash(eliaCard)
+      cardHash: computePersonaCardHash(eliaCard, personaPrompt)
     }
 
     expect(parsePersonaMemory(serializePersonaMemory(record))).toEqual(record)
   })
 
   it("changes the persona hash when a meaningful card field changes", () => {
-    const baseHash = computePersonaCardHash(eliaCard)
-    const renamedHash = computePersonaCardHash({ ...eliaCard, name: "엘리" })
-    const revoicedHash = computePersonaCardHash({ ...eliaCard, voice: ["거친 말투"] })
+    const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
+    const renamedHash = computePersonaCardHash({ ...eliaCard, name: "엘리" }, personaPrompt)
+    const revoicedHash = computePersonaCardHash({ ...eliaCard, voice: ["거친 말투"] }, personaPrompt)
 
     expect(baseHash).toMatch(/^sha256:[a-f0-9]{64}$/)
     expect(renamedHash).not.toBe(baseHash)
     expect(revoicedHash).not.toBe(baseHash)
   })
 
+  it("changes the persona hash when the persona prompt changes", () => {
+    const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
+    const rewordedHash = computePersonaCardHash(eliaCard, "persona prompt v2")
+
+    expect(rewordedHash).not.toBe(baseHash)
+  })
+
   it("keeps the persona hash stable when unrelated card fields change", () => {
-    const baseHash = computePersonaCardHash(eliaCard)
-    const withTags = computePersonaCardHash({ ...eliaCard, tags: ["새 태그"] })
+    const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
+    const withTags = computePersonaCardHash({ ...eliaCard, tags: ["새 태그"] }, personaPrompt)
 
     expect(withTags).toBe(baseHash)
   })
 
   it("changes the persona hash when attributes change", () => {
-    const baseHash = computePersonaCardHash(eliaCard)
-    const withAttributes = computePersonaCardHash({ ...eliaCard, attributes: { mbti: "ENFJ" } })
+    const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
+    const withAttributes = computePersonaCardHash({ ...eliaCard, attributes: { mbti: "ENFJ" } }, personaPrompt)
 
     expect(withAttributes).not.toBe(baseHash)
   })
 
   it("keeps the persona hash stable regardless of attribute key order", () => {
-    const ordered = computePersonaCardHash({ ...eliaCard, attributes: { age: 17, mbti: "ENFJ", sex: "female" } })
-    const shuffled = computePersonaCardHash({ ...eliaCard, attributes: { sex: "female", age: 17, mbti: "ENFJ" } })
+    const ordered = computePersonaCardHash({ ...eliaCard, attributes: { age: 17, mbti: "ENFJ", sex: "female" } }, personaPrompt)
+    const shuffled = computePersonaCardHash({ ...eliaCard, attributes: { sex: "female", age: 17, mbti: "ENFJ" } }, personaPrompt)
 
     expect(shuffled).toBe(ordered)
   })
 
   it("changes the persona hash when desire changes", () => {
-    const baseHash = computePersonaCardHash(eliaCard)
-    const withDesire = computePersonaCardHash({ ...eliaCard, desire: ["친구를 사귀고 싶다"] })
+    const baseHash = computePersonaCardHash(eliaCard, personaPrompt)
+    const withDesire = computePersonaCardHash({ ...eliaCard, desire: ["친구를 사귀고 싶다"] }, personaPrompt)
 
     expect(withDesire).not.toBe(baseHash)
   })
