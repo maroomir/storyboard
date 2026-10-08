@@ -15,6 +15,9 @@ maxTokens: 4000
 설명 없이 JSON 배열만 출력하라. 고친 대사는 따옴표 없이 문장만 적는다.
 [{"n":3,"text":"고친 대사"}]
 고칠 대사가 없으면 빈 배열 []을 출력하라.
+{{#hasRetryReasons}}
+앞서 돌려준 대사가 다음 이유로 반려됐다. 이번에는 어기지 마라: {{retryReasons}}
+{{/hasRetryReasons}}
 {{> proseConventions}}{{#hasVoiceStyle}}
 {{> voiceStyle}}{{/hasVoiceStyle}}
 

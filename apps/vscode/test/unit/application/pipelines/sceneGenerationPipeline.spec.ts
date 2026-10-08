@@ -81,7 +81,7 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     createCharacterPersona: vi.fn(async () => "p"),
     describeBackground: vi.fn(async () => ""),
     draftSceneSkeleton: vi.fn(async () => "뼈대 본문"),
-    polishSceneDialogue: vi.fn(async () => []),
+    polishSceneDialogue: vi.fn(async () => polishResponse([])),
     attributeSceneDialogue: vi.fn(async (input) =>
       (input as { lines: readonly string[] }).lines.map((_, offset) => ({
         index: offset + 1,
@@ -90,6 +90,10 @@ function createRecordingAiService(): SceneGenerationPipelineAiService & {
     ),
     expandSceneSection: vi.fn(async () => longProse("살붙인 본문"))
   }
+}
+
+function polishResponse(rewrites: readonly { index: number; text: string }[], isTruncated = false) {
+  return { rewrites, isTruncated }
 }
 
 function createRecordingCorpus(corpus: SceneDialogueRecord[] = []): SceneDialogueCorpus {
@@ -828,7 +832,7 @@ describe("대사 다듬기 단계", () => {
     const skeleton = `엘리아가 문 앞에서 걸음을 멈췄다. "가자, 지금." ${"복도는 조용했다. ".repeat(20)}`
     const polished = skeleton.replace('"가자, 지금."', '“가자, 지금 당장.”')
     ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
-    ai.polishSceneDialogue.mockResolvedValueOnce([{ index: 1, text: "“가자, 지금 당장.”" }])
+    ai.polishSceneDialogue.mockResolvedValueOnce(polishResponse([{ index: 1, text: "“가자, 지금 당장.”" }]))
     ai.expandSceneSection.mockImplementation(
       async (input) => `${(input as { section: string }).section} ${longProse("살붙인 본문")}`
     )
@@ -885,8 +889,8 @@ describe("대사 다듬기 단계", () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “알았어.”")
     ai.polishSceneDialogue
-      .mockResolvedValueOnce([{ index: 1, text: "가자, 당장." }, { index: 2, text: "엘리아 판" }])
-      .mockResolvedValueOnce([{ index: 2, text: "지훈 판" }])
+      .mockResolvedValueOnce(polishResponse([{ index: 1, text: "가자, 당장." }, { index: 2, text: "엘리아 판" }]))
+      .mockResolvedValueOnce(polishResponse([{ index: 2, text: "지훈 판" }]))
 
     const result = await runSceneGenerationPipeline({
       sceneStem: "01-opening",
@@ -899,14 +903,13 @@ describe("대사 다듬기 단계", () => {
     expect(result.warnings[0]).toContain("대사 2번은 두 인물이 자기 대사라고 해")
   })
 
-  it("falls back to the original skeleton and warns when a rewrite adds a character", async () => {
+  it("re-asks only the character whose rewrite failed, and keeps the skeleton line for it in the end", async () => {
     const ai = createRecordingAiService()
-    const skeleton = "엘리아가 말했다. “가자, 지금.”"
-    ai.draftSceneSkeleton.mockResolvedValueOnce(skeleton)
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 그가 답했다. “알았어.”")
     ai.polishSceneDialogue.mockImplementation(async (input) =>
       (input as { character: { name: string } }).character.name === "엘리아"
-        ? [{ index: 1, text: "지훈이 들어왔다" }]
-        : []
+        ? polishResponse([{ index: 1, text: "지훈이 들어왔다" }])
+        : polishResponse([{ index: 2, text: "알았다니까." }])
     )
 
     const result = await runSceneGenerationPipeline({
@@ -916,11 +919,61 @@ describe("대사 다듬기 단계", () => {
       format: "novel"
     })
 
-    // 인물 2명 × 다듬기 재시도 한도(2판)
-    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(4)
-    expect(result.skeleton).toBe(skeleton)
-    expect(result.warnings[0]).toContain("대사 다듬기를 되돌렸습니다")
-    expect(result.warnings[0]).toContain("지훈")
+    const names = ai.polishSceneDialogue.mock.calls.map(
+      (call) => (call[0] as { character: { name: string } }).character.name
+    )
+    // 첫 판은 두 인물, 둘째 판(재시도 한도 2)은 위반한 엘리아만.
+    expect(names).toEqual(["엘리아", "지훈", "엘리아"])
+    expect(result.skeleton).toBe("엘리아가 말했다. “가자, 지금.” 그가 답했다. “알았다니까.”")
+    const polishWarnings = result.warnings.filter((warning) => warning.includes("다듬기"))
+    expect(polishWarnings).toHaveLength(1)
+    expect(polishWarnings[0]).toContain("엘리아의 대사 다듬기를 되돌렸습니다")
+    expect(polishWarnings[0]).toContain("지훈")
+    expect(result.dialoguePolish).toEqual({ lineCount: 2, polishedCount: 1, contestedCount: 0 })
+  })
+
+  it("hands the rejection reasons to the retry call", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
+    let eliaCalls = 0
+    ai.polishSceneDialogue.mockImplementation(async (input) => {
+      if ((input as { character: { name: string } }).character.name !== "엘리아") {
+        return polishResponse([])
+      }
+      eliaCalls += 1
+      return polishResponse([{ index: 1, text: eliaCalls === 1 ? "지훈이 들어왔다" : "가자, 당장." }])
+    })
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const eliaInputs = ai.polishSceneDialogue.mock.calls
+      .map((call) => call[0] as { character: { name: string }; retryReasons?: string[] })
+      .filter((input) => input.character.name === "엘리아")
+    expect(eliaInputs[0]).not.toHaveProperty("retryReasons")
+    expect(eliaInputs[1]?.retryReasons?.[0]).toContain("뼈대에 없는 인물")
+    expect(result.skeleton).toBe("엘리아가 말했다. “가자, 당장.”")
+    expect(result.warnings.filter((warning) => warning.includes("다듬기"))).toEqual([])
+  })
+
+  it("warns when a polish response was cut at the output limit", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.”")
+    ai.polishSceneDialogue.mockResolvedValueOnce(polishResponse([], true))
+
+    const result = await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문"),
+      aiService: ai,
+      format: "novel"
+    })
+
+    expect(ai.polishSceneDialogue).toHaveBeenCalledTimes(1)
+    expect(result.warnings).toContain("엘리아의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다")
   })
 })
 

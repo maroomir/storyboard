@@ -41,6 +41,7 @@ import {
 } from './sceneSectionPlan';
 import { selectRepresentativeDialogue } from './dialogueCorpus';
 import {
+  type DialoguePolishSummary,
   type RunSceneGenerationPipelineInput,
   type RunSceneGenerationPipelineResult,
   type SceneGenerationPipelineAiService,
@@ -49,6 +50,7 @@ import {
 
 export type {
   BackgroundMemoryStore,
+  DialoguePolishSummary,
   PersonaMemoryStore,
   RunSceneGenerationPipelineInput,
   RunSceneGenerationPipelineResult,
@@ -297,11 +299,16 @@ function weighViolations(
   return violations.reduce((total, violation) => total + weights[violation.kind], 0);
 }
 
-// NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남으면 다듬기 이전 뼈대로 되돌린다.
+// NOTE: 다듬기가 사건을 늘리면 씬 전체가 오염되므로, 위반이 남은 다듬기는 뼈대 대사로 되돌린다.
 // 대사 개성은 덜해도 사건은 안전하고, 되돌린 사실은 헤더 경고로 알린다.
 
 // 인물 하나에 호출 하나. 각 호출은 자기 인물의 페르소나·입버릇·말투 표본·아는 것만 받고, 번호로
 // 가리킨 자기 대사만 돌려준다. 병합은 번호 기준이고 두 인물이 같은 번호를 가져가면 뼈대가 이긴다.
+//
+// NOTE: 검증은 인물마다 따로 한다. 그 인물의 재작성만 뼈대에 넣어 보고, 위반이면 그 인물만 사유를
+// 실어 다시 부른다. 한 판을 통째로 검증하면 한 인물의 실수가 나머지 인물의 다듬기까지 버리고, 다시
+// 돌릴 때도 문제없던 인물의 호출을 되풀이하게 된다. 한도를 다 쓰고도 위반인 인물은 그 인물만
+// 뼈대 대사로 남는다.
 async function polishDialogueOrKeepSkeleton(input: {
   readonly aiService: Pick<SceneGenerationPipelineAiService, 'polishSceneDialogue'>;
   readonly skeleton: string;
@@ -312,27 +319,49 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
   readonly onProgress: RunSceneGenerationPipelineInput['onProgress'];
-}): Promise<{ readonly text: string; readonly warnings: readonly string[] }> {
-  let lastViolations: readonly SectionViolation[] = [];
+}): Promise<{
+  readonly text: string;
+  readonly warnings: readonly string[];
+  readonly summary: DialoguePolishSummary | undefined;
+}> {
   const numbered = numberSkeletonDialogue(input.skeleton, input.tuning);
   const speakers = [...input.personas.keys()];
 
   if (numbered.dialogues.length === 0 || speakers.length === 0) {
     input.onProgress?.('polishDialogue', 1, 1);
-    return { text: input.skeleton, warnings: [] };
+    return { text: input.skeleton, warnings: [], summary: undefined };
   }
 
   const catchphrases = characterCatchphrases(input.characters);
   const speechToOthers = characterSpeechToOthers(input.characters);
+  const validateAgainstSkeleton = (polished: string): SectionViolation[] =>
+    validatePolishedSkeleton({
+      skeleton: input.skeleton,
+      polished,
+      characters: input.characters,
+      lengthLimit: input.skeleton.length * input.tuning.polishLengthLimitRatio,
+      tuning: input.tuning,
+    });
+
+  const accepted = new Map<string, readonly SceneDialogueRewrite[]>();
+  const rejected = new Map<string, readonly SectionViolation[]>();
+  const truncated = new Set<string>();
+  let pending = speakers;
 
   // NOTE: 뼈대·구간은 attempt <= retryLimit 로 돌고 다듬기만 < 로 돈다. 같은 값이 호출 수를 하나
-  // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다. 한 판은 인물 수만큼의 호출이다.
-  for (let attempt = 0; attempt < input.tuning.polishRetryLimit; attempt += 1) {
-    const rewritesByCharacter = new Map<string, readonly SceneDialogueRewrite[]>();
+  // 다르게 만드므로, 손잡이를 비교할 때 두 계열을 나란히 놓지 않는다. 첫 판은 인물 수만큼, 그 뒤
+  // 판은 위반한 인물 수만큼의 호출이다.
+  for (
+    let attempt = 0;
+    attempt < input.tuning.polishRetryLimit && pending.length > 0;
+    attempt += 1
+  ) {
+    const failing: string[] = [];
 
-    for (const [position, name] of speakers.entries()) {
-      input.onProgress?.('polishDialogue', position + 1, speakers.length);
-      const rewrites = await input.aiService.polishSceneDialogue(
+    for (const [position, name] of pending.entries()) {
+      input.onProgress?.('polishDialogue', position + 1, pending.length);
+      const retryReasons = rejected.get(name)?.map((violation) => violation.detail);
+      const response = await input.aiService.polishSceneDialogue(
         {
           numberedSkeleton: numbered.text,
           character: {
@@ -344,41 +373,80 @@ async function polishDialogueOrKeepSkeleton(input: {
             speechToOthers: speechToOthers.get(name) ?? [],
           },
           otherCharacters: speakers.filter((other) => other !== name),
+          ...(retryReasons === undefined ? {} : { retryReasons }),
         },
         input.options,
       );
-      rewritesByCharacter.set(name, rewrites);
+
+      if (response.isTruncated) {
+        truncated.add(name);
+      } else {
+        truncated.delete(name);
+      }
+
+      const solo = mergeDialogueRewrites(
+        input.skeleton,
+        numbered,
+        new Map([[name, response.rewrites]]),
+      );
+      const violations = validateAgainstSkeleton(solo.text);
+
+      if (violations.length === 0) {
+        accepted.set(name, response.rewrites);
+        rejected.delete(name);
+      } else {
+        rejected.set(name, violations);
+        failing.push(name);
+      }
     }
 
-    const merged = mergeDialogueRewrites(input.skeleton, numbered, rewritesByCharacter);
-    const polished = merged.text;
+    pending = failing;
+  }
 
-    const violations = validatePolishedSkeleton({
-      skeleton: input.skeleton,
-      polished,
-      characters: input.characters,
-      lengthLimit: input.skeleton.length * input.tuning.polishLengthLimitRatio,
-      tuning: input.tuning,
-    });
+  const warnings = [
+    ...[...rejected.entries()].map(
+      ([name, violations]) =>
+        `${name}의 대사 다듬기를 되돌렸습니다 — ${violations.map((violation) => violation.detail).join(' / ')}`,
+    ),
+    ...[...truncated]
+      .filter((name) => !rejected.has(name))
+      .map(
+        (name) => `${name}의 대사 다듬기 응답이 출력 한도에서 잘려 일부 대사를 손보지 못했습니다`,
+      ),
+  ];
 
-    if (violations.length === 0) {
-      return {
-        text: polished,
-        warnings:
-          merged.contestedIndices.length === 0
-            ? []
-            : [
-                `대사 ${merged.contestedIndices.join(', ')}번은 두 인물이 자기 대사라고 해 뼈대 그대로 두었습니다`,
-              ],
-      };
-    }
+  const merged = mergeDialogueRewrites(input.skeleton, numbered, accepted);
+  const combinedViolations = validateAgainstSkeleton(merged.text);
 
-    lastViolations = violations;
+  // 인물마다 통과했어도 합친 결과가 길이 한도를 넘을 수 있다. 그때는 종전처럼 씬 전체를 되돌린다.
+  if (combinedViolations.length > 0) {
+    return {
+      text: input.skeleton,
+      warnings: [
+        ...warnings,
+        ...combinedViolations.map(
+          (violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`,
+        ),
+      ],
+      summary: { lineCount: numbered.dialogues.length, polishedCount: 0, contestedCount: 0 },
+    };
   }
 
   return {
-    text: input.skeleton,
-    warnings: lastViolations.map((violation) => `대사 다듬기를 되돌렸습니다 — ${violation.detail}`),
+    text: merged.text,
+    warnings: [
+      ...warnings,
+      ...(merged.contestedIndices.length === 0
+        ? []
+        : [
+            `대사 ${merged.contestedIndices.join(', ')}번은 두 인물이 자기 대사라고 해 뼈대 그대로 두었습니다`,
+          ]),
+    ],
+    summary: {
+      lineCount: numbered.dialogues.length,
+      polishedCount: merged.replacedCount,
+      contestedCount: merged.contestedIndices.length,
+    },
   };
 }
 
@@ -511,6 +579,7 @@ interface SceneRunState {
   voiceSamples: Map<string, readonly string[]>;
   skeleton: string;
   polishedText: string;
+  dialoguePolish: DialoguePolishSummary | undefined;
   readonly warnings: string[];
   draftBody: string;
   dialogueRecord: SceneDialogueRecord | undefined;
@@ -628,6 +697,7 @@ const polishDialogueStage: ISceneStage = {
       tuning: ctx.tuning,
     });
     state.polishedText = polished.text;
+    state.dialoguePolish = polished.summary;
     state.warnings.push(...polished.warnings);
     assertNotCancelled(ctx.shouldCancel);
   },
@@ -738,6 +808,7 @@ async function executeSceneGenerationPipeline(
     voiceSamples: new Map(),
     skeleton: '',
     polishedText: '',
+    dialoguePolish: undefined,
     warnings: [],
     draftBody: '',
     dialogueRecord: undefined,
@@ -755,6 +826,7 @@ async function executeSceneGenerationPipeline(
     personasUsed: state.personasUsed,
     providers: ctx.providers,
     ...(state.dialogueRecord === undefined ? {} : { dialogueRecord: state.dialogueRecord }),
+    ...(state.dialoguePolish === undefined ? {} : { dialoguePolish: state.dialoguePolish }),
   };
 }
 

@@ -86,6 +86,14 @@ export interface RunSceneGenerationPipelineInput {
   readonly stages?: readonly SceneStageId[];
 }
 
+// 대사 다듬기가 실제로 손본 양. 인물별 호출은 화자가 불분명한 대사를 건너뛰므로 적용률을 따로 본다.
+export interface DialoguePolishSummary {
+  readonly lineCount: number;
+  readonly polishedCount: number;
+  // 두 인물이 같은 번호를 가져가 뼈대로 둔 대사 수.
+  readonly contestedCount: number;
+}
+
 export interface RunSceneGenerationPipelineResult {
   readonly draftBody: string;
   // 1단계 산출물. 사건·등장·종료 지점이 여기서 확정되므로 캐시와 디버깅의 기준이 된다.
@@ -97,4 +105,6 @@ export interface RunSceneGenerationPipelineResult {
   readonly providers: Readonly<SceneGenerationPipelineTaskProviders>;
   // 완성된 초안 본문의 대사 귀속. 호출자가 초안을 쓴 뒤 저장한다.
   readonly dialogueRecord?: SceneDialogueRecord;
+  // 다듬기 단계가 돌았고 대사가 있었을 때만 있다.
+  readonly dialoguePolish?: DialoguePolishSummary;
 }

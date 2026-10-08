@@ -227,7 +227,7 @@ describe("the whole pipeline is unchanged by an explicit default", () => {
       }),
       polishSceneDialogue: vi.fn(async () => {
         log.push("polish")
-        return []
+        return { rewrites: [], isTruncated: false }
       }),
       attributeSceneDialogue: vi.fn(async (input) => {
         log.push("attribute")

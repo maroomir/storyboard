@@ -26,6 +26,16 @@ describe("대사 다듬기 계약", () => {
     expect(system).toContain("[이 인물]이 말한 대사만")
     expect(system).toContain("[아는 것]에 적힌 정보만")
   })
+
+  it("carries the rejection reasons only on a retry", () => {
+    const retry = SceneDialoguePolishPrompt.build({
+      ...polishInput,
+      retryReasons: ["뼈대에 없는 인물이 등장합니다 (지훈)"]
+    }).system
+
+    expect(system).not.toContain("반려됐다")
+    expect(retry).toContain("반려됐다. 이번에는 어기지 마라: 뼈대에 없는 인물이 등장합니다 (지훈)")
+  })
 })
 
 describe("페르소나 예시 대사 재사용 금지", () => {
