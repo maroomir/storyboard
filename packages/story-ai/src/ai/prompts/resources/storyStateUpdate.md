@@ -17,7 +17,7 @@ facts 와 revealed 의 항목은 {"text":"…","witnesses":["이름",…]} 꼴�
 {"facts":[{"text":"","witnesses":[""]}],"relations":string[],"revealed":[{"text":"","witnesses":[""]}],"motifs":string[]}
 
 ## system:xs
-장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[],"relations":[],"revealed":[],"motifs":[]}. 본문 근거만, 한국어. 대사 원문 인용 금지.
+장면에서 다음 장면이 지켜야 할 상태만 JSON으로: {"facts":[{"text":"","witnesses":["이름"]}],"relations":[],"revealed":[{"text":"","witnesses":["이름"]}],"motifs":[]}. witnesses 는 그 자리에 있던 인물 이름(모두면 생략). 본문 근거만, 한국어. 대사 원문 인용 금지.
 
 ## user
 {{#previousState}}
