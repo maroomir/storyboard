@@ -366,6 +366,21 @@ describe("ledger updates after generation", () => {
     expect(fileSystem.read(paths.storyState.path)).toContain(`<!-- scene-input: 1 ${hashA} -->`)
   })
 
+  it("warns with the witness names no card answers to", async () => {
+    const fileSystem = new MemoryWorkspace()
+    logger.warn.mockClear()
+
+    await updateStoryStateAfterGeneration(
+      generationInputs(1, hashA),
+      generationOptions(fileSystem),
+      aiService([{ section: "facts", text: "본 일", witnesses: ["낯선 이"] }]),
+      "본문"
+    )
+
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(String(logger.warn.mock.calls[0]?.[0])).toContain("낯선 이")
+  })
+
   // 원장 갱신에서 항목을 못 받아도 이번 판본이 기준이 되어야 다음 감사가 옳게 대조한다.
   it("records the hash even when the model returns no items", async () => {
     const fileSystem = new MemoryWorkspace()
@@ -391,16 +406,32 @@ describe("ledger updates after generation", () => {
       { id: "hana", name: "하나", aliases: ["하나 씨"] },
       { id: "jun", name: "준" }
     ]
-    const entries = toStoryStateEntries(
+    const mapping = toStoryStateEntries(
       [
-        { section: "facts", text: "하나만 아는 일", witnesses: ["하나 씨", "모르는 이름"] },
+        { section: "facts", text: "하나만 아는 일", witnesses: ["하나 씨"] },
         { section: "facts", text: "모두 아는 일" },
         { section: "revealed", text: "아는 이름이 없음", witnesses: ["누구"] }
       ],
       characters
     )
 
-    expect(entries.map((entry) => entry.witnesses)).toEqual([["hana"], ["hana", "jun"], ["hana", "jun"]])
+    expect(mapping.entries.map((entry) => entry.witnesses)).toEqual([["hana"], ["hana", "jun"], ["hana", "jun"]])
+    expect(mapping.unknownWitnesses).toEqual(["누구"])
+  })
+
+  // 성을 뺀 이름("준" 대신 "이준"의 "준")이 섞이면 맞는 이름만 남기는 것이 아니라 전원으로 둔다. 맞는
+  // 이름만 남기면 실제로 그 자리에 있던 인물이 그 사실을 모르는 것으로 기록된다.
+  it("keeps the whole cast when only some of the tagged names match a card", () => {
+    const mapping = toStoryStateEntries(
+      [{ section: "facts", text: "둘이 본 일", witnesses: ["김하나", "준"] }],
+      [
+        { id: "hana", name: "김하나" },
+        { id: "jun", name: "이준" }
+      ]
+    )
+
+    expect(mapping.entries[0]?.witnesses).toEqual(["hana", "jun"])
+    expect(mapping.unknownWitnesses).toEqual(["준"])
   })
 
   it("rewinds the later scenes when an earlier one is regenerated", async () => {
