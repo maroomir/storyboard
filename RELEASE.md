@@ -61,7 +61,8 @@ jobs. Its steps are also separate scripts:
 - `npm run bvt:golden` — golden workspaces (`bvt/golden/`): the built CLI drives each scenario in
   `scenarios.json` with the `mock` provider and every file the work would commit is compared with
   the snapshot, with timestamps, ids, hashes and the version masked on both sides. The `reopen`
-  scenarios open a frozen workspace an earlier release wrote and must leave it unchanged. When a
+  scenarios open a frozen workspace an earlier release wrote and must leave it unchanged; their
+  `draft generate --all` must generate nothing, though the git-ignored cache is not there. When a
   difference is intended, run `npm run bvt:golden -- --update`, read the snapshot diff, and commit
   it with the change.
 - `npm run bvt:smoke` — the artifact smoke: `scripts/package-release.sh` packages the VSIX, the

@@ -13,6 +13,7 @@ after the first public release.
 ### Fixed
 
 - **A short previous draft no longer leaks its front matter into the next scene's previous-scene context.** The last 1000 characters of the raw draft file were used as they were, so when the body was shorter than that, metadata such as `generatedAt`, `generator` and `warnings` reached the model as story context. Only the body is used now. (#99)
+- **A work without `.storyboard/cache/`, such as one cloned with git, no longer regenerates drafts that are current.** Whether a draft was current was judged only from the git-ignored cache, so `novel generate` and `draft generate --all` treated every draft as "different from the last generation" and paid to rewrite each scene. Without a cache, the scene input hash recorded in the committed story-state ledger (`.storyboard/memory/storyState.md`) now decides, so a scene whose inputs are unchanged is left as it is. Existing works benefit without any file change. (#100)
 
 ## [0.12.4] - 2026-10-08
 
