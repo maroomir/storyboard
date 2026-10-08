@@ -9,6 +9,8 @@ Storyboard의 주요 변경 사항을 한국어로 기록합니다.
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-10-08
+
 ### 변경 (호환성 주의)
 
 - **노트 카드 후보 파일(`.storyboard/cache/notes/candidates.json`)의 형식이 바뀌었습니다.** 0.12가 남긴 후보는 읽지 않습니다. `card promote`가 경고와 함께 건너뛰고, 다음 `notes absorb`가 새 형식으로 바꿔 씁니다. 승격하지 않은 후보가 남아 있었다면 그 노트를 다시 흡수하세요.

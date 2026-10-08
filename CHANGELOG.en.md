@@ -10,6 +10,8 @@ after the first public release.
 
 ## [Unreleased]
 
+## [0.12.4] - 2026-10-08
+
 ### Changed (breaking)
 
 - **The note card candidate file (`.storyboard/cache/notes/candidates.json`) has a new format.** Candidates left by 0.12 are not read: `card promote` skips them with a warning and the next `notes absorb` rewrites the file in the new format. If candidates were still waiting to be promoted, absorb those notes again.
