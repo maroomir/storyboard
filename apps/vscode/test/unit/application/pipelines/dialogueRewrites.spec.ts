@@ -47,6 +47,22 @@ describe("mergeDialogueRewrites", () => {
     expect(merged.contestedIndices).toEqual([2])
   })
 
+  it("drops the ⟨n⟩ marker a model echoed back with its line", () => {
+    const merged = mergeDialogueRewrites(
+      skeleton,
+      numbered,
+      new Map([["하나", [{ index: 1, text: "⟨1⟩ “가자, 당장.”" }]]])
+    )
+
+    expect(merged.text).toBe("하나가 말했다. “가자, 당장.” 준이 웃었다. “싫은데.” 하나가 돌아섰다.")
+  })
+
+  it("ignores a rewrite that still carries a marker after the leading one is gone", () => {
+    const merged = mergeDialogueRewrites(skeleton, numbered, new Map([["하나", [{ index: 1, text: "가자 ⟨2" }]]]))
+
+    expect(merged.text).toBe(skeleton)
+  })
+
   it("ignores an unknown index, an empty line, and a rewrite that smuggles in a second quote", () => {
     const merged = mergeDialogueRewrites(
       skeleton,
