@@ -224,6 +224,7 @@ function normalizeCharacterCard(card: CharacterCard): CharacterCard {
     ...(card.traits === undefined ? {} : { traits: card.traits }),
     ...(card.description === undefined ? {} : { description: card.description }),
     ...(card.voice === undefined ? {} : { voice: card.voice }),
+    ...(card.catchphrases === undefined ? {} : { catchphrases: card.catchphrases }),
     ...(card.desire === undefined ? {} : { desire: card.desire }),
     ...(card.relations === undefined ? {} : { relations: card.relations }),
     ...(card.arc === undefined ? {} : { arc: card.arc }),

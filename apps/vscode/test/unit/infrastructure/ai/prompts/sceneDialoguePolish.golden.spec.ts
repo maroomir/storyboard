@@ -14,6 +14,7 @@ describe("SceneDialoguePolishPrompt golden", () => {
       ["하나", ["“빨리 와.”", "“됐어.”"]],
       ["준", []]
     ]),
+    catchphrases: new Map([["준", ["뭐 별거는 아닌데"]]]),
     style: {
       narration: { tense: "present", focal: "하나" },
       genre: "무협",

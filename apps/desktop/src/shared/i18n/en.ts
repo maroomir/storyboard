@@ -227,6 +227,7 @@ export const enMessages: Readonly<Record<MessageKey, string>> = {
   'bible.description': 'Description',
   'bible.traits': 'Traits',
   'bible.voice': 'Voice',
+  'bible.catchphrases': 'Catchphrases',
   'bible.desire': 'Wants',
   'bible.tags': 'Tags',
   'bible.relations': 'Relationships',

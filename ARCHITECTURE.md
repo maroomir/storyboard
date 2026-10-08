@@ -255,6 +255,8 @@ description:
 voice:
   - 밝고 또렷한 1인칭으로 말한다
   - 긴장해도 말끝을 흐리지 않는다
+catchphrases:            # 반복돼야 하는 입버릇·러닝개그. voice 의 예시 대사와 달리 복사 금지·반복 제한의 예외
+  - 이 몸이 말이야
 desire:
   - 새 학교에서 진짜 친구를 만들고 싶다
 relations:
@@ -299,7 +301,7 @@ description:
 - 좌측: 미리보기(캐릭터 프로필 이미지 + 역할/유형 배지)
 - 우측: 탭으로 구성된 편집 영역
   - **`편집` 탭**: 사용자가 수기로 작성하는 필드만 단일 목록형으로 모은다.
-    - 캐릭터: `name`·`aliases`·`role`·`voice`·`desire`·`description`·`tags`·`profile` (`id`는 읽기 전용)
+    - 캐릭터: `name`·`aliases`·`role`·`voice`·`catchphrases`·`desire`·`description`·`tags`·`profile` (`id`는 읽기 전용)
     - 배경: `name`·`aliases`·`description`·`tags`·`time`·`weather`·`senses`·`locationKind`(location 한정) (`id`는 읽기 전용)
   - **`AI 기록` 탭(캐릭터 한정, 읽기 전용)**: draft 생성 중 AI가 자동 갱신하는 값을 시각화한다(아크 곡선·관계 미리보기). 직접 입력하지 않는다.
   - **`YAML` 탭**: 전체 필드의 raw 확인/편집 escape hatch.
@@ -310,7 +312,7 @@ description:
 
 카드 필드는 출처에 따라 입력 주체가 나뉜다. 자세한 영향도 분석은 `apps/vscode/docs/card-parameter-impact.md`.
 
-- **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
+- **수기 입력(작가 의도·정체성)**: 캐릭터 `id`·`name`·`voice`·`catchphrases`·`aliases`·`role`·`description`·`tags`·`profile`, 배경 `type`·`id`·`name`·`description`·`tags`·`locationKind`.
 - **AI 자동 갱신(이야기 진행으로 누적되는 값)**: 캐릭터 `traits`·`recentDialogues`·`attributes`·`arc`·`relations`, 배경 `characterIds`. 스키마/YAML에는 유지되지만 `편집` 탭에 입력란을 두지 않는다.
   - `traits`·`recentDialogues`는 `apps/vscode/src/infrastructure/ai/traitsUpdater.ts`가 draft 생성 후 카드에 직접 기록한다.
   - 배경 `characterIds`는 씬에 부착된 배경 카드에 등장 인물 id를 결정적으로 append한다(`apps/vscode/src/infrastructure/ai/backgroundCharacterUpdater.ts`).

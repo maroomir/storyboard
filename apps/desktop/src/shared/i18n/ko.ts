@@ -228,6 +228,7 @@ export const koMessages = {
   'bible.description': '소개',
   'bible.traits': '성격',
   'bible.voice': '말투',
+  'bible.catchphrases': '입버릇',
   'bible.desire': '바라는 것',
   'bible.tags': '태그',
   'bible.relations': '관계',

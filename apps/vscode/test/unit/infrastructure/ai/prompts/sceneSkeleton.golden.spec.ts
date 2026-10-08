@@ -12,6 +12,7 @@ describe("SceneSkeletonPrompt golden", () => {
       ["하나", "말투: 짧고 단호함"],
       ["준", ""]
     ]),
+    catchphrases: new Map([["하나", ["뭐 별거는 아닌데"]]]),
     background: { ...emptyBackground, description: ["비 내리는 부두", "낡은 창고"] },
     previousContext: "둘은 어제 다퉜다.",
     endState: "준이 문을 닫고 나간다.",

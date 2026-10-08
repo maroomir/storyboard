@@ -87,7 +87,7 @@ export function craftContractLines(override: CraftContractOverride | undefined):
 
   // NOTE: 심상만 제한하면 제목·후렴 같은 반복 대사가 규제 밖으로 새어 몇 배로 늘어난다.
   lines.push(
-    `같은 심상·소재(예: 흐릿한 길, 문틈)는 물론 같은 대사·후렴구·문장도 장면 전체에서 ${contract.motifRepeatLimit}회를 넘겨 반복하지 마라.`,
+    `같은 심상·소재(예: 흐릿한 길, 문틈)는 물론 같은 대사·후렴구·문장도 장면 전체에서 ${contract.motifRepeatLimit}회를 넘겨 반복하지 마라. 인물 카드가 입버릇으로 정한 표현은 이 제한의 예외다.`,
   );
 
   if (contract.stockGestureBlacklist.length > 0) {
