@@ -18,6 +18,8 @@ export interface SceneDialoguePolishCharacter {
   readonly knowledge?: readonly string[];
   // 상대별 말투("지훈에게: 반말"). 카드 relations 의 speech 에서 온다.
   readonly speechToOthers?: readonly string[];
+  // 앞선 장면에서 바뀐 관계·호칭·말투(원장의 관계 항목). 상대별 말투보다 나중 상태다.
+  readonly relationChanges?: readonly string[];
 }
 
 export interface SceneDialoguePolishInput {
@@ -65,6 +67,8 @@ export const SceneDialoguePolishPrompt = {
         knowledge: list(character.knowledge),
         hasSpeechToOthers: list(character.speechToOthers).length > 0,
         speechToOthers: list(character.speechToOthers),
+        hasRelationChanges: list(character.relationChanges).length > 0,
+        relationChanges: list(character.relationChanges),
         hasOtherCharacters: input.otherCharacters.length > 0,
         otherCharacters: input.otherCharacters.join(', '),
         numberedSkeleton: input.numberedSkeleton,

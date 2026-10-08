@@ -871,6 +871,25 @@ describe("대사 다듬기 단계", () => {
     expect(inputs[0]?.numberedSkeleton).toBe("엘리아가 말했다. ⟨1⟩“가자, 지금.” 지훈이 답했다. ⟨2⟩“알았어.”")
   })
 
+  it("hands each character its own relation changes from the ledger", async () => {
+    const ai = createRecordingAiService()
+    ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 말했다. “가자, 지금.” 지훈이 답했다. “알았어.”")
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard, jihoonCard], "본문"),
+      aiService: ai,
+      format: "novel",
+      characterRelations: new Map([["엘리아", ["엘리아는 지훈에게 이제 반말을 쓴다"]]])
+    })
+
+    const inputs = ai.polishSceneDialogue.mock.calls.map(
+      (call) => call[0] as { character: { name: string; relationChanges?: string[] } }
+    )
+    expect(inputs[0]?.character.relationChanges).toEqual(["엘리아는 지훈에게 이제 반말을 쓴다"])
+    expect(inputs[1]?.character.relationChanges).toEqual([])
+  })
+
   it("skips the polish when the skeleton has no dialogue", async () => {
     const ai = createRecordingAiService()
     ai.draftSceneSkeleton.mockResolvedValueOnce("엘리아가 문을 연다.")
