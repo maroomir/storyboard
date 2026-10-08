@@ -25,6 +25,7 @@ import {
   formatStoryStateForPrompt,
   readStoryState,
   selectCharacterKnowledge,
+  selectCharacterRelations,
   type StoryState,
   type StoryStateFocalFilter,
 } from './storyState';
@@ -211,6 +212,8 @@ export interface NarrativeContext {
   readonly prompt?: string;
   // 인물 이름 → 이 씬 이전에 그 인물이 겪었거나 알게 된 것. 원장의 목격자 태그로 고른다.
   readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
+  // 인물 이름 → 앞선 장면에서 바뀐 그 인물의 관계·호칭·말투. 원장의 관계 항목에서 고른다.
+  readonly characterRelations?: ReadonlyMap<string, readonly string[]>;
 }
 
 export interface NarrativeContextOptions {
@@ -230,9 +233,15 @@ export async function resolveSceneBibleFacts(
   const bible = await readSceneBible(paths, fileSystem);
   const storyTimeline = await readStoryTimeline(paths, fileSystem, bible);
 
-  return selectInjectedFacts(bible, sceneSubjects(context), context.scene.body, context.scene.order, {
-    ...(storyTimeline === undefined ? {} : { storyTimeline }),
-  });
+  return selectInjectedFacts(
+    bible,
+    sceneSubjects(context),
+    context.scene.body,
+    context.scene.order,
+    {
+      ...(storyTimeline === undefined ? {} : { storyTimeline }),
+    },
+  );
 }
 
 // 유효 구간을 쓰는 사실이 하나도 없으면 서사 시간을 볼 일도 없다. 씬을 전부 읽는 비용을 그때만
@@ -320,12 +329,35 @@ export async function buildNarrativeContext(
   );
   const characterKnowledge =
     ledger === undefined ? undefined : selectSceneCharacterKnowledge(ledger, context);
+  const characterRelations =
+    ledger === undefined ? undefined : selectSceneCharacterRelations(ledger, context);
 
   return {
     bibleFacts,
     prompt,
     ...(characterKnowledge === undefined ? {} : { characterKnowledge }),
+    ...(characterRelations === undefined ? {} : { characterRelations }),
   };
+}
+
+function selectSceneCharacterRelations(
+  ledger: StoryState,
+  context: SceneContext,
+): ReadonlyMap<string, readonly string[]> | undefined {
+  const relations = new Map<string, readonly string[]>();
+
+  for (const character of context.characters) {
+    const changes = selectCharacterRelations(
+      ledger,
+      { id: character.id, names: [character.name, ...(character.aliases ?? [])] },
+      context.scene.order,
+    );
+    if (changes.length > 0) {
+      relations.set(character.name, changes);
+    }
+  }
+
+  return relations.size > 0 ? relations : undefined;
 }
 
 function selectSceneCharacterKnowledge(

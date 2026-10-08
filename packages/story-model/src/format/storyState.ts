@@ -369,7 +369,36 @@ export function selectCharacterKnowledge(
       isWitnessedBy(entry, { focal: characterId }),
   );
 
-  return selectWithinBudget(visible, sceneText, characterKnowledgeBudget).map((entry) => entry.text);
+  return selectWithinBudget(visible, sceneText, characterKnowledgeBudget).map(
+    (entry) => entry.text,
+  );
+}
+
+// NOTE: 인물별 «관계 변화». 카드 relations 의 speech 는 처음 정한 말투라, 앞선 장면에서 «이제 반말을
+// 쓴다»처럼 바뀐 관계를 모른다. 다듬기가 카드만 보면 뼈대가 맞게 바꾼 말투를 카드의 초기값으로
+// 되돌리므로, 원장의 관계 항목 중 그 인물의 이름이 나오는 최근 것을 함께 준다.
+const characterRelationBudget = 4;
+
+export function selectCharacterRelations(
+  state: StoryState,
+  character: { readonly id: string; readonly names: readonly string[] },
+  beforeSceneOrder: number | undefined,
+): string[] {
+  const names = character.names.filter((name) => name.trim().length > 0);
+
+  return state.entries
+    .filter(
+      (entry) =>
+        entry.section === 'relations' &&
+        entry.isStale !== true &&
+        (beforeSceneOrder === undefined ||
+          entry.throughScene === undefined ||
+          entry.throughScene < beforeSceneOrder) &&
+        isWitnessedBy(entry, { focal: character.id }) &&
+        names.some((name) => entry.text.includes(name)),
+    )
+    .slice(-characterRelationBudget)
+    .map((entry) => entry.text);
 }
 
 // 목격 범위 서술자의 초점 인물. 주면 그 인물이 목격하지 않은 항목을 주입에서 뺀다.

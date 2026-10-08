@@ -315,6 +315,7 @@ async function polishDialogueOrKeepSkeleton(input: {
   readonly personas: ReadonlyMap<string, string>;
   readonly voiceSamples: ReadonlyMap<string, readonly string[]>;
   readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
+  readonly characterRelations: ReadonlyMap<string, readonly string[]> | undefined;
   readonly characters: SceneContext['characters'];
   readonly options: GenerateTextOptions;
   readonly tuning: ResolvedSceneGenerationTuning;
@@ -371,6 +372,7 @@ async function polishDialogueOrKeepSkeleton(input: {
             samples: input.voiceSamples.get(name) ?? [],
             knowledge: input.characterKnowledge?.get(name) ?? [],
             speechToOthers: speechToOthers.get(name) ?? [],
+            relationChanges: input.characterRelations?.get(name) ?? [],
           },
           otherCharacters: speakers.filter((other) => other !== name),
           ...(retryReasons === undefined ? {} : { retryReasons }),
@@ -685,6 +687,7 @@ const polishDialogueStage: ISceneStage = {
       personas: state.personasUsed,
       voiceSamples: state.voiceSamples,
       characterKnowledge: state.input.characterKnowledge,
+      characterRelations: state.input.characterRelations,
       characters: ctx.context.characters,
       onProgress: ctx.onProgress,
       options: withAttribution(

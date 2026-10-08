@@ -758,6 +758,27 @@ describe("buildNarrativeContext", () => {
     expect(result.characterKnowledge?.get(jihoonCard.name)).toEqual(["지훈이 열쇠를 주웠다"])
   })
 
+  it("hands each character the ledger's relation changes that name it", async () => {
+    const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
+    const fileSystem = new MockFileSystem()
+    fileSystem.setFile(
+      statePath,
+      `# 이야기 상태\n<!-- through-scene: 1 -->\n## 인물 관계와 말투\n- [1] ${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다\n`
+    )
+    const secondScene: SceneFile = { ...firstScene, order: 2, orderText: "02" }
+
+    const result = await buildNarrativeContext(
+      { ...basePaths, storyState: statePath },
+      { scene: secondScene, characters: [eliaCard, jihoonCard] },
+      fileSystem
+    )
+
+    expect(result.characterRelations?.get(eliaCard.name)).toEqual([
+      `${eliaCard.name}는 ${jihoonCard.name}에게 이제 반말을 쓴다`
+    ])
+    expect(result.characterRelations?.get(jihoonCard.name)).toHaveLength(1)
+  })
+
   it("skips the story state ledger for the first scene", async () => {
     const statePath = "/mock/workspace/.storyboard/cache/storyState.md"
     const fileSystem = new MockFileSystem()

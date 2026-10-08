@@ -11,9 +11,11 @@ describe("SceneDialoguePolishPrompt golden", () => {
       catchphrases: ["뭐 별거는 아닌데"],
       samples: ["“빨리 와.”", "“됐어.”"],
       knowledge: ["하나가 편지를 받았다"],
-      speechToOthers: ["하나에게: 반말"]
+      speechToOthers: ["하나에게: 반말"],
+      relationChanges: ["하나와 준은 이제 서로 이름을 부른다"]
     },
     otherCharacters: ["하나", "민"],
+    retryReasons: ["뼈대에 없는 인물이 등장합니다 (민)"],
     style: {
       narration: { tense: "present", focal: "하나" },
       genre: "무협",

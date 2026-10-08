@@ -14,7 +14,10 @@ import {
   sceneNarrationHashInput,
 } from '@storyboard/story-model';
 import type { StoryUri, StoryWorkspaceFolder } from '@storyboard/story-model';
-import type { IProjectRepository, ISceneRepository } from '#engine/application/drafts/draftRepositories';
+import type {
+  IProjectRepository,
+  ISceneRepository,
+} from '#engine/application/drafts/draftRepositories';
 
 import { readChapterNarrationDefaults, resolveSceneNarration } from './resolveSceneNarration';
 import { resolveSceneThread } from './resolveSceneThread';
@@ -42,6 +45,7 @@ export interface SceneGenerationInputs {
   readonly previousContext: string | undefined;
   readonly canonFactLines: readonly string[];
   readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
+  readonly characterRelations: ReadonlyMap<string, readonly string[]> | undefined;
   readonly sceneBreakJoiner: string | undefined;
   readonly inputHash: string;
   readonly warnings: readonly string[];
@@ -214,6 +218,7 @@ export async function loadSceneGenerationInputs(
       context,
       previousContext,
       characterKnowledge: contextResult.characterKnowledge,
+      characterRelations: contextResult.characterRelations,
       canonFactLines: contextResult.canonFactLines,
       sceneBreakJoiner,
       inputHash,
@@ -233,6 +238,7 @@ type SceneContextBundleResult =
       readonly previousContext: string | undefined;
       readonly canonFactLines: readonly string[];
       readonly characterKnowledge: ReadonlyMap<string, readonly string[]> | undefined;
+      readonly characterRelations: ReadonlyMap<string, readonly string[]> | undefined;
       readonly sceneBreakJoiner: string | undefined;
       readonly inputHash: string;
       readonly warnings: readonly string[];
@@ -354,6 +360,7 @@ async function loadSceneContextBundle(
     previousContext: narrativeContext.prompt,
     canonFactLines: formatBibleFactLines(context, narrativeContext.bibleFacts),
     characterKnowledge: narrativeContext.characterKnowledge,
+    characterRelations: narrativeContext.characterRelations,
     sceneBreakJoiner,
     inputHash,
     warnings: [memoryAudit.staleWarning, chapterAudit.staleWarning].filter(

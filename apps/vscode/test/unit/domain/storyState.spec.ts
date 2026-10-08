@@ -15,6 +15,7 @@ import {
   sealStoryState,
   parseStoryState,
   selectCharacterKnowledge,
+  selectCharacterRelations,
   readStoryState,
   serializeStoryState,
   storyStateSceneOrders,
@@ -224,6 +225,35 @@ describe("selectCharacterKnowledge", () => {
 
     expect(selectCharacterKnowledge(state, "hana", 3)).toEqual(["하나만 본 일", "태그 없는 옛 항목", "둘이 들은 일"])
     expect(selectCharacterKnowledge(state, "jun", 3)).toEqual(["준만 본 일", "태그 없는 옛 항목", "둘이 들은 일"])
+  })
+})
+
+describe("selectCharacterRelations", () => {
+  it("gives the latest relation changes that name the character, before this scene", () => {
+    const state = parseStoryState(
+      [
+        "# 이야기 상태",
+        "## 인물 관계와 말투",
+        "- [1] 하나와 준은 서로 존댓말을 쓴다",
+        "- [2|hana,jun] 하나와 준은 이제 반말을 쓴다",
+        "- [2|min] 민은 하나를 누나라 부른다",
+        "- [2] 민과 서진은 서먹하다",
+        "- [3|hana,jun] 뒤 씬의 관계",
+        "## 확정 사실",
+        "- [1] 하나와 준이 만났다",
+        ""
+      ].join("\n")
+    )
+
+    expect(selectCharacterRelations(state, { id: "jun", names: ["준"] }, 3)).toEqual([
+      "하나와 준은 서로 존댓말을 쓴다",
+      "하나와 준은 이제 반말을 쓴다"
+    ])
+    // 민이 한 말이라도 하나가 그 자리에 없었으면 하나의 관계 변화로 주지 않는다.
+    expect(selectCharacterRelations(state, { id: "hana", names: ["하나"] }, 3)).toEqual([
+      "하나와 준은 서로 존댓말을 쓴다",
+      "하나와 준은 이제 반말을 쓴다"
+    ])
   })
 })
 

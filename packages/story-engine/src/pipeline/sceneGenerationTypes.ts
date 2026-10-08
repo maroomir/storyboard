@@ -71,6 +71,8 @@ export interface RunSceneGenerationPipelineInput {
   readonly canonFactLines?: readonly string[];
   // 인물 이름 → 이 씬 이전에 그 인물이 겪었거나 알게 된 것. 뼈대·다듬기가 인물별 지식 경계로 쓴다.
   readonly characterKnowledge?: ReadonlyMap<string, readonly string[]>;
+  // 인물 이름 → 앞선 장면에서 바뀐 관계·호칭·말투. 다듬기가 카드의 상대별 말투보다 앞세운다.
+  readonly characterRelations?: ReadonlyMap<string, readonly string[]>;
   readonly useContextCondense?: boolean;
   // 한 번의 살붙임 호출이 낼 수 있는 최대 글자 수. 목표 분량을 이 값으로 나눠 구간 수가 정해진다.
   readonly sectionOutputLimit?: number;
