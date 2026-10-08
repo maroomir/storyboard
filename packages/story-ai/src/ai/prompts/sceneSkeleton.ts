@@ -2,6 +2,7 @@ import type { Background, SceneGrounding } from '@storyboard/story-model';
 import {
   joinCardText,
   craftContractLines,
+  narrationStyleLines,
   proseConventionLines,
   sceneGroundingLines,
   voiceStyleLines,
@@ -54,7 +55,10 @@ export const SceneSkeletonPrompt = {
       },
       partials: {
         proseConventions: proseConventionLines(style?.narration?.tense).join('\n'),
-        voiceStyle: (style ? voiceStyleLines(style) : []).join('\n'),
+        voiceStyle: (style
+          ? [...narrationStyleLines(style.narration), ...voiceStyleLines(style)]
+          : []
+        ).join('\n'),
         craftContract: craftContractLines(style?.craftContract).join('\n'),
         grounding: sceneGroundingLines(input.grounding).join('\n'),
       },

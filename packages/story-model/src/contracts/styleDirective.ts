@@ -212,6 +212,21 @@ function lengthLine(directive: StyleDirective): string | undefined {
     : undefined;
 }
 
+// 인칭·지식 경계·서술자 목소리만. 뼈대처럼 분량 줄은 따로 받지만 시점은 알아야 하는 단계용.
+// NOTE: 시점을 받지 않던 뼈대는 1인칭 작품도 3인칭 서정으로 설계했고, 뒤 단계가 그 설계 위에서
+// 인칭만 바꿔 «누구 눈으로 겪는 사건인지»가 뼈대에서 정해지지 않았다(#88-6).
+export function narrationStyleLines(narration: NarrationDirective | undefined): string[] {
+  if (!narration) {
+    return [];
+  }
+
+  return [
+    narrationPersonLine(narration),
+    narrationKnowledgeLine(narration),
+    narrationVoiceLine(narration),
+  ].filter((line): line is string => Boolean(line));
+}
+
 // genreFormatting처럼 최종 시점을 확정하는 단계용: 시점까지 포함한다.
 export function narrativeStyleLines(directive: StyleDirective | undefined): string[] {
   if (!directive) {
