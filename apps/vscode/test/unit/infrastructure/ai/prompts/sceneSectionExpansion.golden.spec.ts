@@ -8,6 +8,7 @@ describe("SceneSectionExpansionPrompt golden", () => {
     section: "준이 들어온다.",
     previousSection: "하나는 문고리를 잡았다.",
     targetLength: 1500,
+    backgroundFacts: ["해외 콘도 12층", "거실 통창 너머 바다"],
     retryReasons: ["대사 반복", "분량 부족"],
     style: {
       narration: { person: "first", knowledge: "witnessed", tense: "present", focal: "하나", voice: ["건조함"] },

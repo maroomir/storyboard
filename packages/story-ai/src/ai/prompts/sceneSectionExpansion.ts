@@ -13,6 +13,8 @@ export interface SceneSectionExpansionInput {
   readonly section: string;
   readonly previousSection?: string;
   readonly targetLength: number;
+  // 이 씬의 배경 카드가 적어 둔 공간 사실(구조·층수·소품·감각). 씬 사이 재료(원장·캐넌)는 아니다.
+  readonly backgroundFacts?: readonly string[];
   readonly retryReasons?: readonly string[];
   readonly style?: StyleDirective;
 }
@@ -27,6 +29,8 @@ export const SceneSectionExpansionPrompt = {
         targetLength: input.targetLength.toLocaleString(),
         hasRetryReasons: input.retryReasons !== undefined && input.retryReasons.length > 0,
         retryReasons: input.retryReasons?.join(' / '),
+        hasBackgroundFacts: (input.backgroundFacts ?? []).length > 0,
+        backgroundFacts: input.backgroundFacts ?? [],
         skeleton: input.skeleton,
         previousSection: input.previousSection,
         section: input.section,

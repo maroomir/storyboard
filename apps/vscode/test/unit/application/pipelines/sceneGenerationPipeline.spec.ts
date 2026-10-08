@@ -260,6 +260,31 @@ describe("runSceneGenerationPipeline — 뼈대 단계", () => {
     const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as Record<string, unknown>
     expect(JSON.stringify(expansionInput)).not.toContain("왕족")
   })
+
+  it("hands the scene's own background facts to every expansion call", async () => {
+    const ai = createRecordingAiService()
+    const background: BackgroundCard = {
+      type: "location",
+      id: "condo",
+      name: "해외 콘도",
+      locationKind: "place",
+      description: ["12층", "거실 통창 너머 바다"],
+      characterIds: [],
+      tags: [],
+      senses: ["에어컨 바람 냄새"],
+      time: "오후"
+    }
+
+    await runSceneGenerationPipeline({
+      sceneStem: "01-opening",
+      context: contextFor([eliaCard], "본문", background),
+      aiService: ai,
+      format: "novel"
+    })
+
+    const expansionInput = ai.expandSceneSection.mock.calls[0]?.[0] as { backgroundFacts: readonly string[] }
+    expect(expansionInput.backgroundFacts).toEqual(["오후", "12층", "거실 통창 너머 바다", "에어컨 바람 냄새"])
+  })
 })
 
 describe("runSceneGenerationPipeline — 살붙임 단계", () => {
