@@ -16,18 +16,20 @@ describe('draft candidate validation', () => {
     ).toBe(360);
   });
 
-  it('never raises the minimum above the original length of a short draft', () => {
+  it('keeps the compression allowance for a draft still under its scene target', () => {
     expect(
       resolveMinimumDraftLength(600, { maxCompressionPercent: 20, targetLength: 1000 }),
-    ).toBe(600);
+    ).toBe(480);
   });
 
-  it('accepts a revision that lengthens a draft still under its scene target', () => {
+  it('accepts a revision slightly shorter than a draft still under its scene target', () => {
     const policy = { maxCompressionPercent: 20, targetLength: 1000 };
     const original = '가'.repeat(600);
 
     expect(validateDraftCandidate(original, '나'.repeat(700), policy).accepted).toBe(true);
-    expect(validateDraftCandidate(original, '나'.repeat(500), policy).reason).toBe('too-short');
+    // #88-10: 목표 미달 원고의 감수 결과가 3% 줄었다고 통째로 기각되던 것을 막는다.
+    expect(validateDraftCandidate(original, '나'.repeat(580), policy).accepted).toBe(true);
+    expect(validateDraftCandidate(original, '나'.repeat(470), policy).reason).toBe('too-short');
   });
 
   it('reads an inline target length from an outline-derived scene seed', () => {

@@ -33,9 +33,12 @@ export function resolveMinimumDraftLength(
   policy: DraftCandidateLengthPolicy,
 ): number {
   // NOTE: 이 하한은 압축을 막기 위한 것이므로 원본 길이를 넘어서는 안 된다. 목표에 미달한 원고에서
-  // 하한을 목표 기준으로만 잡으면 원본보다 길어진 수정본까지 too-short로 기각돼 감수가 무력해진다.
-  if (policy.targetLength !== undefined && policy.targetLength > 0) {
-    return Math.min(Math.ceil(policy.targetLength * 0.9), originalLength);
+  // 하한을 원본 길이로 잡으면 한 글자라도 줄어든 수정본이 too-short로 기각돼(실측: 3% 짧아진 감수
+  // 결과가 통째로 버려짐) 감수가 무력해진다. 목표에 닿은 원고만 목표 기준으로 지키고, 미달 원고는
+  // 압축 허용 한도만 적용한다.
+  const target = policy.targetLength;
+  if (target !== undefined && target > 0 && originalLength >= target) {
+    return Math.ceil(target * 0.9);
   }
 
   const retainedPercent = 100 - normalizeMaxCompressionPercent(policy.maxCompressionPercent);
