@@ -14,7 +14,7 @@ import {
   markStoryStateStaleEntries,
   sealStoryMemory
 } from "../../../../../../packages/story-engine/src/application/drafts/storyStateAudit"
-import { updateStoryStateAfterGeneration } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
+import { toStoryStateEntries, updateStoryStateAfterGeneration } from "../../../../../../packages/story-engine/src/application/drafts/updateStoryState"
 
 // 원장 감사는 워크스페이스를 통째로 읽어 해시를 다시 계산한다. 카드·씬을 흉내 내면 그 계산이
 // 실제로 무엇에 반응하는지 검증할 수 없으므로, 진짜 파일 내용을 담은 메모리 파일 시스템을 쓴다.
@@ -384,6 +384,23 @@ describe("ledger updates after generation", () => {
     const ledgerText = fileSystem.read(paths.storyState.path) ?? ""
     expect(ledgerText).toContain(`<!-- scene-input: 1 ${hashA} -->`)
     expect(ledgerText).toContain("- [1] 지켜야 할 사실")
+  })
+
+  it("maps tagged witness names to card ids and falls back to the whole cast", () => {
+    const characters = [
+      { id: "hana", name: "하나", aliases: ["하나 씨"] },
+      { id: "jun", name: "준" }
+    ]
+    const entries = toStoryStateEntries(
+      [
+        { section: "facts", text: "하나만 아는 일", witnesses: ["하나 씨", "모르는 이름"] },
+        { section: "facts", text: "모두 아는 일" },
+        { section: "revealed", text: "아는 이름이 없음", witnesses: ["누구"] }
+      ],
+      characters
+    )
+
+    expect(entries.map((entry) => entry.witnesses)).toEqual([["hana"], ["hana", "jun"], ["hana", "jun"]])
   })
 
   it("rewinds the later scenes when an earlier one is regenerated", async () => {

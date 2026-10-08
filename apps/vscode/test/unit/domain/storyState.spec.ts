@@ -222,6 +222,20 @@ describe("coerceStoryStateUpdate", () => {
     ])
   })
 
+  it("reads witness-tagged facts and revealed items", () => {
+    const items = coerceStoryStateUpdate(
+      JSON.stringify({
+        facts: [{ text: "하나가 편지를 읽었다", witnesses: ["하나", " ", 3] }, { text: "" }, "태그 없는 사실"],
+        revealed: [{ witnesses: ["준"] }]
+      })
+    )
+
+    expect(items).toEqual([
+      { section: "facts", text: "하나가 편지를 읽었다", witnesses: ["하나"] },
+      { section: "facts", text: "태그 없는 사실" }
+    ])
+  })
+
   it("ignores unknown keys, non-strings, and blanks", () => {
     const items = coerceStoryStateUpdate(
       JSON.stringify({ facts: ["사실1", 42, "  "], unknown: ["버림"] })
