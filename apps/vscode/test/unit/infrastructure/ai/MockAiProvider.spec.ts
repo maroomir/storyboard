@@ -43,7 +43,7 @@ describe("MockAiProvider", () => {
   it("splits the numbered lines between the characters of a polish, never claiming one twice", async () => {
     const provider = new MockAiProvider()
     const skeleton = "[뼈대]\n⟨1⟩“가자.” ⟨2⟩“싫어.” ⟨3⟩“왜?”"
-    const polishFor = async (self: string, others: string) =>
+    const polishFor = async (self: string, others: string): Promise<{ n: number; text: string }[]> =>
       JSON.parse(
         (
           await provider.generate({
