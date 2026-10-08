@@ -51,10 +51,18 @@ export type NoteConsolidatedGroups = Partial<
 
 // A field is answered either as a flat list of what to keep (`values`, the shape asked for aliases)
 // or as groups of one meaning, the most specific first (`groups`, the shape asked for the rest).
+// Two candidates of one field that state the same fact in opposite ways. Both stay; the author is
+// told, since neither the notes nor the model can say which one the work means.
+export interface NoteConsolidationConflict {
+  readonly field: NoteConsolidatedField;
+  readonly items: readonly string[];
+}
+
 export interface NoteConsolidatedLists {
   readonly cardId: string;
   readonly values: NoteConsolidatedValues;
   readonly groups?: NoteConsolidatedGroups;
+  readonly conflicts?: readonly NoteConsolidationConflict[];
 }
 
 export type NoteConsolidationFailure = 'truncated' | 'unparsed';
@@ -83,6 +91,20 @@ function readGroups(value: unknown): string[][] | undefined {
     : undefined;
 }
 
+function readConflicts(value: unknown): NoteConsolidationConflict[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    const record = typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>) : {};
+    const field = noteConsolidatedFields.find((name) => name === record.field);
+    const items = readTextList(record.items) ?? [];
+
+    return field === undefined || items.length < 2 ? [] : [{ field, items }];
+  });
+}
+
 function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
   const id = answerIdSchema.safeParse(entry);
 
@@ -105,9 +127,14 @@ function readAnswer(entry: unknown): NoteConsolidatedLists | undefined {
     }
   }
 
-  return Object.keys(groups).length === 0
-    ? { cardId: id.data.id, values }
-    : { cardId: id.data.id, values, groups };
+  const conflicts = readConflicts(record.conflicts);
+
+  return {
+    cardId: id.data.id,
+    values,
+    ...(Object.keys(groups).length === 0 ? {} : { groups }),
+    ...(conflicts.length === 0 ? {} : { conflicts }),
+  };
 }
 
 export function readNoteConsolidationResponse(
