@@ -24,6 +24,7 @@ import type {
   StudioTarget,
   StudioValidation,
   NarratorCard,
+  SceneBeat,
 } from '@storyboard/story-model/contracts';
 
 export type {
@@ -119,7 +120,7 @@ export interface SceneCard {
   readonly endState?: string;
   readonly foreshadowing?: readonly string[];
   readonly neededCanon?: readonly string[];
-  readonly beats?: readonly string[];
+  readonly beats?: readonly SceneBeat[];
   readonly summary?: string;
 }
 

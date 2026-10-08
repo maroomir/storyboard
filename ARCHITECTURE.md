@@ -397,7 +397,10 @@ neededCanon:
   - 학교는 3월에 학기를 시작한다
 beats:
   - 정문 앞에서 숨을 고르다 지훈을 발견한다
-  - 지훈이 먼저 이름을 부르고, 둘은 나란히 교문을 지난다
+  - text: 지훈이 먼저 이름을 부르고, 둘은 나란히 교문을 지난다
+    cast: [elia, jihoon]     # 이 비트에 있는 인물(카드 id 또는 이름)
+    place: 교문 앞
+    time: 등교 직전
 summary: 01-arrival.summary.md
 ```
 
@@ -417,8 +420,13 @@ summary: 01-arrival.summary.md
   `max(generation.beats.minimum, ceil(targetWordCount / generation.beats.charsPerBeat))`개를 뽑아 카드에 쓴다
   (`GenerateSceneBeatsUseCase`; summary가 있으면 그 범위 안에서만, `generation.beats.auto`로 끔).
   `scene plot` verb와 확장 명령은 같은 사용 사례를 미리 돌리는 입구이고, 이미 있는
-  비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 `summary`보다
-  우선한다.
+  비트는 `--force`로만 덮어쓴다. 프롬프트 본문(`renderSceneCardBody`)에서는 `beats`가 사건 재료이고
+  `summary`는 `[창작자 요약]` 설계 블록으로 함께 간다.
+- 비트는 문자열이거나 좌표를 단 객체(`text`·`cast`·`place`·`time`)다. 좌표는 사건 줄 아래
+  `(출연: … / 장소: … / 시각: …)` 한 줄로 프롬프트에 실리고(출연의 카드 id는 이름으로 바뀐다),
+  뼈대는 그 인물만 그 자리에 두고 그 장소·시각에서 사건을 벌인다 — 인물의 등장·퇴장을 뼈대가
+  추론하지 않게 하고, 뒤에 오는 «이 비트에서 누가 무엇을 아는가»의 좌표가 된다. 기계가 뽑는 비트와
+  `scene plot`은 문자열만 쓴다.
 
 #### 서술자와 줄기 (`narrator`·`thread`)
 

@@ -27,6 +27,52 @@ export const sceneGroundingFieldLabels: Readonly<Record<SceneGroundingFieldKey, 
   time: '시점',
 };
 
+// NOTE: 비트는 문자열이거나, 그 사건의 좌표(출연·장소·시각)를 단 객체다. 좌표가 있으면 뼈대가 인물의
+// 등장·퇴장을 추론하지 않아도 되고, 구간별 검증과 «이 비트에서 누가 무엇을 아는가»의 자리가 생긴다.
+// 문자열만 쓰던 카드는 그대로 읽힌다.
+export const sceneBeatDetailSchema = z.object({
+  text: z.string().trim().min(1),
+  // 이 비트에 있는 인물. 카드 id 또는 이름.
+  cast: z.array(z.string().trim().min(1)).optional(),
+  place: z.string().trim().min(1).optional(),
+  time: z.string().trim().min(1).optional(),
+});
+
+export const sceneBeatSchema = z.union([z.string().trim().min(1), sceneBeatDetailSchema]);
+
+export type SceneBeatDetail = z.infer<typeof sceneBeatDetailSchema>;
+export type SceneBeat = z.infer<typeof sceneBeatSchema>;
+
+export function sceneBeatText(beat: SceneBeat): string {
+  return typeof beat === 'string' ? beat : beat.text;
+}
+
+export function sceneBeatTexts(beats: readonly SceneBeat[] | undefined): string[] {
+  return (beats ?? []).map(sceneBeatText);
+}
+
+export const sceneBeatCoordinateLabels = { cast: '출연', place: '장소', time: '시각' } as const;
+
+// 좌표는 사건 줄 아래 괄호 한 줄로 붙는다. 빈 줄이 없어야 사건 재료 분할에서 한 블록으로 남는다.
+export function renderSceneBeat(
+  beat: SceneBeat,
+  castName: (ref: string) => string = (ref) => ref,
+): string {
+  if (typeof beat === 'string') {
+    return beat;
+  }
+
+  const coordinates = [
+    beat.cast && beat.cast.length > 0
+      ? `${sceneBeatCoordinateLabels.cast}: ${beat.cast.map(castName).join(', ')}`
+      : undefined,
+    beat.place ? `${sceneBeatCoordinateLabels.place}: ${beat.place}` : undefined,
+    beat.time ? `${sceneBeatCoordinateLabels.time}: ${beat.time}` : undefined,
+  ].filter((part): part is string => part !== undefined);
+
+  return coordinates.length > 0 ? `${beat.text}\n(${coordinates.join(' / ')})` : beat.text;
+}
+
 export const sceneFrontmatterSchema = z
   .object({
     title: z.string().trim().min(1).optional(),
@@ -70,7 +116,7 @@ export const sceneCardSchema = z.object({
   foreshadowing: z.array(z.string().trim().min(1)).optional(),
   neededCanon: z.array(z.string().trim().min(1)).optional(),
   summary: z.string().optional(),
-  beats: z.array(z.string().trim().min(1)).optional(),
+  beats: z.array(sceneBeatSchema).optional(),
 });
 
 export type SceneCard = z.infer<typeof sceneCardSchema>;
@@ -166,7 +212,11 @@ export const sceneSummaryLabel = '창작자 요약';
 // `[라벨]` 블록으로 렌더링해 프롬프트 계약을 바꾸지 않는다. 사건 재료는 라벨 없는 블록으로 놓이며
 // beats 가 있으면 그것이 사건 재료다. 그때 summary 는 비트에 없는 질감(말버릇·분위기·작가 메모)을
 // 담으므로 버리지 않고 설계 블록으로 함께 넘긴다 — 한 블록으로 묶어야 사건 재료로 읽히지 않는다.
-export function renderSceneCardBody(card: SceneCard, summaryText?: string): string {
+export function renderSceneCardBody(
+  card: SceneCard,
+  summaryText?: string,
+  castName?: (ref: string) => string,
+): string {
   const blocks: string[] = [];
 
   if (card.purpose !== undefined) {
@@ -213,7 +263,7 @@ export function renderSceneCardBody(card: SceneCard, summaryText?: string): stri
     if (hasSummary) {
       blocks.push(`[${sceneSummaryLabel}]\n${summary.replace(/\n\s*\n+/g, '\n')}`);
     }
-    blocks.push(beats.join('\n\n'));
+    blocks.push(beats.map((beat) => renderSceneBeat(beat, castName)).join('\n\n'));
   } else if (hasSummary) {
     blocks.push(summary);
   }

@@ -11,6 +11,7 @@ import { characterCatchphrases, type GenerateTextOptions } from '@storyboard/sto
 import {
   computeDraftBodyHash,
   createEmptyBackground,
+  renderSceneCardBody,
   splitSceneNarrativeSource,
   unknownDialogueSpeaker,
 } from '@storyboard/story-model';
@@ -85,7 +86,9 @@ function resolveExecutionContext(input: RunSceneGenerationPipelineInput): Resolv
   } = input;
   const sceneStem = input.sceneStem ?? input.context.scene.stem;
   const body = context.scene.body.trim();
-  const narrativeParts = splitSceneNarrativeSource(body);
+  const narrativeParts = splitSceneNarrativeSource(
+    renderNarrativeBodyWithCastNames(context) ?? body,
+  );
 
   if (body.length === 0) {
     throw new Error(
@@ -145,6 +148,19 @@ function sectionTargetLengths(
 
 // NOTE: 씬 간 연속성 재료(캐넌·이전 씬)는 사건을 정하는 뼈대 단계에만 넣는다. 살붙임은 뼈대만 보고
 // 문장을 다듬으므로, 여기서 설정을 다시 보여 주면 묘사가 새 설정을 끌어들일 여지만 생긴다.
+// 비트 좌표의 출연은 카드 id로 적힐 수 있다. 프롬프트에는 이름이 가야 하므로, 좌표 비트가 있는
+// 씬만 이름으로 다시 렌더링한다. 씬 본문(해시·저장)은 그대로 둔다.
+function renderNarrativeBodyWithCastNames(context: SceneContext): string | undefined {
+  const card = context.scene.card;
+  const hasCoordinates = (card?.beats ?? []).some((beat) => typeof beat !== 'string');
+  if (card === undefined || !hasCoordinates) {
+    return undefined;
+  }
+
+  const nameById = new Map(context.characters.map((character) => [character.id, character.name]));
+  return renderSceneCardBody(card, context.scene.summaryText, (ref) => nameById.get(ref) ?? ref);
+}
+
 function buildSkeletonContext(
   previousContext: string | undefined,
   canonFactLines: readonly string[] | undefined,
