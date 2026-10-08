@@ -19,7 +19,7 @@
 핵심 근거 (코드 위치):
 
 - `packages/story-ai/src/ai/prompts/personaGeneration.ts` — character에서 **`name`, `voice`, `description`, `role`, `attributes`(키 정렬), `traits`(slice 0,10)** 사용.
-- `packages/story-ai/src/ai/prompts/personaDialogue.ts` — `background.description`, `background.tags`만 사용.
+- `packages/story-ai/src/ai/prompts/sceneSkeleton.ts`·`sceneSectionExpansion.ts` — `background.description`(과 살붙임의 `senses`·`time`·`weather`)을 사용.
 - `packages/story-model/src/format/sceneContext.ts` — `name` + `aliases`로 인물 **탐지**.
 - `packages/story-engine/src/pipeline/sceneGenerationPipeline.ts` — `name` + `aliases`로 상황별 페르소나 **스코핑**.
 - `packages/story-model/src/format/sceneContext.ts` (`resolveSceneBackground`/`detectSceneBackground`) — `scene.frontmatter.location`이 있으면 그 id로, 없으면 본문에서 `name`+`aliases` 자동 탐지(가장 긴 일치 토큰 1개)로 부착(2026-06-25 추가). 어느 쪽으로도 매칭이 없으면 `createEmptyBackground` → 배경 필드 무시.
@@ -38,9 +38,9 @@
 | 6 | **`role`** | personaGeneration "역할" | 약함(한 줄). |
 | 7 | **`attributes`** | personaGeneration "속성"(키 정렬) | 성별·나이·MBTI 등 압축 프라이어(2026-06-25 추가). |
 | 8 | **`desire`** | personaGeneration "목표" | 인물 동기·목표(2026-06-25 추가). |
-| 9 | `background.description` | backgroundDescription/personaDialogue | location/자동탐지 부착 시에만. |
+| 9 | `background.description` | backgroundDescription/sceneSkeleton | location/자동탐지 부착 시에만. |
 | 10 | **`background.time`·`weather`·`senses`** | backgroundDescription "시간/날씨/감각" | 드로잉 감각 묘사 입력(2026-06-25 추가), 부착 시에만. |
-| 11 | `background.tags` | personaDialogue "태그" | 부착 시에만, 미미. |
+| 11 | `background.tags` | backgroundDescription | 부착 시에만, 미미. |
 
 > 참고 — 실제로 가장 큰 생성 레버는 **카드 밖**에 있다: `setting.pov`, `setting.styleConstraints`, `setting.genre`(→ styleDirective), `scene.frontmatter.relationStage` / `characters` / `location`. 카드 슬림화와 별개로 이쪽이 품질에 더 크게 작용한다.
 
@@ -94,6 +94,6 @@
 ## 부록: 필드별 코드 사용처 요약
 
 - 생성(persona): `personaGeneration.ts` → `name`, `voice`, `description`, `desire`, `role`, `attributes`, `traits`
-- 생성(배경, 조건부): `backgroundDescription.ts` → `name`, `description`, `time`, `weather`, `senses`, `tags`; 결과 분위기는 `personaDialogue.ts`에 주입
+- 생성(배경, 조건부): `backgroundDescription.ts` → `name`, `description`, `time`, `weather`, `senses`, `tags`; 결과 분위기는 `sceneSkeleton.ts`에 주입
 - 탐지/스코핑: `sceneContext.ts`, `sceneGenerationPipeline.ts` → `name`, `aliases`
 - UI/그래프/hover/스냅샷 전용(생성 무관): `relations`, `arc`, `recentDialogues`, `profile`, character `tags`, `background.characterIds`, `background.locationKind`

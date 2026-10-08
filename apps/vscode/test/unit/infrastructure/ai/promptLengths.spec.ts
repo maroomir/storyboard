@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 
-import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaDialoguePrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
+import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
 import type { PromptArtifact, PromptVariantId } from '@storyboard/story-ai';
-import type { Background, Character, ProjectFormat } from '@storyboard/story-model';
+import type { Character, ProjectFormat } from '@storyboard/story-model';
 
 interface PromptLengthSample {
   readonly name: string
@@ -25,18 +25,8 @@ describe("prompt length dump", () => {
     recentDialogues: []
   }
 
-  const background: Background = {
-    type: "location",
-    id: "school",
-    name: "학교",
-    locationKind: "place",
-    description: ["교실"],
-    characterIds: [],
-    tags: []
-  }
 
   const format: ProjectFormat = "screenplay"
-  const personas = new Map([["엘리아", "나는 침착하고 책임감이 강하다."]])
 
   const samples: readonly PromptLengthSample[] = [
     {
@@ -46,11 +36,6 @@ describe("prompt length dump", () => {
     {
       name: "personaGeneration",
       build: (v): PromptArtifact => PersonaGenerationPrompt.build(character, v)
-    },
-    {
-      name: "personaDialogue",
-      build: (v): PromptArtifact =>
-        PersonaDialoguePrompt.build("엘리아가 문을 연다.", personas, background, undefined, v)
     },
     {
       name: "genreFormatting",

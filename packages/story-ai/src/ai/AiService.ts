@@ -192,22 +192,6 @@ export class StoryboardAiService {
     return this.sceneAiService.describeBackground(background, options, recentExcerpt);
   }
 
-  public async generatePersonaDialogue(
-    situation: string,
-    personas: ReadonlyMap<string, string>,
-    background: Background,
-    previousContext?: string,
-    options: GenerateTextOptions = {},
-  ): Promise<string> {
-    return this.sceneAiService.generatePersonaDialogue(
-      situation,
-      personas,
-      background,
-      previousContext,
-      options,
-    );
-  }
-
   public async draftSceneSkeleton(
     input: Parameters<SceneAiService['draftSceneSkeleton']>[0],
     options: GenerateTextOptions = {},

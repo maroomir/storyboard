@@ -6,7 +6,7 @@
   },
   "rich": {
     "minimumMaxTokens": 4000,
-    "tasks": ["personaDialogue", "sceneDraft", "draftExpansion"],
+    "tasks": ["sceneDraft", "draftExpansion"],
     "modelKeywords": [
       "opus",
       "sonnet",

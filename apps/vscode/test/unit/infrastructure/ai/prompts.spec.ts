@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 
-import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaDialoguePrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
-import type { Background, Character, ProjectFormat } from '@storyboard/story-model';
+import { DraftExpansionPrompt, GenreFormattingPrompt, GrammarCheckPrompt, InlineCompletionPrompt, PersonaGenerationPrompt, SituationExtractionPrompt, TraitsExtractionPrompt } from '@storyboard/story-ai';
+import type { Character, ProjectFormat } from '@storyboard/story-model';
 
 describe("AI prompts", () => {
   const character: Character = {
@@ -19,15 +19,6 @@ describe("AI prompts", () => {
     recentDialogues: []
   }
 
-  const background: Background = {
-    type: "location",
-    id: "school",
-    name: "학교",
-    locationKind: "place",
-    description: ["교실"],
-    characterIds: [],
-    tags: []
-  }
 
   const format: ProjectFormat = "screenplay"
 
@@ -35,13 +26,6 @@ describe("AI prompts", () => {
     const artifacts = [
       SituationExtractionPrompt.build("엘리아가 교실로 들어온다.", "generic"),
       PersonaGenerationPrompt.build(character, "generic"),
-      PersonaDialoguePrompt.build(
-        "엘리아가 문을 연다.",
-        new Map([["엘리아", "나는 침착하다."]]),
-        background,
-        undefined,
-        "generic"
-      ),
       GenreFormattingPrompt.build("엘리아: 안녕", format, "generic"),
       TraitsExtractionPrompt.build("엘리아가 웃는다.", "엘리아", undefined, "generic"),
       GrammarCheckPrompt.build("이건 정말루 중요해.", "generic"),

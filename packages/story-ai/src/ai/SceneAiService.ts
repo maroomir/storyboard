@@ -8,7 +8,6 @@ import {
 import { AiTextGateway } from './AiTextGateway';
 import { BackgroundDescriptionPrompt } from './prompts/backgroundDescription';
 import { GenreFormattingPrompt } from './prompts/genreFormatting';
-import { PersonaDialoguePrompt } from './prompts/personaDialogue';
 import { PersonaGenerationPrompt } from './prompts/personaGeneration';
 import { SceneBeatsPrompt } from './prompts/sceneBeats';
 import { SceneGroundingPrompt } from './prompts/sceneGrounding';
@@ -185,32 +184,6 @@ export class SceneAiService {
         temperature: options.temperature ?? BackgroundDescriptionPrompt.config.temperature,
         maxTokens: options.maxTokens ?? BackgroundDescriptionPrompt.config.maxTokens,
       },
-    );
-
-    return response.text.trim();
-  }
-
-  public async generatePersonaDialogue(
-    situation: string,
-    personas: ReadonlyMap<string, string>,
-    background: Background,
-    previousContext?: string,
-    options: GenerateTextOptions = {},
-  ): Promise<string> {
-    const variant = this.gateway.resolvePromptVariant('personaDialogue', options);
-    const prompt = PersonaDialoguePrompt.build(
-      situation,
-      personas,
-      background,
-      previousContext,
-      variant,
-      options.styleDirective,
-      options.sceneGrounding,
-    );
-    const response = await this.gateway.generate(
-      'personaDialogue',
-      toPromptMessages(prompt),
-      options,
     );
 
     return response.text.trim();

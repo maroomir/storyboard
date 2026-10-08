@@ -34,7 +34,9 @@ export const aiTaskCatalog = [
   { name: 'sceneStructure', label: '씬 구조화' },
   { name: 'situationExtraction', label: '상황 추출' },
   { name: 'personaGeneration', label: '페르소나 생성' },
-  { name: 'personaDialogue', label: '페르소나 대화' },
+  // NOTE: 비트별 즉흥 대화(뼈대 구조 이전)의 작업 이름. 프롬프트와 호출은 없어졌지만 옛 사용량
+  // 원장·설정 파일이 이 이름을 담고 있어 enum 에서 빼면 그 파일들이 읽히지 않는다.
+  { name: 'personaDialogue', label: '페르소나 대화 (사용 안 함)' },
   { name: 'backgroundDescription', label: '배경 묘사' },
   { name: 'sceneDraft', label: '씬 드래프트' },
   { name: 'sceneSkeleton', label: '씬 뼈대' },
